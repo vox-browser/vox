@@ -15,7 +15,7 @@ $if !vox_ui2 ? {
 			} else {
 				gg.rgb(210, 210, 210)
 			}
-			app.ctx.draw_convex_poly([x, f32(tab_strip_height), x + 10, f32(5),
+			draw_browser_polygon(app.ctx, [x, f32(tab_strip_height), x + 10, f32(5),
 				x + f32(tab_width) - 10, f32(5), x + f32(tab_width), f32(tab_strip_height)], fill)
 			title := address_for_display(chrome.tab_titles[i], 0, false, int((tab_width - 48) / 7))
 			app.ctx.draw_text(int(x) + 18, 13, title, color: gg.rgb(55, 55, 55), size: 12)
