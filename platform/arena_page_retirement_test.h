@@ -21,4 +21,10 @@ static size_t vox_arena_test_resident_bytes(void *start, size_t bytes) {
     free(residency);
     return resident;
 }
+static size_t vox_arena_test_unused_resident_bytes(void *start, size_t bytes) {
+    size_t page = (size_t)sysconf(_SC_PAGESIZE);
+    uintptr_t lo = ((uintptr_t)start + page - 1) / page * page;
+    uintptr_t hi = ((uintptr_t)start + bytes) / page * page;
+    return hi > lo ? vox_arena_test_resident_bytes((void *)lo, hi - lo) : 0;
+}
 #endif

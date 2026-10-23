@@ -5,12 +5,13 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
-// The arena has already invalidated every allocation in this mapping. Preserve
-// its address reservation and allocator metadata, but discard complete payload
-// pages. Darwin's MADV_DONTNEED alone leaves dirty pages physically charged.
-static int vox_retire_empty_arena_pages(void *start, size_t bytes) {
+// The caller supplies only reset or never-allocated payload bytes. Preserve
+// partial boundary pages, the address reservation, and allocator metadata.
+// Darwin's MADV_DONTNEED alone leaves dirty pages physically charged.
+static int vox_retire_unused_arena_pages(void *start, size_t bytes) {
     long page_size = sysconf(_SC_PAGESIZE);
     if (page_size <= 0 || !start) return 0;
+    if (bytes > UINTPTR_MAX - (uintptr_t)start) return -1;
     uintptr_t page = (uintptr_t)page_size;
     uintptr_t lo = ((uintptr_t)start + page - 1) / page * page;
     uintptr_t hi = ((uintptr_t)start + bytes) / page * page;

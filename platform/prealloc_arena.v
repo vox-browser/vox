@@ -8,7 +8,7 @@ import os
 
 fn C.vox_note_poisoned_range(start voidptr, end voidptr, label &char)
 fn C.vox_install_poison_fault_handler()
-fn C.vox_retire_empty_arena_pages(start voidptr, bytes usize) int
+fn C.vox_retire_unused_arena_pages(start voidptr, bytes usize) int
 
 // Arenas for -prealloc builds.
 //
@@ -422,9 +422,34 @@ pub fn (arena &Arena) trim_empty_pages() bool {
 		}
 		mut block := arena.scope.first
 		for block != unsafe { nil } && block.scope == voidptr(arena.scope) {
-			if block.mmap_allocated && C.vox_retire_empty_arena_pages(block.start,
+			if block.mmap_allocated && C.vox_retire_unused_arena_pages(block.start,
 				usize(block.stop) - usize(block.start)) != 0 {
 				panic('could not trim empty arena pages')
+			}
+			block = block.next
+		}
+		return true
+	}
+	return false
+}
+
+// Discard complete pages beyond each block's allocation cursor. Live payload,
+// cursor positions, block links, and capacity remain valid for retained readers
+// and future allocations. Call only on the owning thread between arena entries.
+pub fn (arena &Arena) trim_unused_pages() bool {
+	$if prealloc {
+		if !arena_thread_is_current() || arena.scope == unsafe { nil } || arena.entered {
+			return false
+		}
+		verify_prealloc_layout()
+		mut block := arena.scope.first
+		for block != unsafe { nil } && block.scope == voidptr(arena.scope) {
+			if usize(block.current) < usize(block.start) || usize(block.current) > usize(block.stop) {
+				panic('invalid arena allocation cursor')
+			}
+			if block.mmap_allocated && C.vox_retire_unused_arena_pages(block.current,
+				usize(block.stop) - usize(block.current)) != 0 {
+				panic('could not trim unused arena pages')
 			}
 			block = block.next
 		}
@@ -441,7 +466,7 @@ fn trim_thread_arena_recycle_pages() {
 		cache := unsafe { &PreallocRecycleCacheView(block.recycle_cache) }
 		assert cache.count >= 0 && cache.count <= 8
 		for index in 0 .. cache.count {
-			if C.vox_retire_empty_arena_pages(cache.starts[index], usize(cache.sizes[index])) != 0 {
+			if C.vox_retire_unused_arena_pages(cache.starts[index], usize(cache.sizes[index])) != 0 {
 				panic('could not trim recycled arena pages')
 			}
 		}
@@ -478,7 +503,7 @@ pub fn (mut arena Arena) reset() {
 		if arena.usage().capacity >= 1024 * 1024 {
 			mut block := arena.scope.first
 			for block != unsafe { nil } && block.scope == scope {
-				if block.mmap_allocated && C.vox_retire_empty_arena_pages(block.start,
+				if block.mmap_allocated && C.vox_retire_unused_arena_pages(block.start,
 					usize(block.stop) - usize(block.start)) != 0 {
 					panic('could not retire empty arena pages')
 				}

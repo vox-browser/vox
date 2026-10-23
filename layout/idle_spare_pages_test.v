@@ -6,6 +6,7 @@ import platform
 
 #include "@DIR/../platform/arena_page_retirement_test.h"
 fn C.vox_arena_test_resident_bytes(start voidptr, bytes usize) usize
+fn C.vox_arena_test_unused_resident_bytes(start voidptr, bytes usize) usize
 
 fn test_idle_paint_page_trim_keeps_live_scenes_and_trees_and_refills_spares() {
 	$if !prealloc { return }
@@ -16,6 +17,11 @@ fn test_idle_paint_page_trim_keeps_live_scenes_and_trees_and_refills_spares() {
 	mut pool := result.scene_pool_()
 	mut live_scene := pool.acquire()
 	result.scene = live_scene
+	warm := live_scene.arena.enter()
+	warm_bytes := []u8{len:200 * 1024, init:61}
+	assert warm_bytes[0] == 61
+	live_scene.arena.leave(warm)
+	live_scene.arena.reset()
 	entry := live_scene.arena.enter()
 	live_bytes := []u8{len:128 * 1024, init:23}
 	live_scene.arena.leave(entry)
@@ -26,6 +32,11 @@ fn test_idle_paint_page_trim_keeps_live_scenes_and_trees_and_refills_spares() {
 	spare_scene.release()
 	mut live_tree := result.acquire_paint_tree_storage(document)
 	result.paint_tree_storage = live_tree
+	warm_tree := live_tree.arena.enter()
+	warm_tree_bytes := []u8{len:200 * 1024, init:67}
+	assert warm_tree_bytes[0] == 67
+	live_tree.arena.leave(warm_tree)
+	live_tree.arena.reset()
 	tree_entry := live_tree.arena.enter()
 	live_tree_bytes := []u8{len:128 * 1024, init:43}
 	live_tree.arena.leave(tree_entry)
@@ -34,7 +45,15 @@ fn test_idle_paint_page_trim_keeps_live_scenes_and_trees_and_refills_spares() {
 	spare_tree_bytes := []u8{len:128 * 1024, init:89}
 	spare_tree.arena.leave(spare_tree_entry)
 	spare_tree.release()
+	scene_usage := live_scene.arena.usage()
+	tree_usage := live_tree.arena.usage()
 	trim_spare_paint_pages(result)
+	assert live_scene.arena.usage().used == scene_usage.used
+	assert live_scene.arena.usage().capacity == scene_usage.capacity
+	assert live_tree.arena.usage().used == tree_usage.used
+	assert live_tree.arena.usage().capacity == tree_usage.capacity
+	assert C.vox_arena_test_unused_resident_bytes(voidptr(usize(live_bytes.data) + usize(live_bytes.len)), 64 * 1024) == 0
+	assert C.vox_arena_test_unused_resident_bytes(voidptr(usize(live_tree_bytes.data) + usize(live_tree_bytes.len)), 64 * 1024) == 0
 	assert live_bytes[0] == 23 && live_bytes[live_bytes.len - 1] == 23
 	assert live_tree_bytes[0] == 43 && live_tree_bytes[live_tree_bytes.len - 1] == 43
 	if !platform.arenas_poisoned() {

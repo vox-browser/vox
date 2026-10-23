@@ -22,8 +22,8 @@ fn trim_empty_inline_item_pages() {
 }
 
 // Arena maintenance must keep published caches: dropping their pointers would
-// orphan the allocations. Only already-reset scratch and unreferenced spares
-// have physical pages that can be discarded here.
+// orphan the allocations. Reset scratch, unreferenced spares, and complete
+// never-allocated suffix pages of retained arenas can be discarded here.
 pub fn trim_unused_layout_pages(display_list &dom.DisplayList) {
 	$if prealloc {
 		if !platform.arena_thread_is_current() { return }
@@ -37,12 +37,20 @@ pub fn trim_unused_layout_pages(display_list &dom.DisplayList) {
 
 fn trim_spare_paint_pages(result &DocumentLayoutResult) {
 	if result.scene_pool != unsafe { nil } {
+		for scene in result.scene_pool.live {
+			assert scene.references > 0
+			scene.arena.trim_unused_pages()
+		}
 		for scene in result.scene_pool.free {
 			assert scene.references == 0
 			scene.arena.trim_empty_pages()
 		}
 	}
 	if result.paint_tree_pool != unsafe { nil } {
+		for tree in result.paint_tree_pool.live {
+			assert tree.references > 0
+			tree.arena.trim_unused_pages()
+		}
 		for tree in result.paint_tree_pool.free {
 			assert tree.references == 0
 			tree.arena.trim_empty_pages()
