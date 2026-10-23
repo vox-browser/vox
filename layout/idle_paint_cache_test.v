@@ -113,6 +113,8 @@ fn test_idle_trim_rebuilds_hover_style_and_scroll_while_preserving_old_vectors()
 	defer { document.finalize() }
 	_ = layout_document_typed_in_viewport(document, 320, 120)
 	initial := document.record_display_list() or { panic('missing initial paint') }
+	initial_lease := retain_display_list_scene(initial)
+	defer { release_display_list_scene(initial_lease) }
 	old_commands := display_list_commands(initial)
 	old_snapshot := idle_paint_snapshot(old_commands)
 	target := document.get_element_by_id('target') or { panic('missing target') }
@@ -174,6 +176,8 @@ fn test_idle_trim_preserves_compositor_animation_and_caret_invalidation() {
 	mut selection := document.get_selection() or { panic('missing selection') }
 	selection.collapse(text, 1) or { panic(err) }
 	first := document.record_display_list() or { panic('missing first paint') }
+	first_lease := retain_display_list_scene(first)
+	defer { release_display_list_scene(first_lease) }
 	old_commands := display_list_commands(first)
 	old_snapshot := idle_paint_snapshot(old_commands)
 	first_caret := old_commands.filter(it.kind == 'fill_rect' && it.color == 'rgb(13 14 15)')
@@ -249,6 +253,8 @@ fn test_idle_trim_discards_relayout_snapshots_and_rebuilds_identical_resized_out
 	defer { document.finalize() }
 	_ = layout_document_typed_in_viewport(document, 320, 200)
 	first := document.record_display_list() or { panic('missing first paint') }
+	first_lease := retain_display_list_scene(first)
+	defer { release_display_list_scene(first_lease) }
 	result := document_layout_result(document) or { panic('missing layout') }
 	idle_paint_expect(result.state.block_layouts_.len + result.state.inline_layouts_.len > 0)
 	flow := document.get_element_by_id('flow') or { panic('missing flow') }
@@ -296,7 +302,7 @@ fn test_idle_trim_reaches_shared_svg_image_document_without_discarding_its_live_
 	root := layout_document_typed_in_viewport(document, 100, 100)
 	element := document.get_element_by_id('one') or { panic('missing SVG host') }
 	box := root.find_box(i64(element.as_node().unique_id())) or { panic('missing SVG box') }
-	mut isolated := box.background_images[0].svg_document or { panic('missing SVG document') }
+	mut isolated := box.decorations().background_images[0].svg_document or { panic('missing SVG document') }
 	_ = run_document_layout(isolated, 20, 10) or { panic('missing SVG layout') }
 	image_list := isolated.record_display_list() or { panic('missing SVG paint') }
 	image_result := document_layout_result(isolated) or { panic('missing SVG result') }

@@ -9,15 +9,21 @@ fn optional_geometry_box() BlockBox {
 		width:                  80
 		height:                 40
 		table_cell_coordinates: retained_box_paint_payload(?painting.TableCellCoordinates(painting.TableCellCoordinates{ row_index: 2, column_span: 3 }))
-		background_gradient:    retained_box_paint_payload(?LinearGradient(LinearGradient{
+
+		decoration_data: retained_block_box_decoration(BlockBoxDecorationData{
+			background_gradient:    retained_box_paint_payload(?LinearGradient(LinearGradient{
 			colors: [css.Color{255, 0, 0, 255}, css.Color{0, 0, 255, 255}]
 		}))
-		css_clip:               retained_box_paint_payload(?LayoutRect(LayoutRect{1, 2, 30, 40}))
-		clip_path:              retained_box_paint_payload(?painting.ClipPathVisualData(painting.ClipPathVisualData{
+		})
+
+		clip_data: retained_block_box_clip(BlockBoxClipData{
+			css_clip:               retained_box_paint_payload(?LayoutRect(LayoutRect{1, 2, 30, 40}))
+			clip_path:              retained_box_paint_payload(?painting.ClipPathVisualData(painting.ClipPathVisualData{
 			polygon: [painting.Point{0, 0}, painting.Point{20, 0}, painting.Point{0, 20}]
 		}))
-		svg_clip:               retained_box_paint_payload(?painting.SVGClipVisualData(painting.SVGClipVisualData{ cache_key: 17 }))
-		svg_mask:               retained_box_paint_payload(?painting.SVGMaskVisualData(painting.SVGMaskVisualData{ cache_key: 23 }))
+			svg_clip:               retained_box_paint_payload(?painting.SVGClipVisualData(painting.SVGClipVisualData{ cache_key: 17 }))
+			svg_mask:               retained_box_paint_payload(?painting.SVGMaskVisualData(painting.SVGMaskVisualData{ cache_key: 23 }))
+		})
 	}
 }
 
@@ -26,14 +32,14 @@ fn test_boxes_without_optional_geometry_do_not_embed_its_storage() {
 	box := BlockBox{}
 	assert box.table_cell_coordinates == none
 	assert box.table_cell_borders == none
-	assert box.background_gradient == none
-	assert box.fieldset_paintable == none
+	assert box.decorations().background_gradient == none
+	assert box.media().fieldset_paintable == none
 	assert box.overlay == none
 	assert box.overflow_clip == none
-	assert box.css_clip == none
-	assert box.clip_path == none
-	assert box.svg_clip == none
-	assert box.svg_mask == none
+	assert box.clips().css_clip == none
+	assert box.clips().clip_path == none
+	assert box.clips().svg_clip == none
+	assert box.clips().svg_mask == none
 	assert retained_box_paint_payload[LayoutRect](none) == none
 }
 
@@ -44,13 +50,13 @@ fn test_optional_geometry_snapshots_survive_return_copy_and_collection() {
 		gc_collect()
 		coordinates := copy.table_cell_coordinates or { panic('missing coordinates') }
 		assert coordinates.row_index == 2 && coordinates.column_span == 3
-		clip := copy.css_clip or { panic('missing CSS clip') }
+		clip := copy.clips().css_clip or { panic('missing CSS clip') }
 		assert *clip == LayoutRect{1, 2, 30, 40}
-		path := copy.clip_path or { panic('missing clip path') }
+		path := copy.clips().clip_path or { panic('missing clip path') }
 		assert path.polygon.len == 3 && path.polygon[1].x == 20
-		assert (copy.svg_clip or { panic('missing SVG clip') }).cache_key == 17
-		assert (copy.svg_mask or { panic('missing SVG mask') }).cache_key == 23
-		gradient := copy.background_gradient or { panic('missing gradient') }
+		assert (copy.clips().svg_clip or { panic('missing SVG clip') }).cache_key == 17
+		assert (copy.clips().svg_mask or { panic('missing SVG mask') }).cache_key == 23
+		gradient := copy.decorations().background_gradient or { panic('missing gradient') }
 		assert gradient.colors.len == 2
 		commands := copy.paint_commands().filter(it.kind == 'fill_gradient')
 		assert commands.len == 1

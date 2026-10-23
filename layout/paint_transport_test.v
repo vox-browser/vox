@@ -242,10 +242,13 @@ fn test_background_clip_text_uses_inclusive_in_flow_and_floating_glyph_runs() {
 		width: 100
 		height: 60
 		background_color: css.Color{255, 0, 0, 255}
-		background_color_clip: 'text'
 		paintable_with_lines: true
 		lines: text_clip_test_box('own').lines
 		children: [in_flow, floating, absolute]
+
+		decoration_data: retained_block_box_decoration(BlockBoxDecorationData{
+			background_color_clip: 'text'
+		})
 	}
 	commands := box.paint_commands()
 	begin_commands := commands.filter(it.kind == 'begin_background_text_clip')
@@ -270,12 +273,18 @@ fn test_background_clip_text_uses_inclusive_in_flow_and_floating_glyph_runs() {
 		width: 100
 		height: 60
 		background_color: css.Color{255, 0, 0, 255}
-		background_color_clip: 'text'
-		paints_canvas_background: true
-		canvas_width: 120
-		canvas_height: 80
 		paintable_with_lines: true
 		lines: text_clip_test_box('root').lines
+
+		decoration_data: retained_block_box_decoration(BlockBoxDecorationData{
+			background_color_clip: 'text'
+		})
+
+		canvas_data: retained_block_box_canvas(BlockBoxCanvasData{
+			paints_canvas_background: true
+			canvas_width: 120
+			canvas_height: 80
+		})
 	}
 	assert root.paint_commands().all(it.kind != 'begin_background_text_clip')
 }

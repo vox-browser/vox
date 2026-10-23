@@ -284,8 +284,8 @@ fn test_backdrop_filter_records_cpp_background_phase_command() {
 	assert backdrop.y == math.round(target_box.y - target_box.padding.top - target_box.border.top)
 	assert backdrop.width == math.round(target_box.width + target_box.padding.left + target_box.padding.right + target_box.border.left + target_box.border.right)
 	assert backdrop.height == math.round(target_box.height + target_box.padding.top + target_box.padding.bottom + target_box.border.top + target_box.border.bottom)
-	assert backdrop.corner_radii.top_left.x == math.floor(target_box.border_radii.top_left.x)
-	assert backdrop.corner_radii.bottom_left.y == math.floor(target_box.border_radii.bottom_left.y)
+	assert backdrop.corner_radii.top_left.x == math.floor(target_box.decorations().border_radii.top_left.x)
+	assert backdrop.corner_radii.bottom_left.y == math.floor(target_box.decorations().border_radii.bottom_left.y)
 	assert !backdrop.backdrop_source_outside_filter
 	filter := backdrop.backdrop_filter() or { panic('missing backdrop filter') }
 	// Gfx::Filter stores the later CSS operation outside the earlier one.
@@ -602,11 +602,11 @@ fn test_typed_background_images_keep_gradient_url_layer_order_and_geometry() {
 	target := root.find_box(i64(target_element.as_node().unique_id())) or {
 		panic('missing target box')
 	}
-	assert target.background_images.len == 2
-	assert target.background_images[0].gradient_source != none
-	assert target.background_images[0].url == ''
-	assert target.background_images[1].gradient_source == none
-	assert target.background_images[1].url.ends_with('back.png')
+	assert target.decorations().background_images.len == 2
+	assert target.decorations().background_images[0].gradient_source != none
+	assert target.decorations().background_images[0].url == ''
+	assert target.decorations().background_images[1].gradient_source == none
+	assert target.decorations().background_images[1].url.ends_with('back.png')
 
 	commands := target.paint_commands()
 	background_commands := commands.filter(it.kind in ['fill_gradient', 'draw_background_image'])
@@ -748,8 +748,8 @@ fn test_typed_background_image_set_selects_candidate_for_device_pixel_ratio() {
 	target := root.find_box(i64(target_element.as_node().unique_id())) or {
 		panic('missing target box')
 	}
-	assert target.background_images.len == 1
-	assert target.background_images[0].url.ends_with('one.png')
+	assert target.decorations().background_images.len == 1
+	assert target.decorations().background_images[0].url.ends_with('one.png')
 }
 
 fn test_svg_background_image_retains_its_isolated_document_for_nested_painting() {
@@ -796,9 +796,9 @@ fn test_svg_images_use_page_preference_without_a_supported_color_scheme() {
 	} {
 		element := document.get_element_by_id(id) or { panic('missing ${id}') }
 		box := root.find_box(i64(element.as_node().unique_id())) or { panic('missing ${id} box') }
-		assert box.background_images.len == 1
-		assert box.background_images[0].color_scheme == expected
-		assert box.background_images[0].svg_document?.svg_image_color_scheme()? == css.preferred_color_scheme_to_string(expected)
+		assert box.decorations().background_images.len == 1
+		assert box.decorations().background_images[0].color_scheme == expected
+		assert box.decorations().background_images[0].svg_document?.svg_image_color_scheme()? == css.preferred_color_scheme_to_string(expected)
 	}
 
 	for id, expected in {
@@ -808,7 +808,7 @@ fn test_svg_images_use_page_preference_without_a_supported_color_scheme() {
 	} {
 		element := document.get_element_by_id(id) or { panic('missing ${id}') }
 		box := root.find_box(i64(element.as_node().unique_id())) or { panic('missing ${id} box') }
-		svg_document := box.nested_viewport_document or { panic('missing ${id} SVG document') }
+		svg_document := box.media().nested_viewport_document or { panic('missing ${id} SVG document') }
 		assert svg_document.svg_image_color_scheme()? == css.preferred_color_scheme_to_string(expected)
 	}
 }
@@ -820,7 +820,7 @@ fn test_typed_background_clip_text_reaches_the_group_mask() {
 	target := root.find_box(i64(target_element.as_node().unique_id())) or {
 		panic('missing target box')
 	}
-	assert target.background_color_clip == 'text'
+	assert target.decorations().background_color_clip == 'text'
 	commands := target.paint_commands()
 	begin_commands := commands.filter(it.kind == 'begin_background_text_clip')
 	assert begin_commands.len == 1
@@ -853,7 +853,7 @@ fn test_body_background_is_propagated_to_canvas_and_not_painted_twice() {
 	body := document.get_element_by_id('body') or { panic('missing body') }
 	body_box := root.find_box(i64(body.as_node().unique_id())) or { panic('missing body box') }
 
-	assert root.paints_canvas_background
+	assert root.canvas().paints_canvas_background
 	assert root.background_color == css.Color{12, 34, 56, 255}
 	assert document.background_color() == dom.Color{12, 34, 56, 255}
 	assert body_box.skip_background_paint
@@ -906,7 +906,7 @@ fn test_body_background_layers_are_propagated_to_root_canvas() {
 	body_box := root.find_box(i64(body.as_node().unique_id())) or { panic('missing body box') }
 
 	assert body_box.skip_background_paint
-	assert root.background_gradient != none
+	assert root.decorations().background_gradient != none
 	assert root.replaced_image_rendering == .pixelated
 	gradients := root.paint_commands().filter(it.kind == 'fill_gradient')
 	assert gradients.len == 1
@@ -3096,7 +3096,7 @@ fn test_iframe_replays_the_hosted_document_as_a_nested_display_list() {
 	iframe_box := root.find_box(i64(iframe_element.as_node().unique_id())) or {
 		panic('missing iframe paint box')
 	}
-	mut hosted_document := iframe_box.nested_viewport_document or {
+	mut hosted_document := iframe_box.media().nested_viewport_document or {
 		panic('missing hosted document')
 	}
 	blocker := hosted_document.create_element('style') or { panic(err) }
@@ -4257,7 +4257,7 @@ fn test_typed_outlines_use_cpp_border_dispatch_and_auto_accent() {
 	assert dashed_box.outline_style == .dashed
 	assert double_box.outline_style == .double
 	assert automatic_box.outline_style == .solid
-	assert automatic_box.outline_width == 2
+	assert automatic_box.decorations().outline_width == 2
 
 	outline_commands := root.paint_commands().filter(it.paint_phase == .outline)
 	dashed_commands := outline_commands.filter(it.color == 'rgb(10 90 40)')

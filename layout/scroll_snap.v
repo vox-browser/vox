@@ -143,7 +143,7 @@ fn style_source_for_snap_container(snap_container &BlockBox) SnapContainerStyleS
 	// The viewport transport is the document element's box, so it already is
 	// the style source upstream selects for a viewport snap container.
 	return SnapContainerStyleSource{
-		scroll_snap_type: snap_container.scroll_snap_type
+		scroll_snap_type: snap_container.scroll_snap().scroll_snap_type
 		writing_mode: snap_container.writing_mode
 		direction: snap_container.direction
 	}
@@ -191,13 +191,13 @@ fn for_each_descendant_snap_area(parent &BlockBox, snap_container &BlockBox,
 	// Borrow each child: passing a loop copy's address would heap-allocate it.
 	for i in 0 .. parent.children.len {
 		child := &parent.children[i]
-		if has_snap_alignment(child.scroll_snap_align)
+		if has_snap_alignment(child.scroll_snap().scroll_snap_align)
 			&& is_captured_by_snap_container(child, snap_container) {
 			areas << DescendantSnapArea{
 				rect: snap_area_rect(child)
 				reference: snap_area_reference_for(child)
-				alignment: child.scroll_snap_align
-				always_stop: child.scroll_snap_stop == .always
+				alignment: child.scroll_snap().scroll_snap_align
+				always_stop: child.scroll_snap().scroll_snap_stop == .always
 				writing_mode: child.writing_mode
 				direction: child.direction
 			}
@@ -217,10 +217,10 @@ fn snap_area_rect(snap_area &BlockBox) LayoutRect {
 		rect = LayoutRect{rect.x * scale, rect.y * scale, rect.width * scale, rect.height * scale}
 	}
 	return LayoutRect{
-		x:      rect.x - snap_area.scroll_margin.left
-		y:      rect.y - snap_area.scroll_margin.top
-		width:  rect.width + snap_area.scroll_margin.left + snap_area.scroll_margin.right
-		height: rect.height + snap_area.scroll_margin.top + snap_area.scroll_margin.bottom
+		x:      rect.x - snap_area.scroll_snap().scroll_margin.left
+		y:      rect.y - snap_area.scroll_snap().scroll_margin.top
+		width:  rect.width + snap_area.scroll_snap().scroll_margin.left + snap_area.scroll_snap().scroll_margin.right
+		height: rect.height + snap_area.scroll_snap().scroll_margin.top + snap_area.scroll_snap().scroll_margin.bottom
 	}
 }
 
@@ -459,7 +459,7 @@ fn consider_snap_candidate(offset f64, candidate SnapPositionCandidate,
 }
 
 pub fn snap_axes_of_scroll_container(snap_container &BlockBox) SnapAxes {
-	type_ := snap_container.scroll_snap_type
+	type_ := snap_container.scroll_snap().scroll_snap_type
 	if type_.strictness == .none_ {
 		return SnapAxes{}
 	}
@@ -488,10 +488,10 @@ fn collect_snap_position_candidates(snap_container &BlockBox, collect_x bool,
 	overflow := snap_container.scrollable_overflow or { return none }
 	padding_box := compatibility_absolute_padding_box_rect(snap_container)
 	snapport := LayoutRect{
-		x:      padding_box.x + snap_container.scroll_padding.left
-		y:      padding_box.y + snap_container.scroll_padding.top
-		width:  math.max(0.0, padding_box.width - snap_container.scroll_padding.left - snap_container.scroll_padding.right)
-		height: math.max(0.0, padding_box.height - snap_container.scroll_padding.top - snap_container.scroll_padding.bottom)
+		x:      padding_box.x + snap_container.scroll_snap().scroll_padding.left
+		y:      padding_box.y + snap_container.scroll_snap().scroll_padding.top
+		width:  math.max(0.0, padding_box.width - snap_container.scroll_snap().scroll_padding.left - snap_container.scroll_snap().scroll_padding.right)
+		height: math.max(0.0, padding_box.height - snap_container.scroll_snap().scroll_padding.top - snap_container.scroll_snap().scroll_padding.bottom)
 	}
 	max_x := math.max(0.0, overflow.width - padding_box.width)
 	max_y := math.max(0.0, overflow.height - padding_box.height)

@@ -63,12 +63,12 @@ fn test_completed_image_with_a_definite_size_repaints_without_layout() {
 	image_node := image_contents_repaint_node(result.root, 'fixed') or { panic('missing image box') }
 	assert image_node.is_image_box()
 	box := result.retained_box_for_layout(voidptr(image_node)) or { panic('missing paint box') }
-	assert box.replaced_image_url == 'https://thumbs.example/a.jpg'
+	assert box.media().replaced_image_url == 'https://thumbs.example/a.jpg'
 	model := complete_image_contents_repaint_image(document, 'fixed')
 	assert model.complete()
 	assert document.layout_is_up_to_date()
 	assert result.needs_repaint
-	paintable := box.replaced_image_paintable or { panic('missing image paintable') }
+	paintable := box.media().replaced_image_paintable or { panic('missing image paintable') }
 	intrinsic := paintable.intrinsic_size or { panic('missing natural size') }
 	assert intrinsic.width or { CSSPixels.new(0) } == CSSPixels.new(8)
 	assert intrinsic.height or { CSSPixels.new(0) } == CSSPixels.new(6)

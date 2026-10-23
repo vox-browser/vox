@@ -28,7 +28,7 @@ fn register_svg_document_cache_test_source(address string, source string) {
 fn svg_document_cache_test_background(root &BlockBox, document &dom.Document, id string) &dom.Document {
 	element := document.get_element_by_id(id) or { panic('missing ${id}') }
 	box := root.find_box(i64(element.as_node().unique_id())) or { panic('missing ${id} box') }
-	return box.background_images[0].svg_document or { panic('missing ${id} SVG document') }
+	return box.decorations().background_images[0].svg_document or { panic('missing ${id} SVG document') }
 }
 
 fn test_svg_background_documents_share_the_current_viewport_and_color_environment() {

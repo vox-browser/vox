@@ -105,12 +105,12 @@ fn test_layout_transport_preserves_scroll_padding_and_target_margin() {
 	target_box := snap_context_box_for_node(&root, i64(second.as_node().unique_id())) or {
 		panic('missing target transport')
 	}
-	assert scroller_box.scroll_padding == BoxEdges{
+	assert scroller_box.scroll_snap().scroll_padding == BoxEdges{
 		top: 20
 	}
-	assert target_box.scroll_margin == BoxEdges{
+	assert target_box.scroll_snap().scroll_margin == BoxEdges{
 		top: 5
 	}
-	assert scroller_box.scroll_snap_type.strictness == .mandatory
-	assert target_box.scroll_snap_align.block_alignment == .start
+	assert scroller_box.scroll_snap().scroll_snap_type.strictness == .mandatory
+	assert target_box.scroll_snap().scroll_snap_align.block_alignment == .start
 }

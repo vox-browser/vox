@@ -58,16 +58,25 @@ fn test_scroll_snap_covering_area_contributes_destination_inside_valid_range() {
 
 fn test_scroll_snap_axes_follow_logical_writing_mode() {
 	assert snap_axes_of_scroll_container(&BlockBox{
-		scroll_snap_type: css.ScrollSnapType{ axis: .inline_, strictness: .mandatory }
 		writing_mode:     .horizontal_tb
+
+		scroll_snap_data: retained_block_box_scroll_snap(BlockBoxScrollSnapData{
+			scroll_snap_type: css.ScrollSnapType{ axis: .inline_, strictness: .mandatory }
+		})
 	}) == SnapAxes{ x: true }
 	assert snap_axes_of_scroll_container(&BlockBox{
-		scroll_snap_type: css.ScrollSnapType{ axis: .inline_, strictness: .mandatory }
 		writing_mode:     .vertical_rl
+
+		scroll_snap_data: retained_block_box_scroll_snap(BlockBoxScrollSnapData{
+			scroll_snap_type: css.ScrollSnapType{ axis: .inline_, strictness: .mandatory }
+		})
 	}) == SnapAxes{ y: true }
 	assert snap_axes_of_scroll_container(&BlockBox{
-		scroll_snap_type: css.ScrollSnapType{ axis: .block, strictness: .mandatory }
 		writing_mode:     .vertical_lr
+
+		scroll_snap_data: retained_block_box_scroll_snap(BlockBoxScrollSnapData{
+			scroll_snap_type: css.ScrollSnapType{ axis: .block, strictness: .mandatory }
+		})
 	}) == SnapAxes{ x: true }
 }
 

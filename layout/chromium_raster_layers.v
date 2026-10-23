@@ -202,7 +202,7 @@ fn chromium_raster_chunk_bounds(box &BlockBox, command &PaintCommand) LayoutRect
 		}
 	}
 	if command.paint_phase == .outline {
-		outset := math.max(0.0, box.outline_width + box.outline_offset)
+		outset := math.max(0.0, box.decorations().outline_width + box.decorations().outline_offset)
 		rect = LayoutRect{
 			x:      rect.x - outset
 			y:      rect.y - outset

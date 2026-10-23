@@ -334,9 +334,9 @@ fn test_image_payload_absent_defaults_match_the_original_record() {
 fn test_image_payload_background_producers_match_original_fields_and_gradients() {
 	document := html.parse_document('<!doctype html><style>html,body{margin:0}#target{width:120px;height:80px;background-image:url(retained.png),linear-gradient(to right,red,blue);background-repeat:round space,no-repeat;background-position:25% 75%;background-size:30px auto;background-attachment:fixed,local;background-blend-mode:multiply,screen;image-rendering:pixelated}</style><div id="target"></div>')
 	root := layout_document_typed_in_viewport(document, 240, 160)
-	boxes := root.paint_order().filter(it.background_images.len == 2)
+	boxes := root.paint_order().filter(it.decorations().background_images.len == 2)
 	assert boxes.len == 1
-	for layer in boxes[0].background_images {
+	for layer in boxes[0].decorations().background_images {
 		for fixed_context in [?int(none), ?int(7)] {
 			actual := background_layer_command(layer, LayoutRect{3, 4, 120, 80}, LayoutRect{5, 6, 90, 60}, BoxRadii{ top_left: CornerRadius{3, 7} }, 0.7, 9, [
 				f64(1),
@@ -357,7 +357,11 @@ fn test_image_payload_background_producers_match_original_fields_and_gradients()
 }
 
 fn image_payload_returned_background() PaintCommand {
-	return BlockBox{ width: 100, height: 50, background_images: [BackgroundImageLayer{ url: 'retained.png', repeat_x: 'round', repeat_y: 'space', size: '20px auto', position_x: '25%', position_y: '75%', attachment: 'local', intrinsic_width: 40, intrinsic_height: 30 }] }.paint_commands().filter(it.kind == 'draw_background_image')[0]
+	return BlockBox{ width: 100, height: 50,
+		decoration_data: retained_block_box_decoration(BlockBoxDecorationData{
+			background_images: [BackgroundImageLayer{ url: 'retained.png', repeat_x: 'round', repeat_y: 'space', size: '20px auto', position_x: '25%', position_y: '75%', attachment: 'local', intrinsic_width: 40, intrinsic_height: 30 }]
+		})
+	}.paint_commands().filter(it.kind == 'draw_background_image')[0]
 }
 
 fn test_image_payload_survives_producer_return_collection_and_source_replacement() {
@@ -433,7 +437,14 @@ fn test_image_payload_nested_replay_preserves_source_geometry_and_earlier_record
 }
 
 fn test_image_payload_replaced_producer_retains_exact_image_parameters() {
-	box := BlockBox{ x: 3, y: 5, width: 100, height: 50, replaced_image_url: 'retained.png', replaced_image_size: 'contain', replaced_image_position_x: '25%', replaced_image_position_y: '75%', replaced_image_rendering: .pixelated }
+	box := BlockBox{ x: 3, y: 5, width: 100, height: 50, replaced_image_rendering: .pixelated
+		media_data: retained_block_box_media(BlockBoxMediaData{
+			replaced_image_url: 'retained.png'
+			replaced_image_size: 'contain'
+			replaced_image_position_x: '25%'
+			replaced_image_position_y: '75%'
+		})
+	}
 	command := box.paint_commands().filter(it.kind == 'draw_background_image')[0]
 	image := command.image()
 	assert image.image_url == 'retained.png'
@@ -450,7 +461,14 @@ fn test_image_payload_replaced_producer_retains_exact_image_parameters() {
 }
 
 fn test_image_payload_svg_export_preserves_image_parameters_and_escaping() {
-	box := BlockBox{ x: 3, y: 5, width: 100, height: 50, replaced_image_url: 'retained&image.png', replaced_image_size: 'contain', replaced_image_position_x: '25%', replaced_image_position_y: '75%' }
+	box := BlockBox{ x: 3, y: 5, width: 100, height: 50,
+		media_data: retained_block_box_media(BlockBoxMediaData{
+			replaced_image_url: 'retained&image.png'
+			replaced_image_size: 'contain'
+			replaced_image_position_x: '25%'
+			replaced_image_position_y: '75%'
+		})
+	}
 	svg := box.render_svg(120, 80)
 	assert svg.contains('href="retained&amp;image.png"')
 	assert svg.contains('x="3" y="5" width="100" height="50" preserveAspectRatio="xMidYMid meet"')

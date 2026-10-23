@@ -12,12 +12,15 @@ fn ephemeral_css_gradient_commands() []PaintCommand {
 	return BlockBox{
 		width: 100
 		height: 50
-		background_gradient: &LinearGradient{
+
+		decoration_data: retained_block_box_decoration(BlockBoxDecorationData{
+			background_gradient: &LinearGradient{
 			x2: 1
 			colors: [css.Color{255, 255, 255, 255}, css.Color{0, 0, 0, 255}]
 			stops: [GradientStop{color: css.Color{255, 255, 255, 255}, offset: 0},
 				GradientStop{color: css.Color{0, 0, 0, 255}, offset: 1}]
 		}
+		})
 	}.paint_commands().filter(it.kind == 'fill_gradient')
 }
 

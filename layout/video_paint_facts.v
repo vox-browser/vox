@@ -27,33 +27,37 @@ fn push_video_paint_facts(element &dom.HTMLVideoElement) {
 		mut media := model.media
 		source = media.ensure_video_frame_source()
 	}
-	paintable := box.video_paintable or { return }
+	paintable := box.media().video_paintable or { return }
 	natural_size := if dimensions := model.natural_media_size() {
 		?painting.IntSize(painting.IntSize{int(dimensions.width), int(dimensions.height)})
 	} else { ?painting.IntSize(none) }
-	if box.video_representation == representation
-		&& video_paint_bitmap_identity(box.video_bitmap) == video_paint_bitmap_identity(bitmap)
-		&& video_paint_source_identity(box.video_frame_source) == video_paint_source_identity(source)
+	if box.media().video_representation == representation
+		&& video_paint_bitmap_identity(box.media().video_bitmap) == video_paint_bitmap_identity(bitmap)
+		&& video_paint_source_identity(box.media().video_frame_source) == video_paint_source_identity(source)
 		&& paintable.natural_media_size == natural_size {
 		return
 	}
-	box.video_representation = representation
-	box.video_bitmap = bitmap
-	box.video_frame_source = source
-	if paintable.natural_media_size != natural_size {
-		// Existing display lists retain their immutable geometry snapshot.
-		box.video_paintable = &painting.VideoPaintable{
+	// Existing boxes and display lists retain their previous immutable snapshot.
+	next_paintable := if paintable.natural_media_size != natural_size {
+		&painting.VideoPaintable{
 			...paintable
 			natural_media_size: natural_size
 		}
-	}
+	} else { paintable }
+	box.media_data = retained_block_box_media(BlockBoxMediaData{
+		...*box.media()
+		video_representation: representation
+		video_bitmap: bitmap
+		video_frame_source: source
+		video_paintable: next_paintable
+	})
 	viewport_invalidate_box_paint_cache(mut result, box)
 	mut mutable_document := unsafe { &dom.Document(document) }
 	mutable_document.set_needs_repaint_with_invalidation(.paint_commands)
 }
 
 fn video_paint_box_for_layout_handle(mut box BlockBox, handle voidptr) ?&BlockBox {
-	if box.layout_handle == handle && box.video_paintable != none {
+	if box.layout_handle == handle && box.media().video_paintable != none {
 		return unsafe { &box }
 	}
 	for mut child in box.children {

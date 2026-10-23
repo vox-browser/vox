@@ -80,14 +80,14 @@ fn retained_block_text_lines(container &Node, used &UsedValues, state &LayoutSta
 }
 
 fn retained_paint_box_can_share(box &BlockBox) bool {
-	return box.background_images.len == 0 && box.background_gradient == none
-		&& box.replaced_image_url == '' && box.replaced_image_paintable == none
-		&& box.canvas_paintable == none && box.video_paintable == none
-		&& box.nested_viewport_paintable == none && box.form_control_kind == ''
-		&& box.fieldset_paintable == none && !box.has_svg_path() && !box.is_svg_image
+	return box.decorations().background_images.len == 0 && box.decorations().background_gradient == none
+		&& box.media().replaced_image_url == '' && box.media().replaced_image_paintable == none
+		&& box.media().canvas_paintable == none && box.media().video_paintable == none
+		&& box.media().nested_viewport_paintable == none && box.media().form_control_kind == ''
+		&& box.media().fieldset_paintable == none && !box.has_svg_path() && !box.media().is_svg_image
 		&& box.marker_shape == '' && box.overlay == none && !box.has_scrollable_overflow
-		&& box.css_clip == none && box.clip_path == none && box.svg_clip == none && box.svg_mask == none
-		&& !box.filter.has_filters() && !box.backdrop_filter.has_filters()
+		&& box.clips().css_clip == none && box.clips().clip_path == none && box.clips().svg_clip == none && box.clips().svg_mask == none
+		&& !box.filters().filter.has_filters() && !box.filters().backdrop_filter.has_filters()
 		&& !box.uses_own_paint_transform_4x4 && affine_is_compact_identity(box.paint_transform)
 		&& retained_paint_rect_can_translate(box.border_box(), 0, 0)
 }

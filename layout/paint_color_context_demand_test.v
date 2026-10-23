@@ -17,7 +17,10 @@ fn test_box_paint_keeps_full_color_and_calculation_context_for_gradients_and_fil
 		element := document.get_element_by_id('target')?
 		node := unsafe { &Node(element.as_node().unsafe_layout_node()?.real_layout_handle()) }
 		state := document_layout_result(document)?.state
-		used := state.try_get(node.as_node_with_style()?)?
+		styled := node.as_node_with_style() or { panic('missing styled target') }
+		used := state.try_get(styled) or { panic('missing used target') }
+		assert used.border_box_width().to_double() == 80
+		assert used.border_box_height().to_double() == 40
 		computed := node.computed_values()
 		box := uncached_block_box_from_typed_layout_shallow(node, state, [6]f64{})
 		full := color_resolution_context_for_typed_node(node, computed.color())
@@ -28,14 +31,15 @@ fn test_box_paint_keeps_full_color_and_calculation_context_for_gradients_and_fil
 			width:  used.border_box_width().to_double()
 			height: used.border_box_height().to_double()
 		}
-		actual_gradient := box.background_gradient or { panic('missing painted gradient') }
+		actual_gradient := box.decorations().background_gradient or { panic('missing painted gradient') }
 		expected_gradient := computed_background_gradient(computed, bounds.width, bounds.height, full) or { panic('missing reference gradient') }
-		assert actual_gradient.str() == expected_gradient.str()
+		actual_gradient_value := *actual_gradient
+		assert actual_gradient_value.str() == expected_gradient.str()
 		if style.contains('filter:') {
-			assert box.filter.has_filters() || box.backdrop_filter.has_filters()
+			assert box.filters().filter.has_filters() || box.filters().backdrop_filter.has_filters()
 		}
-		assert box.filter.str() == resolved_css_filter_for_element(computed, full, element, bounds).str()
-		assert box.backdrop_filter.str() == resolve_css_filter(computed.backdrop_filter(), computed, full, element, bounds).str()
+		assert box.filters().filter.str() == resolved_css_filter_for_element(computed, full, element, bounds).str()
+		assert box.filters().backdrop_filter.str() == resolve_css_filter(computed.backdrop_filter(), computed, full, element, bounds).str()
 	}
 }
 

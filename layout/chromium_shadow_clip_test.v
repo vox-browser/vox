@@ -10,9 +10,11 @@ fn opaque_shadow_test_commands(chromium bool, alpha u8, size f64) []PaintCommand
 		height:                size
 		snaps_background_rect: chromium
 		background_color:      css.Color{255, 221, 170, alpha}
-		background_color_clip: 'border-box'
-		border_radius:         3
-		shadows:               [
+
+		decoration_data: retained_block_box_decoration(BlockBoxDecorationData{
+			background_color_clip: 'border-box'
+			border_radius:         3
+			shadows:               [
 			BoxShadow{
 				offset_x: 2
 				offset_y: 2
@@ -20,6 +22,7 @@ fn opaque_shadow_test_commands(chromium bool, alpha u8, size f64) []PaintCommand
 				color:    css.Color{136, 136, 136, 255}
 			},
 		]
+		})
 	}
 	return box.paint_commands()
 }

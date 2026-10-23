@@ -98,7 +98,6 @@ fn test_paint_commands_follow_stacking_context_phase_order() {
 		width: 20
 		height: 20
 		background_color: css.Color{255, 255, 255, 255}
-		outline_width: 1
 		outline_color: css.Color{0, 0, 0, 255}
 		lines: [TextLine{
 			fragments: [TextFragment{
@@ -107,6 +106,10 @@ fn test_paint_commands_follow_stacking_context_phase_order() {
 			}]
 		}]
 		children: [negative, normal, zero, positive]
+
+		decoration_data: retained_block_box_decoration(BlockBoxDecorationData{
+			outline_width: 1
+		})
 	}
 
 	commands := root.paint_commands()
@@ -166,7 +169,6 @@ fn test_scrollbar_overlay_uses_translated_geometry_and_paints_after_outline() {
 		width: 100
 		height: 100
 		background_color: css.Color{0, 0, 0, 0}
-		outline_width: 1
 		outline_color: css.Color{0, 0, 0, 255}
 		overlay: &CompatibilityOverlayData{
 			scrollable_overflow: LayoutRect{10, 10, 100, 300}
@@ -176,6 +178,10 @@ fn test_scrollbar_overlay_uses_translated_geometry_and_paints_after_outline() {
 			scrollbar_thumb_color: css.Color{64, 64, 64, 192}
 			scrollbar_track_color: css.Color{212, 208, 200, 192}
 		}
+
+		decoration_data: retained_block_box_decoration(BlockBoxDecorationData{
+			outline_width: 1
+		})
 	}
 	commands := root.paint_commands()
 	assert commands.len == 3

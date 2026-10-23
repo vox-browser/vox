@@ -2623,11 +2623,14 @@ fn paintable_box_paint_background(mut root_box BlockBox, root_layout_node &Node,
 			}
 		}
 	}
-	root_box.paints_canvas_background = true
-	root_box.canvas_x = canvas_rect.x
-	root_box.canvas_y = canvas_rect.y
-	root_box.canvas_width = canvas_rect.width
-	root_box.canvas_height = canvas_rect.height
+	root_box.canvas_data = retained_block_box_canvas(BlockBoxCanvasData{
+		...*root_box.canvas()
+		paints_canvas_background: true
+		canvas_x: canvas_rect.x
+		canvas_y: canvas_rect.y
+		canvas_width: canvas_rect.width
+		canvas_height: canvas_rect.height
+	})
 
 	// HTMLHtmlElement::should_use_body_background_properties(): propagation is disabled by any
 	// containment on html/body and otherwise happens only when the root has no image layers and a
@@ -2643,8 +2646,11 @@ fn paintable_box_paint_background(mut root_box BlockBox, root_layout_node &Node,
 					mut color_context := color_resolution_context_for_typed_node(body_layout_node, css.Color{0, 0, 0, 255})
 					color_context.current_color = computed_paint_color(body_computed, .color, color_context, css.Color{0, 0, 0, 255})
 					root_box.background_color = computed_paint_color(body_computed, .background_color, color_context, css.Color{0, 0, 0, 0})
-					root_box.background_gradient = retained_box_paint_payload(computed_background_gradient(body_computed, root_box.border_box().width, root_box.border_box().height, color_context))
-					root_box.background_images = computed_background_image_layers(body_layout_node, body_element, body_computed, color_context)
+					root_box.decoration_data = retained_block_box_decoration(BlockBoxDecorationData{
+						...*root_box.decorations()
+						background_gradient: retained_box_paint_payload(computed_background_gradient(body_computed, root_box.border_box().width, root_box.border_box().height, color_context))
+						background_images: computed_background_image_layers(body_layout_node, body_element, body_computed, color_context)
+					})
 					// If the body's background was propagated to the root element, use the
 					// body's image-rendering value too.
 					root_box.replaced_image_rendering = body_computed.image_rendering()
@@ -2684,8 +2690,11 @@ fn renderer_box_from_document_layout_result(result &DocumentLayoutResult, viewpo
 	// root element as the owner of the mandatory viewport scroll frame so replay
 	// still follows ViewportPaintable::assign_scroll_frames().
 	root_box.is_viewport_scroller = true
-	root_box.viewport_width = viewport_width * document.layout_coordinate_scale()
-	root_box.viewport_height = viewport_height * document.layout_coordinate_scale()
+	root_box.canvas_data = retained_block_box_canvas(BlockBoxCanvasData{
+		...*root_box.canvas()
+		viewport_width: viewport_width * document.layout_coordinate_scale()
+		viewport_height: viewport_height * document.layout_coordinate_scale()
+	})
 	if viewport_styled := result.root.as_node_with_style() {
 		if viewport_used := result.state.try_get(viewport_styled) {
 			root_box.overlay = retained_box_paint_payload(compatibility_overlay_data(result.root, viewport_styled.computed_values(), viewport_used))
@@ -4098,46 +4107,14 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 		border_color: border_color
 		border_colors: border_colors
 		border_styles: border_styles
-		border_radius: border_radius
-		border_radii: border_radii
-		outline_width: outline_width
-		outline_offset: outline_offset
 		outline_color: outline_color
 		outline_style: outline_style
 		outline_is_auto: outline_is_auto
-		shadow: shadow
-		shadows: shadows
-		background_gradient: retained_box_paint_payload(background_gradient)
-		background_images: background_images
-		background_color_clip: background_box_name(computed.background_color_clip())
-		replaced_image_url: replaced_image_url
-		replaced_image_size: replaced_image_size
-		replaced_image_position_x: replaced_image_position_x
-		replaced_image_position_y: replaced_image_position_y
 		replaced_image_rendering: computed.image_rendering()
-		replaced_image_paintable: replaced_image_paintable
-		replaced_image_bitmap: replaced_image_bitmap
-		canvas_bitmap: canvas_bitmap
-		canvas_paintable: canvas_paintable
-		video_bitmap: video_bitmap
-		video_frame_source: video_frame_source
-		video_representation: video_representation
-		video_paintable: video_paintable
-		nested_viewport_document: nested_viewport_document
-		nested_viewport_paintable: nested_viewport_paintable
-		is_svg_image: node.is_svg_image_box()
-		form_control_kind: form_control_kind
-		form_control_checked: form_control_checked
-		form_control_indeterminate: form_control_indeterminate
-		form_control_enabled: form_control_enabled
-		form_control_activated: form_control_activated
 		form_control_color_scheme: computed.color_scheme()
 		form_control_accent_color: computed.accent_color()
-		fieldset_paintable: retained_box_paint_payload(fieldset_paintable)
 		opacity: f64(computed.opacity())
 		mix_blend_mode: painting.mix_blend_mode_to_compositing_and_blending_operator(painting.blend_mode_from_css(computed.mix_blend_mode()))
-		filter: filter
-		backdrop_filter: backdrop_filter
 		visible: computed.visibility() == .visible
 		pointer_events_enabled: paintable_visible_for_hit_testing(node, computed)
 		node_id: node_id
@@ -4180,22 +4157,69 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 		has_scrollable_overflow: used.has_scrollable_overflow() && !node.is_viewport()
 		scrollable_overflow: scrollable_overflow
 		overflow_clip: retained_box_paint_payload(overflow_clip)
-		scroll_snap_align: computed.scroll_snap_align()
-		scroll_snap_stop: computed.scroll_snap_stop()
-		scroll_snap_type: computed.scroll_snap_type()
-		scroll_margin: compatibility_scroll_snap_edges(computed, used, false)
-		scroll_padding: compatibility_scroll_snap_edges(computed, used, true)
 		writing_mode: computed.writing_mode()
 		direction: computed.direction()
-		css_clip: retained_box_paint_payload(css_clip)
-		clip_path: retained_box_paint_payload(clip_path)
-		svg_clip: retained_box_paint_payload(svg_clip)
-		svg_mask: retained_box_paint_payload(svg_mask)
 		sticky_position: node.is_sticky_position()
 		own_paint_transform: paint_transform
 		own_paint_transform_4x4: paint_transform_4x4
 		uses_own_paint_transform_4x4: uses_paint_transform_4x4
 		paint_transform: accumulated_paint_transform
+
+		media_data: retained_block_box_media(BlockBoxMediaData{
+			replaced_image_url: replaced_image_url
+			replaced_image_size: replaced_image_size
+			replaced_image_position_x: replaced_image_position_x
+			replaced_image_position_y: replaced_image_position_y
+			replaced_image_paintable: replaced_image_paintable
+			replaced_image_bitmap: replaced_image_bitmap
+			canvas_bitmap: canvas_bitmap
+			canvas_paintable: canvas_paintable
+			video_bitmap: video_bitmap
+			video_frame_source: video_frame_source
+			video_representation: video_representation
+			video_paintable: video_paintable
+			nested_viewport_document: nested_viewport_document
+			nested_viewport_paintable: nested_viewport_paintable
+			is_svg_image: node.is_svg_image_box()
+			form_control_kind: form_control_kind
+			form_control_checked: form_control_checked
+			form_control_indeterminate: form_control_indeterminate
+			form_control_enabled: form_control_enabled
+			form_control_activated: form_control_activated
+			fieldset_paintable: retained_box_paint_payload(fieldset_paintable)
+		})
+
+		decoration_data: retained_block_box_decoration(BlockBoxDecorationData{
+			border_radius: border_radius
+			border_radii: border_radii
+			outline_width: outline_width
+			outline_offset: outline_offset
+			shadow: shadow
+			shadows: shadows
+			background_gradient: retained_box_paint_payload(background_gradient)
+			background_images: background_images
+			background_color_clip: background_box_name(computed.background_color_clip())
+		})
+
+		filter_data: retained_block_box_filter(BlockBoxFilterData{
+			filter: filter
+			backdrop_filter: backdrop_filter
+		})
+
+		scroll_snap_data: retained_block_box_scroll_snap(BlockBoxScrollSnapData{
+			scroll_snap_align: computed.scroll_snap_align()
+			scroll_snap_stop: computed.scroll_snap_stop()
+			scroll_snap_type: computed.scroll_snap_type()
+			scroll_margin: compatibility_scroll_snap_edges(computed, used, false)
+			scroll_padding: compatibility_scroll_snap_edges(computed, used, true)
+		})
+
+		clip_data: retained_block_box_clip(BlockBoxClipData{
+			css_clip: retained_box_paint_payload(css_clip)
+			clip_path: retained_box_paint_payload(clip_path)
+			svg_clip: retained_box_paint_payload(svg_clip)
+			svg_mask: retained_box_paint_payload(svg_mask)
+		})
 	}
 }
 

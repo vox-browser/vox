@@ -66,15 +66,15 @@ fn mark_viewport_invisible_entries(result &DocumentLayoutResult, mut selected []
 }
 
 fn viewport_entry_has_bounded_ink(box &BlockBox) bool {
-	return !box.has_svg_path() && box.svg_mask == none && box.svg_clip == none
-		&& !box.filter.has_filters() && !box.backdrop_filter.has_filters()
-		&& box.shadow == none && box.shadows.len == 0
-		&& box.background_images.len == 0 && box.background_gradient == none
-		&& box.replaced_image_url == '' && box.replaced_image_paintable == none
-		&& box.canvas_bitmap == none && box.canvas_paintable == none
-		&& box.video_bitmap == none && box.video_paintable == none
-		&& box.nested_viewport_document == none && box.nested_viewport_paintable == none
-		&& box.fieldset_paintable == none && box.form_control_kind == ''
+	return !box.has_svg_path() && box.clips().svg_mask == none && box.clips().svg_clip == none
+		&& !box.filters().filter.has_filters() && !box.filters().backdrop_filter.has_filters()
+		&& box.decorations().shadow == none && box.decorations().shadows.len == 0
+		&& box.decorations().background_images.len == 0 && box.decorations().background_gradient == none
+		&& box.media().replaced_image_url == '' && box.media().replaced_image_paintable == none
+		&& box.media().canvas_bitmap == none && box.media().canvas_paintable == none
+		&& box.media().video_bitmap == none && box.media().video_paintable == none
+		&& box.media().nested_viewport_document == none && box.media().nested_viewport_paintable == none
+		&& box.media().fieldset_paintable == none && box.media().form_control_kind == ''
 		&& !box.table_inside && !box.uses_collapsed_borders
 		&& box.overlay == none && box.marker_shape == ''
 		&& box.fixed_background_visual_context == none
@@ -97,13 +97,13 @@ fn viewport_box_ink_is_outside(box &BlockBox, transform [6]f64, width f64, heigh
 	mut ink_probe PaintCommand) bool {
 	border := box.border_box()
 	// Includes native antialiasing, negative outline offsets and auto rings.
-	outset := math.max(f64(0), box.outline_width + math.abs(box.outline_offset)) + 2
+	outset := math.max(f64(0), box.decorations().outline_width + math.abs(box.decorations().outline_offset)) + 2
 	if !viewport_rect_is_outside(LayoutRect{border.x - outset, border.y - outset,
 		border.width + outset * 2, border.height + outset * 2}, transform, width, height, mut ink_probe) {
 		return false
 	}
-	if box.paints_canvas_background && !viewport_rect_is_outside(
-		LayoutRect{box.canvas_x, box.canvas_y, box.canvas_width, box.canvas_height},
+	if box.canvas().paints_canvas_background && !viewport_rect_is_outside(
+		LayoutRect{box.canvas().canvas_x, box.canvas().canvas_y, box.canvas().canvas_width, box.canvas().canvas_height},
 		transform, width, height, mut ink_probe) { return false }
 	for line in box.lines {
 		for index in 0 .. line.fragments.len {

@@ -26,7 +26,10 @@ fn retained_background_snapshot_commands() []PaintCommand {
 	return BlockBox{
 		width: 100
 		height: 50
-		background_images: [background_snapshot_test_layer(12)]
+
+		decoration_data: retained_block_box_decoration(BlockBoxDecorationData{
+			background_images: [background_snapshot_test_layer(12)]
+		})
 	}.paint_commands()
 }
 
@@ -51,10 +54,16 @@ fn test_replacing_background_source_preserves_earlier_recordings() {
 	mut box := BlockBox{
 		width: 100
 		height: 50
-		background_images: [background_snapshot_test_layer(12)]
+
+		decoration_data: retained_block_box_decoration(BlockBoxDecorationData{
+			background_images: [background_snapshot_test_layer(12)]
+		})
 	}
 	old_commands := box.paint_commands()
-	box.background_images = [background_snapshot_test_layer(20)]
+	box.decoration_data = retained_block_box_decoration(BlockBoxDecorationData{
+		...*box.decorations()
+		background_images: [background_snapshot_test_layer(20)]
+	})
 	new_commands := box.paint_commands()
 	old_data := old_commands.filter(it.kind == 'draw_background_image')[0].image().background_layer_data or { panic('missing old background') }
 	new_data := new_commands.filter(it.kind == 'draw_background_image')[0].image().background_layer_data or { panic('missing new background') }

@@ -48,7 +48,7 @@ fn test_svg_masks_share_background_documents_and_preserve_retained_operations() 
 	assert viewport.svg_image_documents_.len == 1
 	one := document.get_element_by_id('one')?
 	box := root.find_box(i64(one.as_node().unique_id()))?
-	mut isolated := box.background_images[0].svg_document?
+	mut isolated := box.decorations().background_images[0].svg_document?
 	first := mask_cache_collect(result.root, address, 20, 10, false)
 	first_handle := isolated.layout_engine_handle()
 	repeated := mask_cache_collect(result.root, address, 20, 10, false)
@@ -66,7 +66,8 @@ fn test_svg_masks_share_background_documents_and_preserve_retained_operations() 
 	assert isolated.svg_image_color_scheme()? == 'light'
 	assert mask_cache_gradient_color(first) == painting.Color{0, 255, 0, 255}
 	_ = run_document_layout(isolated, 20, 10)?
-	commands := display_list_commands(isolated.record_display_list()?)
+	isolated_list := isolated.record_display_list()?
+	commands := display_list_commands(isolated_list)
 	assert commands.filter(it.kind == 'draw_svg_path').len == 1
 	assert mask_cache_collect(result.root, address, 20, 10, false).operations == first.operations
 }

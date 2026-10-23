@@ -295,70 +295,18 @@ pub mut:
 	border_color     css.Color
 	border_colors    BoxColors
 	border_styles    BoxBorderStyles = solid_box_border_styles()
-	// The uniform border-radius (px) applied when filling the background/border box.
-	border_radius f64
-	border_radii  BoxRadii
-	// The outline (painted outside the border box, not affecting layout): its width (0 = none), the
-	// gap between the border edge and the outline (`outline-offset`, may be negative), and its color.
-	outline_width  f64
-	outline_offset f64
+	// Outline color and line style remain common; optional geometry lives in decorations().
 	outline_color  css.Color
 	outline_style  painting.LineStyle = .solid
 	outline_is_auto bool
-	// Drop shadows behind the box. `shadow` retains the first entry for compatibility; `shadows`
-	// carries the complete comma-separated outer-shadow list.
-	shadow  ?BoxShadow
-	shadows []BoxShadow
-	// A `linear-gradient` background image, painted over the background color, or none.
-	background_gradient   ?&LinearGradient
-	background_images     []BackgroundImageLayer
-	background_color_clip string = 'border-box'
-	// Replaced image content paints over CSS backgrounds and below borders.
-	replaced_image_url        string
-	replaced_image_size       string
-	replaced_image_position_x string
-	replaced_image_position_y string
 	replaced_image_rendering  css.ImageRendering
-	// Immutable geometry is shared with retained paint commands. Ordinary
-	// boxes pay only for absent references rather than every media variant.
-	replaced_image_paintable  ?&painting.ImagePaintable = none
-	replaced_image_bitmap     ?&dom.Bitmap_
-	canvas_bitmap             ?&dom.Bitmap_
-	canvas_paintable          ?&painting.CanvasPaintable = none
-	video_bitmap              ?&dom.Bitmap_
-	video_frame_source        ?&painting.VideoFrameSource
-	video_representation      painting.VideoRepresentation
-	video_paintable           ?&painting.VideoPaintable = none
-	nested_viewport_document  ?&dom.Document
-	nested_viewport_paintable ?&painting.NavigableContainerViewportPaintable = none
-	// Retained for detached compatibility commands; typed HTML/SVG images carry
-	// their source semantics in replaced_image_paintable.
-	is_svg_image               bool
-	form_control_kind          string
-	form_control_checked       bool
-	form_control_indeterminate bool
-	form_control_enabled       bool = true
-	form_control_activated     bool
 	form_control_color_scheme  css.PreferredColorScheme
 	form_control_accent_color  ?css.Color
-	fieldset_paintable         ?&painting.FieldSetPaintable
-	// Root backgrounds cover the viewport canvas. A transparent HTML root may receive these values
-	// from the body background according to CSS canvas-background propagation.
-	canvas_background_color  css.Color
-	canvas_x                 f64
-	canvas_y                 f64
-	canvas_width             f64
-	canvas_height            f64
-	paints_canvas_background bool
 	skip_background_paint    bool
 	// `opacity` is this box's own opacity (0..1) in the tree; in a paint-order entry it holds the
 	// cumulative opacity (this box's times its ancestors').
 	opacity        f64 = 1.0
 	mix_blend_mode painting.CompositingAndBlendingOperator
-	// Painting::ResolvedCSSFilter retained from computed style. The visual-context
-	// builder converts this to a device filter before display-list replay.
-	filter          painting.ResolvedCSSFilter
-	backdrop_filter painting.ResolvedCSSFilter
 	// Whether this box paints its own background/border/text (`visibility: visible`). A
 	// `visibility: hidden` box still takes up space but is not painted; because `visibility` inherits,
 	// each box carries its own resolved value, so a visible descendant of a hidden box still paints.
@@ -391,28 +339,11 @@ pub mut:
 	has_scrollable_overflow bool
 	scrollable_overflow     ?LayoutRect
 	overflow_clip           ?&CompatibilityOverflowClip
-	// CSS Scroll Snap metadata retained by the renderer transport. Snap
-	// destination selection runs after layout, when scroll operations arrive.
-	scroll_snap_align css.ScrollSnapAlignData
-	scroll_snap_stop  css.ScrollSnapStop
-	scroll_snap_type  css.ScrollSnapType
-	scroll_margin     BoxEdges
-	scroll_padding    BoxEdges
 	writing_mode      css.WritingMode
 	direction         css.Direction
-	// CSS2 `clip: rect(...)`, resolved from an absolute/fixed box's border box.
-	// Unlike overflow clipping, this belongs to the box's own visual context and
-	// therefore clips both the box and its descendants.
-	css_clip ?&LayoutRect
-	// CSS basic-shape clip-path geometry is retained in absolute document
-	// coordinates, matching Painting::ClipPathData.
-	clip_path            ?&painting.ClipPathVisualData
-	svg_clip             ?&painting.SVGClipVisualData
-	svg_mask             ?&painting.SVGMaskVisualData
 	sticky_position      bool
 	is_viewport_scroller bool
-	viewport_width       f64
-	viewport_height      f64
+
 	// The element-local transform is retained separately so the accumulated
 	// visual-context tree can interleave transforms, clips, and scroll frames in
 	// source order. `paint_transform` remains the old cumulative compatibility
@@ -425,6 +356,13 @@ pub mut:
 	// Cumulative CSS 2D transform in document coordinates. An all-zero value is the compact identity
 	// representation used by boxes which do not establish a transformed paint subtree.
 	paint_transform [6]f64
+	// Immutable cold paint snapshots; ordinary boxes share the empty defaults.
+	media_data &BlockBoxMediaData = unsafe { nil }
+	decoration_data &BlockBoxDecorationData = unsafe { nil }
+	filter_data &BlockBoxFilterData = unsafe { nil }
+	scroll_snap_data &BlockBoxScrollSnapData = unsafe { nil }
+	clip_data &BlockBoxClipData = unsafe { nil }
+	canvas_data &BlockBoxCanvasData = unsafe { nil }
 mut:
 	own_scroll_frame_index                         int
 	sticky_scroll_frame_index                      int
@@ -482,10 +420,10 @@ pub fn (b &BlockBox) hit_test(x f64, y f64) ?i64 {
 // the accumulated visual context before testing the untransformed border box.
 fn (b &BlockBox) border_radii_data() painting.BorderRadiiData {
 	return painting.BorderRadiiData{
-		top_left: painting.BorderRadiusData{b.border_radii.top_left.x, b.border_radii.top_left.y}
-		top_right: painting.BorderRadiusData{b.border_radii.top_right.x, b.border_radii.top_right.y}
-		bottom_right: painting.BorderRadiusData{b.border_radii.bottom_right.x, b.border_radii.bottom_right.y}
-		bottom_left: painting.BorderRadiusData{b.border_radii.bottom_left.x, b.border_radii.bottom_left.y}
+		top_left: painting.BorderRadiusData{b.decorations().border_radii.top_left.x, b.decorations().border_radii.top_left.y}
+		top_right: painting.BorderRadiusData{b.decorations().border_radii.top_right.x, b.decorations().border_radii.top_right.y}
+		bottom_right: painting.BorderRadiusData{b.decorations().border_radii.bottom_right.x, b.decorations().border_radii.bottom_right.y}
+		bottom_left: painting.BorderRadiusData{b.decorations().border_radii.bottom_left.x, b.decorations().border_radii.bottom_left.y}
 	}
 }
 
@@ -1484,8 +1422,8 @@ fn (b &BlockBox) current_scroll_offset(fallback CompatibilityOverlayData) painti
 fn (b &BlockBox) compatibility_absolute_padding_rect() painting.Rect {
 	if b.is_viewport_scroller {
 		return painting.Rect{
-			width: b.viewport_width
-			height: b.viewport_height
+			width: b.canvas().viewport_width
+			height: b.canvas().viewport_height
 		}
 	}
 	return painting.Rect{
@@ -1562,10 +1500,10 @@ fn (b &BlockBox) current_form_control_state() CompatibilityFormControlState {
 		}
 	}
 	return CompatibilityFormControlState{
-		checked: b.form_control_checked
-		indeterminate: b.form_control_indeterminate
-		enabled: b.form_control_enabled
-		activated: b.form_control_activated
+		checked: b.media().form_control_checked
+		indeterminate: b.media().form_control_indeterminate
+		enabled: b.media().form_control_enabled
+		activated: b.media().form_control_activated
 	}
 }
 
@@ -1727,7 +1665,7 @@ fn collect_table_cells(box &BlockBox, mut cells []painting.TableCellPaintData) {
 			coordinates := child.table_cell_coordinates or { continue }
 			borders := child.table_cell_borders or { continue }
 			border_rect := child.border_box()
-			radii := effective_box_radii(child.border_radii, child.border_radius, border_rect.width, border_rect.height)
+			radii := effective_box_radii(child.decorations().border_radii, child.decorations().border_radius, border_rect.width, border_rect.height)
 			cells << painting.TableCellPaintData{
 				coordinates: *coordinates
 				rect: painting.Rect{border_rect.x, border_rect.y, border_rect.width, border_rect.height}
@@ -2050,7 +1988,7 @@ fn append_painting_display_command(mut commands []PaintCommand,
 // clipped to the normalized border radii by the player.
 fn paintable_box_paint_backdrop_filter(mut commands []PaintCommand, box &BlockBox,
 	border_rect LayoutRect, border_radii BoxRadii, opacity f64) {
-	filter := box.backdrop_filter.to_gfx_filter(1.0) or { return }
+	filter := box.filters().backdrop_filter.to_gfx_filter(1.0) or { return }
 	region := compatibility_rounded_int_rect(border_rect)
 	if region.is_empty() {
 		return
@@ -2062,7 +2000,7 @@ fn paintable_box_paint_backdrop_filter(mut commands []PaintCommand, box &BlockBo
 		filter: filter
 	}, opacity)
 	if commands.len > start {
-		commands[start].backdrop_source_outside_filter = box.filter.to_gfx_filter(1.0) != none
+		commands[start].backdrop_source_outside_filter = box.filters().filter.to_gfx_filter(1.0) != none
 	}
 }
 
@@ -2160,8 +2098,8 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 		border_width := box.width + box.padding.left + box.padding.right + box.border.left + box.border.right
 		border_height := box.height + box.padding.top + box.padding.bottom + box.border.top + box.border.bottom
 		border_rect := LayoutRect{border_left, border_top, border_width, border_height}
-		background_border_rect := if box.paints_canvas_background && box.canvas_width > 0 && box.canvas_height > 0 {
-			rect_union(border_rect, LayoutRect{box.canvas_x, box.canvas_y, box.canvas_width, box.canvas_height})
+		background_border_rect := if box.canvas().paints_canvas_background && box.canvas().canvas_width > 0 && box.canvas().canvas_height > 0 {
+			rect_union(border_rect, LayoutRect{box.canvas().canvas_x, box.canvas().canvas_y, box.canvas().canvas_width, box.canvas().canvas_height})
 		} else if box.snaps_background_rect {
 			pixel_snapped_layout_rect(border_rect)
 		} else {
@@ -2171,7 +2109,7 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 		// transparent rectangle for an SVG filter even when the source paints no
 		// pixels. It expands the effect input to the target bounds so feFlood and
 		// feImage can generate content for otherwise-empty elements.
-		if svg_filter_bounds := box.filter.svg_filter_bounds() {
+		if svg_filter_bounds := box.filters().filter.svg_filter_bounds() {
 			if !svg_filter_bounds.is_empty() {
 				commands << PaintCommand{
 					kind: 'fill_rect_transparent'
@@ -2187,7 +2125,7 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 
 		// All four radii have already undergone CSS overlap reduction; the scalar is retained for the
 		// compact uniform-circle renderer path.
-		box_radii := effective_box_radii(box.border_radii, box.border_radius, border_width, border_height)
+		box_radii := effective_box_radii(box.decorations().border_radii, box.decorations().border_radius, border_width, border_height)
 		uniform_circle_radii := box_radii_are_uniform_circles(box_radii)
 		radius := if uniform_circle_radii { box_radii.top_left.x } else { 0.0 }
 		rounded_points := if !box_radii_are_zero(box_radii) && !uniform_circle_radii {
@@ -2197,12 +2135,12 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 		}
 		// The resolved shadow list is immutable while recording. Share its backing
 		// store, as PaintableBox does upstream, instead of copying every layer on
-		// every repaint. The local header is only appended to for the empty-list
-		// compatibility case, so no element visible through the box is mutated.
-		mut box_shadows := unsafe { box.shadows }
+		// every repaint. The empty-list compatibility case creates its own array,
+		// including when the published empty list has spare backing capacity.
+		mut box_shadows := unsafe { box.decorations().shadows }
 		if box_shadows.len == 0 {
-			if shadow := box.shadow {
-				box_shadows << shadow
+			if shadow := box.decorations().shadow {
+				box_shadows = [shadow]
 			}
 		}
 		background_paint_start := commands.len
@@ -2211,7 +2149,7 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 		}
 		if box.snaps_background_rect && box.background_color.a == 255
 			&& !box.skip_background_paint && !empty_cell_hidden
-			&& box.background_color_clip == 'border-box' && box_shadows.any(!it.inset) {
+			&& box.decorations().background_color_clip == 'border-box' && box_shadows.any(!it.inset) {
 			outer_start := commands.len
 			paintable_box_paint_box_shadow(mut commands, box_shadows.filter(!it.inset),
 				box.border, effective_border_colors(box.border_colors, box.border_color),
@@ -2219,9 +2157,9 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 			chromium_inset_opaque_shadow_clips(mut commands, outer_start)
 			box_shadows = box_shadows.filter(it.inset)
 		}
-		background_isolated := box.background_images.any(background_image_layer_blend_mode(it) != .normal)
-		needs_background_text_clip := box.background_color_clip == 'text'
-			&& !box.paints_canvas_background && !box.skip_background_paint && !empty_cell_hidden
+		background_isolated := box.decorations().background_images.any(background_image_layer_blend_mode(it) != .normal)
+		needs_background_text_clip := box.decorations().background_color_clip == 'text'
+			&& !box.canvas().paints_canvas_background && !box.skip_background_paint && !empty_cell_hidden
 		if needs_background_text_clip {
 			commands << PaintCommand{
 				kind: 'begin_background_text_clip'
@@ -2235,14 +2173,14 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 		if background_isolated && !box.skip_background_paint && !empty_cell_hidden {
 			commands << PaintCommand{ kind: 'begin_background_blend_group' }
 		}
-		mut color_rect := background_box_rect_from_border(box, box.background_color_clip, background_border_rect)
-		mut color_radii := background_box_radii(box, box.background_color_clip, box_radii, color_rect)
-		if box.snaps_background_rect && box.background_color_clip == 'border-box'
-			&& !box.paints_canvas_background && !box_radii_are_zero(color_radii) {
+		mut color_rect := background_box_rect_from_border(box, box.decorations().background_color_clip, background_border_rect)
+		mut color_radii := background_box_radii(box, box.decorations().background_color_clip, box_radii, color_rect)
+		if box.snaps_background_rect && box.decorations().background_color_clip == 'border-box'
+			&& !box.canvas().paints_canvas_background && !box_radii_are_zero(color_radii) {
 			color_rect, color_radii = chromium_background_under_opaque_border(color_rect,
 				color_radii, box.border, effective_border_colors(box.border_colors, box.border_color), box.border_styles)
 		}
-		if !box.skip_background_paint && !empty_cell_hidden && box.background_color.a > 0 && !box.paints_canvas_background && !box_radii_are_zero(color_radii) {
+		if !box.skip_background_paint && !empty_cell_hidden && box.background_color.a > 0 && !box.canvas().paints_canvas_background && !box_radii_are_zero(color_radii) {
 			if box_radii_are_uniform_circles(color_radii) {
 				commands << PaintCommand{
 					kind: 'fill_rect'
@@ -2283,10 +2221,10 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 		// Compatibility-only boxes still carry their single parsed gradient separately. Typed layout
 		// retains gradients in the ordered image layer list below, as BackgroundPainting does.
 		if !box.skip_background_paint && !empty_cell_hidden {
-			has_retained_gradient_layer := box.background_images.any(it.gradient_source != none)
-			if grad := box.background_gradient {
+			has_retained_gradient_layer := box.decorations().background_images.any(it.gradient_source != none)
+			if grad := box.decorations().background_gradient {
 				if !has_retained_gradient_layer {
-					gradient_points := if box.paints_canvas_background {
+					gradient_points := if box.canvas().paints_canvas_background {
 						[]f64{}
 					} else {
 						rounded_points
@@ -2298,7 +2236,7 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 						width: background_border_rect.width
 						height: background_border_rect.height
 						opacity: opacity
-						radius: if box.paints_canvas_background { 0.0 } else { radius }
+						radius: if box.canvas().paints_canvas_background { 0.0 } else { radius }
 						gradient: grad
 						points: gradient_points
 					}
@@ -2310,24 +2248,24 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 			} else {
 				painting.Point{}
 			}
-			for layer_index := box.background_images.len - 1; layer_index >= 0; layer_index-- {
-				layer := box.background_images[layer_index]
+			for layer_index := box.decorations().background_images.len - 1; layer_index >= 0; layer_index-- {
+				layer := box.decorations().background_images[layer_index]
 				origin := background_box_rect(box, layer.origin)
 				clip := background_box_rect_from_border(box, layer.clip, background_border_rect)
-				clip_radii := if box.paints_canvas_background {
+				clip_radii := if box.canvas().paints_canvas_background {
 					BoxRadii{}
 				} else {
 					background_box_radii(box, layer.clip, box_radii, clip)
 				}
-				if command := background_layer_command(layer, origin, clip, clip_radii, opacity, if box.paints_canvas_background {
+				if command := background_layer_command(layer, origin, clip, clip_radii, opacity, if box.canvas().paints_canvas_background {
 					0.0
 				} else {
 					radius
-				}, if box.paints_canvas_background { []f64{} } else { rounded_points }, background_scroll_offset, box.replaced_image_rendering, box.fixed_background_visual_context, LayoutRect{
+				}, if box.canvas().paints_canvas_background { []f64{} } else { rounded_points }, background_scroll_offset, box.replaced_image_rendering, box.fixed_background_visual_context, LayoutRect{
 					x: 0
 					y: 0
-					width: b.viewport_width
-					height: b.viewport_height
+					width: b.canvas().viewport_width
+					height: b.canvas().viewport_height
 				}, box.snaps_background_rect) {
 					commands << command
 				}
@@ -2339,7 +2277,7 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 		if needs_background_text_clip {
 			commands << PaintCommand{ kind: 'end_background_text_clip' }
 		}
-		if fieldset := box.fieldset_paintable {
+		if fieldset := box.media().fieldset_paintable {
 			converter := painting.new_device_pixel_converter(1.0) or { return commands }
 			if clip := fieldset.background_clip_rect(converter) {
 				set_recording_clip_for_range(mut commands, background_paint_start, commands.len, clip)
@@ -2354,38 +2292,38 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 			}, opacity)
 		}
 		foreground_replaced_start := commands.len
-		if (box.replaced_image_url != '' || box.replaced_image_bitmap != none)
-			&& box.nested_viewport_document == none {
+		if (box.media().replaced_image_url != '' || box.media().replaced_image_bitmap != none)
+			&& box.media().nested_viewport_document == none {
 			commands << PaintCommand{
-				kind: if box.replaced_image_paintable != none {
+				kind: if box.media().replaced_image_paintable != none {
 					'draw_replaced_image'
-				} else if box.is_svg_image { 'draw_svg_image' } else { 'draw_background_image' }
+				} else if box.media().is_svg_image { 'draw_svg_image' } else { 'draw_background_image' }
 				x: box.x
 				y: box.y
 				width: box.width
 				height: box.height
 				opacity: opacity
 				image_data: &PaintImageData{
-					image_url: box.replaced_image_url
+					image_url: box.media().replaced_image_url
 					image_repeat_x: 'no-repeat'
 					image_repeat_y: 'no-repeat'
-					image_size: box.replaced_image_size
-					image_position_x: box.replaced_image_position_x
-					image_position_y: box.replaced_image_position_y
+					image_size: box.media().replaced_image_size
+					image_position_x: box.media().replaced_image_position_x
+					image_position_y: box.media().replaced_image_position_y
 					image_rendering: box.replaced_image_rendering
 					image_clip_x: box.x
 					image_clip_y: box.y
 					image_clip_width: box.width
 					image_clip_height: box.height
 				}
-				replaced_image_bitmap: box.replaced_image_bitmap
-				image_paintable: box.replaced_image_paintable
+				replaced_image_bitmap: box.media().replaced_image_bitmap
+				image_paintable: box.media().replaced_image_paintable
 				force_dark_role: .background
 				force_dark_role_set: true
 			}
 		}
-		if bitmap := box.canvas_bitmap {
-			if canvas_paintable := box.canvas_paintable {
+		if bitmap := box.media().canvas_bitmap {
+			if canvas_paintable := box.media().canvas_paintable {
 				commands << PaintCommand{
 					kind: 'draw_canvas'
 					x: box.x
@@ -2398,7 +2336,7 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 				}
 			}
 		}
-		if video_paintable := box.video_paintable {
+		if video_paintable := box.media().video_paintable {
 			commands << PaintCommand{
 				kind: 'draw_video'
 				x: box.x
@@ -2406,14 +2344,14 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 				width: box.width
 				height: box.height
 				opacity: opacity
-				video_bitmap: box.video_bitmap
-				video_frame_source: box.video_frame_source
-				video_representation: box.video_representation
+				video_bitmap: box.media().video_bitmap
+				video_frame_source: box.media().video_frame_source
+				video_representation: box.media().video_representation
 				video_paintable: video_paintable
 			}
 		}
-		if nested_viewport_paintable := box.nested_viewport_paintable {
-			if hosted_document := box.nested_viewport_document {
+		if nested_viewport_paintable := box.media().nested_viewport_paintable {
+			if hosted_document := box.media().nested_viewport_document {
 				if hosted_document.is_render_blocked() {
 					continue
 				}
@@ -2459,7 +2397,7 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 			}
 		}
 		form_control_state := box.current_form_control_state()
-		if box.form_control_kind in ['checkbox', 'radio'] {
+		if box.media().form_control_kind in ['checkbox', 'radio'] {
 			converter := painting.new_device_pixel_converter(1.0) or { return commands }
 			control_rect := painting.centered_form_control_rect(painting.Rect{
 				x: box.x
@@ -2467,7 +2405,7 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 				width: box.width
 				height: box.height
 			}, converter)
-			if box.snaps_background_rect && box.form_control_kind == 'checkbox'
+			if box.snaps_background_rect && box.media().form_control_kind == 'checkbox'
 				&& !form_control_state.checked && !form_control_state.indeterminate
 				&& form_control_state.enabled && !form_control_state.activated
 				&& box.form_control_color_scheme != .dark {
@@ -2475,7 +2413,7 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 					box.y, box.width, box.height), opacity)
 			} else {
 				input_colors := painting.compute_input_colors(box.form_control_color_scheme, box.form_control_accent_color)
-				display_commands := if box.form_control_kind == 'checkbox' {
+				display_commands := if box.media().form_control_kind == 'checkbox' {
 					painting.checkbox_commands(control_rect, form_control_state.checked, form_control_state.indeterminate, form_control_state.enabled, form_control_state.activated, box.form_control_color_scheme, input_colors)
 				} else {
 					painting.radio_button_commands(control_rect, form_control_state.checked, form_control_state.enabled, form_control_state.activated, box.form_control_color_scheme, input_colors)
@@ -2495,7 +2433,7 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 					append_painting_display_command(mut commands, display_command, opacity)
 				}
 				commands << PaintCommand{ kind: 'end_skia_command_group' }
-				if box.form_control_kind == 'checkbox' && form_control_state.checked
+				if box.media().form_control_kind == 'checkbox' && form_control_state.checked
 					&& !form_control_state.indeterminate {
 					set_force_dark_role_for_range(mut commands, control_start + 1, control_start + 2,
 						.background)
@@ -2506,8 +2444,8 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 						.border)
 					set_force_dark_role_for_range(mut commands, control_start + 2, control_start + 3,
 						.background)
-					if (box.form_control_kind == 'checkbox' && form_control_state.indeterminate)
-						|| (box.form_control_kind == 'radio' && form_control_state.checked) {
+					if (box.media().form_control_kind == 'checkbox' && form_control_state.indeterminate)
+						|| (box.media().form_control_kind == 'radio' && form_control_state.checked) {
 						set_force_dark_role_for_range(mut commands, control_start + 3, control_start + 4,
 							.foreground)
 					}
@@ -2522,7 +2460,7 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 		// for the collapsed table principal. Their shared edges are painted below.
 		if !box.table_cell && !(box.uses_collapsed_borders && box.table_inside) {
 			border_colors := effective_border_colors(box.border_colors, box.border_color)
-			if fieldset := box.fieldset_paintable {
+			if fieldset := box.media().fieldset_paintable {
 				converter := painting.new_device_pixel_converter(1.0) or { return commands }
 				borders := painting_borders_from_transport(box.border, border_colors, box.border_styles)
 				for fieldset_command in fieldset.paint(borders, painting_radii_from_transport(box_radii), converter) {
@@ -2546,7 +2484,7 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 		// PaintableBox::paint() inflates the border rect and radii, then sends outlines through the
 		// same BorderPainting.cpp dispatcher as ordinary borders.
 		outline_start := commands.len
-		append_translated_outline_commands(mut commands, box.outline_width, box.outline_offset, box.outline_color, box.outline_style, box.outline_is_auto, box_radii, border_left, border_top, border_width, border_height, opacity)
+		append_translated_outline_commands(mut commands, box.decorations().outline_width, box.decorations().outline_offset, box.outline_color, box.outline_style, box.outline_is_auto, box_radii, border_left, border_top, border_width, border_height, opacity)
 		outline_end := commands.len
 		foreground_content_start := commands.len
 		if box.svg_data != unsafe { nil } && box.svg_path().path.len > 0 {

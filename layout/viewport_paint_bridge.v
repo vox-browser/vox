@@ -427,12 +427,12 @@ fn paintable_box_could_be_scrolled_by_wheel_event(box &BlockBox) bool {
 	computed := styled.computed_values()
 	is_viewport := box.is_viewport_scroller || node.is_viewport()
 	padding_width := if is_viewport {
-		box.viewport_width
+		box.canvas().viewport_width
 	} else {
 		box.width + box.padding.left + box.padding.right
 	}
 	padding_height := if is_viewport {
-		box.viewport_height
+		box.canvas().viewport_height
 	} else {
 		box.height + box.padding.top + box.padding.bottom
 	}
@@ -497,8 +497,8 @@ fn compatibility_sticky_insets(box &BlockBox, scrollport_size painting.Size) pai
 fn compatibility_scrollport_rect(box &BlockBox) LayoutRect {
 	if box.is_viewport_scroller {
 		return LayoutRect{
-			width: box.viewport_width
-			height: box.viewport_height
+			width: box.canvas().viewport_width
+			height: box.canvas().viewport_height
 		}
 	}
 	return LayoutRect{
@@ -661,7 +661,7 @@ fn patch_compositor_visual_contexts(mut tree painting.AccumulatedVisualContextTr
 	boxes []&BlockBox) bool {
 	for box in boxes {
 		needs_effects := box.opacity < 1.0 || box.mix_blend_mode != .normal
-			|| box.filter.to_gfx_filter(1.0) != none
+			|| box.filters().filter.to_gfx_filter(1.0) != none
 		if needs_effects != (box.own_effects_visual_context_idx > 0)
 			|| compatibility_box_has_own_transform_context(box) != (box.own_transform_visual_context_idx > 0) {
 			return false
@@ -758,7 +758,7 @@ fn assign_compatibility_visual_contexts_with_coordinate_root(mut box BlockBox, v
 	}
 	box.own_effects_visual_context_idx = 0
 	box.own_transform_visual_context_idx = 0
-	gfx_filter := box.filter.to_gfx_filter(1.0)
+	gfx_filter := box.filters().filter.to_gfx_filter(1.0)
 	if box.opacity < 1.0 || box.mix_blend_mode != .normal || gfx_filter != none {
 		own_state = tree.append(painting.EffectsVisualData{
 			opacity: box.opacity
@@ -798,23 +798,23 @@ fn assign_compatibility_visual_contexts_with_coordinate_root(mut box BlockBox, v
 			own_state
 		}
 	}
-	if css_clip := box.css_clip {
+	if css_clip := box.clips().css_clip {
 		own_state = tree.append(painting.ClipVisualData{
 			rect: compatibility_rounded_int_rect(*css_clip)
 		}, own_state)
 	}
-	if clip_path := box.clip_path {
+	if clip_path := box.clips().clip_path {
 		own_state = tree.append(*clip_path, own_state)
 	}
-	if svg_mask := box.svg_mask {
+	if svg_mask := box.clips().svg_mask {
 		own_state = tree.append(*svg_mask, own_state)
 	}
-	if svg_clip := box.svg_clip {
+	if svg_clip := box.clips().svg_clip {
 		own_state = tree.append(*svg_clip, own_state)
 	}
 	box.accumulated_visual_context_index = own_state
 
-	if box.background_images.any(it.attachment == 'fixed') {
+	if box.decorations().background_images.any(it.attachment == 'fixed') {
 		// CSS Transforms makes fixed backgrounds on transformed non-root boxes
 		// behave as scroll backgrounds. Inspect the typed layout ancestors so SVG
 		// transforms do not accidentally change the CSS rule.
@@ -1265,8 +1265,8 @@ fn layout_paintable_image_contents_changed(target voidptr, layout_handle voidptr
 	source_node := unsafe { &Node(layout_handle) }
 	image_box := source_node.as_image_box() or { return false }
 	mut box := result.retained_box_for_layout(layout_handle) or { return false }
-	paintable := box.replaced_image_paintable or { return false }
-	if paintable.is_svg_image || box.is_svg_image || image_box.svg_image_document() != none {
+	paintable := box.media().replaced_image_paintable or { return false }
+	if paintable.is_svg_image || box.media().is_svg_image || image_box.svg_image_document() != none {
 		return false
 	}
 	mut mutable_image_box := unsafe { &ImageBox(image_box) }
@@ -1276,14 +1276,17 @@ fn layout_paintable_image_contents_changed(target voidptr, layout_handle voidptr
 	}
 	source := mutable_image_box.source()
 	source_url := source_node.document().encoding_parse_and_serialize_url(source) or { source }
-	if source_url != box.replaced_image_url {
+	if source_url != box.media().replaced_image_url {
 		return false
 	}
-	box.replaced_image_bitmap = mutable_image_box.replaced_image_bitmap()
-	box.replaced_image_paintable = &painting.ImagePaintable{
-		...*paintable
-		intrinsic_size: mutable_image_box.natural_size()
-	}
+	box.media_data = retained_block_box_media(BlockBoxMediaData{
+		...*box.media()
+		replaced_image_bitmap: mutable_image_box.replaced_image_bitmap()
+		replaced_image_paintable: &painting.ImagePaintable{
+			...*paintable
+			intrinsic_size: mutable_image_box.natural_size()
+		}
+	})
 	layout_paintable_set_needs_repaint(target, layout_handle, .paint_commands)
 	return true
 }
@@ -1330,7 +1333,7 @@ fn compatibility_cursor_rect_in_box(box &BlockBox, offset int) ?painting.Rect {
 
 fn compatibility_absolute_padding_box_rect(box &BlockBox) LayoutRect {
 	if box.is_viewport_scroller {
-		return LayoutRect{ width: box.viewport_width, height: box.viewport_height }
+		return LayoutRect{ width: box.canvas().viewport_width, height: box.canvas().viewport_height }
 	}
 	return LayoutRect{
 		x: box.x - box.padding.left
@@ -1590,7 +1593,7 @@ fn viewport_invalidate_fixed_background_paint_caches(mut result DocumentLayoutRe
 		return
 	}
 	for index, entry in result.paint_order {
-		if !entry.box.background_images.any(it.attachment == 'fixed')
+		if !entry.box.decorations().background_images.any(it.attachment == 'fixed')
 			|| !result.paint_phase_entry_valid[index] {
 			continue
 		}

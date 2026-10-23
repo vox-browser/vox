@@ -45,8 +45,8 @@ pub fn refresh_document_background_resources(document &dom.Document, changed map
 fn background_resource_refresh_supported(box &BlockBox) bool {
 	// Keep resource-bearing masks/filters and nested documents on the general
 	// refresh path; this slice updates CSS background layers only.
-	if box.svg_mask != none || box.svg_clip != none || box.filter.has_svg_filters()
-		|| box.backdrop_filter.has_svg_filters() || box.nested_viewport_document != none {
+	if box.clips().svg_mask != none || box.clips().svg_clip != none || box.filters().filter.has_svg_filters()
+		|| box.filters().backdrop_filter.has_svg_filters() || box.media().nested_viewport_document != none {
 		return false
 	}
 	// Borrow each child: passing a loop copy's address would heap-allocate it.
@@ -93,8 +93,13 @@ fn refreshed_background_resource_layers(layers []BackgroundImageLayer, root &Nod
 
 fn refresh_background_resources_in_box(mut box BlockBox, root &Node,
 	changed map[string]bool, mut resources map[string]CompletedBackgroundResource, mut changed_boxes []&BlockBox) bool {
-	layers, own_update := refreshed_background_resource_layers(box.background_images, root, changed, mut resources)
-	if own_update { box.background_images = layers }
+	layers, own_update := refreshed_background_resource_layers(box.decorations().background_images, root, changed, mut resources)
+	if own_update {
+		box.decoration_data = retained_block_box_decoration(BlockBoxDecorationData{
+			...*box.decorations()
+			background_images: layers
+		})
+	}
 	mut did_update := own_update
 	for line_index := 0; line_index < box.lines.len; line_index++ {
 		for fragment_index := 0; fragment_index < box.lines[line_index].fragments.len; fragment_index++ {

@@ -234,14 +234,17 @@ fn refresh_local_paint_styles_in_box(mut box BlockBox, state &LayoutState,
 			box.border_color = fresh.border_color
 			box.border_colors = fresh.border_colors
 			box.outline_color = fresh.outline_color
-			box.outline_width = fresh.outline_width
 			box.outline_style = fresh.outline_style
-			box.outline_offset = fresh.outline_offset
 			box.outline_is_auto = fresh.outline_is_auto
-			box.shadow = fresh.shadow
-			box.shadows = fresh.shadows
-			box.background_gradient = fresh.background_gradient
-			box.background_images = fresh.background_images
+			box.decoration_data = retained_block_box_decoration(BlockBoxDecorationData{
+				...*box.decorations()
+				outline_width: fresh.decorations().outline_width
+				outline_offset: fresh.decorations().outline_offset
+				shadow: fresh.decorations().shadow
+				shadows: fresh.decorations().shadows
+				background_gradient: fresh.decorations().background_gradient
+				background_images: fresh.decorations().background_images
+			})
 			did_change = true
 		}
 		if line_changes.len() > 0 && line_style_depends_on_changed_node(&box, line_changes) {

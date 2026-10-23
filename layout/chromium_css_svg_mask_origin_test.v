@@ -26,7 +26,7 @@ fn test_chromium_css_svg_mask_snaps_only_its_paint_origin() {
 			root := layout_document_typed_in_viewport(document,100,80)
 			element := document.get_element_by_id('target') or { panic('missing target') }
 			box := root.find_box(i64(element.as_node().unique_id())) or { panic('missing box') }
-			mask := box.svg_mask or { panic('missing mask') }
+			mask := box.clips().svg_mask or { panic('missing mask') }
 			assert mask.operations.len == 1
 			assert mask.operations[0].kind == .path
 			expected := if policy == .chromium { math.floor(origin+.5) } else { origin }
@@ -46,7 +46,7 @@ fn test_svg_image_inside_a_mask_keeps_its_fractional_svg_coordinates() {
 	root := layout_document_typed_in_viewport(document,100,80)
 	element := document.get_element_by_id('target') or { panic('missing target') }
 	box := root.find_box(i64(element.as_node().unique_id())) or { panic('missing box') }
-	mask := box.svg_mask or { panic('missing SVG mask') }
+	mask := box.clips().svg_mask or { panic('missing SVG mask') }
 	assert mask.operations.len == 1
 	assert mask.operations[0].kind == .path
 	assert mask.operations[0].transform.e == 10.5

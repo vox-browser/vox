@@ -16,7 +16,7 @@ fn test_css_svg_mask_images_retain_translated_vector_geometry_and_alpha() {
 	root := layout_document_typed_in_viewport(document,100,80)
 	element := document.get_element_by_id('target') or { panic('missing target') }
 	box := root.find_box(i64(element.as_node().unique_id())) or { panic('missing box') }
-	mask := box.svg_mask or { panic('missing CSS SVG mask') }
+	mask := box.clips().svg_mask or { panic('missing CSS SVG mask') }
 	assert mask.mask_type == .alpha
 	assert mask.operations.len == 1
 	path := mask.operations[0]
