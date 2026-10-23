@@ -51,6 +51,14 @@ $if macos {
 }
 
 fn C.schedule_native_screenshot(path string)
+fn C.schedule_native_document_screenshot(path string, top f64, width f64, height f64, owner voidptr, callback fn (voidptr))
+
+// Capture delivers this callback synchronously on the main thread after its
+// measured PNG endpoint, while the owning browser is still alive.
+fn native_document_capture_audit(owner voidptr) {
+	app := unsafe { &BrowserApp(owner) }
+	app.write_capture_audit_if_requested()
+}
 
 fn C.native_decode_video_frame(path &char, seconds f64, output_width &int, output_height &int, output_pitch &int) &u8
 
@@ -6995,8 +7003,18 @@ fn (mut app BrowserApp) draw() {
 		}
 		$if macos { C.native_cancel_capture_retry() }
 		app.screenshot_scheduled = true
-		app.write_capture_audit_if_requested()
-		schedule_native_screenshot(app.screenshot_path)
+		if os.getenv('VOX_CAPTURE_DOCUMENT_ONLY') == '1' {
+			$if macos {
+				C.schedule_native_document_screenshot(app.screenshot_path, f64(app.page_top()),
+					f64(app.viewport_width), f64(app.viewport_height), voidptr(&app), native_document_capture_audit)
+			} $else {
+				app.write_capture_audit_if_requested()
+				schedule_native_screenshot(app.screenshot_path)
+			}
+		} else {
+			app.write_capture_audit_if_requested()
+			schedule_native_screenshot(app.screenshot_path)
+		}
 	}
 	$if linux { finish_linux_frame() }
 }

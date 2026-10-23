@@ -95,7 +95,7 @@ struct CaptureAudit {
 	paint_commands         int
 	javascript_diagnostics []string
 	selections             []CaptureAuditSelection
-	note                   string = 'Retained DOM/layout/image snapshot when native capture is scheduled; snapshot collection is included in process-exit instruction totals.'
+	note                   string = 'Retained DOM/layout/image snapshot. Document-only captures collect after PNG encoding; other captures collect when scheduled. Collection is included in process-exit instruction totals.'
 }
 
 fn (app &BrowserApp) capture_audit_image(element &dom.Element) ?CaptureAuditImage {

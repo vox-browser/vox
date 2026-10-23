@@ -5515,7 +5515,9 @@ void native_finish_svg_pattern_path(const float *data, int segment_count,
 	CGImageRelease(image);
 }
 
-void schedule_native_screenshot(string output_path) {
+static void native_schedule_screenshot(string output_path, BOOL document_only,
+                                       double top, double width, double height,
+                                       void *owner, void (*callback)(void *)) {
 	NSString *path = native_capture_string(output_path);
 	const char *delay_value = getenv("LADYBIRD_SCREENSHOT_DELAY_SECONDS");
 	double delay = delay_value == NULL ? 0.1 : strtod(delay_value, NULL);
@@ -5529,6 +5531,32 @@ void schedule_native_screenshot(string output_path) {
 		NSView *view = native_browser_view();
 		[view displayIfNeeded];
 		NSRect bounds = [view bounds];
+		if (document_only) {
+			// The caller supplies logical document dimensions and an inset measured
+			// from the top of the content view, regardless of its coordinate direction.
+			if (!isfinite(top) || !isfinite(width) || !isfinite(height)
+			    || !isfinite(bounds.origin.x) || !isfinite(bounds.origin.y)
+			    || !isfinite(bounds.size.width) || !isfinite(bounds.size.height)
+			    || top < 0.0 || width <= 0.0 || height <= 0.0
+			    || width > bounds.size.width || top > bounds.size.height
+			    || height > bounds.size.height - top) {
+				fprintf(stderr, "Ladybird V: invalid document screenshot bounds top=%g %gx%g in %gx%g\n",
+				        top, width, height, bounds.size.width, bounds.size.height);
+				[NSApp terminate:nil];
+				return;
+			}
+			bounds.origin.y += [view isFlipped] ? top : bounds.size.height - top - height;
+			bounds.size = NSMakeSize(width, height);
+			double scaled_width = width * native_screenshot_scale();
+			double scaled_height = height * native_screenshot_scale();
+			if (!isfinite(bounds.origin.y) || !isfinite(scaled_width) || !isfinite(scaled_height)
+			    || scaled_width >= (double)NSIntegerMax / 4.0
+			    || scaled_height >= (double)NSIntegerMax) {
+				fprintf(stderr, "Ladybird V: document screenshot dimensions overflow\n");
+				[NSApp terminate:nil];
+				return;
+			}
+		}
 		// Headless Ladybird paints one device pixel per CSS pixel. Capture the native
 		// viewer at the same scale instead of snapshotting its Retina backing store
 		// and resampling it afterwards; resampling changes every antialiased edge.
@@ -5570,11 +5598,15 @@ void schedule_native_screenshot(string output_path) {
 		}
 		native_capture_instruction_checkpoint("capture_converted");
 		NSData *png = [encodedBitmap representationUsingType:NSBitmapImageFileTypePNG properties:@{}];
-		native_capture_instruction_checkpoint("capture_encoded");
+		if (!document_only) native_capture_instruction_checkpoint("capture_encoded");
 		if (png == nil) {
 			fprintf(stderr, "Ladybird V: could not encode the window screenshot as PNG\n");
 			[NSApp terminate:nil];
 			return;
+		}
+		if (document_only) {
+			vox_coalition_instruction_checkpoint("capture_document_encoded");
+			native_capture_instruction_checkpoint("capture_document_encoded");
 		}
 		NSError *write_error = nil;
 		BOOL saved = [png writeToFile:path options:NSDataWritingAtomic error:&write_error];
@@ -5585,6 +5617,7 @@ void schedule_native_screenshot(string output_path) {
 		if (saved) {
 			fprintf(stdout, "Saved Ladybird V window screenshot: %s\n", [path fileSystemRepresentation]);
 			fflush(stdout);
+			if (callback != NULL) callback(owner);
 		} else {
 			fprintf(stderr, "Ladybird V: could not save screenshot to %s: %s\n",
 			        [path fileSystemRepresentation],
@@ -5593,4 +5626,13 @@ void schedule_native_screenshot(string output_path) {
 		[NSApp terminate:nil];
 		});
 	});
+}
+
+void schedule_native_screenshot(string output_path) {
+	native_schedule_screenshot(output_path, NO, 0.0, 0.0, 0.0, NULL, NULL);
+}
+
+void schedule_native_document_screenshot(string output_path, double top, double width, double height,
+                                         void *owner, void (*callback)(void *)) {
+	native_schedule_screenshot(output_path, YES, top, width, height, owner, callback);
 }

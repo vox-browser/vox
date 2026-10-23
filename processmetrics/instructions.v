@@ -29,7 +29,12 @@ pub fn (end InstructionSnapshot) since(start InstructionSnapshot) ?u64 {
 // below are separate records and must not be added to these phase deltas.
 pub fn instruction_checkpoint(label string) {
 	if !instructions_enabled() { return }
-	reading := instruction_snapshot()
+	report_instruction_snapshot(label, instruction_snapshot())
+}
+
+// Preserve the exact sampled boundary when a caller records multiple counters.
+pub fn report_instruction_snapshot(label string, reading InstructionSnapshot) {
+	if !instructions_enabled() { return }
 	if reading.available {
 		eprintln('Vox instructions cumulative: ${label} ${reading.instructions}')
 	} else {

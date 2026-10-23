@@ -19,6 +19,9 @@ fn (mut timing BrowserPaintTiming) begin_navigation() {
 	timing.navigation_start_ns = time.sys_mono_now()
 	timing.navigation_painted = false
 	timing.navigation_instructions = processmetrics.begin_instructions()
+	coalition := processmetrics.begin_coalition_instructions()
+	processmetrics.report_instruction_snapshot('navigation_started', timing.navigation_instructions)
+	processmetrics.report_coalition_instruction_snapshot('navigation_started', coalition)
 }
 
 fn (mut timing BrowserPaintTiming) report_document_paint() {

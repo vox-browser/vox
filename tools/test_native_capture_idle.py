@@ -20,11 +20,16 @@ def sha256(path):
 def entry_points(source):
     text = source.read_text()
     functions = []
-    for name in ("native_cache_browser_snapshot", "schedule_native_screenshot"):
-        start = text.index("void " + name + "(")
+    for declaration in ("static CGFloat native_screenshot_scale(",
+                        "void native_cache_browser_snapshot(",
+                        "static void native_schedule_screenshot(",
+                        "void schedule_native_screenshot(",
+                        "void schedule_native_document_screenshot("):
+        start = text.index(declaration)
         end = text.index("\n}\n", start) + 2
         function = text[start:end]
-        assert function.index("native_when_document_work_idle") < function.index("[view displayIfNeeded]")
+        if "native_when_document_work_idle" in function:
+            assert function.index("native_when_document_work_idle") < function.index("[view displayIfNeeded]")
         functions.append(function)
     return "\n\n".join(functions) + "\n"
 
@@ -64,8 +69,10 @@ def main():
                 row["test_exit_code"] = subprocess.run([str(directory / "tests"), str(artifacts)], stdout=log, stderr=subprocess.STDOUT).returncode
             text = (directory / "test.log").read_text()
             row["case_records"] = text.count("deferred=1 fresh_source=32x16 scale=1 once=1 path_alive=1")
+            row["document_case_records"] = text.count("deferred=1 bounds=1 png=20x8 process=1 coalition=1")
+            row["invalid_case_records"] = text.count("rejected=1 no_png=1 no_checkpoint=1")
             row["final_marker_present"] = "PASS deferred actual snapshot/screenshot entry points preserve logical scale and path lifetime" in text
-        row["status"] = "passed" if row.get("test_exit_code") == 0 and row.get("case_records") == 4 and row.get("final_marker_present") else "failed"
+        row["status"] = "passed" if row.get("test_exit_code") == 0 and row.get("case_records") == 4 and row.get("document_case_records") == 2 and row.get("invalid_case_records") == 8 and row.get("final_marker_present") else "failed"
         result["jobs"][mode] = row
     result["changed_inputs"] = [str(path) for path, digest in pins.items() if sha256(Path(path)) != digest]
     result["status"] = "passed" if all(row["status"] == "passed" for row in result["jobs"].values()) and not result["changed_inputs"] else "failed"
