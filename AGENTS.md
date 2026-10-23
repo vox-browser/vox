@@ -2581,6 +2581,15 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   First cohort3native pre-primary unsupportedflag failures/terminalUNKNOWN plus3Chrome0 retained separately.
   Second cohort6actual browser0/6PNGs, but native1024x740/readiness interactive,interactive,complete/known-image model gates fail;cohort1/audit0/no replay or parity credit.
   Tool compatibility1ddcecb3/72c13caa passes23Python checks;strict viewport/content gates retained;accepted177/broad177/carry0/canonical/GUI/foreign preserved.
+  Borrowed matching context round179 (`a878c08b`):one whole original runtime hunk/one CSS path/no rebase or projection.
+  Twelve exact cases/1,721assertions beforeBoehm/finalBoehm/finalnone;common60/config.
+  Declared512complete public matching passes/eight named layers/97author rules:local -0.455750%/3wins/all6actual0;zero pagecredit.
+  Fullprocess profiles521fixturecalls;matching counts equal when present;metadata deltas only from actual rows/missingUNKNOWN/no reset/filter.
+  Fresh page 16,450,478,475→16,443,585,211.5;18/30wins;point 6,893,263.5.
+  Paired CI[-1,356,805.5,15,954,926];repeatable credit 0;all60retained;seed179/30000bootstrap;first preparation1/2/1.
+  Focused exact;broad passed;prior carry0;entire independent C/493builtins/176protected/120native/37headers/exactargs.
+  Accepted control179;broad baseline179;carry0;isolated179app/GC1+override2.
+  Complete feature retained;all actual evidence receipts remain.canonical/GUI/foreign preserved;Chrome parity open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
