@@ -2577,6 +2577,10 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Original preparation/enum-compile/script-launch/guard-wait failures retained;no successful case replay.
   Actual localgate1/parent1;normal native/strictC/profile/page/broad/screens/bundle/GC178 unstarted;prepared scripts earn no pass.
   Both runtime hunks restored exactly by7f30d942;tests/evidence retained;accepted177/broad177/app177/carry0 preserved;canonical/GUI/foreign preserved;Chrome open.
+  Normal-GC sealed capture diagnostic October23:authenticated accepted177 C adapter/native/sign/smoke/GC1+override2 actual0;fresh frontend guard-9/frontendUNKNOWN retained.
+  First cohort3native pre-primary unsupportedflag failures/terminalUNKNOWN plus3Chrome0 retained separately.
+  Second cohort6actual browser0/6PNGs, but native1024x740/readiness interactive,interactive,complete/known-image model gates fail;cohort1/audit0/no replay or parity credit.
+  Tool compatibility1ddcecb3/72c13caa passes23Python checks;strict viewport/content gates retained;accepted177/broad177/carry0/canonical/GUI/foreign preserved.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

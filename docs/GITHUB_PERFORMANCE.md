@@ -5,6 +5,91 @@ shared offline capture diagnostic is below; the original October 13–14
 measurements and subsequent frozen first-frame optimization rounds follow.
 Chrome parity remains open.
 
+## Normal-GC sealed capture attempts, October 23
+
+The accepted round-177 runtime now has a separate measurement-only native
+adapter build using its authenticated old-V generated C, Boehm, native C-O2
+and one marker by default. Native compilation, signing, signature verification,
+headless startup and the GC policy check all exit zero. The collector performs
+actual collections with both default marker 1 and explicit override 2. This is
+not a new optimization or a replacement for the accepted first-paint control.
+The canonical app and independent current-Root work remain untouched.
+
+A fresh V frontend attempt exceeded the 12 GiB process-tree guard: its
+controller exits -9 and the frontend's final exit is UNKNOWN. That attempt is
+retained as failed. The successful native resume instead authenticates the
+complete accepted-177 generated program, all 120 native inputs and exact
+compiler arguments. Its strict adapter audit permits only source-path
+normalization and the declared navigation/capture/post-endpoint audit hooks.
+It does not claim that the uncompiled V adapter or current Root passed.
+The old synchronous screenshot path also lacks the newer deferred-work idle
+barrier.
+
+Two separately declared three-pair attempts retain every observation in order,
+with no retries or exclusions:
+
+- The original launch uses the newer `--enable-javascript` switch. Accepted
+  round 177 rejects it before parsing or any native primary. All three native
+  terminal statuses remain UNKNOWN. The three completed Chrome observations
+  exit zero and stay in that original cohort; they are never substituted into
+  the second cohort.
+- The second launch selects `--js-engine=javascriptcore`, following the old
+  browser's default-enabled author-script contract. All six actual browser
+  kernel statuses and launch exits are zero. All six PNGs and post-endpoint
+  audits exist, but each native PNG is **1024×740**, not the declared 1024×768.
+  The tool supplied window height 852 using 84 pixels of chrome; this older
+  runtime uses 112. Native readiness is `interactive`, `interactive`, then
+  `complete`. All three also fail both known-image model gates. The avatar is
+  present in the paint cache at 60×60 despite its image model reporting zero
+  natural size; the offscreen logo lacks a decoded paint-cache image. The
+  image failures must not be described as two absent painted images.
+
+The second attempt's retained hardware counts are **ineligible for a browser
+comparison**. They authenticate completed work, not equivalent content or
+Chrome parity:
+
+| Pair | Native coalition instructions | Chrome coalition lower bound | Chrome coalition upper bound |
+| --- | ---: | ---: | ---: |
+| 1 | 22,465,730,926 | 3,834,493,202 | 3,866,007,927 |
+| 2 | 22,440,066,129 | 3,987,634,109 | 4,020,092,240 |
+| 3 | 22,623,860,883 | 3,867,004,164 | 3,919,178,509 |
+
+Both cohort drivers and guards actually exit 1. Retained-evidence audits exit
+zero after recomputing their failures, native counter deltas, Chrome bounds,
+real exits and file hashes. Audit success does not turn either cohort into a
+pass. A mistaken intermediate audit assertion that every native readiness
+state was `interactive` is disclosed in the final receipt. No completed
+primary is replayed, pooled, excluded or replaced, and no third cohort is run.
+
+Tooling commits `1ddcecb3` and `72c13caa` add an explicit default-enabled
+JavaScript launch mode and a declared native chrome height. All 23 focused
+Python checks pass. Future launches can select 112 pixels for this legacy
+runtime while keeping strict 1024×768 capture gates. These fixes do not
+requalify existing captures. The separately completed preallocation diagnostic
+below remains unchanged. Normal-GC Chrome distance remains unestablished;
+accepted control 177, broad baseline 177 and observed carry zero are unchanged.
+
+Evidence under `Build/instructions/accepted177-sealed-20261023/`:
+
+- `build-result.json`, `adapter-provenance-result.json`, `gc-policy-result.json`
+  and the retained `build-interrupted-result.json` distinguish real native
+  success from the failed fresh frontend.
+- `observations/{plan,summary}.json` and `failed-launch-audit.json` preserve
+  the original three pre-primary native failures and three completed Chrome
+  observations.
+- `diagnostic-default-js-plan.json`,
+  `observations-default-js/{plan,summary}.json`,
+  `measurement-default-js-result.json` and `failed-default-js-audit.json`
+  retain all six later primaries/captures and their failing gates. The audit
+  authenticates 5,328 snapshot files, 120 native inputs and all 414 declared
+  runtime pins using the archived original tool where it has since changed.
+- `durable-archives.json` records verified compressed and original hashes for
+  the original/adapter C, exact patch and post-endpoint audit implementation.
+  Both cohorts' originally declared tool versions are retained separately.
+- Executable SHA256 `eee4c77debeefbe0fa3c42c00bcc7669cf7106c8d533412410e4b8c2086ea3ee`;
+  adapter C SHA256 `aeef167431cb30f615b5f64d9851c80afd6362c5405df57a181cd2043428a01a`;
+  second summary SHA256 `ab8f400f370781e243c4494bcf203b2698672b21d3be33c8e6956ebd3043c8a3`.
+
 ## Shared offline capture diagnostic, October 23
 
 The completed three-pair diagnostic uses the same sealed response bodies in
