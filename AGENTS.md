@@ -2590,6 +2590,10 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Focused exact;broad passed;prior carry0;entire independent C/493builtins/176protected/120native/37headers/exactargs.
   Accepted control179;broad baseline179;carry0;isolated179app/GC1+override2.
   Complete feature retained;all actual evidence receipts remain.canonical/GUI/foreign preserved;Chrome parity open.
+  Compiler syntax compatibility October23 (`51421166`, `f90ccbe2`):two non-performance fixes; stylesheet media identity/default owner and u64 HarfBuzz initial generation preserved.
+  Five workspace cases Boehm1080/prealloc1221 assertions;four HarfBuzz cases184/config Boehm+none;all actual0.
+  New separated C-O2 builds12GiB/runtime3GiB;earlier Boehm workspace embedded12GiB retained without replay;legacy Root checker failures remain.
+  Two owned fixes since preceding broad checkpoint;zero instruction credit/accepted179/broad179/carry0/canonical/GUI/foreign preserved. See docs/translation-audit/COMPILER_OPTIONAL_AND_GLOBAL_COMPATIBILITY.md.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
