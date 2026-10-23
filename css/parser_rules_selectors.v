@@ -2441,6 +2441,7 @@ fn (mut parser RuleSelectorParser) convert_child_rule_list(children []RuleOrList
 
 fn (mut parser RuleSelectorParser) convert_to_style_declaration(declarations ParserRuleDeclarations) &CSSStyleProperties {
 	mut result := CSSStyleProperties.create()
+	mut builder := CSSOMDeclarationBuilder{}
 	params := parser.parsing_params()
 	for declaration in declarations {
 		if is_a_custom_property_name_string(declaration.name) {
@@ -2465,13 +2466,14 @@ fn (mut parser RuleSelectorParser) convert_to_style_declaration(declarations Par
 				parser.component_input_transient) or {
 				continue
 			}
-			result.append_parsed_declaration(StyleProperty{
+			append_parsed_cssom_declaration(voidptr(&builder), StyleProperty{
 				important: declaration.important
 				property_id: property_id
 				value: dom_style_value_from_value_logic(parsed)
 			})
 		}
 	}
+	publish_cssom_declarations(voidptr(&builder), voidptr(result))
 	return result
 }
 
