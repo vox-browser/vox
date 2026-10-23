@@ -80,6 +80,24 @@ class ContentGateTests(unittest.TestCase):
             json.dumps(links, separators=(',', ':'), ensure_ascii=False).encode()).hexdigest())
         self.assertEqual((self.expected['rows'], self.expected['file_links']), (32, 64))
 
+    def test_explicit_javascript_launch_contract_remains_enabled(self):
+        argv = measurement.native_browser_arguments(SimpleNamespace(vox_javascript_mode='explicit'), '/tmp/document.png')
+        self.assertIn('--enable-javascript', argv)
+        self.assertEqual(argv[-1], measurement.URL)
+        self.assertEqual(argv[argv.index('--window-width') + 1], '1024')
+        self.assertEqual(argv[argv.index('--window-height') + 1], '852')
+
+    def test_older_default_enabled_launch_selects_javascriptcore_without_new_switch(self):
+        argv = measurement.native_browser_arguments(SimpleNamespace(vox_javascript_mode='default-enabled'), '/tmp/document.png')
+        self.assertNotIn('--enable-javascript', argv)
+        self.assertIn('--js-engine=javascriptcore', argv)
+        self.assertEqual(argv[argv.index('--screenshot') + 1], '/tmp/document.png')
+        self.assertNotIn('--disable-javascript', argv)
+
+    def test_unrecognized_javascript_contract_fails_before_a_launch(self):
+        with self.assertRaisesRegex(RuntimeError, 'Unknown native JavaScript launch contract'):
+            measurement.native_browser_arguments(SimpleNamespace(vox_javascript_mode='disabled'), '/tmp/document.png')
+
     def test_source_structure_change_is_not_silently_accepted(self):
         self.fixture = SyntheticFixture()
         self.fixture.body = self.fixture.body.replace(b'react-directory-row', b'other-row', 1)
