@@ -17,8 +17,8 @@ in its protocol. Explicit historic Boehm comparisons require `--allocator boehm`
 ### Corrected arena before/after: 50 MB remains unmet
 
 The latest V-source comparison, three alternating optimized pairs, measures
-**56.46 → 54.74 MB**, a **3.05% reduction**. The largest candidate settled
-observation is **54,904,224 bytes**. The **50,000,000-byte limit still fails**.
+**54.64 → 52.17 MB**, a **4.53% reduction**. The largest candidate settled
+observation is **52,233,560 bytes**. The **50,000,000-byte limit still fails**.
 All six raw viewport images match, all frozen-input guards pass, and all six script audits
 report no page runtime, sources, source bytes or preloaded scripts.
 
@@ -61,6 +61,8 @@ report no page runtime, sources, source bytes or preloaded scripts.
 | Shared SVG sources, compact DOM/layout owners and CSS parser intermediates | 60,048,752 bytes | 58,148,256 bytes | 3.16% |
 | Typed CSS exports, inline/font workspaces, image reuse and borrowed paint lines | 57,722,296 bytes | 56,362,424 bytes | 2.36% |
 | Cold rule payloads, paint workspaces, compact CSS pixels and remaining temporary owners | 56,460,704 bytes | 54,740,336 bytes | 3.05% |
+| Native post-graphics allocator relief with unchanged V code/data | 54,429,064 bytes | 54,642,080 bytes | -0.39% |
+| Selector publication, embedded text, DOM/SVG records and temporary navigation/inline storage | 54,642,032 bytes | 52,168,048 bytes | 4.53% |
 
 Each row is its own three-pair cohort; these are aggregate build comparisons,
 not isolated savings attributed to individual commits. Evidence is in
@@ -83,7 +85,8 @@ not isolated savings attributed to individual commits. Evidence is in
 `arena-stylesheet-workspace-paired/`, `arena-property-workspaces-paired/` and
 `arena-layout-shaping-paired/`, `arena-static-svg-backgrounds-paired/` and
 `arena-combined-ownership-paired/`, `arena-exported-workspaces-paired/` and
-`arena-retained-owner-storage-paired/`, including summaries, raw
+`arena-retained-owner-storage-paired/`, `arena-native-graphics-relief-paired/` and
+`arena-accepted-publication-storage-paired/`, including summaries, raw
 process samples, allocator checks, resource audits and captures. Matching
 `arena-{text,svg}-lifetimes-build-protocol.json` files pin the complete source
 inputs, current compiler and native libraries. The static-paint and SVG protocols are
@@ -228,6 +231,40 @@ The paired summary SHA-256 is
 `5196f4635aeed35fa97f38bac88cdddbd1698540635c9f177dcaa317ddde2a2b`.
 Pending selector graph workspaces and native post-graphics allocator relief
 are excluded from this measured executable.
+
+The native-graphics-relief cohort keeps the generated V code/data from `33fa581b`
+and updates native providers through `8abd1bbc`. It measures **54.43 → 54.64 MB**,
+so it establishes no saving. Its maximum settled observation is 54,936,992 bytes
+and sampled launch peaks are 463.42–464.78 MB. All six captures, frozen-input and
+no-script audits, poisoned-arena validation and eight SVG comparisons pass.
+`arena-native-graphics-relief-validation-result.json` SHA-256 is
+`074c7bb1a365f7e2efbe52435a19ba08880197fc70751d0bdf08ebe664740626`.
+
+The accepted-publication-storage cohort freezes committed V source `0c334488`.
+It includes selector publication workspaces, shared embedded text and named HTML
+references, rare SVG and DOM style records, and retiring decoded navigation and
+uncached inline layout storage. Its seven implementation cohorts pass 232 focused
+checks in each allocator mode. The three alternating pairs measure
+**54,642,032 → 52,168,048 bytes** by median. Candidate settled-window medians are
+52,168,048, 51,955,056 and 52,217,176 bytes; the maximum individual observation is
+**52,233,560 bytes**, leaving **2,233,560 bytes** above the decimal 50 MB limit.
+All six raw captures are identical, the 40-file cache is unchanged, and page
+scripts remain disabled. The poisoned-arena run and all eight SVG comparisons
+also pass. Sampled candidate launch peaks are 458.25–458.66 MB; this result is
+for settled memory.
+
+`arena-accepted-publication-storage-build-protocol.json` pins the source,
+generated C, compiler and native inputs; its SHA-256 is
+`01ab81f0ee98bb0f08e73ba9d193e6e8a52397cf131a3c2a57696c5705da926b`.
+Executable SHA-256 is
+`c658bc6cbcf429c6a78524471d42e1417e16bd3fc52c8270c43bc43dce831ab3`.
+The paired summary SHA-256 is
+`5b590aa3fc176138d90a8e97778d05e7f8a584ac256665434cf2d7b62c81a4cd`;
+`arena-accepted-publication-storage-validation-result.json` SHA-256 is
+`91ca821fe5be7c001975703885c2cab20be00af7a8e8477d5b35d402a5f1b34d`.
+These runs use private bundles. Later DOM layout bridge snapshots (`a97f4e55`)
+and node-identity fixes are excluded from this measured executable and receive
+no RAM credit here.
 
 Replacing the native wrapper and Metal providers with the completed code from
 `57c321a4`, while preserving the V executable byte for byte, measured

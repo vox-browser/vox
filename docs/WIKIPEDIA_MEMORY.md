@@ -1,9 +1,9 @@
 # Wikipedia memory usage
 
 The [corrected arena measurements](WIKIPEDIA_NOJS_MEMORY.md#corrected-arena-beforeafter-50-mb-remains-unmet)
-now record **56.46 → 54.74 MB** with `-prealloc -gc none`; the 50 MB target
+now record **54.64 → 52.17 MB** with `-prealloc -gc none`; the 50 MB target
 remains unmet. Three alternating pairs have identical viewport captures, and
-the largest candidate settled observation is 54,904,224 bytes. These runs disable
+the largest candidate settled observation is 52,233,560 bytes. These runs disable
 page scripts. The earlier
 results below used Boehm.
 
