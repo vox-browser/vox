@@ -75,7 +75,7 @@ fn test_form_associated_text_control_preserves_visual_line_affinity() {
 	mut node := text_node.as_node()
 	node.set_layout_node(&dom.LayoutNode{
 		is_text_node_: true
-		visual_lines_: [
+		visual_lines_data_: &dom.LayoutVisualLines{ values: [
 			dom.VisualLine{
 				start_offset: 0
 				end_offset: 4
@@ -100,7 +100,7 @@ fn test_form_associated_text_control_preserves_visual_line_affinity() {
 					dom.VisualCaretStop{offset: 9, inline_coordinate: 40},
 				]
 			},
-		]
+		] }
 	})
 	text.text_node_ = text_node
 	text.selection_start_ = 5

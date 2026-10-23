@@ -249,7 +249,7 @@ fn html_element_rendered_text_collection_steps(node &dom.Node) []RenderedTextIte
 	}
 	if node.is_text() {
 		mut text_items := []RenderedTextItem{}
-		for chunk in layout_node.rendered_text_chunks_ {
+		for chunk in layout_node.rendered_text_chunks() {
 			text_items << RenderedTextItem(chunk)
 		}
 		return text_items
@@ -466,7 +466,7 @@ fn united_rect_for_continuation_chain(start &dom.LayoutNode, kind PaintableBoxRe
 				result = rect
 			}
 		}
-		current = node.continuation_next_
+		current = node.continuation_next()
 	}
 	return result
 }

@@ -8,13 +8,13 @@ fn attach_block_plan_layout(node &dom.Node, owner u32) {
 		mut mutable_node := unsafe { &dom.Node(node) }
 		mutable_node.set_layout_node(&dom.LayoutNode{
 			is_text_node_: true
-			visual_lines_: [dom.VisualLine{
+			visual_lines_data_: &dom.LayoutVisualLines{ values: [dom.VisualLine{
 				start_offset: 0
 				end_offset: node.length()
 				end_offset_with_trailing_whitespace: node.length()
 				has_fragments: true
 				owner_paintable: owner
-			}]
+			}] }
 		})
 	}
 	for child in node.children_as_vector() {
@@ -107,9 +107,10 @@ fn test_block_replacement_integrates_matching_pasted_list() {
 	editing.integrate_first_pasted_list(mut content, destination.as_node())
 
 	assert list.as_node().child_count() == 3
-	assert list.as_node().child_at_index(1)? == first.as_node()
-	assert list.as_node().child_at_index(2)? == last.as_node()
-	assert pasted.as_node().parent() == none
-	assert content.first_node()? == first.as_node()
-	assert content.last_node()? == last.as_node()
+	assert voidptr(list.as_node().child_at_index(1)?) == voidptr(first.as_node())
+	assert voidptr(list.as_node().child_at_index(2)?) == voidptr(last.as_node())
+	pasted_is_detached := pasted.as_node().parent() == none
+	assert pasted_is_detached
+	assert voidptr(content.first_node()?) == voidptr(first.as_node())
+	assert voidptr(content.last_node()?) == voidptr(last.as_node())
 }

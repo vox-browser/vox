@@ -1366,8 +1366,6 @@ pub mut:
 	dom_node_                                       ?&Node
 	parent_                                         ?&LayoutNode
 	containing_block_                               ?&LayoutNode
-	continuation_of_node_                           ?&LayoutNode
-	continuation_next_                              ?&LayoutNode
 	children_                                       []&LayoutNode
 	is_anonymous_                                   bool
 	is_text_node_                                   bool
@@ -1375,8 +1373,6 @@ pub mut:
 	is_atomic_inline_                               bool
 	is_replaced_box_                                bool
 	display_                                        CSSDisplay_
-	pseudo_element_generator_                       ?&Element
-	generated_for_                                  ?PseudoElement
 	has_geometry_                                   bool
 	is_viewport_                                    bool
 	is_positioned_                                  bool
@@ -1393,8 +1389,9 @@ pub mut:
 	is_editing_host_                                bool
 	is_editable_or_editing_host_                    bool
 	rendered_text_                                  string
-	rendered_text_chunks_                           []string
-	visual_lines_                                   []VisualLine
+	rendered_text_chunks_data_ &LayoutRenderedTextChunks = unsafe { nil }
+	visual_lines_data_ &LayoutVisualLines = unsafe { nil }
+	rare_data_ &LayoutNodeRareData = unsafe { nil }
 	visual_lines_callback                           fn (voidptr) []VisualLine = unsafe { nil }
 	paintables_                                     []&Paintable
 	border_box_                                     Rect

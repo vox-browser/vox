@@ -138,7 +138,7 @@ fn collect_retained_flow_elements(element &dom.Element, mut elements []&dom.Elem
 		if value.to_keyword() !in [.normal, .none_] { return false }
 	}
 	mirror := node.unsafe_layout_node() or { return false }
-	if mirror.real_layout_handle() == unsafe { nil } || mirror.continuation_next_ != none {
+	if mirror.real_layout_handle() == unsafe { nil } || mirror.continuation_next() != none {
 		return false
 	}
 	typed := unsafe { &Node(mirror.real_layout_handle()) }

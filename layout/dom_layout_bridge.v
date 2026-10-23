@@ -407,8 +407,10 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, 
 	placeholder.is_atomic_inline_ = box.is_atomic_inline()
 	placeholder.is_replaced_box_ = box.is_replaced_box()
 	placeholder.display_ = layout_node_display(box)
-	placeholder.pseudo_element_generator_ = box.pseudo_element_generator()
-	placeholder.generated_for_ = dom_pseudo_element_for_layout_node(box.generated_for_pseudo_element())
+	mut rare := dom.LayoutNodeRareData{
+		pseudo_element_generator: box.pseudo_element_generator()
+		generated_for: dom_pseudo_element_for_layout_node(box.generated_for_pseudo_element())
+	}
 	placeholder.is_viewport_ = box.is_viewport()
 	placeholder.is_positioned_ = box.is_positioned()
 	placeholder.is_sticky_position_ = box.is_sticky_position()
@@ -427,6 +429,7 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, 
 		mutable_box.dom_layout_node_ = placeholder
 	}
 	if text_node := box.as_text_node() {
+		mut chunks := []string{}
 		placeholder.text_has_source_range_ = text_node.source_range_length_ != none
 		// DOM::Node::name_or_description() reads TextNode::text_for_rendering()
 		// directly. Keep that value separate from the ChunkIterator output used
@@ -436,26 +439,28 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, 
 			placeholder.rendered_text_ = first.text_for_rendering() + placeholder.rendered_text_
 			if collect_text_chunks {
 				collected := collect_dom_rendered_text(first)
-				if collected != '' { placeholder.rendered_text_chunks_ << collected }
+				if collected != '' { chunks << collected }
 			}
 		}
 		// innerText consumes the concatenated no-wrap text after the remaining
 		// collapsible-space processing; font and grapheme chunks are unnecessary.
 		if collect_text_chunks {
 			collected := collect_dom_rendered_text(text_node)
-			if collected != '' { placeholder.rendered_text_chunks_ << collected }
+			if collected != '' { chunks << collected }
 		}
+		placeholder.set_rendered_text_chunks(chunks)
 	}
 	placeholders.set(box, placeholder)
 	if metrics := box.as_node_with_style_and_box_model_metrics() {
 		if previous := metrics.continuation_of_node() {
 			if previous_placeholder := placeholders.get(unsafe { &Node(previous) }) {
-				placeholder.continuation_of_node_ = previous_placeholder
+				rare = dom.LayoutNodeRareData{ ...rare, continuation_of_node: previous_placeholder }
 				mut mutable_previous_placeholder := unsafe { &dom.LayoutNode(previous_placeholder) }
-				mutable_previous_placeholder.continuation_next_ = placeholder
+				mutable_previous_placeholder.set_continuation_next(placeholder)
 			}
 		}
 	}
+	placeholder.set_rare_data(rare)
 	if containing_block := box.containing_block() {
 		if containing_block_placeholder := placeholders.get(unsafe { &Node(containing_block) }) {
 			placeholder.containing_block_ = containing_block_placeholder
@@ -466,7 +471,7 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, 
 			if lazy_visual_lines {
 				placeholder.visual_lines_callback = materialize_dom_text_visual_lines
 			} else {
-				placeholder.visual_lines_ = collect_dom_text_visual_lines(box, layout_state)
+				placeholder.set_visual_lines(collect_dom_text_visual_lines(box, layout_state))
 			}
 		}
 		if box.is_inline_node() {

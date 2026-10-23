@@ -25,7 +25,7 @@ fn test_committed_text_defers_caret_projection_until_requested_and_resets_after_
 		nodes << node.children()
 		if !node.is_text_node() { continue }
 		assert node.dom_layout_node_.visual_lines_callback != unsafe { nil }
-		assert node.dom_layout_node_.visual_lines_.len == 0
+		assert node.dom_layout_node_.cached_visual_lines().len == 0
 		deferred++
 	}
 	assert deferred > 160
@@ -44,7 +44,7 @@ fn test_committed_text_defers_caret_projection_until_requested_and_resets_after_
 	document.update_layout(.debugging)
 	assert voidptr(text.as_node().layout_node()?) == voidptr(mirror)
 	assert mirror.visual_lines_callback != unsafe { nil }
-	assert mirror.visual_lines_.len == 0
+	assert mirror.cached_visual_lines().len == 0
 	current := dom.collect_visual_lines(text)
 	assert current == collect_dom_text_visual_lines(typed, document_layout_result(document)?.state)
 	assert lines.str() == old
@@ -61,7 +61,7 @@ fn test_explicit_dom_attachment_with_a_state_keeps_its_eager_projection() {
 	text := lazy_visual_dom_text(document)
 	mirror := text.as_node().layout_node()?
 	assert mirror.visual_lines_callback == unsafe { nil }
-	assert mirror.visual_lines_.len > 1
+	assert mirror.cached_visual_lines().len > 1
 	assert dom.collect_visual_lines(text) == collect_dom_text_visual_lines(unsafe { &Node(mirror.real_layout_handle()) }, result.state)
 }
 

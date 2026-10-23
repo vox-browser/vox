@@ -17,7 +17,7 @@ fn attach_rendered_text_for_inserted_content(text_node &dom.Node) {
 	mut mutable_text_node := unsafe { &dom.Node(text_node) }
 	mutable_text_node.set_layout_node(&dom.LayoutNode{
 		is_text_node_: true
-		visual_lines_: [dom.VisualLine{
+		visual_lines_data_: &dom.LayoutVisualLines{ values: [dom.VisualLine{
 			start_offset: 0
 			end_offset: text_node.length()
 			end_offset_with_trailing_whitespace: text_node.length()
@@ -26,7 +26,7 @@ fn attach_rendered_text_for_inserted_content(text_node &dom.Node) {
 				offset: text_node.length()
 				inline_coordinate: f64(text_node.length())
 			}]
-		}]
+		}] }
 	})
 }
 
@@ -55,15 +55,18 @@ fn test_inserted_content_tracks_insertion_and_semantic_boundaries() {
 	assert content.text_nodes().len == 1
 	assert content.insertion_was_inside_paragraph()
 	assert content.insertion_was_after_whitespace()
-	assert content.insertion_boundary()?.node == host.as_node()
+	assert voidptr(content.insertion_boundary()?.node) == voidptr(host.as_node())
 	assert content.insertion_boundary()?.offset == 1
 	assert content.start_boundary()?.node.is_text()
 	assert content.start_boundary()?.offset == 0
-	assert content.end_boundary()?.node == host.as_node()
+	assert voidptr(content.end_boundary()?.node) == voidptr(host.as_node())
 	assert content.end_boundary()?.offset == reference.as_node().index()
 
 	content.begin_completion(content.end_boundary()?)
-	assert content.completion_start_boundary()? == content.start_boundary()?
+	completion_start := content.completion_start_boundary()?
+	content_start := content.start_boundary()?
+	assert voidptr(completion_start.node) == voidptr(content_start.node)
+	assert completion_start.offset == content_start.offset
 	content.require_end_text_seam_normalization()
 	assert content.should_normalize_end_text_seam()
 	content.release()
@@ -76,13 +79,13 @@ fn test_end_boundary_of_node_handles_text_placeholder_break_and_atomic_content()
 	text := paragraph.first_child() or { panic('missing text') }
 	image := host.as_node().last_child() or { panic('missing image') }
 
-	assert editing.end_boundary_of_node(text) == dom.BoundaryPoint{ node: text, offset: 4 }
-	assert editing.end_boundary_of_node(paragraph) == dom.BoundaryPoint{
-		node: paragraph
-		offset: 1
-	}
-	assert editing.end_boundary_of_node(image) == dom.BoundaryPoint{
-		node: host.as_node()
-		offset: 2
-	}
+	text_end := editing.end_boundary_of_node(text)
+	assert voidptr(text_end.node) == voidptr(text)
+	assert text_end.offset == 4
+	paragraph_end := editing.end_boundary_of_node(paragraph)
+	assert voidptr(paragraph_end.node) == voidptr(paragraph)
+	assert paragraph_end.offset == 1
+	image_end := editing.end_boundary_of_node(image)
+	assert voidptr(image_end.node) == voidptr(host.as_node())
+	assert image_end.offset == 2
 }

@@ -15,13 +15,13 @@ fn attach_replacement_end_layout(node &dom.Node, owner u32) {
 		mut mutable_node := unsafe { &dom.Node(node) }
 		mutable_node.set_layout_node(&dom.LayoutNode{
 			is_text_node_: true
-			visual_lines_: [dom.VisualLine{
+			visual_lines_data_: &dom.LayoutVisualLines{ values: [dom.VisualLine{
 				start_offset: 0
 				end_offset: node.length()
 				end_offset_with_trailing_whitespace: node.length()
 				has_fragments: true
 				owner_paintable: owner
-			}]
+			}] }
 		})
 	}
 	for child in node.children_as_vector() {
@@ -44,7 +44,8 @@ fn test_replacement_end_newline_advances_into_destination_suffix() {
 		offset: inserted_text.length()
 	}, fragment, editing.BlockReplacementPlan{})
 
-	assert result == dom.BoundaryPoint{ node: suffix_text, offset: 0 }
+	assert voidptr(result.node) == voidptr(suffix_text)
+	assert result.offset == 0
 }
 
 fn test_replacement_end_newline_preserves_genuine_empty_terminal_paragraph() {
@@ -61,7 +62,8 @@ fn test_replacement_end_newline_preserves_genuine_empty_terminal_paragraph() {
 			selection_end_was_end_of_paragraph: true
 		})
 
-	assert result == boundary
+	assert voidptr(result.node) == voidptr(boundary.node)
+	assert result.offset == boundary.offset
 }
 
 fn test_replacement_end_newline_materializes_terminal_list_item() {
@@ -78,7 +80,7 @@ fn test_replacement_end_newline_materializes_terminal_list_item() {
 	}, fragment, editing.BlockReplacementPlan{})
 
 	assert list.child_count() == 2
-	assert result.node == list.last_child()?
+	assert voidptr(result.node) == voidptr(list.last_child()?)
 	assert result.offset == 0
 	assert result.node.as_element()?.local_name() == 'li'
 }
@@ -98,5 +100,6 @@ fn test_replacement_end_newline_advances_to_following_list_item() {
 		offset: first_text.length()
 	}, fragment, editing.BlockReplacementPlan{})
 
-	assert result == dom.BoundaryPoint{ node: second_text, offset: 0 }
+	assert voidptr(result.node) == voidptr(second_text)
+	assert result.offset == 0
 }

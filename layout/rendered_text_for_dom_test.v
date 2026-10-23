@@ -96,7 +96,7 @@ fn test_dom_text_collection_keeps_first_letter_transforms_live_text_and_source_g
 	mut text := host.as_node().first_child() or { panic('missing text') }
 	assert html.html_element_inner_text(unsafe { &dom.HTMLElement(host) }) == 'SSABC É'
 	committed := text.layout_node() or { panic('missing committed text') }
-	assert committed.rendered_text_chunks_.join('') == 'SSABC É'
+	assert committed.rendered_text_chunks().join('') == 'SSABC É'
 	range := dom.Range.create_from_boundary_points(text, 0, text, 1)
 	assert range.get_client_rects().length() > 0
 	mut caret_offsets := []int{}

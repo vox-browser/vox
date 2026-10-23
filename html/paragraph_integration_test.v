@@ -7,13 +7,13 @@ fn attach_paragraph_integration_text_layout(node &dom.Node) {
 	mut mutable_node := unsafe { &dom.Node(node) }
 	mutable_node.set_layout_node(&dom.LayoutNode{
 		is_text_node_: true
-		visual_lines_: [dom.VisualLine{
+		visual_lines_data_: &dom.LayoutVisualLines{ values: [dom.VisualLine{
 			start_offset: 0
 			end_offset: node.length()
 			end_offset_with_trailing_whitespace: node.length()
 			has_fragments: true
 			owner_paintable: u32(node.unique_id().value())
-		}]
+		}] }
 	})
 }
 
@@ -63,7 +63,7 @@ fn test_paragraph_integration_rejects_blockquotes_and_heading_mismatches() {
 	blockquote := blockquote_document.get_element_by_id('inserted') or { panic('missing blockquote') }
 	mut blockquote_content := paragraph_integration_content(blockquote_document, blockquote.as_node())
 	blockquote_start := blockquote_content.start_boundary() or { panic('missing blockquote start') }
-	assert editing.block_node_of_node(blockquote_start.node)? == blockquote.as_node()
+	assert voidptr(editing.block_node_of_node(blockquote_start.node)?) == voidptr(blockquote.as_node())
 	assert (editing.block_node_of_node(blockquote_start.node)?.as_element() or {
 		panic('blockquote block is not an element')
 	}).local_name() == 'blockquote'

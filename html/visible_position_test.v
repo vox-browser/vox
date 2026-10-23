@@ -17,7 +17,7 @@ fn attach_rendered_text_for_visible_position(text_node &dom.Node) {
 	mut mutable_text_node := unsafe { &dom.Node(text_node) }
 	mutable_text_node.set_layout_node(&dom.LayoutNode{
 		is_text_node_: true
-		visual_lines_: [dom.VisualLine{
+		visual_lines_data_: &dom.LayoutVisualLines{ values: [dom.VisualLine{
 			start_offset: 0
 			end_offset: text_node.length()
 			end_offset_with_trailing_whitespace: text_node.length()
@@ -26,7 +26,7 @@ fn attach_rendered_text_for_visible_position(text_node &dom.Node) {
 				offset: text_node.length()
 				inline_coordinate: f64(text_node.length())
 			}]
-		}]
+		}] }
 	})
 }
 
@@ -46,11 +46,18 @@ fn test_visible_position_keeps_dom_boundary_and_canonical_deep_equivalent() {
 		node: host.as_node()
 		offset: 0
 	})
-	assert position.boundary() == dom.BoundaryPoint{ node: host.as_node(), offset: 0 }
-	assert position.deep_equivalent() == dom.BoundaryPoint{ node: first_text, offset: 0 }
+	boundary := position.boundary()
+	assert voidptr(boundary.node) == voidptr(host.as_node())
+	assert boundary.offset == 0
+	deep := position.deep_equivalent()
+	assert voidptr(deep.node) == voidptr(first_text)
+	assert deep.offset == 0
 	next := position.next() or { panic('missing next position') }
-	assert next.deep_equivalent() == dom.BoundaryPoint{ node: first_text, offset: 1 }
-	assert position.previous() == none
+	next_deep := next.deep_equivalent()
+	assert voidptr(next_deep.node) == voidptr(first_text)
+	assert next_deep.offset == 1
+	has_no_previous := position.previous() == none
+	assert has_no_previous
 }
 
 fn test_visible_position_detects_paragraph_and_block_edges() {
@@ -115,6 +122,8 @@ fn test_visible_position_retains_atomic_inline_block_owned_caret() {
 		offset: 0
 	})
 
-	assert position.deep_equivalent() == dom.BoundaryPoint{ node: host.as_node(), offset: 0 }
+	deep := position.deep_equivalent()
+	assert voidptr(deep.node) == voidptr(host.as_node())
+	assert deep.offset == 0
 	assert !position.is_before_or_after_containing_block()
 }

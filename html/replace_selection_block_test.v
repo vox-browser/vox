@@ -8,13 +8,13 @@ fn attach_block_replacement_layout(node &dom.Node, owner u32) {
 		mut mutable_node := unsafe { &dom.Node(node) }
 		mutable_node.set_layout_node(&dom.LayoutNode{
 			is_text_node_: true
-			visual_lines_: [dom.VisualLine{
+			visual_lines_data_: &dom.LayoutVisualLines{ values: [dom.VisualLine{
 				start_offset: 0
 				end_offset: node.length()
 				end_offset_with_trailing_whitespace: node.length()
 				has_fragments: true
 				owner_paintable: owner
-			}]
+			}] }
 		})
 	}
 	for child in node.children_as_vector() {

@@ -1067,17 +1067,17 @@ pub fn (n &LayoutNodeWithStyle_) dom_node() ?&Node {
 
 pub fn (n &LayoutNodeWithStyle_) is_generated_for_pseudo_element() bool {
 	layout_node := n.layout_node_ or { return false }
-	return layout_node.generated_for_ != none
+	return layout_node.generated_for_pseudo_element() != none
 }
 
 pub fn (n &LayoutNodeWithStyle_) pseudo_element_generator() ?&Element {
 	layout_node := n.layout_node_ or { return none }
-	return layout_node.pseudo_element_generator_
+	return layout_node.pseudo_element_generator()
 }
 
 pub fn (n &LayoutNodeWithStyle_) generated_for_pseudo_element() ?PseudoElement {
 	layout_node := n.layout_node_ or { return none }
-	return layout_node.generated_for_
+	return layout_node.generated_for_pseudo_element()
 }
 
 pub fn (n &LayoutNodeWithStyle_) is_before(other &LayoutNodeWithStyle_) bool {

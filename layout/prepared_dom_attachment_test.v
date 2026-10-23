@@ -16,7 +16,7 @@ fn test_prepared_dom_attachment_commits_geometry_without_replacing_fresh_mirrors
 	initial_text := text.layout_node() or { panic('mirror') }
 	root_children_data := prepared.root.children_.data
 	assert !initial_host.has_geometry_
-	assert initial_text.rendered_text_chunks_.len == 0
+	assert initial_text.rendered_text_chunks().len == 0
 	document.set_layout_viewport(&dom.LayoutViewport{ root_node: prepared.root })
 	mut state := LayoutState.new()
 	viewport := root.as_viewport() or { panic('viewport') }
@@ -28,7 +28,7 @@ fn test_prepared_dom_attachment_commits_geometry_without_replacing_fresh_mirrors
 	assert voidptr(text.layout_node() or { panic('text') }) == voidptr(initial_text)
 	assert initial_host.has_geometry_
 	assert initial_host.content_width_ == 200
-	assert initial_text.rendered_text_chunks_.join('') == 'a b'
+	assert initial_text.rendered_text_chunks().join('') == 'a b'
 	assert initial_text.visual_lines().len > 0
 	assert initial_text.containing_block() != none
 	assert voidptr(initial_text.parent() or { panic('parent') }) == voidptr(initial_host)

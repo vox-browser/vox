@@ -81,32 +81,34 @@ fn test_selection_modify_moves_by_line() {
 	document, text := selection_test_document_with_text('one\ntwo')
 	mut text_node := text.as_node()
 	text_node.set_layout_node(&LayoutNode{
-		is_text_node_: true
-		visual_lines_: [
-			VisualLine{
-				start_offset: 0
-				end_offset: 3
-				end_offset_with_trailing_whitespace: 3
-				has_fragments: true
-				caret_stops: [
-					VisualCaretStop{offset: 0, inline_coordinate: 0},
-					VisualCaretStop{offset: 1, inline_coordinate: 10},
-					VisualCaretStop{offset: 3, inline_coordinate: 30},
-				]
-			},
-			VisualLine{
-				start_offset: 4
-				end_offset: 7
-				end_offset_with_trailing_whitespace: 7
-				has_fragments: true
-				line_index: 1
-				caret_stops: [
-					VisualCaretStop{offset: 4, inline_coordinate: 0},
-					VisualCaretStop{offset: 5, inline_coordinate: 10},
-					VisualCaretStop{offset: 7, inline_coordinate: 30},
-				]
-			},
-		]
+		is_text_node_:      true
+		visual_lines_data_: &LayoutVisualLines{
+			values: [
+				VisualLine{
+					start_offset:                        0
+					end_offset:                          3
+					end_offset_with_trailing_whitespace: 3
+					has_fragments:                       true
+					caret_stops:                         [
+						VisualCaretStop{ offset: 0, inline_coordinate: 0 },
+						VisualCaretStop{ offset: 1, inline_coordinate: 10 },
+						VisualCaretStop{ offset: 3, inline_coordinate: 30 },
+					]
+				},
+				VisualLine{
+					start_offset:                        4
+					end_offset:                          7
+					end_offset_with_trailing_whitespace: 7
+					has_fragments:                       true
+					line_index:                          1
+					caret_stops:                         [
+						VisualCaretStop{ offset: 4, inline_coordinate: 0 },
+						VisualCaretStop{ offset: 5, inline_coordinate: 10 },
+						VisualCaretStop{ offset: 7, inline_coordinate: 30 },
+					]
+				},
+			]
+		}
 	})
 	mut selection := Selection.create(document)
 	selection.collapse(text.as_node(), 1) or { panic(err) }
@@ -127,18 +129,20 @@ fn selection_test_editing_host() (&Document, &Element) {
 fn attach_selection_test_line(node &Node, owner u32) {
 	mut mutable_node := unsafe { &Node(node) }
 	mutable_node.set_layout_node(&LayoutNode{
-		is_text_node_: node.is_text()
-		is_atomic_inline_: !node.is_text()
-		visual_lines_: if node.is_text() {
-			[VisualLine{
-				start_offset: 0
-				end_offset: node.length()
-				end_offset_with_trailing_whitespace: node.length()
-				has_fragments: true
-				owner_paintable: owner
-			}]
-		} else {
-			[]VisualLine{}
+		is_text_node_:      node.is_text()
+		is_atomic_inline_:  !node.is_text()
+		visual_lines_data_: &LayoutVisualLines{
+			values: if node.is_text() {
+				[VisualLine{
+					start_offset:                        0
+					end_offset:                          node.length()
+					end_offset_with_trailing_whitespace: node.length()
+					has_fragments:                       true
+					owner_paintable:                     owner
+				}]
+			} else {
+				[]VisualLine{}
+			}
 		}
 	})
 }
@@ -288,7 +292,7 @@ fn test_canonical_editing_location_skips_formatting_whitespace_into_the_followin
 	assert between.offset == 0
 
 	inside_whitespace := navigator.canonical_location_for_editing(CaretLocation{
-		node: whitespace.as_node()
+		node:   whitespace.as_node()
 		offset: 1
 	})
 	assert inside_whitespace.node == second_text
@@ -306,7 +310,7 @@ fn test_canonical_editing_location_moves_before_a_trailing_placeholder_break() {
 	text := paragraph_node.first_child() or { panic('missing text') }
 
 	location := CaretNavigator.new(document).canonical_location_for_editing(CaretLocation{
-		node: paragraph_node
+		node:   paragraph_node
 		offset: 2
 	})
 	assert location.node == text

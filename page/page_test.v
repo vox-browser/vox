@@ -201,13 +201,13 @@ fn test_page_editing_keys_route_through_the_active_input_target() {
 	mut text_node := text.as_node()
 	text_node.set_layout_node(&dom.LayoutNode{
 		is_text_node_: true
-		visual_lines_: [dom.VisualLine{
+		visual_lines_data_: &dom.LayoutVisualLines{ values: [dom.VisualLine{
 			start_offset: 0
 			end_offset: 3
 			end_offset_with_trailing_whitespace: 3
 			has_fragments: true
 			owner_paintable: 1
-		}]
+		}] }
 	})
 	mut host_node := host.as_node()
 	host_node.append_child(text.as_node())!

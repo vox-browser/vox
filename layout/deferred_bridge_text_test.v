@@ -16,7 +16,7 @@ fn test_initial_bridge_keeps_structure_and_ordinals_without_collecting_text_chun
 	assert voidptr(initial.parent() or { panic('missing text parent') }) == voidptr(host_layout)
 	assert initial.containing_block() != none
 	assert initial.rendered_text_ == '  a   b  '
-	assert initial.rendered_text_chunks_.len == 0
+	assert initial.rendered_text_chunks().len == 0
 	text_node := unsafe { &Node(initial.layout_handle) }.as_text_node() or { panic('missing typed text') }
 	assert text_node.cached_utf16_code_units_ == none
 	mut first := document.get_element_by_id('first') or { panic('missing first item') }
@@ -26,7 +26,7 @@ fn test_initial_bridge_keeps_structure_and_ordinals_without_collecting_text_chun
 	// The public no-state attachment retains its ordinary text-collection API.
 	_ = attach_layout_nodes(root)
 	complete := text.layout_node() or { panic('missing complete text association') }
-	assert complete.rendered_text_chunks_.join('') == ' a b '
+	assert complete.rendered_text_chunks().join('') == ' a b '
 	// Completed text collection also leaves shaping-only UTF-16 data lazy.
 	assert text_node.cached_utf16_code_units_ == none
 }
@@ -40,7 +40,7 @@ fn test_final_bridge_keeps_first_letter_inner_text_range_geometry_and_caret_stop
 	assert html.html_element_inner_text(unsafe { &dom.HTMLElement(host) }) == 'Abc'
 	committed := text.layout_node() or { panic('missing committed text') }
 	assert committed.rendered_text_ == 'Abc'
-	assert committed.rendered_text_chunks_.join('') == 'Abc'
+	assert committed.rendered_text_chunks().join('') == 'Abc'
 	mut caret_offsets := []int{}
 	for line in committed.visual_lines() {
 		for stop in line.caret_stops { caret_offsets << stop.offset }
@@ -69,12 +69,12 @@ fn test_final_bridge_refreshes_inner_text_search_and_geometry_after_live_mutatio
 	assert previous.needs_layout_update()
 	assert html.html_element_inner_text(unsafe { &dom.HTMLElement(host) }) == 'C D'
 	updated := text.layout_node() or { panic('missing updated text layout') }
-	assert updated.rendered_text_chunks_.join('') == 'C D'
+	assert updated.rendered_text_chunks().join('') == 'C D'
 	assert document.find_matching_text('C D', .case_sensitive).len == 1
 	host.set_attribute_value('style', 'white-space:pre')
 	assert html.html_element_inner_text(unsafe { &dom.HTMLElement(host) }) == 'C   D'
 	latest := text.layout_node() or { panic('missing preserved-whitespace text layout') }
-	assert latest.rendered_text_chunks_.join('') == 'C   D'
+	assert latest.rendered_text_chunks().join('') == 'C   D'
 	assert latest.visual_lines().len > 0
 	range := dom.Range.create_from_boundary_points(text, 0, text, 5)
 	assert range.get_client_rects().length() > 0

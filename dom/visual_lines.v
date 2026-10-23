@@ -20,9 +20,9 @@ pub fn (node &LayoutNode) visual_lines() []VisualLine {
 		// A callback is consumed once per committed attachment. Clear it before
 		// entering the provider so reentrant readers see the existing snapshot.
 		current.visual_lines_callback = unsafe { nil }
-		current.visual_lines_ = provider(current.layout_handle)
+		current.set_visual_lines(provider(current.layout_handle))
 	}
-	return node.visual_lines_
+	return node.cached_visual_lines()
 }
 
 pub fn collect_visual_lines(dom_node &Text) []VisualLine {

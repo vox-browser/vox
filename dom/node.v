@@ -2014,7 +2014,7 @@ fn append_layout_rendered_text(node &LayoutNode, mut builder strings.Builder) {
 }
 
 fn append_generated_content_text(node &LayoutNode, pseudo_element PseudoElement, mut builder strings.Builder) {
-	if generated_for := node.generated_for_ {
+	if generated_for := node.generated_for_pseudo_element() {
 		if generated_for == pseudo_element {
 			append_layout_rendered_text(node, mut builder)
 			return
