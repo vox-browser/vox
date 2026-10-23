@@ -2073,7 +2073,7 @@ fn style_scope_has_result_cache_boundary(style_computer &StyleComputer) &HasResu
 	return style_computer.has_result_cache_
 }
 
-fn style_scope_merge_attempted_pseudo_class_matches(mut attempted PseudoClassBitmap, context MatchContext) {
+fn style_scope_merge_attempted_pseudo_class_matches(mut attempted PseudoClassBitmap, context &MatchContext) {
 	attempted.merge(context.attempted_pseudo_class_matches)
 }
 
