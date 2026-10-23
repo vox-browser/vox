@@ -629,6 +629,12 @@ fn invalidate_style_sheet_keyframes_rule(context voidptr, rule &CSSRule) {
 }
 
 fn invalidate_root_for_keyframes_rules_in_sheet(root &dom.Node, sheet &CSSStyleSheet) {
+	// A pending document-wide pass recomputes animation names in every attached
+	// scope. Do not walk that tree again for each keyframes rule. A shadow root
+	// can be disconnected or affect its host, so retain its targeted traversal.
+	if root.is_document() && root.document().needs_full_style_update() {
+		return
+	}
 	// Shadow-scoped keyframes can affect the host or its light DOM when another active rule in the
 	// same scope assigns animation-name through :host or ::slotted(...). Mirror the per-rule fan-out.
 	mut include_host := false
