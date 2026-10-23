@@ -45,8 +45,8 @@ const fantasy_fallbacks = ['Impact', 'Luminari', 'Chalkduster', 'Jazz LET', 'Bli
 	'Marker Felt', 'Trattatello', 'Coming Soon']
 const monospace_fallbacks = ['Andale Mono', 'Courier New', 'Courier', 'FreeMono', 'OCR A Std',
 	'Noto Sans Mono', 'DejaVu Sans Mono', 'Droid Sans Mono', 'Liberation Mono']
-const sans_serif_fallbacks = ['Arial', 'Helvetica', 'Verdana', 'Trebuchet MS', 'Gill Sans',
-	'Noto Sans', 'Avantgarde', 'Optima', 'Arial Narrow', 'Liberation Sans', 'Roboto']
+const sans_serif_fallbacks = ['Arial', 'Helvetica', 'Verdana', 'Trebuchet MS', 'Gill Sans', 'Noto Sans',
+	'Avantgarde', 'Optima', 'Arial Narrow', 'Liberation Sans', 'Roboto']
 const serif_fallbacks = ['Times', 'Times New Roman', 'Didot', 'Georgia', 'Palatino', 'Bookman',
 	'New Century Schoolbook', 'American Typewriter', 'Liberation Serif', 'Roman', 'Noto Serif']
 
@@ -59,21 +59,22 @@ pub:
 	italic     bool
 	// A decoded @font-face source. System fonts leave this empty and resolve
 	// through the family cascade.
-	source_path string
-	is_invisible bool
+	source_path           string
+	is_invisible          bool
 	font_rendering_policy FontRenderingPolicy
 	synthesize_ascii_caps bool
 	// A character-fallback face selected by the platform cascade.
 	system_face_override ?SystemFontFace
 mut:
-	resolved_system_face_ ?SystemFontFace
-	system_face_resolved_ bool
-	resolved_path_ string
-	decoded_face_ &ttf.TTF_File = unsafe { nil }
-	harfbuzz_face_ voidptr = unsafe { nil }
+	resolved_system_face_     ?SystemFontFace
+	system_face_resolved_     bool
+	resolved_path_            string
+	resolved_face_cache_key_  string
+	decoded_face_             &ttf.TTF_File = unsafe { nil }
+	harfbuzz_face_            voidptr       = unsafe { nil }
 	harfbuzz_face_generation_ u64
-	pixel_metrics_ FontPixelMetrics
-	has_pixel_metrics_ bool
+	pixel_metrics_            FontPixelMetrics
+	has_pixel_metrics_        bool
 }
 
 pub struct FontPixelMetrics {
@@ -84,7 +85,7 @@ pub:
 	ascent                f32
 	descent               f32
 	line_gap              f32
-	floor_inline_leading   bool
+	floor_inline_leading  bool
 }
 
 pub struct FontGlyphBounds {
@@ -227,13 +228,13 @@ pub fn (font &Font) pixel_metrics() FontPixelMetrics {
 // Skia reports them to Blink, without decoding the face file for x.ttf.
 fn (font &Font) system_face_pixel_metrics(face SystemFontFace) FontPixelMetrics {
 	return FontPixelMetrics{
-		size: font.point_size
-		x_height: f32(face.metrics.x_height)
+		size:                  font.point_size
+		x_height:              f32(face.metrics.x_height)
 		// Blink's `ch` is the unrounded advance of the zero glyph.
 		advance_of_ascii_zero: font.glyph_width(u32(`0`))
-		ascent: f32(face.metrics.ascent)
-		descent: f32(face.metrics.descent)
-		line_gap: f32(face.metrics.leading)
+		ascent:                f32(face.metrics.ascent)
+		descent:               f32(face.metrics.descent)
+		line_gap:              f32(face.metrics.leading)
 	}
 }
 
@@ -243,11 +244,11 @@ fn (font &Font) pixel_metrics_uncached() FontPixelMetrics {
 	}
 	face := font_face(font) or {
 		return FontPixelMetrics{
-			size: font.point_size
-			x_height: font.point_size * 0.5
+			size:                  font.point_size
+			x_height:              font.point_size * 0.5
 			advance_of_ascii_zero: f32(math.round(f64(font.glyph_width(u32(`0`)))))
-			ascent: font.point_size * 0.8
-			descent: font.point_size * 0.2
+			ascent:                font.point_size * 0.8
+			descent:               font.point_size * 0.2
 		}
 	}
 	zero_advance, _ := font.glyph_metrics(u32(`0`))
@@ -310,16 +311,24 @@ fn (font &Font) decoded_face_pixel_metrics(face &ttf.TTF_File, zero_advance f32)
 	generic_serif := font.family.to_lower() in ['serif', 'uiserif']
 		&& os.getenv('LADYBIRD_LAYOUT_TEST_FONT') == '' && font.source_path == ''
 	return FontPixelMetrics{
-		size: font.point_size
-		x_height: f32(x_height_units) * scale
+		size:                  font.point_size
+		x_height:              f32(x_height_units) * scale
 		advance_of_ascii_zero: f32(math.round(f64(zero_advance)))
 		// Ladybird's CoreText generic-serif cascade exposes typographic metrics
 		// with a 3:1 ascent/descent split while retaining the concrete Times New
 		// Roman glyph advances. Matching that split keeps CSS line-box baselines
 		// identical to the upstream macOS browser.
-		ascent: if generic_serif { metric_size * 0.75 } else { f32(ascent_units) * scale }
-		descent: if generic_serif { metric_size * 0.25 } else { f32(descent_units) * scale }
-		line_gap: f32(line_gap_units) * scale
+		ascent:                if generic_serif {
+			metric_size * 0.75
+		} else {
+			f32(ascent_units) * scale
+		}
+		descent:               if generic_serif {
+			metric_size * 0.25
+		} else {
+			f32(descent_units) * scale
+		}
+		line_gap:              f32(line_gap_units) * scale
 	}
 }
 
@@ -345,11 +354,11 @@ pub fn (font &Font) contains_glyph(code_point u32) bool {
 	if font.system_face() != none {
 		return harfbuzz_font_contains_glyph(font, code_point) or { false }
 	}
-	face := font_face(font) or { return font.source_path == '' }
+	glyph := font_coverage_glyph(font, code_point) or { return font.source_path == '' }
 	if code_point > 0xffff {
 		return false
 	}
-	if font_cmap_glyph(face.buf, code_point) != 0 {
+	if glyph != 0 {
 		return true
 	}
 	// NotoEmoji's BMP symbols are exposed through a cmap format which x.ttf
@@ -405,8 +414,8 @@ pub fn (font &Font) glyph_outline(glyph_index int) ?FontGlyphOutline {
 		for index in start .. end + 1 {
 			point := glyph.points[index]
 			contour << FontGlyphOutlinePoint{
-				x: f32(point.x) * scale
-				y: f32(point.y) * scale
+				x:        f32(point.x) * scale
+				y:        f32(point.y) * scale
 				on_curve: point.on_curve
 			}
 		}
@@ -442,18 +451,18 @@ fn (font &Font) glyph_metrics_for_shaping(code_point u32) (f32, int) {
 	if code_point > 0xffff {
 		advance, _ := mutable_face.get_horizontal_metrics(0)
 		platform_glyph_units_cache[cache_key] = GlyphUnitsEntry{
-			face: face
+			face:          face
 			advance_units: advance
-			glyph_index: 0
+			glyph_index:   0
 		}
 		return f32(advance) * font.point_size / units_per_em, 0
 	}
 	glyph_index := font_cmap_glyph(face.buf, code_point)
 	advance, _ := mutable_face.get_horizontal_metrics(glyph_index)
 	platform_glyph_units_cache[cache_key] = GlyphUnitsEntry{
-		face: face
+		face:          face
 		advance_units: advance
-		glyph_index: int(glyph_index)
+		glyph_index:   int(glyph_index)
 	}
 	return f32(advance) * font.point_size / units_per_em, int(glyph_index)
 }
@@ -514,13 +523,30 @@ fn normalize_table_checksums(mut bytes []u8) {
 	}
 }
 
+// Coverage must honor injected and previously decoded faces before borrowing
+// the native source. Failed legacy decodes remain authoritative as well.
+fn font_coverage_glyph(font &Font, code_point u32) ?u16 {
+	if font.decoded_face_ != unsafe { nil } {
+		return font_cmap_glyph(font.decoded_face_.buf, code_point)
+	}
+	path := font.font_path()?
+	cache_key := font.face_cache_key(path, font.face_index())
+	if face := platform_font_faces[cache_key] {
+		return font_cmap_glyph(face.buf, code_point)
+	}
+	if platform_font_face_attempted[cache_key] { return none }
+	if glyph := harfbuzz_font_legacy_cmap_glyph(font, code_point) { return glyph }
+	face := font_face(font)?
+	return font_cmap_glyph(face.buf, code_point)
+}
+
 fn font_face(font &Font) ?&ttf.TTF_File {
 	if font.decoded_face_ != unsafe { nil } {
 		return font.decoded_face_
 	}
 	path := font.font_path()?
 	face_index := font.face_index()
-	cache_key := '${path}|${face_index}'
+	cache_key := font.face_cache_key(path, face_index)
 	if face := platform_font_faces[cache_key] {
 		if font.resolved_path_ != '' {
 			mut mutable_font := unsafe { &Font(font) }
@@ -552,9 +578,9 @@ fn decode_outline_face(mut bytes []u8) &ttf.TTF_File {
 	// External construction with the current V compiler does not apply these
 	// vlib field defaults, but TTF_File.init() writes all 12 PANOSE bytes.
 	mut face := &ttf.TTF_File{
-		buf: bytes
+		buf:          bytes
 		panose_array: []u8{len: 12, init: 0}
-		width_scale: 1.0
+		width_scale:  1.0
 	}
 	$if vox_sparse_ttf ? {
 		face.init_for_glyph_indices()
@@ -568,7 +594,9 @@ fn decode_outline_face(mut bytes []u8) &ttf.TTF_File {
 }
 
 pub fn system_font_family_available(family string) bool {
-	$if linux { return linux_font_path(family, 400, true) != none }
+	$if linux {
+		return linux_font_path(family, 400, true) != none
+	}
 	if family.to_lower() == 'noto emoji' {
 		return emoji_font_path() != none
 	}
@@ -703,7 +731,7 @@ pub fn (plugin &FontPlugin) default_font(point_size f32) ?Font {
 		return none
 	}
 	return Font{
-		family: plugin.default_font_name_
+		family:     plugin.default_font_name_
 		point_size: point_size
 	}
 }
@@ -714,7 +742,7 @@ pub fn (plugin &FontPlugin) default_fixed_width_font() ?Font {
 		return none
 	}
 	return Font{
-		family: family
+		family:     family
 		point_size: 12
 	}
 }

@@ -69,6 +69,10 @@ fn C.hb_face_create(blob voidptr, index u32) voidptr
 
 fn C.hb_face_destroy(face voidptr)
 
+fn C.hb_face_reference_blob(face voidptr) voidptr
+
+fn C.hb_blob_get_data(blob voidptr, length &u32) &char
+
 fn C.hb_font_create(face voidptr) voidptr
 
 fn C.hb_font_destroy(font voidptr)
@@ -237,6 +241,22 @@ pub fn (font &Font) face_index() int {
 	return 0
 }
 
+// A cold coverage query checks the decoded-face cache for every character.
+// Retain its immutable key once, rather than allocating a lookup string per
+// glyph. Unsettled explicit-source fallbacks must remain free to change paths.
+fn (font &Font) face_cache_key(path string, face_index int) string {
+	if font.resolved_path_ != '' {
+		if font.resolved_face_cache_key_ != '' { return font.resolved_face_cache_key_ }
+		persistent := enter_persistent()
+		defer { leave_persistent(persistent) }
+		key := '${path}|${face_index}'
+		mut mutable_font := unsafe { &Font(font) }
+		mutable_font.resolved_face_cache_key_ = key
+		return key
+	}
+	return '${path}|${face_index}'
+}
+
 // Resolve the concrete face selected for a CSS family. Layout metrics,
 // HarfBuzz shaping, and native replay all use this path, so retained glyph IDs
 // can never be interpreted through a different typeface.
@@ -395,18 +415,25 @@ fn scaled_harfbuzz_font(face voidptr, point_size f32, resolution f32, variations
 		// FontVariationAxis has hb_variation_t's {tag, value} layout.
 		C.hb_font_set_variations(font, variations.data, u32(variations.len))
 	}
-	mut axes := if available >= 0 { unsafe { harfbuzz_scaled_fonts[available].variations } } else { []FontVariationAxis{} }
+	mut axes := if available >= 0 {
+		unsafe { harfbuzz_scaled_fonts[available].variations }
+	} else {
+		[]FontVariationAxis{}
+	}
 	axes.clear()
 	axes << variations
 	entry := HarfBuzzScaledFont{
-		face: face
-		scale: scale
+		face:       face
+		scale:      scale
 		point_size: point_size
 		variations: axes
-		font: font
+		font:       font
 	}
-	if available >= 0 { harfbuzz_scaled_fonts[available] = entry }
-	else { harfbuzz_scaled_fonts << entry }
+	if available >= 0 {
+		harfbuzz_scaled_fonts[available] = entry
+	} else {
+		harfbuzz_scaled_fonts << entry
+	}
 	return font
 }
 
@@ -426,10 +453,12 @@ fn scale_for_harfbuzz(point_size f32, resolution f32) int {
 
 fn document_harfbuzz_face(font &Font) ?voidptr {
 	if font.harfbuzz_face_ != unsafe { nil }
-		&& font.harfbuzz_face_generation_ == harfbuzz_cache_generation { return font.harfbuzz_face_ }
+		&& font.harfbuzz_face_generation_ == harfbuzz_cache_generation {
+		return font.harfbuzz_face_
+	}
 	path := font.font_path()?
 	face_index := font.face_index()
-	cache_key := '${path}|${face_index}'
+	cache_key := font.face_cache_key(path, face_index)
 	if face := harfbuzz_document_faces[cache_key] {
 		if face != unsafe { nil } {
 			font.remember_harfbuzz_face(face)
@@ -466,6 +495,22 @@ fn (font &Font) remember_harfbuzz_face(face voidptr) {
 	// borrowed native face. Glyph runs keep independent glyph data.
 	mutable_font.harfbuzz_face_ = face
 	mutable_font.harfbuzz_face_generation_ = harfbuzz_cache_generation
+}
+
+// Query the same cmap formats as the legacy decoder without copying or
+// decoding outline tables. The blob reference protects this borrowed view;
+// no pointer into it escapes, including across native cache retirement.
+fn harfbuzz_font_legacy_cmap_glyph(font &Font, code_point u32) ?u16 {
+	face := document_harfbuzz_face(font)?
+	blob := C.hb_face_reference_blob(face)
+	if blob == unsafe { nil } { return none }
+	defer { C.hb_blob_destroy(blob) }
+	mut length := u32(0)
+	data := C.hb_blob_get_data(blob, &length)
+	if data == unsafe { nil } || length > 0x7fffffff { return none }
+	bytes := unsafe { (&u8(data)).vbytes(int(length)) }
+	cmap := font_source_cmap_table(bytes, font.face_index())?
+	return font_cmap_table_glyph(cmap, code_point)
 }
 
 // x.ttf's cmap reader currently handles only formats 0 and 4. Use HarfBuzz as
@@ -766,7 +811,9 @@ fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, word_spacing f32,
 	} else if utf16_units.len > 0 {
 		if font.synthesize_ascii_caps {
 			mut shaping_units := utf16_units.clone()
-			for index, value in shaping_units { shaping_units[index] = u16(font.shaping_code_point(u32(value))) }
+			for index, value in shaping_units {
+				shaping_units[index] = u16(font.shaping_code_point(u32(value)))
+			}
 			C.hb_buffer_add_utf16(buffer, shaping_units.data, shaping_units.len, 0, -1)
 		} else {
 			C.hb_buffer_add_utf16(buffer, utf16_units.data, utf16_units.len, 0, -1)
@@ -787,8 +834,12 @@ fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, word_spacing f32,
 	mut glyph_count := u32(0)
 	infos := C.hb_buffer_get_glyph_infos(buffer, &glyph_count)
 	positions := C.hb_buffer_get_glyph_positions(buffer, &glyph_count)
-	mut skia_advances := if uses_emoji { []f32{} } else { chromium_bitmap_face_advances(font, face,
-			infos, int(glyph_count)) }
+	mut skia_advances := if uses_emoji {
+		[]f32{}
+	} else {
+		chromium_bitmap_face_advances(font, face,
+			infos, int(glyph_count))
+	}
 	if !uses_emoji && skia_advances.len == 0 {
 		skia_advances = chromium_outline_face_advances(font, face, hb_font, infos, positions,
 			int(glyph_count))
@@ -833,16 +884,16 @@ fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, word_spacing f32,
 		}
 		offset_x := f32(f64(position.x_offset) / resolution)
 		glyphs << Glyph{
-			code_point: code_point
-			glyph_index: int(info.codepoint)
-			position: GlyphPosition{
+			code_point:           code_point
+			glyph_index:          int(info.codepoint)
+			position:             GlyphPosition{
 				x: point_x + offset_x
 				y: f32(f64(position.y_offset) / resolution)
 			}
-			advance: advance
-			offset_x: offset_x
+			advance:              advance
+			offset_x:             offset_x
 			length_in_code_units: length_in_code_units
-			should_paint: should_paint
+			should_paint:         should_paint
 		}
 		if !is_default_ignorable && starting_offset >= first_trailing_offset {
 			trailing_advance += advance
@@ -853,14 +904,14 @@ fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, word_spacing f32,
 	}
 	C.hb_buffer_destroy(buffer)
 	return ShapedText{
-		glyph_run: glyph_run_with_owned_glyphs(font, text_type, glyphs, if uses_emoji {
+		glyph_run:           glyph_run_with_owned_glyphs(font, text_type, glyphs, if uses_emoji {
 			.emoji
 		} else {
 			.document
 		})
 		trailing_whitespace: TrailingWhitespace{
 			length_in_code_units: trailing_length
-			advance: trailing_advance
+			advance:              trailing_advance
 		}
 	}
 }
