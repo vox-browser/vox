@@ -5,6 +5,110 @@ shared offline capture diagnostic is below; the original October 13–14
 measurements and subsequent frozen first-frame optimization rounds follow.
 Chrome parity remains open.
 
+## Current-source normal-GC capture diagnostic, October 23
+
+A separate immutable current-source snapshot now compiles with current V's
+new frontend, the existing HTTP compatibility overlay, Boehm, native C-O2 and
+one marker. This snapshot includes independent geometry work and is distinct
+from the accepted round-179 optimization control. Its selected checks do not
+establish regression coverage for that independent work. The build uses no
+global preallocation, production mode or UI2 switch. The canonical app and
+the user's GUI browser are preserved.
+
+The first build completed native compilation, signing, signature verification,
+headless startup and actual GC collections with default marker 1 and override
+2. Its final controller nevertheless exited 1: it overwrote the GC tool's full
+JSON with an exit-only receipt, then failed to read the missing `rows` field.
+The original failure remains recorded. A separate evidence-only finalizer
+authenticated the successful stage receipts and recovered the complete GC
+JSON from retained stdout and both raw collection logs. It ran no build,
+smoke check or collection again. Its first helper attempt failed on Python
+3.9's missing `hashlib.file_digest`; that failure is also retained. The
+corrected finalizer exits zero and writes `build-completed-result.json`,
+without changing the original failed `build-result.json`.
+
+The ensuing fixed three-pair cohort retains all six observations. Each native
+launch exits zero, but its actual browser kernel status is 6 (`SIGABRT`), before
+the PNG endpoint. The retained assertion and crash stack identify
+`draw_portable_browser_tabs()` calling Sokol polygon drawing without an
+initialized Sokol context. No native PNG, endpoint count or page credit exists.
+All three Chrome browsers exit zero and pass the strict content/capture gates:
+
+| Pair | Native result | Chrome coalition lower bound | Chrome coalition upper bound |
+| --- | --- | ---: | ---: |
+| 1 | Pre-endpoint SIGABRT | 3,870,523,496 | 3,928,682,855 |
+| 2 | Pre-endpoint SIGABRT | 3,807,099,299 | 3,862,788,236 |
+| 3 | Pre-endpoint SIGABRT | 3,856,897,041 | 3,915,179,273 |
+
+The measurement and memory guard exit 1. Its retained audit exits zero after
+authenticating the failures, all 7,059 source pins, 417 runtime pins, real
+statuses, three actual PNGs and recomputed Chrome bounds. Audit success does
+not turn the cohort into a pass. No observation is retried, replaced, pooled
+or excluded. Evidence is under
+`Build/instructions/normal-sealed-current4-20261023/httpcompat-attempt/`.
+Accepted control 179, broad baseline 179, observed carry zero and Chrome parity
+remain unchanged.
+
+Commit `d6b3f0b3` fixes that native tab-paint dispatch through the existing
+Cocoa polygon helper. Two actual bitmap cases pass all 18 assertions under
+current V, Boehm and Clang C-O2. The first fixture's reversed bitmap-row read
+failed and remains retained; an independent CoreGraphics probe established
+the correct orientation before the corrected fixture ran in a fresh snapshot.
+See [the focused evidence](translation-audit/NATIVE_PORTABLE_TAB_PAINT.md).
+
+The isolated corrected browser also completes native compilation, signing,
+signature verification, startup and real GC collections with markers 1 and 2.
+Its new fixed three-pair cohort completes all six browser kernel exits and
+launch exits with zero. All six actual PNGs are 1024×768, and every strict
+content gate passes: complete readiness, fonts, the exact repository listing,
+About content and known decoded images. No completed observation from an
+earlier attempt is reused or replaced.
+
+| Pair | Vox coalition instructions | Chrome coalition lower bound | Chrome coalition upper bound |
+| --- | ---: | ---: | ---: |
+| 1 | 52,016,481,012 | 4,610,459,068 | 4,639,553,145 |
+| 2 | 47,655,363,102 | 4,500,075,499 | 4,532,339,107 |
+| 3 | 52,485,644,827 | 4,570,096,532 | 4,654,053,447 |
+
+The native coalition median is **52,016,481,012** instructions; its separate
+main-task median is 48,345,690,624. Chrome's sampled coalition median bounds
+are **4,570,096,532–4,639,553,145**. These median workflow counts differ by
+about 11.2–11.4 times. Native navigation-to-PNG and Chrome's external
+navigation-to-CDP-PNG boundaries, plus inactive-window versus headless document
+activity, still differ. This is no unconditional internal-browser parity
+claim and earns zero optimization credit. Host load averages were about
+103–106 across 18 logical CPUs; before/after context is retained, and no
+sample was filtered or adjusted for load. Elapsed time earns no credit.
+
+The measurement, its sampled memory guard and the retained audit all exit
+zero. The audit authenticates 7,061 frozen source pins (only the three feature
+paths differ from the preceding snapshot), 417 runtime pins, generated C's
+native polygon dispatch, the focused assertion totals, actual GC collections,
+all six PNG hashes and recomputed coalition counts/bounds. Evidence is under
+`Build/instructions/normal-sealed-current4-20261023/tabpaint-v2-attempt/`.
+The executable SHA256 is
+`2f37bf48e99e9ca4a367c9155e4248db141ba6b3a418a1ee1e172284b39f13ba`;
+summary SHA256 is
+`eab45a6c125925f1e3e6f731d7fce51ef563601adff0cb01ac0481e974df8894`.
+Accepted control 179, broad baseline 179, carry zero and the canonical app
+remain unchanged. The independent current-Root compositor edits are excluded
+from this snapshot and receive no validation or performance claim here.
+
+A separate stack diagnostic attaches to the verified real browser PID 9028.
+The browser and sampler both exit zero, but the `-mayDie` report has an empty
+call graph, so the profile controller exits one. Its original failure remains
+retained and authenticated. A single owned CPU-active control then produces
+stacks with the same sampler. A newly declared two-second diagnostic omits
+up-front symbol reading (`-mayDie`); actual browser PID 35554, sampler and
+controller all exit zero, with real Vox stacks and passing content gates.
+The short early interval contains style computation, matching, layout and GC
+work; it is neither a full-navigation profile nor retired-instruction credit.
+Both profile attempts remain separate from the completed three-pair cohort.
+Evidence is in `sampled-stacks/`, `sample-control/` and
+`sampled-stacks-deferred-symbols/` beneath the same directory. The successful
+raw report SHA256 is
+`ab6d2c3272c125b20a21754b1354d1cf798dac51128aa2b93e29ff699791416c`.
+
 ## Normal-GC sealed capture attempts, October 23
 
 The accepted round-177 runtime now has a separate measurement-only native

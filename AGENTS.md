@@ -2594,6 +2594,11 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Five workspace cases Boehm1080/prealloc1221 assertions;four HarfBuzz cases184/config Boehm+none;all actual0.
   New separated C-O2 builds12GiB/runtime3GiB;earlier Boehm workspace embedded12GiB retained without replay;legacy Root checker failures remain.
   Two owned fixes since preceding broad checkpoint;zero instruction credit/accepted179/broad179/carry0/canonical/GUI/foreign preserved. See docs/translation-audit/COMPILER_OPTIONAL_AND_GLOBAL_COMPATIBILITY.md.
+  Native fallback tab paint October23 (`d6b3f0b3`):existing Cocoa polygon helper replaces direct Sokol call;geometry/colors preserved.
+  Two actual Cocoa bitmap cases/18 assertions pass current-V new frontend/Boehm/C-O2;build12GiB/runtime3GiB actual0;failed reversed-row fixture retained separately.
+  Isolated build/sign/smoke/GC1+override2 actual0;new fixed3pairs/six actual0/six1024x768PNGs/all strictcontent pass/audit0;native52.016B versusChrome4.570–4.640B diagnostic workflow only/endpoints differ/no parity.
+  Separate real-PID sampler actual0/browser0 but empty graph/profiler1 retained;owned control0;new declared deferred-symbol2s profile/browser/sampler/guard0/real Vox stacks/zero instruction credit/no cohort replay.
+  Third owned non-performance fix since preceding broad checkpoint;zero instruction credit/accepted179/broad179/carry0/canonical/GUI/foreign preserved. See docs/translation-audit/NATIVE_PORTABLE_TAB_PAINT.md.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
