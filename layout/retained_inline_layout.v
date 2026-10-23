@@ -22,7 +22,7 @@ fn append_retained_inline_snapshot(mut snapshots []RetainedInlineValues,
 	node &NodeWithStyle, values &UsedValues) {
 	// Write into the final vector slot. A by-value UsedValues local is boxed
 	// by current V even though it is immediately copied into this record.
-	snapshots << RetainedInlineValues{node: node, values: *values}
+	snapshots << RetainedInlineValues{ node: node, values: *values }
 	mut snapshot := unsafe { &snapshots[snapshots.len - 1].values }
 	snapshot.containing_block_used_values_ = none
 	if rare := snapshot.rare_ { snapshot.rare_ = rare.clone() }
@@ -84,7 +84,13 @@ fn collect_retained_inline_inputs(node &Node, root bool, mut inputs []RetainedIn
 		style:          node.computed_values()
 		style_revision: node.computed_values().mutation_revision()
 		child_count:    node.child_count()
-		parent_id:      if root { u64(0) } else if parent := node.parent() { u64(voidptr(parent)) } else { 0 }
+		parent_id:      if root {
+			u64(0)
+		} else if parent := node.parent() {
+			u64(voidptr(parent))
+		} else {
+			0
+		}
 		sibling_index:  node.index_in_parent_
 		text:           text
 	}
@@ -125,7 +131,7 @@ fn copy_retained_inline_lines(lines []LineBox) []LineBox {
 		// arrays. A literal preserves exactly these two explicit buffer copies.
 		result << LineBox{
 			...line
-			fragments_: line.fragments_.clone()
+			fragments_:               line.fragments_.clone()
 			static_position_markers_: line.static_position_markers_.clone()
 		}
 	}
@@ -169,7 +175,7 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 		eligible = eligible && bfc.floating_boxes.len == 0 && !bfc.has_line_clamp()
 			&& !bfc.laying_out_invisible_clamped_content
 			&& (bfc.margin_state.has_block_container_waiting_for_final_y_position()
-			|| bfc.margin_state.current_collapsed_margin() == 0)
+				|| bfc.margin_state.current_collapsed_margin() == 0)
 	}
 	if !eligible {
 		return run_uncached_inline_formatting_context(mut state, containing_block, mut used, mode,
@@ -202,6 +208,10 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 	}
 	mut inputs := []RetainedInlineInput{}
 	if !collect_retained_inline_inputs(root, true, mut inputs) {
+		if inline_layout_workspace_is_closed(root, true) {
+			return run_closed_inline_layout(mut state, containing_block, mut used, mode,
+				space, context)
+		}
 		return run_uncached_inline_formatting_context(mut state, containing_block, mut used, mode,
 			space, context)
 	}

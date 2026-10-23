@@ -2,6 +2,42 @@ module layout
 
 import platform
 
+// Allocation lifetime is independent of line-cache reuse. Generated text,
+// shadow content and ordinary breaks can use a closed workspace even when
+// their inputs cannot be retained as a reusable layout-cache entry.
+fn inline_layout_workspace_is_closed(node &Node, root bool) bool {
+	if node.is_svg_box() || node.is_replaced_box() || node.is_atomic_inline()
+		|| node.is_floating() || node.is_positioned() || node.is_list_item_box()
+		|| node.is_list_item_marker_box() {
+		return false
+	}
+	if root {
+		if !node.display().is_flow_inside()
+			|| node.computed_values().writing_mode() != .horizontal_tb
+			|| line_clamp_is_active(node.computed_values()) {
+			return false
+		}
+	} else if !node.is_text_node() && !node.is_inline_node() && !node.is_break_node() {
+		return false
+	}
+	if node.is_break_node() && node.computed_values().clear() != .none_ {
+		return false
+	}
+	if metrics := node.as_node_with_style_and_box_model_metrics() {
+		if metrics.continuation_of_node() != none { return false }
+	}
+	if text := node.as_text_node() {
+		if text.first_letter_ != none || text.source_range_length_ != none
+			|| text.is_empty_editable_ || text.produces_line_box_fragment_when_empty_ {
+			return false
+		}
+	}
+	for child in node.children() {
+		if !inline_layout_workspace_is_closed(child, false) { return false }
+	}
+	return true
+}
+
 // The closed inline algorithm only publishes lines, fragments and glyph runs.
 // Nodes and fonts already have their own retained owners. Collect run identities
 // before entering that owner so the temporary deduplication table stays local.
@@ -54,8 +90,8 @@ fn own_inline_layout_lines(lines []LineBox) []LineBox {
 	return result
 }
 
-// This is called only after the retained-inline eligibility walk succeeds.
-// Other contexts retain their existing allocation and mutation boundaries.
+// Both callers prove a closed ownership boundary. The separate cache-input
+// walk additionally decides whether the completed result can be reused.
 fn run_closed_inline_layout(mut state LayoutState, containing_block &BlockContainer,
 	mut used UsedValues, mode LayoutMode, space AvailableSpace,
 	context ?&BlockFormattingContext) InlineFormattingResult {
