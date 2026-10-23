@@ -220,5 +220,5 @@ fn (app &BrowserApp) write_capture_audit_if_requested() {
 		eprintln('Vox capture audit: ${err.msg()}')
 		return
 	}
-	os.write_file(path, json2.encode(audit, escape_unicode: true)) or { eprintln('Vox capture audit: ${err.msg()}') }
+	write_capture_audit_json(path, audit) or { eprintln('Vox capture audit: ${err.msg()}') }
 }
