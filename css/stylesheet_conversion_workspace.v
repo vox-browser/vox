@@ -29,7 +29,8 @@ fn parse_css_stylesheet_in_workspace(params ParsingParams, text string, location
 		parser.rule_context = params.rule_context.clone()
 		parser.declared_namespaces = params.declared_namespaces.clone()
 		rules := CSSRuleList.create(parser.convert_rules(raw.rules))
-		return CSSStyleSheet.create(rules, media_list or { MediaList.create_empty() }, location)
+		media := if provided := media_list { provided } else { MediaList.create_empty() }
+		return CSSStyleSheet.create(rules, media, location)
 	}
 	mut parser := RuleSelectorParser.create_for_stylesheet(params, text)
 	parser.defer_style_declarations = deferred

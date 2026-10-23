@@ -7,6 +7,23 @@ $if gcboehm ? {
 	fn C.GC_gcollect()
 }
 
+fn test_stylesheet_conversion_preserves_supplied_media_owner_and_default() {
+	mut media := MediaList.create_empty()
+	media.set_media_text('screen')
+	sheet := parse_css_stylesheet_in_workspace(ParsingParams{}, 'a { color: red; }',
+		'https://workspace.test/style.css', media, false)
+	assert voidptr(sheet.base.media) == voidptr(media)
+	assert sheet.base.media.media_text() == 'screen'
+	assert sheet.base.location or { '' } == 'https://workspace.test/style.css'
+	owner := media.associated_style_sheet or { panic('missing media owner') }
+	assert voidptr(owner) == voidptr(sheet)
+	default_sheet := parse_css_stylesheet_in_workspace(ParsingParams{}, 'b { color: blue; }',
+		none, none, false)
+	assert default_sheet.base.media.length() == 0
+	default_owner := default_sheet.base.media.associated_style_sheet or { panic('missing default media owner') }
+	assert voidptr(default_owner) == voidptr(default_sheet)
+}
+
 fn test_stylesheet_conversion_workspace_preserves_retained_rule_payloads() {
 	sources := [
 		'@namespace s url("http://www.w3.org/2000/svg"); s|svg[data-word="中"] { content: "hello\\20 world"; --x: f([a], var(--b, 2px)); width: var(--x); }',
