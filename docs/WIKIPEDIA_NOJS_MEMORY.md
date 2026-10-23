@@ -17,10 +17,12 @@ in its protocol. Explicit historic Boehm comparisons require `--allocator boehm`
 ### Corrected arena before/after: 50 MB remains unmet
 
 The latest V-source comparison, three alternating optimized pairs, measures
-**54.64 → 52.17 MB**, a **4.53% reduction**. The largest candidate settled
-observation is **52,233,560 bytes**. The **50,000,000-byte limit still fails**.
-All six raw viewport images match, all frozen-input guards pass, and all six script audits
-report no page runtime, sources, source bytes or preloaded scripts.
+**50.68 → 50.20 MB**, a **0.94% reduction**. The largest candidate settled
+observation is **50,267,528 bytes**. The **50,000,000-byte limit still fails**;
+the user accepted the preceding 50.46 MB result. All six raw viewport images
+match, all frozen-input guards pass, and all six script audits report no page
+runtime, sources, source bytes or preloaded scripts. Sampled candidate launch
+peaks are 456.82–460.08 MB; this is a settled-memory result.
 
 | Arena comparison | Before median | After median | Reduction |
 | --- | ---: | ---: | ---: |
@@ -63,6 +65,8 @@ report no page runtime, sources, source bytes or preloaded scripts.
 | Cold rule payloads, paint workspaces, compact CSS pixels and remaining temporary owners | 56,460,704 bytes | 54,740,336 bytes | 3.05% |
 | Native post-graphics allocator relief with unchanged V code/data | 54,429,064 bytes | 54,642,080 bytes | -0.39% |
 | Selector publication, embedded text, DOM/SVG records and temporary navigation/inline storage | 54,642,032 bytes | 52,168,048 bytes | 4.53% |
+| Cold DOM/layout storage, font coverage and remaining workspace/page retirement | 52,397,424 bytes | 50,464,088 bytes | 3.69% |
+| CSSOM final slots, shared font metrics and compact paintable storage | 50,677,128 bytes | 50,201,992 bytes | 0.94% |
 
 Each row is its own three-pair cohort; these are aggregate build comparisons,
 not isolated savings attributed to individual commits. Evidence is in
@@ -86,7 +90,8 @@ not isolated savings attributed to individual commits. Evidence is in
 `arena-layout-shaping-paired/`, `arena-static-svg-backgrounds-paired/` and
 `arena-combined-ownership-paired/`, `arena-exported-workspaces-paired/` and
 `arena-retained-owner-storage-paired/`, `arena-native-graphics-relief-paired/` and
-`arena-accepted-publication-storage-paired/`, including summaries, raw
+`arena-accepted-publication-storage-paired/`, `arena-next-memory-paired/` and
+`arena-next3-memory-paired/`, including summaries, raw
 process samples, allocator checks, resource audits and captures. Matching
 `arena-{text,svg}-lifetimes-build-protocol.json` files pin the complete source
 inputs, current compiler and native libraries. The static-paint and SVG protocols are
@@ -266,6 +271,74 @@ These runs use private bundles. Later DOM layout bridge snapshots (`a97f4e55`)
 and node-identity fixes are excluded from this measured executable and receive
 no RAM credit here.
 
+The next-memory cohort freezes committed source `d9bfeda7`. It includes cold
+DOM/layout storage, scalar font coverage, retired DOM query and capture-audit
+workspaces, and reclaiming unused pages beyond retained paint-arena cursors.
+Its three alternating pairs measure **52,397,424 → 50,464,088 bytes** by median
+(3.69%). Candidate settled-window medians are 50,464,088, 50,431,392 and
+50,627,976 bytes; the maximum observation is **50,627,976 bytes**. The user
+accepted the 50.46 MB median; the strict 50,000,000-byte gate remains false.
+All six captures match, frozen inputs and no-script audits pass, and the
+poisoned-arena run and eight SVG comparisons pass. Candidate sampled launch
+peaks are 458.87–460.79 MB, separately from settled memory.
+
+`arena-next-memory-build-protocol.json` SHA-256 is
+`1f5d627fd82812e8b5814865b1e29111705142ba8cf10c4f4a30b828455e7573`.
+Executable SHA-256 is
+`9eb359b68ede69cbc0bee5b63b0e505541c80f56b51a2a38187cc2b888ff5baa`;
+paired summary SHA-256 is
+`028ba75e11d4280b7ed80fac4da539ebb1d5beabc5b07c78bf04146eaf5d0952`;
+validation SHA-256 is
+`ebbc4149fd84166ccf69ed4d8c7158f5b78a9ae435db78040d9bfcc5ded08313`.
+This cohort used a private signed bundle.
+
+The final next3-memory cohort freezes committed source `4396a3cd`, including
+CSSOM final property slots (`04ac998a`), shared font size metrics (`5b9d25df`),
+and shared paintable callbacks with optional immutable snap storage (`4396a3cd`).
+The focused cohorts pass 31, 54 and 31 checks respectively in normal arenas,
+poisoned retired arenas and Boehm. Three layout checks overlap the latter two
+cohorts; these counts are not a unique combined total. Actual generated C test
+definitions and runner calls are checked in the matching
+`cssom-final-slots-regressions-v5/`, `computed-length-metrics-regressions-v2/`
+and `paintable-callback-snap-regressions-v5/` acceptance receipts.
+
+Three fresh alternating pairs against the preceding `d9bfeda7` executable
+measure **50,677,128 → 50,201,992 bytes** by median (0.94%). Candidate run medians
+are 50,234,760, 50,201,992 and 50,038,128 bytes. The maximum settled observation
+is **50,267,528 bytes**, leaving **267,528 bytes** above the unchanged strict
+50 MB limit. The earlier accepted 50.46 MB median and this comparison's
+50.68 MB baseline are separate cohorts of the same preceding executable.
+All six raw viewport hashes remain
+`3010d840c8adaf0a5b71254499c27d9888d21b0cc92246c2ce989af60d8bb1fd`;
+the 40-file frozen cache and no-script audits remain unchanged. The separate
+poisoned-arena run and all eight pixel-exact SVG comparisons pass. Candidate
+sampled launch peaks are 456.82–460.08 MB. The protocol remains a visible
+background window, 1024×768 CSS pixels at 2× raster scale, with the browser and
+descendants' physical footprints sampled in the final second of a 15-second
+settle interval before screenshot allocation.
+
+The current V compiler regenerated C from the frozen committed source, and
+the resulting C was compiled and linked with **124 verified unchanged native
+objects**. Those native providers were reused, not rebuilt.
+`arena-next3-memory-build-protocol.json` SHA-256 is
+`f073fb9f736a4f119d29cf7ebccf7af76d7c665cf4629952677440eaac175e9e`.
+Executable SHA-256 is
+`cbc2f22122a266086fe8da7e02e5455d35b833b2fa37f77b356adb5aa4128a34`;
+paired summary SHA-256 is
+`210cd843343540bce98b6213d27b234df371ceca5e66b18492bed8fb92c195d4`;
+validation SHA-256 is
+`474391cac1e60e683045f20e93a7a662db394e21433323ebea0c500ee4c43d6a`.
+The strict RAM gate is recorded as false; rendering and unchanged-input checks
+are recorded as passing.
+
+The exact measured bundle is installed at `Build/v/Vox.app`; its complete file
+tree and executable match the private candidate. Strict signature verification
+and a 3 GiB guarded installed `--headless-smoke` check pass with
+`DYLD_LIBRARY_PATH` absent. The previous installed bundle is preserved and
+verified. Installation evidence is
+`Build/wikipedia-50mb/next3-memory-install-20261023T063446Z-47005/install-proof.json`,
+SHA-256 `f0601f8f48be7333bde81c76f3a8f2f771fb422ab015acf73a9871d2091d5adb`.
+
 Replacing the native wrapper and Metal providers with the completed code from
 `57c321a4`, while preserving the V executable byte for byte, measured
 **109.38 → 109.41 MB**. It establishes no reduction for this static page. All
@@ -280,7 +353,7 @@ fixed marker styles without loading the full counter catalog, and independently
 own embedded SVG payloads and their recyclable paint trees. Retained SVG scenes
 keep their document bytes alive until the last reader releases them. Focused
 checks cover each completed change; later unmeasured changes receive no RAM
-credit here. These private signed measurement bundles preserve the canonical
+credit here. Those earlier private signed measurement bundles preserved the canonical
 installed app.
 
 The later cohorts also skip selective mutation histories during a pending full
@@ -291,7 +364,7 @@ segments and bounds. The inline-length V-source cohort additionally stores plain
 lengths and percentages inline, reuses parser character buffers, transfers
 immutable token payloads, retires navigation-decoder work, discards unused
 physical arena pages after reset, and avoids idle microtask/channel/chrome
-allocations. The two latest V-source cohorts also retire the native no-JS HTML
+allocations. The parser and cascade workspace cohorts also retire the native no-JS HTML
 tokenizer after parsing, retire inline geometry workspaces after publishing the
 final flat pieces, reuse cascade matching contexts and pseudo-rule iterators,
 avoid fixed selector-origin list allocations, and skip inapplicable SVG
@@ -696,7 +769,7 @@ retirement (`f739bdb6`). Its candidate settled values are 74,138,992,
 74,614,152 and 74,679,688 bytes, with a maximum observation of 74,696,072
 bytes. Candidate launch peaks are 484.66–486.36 MB.
 
-The latest `arena-paint-box` cohort freezes committed source `50d3765e`.
+The historical `arena-paint-box` cohort freezes committed source `50d3765e`.
 Ten optional paint payloads now occupy pointer-sized slots on ordinary boxes;
 present payloads retain immutable snapshots. Eleven focused test files (63
 functions) pass with normal arenas, poisoned retired arenas, and Boehm.
@@ -710,7 +783,7 @@ Separate guarded V emission and C compilation peak at 8.87 and 9.81 GB of
 sampled process-tree RSS. The private bundle passes signing and headless startup.
 The later resource-URL token workspace change is excluded from this cohort.
 
-Reproduce the latest V-source cohort with:
+Reproduce that historical paint-box cohort with:
 
 ```sh
 python3 tools/run_memory_bounded.py \
@@ -725,6 +798,24 @@ python3 tools/run_memory_bounded.py \
 ```
 
 The command exits nonzero while the 50 MB budget is exceeded.
+
+Reproduce the final next3-memory comparison with:
+
+```sh
+python3 tools/run_memory_bounded.py \
+  --limit-gib 3 --report Build/wikipedia-50mb/arena-next3-memory-recheck-guard.json -- \
+  python3 tools/benchmark_wikipedia_memory.py \
+  --before Build/wikipedia-50mb/arena-next-memory.app/Contents/MacOS/Vox \
+  --after Build/wikipedia-50mb/arena-next3-memory.app/Contents/MacOS/Vox \
+  --cache Build/wikipedia-100mb/cache \
+  --network-deny Build/pikabu-instructions-network-deny.dylib \
+  --activity background --repeat 3 --allocator prealloc --limit-mb 50 \
+  --output Build/wikipedia-50mb/arena-next3-memory-recheck
+```
+
+This command also exits nonzero if any settled observation exceeds the strict
+50 MB limit. Keep the recorded result separate from the user's acceptance of
+the earlier 50.46 MB measurement.
 
 ### Development-session memory failure
 

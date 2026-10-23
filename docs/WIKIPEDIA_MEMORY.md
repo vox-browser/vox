@@ -1,11 +1,15 @@
 # Wikipedia memory usage
 
 The [corrected arena measurements](WIKIPEDIA_NOJS_MEMORY.md#corrected-arena-beforeafter-50-mb-remains-unmet)
-now record **54.64 → 52.17 MB** with `-prealloc -gc none`; the 50 MB target
-remains unmet. Three alternating pairs have identical viewport captures, and
-the largest candidate settled observation is 52,233,560 bytes. These runs disable
-page scripts. The earlier
+now record **50.68 → 50.20 MB** with `-prealloc -gc none`. The largest candidate
+settled observation is 50,267,528 bytes, so the strict 50 MB gate remains unmet.
+The user accepted the preceding 50.46 MB result. Three alternating pairs have
+identical viewport captures; these runs disable page scripts. The earlier
 results below used Boehm.
+
+The verified final bundle is installed at `Build/v/Vox.app`. Its complete file
+tree matches the measured candidate; strict signature verification and the
+installed headless startup check pass.
 
 The [2026-10-21 HTML/CSS-only measurement](WIKIPEDIA_NOJS_MEMORY.md) records
 **123.2 → 87.3 MB settled physical memory** for Wikipedia, with unchanged
