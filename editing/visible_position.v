@@ -135,7 +135,7 @@ fn has_sibling_toward(node &dom.Node, block &dom.Node, direction VisibleScanDire
 	mut ancestor := ?&dom.Node(node)
 	for ancestor != none {
 		current := ancestor or { return false }
-		if current == block {
+		if voidptr(current) == voidptr(block) {
 			break
 		}
 		if direction == .forward {
@@ -184,7 +184,7 @@ fn scan_adjacent_content(position dom.CaretLocation, block &dom.Node, direction 
 		mut ancestor := ?&dom.Node(position.node)
 		for ancestor != none {
 			current := ancestor or { break }
-			if current == block {
+			if voidptr(current) == voidptr(block) {
 				break
 			}
 			if sibling := current.next_sibling() {
@@ -197,7 +197,7 @@ fn scan_adjacent_content(position dom.CaretLocation, block &dom.Node, direction 
 
 	for node != none {
 		current := node or { break }
-		if current == block || !block.is_inclusive_ancestor_of(current) {
+		if voidptr(current) == voidptr(block) || !block.is_inclusive_ancestor_of(current) {
 			break
 		}
 		if is_html_break(current) {
@@ -253,7 +253,7 @@ pub fn (position &VisiblePosition) is_end_of_containing_block() bool {
 
 pub fn (position &VisiblePosition) is_before_or_after_containing_block() bool {
 	block := block_node_of_node(position.deep_equivalent_.node) or { return false }
-	if position.deep_equivalent_.node != block {
+	if voidptr(position.deep_equivalent_.node) != voidptr(block) {
 		return false
 	}
 	child_after := block.child_at_index(position.deep_equivalent_.offset)

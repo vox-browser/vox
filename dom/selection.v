@@ -116,7 +116,7 @@ fn is_empty_line_break(node &Node) bool {
 	mut previous := node.previous_in_pre_order()
 	for previous != none {
 		candidate := previous or { break }
-		if candidate == containing_block_node {
+		if voidptr(candidate) == voidptr(containing_block_node) {
 			break
 		}
 		if !containing_block_node.is_inclusive_ancestor_of(candidate) {

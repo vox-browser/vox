@@ -80,7 +80,7 @@ fn can_merge_paragraph_contents(node &dom.Node) bool {
 
 fn restore_trailing_break(block &dom.Node, trailing_break &dom.Node) {
 	if last_child := block.last_child() {
-		if last_child == trailing_break {
+		if voidptr(last_child) == voidptr(trailing_break) {
 			return
 		}
 	}
@@ -142,7 +142,7 @@ fn is_at_end_of(boundary dom.BoundaryPoint, ancestor &dom.Node) bool {
 	}
 
 	mut node := boundary.node
-	for node != ancestor {
+	for voidptr(node) != voidptr(ancestor) {
 		parent := node.parent() or { return false }
 		mut sibling := node.next_sibling()
 		for sibling != none {
@@ -183,7 +183,7 @@ pub fn canonicalize_inserted_content_end(boundary dom.BoundaryPoint, fragment &R
 			if next_position := next {
 				next_equivalent := next_position.deep_equivalent()
 				if next_block := block_node_of_node(next_equivalent.node) {
-					if node_has_html_name(next_block, ['li']) && next_block != block
+					if node_has_html_name(next_block, ['li']) && voidptr(next_block) != voidptr(block)
 						&& optional_nodes_are_same(next_block.parent(), block.parent()) {
 						return next_equivalent
 					}

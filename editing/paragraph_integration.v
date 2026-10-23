@@ -63,7 +63,7 @@ fn enclosing_table_cell(node &dom.Node) ?&dom.Node {
 fn optional_nodes_are_same(left ?&dom.Node, right ?&dom.Node) bool {
 	if left_node := left {
 		if right_node := right {
-			return left_node == right_node
+			return voidptr(left_node) == voidptr(right_node)
 		}
 		return false
 	}
@@ -132,7 +132,7 @@ fn (integration &ParagraphIntegration) should_merge_start() bool {
 	}
 
 	if source_block := block_node_of_node(start.deep_equivalent().node) {
-		if start.deep_equivalent().node == source_block && is_non_list_single_line_container(source_block)
+		if voidptr(start.deep_equivalent().node) == voidptr(source_block) && is_non_list_single_line_container(source_block)
 			&& !has_visible_children(source_block) {
 			// INTEROP: A boundary-only clipboard paragraph may be represented by an empty block with no rendered caret
 			//          inside it. Blink folds that transport wrapper into the preceding paragraph instead of leaving an
