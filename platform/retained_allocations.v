@@ -69,6 +69,11 @@ pub fn enter_retained_allocations() RetainedAllocationScope {
 		}
 		// Grow bookkeeping outside both the temporary work and document payload.
 		persistent := enter_persistent()
+		// Initialize explicitly: a zero-initialized global record can otherwise
+		// leave this array without the element size needed to save restore records.
+		if state.retained_allocation_stack.cap == 0 {
+			state.retained_allocation_stack = []RetainedAllocationEntry{cap: 8}
+		}
 		index := state.retained_allocation_depth
 		if index == state.retained_allocation_stack.len {
 			state.retained_allocation_stack << RetainedAllocationEntry{}

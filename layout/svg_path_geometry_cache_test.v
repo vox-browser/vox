@@ -3,6 +3,7 @@ module layout
 import css
 import dom
 import html
+import platform
 
 $if gcboehm ? {
 	fn C.GC_gcollect()
@@ -70,4 +71,43 @@ fn test_svg_path_geometry_cache_follows_applied_css_and_keeps_old_results_alive(
 	assert empty.path.instructions.len == 0
 	assert empty.bounds.width == 0
 	assert voidptr(empty) == voidptr(cached_svg_path_geometry(path_node))
+}
+
+fn test_svg_path_geometry_cache_survives_probe_workspace_retirement() {
+	mut owner := platform.new_retained_arena('SVG path cache document')
+	mut document_scope := owner.enter()
+	document := html.parse_document('<!doctype html><svg><path d="M 1 2 L 11 12"/></svg>')
+	root := build_layout_tree(document) or { panic('missing layout tree') }
+	path_node := svg_cache_test_path(root)
+	mut scratch := platform.new_arena('SVG path cache probe')
+	entry := scratch.enter()
+	first := cached_svg_path_geometry(path_node)
+	$if prealloc {
+		assert owner.arena.contains(first)
+		assert owner.arena.contains(first.instructions.str)
+		assert owner.arena.contains(first.path.instructions.data)
+	}
+	scratch.leave(entry)
+	scratch.reset()
+	assert voidptr(first) == voidptr(cached_svg_path_geometry(path_node))
+	assert first.path.serialize() == 'M 1 2 L 11 12'
+	mut style := css.ComputedProperties.new()
+	style.set_property_without_modifying_flags(.d, &dom.StyleValue{ css_text: 'path("M 20 30 L 50 60")' })
+	mut styled := unsafe { &NodeWithStyle(path_node) }
+	styled.apply_style(style)
+	changed_entry := scratch.enter()
+	changed := cached_svg_path_geometry(path_node)
+	$if prealloc {
+		assert owner.arena.contains(changed)
+		assert owner.arena.contains(changed.instructions.str)
+		assert owner.arena.contains(changed.path.instructions.data)
+	}
+	scratch.leave(changed_entry)
+	scratch.release()
+	assert voidptr(first) != voidptr(changed)
+	assert voidptr(changed) == voidptr(cached_svg_path_geometry(path_node))
+	assert changed.path.serialize() == 'M 20 30 L 50 60'
+	assert first.path.serialize() == 'M 1 2 L 11 12'
+	document_scope.finish()
+	owner.release()
 }

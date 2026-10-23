@@ -441,9 +441,14 @@ fn cached_svg_path_geometry(graphics_box &Node) &CachedSVGPathGeometry {
 	}
 	// SVG path coordinates do not depend on the viewport. Layout probes can
 	// share this immutable parsed path while stroke and transforms stay live.
-	path := svg.parse_path_data(instructions)
+	// Unlike probe geometry, this node-owned cache outlives the workspace that
+	// first requests it. Own its text and parsed storage in the document arena.
+	mut retained := platform.enter_retained_allocations()
+	defer { retained.finish() }
+	owned_instructions := instructions.clone()
+	path := svg.parse_path_data(owned_instructions)
 	geometry := &CachedSVGPathGeometry{
-		instructions: instructions
+		instructions: owned_instructions
 		path: path
 		bounds: svg_path_bounds(path) or { svg.Rect{} }
 	}
