@@ -355,8 +355,9 @@ def native_browser_arguments(args, png):
     # it by retrying a failed browser launch inside a declared cohort.
     mode = args.vox_javascript_mode
     require(mode in ('explicit', 'default-enabled'), 'Unknown native JavaScript launch contract')
+    require(args.vox_chrome_height >= 0, 'Native window chrome height must be nonnegative')
     javascript = ['--enable-javascript'] if mode == 'explicit' else ['--js-engine=javascriptcore']
-    return javascript + ['--window-width', str(WIDTH), '--window-height', str(HEIGHT + 84),
+    return javascript + ['--window-width', str(WIDTH), '--window-height', str(HEIGHT + args.vox_chrome_height),
                          '--screenshot', str(png), URL]
 
 
@@ -733,6 +734,8 @@ def main():
     parser.add_argument('--vox-build-protocol', type=Path, required=True)
     parser.add_argument('--vox-javascript-mode', choices=['explicit', 'default-enabled'], default='explicit',
                         help='Use default-enabled only for a verified older build that runs author scripts by default; selects JavaScriptCore explicitly. No launch probing or retries.')
+    parser.add_argument('--vox-chrome-height', type=int, default=84,
+                        help='Verified native toolbar plus status-bar height; document viewport remains 1024x768 and actual PNG/DOM dimensions must pass.')
     parser.add_argument('--gc-markers', type=int, choices=[1, 2], default=1)
     parser.add_argument('--chrome-app', type=Path, required=True)
     parser.add_argument('--fixture', type=Path, required=True)
@@ -746,7 +749,7 @@ def main():
     parser.add_argument('--chrome-sha256')
     parser.add_argument('--manifest-sha256')
     args = parser.parse_args()
-    require(args.samples > 0 and args.timeout > 0 and args.settle_seconds >= 0,
+    require(args.samples > 0 and args.timeout > 0 and args.settle_seconds >= 0 and args.vox_chrome_height >= 0,
             'Samples/watchdog must be positive and settle seconds nonnegative')
     for key in ['vox', 'vox_build_protocol', 'chrome_app', 'fixture', 'network_deny', 'work_dir']:
         setattr(args, key, getattr(args, key).resolve())
@@ -781,6 +784,7 @@ def main():
                        for engine in (['vox', 'chrome'] if index % 2 == 0 else ['chrome', 'vox'])],
                 url=URL, viewport=[WIDTH, HEIGHT], device_scale_factor=1, author_javascript=True,
                 vox_javascript_launch_mode=args.vox_javascript_mode,
+                vox_window_chrome_height=args.vox_chrome_height,
                 fixture=str(args.fixture), manifest_sha256=fixture.manifest_sha256,
                 fixture_policy=fixture.manifest['metadata_policy'], source_expectations=expected,
                 runtime_pins=pinned, endpoint_scope=NOTE, audit_policy=AUDIT_POLICY, performance_credit=0,

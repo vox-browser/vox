@@ -81,18 +81,23 @@ class ContentGateTests(unittest.TestCase):
         self.assertEqual((self.expected['rows'], self.expected['file_links']), (32, 64))
 
     def test_explicit_javascript_launch_contract_remains_enabled(self):
-        argv = measurement.native_browser_arguments(SimpleNamespace(vox_javascript_mode='explicit'), '/tmp/document.png')
+        argv = measurement.native_browser_arguments(SimpleNamespace(vox_javascript_mode='explicit', vox_chrome_height=84), '/tmp/document.png')
         self.assertIn('--enable-javascript', argv)
         self.assertEqual(argv[-1], measurement.URL)
         self.assertEqual(argv[argv.index('--window-width') + 1], '1024')
         self.assertEqual(argv[argv.index('--window-height') + 1], '852')
 
     def test_older_default_enabled_launch_selects_javascriptcore_without_new_switch(self):
-        argv = measurement.native_browser_arguments(SimpleNamespace(vox_javascript_mode='default-enabled'), '/tmp/document.png')
+        argv = measurement.native_browser_arguments(SimpleNamespace(vox_javascript_mode='default-enabled', vox_chrome_height=112), '/tmp/document.png')
         self.assertNotIn('--enable-javascript', argv)
         self.assertIn('--js-engine=javascriptcore', argv)
         self.assertEqual(argv[argv.index('--screenshot') + 1], '/tmp/document.png')
         self.assertNotIn('--disable-javascript', argv)
+        self.assertEqual(argv[argv.index('--window-height') + 1], '880')
+
+    def test_window_chrome_cannot_shrink_the_requested_document_viewport(self):
+        with self.assertRaisesRegex(RuntimeError, 'chrome height must be nonnegative'):
+            measurement.native_browser_arguments(SimpleNamespace(vox_javascript_mode='explicit', vox_chrome_height=-1), '/tmp/document.png')
 
     def test_unrecognized_javascript_contract_fails_before_a_launch(self):
         with self.assertRaisesRegex(RuntimeError, 'Unknown native JavaScript launch contract'):
