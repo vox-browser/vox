@@ -25,7 +25,7 @@ fn test_native_timer_callback_uses_owner_task_this_arguments_context_and_ignores
 	host.install(mut runtime)!
 	settings := host.settings
 	assert html.can_run_script_for_settings(settings) == .run
-	owner_handle := voidptr(&runtime)
+	owner_handle := voidptr(runtime)
 	runtime.define_value_host_function('__timerOwnerContext', fn [settings, owner_handle] (_ voidptr, _ []voidptr) !voidptr {
 		runtime := unsafe { &Runtime(owner_handle) }
 		task := settings.responsible_event_loop().currently_running_task() or { panic('missing source timer task') }

@@ -6,6 +6,16 @@ import webidl
 
 
 pub fn (mut runtime Runtime) webidl_callback(function voidptr, convert JavaScriptWebIDLValueConverter) !webidl.CallbackType {
+	return runtime.webidl_callback_with_result(function, convert, false)
+}
+
+// A void IDL callback discards its completion value. Projecting that value into
+// WebIDL would root an otherwise unreachable return object until Runtime.close.
+pub fn (mut runtime Runtime) webidl_void_callback(function voidptr, convert JavaScriptWebIDLValueConverter) !webidl.CallbackType {
+	return runtime.webidl_callback_with_result(function, convert, true)
+}
+
+fn (mut runtime Runtime) webidl_callback_with_result(function voidptr, convert JavaScriptWebIDLValueConverter, discard_result bool) !webidl.CallbackType {
 	runtime.require_javascript_value_context()!
 	if !C.JSValueIsObject(runtime.context, function) || !C.JSObjectIsFunction(runtime.context, function) {
 		return error('TypeError: WebIDL callback is not callable')
@@ -14,7 +24,7 @@ pub fn (mut runtime Runtime) webidl_callback(function voidptr, convert JavaScrip
 	owner_handle := voidptr(&runtime)
 	stored_settings := runtime.callback_settings()
 	return webidl.CallbackType{
-		callback: fn [owner_handle, function, convert, stored_settings] (receiver webidl.Value, arguments []webidl.Value) !webidl.Value {
+		callback: fn [owner_handle, function, convert, stored_settings, discard_result] (receiver webidl.Value, arguments []webidl.Value) !webidl.Value {
 			mut owner := unsafe { &Runtime(owner_handle) }
 			if owner.closed { return webidl.undefined_value() }
 			owner.prepare_html_callback(stored_settings)
@@ -32,6 +42,7 @@ pub fn (mut runtime Runtime) webidl_callback(function voidptr, convert JavaScrip
 				}
 				return err
 			}
+			if discard_result { return webidl.undefined_value() }
 			return owner.webidl_value(result)
 		}
 	}

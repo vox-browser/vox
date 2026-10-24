@@ -22,9 +22,19 @@ pub fn (mut host TimerHost) install(mut runtime Runtime) ! {
 	host.runtime = &runtime
 	// Capture the actual script-visible global before author replacements;
 	// source callbacks receive their owning WindowProxy/global wrapper.
-	host.global_this_value_ = runtime.webidl_value(runtime.evaluate_host_value('globalThis')!)!
+	global_this := runtime.evaluate_host_value('globalThis')!
+	defer { runtime.release_javascript_value(global_this) }
+	host.global_this_value_ = runtime.webidl_value(global_this)!
 	host_handle := voidptr(&host)
 	mut scope := unsafe { &html.WindowOrWorkerGlobalScopeMixin(host.scope) }
+	removed := fn [host_handle] (id i32) {
+		mut host := unsafe { &TimerHost(host_handle) }
+		roots := host.ids[id] or { return }
+		host.ids.delete(id)
+		for value in roots { host.runtime.release_javascript_value(value) }
+	}
+	runtime.own_closure(voidptr(removed))
+	scope.set_timer_removed_handler(removed)
 	scope.set_timer_classic_script_evaluator(fn [host_handle] (source string, realm &html.ScriptingRealm) !dom.JSValue {
 		mut host := unsafe { &TimerHost(host_handle) }
 		if host.closed { return dom.js_undefined() }
@@ -37,9 +47,9 @@ pub fn (mut host TimerHost) install(mut runtime Runtime) ! {
 		actual_url := js_source_string(url.serialize())
 		defer { C.JSStringRelease(actual_source); C.JSStringRelease(actual_url) }
 		mut exception := unsafe { nil }
-		result := C.JSEvaluateScript(runtime.context, actual_source, unsafe { nil }, actual_url, 1, &exception)
+		C.JSEvaluateScript(runtime.context, actual_source, unsafe { nil }, actual_url, 1, &exception)
 		if exception != unsafe { nil } { return webidl.throw_value(runtime.webidl_value(exception)!) }
-		return dom.js_webidl_value(runtime.webidl_value(result)!)
+		return dom.js_undefined()
 	})
 	scope.set_timer_compilation_exception_value_converter(fn [host_handle] (exception IError) webidl.Value {
 		mut host := unsafe { &TimerHost(host_handle) }
@@ -93,16 +103,23 @@ fn (mut host TimerHost) operate(arguments []voidptr) !voidptr {
 		id := i32(webidl.convert_to_int(webidl.number_value(number), 32, true, .no, .no)!)
 		mut scope := unsafe { &html.WindowOrWorkerGlobalScopeMixin(host.scope) }
 		scope.clear_timeout(id)
-		host.ids.delete(id)
 		return C.JSValueMakeUndefined(host.runtime.context)
+	}
+	mut roots := []voidptr{}
+	mut installed := false
+	defer {
+		if !installed {
+			for value in roots { host.runtime.release_javascript_value(value) }
+		}
 	}
 	mut handler := html.TimerHandler{}
 	if C.JSValueIsObject(host.runtime.context, handler_value) && C.JSObjectIsFunction(host.runtime.context, handler_value) {
 		host_handle := voidptr(&host)
-		callback := host.runtime.webidl_callback(handler_value, fn [host_handle] (value webidl.Value) !voidptr {
+		callback := host.runtime.webidl_void_callback(handler_value, fn [host_handle] (value webidl.Value) !voidptr {
 			mut host := unsafe { &TimerHost(host_handle) }
 			return host.value(value)
 		})!
+		roots << handler_value
 		handler = html.timer_webidl_callback_handler(callback, host.global_this_value_)
 	} else {
 		handler = html.timer_source_handler(host.runtime.binding_dom_string(handler_value)!)
@@ -120,10 +137,12 @@ fn (mut host TimerHost) operate(arguments []voidptr) !voidptr {
 		value := C.JSObjectGetPropertyAtIndex(host.runtime.context, actual_arguments, u32(index), &exception)
 		if exception != unsafe { nil } { return host.runtime.actual_javascript_exception(exception) }
 		values << dom.js_webidl_value(host.runtime.webidl_value(value)!)
+		roots << value
 	}
 	mut scope := unsafe { &html.WindowOrWorkerGlobalScopeMixin(host.scope) }
 	id := if op == 'interval' { scope.set_interval(handler, timeout, values) } else { scope.set_timeout(handler, timeout, values) }
-	host.ids[id] = true
+	host.ids[id] = roots
+	installed = true
 	return C.JSValueMakeNumber(host.runtime.context, id)
 }
 

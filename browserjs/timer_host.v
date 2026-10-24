@@ -12,7 +12,7 @@ pub struct TimerHost {
 mut:
 	runtime &Runtime = unsafe { nil }
 	global_this_value_ webidl.Value
-	ids map[i32]bool
+	ids map[i32][]voidptr
 	closed bool
 }
 
@@ -33,8 +33,9 @@ pub fn (mut host TimerHost) close() {
 	if host.closed { return }
 	host.closed = true
 	mut scope := unsafe { &html.WindowOrWorkerGlobalScopeMixin(host.scope) }
-	for id, _ in host.ids { scope.clear_timeout(id) }
+	for id in host.ids.keys() { scope.clear_timeout(id) }
 	host.ids = {}
 	scope.set_timer_classic_script_evaluator(none)
 	scope.set_timer_compilation_exception_value_converter(none)
+	scope.set_timer_removed_handler(none)
 }

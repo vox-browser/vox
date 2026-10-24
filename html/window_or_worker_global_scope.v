@@ -149,6 +149,7 @@ mut:
 	timer_script_evaluator_         ?TimerScriptEvaluator
 	timer_classic_script_evaluator_ ?ScriptEvaluationHook
 	embedding_timer_compilation_exception_value_ ?fn (IError) webidl.Value
+	embedding_timer_removed_        ?fn (i32)
 	performance_entry_buffer_map_   map[string]&PerformanceEntryTuple
 	registered_observers_           []&PerformanceObserverRecord
 	observer_task_queued_           bool
@@ -367,6 +368,18 @@ pub fn (mut scope WindowOrWorkerGlobalScopeMixin) set_timer_compilation_exceptio
 	scope.embedding_timer_compilation_exception_value_ = converter
 }
 
+// Native engine roots have the same lifetime as the source timer handle,
+// including cancellation outside the script-visible clearTimeout adapter.
+pub fn (mut scope WindowOrWorkerGlobalScopeMixin) set_timer_removed_handler(handler ?fn (i32)) {
+	scope.embedding_timer_removed_ = handler
+}
+
+fn (mut scope WindowOrWorkerGlobalScopeMixin) remove_timer(id i32) {
+	if id !in scope.active_timers_ { return }
+	scope.active_timers_.delete(id)
+	if handler := scope.embedding_timer_removed_ { handler(id) }
+}
+
 pub fn (mut scope WindowOrWorkerGlobalScopeMixin) set_fetch_host(host ?&fetch.FetchHost) {
 	if value := host {
 		scope.fetch_host_ = voidptr(value)
@@ -446,7 +459,7 @@ fn (mut scope WindowOrWorkerGlobalScopeMixin) run_timer_initialization_steps(han
 		if repeat {
 			owner.run_timer_initialization_steps(handler, normalized_timeout, arguments, true, id)
 		} else {
-			owner.active_timers_.delete(id)
+			owner.remove_timer(id)
 		}
 	}
 	completion := fn [owner_handle, task_steps, nesting_level] () {
@@ -488,16 +501,13 @@ pub fn (mut scope WindowOrWorkerGlobalScopeMixin) clear_timeout(id i32) {
 	if timer := scope.active_timers_[id] {
 		if mut clock := timer.clock_ { clock.stop() }
 	}
-	scope.active_timers_.delete(id)
+	scope.remove_timer(id)
 }
 
 pub fn (mut scope WindowOrWorkerGlobalScopeMixin) clear_interval(id i32) { scope.clear_timeout(id) }
 
 pub fn (mut scope WindowOrWorkerGlobalScopeMixin) clear_map_of_active_timers() {
-	for _, timer in scope.active_timers_ {
-		if mut clock := timer.clock_ { clock.stop() }
-	}
-	scope.active_timers_.clear()
+	for id in scope.active_timers_.keys() { scope.clear_timeout(id) }
 }
 
 pub fn (scope &WindowOrWorkerGlobalScopeMixin) active_timer_count() int {
@@ -842,7 +852,7 @@ pub fn (mut scope WindowOrWorkerGlobalScopeMixin) run_steps_after_a_timeout(time
 	owner_handle := voidptr(&scope)
 	remove_timer_and_complete := fn [owner_handle, id, completion_step] () {
 		mut owner := unsafe { &WindowOrWorkerGlobalScopeMixin(owner_handle) }
-		owner.active_timers_.delete(id)
+		owner.remove_timer(id)
 		completion_step()
 	}
 	scope.arm_timeout(timeout, remove_timer_and_complete, id, false, .chained)
