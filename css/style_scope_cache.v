@@ -2502,6 +2502,19 @@ fn collect_matching_rules_with_storage(style_computer &StyleComputer, abstract_e
 					}
 				}
 			}
+			// Reserve a small first block only after a selector has matched. Keep
+			// the allocation in the same owner as subsequent result growth.
+			if matching_rules.len == 0 {
+				capacity := if rules_to_run.len < 8 { rules_to_run.len } else { 8 }
+				if storage == unsafe { nil } {
+					matching_rules.ensure_cap(capacity)
+				} else {
+					mut arena := unsafe { &platform.Arena(storage) }
+					entry := arena.enter()
+					matching_rules.ensure_cap(capacity)
+					arena.leave(entry)
+				}
+			}
 			append_scoped_matching_rule(mut matching_rules, ScopedMatchingRule{
 				rule: rule_to_run
 				shadow_root: style_scope_mut_shadow_root_option(rule_root)
