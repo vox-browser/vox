@@ -2616,6 +2616,14 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Strict whole-C permits one runtime function;all128native inputs/exactargs match;isolated app/sign/smoke/GC1+override2 actual0.
   Broad87bothGC/sixactual0/174executions;canonical13/19pass/12exact/controller1;all19matchingexact/unchanged bounds;checkpointpending canonical baseline.
   Separate current4 measuredcb5a672a;carry35,090,931;legacy179ledger/canonical/GUI/foreign preserved;Chrome parity open.
+  Table child no-match wrapper October24 (`8067e809`):skip unchanged child-list rebuild;all six pure predicates/whitespace/wrappers/parent links/later insertion preserved.
+  Ten functional cases/13481assertions each beforeBoehm/finalBoehm/finalnone;focused viewport exact;all actual0/no completed case replay.
+  Declared3pairs/eight complete public layout-tree builds:local1,371,763,283→1,351,091,021/1.506985%/sixactual0/checksum8/zero pagecredit.
+  Current4 matching30pairs14,282,320,714.5→14,275,234,902.5/21wins/point7,085,812;pairedCI[1,975,295.5,12,861,382]/repeatable7,085,812;seed182/30000bootstrap.
+  All60actual0/60PNGs/strictcontent;first preparation1/3/3/1;later refreshes separate;no retries/replacements/recoveries/extensions;private APFS cache clones byte-authenticated.
+  Strict whole-C permits one runtime function;all128native inputs/exactargs match;isolated app/sign/smoke/GC1+override2 actual0.
+  Broad87bothGC/sixactual0/174executions;canonical13/19pass/12exact/controller1;all19matchingexact/unchanged bounds;checkpointpending canonical baseline.
+  Separate current4 measured8067e809;carry42,176,743;legacy179ledger/canonical/GUI/foreign preserved;Chrome parity open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
