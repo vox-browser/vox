@@ -3,6 +3,7 @@
 #include "../native_graphite_bridge.h"
 #include <algorithm>
 #include <cassert>
+#include <cstdlib>
 #include <cstring>
 #include <dlfcn.h>
 #include <iostream>
@@ -149,6 +150,44 @@ int main(int argc, char** argv)
         backdrop[(height - 1) * pitch + width * 4 - 1] ^= 73;
         compare(); compare();
         pill.matrix[2] = -.375f; compare(); compare();
+        clear(); compare();
+    }
+    // A small shape only changes its conservative device bounds, even in a
+    // large tile. Compare every output byte, including untouched backdrop and
+    // row padding, across clipping, colors, misses, hits and idle eviction.
+    for (int scale : {1, 2}) for (int background : {0, 1}) for (int msaa : {0, 1})
+    for (int fill : {0, 1}) for (int floating : {0, 1}) for (float phase : {37.f, -.375f, 532.25f}) {
+        constexpr int width = 544, height = 256, pitch = width * 4 + 12;
+        VoxGraphiteShape shape {};
+        shape.matrix[0] = shape.matrix[4] = scale; shape.matrix[8] = 1;
+        shape.matrix[2] = phase; shape.matrix[5] = 217.25f;
+        shape.rect[2] = 53; shape.rect[3] = 28;
+        std::fill_n(shape.rect + 4, 8, 14.f);
+        shape.fill = fill; shape.thickness = 1.25f;
+        shape.anti_alias = 1; shape.force_msaa = msaa;
+        shape.red = 54; shape.green = 137; shape.blue = 211; shape.alpha = 190;
+        shape.has_float_color = floating;
+        float color[] {.213f, .537f, .827f, .746f};
+        std::copy_n(color, 4, shape.float_color);
+        std::vector<uint8_t> backdrop(pitch * height), expected, actual;
+        for (size_t i = 0; i < backdrop.size(); ++i) backdrop[i] = (i * 19 + i / 13) % 256;
+        auto compare = [&] {
+            expected = actual = backdrop;
+            assert(before_shape(expected.data(), width, height, pitch, background, &shape));
+            assert(after_shape(actual.data(), width, height, pitch, background, &shape));
+            if (expected != actual) {
+                std::cerr << "Small shape patch mismatch: scale=" << scale << " backdrop=" << background
+                    << " msaa=" << msaa << " fill=" << fill << " float=" << floating << " phase=" << phase << '\n';
+                std::abort();
+            }
+            ++comparisons;
+            if (finish_frame) finish_frame();
+        };
+        compare(); compare();
+        backdrop[17] ^= 73; compare(); compare(); // Outside the shape's dependency.
+        backdrop[230 * pitch + std::clamp(int(phase) + 10, 5, width - 5) * 4] ^= 37;
+        compare(); compare();
+        shape.matrix[5] += .375f; compare(); compare();
         clear(); compare();
     }
     for (int scale : {1, 2}) for (int background : {0, 1}) for (int msaa : {0, 1}) {

@@ -704,6 +704,101 @@ static bool draw_large_rounded_shape(uint8_t* pixels, int width, int height,
     return true;
 }
 
+// Small controls still rasterize in their original Chromium tile: changing
+// the surface extent changes GPU coverage rounding. Only the conservative
+// affected rectangle needs a backdrop, readback or retained cache entry.
+static bool draw_small_shape_patch(uint8_t* pixels, int width, int height,
+    int pitch, bool has_background, VoxGraphiteShape const& shape)
+{
+    if (width > 16384 || height > 16384 || shape.has_underlay || shape.clip_out_count)
+        return false;
+    auto const* m = shape.matrix;
+    if ((m[0] != 1 && m[0] != 2) || (m[4] != 1 && m[4] != 2)
+        || m[1] != 0 || m[3] != 0 || m[6] != 0 || m[7] != 0 || m[8] != 1)
+        return false;
+    for (float value : shape.matrix)
+        if (!std::isfinite(value) || std::abs(value) > 65536) return false;
+    for (float value : shape.rect)
+        if (!std::isfinite(value) || std::abs(value) > 32768) return false;
+    if (!(shape.rect[2] > 0 && shape.rect[3] > 0)
+        || !std::isfinite(shape.thickness) || std::abs(shape.thickness) > 4096)
+        return false;
+    SkPaint paint;
+    if (!shape.fill) {
+        paint.setStyle(SkPaint::kStroke_Style);
+        paint.setStrokeWidth(std::max(0.0f, shape.thickness));
+    }
+    SkRect storage;
+    auto local = paint.computeFastBounds(rounded_rect(shape.rect).rect(), &storage);
+    SkMatrix matrix;
+    matrix.set9(m);
+    auto bounds = matrix.mapRect(local);
+    if (!bounds.isFinite()) return false;
+    auto bound = [](double value, int limit) {
+        return int(std::clamp(value, 0.0, double(limit)));
+    };
+    int left = bound(std::floor(bounds.left()) - 2, width);
+    int top = bound(std::floor(bounds.top()) - 2, height);
+    int right = bound(std::ceil(bounds.right()) + 2, width);
+    int bottom = bound(std::ceil(bounds.bottom()) + 2, height);
+    int patch_width = right - left, patch_height = bottom - top;
+    size_t count = size_t(patch_width) * patch_height;
+    if (count > 16384 || count * 4 >= size_t(width) * height) return false;
+    if (!count) {
+        if (!has_background) for (int y = 0; y < height; ++y)
+            std::memset(pixels + size_t(y) * pitch, 0, size_t(width) * 4);
+        return true;
+    }
+    std::vector<uint8_t> patch(count * 4);
+    if (has_background) for (int y = 0; y < patch_height; ++y)
+        std::memcpy(patch.data() + size_t(y) * patch_width * 4,
+            pixels + size_t(top + y) * pitch + size_t(left) * 4, size_t(patch_width) * 4);
+    if (count) {
+        std::lock_guard lock(gpu_mutex);
+        auto cached = shape_cache.prepare_patches(shape, width, height,
+            int(count), has_background, patch.data());
+        if (!cached.hit) {
+            auto* gpu = context();
+            if (!gpu) return false;
+            auto recorder = gpu->makeRecorder();
+            auto info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
+                kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
+            auto surface = SkSurfaces::RenderTarget(recorder.get(), info);
+            if (!surface) return false;
+            surface->getCanvas()->clear(SK_ColorTRANSPARENT);
+            if (has_background)
+                surface->writePixels(SkPixmap(info.makeWH(patch_width, patch_height),
+                    patch.data(), size_t(patch_width) * 4), left, top);
+            draw_shape_on_canvas(surface->getCanvas(), shape, width, height);
+            auto recording = recorder->snap();
+            skgpu::graphite::InsertRecordingInfo insertion;
+            insertion.fRecording = recording.get();
+            if (gpu->insertRecording(insertion) != skgpu::graphite::InsertStatus::kSuccess)
+                return false;
+            std::unique_ptr<const SkImage::AsyncReadResult> result;
+            gpu->asyncRescaleAndReadPixels(surface.get(), info.makeWH(patch_width, patch_height),
+                SkIRect::MakeXYWH(left, top, patch_width, patch_height),
+                SkImage::RescaleGamma::kSrc, SkImage::RescaleMode::kNearest,
+                [](void* target, std::unique_ptr<const SkImage::AsyncReadResult> data) {
+                    *static_cast<std::unique_ptr<const SkImage::AsyncReadResult>*>(target) = std::move(data);
+                }, &result);
+            if (!gpu->submit(skgpu::graphite::SubmitInfo(skgpu::graphite::SyncToCpu::kYes)) || !result)
+                return false;
+            for (int y = 0; y < patch_height; ++y)
+                std::memcpy(patch.data() + size_t(y) * patch_width * 4,
+                    static_cast<uint8_t const*>(result->data(0)) + size_t(y) * result->rowBytes(0),
+                    size_t(patch_width) * 4);
+            shape_cache.finish(std::move(cached), patch.data(), int(count * 4));
+        }
+    }
+    if (!has_background) for (int y = 0; y < height; ++y)
+        std::memset(pixels + size_t(y) * pitch, 0, size_t(width) * 4);
+    for (int y = 0; y < patch_height; ++y)
+        std::memcpy(pixels + size_t(top + y) * pitch + size_t(left) * 4,
+            patch.data() + size_t(y) * patch_width * 4, size_t(patch_width) * 4);
+    return true;
+}
+
 extern "C" __attribute__((visibility("default")))
 int vox_graphite_draw_shape_pixels(uint8_t* pixels, int width, int height,
     int pitch, int has_background, VoxGraphiteShape const* shape)
@@ -725,6 +820,7 @@ int vox_graphite_draw_shape_pixels(uint8_t* pixels, int width, int height,
         if (vox_draw_solid_stroke(pixels, width, height, pitch, has_background != 0, *shape)) return 1;
         if (draw_large_rounded_shape(pixels, width, height, pitch, has_background != 0, *shape)) return 1;
     }
+    if (draw_small_shape_patch(pixels, width, height, pitch, has_background != 0, *shape)) return 1;
     std::lock_guard lock(gpu_mutex);
     auto cached = shape_cache.prepare(*shape, width, height, pitch, has_background != 0, pixels);
     if (cached.hit) return 1;
