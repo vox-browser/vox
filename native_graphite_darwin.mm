@@ -614,8 +614,14 @@ static bool draw_large_rounded_shape(uint8_t* pixels, int width, int height,
     // corners need GPU pixels; offscreen corners need no readback at all.
     bool aligned_fill = shape.fill;
     for (auto edge : edges) aligned_fill = aligned_fill && edge == std::floor(edge);
+    bool aligned_stroke = !shape.fill && shape.alpha == 255;
+    for (int i = 0; i < 4; ++i) {
+        float half = i % 2 ? half_y : half_x;
+        aligned_stroke = aligned_stroke && edges[i] - half == std::floor(edges[i] - half)
+            && edges[i] + half == std::floor(edges[i] + half);
+    }
     // Fractional straight edges and strokes retain the original GPU coverage.
-    if (!aligned_fill) {
+    if (!aligned_fill && !aligned_stroke) {
         patch(left_cut, outer_top, right_cut, std::ceil(edges[1] + half_y) + 2);
         patch(left_cut, std::floor(edges[3] - half_y) - 2, right_cut, outer_bottom);
         patch(outer_left, top_cut, std::ceil(edges[0] + half_x) + 2, bottom_cut);
@@ -682,6 +688,13 @@ static bool draw_large_rounded_shape(uint8_t* pixels, int width, int height,
         solid.rect[2] = float(std::floor(edges[2])) - solid.rect[0];
         solid.rect[3] = float(std::floor(edges[3])) - solid.rect[1];
         vox_draw_solid_rect(pixels, width, height, pitch, true, solid);
+    } else if (aligned_stroke) {
+        // Straight, opaque stroke edges cover whole device pixels. Paint the
+        // rectangular strips, then restore the original GPU corner patches,
+        // including their untouched backdrop outside the rounded contour.
+        auto stroke = shape;
+        std::fill_n(stroke.rect + 4, 8, 0.0f);
+        vox_draw_solid_stroke(pixels, width, height, pitch, true, stroke);
     }
     for (auto const& patch : patches) for (int y = 0; y < patch.height; ++y)
         std::memcpy(pixels + size_t(patch.top + y) * pitch + size_t(patch.left) * 4,
@@ -695,7 +708,17 @@ int vox_graphite_draw_shape_pixels(uint8_t* pixels, int width, int height,
 {
     if (!pixels || !shape || width <= 0 || height <= 0 || pitch <= 0
         || static_cast<size_t>(pitch) < static_cast<size_t>(width) * 4) return 0;
-    if (!shape->has_float_color) {
+    // CSS retains unrounded colors even for ordinary byte-valued sRGB. When
+    // both SkPaint setters produce exactly the same components, these draws
+    // can use the opaque rectangle and rounded-border paths too. Comparing
+    // bytes after quantization would lose coverage/blending precision.
+    bool byte_color = !shape->has_float_color;
+    if (!byte_color) {
+        auto color = SkColor4f::FromColor(SkColorSetARGB(shape->alpha,
+            shape->red, shape->green, shape->blue));
+        byte_color = std::equal(shape->float_color, shape->float_color + 4, color.vec());
+    }
+    if (byte_color) {
         if (vox_draw_solid_rect(pixels, width, height, pitch, has_background != 0, *shape)) return 1;
         if (vox_draw_solid_stroke(pixels, width, height, pitch, has_background != 0, *shape)) return 1;
         if (draw_large_rounded_shape(pixels, width, height, pitch, has_background != 0, *shape)) return 1;

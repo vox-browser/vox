@@ -187,8 +187,8 @@ int main(int argc, char** argv)
         if (finish_frame) finish_frame();
     }
     for (int scale : {1, 2}) for (int background : {0, 1}) for (int fill : {0, 1})
-    for (int msaa : {0, 1}) for (int offset : {-280, -13, 0, 53, 290})
-    for (float phase : {0.0f, .375f, .6666667f}) {
+    for (int msaa : {0, 1}) for (int offset : {-1000, -280, -13, 0, 53, 290, 1000})
+    for (float phase : {0.0f, .375f, .5f, .6666667f}) {
         VoxGraphiteShape shape {};
         shape.matrix[0] = shape.matrix[4] = scale; shape.matrix[8] = 1;
         shape.matrix[2] = phase;
@@ -257,6 +257,40 @@ int main(int argc, char** argv)
         backdrop[corner] = 21; backdrop[corner + 3] = 183;
         compare();
         clear(); compare();
+    }
+    // CSS supplies unrounded sRGB even for byte-valued colors. Compare exact
+    // byte equivalents, independently divided components and non-equivalents
+    // against the original GPU path. Preserve fractional alpha even when its
+    // serialized byte rounds to opaque, and preserve changed backdrops on hits.
+    for (int scale : {1, 2}) for (int background : {0, 1}) for (int msaa : {0, 1})
+    for (int kind : {0, 1, 2, 3}) for (int color : {0, 1, 2, 3}) {
+        VoxGraphiteShape shape {};
+        shape.matrix[0] = shape.matrix[4] = scale; shape.matrix[8] = 1;
+        shape.rect[0] = 7; shape.rect[1] = -13;
+        shape.rect[2] = 617; shape.rect[3] = 281;
+        if (kind >= 2) for (int i = 4; i < 12; ++i) shape.rect[i] = 6.5f;
+        shape.fill = kind != 1 && kind != 3; shape.thickness = 2;
+        shape.anti_alias = 1; shape.force_msaa = msaa;
+        shape.red = 171; shape.green = 53; shape.blue = 248; shape.alpha = 255;
+        shape.has_float_color = 1;
+        float unit = 1.0f / 255.0f;
+        shape.float_color[0] = color == 0 ? 171 * unit : 171 / 255.0f;
+        shape.float_color[1] = color == 0 ? 53 * unit : 53 / 255.0f;
+        shape.float_color[2] = color == 0 ? 248 * unit : 248 / 255.0f;
+        shape.float_color[3] = color == 3 ? 254.75f / 255.0f : 1;
+        if (color == 2) shape.float_color[0] = 171.375f / 255.0f;
+        int width = 631 * scale, height = 303 * scale, pitch = width * 4 + 12;
+        std::vector<uint8_t> backdrop(size_t(pitch) * height, 89), expected, actual;
+        for (int iteration = 0; iteration < 4; ++iteration) {
+            if (iteration == 2) backdrop[size_t(height / 2) * pitch + width * 2] ^= 31;
+            if (iteration == 3) clear();
+            expected = actual = backdrop;
+            assert(before_shape(expected.data(), width, height, pitch, background, &shape));
+            assert(after_shape(actual.data(), width, height, pitch, background, &shape));
+            assert(expected == actual);
+            ++comparisons;
+            if (finish_frame) finish_frame();
+        }
     }
     // Pixel-aligned strokes and narrow rounded comment controls, including
     // corners completely above/below the viewport and fractional fallbacks.
