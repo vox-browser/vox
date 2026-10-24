@@ -694,7 +694,9 @@ static bool draw_large_rounded_shape(uint8_t* pixels, int width, int height,
         // including their untouched backdrop outside the rounded contour.
         auto stroke = shape;
         std::fill_n(stroke.rect + 4, 8, 0.0f);
-        vox_draw_solid_stroke(pixels, width, height, pitch, true, stroke);
+        // Very large coordinates can round a strip's inner and outer edge
+        // together. The helper rejects them before touching the backdrop.
+        if (!vox_draw_solid_stroke(pixels, width, height, pitch, true, stroke)) return false;
     }
     for (auto const& patch : patches) for (int y = 0; y < patch.height; ++y)
         std::memcpy(pixels + size_t(patch.top + y) * pitch + size_t(patch.left) * 4,

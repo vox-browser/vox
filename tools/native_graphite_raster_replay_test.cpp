@@ -229,6 +229,23 @@ int main(int argc, char** argv)
         ++comparisons;
         if (finish_frame) finish_frame();
     }
+    // At large finite extents, float rounding can collapse the far stroke
+    // edges while the near edge is still visible. Keep the GPU fallback.
+    for (int scale : {1, 2}) for (int background : {0, 1}) for (int msaa : {0, 1}) {
+        VoxGraphiteShape shape {};
+        shape.matrix[0] = shape.matrix[4] = scale; shape.matrix[8] = 1;
+        shape.rect[0] = 7; shape.rect[1] = 3;
+        shape.rect[2] = float(1 << 28); shape.rect[3] = 281;
+        for (int i = 4; i < 12; ++i) shape.rect[i] = 6.5f;
+        shape.thickness = 2; shape.anti_alias = 1; shape.force_msaa = msaa;
+        shape.red = 171; shape.green = 53; shape.blue = 248; shape.alpha = 255;
+        int width = 631 * scale, height = 303 * scale, pitch = width * 4 + 12;
+        std::vector<uint8_t> expected(pitch * height, 89), actual = expected;
+        assert(before_shape(expected.data(), width, height, pitch, background, &shape));
+        assert(after_shape(actual.data(), width, height, pitch, background, &shape));
+        assert(expected == actual); ++comparisons;
+        if (finish_frame) finish_frame();
+    }
     for (int scale : {1, 2}) for (int background : {0, 1}) for (int fill : {0, 1}) {
         VoxGraphiteShape shape {};
         shape.matrix[0] = shape.matrix[4] = scale; shape.matrix[8] = 1;
