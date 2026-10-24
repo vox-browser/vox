@@ -2642,6 +2642,15 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Separate current4 measured4ae40267;carry53,069,359.5;legacy179ledger/canonical/GUI/foreign preserved;Chrome parity open.
   Rejected primary cache lookup October24:focused17cases/10097assertions each beforeBoehm/finalBoehm/finalnone;exact two-statement focused C projection passes.
   Fixed3pairs/512public matching passes:120,070,339→120,110,437/+0.033395% instructions/one improving pair/sixactual0/checksum49664;negative local gate;runtime restored/no browser cohort/no page credit/no broad reset/carry53,069,359.5 unchanged.
+  Lazy matching-rule result capacity October25 (`44590917`) reserves up to eight entries after the first accepted selector in the same public/workspace owner; all-miss results stay unallocated.
+  Normal beforeBoehm/finalBoehm/finalnone:19 active functional cases/11556assertions each; finalprealloc ownership-only:20/12709. Original selected-case metadata clarified by retained coverage audit; zero ownership instruction credit.
+  Declared3pairs/512complete public matching passes:local119,675,604→117,218,636/2.053023%/sixactual0/checksum49664/zero pagecredit.
+  Current4 matching30pairs14,270,738,279.5→14,269,331,966/18wins/point1,406,313.5;pairedCI[-6,175,615.5,7,986,632.5]/repeatable0;seed186/30000bootstrap.
+  All60actual0/60PNGs/strictcontent;first preparation1/3/3/1;later refreshes separate;no retries/replacements/recoveries/extensions;private APFS cache clones byte-authenticated.
+  Strict whole-C permits one runtime function/exact lazy block and five authenticated temporary renumberings;all128native inputs/exactargs match;isolated app/sign/smoke/GC1+override2 actual0.
+  Focused viewport exact; broad87bothGC/sixactual0/174executions;canonical13/19pass/12exact/controller1;all19matchingexact/unchanged bounds;checkpointpending canonical baseline.
+  Initial screenshot helper permission failure actual1 occurs before browser launch; original evidence retained, execute mode repaired, unfinished screenshot stage resumed without replaying completed cases.
+  Separate current4 measured44590917;carry54,475,673;legacy179ledger/canonical/GUI/foreign preserved;Chrome parity open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

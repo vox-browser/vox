@@ -5,6 +5,117 @@ shared offline capture diagnostic is below; the original October 13–14
 measurements and subsequent frozen first-frame optimization rounds follow.
 Chrome parity remains open.
 
+## Lazy matching-rule result capacity, October 25
+
+Commit `44590917` reserves up to eight matching-rule result entries after
+the first selector succeeds. A public result keeps its normal owner; an internal
+result reserves inside its existing workspace arena. Later growth retains the
+same policy. All-miss candidate lists keep an unallocated empty result. Rule
+traversal, selector matching, result order and cache contents remain unchanged.
+
+| Fixed first-document-paint cohort | Retired CPU instructions |
+| --- | ---: |
+| Before median | 14,270,738,279.5 |
+| Final median | 14,269,331,966 |
+| Observed saving | 1,406,313.5 (0.009855%) |
+| Paired 95% interval for median saving | -6,175,615.5–7,986,632.5 |
+| Improving pairs | 18 / 30 |
+| Repeatable instruction credit | 0 |
+
+The predeclared 30 pairs alternate before/final on odd pairs and final/before
+on even pairs. The paired bootstrap uses 30,000 resamples, seed 186 and the
+difference of marginal medians. Both variants use current V's new frontend,
+Boehm marker 1, native C-O2, the same frozen complete-content cache and the
+`native.scopes.navigation_to_first_document_paint[0]` endpoint at 1024×768.
+All 60 actual exits and PNGs pass strict content, loaded-library and exclusive
+coalition checks. There are no retries, recovered counters, replacements,
+exclusions or cohort extensions. The capture audit re-extracts every first
+primary and recomputes the interval. First preparation has one install,
+three build entries, three attach entries and one paint preparation; later
+refreshes remain separate. Each observation uses a byte-authenticated private
+APFS cache clone and the same pinned offline connect/connectx guard.
+
+The normal before/Boehm, final/Boehm and final/no-GC configurations each execute
+19 functional cases and 11,556 assertions. The final prealloc ownership
+check executes 20 functional cases and 12,709 assertions; it earns no instruction
+credit. There are 20 selected functional cases in each harness: the document-arena
+bounded-growth case runs only with prealloc. The separate local diagnostic is
+gated off in these functional runs. `focused-coverage-audit.json` records the
+actual active cases without rewriting the original selected-case metadata.
+
+Two new cases exercise result counts 1, 2, 7, 8, 9 and 33 for ordinary and pseudo
+elements; preceding misses; all-miss/all-match/live hover transitions; pointer
+identity, ordering, scope and attempted-match metadata; normal and arena owners;
+and public result retention after workspace release and forced GC. Retained
+cases cover bucket selection, key folding, nested workspace reuse, layers,
+pseudo rules and owner lifetime. The first control frontend exits 1 because the
+new non-Result fixture helper used implicit error propagation. Its failed guard,
+command, logs and scratch remain in `failed-frontend-v1/`. Both frozen sources
+then receive identical explicit failure handling before any runtime or counter
+observation. No completed case, diagnostic or primary is replayed.
+
+The fixed local diagnostic uses three alternating pairs of 512 complete public
+matching passes over eight named layers and 97 author rules. Setup, eight
+warmups, forced GC and assertions remain outside the hardware counter.
+All six actual exits are zero, checksum 49,664. Medians are
+119,675,604→117,218,636, saving 2.053023%;
+all three pairs improve. This local result earns zero page credit.
+
+The first screenshot operation exits 1 before launching a browser because the
+capture helper is not executable. Its log, command, result, guard and failed
+controller receipt remain in `failed-screenshot-launch-v1/`. Restoring the
+helper's execute bit allows the unfinished screenshot stage to resume; all
+completed broad cases and primary observations are retained without replay.
+
+The strict entire-program generated-C audit permits only
+`css__collect_matching_rules_with_storage` to change. The target body must equal
+the original body with the exact lazy capacity block and five authenticated
+temporary-identifier renumberings. The same target-body projection passes in
+focused Boehm, no-GC and prealloc builds. Every other generated body compares
+exactly after authenticated source-path/string-length, scratch and private
+executable directory normalization. The sole 13-line runtime V delta and all
+128 native inputs and native arguments are authenticated. The preceding rejected
+lookup attempt's final audit completes before this edit; that scheduling boundary
+transfers no performance or validation credit.
+
+The accumulated observed saving crosses the 5M broad gate. Selected CSS31,
+SVG10 and layout46 harnesses pass under both Boehm and no-GC: six actual zero
+runtime exits and 174 case executions. These harnesses retain the preceding
+current4 batch's exact fixture bodies and numeric bounds, including its
+authenticated layout compatibility repair. The focused 1024×768 viewport is
+pixel-exact. The 19 final canonical comparisons have 13 passes
+and 12 exact images under unchanged bounds. All 19 matching
+control/final images are exact; the control images are authenticated existing
+captures of the same control binary, and final captures are fresh.
+
+Canonical failures retained: inline-node (14,940 pixels), ordered-list (4,900 pixels), text-decorations (29,116 pixels), default-ignorable-code-points-not-painted (1,712 pixels), abspos-inside-opacity-inside-relpos (10,000 pixels), select-line-height-ignored (10,239 pixels).
+The validation controller actually exits 1. The current4 broad checkpoint
+remains pending the canonical screenshot baseline;
+the outstanding observed carry is 54,475,673 instructions.
+Matching images do not turn a failed canonical comparison into a pass.
+
+The measured app is isolated at
+`Build/instructions/normal-sealed-current4-20261023/lazy-rule-capacity-attempt/Vox.app`.
+Signing, signature verification, startup and actual collections under default
+marker 1 and override 2 pass. This job preserves the independently advancing
+canonical app, GUI and foreign edits. The legacy accepted179 ledger remains
+unchanged. Fresh before/final observations determine the saving; historical
+medians are not subtracted. Chrome parity remains open because its earlier
+capture-workflow endpoint and hydrated content differ.
+
+Receipts, hashes, durable generated C and raw logs are retained in
+`lazy-rule-capacity-attempt/`, including `page-observations/{plan,summary}.json`,
+`capture-audit.json`, `generated-c-audit.json`, `focused-coverage-audit.json`,
+`validation-result.json`, `screenshots-result.json`, `performance-ledger.json`
+and `final-audit.json`.
+
+| Durable artifact | SHA-256 |
+| --- | --- |
+| Measured executable | `1ca2aac660780418862920f8b5709c518ed6df76dc431b34446c5537fc28601c` |
+| Raw browser C | `929b7b1255a018554c9506e522e23e32fc0cde03c07090ab78b97a02e65e39b0` |
+| `browser.c.gz` | `93636f19ba7474ac0d89d9e3086a3fb643253417171180d45a2903d3801120cd` |
+| Page summary | `4bc97400df4a111f5df2a9e5eaf38b98a882a31f3a3580c02986af7c84301e4d` |
+
 ## Rejected primary rule-cache lookup, October 24
 
 The candidate resolved the primary cascade-origin/layer cache once at the start
