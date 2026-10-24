@@ -217,7 +217,8 @@ fn remove_irrelevant_table_children(mut node Node) {
 
 fn generate_table_child_wrappers(mut node Node, document &dom.Document) {
 	if node.table_fixup_skip_ { return }
-	for child in node.children_.clone() {
+	// Each recursive call changes its own descendants, never this child vector.
+	for child in node.children_ {
 		mut mutable_child := unsafe { &Node(child) }
 		generate_table_child_wrappers(mut mutable_child, document)
 	}
