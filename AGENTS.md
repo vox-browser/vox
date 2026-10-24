@@ -2640,6 +2640,8 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Strict whole-C permits one runtime function;all128native inputs/exactargs match;isolated app/sign/smoke/GC1+override2 actual0.
   Broad87bothGC/sixactual0/174executions;canonical13/19pass/12exact/controller1;all19matchingexact/unchanged bounds;checkpointpending canonical baseline.
   Separate current4 measured4ae40267;carry53,069,359.5;legacy179ledger/canonical/GUI/foreign preserved;Chrome parity open.
+  Rejected primary cache lookup October24:focused17cases/10097assertions each beforeBoehm/finalBoehm/finalnone;exact two-statement focused C projection passes.
+  Fixed3pairs/512public matching passes:120,070,339→120,110,437/+0.033395% instructions/one improving pair/sixactual0/checksum49664;negative local gate;runtime restored/no browser cohort/no page credit/no broad reset/carry53,069,359.5 unchanged.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

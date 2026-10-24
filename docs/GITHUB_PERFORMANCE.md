@@ -5,6 +5,36 @@ shared offline capture diagnostic is below; the original October 13–14
 measurements and subsequent frozen first-frame optimization rounds follow.
 Chrome parity remains open.
 
+## Rejected primary rule-cache lookup, October 24
+
+The candidate resolved the primary cascade-origin/layer cache once at the start
+of rule collection, retaining its optional result through the read-only subject
+metadata and scratch acquisition. This removed a duplicate readiness check.
+
+The predeclared local cohort did not confirm a saving. Three alternating pairs
+of 512 complete public matching passes produced medians of 120,070,339 before
+and 120,110,437 after: **40,098 more retired instructions (+0.033395%)**, with
+only one improving pair. All six actual exits are zero with checksum 49,664.
+Setup, eight warmups, forced GC and assertions are outside the hardware counter.
+The fixed cohort was neither extended nor replayed.
+
+All 17 functional cases pass 10,097 assertions in each of before/Boehm,
+final/Boehm and final/no-GC. Three new cases check origin/layer replacement,
+missing and empty entries, first-use construction, font-policy changes,
+stylesheet invalidation and shadow-host collection when the primary cache is
+absent. The exact generated-C target-body review passes in both GC modes,
+allowing only the two intended statement substitutions.
+
+The negative local gate stops this candidate before a normal browser build or
+page observations. Its runtime edit and new test file are removed from the
+working tree after their frozen copies and all evidence are retained under
+`Build/instructions/normal-sealed-current4-20261023/single-cache-lookup-attempt/`
+and `single-cache-lookup-{before,final}-source/`. There is no feature commit,
+page credit, broad batch or ledger reset. The preceding measured feature remains
+`4ae40267`; its outstanding observed carry remains 53,069,359.5 instructions.
+The legacy accepted179 ledger, canonical app, GUI and foreign work are preserved.
+Chrome parity remains open.
+
 ## Sparse CSS candidate buckets, October 24
 
 Commit `4ae40267` checks whether each class, ID, tag, pseudo-element and
