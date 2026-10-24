@@ -2,7 +2,7 @@ import unittest
 import io
 from unittest.mock import patch
 
-from measure_browser_scroll import capture_browser_log, compare, summarize
+from measure_browser_scroll import capture_browser_log, compare, summarize, window_size
 
 
 def frame(number, before, after, total=10):
@@ -11,6 +11,10 @@ def frame(number, before, after, total=10):
 
 
 class ScrollMeasurementTests(unittest.TestCase):
+    def test_window_includes_complete_browser_chrome(self):
+        self.assertEqual(window_size(1024, 768), [1024, 852])
+        self.assertEqual(window_size(800, 600), [800, 684])
+
     def test_keeps_slow_frames_and_reports_boundary_events_separately(self):
         result = summarize(frame(0, 0, 42) + frame(1, 42, 84, 1000) + frame(2, 84, 84), 3)
         self.assertEqual(result["all"]["frames"], 3)

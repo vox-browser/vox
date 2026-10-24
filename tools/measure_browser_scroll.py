@@ -24,6 +24,11 @@ REPO = Path(__file__).resolve().parents[1]
 FRAME = re.compile(r"^Vox scroll frame: (\d+) (.*)$", re.MULTILINE)
 
 
+def window_size(width, document_height):
+    # Match capture_screenshot.sh: 60px tab strip/toolbar plus 24px status bar.
+    return [width, document_height + 84]
+
+
 def capture_browser_log(stream, output, receipts):
     for line in stream:
         received = time.monotonic_ns()
@@ -172,8 +177,9 @@ def main():
     if args.trigger_file:
         args.trigger_file.unlink(missing_ok=True)
     trigger_line = f"Vox scroll frame: {args.trigger_frame} "
-    command = [str(binary), "--enable-javascript", "--window-width", str(args.width),
-               "--window-height", str(args.height + 80)]
+    dimensions = window_size(args.width, args.height)
+    command = [str(binary), "--enable-javascript", "--window-width", str(dimensions[0]),
+               "--window-height", str(dimensions[1])]
     if args.capture:
         command += ["--screenshot", str((args.output / "window.png").resolve())]
     command.append(args.url)
@@ -227,7 +233,7 @@ def main():
               "library_sha256": library_digest,
               "native_libraries_sha256": {path.name: digest for path, digest in native_libraries.items()},
               "cache_sha256": cache_digest.hexdigest(),
-              "url": args.url, "viewport": [args.width, args.height],
+              "url": args.url, "viewport": [args.width, args.height], "window_size": dimensions,
               "raster_mode": "logical-pixel screenshot" if args.capture else "interactive window backing scale",
               "endpoint": "native wheel dispatch through replay, including synchronous GPU waits; excludes Cocoa layer publication, vsync and idle work",
               **summarize(log_path.read_text(), args.frames, args.idle, receipts)}
