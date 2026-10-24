@@ -2599,6 +2599,15 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Isolated build/sign/smoke/GC1+override2 actual0;new fixed3pairs/six actual0/six1024x768PNGs/all strictcontent pass/audit0;native52.016B versusChrome4.570–4.640B diagnostic workflow only/endpoints differ/no parity.
   Separate real-PID sampler actual0/browser0 but empty graph/profiler1 retained;owned control0;new declared deferred-symbol2s profile/browser/sampler/guard0/real Vox stacks/zero instruction credit/no cohort replay.
   Third owned non-performance fix since preceding broad checkpoint;zero instruction credit/accepted179/broad179/carry0/canonical/GUI/foreign preserved. See docs/translation-audit/NATIVE_PORTABLE_TAB_PAINT.md.
+  Pending full-style keyframes invalidation October23–24 (`06f8f761`):document-only pending-full guard;disconnected/host-affecting shadow traversal preserved.
+  Eleven focused cases/4066assertions per configuration;Boehm composite retained10+corrected1/no completed case replay;finalnone eleven together;focused viewport exact.
+  Declared3pairs/64complete public sheet add-remove pairs:local32472263→691815/-97.869520%/all6actual0/zero pagecredit.
+  Current4 matching30pairs14380055655.5→14347795118/28wins/point32260537.5;pairedCI[27770356,40161654]/repeatable32260537.5;seed180/30000bootstrap.
+  All60actual0/60PNGs/strictcontent;first preparation1/3/1;later refreshes separate;no retries/replacements/recoveries.
+  Strict whole-C audit permits one runtime function;all128native inputs/exactargs match;initial failed audits/prelink retained.
+  Broad87bothGC/sixactual0/174executions pass;canonical screens13of19pass/12exact/controller1 retained;all19before-final pairs exact/unchanged bounds;current4 broad checkpoint pending.
+  Interrupted first native statusUNKNOWN retained/resumed from C;legacy layout frontend1 retained/46fixtures refreshed from frozen current tests/numeric bounds unchanged/no completed case replay.
+  Separate current4 measured06f8f761/14347795118;acceptance pending canonical baseline/carry32260537.5 not reset;isolated app/sign/smoke/GC1+override2;legacy179 ledger/canonical/GUI/foreign preserved;Chrome parity open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

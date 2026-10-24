@@ -5,6 +5,140 @@ shared offline capture diagnostic is below; the original October 13–14
 measurements and subsequent frozen first-frame optimization rounds follow.
 Chrome parity remains open.
 
+## Pending full-style keyframes invalidation, October 23–24
+
+Commit `06f8f761` avoids walking the document once per keyframes rule when a
+full document style pass is already pending. That pass recomputes animation
+names in attached scopes. Shadow-root traversal remains targeted, including
+disconnected roots and rules affecting the host. Adding and removing sheets
+still refreshes existing animations, and targeted document invalidation resumes
+after the full-pass flag drains.
+
+The matching first-document-paint cohort shows a repeatable **0.224342%**
+reduction in retired CPU instructions:
+
+| Measure | Result |
+| --- | ---: |
+| Before median | 14,380,055,655.5 |
+| Final median | 14,347,795,118 |
+| Observed and repeatable saving | 32,260,537.5 |
+| Paired 95% interval for median saving | 27,770,356–40,161,654 |
+| Improving pairs | 28 / 30 |
+
+The predeclared cohort uses 30 alternating pairs, before/final on odd pairs
+and final/before on even pairs, with 30,000 paired bootstrap resamples and seed
+180. The statistic is the difference of marginal medians. The fixed endpoint
+is `native.scopes.navigation_to_first_document_paint[0]`, with a 1024×768
+document viewport. Both binaries use current V's new frontend, Boehm with one
+marker, native C-O2 and explicit JavaScript. There is no global preallocation,
+production mode or UI2 switch. All 60 primary observations, actual browser
+kernel and launch exits, strict content gates and actual PNGs pass. There are
+no retries, replacements, recovered counters, excluded samples or extensions.
+
+The capture audit re-extracts every primary from the raw counter log, checks
+the pinned offline cache and runtime inputs, authenticates actual coalition
+membership and recomputes the bootstrap interval. Each first primary records
+one install, three geometry entries and one paint preparation: two geometry
+passes occur during installation and the third pre-paint entry reuses the
+cached geometry. Later refreshes are retained separately. This is the current
+source workload, with complete repository listing, About content and decoded
+known images. Its medians are not subtracted from the legacy round-179 or
+Chrome capture-workflow medians. **Chrome parity remains open.**
+
+Focused validation covers 11 functional cases and 4,066 assertions per
+configuration: before/Boehm, final/Boehm and final/no-GC. Each Boehm result is
+composite: ten retained passing cases with 1,041 assertions plus the corrected
+lifecycle fixture's 3,025 assertions. The original fixture used ownerless
+sheets with the wrong order; its failures remain retained. Completed cases
+were not replayed. The final/no-GC driver passes all eleven functional cases
+together. The focused 1024×768 viewport is pixel-exact.
+
+The separate three-pair local diagnostic measures 64 complete public
+sheet-add/remove pairs over 128 elements and 16 absent keyframes names.
+Setup, eight warmups, forced GC and assertions remain outside the counter.
+All six actual processes exit zero with checksum 64. Median instructions fall
+from 32,472,263 to 691,815, a **97.869520% local saving**, with all three pairs
+improving. This local result earns no whole-page credit.
+
+The strict generated-C audit permits only
+`css__invalidate_root_for_keyframes_rules_in_sheet` to change. The original
+function suffix and all remaining generated C compare exactly after
+authenticated source-path/string-length and artifact-path normalization.
+The runtime source delta is precisely the six-line guard. The measured
+candidate is rebuilt with the control's exact 128 native inputs and matching
+native arguments. Initial path-length, native-object and pre-link path-check
+failures remain retained; differing object hashes were resolved by rebuilding
+with the control inputs. They were not normalized away.
+
+The observed 32.26M saving crosses the 5M broad gate. Selected CSS31, SVG10
+and layout46 harnesses pass in both Boehm and no-GC modes: six
+actual zero runtime exits and 174 case executions. The predeclared upstream
+screenshot protocol fails: only 13 of 19 comparisons pass its unchanged
+bounds, with 12 pixel-exact. Its controller exits one at inline-node. A separate
+characterization retains that capture and completes the other cases without
+replaying successful captures. **All 19 frozen before/final pairs are
+pixel-exact**, including every upstream-reference failure. The six canonical
+failures are inline-node (14,940 pixels), ordered-list (4,900),
+text-decorations (29,116), default-ignorable-code-points-not-painted (1,712),
+abspos-inside-opacity-inside-relpos (10,000) and select-line-height-ignored
+(10,239). Canvas-text retains its allowed 1,994-pixel difference.
+
+Both frozen binaries use an independently introduced Chromium document font
+policy; that policy selects system faces despite the layout-test font
+environment setting. This explains the observed font-reference mismatch in
+inline-node. Other canonical differences are recorded without assigning an
+unverified cause. No runtime policy or screenshot bound is changed to obtain
+a pass. The **broad checkpoint remains pending**; the matching-image evidence
+is recorded separately from the failed canonical protocol.
+
+The first CSS/Boehm native compilation was interrupted with unknown native
+and controller exits; its empty guard, partial log and exact command are
+retained. Validation resumes from the authenticated generated C, without
+repeating the successful frontend or any completed case. Every successful
+build and runtime stage has its own actual completed memory-guard receipt.
+The original layout frontend exits one because its legacy fixtures refer to
+fields moved by earlier compaction. No layout case runs in that attempt. The
+same 46 selected cases are refreshed from the immutable current-source tests:
+retained media/decoration/SVG payload accessors, node-aware background
+resolution and retained display-list recordings. The debug-guide test follows
+the already implemented lazy-cache policy, checking empty caches when hidden
+and populated caches when visible. Every numeric assertion bound stays fixed.
+The failed frontend and original manifest remain retained; runtime sources
+and completed CSS/SVG cases are untouched. A subsequent layout frontend is
+interrupted before its terminal receipt; its exit remains unknown and no
+layout tests run. Its partial log and empty guard are retained separately.
+
+The measured app remains isolated at
+`Build/instructions/normal-sealed-current4-20261023/keyframes-v2-attempt/matched-native/Vox.app`.
+Its signing, signature verification and startup pass, with actual GC
+collections under default marker 1 and override 2. The canonical app and the
+legacy accepted-179 ledger remain unchanged. A separate current4 ledger records
+the measured binary and its 14,347,795,118-instruction median. The positive
+paired interval verifies performance credit, while acceptance and the broad
+checkpoint await resolution of the canonical screenshot baseline. The observed
+32,260,537.5-instruction saving stays outstanding; the broad carry is not reset.
+The frozen source includes
+independent geometry work; this optimization's comparisons do not grant that
+work extra performance credit or complete regression coverage.
+
+Evidence is under
+`Build/instructions/normal-sealed-current4-20261023/keyframes-v2-attempt/`:
+`page-observations/{plan,summary}.json`, `capture-audit.json`,
+`generated-c-audit.json`, `validation-result.json` (failed canonical protocol),
+`screenshot-characterization-result.json`, `performance-ledger.json`
+and the final `final-audit.json`. The final audit authenticates actual exits,
+source/input/binary hashes, retained observations, focused and broad cases,
+screenshots, GC, the documentation commit and preservation of foreign work.
+Durable browser C and all focused/broad binaries are archived with raw and
+archive hashes.
+
+| Durable artifact | SHA-256 |
+| --- | --- |
+| Measured executable | `899daf8f5014beacc99fc5408719a8c65878d14c1b27af6228f13cae86cbbda4` |
+| Raw browser C | `c84c3235a9cc6324bfed7ea083853b8f1dbf0ddac839df08036e7aaefe039784` |
+| `browser.c.gz` | `c1cfe4995457636f42d897c162372286c010c25d2c6d9da6658792af9aa4081f` |
+| Page summary | `1da06172b5396aae5d9fe683461012388e1695d9c432da42a9fe53685ade144a` |
+
 ## Current-source normal-GC capture diagnostic, October 23
 
 A separate immutable current-source snapshot now compiles with current V's
