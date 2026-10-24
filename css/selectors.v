@@ -3509,7 +3509,8 @@ fn has_matching_descendant_for_relative(selector Selector, node &dom.Node, shado
 				return true
 			}
 		}
-		if has_matching_descendant_for_relative(selector, child, shadow_host, mut context, anchor, scope) {
+		if child.children.len > 0
+			&& has_matching_descendant_for_relative(selector, child, shadow_host, mut context, anchor, scope) {
 			return true
 		}
 	}
