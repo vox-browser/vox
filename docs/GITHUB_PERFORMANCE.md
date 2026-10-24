@@ -5,6 +5,126 @@ shared offline capture diagnostic is below; the original October 13–14
 measurements and subsequent frozen first-frame optimization rounds follow.
 Chrome parity remains open.
 
+## Leaf recursion in relative `:has()` search, October 24
+
+Commit `cb5a672a` skips the recursive descendant search when the child
+has no children. Each child is still matched first, in the same order, with
+the same involvement metadata. Anchor exclusion, mixed sibling relations,
+shadow boundaries and later insertion/removal invalidation retain their behavior.
+
+The fixed matching first-document-paint cohort measures retired CPU instructions:
+
+| Measure | Result |
+| --- | ---: |
+| Before median | 14,370,544,489.5 |
+| Final median | 14,367,714,096 |
+| Observed saving | 2,830,393.5 (0.019696%) |
+| Paired 95% interval for median saving | -21,690,556.5–22,445,482 |
+| Improving pairs | 14 / 30 |
+| Repeatable instruction credit | 0 |
+
+The predeclared 30 alternating pairs use before/final on odd pairs and
+final/before on even pairs, with 30,000 paired bootstrap resamples and seed181.
+The statistic is the difference of marginal medians. The endpoint remains
+`native.scopes.navigation_to_first_document_paint[0]`, document viewport
+1024×768. Both variants use the frozen current4 workload, current V's new
+frontend, Boehm marker1 and native C-O2. No global preallocation, production
+mode or UI2 switch is enabled. All60 actual process exits, strict complete
+content gates and PNGs pass. There are no primary replacements, exclusions,
+startup retries, recovered counters or cohort extensions.
+
+The capture audit re-extracts the first primary from each raw log, authenticates
+the pinned cache, loaded runtime and exclusive coalition, and recomputes the
+paired interval. First-frame preparation remains one install, three build/attach
+entries and one paint preparation; later refreshes remain separate. Before any
+primary, the offline guard was frozen from `7b9340c7`, which adds macOS
+`connectx` blocking. Its private build and focused DNS/connect/connectx checks
+pass for IPv4 and IPv6. Both variants use that same pinned library; this tooling
+change earns no instruction credit. The preceding guard snapshot is retained.
+Private
+APFS fixture clones preserve every validated byte without redundant physical
+copies. The preceding keyframes cohort's 60 completed cache directories were
+also converted to byte-identical private clones, with every input and output
+hash verified and the evidence paths retained; no observation was replayed.
+
+Focused checks pass ten functional cases and 141,409 assertions in each
+of before/Boehm, final/Boehm and final/no-GC. Three new cases cover tree order
+and metadata, empty/text-only/disconnected/shadow boundaries, relations,
+forced GC and later selective style invalidation. Existing `:has()` cache
+cases and borrowed-selector backtracking are included. The separate diagnostic
+uses three fixed alternating pairs and 128 complete positive/negative public
+selector-match pairs over 64 branches. Setup, eight warmups, forced GC and
+assertions remain outside the counter. All six actual exits are zero with
+checksum256. Local medians are 37,070,001→28,821,779,
+a 22.250396% saving; all three pairs improve. Local work earns
+zero page credit. The original polling controllers were stopped only while
+idle, with no child checks active; their terminal exits remain unknown. Their
+logs and transition receipt are retained. The resumed controllers wait on the
+standard shared memory guard and retain the completed control build. The first
+generated-C audit actually exits1 because its exact statement expectation
+omits parentheses emitted by the compiler. That failed guard and both stopped
+controller receipts remain archived. Correcting the exact emitted statement
+expectation adds no normalization and replays no successful check or primary;
+the successful frontend is retained.
+A later interruption leaves the idle validation controller's terminal status
+unknown and its guard report empty. Both are preserved. The first resume
+actually exits1 before launching a child because the empty report already
+exists; that receipt is archived too. A distinct guard report resumes only
+the unstarted validation work, without replaying a completed check or primary.
+The first canonical screenshot step also exits1 before launching a browser:
+its Python capture helper lacks execute permission. That failure, its guard,
+and the dependent table controllers' actual exit1 receipts are archived in
+`screenshot-launch-recovery/`. Restoring execute permission leaves helper
+contents unchanged. Only the unstarted captures resume; all 174 completed
+regression executions and all completed primaries are retained.
+
+The strict entire-program generated-C audit permits only
+`css__has_matching_descendant_for_relative` to change. It authenticates the
+exact short-circuit condition, the sole runtime V source delta, all128 native
+inputs, and identical native arguments apart from artifact paths. All remaining
+generated C compares exactly after authenticated source-path/string-length,
+scratch and private executable directory normalization. Public matching,
+cache policy and invalidation machinery are unchanged.
+
+The accumulated observed saving crosses the 5M broad gate. Selected CSS31,
+SVG10 and layout46 harnesses pass under both Boehm and no-GC: six actual zero
+runtime exits and 174 case executions. These harnesses retain the preceding
+current4 batch's exact fixture bodies and numeric bounds, including its
+authenticated layout compatibility repair. The focused 1024×768 viewport is
+pixel-exact. The 19 final canonical comparisons have 13 passes
+and 12 exact images under unchanged bounds. All 19 matching
+control/final images are exact; the control images are authenticated existing
+captures of the same control binary, and final captures are fresh.
+
+Canonical failures retained: inline-node (14,940 pixels), ordered-list (4,900 pixels), text-decorations (29,116 pixels), default-ignorable-code-points-not-painted (1,712 pixels), abspos-inside-opacity-inside-relpos (10,000 pixels), select-line-height-ignored (10,239 pixels).
+The validation controller actually exits 1. The current4 broad checkpoint
+remains pending the canonical screenshot baseline;
+the outstanding observed carry is 35,090,931 instructions.
+Matching images do not turn a failed canonical comparison into a pass.
+
+The measured app remains isolated at
+`Build/instructions/normal-sealed-current4-20261023/has-leaf-attempt/Vox.app`.
+Signing, signature verification, startup and actual GC collections pass under
+default marker1 and override2. This job never replaces the canonical app;
+independent workspace and bundle work continues separately. The legacy
+accepted179 ledger remains unchanged. The new cohort compares freshly matched
+before/final observations; it does not subtract historical medians. **Chrome
+parity remains open:** its earlier capture-workflow endpoint differs and does
+not establish comparable first-frame instruction counts.
+
+Evidence lives under the same `has-leaf-attempt/` directory:
+`page-observations/{plan,summary}.json`, `capture-audit.json`,
+`generated-c-audit.json`, `validation-result.json`, `screenshots-result.json`,
+`performance-ledger.json` and the final `final-audit.json`. Source, input,
+binary, generated-C and log hashes accompany actual terminal receipts.
+
+| Durable artifact | SHA-256 |
+| --- | --- |
+| Measured executable | `c04d94237a6afc919d27cd31f82d30a1a92c41d139f629aa44879f93a01b704d` |
+| Raw browser C | `cc35184037a353ba33bbca6eb397f84765552c2a9760767e548a04a285e1da7a` |
+| `browser.c.gz` | `020523d4c0b8a64c483e52f7e3aa6c58c188e11e99b47c781bc070c1d55aff68` |
+| Page summary | `1b8c5ae617f2d116c52b6c8abb542321a53b1b501afb11f50602b2f7951c6189` |
+
 ## Pending full-style keyframes invalidation, October 23–24
 
 Commit `06f8f761` avoids walking the document once per keyframes rule when a

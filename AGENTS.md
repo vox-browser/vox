@@ -2608,6 +2608,14 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Broad87bothGC/sixactual0/174executions pass;canonical screens13of19pass/12exact/controller1 retained;all19before-final pairs exact/unchanged bounds;current4 broad checkpoint pending.
   Interrupted first native statusUNKNOWN retained/resumed from C;legacy layout frontend1 retained/46fixtures refreshed from frozen current tests/numeric bounds unchanged/no completed case replay.
   Separate current4 measured06f8f761/14347795118;acceptance pending canonical baseline/carry32260537.5 not reset;isolated app/sign/smoke/GC1+override2;legacy179 ledger/canonical/GUI/foreign preserved;Chrome parity open.
+  Relative :has() leaf recursion October24 (`cb5a672a`):skip empty descendant recursion after unchanged child match;tree order/metadata/shadow/invalidation preserved.
+  Ten functional cases/141409assertions each beforeBoehm/finalBoehm/finalnone;focused viewport exact;all actual0/no completed case replay.
+  Declared3pairs/128complete public match pairs:local37,070,001→28,821,779/22.250396%/sixactual0/checksum256/zero pagecredit.
+  Current4 matching30pairs14,370,544,489.5→14,367,714,096/14wins/point2,830,393.5;pairedCI[-21,690,556.5,22,445,482]/repeatable0;seed181/30000bootstrap.
+  All60actual0/60PNGs/strictcontent;first preparation1/3/3/1;later refreshes separate;no retries/replacements/recoveries/extensions;private APFS cache clones byte-authenticated.
+  Strict whole-C permits one runtime function;all128native inputs/exactargs match;isolated app/sign/smoke/GC1+override2 actual0.
+  Broad87bothGC/sixactual0/174executions;canonical13/19pass/12exact/controller1;all19matchingexact/unchanged bounds;checkpointpending canonical baseline.
+  Separate current4 measuredcb5a672a;carry35,090,931;legacy179ledger/canonical/GUI/foreign preserved;Chrome parity open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
