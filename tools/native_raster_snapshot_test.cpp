@@ -64,6 +64,32 @@ int main()
     check(noise, 257 * 4, 31, false);
     check(std::vector<uint8_t>(28, 7), 4, 7, false);
     check(std::vector<uint8_t>(4097, 7), 241, 17, false);
+    // Repeated words may start unaligned, end in an odd word, and cross
+    // arbitrary row boundaries. Every word remains part of the cache key.
+    for (size_t width : {1, 2, 3, 7, 16, 31, 64, 257, 544}) {
+        size_t height = 1200 / width + 2, row_bytes = width * 4, pitch = row_bytes + 7;
+        std::vector<uint8_t> original(row_bytes * height), input(1 + pitch * height, 91);
+        uint32_t value = 0x1234abcd;
+        for (size_t i = 0; i < original.size(); i += 4)
+            std::memcpy(original.data() + i, &value, 4);
+        auto owned = original;
+        VoxRasterSnapshot snapshot(std::move(owned));
+        assert(snapshot.size() < original.size());
+        assert(snapshot.copy_to(input.data() + 1, row_bytes, pitch, height));
+        assert(snapshot.equal(input.data() + 1, row_bytes, pitch, height));
+        for (size_t y = 0; y < height; ++y) {
+            assert(!std::memcmp(input.data() + 1 + y * pitch,
+                original.data() + y * row_bytes, row_bytes));
+            for (size_t x = 0; x < width; ++x) {
+                size_t at = 1 + y * pitch + x * 4 + (x + y) % 4;
+                input[at] ^= 1;
+                assert(!snapshot.equal(input.data() + 1, row_bytes, pitch, height));
+                input[at] ^= 1;
+            }
+            for (size_t x = row_bytes; x < pitch; ++x) assert(input[1 + y * pitch + x] == 91);
+        }
+        assert(input[0] == 91);
+    }
     // A proven opaque image interior can ignore its hidden backdrop. Exercise
     // both raw and compressed snapshots, row padding and mask boundaries.
     for (bool compressed : {false, true}) {

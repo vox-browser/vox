@@ -24,6 +24,28 @@ private:
         std::memcpy(&result, bytes, sizeof(result));
         return result;
     }
+    static bool equal_run(uint8_t const* bytes, size_t words, uint32_t value)
+    {
+        // Reduce whole runs instead of branching on each pixel. memcpy keeps
+        // unaligned caller rows valid and lets the compiler vectorize loads.
+        uint64_t pattern = uint64_t(value) << 32 | value;
+        uint64_t difference = 0;
+        size_t pairs = words / 2;
+        for (size_t i = 0; i < pairs; ++i) {
+            uint64_t actual;
+            std::memcpy(&actual, bytes + i * 8, 8);
+            difference |= actual ^ pattern;
+        }
+        return !difference && (!(words & 1) || word(bytes + pairs * 8) == value);
+    }
+    static void copy_run(uint8_t* bytes, size_t words, uint32_t value)
+    {
+        uint64_t pattern = uint64_t(value) << 32 | value;
+        size_t pairs = words / 2;
+        for (size_t i = 0; i < pairs; ++i)
+            std::memcpy(bytes + i * 8, &pattern, 8);
+        if (words & 1) std::memcpy(bytes + pairs * 8, &value, 4);
+    }
     template<typename Emit>
     static void encode(uint8_t const* bytes, size_t words, Emit emit)
     {
@@ -84,13 +106,18 @@ private:
             while (remaining) {
                 size_t count = std::min(remaining, (row_bytes - x) / 4);
                 if (repeated) {
-                    for (size_t i = 0; i < count; ++i) {
-                        if constexpr (Compare) {
-                            if (y >= ignore.top && y < ignore.bottom
-                                && x + i * 4 >= ignore.left && x + i * 4 < ignore.right) continue;
-                            if (word(input + y * pitch + x + i * 4) != value) return false;
-                        } else std::memcpy(output + y * pitch + x + i * 4, &value, 4);
-                    }
+                    if constexpr (Compare) {
+                        auto* bytes = input + y * pitch + x;
+                        if (y < ignore.top || y >= ignore.bottom
+                            || x >= ignore.right || x + count * 4 <= ignore.left) {
+                            if (!equal_run(bytes, count, value)) return false;
+                        } else {
+                            size_t before = ignore.left > x ? (ignore.left - x) / 4 : 0;
+                            size_t after = std::min(count, (ignore.right - x) / 4);
+                            if (!equal_run(bytes, before, value)
+                                || !equal_run(bytes + after * 4, count - after, value)) return false;
+                        }
+                    } else copy_run(output + y * pitch + x, count, value);
                 } else {
                     if constexpr (Compare) {
                         if (!equal_span(input + y * pitch + x,
