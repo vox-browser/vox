@@ -1,6 +1,8 @@
 import unittest
+import io
+from unittest.mock import patch
 
-from measure_browser_scroll import compare, summarize
+from measure_browser_scroll import capture_browser_log, compare, summarize
 
 
 def frame(number, before, after, total=10):
@@ -30,6 +32,26 @@ class ScrollMeasurementTests(unittest.TestCase):
                     frame(1, 0, 42) + frame(0, 42, 84)):
             with self.assertRaises(ValueError):
                 summarize(log, 2)
+
+    def test_native_cadence_includes_stalls_between_completed_frames(self):
+        log = "".join(frame(n, n * 42, (n + 1) * 42) for n in range(3))
+        receipts = [(0, 5000000), (1, 21000000), (2, 121000000)]
+        cadence = summarize(log, 3, receipts=receipts)["native_frame_cadence"]
+        self.assertEqual(cadence["intervals"], 2)
+        self.assertAlmostEqual(cadence["mean_fps"], 2_000_000 / 116000)
+        self.assertEqual(cadence["interval_us"]["max"], 100000)
+        self.assertNotIn("native_frame_cadence", summarize(frame(0, 0, 42), 1))
+        for invalid in (receipts[:2], [(0, 5), (1, 5), (2, 7)]):
+            with self.assertRaises(ValueError):
+                summarize(log, 3, receipts=invalid)
+
+    def test_timestamps_only_native_frame_completion_lines(self):
+        log = "startup\n" + frame(0, 0, 42) + frame(1, 42, 84)
+        output, receipts = io.StringIO(), []
+        with patch("measure_browser_scroll.time.monotonic_ns", side_effect=(1, 2, 3)):
+            capture_browser_log(io.StringIO(log), output, receipts)
+        self.assertEqual(output.getvalue(), log)
+        self.assertEqual(receipts, [(0, 2), (1, 3)])
 
     def test_requires_actual_viewport_scroll(self):
         with self.assertRaises(ValueError):

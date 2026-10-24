@@ -3,8 +3,9 @@
 
 Use identical URL, viewport, frame count and cache template for comparisons.
 Frames include normal JavaScript, layout, paint and GC work inside the browser's
-frame callback. Cocoa layer publication, display-clock waits and GPU execution
-are outside the timed callback.
+frame callback, including synchronous GPU waits. A pipe reader timestamps each flushed
+frame completion; its intervals include publication and scheduling between
+callbacks, plus log delivery latency. They do not measure display scanout.
 """
 
 import argparse
@@ -17,12 +18,23 @@ import shutil
 import statistics
 import subprocess
 import time
+import threading
 
 REPO = Path(__file__).resolve().parents[1]
 FRAME = re.compile(r"^Vox scroll frame: (\d+) (.*)$", re.MULTILINE)
 
 
-def summarize(log, expected_frames, idle=False):
+def capture_browser_log(stream, output, receipts):
+    for line in stream:
+        received = time.monotonic_ns()
+        match = FRAME.match(line)
+        if match:
+            receipts.append((int(match.group(1)), received))
+        output.write(line)
+        output.flush()
+
+
+def summarize(log, expected_frames, idle=False, receipts=None):
     rows = []
     for number, fields in FRAME.findall(log):
         row = {}
@@ -52,7 +64,24 @@ def summarize(log, expected_frames, idle=False):
                            "max": values[-1], "sum": sum(values)}
         return result
 
-    return {"all": distribution(rows), "moving": distribution(moved), "rows": rows}
+    result = {"all": distribution(rows), "moving": distribution(moved), "rows": rows}
+    if receipts is not None:
+        if [number for number, _ in receipts] != list(range(expected_frames)):
+            raise ValueError("Frame completion receipts do not match the measured frames")
+        if len(receipts) > 1:
+            intervals = sorted((current[1] - previous[1]) / 1000
+                               for previous, current in zip(receipts, receipts[1:]))
+            if intervals[0] <= 0:
+                raise ValueError("Native frame intervals must be positive")
+            result["native_frame_cadence"] = {
+                "endpoint": "flushed native frame completion log receipts; includes inter-frame publication, scheduling and log delivery latency; not display scanout",
+                "intervals": len(intervals),
+                "mean_fps": 1_000_000 * len(intervals) / sum(intervals),
+                "interval_us": {"median": statistics.median(intervals),
+                                "p95": intervals[min(len(intervals) - 1, int(len(intervals) * .95))],
+                                "max": intervals[-1], "sum": sum(intervals)},
+            }
+    return result
 
 
 def compare(before, after):
@@ -129,6 +158,10 @@ def main():
     if not library.is_file() and len(binary.parents) > 3:
         library = binary.parents[3] / "libLadybirdVSkiaText.dylib"
     library_digest = hashlib.sha256(library.read_bytes()).hexdigest() if library.is_file() else None
+    native_libraries = {path: hashlib.sha256(path.read_bytes()).hexdigest()
+                        for name in ("libLadybirdVSkiaText.dylib", "libVoxGraphite.dylib",
+                                     "libVoxGraphiteDawn.dylib")
+                        if (path := library.parent / name).is_file()}
     if library.is_file():
         env["DYLD_LIBRARY_PATH"] = str(library.parent)
     env.update(item.split("=", 1) for item in args.env)
@@ -147,9 +180,13 @@ def main():
     digest = hashlib.sha256(binary.read_bytes()).hexdigest()
     log_path = args.output / "browser.log"
     sample = None
+    receipts = []
     with log_path.open("w") as output:
-        process = subprocess.Popen(command, cwd=REPO, env=env, stdout=output,
-                                   stderr=subprocess.STDOUT)
+        process = subprocess.Popen(command, cwd=REPO, env=env, stdout=subprocess.PIPE,
+                                   stderr=subprocess.STDOUT, text=True, errors="replace")
+        reader = threading.Thread(target=capture_browser_log,
+                                  args=(process.stdout, output, receipts), daemon=True)
+        reader.start()
         started = time.monotonic()
         try:
             while process.poll() is None:
@@ -172,19 +209,28 @@ def main():
                 except subprocess.TimeoutExpired:
                     process.kill()
                     process.wait()
+            reader.join(timeout=10)
+            if reader.is_alive():
+                raise RuntimeError("Browser log pipe did not close")
+            process.stdout.close()
+            (args.output / "frame-receipts.json").write_text(json.dumps(receipts) + "\n")
             if sample:
                 sample.wait(timeout=args.sample_seconds + 10)
     if digest != hashlib.sha256(binary.read_bytes()).hexdigest():
         raise RuntimeError("Browser executable changed during measurement")
     if library_digest and library_digest != hashlib.sha256(library.read_bytes()).hexdigest():
         raise RuntimeError("Native replay library changed during measurement")
+    for path, original_digest in native_libraries.items():
+        if original_digest != hashlib.sha256(path.read_bytes()).hexdigest():
+            raise RuntimeError(f"Native library changed during measurement: {path}")
     result = {"command": command, "binary_sha256": digest,
               "library_sha256": library_digest,
+              "native_libraries_sha256": {path.name: digest for path, digest in native_libraries.items()},
               "cache_sha256": cache_digest.hexdigest(),
               "url": args.url, "viewport": [args.width, args.height],
               "raster_mode": "logical-pixel screenshot" if args.capture else "interactive window backing scale",
               "endpoint": "native wheel dispatch through replay, including synchronous GPU waits; excludes Cocoa layer publication, vsync and idle work",
-              **summarize(log_path.read_text(), args.frames, args.idle)}
+              **summarize(log_path.read_text(), args.frames, args.idle, receipts)}
     (args.output / "summary.json").write_text(json.dumps(result, indent=2) + "\n")
     if args.compare_to:
         result["comparison"] = compare(json.loads(args.compare_to.read_text()), result)
