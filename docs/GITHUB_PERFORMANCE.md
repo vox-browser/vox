@@ -5,6 +5,112 @@ shared offline capture diagnostic is below; the original October 13–14
 measurements and subsequent frozen first-frame optimization rounds follow.
 Chrome parity remains open.
 
+## Sparse CSS candidate buckets, October 24
+
+Commit `4ae40267` checks whether each class, ID, tag, pseudo-element and
+attribute rule map contains any entries before reading the corresponding
+element metadata. An empty root-rule list also avoids the document-root lookup.
+Populated buckets retain their original traversal, namespace filtering and rule
+order. No rule cache is added and the public bucket iterator remains unchanged.
+
+| Fixed first-document-paint cohort | Retired CPU instructions |
+| --- | ---: |
+| Before median | 14,267,267,976.5 |
+| Final median | 14,261,751,982.5 |
+| Observed saving | 5,515,994 (0.038662%) |
+| Paired 95% interval for median saving | -349,829.5–15,482,332.5 |
+| Improving pairs | 20 / 30 |
+| Repeatable instruction credit | 0 |
+
+The predeclared 30 pairs alternate before/final on odd pairs and final/before
+on even pairs. The paired bootstrap uses 30,000 resamples, seed 184 and the
+difference of marginal medians. Both variants use current V's new frontend,
+Boehm marker 1, native C-O2, the same frozen complete-content cache and the
+`native.scopes.navigation_to_first_document_paint[0]` endpoint at 1024×768.
+All 60 actual exits and PNGs pass strict content, loaded-library and exclusive
+coalition checks. There are no retries, recovered counters, replacements,
+exclusions or cohort extensions. The capture audit re-extracts every first
+primary and recomputes the interval. First preparation has one install,
+three build entries, three attach entries and one paint preparation; later
+refreshes remain separate. Each observation uses a byte-authenticated private
+APFS cache clone and the same pinned offline connect/connectx guard.
+
+Fourteen functional cases pass 9,689 assertions in each of
+before/Boehm, final/Boehm and final/no-GC. Two new cases compare all 64 bucket
+population combinations against the unchanged public iterator in standard and
+quirks matching, for elements and pseudo-elements. Explicit expectations also
+check duplicate rule identity, ordering, namespace filtering and retained scope
+metadata. Repeated root attachment, removal, bucket population and forced GC
+exercise the public collection path. Twelve retained cases cover empty entries,
+direct collection, key folding, pseudo targeting and attempted-match metadata.
+
+The initial control frontend exits 1 on a retained helper's implicit `err`
+reference. Its failed guard, command, logs and scratch are retained under
+`frontend-compatibility-recovery/`. Both frozen harnesses then receive the same
+three constant panic diagnostics; fixtures, assertions and numeric bounds stay
+unchanged. The next control runtime exits 1 before completing a test case,
+because the new shadow-host fixture omitted the required HTML namespace.
+Its successful build, failed runtime and dependent controller exits are retained
+under `fixture-namespace-recovery/`. Both new fixtures then use explicit HTML
+namespaces. No completed functional case, diagnostic or primary is replayed.
+
+The fixed local diagnostic uses three alternating pairs of 512 complete public
+matching passes over eight named layers and 97 author rules. Setup, eight
+warmups, forced GC and assertions remain outside the hardware counter.
+All six actual exits are zero, checksum 49,664. Medians are
+122,971,135→120,244,920, saving 2.216955%;
+all three pairs improve. This local result earns zero page credit.
+
+The strict entire-program generated-C audit permits only
+`css__style_scope_add_cached_rules_to_run` to change. The target body must equal
+the original body with exactly five map-length guards and the root-length
+condition; this compiler lowers map length to `data->count`. The initial
+expected-C projection used an array-style `.len`; its retained diff contains
+only those five accessor spellings. The corrected exact projection and both
+focused GC bodies pass without changing runtime code. Every other generated
+body compares exactly after authenticated
+source-path/string-length, scratch and private executable directory normalization.
+The sole runtime V delta and all 128 native inputs and native arguments are
+authenticated. The predecessor's final audit finishes before this runtime edit;
+no performance or validation credit transfers across that scheduling boundary.
+
+The accumulated observed saving crosses the 5M broad gate. Selected CSS31,
+SVG10 and layout46 harnesses pass under both Boehm and no-GC: six actual zero
+runtime exits and 174 case executions. These harnesses retain the preceding
+current4 batch's exact fixture bodies and numeric bounds, including its
+authenticated layout compatibility repair. The focused 1024×768 viewport is
+pixel-exact. The 19 final canonical comparisons have 13 passes
+and 12 exact images under unchanged bounds. All 19 matching
+control/final images are exact; the control images are authenticated existing
+captures of the same control binary, and final captures are fresh.
+
+Canonical failures retained: inline-node (14,940 pixels), ordered-list (4,900 pixels), text-decorations (29,116 pixels), default-ignorable-code-points-not-painted (1,712 pixels), abspos-inside-opacity-inside-relpos (10,000 pixels), select-line-height-ignored (10,239 pixels).
+The validation controller actually exits 1. The current4 broad checkpoint
+remains pending the canonical screenshot baseline;
+the outstanding observed carry is 53,069,359.5 instructions.
+Matching images do not turn a failed canonical comparison into a pass.
+
+The measured app is isolated at
+`Build/instructions/normal-sealed-current4-20261023/sparse-buckets-attempt/Vox.app`.
+Signing, signature verification, startup and actual collections under default
+marker 1 and override 2 pass. This job preserves the independently advancing
+canonical app, GUI and foreign edits. The legacy accepted179 ledger remains
+unchanged. Fresh before/final observations determine the saving; historical
+medians are not subtracted. Chrome parity remains open because its earlier
+capture-workflow endpoint and hydrated content differ.
+
+Receipts, hashes, durable generated C and raw logs are retained in
+`sparse-buckets-attempt/`, including `page-observations/{plan,summary}.json`,
+`capture-audit.json`, `generated-c-audit.json`, `validation-result.json`,
+`screenshots-result.json`, `performance-ledger.json` and `final-audit.json`.
+
+| Durable artifact | SHA-256 |
+| --- | --- |
+| Measured executable | `38e43986ea6365670bf83a5e5fd3a94b82305e19ce5703ef98769f4c49ae7c3f` |
+| Raw browser C | `e5e737b59269491e15756c6464722c494d1743be373c0e884b0248cbd4642908` |
+| `browser.c.gz` | `22e948b413eb8444142f3b0799a6b377149c7638a4ad6abddda52ca1318eae54` |
+| Page summary | `617803949bc0de6ac0f4681796bd5e39ad93c000586550a1efcbc2cae5ed0cb3` |
+
 ## Borrowed table traversal children, October 24
 
 Commit `30fa867e` traverses the existing child list while generating table
