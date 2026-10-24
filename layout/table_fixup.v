@@ -109,6 +109,18 @@ fn flush_table_fixup_sequence(mut rebuilt []&Node, mut sequence []&Node, parent 
 }
 
 fn wrap_table_child_sequences(mut parent Node, document &dom.Document, matcher fn (&Node) bool, display css.Display, kind AnonymousTableBoxKind) {
+	// All callers use table-role predicates. Without a matching child, no
+	// sequence can start and rebuilding would keep the same child sequence.
+	mut needs_wrapper := false
+	for child in parent.children_ {
+		if matcher(child) {
+			needs_wrapper = true
+			break
+		}
+	}
+	if !needs_wrapper {
+		return
+	}
 	original := parent.children_.clone()
 	mut rebuilt := []&Node{}
 	mut sequence := []&Node{}
