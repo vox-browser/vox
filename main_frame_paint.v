@@ -87,7 +87,9 @@ fn (mut app BrowserApp) record_document_paint_commands() {
 	// Recording can refresh paint-only styles in the retained transport without
 	// a layout pass. Adopt that final snapshot as well as geometry changes.
 	app.adopt_current_document_geometry()
-	if document.font_rendering_policy() == .chromium {
+	// Raster-layer origins and tile grids use screen pixels. Zoomed commands
+	// use the ordinary compositing layer until those plans support a scale.
+	if document.font_rendering_policy() == .chromium && app.page_zoom == 1 {
 		mut raster_scale := 1.0
 		$if macos {
 			raster_scale = C.native_display_device_pixel_ratio()

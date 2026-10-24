@@ -39,7 +39,7 @@ static void native_test_address_submit(void *field) {
 	[[(__bridge NSTextField *)field currentEditor] doCommandBySelector:@selector(insertNewline:)];
 }
 
-static void native_test_address_shortcut(void *field, void *owner, VoxAddressShortcut callback,
+static int native_test_address_shortcut(void *field, void *owner, VoxAddressShortcut callback,
 	unsigned short key, int shift) {
 	NSWindow *window = [(__bridge NSTextField *)field window];
 	NSEventModifierFlags modifiers = key == 53 ? 0 : NSEventModifierFlagCommand;
@@ -47,7 +47,7 @@ static void native_test_address_shortcut(void *field, void *owner, VoxAddressSho
 	NSEvent *event = [NSEvent keyEventWithType:NSEventTypeKeyDown location:NSZeroPoint
 		modifierFlags:modifiers timestamp:0 windowNumber:window.windowNumber context:nil
 		characters:@"" charactersIgnoringModifiers:@"" isARepeat:NO keyCode:key];
-	native_address_bar_filter_key((__bridge NSTextField *)field, owner, callback, event);
+	return native_address_bar_filter_key((__bridge NSTextField *)field, owner, callback, event) == nil;
 }
 
 static int native_test_address_geometry(void *field, int width) {

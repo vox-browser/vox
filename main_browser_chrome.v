@@ -64,7 +64,7 @@ fn (mut app BrowserApp) toggle_browser_debug() {
 fn (app &BrowserApp) browser_chrome_snapshot_path(resource_url string) string {
 	// Keep previous chrome layouts and debug-only diagnostics out of normal
 	// startup snapshots, while retaining the shared snapshots cache directory.
-	return cached_snapshot_path('${resource_url}\nclassic-chrome-v3:${app.chrome_debug}:${app.browser_tab_snapshot_key()}')
+	return cached_snapshot_path('${resource_url}\nclassic-chrome-v3:${app.chrome_debug}:${app.browser_tab_snapshot_key()}:zoom=${app.page_zoom}')
 }
 
 fn (app &BrowserApp) chrome_footer() string {

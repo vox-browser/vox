@@ -206,8 +206,8 @@ fn (mut app BrowserApp) poll_page_preload() {
 		base_url := document.base_url().serialize()
 		foreground_urls := foreground_preload_urls_in_document_storage(document, base_url,
 			pending.resources, pending.image_urls,
-			if app.viewport_width > 0 { app.viewport_width } else { initial_width },
-			if app.viewport_height > 0 { app.viewport_height } else { initial_height - app.chrome_height() })
+			f64(if app.viewport_width > 0 { app.viewport_width } else { initial_width }) / app.page_zoom,
+			f64(if app.viewport_height > 0 { app.viewport_height } else { initial_height - app.chrome_height() }) / app.page_zoom)
 		retire_native_preload_document(document)
 		pending.discovery_document = unsafe { nil }
 		pending.image_urls = []string{}

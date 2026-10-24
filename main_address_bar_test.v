@@ -109,7 +109,7 @@ $if vox_ui2 ? {
 	fn C.native_test_address_close(window voidptr)
 	fn C.native_test_address_insert(field voidptr, bytes &u8, length int)
 	fn C.native_test_address_submit(field voidptr)
-	fn C.native_test_address_shortcut(field voidptr, owner voidptr, callback fn (voidptr, int), key u16, shift int)
+	fn C.native_test_address_shortcut(field voidptr, owner voidptr, callback fn (voidptr, int), key u16, shift int) int
 	fn C.native_test_address_geometry(field voidptr, width int) int
 	fn C.native_test_address_selection(field voidptr) usize
 	fn C.native_test_address_backspace(field voidptr)
@@ -162,6 +162,39 @@ $if vox_ui2 ? {
 		assert app.navigation_generation == 1
 		assert ui2.focused_id() == ''
 		assert !app.address_active
+	}
+
+	fn test_ui2_zoom_shortcuts_preserve_native_address_text_selection_and_focus() {
+		window := C.native_test_address_window()
+		mut app, field := address_bar_test_app(C.native_test_address_parent(window))
+		defer {
+			app.unmount_address_bar()
+			C.native_test_address_close(window)
+		}
+		app.focus_address_bar()
+		address_bar_test_insert(field, 'https://example.test/unfinished')
+		app.focus_address_bar()
+		for key in [u16(24), 69, 81] {
+			assert C.native_test_address_shortcut(field, app, address_bar_shortcut, key, 1) == 1
+			assert app.page_zoom == 1.1
+			assert C.native_test_address_shortcut(field, app, address_bar_shortcut, 29, 0) == 1
+			assert app.page_zoom == 1
+		}
+		for key in [u16(27), 78] {
+			assert C.native_test_address_shortcut(field, app, address_bar_shortcut, key, 0) == 1
+			assert app.page_zoom == 0.9
+			assert C.native_test_address_shortcut(field, app, address_bar_shortcut, 82, 0) == 1
+			assert app.page_zoom == 1
+		}
+		assert app.address == 'https://example.test/unfinished'
+		assert ui2.text('address') == app.address
+		assert C.native_test_address_selection(field) == usize(app.address.len)
+		assert ui2.focused_id() == 'address'
+		assert app.address_active && app.address_select
+		app.blur_address_bar()
+		assert C.native_test_address_shortcut(field, app, address_bar_shortcut, 24, 0) == 1
+		assert app.page_zoom == 1.1
+		assert ui2.focused_id() == ''
 	}
 
 	fn test_ui2_address_bar_enter_reads_the_live_control_and_resize_preserves_edits() {

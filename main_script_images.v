@@ -37,7 +37,7 @@ fn (mut app BrowserApp) request_script_inserted_images() []string {
 		mut document := unsafe { &dom.Document(app.document) }
 		document.update_paint_and_hit_testing_properties_if_needed()
 	}
-	viewport_height := f64(if app.viewport_height > 0 { app.viewport_height } else { initial_height })
+	viewport_height := f64(if app.viewport_height > 0 { app.viewport_height } else { initial_height }) / app.page_zoom
 	for element in css.query_selector_all(app.document.as_node(), 'img[src]') {
 		if !element.is_html_element() {
 			continue

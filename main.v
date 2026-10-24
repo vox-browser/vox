@@ -396,6 +396,8 @@ mut:
 	chrome_debug                        bool
 	viewport_width                      int
 	viewport_height                     int
+	page_zoom                           f64 = 1
+	applied_page_zoom                   f64 = 1
 	scroll_y                            f64
 	overlay_scrollbars                  BrowserOverlayScrollbars
 	content_height                      f64
@@ -3167,7 +3169,7 @@ fn (app &BrowserApp) hit_test_at_viewport_point(x f64, y f64) ?dom.HitTestResult
 		return none
 	}
 	viewport := app.document.paintable_box() or { return none }
-	return viewport.hit_test(x, y, .exact)
+	return viewport.hit_test(x / app.page_zoom, y / app.page_zoom, .exact)
 }
 
 fn (app &BrowserApp) document_content_height(viewport_height int) f64 {
@@ -3179,13 +3181,13 @@ fn (app &BrowserApp) document_content_height(viewport_height int) f64 {
 		if viewport := result.root.as_node_with_style() {
 			if used := result.state.try_get(viewport) {
 				if overflow := used.scrollable_overflow_rect() {
-					return math.max(f64(viewport_height), overflow.height.to_double() / app.document.layout_coordinate_scale())
+					return math.max(f64(viewport_height), overflow.height.to_double() / app.document.layout_coordinate_scale() * app.page_zoom)
 				}
 			}
 		}
 	}
 	root_rect := app.root_box.border_box()
-	return math.max(f64(viewport_height), (root_rect.y + root_rect.height) / app.document.layout_coordinate_scale())
+	return math.max(f64(viewport_height), (root_rect.y + root_rect.height) / app.document.layout_coordinate_scale() * app.page_zoom)
 }
 
 fn (mut app BrowserApp) adopt_current_document_geometry() {
@@ -3236,7 +3238,7 @@ fn (mut app BrowserApp) dispatch_chrome_pointer_event_at_viewport_point(event_ty
 	mut screen_x := x
 	mut screen_y := y + f64(app.page_top())
 	$if macos { C.native_pointer_screen_position(x, screen_y, &screen_x, &screen_y) }
-	_ = handler.handle_platform_pointer_event(event_type, input_target, page.PixelPoint{x: x, y: y},
+	_ = handler.handle_platform_pointer_event(event_type, input_target, page.PixelPoint{x: x / app.page_zoom, y: y / app.page_zoom},
 		page.PixelPoint{x: screen_x, y: screen_y}, u32(button), app.platform_pointer_buttons, app.platform_pointer_modifiers, 1)
 	handled := target != '' || had_capture || handler.has_captured_chrome_widget()
 	// Hover, focus, listeners and chrome widgets can all invalidate the retained
@@ -3297,10 +3299,11 @@ fn (mut app BrowserApp) relayout(window_width int, window_height int) {
 		1
 	}
 	layout_checkpoint := time.sys_mono_now()
+	app.applied_page_zoom = app.page_zoom
 	if app.layout_tree_only {
 		// The dump reads the retained typed tree directly. Building the separate
 		// renderer transport here would add a full unused tree traversal.
-		_ = layout.run_document_layout_for_tree_dump(app.document, f64(viewport_width), f64(viewport_height)) or { return }
+		_ = layout.run_document_layout_for_tree_dump(app.document, f64(viewport_width) / app.page_zoom, f64(viewport_height) / app.page_zoom) or { return }
 		debug_timing_checkpoint('  layout_tree', layout_checkpoint)
 		app.root_box = layout.BlockBox{}
 		layout.release_paint_tree(app.paint_tree_storage)
@@ -3322,7 +3325,7 @@ fn (mut app BrowserApp) relayout(window_width int, window_height int) {
 	}
 	layout.enable_native_paint_tree_storage(app.document)
 	layout.enable_native_static_svg_backgrounds(app.document)
-	app.root_box = layout.layout_document_typed_in_viewport(app.document, f64(viewport_width), f64(viewport_height))
+	app.root_box = layout.layout_document_typed_in_viewport(app.document, f64(viewport_width) / app.page_zoom, f64(viewport_height) / app.page_zoom)
 	previous_storage := app.paint_tree_storage
 	app.paint_tree_storage = layout.retain_document_paint_tree(app.document)
 	layout.release_paint_tree(previous_storage)
@@ -3839,7 +3842,7 @@ fn (mut app BrowserApp) set_scroll_y(requested f64, window_height int) {
 	if app.document != unsafe { nil } {
 		mut document := unsafe { &dom.Document(app.document) }
 		viewport := document.viewport_rect()
-		document.set_viewport_rect(dom.Rect{viewport.x, app.scroll_y, viewport.width, viewport.height})
+		document.set_viewport_rect(dom.Rect{viewport.x, app.scroll_y / app.page_zoom, viewport.width, viewport.height})
 	}
 }
 
@@ -6854,7 +6857,8 @@ fn (mut app BrowserApp) draw() {
 	} else {
 		window.height - app.chrome_height()
 	}
-	if window.width > 0 && (window.width != app.viewport_width || content_viewport_height != app.viewport_height) {
+	if window.width > 0 && (window.width != app.viewport_width || content_viewport_height != app.viewport_height
+		|| app.page_zoom != app.applied_page_zoom) {
 		app.relayout(window.width, window.height)
 	}
 	app.scroll_profile_mark('navigation')
@@ -6877,7 +6881,7 @@ fn (mut app BrowserApp) draw() {
 		$if macos {
 			if app.ctx.native_rendering && app.document != unsafe { nil }
 				&& app.document.font_rendering_policy() == .chromium {
-				C.native_set_chromium_shared_recording(i32(chromium_shared_recording_supported(app.paint_commands, app.chromium_raster_plan)), i32(app.viewport_width), i32(app.viewport_height))
+				C.native_set_chromium_shared_recording(i32(app.page_zoom == 1 && chromium_shared_recording_supported(app.paint_commands, app.chromium_raster_plan)), i32(app.viewport_width), i32(app.viewport_height))
 				C.native_begin_font_compositing_layer(f32(app.ctx.width), f32(app.ctx.height))
 				app.set_chromium_msaa_tiles()
 			} else if app.ctx.native_rendering
@@ -6897,7 +6901,11 @@ fn (mut app BrowserApp) draw() {
 		mut replay_scratch := app.begin_native_replay_scratch()
 		for command_index in 0 .. app.paint_commands.len {
 			platform.cooperative_work_checkpoint()
-			command := unsafe { &app.paint_commands[command_index] }
+			mut command := unsafe { &app.paint_commands[command_index] }
+			if app.page_zoom != 1 {
+				mut projected := app.zoomed_paint_command(*command)
+				command = &projected
+			}
 			if culling.skip(command, 0, f64(page_y), f64(window.width), f64(window.height)) {
 				continue
 			}
@@ -7026,8 +7034,8 @@ fn (app &BrowserApp) element_at_window_point(mouse_x f32, mouse_y f32) ?&dom.Ele
 	if mouse_y < app.page_top() || mouse_y >= f32(browser_window_size().height - app.status_height()) {
 		return none
 	}
-	document_x := f64(mouse_x)
-	document_y := f64(mouse_y - app.page_top())
+	document_x := f64(mouse_x) / app.page_zoom
+	document_y := f64(mouse_y - app.page_top()) / app.page_zoom
 	if viewport_paintable := app.document.paintable_box() {
 		if hit := viewport_paintable.hit_test(document_x, document_y, .exact) {
 			if hit.element != unsafe { nil } {
@@ -7037,7 +7045,7 @@ fn (app &BrowserApp) element_at_window_point(mouse_x f32, mouse_y f32) ?&dom.Ele
 		return none
 	}
 	root := unsafe { &dom.Node(app.document) }
-	return app.root_box.element_at_point(document_x, document_y + app.scroll_y, root)
+	return app.root_box.element_at_point(document_x, document_y + app.scroll_y / app.page_zoom, root)
 }
 
 fn (app &BrowserApp) link_at_point(mouse_x f32, mouse_y f32) ?string {
@@ -7129,6 +7137,13 @@ fn browser_pointer_button_mask(button int) u32 {
 fn (mut app BrowserApp) handle_event(event &gg.Event) {
 	app.platform_pointer_modifiers = browser_pointer_modifiers(event.modifiers)
 	if app.navigation_work_depth > 0 {
+		if event.typ == .key_down {
+			zoom_action := browser_zoom_shortcut(event.key_code, unsafe { gg.Modifier(event.modifiers) })
+			if zoom_action != '' {
+				app.activate_browser_zoom(zoom_action)
+				return
+			}
+		}
 		button := browser_pointer_button(event.mouse_button)
 		if event.typ == .mouse_down {
 			app.platform_pointer_buttons |= browser_pointer_button_mask(button)
@@ -7267,6 +7282,11 @@ fn (mut app BrowserApp) handle_key(key gg.KeyCode, modifier gg.Modifier) {
 	window_height := browser_window_size().height
 	height := if window_height > 0 { window_height } else { app.viewport_height + app.chrome_height() }
 	command := modifier.has(.super) || modifier.has(.ctrl)
+	zoom_action := browser_zoom_shortcut(key, modifier)
+	if zoom_action != '' {
+		app.activate_browser_zoom(zoom_action)
+		return
+	}
 	tab_action := browser_tab_shortcut(key, modifier)
 	if tab_action != '' {
 		app.activate_tab_chrome(tab_action)

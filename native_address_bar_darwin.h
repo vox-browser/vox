@@ -18,6 +18,18 @@ static NSEvent *native_address_bar_filter_key(NSTextField *field, void *owner,
 	BOOL editing = control.currentEditor != nil
 		&& control.window.firstResponder == control.currentEditor;
 	NSEventModifierFlags mods = event.modifierFlags & NSEventModifierFlagDeviceIndependentFlagsMask;
+	// Consume browser zoom before AppKit's field editor or Sokol can interpret
+	// it as address input. Shift is allowed for the '+' above '='.
+	if ((mods & NSEventModifierFlagCommand)
+		&& !(mods & (NSEventModifierFlagControl | NSEventModifierFlagOption))) {
+		if (event.keyCode == 24 || event.keyCode == 69 || event.keyCode == 81) {
+			callback(owner, 17); return nil;
+		}
+		if (!(mods & NSEventModifierFlagShift)) {
+			if (event.keyCode == 27 || event.keyCode == 78) { callback(owner, 18); return nil; }
+			if (event.keyCode == 29 || event.keyCode == 82) { callback(owner, 19); return nil; }
+		}
+	}
 	if (event.keyCode == 2 && (mods & NSEventModifierFlagCommand)
 		&& !(mods & (NSEventModifierFlagControl | NSEventModifierFlagOption | NSEventModifierFlagShift))) {
 		if (!event.isARepeat) callback(owner, 3); // Cmd+D, including while editing the address.

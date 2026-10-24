@@ -31,7 +31,7 @@ fn (mut app BrowserApp) scroll_element_at_viewport_point(point page.PixelPoint,
 		for paintable in layout_node.paintables() {
 			if paintable.is_paintable_box() {
 				mut box := unsafe { &dom.PaintableBox(paintable) }
-				if box.handle_mousewheel(delta_x, delta_y) {
+				if box.handle_mousewheel(delta_x / app.page_zoom, delta_y / app.page_zoom) {
 					return true
 				}
 			}
@@ -57,8 +57,9 @@ fn (mut app BrowserApp) handle_wheel_at_viewport_point(client page.PixelPoint,
 	target := wheel_input_target(hit) or { return .dropped }
 	mut handler := app.page_model.event_handler
 	handler.set_document_state(document.is_fully_active(), document.layout_node() != none)
-	result := handler.handle_mousewheel_with_parameters(target, client, screen, button, buttons,
-		modifiers, delta_x, delta_y, .precise, .changed, async_default_action)
+	result := handler.handle_mousewheel_with_parameters(target,
+		page.PixelPoint{client.x / app.page_zoom, client.y / app.page_zoom}, screen, button, buttons,
+		modifiers, delta_x / app.page_zoom, delta_y / app.page_zoom, .precise, .changed, async_default_action)
 	// Callback wrappers mark the compact document dirty; apply those operations
 	// even when the callback cancels the wheel's default action.
 	app.poll_javascript_tasks()

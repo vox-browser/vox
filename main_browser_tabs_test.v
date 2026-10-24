@@ -32,6 +32,27 @@ fn browser_tabs_test_cleanup(mut app BrowserApp) {
 	for mut tab in app.tabs.pages { tab.dispose_browser_tab() }
 }
 
+fn test_tabs_keep_zoom_across_navigation_and_start_new_tabs_at_normal_scale() {
+	mut app := browser_tabs_test_app()
+	defer { browser_tabs_test_cleanup(mut app) }
+	app.activate_browser_zoom('zoom-in')
+	app.install_loaded_page(LoadedPage{
+		url: 'https://tabs.example/zoomed-navigation'
+		markup: '<!doctype html><p>Zoomed navigation</p>'
+		content_type: 'text/html'
+	}, true)
+	assert app.page_zoom == 1.1
+	assert app.document.viewport_rect().width == f64(app.viewport_width) / 1.1
+	app.activate_tab_chrome('tab-new')
+	mut second := app.active_browser_tab()
+	assert second.page_zoom == 1
+	second.activate_browser_zoom('zoom-out')
+	app.activate_tab_chrome('tab-select:0')
+	assert app.active_browser_tab().page_zoom == 1.1
+	app.activate_tab_chrome('tab-select:1')
+	assert app.active_browser_tab().page_zoom == 0.9
+}
+
 fn test_tabs_keep_independent_dom_javascript_history_and_scroll() {
 	mut app := browser_tabs_test_app()
 	defer { browser_tabs_test_cleanup(mut app) }
@@ -242,7 +263,7 @@ $if vox_ui2 ? {
 	fn C.native_test_address_window() voidptr
 	fn C.native_test_address_parent(window voidptr) voidptr
 	fn C.native_test_address_close(window voidptr)
-	fn C.native_test_address_shortcut(field voidptr, owner voidptr, callback fn (voidptr, int), key u16, shift int)
+	fn C.native_test_address_shortcut(field voidptr, owner voidptr, callback fn (voidptr, int), key u16, shift int) int
 	fn C.native_test_tabs_count() int
 	fn C.native_test_tabs_click(index int, close int)
 	fn C.native_test_tabs_geometry() int
@@ -270,8 +291,11 @@ $if vox_ui2 ? {
 		assert C.native_test_tabs_count() == 2
 		assert ui2.text('address') == ''
 		assert ui2.focused_id() == 'address'
+		assert C.native_test_address_shortcut(field, app, address_bar_shortcut, 24, 1) == 1
+		assert second.page_zoom == 1.1 && app.page_zoom == 1
 		C.native_test_address_shortcut(field, app, address_bar_shortcut, 18, 0)
 		assert app.tabs.selected == 0
+		assert app.active_browser_tab().page_zoom == 1
 		assert ui2.text('address') == 'https://tabs.example/first'
 		C.native_test_tabs_click(1, 0)
 		assert app.tabs.selected == 1

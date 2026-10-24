@@ -13,8 +13,8 @@ fn (mut app BrowserApp) preload_initial_document_resources(base_url string) map[
 	// during startup. Give them the same viewport as the eventual native frame.
 	viewport_height := if app.viewport_height > 0 { app.viewport_height } else { initial_height - app.chrome_height() }
 	app.document.set_viewport_rect(dom.Rect{
-		width: if app.viewport_width > 0 { app.viewport_width } else { initial_width }
-		height: viewport_height
+		width: f64(if app.viewport_width > 0 { app.viewport_width } else { initial_width }) / app.page_zoom
+		height: f64(viewport_height) / app.page_zoom
 	})
 	// Script-enabled documents retain the existing capacity hint; HTML/CSS-only
 	// documents let their managed heap grow with actual live state.

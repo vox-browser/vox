@@ -121,6 +121,9 @@ $if vox_ui2 ? {
 			7 { app.activate_tab_chrome('tab-previous') }
 			8 { app.activate_tab_chrome('tab-last') }
 			9...16 { app.activate_tab_chrome('tab-select:${action - 9}') }
+			17 { app.activate_browser_zoom('zoom-in') }
+			18 { app.activate_browser_zoom('zoom-out') }
+			19 { app.activate_browser_zoom('zoom-reset') }
 			else {}
 		}
 
