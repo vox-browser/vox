@@ -5,6 +5,116 @@ shared offline capture diagnostic is below; the original October 13–14
 measurements and subsequent frozen first-frame optimization rounds follow.
 Chrome parity remains open.
 
+## Borrowed table traversal children, October 24
+
+Commit `30fa867e` traverses the existing child list while generating table
+child wrappers. Each recursive call changes only its own descendants; wrapping
+the current node starts after traversal finishes. The parent vector remains
+stable throughout iteration, so its clone is unnecessary. Existing wrapper
+construction, table-role matching and whitespace behavior remain unchanged.
+
+The fixed matching first-document-paint cohort measures retired CPU instructions:
+
+| Measure | Result |
+| --- | ---: |
+| Before median | 14,348,924,951.5 |
+| Final median | 14,343,548,329 |
+| Observed saving | 5,376,622.5 (0.037471%) |
+| Paired 95% interval for median saving | -10,621,020.5–30,949,172 |
+| Improving pairs | 17 / 30 |
+| Repeatable instruction credit | 0 |
+
+The predeclared 30 alternating pairs use before/final on odd pairs and
+final/before on even pairs, with 30,000 paired bootstrap resamples and seed183.
+The statistic is the difference of marginal medians. The endpoint remains
+`native.scopes.navigation_to_first_document_paint[0]`, document viewport
+1024×768. Both variants use the frozen current4 workload, current V's new
+frontend, Boehm marker1 and native C-O2. No global preallocation, production
+mode or UI2 switch is enabled. All60 actual process exits, strict complete
+content gates and PNGs pass. There are no primary replacements, exclusions,
+startup retries, recovered counters or cohort extensions.
+
+The capture audit re-extracts the first primary from each raw log, authenticates
+the pinned cache, loaded runtime and exclusive coalition, and recomputes the
+paired interval. First-frame preparation remains one install, three build/attach
+entries and one paint preparation; later refreshes remain separate. Before any
+primary, the offline guard was frozen from `7b9340c7`, which adds macOS
+`connectx` blocking. Its private build and focused DNS/connect/connectx checks
+pass for IPv4 and IPv6. Both variants use that same pinned library; this tooling
+change earns no instruction credit. The preceding guard snapshot is retained.
+Private
+APFS fixture clones preserve every validated byte without redundant physical
+copies. The earlier keyframes cohort's 60 completed cache directories were
+also converted to byte-identical private clones, with every input and output
+hash verified and the evidence paths retained; no observation was replayed.
+
+Focused checks pass thirteen functional cases and 15,158 assertions in each
+of before/Boehm, final/Boehm and final/no-GC. Three new cases exercise five
+later siblings whose descendants change, nested table/row/block mutations,
+and a skipped subtree revisited after a later sibling, with forced GC and
+explicit pointer, parent and child-index checks.
+Existing child storage, subtree proofs, saved flags and complete tree-builder
+cases are included. Three older test helpers receive only the authenticated
+current-V optional-pointer syntax repair in both frozen harnesses; their numeric
+bounds remain intact. The separate diagnostic uses three fixed alternating
+pairs, each measuring eight complete public layout-tree builds over 16 tables
+with eight rows and four cells per row. Parsing/setup, two complete-build
+warmups, forced GC and assertions remain outside the counter. All six actual
+exits are zero with checksum8. Local medians are
+1,349,374,647→1,346,997,749, a 0.176148% saving;
+all three pairs improve. Local work earns zero page credit.
+
+The predecessor's final evidence audit completes before this feature changes
+the runtime source. This scheduling boundary transfers no test or instruction
+credit; all measurements and focused checks here are fresh.
+
+The strict entire-program generated-C audit permits only
+`layout__generate_table_child_wrappers` to change. It authenticates the exact
+removed child-vector clone and target-local compiler temporary renumbering, the sole
+runtime V source delta, all128 native
+inputs, and identical native arguments apart from artifact paths. All remaining
+generated C compares exactly after authenticated source-path/string-length,
+scratch and private executable directory normalization. The public tree builder and all other table-fixup bodies compare exactly.
+
+The accumulated observed saving crosses the 5M broad gate. Selected CSS31,
+SVG10 and layout46 harnesses pass under both Boehm and no-GC: six actual zero
+runtime exits and 174 case executions. These harnesses retain the preceding
+current4 batch's exact fixture bodies and numeric bounds, including its
+authenticated layout compatibility repair. The focused 1024×768 viewport is
+pixel-exact. The 19 final canonical comparisons have 13 passes
+and 12 exact images under unchanged bounds. All 19 matching
+control/final images are exact; the control images are authenticated existing
+captures of the same control binary, and final captures are fresh.
+
+Canonical failures retained: inline-node (14,940 pixels), ordered-list (4,900 pixels), text-decorations (29,116 pixels), default-ignorable-code-points-not-painted (1,712 pixels), abspos-inside-opacity-inside-relpos (10,000 pixels), select-line-height-ignored (10,239 pixels).
+The validation controller actually exits 1. The current4 broad checkpoint
+remains pending the canonical screenshot baseline;
+the outstanding observed carry is 47,553,365.5 instructions.
+Matching images do not turn a failed canonical comparison into a pass.
+
+The measured app remains isolated at
+`Build/instructions/normal-sealed-current4-20261023/table-borrow-attempt/Vox.app`.
+Signing, signature verification, startup and actual GC collections pass under
+default marker1 and override2. This job never replaces the canonical app;
+independent workspace and bundle work continues separately. The legacy
+accepted179 ledger remains unchanged. The new cohort compares freshly matched
+before/final observations; it does not subtract historical medians. **Chrome
+parity remains open:** its earlier capture-workflow endpoint differs and does
+not establish comparable first-frame instruction counts.
+
+Evidence lives under the same `table-borrow-attempt/` directory:
+`page-observations/{plan,summary}.json`, `capture-audit.json`,
+`generated-c-audit.json`, `validation-result.json`, `screenshots-result.json`,
+`performance-ledger.json` and the final `final-audit.json`. Source, input,
+binary, generated-C and log hashes accompany actual terminal receipts.
+
+| Durable artifact | SHA-256 |
+| --- | --- |
+| Measured executable | `a3ddfefb02bdec63aeee87623762495419a138f1091443047c90ca4d14f7c3f6` |
+| Raw browser C | `39dd95ba8b3664ad4c3422476c89ec9afcaa19bc3155843e777225c997cb1cd8` |
+| `browser.c.gz` | `e4bf7852ea704ecf487c7148bfcf4c97a64cd99e27fd7bedaaef3f30adcabf88` |
+| Page summary | `4435c3bc6b1d134a7f1afa93bca8fdc5637874c79eac02c065c3892f3e98f980` |
+
 ## Unchanged table child sequences, October 24
 
 Commit `8067e809` checks whether a child matches the table-role predicate
