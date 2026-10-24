@@ -124,6 +124,33 @@ int main(int argc, char** argv)
     auto after_shape = reinterpret_cast<decltype(before_shape)>(
         dlsym(candidate, "vox_graphite_draw_shape_pixels"));
     assert(before_shape && after_shape);
+    // Small root-layer controls use full Chromium tiles. Exercise cold and
+    // retained results with both coverage modes and changed distant backdrop.
+    for (int msaa : {0, 1}) for (int fill : {0, 1}) {
+        constexpr int width = 544, height = 256, pitch = width * 4 + 12;
+        VoxGraphiteShape pill {};
+        pill.matrix[0] = pill.matrix[4] = 2; pill.matrix[8] = 1;
+        pill.matrix[5] = -2032;
+        pill.rect[0] = 125; pill.rect[1] = 1029;
+        pill.rect[2] = 53; pill.rect[3] = 28;
+        std::fill_n(pill.rect + 4, 8, 14.0f);
+        pill.red = 54; pill.green = 137; pill.blue = 211; pill.alpha = 255;
+        pill.fill = fill; pill.thickness = 1;
+        pill.anti_alias = 1; pill.force_msaa = msaa;
+        std::vector<uint8_t> backdrop(pitch * height, 97), expected, actual;
+        auto compare = [&] {
+            expected = actual = backdrop;
+            assert(before_shape(expected.data(), width, height, pitch, 1, &pill));
+            assert(after_shape(actual.data(), width, height, pitch, 1, &pill));
+            assert(expected == actual); ++comparisons;
+            if (finish_frame) finish_frame();
+        };
+        compare(); compare();
+        backdrop[(height - 1) * pitch + width * 4 - 1] ^= 73;
+        compare(); compare();
+        pill.matrix[2] = -.375f; compare(); compare();
+        clear(); compare();
+    }
     for (int scale : {1, 2}) for (int background : {0, 1}) for (int msaa : {0, 1}) {
         VoxGraphiteShape shape {};
         shape.matrix[0] = shape.matrix[4] = scale;

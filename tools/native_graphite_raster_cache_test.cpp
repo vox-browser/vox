@@ -174,14 +174,42 @@ int main()
     assert(!cache.prepare(value, 2, 2, 8, false, pixels.data()).pending);
     value = shape; value.clip_outs = nullptr;
     assert(!cache.prepare(value, 2, 2, 8, false, pixels.data()).pending);
-    std::vector<uint8_t> large_output(400 * 400 * 4);
-    assert(!cache.prepare(shape, 400, 400, 1600, false, large_output.data()).pending);
-    assert(cache.prepare(descriptor, 400, 400, 1600, false, large_output.data()).pending);
+    std::vector<uint8_t> large_output(800 * 800 * 4);
+    assert(!cache.prepare(shape, 800, 800, 3200, false, large_output.data()).pending);
+    assert(cache.prepare(descriptor, 800, 800, 3200, false, large_output.data()).pending);
     cache.clear();
     assert(!cache.prepare(shape, 2, 2, 8, false, pixels.data()).hit);
     // Corner patches retain the original surface geometry in addition to the
     // packed pixels, so a different GPU coverage calculation cannot alias.
     shape.clip_out_count = 0;
+    // A small pill can arrive in a complete Chromium root tile. Retain its
+    // complete input/output, including pixels far outside the pill, and keep
+    // the existing total budget and parameter/mutation checks.
+    {
+        constexpr int width = 544, height = 256, pitch = width * 4 + 12;
+        std::vector<uint8_t> tile(pitch * height, 31);
+        VoxGraphiteRasterCache tiles;
+        auto draw = tiles.prepare(shape, width, height, pitch, true, tile.data());
+        assert(draw.pending && !draw.hit);
+        std::fill(tile.begin(), tile.end(), 123);
+        tiles.finish(std::move(draw), tile.data(), pitch);
+        std::fill(tile.begin(), tile.end(), 31);
+        assert(tiles.prepare(shape, width, height, pitch, true, tile.data()).hit);
+        for (int y = 0; y < height; ++y) {
+            for (int x = 0; x < width * 4; ++x) assert(tile[y * pitch + x] == 123);
+            for (int x = width * 4; x < pitch; ++x) assert(tile[y * pitch + x] == 31);
+        }
+        std::fill(tile.begin(), tile.end(), 31);
+        tile[(height - 1) * pitch + width * 4 - 1]++;
+        assert(!tiles.prepare(shape, width, height, pitch, true, tile.data()).hit);
+        tile[(height - 1) * pitch + width * 4 - 1]--;
+        auto moved = shape; moved.matrix[5] += .125f;
+        assert(!tiles.prepare(moved, width, height, pitch, true, tile.data()).hit);
+        VoxGraphiteRasterCache bounded(1024 * 1024);
+        assert(!bounded.prepare(shape, width, height, pitch, true, tile.data()).pending);
+        tiles.clear();
+        assert(!tiles.prepare(shape, width, height, pitch, true, tile.data()).hit);
+    }
     std::fill(pixels.begin(), pixels.end(), 19);
     request = cache.prepare_patches(shape, 631, 303, 4, true, pixels.data());
     assert(!request.hit && request.pending);

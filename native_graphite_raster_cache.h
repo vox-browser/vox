@@ -320,9 +320,11 @@ private:
         Request request;
         if (!pixels || width <= 0 || height <= 0 || pitch <= 0
             || size_t(pitch) < size_t(width) * 4 || !entry_limit) return request;
-        // Large shapes often cover changing page content. Copying those input
-        // backdrops would consume the small-control cache without useful hits.
-        constexpr size_t shape_limit = 512 * 1024;
+        // Small controls in the root layer use complete 544x256 Chromium
+        // tiles, including their backdrop. Admit that raw pair even when the
+        // control itself occupies only a few pixels. Retained entries still
+        // obey the unchanged byte/entry budgets after lossless compression.
+        constexpr size_t shape_limit = 2 * 1024 * 1024;
         bool is_image = !parameters.is_shape && !parameters.is_shadow && !parameters.is_path;
         // Flat SVG surfaces can shrink greatly in the row codec. Bound their
         // temporary raw pair separately, then enforce the retained budget on
