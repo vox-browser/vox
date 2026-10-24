@@ -138,3 +138,84 @@ python3 tools/gc_allocation_report.py Build/alloc.txt --mode retained
 `GC_RETAINERS_OUT`; it reports the chain of reachable objects holding the
 oldest remembered allocation. A level without heap referrers is a root.
 Raw runs, samples and reftest results are under `Build/pikabu-scroll/`.
+
+
+## Production native-raster follow-up (2026-10-25)
+
+This follow-up profiles the current preallocated, no-GC production executable;
+the Boehm measurements above describe the earlier implementation. The 60 fps
+target has **not** been reached. The current controlled runs still take about
+48 ms per scroll callback, before Cocoa publication.
+
+The frozen input is the real Pikabu front page (347,352 bytes of HTML and 104
+cached resources), with scripts and animations enabled. All runs use the same
+production V executable and production `-O2` native libraries. Renderer-only
+bundle copies isolate the native changes from concurrent V development. The
+source diffs, library fingerprints, raw frame records and samples are retained
+under `Build/pikabu-scroll-20261024/`. The shared memory guard serializes all
+builds, tests and benchmarks with its default 12 GiB sampled RSS budget.
+
+The changes so far are:
+
+- Rounded opaque borders use exact solid edge spans plus the original GPU
+  corner patches. Float colors qualify only when they exactly equal Skia's
+  byte-color conversion. Collapsed edge geometry retains the GPU fallback.
+- Complete Chromium tiles containing small rounded controls can enter the
+  existing bounded cache. Small shapes transfer and retain only a conservative
+  affected-pixel patch while preserving the original GPU surface dimensions,
+  geometry, coverage and dither coordinates.
+- Repeated raster pixels are compared and expanded in bulk, including
+  unaligned rows and odd-length runs; row padding remains untouched.
+- The frozen-network guard also blocks `connectx`. `VOX_PROXY` points to a dead
+  loopback port so inherited local proxy settings cannot bypass the guard.
+- The scroll driver fingerprints native libraries, retains failed-run logs,
+  and records receipt times for every contiguous flushed frame ID. Window
+  height now includes all 84 pixels of browser chrome. Earlier runs requested
+  a nominal 768-pixel viewport but actually rendered 764 pixels; comparisons
+  below use the same actual **1024 × 764** viewport at Retina scale.
+
+Two complete baseline/candidate pairs for the small-shape and raster-run
+changes give the following results. Each is the same 120 wheel events, 42 CSS
+pixels per event, alternating direction every 30 events, over scroll positions
+0–1260. Live network requests are blocked, and both sides receive private
+copies of the same cache.
+
+| Per scroll callback | First baseline | First candidate | Repeat baseline | Repeat candidate |
+| --- | ---: | ---: | ---: | ---: |
+| Median callback | 74.905 ms | 48.115 ms | 56.492 ms | 48.047 ms |
+| Median replay | 69.841 ms | 43.870 ms | 52.299 ms | 43.306 ms |
+| Median retired instructions | 352.781 M | 299.163 M | 325.541 M | 278.273 M |
+| Mean retired instructions | 357.329 M | 310.406 M | 335.421 M | 293.591 M |
+| Complete frame-receipt cadence | 5.457 fps | 6.220 fps | 6.048 fps | 6.386 fps |
+
+The paired callback reduction is 35.8% and 15.0%; median instruction reductions
+are 15.2% and 14.5%. Shared-machine load changes substantially between pairs,
+so the larger wall-time gain is not a stable speedup claim. Receipt cadence
+includes every interval: the existing profiler inserts roughly three-second
+quiet waits when background requests become pending. These waits are neither
+filtered out nor converted into an apparent 60 fps result. Callback timing,
+receipt cadence and actual display presentation are distinct measurements.
+
+Focused validation includes CPU raster-cache tests, sanitizer checks for the
+raster-run codec, eight scroll-driver tests and 4,718 exact GPU replay
+comparisons against the original library. The broader native batch passes 15
+clip cases, 720 composite comparisons, 6,240 glyph-cache comparisons, 864
+shape/backdrop comparisons and 288 tiled-image comparisons (44 batched).
+
+At scroll position 1260, baseline/candidate document screenshots are identical
+at both 1× and 2× scale after pausing only the seven moving tag-placeholder
+shimmers for the pixel comparison. Performance runs keep those animations
+active. Nineteen screenshot/reftest pages also preserve every baseline pixel,
+including the same-size SVG image replacement and eight SVG paint-server
+mutation guards. Fourteen of these pages match their upstream reference
+exactly; five retain pre-existing reference differences. This is preservation
+evidence, not a claim that all upstream conformance cases pass.
+
+The earlier `patch-guard.json` contains completed native tests and its first
+benchmark, but ends with a failed fully paused-page capture. That failed
+attempt remains retained. `continue-validation-guard.json` completes the
+corrected pixel comparison, all 19 visual pages and the repeat benchmark.
+
+Remaining sampled time is dominated by native replay, notably synchronous GPU
+readbacks for animated clipped gradients and repeated root-tile processing.
+The 48 ms callback cost remains above the 16.67 ms budget for 60 fps.
