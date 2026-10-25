@@ -1024,7 +1024,7 @@ performance credit.
 Evidence under `Build/pikabu-live-lag-20261025/`:
 `loader-arena-{replay,replay-repeat,live,live-repeat}/`,
 `loader-arena-{sample.txt,diagnostic-result.json,visual-result.json}`, and
-`loader-arena-serial-guard.json`. The guard's successful exit does not turn the
+`loader-arena-resume-replay-guard-v1.json`. The guard's successful exit does not turn the
 failed live trials into acceptance passes.
 
 ### Rejected fractional rounded-parts experiment
