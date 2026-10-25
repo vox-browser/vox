@@ -1,9 +1,53 @@
 #include "../native_chromium_raster_grid.h"
 #include <cassert>
 #include <cstdio>
+#include <limits>
+
+static std::vector<char> reference_msaa_mask(int width, int height, long first_x, long first_y,
+    int tw, int th, int columns, std::vector<int> const& tiles)
+{
+    std::vector<char> result(size_t(width) * height);
+    auto owner = [](long v, int size) { return v <= size - 2 ? 0L : (v - 1) / (size - 2); };
+    for (int y = 0; y < height; ++y) {
+        if (first_y + y < 0) continue;
+        long row = owner(first_y + y, th);
+        for (int x = 0; x < width; ++x) {
+            if (first_x + x < 0) continue;
+            long col = std::min(owner(first_x + x, tw), long(columns - 1));
+            result[size_t(y) * width + x] = std::binary_search(tiles.begin(), tiles.end(), int(row * columns + col));
+        }
+    }
+    return result;
+}
+static void check_msaa_masks()
+{
+    size_t cases = 0;
+    auto check = [&](int w, int h, long x, long y, int tw, int th, int cols, auto const& tiles) {
+        auto expected = reference_msaa_mask(w,h,x,y,tw,th,cols,tiles);
+        assert(expected == vox_chromium_msaa_pixel_mask(w,h,x,y,tw,th,cols,tiles)); ++cases;
+    };
+    for (int tw : {3, 4, 17, 64, 544}) for (int th : {3, 11, 48, 256})
+    for (int cols : {1,3,7}) for (int mode : {0,1,2,3}) {
+        std::vector<int> tiles;
+        for (int i = 0; i < 56; ++i) if (mode == 1 || (mode == 2 && i % 2) || (mode == 3 && i % 3 == 0)) tiles.push_back(i);
+        for (long x : {-173L, -1L, 0L, long(tw - 2), long(tw - 1), long(2 * tw - 4), long(2 * tw - 3), long(cols * tw + 2)})
+        for (long y : {-121L, -1L, 0L, long(th - 2), long(th - 1), long(2 * th - 4), long(2 * th - 3), long(8 * th)})
+            check(173,121,x,y,tw,th,cols,tiles);
+    }
+    for (int w : {1,2,1024}) for (int h : {1,2,848})
+    for (long x : {-1L,0L,543L}) for (long y : {-1L,0L,255L})
+        check(w,h,x,y,544,256,3,std::vector<int>{0,2,4,6,8});
+    // Negative origins must not be negated until known to fit the span.
+    check(2,2,std::numeric_limits<long>::min(),0,544,256,3,std::vector<int>{0});
+    check(2,2,0,std::numeric_limits<long>::min(),544,256,3,std::vector<int>{0});
+    assert(vox_chromium_msaa_pixel_mask(0,2,0,0,544,256,3,{}).empty());
+    std::printf("Tile MSAA masks: %zu exact per-pixel reference comparisons passed\n",cases);
+}
+
 
 int main()
 {
+    check_msaa_masks();
     size_t comparisons = 0;
     for (long first_y : {0L, 2L, 3L, 4L, 5L})
     for (long first_x : {0L, 3L, 4L, 5L, 6L})

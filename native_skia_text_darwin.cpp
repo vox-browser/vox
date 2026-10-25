@@ -2018,26 +2018,11 @@ extern "C" void ladybird_v_skia_set_msaa_grid(int const* tiles, int count,
 static std::vector<char> chromium_layer_msaa_pixel_mask(RasterRegion const& region,
     int width, int height, float page_x, float page_y, float scroll_y, float scale)
 {
-    std::vector<char> mask(static_cast<size_t>(width) * height);
     long first_x = std::lround((region.left - page_x - s_raster_origin_x) * scale);
     long first_y = std::lround((region.top - page_y + scroll_y - s_raster_origin_y
         + (s_raster_layer_is_root ? s_root_raster_scroll_y : 0)) * scale);
-    auto owner = [](long coordinate, int size) {
-        return coordinate <= size - 2 ? 0L : (coordinate - 1) / (size - 2);
-    };
-    for (int y = 0; y < height; ++y) {
-        if (first_y + y < 0) continue;
-        long row = owner(first_y + y, s_msaa_grid_height);
-        for (int x = 0; x < width; ++x) {
-            if (first_x + x < 0) continue;
-            long column = owner(first_x + x, s_msaa_grid_width);
-            column = std::min(column, static_cast<long>(s_msaa_grid_columns - 1));
-            int cell = static_cast<int>(row * s_msaa_grid_columns + column);
-            mask[static_cast<size_t>(y) * width + x] = std::binary_search(
-                s_msaa_grid_tiles.begin(), s_msaa_grid_tiles.end(), cell);
-        }
-    }
-    return mask;
+    return vox_chromium_msaa_pixel_mask(width, height, first_x, first_y,
+        s_msaa_grid_width, s_msaa_grid_height, s_msaa_grid_columns, s_msaa_grid_tiles);
 }
 
 template<bool Compact = false, typename Draw>

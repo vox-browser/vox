@@ -11,6 +11,48 @@ struct VoxChromiumRasterGrid {
     }
 };
 
+// Tile ownership is constant across each cell span. Resolve it once per
+// horizontal span and reuse the row throughout the same vertical span.
+inline std::vector<char> vox_chromium_msaa_pixel_mask(int width, int height,
+    long first_x, long first_y, int tile_width, int tile_height, int columns,
+    std::vector<int> const& tiles)
+{
+    if (width <= 0 || height <= 0 || tile_width <= 2 || tile_height <= 2 || columns <= 0)
+        return {};
+    std::vector<char> mask(size_t(width) * height);
+    if (tiles.empty()) return mask;
+    int start_x = first_x < 0 ? (first_x <= -long(width) ? width : int(-first_x)) : 0;
+    int y = first_y < 0 ? (first_y <= -long(height) ? height : int(-first_y)) : 0;
+    auto owner = [](long coordinate, int size) {
+        return coordinate <= size - 2 ? 0L : (coordinate - 1) / (size - 2);
+    };
+    auto span = [](long coordinate, int size) {
+        long spacing = size - 2;
+        return coordinate <= spacing ? spacing - coordinate + 1
+            : spacing - (coordinate - 1) % spacing;
+    };
+    for (; y < height;) {
+        long coordinate_y = first_y + y;
+        long row = owner(coordinate_y, tile_height);
+        int rows = int(std::min(long(height - y), span(coordinate_y, tile_height)));
+        auto* output = mask.data() + size_t(y) * width;
+        for (int x = start_x; x < width;) {
+            long coordinate_x = first_x + x;
+            long column = std::min(owner(coordinate_x, tile_width), long(columns - 1));
+            int count = column == columns - 1 ? width - x
+                : int(std::min(long(width - x), span(coordinate_x, tile_width)));
+            int cell = static_cast<int>(row * columns + column);
+            if (std::binary_search(tiles.begin(), tiles.end(), cell))
+                std::fill_n(output + x, count, char(1));
+            x += count;
+        }
+        for (int copy = 1; copy < rows; ++copy)
+            std::copy_n(output, width, output + size_t(copy) * width);
+        y += rows;
+    }
+    return mask;
+}
+
 // Draw each intersecting raster tile from the same immutable backdrop. Its
 // border texels participate in rasterization, then each pixel is copied from
 // the one tile that owns it. The last tile retains the outer border too.
