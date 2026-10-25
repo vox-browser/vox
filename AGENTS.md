@@ -103,6 +103,48 @@
   actual window rendering and address-bar keyboard navigation. Use
   `python3 tools/test_linux_native.py --gc none` for ownership diagnostics.
 
+## Scrolling performance measurements
+
+- Measure the requested production bundle and page with precise wheel events
+  through the native input view. Use `tools/measure_precise_scroll.py` on macOS;
+  run it inside the memory guard above with `VOX_TEST_WINDOW=1`. Record the
+  executable and native-library hashes, URL, viewport, backing scale, cache and
+  network policy, settle period, input schedule, and actual input timestamps.
+  Keep these conditions identical in before/after comparisons. A frozen cached
+  page isolates a change; also validate the installed bundle on the live URL
+  before claiming the user's live scrolling problem is fixed.
+- Count changed native frame publications after `updateLayer` completes. Report
+  scroll-changing publications separately so animations cannot inflate scrolling
+  fps. Verify that the document scroll position moves. Report the measurement
+  endpoint explicitly. Native publication does not establish physical display
+  scanout; use a display presentation measurement for claims about displayed
+  frames. Record actual input cadence: a nominal 60 Hz timer can deliver late
+  when the main thread is blocked.
+- Run at least two complete, unprofiled trials for each measured build. For
+  optimization credit use alternating matched control/candidate trials, retain
+  every result, and report regressions as well as gains. Profile separately;
+  samples, instrumentation, or changed animation/paint/raster settings cannot
+  supply unprofiled performance credit.
+- Report mean scroll-changing publication fps together with median, p95 and
+  maximum scroll intervals, the fraction exceeding the target frame budget (16.67 ms at
+  60 Hz), and the completed input/frame counts. Average throughput alone does
+  not establish smooth 60 fps. Keep the target open when representative input
+  still runs near 30 fps or has substantial deadline misses. Do not describe a
+  different workload's faster result as the user's current scrolling fps.
+- `tools/measure_browser_scroll.py` and `VOX_PROFILE_SCROLL` are synthetic
+  draw-callback benchmarks: integer 42 CSS-pixel steps, self-paced callbacks,
+  and completion-log receipt timing. Label their results as synthetic. Their
+  callback durations, reciprocal timings, GPU throughput, and log receipt
+  cadence cannot prove native publication cadence or smooth real scrolling.
+  Do not infer raster reuse from integer steps; inspect the recorded reuse
+  counters. The historical Pikabu 61.7/68.7 figures used this workload and did
+  not establish the 60 fps goal; see `docs/PIKABU_SCROLLING.md`.
+- Preserve raw logs, commands, summaries, and actual browser/guard exit codes
+  under a unique `Build/` directory. Missing publications, stationary input,
+  crashes, timeouts, or changed build identities invalidate an acceptance run.
+  A compile-only check does not execute tests. Keep pixel correctness and the
+  existing focused/broad verification cadence while optimizing.
+
 ## Screenshot conformance workflow
 
 - Run windowed tests and visual checks on the display away from the pointer
