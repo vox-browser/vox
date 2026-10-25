@@ -96,6 +96,14 @@ int vox_graphite_draw_image_tiles(uint8_t *pixels, int width, int height,
     int pitch, int has_background, const VoxGraphiteImage *images, int count);
 int vox_graphite_draw_shape_pixels(uint8_t *pixels, int width, int height,
     int pitch, int has_background, const VoxGraphiteShape *shape);
+// CPU pixels for a subregion of an otherwise transparent GPU surface. The
+// shape matrix and raster dimensions remain in the original tile coordinates.
+typedef struct VoxGraphitePixelRegion {
+    int x, y, width, height, pitch;
+    uint8_t *pixels;
+} VoxGraphitePixelRegion;
+int vox_graphite_draw_shape_region_pixels(const VoxGraphitePixelRegion *region,
+    int surface_width, int surface_height, int has_background, const VoxGraphiteShape *shape);
 int vox_graphite_draw_path_pixels(uint8_t *pixels, int width, int height,
     int pitch, int has_background, const VoxGraphitePath *path);
 int vox_graphite_draw_path_batch_pixels(uint8_t *pixels, int width, int height,

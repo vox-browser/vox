@@ -704,11 +704,34 @@ static bool draw_large_rounded_shape(uint8_t* pixels, int width, int height,
     return true;
 }
 
+// Copy between a packed patch and a CPU view without materializing the rest
+// of its GPU tile. An absent backdrop texel is transparent, as in the full tile.
+static void copy_shape_patch(VoxGraphitePixelRegion const& region, uint8_t* patch,
+    int left, int top, int width, int height, bool to_region)
+{
+    int l = std::max(left, region.x), t = std::max(top, region.y);
+    int r = std::min(left + width, region.x + region.width);
+    int b = std::min(top + height, region.y + region.height);
+    if (l >= r || t >= b) return;
+    for (int y = t; y < b; ++y) {
+        auto* view_row = region.pixels + size_t(y - region.y) * region.pitch + size_t(l - region.x) * 4;
+        auto* patch_row = patch + size_t(y - top) * width * 4 + size_t(l - left) * 4;
+        if (to_region) std::memcpy(view_row, patch_row, size_t(r - l) * 4);
+        else std::memcpy(patch_row, view_row, size_t(r - l) * 4);
+    }
+}
+
+static void clear_shape_region(VoxGraphitePixelRegion const& region)
+{
+    for (int y = 0; y < region.height; ++y)
+        std::memset(region.pixels + size_t(y) * region.pitch, 0, size_t(region.width) * 4);
+}
+
 // Small controls still rasterize in their original Chromium tile: changing
 // the surface extent changes GPU coverage rounding. Only the conservative
 // affected rectangle needs a backdrop, readback or retained cache entry.
-static bool draw_small_shape_patch(uint8_t* pixels, int width, int height,
-    int pitch, bool has_background, VoxGraphiteShape const& shape)
+static bool draw_small_shape_patch(VoxGraphitePixelRegion const& region, int width, int height,
+    bool has_background, VoxGraphiteShape const& shape)
 {
     if (width > 16384 || height > 16384 || shape.has_underlay || shape.clip_out_count)
         return false;
@@ -745,14 +768,11 @@ static bool draw_small_shape_patch(uint8_t* pixels, int width, int height,
     size_t count = size_t(patch_width) * patch_height;
     if (count > 16384 || count * 4 >= size_t(width) * height) return false;
     if (!count) {
-        if (!has_background) for (int y = 0; y < height; ++y)
-            std::memset(pixels + size_t(y) * pitch, 0, size_t(width) * 4);
+        if (!has_background) clear_shape_region(region);
         return true;
     }
     std::vector<uint8_t> patch(count * 4);
-    if (has_background) for (int y = 0; y < patch_height; ++y)
-        std::memcpy(patch.data() + size_t(y) * patch_width * 4,
-            pixels + size_t(top + y) * pitch + size_t(left) * 4, size_t(patch_width) * 4);
+    if (has_background) copy_shape_patch(region, patch.data(), left, top, patch_width, patch_height, false);
     if (count) {
         std::lock_guard lock(gpu_mutex);
         auto cached = shape_cache.prepare_patches(shape, width, height,
@@ -791,12 +811,22 @@ static bool draw_small_shape_patch(uint8_t* pixels, int width, int height,
             shape_cache.finish(std::move(cached), patch.data(), int(count * 4));
         }
     }
-    if (!has_background) for (int y = 0; y < height; ++y)
-        std::memset(pixels + size_t(y) * pitch, 0, size_t(width) * 4);
-    for (int y = 0; y < patch_height; ++y)
-        std::memcpy(pixels + size_t(top + y) * pitch + size_t(left) * 4,
-            patch.data() + size_t(y) * patch_width * 4, size_t(patch_width) * 4);
+    if (!has_background) clear_shape_region(region);
+    copy_shape_patch(region, patch.data(), left, top, patch_width, patch_height, true);
     return true;
+}
+
+extern "C" __attribute__((visibility("default")))
+int vox_graphite_draw_shape_region_pixels(VoxGraphitePixelRegion const* region,
+    int width, int height, int has_background, VoxGraphiteShape const* shape)
+{
+    if (!region || !region->pixels || !shape || width <= 0 || height <= 0
+        || width > 16384 || height > 16384 || region->x < 0 || region->y < 0
+        || region->width <= 0 || region->height <= 0 || region->pitch <= 0
+        || region->width > width || region->height > height
+        || region->x > width - region->width || region->y > height - region->height
+        || size_t(region->pitch) < size_t(region->width) * 4) return 0;
+    return draw_small_shape_patch(*region, width, height, has_background != 0, *shape);
 }
 
 extern "C" __attribute__((visibility("default")))
@@ -820,7 +850,8 @@ int vox_graphite_draw_shape_pixels(uint8_t* pixels, int width, int height,
         if (vox_draw_solid_stroke(pixels, width, height, pitch, has_background != 0, *shape)) return 1;
         if (draw_large_rounded_shape(pixels, width, height, pitch, has_background != 0, *shape)) return 1;
     }
-    if (draw_small_shape_patch(pixels, width, height, pitch, has_background != 0, *shape)) return 1;
+    if (draw_small_shape_patch({0, 0, width, height, pitch, pixels}, width, height,
+            has_background != 0, *shape)) return 1;
     std::lock_guard lock(gpu_mutex);
     auto cached = shape_cache.prepare(*shape, width, height, pitch, has_background != 0, pixels);
     if (cached.hit) return 1;
