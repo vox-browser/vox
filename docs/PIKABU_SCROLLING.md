@@ -1321,3 +1321,25 @@ mask-cpu-diagnostic.log,snapshot-cpu-diagnostic.log,
 measurement-tool-focused-check.json}` and
 `mask-pixels-production-v2/retry-reason.json`. The measurement-tool and
 instruction commits are `9a27b77c` and `4baaa110`.
+
+### Production retry blocked by disk space (October 26)
+
+The second production job never acquires the shared guard. After more than
+29 minutes queued, available disk space falls below its 1 GiB build preflight
+minimum, reaching 175,362,048 bytes at cancellation. Only this queued job is
+terminated; its launcher exits 143, with no child build or browser started.
+The empty guard report is not a completed guard result. There is no new
+production bundle, visual result or scrolling FPS evidence from this retry.
+The 60 fps target remains open.
+
+The prepared measurement controller now checks mask conversion during input
+on both archived and live pages, attempts alternating live control/candidate
+pairs, and retains failed trials. Three mocked controller scenarios pass,
+including an ineligible archive and a failed diagnostic; these execute no
+native compiler or browser and supply no performance evidence. The next
+production attempt needs sufficient free disk space and a new guard report.
+
+Evidence: `Build/pikabu-live-lag-20261025/mask-pixels-production-v2/`
+`queue-cancellation.json`, `check-measure-flow.{py,json}`, `measure.py` and
+`build.py`. The prior compiler failure and focused native checks remain
+recorded above.
