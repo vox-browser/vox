@@ -180,6 +180,7 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	if action == 'nodeParent' { return binding.node_relation_query(root, 'parent') }
 	if action == 'cachedParent' { return binding.cached_parent_query(root) }
 	if action == 'geometry' { return compact_element_geometry_query(root, selector) }
+	if action == 'setScroll' { return compact_element_set_scroll(root, selector, binding.runtime) }
 	if action == 'offsetParent' {
 		element := root.as_element() or { return error('TypeError: Invalid Element receiver') }
 		if !element.is_html_element() { return 'null' }

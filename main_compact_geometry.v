@@ -32,6 +32,14 @@ fn compact_element_geometry_query(root &dom.Node, name string) !string {
 	if name == 'clientLeft' { return element.client_left().str() }
 	if name == 'clientWidth' { return element.client_width().str() }
 	if name == 'clientHeight' { return element.client_height().str() }
+	if name == 'scrollTop' { return json2.encode(element.scroll_top()) }
+	if name == 'scrollLeft' { return json2.encode(element.scroll_left()) }
+	if name in ['scrollWidth', 'scrollHeight'] {
+		mut owner := unsafe { &dom.Element(element) }
+		mut document := unsafe { &dom.Document(element.document()) }
+		document.update_layout(if name == 'scrollWidth' { .element_scroll_width } else { .element_scroll_height })
+		return if name == 'scrollWidth' { owner.scroll_width().str() } else { owner.scroll_height().str() }
+	}
 	if !element.is_html_element() { return error('TypeError: Invalid HTMLElement receiver') }
 	host := unsafe { &dom.HTMLElement(element) }
 	return match name {
@@ -48,8 +56,15 @@ fn compact_element_geometry_bootstrap() string {
 function __compactElementGeometry(object,state){
  const read=function(receiver,name){const own=__elementApply(__elementRecordGet,__elementRecords,[receiver]);if(!own)throw new TypeError("Illegal Element receiver");return __queryElements(own.bridgeKey,"geometry",name);};
  object.getBoundingClientRect=function getBoundingClientRect(){return read(this,"rect");};
- for(const name of ["clientTop","clientLeft","clientWidth","clientHeight"]){
+ for(const name of ["clientTop","clientLeft","clientWidth","clientHeight","scrollWidth","scrollHeight"]){
   Object.defineProperty(object,name,{get(){return read(this,name);},enumerable:true,configurable:true});
+ }
+ for(const name of ["scrollTop","scrollLeft"]){
+  Object.defineProperty(object,name,{get(){return read(this,name);},set(value){
+   const own=__elementApply(__elementRecordGet,__elementRecords,[this]);if(!own)throw new TypeError("Illegal Element receiver");
+   value=+value;if(!__compactScrollFinite(value))value=0;
+   __queryElements(own.bridgeKey,"setScroll",JSON.stringify({name,value}));
+  },enumerable:true,configurable:true});
  }
  if(state.namespaceURI!=="http://www.w3.org/1999/xhtml")return;
  for(const name of ["offsetTop","offsetLeft","offsetWidth","offsetHeight"]){
@@ -57,6 +72,7 @@ function __compactElementGeometry(object,state){
  }
  Object.defineProperty(object,"offsetParent",{get(){return __queryElements(state.bridgeKey,"offsetParent","");},enumerable:true,configurable:true});
 }
+const __compactScrollFinite=Number.isFinite;
 Object.defineProperty(Element.prototype,"ownerDocument",{get:function(){
  if(!__elementApply(__elementRecordGet,__elementRecords,[this]))throw new TypeError("Illegal Node receiver");
  return document;
