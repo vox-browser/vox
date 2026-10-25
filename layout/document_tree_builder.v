@@ -3048,7 +3048,11 @@ fn last_anonymous_inline_wrapper_or_new(mut parent Node, document &dom.Document,
 // NodeWithStyle::create_anonymous_wrapper — an anonymous block box with the
 // parent's inherited values and initial non-inherited values.
 fn create_anonymous_block_wrapper(document &dom.Document, parent_computed &css.ComputedProperties) &Node {
-	anonymous_values := css.resolve_anonymous_block_values_for_document(parent_computed, document)
+	// Mixed-content insertion receives the element's CSS-pixel style, while
+	// its real block children already use layout coordinates. Inherit from
+	// that same projection so an unwrapped text run keeps the physical font.
+	parent_values := computed_values_in_layout_coordinates(parent_computed, document)
+	anonymous_values := css.resolve_anonymous_block_values_for_document(parent_values, document)
 	mut wrapper := BlockContainer.with_resolved_values(document, none, anonymous_values)
 	wrapper.anonymous_ = true
 	wrapper.children_are_inline_ = true
