@@ -123,13 +123,82 @@ The next profile showed substantial synchronous Metal readback time for small
 shapes and images, in addition to paths. Further work must reduce that cost
 and pass another matched native-input series plus installed live SOCKS trials.
 
-A separate recorder/surface reuse candidate and a fractional-phase viewport
-cache prototype are pending validation. Neither has performance credit. The
-actual wheel sequence advances by approximately 25.200001001 CSS pixels per
-event because the native adapter converts deltas through 32-bit floats. An
-idealized 25.2-pixel sequence therefore cannot establish cache reuse for the
-measured workload. A cache-state probe in the second root-fill diagnostic did
-not load because the measurement tool replaced `DYLD_INSERT_LIBRARIES`; those
-absent counters are inconclusive. Its corrected retry uses the tool's
-`--insert-library` option and must validate executable identity and symbol
-ranges before interpreting cache state.
+## Bounded region-target reuse
+
+Commit `55d94b25` reuses the existing bounded Graphite recorder/surface pool
+for image regions, small shapes and rounded parts. Each operation saves and
+restores canvas state before clearing and replaying, preserving clips and
+transforms between uses. The pool retains at most 32 targets and 4 MiB of
+surface pixels; larger requests keep the original allocation path. The
+recorder retains its existing 16 MiB budget.
+
+All 8,952 exact GPU comparisons passed, including 384 new interleaved region
+comparisons, 1,920 image comparisons, 2,560 shape comparisons, 3,312 rounded-part
+comparisons and 776 path comparisons. They cover repeated and changing
+extents, eviction, the oversized fallback, source/backdrop changes, fractional
+transforms, clips, alpha, MSAA, odd pitches and untouched padding. A separate
+diagnostic confirmed successful image and small-shape pool hits during the
+original archived page's input window.
+
+The complete alternating series follows. Both frozen pairs improved, by
+7.61% and 19.83%, respectively. These two pairs do not establish a stable
+general gain: other compiler jobs loaded the host, and these timings cannot
+be compared as isolated changes against the earlier build families. The live
+SOCKS result still misses the 60 fps target substantially.
+
+| Trial | Scroll publications/s | Median / p95 / maximum interval (ms) | Over 16.67 ms | Moving intervals / measured publications / inputs |
+| --- | ---: | --- | ---: | --- |
+| region-reuse-control-frozen-1 | 22.11 | 39.14 / 86.45 / 120.21 | 100.00% | 156 / 158 / 360 |
+| region-reuse-candidate-frozen-1 | 23.80 | 36.42 / 70.49 / 99.05 | 96.89% | 161 / 163 / 360 |
+| region-reuse-control-frozen-2 | 20.97 | 44.06 / 91.00 / 132.05 | 100.00% | 140 / 142 / 360 |
+| region-reuse-candidate-frozen-2 | 25.13 | 35.47 / 71.38 / 97.74 | 96.34% | 164 / 165 / 360 |
+| region-reuse-candidate-live-1 | 27.66 | 31.17 / 65.43 / 125.09 | 95.63% | 183 / 185 / 360 |
+| region-reuse-candidate-live-2 | 26.26 | 31.75 / 72.75 / 139.10 | 100.00% | 173 / 176 / 360 |
+
+| Trial | Actual input Hz | First-to-last input period (s) | Leading / trailing scroll gap (ms) |
+| --- | ---: | ---: | --- |
+| region-reuse-control-frozen-1 | 50.89 | 7.054 | 493.77 / 1.34 |
+| region-reuse-candidate-frozen-1 | 53.06 | 6.766 | 470.75 / 20.12 |
+| region-reuse-control-frozen-2 | 53.78 | 6.676 | 265.45 / 1.43 |
+| region-reuse-candidate-frozen-2 | 55.01 | 6.526 | 225.57 / 21.37 |
+| region-reuse-candidate-live-1 | 54.25 | 6.617 | 203.00 / 36.96 |
+| region-reuse-candidate-live-2 | 54.50 | 6.588 | 206.29 / 1.36 |
+
+All six browsers completed 360 inputs and exited 0. The validation guard
+completed with exit 0, a 3 GiB limit and sampled peak RSS 1,202,176,000 bytes.
+Headless startup passed. Seven of the 11 screenshot smoke cases passed; the
+four failures remained pixel-identical to fresh pinned-control captures.
+These failures remain open conformance issues. Raw commands and exits are in
+`region-reuse-validation-commands.json`, the individual trial result files
+and `region-reuse-validation-guard.json`. Successful reuse counters are in
+`region-reuse-diagnostic-result.json`.
+
+The control/candidate unsigned main executable SHA-256 is
+`388f692e1d24f26c739a1dd72280359cdda9189b4d252013d4440c5d91fb3da5`.
+Graphite control SHA-256 is
+`a36151a5d563b3a2875b4ed5d634b878f8d55d88f4199990c67f88fa9cefcf65`;
+candidate SHA-256 is
+`d570416e38bb99496c7d4a4b5201f85090321cfd6851ab4bca03e857515e1b36`.
+Complete signed executable and dependency identities, including unchanged
+Skia and Dawn libraries, are in `region-reuse-pair-source-verified.json`.
+Live trials launched fresh processes from the installed candidate bundle.
+The previously installed bundle was restored when the experiment finished.
+
+## Scroll-cache eligibility investigation
+
+The actual wheel sequence advances by approximately 25.200001001 CSS pixels
+per event because the native adapter converts deltas through 32-bit floats.
+An idealized 25.2-pixel sequence therefore cannot establish cache reuse for
+the measured workload. Fractional-phase caching and preserving the original
+native wheel doubles remain prototypes without performance credit.
+
+A cache-state probe in the second root-fill diagnostic did not load because
+the measurement tool replaced `DYLD_INSERT_LIBRARIES`; those absent counters
+are inconclusive. The corrected third diagnostic uses `--insert-library`
+and validates the actual executable header, image path and symbol segment
+ranges. Both startup and input records show no allocated scroll-cache pixels
+and no shared-recording path. Consequently, cache eligibility must be
+resolved before a fractional-phase cache can help this page. The validated
+probe's command, identities and state records are retained in
+`scroll-cache-diagnostic-v3-result.json`; no timing credit is assigned to it.
+An instrumented build is pending to identify the eligibility rejection.
