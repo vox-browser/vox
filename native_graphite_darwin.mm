@@ -730,7 +730,6 @@ static void clear_shape_region(VoxGraphitePixelRegion const& region)
 static bool draw_rounded_parts(VoxGraphitePixelRegion const* regions, int count, int width, int height,
     bool has_background, VoxGraphiteShape const& shape)
 {
-    if (!shape.fill) return false;
     if (width > 16384 || height > 16384) return false;
     float edges[4];
     auto solid = shape;
@@ -785,6 +784,14 @@ static bool draw_rounded_parts(VoxGraphitePixelRegion const* regions, int count,
         float half = i % 2 ? half_y : half_x;
         aligned_stroke = aligned_stroke && edges[i] - half == std::floor(edges[i] - half)
             && edges[i] + half == std::floor(edges[i] + half);
+    }
+    if (!shape.fill) {
+        if (!aligned_stroke || edges[2] - edges[0] <= half_x * 2
+            || edges[3] - edges[1] <= half_y * 2) return false;
+        for (int i = 0; i < 4; ++i) {
+            float half = i % 2 ? half_y : half_x;
+            if (!std::isfinite(edges[i] - half) || !std::isfinite(edges[i] + half)) return false;
+        }
     }
     // Fractional straight edges and strokes retain the original GPU coverage.
     if (!aligned_fill && !aligned_stroke) {
@@ -847,13 +854,23 @@ static bool draw_rounded_parts(VoxGraphitePixelRegion const* regions, int count,
     for (int i = 0; i < count; ++i) {
         auto const& view = regions[i];
         if (!has_background) clear_shape_region(view);
-        int left = int(std::clamp(std::ceil(double(edges[0])), double(view.x), double(view.x + view.width)));
-        int top = int(std::clamp(std::ceil(double(edges[1])), double(view.y), double(view.y + view.height)));
-        int right = int(std::clamp(std::floor(double(edges[2])), double(view.x), double(view.x + view.width)));
-        int bottom = int(std::clamp(std::floor(double(edges[3])), double(view.y), double(view.y + view.height)));
         uint32_t color = 0xff000000u | uint32_t(shape.red) << 16 | uint32_t(shape.green) << 8 | shape.blue;
-        for (int y = top; y < bottom; ++y) for (int x = left; x < right; ++x)
-            std::memcpy(view.pixels + size_t(y - view.y) * view.pitch + size_t(x - view.x) * 4, &color, 4);
+        auto strip = [&](double l, double t, double r, double b) {
+            int left = int(std::clamp(l, double(view.x), double(view.x + view.width)));
+            int top = int(std::clamp(t, double(view.y), double(view.y + view.height)));
+            int right = int(std::clamp(r, double(view.x), double(view.x + view.width)));
+            int bottom = int(std::clamp(b, double(view.y), double(view.y + view.height)));
+            for (int y = top; y < bottom; ++y) for (int x = left; x < right; ++x)
+                std::memcpy(view.pixels + size_t(y - view.y) * view.pitch + size_t(x - view.x) * 4, &color, 4);
+        };
+        if (shape.fill) strip(std::ceil(edges[0]), std::ceil(edges[1]),
+            std::floor(edges[2]), std::floor(edges[3]));
+        else {
+            strip(edges[0] - half_x, edges[1] - half_y, edges[2] + half_x, edges[1] + half_y);
+            strip(edges[0] - half_x, edges[3] - half_y, edges[2] + half_x, edges[3] + half_y);
+            strip(edges[0] - half_x, edges[1] + half_y, edges[0] + half_x, edges[3] - half_y);
+            strip(edges[2] - half_x, edges[1] + half_y, edges[2] + half_x, edges[3] - half_y);
+        }
         for (auto const& patch : patches)
             copy_shape_patch(view, packed.data() + patch.offset,
                 patch.left, patch.top, patch.width, patch.height, true);
@@ -865,7 +882,7 @@ extern "C" __attribute__((visibility("default")))
 int vox_graphite_draw_rounded_parts_pixels(VoxGraphitePixelRegion const* regions, int count,
     int width, int height, int has_background, VoxGraphiteShape const* shape)
 {
-    if (!regions || count <= 0 || count > 4 || !shape || !shape->fill || shape->alpha != 255
+    if (!regions || count <= 0 || count > 4 || !shape || shape->alpha != 255
         || width <= 0 || height <= 0 || width > 16384 || height > 16384) return 0;
     if (shape->has_float_color) {
         auto color = SkColor4f::FromColor(SkColorSetARGB(shape->alpha, shape->red, shape->green, shape->blue));

@@ -141,9 +141,10 @@ int main()
         }
         // Call the optimized helper directly as well, so a fallback cannot
         // make a passing comparison hide an unexercised fast path.
-        int direct_fills = 0;
+        int direct_cases = 0;
         for (int scale : {1, 2}) for (int clip : {0, 1, 2})
-        for (int color_case : {0, 1, 2, 3}) for (int background : {0, 1, 2, 3}) {
+        for (int color_case : {0, 1, 2, 3}) for (int background : {0, 1, 2, 3})
+        for (int stroke_case : {0, 1, 2}) {
             int width = 160 * scale, height = 120 * scale, pitch = width * 4 + 16;
             std::vector<uint8_t> expected(size_t(pitch) * height);
             for (size_t i = 0; i < expected.size(); ++i) {
@@ -183,14 +184,16 @@ int main()
             float data[] {11, 7, 100, 82, 5, 4, 3, 2, 4, 5, 2, 3};
             std::copy_n(data, 12, shape.rect);
             shape.red = red; shape.green = green; shape.blue = blue; shape.alpha = 255;
-            shape.fill = 1; shape.anti_alias = 1;
-            assert(reference(before, 11, 7, 100, 82, 5, 4, 3, 2, 4, 5, 2, 3,
-                1, 0, 0, 1, 0, 0, 0, 0, 0, 160, 120, red, green, blue, 255, 1, 1, 1, 1));
+            shape.fill = stroke_case == 0; shape.anti_alias = 1;
+            shape.thickness = stroke_case == 2 ? 1 : 2;
+            if (stroke_case == 2) { shape.rect[0] += .5; shape.rect[1] += .5; }
+            assert(reference(before, shape.rect[0], shape.rect[1], 100, 82, 5, 4, 3, 2, 4, 5, 2, 3,
+                1, 0, 0, 1, 0, 0, 0, 0, 0, 160, 120, red, green, blue, 255, shape.fill, shape.thickness, 1, 1));
             assert(draw_chromium_sparse_rounded(after, shape, paint, region, scale, 0, 0, 0, 120));
             CGContextFlush(before); CGContextFlush(after);
             if (expected != actual) {
                 std::cerr << "Direct rounded parts mismatch scale=" << scale << " clip=" << clip
-                    << " color=" << color_case << " background=" << background << '\n';
+                    << " stroke=" << stroke_case << " color=" << color_case << " background=" << background << '\n';
                 int differences = 0;
                 for (size_t i = 0; i < expected.size(); ++i) if (expected[i] != actual[i]) {
                     if (differences++ < 24) std::cerr << " byte=" << i << " x=" << (i % pitch) / 4 << " y=" << i / pitch
@@ -209,11 +212,11 @@ int main()
                 CGContextFlush(after);
                 assert(expected == actual);
             }
-            ++comparisons; ++direct_fills;
+            ++comparisons; ++direct_cases;
             CGContextRelease(before); CGContextRelease(after);
         }
-        assert(direct_fills == 96);
-        std::cout << "Direct rounded parts: " << direct_fills << " exact comparisons passed\n";
+        assert(direct_cases == 288);
+        std::cout << "Direct rounded parts: " << direct_cases << " exact comparisons passed\n";
         reference_grid(nullptr, 0, 0, 0, 0);
         ladybird_v_skia_set_msaa_grid(nullptr, 0, 0, 0, 0);
         // The candidate's frame pool was opened inside the reference's pool.

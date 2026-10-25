@@ -2138,7 +2138,7 @@ static bool draw_chromium_sparse_rounded(CGContextRef destination, VoxGraphiteSh
 {
     auto draw = graphite_rounded_parts_draw();
     if (!draw || !s_raster_layer_is_root || s_msaa_grid_columns <= 0
-        || s_msaa_grid_width <= 2 || s_msaa_grid_height <= 2 || !shape.fill || shape.alpha != 255
+        || s_msaa_grid_width <= 2 || s_msaa_grid_height <= 2 || shape.alpha != 255
         || (scale != 1 && scale != 2)
         || paint.getColor4f() != SkColor4f::FromColor(SkColorSetRGB(shape.red, shape.green, shape.blue))) return false;
     auto ctm = CGContextGetCTM(destination);
@@ -2163,7 +2163,16 @@ static bool draw_chromium_sparse_rounded(CGContextRef destination, VoxGraphiteSh
         || first_x < 0 || first_y < 0 || first_x > extent_x || first_y > extent_y
         || width > extent_x - first_x || height > extent_y - first_y) return false;
     float edges[4];
-    if (!vox_aligned_opaque_rect(shape, edges)) return false;
+    if (shape.has_underlay || shape.clip_out_count || !vox_axis_aligned_rect(shape, edges)) return false;
+    float hx = shape.fill ? 0 : shape.thickness * shape.matrix[0] / 2;
+    float hy = shape.fill ? 0 : shape.thickness * shape.matrix[4] / 2;
+    if (!shape.fill && (!(hx > 0 && hy > 0) || !std::isfinite(hx) || !std::isfinite(hy)
+            || edges[2] - edges[0] <= hx * 2 || edges[3] - edges[1] <= hy * 2)) return false;
+    for (int i = 0; i < 4; ++i) {
+        float half = i % 2 ? hy : hx;
+        for (float edge : {edges[i] - half, edges[i] + half})
+            if (!std::isfinite(edge) || edge != std::floor(edge)) return false;
+    }
     float rx = 0, ry = 0;
     for (int i = 4; i < 12; i += 2) {
         if (!std::isfinite(shape.rect[i]) || !std::isfinite(shape.rect[i + 1])
@@ -2171,7 +2180,7 @@ static bool draw_chromium_sparse_rounded(CGContextRef destination, VoxGraphiteSh
         rx = std::max(rx, shape.rect[i]); ry = std::max(ry, shape.rect[i + 1]);
     }
     if (rx == 0 || ry == 0) return false;
-    float cw = std::ceil(rx * shape.matrix[0]) + 2, ch = std::ceil(ry * shape.matrix[4]) + 2;
+    float cw = std::ceil(rx * shape.matrix[0] + hx) + 2, ch = std::ceil(ry * shape.matrix[4] + hy) + 2;
     if (cw * 2 >= edges[2] - edges[0] || ch * 2 >= edges[3] - edges[1] || cw * ch > 4096) return false;
     long fc = grid.owner(first_x, grid.width, grid.columns), lc = grid.owner(first_x + width - 1, grid.width, grid.columns);
     long fr = grid.owner(first_y, grid.height, grid.rows), lr = grid.owner(first_y + height - 1, grid.height, grid.rows);
@@ -2180,7 +2189,7 @@ static bool draw_chromium_sparse_rounded(CGContextRef destination, VoxGraphiteSh
         long ox = first_x - column * (grid.width - 2), oy = first_y - row * (grid.height - 2);
         auto tile = shape; tile.matrix[2] += ox; tile.matrix[5] += oy;
         float mapped[4];
-        if (!vox_aligned_opaque_rect(tile, mapped)) return false;
+        if (!vox_axis_aligned_rect(tile, mapped)) return false;
         for (int e = 0; e < 4; ++e)
             if (double(mapped[e]) != double(edges[e]) + (e % 2 ? oy : ox)) return false;
     }
@@ -2197,10 +2206,10 @@ static bool draw_chromium_sparse_rounded(CGContextRef destination, VoxGraphiteSh
         copy_backdrop_pixels(source, part.width, part.height, part.pixels);
         parts.push_back(std::move(part));
     };
-    add(edges[0] - 2, edges[1] - 2, lcut, tcut);
-    add(rcut, edges[1] - 2, edges[2] + 2, tcut);
-    add(edges[0] - 2, bcut, lcut, edges[3] + 2);
-    add(rcut, bcut, edges[2] + 2, edges[3] + 2);
+    add(edges[0] - hx - 2, edges[1] - hy - 2, lcut, tcut);
+    add(rcut, edges[1] - hy - 2, edges[2] + hx + 2, tcut);
+    add(edges[0] - hx - 2, bcut, lcut, edges[3] + hy + 2);
+    add(rcut, bcut, edges[2] + hx + 2, edges[3] + hy + 2);
     // Every tile reads the immutable destination, including its shared border;
     // only texels owned by that tile are copied into the staged corner images.
     for (long row = fr; row <= lr; ++row) for (long column = fc; column <= lc; ++column) {
@@ -2251,11 +2260,13 @@ static bool draw_chromium_sparse_rounded(CGContextRef destination, VoxGraphiteSh
         int(std::clamp<double>(edges[2], 0, width)),
         int(std::clamp<double>(edges[3], 0, height))
     };
-    copy_backdrop_pixels(backdrop, width, height, pixels, covered);
+    copy_backdrop_pixels(backdrop, width, height, pixels, shape.fill ? covered : RasterRegion {});
     auto rectangle = shape;
     std::fill(rectangle.rect + 4, rectangle.rect + 12, 0);
-    if (!vox_draw_solid_rect(reinterpret_cast<uint8_t*>(pixels.data()), width, height,
-            width * 4, true, rectangle)) return false;
+    bool filled = rectangle.fill
+        ? vox_draw_solid_rect(reinterpret_cast<uint8_t*>(pixels.data()), width, height, width * 4, true, rectangle)
+        : vox_draw_solid_stroke(reinterpret_cast<uint8_t*>(pixels.data()), width, height, width * 4, true, rectangle);
+    if (!filled) return false;
     for (auto const& part : parts) for (int y = 0; y < part.height; ++y)
         std::copy_n(part.pixels.data() + size_t(y) * part.width, part.width,
             pixels.data() + size_t(part.top + y) * width + part.left);

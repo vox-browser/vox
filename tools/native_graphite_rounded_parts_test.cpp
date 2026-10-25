@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cstring>
 #include <dlfcn.h>
+#include <limits>
 #include <vector>
 
 int main(int argc, char** argv)
@@ -26,14 +27,14 @@ int main(int argc, char** argv)
     for (int scale : {1, 2}) for (int msaa : {0, 1}) for (int background : {0, 1})
     for (int translate : {0, -17, 31}) for (auto const& rect : rects)
     for (auto const& crop : crops) for (int color : {35}) for (int floating : {0, 1})
-    for (float radius : {3.f, 7.f}) for (float fraction : {0.f, .25f}) {
+    for (int fill : {0, 1}) for (float radius : {3.f, 7.f}) for (float fraction : {0.f, .25f}) {
         VoxGraphiteShape shape {};
         shape.matrix[0] = shape.matrix[4] = scale; shape.matrix[8] = 1;
         shape.matrix[2] = translate; shape.matrix[5] = -translate;
         std::copy_n(rect, 4, shape.rect);
         shape.rect[0] += fraction; shape.rect[1] -= fraction;
         for (int corner = 4; corner < 12; ++corner) shape.rect[corner] = radius + (corner % 3);
-        shape.fill = 1; shape.anti_alias = 1; shape.force_msaa = msaa;
+        shape.fill = fill; shape.thickness = 2.f / scale; shape.anti_alias = 1; shape.force_msaa = msaa;
         shape.red = color; shape.green = 167; shape.blue = 79; shape.alpha = 255;
         shape.has_float_color = floating;
         shape.float_color[0] = color * (1.f / 255);
@@ -69,13 +70,15 @@ int main(int argc, char** argv)
         ++comparisons;
     }
     for (int scale : {1, 2}) for (int msaa : {0, 1}) for (int background : {0, 1})
-    for (int mutation : {0, 1, 2}) {
+    for (int stroke : {0, 1, 2}) for (int mutation : {0, 1, 2}) {
         VoxGraphiteShape shape {};
         shape.matrix[0] = shape.matrix[4] = scale; shape.matrix[8] = 1;
         shape.rect[0] = 20.f / scale; shape.rect[1] = 12.f / scale;
         shape.rect[2] = 400.f / scale; shape.rect[3] = 180.f / scale;
         for (int i = 4; i < 12; ++i) shape.rect[i] = 3 + i % 3;
-        shape.fill = shape.anti_alias = 1; shape.force_msaa = msaa;
+        shape.fill = stroke == 0; shape.anti_alias = 1; shape.force_msaa = msaa;
+        shape.thickness = (stroke == 2 ? 1.f : 2.f) / scale;
+        if (stroke == 2) { shape.rect[0] += .5f / scale; shape.rect[1] += .5f / scale; }
         shape.alpha = 255; shape.red = 197; shape.green = 37; shape.blue = 83;
         constexpr int locations[][2] {{16, 8}, {400, 8}, {16, 172}, {400, 172}};
         constexpr int w = 24, h = 24, pitch = w * 4 + 13;
@@ -119,9 +122,26 @@ int main(int argc, char** argv)
         views[0].pitch = w * 4 - 1;
         assert(!draw(views, 4, width, height, background, &shape));
         unchanged();
+        views[0].pitch = pitch;
+        if (stroke) {
+            auto valid = shape;
+            for (int defect = 0; defect < 8; ++defect) {
+                shape = valid;
+                if (defect == 0) shape.thickness = 0;
+                if (defect == 1) shape.thickness = -1;
+                if (defect == 2) shape.thickness = std::numeric_limits<float>::infinity();
+                if (defect == 3) shape.thickness = std::numeric_limits<float>::quiet_NaN();
+                if (defect == 4) shape.thickness = .25f / scale;
+                if (defect == 5) shape.rect[2] = shape.thickness / 2;
+                if (defect == 6) shape.has_underlay = 1;
+                if (defect == 7) shape.alpha = 128;
+                assert(!draw(views, 4, width, height, background, &shape));
+                unchanged();
+            }
+        }
         ++comparisons;
     }
-    assert(comparisons >= 1900 && rejected > 0);
+    assert(comparisons >= 3300 && rejected > 0);
     std::printf("Unsupported rounded-part cases preserved: %zu\n", rejected);
     std::printf("Rounded shape parts: %zu exact original-renderer comparisons passed\n", comparisons);
 }
