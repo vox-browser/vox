@@ -1237,3 +1237,30 @@ Evidence under `Build/pikabu-live-lag-20261025/`:
 `sparse-mask/live-v2/{live-result.json,live-*/run.json,live-*/browser.log}`,
 `sparse-mask/live-v2-guard.json`, and
 `{rectangular-mask,constant-mask,clear-mask}/{test.c,check-guard.json}`.
+
+
+### Input-window profile and pending exact-byte optimizations (October 26)
+
+A separate diagnostic run starts the five-second sampling window only after
+`SCROLL_START` on the live Pikabu document. The probe identifies the actual
+executable with `_NSGetMachExecuteHeader()`; dyld image zero is the injected
+measurement library. Its first 12 logged mask builds occur after scrolling
+starts. Process-wide totals are 57 builds, 97 draws and 28,241,286 mask pixels;
+those totals include the whole process and are not isolated input-window counts.
+The input-window sample also includes raster-cache snapshot encoding, image
+rasterization and rounded-rectangle GPU synchronization. This establishes work
+to investigate, without assigning an unprofiled frame-rate gain to any change.
+
+Two candidates preserve the existing pixel format and geometry: moving mask
+format selection outside pixel loops to permit vectorization, and copying
+raster-snapshot literal spans in bulk while preserving the encoded word stream.
+Their focused checks and production comparison are pending. Neither candidate
+has scrolling optimization credit or establishes smooth 60 fps. New fixture
+checks must count eligibility during input separately from startup and settling;
+a path exercised only while loading cannot explain a scrolling timing change.
+
+Evidence under `Build/pikabu-live-lag-20261025/cache-mask/`:
+`profile-job.py`, `live-profile-v3/{run.json,browser.log,summary.json}`,
+`live-profile-v3-{result.json,sample.txt}` and
+`live-profile-v3-queued-guard.json`. The browser measurement, sample and guard
+all exit zero. This is a profiled diagnostic, not an acceptance run.
