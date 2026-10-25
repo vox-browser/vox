@@ -19654,3 +19654,70 @@ Result SHA256: `79a42593ffc50e06b05e7af8b7af99958b740bc6d2b3bc22e6f894bde6d403a4
 Log SHA256: `6927f662b92225fc4ee89b42b803af076facac5df502c9530a04dc76cc2b73f9`.
 Generated-C archive SHA256: `bbd718bb7f7b1bc908b537141320618e10e73216046d465dc360f508efacdb1a`.
 Instrumented binary SHA256: `0c9c987ceac06d3341f0debe223b2969f955b47ae2b774fbfff40fd941333db0`.
+
+## Native-submission style attribution (October 25, 2026)
+
+A separately declared single diagnostic narrows the preceding attribution to
+ten style functions and the existing style-cause/font-guard counters. It uses
+the same frozen `948f56f4` integration snapshot, fixture, compiler and 130
+native inputs. Removing the ten wrappers, globals and four diagnostic edits
+restores the entire original generated C byte-for-byte. Native arguments differ
+only in C-input and private-output paths. Native compilation, signing, signature
+verification, startup, browser and memory guard all actually exit zero.
+
+The document viewport is exactly 1024×768, the strict content gate passes,
+author JavaScript is explicit, Boehm uses one marker and external network
+access is denied. This is one observer-perturbed observation with no retries,
+exclusions, extensions or replay. Navigation instructions through the legacy
+boundary are 27,472,255,460; through local native layer submission,
+77,567,193,559. Each scope is reported once. Neither scope proves
+physical presentation or web FCP.
+
+| Inclusive hardware scope | Legacy calls / instructions | Native-submission calls / instructions |
+| --- | ---: | ---: |
+| `dom__Document__update_style` | 5 / 12,402,190,196 | 26 / 51,671,665,633 |
+| `css__update_style_for_document_from_upstream` | 4 / 12,317,733,830 | 18 / 51,480,564,463 |
+| `css__StyleComputer__recompute_style_with_invalidation` | 5,238 / 11,915,426,560 | 23,052 / 50,762,762,403 |
+| `css__StyleComputer__compute_style_impl` | 21,143 / 11,375,892,446 | 92,385 / 48,187,938,824 |
+| `css__collect_matching_rules_with_storage` | 253,572 / 3,803,805,395 | 1,108,396 / 17,108,963,163 |
+| `css__StyleComputer__compute_cascaded_values_into` | 31,846 / 1,626,822,957 | 138,722 / 5,649,147,449 |
+| `css__StyleComputer__compute_properties` | 5,811 / 1,235,169,576 | 24,775 / 4,348,265,433 |
+| `css__evaluate_media_rules_for_document` | 7 / 20,641,248 | 29 / 82,638,072 |
+| `css__StyleComputer__recompute_inherited_style_with_invalidation` | 0 / 0 | 0 / 0 |
+| `css__StyleComputer__refresh_font_inputs` | 0 / 0 | 0 / 0 |
+
+The hardware totals include callees and observer overhead, overlap and must
+never be summed or used for optimization credit. Call counts describe the
+workload rather than replace retired instructions. Both boundaries have zero
+instrumentation failures and no open wrappers.
+
+| Recompute cause | Through legacy boundary | Through native submission |
+| --- | ---: | ---: |
+| Full document | 5,214 | 5,214 |
+| Node invalidation | 14 | 2,144 |
+| Parent display | 10 | 10 |
+| Ancestor recomputation | 0 | 0 |
+| Custom-property dependency | 0 | 15,684 |
+| Conditional media | 0 | 0 |
+| Font refresh | 0 | 0 |
+| Font fallback | 0 | 0 |
+
+All sixteen font-guard rejection counters remain zero at both checkpoints.
+The retained per-document pass records distinguish full, animated, node and
+child invalidations. They show repeated expensive selective passes after the
+legacy boundary; the custom-property dependency cause increases while the
+full-document cause remains unchanged. This points to animated/custom-property
+propagation as a further investigation target. It does not establish that any
+of those updates can safely be skipped.
+
+This diagnostic receives zero page credit and does not reset a broad gate.
+Current4 carry stays 54,475,673 with its canonical baseline pending; the legacy
+round-179 ledger is byte-identical. No canonical app is installed and the user's
+GUI browser is preserved. Chrome parity remains open.
+
+Evidence: `Build/instructions/native-style-attribution-20261025/`.
+Evidence-audit SHA256: `be239a024e84d6a3db63649ff033b486d7f486694582a4a83d94e4083daf0e9b`.
+Observation SHA256: `3ac7275a48184909c6759f86b1f058b3c64b241d31e280af9c9743d8d0d25865`.
+Primary-log SHA256: `018d0759942f62ba24a1b5f8d54877bf4fdfe8f6f4b5fd125910757c561a2ac4`.
+Generated-C archive SHA256: `e6e5efcea8d4a8f67c3fbfa9e5b5e2b7a4a85ce04e40443684952d1200e8d246`.
+Instrumented binary SHA256: `ec4140956283ddaa324a10c945f634b6cb6ca20445218858d52fb655db321c21`.

@@ -2674,6 +2674,9 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Batch capture defers replay through readiness/font settlement;repeated layout/paint preparation lies between boundaries;not one bitmap-copy measurement/not physical presentation/FCP.
   Separate one-observation inclusive hardware attribution:14 wrappers/full-C removal exact/130native pins/native+sign+verify+smoke+browser+guard0/zero instrumentation failures;overlapping observer-perturbed totals never summed or credited.
   Initial native symbol failure1 retained;corrected compile timeout guard125/child-9/native-terminalUNKNOWN retained/no browser;only unfinished native stage resumed with identical C/args/memory guard/900s limit. Both diagnostics optimizationcredit0/current4 carry54,475,673/pending canonical baseline/legacy179ledger unchanged/Chrome parity open.
+  Native-submission style attribution October25:one observer-perturbed observation/10inclusive hardware wrappers+16cause+16font-guard counters/full-C removal exact/130native pins/actual native+sign+verify+smoke+browser+guard0/strictcontent/exact1024x768.
+  Full-document cause5214→5214;custom-property dependency0→15684;node14→2144;zero font refresh/fallback/rejections/zero instrumentation failures/no open wrappers. Repeated animated/selective passes require investigation;overlapping totals never summed/call counts never substitute for instructions.
+  Diagnostic pagecredit0/no broad reset/current4 carry54,475,673/canonical baseline pending/legacy179ledger+canonical+GUI preserved/Chrome parity open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
