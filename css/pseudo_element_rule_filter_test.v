@@ -12,7 +12,7 @@ fn pseudo_element_filter_test_selector(source string) Selector {
 fn test_candidate_rules_are_filtered_by_target_pseudo_element() {
 	document := dom.Document.create(dom.url_about_blank())
 	mut element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
-		panic(err)
+		panic('invalid pseudo-element fixture')
 	}
 	element.set_attribute_value('class', 'target')
 	computer := StyleComputer.new(document)
@@ -30,7 +30,7 @@ fn test_candidate_rules_are_filtered_by_target_pseudo_element() {
 		selector: pseudo_element_filter_test_selector('.target')
 		cascade_origin: .author
 	}
-	mut rules_to_run := []ScopedMatchingRule{}
+	mut rules_to_run := []MatchingRuleCandidate{}
 	style_scope_add_rules_to_run(computer, dom.AbstractElement.new(element, .before), [before_rule,
 		after_rule, ordinary_rule], none, none, none, mut rules_to_run)
 

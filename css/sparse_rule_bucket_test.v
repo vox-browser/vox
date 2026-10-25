@@ -74,11 +74,9 @@ fn test_sparse_candidate_buckets_keep_order_identity_and_scope_for_every_combina
 				}
 				cache.other_rules = [rules[7]]
 				expected << 8
-				seed := ScopedMatchingRule{
+				seed := MatchingRuleCandidate{
 					rule: sentinel
 					shadow_root: shadow
-					resolved_scope_root: root
-					scope_proximity: 7
 				}
 				mut actual := [seed]
 				mut oracle := [seed]
@@ -94,12 +92,10 @@ fn test_sparse_candidate_buckets_keep_order_identity_and_scope_for_every_combina
 					indices << rule.rule.rule_index
 					assert voidptr(rule.rule) == voidptr(oracle[index].rule)
 					assert style_scope_optional_shadow_root_equal(rule.shadow_root, oracle[index].shadow_root)
-					assert rule.scope_proximity == oracle[index].scope_proximity
-					if index > 0 { assert rule.resolved_scope_root == none }
+					if index > 0 { assert rule.shadow_root == none }
 				}
 				assert indices == expected
-				assert voidptr(actual[0].resolved_scope_root or { panic('lost scope') }) == voidptr(root)
-				assert actual[0].scope_proximity == 7
+				assert voidptr(actual[0].shadow_root or { panic('lost shadow scope') }) == voidptr(shadow)
 				assert 'absent' !in cache.rules_by_class || cache.rules_by_class['absent'].len == 0
 				assert 'missing' !in cache.rules_by_attribute_name || cache.rules_by_attribute_name['missing'].len == 0
 			}
@@ -130,6 +126,8 @@ fn test_sparse_root_buckets_observe_live_attachment_population_and_removal() {
 		cache.root_rules = [rule]
 		retained := style_computer_collect_matching_rules_in_scope(computer, element, .author, mut attempted, none, scope)
 		assert retained.len == 1
+		assert retained[0].resolved_scope_root == none
+		assert retained[0].scope_proximity == 0x3fffffff
 		assert voidptr(retained[0].rule) == voidptr(rule)
 		cache.root_rules = []&MatchingRule{}
 		gc_collect()

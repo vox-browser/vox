@@ -3,11 +3,11 @@ module css
 import dom
 
 fn empty_bucket_selector(source string) Selector {
-	list := parse_selector_with_parser(source, map[string]bool{}) or { panic(err) }
+	list := parse_selector_with_parser(source, map[string]bool{}) or { panic('invalid empty-bucket selector') }
 	return list.selectors[0]
 }
 
-fn test_empty_rule_buckets_preserve_existing_scoped_results() {
+fn test_empty_rule_buckets_preserve_existing_candidates() {
 	document := dom.Document.create(dom.url_about_blank())
 	mut host := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div')!
 	shadow := host.attach_shadow(dom.ShadowRootInit{ mode: .open })!
@@ -20,12 +20,12 @@ fn test_empty_rule_buckets_preserve_existing_scoped_results() {
 		for abstract_element in [dom.AbstractElement.new(element, none),
 			dom.AbstractElement.new(element, dom.PseudoElement.before),
 			dom.AbstractElement.new(element, dom.PseudoElement.selection)] {
-			mut output := [ScopedMatchingRule{
+			mut output := [MatchingRuleCandidate{
 				rule: rule
 				shadow_root: shadow
-				resolved_scope_root: element
-				scope_proximity: 7
 			}]
+			storage := output.data
+			capacity := output.cap
 			for _ in 0 .. 3 {
 				style_scope_add_rules_to_run(computer, abstract_element, empty, none, none, none,
 					mut output)
@@ -33,12 +33,11 @@ fn test_empty_rule_buckets_preserve_existing_scoped_results() {
 					shadow, mut output)
 				gc_collect()
 				assert output.len == 1
+				assert output.data == storage
+				assert output.cap == capacity
 				assert voidptr(output[0].rule) == voidptr(rule)
 				actual_shadow := output[0].shadow_root or { panic('missing retained shadow root') }
-				actual_scope := output[0].resolved_scope_root or { panic('missing retained scope root') }
 				assert voidptr(actual_shadow) == voidptr(shadow)
-				assert voidptr(actual_scope) == voidptr(element)
-				assert output[0].scope_proximity == 7
 			}
 		}
 	}
@@ -68,6 +67,8 @@ fn test_empty_rule_buckets_observe_later_cache_population_and_removal() {
 		assert actual.len == 1
 		assert voidptr(actual[0].rule) == voidptr(rule)
 		assert actual[0].rule.rule_index == 17
+		assert actual[0].resolved_scope_root == none
+		assert actual[0].scope_proximity == 0x3fffffff
 		cache.other_rules = []&MatchingRule{}
 		gc_collect()
 		assert actual.len == 1
