@@ -253,7 +253,6 @@ fn (mut app BrowserApp) dispose_browser_tab() {
 	layout_handle := if retiring != unsafe { nil } { retiring.layout_engine_handle() } else { unsafe { nil } }
 	app.navigation_generation++
 	app.pending_navigation = none
-	app.pending_cached_page = none
 	app.cancel_page_preload()
 	app.pending_native_navigation = none
 	app.deferred_page_input = []DeferredPageInput{}
@@ -318,10 +317,8 @@ fn (mut app BrowserApp) draw_browser_tabs() {
 fn (mut app BrowserApp) poll_background_browser_tab() {
 	mut work := app.begin_navigation_work()
 	defer { work.finish() }
-	app.install_pending_cached_page()
 	app.start_pending_navigation()
-	app.poll_navigation()
-	app.poll_navigation_and_background_resources(true)
+	app.poll_navigation_and_background_resources()
 	app.poll_javascript_tasks()
 	if app.document != unsafe { nil } {
 		app.document.update_the_visibility_state(.hidden)

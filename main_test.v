@@ -961,22 +961,6 @@ fn test_stale_pending_navigation_is_discarded_before_network_start() {
 	assert app.pending_navigation == none
 }
 
-fn test_stale_pending_cached_page_is_discarded_before_install() {
-	mut app := BrowserApp{
-		navigation_generation: 2
-		pending_cached_page: PendingCachedPage{
-			loaded: LoadedPage{
-				url: 'https://example.com/'
-				markup: '<p>stale</p>'
-			}
-			generation: 1
-		}
-	}
-	app.install_pending_cached_page()
-	assert app.pending_cached_page == none
-	assert app.document == unsafe { nil }
-}
-
 fn test_native_text_draw_y_converts_layout_line_box_to_cocoa_position() {
 	assert native_text_draw_y(90, 28) == 104
 	assert native_text_draw_y(134, 18) == 138

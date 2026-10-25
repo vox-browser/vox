@@ -44,18 +44,15 @@ fn test_running_navigation_fetch_blocks_idle_collection_until_response_is_consum
 	listener.set_accept_timeout(5 * time.second)
 	defer { listener.close() or {} }
 	mut app := navigation_fetch_state_app()
-	defer { app.document.finalize() }
+	mut old := app.document
+	defer { app.document.finalize(); old.finalize() }
 	requested := chan bool{cap: 1}
 	release := chan bool{cap: 1}
 	worker := spawn gated_navigation_fetch(mut listener, requested, release)
 	app.address = 'http://${listener.addr()!}/next'
-	app.markup = '<!doctype html><p>Next page</p>'
-	app.content_type = 'text/html'
 	app.start_navigation_fetch(PendingNavigation{
 		resolved: app.address
 		generation: app.navigation_generation
-		// Consume the response without installing another document in this case.
-		had_cached_page: true
 	})
 	assert <-requested
 	assert app.pending_navigation == none
@@ -75,17 +72,20 @@ fn test_running_navigation_fetch_blocks_idle_collection_until_response_is_consum
 	assert app.memory_maintenance.pending_document_work
 	app.poll_navigation()
 	assert !app.has_navigation_fetch_in_flight()
+	assert voidptr(app.document) != voidptr(old)
+	assert app.markup.contains('Next page')
 }
 
 fn test_stale_navigation_reply_cannot_clear_current_fetch_and_history_supersedes_it() {
 	mut app := navigation_fetch_state_app()
-	defer { app.document.finalize() }
+	mut old := app.document
+	defer { app.document.finalize(); old.finalize() }
 	app.navigation_generation = 2
 	app.navigation_fetch_generation = 2
-	app.navigation_results <- NavigationResult{generation: 1, had_cached_page: true}
+	app.navigation_results <- NavigationResult{generation: 1}
 	app.poll_navigation()
 	assert app.has_navigation_fetch_in_flight()
-	app.navigation_results <- NavigationResult{generation: 2, had_cached_page: true}
+	app.navigation_results <- NavigationResult{generation: 2, resolved: 'https://navigation-fetch.test/', error: 'offline'}
 	app.poll_navigation()
 	assert !app.has_navigation_fetch_in_flight()
 	app.navigation_fetch_generation = 2
