@@ -332,3 +332,26 @@ python3 tools/check_pixel_equality.py \
   Tests/Browser/Brave/expected/isolated-svg-strokes.png \
   Build/isolated-svg.png Build/isolated-svg.diff.png
 ```
+
+`device-layout-image-fallback` checks 70px fixed-size, empty-alt failed images
+in LTR and RTL at native scale 2 (800×600 viewport, 1600×1200 PNG), against
+Brave 156.1.98.60. The Chromium profile paints the silver frame and the
+licensed Chromium icon only after failure; pending requests stay blank.
+The zero-font thumbnail line also retains its 70px height. This focused
+fixture is pixel-exact. The unchanged expanded cases in
+[`diagnostic/device-layout-image-fallback.html`](diagnostic/device-layout-image-fallback.html)
+and its adjacent Brave PNG preserve remaining small-image and inline RTL
+ordering differences. Nonempty alternative text and images with automatic
+sizes retain the existing layout path.
+
+Capture device-layout fixtures without downsampling:
+
+```sh
+VOX_TEST_WINDOW=1 LADYBIRD_SCREENSHOT_SCALE=2 VOX_SCREENSHOT_NATIVE_LAYOUT=1 \
+  VOX_CAPTURE_DOCUMENT_ONLY=1 Build/v/Vox.app/Contents/MacOS/Vox \
+  --window-width 800 --window-height 684 --screenshot Build/image-fallback.png \
+  "$PWD/Tests/Browser/Brave/input/device-layout-image-fallback.html"
+python3 tools/check_pixel_equality.py \
+  Tests/Browser/Brave/expected/device-layout-image-fallback.png \
+  Build/image-fallback.png Build/image-fallback.diff.png
+```

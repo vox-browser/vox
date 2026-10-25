@@ -2297,8 +2297,15 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 			}, opacity)
 		}
 		foreground_replaced_start := commands.len
+		mut drew_image_fallback := false
+		if paintable := box.media().replaced_image_paintable {
+			if paintable.broken_image_fallback_scale > 0 {
+				append_chromium_broken_image(mut commands, paintable, opacity)
+				drew_image_fallback = true
+			}
+		}
 		if (box.media().replaced_image_url != '' || box.media().replaced_image_bitmap != none)
-			&& box.media().nested_viewport_document == none {
+			&& box.media().nested_viewport_document == none && !drew_image_fallback {
 			commands << PaintCommand{
 				kind: if box.media().replaced_image_paintable != none {
 					'draw_replaced_image'

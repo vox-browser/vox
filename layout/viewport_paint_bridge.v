@@ -1286,6 +1286,7 @@ fn layout_paintable_image_contents_changed(target voidptr, layout_handle voidptr
 		replaced_image_paintable: &painting.ImagePaintable{
 			...*paintable
 			intrinsic_size: mutable_image_box.natural_size()
+			broken_image_fallback_scale: chromium_broken_image_fallback_scale(source_node)
 		}
 	})
 	layout_paintable_set_needs_repaint(target, layout_handle, .paint_commands)

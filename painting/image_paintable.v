@@ -14,6 +14,10 @@ pub:
 	resolution_context css.LengthResolutionContext
 	image_rendering    css.ImageRendering
 	is_svg_image       bool
+	// Chromium's fixed-size, empty-alt failure presentation. Pending images
+	// leave this zero, so fetches never flash the broken-image frame.
+	broken_image_fallback_scale f64
+	broken_image_fallback_rtl bool
 	// The provider's intrinsic CSS size may differ from the decoded frame
 	// bitmap (notably for SVG images). Object fitting uses this size.
 	intrinsic_size ?css.SizeWithAspectRatio

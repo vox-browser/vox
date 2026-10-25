@@ -3880,6 +3880,8 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 			resolution_context: computed.length_resolution_context()
 			image_rendering: computed.image_rendering()
 			is_svg_image: node.is_svg_image_box()
+			broken_image_fallback_scale: chromium_broken_image_fallback_scale(node)
+			broken_image_fallback_rtl: computed.direction() == .rtl
 			intrinsic_size: replaced_intrinsic_size
 		}
 	}
