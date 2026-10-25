@@ -2004,8 +2004,8 @@ fn update_style_for_document_from_upstream(document &dom.Document) RequiredInval
 }
 
 // The computed value of `property_id` for `element`, serialized from the retained StyleComputer result.
-// Runs a full style pass over the element's document (so
-// inheritance from ancestors resolves), then reads the element's stored computed value.
+// Flushes pending document style work (so inheritance from ancestors resolves),
+// then reads the element's stored computed value.
 // This reflects the same UA, user, author, inline, inheritance, and initial-value
 // inputs as the document's StyleComputer pass.
 pub fn computed_value_for(element &dom.Element, property_id PropertyID) ?string {
@@ -2021,11 +2021,12 @@ pub fn up_to_date_computed_properties_for_element(element &dom.Element) &Compute
 	css_style_computer_for(document)
 
 	abstract_element := dom.AbstractElement.new(element, none)
-	// Style the document once (a full UA + author + inline pass over the tree is expensive), then read the
-	// Re-run the document pass whenever DOM invalidation says this element or an
-	// inheritance ancestor is stale.
-	if abstract_element.computed_properties() == none || document.element_needs_style_update(element) {
+	// Bootstrap missing styles, then let the document retain the scope of later
+	// invalidations, including font-only updates and stale inheritance ancestors.
+	if abstract_element.computed_properties() == none {
 		document.needs_full_style_update = true
+		document.update_style()
+	} else if document.element_needs_style_update(element) {
 		document.update_style()
 	}
 
@@ -2054,8 +2055,10 @@ pub fn computed_styles_with_and_without_inline(element &dom.Element) ?ComputedSt
 	mut document := element.as_node().document()
 	css_style_computer_for(document)
 	abstract_element := dom.AbstractElement.new(element, none)
-	if abstract_element.computed_properties() == none || document.element_needs_style_update(element) {
+	if abstract_element.computed_properties() == none {
 		document.needs_full_style_update = true
+		document.update_style()
+	} else if document.element_needs_style_update(element) {
 		document.update_style()
 	}
 

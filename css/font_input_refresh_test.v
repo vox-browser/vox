@@ -93,6 +93,46 @@ fn test_font_inputs_refresh_retains_styles_and_normal_metrics_after_real_face_lo
 	}
 }
 
+fn test_computed_style_query_preserves_font_only_refresh() {
+	$if macos {
+		mut document, root, subject, unrelated := font_input_fixture()
+		before := font_input_style(subject, none)
+		unrelated_before := font_input_style(unrelated, none)
+		font_input_install_real_face(document)
+		assert subject.has_pending_font_input_update()
+		assert document.element_needs_style_update(subject)
+		assert !document.needs_full_style_update()
+
+		after := up_to_date_computed_properties_for_element(subject)
+		assert voidptr(after) == voidptr(before)
+		assert voidptr(font_input_style(unrelated, none)) == voidptr(unrelated_before)
+		assert !subject.has_pending_font_input_update()
+		assert document.style_invalidation_counters().element_style_recomputations == 0
+		assert document.style_invalidation_counters().element_inherited_style_recomputations > 0
+		font_input_assert_full_cascade_oracle(root, none)
+		font_input_assert_full_cascade_oracle(subject, none)
+	}
+}
+
+fn test_inline_style_comparison_preserves_font_only_refresh() {
+	$if macos {
+		mut document, _, subject, unrelated := font_input_fixture()
+		before := font_input_style(subject, none)
+		unrelated_before := font_input_style(unrelated, none)
+		font_input_install_real_face(document)
+		assert subject.has_pending_font_input_update()
+
+		pair := computed_styles_with_and_without_inline(subject) or { panic('missing pair') }
+		assert voidptr(pair.with_inline) == voidptr(before)
+		assert voidptr(font_input_style(unrelated, none)) == voidptr(unrelated_before)
+		assert !subject.has_pending_font_input_update()
+		assert document.style_invalidation_counters().element_style_recomputations == 0
+		assert (pair.with_inline.property(.width, .no) or { panic('width') }).css_text == '120px'
+		assert (pair.without_inline.property(.width, .no) or { panic('width') }).css_text == 'auto'
+		font_input_assert_full_cascade_oracle(subject, none)
+	}
+}
+
 fn test_font_input_guard_tracks_nested_font_lengths_and_relative_font_size() {
 	document := dom.Document.create(dom.url_about_blank())
 	computer := StyleComputer.new(document)
