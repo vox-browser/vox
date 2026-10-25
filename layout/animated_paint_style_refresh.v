@@ -47,6 +47,7 @@ fn compositor_style_refresh_preserves_box_categories(box &BlockBox, changed &Han
 		if !compositor_style_refresh_supports_node(node)
 			|| box.stacking_context != node.establishes_stacking_context()
 			|| box.uses_own_paint_transform_4x4 == computed_transform_is_none(computed)
+			|| box.chromium_compositor_surface != chromium_transform_needs_surface(node)
 			|| (box.opacity < 1) != (computed.opacity() < 1) { return false }
 	}
 	// Borrow each child: passing a loop copy's address would heap-allocate it.

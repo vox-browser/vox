@@ -4118,6 +4118,7 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 		form_control_color_scheme: computed.color_scheme()
 		form_control_accent_color: computed.accent_color()
 		opacity: f64(computed.opacity())
+		chromium_compositor_surface: chromium_transform_needs_surface(node)
 		mix_blend_mode: painting.mix_blend_mode_to_compositing_and_blending_operator(painting.blend_mode_from_css(computed.mix_blend_mode()))
 		visible: computed.visibility() == .visible
 		pointer_events_enabled: paintable_visible_for_hit_testing(node, computed)

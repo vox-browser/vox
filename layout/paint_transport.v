@@ -307,6 +307,8 @@ pub mut:
 	// `opacity` is this box's own opacity (0..1) in the tree; in a paint-order entry it holds the
 	// cumulative opacity (this box's times its ancestors').
 	opacity        f64 = 1.0
+	// Non-perspective 3D transforms retain an isolated surface in Chromium.
+	chromium_compositor_surface bool
 	mix_blend_mode painting.CompositingAndBlendingOperator
 	// Whether this box paints its own background/border/text (`visibility: visible`). A
 	// `visibility: hidden` box still takes up space but is not painted; because `visibility` inherits,

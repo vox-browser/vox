@@ -660,7 +660,7 @@ fn patch_compositor_visual_contexts(mut tree painting.AccumulatedVisualContextTr
 	boxes []&BlockBox) bool {
 	for box in boxes {
 		needs_effects := box.opacity < 1.0 || box.mix_blend_mode != .normal
-			|| box.filters().filter.to_gfx_filter(1.0) != none
+			|| box.filters().filter.to_gfx_filter(1.0) != none || box.chromium_compositor_surface
 		if needs_effects != (box.own_effects_visual_context_idx > 0)
 			|| compatibility_box_has_own_transform_context(box) != (box.own_transform_visual_context_idx > 0) {
 			return false
@@ -758,11 +758,13 @@ fn assign_compatibility_visual_contexts_with_coordinate_root(mut box BlockBox, v
 	box.own_effects_visual_context_idx = 0
 	box.own_transform_visual_context_idx = 0
 	gfx_filter := box.filters().filter.to_gfx_filter(1.0)
-	if box.opacity < 1.0 || box.mix_blend_mode != .normal || gfx_filter != none {
+	isolated_surface := box.chromium_compositor_surface
+	if box.opacity < 1.0 || box.mix_blend_mode != .normal || gfx_filter != none || isolated_surface {
 		own_state = tree.append(painting.EffectsVisualData{
 			opacity: box.opacity
 			blend_mode: box.mix_blend_mode
 			filter: gfx_filter
+			isolated: isolated_surface
 		}, own_state)
 		box.own_effects_visual_context_idx = own_state
 	}
@@ -2000,7 +2002,7 @@ fn apply_compatibility_visual_context_node(tree &painting.AccumulatedVisualConte
 			}
 		}
 		painting.EffectsVisualData {
-			if node.data.opacity < 1.0 || node.data.blend_mode != .normal {
+			if node.data.isolated || node.data.opacity < 1.0 || node.data.blend_mode != .normal {
 				flattened.layers << PaintVisualLayer{
 					kind: .css_effect
 					scope_id: u64(index)

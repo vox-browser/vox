@@ -221,10 +221,12 @@ pub:
 	opacity    f64 = 1.0
 	blend_mode CompositingAndBlendingOperator
 	filter     ?GfxFilter
+	// A compositor surface also isolates descendants at full opacity.
+	isolated   bool
 }
 
 pub fn (effects EffectsVisualData) needs_layer() bool {
-	return effects.opacity < 1 || effects.blend_mode != .normal || effects.filter != none
+	return effects.isolated || effects.opacity < 1 || effects.blend_mode != .normal || effects.filter != none
 }
 
 pub type VisualContextData = ClipPathVisualData
