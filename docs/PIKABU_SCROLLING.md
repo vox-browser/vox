@@ -628,3 +628,86 @@ This unpaired run is recorded separately from the matched improvements above;
 it measures native completion rather than display scanout. Its evidence is
 `canonical-gradient-target-installed.json`, `gradient-target-install-guard.json`
 and `gradient-target-production-profile/summary.json`.
+
+
+### Reuse Metal queues for eight completed frames (`add65da5`)
+
+Graphite keeps one real Metal queue for up to eight completed frames before
+releasing it. Each frame still completes its GPU work before returning CPU
+pixels. Explicit graphics cleanup and idle context destruction retain their
+immediate release behavior; Dawn keeps its existing retirement policy.
+This amortizes driver setup without accumulating a queue for every frame.
+
+Four matched 240-frame runs use the same newer frozen V executable, cached
+Pikabu resources, viewport, scroll positions and replay command counts.
+
+| Per callback | Control | Eight frames | Repeat control | Repeat eight frames |
+| --- | ---: | ---: | ---: | ---: |
+| Median callback | 31.194 ms | 19.661 ms | 29.179 ms | 18.976 ms |
+| Median replay | 26.516 ms | 15.178 ms | 24.732 ms | 14.617 ms |
+| Mean retired instructions | 186.581 M | 124.883 M | 183.957 M | 125.585 M |
+| Native completion cadence | 29.93 fps | 41.28 fps | 30.87 fps | 41.21 fps |
+
+Both orders improve callback time and instruction count, saving 61.697 M and
+58.372 M instructions per frame. Both cross the 5 M broad-test threshold.
+The completed broad batch advances this scrolling cohort's baseline to
+`add65da5`, with zero accumulated savings after that batch. Completion cadence
+includes publication and scheduling; it does not measure display scanout.
+
+The clean official Graphite build passes 776 exact GPU path comparisons,
+192 native gradient integration comparisons, and the sanitized 776-case
+harness. CPU queue ownership tests pass optimized and ASan/UBSan builds,
+covering the eighth-frame boundary, forced retirement, counter reset, labels,
+residency sets and destruction. Dynamically loaded GPU libraries are optimized.
+
+A separate 4,000-frame changing-gradient stress run performs six real readbacks
+per frame. Peak physical footprint is 345.4 MB; the median near frame 2,000 is
+337.118 MB versus 337.265 MB near frame 4,000. Idle cleanup reduces footprint to
+10.9 MB. The first 1,000-frame experiment exceeded an initial 64 MiB fluctuation
+bound by 0.2 MiB; its receipt remains preserved. The extended test separately
+bounds peak footprint, fluctuation, sustained median growth and idle retention.
+
+Paused Pikabu at 1×/2× and all 19 visual preservation pages compare exactly.
+The frozen native clipping, compositing, glyph, shape and tiled replay checks
+also pass. This batch does not rerun the separate 6,986-case GPU replay suite.
+
+Evidence under `Build/pikabu-scroll-20261024/`: `queue-window-result.json`,
+`queue-window-clean-result.json`, `queue-window-clean-guard.json`,
+`queue-window-visual/{gate,focused,broad}.json`,
+`queue-window-verify-guard.json`, `queue-window-memory-retry-result.json`
+and `queue-window-memory-attempt1-*`.
+The production bundle installation and fresh completion cadence are recorded
+separately below; the paired runs in this table remain below 60 fps.
+
+
+The canonical production bundle contains the clean queue-reuse Graphite library.
+Installation preserves its unsigned V executable and text/Dawn libraries. Strict
+bundle signature verification, headless startup and the requested live Pikabu
+launch pass. Two fresh production processes each scroll the same cached page
+for 240 moving frames in a 1024×764 viewport, with external network blocked.
+
+| Production measurement | First run | Repeat |
+| --- | ---: | ---: |
+| Median callback | 12.756 ms | 11.896 ms |
+| p95 callback | 23.809 ms | 21.607 ms |
+| Median replay | 9.904 ms | 9.147 ms |
+| Mean retired instructions | 122.390 M | 122.366 M |
+| Mean native completion cadence | 61.68 fps | 68.72 fps |
+| p95 native completion interval | 26.171 ms | 23.199 ms |
+
+Both production runs exceed 60 fps mean native completion cadence. The cadence
+comes from flushed completion-log receipts and includes inter-frame publication,
+scheduling and log delivery; it does not establish physical display scanout or
+locked 60 fps. Some frames still exceed 16.7 ms. These fresh runs have different
+system load from the matched table above and supply no additional paired
+improvement claim.
+
+Production evidence: `canonical-queue-window-installed.json`,
+`queue-window-install-guard.json`,
+`queue-window-production-profile/summary.json` and
+`queue-window-production-repeat/summary.json`. The clean library SHA256 is
+`bc5054c22f76b14da859f5f4f0a5217c158d26734aa329e35352018418bcff4c`;
+after ad-hoc signing the installed library is
+`a5d1163a5481b19ca0a8a40002a8b3fdac7ac22bf5a64720577b56f42fa3b062`.
+The preserved unsigned V payload is
+`46dfed8e2a5b60622af27998be96c618d2055a1e1fbabae30175c02d47e0399d`.
