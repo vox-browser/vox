@@ -3,6 +3,7 @@
 // this file only turns the retained glyph IDs into the final antialiased pixels.
 
 #include "native_allocator_policy_darwin.h"
+#include "native_raster_buffer_pool.h"
 #include <CoreGraphics/CoreGraphics.h>
 #include <dlfcn.h>
 #include <chrono>
@@ -75,6 +76,8 @@
 #endif
 
 namespace {
+
+VoxRasterBufferPool s_sparse_raster_pool;
 
 SkCanvas* shared_recording_canvas(CGContextRef);
 void shared_recording_block(SkRect);
@@ -734,6 +737,7 @@ extern "C" void ladybird_v_skia_release_unused_graphics_memory()
         if (purge) purge();
         dlclose(library);
     }
+    s_sparse_raster_pool.clear();
     s_glyph_raster_cache.clear();
     SkGraphics::PurgeAllCaches();
 }
@@ -743,6 +747,7 @@ extern "C" void ladybird_v_skia_release_unused_graphics_memory()
 extern "C" int ladybird_v_skia_release_idle_graphics_memory()
 {
     if (!pthread_main_np()) return 0;
+    s_sparse_raster_pool.clear(true);
     bool pending = false;
     if (auto* gpu = s_image_gpu_context.get(); gpu &&
         std::chrono::steady_clock::now() - s_image_gpu_context_last_use >= std::chrono::seconds(2)) {
@@ -2241,8 +2246,9 @@ static bool draw_chromium_sparse_rounded(CGContextRef destination, VoxGraphiteSh
     // either the backdrop copy or the opaque rectangle below.
     if (size_t(width) * height > 8 * 1024 * 1024) return false;
     size_t pixel_count = size_t(width) * height;
-    std::unique_ptr<uint32_t[]> pixels(new (std::nothrow) uint32_t[pixel_count]);
-    if (!pixels) return false;
+    auto allocation = s_sparse_raster_pool.acquire(pixel_count);
+    if (!allocation) return false;
+    auto* pixels = allocation->pixels.get();
     RasterRegion covered {
         int(std::clamp<double>(edges[0], 0, width)),
         int(std::clamp<double>(edges[1], 0, height)),
@@ -2252,7 +2258,7 @@ static bool draw_chromium_sparse_rounded(CGContextRef destination, VoxGraphiteSh
     auto omitted = shape.fill ? covered : RasterRegion {};
     for (int y = 0; y < height; ++y) {
         auto copy = [&](int left, int right) {
-            std::memcpy(pixels.get() + size_t(y) * width + left,
+            std::memcpy(pixels + size_t(y) * width + left,
                 backdrop.pixels + size_t(y) * backdrop.pitch + size_t(left) * 4,
                 size_t(right - left) * 4);
         };
@@ -2264,15 +2270,17 @@ static bool draw_chromium_sparse_rounded(CGContextRef destination, VoxGraphiteSh
     std::fill(rectangle.rect + 4, rectangle.rect + 12, 0);
     std::swap(rectangle.red, rectangle.blue);
     bool filled = rectangle.fill
-        ? vox_draw_solid_rect(reinterpret_cast<uint8_t*>(pixels.get()), width, height, width * 4, true, rectangle)
-        : vox_draw_solid_stroke(reinterpret_cast<uint8_t*>(pixels.get()), width, height, width * 4, true, rectangle);
+        ? vox_draw_solid_rect(reinterpret_cast<uint8_t*>(pixels), width, height, width * 4, true, rectangle)
+        : vox_draw_solid_stroke(reinterpret_cast<uint8_t*>(pixels), width, height, width * 4, true, rectangle);
     if (!filled) return false;
     for (auto const& part : parts) for (int y = 0; y < part.height; ++y)
-        swap_red_blue_pixels(reinterpret_cast<uint8_t*>(pixels.get() + size_t(part.top + y) * width + part.left),
+        swap_red_blue_pixels(reinterpret_cast<uint8_t*>(pixels + size_t(part.top + y) * width + part.left),
             reinterpret_cast<uint8_t const*>(part.pixels.data() + size_t(y) * part.width), part.width);
-    auto provider = CGDataProviderCreateWithData(nullptr, pixels.get(), pixel_count * sizeof(uint32_t),
-        [](void*, void const* bytes, size_t) { delete[] static_cast<uint32_t const*>(bytes); });
-    if (provider) pixels.release();
+    auto provider = CGDataProviderCreateWithData(allocation.get(), pixels, pixel_count * sizeof(uint32_t),
+        [](void* owner, void const*, size_t) {
+            s_sparse_raster_pool.release(std::unique_ptr<VoxRasterBufferPool::Buffer>(static_cast<VoxRasterBufferPool::Buffer*>(owner)));
+        });
+    if (provider) allocation.release();
     auto image = image_from_provider(provider, width, height, true);
     int result = composite_image(destination, image,
         CGRectMake(region.left, canvas_height - region.bottom, region.width(), region.height()), true);
