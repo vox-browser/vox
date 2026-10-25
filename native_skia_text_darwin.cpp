@@ -9,6 +9,7 @@
 #include <chrono>
 #include "native_graphite_bridge.h"
 #include "native_graphite_solid_rect.h"
+#include "native_svg_path_regions.h"
 #include "native_chromium_raster_phase.h"
 #include "native_chromium_raster_rows.h"
 #include "native_chromium_raster_grid.h"
@@ -224,6 +225,16 @@ auto graphite_path_draw()
         void* library = dlopen("@rpath/libVoxGraphite.dylib", RTLD_LAZY | RTLD_LOCAL);
         return library ? reinterpret_cast<decltype(&vox_graphite_draw_path_pixels)>(
             dlsym(library, "vox_graphite_draw_path_pixels")) : nullptr;
+    }();
+    return draw;
+}
+
+auto graphite_path_parts_draw()
+{
+    static auto draw = [] {
+        void* library = dlopen("@rpath/libVoxGraphite.dylib", RTLD_LAZY | RTLD_LOCAL);
+        return library ? reinterpret_cast<decltype(&vox_graphite_draw_path_parts_pixels)>(
+            dlsym(library, "vox_graphite_draw_path_parts_pixels")) : nullptr;
     }();
     return draw;
 }
@@ -3037,6 +3048,51 @@ extern "C" int ladybird_v_skia_draw_svg_path_batch(CGContextRef destination,
         region.left, canvas_height - region.bottom, region.width(), region.height(), has_background);
 }
 
+// CSS partial borders consist of narrow contours around a large empty box.
+// Read their union, including a conservative AA guard, in the original GPU
+// coordinates. Copy untouched interior pixels neither to nor from the GPU.
+static bool draw_sparse_svg_path(CGContextRef destination, VoxGraphitePath const& path,
+    RasterRegion const& region, int width, int height, float scale,
+    float canvas_height, bool opaque_backdrop)
+{
+    auto draw = graphite_path_parts_draw();
+    auto ctm = CGContextGetCTM(destination);
+    if (ctm.a != scale || ctm.d != scale || ctm.b != 0 || ctm.c != 0
+        || ctm.tx != 0 || ctm.ty != 0) return false;
+    std::vector<VoxPathRegion> parts;
+    if (!draw || !vox_sparse_path_regions(path, width, height, parts)) return false;
+    auto background = opaque_backdrop ? read_backdrop(destination, region, scale, width, height) : Backdrop{};
+    std::vector<std::vector<uint32_t>> pixels(parts.size());
+    std::vector<VoxGraphitePixelRegion> views;
+    for (size_t i = 0; i < parts.size(); ++i) {
+        auto const& part = parts[i];
+        pixels[i].resize(size_t(part.width()) * part.height());
+        if (background.pixels) for (int y = 0; y < part.height(); ++y)
+            swap_red_blue_pixels(reinterpret_cast<uint8_t*>(pixels[i].data() + size_t(y) * part.width()),
+                background.pixels + size_t(part.top + y) * background.pitch + size_t(part.left) * 4, part.width());
+        views.push_back({part.left, part.top, part.width(), part.height(), part.width() * 4,
+            reinterpret_cast<uint8_t*>(pixels[i].data())});
+    }
+    if (!draw(views.data(), int(views.size()), width, height, background.pixels != nullptr, &path)) return false;
+    std::vector<CGImageRef> images;
+    for (size_t i = 0; i < parts.size(); ++i) {
+        auto image = create_pixel_image(destination, std::move(pixels[i]), parts[i].width(), parts[i].height());
+        if (!image) {
+            for (auto prior : images) CGImageRelease(prior);
+            return false;
+        }
+        images.push_back(image);
+    }
+    for (size_t i = 0; i < parts.size(); ++i) {
+        auto const& part = parts[i];
+        composite_image(destination, images[i], CGRectMake(region.left + part.left / scale,
+            canvas_height - (region.top + part.bottom / scale), part.width() / scale,
+            part.height() / scale), background.pixels != nullptr);
+        CGImageRelease(images[i]);
+    }
+    return true;
+}
+
 extern "C" int ladybird_v_skia_draw_svg_path(CGContextRef destination,
     float const* data, int segment_count, int even_odd,
     float transform_a, float transform_b, float transform_c, float transform_d,
@@ -3142,8 +3198,20 @@ extern "C" int ladybird_v_skia_draw_svg_path(CGContextRef destination,
     auto raster_height = raster_dimension(region.height(), destination_scale);
     auto raster_scale_x = static_cast<float>(raster_width) / static_cast<float>(region.width());
     auto raster_scale_y = static_cast<float>(raster_height) / static_cast<float>(region.height());
-    std::vector<uint32_t> pixels(static_cast<size_t>(raster_width) * static_cast<size_t>(raster_height));
     bool strokes = has_stroke && stroke_width > 0.0f;
+    if (s_chromium_painting && has_fill && !strokes && raster_scale_x == destination_scale
+        && raster_scale_y == destination_scale) {
+        VoxGraphitePath descriptor {};
+        descriptor.segments = data;
+        descriptor.segment_count = segment_count;
+        descriptor.even_odd = even_odd;
+        descriptor.red = fill_red; descriptor.green = fill_green;
+        descriptor.blue = fill_blue; descriptor.alpha = fill_alpha;
+        raster_matrix(matrix, region, raster_scale_x, raster_scale_y).get9(descriptor.matrix);
+        if (draw_sparse_svg_path(destination, descriptor, region, raster_width, raster_height,
+                destination_scale, canvas_height, opaque_backdrop)) return 1;
+    }
+    std::vector<uint32_t> pixels(static_cast<size_t>(raster_width) * static_cast<size_t>(raster_height));
     if (s_chromium_painting && (has_fill || strokes)
         && !(strokes && dash_data && dash_count > 0)) {
         // Chromium draws SVG paths with its GPU rasterizer. The stroke draws

@@ -311,6 +311,23 @@ public:
             width, height, pitch, has_background, pixels,
             Rows {reinterpret_cast<uint8_t const*>(path.stops), size_t(path.stop_count) * 5 * sizeof(float), 0, 1});
     }
+    Request prepare_path_patches(VoxGraphitePath const& path, int surface_width,
+        int surface_height, int pixel_count, bool has_background, uint8_t* pixels,
+        std::vector<int> const& rectangles)
+    {
+        if (!path.segments || path.segment_count <= 0 || path.gradient || path.stop_count
+            || surface_width <= 0 || surface_height <= 0 || pixel_count <= 0
+            || size_t(pixel_count) > max_entry_bytes / 4) return {};
+        Entry parameters;
+        parameters.is_path = true;
+        parameters.path = path;
+        parameters.surface_width = surface_width;
+        parameters.surface_height = surface_height;
+        return prepare_entry(parameters,
+            Rows {reinterpret_cast<uint8_t const*>(path.segments), size_t(path.segment_count) * 12 * sizeof(float), 0, 1},
+            pixel_count, 1, pixel_count * 4, has_background, pixels,
+            Rows {reinterpret_cast<uint8_t const*>(rectangles.data()), rectangles.size() * sizeof(int), 0, 1});
+    }
     // Packed patches still depend on the original surface dimensions: GPU
     // clipping and coverage arithmetic must retain the same raster coordinates.
     Request prepare_patches(VoxGraphiteShape const& shape, int surface_width,

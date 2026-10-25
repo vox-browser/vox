@@ -1315,6 +1315,107 @@ int vox_graphite_draw_path_region_pixels(VoxGraphitePixelRegion const* region,
     return 1;
 }
 
+extern "C" __attribute__((visibility("default")))
+int vox_graphite_draw_path_parts_pixels(VoxGraphitePixelRegion const* regions, int count,
+    int width, int height, int has_background, VoxGraphitePath const* path)
+{
+    if (!regions || count <= 0 || count > 32 || !path || !path->segments
+        || path->segment_count <= 0 || path->gradient || path->stop_count || path->stroke
+        || width <= 0 || height <= 0 || width > 16384 || height > 16384) return 0;
+    size_t area = 0;
+    std::vector<int> rectangles;
+    for (int i = 0; i < count; ++i) {
+        auto const& view = regions[i];
+        if (!view.pixels || view.x < 0 || view.y < 0 || view.width <= 0 || view.height <= 0
+            || view.width > width || view.height > height || view.pitch <= 0
+            || view.x > width - view.width || view.y > height - view.height
+            || size_t(view.pitch) < size_t(view.width) * 4) return 0;
+        for (int j = 0; j < i; ++j) {
+            auto const& prior = regions[j];
+            if (view.x < prior.x + prior.width && prior.x < view.x + view.width
+                && view.y < prior.y + prior.height && prior.y < view.y + view.height) return 0;
+        }
+        area += size_t(view.width) * view.height;
+        rectangles.insert(rectangles.end(), {view.x, view.y, view.width, view.height});
+    }
+    if (area > 65536) return 0;
+    std::vector<uint8_t> packed(area * 4);
+    size_t offset = 0;
+    if (has_background) for (int i = 0; i < count; ++i) {
+        auto const& view = regions[i];
+        for (int y = 0; y < view.height; ++y)
+            std::memcpy(packed.data() + offset + size_t(y) * view.width * 4,
+                view.pixels + size_t(y) * view.pitch, size_t(view.width) * 4);
+        offset += size_t(view.width) * view.height * 4;
+    }
+    std::lock_guard lock(gpu_mutex);
+    auto cached = path_cache.prepare_path_patches(*path, width, height,
+        int(area), has_background != 0, packed.data(), rectangles);
+    if (!cached.hit) {
+        auto* gpu = context();
+        if (!gpu) return 0;
+        auto info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
+            kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
+        std::unique_ptr<skgpu::graphite::Recorder> temporary_recorder;
+        sk_sp<SkSurface> temporary_surface;
+        auto* surface = region_target(gpu, info);
+        auto* recorder = region_recorder.get();
+        if (!surface) {
+            temporary_recorder = gpu->makeRecorder();
+            recorder = temporary_recorder.get();
+            if (!recorder) return 0;
+            temporary_surface = SkSurfaces::RenderTarget(recorder, info);
+            surface = temporary_surface.get();
+        }
+        if (!surface) return 0;
+        auto* canvas = surface->getCanvas();
+        canvas->clear(SK_ColorTRANSPARENT);
+        offset = 0;
+        if (has_background) for (int i = 0; i < count; ++i) {
+            auto const& view = regions[i];
+            surface->writePixels(SkPixmap(info.makeWH(view.width, view.height),
+                packed.data() + offset, size_t(view.width) * 4), view.x, view.y);
+            offset += size_t(view.width) * view.height * 4;
+        }
+        if (!draw_path_on_canvas(canvas, path)) return 0;
+        auto recording = recorder->snap();
+        skgpu::graphite::InsertRecordingInfo insertion;
+        insertion.fRecording = recording.get();
+        if (gpu->insertRecording(insertion) != skgpu::graphite::InsertStatus::kSuccess) return 0;
+        std::vector<std::unique_ptr<const SkImage::AsyncReadResult>> results(count);
+        for (int i = 0; i < count; ++i) {
+            auto const& view = regions[i];
+            gpu->asyncRescaleAndReadPixels(surface, info.makeWH(view.width, view.height),
+                SkIRect::MakeXYWH(view.x, view.y, view.width, view.height),
+                SkImage::RescaleGamma::kSrc, SkImage::RescaleMode::kNearest,
+                [](void* target, std::unique_ptr<const SkImage::AsyncReadResult> data) {
+                    *static_cast<std::unique_ptr<const SkImage::AsyncReadResult>*>(target) = std::move(data);
+                }, &results[i]);
+        }
+        if (!gpu->submit(skgpu::graphite::SubmitInfo(skgpu::graphite::SyncToCpu::kYes))) return 0;
+        for (auto const& result : results) if (!result) return 0;
+        offset = 0;
+        for (int i = 0; i < count; ++i) {
+            auto const& view = regions[i];
+            for (int y = 0; y < view.height; ++y)
+                std::memcpy(packed.data() + offset + size_t(y) * view.width * 4,
+                    static_cast<uint8_t const*>(results[i]->data(0)) + size_t(y) * results[i]->rowBytes(0),
+                    size_t(view.width) * 4);
+            offset += size_t(view.width) * view.height * 4;
+        }
+        path_cache.finish(std::move(cached), packed.data(), int(area * 4));
+    }
+    offset = 0;
+    for (int i = 0; i < count; ++i) {
+        auto const& view = regions[i];
+        for (int y = 0; y < view.height; ++y)
+            std::memcpy(view.pixels + size_t(y) * view.pitch,
+                packed.data() + offset + size_t(y) * view.width * 4, size_t(view.width) * 4);
+        offset += size_t(view.width) * view.height * 4;
+    }
+    return 1;
+}
+
 // An SVG image is one recording. Resolve multisample coverage after its last
 // path, so adjacent fills and non-scaling strokes share the same samples.
 extern "C" __attribute__((visibility("default")))

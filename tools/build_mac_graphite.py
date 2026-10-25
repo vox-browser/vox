@@ -134,6 +134,7 @@ def main():
         "-Wl,-exported_symbol,_vox_graphite_draw_rounded_parts_pixels",
         "-Wl,-exported_symbol,_vox_graphite_draw_path_pixels",
         "-Wl,-exported_symbol,_vox_graphite_draw_path_region_pixels",
+        "-Wl,-exported_symbol,_vox_graphite_draw_path_parts_pixels",
         "-Wl,-exported_symbol,_vox_graphite_draw_path_batch_pixels",
         "-Wl,-exported_symbol,_vox_graphite_draw_svg_image_pixels",
         "-Wl,-exported_symbol,_vox_graphite_convert_icc_rgba",
