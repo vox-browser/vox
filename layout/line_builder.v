@@ -1065,8 +1065,11 @@ fn middle_alignment_offset(node &Node, top CSSPixels, bottom CSSPixels, height C
 	if node.document().font_rendering_policy() == .chromium {
 		// Blink rounds half the parent's x-height, independently of the box's
 		// half-height. Rounding the complete sum loses one CSSPixel quantum.
+		// LayoutUnit::FromFloatRound uses roundf (ties away from zero),
+		// whereas LibWeb CSSPixels uses ties-to-even rounding.
+		half_x_height := CSSPixels.from_raw(int(math.round(f64(x_height) * 32)))
 		return CSSPixels.from_raw(top.minus(bottom).minus(height).raw_value() / 2)
-			.minus(CSSPixels.nearest_value_for(f64(x_height) / 2))
+			.minus(half_x_height)
 	}
 	return CSSPixels.from_raw(top.minus(bottom).minus(height)
 		.minus(CSSPixels.nearest_value_for(f64(x_height))).raw_value() / 2)

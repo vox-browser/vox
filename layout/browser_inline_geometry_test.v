@@ -46,3 +46,19 @@ fn test_middle_alignment_uses_the_immediate_parent_font_and_retains_fractional_o
 	baseline := line_state.line_boxes[0].baseline().to_double()
 	assert middle_state.offset.y().to_double() == baseline - 6 - 2.6875
 }
+
+fn test_chromium_middle_alignment_rounds_the_projected_x_height() {
+	mut document := html.parse_document('<!doctype html><div></div>')
+	defer { document.finalize() }
+	document.set_font_rendering_policy(.chromium)
+	for scale in [1.0, 2.0] {
+		document.set_layout_coordinate_scale(scale)
+		result := run_document_layout(document, 800, 600) or { panic('layout') }
+		node := result.root
+		// Blink rounds half the selected font metric in layout coordinates.
+		// At scale 2 this is 8.734375, rather than twice 4.359375.
+		offset := middle_alignment_offset(node, CSSPixels.new(0), CSSPixels.new(0),
+			CSSPixels.new(0), f32(8.7265625 * scale))
+		assert offset == CSSPixels.nearest_value_for(if scale == 1 { -4.359375 } else { -8.734375 })
+	}
+}
