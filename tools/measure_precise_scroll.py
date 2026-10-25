@@ -64,6 +64,11 @@ def summarize(log, expected_inputs, target_hz=60):
     ends = [line for line in log.splitlines() if line.startswith("SCROLL_DONE ")]
     if len(starts) != 1 or len(ends) != 1 or "precise=1 " not in starts[0]:
         raise ValueError("Missing completion or precise input confirmation")
+    # A long error message can itself scroll. Movement alone cannot establish
+    # that the requested document loaded, so reject Vox's error-page title too.
+    title = starts[0].partition(" title=")[2].strip()
+    if title in {"Navigation error", "Navigation error — vox"}:
+        raise ValueError("Navigation error page cannot supply scrolling acceptance")
     inputs, frames = records(log, "SCROLL_INPUT"), records(log, "SCROLL_PUBLISH")
     counts = dict(re.findall(r"(inputs|publications)=(\d+)", ends[0]))
     if len(inputs) != expected_inputs or counts != {

@@ -103,6 +103,11 @@ class PreciseScrollTests(unittest.TestCase):
         self.assertEqual(result["mean_scroll_interval_fps"], 50)
         self.assertEqual(result["fraction_over_budget"], 1)
 
+    def test_rejects_navigation_error_even_when_error_content_scrolls(self):
+        for title in ("Navigation error", "Navigation error — vox"):
+            with self.subTest(title=title), self.assertRaisesRegex(ValueError, "Navigation error page"):
+                summarize(log_for().replace("title=fixture", "title=" + title), 12)
+
     def test_average_includes_time_before_first_and_after_last_publication(self):
         result = summarize(log_for(times=[80000 + i * 2000 for i in range(11)] + [115000]), 12)
         self.assertEqual(result["mean_scroll_interval_fps"], 500)
