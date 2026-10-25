@@ -5,6 +5,21 @@ import dom
 import html
 import platform
 
+fn test_chromium_ascii_hyphen_can_end_a_line_after_whitespace() {
+	for chromium in [false, true] {
+		mut document := dom.Document.create(dom.url_about_blank())
+		defer { document.finalize() }
+		if chromium { document.set_font_rendering_policy(.chromium) }
+		style := chunk_test_style(document, 'display:block;white-space-collapse:collapse;text-wrap-mode:wrap')
+		for text in ['-word', 'end. -word', 'end. -123'] {
+			text_node := make_chunk_test_text_node(document, text, style)
+			mut iterator := TextNodeChunkIterator.new(text_node, true, false)
+			boundary := text.index('-') or { panic('hyphen') } + 1
+			assert iterator.line_boundaries[boundary] == (chromium && text != 'end. -123')
+		}
+	}
+}
+
 fn chunk_test_style(document &dom.Document, declarations string) &css.ComputedProperties {
 	mut element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
 		panic('${err}')

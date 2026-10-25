@@ -439,6 +439,8 @@ pub fn (iterator &InlineLevelIterator) next_non_whitespace_sequence_width() CSSP
 		}
 		node := next_item.node or { break }
 		if node.computed_values().text_wrap_mode() == .wrap {
+			if node.document().font_rendering_policy() == .chromium
+				&& index > iterator.next_item_index && next_item.can_break_before { break }
 			if next_item.type_ != .text || next_item.is_collapsible_whitespace {
 				break
 			}
@@ -457,6 +459,9 @@ fn (iterator &InlineLevelIterator) next_non_whitespace_sequence_items() []Inline
 		item := iterator.items[end]
 		if item.type_ in [.forced_break, .block_level_box, .element] { break }
 		node := item.node or { break }
+		if node.document().font_rendering_policy() == .chromium
+			&& node.computed_values().text_wrap_mode() == .wrap
+			&& end > iterator.next_item_index && item.can_break_before { break }
 		if node.computed_values().text_wrap_mode() == .wrap
 			&& (item.type_ != .text || item.is_collapsible_whitespace || item.is_all_whitespace) { break }
 		end++

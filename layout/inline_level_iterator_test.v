@@ -3,6 +3,27 @@ module layout
 import css
 import dom
 
+fn test_chromium_whitespace_lookahead_stops_at_a_hyphen_break() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	defer { document.finalize() }
+	document.set_font_rendering_policy(.chromium)
+	style := inline_iterator_test_style(document, 'div', 'display:block;font:16px Arial')
+	mut container := BlockContainer.new(document, none, style)
+	container.set_children_are_inline(true)
+	dom_text := document.create_text_node('end. -word')
+	container.append_child(unsafe { &Node(TextNode.new(document, dom_text.as_node(), 'end. -word')) })
+	_, mut iterator := make_inline_iterator(document, container, 300)
+	for {
+		item := iterator.next() or { panic('whitespace') }
+		if !item.is_collapsible_whitespace { continue }
+		sequence := iterator.next_non_whitespace_sequence_items()
+		assert sequence.len == 1
+		assert sequence[0].length_in_node == 1
+		assert iterator.next_non_whitespace_sequence_width() == sequence[0].border_box_width()
+		break
+	}
+}
+
 fn inline_iterator_test_style(document &dom.Document, tag string, declarations string) &css.ComputedProperties {
 	mut element := document.create_element_ns('http://www.w3.org/1999/xhtml', tag) or {
 		panic('${err}')
