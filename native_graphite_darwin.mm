@@ -516,6 +516,60 @@ int vox_graphite_draw_image_pixels(uint8_t* pixels, int width, int height,
     return result;
 }
 
+// Preserve the original tile extent and image interpolation, but transfer and
+// cache only its visible CPU view. Pixels outside the view are transparent,
+// just as in the full tile assembled by the root raster grid.
+extern "C" __attribute__((visibility("default")))
+int vox_graphite_draw_image_region_pixels(VoxGraphitePixelRegion const* region,
+    int width, int height, int has_background, VoxGraphiteImage const* image)
+{
+    if (!region || !region->pixels || !image_draw_is_valid(image)
+        || width <= 0 || height <= 0 || width > 16384 || height > 16384
+        || region->x < 0 || region->y < 0 || region->width <= 0 || region->height <= 0
+        || region->width > width || region->height > height || region->pitch <= 0
+        || region->x > width - region->width || region->y > height - region->height
+        || size_t(region->pitch) < size_t(region->width) * 4) return 0;
+    std::lock_guard lock(gpu_mutex);
+    auto cached = image_cache.prepare_region(*image, width, height, *region, has_background != 0);
+    if (cached.hit) return 1;
+    auto* gpu = context();
+    if (!gpu) return 0;
+    auto recorder = gpu->makeRecorder();
+    auto info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
+        kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
+    auto surface = SkSurfaces::RenderTarget(recorder.get(), info);
+    if (!surface) return 0;
+    auto* canvas = surface->getCanvas();
+    canvas->clear(SK_ColorTRANSPARENT);
+    auto view_info = info.makeWH(region->width, region->height);
+    if (has_background) surface->writePixels(SkPixmap(view_info, region->pixels,
+        region->pitch), region->x, region->y);
+    PreparedImageDraw prepared;
+    plan_image_draw(image, prepared);
+    if (!prepare_image_texture(recorder.get(), image, prepared)) return 0;
+    if (image->flags & VOX_GRAPHITE_IMAGE_FORCE_MSAA) force_msaa_render_pass(canvas, width, height);
+    draw_prepared_image(canvas, image, prepared);
+    auto recording = recorder->snap();
+    skgpu::graphite::InsertRecordingInfo insertion;
+    insertion.fRecording = recording.get();
+    if (gpu->insertRecording(insertion) != skgpu::graphite::InsertStatus::kSuccess) return 0;
+    std::unique_ptr<const SkImage::AsyncReadResult> result;
+    gpu->asyncRescaleAndReadPixels(surface.get(), view_info,
+        SkIRect::MakeXYWH(region->x, region->y, region->width, region->height),
+        SkImage::RescaleGamma::kSrc, SkImage::RescaleMode::kNearest,
+        [](void* target, std::unique_ptr<const SkImage::AsyncReadResult> data) {
+            *static_cast<std::unique_ptr<const SkImage::AsyncReadResult>*>(target) = std::move(data);
+        }, &result);
+    if (!gpu->submit(skgpu::graphite::SubmitInfo(skgpu::graphite::SyncToCpu::kYes)) || !result) return 0;
+    for (int row = 0; row < region->height; ++row)
+        std::memcpy(region->pixels + size_t(row) * region->pitch,
+            static_cast<uint8_t const*>(result->data(0)) + size_t(row) * result->rowBytes(0),
+            size_t(region->width) * 4);
+    image_upload_cache.finish(std::move(prepared.upload), prepared.texture);
+    image_cache.finish(std::move(cached), region->pixels, region->pitch);
+    return 1;
+}
+
 // Placements of images drawn in turn over one raster, as Chromium draws a
 // background's tiles in one GPU pass: one backdrop upload and one readback
 // replace one of each per placement. Each placement draws exactly as

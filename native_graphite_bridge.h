@@ -102,6 +102,10 @@ typedef struct VoxGraphitePixelRegion {
     int x, y, width, height, pitch;
     uint8_t *pixels;
 } VoxGraphitePixelRegion;
+// Image interpolation uses the complete surface extent. Only the region has a
+// CPU backdrop; the rest is transparent. Failure leaves the region untouched.
+int vox_graphite_draw_image_region_pixels(const VoxGraphitePixelRegion *region,
+    int surface_width, int surface_height, int has_background, const VoxGraphiteImage *image);
 // Retain full GPU coordinates while writing at most four disjoint CPU views.
 // Unsupported shapes and failures leave every view and its padding untouched.
 int vox_graphite_draw_rounded_parts_pixels(const VoxGraphitePixelRegion *regions, int count,

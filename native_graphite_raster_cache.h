@@ -27,6 +27,7 @@ class VoxGraphiteRasterCache {
         bool is_shape = false;
         bool is_shadow = false;
         int surface_width = 0, surface_height = 0;
+        int region_x = 0, region_y = 0;
         int width = 0, height = 0;
         bool has_background = false;
         std::shared_ptr<std::vector<uint8_t> const> source;
@@ -222,6 +223,18 @@ public:
         parameters.image = image;
         return prepare_image(parameters, width, height, pitch, has_background, pixels);
     }
+    Request prepare_region(VoxGraphiteImage const& image, int surface_width,
+        int surface_height, VoxGraphitePixelRegion const& region, bool has_background)
+    {
+        Entry parameters;
+        parameters.image = image;
+        parameters.surface_width = surface_width;
+        parameters.surface_height = surface_height;
+        parameters.region_x = region.x;
+        parameters.region_y = region.y;
+        return prepare_image(parameters, region.width, region.height, region.pitch,
+            has_background, region.pixels);
+    }
     // Background placements share one source during a call. Across calls the
     // cache still owns and compares its bytes, including animated/reused data.
     Request prepare_tiles(VoxGraphiteImage const* images, int count, int width,
@@ -341,7 +354,7 @@ private:
         if (immutable_cost > byte_limit) return request;
         size_t cost = immutable_cost + backdrop.bytes * backdrop.height * (has_background ? 2 : 1);
         if (cost > limit) return request;
-        auto opaque = is_image && parameters.tiles.empty()
+        auto opaque = is_image && parameters.tiles.empty() && !parameters.surface_width
             ? opaque_image_interior(parameters.image, width, height) : VoxRasterSnapshot::Rect{};
         for (auto it = entries.begin(); it != entries.end(); ++it) {
             auto const& entry = **it;
@@ -350,6 +363,7 @@ private:
                 || entry.is_path != parameters.is_path
                 || entry.is_shadow != parameters.is_shadow
                 || entry.surface_width != parameters.surface_width || entry.surface_height != parameters.surface_height
+                || entry.region_x != parameters.region_x || entry.region_y != parameters.region_y
                 || entry.tiles.size() != parameters.tiles.size()
                 || !std::equal(entry.tiles.begin(), entry.tiles.end(), parameters.tiles.begin(), same_image)
                 || (entry.is_shape ? !same_shape(entry.shape, parameters.shape)

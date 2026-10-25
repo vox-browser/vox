@@ -158,6 +158,16 @@ auto graphite_image_draw()
     return draw;
 }
 
+auto graphite_image_region_draw()
+{
+    static auto draw = [] {
+        void* library = dlopen("@rpath/libVoxGraphite.dylib", RTLD_LAZY | RTLD_LOCAL);
+        return library ? reinterpret_cast<decltype(&vox_graphite_draw_image_region_pixels)>(
+            dlsym(library, "vox_graphite_draw_image_region_pixels")) : nullptr;
+    }();
+    return draw;
+}
+
 auto graphite_image_tiles_draw()
 {
     static auto draw = [] {
@@ -3014,6 +3024,21 @@ static bool draw_chromium_root_image_tiles(std::vector<uint32_t>& pixels,
     float canvas_width, bool has_background, VoxGraphiteImage const& descriptor)
 {
     auto draw = graphite_image_draw();
+    auto draw_region = graphite_image_region_draw();
+    if (draw_region && has_background && s_raster_layer_is_root && s_msaa_grid_columns > 0)
+        return draw_chromium_root_raster_grid<true>(pixels, raster_width, raster_height,
+            region, page_x, page_y, scroll_y, scale,
+            [&](auto& target, long offset_x, long offset_y, bool msaa,
+                int x, int y, int width, int height) {
+                auto image = descriptor;
+                image.matrix[2] += offset_x;
+                image.matrix[5] += offset_y;
+                image.flags = (image.flags & ~VOX_GRAPHITE_IMAGE_FORCE_MSAA)
+                    | (msaa ? VOX_GRAPHITE_IMAGE_FORCE_MSAA : 0);
+                VoxGraphitePixelRegion view {x, y, width, height, width * 4,
+                    reinterpret_cast<uint8_t*>(target.data())};
+                return draw_region(&view, s_msaa_grid_width, s_msaa_grid_height, 1, &image) != 0;
+            });
     if (draw && has_background && s_raster_layer_is_root && s_msaa_grid_columns > 0)
         return draw_chromium_root_raster_grid(pixels, raster_width, raster_height,
             region, page_x, page_y, scroll_y, scale,

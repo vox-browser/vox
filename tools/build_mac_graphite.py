@@ -127,6 +127,7 @@ def main():
         "-framework", "CoreGraphics", "-framework", "Foundation", "-framework", "ImageIO",
         "-Wl,-exported_symbol,_vox_graphite_draw_shadow_pixels",
         "-Wl,-exported_symbol,_vox_graphite_draw_image_pixels",
+        "-Wl,-exported_symbol,_vox_graphite_draw_image_region_pixels",
         "-Wl,-exported_symbol,_vox_graphite_draw_image_tiles",
         "-Wl,-exported_symbol,_vox_graphite_draw_shape_pixels",
         "-Wl,-exported_symbol,_vox_graphite_draw_shape_region_pixels",
