@@ -25,6 +25,8 @@ pub:
 	url           string
 	starting_line int              = 1
 	source_type   libjs.SourceType = .script
+	// The compact loader retains the actual external script for completion events.
+	external_element ?&dom.Element
 }
 
 @[heap]

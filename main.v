@@ -1441,6 +1441,7 @@ fn script_sources(document &dom.Document, base_url string, preloaded map[string]
 				code: code
 				url: resolved_url
 				source_type: if type_ == 'module' { .module } else { .script }
+				external_element: script_element
 			}
 		} else {
 			source = browserjs.ScriptSource{
@@ -1790,6 +1791,7 @@ fn javascript_bootstrap() string {
 		'const __trackEndsWith=String.prototype.endsWith,__trackApply=Reflect.apply;',
 		'function __isTrackElementState(s){return s.namespaceURI==="http://www.w3.org/1999/xhtml"&&(s.tagName==="track"||__trackApply(__trackEndsWith,s.tagName,[":track"]));}',
 		'const __bindElementWheel = globalThis.__ladybirdElementWheelBind;',
+		'const __bindScriptElement = globalThis.__ladybirdScriptElementBind;',
 		'const __nativeImageGet = globalThis.__ladybirdImageGet;',
 		'const __listeners = Object.create(null);',
 		browserjs.compact_attribute_bootstrap(),
@@ -1848,7 +1850,7 @@ fn javascript_bootstrap() string {
 		'    if(s.namespaceURI!=="http://www.w3.org/1999/xhtml"||s.tagName!=="video")Object.defineProperties(o,{videoWidth:{get:function(){return +s.videoWidth||0;}}, videoHeight:{get:function(){return +s.videoHeight||0;}}});',
 		'    if(!__isTrackElementState(s)&&(s.namespaceURI!=="http://www.w3.org/1999/xhtml"||(s.tagName!=="audio"&&s.tagName!=="video")))Object.defineProperty(o,"readyState",{get:function(){return +s.readyState||0;}});',
 		'    __compactElementGeometry(o,s);o.focus=function(){__state.operations.push({op:"focus",target:s.bridgeKey});};o.select=function(){__state.operations.push({op:"selectTextControl",target:s.bridgeKey});};o.insertBefore=function(child,reference){const c=child&&child.__state,r=reference&&reference.__state;if(c&&c.tagName==="#node")return __compactInsertNode(o,child,reference,true);if(c){if(c.created)__state.operations.push({op:"insertCreated",target:s.bridgeKey,child:c,reference:r?r.bridgeKey:"",referenceFirstChild:!!(reference&&reference.__firstChildOf===s.bridgeKey)});else __state.operations.push({op:"moveBefore",target:s.bridgeKey,child:c.bridgeKey,reference:r?r.bridgeKey:"",insert:true});s.hasChildren=true;c.parentKey=s.bridgeKey;c.removed=false;}return child;};',
-		'    o.style = __styleProxy(s); o.classList = __classList(s); Object.defineProperty(o,"__state",{value:s}); Object.defineProperty(s, "__object", { value: o, writable: true, configurable: true }); if(s.tagName==="img"&&s.namespaceURI==="http://www.w3.org/1999/xhtml")__ladybirdImageBind(o,s.bridgeKey); if((s.tagName==="audio"||s.tagName==="video")&&s.namespaceURI==="http://www.w3.org/1999/xhtml"){__bindMediaElement(o,s.bridgeKey,s.tagName);__recordMediaAttributes(o,s,__reflectMediaAttribute);delete o.addEventListener;delete o.removeEventListener;}else if(s.tagName!=="#document-fragment"&&s.tagName!=="#text"){__bindElementWheel(o,s.bridgeKey,s.tagName,s.namespaceURI);if(__isTrackElementState(s)){__bindTrackElement(o,s.bridgeKey);__recordMediaAttributes(o,s,__compactAttributes.reflect);delete o.addEventListener;delete o.removeEventListener;delete o.dispatchEvent;}}',
+		'    o.style = __styleProxy(s); o.classList = __classList(s); Object.defineProperty(o,"__state",{value:s}); Object.defineProperty(s, "__object", { value: o, writable: true, configurable: true }); if(s.tagName==="img"&&s.namespaceURI==="http://www.w3.org/1999/xhtml")__ladybirdImageBind(o,s.bridgeKey); if((s.tagName==="audio"||s.tagName==="video")&&s.namespaceURI==="http://www.w3.org/1999/xhtml"){__bindMediaElement(o,s.bridgeKey,s.tagName);__recordMediaAttributes(o,s,__reflectMediaAttribute);delete o.addEventListener;delete o.removeEventListener;}else if(s.tagName!=="#document-fragment"&&s.tagName!=="#text"){__bindElementWheel(o,s.bridgeKey,s.tagName,s.namespaceURI);if(s.namespaceURI==="http://www.w3.org/1999/xhtml"&&s.tagName==="script")__bindScriptElement(o);if(__isTrackElementState(s)){__bindTrackElement(o,s.bridgeKey);__recordMediaAttributes(o,s,__compactAttributes.reflect);delete o.addEventListener;delete o.removeEventListener;delete o.dispatchEvent;}}',
 		'  } return s.__object;',
 		'}',
 		'let __createdElementCount=0; function __createKnownElement(namespaceURI,name){const key="__created_"+(++__createdElementCount),s={created:true,bridgeKey:key,elementIndex:1000000000+__createdElementCount,namespaceURI:namespaceURI,tagName:name,id:"",src:"",width:"",height:"",textContent:"",innerHTML:"",className:"",styleText:"",onclick:"",attributes:{},attributeRecords:[],hasChildren:false,children:[],disabled:false,checked:false,indeterminate:false};__state.elements[key]=s;return __element(s);}',
@@ -2885,6 +2887,10 @@ fn run_document_script_sources_with_image_fetch_hooks(document &dom.Document, cu
 		messages << 'JavaScript element wheel bindings: ${err.msg()}'
 		return none
 	}
+	mutable_runtime.install_script_element_event_binding() or {
+		messages << 'JavaScript script element event bindings: ${err.msg()}'
+		return none
+	}
 	install_compact_element_content_binding_with_policy(document, mut mutable_runtime, .roots_and_ids) or {
 		messages << 'JavaScript element content bindings: ${err.msg()}'
 		return none
@@ -2991,6 +2997,12 @@ fn run_document_script_sources_with_image_fetch_hooks(document &dom.Document, cu
 		runtime.run_document_scripts([source]) or {
 			messages << 'JavaScript: ${err.msg()}'
 			return none
+		}
+		if element := source.external_element {
+			runtime.dispatch_external_script_load(element) or {
+				messages << 'JavaScript script completion: ${err.msg()}'
+				return none
+			}
 		}
 	}
 	for name in ['DOMContentLoaded', 'load'] {
