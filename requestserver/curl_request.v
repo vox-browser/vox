@@ -9,6 +9,7 @@ module requestserver
 import fetch
 import http
 import os
+import platform
 
 @[heap]
 pub struct CurlRequest {
@@ -42,6 +43,10 @@ pub fn (mut connection CurlConnection) fetch_host() &fetch.FetchHost {
 }
 
 pub fn (mut connection CurlConnection) start_fetch(params &fetch.FetchParams, input &fetch.Request) &fetch.PendingResponse {
+	// Font and image requests can start during a temporary style/layout pass.
+	// Curl retains these requests, map entries and callbacks until completion.
+	entry := platform.enter_persistent()
+	defer { platform.leave_persistent(entry) }
 	mut request := unsafe { &fetch.Request(input) }
 	pending := fetch.PendingResponse.create(mut request, none)
 	if filtered_response := request.apply_adblock() {
@@ -142,6 +147,8 @@ fn (request &CurlRequest) request_handle() fetch.RequestServerRequest {
 }
 
 fn curl_header_received(buffer voidptr, size usize, count usize, owner voidptr) usize {
+	entry := platform.enter_persistent()
+	defer { platform.leave_persistent(entry) }
 	mut request := unsafe { &CurlRequest(owner) }
 	length := size * count
 	line := unsafe { (&u8(buffer)).vbytes(int(length)).bytestr() }
@@ -174,6 +181,8 @@ fn curl_header_received(buffer voidptr, size usize, count usize, owner voidptr) 
 }
 
 fn curl_data_received(buffer voidptr, size usize, count usize, owner voidptr) usize {
+	entry := platform.enter_persistent()
+	defer { platform.leave_persistent(entry) }
 	mut request := unsafe { &CurlRequest(owner) }
 	if !request.transfer_headers_to_client_if_needed() { return 0 }
 	length := size * count
@@ -246,6 +255,8 @@ fn (mut request CurlRequest) notify_fetch_complete(result int) {
 }
 
 pub fn (mut request CurlRequest) stop() {
+	entry := platform.enter_persistent()
+	defer { platform.leave_persistent(entry) }
 	if request.finished_ || request.stop_requested_ { return }
 	request.stop_requested_ = true
 	// LibRequests::stop sends IPC; the server never removes its easy handle

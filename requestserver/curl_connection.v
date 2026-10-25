@@ -26,6 +26,8 @@ mut:
 }
 
 pub fn CurlConnection.create() !&CurlConnection {
+	entry := platform.enter_persistent()
+	defer { platform.leave_persistent(entry) }
 	if C.curl_global_init(C.CURL_GLOBAL_ALL) != C.CURLE_OK { return error('Failed to initialize libcurl') }
 	mut connection := &CurlConnection{ multi_: C.curl_multi_init() }
 	if connection.multi_ == unsafe { nil } { return error('Failed to initialize curl multi handle') }
@@ -64,6 +66,8 @@ fn curl_timeout_callback(_ voidptr, timeout_ms i64, owner voidptr) int {
 }
 
 fn curl_socket_callback(_ voidptr, socket int, what int, owner voidptr, _ voidptr) int {
+	entry := platform.enter_persistent()
+	defer { platform.leave_persistent(entry) }
 	mut connection := unsafe { &CurlConnection(owner) }
 	$if darwin || linux {
 		if what == C.CURL_POLL_REMOVE {
@@ -95,6 +99,8 @@ fn curl_socket_activate(owner voidptr, socket int, flags int) {
 }
 
 fn (mut connection CurlConnection) socket_action(socket int, flags int) {
+	entry := platform.enter_persistent()
+	defer { platform.leave_persistent(entry) }
 	if connection.closed_ { return }
 	mut running := 0
 	connection.in_curl_call_ = true
