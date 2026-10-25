@@ -1014,7 +1014,15 @@ pub fn (mut scope WindowOrWorkerGlobalScopeMixin) indexed_db() &GlobalScopeIndex
 		storage_key: if key := storage_key { key.to_string() } else { '' }
 		event_loop_handle: voidptr(loop)
 		queue_database_task: fn [loop, document] (task indexeddb.DatabaseTask) {
-			queue_a_task(.database_access, loop, document, task)
+			queue_a_task(.database_access, loop, document, fn [document, task] () {
+				mut allocation_scope := platform.RetainedArenaScope{}
+				if owner := document {
+					mut storage := owner.native_storage()
+					if storage != unsafe { nil } { allocation_scope = storage.enter_nested() }
+				}
+				defer { allocation_scope.finish() }
+				task()
+			})
 		}
 	}
 	factory := indexeddb.IDBFactory.create_for_global_scope(global_scope) or { panic(err) }
