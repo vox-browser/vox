@@ -219,3 +219,42 @@ corrected pixel comparison, all 19 visual pages and the repeat benchmark.
 Remaining sampled time is dominated by native replay, notably synchronous GPU
 readbacks for animated clipped gradients and repeated root-tile processing.
 The 48 ms callback cost remains above the 16.67 ms budget for 60 fps.
+
+### Compact root-tile transfers (`cf97c93b`)
+
+Small root-layer controls now allocate and transfer only their intersection
+with each Chromium tile. The GPU still uses the original tile dimensions,
+origin and coverage; absent CPU backdrop pixels remain transparent. A failed
+compact draw leaves the original pixels available for the full-tile fallback.
+The full-tile path also avoids clearing its newly zero-initialized first tile
+twice.
+
+Two 120-frame pairs use the same current production executable, frozen input,
+viewport and animated workload described above. The repeat runs in reverse
+order (candidate first) to expose time-dependent host load.
+
+| Per scroll callback | Baseline | Compact tiles | Repeat baseline | Repeat compact tiles |
+| --- | ---: | ---: | ---: | ---: |
+| Median callback | 54.342 ms | 50.680 ms | 51.991 ms | 51.847 ms |
+| Median replay | 49.533 ms | 46.095 ms | 47.366 ms | 46.954 ms |
+| Median retired instructions | 297.168 M | 288.519 M | 294.415 M | 287.127 M |
+| Mean retired instructions | 308.912 M | 303.592 M | 306.530 M | 302.627 M |
+
+Mean instruction savings are 5.321 M and 3.904 M per callback (1.72% and
+1.27%). Median wall-time savings vary from 6.74% to 0.28%; this does not
+establish a repeatable 6.74% speedup or meet the 60 fps target.
+
+Focused validation passes 3,575 grid checks in both optimized and ASan/UBSan
+builds, 2,560 exact GPU region comparisons, 1,080 shape/backdrop comparisons
+and 6,986 GPU replay comparisons. Coverage includes overlapping tile ownership,
+immutable backdrops, failure atomicity, odd row strides, untouched padding,
+cache hits and context teardown. Pikabu screenshots remain pixel-exact at both
+1× and 2×. The first pair crosses the cumulative 5 M instruction gate; the
+broader native batch and all 19 visual pages pass with unchanged pixels.
+
+Receipts are `grid-region-guard-3.json` (retained failed integration-test
+attempt), `region-resume-guard.json` (completed checks and benchmarks),
+`region-visual/` and the four benchmark directories named `grid-before`,
+`region-after`, `region-repeat-after` and `region-repeat-before` under
+`Build/pikabu-scroll-20261024/`. These focused native jobs use the guard's
+3 GiB budget.
