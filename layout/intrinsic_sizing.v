@@ -689,8 +689,8 @@ fn intrinsic_outer_width_contribution_with_resolved_box_model(mut state LayoutSt
 			inner = css_pixels_min(inner, calculate_max_content_width(mut state, box))
 		} else if max_width.is_fit_content() {
 			inner = css_pixels_min(inner, calculate_fit_content_width(mut state, box, available_width))
-		} else if maximum := styled.computed_values().length_percentage_to_px(.max_width, containing_width.to_double()) {
-			inner = css_pixels_min(inner, css_px(maximum))
+		} else if maximum := resolve_layout_content_size(node, max_width, containing_width, values, true) {
+			inner = css_pixels_min(inner, maximum)
 		}
 	}
 	min_width := styled.computed_values().size_value(.min_width)
@@ -700,8 +700,8 @@ fn intrinsic_outer_width_contribution_with_resolved_box_model(mut state LayoutSt
 		inner = css_pixels_max(inner, calculate_max_content_width(mut state, box))
 	} else if min_width.is_fit_content() {
 		inner = css_pixels_max(inner, calculate_fit_content_width(mut state, box, available_width))
-	} else if minimum := styled.computed_values().length_percentage_to_px(.min_width, containing_width.to_double()) {
-		inner = css_pixels_max(inner, css_px(minimum))
+	} else if minimum := resolve_layout_content_size(node, min_width, containing_width, values, true) {
+		inner = css_pixels_max(inner, minimum)
 	}
 	return inner.plus(flex_or_grid_item_outer_inline_edges(values))
 }
