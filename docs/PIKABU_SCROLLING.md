@@ -389,3 +389,44 @@ the instruction-savings baseline to staged borders. A separate readback-polling
 experiment passed focused correctness checks but increased instructions by
 about 25 M per callback; it was rejected and receives no savings credit
 (`readback-poll-result.json`).
+
+
+### Span-based multisample masks (`e4951357`)
+
+Rounded fallback shapes resolve multisampling once per horizontal tile span
+and copy the resulting mask row through each vertical span. This preserves the
+original tile ownership at overlapping borders, negative origins and the final
+column while removing a binary search for every pixel.
+
+| Per scroll callback | Staged-border control | Span masks | Repeat control | Repeat span masks |
+| --- | ---: | ---: | ---: | ---: |
+| Median callback | 29.845 ms | 28.992 ms | 28.381 ms | 27.784 ms |
+| Median replay | 26.626 ms | 25.965 ms | 25.331 ms | 24.865 ms |
+| Mean retired instructions | 262.048 M | 243.278 M | 260.137 M | 241.593 M |
+
+The fresh 120-frame pairs save 18.770 M and 18.544 M instructions per callback
+(7.16% and 7.13%). Callback medians improve by 2.86% and 2.11%. Both orderings
+retain the same executable payload, offline cache, viewport, positions and
+command fingerprints. Publication and scanout remain outside this endpoint;
+60 fps remains unachieved.
+
+The mask helper passes 15,443 exact comparisons against the original per-pixel
+algorithm in optimized and AddressSanitizer/UndefinedBehaviorSanitizer builds.
+The focused native/GPU batch passes 2,016 native comparisons, 288 required
+fast-path cases, 576 anisotropic rejection checks, 3,288 direct GPU comparisons
+and 2,520 unsupported-case preservation checks. The broad batch passes 6,986
+GPU replay comparisons, the complete frozen-source clipping/composite/glyph/
+shape/tile batch, pixel-exact paused Pikabu captures at both densities and
+unchanged pixels on all 19 visual pages. This advances the broad instruction
+savings baseline to span masks.
+
+Receipts under `Build/pikabu-scroll-20261024/` are `tile-mask-result.json`,
+`tile-mask-guard.json`, `tile-mask-verify-retry2-guard.json` and
+`tile-mask-visual/`. The first broad attempt ran out of disk space; the first
+retry exposed loader coalescing of identical hardlinked test libraries. The
+successful retry uses distinct library inodes with the same checked bytes.
+Neither failed attempt receives broad-verification credit.
+
+Clean production-library promotion also passes the optimized and sanitizer mask
+checks, 3,312 exact rounded-part GPU comparisons and the required native
+fast-path/rejection checks (`tile-mask-promote-retry-guard.json`, exit 0).
