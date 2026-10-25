@@ -21,6 +21,7 @@ import shutil
 import statistics
 import subprocess
 import sys
+import time
 
 REPO = Path(__file__).resolve().parents[1]
 ENDPOINT = "changed Cocoa layer contents after updateLayer; not physical scanout"
@@ -231,6 +232,9 @@ def main():
                         ("VOX_", "LADYBIRD_", "DYLD_")) or key in {
                             "HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY", "SSL_CERT_FILE"}})
     try:
+        evidence["started_unix"] = time.time()
+        evidence["host"] = dict(cpu_count=os.cpu_count(),
+                                load_average_before=list(os.getloadavg()))
         with (output / "browser.log").open("w") as log:
             child = subprocess.Popen(command, cwd=REPO, env=env, stdout=log,
                                      stderr=subprocess.STDOUT)
@@ -255,6 +259,8 @@ def main():
         evidence.update(valid=False, error=str(error))
         raise
     finally:
+        evidence["finished_unix"] = time.time()
+        evidence["host"]["load_average_after"] = list(os.getloadavg())
         (output / "run.json").write_text(json.dumps(evidence, indent=2) + "\n")
 
 

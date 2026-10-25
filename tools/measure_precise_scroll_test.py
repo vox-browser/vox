@@ -66,10 +66,19 @@ class PreciseScrollTests(unittest.TestCase):
                                     VOX_PROXY="http://127.0.0.1:9"), \
                     mock.patch.object(measure_precise_scroll.subprocess, "run", compile_probe), \
                     mock.patch.object(measure_precise_scroll.subprocess, "Popen", launch), \
+                    mock.patch.object(measure_precise_scroll.os, "cpu_count", return_value=18), \
+                    mock.patch.object(measure_precise_scroll.os, "getloadavg",
+                                      side_effect=[(1, 2, 3), (4, 5, 6)]), \
+                    mock.patch.object(measure_precise_scroll.time, "time", side_effect=[100, 200]), \
                     contextlib.redirect_stdout(io.StringIO()):
                 measure_precise_scroll.main()
             evidence = json.loads((output / "run.json").read_text())
             self.assertTrue(evidence["valid"])
+            self.assertEqual(evidence["host"], {"cpu_count": 18,
+                             "load_average_before": [1, 2, 3],
+                             "load_average_after": [4, 5, 6]})
+            self.assertEqual(evidence["started_unix"], 100)
+            self.assertEqual(evidence["finished_unix"], 200)
             self.assertEqual(evidence["schedule"]["required_title"], "fixture")
             self.assertEqual(evidence["schedule"]["settle_basis"], "matching document title")
             self.assertEqual(evidence["environment"]["VOX_PROFILE_DIR"], str(output / "profile"))
