@@ -73,6 +73,7 @@ function __compactNodeWrapper(state){
  Object.defineProperties(node,{
   __state:{value:state},nodeType:{value:state.nodeType},nodeName:{value:state.nodeName},ownerDocument:{value:document},
   contains:{value:__compactNodeContains,writable:true,enumerable:true,configurable:true},
+  isConnected:{get:__compactNodeConnected,enumerable:true,configurable:true},
   parentNode:{get(){return __compactNativeParent(record(this));}},
   parentElement:{get(){const parent=this.parentNode;return parent&&parent.nodeType===1?parent:null;}},
   firstChild:{get(){return __queryElements(record(this).bridgeKey,"firstChild","");}},
