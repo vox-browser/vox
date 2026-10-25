@@ -2670,6 +2670,10 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Initial completed integration browser0/error-pagePNG1024x740/proxy502/controller1 retained;separate proxy-cleared 880px-window delayed-image diagnostic actual0/exact1024x768;legacy997450381/native-nav1231516268/native-install356142066,each once;no completed primary replay.
   Isolated snapshot app/sign/verify/smoke/realGC default1+override2 actual0;precompiler/pre-sign/prerequisite controller failures retained/completed stages reused.
   Zero optimization credit/no broad reset/current4 carry54,475,673+pending canonical baseline/legacy179ledger unchanged/canonical+GUI+foreign preserved;Chrome parity open.
+  Cached GitHub native-submission boundary diagnostics October25:one unprofiled observation/actual browser+guard0/strictcontent/exact1024x768;legacy21396455561/native54211171539/difference32814715978.
+  Batch capture defers replay through readiness/font settlement;repeated layout/paint preparation lies between boundaries;not one bitmap-copy measurement/not physical presentation/FCP.
+  Separate one-observation inclusive hardware attribution:14 wrappers/full-C removal exact/130native pins/native+sign+verify+smoke+browser+guard0/zero instrumentation failures;overlapping observer-perturbed totals never summed or credited.
+  Initial native symbol failure1 retained;corrected compile timeout guard125/child-9/native-terminalUNKNOWN retained/no browser;only unfinished native stage resumed with identical C/args/memory guard/900s limit. Both diagnostics optimizationcredit0/current4 carry54,475,673/pending canonical baseline/legacy179ledger unchanged/Chrome parity open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

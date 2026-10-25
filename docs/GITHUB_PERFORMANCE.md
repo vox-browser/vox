@@ -19564,3 +19564,93 @@ Its SHA256 is `9f8a97ae55ea2ad0256042dbbd0317acff79b2a575c512065e142509820c148b`
 Binary SHA256: `e36d1f9a53075c6b6c3dfc0cf8d57d83c4352b2b4523438437b0c7fbe608145f`.
 Durable generated-C archive SHA256: `692d483f2bf904c520cb07567b75cbb479f847174a07403d2b46da60fef1cc8c`.
 Integration log SHA256: `de67d15a2618e1fe203110a811ad20f99020925d2b1275f2fa32273b9f28a01d`.
+
+## Cached GitHub native-submission boundary diagnostics (October 25, 2026)
+
+A separately declared, unprofiled observation of the verified `948f56f4`
+integration snapshot reaches native document layer submission after
+54,211,171,539 retired instructions. The unchanged
+legacy draw-tail scope reports 21,396,455,561; the
+difference is 32,814,715,978. These are
+two boundaries in one observation, rather than an optimization comparison or a
+repeatability cohort. Both scopes appear once. The actual browser and guard
+exits are zero, the document viewport is exactly 1024×768, and the sealed fixture
+passes the strict semantic/content gate. Author JavaScript is explicit, Boehm
+uses one marker, external network access is denied, and runtime inputs and the
+sealed fixture are checked before and after the observation.
+
+This snapshot's batch-capture path keeps servicing layout, resource completion
+and engine tasks until document readiness and font promises permit document
+replay. The retained log records repeated layout and command-preparation passes
+between the legacy report and the native submission. Consequently, the
+32,814,715,978-instruction difference does
+not measure one bitmap conversion. The new boundary acknowledges a local layer
+update after `CALayer.contents` and `CATransaction.commit`; it does not prove
+physical display presentation or web FCP. The binary predates the independent
+fresh-RGBA change `74d53691`.
+
+A second, separately declared instrumented diagnostic adds inclusive hardware
+instruction wrappers to fourteen functions in the exact frozen generated C.
+Removing the wrappers and their globals restores the entire original C
+byte-for-byte. Native inputs and compiler arguments remain pinned, with only
+the C input and private output paths substituted. This is one new instrumented
+observation, with zero retries, exclusions or extensions. Its actual browser,
+guard, native compilation, signing, strict verification and smoke exits are
+zero; the exact viewport and strict content gate pass. Both checkpoint reports
+contain all fourteen rows with zero instrumentation failures.
+
+The instrumented navigation scopes are
+21,315,055,307 at the legacy boundary and
+60,023,466,611 at native submission. These observer-perturbed counts
+are separate from the unprofiled observation above. Function totals include
+their callees and process-wide work charged while the navigation owner thread
+is inside the wrapper. Nested totals overlap, include wrapper overhead, and
+must not be summed. Open wrappers are clipped to each endpoint snapshot.
+
+| Inclusive hardware scope | Through legacy boundary | Through native submission | Additional instructions between boundaries |
+| --- | ---: | ---: | ---: |
+| `dom__Document__update_layout` | 17,355,349,147 | 51,515,629,372 | 34,160,280,225 |
+| `BrowserApp__draw` | 20,453,643,267 | 49,540,031,667 | 29,086,388,400 |
+| `BrowserApp__finish_frame_preparation` | 378,291,468 | 27,498,843,768 | 27,120,552,300 |
+| `dom__Document__update_style` | 6,186,777,348 | 32,782,261,968 | 26,595,484,620 |
+| `layout__finish_document_layout` | 9,079,042,297 | 16,291,328,786 | 7,212,286,489 |
+| `BrowserApp__record_document_paint_commands` | 294,147,640 | 2,839,641,791 | 2,545,494,151 |
+| `dom__Document__record_display_list_for_viewport` | 293,285,819 | 2,822,923,972 | 2,529,638,153 |
+| `layout__refresh_document_paint_tree` | 143,295,383 | 2,346,702,048 | 2,203,406,665 |
+| `layout__build_layout_tree_from_computed_styles` | 1,325,392,115 | 1,507,516,882 | 182,124,767 |
+| `layout__update_chromium_raster_layer_plan` | 957,901 | 15,601,854 | 14,643,953 |
+| `BrowserApp__poll_navigation_and_background_resources` | 12,652,799,464 | 12,664,105,307 | 11,305,843 |
+| `BrowserApp__advance_document_animations` | 201,291 | 870,035 | 668,744 |
+| `BrowserApp__poll_javascript_tasks` | 103,329 | 535,345 | 432,016 |
+| `BrowserApp__deliver_rendering_opportunity` | 60,384 | 208,985 | 148,601 |
+
+The original attribution build failed in native compilation because its
+diagnostic wrapper referenced `builtin__string__eq`; this frontend emits
+`string__eq`. Its actual native/guard exits are 1, and no browser observation
+ran. That C, log and failure receipt remain in
+`native-submission-attribution-20261025/`. The corrected attempt uses its own
+directory and changes only that diagnostic symbol and artifact paths. Its first
+native compilation exceeded the declared 240-second limit: guard exit 125,
+guard child exit -9, sampled peak RSS 3,974,037,504 bytes. The controller did not
+return a native terminal status, which remains unknown. No browser observation
+started. The original C, partial native log and timeout receipts are preserved.
+Only that unfinished native stage was resumed with the same C and exact native
+argument array under the same memory guard and a 900-second timeout. The
+resumed native, signing, verification and smoke exits are all actually zero.
+This does not alter runtime V sources or replace a completed observation.
+
+Both diagnostics receive zero optimization credit. They neither reset the
+broad-verification gate nor change the current4 observed carry of 54,475,673,
+its pending canonical baseline, or the byte-identical legacy round-179 ledger.
+No canonical app is written and the user's GUI browser is preserved. Chrome
+parity remains open because a matching content and endpoint comparison has not
+been established.
+
+Unprofiled evidence: `Build/instructions/github-native-submission-baseline-20261025/`.
+Result SHA256: `6ee53bfb1eca2c885ab3434b28de881cf20fc9e7ff336631934acf99725485c0`.
+Log SHA256: `c362334f30c27e834cce8e3add28444d536252cde2ba53368078a75168b21212`.
+Attribution evidence: `Build/instructions/native-submission-attribution-corrected-20261025/`.
+Result SHA256: `79a42593ffc50e06b05e7af8b7af99958b740bc6d2b3bc22e6f894bde6d403a4`.
+Log SHA256: `6927f662b92225fc4ee89b42b803af076facac5df502c9530a04dc76cc2b73f9`.
+Generated-C archive SHA256: `bbd718bb7f7b1bc908b537141320618e10e73216046d465dc360f508efacdb1a`.
+Instrumented binary SHA256: `0c9c987ceac06d3341f0debe223b2969f955b47ae2b774fbfff40fd941333db0`.
