@@ -93,3 +93,53 @@ current V `1e63d0f`, SHA-256
 These passing binding tests do not establish successful live Pikabu startup.
 Fresh production captures of the live URL and retained archive remain pending
 under the shared build guard.
+
+## Adjacent SVG fills and diagnostic capture
+
+`f4e8f816` shares a raster pass between adjacent SVG gradient fills instead of
+compositing every path through a separate coverage mask. `bcec0c16` does the
+same for eligible solid fills with matching rectangular clips, including nested
+SVG display lists. Both paths retain the existing fallback for incompatible
+clips and effects. Three gradient-group tests and five solid-group tests passed;
+receipts are in `Build/pikabu-story-latest-v-stages.json` and
+`Build/pikabu-story-continued-stages.json`. The chained-drop-shadow native check
+also passed four cases.
+
+A later diagnostic capture is preserved in
+`Build/pikabu-story-early-diagnostic/`, including the actual app bundle, per-file
+hashes, fresh Brave references, source fixture hashes, audits, logs, strict pixel
+verdicts, and region counts in `results.json`. Its executable SHA-256 is
+`a7d1db2fbaa7ce869508a38235078ea69a29ea05abe7a362bb24b0956f89ae41`;
+Brave is 156.1.98.60, executable SHA-256
+`9d53e182ab59b7c430abea0233088cb452694b96843d62ccccbc6c0902b98fe5`.
+This was an existing shared production bundle: its identity was verified before
+and after capture, but it has no complete build-start source manifest. These
+results are diagnostic evidence, not an isolated attribution to either fix.
+
+All captures used a fresh private profile, 1024 × 768 document pixels at scale
+1, and eight seconds of settling. Native and Brave processes exited zero.
+Strict comparisons still fail except for the shadow-stack fixture:
+
+| Input | Differing pixels | Pixels with channel error > 3 | Maximum channel error |
+| --- | ---: | ---: | ---: |
+| Shadow stack | 0 | 0 | 0 |
+| Adjacent gradients | 408 | 0 | 1 |
+| Adjacent clipped solids | 4,326 | 532 | 94 |
+| Avatar fixture | 1,177 | 416 | 20 |
+| Drop-shadow chain | 9,428 | 0 | 2 |
+| Bundled story | 16,917 | 186 | 43 |
+| Live story | 514,947 | 437,491 | 255 |
+
+The bundled story differs at 2.1511% of viewport pixels. The masked avatar and
+cookie notice retain larger errors; most remaining header-shadow differences
+are one channel level. The title region has three differing pixels with a
+maximum channel error of one. No pixels were excluded and no tolerance was
+introduced into the pass criterion.
+
+The live URL loads the intended Pikabu document but still fails script startup
+at jQuery's `document.implementation.createHTMLDocument("")` probe. The native
+DOM already implements this API; the compact JavaScript bridge does not yet
+expose it in this captured build. Missing WebSocket and a randomized script
+reference error also remain. An ordinary visible, fully active window with a
+20-second observation records the same failure, so it is not specific to the
+screenshot launch mode. The script-free archive cannot establish live parity.
