@@ -5,9 +5,20 @@ shared offline capture diagnostic is below; the original October 13–14
 measurements and subsequent frozen first-frame optimization rounds follow.
 Chrome parity remains open.
 
-## Compact private matching-rule candidates, October 25
+## Rejected compact private matching-rule candidates, October 25
 
-Commit `574f072a` stores only the matching-rule pointer and optional shadow
+Rejected after the complete 30-pair cohort: the candidate used 74,170,885 more
+instructions at the median (+0.520928%), with a paired 95% increase interval of
+67,862,265–87,673,275 instructions. Commit `1115393e` restores the
+previous runtime while retaining the new ownership cases and pointer-identity
+assertions. All seven restored files exactly match the completed before harness;
+its 25 active cases and 24,835 assertions passed. Completed tests and primary
+observations were retained without replay. No new instruction credit is claimed.
+The 54,475,673-instruction carry and pending canonical screenshot baseline remain
+unchanged. The isolated measured app and the evidence below describe the rejected
+candidate; they do not describe the current runtime or establish Chrome parity.
+
+Rejected commit `574f072a` stored only the matching-rule pointer and optional shadow
 root in transient candidate buffers. The generated record shrinks from 48 to
 24 bytes. Scope-root resolution still precedes selector matching where needed;
 successful matches retain the root and proximity in the unchanged public

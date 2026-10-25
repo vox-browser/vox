@@ -2661,6 +2661,9 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Focused viewport exact;broad87bothGC/sixactual0/174executions;canonical13/19pass/12exact/controller1;all19matchingexact/unchanged bounds;checkpointpending canonical baseline.
   Interrupted initial native/guard exits UNKNOWN retained; no tests/primaries had run; unfinished build regenerated on SSD;125native objects recovered byte-exact against parent hashes.
   Separate current4 measured574f072a;carry54,475,673;legacy179ledger/canonical/GUI/foreign preserved;Chrome parity open.
+  Rejected after final-audit0:median candidate regression74,170,885/+0.520928%;paired increaseCI[67,862,265,87,673,275].
+  Runtime restored by1115393e;all7files exact completed before harness/25cases/24835assertions;new ownership tests and pointer-identity fixes retained/no completed replay.
+  Measured isolated candidate retained as historical evidence;repeatablecredit0/carry54,475,673/pending canonical baseline unchanged;Chrome parity open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
