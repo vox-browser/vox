@@ -989,3 +989,68 @@ Evidence under `Build/pikabu-live-lag-20261025/`:
 `loader-arena-smoke.log`, `loader-arena-production-guard.json`, and
 `loader-arena-precise/{run.json,browser.log}`. The guard exits 1 because the
 scrolling acceptance trial failed; the preceding executed checks pass.
+
+
+### Archived-page baseline and readiness correction
+
+A local TLS replay now serves the archived Pikabu main response and resources
+at their original URLs, with external forwarding disabled. The main response
+SHA-256 is `7d43fabcfe55aab6d0ffce072975d0266ba12d84787c39c028ad14cf82da486a`.
+Both 600-input frozen-production trials start with the Pikabu document title.
+They provide a baseline, without paired optimization credit:
+
+| Measurement | Trial 1 | Trial 2 |
+| --- | ---: | ---: |
+| Full-input-window scroll throughput | 24.20 fps | 23.78 fps |
+| Median scroll interval | 40.040 ms | 40.912 ms |
+| p95 scroll interval | 56.454 ms | 57.957 ms |
+| Maximum scroll interval | 92.136 ms | 79.283 ms |
+| Scroll intervals over 16.67 ms | 266/266 | 267/267 |
+| Completed inputs / changed publications | 600 / 279 | 600 / 281 |
+
+The old live trial starts with title `vox`; input precedes the first publication
+by 4.53 seconds. Its computed 12.49 fps includes navigation and cannot describe
+steady scrolling. The repeat starts with the same unloaded title, never
+scrolls, and fails summary validation. Both remain preserved as failed
+acceptance evidence. This exposed the need for `--require-title`, whose settle
+period begins after document identity matches. Nineteen measurement-tool tests
+pass and the native probe compiles with strict warnings.
+
+Ten canonical visual checks pass for the frozen loader-arena production build.
+The separate sampling run identifies rounded-shape rasterization, backdrop
+copying and image composition as substantial costs; sampled runs do not supply
+performance credit.
+
+Evidence under `Build/pikabu-live-lag-20261025/`:
+`loader-arena-{replay,replay-repeat,live,live-repeat}/`,
+`loader-arena-{sample.txt,diagnostic-result.json,visual-result.json}`, and
+`loader-arena-serial-guard.json`. The guard's successful exit does not turn the
+failed live trials into acceptance passes.
+
+### Rejected fractional rounded-parts experiment
+
+The candidate extends sparse rounded-corner staging to fractional opaque fill
+edges while retaining the original GPU surface dimensions. Its 6,528 exact
+native/GPU comparisons pass; that total includes 4,800 direct rounded-parts
+comparisons. Alternating archived-page trials give:
+
+| Measurement | Control 1 | Candidate 1 | Control 2 | Candidate 2 |
+| --- | ---: | ---: | ---: | ---: |
+| Scroll throughput | 22.87 fps | 36.49 fps | 35.23 fps | 35.65 fps |
+| Median interval | 43.324 ms | 27.475 ms | 28.347 ms | 27.946 ms |
+| p95 interval | 57.365 ms | 38.132 ms | 42.519 ms | 40.217 ms |
+| Maximum interval | 80.859 ms | 54.768 ms | 57.515 ms | 55.279 ms |
+| Intervals over 16.67 ms | 252/252 | 380/401 | 387/395 | 378/391 |
+| Inputs / changed publications | 600 / 264 | 600 / 424 | 600 / 420 | 600 / 411 |
+
+The second pair fails the experiment's required 2% throughput and median gain.
+More decisively, a separate eligibility diagnostic observes 34,475 attempts and
+zero successful sparse draws: every call fails the initial eligibility check.
+The timing differences therefore cannot be credited to this change. The
+candidate remains only under `Build/` and is not installed or promoted to
+production. No sanitizer or visual follow-up is claimed for this rejected
+candidate. The smooth 60 fps goal remains open.
+
+Evidence: `fractional-sparse-result.json`, `fractional-exact.log`,
+`fractional-{control,candidate}-{1,2}/`, and
+`fractional-eligibility-result.json` under the same artifact directory.
