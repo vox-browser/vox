@@ -2927,6 +2927,10 @@ fn run_document_script_sources_with_image_fetch_hooks(document &dom.Document, cu
 		messages << 'JavaScript Window.event bindings: ${err.msg()}'
 		return none
 	}
+	mutable_runtime.install_window_self_binding() or {
+		messages << 'JavaScript Window.self bindings: ${err.msg()}'
+		return none
+	}
 	mutable_runtime.install_window_screen_binding() or {
 		messages << 'JavaScript Screen bindings: ${err.msg()}'
 		return none
