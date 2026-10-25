@@ -1584,7 +1584,14 @@ fn table_cell_intrinsic_height_measures(mut state LayoutState, cell &Node, colla
 	if computed.box_sizing() == .border_box && max_height.raw_value() != CSSPixels.max().raw_value() {
 		max_height = css_pixels_max(CSSPixels.new(0), max_height.minus(edges))
 	}
-	outer_min_height := css_pixels_max(min_height, min_content_height).plus(edges)
+	// Chromium obtains the content minimum from the cell layout at the actual
+	// column width. A separate intrinsic-width probe can have a different
+	// baseline and must not enlarge the row after that layout has completed.
+	outer_min_height := if cell.document().font_rendering_policy() == .chromium {
+		min_height.plus(edges)
+	} else {
+		css_pixels_max(min_height, min_content_height).plus(edges)
+	}
 	outer_max_height := if row_is_constrained {
 		css_pixels_max(min_height, css_pixels_max(height, min_content_height)).plus(edges)
 	} else {
