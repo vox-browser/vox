@@ -1343,3 +1343,23 @@ Evidence: `Build/pikabu-live-lag-20261025/mask-pixels-production-v2/`
 `queue-cancellation.json`, `check-measure-flow.{py,json}`, `measure.py` and
 `build.py`. The prior compiler failure and focused native checks remain
 recorded above.
+
+### Third production attempt fails the disk preflight (October 26)
+
+The third attempt reaches the shared guard after disk space briefly recovers
+while it is queued. At execution its preflight records only 341,254,144 free
+bytes, below the 1,073,741,824-byte minimum, and exits one before invoking the
+compiler. The guard also exits one, recording 0.217 seconds and 229,376 sampled
+peak RSS bytes. These are controller and guard exits; no browser runs.
+
+There is no new bundle, paired visual result, mask eligibility result or
+scrolling FPS measurement from this attempt. The previously passing focused
+native checks and mocked measurement checks do not replace that validation.
+The production comparison remains blocked by disk space, and the 60 fps target
+remains open. The shared guard is released after the failed attempt.
+
+Evidence: `Build/pikabu-live-lag-20261025/mask-pixels-production-v3/`
+`result.json`, `build.py.log`, `build-and-visual-result.json`,
+`build-visual-measure-guard.json`, `retry-reason.json` and
+`check-measure-flow.{json,log}`. The last two files record mocked controller
+checks only; they contain no native scrolling performance evidence.
