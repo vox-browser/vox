@@ -127,7 +127,11 @@
   supply unprofiled performance credit.
 - Report mean scroll-changing publication fps together with median, p95 and
   maximum scroll intervals, the fraction exceeding the target frame budget (16.67 ms at
-  60 Hz), and the completed input/frame counts. Average throughput alone does
+  60 Hz), and the completed input/frame counts. Use the entire first-to-last
+  input period as the throughput denominator and report leading/trailing
+  publication gaps; averaging only between publications hides boundary stalls.
+  Keep reciprocal interval timings separate from full-window throughput.
+  Average throughput alone does
   not establish smooth 60 fps. Keep the target open when representative input
   still runs near 30 fps or has substantial deadline misses. Do not describe a
   different workload's faster result as the user's current scrolling fps.

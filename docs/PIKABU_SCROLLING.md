@@ -849,6 +849,12 @@ python3 tools/run_memory_bounded.py --report Build/pikabu-precise-live-1-guard.j
 
 The defaults are 600 events at nominal 60 Hz, 2-pixel precise wheel deltas,
 reversing every 60 events, a 12-second settle, and a 1024×764 document viewport.
+Protocol version 2 divides observed scroll changes by the entire first-to-last
+input period, including time before the first publication and after the last.
+The first publication supplies a reference position and is conservatively
+excluded from the scroll-change count. Leading/trailing publication gaps are
+reported explicitly. Reciprocal publication-interval timings remain diagnostic
+fields and do not replace full-window throughput.
 The tool selects the test display away from the pointer. `--network-policy`
 records the policy; an offline comparison must separately supply the blocking
 interposer with `--insert-library` and an identical `--cache-template`.
@@ -871,7 +877,7 @@ performance:
 
 | Measurement | Validation | Repeat |
 | --- | ---: | ---: |
-| Mean scroll-changing publication cadence | 27.48 fps | 24.40 fps |
+| Full-input-window scroll throughput | 26.69 fps | 23.72 fps |
 | Median scroll interval | 34.644 ms | 39.483 ms |
 | p95 scroll interval | 58.092 ms | 63.071 ms |
 | Maximum scroll interval | 81.582 ms | 91.506 ms |
@@ -884,6 +890,9 @@ not change. These new results count changed contents and report scroll-changing
 publications separately; they cannot supply a paired regression claim against
 that older endpoint. Both new browser processes exit zero. Evidence is under
 `Build/pikabu-live-lag-20261025/precise-tool-validation{,-repeat}/`.
+The table uses `summary-input-window-v2.json`, recalculated from the original
+raw timestamps without rerunning the browser. The original `summary.json`
+retains the earlier reciprocal-interval averages of 27.48 and 24.40 fps.
 
 ### Rejected buffer and recorder reuse experiments
 
@@ -906,14 +915,18 @@ The endpoint is changed native contents after `updateLayer`, not scanout.
 
 | Trial | Scroll fps | Median ms | p95 ms | Maximum ms | Intervals >16.67 ms | Input Hz | Publications |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Buffer reuse, control 1 | 33.20 | 28.851 | 47.935 | 74.165 | 377/393 | 50.13 | 419 |
-| Buffer reuse, candidate 1 | 32.99 | 29.100 | 49.695 | 70.236 | 389/410 | 47.83 | 440 |
-| Buffer reuse, control 2 | 31.16 | 31.456 | 52.095 | 72.616 | 371/378 | 49.01 | 403 |
-| Buffer reuse, candidate 2 | 31.77 | 30.385 | 49.702 | 70.998 | 350/361 | 52.29 | 390 |
-| Recorder reuse, control 1 | 24.91 | 39.183 | 63.113 | 87.763 | 303/304 | 48.52 | 324 |
-| Recorder reuse, candidate 1 | 20.88 | 47.102 | 70.552 | 91.447 | 259/259 | 47.86 | 273 |
-| Recorder reuse, control 2 | 21.02 | 46.220 | 70.199 | 94.461 | 252/252 | 49.36 | 269 |
-| Recorder reuse, candidate 2 | 25.42 | 37.036 | 64.976 | 92.877 | 295/296 | 50.80 | 319 |
+| Buffer reuse, control 1 | 32.89 | 28.851 | 47.935 | 74.165 | 377/393 | 50.13 | 419 |
+| Buffer reuse, candidate 1 | 32.74 | 29.100 | 49.695 | 70.236 | 389/410 | 47.83 | 440 |
+| Buffer reuse, control 2 | 30.93 | 31.456 | 52.095 | 72.616 | 371/378 | 49.01 | 403 |
+| Buffer reuse, candidate 2 | 31.51 | 30.385 | 49.702 | 70.998 | 350/361 | 52.29 | 390 |
+| Recorder reuse, control 1 | 24.62 | 39.183 | 63.113 | 87.763 | 303/304 | 48.52 | 324 |
+| Recorder reuse, candidate 1 | 20.70 | 47.102 | 70.552 | 91.447 | 259/259 | 47.86 | 273 |
+| Recorder reuse, control 2 | 20.77 | 46.220 | 70.199 | 94.461 | 252/252 | 49.36 | 269 |
+| Recorder reuse, candidate 2 | 25.10 | 37.036 | 64.976 | 92.877 | 295/296 | 50.80 | 319 |
+
+Scroll fps uses the full input window from `summary-input-window-v2.json`,
+recalculated from the original raw timestamps. The original summaries retain
+the earlier reciprocal-interval averages; no browser rerun is implied.
 
 The buffer candidate passes optimized and ASan/UBSan ownership checks,
 1,440 direct cases, 3,168 native rounded comparisons and 2,304 native solid
