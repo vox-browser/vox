@@ -2110,6 +2110,9 @@ pub mut:
 	// Blink retains a float font size even when box geometry uses LayoutUnit.
 	font_size_unrounded ?f64
 	x_height     CSSPixels
+	// Blink multiplies ex/rex lengths by the face's float metric before
+	// converting the result into LayoutUnit geometry.
+	x_height_unrounded ?f64
 	cap_height   CSSPixels
 	zero_advance CSSPixels
 	line_height  CSSPixels
@@ -2362,8 +2365,8 @@ pub fn ratio_between_font_relative_unit_and_px(unit LengthUnit, font_metrics Len
 	return match unit {
 		.em { font_metrics.font_size_unrounded or { font_metrics.font_size.to_double() } }
 		.rem { root_font_metrics.font_size_unrounded or { root_font_metrics.font_size.to_double() } }
-		.ex { font_metrics.x_height.to_double() }
-		.rex { root_font_metrics.x_height.to_double() }
+		.ex { font_metrics.x_height_unrounded or { font_metrics.x_height.to_double() } }
+		.rex { root_font_metrics.x_height_unrounded or { root_font_metrics.x_height.to_double() } }
 		.cap { font_metrics.cap_height.to_double() }
 		.rcap { root_font_metrics.cap_height.to_double() }
 		.ch { font_metrics.zero_advance.to_double() }

@@ -18,6 +18,21 @@ fn test_chromium_fixed_line_height_rounds_only_after_device_projection() {
 	assert computed_style_in_layout_coordinates(source, document).line_height() == CSSPixels.truncated_value_for(35.2)
 }
 
+fn test_device_layout_ex_width_uses_the_selected_unrounded_x_height() {
+	mut document, source := device_layout_test_style('font:bold 13px Verdana;width:4.1ex')
+	defer { document.finalize() }
+	document.set_layout_coordinate_scale(2)
+	projected := computed_style_in_layout_coordinates(source, document)
+	mut mutable_projected := unsafe { &ComputedProperties(projected) }
+	font := mutable_projected.first_available_computed_font(FontComputer.create_for_document(document))
+	x_height := f64(font.font_for_metrics().pixel_metrics().x_height)
+	metrics_source := computed_interpolation_font_metrics_for_style(source, FontComputer.create_for_document(document))
+	raw_source := metrics_source.x_height_unrounded or { panic('missing source x-height') }
+	assert projected.length_percentage_to_px(.width, 1600)? == CSSPixels.truncated_value_for(raw_source * 4.1 * 2).to_double()
+	metrics := computed_interpolation_font_metrics_for_style(projected, FontComputer.create_for_document(document))
+	assert (metrics.x_height_unrounded or { panic('missing Chromium x-height') }) == x_height
+}
+
 fn device_layout_test_style(declaration string) (&dom.Document, &ComputedProperties) {
 	mut document := dom.Document.create(dom.url_about_blank())
 	document.set_browsing_context(&dom.BrowsingContext{ active_document_: document })

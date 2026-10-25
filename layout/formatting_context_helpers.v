@@ -87,6 +87,12 @@ fn resolve_layout_size(node &Node, size css.Size, percentage_basis CSSPixels) ?C
 	// Absolute lengths and plain percentages do not read font or viewport
 	// metrics. Keep the existing size resolver and its payload/rounding rules.
 	if value := size.length_percentage_ {
+		if value.is_length() && value.length().is_absolute()
+			&& node.document().font_rendering_policy() == .chromium {
+			// Blink constructs a LayoutUnit from the final float length. The
+			// nearest-pixel conversion used by the upstream policy rounds early.
+			return CSSPixels.truncated_value_for(value.length().absolute_length_to_px_without_rounding())
+		}
 		if value.is_percentage() || (value.is_length() && value.length().is_absolute()) {
 			return size.to_px(css.LengthResolutionContext{}, percentage_basis)
 		}

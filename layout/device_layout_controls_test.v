@@ -45,3 +45,18 @@ fn test_device_layout_control_auto_sizes_use_the_projected_font_once() {
 		}
 	}
 }
+
+fn test_chromium_float_fixed_width_truncates_after_device_projection() {
+	for scale in [1.0, 2.0] {
+		mut document := html.parse_document('<!doctype html><style>html,body{margin:0}#float{float:left;width:29.2265625px;height:10px}</style><div id="float"></div>')
+		defer { document.finalize() }
+		document.set_font_rendering_policy(.chromium)
+		document.set_layout_coordinate_scale(scale)
+		result := run_document_layout(document, 800, 600) or { panic('layout') }
+		element := document.get_element_by_id('float') or { panic('float') }
+		bridge := element.as_node().layout_node() or { panic('layout node') }
+		node := unsafe { &Node(bridge.layout_handle) }
+		used := result.state.try_get(node.as_node_with_style() or { panic('style') }) or { panic('geometry') }
+		assert used.content_width() == css.CSSPixels.truncated_value_for(29.2265625 * scale)
+	}
+}

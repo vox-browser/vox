@@ -1,5 +1,19 @@
 module css
 
+fn test_ex_units_round_after_multiplying_unrounded_font_metrics() {
+	metrics := LengthFontMetrics{
+		x_height: CSSPixels.nearest_value_for(14.2529296875)
+		x_height_unrounded: 14.2529296875
+	}
+	root := LengthFontMetrics{
+		x_height: CSSPixels.nearest_value_for(9.123)
+		x_height_unrounded: 9.123
+	}
+	assert Length.new(4.1, .ex).font_relative_length_to_px(metrics, root).to_double() == 58.4375
+	assert ratio_between_font_relative_unit_and_px(.rex, metrics, root) == 9.123
+	assert metrics.x_height.to_double() * 4.1 != 58.4375
+}
+
 fn test_font_relative_unit_ratios_match_length_resolution() {
 	font_metrics := LengthFontMetrics.new(CSSPixels.new(20), CSSPixels.new(9), CSSPixels.new(14), CSSPixels.new(11), CSSPixels.new(24))
 	root_metrics := LengthFontMetrics.new(CSSPixels.new(32), CSSPixels.new(15), CSSPixels.new(23), CSSPixels.new(17), CSSPixels.new(40))

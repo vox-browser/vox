@@ -12996,6 +12996,7 @@ fn computed_interpolation_font_metrics_for_style(computed_properties &ComputedPr
 		font_size: computed_properties.font_size()
 		font_size_unrounded: if font.font_rendering_policy == .chromium { ?f64(computed_properties.resolved_font_size_px()) } else { none }
 		x_height: CSSPixels.nearest_value_for(f64(metrics.x_height))
+		x_height_unrounded: if font.font_rendering_policy == .chromium { ?f64(metrics.x_height) } else { none }
 		cap_height: CSSPixels.nearest_value_for(f64(metrics.ascent))
 		zero_advance: CSSPixels.nearest_value_for(f64(metrics.advance_of_ascii_zero))
 		line_height: computed_properties.line_height()
