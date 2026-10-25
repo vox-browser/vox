@@ -50,11 +50,13 @@ class PreciseScrollTests(unittest.TestCase):
                 self.assertEqual(env["VOX_PROXY"], "http://127.0.0.1:9")
                 self.assertEqual(env["SSL_CERT_FILE"], str(certificate))
                 self.assertNotIn("VOX_PROFILE_FRAMES", env)
+                self.assertEqual(env["VOX_PRECISE_REQUIRED_TITLE"], "fixture")
                 kwargs["stdout"].write(log_for())
                 return mock.Mock(pid=123, wait=mock.Mock(return_value=0))
 
             arguments = ["probe", "--binary", str(binary), "--output", str(output),
                          "--inputs", "12", "--network-policy", "fixture offline route",
+                         "--require-title", "fixture",
                          "--env", f"VOX_PROFILE_DIR={user_profile}"]
             with mock.patch.object(measure_precise_scroll.sys, "platform", "darwin"), \
                     mock.patch.object(measure_precise_scroll.sys, "argv", arguments), \
@@ -68,6 +70,8 @@ class PreciseScrollTests(unittest.TestCase):
                 measure_precise_scroll.main()
             evidence = json.loads((output / "run.json").read_text())
             self.assertTrue(evidence["valid"])
+            self.assertEqual(evidence["schedule"]["required_title"], "fixture")
+            self.assertEqual(evidence["schedule"]["settle_basis"], "matching document title")
             self.assertEqual(evidence["environment"]["VOX_PROFILE_DIR"], str(output / "profile"))
             self.assertEqual(evidence["environment"]["SSL_CERT_FILE"], str(certificate))
             self.assertEqual(evidence["source_and_binary_sha256"][str(certificate)],
@@ -107,6 +111,17 @@ class PreciseScrollTests(unittest.TestCase):
         for title in ("Navigation error", "Navigation error — vox"):
             with self.subTest(title=title), self.assertRaisesRegex(ValueError, "Navigation error page"):
                 summarize(log_for().replace("title=fixture", "title=" + title), 12)
+
+    def test_required_document_title_rejects_loading_page_even_when_it_moves(self):
+        for title in ("vox", "", "Other page — vox"):
+            with self.subTest(title=title), self.assertRaisesRegex(ValueError, "Requested document title"):
+                summarize(log_for().replace("title=fixture", "title=" + title), 12,
+                          required_title="Пикабу")
+
+    def test_required_title_accepts_loaded_document_with_browser_suffix(self):
+        result = summarize(log_for().replace("title=fixture", "title=Горячее | Пикабу — vox"),
+                           12, required_title="Пикабу")
+        self.assertEqual(result["completed_inputs"], 12)
 
     def test_average_includes_time_before_first_and_after_last_publication(self):
         result = summarize(log_for(times=[80000 + i * 2000 for i in range(11)] + [115000]), 12)

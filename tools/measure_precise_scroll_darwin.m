@@ -42,6 +42,13 @@ static dispatch_source_t timer;
 static double started, last_input, input_hz, delta;
 static unsigned inputs, publications, input_limit, reverse_every, frame_capacity;
 static BOOL active;
+static const char *required_title;
+static double settle_seconds, ready_since = -1;
+
+static BOOL title_matches(void) {
+    return !required_title || !*required_title ||
+        [page_view.window.title containsString:[NSString stringWithUTF8String:required_title]];
+}
 
 static NSView *find(NSView *root, NSString *name) {
     if ([root isKindOfClass:NSClassFromString(name)]) return root;
@@ -101,6 +108,9 @@ static void tick(void) {
     positioned.windowNumber = input_view.window.windowNumber;
     CFRelease(cg);
     if (!inputs) {
+        if (!title_matches()) {
+            fprintf(stderr, "SCROLL_ERROR requested document changed before input\n"); exit(2);
+        }
         NSEvent *event = (NSEvent *)positioned;
         fprintf(stderr, "SCROLL_START precise=%d delta_y=%g view_width=%g view_height=%g scale=%g input_hz=%g title=%s\n",
             event.hasPreciseScrollingDeltas, event.scrollingDeltaY,
@@ -133,9 +143,24 @@ static void begin(void) {
         if (input_view && page_view && page_view.layer.contents) break;
     }
     if (!input_view || !page_view || !page_view.layer.contents) {
+        ready_since = -1;
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, NSEC_PER_SEC),
             dispatch_get_main_queue(), ^{ begin(); });
         return;
+    }
+    if (required_title && *required_title) {
+        double now = CACurrentMediaTime();
+        if (!title_matches()) ready_since = -1;
+        else if (ready_since < 0) {
+            ready_since = now;
+            fprintf(stderr, "SCROLL_READY title=%s settle_seconds=%g\n",
+                page_view.window.title.UTF8String, settle_seconds);
+        }
+        if (ready_since < 0 || now-ready_since < settle_seconds) {
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, NSEC_PER_SEC),
+                dispatch_get_main_queue(), ^{ begin(); });
+            return;
+        }
     }
     Method method = class_getInstanceMethod(page_view.class, @selector(updateLayer));
     if (!method) { fprintf(stderr, "SCROLL_ERROR no publication hook\n"); exit(2); }
@@ -174,7 +199,9 @@ __attribute__((constructor)) static void boot(void) {
     if (!input_samples || !frame_samples) {
         fprintf(stderr, "SCROLL_ERROR sample allocation failed\n"); exit(2);
     }
-    double settle = values[4];
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, settle*NSEC_PER_SEC),
+    settle_seconds = values[4];
+    required_title = getenv("VOX_PRECISE_REQUIRED_TITLE");
+    double startup_delay = required_title && *required_title ? 0 : settle_seconds;
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, startup_delay*NSEC_PER_SEC),
         dispatch_get_main_queue(), ^{ begin(); });
 }

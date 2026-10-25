@@ -57,7 +57,7 @@ def intervals(rows):
     return values
 
 
-def summarize(log, expected_inputs, target_hz=60):
+def summarize(log, expected_inputs, target_hz=60, required_title=""):
     if "SCROLL_ERROR" in log:
         raise ValueError("Native probe reported an error")
     starts = [line for line in log.splitlines() if line.startswith("SCROLL_START ")]
@@ -69,6 +69,8 @@ def summarize(log, expected_inputs, target_hz=60):
     title = starts[0].partition(" title=")[2].strip()
     if title in {"Navigation error", "Navigation error — vox"}:
         raise ValueError("Navigation error page cannot supply scrolling acceptance")
+    if required_title and required_title not in title:
+        raise ValueError("Requested document title was not present when input started")
     inputs, frames = records(log, "SCROLL_INPUT"), records(log, "SCROLL_PUBLISH")
     counts = dict(re.findall(r"(inputs|publications)=(\d+)", ends[0]))
     if len(inputs) != expected_inputs or counts != {
@@ -147,6 +149,8 @@ def main():
     parser.add_argument("--delta", type=int, default=2)
     parser.add_argument("--reverse-every", type=int, default=60)
     parser.add_argument("--settle-seconds", type=float, default=12)
+    parser.add_argument("--require-title", default="",
+                        help="Wait for this case-sensitive window-title substring, then settle; reject a different start title")
     parser.add_argument("--timeout", type=float, default=120)
     args = parser.parse_args()
     if sys.platform != "darwin":
@@ -202,7 +206,8 @@ def main():
                DYLD_INSERT_LIBRARIES=":".join(map(str, [probe, *libraries])),
                VOX_PRECISE_INPUTS=str(args.inputs), VOX_PRECISE_REVERSE=str(args.reverse_every),
                VOX_PRECISE_HZ=str(args.input_hz), VOX_PRECISE_DELTA=str(args.delta),
-               VOX_PRECISE_SETTLE=str(args.settle_seconds))
+               VOX_PRECISE_SETTLE=str(args.settle_seconds),
+               VOX_PRECISE_REQUIRED_TITLE=args.require_title)
     pinned = [binary, *sorted(binary.parent.glob("*.dylib")),
               Path(__file__).resolve(), source, probe, *libraries]
     # A private replay certificate changes the accepted network responses.
@@ -219,7 +224,9 @@ def main():
                     initial_profile="empty private profile; bookmark bar hidden; no saved proxy override",
                     viewport=[args.width, args.height], network_policy=args.network_policy,
                     schedule=dict(inputs=args.inputs, hz=args.input_hz, delta=args.delta,
-                                  reverse_every=args.reverse_every, settle_seconds=args.settle_seconds),
+                                  reverse_every=args.reverse_every, settle_seconds=args.settle_seconds,
+                                  required_title=args.require_title,
+                                  settle_basis="matching document title" if args.require_title else "process startup"),
                     environment={key: value for key, value in env.items() if key.startswith(
                         ("VOX_", "LADYBIRD_", "DYLD_")) or key in {
                             "HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY", "SSL_CERT_FILE"}})
@@ -239,7 +246,7 @@ def main():
         if hashes != {str(path): sha256(path) for path in pinned}:
             raise RuntimeError("Build or probe identity changed during measurement")
         summary = summarize((output / "browser.log").read_text(errors="replace"),
-                            args.inputs, args.target_hz)
+                            args.inputs, args.target_hz, args.require_title)
         (output / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
         evidence["valid"] = True
         print(json.dumps({key: value for key, value in summary.items()
