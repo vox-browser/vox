@@ -6952,7 +6952,9 @@ fn (mut app BrowserApp) draw() {
 		}
 		mut raster_layer := -1
 		mut replay_scratch := app.begin_native_replay_scratch()
+		mut shared_gradient_end := 0
 		for command_index in 0 .. app.paint_commands.len {
+			if command_index < shared_gradient_end { continue }
 			platform.cooperative_work_checkpoint()
 			mut command := unsafe { &app.paint_commands[command_index] }
 			if app.page_zoom != 1 {
@@ -6973,6 +6975,10 @@ fn (mut app BrowserApp) draw() {
 						raster_layer = next_layer
 					}
 				}
+			}
+			if command.kind == 'draw_svg_path' {
+				shared_gradient_end = app.draw_chromium_svg_gradient_group(command_index, page_y)
+				if shared_gradient_end > command_index { continue }
 			}
 			if app.scroll_profile.active && app.scroll_profile.replay_kinds {
 				before := platform.thread_arena_usage().used
