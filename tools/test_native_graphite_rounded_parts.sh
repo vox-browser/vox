@@ -19,13 +19,15 @@ if [ "$#" -eq 3 ]; then
         *) echo "Unsupported macOS architecture" >&2; exit 1 ;;
     esac
     skia_root="$upstream_dir/Build/release/vcpkg_installed/${LADYBIRD_VCPKG_TRIPLET:-$default_triplet}"
-    clang++ -std=c++20 -O2 -x objective-c++ \
-        -I"$skia_root/include/skia" -I"$skia_root/include" \
-        "$repo_dir/tools/native_skia_rounded_parts_test.cpp" \
-        -L"$skia_root/lib" -lskia \
-        -framework CoreFoundation -framework CoreGraphics -framework CoreText -framework Foundation -framework Metal \
-        -Wl,-rpath,"$skia_root/lib" -o "$output_dir/native_skia_rounded_parts_test"
     graphite_dir=$(CDPATH= cd -- "$(dirname -- "$2")" && pwd)
-    VOX_SKIA_REFERENCE_LIBRARY="$3" DYLD_LIBRARY_PATH="$graphite_dir${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}" \
-        "$output_dir/native_skia_rounded_parts_test"
+    for name in native_skia_rounded_parts_test native_skia_solid_replay_test; do
+        clang++ -std=c++20 -O2 -x objective-c++ \
+            -I"$skia_root/include/skia" -I"$skia_root/include" \
+            "$repo_dir/tools/$name.cpp" \
+            -L"$skia_root/lib" -lskia \
+            -framework CoreFoundation -framework CoreGraphics -framework CoreText -framework Foundation -framework Metal \
+            -Wl,-rpath,"$skia_root/lib" -o "$output_dir/$name"
+        VOX_SKIA_REFERENCE_LIBRARY="$3" DYLD_LIBRARY_PATH="$graphite_dir${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}" \
+            "$output_dir/$name"
+    done
 fi
