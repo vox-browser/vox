@@ -193,8 +193,20 @@ The previously installed bundle was restored when the experiment finished.
 The actual wheel sequence advances by approximately 25.200001001 CSS pixels
 per event because the native adapter converts deltas through 32-bit floats.
 An idealized 25.2-pixel sequence therefore cannot establish cache reuse for
-the measured workload. Fractional-phase caching and preserving the original
-native wheel doubles remain prototypes without performance credit.
+the measured workload. Preserving the original native wheel doubles remains
+an unintegrated prototype without performance credit.
+
+The bounded fractional-phase cache prototype passed its CPU pixel tests but
+failed the GPU comparison at its first reused frame: frame 5, scroll 126 CSS
+pixels, scale 2, cached byte 115 versus full-repaint byte 102 at offset
+171,576. The scene includes overlapping translucent shapes, forced MSAA and
+a vector path. The prototype is rejected; no cache behavior or wheel adapter
+change has been enabled. Compilation and both wheel-dispatch test modes
+passed. The GPU runtime and enclosing guard exited 1; the 3 GiB guard recorded
+peak RSS 906,117,120 bytes. Commands, exits and raw output are retained in
+`scroll-raster-phase-prototype.json`, `scroll-phase-prototype-v2-guard.json`
+and `scroll-raster-phase-gpu-prototype.log`. CPU correctness alone did not
+establish GPU pixel correctness.
 
 A cache-state probe in the second root-fill diagnostic did not load because
 the measurement tool replaced `DYLD_INSERT_LIBRARIES`; those absent counters
@@ -206,3 +218,12 @@ resolved before a fractional-phase cache can help this page. The validated
 probe's command, identities and state records are retained in
 `scroll-cache-diagnostic-v3-result.json`; no timing credit is assigned to it.
 An instrumented build is pending to identify the eligibility rejection.
+
+A fresh availability request through `socks5h://127.0.0.1:1337` returned HTTP
+200 on October 26. The thread had grown to 222 posts and 482,754 response bytes,
+compared with the saved 154-post fixture. Its response SHA-256 is
+`fbfce9f74a54d5de4b8444e9848143cc30bb37ea6de63d2697be97153013ad14`;
+the command, timestamp, title and exit 0 are retained in
+`live-availability-20261026.json`. A successful fetch establishes availability,
+not browser readiness or scrolling performance. The pending eligibility check
+will exercise both the original frozen fixture and the current live page.
