@@ -789,3 +789,26 @@ and 2,304 solid replay checks. Evidence is under
 `Build/pikabu-live-lag-20261025/`: `recorder.log`, `recorder-runtime.log`,
 `recorder-runtime-guard.json`, `recorder-runtime-selection.json`, and
 `precise-recorder-runtime*/summary.json`.
+
+### Rejected combined antialiasing readback experiment
+
+A private experiment submits both antialiasing modes with independent backdrops
+before one GPU completion wait. Its isolated rounded-shape workload improves
+by 1.46–1.48×, but the matched precise-wheel page runs do not establish a
+consistent gain:
+
+| Measurement | Control | Combined wait | Repeat control | Repeat combined |
+| --- | ---: | ---: | ---: | ---: |
+| Mean native completion cadence | 31.27 fps | 31.70 fps | 30.90 fps | 32.04 fps |
+| Median native frame | 27.882 ms | 27.783 ms | 28.663 ms | 26.684 ms |
+
+The first pair improves cadence by only 1.39% and median frame time by 0.36%.
+It fails the experiment's requirement for both pairs to improve both measures
+by more than 2%, so the change is excluded from production. The exactness checks
+pass 6,984 full-shape and 6,984 independent paired-output comparisons, plus
+1,160 unsupported cases and the existing focused native replay checks. This
+experiment adds no retired-instruction credit or completed production fix.
+
+Evidence: `Build/pikabu-live-lag-20261025/shape-pair-runtime-selection.json`,
+`shape-pair-measurement.log`, `shape-pair-measurement-guard.json`, and
+`precise-shape-pair*/summary.json`. The 60 fps goal remains open.
