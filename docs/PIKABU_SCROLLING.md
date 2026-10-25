@@ -1054,3 +1054,68 @@ candidate. The smooth 60 fps goal remains open.
 Evidence: `fractional-sparse-result.json`, `fractional-exact.log`,
 `fractional-{control,candidate}-{1,2}/`, and
 `fractional-eligibility-result.json` under the same artifact directory.
+
+### Non-root rounded-shape readbacks (October 25)
+
+A finer eligibility diagnostic explains the rejected experiment: 17,940 calls
+were non-root layers, while 17,054 root calls had no MSAA grid. The accepted
+change adds compact rounded-edge readback for eligible non-root layers. It
+retains the original GPU surface dimensions and transform, resolves each
+patch against the original MSAA grid, and assembles one image with the same
+Quartz footprint and clipping. Integer-aligned strokes and fills use corner
+patches; fractional opaque fills retain all four edge bands. Unsupported
+geometry, colors, backdrops and sizes retain the existing fallback.
+
+The separate instrumented Pikabu run records 12,882 successful fast-path draws
+from 23,572 attempts. Neither that diagnostic nor sanitizer runs supplies fps
+credit. Alternating unprofiled trials use the same frozen executable, archive,
+response bytes, proxy, private TLS trust, 1024-by-764 document viewport, 2x
+backing scale, 600 precise two-pixel inputs, nominal 60 Hz input, reversal every
+60 inputs, and 12-second settle after the Pikabu title appears. Both pairs
+clear the preselected 2% throughput and median improvement requirement; p95
+must stay within 2% of the matched control.
+
+| Measurement | Control 1 | Candidate 1 | Control 2 | Candidate 2 |
+| --- | ---: | ---: | ---: | ---: |
+| Scroll throughput | 35.744 fps | 36.748 fps | 35.476 fps | 36.636 fps |
+| Median interval | 28.109 ms | 27.094 ms | 28.384 ms | 27.137 ms |
+| p95 interval | 40.385 ms | 39.647 ms | 39.427 ms | 40.030 ms |
+| Maximum interval | 61.646 ms | 61.708 ms | 55.946 ms | 56.996 ms |
+| Intervals over 16.67 ms | 385/405 | 382/410 | 395/406 | 379/408 |
+| Inputs / changed publications | 600 / 425 | 600 / 439 | 600 / 425 | 600 / 438 |
+| Actual input delivery | 52.865 Hz | 53.689 Hz | 52.340 Hz | 53.786 Hz |
+
+This is a 2.81% and 3.27% improvement on the archived workload, measured at
+changed native layer contents after `updateLayer`, with the entire input
+window as denominator. Physical scanout is not measured. The p95 and maximum
+regress slightly in the second pair. Most intervals still miss 16.67 ms, so
+this change does not meet the smooth 60 fps target.
+
+All 864 exact native/GPU comparisons pass, covering both backing scales,
+rectangular and curved clips, analytic/mixed/all-MSAA grids, fills and strokes,
+fractional positions, viewport clipping, padded rows, and translucent backdrops.
+The same cases pass with ASan and UBSan. The committed native test also asserts
+direct fast-path eligibility so identical fallback draws cannot silently pass.
+Nineteen canonical visual cases remain pixel-identical to the control; existing
+differences from upstream expected images are reported separately. No retired
+instruction reduction is measured or credited; the broad-suite instruction
+counter remains unchanged.
+
+Fresh document-gated baseline checks on the frozen loader-arena build give
+35.130/34.200 fps on the archive and 10.115/10.083 fps on the live page with
+independent empty caches and 20-second settles after document identity. All
+four start with the Pikabu title. The live runs have 93.494/93.464 ms median,
+152.469/143.670 ms p95, 191.041/223.024 ms maximum, 118/118 over-budget
+intervals each, and 600 inputs / 123 changed publications each. These workloads
+are separate: archive results cannot establish live-page performance. The
+installed production bundle requires its own fresh live checks.
+
+Evidence under `Build/pikabu-live-lag-20261025/`:
+`rounded-eligibility-v2-result.json`, `sparse-layer-result.json`,
+`sparse-layer-{control,candidate}-{1,2}/`,
+`sparse-layer-diagnostic-run/browser.log`,
+`sparse-layer-{exact,sanitizer}.log`,
+`sparse-layer-visual-preservation/summary.json`,
+`integrated-native-{test,sanitizer}.log`, and
+`readiness-{replay,live}-{1,2}/`. Source/library/probe identities and matching
+initial cache hashes are retained in each trial's `run.json`.
