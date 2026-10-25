@@ -610,7 +610,17 @@ pub fn (mut builder LineBuilder) update_last_line() {
 	container_font_size := computed.font_size()
 	container_font_metrics :=
 		layout_font_metrics_for_node(unsafe { &Node(builder.containing_block) })
-	strut_baseline := font_baseline_for_line_height(container_font_metrics, computed.line_height())
+	// Quirks documents omit the block's zero-width inline strut. Actual
+	// text and atomic inline boxes still supply their own line metrics.
+	// https://quirks.spec.whatwg.org/#the-blocks-ignore-line-height-quirk
+	document := unsafe { &Node(builder.containing_block) }.document()
+	omit_strut := (line_box.fragments_.len > 0 || !line_box.has_forced_break())
+		&& document.font_rendering_policy() == .chromium
+		&& (document.in_quirks_mode() || document.in_limited_quirks_mode())
+	strut_height := if omit_strut { CSSPixels.new(0) } else { computed.line_height() }
+	strut_baseline := if omit_strut { CSSPixels.new(0) } else {
+		font_baseline_for_line_height(container_font_metrics, strut_height)
+	}
 	mut line_box_baseline := strut_baseline
 	// Blink always places the root inline box's strut on the line's baseline, so
 	// a protruding aligned box grows the line box and the next line follows it.
@@ -689,9 +699,9 @@ pub fn (mut builder LineBuilder) update_last_line() {
 	strut_top := builder.current_block_offset
 	mut uppermost_box_top := strut_top
 	mut lowermost_box_bottom := if should_align_strut_to_line_box_baseline {
-		builder.current_block_offset.plus(line_box_baseline).plus(computed.line_height().minus(strut_baseline))
+		builder.current_block_offset.plus(line_box_baseline).plus(strut_height.minus(strut_baseline))
 	} else {
-		builder.current_block_offset.plus(computed.line_height())
+		builder.current_block_offset.plus(strut_height)
 	}
 	mut first_unshifted_text_baseline := ?CSSPixels(none)
 	mut aligned_subtrees := []LineRelativeAlignedSubtree{}
