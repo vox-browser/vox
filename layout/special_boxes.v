@@ -1096,7 +1096,7 @@ pub fn RangeInputBox.new(document &dom.Document, element &dom.Element, computed_
 	box.has_auto_content_box_size_ = true
 	box.auto_content_box_size_ = css.SizeWithAspectRatio{
 		width: resolve_font_dependent_length_for_node(box_node, css.Length.new(20.0, .ch))
-		height: CSSPixels.new(16)
+		height: CSSPixels.nearest_value_for(16 * document.layout_coordinate_scale())
 	}
 	return box
 }

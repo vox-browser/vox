@@ -1753,6 +1753,13 @@ pub fn (n &Box) auto_content_box_size() css.SizeWithAspectRatio {
 		}
 	}
 	if n.has_auto_content_box_size_ {
+		node := unsafe { &Node(n) }
+		// Font-sized controls compute their auto dimensions from the already
+		// projected layout font. Image metadata and fixed replaced defaults,
+		// in contrast, are stored in CSS pixels and still need projection.
+		if node.is_text_input_box() || node.is_range_input_box() || node.is_textarea_box() {
+			return n.auto_content_box_size_
+		}
 		return natural_size_in_layout_coordinates(n.auto_content_box_size_, n.document_)
 	}
 	// Box::compute_auto_content_box_size() falls back to the virtual
