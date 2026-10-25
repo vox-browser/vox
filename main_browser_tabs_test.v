@@ -3,6 +3,7 @@ module main
 import gg
 import page
 import platform
+import sokol.sapp
 
 $if vox_ui2 ? {
 	import ui2
@@ -30,6 +31,118 @@ fn browser_tabs_test_app() &BrowserApp {
 
 fn browser_tabs_test_cleanup(mut app BrowserApp) {
 	for mut tab in app.tabs.pages { tab.dispose_browser_tab() }
+}
+
+fn test_tab_reordering_preserves_owners_selection_and_live_page_state() {
+	mut app := browser_tabs_test_app()
+	defer { browser_tabs_test_cleanup(mut app) }
+	first_document := app.document
+	first_runtime := app.js_runtime
+	app.scroll_y = 123
+	app.activate_tab_chrome('tab-new')
+	second := app.active_browser_tab()
+	app.activate_tab_chrome('tab-new')
+	third := app.active_browser_tab()
+	app.activate_tab_chrome('tab-select:0')
+	app.activate_tab_chrome('tab-move:0:2')
+	assert voidptr(app.tabs.pages[0]) == voidptr(second)
+	assert voidptr(app.tabs.pages[1]) == voidptr(third)
+	assert voidptr(app.tabs.pages[2]) == voidptr(app)
+	assert app.tabs.selected == 2
+	assert voidptr(app.active_browser_tab()) == voidptr(app)
+	assert voidptr(app.document) == voidptr(first_document)
+	assert voidptr(app.js_runtime) == voidptr(first_runtime)
+	assert app.js_runtime.evaluate('tabValue += 1; tabValue')! == '42'
+	assert app.scroll_y == 123
+	assert app.history.len == 1 && app.history_index == 0
+	assert !first_document.hidden()
+	assert second.document.hidden() && third.document.hidden()
+	assert app.browser_chrome_state(800, 600).tab_titles == ['New Tab', 'New Tab', 'First page']
+	// Moving a background tab across the selection must keep the same page active.
+	app.activate_tab_chrome('tab-select:1')
+	app.activate_tab_chrome('tab-move:2:0')
+	assert app.tabs.selected == 2
+	assert voidptr(app.active_browser_tab()) == voidptr(third)
+	app.activate_tab_chrome('tab-move:0:2')
+	assert app.tabs.selected == 1
+	assert voidptr(app.active_browser_tab()) == voidptr(third)
+	for action in ['tab-move:-1:0', 'tab-move:0:99', 'tab-move:99:0', 'tab-move:1:1'] {
+		app.activate_tab_chrome(action)
+	}
+	assert voidptr(app.tabs.pages[0]) == voidptr(second)
+	assert app.tabs.selected == 1
+	app.activate_tab_chrome('tab-next')
+	assert voidptr(app.active_browser_tab()) == voidptr(app)
+	app.activate_tab_chrome('tab-close:0')
+	assert app.tabs.selected == 1
+	assert voidptr(app.active_browser_tab()) == voidptr(app)
+}
+
+fn test_tab_reordering_waits_for_navigation_work() {
+	mut app := browser_tabs_test_app()
+	defer { browser_tabs_test_cleanup(mut app) }
+	app.activate_tab_chrome('tab-new')
+	selected := app.active_browser_tab()
+	app.navigation_work_depth = 1
+	app.activate_tab_chrome('tab-move:1:0')
+	assert app.tabs.selected == 1
+	assert app.tabs.pending_actions == ['tab-move:1:0']
+	app.navigation_work_depth = 0
+	pending := app.tabs.pending_actions.clone()
+	app.tabs.pending_actions.clear()
+	for action in pending { app.activate_tab_chrome(action) }
+	assert app.tabs.selected == 0
+	assert voidptr(app.active_browser_tab()) == voidptr(selected)
+}
+
+fn browser_tabs_test_pointer(mut app BrowserApp, typ sapp.EventType, x f32, y f32) bool {
+	return app.handle_browser_tab_drag(&gg.Event{typ: typ, mouse_button: .left, mouse_x: x, mouse_y: y}, 800)
+}
+
+fn test_tab_drag_moves_in_both_directions_and_captures_page_release() {
+	mut app := browser_tabs_test_app()
+	defer { browser_tabs_test_cleanup(mut app) }
+	app.activate_tab_chrome('tab-new')
+	app.activate_tab_chrome('tab-new')
+	assert browser_tabs_test_pointer(mut app, .mouse_down, 100, 15)
+	app.active_browser_tab().handle_click(100, 15)
+	assert app.tabs.drag != none
+	assert browser_tabs_test_pointer(mut app, .mouse_move, 470, 15)
+	assert app.tabs.drag?.moving
+	assert browser_tabs_test_pointer(mut app, .mouse_up, 470, 15)
+	assert app.tabs.drag == none
+	assert app.tabs.selected == 2
+	assert voidptr(app.active_browser_tab()) == voidptr(app)
+	assert browser_tabs_test_pointer(mut app, .mouse_down, 470, 15)
+	assert browser_tabs_test_pointer(mut app, .mouse_move, 100, 15)
+	assert browser_tabs_test_pointer(mut app, .mouse_up, 100, 15)
+	assert app.tabs.selected == 0
+	assert voidptr(app.tabs.pages[0]) == voidptr(app)
+	assert browser_tabs_test_pointer(mut app, .mouse_down, 100, 15)
+	assert browser_tabs_test_pointer(mut app, .mouse_move, 470, 15)
+	assert browser_tabs_test_pointer(mut app, .mouse_up, 470, 200)
+	assert app.tabs.selected == 0
+	assert voidptr(app.tabs.pages[0]) == voidptr(app)
+}
+
+fn test_tab_drag_threshold_close_button_and_cancellation() {
+	mut app := browser_tabs_test_app()
+	defer { browser_tabs_test_cleanup(mut app) }
+	app.activate_tab_chrome('tab-new')
+	assert browser_tabs_test_pointer(mut app, .mouse_down, 100, 15)
+	assert browser_tabs_test_pointer(mut app, .mouse_move, 102, 15)
+	assert !app.tabs.drag?.moving
+	assert browser_tabs_test_pointer(mut app, .mouse_up, 102, 15)
+	assert app.tabs.selected == 0
+	assert !browser_tabs_test_pointer(mut app, .mouse_down, 225, 15) // Close button.
+	assert !browser_tabs_test_pointer(mut app, .mouse_down, 455, 15) // New tab.
+	assert !browser_tabs_test_pointer(mut app, .mouse_down, 100, 100)
+	assert browser_tabs_test_pointer(mut app, .mouse_down, 100, 15)
+	assert !browser_tabs_test_pointer(mut app, .mouse_leave, 400, -1)
+	assert app.tabs.drag?.cancelled
+	assert browser_tabs_test_pointer(mut app, .mouse_up, 400, 15)
+	assert app.tabs.drag == none
+	assert app.tabs.selected == 0
 }
 
 fn test_tabs_keep_zoom_across_navigation_and_start_new_tabs_at_normal_scale() {
@@ -268,6 +381,56 @@ $if vox_ui2 ? {
 	fn C.native_test_tabs_click(index int, close int)
 	fn C.native_test_tabs_geometry() int
 	fn C.native_test_tabs_snapshot()
+	fn C.native_test_tabs_drag(index int, dx f64, dy f64)
+
+	fn test_native_tab_drag_survives_chrome_refresh_and_preserves_close_actions() {
+		window := C.native_test_address_window()
+		mut app := browser_tabs_test_app()
+		app.ctx = gg.new_context(native_rendering: true)
+		mut owner := unsafe { address_bar_owner }
+		owner.app = app
+		app.mount_ui2_chrome(C.native_test_address_parent(window), 800, 600)!
+		defer {
+			app.unmount_address_bar()
+			browser_tabs_test_cleanup(mut app)
+			C.native_test_address_close(window)
+		}
+		app.activate_tab_chrome('tab-new')
+		app.activate_tab_chrome('tab-new')
+		mut third := app.active_browser_tab()
+		third.update_browser_chrome(800, 600)
+		C.native_test_tabs_drag(0, 368, 0)
+		assert app.tabs.selected == 2, app.tabs.pending_actions.str()
+		assert voidptr(app.active_browser_tab()) == voidptr(app)
+		assert ui2.text('address') == 'https://tabs.example/first'
+		C.native_test_tabs_drag(2, -368, 0)
+		assert app.tabs.selected == 0
+		assert voidptr(app.tabs.pages[0]) == voidptr(app)
+		C.native_test_tabs_drag(0, 368, 100)
+		assert app.tabs.selected == 0
+		assert voidptr(app.tabs.pages[0]) == voidptr(app)
+		C.native_test_tabs_drag(0, 2, 0)
+		assert app.tabs.selected == 0
+		assert C.native_test_tabs_geometry() == 1
+		C.native_test_tabs_click(1, 1)
+		assert app.tabs.pages.len == 2
+		assert voidptr(app.active_browser_tab()) == voidptr(app)
+		assert voidptr(app.tabs.pages[1]) == voidptr(third)
+		// Overflow selection must not slide the tab slots underneath the pointer.
+		for _ in 0 .. 10 { app.activate_tab_chrome('tab-new') }
+		mut last := app.active_browser_tab()
+		last.update_browser_chrome(800, 600)
+		assert C.native_browser_tabs_first() == 3
+		source := app.tabs.pages[3]
+		C.native_test_tabs_drag(3, 620, 0)
+		assert app.tabs.selected == 11
+		assert voidptr(app.tabs.pages[11]) == voidptr(source)
+		C.native_test_tabs_drag(3, 2, 0)
+		assert app.tabs.selected == 3
+		assert C.native_browser_tabs_first() == 0
+		assert C.native_browser_tabs_end() == 9
+		assert C.native_test_tabs_geometry() == 1
+	}
 
 	fn test_native_tab_buttons_shortcuts_and_live_address_bar_follow_selection() {
 		window := C.native_test_address_window()

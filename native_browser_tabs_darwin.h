@@ -1,7 +1,29 @@
 #pragma once
 #include <Cocoa/Cocoa.h>
 
-typedef void (*VoxTabAction)(void *, int, int);
+typedef void (*VoxTabAction)(void *, int, int, int);
+@interface VoxBrowserTabStrip : NSView
+@property void *owner;
+@property VoxTabAction callback;
+@property int tabCount;
+@property int firstTab;
+@property int endTab;
+@property int requestedFirstTab;
+@property int requestedEndTab;
+@property double tabWidth;
+@property BOOL trackingTab;
+@property BOOL draggingTab;
+@property int draggedTab;
+@property int dropTab;
+@property CGFloat dragOffset;
+@property NSPoint dragPoint;
+- (void)selectTab:(NSButton *)sender;
+- (void)closeTab:(NSButton *)sender;
+- (void)newTab:(NSButton *)sender;
+- (void)trackTab:(NSButton *)sender event:(NSEvent *)event;
+- (void)layoutDraggedTab;
+@end
+
 @interface VoxTabButton : NSButton
 @property BOOL selectedTab;
 @property BOOL smallButton;
@@ -31,6 +53,11 @@ static NSBezierPath *vox_tab_path(NSRect r) {
 
 @implementation VoxTabButton
 - (BOOL)isFlipped { return YES; }
+- (BOOL)mouseDownCanMoveWindow { return NO; }
+- (void)mouseDown:(NSEvent *)event {
+	if (self.smallButton) [super mouseDown:event];
+	else [(VoxBrowserTabStrip *)self.target trackTab:self event:event];
+}
 - (void)otherMouseDown:(NSEvent *)event {
 	if (event.buttonNumber == 2 && !self.smallButton)
 		[NSApp sendAction:@selector(closeTab:) to:self.target from:self];
@@ -108,13 +135,6 @@ static NSBezierPath *vox_tab_path(NSRect r) {
 }
 @end
 
-@interface VoxBrowserTabStrip : NSView
-@property void *owner;
-@property VoxTabAction callback;
-- (void)selectTab:(NSButton *)sender;
-- (void)closeTab:(NSButton *)sender;
-- (void)newTab:(NSButton *)sender;
-@end
 @implementation VoxBrowserTabStrip
 - (BOOL)isFlipped { return YES; }
 - (void)drawRect:(NSRect)dirty {
@@ -127,17 +147,70 @@ static NSBezierPath *vox_tab_path(NSRect r) {
 	if (event.clickCount == 2) [self.window zoom:self];
 	else [self.window performWindowDragWithEvent:event];
 }
-- (void)selectTab:(NSButton *)sender { self.callback(self.owner, 0, (int)sender.tag); }
-- (void)closeTab:(NSButton *)sender { self.callback(self.owner, 1, (int)sender.tag); }
-- (void)newTab:(NSButton *)sender { self.callback(self.owner, 2, 0); }
+- (void)selectTab:(NSButton *)sender { self.callback(self.owner, 0, (int)sender.tag, 0); }
+- (void)closeTab:(NSButton *)sender { self.callback(self.owner, 1, (int)sender.tag, 0); }
+- (void)newTab:(NSButton *)sender { self.callback(self.owner, 2, 0, 0); }
+- (void)layoutDraggedTab {
+	VoxTabButton *dragged = nil;
+	for (NSView *view in self.subviews) {
+		if (![view isKindOfClass:VoxTabButton.class] || ((VoxTabButton *)view).smallButton) continue;
+		VoxTabButton *button = (VoxTabButton *)view;
+		NSInteger slot = button.tag;
+		if (self.draggingTab) {
+			if (slot == self.draggedTab) dragged = button;
+			else if (self.draggedTab < slot && slot <= self.dropTab) slot--;
+			else if (self.dropTab <= slot && slot < self.draggedTab) slot++;
+		}
+		NSRect frame = button.frame;
+		frame.origin.x = 62 + (slot - self.firstTab) * self.tabWidth;
+		if (button == dragged)
+			frame.origin.x = MAX(62, MIN(self.dragPoint.x - self.dragOffset,
+				62 + (self.endTab - self.firstTab - 1) * self.tabWidth));
+		button.frame = frame;
+	}
+	if (dragged) [self addSubview:dragged positioned:NSWindowAbove relativeTo:nil];
+}
+- (void)trackTab:(NSButton *)sender event:(NSEvent *)event {
+	NSPoint start = [self convertPoint:event.locationInWindow fromView:nil];
+	self.draggedTab = self.dropTab = (int)sender.tag;
+	self.dragOffset = start.x - sender.frame.origin.x;
+	self.dragPoint = start;
+	self.trackingTab = YES;
+	self.draggingTab = NO;
+	// Selecting can rebuild every button. Track on the strip, which survives
+	// chrome refreshes, rather than retaining the removed NSButton as the drag UI.
+	[self selectTab:sender];
+	for (;;) {
+		NSEvent *next = [NSApp nextEventMatchingMask:NSEventMaskLeftMouseDragged|NSEventMaskLeftMouseUp
+			untilDate:NSDate.distantFuture inMode:NSEventTrackingRunLoopMode dequeue:YES];
+		NSPoint point = [self convertPoint:next.locationInWindow fromView:nil];
+		if (self.trackingTab) {
+			self.dragPoint = point;
+			self.draggingTab |= fabs(point.x - start.x) >= 4;
+			self.dropTab = MAX(self.firstTab, MIN(self.endTab - 1,
+				self.firstTab + (int)floor((point.x - 62) / self.tabWidth)));
+			[self layoutDraggedTab];
+		}
+		if (next.type != NSEventTypeLeftMouseUp) continue;
+		BOOL move = self.trackingTab && self.draggingTab && point.y >= 0 && point.y < self.bounds.size.height;
+		BOOL refreshRange = self.trackingTab && (self.firstTab != self.requestedFirstTab || self.endTab != self.requestedEndTab);
+		int from = self.draggedTab, to = self.dropTab;
+		self.trackingTab = self.draggingTab = NO;
+		[self layoutDraggedTab];
+		if (move && from != to) self.callback(self.owner, 5, from, to);
+		else if (refreshRange) self.callback(self.owner, 5, from, from);
+		break;
+	}
+}
 - (void)scrollWheel:(NSEvent *)event {
 	CGFloat delta = fabs(event.scrollingDeltaX) > fabs(event.scrollingDeltaY) ? event.scrollingDeltaX : event.scrollingDeltaY;
-	if (fabs(delta) > .5) self.callback(self.owner, delta > 0 ? 3 : 4, 0);
+	if (fabs(delta) > .5) self.callback(self.owner, delta > 0 ? 3 : 4, 0, 0);
 }
 @end
 
 static VoxBrowserTabStrip *vox_browser_tab_strip;
 static void native_browser_tabs_remove(void) {
+	vox_browser_tab_strip.trackingTab = vox_browser_tab_strip.draggingTab = NO;
 	[vox_browser_tab_strip removeFromSuperview]; vox_browser_tab_strip = nil;
 }
 static void native_browser_tabs_update(void *toolbar_pointer, void *owner, VoxTabAction callback,
@@ -151,6 +224,10 @@ static void native_browser_tabs_update(void *toolbar_pointer, void *owner, VoxTa
 	}
 	VoxBrowserTabStrip *strip = vox_browser_tab_strip;
 	strip.owner = owner; strip.callback = callback;
+	strip.requestedFirstTab = first; strip.requestedEndTab = end;
+	if (strip.trackingTab && strip.tabCount != count) strip.trackingTab = strip.draggingTab = NO;
+	if (strip.trackingTab) { first = strip.firstTab; end = strip.endTab; }
+	strip.tabCount = count; strip.firstTab = first; strip.endTab = end; strip.tabWidth = width;
 	strip.frame = NSMakeRect(0, toolbar.isFlipped ? 0 : toolbar.bounds.size.height-29, toolbar.bounds.size.width, 29);
 	for (NSView *child in strip.subviews.copy) [child removeFromSuperview];
 	for (int i = first; i < end; ++i) {
@@ -179,8 +256,12 @@ static void native_browser_tabs_update(void *toolbar_pointer, void *owner, VoxTa
 		control.accessibilityLabel = labels[i]; control.toolTip = labels[i];
 		[strip addSubview:control];
 	}
+	[strip layoutDraggedTab];
 	strip.needsDisplay = YES;
 }
+
+static int native_browser_tabs_first(void) { return vox_browser_tab_strip.firstTab; }
+static int native_browser_tabs_end(void) { return vox_browser_tab_strip.endTab; }
 
 static void native_browser_tab_title(int index, const unsigned char *bytes, int length) {
 	NSString *title = [[NSString alloc] initWithBytes:bytes length:length encoding:NSUTF8StringEncoding] ?: @"New Tab";

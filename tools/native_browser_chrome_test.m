@@ -19,7 +19,7 @@
 - (BOOL)isFlipped { return YES; }
 @end
 static int tabAction;
-static void tab_action(void *owner, int action, int index) { tabAction = action + 1; }
+static void tab_action(void *owner, int action, int index, int destination) { tabAction = action + 1; }
 
 int main(void) { @autoreleasepool {
 	[NSApplication sharedApplication];

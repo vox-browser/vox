@@ -46,5 +46,31 @@ $if macos {
 			assert app.ctx.pipeline == unsafe { nil }
 			assert app.ctx.ft == unsafe { nil }
 		}
+
+		fn test_portable_tab_drag_preview_shifts_neighbors_without_moving_owners() {
+			assert C.native_test_portable_tabs_begin(800, 120) == 1
+			defer { C.native_test_portable_tabs_end() }
+			mut app := &BrowserApp{
+				ctx: gg.new_context(native_rendering: true, width: 800, height: 120)
+			}
+			app.initialize_browser_tabs()
+			second := &BrowserApp{ctx: app.ctx}
+			app.tabs.pages << second
+			app.tabs.drag = BrowserTabDrag{
+				page: app
+				first: 0
+				end: 2
+				width: 184
+				offset: 35
+				x: 220
+				target: 1
+				moving: true
+			}
+			app.draw_portable_browser_tabs(800)
+			assert C.native_test_portable_tabs_pixel(100, 8) == u32(0xd2d2d2ff)
+			assert C.native_test_portable_tabs_pixel(210, 8) == u32(0xf7f7f7ff)
+			assert voidptr(app.tabs.pages[0]) == voidptr(app)
+			assert voidptr(app.tabs.pages[1]) == voidptr(second)
+		}
 	}
 }

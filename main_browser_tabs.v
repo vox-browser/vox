@@ -17,6 +17,21 @@ mut:
 	pages           []&BrowserApp
 	selected        int
 	pending_actions []string
+	drag            ?BrowserTabDrag
+}
+
+struct BrowserTabDrag {
+	page   &BrowserApp = unsafe { nil }
+	first  int
+	end    int
+	width  f64
+	start  f64
+	offset f64
+mut:
+	x         f64
+	target    int
+	moving    bool
+	cancelled bool
 }
 
 fn (mut app BrowserApp) initialize_browser_tabs() {
@@ -138,10 +153,41 @@ fn (mut app BrowserApp) activate_tab_chrome(action string) {
 				app.select_browser_tab(action.all_after(':').int())
 			} else if action.starts_with('tab-close:') {
 				app.close_browser_tab(action.all_after(':').int())
+			} else if action.starts_with('tab-move:') {
+				indices := action.all_after(':').split(':')
+				if indices.len == 2 { app.move_browser_tab(indices[0].int(), indices[1].int()) }
 			}
 		}
 	}
 	request_browser_frame()
+}
+
+fn (mut app BrowserApp) move_browser_tab(from int, to int) {
+	if app.tabs == unsafe { nil } || from < 0 || to < 0
+		|| from >= app.tabs.pages.len || to >= app.tabs.pages.len { return }
+	// Move owners, never their contents: document callbacks retain these addresses.
+	moving := app.tabs.pages[from]
+	if from < to {
+		for i in from .. to { app.tabs.pages[i] = app.tabs.pages[i + 1] }
+	} else {
+		for i := from; i > to; i-- { app.tabs.pages[i] = app.tabs.pages[i - 1] }
+	}
+	app.tabs.pages[to] = moving
+	if app.tabs.selected == from {
+		app.tabs.selected = to
+	} else if from < app.tabs.selected && app.tabs.selected <= to {
+		app.tabs.selected--
+	} else if to <= app.tabs.selected && app.tabs.selected < from {
+		app.tabs.selected++
+	}
+	mut selected := app.active_browser_tab()
+	$if macos { C.native_hide_cached_snapshot() }
+	selected.snapshot_visible = false
+	selected.snapshot_hold = false
+	selected.snapshot_cached = true
+	chrome := selected.browser_chrome
+	selected.browser_chrome = BrowserChromeState{}
+	selected.update_browser_chrome(chrome.width, chrome.height)
 }
 
 fn (mut app BrowserApp) select_browser_tab(index int) {
@@ -177,6 +223,7 @@ fn (mut app BrowserApp) select_browser_tab(index int) {
 
 fn (mut app BrowserApp) close_browser_tab(index int) {
 	if app.tabs == unsafe { nil } || index < 0 || index >= app.tabs.pages.len { return }
+	app.tabs.drag = none
 	// Keep a useful window when its final tab is closed.
 	if app.tabs.pages.len == 1 { app.activate_tab_chrome('tab-new') }
 	mut closing := app.tabs.pages[index]

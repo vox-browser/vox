@@ -7256,6 +7256,9 @@ fn browser_pointer_button_mask(button int) u32 {
 
 fn (mut app BrowserApp) handle_event(event &gg.Event) {
 	app.platform_pointer_modifiers = browser_pointer_modifiers(event.modifiers)
+	$if !vox_ui2 ? {
+		if app.handle_browser_tab_drag(event, browser_window_size().width) { return }
+	}
 	if app.navigation_work_depth > 0 {
 		if event.typ == .key_down {
 			zoom_action := browser_zoom_shortcut(event.key_code, unsafe { gg.Modifier(event.modifiers) })

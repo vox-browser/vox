@@ -1,31 +1,51 @@
 module main
 
 import gg
+import math
 
 $if !vox_ui2 ? {
 	fn (mut app BrowserApp) draw_portable_browser_tabs(width int) {
+		app.initialize_browser_tabs()
 		chrome := app.browser_chrome_state(width, 0)
-		first, end := browser_visible_tabs(width, chrome.tab_titles.len, chrome.selected_tab)
-		tab_width := browser_tab_width(width, end - first)
+		mut first, mut end := browser_visible_tabs(width, chrome.tab_titles.len, chrome.selected_tab)
+		mut tab_width := browser_tab_width(width, end - first)
+		if drag := app.tabs.drag {
+			first = drag.first
+			end = drag.end
+			tab_width = drag.width
+		}
 		draw_srgb_rect(app.ctx, 0, 0, f32(width), f32(tab_strip_height), gg.rgb(219, 219, 219))
 		for i in first .. end {
-			x := f32(tab_strip_leading_width + f64(i - first) * tab_width)
-			fill := if i == chrome.selected_tab {
-				gg.rgb(247, 247, 247)
-			} else {
-				gg.rgb(210, 210, 210)
+			mut slot := i
+			if drag := app.tabs.drag {
+				if drag.moving {
+					from := app.browser_tab_index(drag.page)
+					if i == from { continue }
+					if from < i && i <= drag.target { slot-- }
+					if drag.target <= i && i < from { slot++ }
+				}
 			}
-			draw_browser_polygon(app.ctx, [x, f32(tab_strip_height), x + 10, f32(5),
-				x + f32(tab_width) - 10, f32(5), x + f32(tab_width), f32(tab_strip_height)], fill)
-			title := address_for_display(chrome.tab_titles[i], 0, false, int((tab_width - 48) / 7))
-			app.ctx.draw_text(int(x) + 18, 13, title, color: gg.rgb(55, 55, 55), size: 12)
-			app.ctx.draw_text(int(x + f32(tab_width)) - 24, 12, '×',
-				color: gg.rgb(95, 95, 95)
-				size:  14
-			)
+			x := f32(tab_strip_leading_width + f64(slot - first) * tab_width)
+			app.draw_portable_browser_tab(chrome.tab_titles[i], x, tab_width, i == chrome.selected_tab)
+		}
+		if drag := app.tabs.drag {
+			if drag.moving {
+				x := math.clamp(drag.x - drag.offset, tab_strip_leading_width,
+					tab_strip_leading_width + f64(end - first - 1) * tab_width)
+				app.draw_portable_browser_tab(drag.page.browser_tab_title(), f32(x), tab_width, true)
+			}
 		}
 		x := f32(tab_strip_leading_width + 12 + f64(end - first) * tab_width)
 		draw_rounded_fill(app.ctx, x, 11, 28, 14, 2, gg.rgb(204, 204, 204))
+	}
+
+	fn (mut app BrowserApp) draw_portable_browser_tab(label string, x f32, width f64, selected bool) {
+		fill := if selected { gg.rgb(247, 247, 247) } else { gg.rgb(210, 210, 210) }
+		draw_browser_polygon(app.ctx, [x, f32(tab_strip_height), x + 10, f32(5),
+			x + f32(width) - 10, f32(5), x + f32(width), f32(tab_strip_height)], fill)
+		title := address_for_display(label, 0, false, int((width - 48) / 7))
+		app.ctx.draw_text(int(x) + 18, 13, title, color: gg.rgb(55, 55, 55), size: 12)
+		app.ctx.draw_text(int(x + f32(width)) - 24, 12, '×', color: gg.rgb(95, 95, 95), size: 14)
 	}
 
 	fn (mut app BrowserApp) handle_portable_tab_click(x f32, y f32) bool {
