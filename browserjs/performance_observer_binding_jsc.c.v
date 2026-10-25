@@ -84,11 +84,7 @@ fn (mut runtime Runtime) performance_observer_entries(mut binding PerformanceObs
 		values << value
 	}
 	mut exception := unsafe { nil }
-	array := C.JSObjectMakeArray(runtime.context, usize(values.len), if values.len == 0 {
-		unsafe { nil }
-	} else {
-		values.data
-	}, &exception)
+	array := C.JSObjectMakeArray(runtime.context, usize(values.len), values.data, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	return array
 }

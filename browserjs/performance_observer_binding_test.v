@@ -110,3 +110,19 @@ fn test_performance_observer_binding_reentrant_disconnect_exceptions_and_close_a
 	drain_native_observer_binding(scope)
 	document.finalize()
 }
+
+fn test_performance_observer_empty_records_are_real_engine_arrays() {
+	$if !darwin && !linux {
+		return
+	}
+	mut runtime, mut document, _ := native_observer_fixture()!
+	defer {
+		runtime.close()
+		document.finalize()
+	}
+	assert runtime.evaluate_host(r'
+ const observer=new PerformanceObserver(()=>{});
+ const first=observer.takeRecords(),second=observer.takeRecords();
+ Array.isArray(first)&&first.length===0&&Array.isArray(second)&&second.length===0&&first!==second;
+ ')! == 'true'
+}
