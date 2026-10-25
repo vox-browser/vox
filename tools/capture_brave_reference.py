@@ -61,10 +61,18 @@ FREEZE = r"""(() => {
     node.setAttribute('src', 'about:blank');
   });
   const head = root.querySelector('head');
+  // outerHTML is Unicode and the archive is written as UTF-8, even when the
+  // response originally declared a legacy encoding (for example Pikabu).
+  head.querySelectorAll('meta[charset], meta[http-equiv]').forEach(node => {
+    if (node.hasAttribute('charset') ||
+        node.getAttribute('http-equiv').toLowerCase() === 'content-type') node.remove();
+  });
+  const charset = document.createElement('meta');
+  charset.setAttribute('charset', 'utf-8');
+  head.prepend(charset);
   const base = document.createElement('base');
   base.setAttribute('href', document.baseURI);
-  const charset = head.querySelector('meta[charset]');
-  charset ? charset.after(base) : head.prepend(base);
+  charset.after(base);
   const type = document.doctype;
   const doctype = !type ? '' : '<!DOCTYPE ' + type.name +
     (type.publicId ? ' PUBLIC "' + type.publicId + '"' : '') +

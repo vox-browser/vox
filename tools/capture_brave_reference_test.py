@@ -1,12 +1,40 @@
+import base64
+import json
+import subprocess
+import sys
 import tempfile
 from pathlib import Path
 import unittest
 from unittest.mock import Mock, call, patch
 
-from capture_brave_reference import imported_cookies, launch_command, resize_native_viewport, scroll_viewport, window_position
+from capture_brave_reference import BRAVE, imported_cookies, launch_command, resize_native_viewport, scroll_viewport, window_position
 
 
 class BraveReferenceTests(unittest.TestCase):
+    @unittest.skipUnless(Path(BRAVE).is_file(), 'Brave is required for DOM serialization')
+    def test_legacy_encoding_survives_a_frozen_utf8_document_round_trip(self):
+        title = 'Ответ на пост — Пикабу'
+        tool = Path(__file__).with_name('capture_brave_reference.py')
+        declarations = ['<meta charset="windows-1251">',
+                        '<meta http-equiv="Content-Type" content="text/html; charset=windows-1251">']
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for index, declaration in enumerate(declarations):
+                with self.subTest(declaration=declaration):
+                    original = root / f'original-{index}.html'
+                    original.write_bytes((f'<!doctype html>{declaration}<title>{title}</title>'
+                                          f'<p>{title}</p>').encode('cp1251'))
+                    frozen = root / f'frozen-{index}.html'
+                    metadata = root / f'metadata-{index}.json'
+                    common = [sys.executable, str(tool), '--width', '800', '--height', '600',
+                              '--scale', '1', '--settle', '0']
+                    subprocess.run([*common, '--url', original.as_uri(), '--out', str(root / 'original.png'),
+                                    '--freeze', str(frozen)], check=True, timeout=30)
+                    subprocess.run([*common, '--url', frozen.as_uri(), '--out', str(root / 'frozen.png'),
+                                    '--metadata', str(metadata)], check=True, timeout=30)
+                    self.assertEqual(json.loads(metadata.read_text())['title'], title)
+                    self.assertEqual((root / 'original.png').read_bytes(), (root / 'frozen.png').read_bytes())
+
     def test_session_cookies_keep_http_only_domain_and_secure_attributes(self):
         with tempfile.TemporaryDirectory() as directory:
             jar = Path(directory) / 'cookies.txt'
