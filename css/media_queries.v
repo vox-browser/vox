@@ -1570,7 +1570,7 @@ fn query_media_feature(feature_name string, document ?&dom.Document) ?MediaFeatu
 			media_feature_ident_value('no-preference')
 		}
 		'resolution' {
-			media_feature_resolution_value(1)
+			media_feature_resolution_value(if doc := document { doc.display_device_pixel_ratio() } else { 1.0 })
 		}
 		'scripting' {
 			media_feature_ident_value('enabled')

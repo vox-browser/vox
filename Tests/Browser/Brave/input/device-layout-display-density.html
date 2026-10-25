@@ -1,0 +1,17 @@
+<!doctype html>
+<meta charset="utf-8">
+<style>
+html,body { margin:0; background:white }
+.sample { width:100px; height:20px; background:#c00; margin-bottom:4px }
+@media (resolution:2dppx) { #exact { background:#080 } }
+@media (min-resolution:2dppx) { #minimum { background:#080 } }
+@media (max-resolution:1dppx) { #maximum { background:#080 } }
+@media only screen and (min-resolution:2dppx),
+       only screen and (-webkit-min-device-pixel-ratio:2) {
+    #alternatives { background:#080 }
+}
+</style>
+<div id="exact" class="sample"></div>
+<div id="minimum" class="sample"></div>
+<div id="maximum" class="sample"></div>
+<div id="alternatives" class="sample"></div>

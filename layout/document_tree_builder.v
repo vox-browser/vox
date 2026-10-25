@@ -2293,7 +2293,7 @@ fn fixup_button_layout_tree(mut node Node, document &dom.Document) {
 	} else {
 		css.Display.from_short(.block)
 	}
-	content_style := parent_style.computed_values().clone_for_anonymous_with_display(content_display)
+	content_style := parent_style.computed_values().clone_for_button_content_box(content_display)
 	mut content_wrapper := unsafe { &Node(BlockContainer.new(document, none, content_style)) }
 	content_wrapper.anonymous_ = true
 	content_wrapper.is_button_content_box_ = true

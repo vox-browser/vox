@@ -52,6 +52,7 @@ fn parse_page_preload_document(loaded LoadedPage, scripting_enabled bool) &dom.D
 	// font caches even though the native page will never use those faces.
 	document.set_font_size_keyword_policy(.chromium)
 	document.set_font_rendering_policy(.chromium)
+	document.set_display_device_pixel_ratio(html.display_device_pixel_ratio())
 	document.enable_native_storage()
 	mut allocations := document.enter_native_storage()
 	defer { allocations.finish() }
