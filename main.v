@@ -7122,11 +7122,9 @@ fn (app &BrowserApp) element_at_window_point(mouse_x f32, mouse_y f32) ?&dom.Ele
 fn (app &BrowserApp) link_at_point(mouse_x f32, mouse_y f32) ?string {
 	mut element := app.element_at_window_point(mouse_x, mouse_y) or { return none }
 	for {
-		if element.local_name() == 'a' {
-			href := element.get_attribute_value('href')
-			if href != '' {
-				return resolve_document_reference(href, app.address)
-			}
+		if element.local_name() == 'a' && element.has_attribute('href') {
+			parsed_url := element.as_node().document().encoding_parse_url(element.get_attribute_value('href')) or { return none }
+			return parsed_url.serialize()
 		}
 		element = element.as_node().parent_element() or { break }
 	}
@@ -7279,6 +7277,9 @@ fn (mut app BrowserApp) handle_event(event &gg.Event) {
 				app.overlay_scrollbar_activity()
 			}
 			result := app.dispatch_chrome_pointer_event_at_viewport_point('pointerup', browser_pointer_button(event.mouse_button), f64(event.mouse_x), f64(event.mouse_y - app.page_top()))
+			if !result.handled && button == 2 {
+				app.show_link_context_menu(event.mouse_x, event.mouse_y)
+			}
 			if !result.handled && app.page_model != unsafe { nil } && app.page_model.event_handler.last_click_allowed() && button == 0 {
 				app.replay_compact_javascript_click()
 			}
