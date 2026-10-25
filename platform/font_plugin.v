@@ -398,7 +398,11 @@ pub fn (font &Font) glyph_outline(glyph_index int) ?FontGlyphOutline {
 		return none
 	}
 	mut mutable_face := unsafe { &ttf.TTF_File(face) }
+	// read_glyph lazily retains outlines (including compound components) in the
+	// shared face. They must outlive the document or paint arena decoding them.
+	persistent := enter_persistent()
 	glyph := mutable_face.read_glyph(u16(glyph_index))
+	leave_persistent(persistent)
 	if !glyph.valid_glyph || glyph.contour_ends.len == 0 {
 		return none
 	}
