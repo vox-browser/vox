@@ -711,3 +711,52 @@ after ad-hoc signing the installed library is
 `a5d1163a5481b19ca0a8a40002a8b3fdac7ac22bf5a64720577b56f42fa3b062`.
 The preserved unsigned V payload is
 `46dfed8e2a5b60622af27998be96c618d2055a1e1fbabae30175c02d47e0399d`.
+
+### Precise wheel input exposes the remaining lag (2026-10-25)
+
+The 60 fps goal remains open. The integer-step synthetic profiler above does
+not reproduce ordinary precise wheel input: the native wheel handler turns a
+2-pixel event into an 8.4 CSS-pixel scroll step. At 2× scale those fractional
+positions change antialiasing coverage and cannot reuse the integer-scroll
+raster path. Live CSS animations also invalidate retained paint input.
+
+A separate probe sends 240 precise Cocoa wheel events at 60 Hz through the real
+input view, reverses every 60 events, and verifies that the rendered scroll
+position moves. It measures completion of the document view's `updateLayer`,
+including native publication. This is not physical display scanout. It uses the
+same cached Pikabu resources, frozen production V executable, 1024×764 document
+viewport, 2× scale, and a 12-second initial settle in each paired run.
+
+Three completed native changes reduce avoidable work without changing pixels:
+
+- `d6cc7e21` copies mixed antialiasing output in contiguous spans.
+- `4645e115`/`18e663d0` test and implement the existing exact opaque rectangle
+  fallback before duplicate antialiasing passes.
+- `f2f01605` composites mixed raster tiles from tile rectangles without building
+  and scanning a per-pixel ownership mask.
+
+The tile-rectangle change's matched precise-input measurements are:
+
+| Measurement | Control | Candidate | Repeat control | Repeat candidate |
+| --- | ---: | ---: | ---: | ---: |
+| Mean native completion cadence | 29.29 fps | 31.18 fps | 29.59 fps | 32.55 fps |
+| Median native frame | 31.055 ms | 28.042 ms | 30.063 ms | 26.747 ms |
+| p95 completion interval | 53.749 ms | 51.791 ms | 54.833 ms | 49.748 ms |
+
+These results still miss 60 fps. Earlier precise-input runs measured 18 fps;
+those runs had different host load and supply no paired improvement claim.
+A longer CPU-sampling run also measured only 17–18 fps and is diagnostic, not
+performance credit. Rounded-rectangle tile replay, backdrop copying, and raster
+allocation remain the largest native costs in that sample.
+
+Focused validation passes 15,443 ownership-mask reference comparisons, 12,811
+backdrop/mode/failure-rollback comparisons, and 3,575 grid ownership/backdrop
+comparisons in optimized and ASan/UBSan builds. The optimized GPU checks pass
+3,168 rounded-rectangle and 2,304 solid replay comparisons exactly. The
+synthetic workload's instruction differences are below 5 M per frame and vary
+with animation state, so this cohort credits zero additional instruction
+savings and retains `add65da5` as its broad verification baseline.
+
+Evidence: `Build/pikabu-live-lag-20261025/solid-comparison.log`,
+`solid-comparison-guard.json`, `precise-grid-{baseline,spans}*/summary.json`,
+`long-profile-guard.json`, and `long-{baseline,grid-spans}/sample.txt`.
