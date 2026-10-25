@@ -1119,3 +1119,66 @@ Evidence under `Build/pikabu-live-lag-20261025/`:
 `integrated-native-{test,sanitizer}.log`, and
 `readiness-{replay,live}-{1,2}/`. Source/library/probe identities and matching
 initial cache hashes are retained in each trial's `run.json`.
+
+### Installed production checks after rounded-layer integration (October 25)
+
+The installed `Build/v/Vox.app` passes strict signature verification and the
+headless startup check. Its executable SHA-256 is
+`d0010b0f8223259f917b0c3a46fa169286fff244ef94633f493562659500891c`;
+the native bridge is
+`233f400b62a1e055a8e125784b670eb9d38db889ebe3582e69d66663a2ca32a6`.
+The first successful compile overlapped edits to two other source files and
+was rebuilt. Source pins remain unchanged throughout the second build, and
+the executable and library hashes remain unchanged throughout all four trials.
+The current-V compiler uses its 10 GiB limit and the standard production
+preallocated/no-GC configuration, without profiling flags.
+
+Each trial launches a fresh process with an empty private profile. All four
+start with the Pikabu title and complete 600 precise two-pixel inputs, reversing
+every 60 inputs, in the same 1024-by-764 document viewport at 2x scale. Archived
+trials use the original-URL TLS response replay and matching initial cache;
+live trials use independent empty caches and the ambient HTTP proxy. Settling
+starts after the requested document title: 12 seconds for the archive and
+20 seconds for live access. The endpoint remains changed native layer contents
+after `updateLayer`, rather than physical scanout.
+
+| Measurement | Archive 1 | Live 1 | Archive 2 | Live 2 |
+| --- | ---: | ---: | ---: | ---: |
+| Scroll throughput | 26.963 fps | 7.989 fps | 28.202 fps | 8.719 fps |
+| Median interval | 36.454 ms | 115.800 ms | 34.577 ms | 107.507 ms |
+| p95 interval | 49.506 ms | 172.885 ms | 46.386 ms | 146.001 ms |
+| Maximum interval | 97.708 ms | 264.108 ms | 88.143 ms | 167.947 ms |
+| Intervals over 16.67 ms | 296/296 | 93/93 | 310/310 | 101/101 |
+| Inputs / changed publications | 600 / 309 | 600 / 97 | 600 / 326 | 600 / 106 |
+| Actual input delivery | 54.563 Hz | 51.459 Hz | 54.494 Hz | 51.711 Hz |
+| First scroll publication delay | 106.628 ms | 293.888 ms | 105.408 ms | 388.898 ms |
+| Final scroll publication gap | 22.935 ms | 37.912 ms | 39.679 ms | 40.613 ms |
+
+All four runs are valid and exit zero. Every measured interval misses the
+60 Hz deadline. The live scrolling problem is unresolved. The earlier 2.81%
+and 3.27% gain belongs to the alternating frozen control/candidate experiment;
+it cannot establish a gain for this newer production build, which includes
+independent concurrent changes. These installed-bundle results must accompany
+any report of the isolated improvement.
+
+A separate five-second live sample identifies the next bottleneck: 1,227 of
+4,070 main-thread samples enter `native_end_svg_mask_layer`, dominated by
+Core Graphics mask-image drawing and transparency-layer composition. Opacity
+layer work is also substantial (`native_end_css_effect_layer` has 443 samples
+at the top of the stack). This diagnostic receives no performance credit.
+The mask path already bounds transparency layers to the mask rectangle plus a
+fringe; further work must preserve fractional mask coverage and nested clips.
+No additional mask optimization is claimed by these measurements.
+
+The integrated native test and its ASan/UBSan build each execute all 864 exact
+GPU comparisons and the direct eligibility assertion successfully. The entire
+serialized integration job exits zero, with sampled aggregate peak RSS of
+7,605,125,120 bytes within the default 12 GiB budget. This is a sampled process
+tree measurement, not a kernel allocation limit. No new retired-instruction
+savings are measured or added to the broad verification counter.
+
+Evidence under `Build/pikabu-live-lag-20261025/`:
+`production-source-before-{0,1}.json`, `production-sparse-build-{0,1}.log`,
+`integrated-stage-result.json`, `production-sparse-{signature,headless}.log`,
+`production-sparse-{replay,live}-{1,2}/{run.json,summary.json,browser.log}`,
+`production-sparse-live-sample.txt`, and `readiness-guard-v1.json`.
