@@ -4253,7 +4253,7 @@ fn paint_text_decoration(fragment TextFragment, opacity f64) []PaintCommand {
 	} else {
 		math.max(glyph_height * 0.1, 1.0)
 	}
-	mut commands := []PaintCommand{}
+	mut commands := chromium_ancestor_text_decoration_commands(fragment, opacity)
 	for input_line in fragment.decoration.fields() {
 		mut line := input_line
 		mut color := base_color
@@ -4285,7 +4285,18 @@ fn paint_text_decoration(fragment TextFragment, opacity f64) []PaintCommand {
 		}
 		if fragment.chromium_decorations && line == 'underline' && style == 'solid'
 			&& fragment.text_underline_position != 'under' {
+			previous_count := commands.len
 			append_chromium_solid_underline(mut commands, fragment, font_ascent, color, opacity)
+			if previous_count > 0 && commands.len == previous_count + 1 {
+				previous := commands[previous_count - 1]
+				current := commands[previous_count]
+				if previous.kind == 'fill_rect' && previous.antialiased_rect
+					&& previous.clip_outs == current.clip_outs
+					&& previous.x == current.x && previous.y == current.y
+					&& previous.width == current.width && previous.height == current.height {
+					commands[previous_count - 1].underlays_next = true
+				}
+			}
 			continue
 		}
 		mut line_y := 0.0

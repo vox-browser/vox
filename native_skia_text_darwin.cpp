@@ -2351,8 +2351,8 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
     if (auto* canvas = shared_recording_canvas(destination)) {
         canvas->save();
         canvas->setMatrix(matrix);
-        if (has_underlay) canvas->drawRRect(underlay_rect, underlay_paint);
         clip_out_rects(canvas);
+        if (has_underlay) canvas->drawRRect(underlay_rect, underlay_paint);
         canvas->drawRRect(rounded_rect, paint);
         canvas->restore();
     }
@@ -2363,9 +2363,9 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
         canvas->save();
         canvas->setMatrix(raster_matrix(matrix, group.region, group.scale_x,
             group.scale_y));
+        clip_out_rects(canvas);
         if (has_underlay)
             canvas->drawRRect(underlay_rect, underlay_paint);
-        clip_out_rects(canvas);
         canvas->drawRRect(rounded_rect, paint);
         canvas->restore();
         return 1;
@@ -2540,9 +2540,9 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
     auto* canvas = surface->getCanvas();
     canvas->clear(SK_ColorTRANSPARENT);
     canvas->setMatrix(raster_matrix(matrix, region, raster_scale_x, raster_scale_y));
+    clip_out_rects(canvas);
     if (has_underlay)
         canvas->drawRRect(underlay_rect, underlay_paint);
-    clip_out_rects(canvas);
     canvas->drawRRect(rounded_rect, paint);
     surface.reset();
     return composite_pixels(destination, std::move(pixels), raster_width, raster_height,

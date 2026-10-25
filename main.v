@@ -5321,10 +5321,14 @@ fn replaced_image_bitmap_for_renderer(command &layout.PaintCommand, native_rende
 }
 
 fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x f32, page_y f32, window_height int) {
-	// Only the border that draws natively can take a deferred background.
-	if app.rounded_rect_underlay != none
-		&& (source_command.kind != 'stroke_rounded_rect' || source_command.points.len >= 4) {
-		app.flush_rounded_rect_underlay(page_x, page_y, window_height)
+	// A native border or coincident antialiased fill can consume the underlay
+	// in the same render pass, retaining fractional coverage between draws.
+	if pending := app.rounded_rect_underlay_source {
+		if !((source_command.kind == 'stroke_rounded_rect' && source_command.points.len < 4)
+			|| (source_command.kind == 'fill_rect' && source_command.antialiased_rect
+				&& !source_command.underlays_next && source_command.clip_outs == pending.clip_outs)) {
+			app.flush_rounded_rect_underlay(page_x, page_y, window_height)
+		}
 	}
 	app.paint_effect_depth = background_clip_effect_depth_after_command(app.paint_effect_depth,
 		source_command.kind)
@@ -5737,12 +5741,21 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 					if command.clip_outs.len >= 4 {
 						C.native_set_rect_clip_outs(&command.clip_outs[0], command.clip_outs.len / 4)
 					}
+					if underlay := app.rounded_rect_underlay {
+						app.rounded_rect_underlay = none
+						app.rounded_rect_underlay_source = none
+						radius := f32(clamp(underlay.radius, 0.0, math.min(underlay.width, underlay.height) / 2.0))
+						rect := [f32(underlay.x), f32(underlay.y), f32(underlay.width), f32(underlay.height),
+							radius, radius, radius, radius, radius, radius, radius, radius]!
+						C.native_set_rounded_rect_underlay(&rect[0], app.paint_colors.color(underlay.color, underlay.opacity))
+					}
 					set_native_chromium_paint_color(*command)
 					C.native_draw_rounded_rect_srgb(f32(command.x), f32(command.y), f32(command.width), f32(command.height), used_radius, used_radius, used_radius, used_radius, used_radius, used_radius, used_radius, used_radius, f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), fill, 1, 0, if command.scrollbar_axis == '' && !command.disable_antialias {
 						1
 					} else {
 						0
 					})
+					C.native_set_rounded_rect_underlay(unsafe { nil }, gg.Color{})
 					if command.clip_outs.len >= 4 {
 						C.native_set_rect_clip_outs(unsafe { nil }, 0)
 					}

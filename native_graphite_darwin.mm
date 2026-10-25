@@ -641,17 +641,17 @@ static void draw_shape_on_canvas(SkCanvas* canvas, VoxGraphiteShape const& shape
     SkMatrix matrix;
     matrix.set9(shape.matrix);
     canvas->setMatrix(matrix);
+    for (int index = 0; shape.clip_outs && index < shape.clip_out_count; ++index) {
+        float const* clip = shape.clip_outs + index * 4;
+        canvas->clipRect(SkRect::MakeLTRB(clip[0], clip[1], clip[2], clip[3]),
+            SkClipOp::kDifference, false);
+    }
     if (shape.has_underlay) {
         SkPaint underlay;
         underlay.setAntiAlias(shape.anti_alias != 0);
         underlay.setColor(SkColorSetARGB(shape.underlay_rgba[3], shape.underlay_rgba[0],
             shape.underlay_rgba[1], shape.underlay_rgba[2]));
         canvas->drawRRect(rounded_rect(shape.underlay_rect), underlay);
-    }
-    for (int index = 0; shape.clip_outs && index < shape.clip_out_count; ++index) {
-        float const* clip = shape.clip_outs + index * 4;
-        canvas->clipRect(SkRect::MakeLTRB(clip[0], clip[1], clip[2], clip[3]),
-            SkClipOp::kDifference, false);
     }
     SkPaint paint;
     paint.setAntiAlias(shape.anti_alias != 0);
