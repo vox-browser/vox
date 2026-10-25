@@ -168,6 +168,9 @@ extern int ladybird_v_skia_draw_drop_shadow(CGContextRef destination,
 	CGImageRef source, float canvas_width, float canvas_height, float scale,
 	float offset_x, float offset_y, float standard_deviation, uint8_t red,
 	uint8_t green, uint8_t blue, uint8_t alpha);
+extern int ladybird_v_skia_draw_drop_shadow_chain(CGContextRef destination,
+	CGImageRef source, float canvas_width, float canvas_height, float scale,
+	const float *shadows, size_t shadow_count);
 extern int ladybird_v_skia_draw_masked_image(CGContextRef destination,
 	CGImageRef content, CGImageRef mask, float destination_x,
 	float destination_y, float destination_width, float destination_height);
@@ -3736,6 +3739,34 @@ void native_end_css_filter_layer(void) {
 				(uint8_t)lrintf(operation.green * 255.0f),
 				(uint8_t)lrintf(operation.blue * 255.0f),
 				(uint8_t)lrintf(operation.alpha * 255.0f));
+		}
+		if (layer.operation_count > 1 && layer.graph_node_count == 0
+			&& layer.destination != NULL) {
+			BOOL only_drop_shadows = YES;
+			for (size_t index = 0; index < layer.operation_count; ++index) {
+				if (layer.operations[index].kind != 1) only_drop_shadows = NO;
+			}
+			if (only_drop_shadows) {
+				float *shadows = calloc(layer.operation_count * 7, sizeof(float));
+				if (shadows != NULL) {
+					for (size_t index = 0; index < layer.operation_count; ++index) {
+						NativeCSSFilterOperation operation =
+							layer.operations[layer.operation_count - index - 1];
+						float *shadow = shadows + index * 7;
+						shadow[0] = operation.first;
+						shadow[1] = operation.second;
+						shadow[2] = operation.third;
+						shadow[3] = operation.red;
+						shadow[4] = operation.green;
+						shadow[5] = operation.blue;
+						shadow[6] = operation.alpha;
+					}
+					rendered_with_skia = ladybird_v_skia_draw_drop_shadow_chain(
+						layer.destination, source_image, layer.canvas_width,
+						layer.canvas_height, layer.scale, shadows, layer.operation_count);
+					free(shadows);
+				}
+			}
 		}
 #endif
 		if (rendered_with_skia) {

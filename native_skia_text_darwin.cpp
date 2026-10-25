@@ -1841,13 +1841,14 @@ extern "C" int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
         static_cast<float>(region.width()), static_cast<float>(region.height()), has_background);
 }
 
-extern "C" int ladybird_v_skia_draw_drop_shadow(CGContextRef destination,
+// Each seven-float record is dx, dy, sigma, red, green, blue, alpha. Records
+// follow CSS application order; later shadows include all earlier shadows.
+extern "C" int ladybird_v_skia_draw_drop_shadow_chain(CGContextRef destination,
     CGImageRef source, float canvas_width, float canvas_height, float scale,
-    float offset_x, float offset_y, float standard_deviation, uint8_t red,
-    uint8_t green, uint8_t blue, uint8_t alpha)
+    const float* shadows, size_t shadow_count)
 {
     if (!destination || !source || canvas_width <= 0 || canvas_height <= 0
-        || scale <= 0)
+        || scale <= 0 || !shadows || shadow_count == 0)
         return 0;
     auto width = static_cast<int>(CGImageGetWidth(source));
     auto height = static_cast<int>(CGImageGetHeight(source));
@@ -1899,14 +1900,33 @@ extern "C" int ladybird_v_skia_draw_drop_shadow(CGContextRef destination,
     canvas->clear(SK_ColorTRANSPARENT);
     SkPaint paint;
     paint.setAntiAlias(true);
-    paint.setImageFilter(SkImageFilters::DropShadow(offset_x * scale,
-        offset_y * scale, std::max(standard_deviation, 0.0f) * scale,
-        std::max(standard_deviation, 0.0f) * scale,
-        SkColorSetARGB(alpha, red, green, blue), nullptr));
+    sk_sp<SkImageFilter> filter;
+    for (size_t index = 0; index < shadow_count; ++index) {
+        const float* shadow = shadows + index * 7;
+        auto channel = [](float value) {
+            return static_cast<uint8_t>(std::lround(std::clamp(value, 0.0f, 1.0f) * 255));
+        };
+        filter = SkImageFilters::DropShadow(shadow[0] * scale, shadow[1] * scale,
+            std::max(shadow[2], 0.0f) * scale, std::max(shadow[2], 0.0f) * scale,
+            SkColorSetARGB(channel(shadow[6]), channel(shadow[3]),
+                channel(shadow[4]), channel(shadow[5])), std::move(filter));
+    }
+    paint.setImageFilter(std::move(filter));
     canvas->drawImage(source_image.get(), 0, 0, SkSamplingOptions(), &paint);
     surface.reset();
     return composite_pixels(destination, std::move(output_pixels), width, height, 0, 0,
         canvas_width, canvas_height);
+}
+
+extern "C" int ladybird_v_skia_draw_drop_shadow(CGContextRef destination,
+    CGImageRef source, float canvas_width, float canvas_height, float scale,
+    float offset_x, float offset_y, float standard_deviation, uint8_t red,
+    uint8_t green, uint8_t blue, uint8_t alpha)
+{
+    const float shadow[] = { offset_x, offset_y, standard_deviation,
+        red / 255.0f, green / 255.0f, blue / 255.0f, alpha / 255.0f };
+    return ladybird_v_skia_draw_drop_shadow_chain(destination, source,
+        canvas_width, canvas_height, scale, shadow, 1);
 }
 
 extern "C" int ladybird_v_skia_draw_masked_image(CGContextRef destination,
