@@ -13,6 +13,16 @@ Vox runs on macOS and Linux. On Linux, build with `sh build-prod-browser.sh`
 and launch `Build/linux/vox`. See [Linux setup and checks](docs/LINUX.md) for
 dependencies, the Skia bootstrap, headless operation, and platform limitations.
 
+On macOS, **Cmd+,** or **Vox → Settings…** opens the native UI2 settings
+window. Enable **Use SOCKS5 proxy**, enter its host and port, and choose
+**Apply**. Destination DNS lookups go through the proxy, and changes take
+effect for new requests without restarting. Turning the checkbox off and
+applying selects direct connections. **Cancel** discards edits. Settings
+persist in `~/Library/Application Support/Vox/settings.json`, or in
+`VOX_PROFILE_DIR/settings.json` when that profile override is set. Existing
+proxy environment variables remain available until settings are first saved;
+saved settings take precedence over ambient proxy and bypass variables.
+
 The refreshed LibJS frontend lives in [`libjs/`](libjs/PORT_STATUS.md). It exposes
 script/module parsing, positioned diagnostics, scope analysis, and retained AST
 dumps, plus the translated VM record: execution contexts, environment records,
