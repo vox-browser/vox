@@ -50,7 +50,7 @@ fn test_candidate_scratch_reuses_storage_without_retaining_rules_or_aliasing_out
 	rule := &MatchingRule{
 		rule_index: 73
 	}
-	candidates << MatchingRuleCandidate{
+	candidates << ScopedMatchingRule{
 		rule:            rule
 		shadow_root:     shadow
 	}
@@ -60,7 +60,7 @@ fn test_candidate_scratch_reuses_storage_without_retaining_rules_or_aliasing_out
 	assert first.rules.data == storage
 	assert first.rules.len == 0
 	assert first.rules.cap > 0
-	for byte_index in 0 .. int(sizeof(MatchingRuleCandidate)) {
+	for byte_index in 0 .. int(sizeof(ScopedMatchingRule)) {
 		assert unsafe { (&u8(storage))[byte_index] } == 0
 	}
 	for _ in 0 .. 3 {
@@ -100,7 +100,7 @@ fn test_public_matching_query_uses_separate_nested_scratch_and_keeps_scoped_outp
 	sentinel := &MatchingRule{
 		rule_index: 911
 	}
-	outer_candidates << MatchingRuleCandidate{
+	outer_candidates << ScopedMatchingRule{
 		rule: sentinel
 	}
 	mut attempted := PseudoClassBitmap{}
@@ -153,7 +153,7 @@ fn test_candidate_scratch_bounds_retained_depth_and_capacity_without_limiting_qu
 	for index := active.len - 1; index >= 0; index-- {
 		mut buffer := active[index]
 		rules := [
-			MatchingRuleCandidate{
+			ScopedMatchingRule{
 				rule: &MatchingRule{
 					rule_index: usize(index)
 				}
@@ -166,11 +166,11 @@ fn test_candidate_scratch_bounds_retained_depth_and_capacity_without_limiting_qu
 	}
 	assert computer.matching_rule_candidates_.active_depth == 0
 	mut large := computer.acquire_matching_rule_candidates()
-	oversized := []MatchingRuleCandidate{len: max_retained_matching_rule_candidates + 1}
+	oversized := []ScopedMatchingRule{len: max_retained_matching_rule_candidates + 1}
 	computer.release_matching_rule_candidates(mut large, oversized)
 	assert large.rules.cap == 0
 	mut next := computer.acquire_matching_rule_candidates()
-	small := [MatchingRuleCandidate{ rule: &MatchingRule{ rule_index: 314 } }]
+	small := [ScopedMatchingRule{ rule: &MatchingRule{ rule_index: 314 } }]
 	computer.release_matching_rule_candidates(mut next, small)
 	assert next.rules.cap > 0
 	assert computer.matching_rule_candidates_.active_depth == 0
@@ -187,7 +187,7 @@ fn test_candidate_scratch_clears_grown_prefix_and_retains_cloned_rule_and_shadow
 	mut buffer := computer.acquire_matching_rule_candidates()
 	mut candidates := unsafe { buffer.rules }
 	for index in 0 .. 257 {
-		candidates << MatchingRuleCandidate{
+		candidates << ScopedMatchingRule{
 			rule: &MatchingRule{rule_index: usize(index)}
 			shadow_root: if index % 3 == 0 { ?&dom.ShadowRoot(first_shadow) } else if index % 3 == 1 { ?&dom.ShadowRoot(second_shadow) } else { none }
 		}
@@ -199,7 +199,7 @@ fn test_candidate_scratch_clears_grown_prefix_and_retains_cloned_rule_and_shadow
 	assert buffer.rules.len == 0
 	assert buffer.rules.cap >= 257
 	assert buffer.rules.data == storage
-	for byte_index in 0 .. 257 * int(sizeof(MatchingRuleCandidate)) {
+	for byte_index in 0 .. 257 * int(sizeof(ScopedMatchingRule)) {
 		assert unsafe { (&u8(storage))[byte_index] } == 0
 	}
 	for _ in 0 .. 3 {

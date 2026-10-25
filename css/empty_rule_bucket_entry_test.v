@@ -20,7 +20,7 @@ fn test_empty_rule_buckets_preserve_existing_candidates() {
 		for abstract_element in [dom.AbstractElement.new(element, none),
 			dom.AbstractElement.new(element, dom.PseudoElement.before),
 			dom.AbstractElement.new(element, dom.PseudoElement.selection)] {
-			mut output := [MatchingRuleCandidate{
+			mut output := [ScopedMatchingRule{
 				rule: rule
 				shadow_root: shadow
 			}]

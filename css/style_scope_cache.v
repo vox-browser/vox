@@ -1979,7 +1979,7 @@ fn style_scope_filter_namespace_rule(element_namespace_uri ?string, rule &Matchi
 	return true
 }
 
-fn style_scope_add_rule_to_run(style_computer &StyleComputer, abstract_element dom.AbstractElement, rule_to_run &MatchingRule, rule_root ?&dom.ShadowRoot, shadow_root ?&dom.ShadowRoot, element_shadow_root ?&dom.ShadowRoot, mut rules_to_run []MatchingRuleCandidate) {
+fn style_scope_add_rule_to_run(style_computer &StyleComputer, abstract_element dom.AbstractElement, rule_to_run &MatchingRule, rule_root ?&dom.ShadowRoot, shadow_root ?&dom.ShadowRoot, element_shadow_root ?&dom.ShadowRoot, mut rules_to_run []ScopedMatchingRule) {
 	// FIXME: This needs to be revised when adding support for the ::shadow
 	// selector, as it needs to cross shadow boundaries.
 	from_user_agent_or_user_stylesheet := rule_to_run.cascade_origin == .user_agent || rule_to_run.cascade_origin == .user
@@ -2010,7 +2010,7 @@ fn style_scope_add_rule_to_run(style_computer &StyleComputer, abstract_element d
 	}
 
 	_ = abstract_element
-	rules_to_run << MatchingRuleCandidate{
+	rules_to_run << ScopedMatchingRule{
 		rule: rule_to_run
 		shadow_root: style_scope_mut_shadow_root_option(rule_root)
 	}
@@ -2027,7 +2027,7 @@ fn style_scope_selector_targets_pseudo_element(selector Selector, pseudo_element
 	return false
 }
 
-fn style_scope_add_rules_to_run(style_computer &StyleComputer, abstract_element dom.AbstractElement, rules []&MatchingRule, rule_root ?&dom.ShadowRoot, shadow_root ?&dom.ShadowRoot, element_shadow_root ?&dom.ShadowRoot, mut rules_to_run []MatchingRuleCandidate) {
+fn style_scope_add_rules_to_run(style_computer &StyleComputer, abstract_element dom.AbstractElement, rules []&MatchingRule, rule_root ?&dom.ShadowRoot, shadow_root ?&dom.ShadowRoot, element_shadow_root ?&dom.ShadowRoot, mut rules_to_run []ScopedMatchingRule) {
 	if rules.len == 0 {
 		return
 	}
@@ -2077,7 +2077,7 @@ fn style_scope_merge_attempted_pseudo_class_matches(mut attempted PseudoClassBit
 	attempted.merge(context.attempted_pseudo_class_matches)
 }
 
-fn style_scope_add_slotted_rules_for_available_scopes(style_computer &StyleComputer, abstract_element dom.AbstractElement, cascade_origin CascadeOrigin, qualified_layer_name ?string, scope &StyleScope, shadow_root ?&dom.ShadowRoot, element_shadow_root ?&dom.ShadowRoot, mut rules_to_run []MatchingRuleCandidate) {
+fn style_scope_add_slotted_rules_for_available_scopes(style_computer &StyleComputer, abstract_element dom.AbstractElement, cascade_origin CascadeOrigin, qualified_layer_name ?string, scope &StyleScope, shadow_root ?&dom.ShadowRoot, element_shadow_root ?&dom.ShadowRoot, mut rules_to_run []ScopedMatchingRule) {
 	_ = scope
 	// Walk up the slot chain for nested slots. An element can be assigned to a
 	// slot which is itself assigned to another slot in a parent shadow root. The
@@ -2094,13 +2094,13 @@ fn style_scope_add_slotted_rules_for_available_scopes(style_computer &StyleCompu
 	}
 }
 
-fn style_scope_add_part_rules_from_scope(style_computer &StyleComputer, abstract_element dom.AbstractElement, cascade_origin CascadeOrigin, qualified_layer_name ?string, part_scope_shadow_root ?&dom.ShadowRoot, shadow_root ?&dom.ShadowRoot, element_shadow_root ?&dom.ShadowRoot, mut rules_to_run []MatchingRuleCandidate) {
+fn style_scope_add_part_rules_from_scope(style_computer &StyleComputer, abstract_element dom.AbstractElement, cascade_origin CascadeOrigin, qualified_layer_name ?string, part_scope_shadow_root ?&dom.ShadowRoot, shadow_root ?&dom.ShadowRoot, element_shadow_root ?&dom.ShadowRoot, mut rules_to_run []ScopedMatchingRule) {
 	if rule_cache := style_computer.rule_cache_for_cascade_origin(cascade_origin, qualified_layer_name, part_scope_shadow_root) {
 		style_scope_add_rules_to_run(style_computer, abstract_element, rule_cache.part_rules, part_scope_shadow_root, shadow_root, element_shadow_root, mut rules_to_run)
 	}
 }
 
-fn style_scope_add_part_rules_for_available_scopes(style_computer &StyleComputer, abstract_element dom.AbstractElement, cascade_origin CascadeOrigin, qualified_layer_name ?string, scope &StyleScope, shadow_root ?&dom.ShadowRoot, element_shadow_root ?&dom.ShadowRoot, mut rules_to_run []MatchingRuleCandidate) {
+fn style_scope_add_part_rules_for_available_scopes(style_computer &StyleComputer, abstract_element dom.AbstractElement, cascade_origin CascadeOrigin, qualified_layer_name ?string, scope &StyleScope, shadow_root ?&dom.ShadowRoot, element_shadow_root ?&dom.ShadowRoot, mut rules_to_run []ScopedMatchingRule) {
 	_ = scope
 	// ::part() can apply to anything in a shadow tree, that is either an element
 	// with a `part` attribute or a pseudo-element. Rules from any ancestor style
@@ -2275,7 +2275,7 @@ fn style_scope_proximity(target &dom.Element, root &dom.Element) int {
 
 // Consume the same ordered candidate buckets as matching_rule_buckets(),
 // without allocating a temporary array of borrowed array headers.
-fn style_scope_add_cached_rules_to_run(style_computer &StyleComputer, abstract_element dom.AbstractElement, cache &RuleCache, rule_root ?&dom.ShadowRoot, shadow_root ?&dom.ShadowRoot, element_shadow_root ?&dom.ShadowRoot, mut rules_to_run []MatchingRuleCandidate) {
+fn style_scope_add_cached_rules_to_run(style_computer &StyleComputer, abstract_element dom.AbstractElement, cache &RuleCache, rule_root ?&dom.ShadowRoot, shadow_root ?&dom.ShadowRoot, element_shadow_root ?&dom.ShadowRoot, mut rules_to_run []ScopedMatchingRule) {
 	// Empty buckets cannot contribute candidates or require element metadata.
 	element := abstract_element.element()
 	if cache.rules_by_class.len > 0 {

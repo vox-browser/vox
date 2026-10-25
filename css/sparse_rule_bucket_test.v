@@ -74,7 +74,7 @@ fn test_sparse_candidate_buckets_keep_order_identity_and_scope_for_every_combina
 				}
 				cache.other_rules = [rules[7]]
 				expected << 8
-				seed := MatchingRuleCandidate{
+				seed := ScopedMatchingRule{
 					rule: sentinel
 					shadow_root: shadow
 				}
