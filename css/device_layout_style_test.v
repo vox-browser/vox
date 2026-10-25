@@ -2,6 +2,22 @@ module css
 
 import dom
 
+fn test_chromium_fixed_line_height_rounds_only_after_device_projection() {
+	for value in ['17.6px', '1.6em', '160%'] {
+		mut document, source := device_layout_test_style('font:11px Verdana;line-height:${value}')
+		defer { document.finalize() }
+		assert source.line_height() == CSSPixels.nearest_value_for(17.6)
+		document.set_layout_coordinate_scale(2)
+		projected := computed_style_in_layout_coordinates(source, document)
+		assert projected.line_height() == CSSPixels.nearest_value_for(35.2)
+	}
+	mut document, source := device_layout_test_style('font:11px/1.6 Verdana')
+	defer { document.finalize() }
+	document.set_layout_coordinate_scale(2)
+	// Unitless line heights use Blink's percentage calculation and truncate.
+	assert computed_style_in_layout_coordinates(source, document).line_height() == CSSPixels.truncated_value_for(35.2)
+}
+
 fn device_layout_test_style(declaration string) (&dom.Document, &ComputedProperties) {
 	mut document := dom.Document.create(dom.url_about_blank())
 	document.set_browsing_context(&dom.BrowsingContext{ active_document_: document })

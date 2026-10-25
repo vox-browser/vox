@@ -12485,7 +12485,7 @@ fn compute_value_of_property_from_source(property_id PropertyID, specified_value
 			StyleComputer.compute_letter_or_word_spacing(absolutized_value)
 		}
 		.line_height {
-			StyleComputer.compute_line_height(absolutized_value, computation_context.length_resolution_context.font_metrics.font_size)
+			compute_line_height_with_document_policy(absolutized_value, computation_context)
 		}
 		.object_position, .overflow_clip_margin_block_end, .overflow_clip_margin_block_start,
 		.overflow_clip_margin_bottom, .overflow_clip_margin_inline_end,
