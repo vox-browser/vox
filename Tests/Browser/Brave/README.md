@@ -388,3 +388,9 @@ Run the complete pixel comparison on macOS with:
 V_BIN=~/code/v-latest/v python3 tools/run_memory_bounded.py \
   --report Build/hacker-news-pixels-job.json -- python3 tools/hacker_news_pixels_test.py
 ```
+
+`device-layout-inline-precision` checks native scale 2 fractional form-control
+heights, fixed line heights, `ex` widths, middle alignment and soft line breaks.
+`device-layout-display-density` checks resolution media queries at the same
+800×600 viewport and scale 2. Both references use Brave 156.1.98.60 and require
+exact RGBA equality.
