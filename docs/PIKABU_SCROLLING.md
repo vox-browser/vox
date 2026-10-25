@@ -683,24 +683,33 @@ separately below; the paired runs in this table remain below 60 fps.
 The canonical production bundle contains the clean queue-reuse Graphite library.
 Installation preserves its unsigned V executable and text/Dawn libraries. Strict
 bundle signature verification, headless startup and the requested live Pikabu
-launch pass. Two fresh production processes each scroll the same cached page
-for 240 moving frames in a 1024×764 viewport, with external network blocked.
+launch pass. Two fresh production processes each run the synthetic profiler on
+the same cached page for 240 moving frames in a 1024×764 viewport, with external
+network blocked. The profiler injects integer 42 CSS-pixel steps from inside the
+draw callback, reverses every 30 frames, and requests the next frame as soon as
+the callback finishes. It does not reproduce precise Cocoa wheel input.
 
-| Production measurement | First run | Repeat |
+| Synthetic production measurement | First run | Repeat |
 | --- | ---: | ---: |
 | Median callback | 12.756 ms | 11.896 ms |
 | p95 callback | 23.809 ms | 21.607 ms |
 | Median replay | 9.904 ms | 9.147 ms |
 | Mean retired instructions | 122.390 M | 122.366 M |
-| Mean native completion cadence | 61.68 fps | 68.72 fps |
+| Mean completion-log receipt cadence | 61.68 fps | 68.72 fps |
 | p95 native completion interval | 26.171 ms | 23.199 ms |
 
-Both production runs exceed 60 fps mean native completion cadence. The cadence
-comes from flushed completion-log receipts and includes inter-frame publication,
-scheduling and log delivery; it does not establish physical display scanout or
-locked 60 fps. Some frames still exceed 16.7 ms. These fresh runs have different
-system load from the matched table above and supply no additional paired
-improvement claim.
+These numbers describe the synthetic workload only. Reporting them as proof
+that ordinary production scrolling reached 60 fps was incorrect; the later
+precise-input measurements below supersede that conclusion. The cadence comes
+from flushed log receipts at the end of the app draw callback, before that
+frame's native publication. Receipt intervals include work between callbacks
+and log delivery, but are not timestamps of publication or physical scanout.
+Some frames still exceed 16.7 ms. These fresh runs have different system load
+from the matched table above and supply no additional paired improvement claim.
+
+An audit of both saved traces confirms 120 steps of +42 CSS pixels and 120 of
+-42 in each run. All 240 frames in each trace report `scroll_raster_reused=0`;
+the discrepancy cannot be attributed to successful raster reuse in these runs.
 
 Production evidence: `canonical-queue-window-installed.json`,
 `queue-window-install-guard.json`,
@@ -717,8 +726,10 @@ The preserved unsigned V payload is
 The 60 fps goal remains open. The integer-step synthetic profiler above does
 not reproduce ordinary precise wheel input: the native wheel handler turns a
 2-pixel event into an 8.4 CSS-pixel scroll step. At 2× scale those fractional
-positions change antialiasing coverage and cannot reuse the integer-scroll
-raster path. Live CSS animations also invalidate retained paint input.
+positions change antialiasing coverage. They also prevent integer-scroll raster
+reuse, although neither earlier synthetic trace used that path either. Live CSS
+animations invalidate retained paint input as well. These observations identify
+workload differences, not an isolated explanation for the full cadence gap.
 
 A separate probe sends 240 precise Cocoa wheel events at 60 Hz through the real
 input view, reverses every 60 events, and verifies that the rendered scroll
