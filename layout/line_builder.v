@@ -650,6 +650,24 @@ pub fn (mut builder LineBuilder) update_last_line() {
 		if !uses_container_alignment {
 			if vertical_align := fragment_computed.vertical_align_length_percentage() {
 				fragment_baseline = fragment_baseline.plus(vertical_align.to_px(layout_length_resolution_context(fragment.layout_node_), fragment_computed.line_height()))
+			} else if fragment.layout_node_.is_text_node()
+				&& fragment.layout_node_.document().font_rendering_policy() == .chromium
+				&& fragment_computed.vertical_align() in [.text_top, .text_bottom] {
+				// These inline boxes meet the parent's text edges rather than
+				// sharing its baseline. Their ascent contribution follows that
+				// edge, even when their own font has a larger baseline.
+				alignment_source := fragment_alignment_style_source(fragment)
+				parent_metrics := if parent := alignment_source.parent() {
+					layout_font_metrics_for_node(parent)
+				} else {
+					container_font_metrics
+				}
+				fragment_baseline = if fragment_computed.vertical_align() == .text_top {
+					CSSPixels.nearest_value_for(f64(parent_metrics.ascent))
+				} else {
+					fragment.height().minus(CSSPixels.nearest_value_for(f64(parent_metrics.descent)))
+				}
+				used_font_baseline = CSSPixels.new(0)
 			}
 		}
 		if fragment_baseline.raw_value() > line_box_baseline.raw_value()
@@ -730,7 +748,7 @@ pub fn (mut builder LineBuilder) update_last_line() {
 					alphabetic_baseline.minus(CSSPixels.from_raw(container_font_size.raw_value() / 3))
 			}
 			.text_top {
-				parent_font_metrics := if parent := fragment.style_source_.parent() {
+				parent_font_metrics := if parent := alignment_style_source.parent() {
 					layout_font_metrics_for_node(parent)
 				} else {
 					container_font_metrics
@@ -739,7 +757,7 @@ pub fn (mut builder LineBuilder) update_last_line() {
 					effective_box_top_offset)
 			}
 			.text_bottom {
-				parent_font_metrics := if parent := fragment.style_source_.parent() {
+				parent_font_metrics := if parent := alignment_style_source.parent() {
 					layout_font_metrics_for_node(parent)
 				} else {
 					container_font_metrics

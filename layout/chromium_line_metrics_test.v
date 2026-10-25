@@ -5,6 +5,46 @@ import math
 
 // Expected values were measured in Brave 1.97 (Chromium 155) on macOS.
 
+fn test_browser_text_edge_alignment_uses_the_parent_font() {
+	$if macos {
+		mut document := html.parse_document('<!doctype html><style>
+			body { margin:0; font:20px/28px Arial }
+			.line { width:450px }
+			.top { vertical-align:text-top } .bottom { vertical-align:text-bottom }
+			.small { font-size:16px } .big { font-size:24px }
+			.box { display:inline-block; width:20px; height:10px }
+		</style><div id="top" class="line">Hx<span class="top">Hx</span></div>
+		<div id="bottom" class="line">Hx<span class="bottom">Hx</span></div>
+		<div id="small" class="line">Hx<span class="top small">Hx</span></div>
+		<div id="big" class="line">Hx<span class="top big">Hx</span></div>
+		<div id="nested" class="line">Hx<span class="top small">Hx<span>Hx</span><i class="box top"></i></span></div>
+		<div id="wrapped" style="width:80px"><span class="top">Heading heading</span></div>')
+		document.set_font_rendering_policy(.chromium)
+		result := run_document_layout(document, 1024, 768) or { panic('layout failed') }
+		for id in ['top', 'bottom', 'small', 'big', 'nested'] {
+			assert chromium_used_for_id(result, id).content_height().to_double() == 31, id
+		}
+		for id, expected in {
+			'top':    [3, 6]
+			'bottom': [6, 3]
+			'small':  [3, 8]
+			'big':    [3, 3]
+			'nested': [3, 8, 8, 8]
+		} {
+			fragments := chromium_used_for_id(result, id).line_boxes[0].fragments()
+			assert fragments.len == expected.len, id
+			for index, offset in expected {
+				assert fragments[index].block_offset().to_double() == offset, '${id} fragment ${index}'
+			}
+		}
+		wrapped := chromium_used_for_id(result, 'wrapped')
+		assert wrapped.content_height().to_double() == 62
+		assert wrapped.line_boxes.len == 2
+		assert wrapped.line_boxes[0].fragments()[0].block_offset().to_double() == 6
+		assert wrapped.line_boxes[1].fragments()[0].block_offset().to_double() == 37
+	}
+}
+
 fn chromium_layout_node_with_id(root &Node, id string) ?&Node {
 	if dom_node := root.dom_node() {
 		if element := dom_node.as_element() {
