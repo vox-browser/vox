@@ -2609,6 +2609,17 @@ fn html_input_element_create_layout_node(document &dom.Document, element &dom.El
 		}
 	}
 	if computed.appearance() == .none_ {
+		// Blink retains text-control sizing when authors suppress the theme.
+		// A generic box loses the definite clamped height supplied to the editor
+		// and its percentage-sized placeholder wrapper.
+		if document.font_rendering_policy() == .chromium
+			&& type_state in [.text, .search, .telephone, .url, .email, .password, .date,
+				.month, .week, .time, .local_date_and_time, .number] {
+			return HTMLInputElementLayoutNodeResult{
+				handled: true
+				node: unsafe { &Node(TextInputBox.new(document, element, computed)) }
+			}
+		}
 		return HTMLInputElementLayoutNodeResult{}
 	}
 	if type_state == .checkbox {
