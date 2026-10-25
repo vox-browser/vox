@@ -167,6 +167,7 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	if action == 'removeChild' { return binding.remove_child_query(root, selector) }
 	if action == 'insertAdjacentHTML' { return binding.insert_adjacent_html_query(root, selector) }
 	if action == 'dataset' { return compact_dataset_query(root, selector) }
+	if action == 'inlineStyle' { return compact_inline_style_query(root, selector, binding.runtime) }
 	if action in ['createText', 'createFragment', 'childNodes', 'nodeText', 'setNodeText', 'appendNode', 'insertNode'] {
 		return binding.node_tree_query(root, action, selector)
 	}
