@@ -37,6 +37,7 @@ struct CaptureAuditSelector {
 	selector   string
 	limit      int = 100
 	attributes []string
+	layout_depth int
 }
 
 struct CaptureAuditConfig {
@@ -62,6 +63,7 @@ struct CaptureAuditElement {
 	rect            dom.Rect
 	attributes      map[string]string
 	image           ?CaptureAuditImage
+	layout          []CaptureAuditLayout
 }
 
 struct CaptureAuditSelection {
@@ -137,7 +139,8 @@ fn (app &BrowserApp) collect_capture_audit(config CaptureAuditConfig) !CaptureAu
 	if app.document == unsafe { nil } { return error('Capture audit requires a document') }
 	mut selections := []CaptureAuditSelection{}
 	for query in config.selectors {
-		if query.name == '' || query.selector == '' || query.limit < 0 || query.limit > 1000 {
+		if query.name == '' || query.selector == '' || query.limit < 0 || query.limit > 1000
+			|| query.layout_depth < 0 || query.layout_depth > 4 {
 			return error('Invalid capture audit selector configuration')
 		}
 		list := unsafe { &dom.ParentNode(app.document) }.query_selector_all(query.selector)!
@@ -159,6 +162,7 @@ fn (app &BrowserApp) collect_capture_audit(config CaptureAuditConfig) !CaptureAu
 				rect: element.bounding_client_rect_assuming_layout_clean()
 				attributes: attributes
 				image: app.capture_audit_image(element)
+				layout: app.capture_audit_layout(element, query.layout_depth)
 			}
 		}
 		selections << CaptureAuditSelection{query.name, query.selector, list.length(), elements}

@@ -95,6 +95,8 @@ fn test_capture_audit_rejects_invalid_config_and_retains_empty_selector_results(
 		CaptureAuditSelector{name: 'rows', selector: ''},
 		CaptureAuditSelector{name: 'rows', selector: 'p', limit: -1},
 		CaptureAuditSelector{name: 'rows', selector: 'p', limit: 1001},
+		CaptureAuditSelector{name: 'rows', selector: 'p', layout_depth: -1},
+		CaptureAuditSelector{name: 'rows', selector: 'p', layout_depth: 5},
 		CaptureAuditSelector{name: 'rows', selector: '['},
 	] {
 		if _ := app.collect_capture_audit(CaptureAuditConfig{selectors: [config]}) {
@@ -137,4 +139,31 @@ fn test_capture_audit_reports_existing_font_faces_without_loading_or_replacing_t
 	assert voidptr(loaded.parsed_font) == before_font
 	assert voidptr(pending.font_status_promise) == before_promise
 	assert pending.status() == .unloaded
+}
+
+fn test_capture_audit_layout_observes_committed_control_shadow_geometry() {
+	mut document := html.parse_document('<!doctype html><style>body{margin:0}input{font:13px Verdana;width:300px;box-sizing:border-box;padding:6px 25px 6px 9px}</style><input id="search" placeholder="search">')
+	defer { document.finalize() }
+	mut app := BrowserApp{ document: document }
+	app.relayout(800, 684)
+	before_list := document.cached_display_list() or { panic('retained list') }
+	audit := app.collect_capture_audit(CaptureAuditConfig{
+		selectors: [
+			CaptureAuditSelector{ name: 'search', selector: '#search', layout_depth: 4 },
+		]
+	})!
+	observed := audit.selections[0].elements[0].layout
+	assert observed.len >= 4 && observed.len <= 32
+	assert observed[0].tag == 'input'
+	assert observed[0].font_size == 13 * observed[0].scale
+	assert observed[0].parent == -1
+	assert observed[1].parent == 0
+	for i := 1; i < observed.len; i++ {
+		assert observed[i].parent >= 0 && observed[i].parent < i
+	}
+	assert observed[0].width > 0 && observed[0].width <= 300 * observed[0].scale
+	assert observed[0].height > 0
+	decoded := json2.decode[CaptureAudit](json2.encode(audit))!
+	assert decoded.selections[0].elements[0].layout[0].width == observed[0].width
+	assert voidptr(document.cached_display_list() or { panic('retained list') }) == voidptr(before_list)
 }
