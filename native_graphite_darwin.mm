@@ -31,6 +31,7 @@
 #include <cmath>
 #include <cstring>
 #include <memory>
+#include <list>
 #include <mutex>
 #include <pthread.h>
 #include <vector>
@@ -44,6 +45,53 @@ VoxGraphiteImageUploadCache<sk_sp<SkImage>> image_upload_cache;
 VoxGraphiteRasterCache path_cache(8 * 1024 * 1024);
 VoxGraphiteRasterCache shape_cache(16 * 1024 * 1024);
 VoxGraphiteRasterCache shadow_cache(8 * 1024 * 1024, 128);
+// Reuse only the target allocation; every draw still clears, paints and reads
+// the same full GPU coordinates. Keep the recorder alive with its surfaces.
+struct RegionTarget {
+    int width, height;
+    sk_sp<SkSurface> surface;
+};
+std::unique_ptr<skgpu::graphite::Recorder> region_recorder;
+std::list<RegionTarget> region_targets;
+size_t region_target_bytes = 0;
+constexpr size_t region_target_limit = 4 * 1024 * 1024;
+
+void clear_region_targets()
+{
+    region_targets.clear();
+    region_target_bytes = 0;
+    region_recorder.reset();
+}
+
+SkSurface* region_target(skgpu::graphite::Context* gpu, SkImageInfo const& info)
+{
+    size_t cost = size_t(info.width()) * size_t(info.height()) * 4;
+    if (cost > region_target_limit) return nullptr;
+    for (auto i = region_targets.begin(); i != region_targets.end(); ++i) {
+        if (i->width == info.width() && i->height == info.height()) {
+            region_targets.splice(region_targets.begin(), region_targets, i);
+            return region_targets.front().surface.get();
+        }
+    }
+    if (!region_recorder) {
+        skgpu::graphite::RecorderOptions options;
+        options.fGpuBudgetInBytes = 16 * 1024 * 1024;
+        region_recorder = gpu->makeRecorder(options);
+    }
+    if (!region_recorder) return nullptr;
+    while (!region_targets.empty() && (region_targets.size() >= 32
+        || region_target_bytes + cost > region_target_limit)) {
+        auto const& old = region_targets.back();
+        region_target_bytes -= size_t(old.width) * size_t(old.height) * 4;
+        region_targets.pop_back();
+    }
+    auto surface = SkSurfaces::RenderTarget(region_recorder.get(), info);
+    if (!surface) return nullptr;
+    region_targets.push_front({info.width(), info.height(), std::move(surface)});
+    region_target_bytes += cost;
+    return region_targets.front().surface.get();
+}
+
 std::unique_ptr<skgpu::graphite::Context> gpu_context;
 VoxFrameMetalQueue* gpu_frame_queue;
 bool gpu_context_attempted = false;
@@ -148,6 +196,7 @@ int vox_graphite_release_idle_graphics_memory()
     image_upload_cache.clear();
     gpu_context->submit(skgpu::graphite::SubmitInfo(skgpu::graphite::SyncToCpu::kYes));
     gpu_context->checkAsyncWorkCompletion();
+    clear_region_targets();
     gpu_context.reset();
     gpu_frame_queue = nil;
     gpu_context_attempted = false;
@@ -174,6 +223,7 @@ void vox_graphite_release_unused_graphics_memory()
     // this idle call, so no external GPU resource depends on this Context.
     // Dropping cache entries alone leaves Metal's per-context driver storage
     // resident. Release the Context and queue; the next draw recreates them.
+    clear_region_targets();
     gpu_context.reset();
     gpu_frame_queue = nil;
     gpu_context_attempted = false;
@@ -1162,12 +1212,21 @@ int vox_graphite_draw_path_region_pixels(VoxGraphitePixelRegion const* region,
     std::lock_guard lock(gpu_mutex);
     auto* gpu = context();
     if (!gpu) return 0;
-    auto recorder = gpu->makeRecorder();
     auto info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
         kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
-    auto surface = SkSurfaces::RenderTarget(recorder.get(), info);
+    std::unique_ptr<skgpu::graphite::Recorder> temporary_recorder;
+    sk_sp<SkSurface> temporary_surface;
+    auto* surface = region_target(gpu, info);
+    auto* recorder = region_recorder.get();
+    if (!surface) {
+        temporary_recorder = gpu->makeRecorder();
+        recorder = temporary_recorder.get();
+        temporary_surface = SkSurfaces::RenderTarget(recorder, info);
+        surface = temporary_surface.get();
+    }
     if (!surface) return 0;
     auto* canvas = surface->getCanvas();
+    SkAutoCanvasRestore state(canvas, true);
     canvas->clear(SK_ColorTRANSPARENT);
     auto view_info = info.makeWH(region->width, region->height);
     if (has_background) surface->writePixels(SkPixmap(view_info, region->pixels,
@@ -1178,7 +1237,7 @@ int vox_graphite_draw_path_region_pixels(VoxGraphitePixelRegion const* region,
     insertion.fRecording = recording.get();
     if (gpu->insertRecording(insertion) != skgpu::graphite::InsertStatus::kSuccess) return 0;
     std::unique_ptr<const SkImage::AsyncReadResult> result;
-    gpu->asyncRescaleAndReadPixels(surface.get(), view_info,
+    gpu->asyncRescaleAndReadPixels(surface, view_info,
         SkIRect::MakeXYWH(region->x, region->y, region->width, region->height),
         SkImage::RescaleGamma::kSrc, SkImage::RescaleMode::kNearest,
         [](void* target, std::unique_ptr<const SkImage::AsyncReadResult> data) {
