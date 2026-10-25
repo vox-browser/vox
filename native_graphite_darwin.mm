@@ -727,6 +727,168 @@ static void clear_shape_region(VoxGraphitePixelRegion const& region)
         std::memset(region.pixels + size_t(y) * region.pitch, 0, size_t(region.width) * 4);
 }
 
+static bool draw_rounded_parts(VoxGraphitePixelRegion const* regions, int count, int width, int height,
+    bool has_background, VoxGraphiteShape const& shape)
+{
+    if (!shape.fill) return false;
+    if (width > 16384 || height > 16384) return false;
+    float edges[4];
+    auto solid = shape;
+    solid.fill = 1;
+    if (shape.has_underlay || shape.clip_out_count || (shape.fill && shape.alpha != 255)
+        || !vox_axis_aligned_rect(solid, edges)) return false;
+    float half_x = shape.fill ? 0 : shape.thickness * shape.matrix[0] / 2;
+    float half_y = shape.fill ? 0 : shape.thickness * shape.matrix[4] / 2;
+    if (!shape.fill && (!(half_x > 0 && half_y > 0) || !std::isfinite(half_x)
+            || !std::isfinite(half_y)))
+        return false;
+    float rx = 0, ry = 0;
+    for (int i = 4; i < 12; i += 2) {
+        if (shape.rect[i] < 0 || shape.rect[i + 1] < 0
+            || !std::isfinite(shape.rect[i]) || !std::isfinite(shape.rect[i + 1])) return false;
+        rx = std::max(rx, shape.rect[i]); ry = std::max(ry, shape.rect[i + 1]);
+    }
+    float corner_width = std::ceil(rx * shape.matrix[0] + half_x) + 2;
+    float corner_height = std::ceil(ry * shape.matrix[4] + half_y) + 2;
+    if (corner_width * 2 >= edges[2] - edges[0] || corner_height * 2 >= edges[3] - edges[1]
+        || corner_width * corner_height > 4096) return false;
+    struct Patch { int left, top, width, height; size_t offset; };
+    std::vector<Patch> patches;
+    size_t patch_bytes = 0;
+    auto patch = [&](double left, double top, double right, double bottom) {
+        int l = int(std::clamp(left, 0.0, double(width)));
+        int t = int(std::clamp(top, 0.0, double(height)));
+        int r = int(std::clamp(right, 0.0, double(width)));
+        int b = int(std::clamp(bottom, 0.0, double(height)));
+        if (l >= r || t >= b) return;
+        patches.push_back({l, t, r - l, b - t, patch_bytes});
+        patch_bytes += size_t(r - l) * (b - t) * 4;
+    };
+    double outer_left = std::floor(edges[0] - half_x) - 2;
+    double outer_top = std::floor(edges[1] - half_y) - 2;
+    double outer_right = std::ceil(edges[2] + half_x) + 2;
+    double outer_bottom = std::ceil(edges[3] + half_y) + 2;
+    double left_cut = std::ceil(edges[0] + corner_width);
+    double top_cut = std::ceil(edges[1] + corner_height);
+    double right_cut = std::floor(edges[2] - corner_width);
+    double bottom_cut = std::floor(edges[3] - corner_height);
+    patch(outer_left, outer_top, left_cut, top_cut);
+    patch(right_cut, outer_top, outer_right, top_cut);
+    patch(outer_left, bottom_cut, left_cut, outer_bottom);
+    patch(right_cut, bottom_cut, outer_right, outer_bottom);
+    // Integer-aligned opaque edges have full coverage. Only their rounded
+    // corners need GPU pixels; offscreen corners need no readback at all.
+    bool aligned_fill = shape.fill;
+    for (auto edge : edges) aligned_fill = aligned_fill && edge == std::floor(edge);
+    bool aligned_stroke = !shape.fill && shape.alpha == 255;
+    for (int i = 0; i < 4; ++i) {
+        float half = i % 2 ? half_y : half_x;
+        aligned_stroke = aligned_stroke && edges[i] - half == std::floor(edges[i] - half)
+            && edges[i] + half == std::floor(edges[i] + half);
+    }
+    // Fractional straight edges and strokes retain the original GPU coverage.
+    if (!aligned_fill && !aligned_stroke) {
+        patch(left_cut, outer_top, right_cut, std::ceil(edges[1] + half_y) + 2);
+        patch(left_cut, std::floor(edges[3] - half_y) - 2, right_cut, outer_bottom);
+        patch(outer_left, top_cut, std::ceil(edges[0] + half_x) + 2, bottom_cut);
+        patch(std::floor(edges[2] - half_x) - 2, top_cut, outer_right, bottom_cut);
+    }
+    if (patch_bytes > 256 * 1024) return false;
+    std::vector<uint8_t> packed(patch_bytes);
+    if (has_background) for (auto const& patch : patches)
+        for (int i = 0; i < count; ++i) copy_shape_patch(regions[i], packed.data() + patch.offset,
+            patch.left, patch.top, patch.width, patch.height, false);
+    if (!patches.empty()) {
+        std::lock_guard lock(gpu_mutex);
+        auto cached = shape_cache.prepare_patches(shape, width, height,
+            int(patch_bytes / 4), has_background, packed.data());
+        if (!cached.hit) {
+            auto* gpu = context();
+            if (!gpu) return false;
+            auto recorder = gpu->makeRecorder();
+            auto info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
+                kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
+            auto surface = SkSurfaces::RenderTarget(recorder.get(), info);
+            if (!surface) return false;
+            auto* canvas = surface->getCanvas();
+            canvas->clear(SK_ColorTRANSPARENT);
+            if (has_background) for (auto const& patch : patches)
+                surface->writePixels(SkPixmap(info.makeWH(patch.width, patch.height),
+                    packed.data() + patch.offset, size_t(patch.width) * 4), patch.left, patch.top);
+            draw_shape_on_canvas(canvas, shape, width, height);
+            auto recording = recorder->snap();
+            skgpu::graphite::InsertRecordingInfo insertion;
+            insertion.fRecording = recording.get();
+            if (gpu->insertRecording(insertion) != skgpu::graphite::InsertStatus::kSuccess) return false;
+            // Keep the original surface origin and extent. Translating a corner
+            // into a smaller surface changes GPU coverage rounding by one byte.
+            std::vector<std::unique_ptr<const SkImage::AsyncReadResult>> results(patches.size());
+            for (size_t i = 0; i < patches.size(); ++i) {
+                auto const& patch = patches[i];
+                gpu->asyncRescaleAndReadPixels(surface.get(), info.makeWH(patch.width, patch.height),
+                    SkIRect::MakeXYWH(patch.left, patch.top, patch.width, patch.height),
+                    SkImage::RescaleGamma::kSrc, SkImage::RescaleMode::kNearest,
+                    [](void* target, std::unique_ptr<const SkImage::AsyncReadResult> data) {
+                        *static_cast<std::unique_ptr<const SkImage::AsyncReadResult>*>(target) = std::move(data);
+                    }, &results[i]);
+            }
+            if (!gpu->submit(skgpu::graphite::SubmitInfo(skgpu::graphite::SyncToCpu::kYes))) return false;
+            for (size_t i = 0; i < patches.size(); ++i) {
+                if (!results[i]) return false;
+                auto const& patch = patches[i];
+                for (int y = 0; y < patch.height; ++y)
+                    std::memcpy(packed.data() + patch.offset + size_t(y) * patch.width * 4,
+                        static_cast<uint8_t const*>(results[i]->data(0)) + size_t(y) * results[i]->rowBytes(0),
+                        size_t(patch.width) * 4);
+            }
+            shape_cache.finish(std::move(cached), packed.data(), int(patch_bytes));
+        }
+    }
+    for (int i = 0; i < count; ++i) {
+        auto const& view = regions[i];
+        if (!has_background) clear_shape_region(view);
+        int left = int(std::clamp(std::ceil(double(edges[0])), double(view.x), double(view.x + view.width)));
+        int top = int(std::clamp(std::ceil(double(edges[1])), double(view.y), double(view.y + view.height)));
+        int right = int(std::clamp(std::floor(double(edges[2])), double(view.x), double(view.x + view.width)));
+        int bottom = int(std::clamp(std::floor(double(edges[3])), double(view.y), double(view.y + view.height)));
+        uint32_t color = 0xff000000u | uint32_t(shape.red) << 16 | uint32_t(shape.green) << 8 | shape.blue;
+        for (int y = top; y < bottom; ++y) for (int x = left; x < right; ++x)
+            std::memcpy(view.pixels + size_t(y - view.y) * view.pitch + size_t(x - view.x) * 4, &color, 4);
+        for (auto const& patch : patches)
+            copy_shape_patch(view, packed.data() + patch.offset,
+                patch.left, patch.top, patch.width, patch.height, true);
+    }
+    return true;
+}
+
+extern "C" __attribute__((visibility("default")))
+int vox_graphite_draw_rounded_parts_pixels(VoxGraphitePixelRegion const* regions, int count,
+    int width, int height, int has_background, VoxGraphiteShape const* shape)
+{
+    if (!regions || count <= 0 || count > 4 || !shape || !shape->fill || shape->alpha != 255
+        || width <= 0 || height <= 0 || width > 16384 || height > 16384) return 0;
+    if (shape->has_float_color) {
+        auto color = SkColor4f::FromColor(SkColorSetARGB(shape->alpha, shape->red, shape->green, shape->blue));
+        if (!std::equal(shape->float_color, shape->float_color + 4, color.vec())) return 0;
+    }
+    size_t area = 0;
+    for (int i = 0; i < count; ++i) {
+        auto const& view = regions[i];
+        if (!view.pixels || view.x < 0 || view.y < 0 || view.width <= 0 || view.height <= 0
+            || view.pitch <= 0 || view.width > width || view.height > height
+            || view.x > width - view.width || view.y > height - view.height
+            || size_t(view.pitch) < size_t(view.width) * 4) return 0;
+        area += size_t(view.width) * view.height;
+        for (int j = 0; j < i; ++j) {
+            auto const& prior = regions[j];
+            if (view.x < prior.x + prior.width && prior.x < view.x + view.width
+                && view.y < prior.y + prior.height && prior.y < view.y + view.height) return 0;
+        }
+    }
+    if (area > 65536) return 0;
+    return draw_rounded_parts(regions, count, width, height, has_background != 0, *shape);
+}
+
 // Small controls still rasterize in their original Chromium tile: changing
 // the surface extent changes GPU coverage rounding. Only the conservative
 // affected rectangle needs a backdrop, readback or retained cache entry.

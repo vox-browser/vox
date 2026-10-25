@@ -7,6 +7,7 @@
 #include <dlfcn.h>
 #include <chrono>
 #include "native_graphite_bridge.h"
+#include "native_graphite_solid_rect.h"
 #include "native_chromium_raster_phase.h"
 #include "native_chromium_raster_rows.h"
 #include "native_chromium_raster_grid.h"
@@ -170,6 +171,16 @@ auto graphite_shape_draw()
         void* library = dlopen("@rpath/libVoxGraphite.dylib", RTLD_LAZY | RTLD_LOCAL);
         return library ? reinterpret_cast<decltype(&vox_graphite_draw_shape_pixels)>(
             dlsym(library, "vox_graphite_draw_shape_pixels")) : nullptr;
+    }();
+    return draw;
+}
+
+auto graphite_rounded_parts_draw()
+{
+    static auto draw = [] {
+        void* library = dlopen("@rpath/libVoxGraphite.dylib", RTLD_LAZY | RTLD_LOCAL);
+        return library ? reinterpret_cast<decltype(&vox_graphite_draw_rounded_parts_pixels)>(
+            dlsym(library, "vox_graphite_draw_rounded_parts_pixels")) : nullptr;
     }();
     return draw;
 }
@@ -2119,6 +2130,139 @@ static void clip_out_rects(SkCanvas* canvas)
     }
 }
 
+// Keep each original GPU tile, but stage only its rounded corners. Assemble
+// the constant interior and staged corners into one original-size leaf image.
+static bool draw_chromium_sparse_rounded(CGContextRef destination, VoxGraphiteShape const& shape,
+    SkPaint const& paint, RasterRegion const& region, float scale,
+    float page_x, float page_y, float scroll_y, float canvas_height)
+{
+    auto draw = graphite_rounded_parts_draw();
+    if (!draw || !s_raster_layer_is_root || s_msaa_grid_columns <= 0
+        || s_msaa_grid_width <= 2 || s_msaa_grid_height <= 2 || !shape.fill || shape.alpha != 255
+        || (scale != 1 && scale != 2)
+        || paint.getColor4f() != SkColor4f::FromColor(SkColorSetRGB(shape.red, shape.green, shape.blue))) return false;
+    auto ctm = CGContextGetCTM(destination);
+    if (ctm.a != scale || ctm.d != scale) return false;
+    auto space = CGBitmapContextGetColorSpace(destination);
+    auto name = space ? CGColorSpaceCopyName(space) : nullptr;
+    bool srgb = name && CFEqual(name, kCGColorSpaceSRGB);
+    if (name) CFRelease(name);
+    if (!srgb) return false;
+    int width = raster_dimension(region.width(), scale), height = raster_dimension(region.height(), scale);
+    if (size_t(width) * height <= 16384) return false;
+    auto backdrop = read_backdrop(destination, region, scale, width, height);
+    if (!backdrop.pixels) return false;
+    long first_x = std::lround((region.left - page_x) * scale);
+    long first_y = std::lround((region.top - page_y + scroll_y + s_root_raster_scroll_y) * scale);
+    int content_height = std::max(1, int(std::ceil(s_raster_layer_height * scale)));
+    int rows = std::max(1, (content_height - 2 + s_msaa_grid_height - 3) / (s_msaa_grid_height - 2));
+    VoxChromiumRasterGrid grid {s_msaa_grid_width, s_msaa_grid_height, s_msaa_grid_columns, rows};
+    long extent_x = long(grid.columns) * (grid.width - 2) + 2;
+    long extent_y = long(grid.rows) * (grid.height - 2) + 2;
+    if (size_t(grid.width) * grid.height > 8 * 1024 * 1024
+        || first_x < 0 || first_y < 0 || first_x > extent_x || first_y > extent_y
+        || width > extent_x - first_x || height > extent_y - first_y) return false;
+    float edges[4];
+    if (!vox_aligned_opaque_rect(shape, edges)) return false;
+    float rx = 0, ry = 0;
+    for (int i = 4; i < 12; i += 2) {
+        if (!std::isfinite(shape.rect[i]) || !std::isfinite(shape.rect[i + 1])
+            || shape.rect[i] < 0 || shape.rect[i + 1] < 0) return false;
+        rx = std::max(rx, shape.rect[i]); ry = std::max(ry, shape.rect[i + 1]);
+    }
+    if (rx == 0 || ry == 0) return false;
+    float cw = std::ceil(rx * shape.matrix[0]) + 2, ch = std::ceil(ry * shape.matrix[4]) + 2;
+    if (cw * 2 >= edges[2] - edges[0] || ch * 2 >= edges[3] - edges[1] || cw * ch > 4096) return false;
+    long fc = grid.owner(first_x, grid.width, grid.columns), lc = grid.owner(first_x + width - 1, grid.width, grid.columns);
+    long fr = grid.owner(first_y, grid.height, grid.rows), lr = grid.owner(first_y + height - 1, grid.height, grid.rows);
+    // The same mapped corner cuts must survive each original float addition.
+    for (long row = fr; row <= lr; ++row) for (long column = fc; column <= lc; ++column) {
+        long ox = first_x - column * (grid.width - 2), oy = first_y - row * (grid.height - 2);
+        auto tile = shape; tile.matrix[2] += ox; tile.matrix[5] += oy;
+        float mapped[4];
+        if (!vox_aligned_opaque_rect(tile, mapped)) return false;
+        for (int e = 0; e < 4; ++e)
+            if (double(mapped[e]) != double(edges[e]) + (e % 2 ? oy : ox)) return false;
+    }
+    double lcut = std::ceil(edges[0] + cw), rcut = std::floor(edges[2] - cw);
+    double tcut = std::ceil(edges[1] + ch), bcut = std::floor(edges[3] - ch);
+    struct Part { int left, top, width, height; std::vector<uint32_t> pixels; };
+    std::vector<Part> parts;
+    auto add = [&](double l, double t, double r, double b) {
+        int left = int(std::clamp(l, 0.0, double(width))), top = int(std::clamp(t, 0.0, double(height)));
+        int right = int(std::clamp(r, 0.0, double(width))), bottom = int(std::clamp(b, 0.0, double(height)));
+        if (left >= right || top >= bottom) return;
+        Part part {left, top, right - left, bottom - top, std::vector<uint32_t>(size_t(right - left) * (bottom - top))};
+        Backdrop source {backdrop.pixels + size_t(top) * backdrop.pitch + size_t(left) * 4, backdrop.pitch};
+        copy_backdrop_pixels(source, part.width, part.height, part.pixels);
+        parts.push_back(std::move(part));
+    };
+    add(edges[0] - 2, edges[1] - 2, lcut, tcut);
+    add(rcut, edges[1] - 2, edges[2] + 2, tcut);
+    add(edges[0] - 2, bcut, lcut, edges[3] + 2);
+    add(rcut, bcut, edges[2] + 2, edges[3] + 2);
+    // Every tile reads the immutable destination, including its shared border;
+    // only texels owned by that tile are copied into the staged corner images.
+    for (long row = fr; row <= lr; ++row) for (long column = fc; column <= lc; ++column) {
+        long ox = first_x - column * (grid.width - 2), oy = first_y - row * (grid.height - 2);
+        struct Input { int part, left, top, width, height; std::vector<uint32_t> pixels; };
+        std::vector<Input> inputs;
+        for (int i = 0; i < int(parts.size()); ++i) {
+            auto const& part = parts[i];
+            int l = int(std::max<long>(part.left, -ox)), t = int(std::max<long>(part.top, -oy));
+            int r = int(std::min<long>(part.left + part.width, grid.width - ox));
+            int b = int(std::min<long>(part.top + part.height, grid.height - oy));
+            if (l >= r || t >= b) continue;
+            Input input {i, l, t, r - l, b - t, std::vector<uint32_t>(size_t(r - l) * (b - t))};
+            Backdrop source {backdrop.pixels + size_t(t) * backdrop.pitch + size_t(l) * 4, backdrop.pitch};
+            copy_backdrop_pixels(source, input.width, input.height, input.pixels);
+            inputs.push_back(std::move(input));
+        }
+        if (inputs.empty()) continue;
+        VoxGraphitePixelRegion views[4];
+        for (int i = 0; i < int(inputs.size()); ++i) {
+            auto& input = inputs[i];
+            views[i] = {int(input.left + ox), int(input.top + oy), input.width, input.height,
+                input.width * 4, reinterpret_cast<uint8_t*>(input.pixels.data())};
+        }
+        auto tile = shape; tile.matrix[2] += ox; tile.matrix[5] += oy;
+        tile.force_msaa = std::binary_search(s_msaa_grid_tiles.begin(), s_msaa_grid_tiles.end(),
+            int(row * grid.columns + column));
+        if (!draw(views, int(inputs.size()), grid.width, grid.height, 1, &tile)) return false;
+        for (auto const& input : inputs) {
+            auto& part = parts[input.part];
+            int l = int(std::max<long>(input.left, -ox + (column > 0 ? 1 : 0)));
+            int t = int(std::max<long>(input.top, -oy + (row > 0 ? 1 : 0)));
+            int r = int(std::min<long>(input.left + input.width, grid.width - ox - (column + 1 < grid.columns ? 1 : 0)));
+            int b = int(std::min<long>(input.top + input.height, grid.height - oy - (row + 1 < grid.rows ? 1 : 0)));
+            for (int y = t; y < b; ++y) if (l < r)
+                std::copy_n(input.pixels.data() + size_t(y - input.top) * input.width + l - input.left,
+                    r - l, part.pixels.data() + size_t(y - part.top) * part.width + l - part.left);
+        }
+    }
+    // One publication keeps Quartz's original image footprint and clipping.
+    // The opaque rectangle supplies the interior; the original GPU tiles
+    // supply every corner and its guard pixels. Preserve the backdrop outside.
+    if (size_t(width) * height > 8 * 1024 * 1024) return false;
+    std::vector<uint32_t> pixels(size_t(width) * height);
+    RasterRegion covered {
+        int(std::clamp<double>(edges[0], 0, width)),
+        int(std::clamp<double>(edges[1], 0, height)),
+        int(std::clamp<double>(edges[2], 0, width)),
+        int(std::clamp<double>(edges[3], 0, height))
+    };
+    copy_backdrop_pixels(backdrop, width, height, pixels, covered);
+    auto rectangle = shape;
+    std::fill(rectangle.rect + 4, rectangle.rect + 12, 0);
+    if (!vox_draw_solid_rect(reinterpret_cast<uint8_t*>(pixels.data()), width, height,
+            width * 4, true, rectangle)) return false;
+    for (auto const& part : parts) for (int y = 0; y < part.height; ++y)
+        std::copy_n(part.pixels.data() + size_t(y) * part.width, part.width,
+            pixels.data() + size_t(part.top + y) * width + part.left);
+    return composite_pixels(destination, std::move(pixels), width, height,
+        region.left, canvas_height - region.bottom, region.width(), region.height(), true);
+}
+
 extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
     float x, float y, float rect_width, float rect_height, float top_left_x,
     float top_left_y, float top_right_x, float top_right_y, float bottom_right_x,
@@ -2210,6 +2354,18 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
     auto raster_height = raster_dimension(region.height(), destination_scale);
     auto raster_scale_x = static_cast<float>(raster_width) / static_cast<float>(region.width());
     auto raster_scale_y = static_cast<float>(raster_height) / static_cast<float>(region.height());
+    if (s_chromium_painting && opaque_backdrop && !has_underlay && s_rect_clip_outs.empty()) {
+        VoxGraphiteShape sparse {
+            .matrix = {}, .rect = {x, y, rect_width, rect_height,
+                top_left_x, top_left_y, top_right_x, top_right_y,
+                bottom_right_x, bottom_right_y, bottom_left_x, bottom_left_y},
+            .thickness = thickness, .red = red, .green = green, .blue = blue, .alpha = alpha,
+            .fill = fill, .anti_alias = anti_alias, .force_msaa = 0
+        };
+        raster_matrix(matrix, region, raster_scale_x, raster_scale_y).get9(sparse.matrix);
+        if (draw_chromium_sparse_rounded(destination, sparse, paint, region,
+                destination_scale, page_x, page_y, scroll_y, canvas_height)) return 1;
+    }
     std::vector<uint32_t> pixels(static_cast<size_t>(raster_width) * static_cast<size_t>(raster_height));
     auto image_info = SkImageInfo::Make(raster_width, raster_height, kBGRA_8888_SkColorType,
         kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
