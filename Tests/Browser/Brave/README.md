@@ -196,8 +196,14 @@ half-pixel offset and over a tinted background. Blink paints them with
 NativeThemeBase into the pixel-snapped control box: a white background inset
 by 0.2px and a 1px #767676 border stroked half a pixel inside, both with a
 2px radius. Both shapes are rasterized by the isolated GPU backend over the
-page in one pass, as in Brave. Checked, indeterminate, disabled and
-dark-scheme controls keep the existing LibWeb painting.
+page in one pass, as in Brave. Indeterminate, disabled, author-accented
+checked and dark-scheme controls keep the existing LibWeb painting.
+
+`checkbox-checked-device-layout` checks default checked controls, unchecked
+controls, tinted backgrounds and fractional CSS positions at native scale 2
+(800×600 viewport, 1600×1200 PNG). Theme rectangles snap in device pixels; radii, border widths and the checked
+path scale with the display. The default enabled light-theme check uses Chromium’s blue accent
+and white checkmark.
 
 `checkbox-multisampled-tile` places such check boxes, at whole and fractional
 offsets, in the raster tile of a skip-ink underline crossing two descenders,

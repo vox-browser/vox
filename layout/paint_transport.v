@@ -303,6 +303,7 @@ pub mut:
 	replaced_image_rendering  css.ImageRendering
 	form_control_color_scheme  css.PreferredColorScheme
 	form_control_accent_color  ?css.Color
+	form_control_accent_is_auto bool
 	skip_background_paint    bool
 	// `opacity` is this box's own opacity (0..1) in the tree; in a paint-order entry it holds the
 	// cumulative opacity (this box's times its ancestors').
@@ -2424,6 +2425,10 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 		}
 		form_control_state := box.current_form_control_state()
 		if box.media().form_control_kind in ['checkbox', 'radio'] {
+			mut scale := 1.0
+			if box.layout_handle != unsafe { nil } {
+				scale = unsafe { &Node(box.layout_handle) }.document().layout_coordinate_scale()
+			}
 			converter := painting.new_device_pixel_converter(1.0) or { return commands }
 			control_rect := painting.centered_form_control_rect(painting.Rect{
 				x: box.x
@@ -2436,7 +2441,13 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 				&& form_control_state.enabled && !form_control_state.activated
 				&& box.form_control_color_scheme != .dark {
 				append_chromium_unchecked_checkbox(mut commands, chromium_snapped_control_rect(box.x,
-					box.y, box.width, box.height), opacity)
+					box.y, box.width, box.height), scale, opacity)
+			} else if box.snaps_background_rect && box.media().form_control_kind == 'checkbox'
+				&& form_control_state.checked && !form_control_state.indeterminate
+				&& form_control_state.enabled && !form_control_state.activated
+				&& box.form_control_color_scheme != .dark && box.form_control_accent_is_auto {
+				append_chromium_checked_checkbox(mut commands, chromium_snapped_control_rect(box.x,
+					box.y, box.width, box.height), scale, opacity)
 			} else {
 				input_colors := painting.compute_input_colors(box.form_control_color_scheme, box.form_control_accent_color)
 				display_commands := if box.media().form_control_kind == 'checkbox' {
@@ -4354,14 +4365,14 @@ fn chromium_snapped_control_rect(x f64, y f64, width f64, height f64) painting.I
 // radius. Both shapes blend over the page through the isolated GPU backend in
 // one pass, as Brave's GPU rasterization draws them into one raster tile: a
 // multisampled tile resolves their shared edge pixels together.
-fn append_chromium_unchecked_checkbox(mut commands []PaintCommand, rect painting.IntRect, opacity f64) {
+fn append_chromium_unchecked_checkbox(mut commands []PaintCommand, rect painting.IntRect, scale f64, opacity f64) {
 	commands << PaintCommand{
 		kind:                'fill_rect'
-		x:                   f64(rect.x) + 0.2
-		y:                   f64(rect.y) + 0.2
-		width:               f64(rect.width) - 0.4
-		height:              f64(rect.height) - 0.4
-		radius:              2
+		x:                   f64(rect.x) + 0.2 * scale
+		y:                   f64(rect.y) + 0.2 * scale
+		width:               f64(rect.width) - 0.4 * scale
+		height:              f64(rect.height) - 0.4 * scale
+		radius:              2 * scale
 		underlays_next:      true
 		color:               'rgb(255 255 255)'
 		opacity:             opacity
@@ -4370,12 +4381,12 @@ fn append_chromium_unchecked_checkbox(mut commands []PaintCommand, rect painting
 	}
 	commands << PaintCommand{
 		kind:                'stroke_rounded_rect'
-		x:                   f64(rect.x) + 0.5
-		y:                   f64(rect.y) + 0.5
-		width:               f64(rect.width) - 1
-		height:              f64(rect.height) - 1
-		radius:              2
-		stroke_width:        1
+		x:                   f64(rect.x) + 0.5 * scale
+		y:                   f64(rect.y) + 0.5 * scale
+		width:               f64(rect.width) - scale
+		height:              f64(rect.height) - scale
+		radius:              2 * scale
+		stroke_width:        scale
 		color:               'rgb(118 118 118)'
 		opacity:             opacity
 		force_dark_role:     .border
