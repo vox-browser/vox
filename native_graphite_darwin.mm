@@ -178,10 +178,10 @@ void vox_graphite_finish_frame()
     std::lock_guard lock(gpu_mutex);
     if (!gpu_context || !gpu_frame_queue) return;
     // All public draws synchronously return owned CPU pixels. Finish any work
-    // remaining after an early return before detaching the underlying queue.
+    // remaining after an early return before counting this completed frame.
     gpu_context->submit(skgpu::graphite::SubmitInfo(skgpu::graphite::SyncToCpu::kYes));
     gpu_context->checkAsyncWorkCompletion();
-    if ([gpu_frame_queue retireCompletedQueue])
+    if ([gpu_frame_queue finishCompletedFrame])
         gpu_context_last_use = std::chrono::steady_clock::now();
 }
 
@@ -218,9 +218,9 @@ void vox_graphite_release_unused_graphics_memory()
     // covers a previous early-return path before dropping unused cache refs.
     gpu_context->submit(skgpu::graphite::SubmitInfo(skgpu::graphite::SyncToCpu::kYes));
     gpu_context->checkAsyncWorkCompletion();
-    // Only owned CPU pixels cross this backend's public boundary. All draw
-    // wrappers have destroyed their recorders, surfaces and readbacks before
-    // this idle call, so no external GPU resource depends on this Context.
+    // Only owned CPU pixels cross this backend's public boundary. Draw-local
+    // resources are gone; discard the retained region targets and recorder
+    // below before destroying their Context.
     // Dropping cache entries alone leaves Metal's per-context driver storage
     // resident. Release the Context and queue; the next draw recreates them.
     clear_region_targets();

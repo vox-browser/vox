@@ -63,12 +63,18 @@ int main()
         [queue commandBufferWithUnretainedReferences];
         [queue commandBufferWithDescriptor:[[MTLCommandBufferDescriptor new] autorelease]];
         assert(created == 1 && commands == 3);
-        assert([queue retireCompletedQueue] && destroyed == 1 && !last_queue);
+        for (int frame = 0; frame < 7; ++frame) {
+            assert(![queue finishCompletedFrame]);
+            assert(created == 1 && destroyed == 0 && last_queue);
+        }
+        assert([queue finishCompletedFrame] && destroyed == 1 && !last_queue);
+        assert(![queue finishCompletedFrame]);
         assert(![queue retireCompletedQueue] && created == 1);
         // Self-assignment must copy before releasing the preceding label.
         queue.label = queue.label;
         [queue commandBuffer];
         assert(created == 2 && [[last_queue label] isEqualToString:@"owned label"]);
+        assert(![queue finishCompletedFrame]);
         assert([queue retireCompletedQueue] && destroyed == 2);
 #if __MAC_OS_X_VERSION_MAX_ALLOWED >= 150000
         if (@available(macOS 15.0, *)) {
@@ -78,6 +84,8 @@ int main()
             assert(created == 2); // Registering resources need not create a queue.
             [queue commandBuffer];
             assert(created == 3 && [last_queue residencyCount] == 2);
+            // Explicit retirement resets the preceding partial frame window.
+            for (int frame = 0; frame < 7; ++frame) assert(![queue finishCompletedFrame]);
             [queue removeResidencySet:sets[0]];
             assert([last_queue residencyCount] == 1);
             assert([queue retireCompletedQueue] && destroyed == 3);
@@ -94,5 +102,5 @@ int main()
         [queue release];
         assert(destroyed == created && factory_destroyed == 1 && !last_queue);
     }
-    std::puts("Metal frame queue: lazy creation, immediate ownership release, labels and residency sets passed");
+    std::puts("Metal frame queue: eight-frame reuse, forced retirement, labels and residency sets passed");
 }

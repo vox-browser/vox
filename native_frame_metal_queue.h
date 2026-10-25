@@ -3,19 +3,22 @@
 #import <Metal/Metal.h>
 
 // Graphite keeps this queue identity with its Context and compiled pipelines.
-// Its real Metal queue is needed only while encoding/submitting a frame. The
-// owner must complete all work before retiring it; command buffers retain their
-// real queue independently. No GPU resources cross the CPU readback bridge.
+// Reuse its real Metal queue for at most eight completed frames, amortizing
+// driver setup while bounding retained per-queue storage. The owner must finish
+// all work before counting or retiring a frame. Command buffers retain their
+// real queue independently; only owned CPU pixels cross the readback bridge.
 @interface VoxFrameMetalQueue : NSObject <MTLCommandQueue> {
     id<MTLDevice> device_;
     id<MTLCommandQueue> queue_;
     NSString* label_;
+    unsigned completed_frames_;
 #if __MAC_OS_X_VERSION_MAX_ALLOWED >= 150000
     NSMutableSet* residency_sets_;
 #endif
 }
 - (instancetype)initWithDevice:(id<MTLDevice>)device;
 - (BOOL)retireCompletedQueue;
+- (BOOL)finishCompletedFrame;
 @end
 
 @implementation VoxFrameMetalQueue
@@ -45,7 +48,7 @@
     }
 }
 // Called under the receiver lock. Return a borrowed queue: adding an
-// autorelease here would extend it beyond the completed frame boundary.
+// autorelease here would extend it beyond the queue retirement boundary.
 - (id<MTLCommandQueue>)currentQueue {
     if (!queue_) {
         queue_ = [device_ newCommandQueue];
@@ -102,11 +105,21 @@
     }
 }
 #endif
+// Keep a bounded number of completed frames on one real queue. Explicit
+// retirement and destruction still release it immediately, including on idle.
+- (BOOL)finishCompletedFrame {
+    @synchronized(self) {
+        if (!queue_) return NO;
+        if (++completed_frames_ < 8) return NO;
+        return [self retireCompletedQueue];
+    }
+}
 - (BOOL)retireCompletedQueue {
     @synchronized(self) {
         BOOL existed = queue_ != nil;
         [queue_ release];
         queue_ = nil;
+        completed_frames_ = 0;
         return existed;
     }
 }
