@@ -52,6 +52,9 @@ struct RegionTarget {
     sk_sp<SkSurface> surface;
 };
 std::unique_ptr<skgpu::graphite::Recorder> region_recorder;
+// Preserve the bounded GPU resource cache across large-shape cache misses.
+// Access and context teardown are serialized by gpu_mutex.
+std::unique_ptr<skgpu::graphite::Recorder> rounded_recorder;
 std::list<RegionTarget> region_targets;
 size_t region_target_bytes = 0;
 constexpr size_t region_target_limit = 4 * 1024 * 1024;
@@ -61,6 +64,7 @@ void clear_region_targets()
     region_targets.clear();
     region_target_bytes = 0;
     region_recorder.reset();
+    rounded_recorder.reset();
 }
 
 SkSurface* region_target(skgpu::graphite::Context* gpu, SkImageInfo const& info)
@@ -743,10 +747,16 @@ static bool draw_large_rounded_shape(uint8_t* pixels, int width, int height,
         if (!cached.hit) {
             auto* gpu = context();
             if (!gpu) return false;
-            auto recorder = gpu->makeRecorder();
+            if (!rounded_recorder) {
+                skgpu::graphite::RecorderOptions options;
+                options.fGpuBudgetInBytes = 16 * 1024 * 1024;
+                rounded_recorder = gpu->makeRecorder(options);
+            }
+            auto* recorder = rounded_recorder.get();
+            if (!recorder) return false;
             auto info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
                 kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
-            auto surface = SkSurfaces::RenderTarget(recorder.get(), info);
+            auto surface = SkSurfaces::RenderTarget(recorder, info);
             if (!surface) return false;
             auto* canvas = surface->getCanvas();
             canvas->clear(SK_ColorTRANSPARENT);
