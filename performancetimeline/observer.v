@@ -263,6 +263,13 @@ fn (mut timeline PerformanceTimeline) unregister(observer &PerformanceObserver) 
 }
 
 pub fn (mut timeline PerformanceTimeline) add_entry(entry &PerformanceEntry) {
+	timeline.buffer_entry(entry)
+	timeline.queue_entry(entry)
+}
+
+// Embedders buffer and queue separately: a full resource buffer still sends
+// entries to observers, and clearing the timeline must not clear their records.
+pub fn (mut timeline PerformanceTimeline) buffer_entry(entry &PerformanceEntry) {
 	mut tuple := timeline.entry_buffers[entry.entry_type] or { PerformanceEntryTuple{} }
 	if entry.available == .yes {
 		tuple.available_from_timeline = .yes
@@ -272,8 +279,10 @@ pub fn (mut timeline PerformanceTimeline) add_entry(entry &PerformanceEntry) {
 		}
 	}
 	timeline.entry_buffers[entry.entry_type] = tuple
-	for index in 0 .. timeline.observers_.len {
-		mut observer := timeline.observers_[index]
+}
+
+pub fn (mut timeline PerformanceTimeline) queue_entry(entry &PerformanceEntry) {
+	for mut observer in timeline.observers_ {
 		mut matches := false
 		for option in observer.options_list_ {
 			matches_type := if kind := option.type_ { kind == entry.entry_type } else { false }
@@ -295,8 +304,10 @@ pub fn (mut timeline PerformanceTimeline) run_observer_task() {
 		return
 	}
 	timeline.observer_task_queued = false
-	for index in 0 .. timeline.observers_.len {
-		mut observer := timeline.observers_[index]
+	// A callback may disconnect itself or another observer, or register a new
+	// observer. Deliver this task's snapshot without indexing a mutated array.
+	mut observers := timeline.observers_.clone()
+	for mut observer in observers {
 		if observer.observer_buffer_.len == 0 {
 			continue
 		}

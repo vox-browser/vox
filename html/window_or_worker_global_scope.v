@@ -666,6 +666,8 @@ pub fn (mut scope WindowOrWorkerGlobalScopeMixin) relevant_performance_entry_tup
 }
 
 pub fn (mut scope WindowOrWorkerGlobalScopeMixin) queue_performance_entry(entry PerformanceEntry) {
+	mut performance := scope.performance()
+	performance.timeline.queue_entry(performance_entry_object(entry))
 	for observer in scope.registered_observers_ {
 		if entry.entry_type in observer.entry_types {
 			mut mutable_observer := unsafe { &PerformanceObserverRecord(observer) }
@@ -679,6 +681,8 @@ pub fn (mut scope WindowOrWorkerGlobalScopeMixin) add_performance_entry(entry Pe
 	mut tuple := scope.relevant_performance_entry_tuple(entry.entry_type)
 	if tuple.max_buffer_size == 0 || tuple.performance_entry_buffer.len < tuple.max_buffer_size {
 		tuple.performance_entry_buffer << entry
+		mut performance := scope.performance()
+		performance.timeline.buffer_entry(performance_entry_object(entry))
 	}
 }
 
@@ -695,20 +699,22 @@ pub fn (mut scope WindowOrWorkerGlobalScopeMixin) process_performance_observers(
 			observer.callback(entries)
 		}
 	}
+	mut performance := scope.performance()
+	performance.timeline.run_observer_task()
 }
 
 pub fn (mut scope WindowOrWorkerGlobalScopeMixin) register_performance_observer(observer &PerformanceObserverRecord) {
-	if observer !in scope.registered_observers_ {
+	if !scope.has_registered_performance_observer(observer) {
 		scope.registered_observers_ << observer
 	}
 }
 
 pub fn (mut scope WindowOrWorkerGlobalScopeMixin) unregister_performance_observer(observer &PerformanceObserverRecord) {
-	scope.registered_observers_ = scope.registered_observers_.filter(it != observer)
+	scope.registered_observers_ = scope.registered_observers_.filter(voidptr(it) != voidptr(observer))
 }
 
 pub fn (scope &WindowOrWorkerGlobalScopeMixin) has_registered_performance_observer(observer &PerformanceObserverRecord) bool {
-	return observer in scope.registered_observers_
+	return scope.registered_observers_.any(voidptr(it) == voidptr(observer))
 }
 
 pub fn (mut scope WindowOrWorkerGlobalScopeMixin) queue_the_performance_observer_task() {
@@ -716,7 +722,15 @@ pub fn (mut scope WindowOrWorkerGlobalScopeMixin) queue_the_performance_observer
 		return
 	}
 	scope.observer_task_queued_ = true
-	queue_a_task(.performance_timeline, scope.responsible_event_loop(), none, fn [mut scope] () {
+	mut document := ?&dom.Document(none)
+	if window := scope.associated_window_ { document = window.associated_document() }
+	queue_a_task(.performance_timeline, scope.responsible_event_loop(), document, fn [mut scope, document] () {
+		mut allocation_scope := platform.RetainedArenaScope{}
+		if owner := document {
+			mut storage := owner.native_storage()
+			if storage != unsafe { nil } { allocation_scope = storage.enter_nested() }
+		}
+		defer { allocation_scope.finish() }
 		scope.process_performance_observers()
 	})
 }
@@ -752,11 +766,18 @@ pub fn (scope &WindowOrWorkerGlobalScopeMixin) filter_buffer_map_by_name_and_typ
 
 pub fn (mut scope WindowOrWorkerGlobalScopeMixin) clear_performance_entry_buffer(entry_type string) {
 	scope.performance_entry_buffer_map_.delete(entry_type)
+	mut performance := scope.performance()
+	performance.timeline.entry_buffers.delete(entry_type)
 }
 
 pub fn (mut scope WindowOrWorkerGlobalScopeMixin) remove_entries_from_performance_entry_buffer(entry_type string, entry_name string) {
 	mut tuple := scope.performance_entry_buffer_map_[entry_type] or { return }
 	tuple.performance_entry_buffer = tuple.performance_entry_buffer.filter(it.name != entry_name)
+	mut performance := scope.performance()
+	if mut native := performance.timeline.entry_buffers[entry_type] {
+		native.performance_entry_buffer = native.performance_entry_buffer.filter(it.name != entry_name)
+		performance.timeline.entry_buffers[entry_type] = native
+	}
 }
 
 pub fn (mut scope WindowOrWorkerGlobalScopeMixin) add_resource_timing_entry(entry PerformanceEntry) {
@@ -800,11 +821,10 @@ pub fn (mut scope WindowOrWorkerGlobalScopeMixin) fire_resource_timing_buffer_fu
 }
 
 pub fn (mut scope WindowOrWorkerGlobalScopeMixin) copy_resource_timing_secondary_buffer() {
-	mut tuple := scope.relevant_performance_entry_tuple('resource')
 	for scope.resource_timing_secondary_.len > 0 && scope.can_add_resource_timing_entry() {
 		entry := scope.resource_timing_secondary_[0]
 		scope.resource_timing_secondary_.delete(0)
-		tuple.performance_entry_buffer << entry
+		scope.add_performance_entry(entry)
 	}
 }
 

@@ -1,0 +1,48 @@
+module browserjs
+
+// PerformanceObserver is backed by the owning global's native timeline.
+fn performance_observer_binding_factory() string {
+	return r'(function(operate,global){
+ const define=Object.defineProperty,descriptor=Object.getOwnPropertyDescriptor,create=Object.create,T=global.TypeError;
+ const object=value=>value!==null&&(typeof value==="object"||typeof value==="function");
+ const prototypes=[{}, {}, {}];
+ function PerformanceObserverEntryList(){throw new T("Illegal constructor")}
+ function PerformanceEntry(){throw new T("Illegal constructor")}
+ const PerformanceObserver=new Proxy(function PerformanceObserver(callback){throw new T("PerformanceObserver constructor requires new")},{construct(target,args,newTarget){
+  if(args.length===0||typeof args[0]!=="function")throw new T("PerformanceObserver requires a callback function");
+  const requested=newTarget.prototype,receiver=create(object(requested)?requested:prototypes[0]);
+  operate("construct",receiver,args[0]);return receiver;
+ }});
+ for(const [index,constructor,name] of [[0,PerformanceObserver,"PerformanceObserver"],[1,PerformanceObserverEntryList,"PerformanceObserverEntryList"],[2,PerformanceEntry,"PerformanceEntry"]]){
+  define(constructor,"prototype",{value:prototypes[index],writable:false});
+  define(prototypes[index],"constructor",{value:constructor,writable:true,configurable:true});
+  define(prototypes[index],Symbol.toStringTag,{value:name,configurable:true});
+  define(global,name,{value:constructor,writable:true,configurable:true});
+ }
+ const types=Object.freeze(operate("supported",null));
+ define(PerformanceObserver,"supportedEntryTypes",{get:descriptor({get supportedEntryTypes(){return types}},"supportedEntryTypes").get,enumerable:true,configurable:true});
+ const observerMethods={observe(options){
+  operate("observerBrand",this);if(arguments.length===0)throw new T("observe requires options");
+  if(options!=null&&!object(options))throw new T("options must be a dictionary");
+  options=options==null?{}:options;
+  const buffered=options.buffered,rawThreshold=options.durationThreshold;
+  const threshold=rawThreshold===undefined?undefined:operate("unsigned",this,rawThreshold),entries=options.entryTypes;
+  let entryTypes;
+  if(entries!==undefined){if(!object(entries))throw new T("entryTypes must be iterable");entryTypes=[];for(const entry of entries)entryTypes.push(operate("string",this,entry))}
+  const type=options.type;
+  return operate("observe",this,buffered===undefined?undefined:!!buffered,threshold,entryTypes,type===undefined?undefined:operate("string",this,type));
+ },disconnect(){return operate("disconnect",this)},takeRecords(){return operate("takeRecords",this)}};
+ const listMethods={getEntries(){return operate("getEntries",this)},getEntriesByType(type){
+  operate("listBrand",this);if(arguments.length===0)throw new T("getEntriesByType requires a type");return operate("getEntriesByType",this,operate("string",this,type));
+ },getEntriesByName(name,type){
+  operate("listBrand",this);if(arguments.length===0)throw new T("getEntriesByName requires a name");return operate("getEntriesByName",this,operate("string",this,name),type===undefined?undefined:operate("string",this,type));
+ }};
+ for(const [prototype,methods] of [[prototypes[0],observerMethods],[prototypes[1],listMethods],[prototypes[2],{toJSON(){return {name:operate("name",this),entryType:operate("entryType",this),startTime:operate("startTime",this),duration:operate("duration",this)}}}]])
+  for(const name of Object.keys(methods))define(prototype,name,{value:methods[name],writable:true,enumerable:true,configurable:true});
+ for(const name of ["name","entryType","startTime","duration"]){
+  const get=descriptor({get [name](){return operate(name,this)}},name).get;
+  define(prototypes[2],name,{get,enumerable:true,configurable:true});
+ }
+ return function make(index,dropped){return index===3?(dropped===undefined?{}:{droppedEntriesCount:dropped}):create(prototypes[index])};
+})'
+}
