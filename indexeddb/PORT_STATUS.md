@@ -120,3 +120,43 @@ Summary for all V _test.v files: 9 passed, 9 total.
 $ git diff --check -- indexeddb
 (no output; exit status 0)
 ```
+
+## Browser request integration — 2026-10-25
+
+`38a07d9b` adds ordered asynchronous object-store get/put/add requests to the
+existing native transaction queue. Validation and value cloning happen when
+the operation is called; completion reuses the original request. Success/error
+listeners run with an active transaction, canceled errors allow subsequent
+requests, and uncanceled errors or listener exceptions abort and roll back.
+Upgrade completion waits for queued operations, including explicitly committed
+transactions, and failed upgrades release their connection-queue entry.
+
+`106cb5bb` connects the owning Window's factory to JavaScriptCore through native
+request, database, transaction and store wrappers. It supplies trusted request
+and upgrade events, live name lists, native receiver checks, exception identity,
+and document-owned allocation for database tasks. The binding currently exposes
+factory open/delete/cmp, database schema/transaction operations, transaction
+completion and store get/put/add. It does not expose the complete typed module:
+cursor/index operations, complete request-event bubbling, arbitrary structured
+clone graphs, disk persistence, quota and cross-process coordination remain open.
+The value adapter supports finite trees of primitives, plain objects, dense
+arrays, dates and ArrayBuffers; unsupported records throw DataCloneError.
+
+Focused checks: six new asynchronous core cases and ten existing store,
+transaction-completion and factory cases pass with normal GC. Five new browser
+binding cases pass with normal GC and with `-prealloc -gc none`, including
+Promise continuations, request identity/order, call-time cloning, error
+cancellation/rollback, upgrades and runtime shutdown. Evidence is retained in
+`Build/pikabu-story-idb-core-stages.json`,
+`Build/pikabu-story-idb-binding-stages.json` and the successful guarded job
+`Build/pikabu-story-idb-core-job.json`; this is focused coverage, not a rerun of
+every module test or full IndexedDB parity.
+
+Scoped physical-LF inventory at `106cb5bb`: IndexedDB contains 20 implementation
+files / 5,581 lines and 13 test files / 1,519 lines. The two feature commits add
+117 IndexedDB implementation lines and 131 test lines, eight HTML implementation
+lines, and 756 implementation / 169 test lines in browser/root support. The
+per-parent 14-path inventory is `Build/pikabu-story-idb-inventory.json` (SHA-256
+`ec81a39e733e55a4b7abc0fe6e91707c45189545aadb7b36cb41a9c5bdd13b81`).
+The earlier audit table and global ownership inventories retain their original
+dated pins; these counts add no behavioral parity credit.

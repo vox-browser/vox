@@ -1092,8 +1092,10 @@ server identity for direct PageClient handoff. Still open:
 - The compositor keeps its own visual context tree instead of
   `AccumulatedVisualContextTree` spatial transforms and sticky offsets.
 - The WebGL module is not connected to `<canvas>` or the DOM event model.
-- IndexedDB is a synchronous model without connection queues or task-driven
-  request processing.
+- IndexedDB's browser binding exposes queued open/upgrade and store get/put/add
+  requests through the native transaction model. Cursor/index bindings, complete
+  event bubbling, arbitrary structured clone graphs and persistent storage remain
+  open; see `indexeddb/PORT_STATUS.md` for the scoped 2026-10-25 checkpoint.
 - Stream transfer and ML-KEM remain untranslated.
 
 `Complete` means every upstream `.cpp` unit has an audited V implementation
