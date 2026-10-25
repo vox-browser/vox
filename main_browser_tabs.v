@@ -99,6 +99,8 @@ fn (mut app BrowserApp) activate_tab_chrome(action string) {
 				tabs:                           app.tabs
 				browsing_history:               current.browsing_history
 				browsing_history_error:         current.browsing_history_error
+				bookmarks:                      current.bookmarks
+				bookmarks_error:                current.bookmarks_error
 				ctx:                            current.ctx
 				page_model:                     owner
 				js_engine:                      current.js_engine

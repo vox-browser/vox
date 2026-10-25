@@ -37,6 +37,7 @@ fn (mut app BrowserApp) unmount_address_bar() {
 	$if vox_ui2 ? {
 		if !app.native_address_bar { return }
 		C.native_browser_tabs_remove()
+		C.native_browser_bookmarks_remove()
 		C.native_browser_chrome_restore_window()
 		C.native_address_bar_remove_shortcuts()
 		C.native_browser_chrome_stop_memory()
@@ -125,6 +126,8 @@ $if vox_ui2 ? {
 			18 { app.activate_browser_zoom('zoom-out') }
 			19 { app.activate_browser_zoom('zoom-reset') }
 			20 { app.open_browser_history() }
+			21 { app.activate_browser_bookmarks('bookmarks-toggle') }
+			22 { app.activate_browser_bookmarks('bookmark-add') }
 			else {}
 		}
 

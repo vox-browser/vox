@@ -37,10 +37,16 @@ static NSEvent *native_address_bar_filter_key(NSTextField *field, void *owner,
 			if (event.keyCode == 29 || event.keyCode == 82) { callback(owner, 19); return nil; }
 		}
 	}
-	if (event.keyCode == 2 && (mods & NSEventModifierFlagCommand)
-		&& !(mods & (NSEventModifierFlagControl | NSEventModifierFlagOption | NSEventModifierFlagShift))) {
-		if (!event.isARepeat) callback(owner, 3); // Cmd+D, including while editing the address.
-		return nil;
+	if ((mods & NSEventModifierFlagCommand)
+		&& !(mods & (NSEventModifierFlagControl | NSEventModifierFlagOption))) {
+		if (event.keyCode == 11 && (mods & NSEventModifierFlagShift)) {
+			if (!event.isARepeat) callback(owner, 21); // Cmd+Shift+B
+			return nil;
+		}
+		if (event.keyCode == 2) {
+			if (!event.isARepeat) callback(owner, (mods & NSEventModifierFlagShift) ? 3 : 22);
+			return nil; // Cmd+D bookmarks; Cmd+Shift+D toggles diagnostics.
+		}
 	}
 	if (!(mods & NSEventModifierFlagOption)) {
 		if ((mods & NSEventModifierFlagControl) && event.keyCode == 48) {

@@ -5,6 +5,7 @@ import adblock
 import browsernet
 import browserjs
 import browserhistory
+import browserbookmarks
 import crypto.sha256
 import css
 import dom
@@ -394,6 +395,9 @@ mut:
 	tabs                                &BrowserTabs = unsafe { nil }
 	browsing_history                    &browserhistory.Store = unsafe { nil }
 	browsing_history_error              string
+	bookmarks                           &browserbookmarks.Store = unsafe { nil }
+	bookmarks_error                     string
+	bookmark_bar_first                  int
 	history_page                        &BrowserHistoryPage = unsafe { nil }
 	browser_chrome                      BrowserChromeState
 	browser_text_cache_                 &BrowserChromeTextCache = unsafe { nil }
@@ -3115,7 +3119,7 @@ fn (app &BrowserApp) chrome_height() int {
 }
 
 fn (app &BrowserApp) page_top() f32 {
-	return f32(tab_strip_height + browser_toolbar_height(app.chrome_debug))
+	return f32(app.bookmark_bar_top() + if app.bookmark_bar_visible() { bookmark_bar_height } else { 0.0 })
 }
 
 fn (app &BrowserApp) status_height() int {
@@ -7117,6 +7121,7 @@ fn (mut app BrowserApp) handle_click(x f32, y f32) {
 	}
 	$if !vox_ui2 ? {
 		if app.handle_portable_tab_click(x, y) { return }
+		if app.handle_portable_bookmark_click(x, y) { return }
 		if y >= tab_strip_height + 4 && y <= tab_strip_height + 26 {
 			if x >= 5 && x < 27 {
 				app.history_go(-1)
@@ -7211,6 +7216,7 @@ fn (mut app BrowserApp) handle_event(event &gg.Event) {
 				&& ((app.platform_pointer_modifiers & (dom.modifier_ctrl | dom.modifier_super) != 0
 					&& event.key_code in [.l, .r])
 					|| browser_tab_shortcut(event.key_code, unsafe { gg.Modifier(event.modifiers) }) != ''
+					|| browser_bookmark_shortcut(event.key_code, unsafe { gg.Modifier(event.modifiers) }) != ''
 					|| is_browser_debug_shortcut(event.key_code, unsafe { gg.Modifier(event.modifiers) }))
 			if !chrome_shortcut { app.defer_page_input(event) }
 		}
@@ -7331,6 +7337,11 @@ fn (mut app BrowserApp) handle_character(code u32) {
 }
 
 fn (mut app BrowserApp) handle_key(key gg.KeyCode, modifier gg.Modifier) {
+	bookmark_action := browser_bookmark_shortcut(key, modifier)
+	if bookmark_action != '' {
+		app.activate_browser_bookmarks(bookmark_action)
+		return
+	}
 	if browser_history_shortcut(key, modifier) {
 		app.open_browser_history()
 		return
@@ -7511,6 +7522,7 @@ fn main() {
 	main_checkpoint = debug_timing_checkpoint('startup_browser_state', main_checkpoint)
 	if !options.headless_smoke && !options.headless_layout_tree {
 		app.initialize_browser_history()
+		app.initialize_browser_bookmarks()
 	}
 	app.install_chrome_widget_input_bridge()
 	main_checkpoint = debug_timing_checkpoint('startup_input_bridge', main_checkpoint)

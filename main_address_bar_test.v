@@ -51,11 +51,11 @@ fn test_address_bar_escape_restores_current_history_url() {
 }
 
 fn test_browser_debug_uses_command_on_macos_and_control_on_windows() {
-	assert browser_debug_modifier(.super, true)
+	assert browser_debug_modifier(.super | .shift, true)
 	assert !browser_debug_modifier(.ctrl, true)
-	assert browser_debug_modifier(.ctrl, false)
+	assert browser_debug_modifier(.ctrl | .shift, false)
 	assert !browser_debug_modifier(.super, false)
-	assert !browser_debug_modifier(.super | .shift, true)
+	assert !browser_debug_modifier(.super, true)
 	assert !browser_debug_modifier(.ctrl | .alt, false)
 	modifier := $if macos { gg.Modifier.super } $else { gg.Modifier.ctrl }
 	mut app := BrowserApp{ address: 'unfinished.example', address_active: true }
@@ -66,9 +66,9 @@ fn test_browser_debug_uses_command_on_macos_and_control_on_windows() {
 	app.snapshot_hold = true
 	app.snapshot_hold_until = 1
 	app.navigation_work_depth = 1
-	app.handle_event(&gg.Event{ typ: .key_down, key_code: .d, modifiers: u32(modifier) })
+	app.handle_event(&gg.Event{ typ: .key_down, key_code: .d, modifiers: u32(modifier | .shift) })
 	assert app.deferred_page_input.len == 0
-	app.handle_key(.d, modifier)
+	app.handle_key(.d, modifier | .shift)
 	assert app.chrome_debug
 	assert app.browser_chrome_snapshot_path('https://example.test/') != normal_snapshot
 	assert !app.snapshot_cached
@@ -76,7 +76,7 @@ fn test_browser_debug_uses_command_on_macos_and_control_on_windows() {
 	assert app.snapshot_hold_until == 0
 	assert app.address == 'unfinished.example'
 	assert app.address_active
-	app.handle_key(.d, modifier)
+	app.handle_key(.d, modifier | .shift)
 	assert !app.chrome_debug
 	assert app.browser_chrome_snapshot_path('https://example.test/') == normal_snapshot
 }
@@ -394,7 +394,7 @@ $if vox_ui2 ? {
 		address_bar_test_insert(field, 'https://editing.example/')
 		C.native_test_address_shortcut(field, app, address_bar_shortcut, 0, 0)
 		selection := C.native_test_address_selection(field)
-		C.native_test_address_shortcut(field, app, address_bar_shortcut, 2, 0)
+		C.native_test_address_shortcut(field, app, address_bar_shortcut, 2, 1)
 		assert app.chrome_debug
 		assert C.native_test_chrome_hidden(ui2.embedded_browser_control('load-status')) == 0
 		assert ui2.text('load-status') == app.status
@@ -403,7 +403,7 @@ $if vox_ui2 ? {
 		assert C.native_test_address_selection(field) == selection
 		assert app.address == 'https://editing.example/'
 		app.blur_address_bar()
-		C.native_test_address_shortcut(field, app, address_bar_shortcut, 2, 0)
+		C.native_test_address_shortcut(field, app, address_bar_shortcut, 2, 1)
 		assert !app.chrome_debug
 		assert C.native_test_chrome_hidden(ui2.embedded_browser_control('load-status')) == 1
 		assert C.native_test_chrome_geometry(ui2.embedded_browser_control('toolbar'), ui2.embedded_browser_control('status-bar'), 800, 600, 60) == 1

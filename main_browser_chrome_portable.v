@@ -40,6 +40,7 @@ $if !vox_ui2 ? {
 		if app.chrome_debug {
 			app.ctx.draw_text(14, int(tab_strip_height + toolbar_height + 8), app.status, color: gg.rgb(148, 163, 184), size: 12)
 		}
+		app.draw_portable_bookmarks(window.width)
 
 		status_y := window.height - int(status_bar_height)
 		draw_srgb_rect(app.ctx, 0, f32(status_y), f32(window.width), f32(status_bar_height), gg.rgb(230, 230, 230))

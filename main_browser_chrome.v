@@ -27,6 +27,9 @@ struct BrowserChromeState {
 	tab_titles []string
 	selected_tab int
 	debug   bool
+	bookmarks_visible bool
+	bookmarks_version u64
+	bookmarks_error string
 }
 
 fn browser_chrome_requires_update(previous BrowserChromeState, next BrowserChromeState) bool {
@@ -43,8 +46,8 @@ fn browser_toolbar_height(debug bool) f64 {
 }
 
 fn browser_debug_modifier(modifier gg.Modifier, is_macos bool) bool {
-	if modifier.has(.shift) || modifier.has(.alt) { return false }
-	return if is_macos { modifier.has(.super) } else { modifier.has(.ctrl) }
+	if !modifier.has(.shift) || modifier.has(.alt) { return false }
+	return if is_macos { modifier.has(.super) && !modifier.has(.ctrl) } else { modifier.has(.ctrl) && !modifier.has(.super) }
 }
 
 fn is_browser_debug_shortcut(key gg.KeyCode, modifier gg.Modifier) bool {
@@ -74,7 +77,7 @@ fn (mut app BrowserApp) toggle_browser_debug() {
 fn (app &BrowserApp) browser_chrome_snapshot_path(resource_url string) string {
 	// Keep previous chrome layouts and debug-only diagnostics out of normal
 	// startup snapshots, while retaining the shared snapshots cache directory.
-	return cached_snapshot_path('${resource_url}\nclassic-chrome-v4:${app.chrome_debug}:${app.browser_tab_snapshot_key()}:zoom=${app.page_zoom}')
+	return cached_snapshot_path('${resource_url}\nclassic-chrome-v4:${app.chrome_debug}:${app.browser_tab_snapshot_key()}:zoom=${app.page_zoom}:bookmarks=${app.bookmark_bar_visible()}:${if app.bookmarks != unsafe { nil } { app.bookmarks.version } else { u64(0) }}')
 }
 
 fn (app &BrowserApp) chrome_footer() string {
@@ -100,6 +103,9 @@ fn (app &BrowserApp) browser_chrome_state(width int, height int) BrowserChromeSt
 		forward: app.history_index + 1 < app.history.len
 		reload:  app.history_index >= 0
 		debug:   app.chrome_debug
+		bookmarks_visible: app.bookmark_bar_visible()
+		bookmarks_version: if app.bookmarks != unsafe { nil } { app.bookmarks.version } else { 0 }
+		bookmarks_error: app.bookmarks_error
 	}
 }
 
@@ -120,7 +126,7 @@ $if vox_ui2 ? {
 		footer_width := if width > 224 { width - 224 } else { 0.0 }
 		memory := ui2.text('memory')
 		return [
-			ui2.view('toolbar', ui2.rect(0, 0, width, tab_strip_height + browser_toolbar_height(chrome.debug)), ui2.BoxStyle{ bg: 0xf7f7f7 }, [
+			ui2.view('toolbar', ui2.rect(0, 0, width, tab_strip_height + browser_toolbar_height(chrome.debug) + if chrome.bookmarks_visible { bookmark_bar_height } else { 0.0 }), ui2.BoxStyle{ bg: 0xf7f7f7 }, [
 				ui2.Element{ ...chrome_navigation_button('back', '‹', 5, chrome.back), tooltip: 'Back', accessibility_label: 'Back' },
 				ui2.Element{ ...chrome_navigation_button('forward', '›', 27, chrome.forward), tooltip: 'Forward', accessibility_label: 'Forward' },
 				ui2.Element{ ...chrome_navigation_button('reload', '↻', 49, chrome.reload), tooltip: 'Reload', accessibility_label: 'Reload' },
@@ -167,6 +173,7 @@ $if vox_ui2 ? {
 		app.native_address_bar = true
 		app.style_native_browser_chrome()
 		app.update_native_browser_tabs(chrome)
+		app.update_native_browser_bookmarks(chrome)
 		C.native_browser_chrome_start_memory(ui2.embedded_browser_control('memory'))
 		return ui2.embedded_browser_control('address')
 	}
@@ -182,6 +189,7 @@ fn (mut app BrowserApp) update_browser_chrome(width int, height int) {
 		ui2.update_embedded_browser(browser_chrome_elements(chrome))
 		app.style_native_browser_chrome()
 		app.update_native_browser_tabs(chrome)
+		app.update_native_browser_bookmarks(chrome)
 	}
 }
 
