@@ -124,6 +124,7 @@ $if vox_ui2 ? {
 			17 { app.activate_browser_zoom('zoom-in') }
 			18 { app.activate_browser_zoom('zoom-out') }
 			19 { app.activate_browser_zoom('zoom-reset') }
+			20 { app.open_browser_history() }
 			else {}
 		}
 

@@ -97,6 +97,8 @@ fn (mut app BrowserApp) activate_tab_chrome(action string) {
 			client.set_request_frame_hook(request_browser_frame)
 			mut tab := &BrowserApp{
 				tabs:                           app.tabs
+				browsing_history:               current.browsing_history
+				browsing_history_error:         current.browsing_history_error
 				ctx:                            current.ctx
 				page_model:                     owner
 				js_engine:                      current.js_engine

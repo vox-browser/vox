@@ -207,7 +207,7 @@ $if vox_ui2 ? {
 		app.focus_address_bar()
 		address_bar_test_insert(field, 'https://ui2-address-bar.invalid/enter')
 		app.resize_address_bar(1000)
-		assert C.native_test_address_geometry(field, 896) == 1
+		assert C.native_test_address_geometry(field, 862) == 1
 		assert ui2.focused_id() == 'address'
 		assert ui2.text('address') == app.address
 		// Imperative native replacement need not deliver a change notification.
@@ -324,7 +324,7 @@ $if vox_ui2 ? {
 		C.native_test_chrome_resize(window, 1000, 700)
 		app.update_browser_chrome(1000, 700)
 		assert ui2.embedded_browser_control('address') == field
-		assert C.native_test_address_geometry(field, 896) == 1
+		assert C.native_test_address_geometry(field, 862) == 1
 		assert ui2.focused_id() == 'address'
 		assert ui2.text('address') == 'https://editing.example/привет'
 		assert C.native_test_address_selection(field) == selection

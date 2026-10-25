@@ -17,8 +17,9 @@ $if !vox_ui2 ? {
 		app.draw_chrome_button(5, '‹', app.history_index > 0)
 		app.draw_chrome_button(27, '›', app.history_index + 1 < app.history.len)
 		app.draw_chrome_button(49, '↻', app.history_index >= 0)
+		app.draw_chrome_button(f32(window.width - 32), '◷', true)
 		address_x := f32(78)
-		address_width := f32(window.width - 84)
+		address_width := f32(window.width - 118)
 		app.resize_address_bar(window.width)
 		if !app.native_address_bar {
 			address_color := if app.address_active {

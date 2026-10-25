@@ -4,6 +4,7 @@ import color
 import adblock
 import browsernet
 import browserjs
+import browserhistory
 import crypto.sha256
 import css
 import dom
@@ -391,6 +392,9 @@ mut:
 	address_select                      bool
 	native_address_bar                  bool
 	tabs                                &BrowserTabs = unsafe { nil }
+	browsing_history                    &browserhistory.Store = unsafe { nil }
+	browsing_history_error              string
+	history_page                        &BrowserHistoryPage = unsafe { nil }
 	browser_chrome                      BrowserChromeState
 	browser_text_cache_                 &BrowserChromeTextCache = unsafe { nil }
 	chrome_debug                        bool
@@ -864,6 +868,7 @@ fn initial_document(argument string) (string, string, string) {
 
 fn resolve_url(reference string, base string) string {
 	trimmed := reference.trim_space()
+	if is_browser_history_url(trimmed) { return browser_history_url }
 	if trimmed == '' {
 		return base
 	}
@@ -3396,7 +3401,10 @@ fn document_has_window_event_handlers(document &dom.Document) bool {
 	return window.data.event_handler_count() > 0
 }
 
-fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool) {
+fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history bool) {
+	loaded := if is_browser_history_url(input_loaded.url) {
+		LoadedPage{...input_loaded, url: browser_history_url, markup: app.browser_history_markup(), content_type: 'text/html'}
+	} else { input_loaded }
 	mut navigation_work := app.begin_navigation_work()
 	defer { navigation_work.finish() }
 	heap_scripting_enabled := browser_scripting_enabled(loaded.url, app.script_policy)
@@ -3553,6 +3561,8 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 		}
 		app.history_index = app.history.len - 1
 	}
+	app.install_browser_history_listeners()
+	app.record_browser_visit(loaded)
 	app.relayout(if app.viewport_width > 0 { app.viewport_width } else { initial_width }, if app.viewport_height > 0 {
 		app.viewport_height + app.chrome_height()
 	} else {
@@ -3611,6 +3621,15 @@ fn (mut app BrowserApp) navigate(address string, add_history bool) {
 		''
 	}
 	resolved := resolve_url(address, base)
+	if resolved == browser_history_url {
+		app.navigation_generation++
+		app.pending_navigation = none
+		app.pending_cached_page = none
+		app.cancel_page_preload()
+		app.pending_native_navigation = none
+		app.install_loaded_page(LoadedPage{url: browser_history_url, status: 'History', content_type: 'text/html'}, add_history)
+		return
+	}
 	if parsed := url.parse(resolved) {
 		if parsed.scheme == 'javascript' {
 			app.navigate_javascript_url(parsed)
@@ -6824,6 +6843,7 @@ fn (mut app BrowserApp) draw() {
 	paint_before_frame := app.paint_generation
 	app.poll_deferred_navigation_input()
 	app.poll_deferred_page_input()
+	app.poll_browser_history_page()
 	// Profile wheels enter like physical input, outside the frame's navigation
 	// work scope; inside it they would be deferred to the next frame untimed.
 	app.begin_scroll_profile_frame()
@@ -7083,7 +7103,11 @@ fn (mut app BrowserApp) handle_click(x f32, y f32) {
 				return
 			}
 			window := browser_window_size()
-			if x >= 78 && x < f32(window.width - 6) {
+			if x >= f32(window.width - 34) {
+				app.open_browser_history()
+				return
+			}
+			if x >= 78 && x < f32(window.width - 40) {
 				app.focus_address_bar()
 				return
 			}
@@ -7279,6 +7303,11 @@ fn (mut app BrowserApp) handle_character(code u32) {
 }
 
 fn (mut app BrowserApp) handle_key(key gg.KeyCode, modifier gg.Modifier) {
+	if browser_history_shortcut(key, modifier) {
+		app.open_browser_history()
+		return
+	}
+	if app.handle_browser_history_key(key, modifier) { return }
 	window_height := browser_window_size().height
 	height := if window_height > 0 { window_height } else { app.viewport_height + app.chrome_height() }
 	command := modifier.has(.super) || modifier.has(.ctrl)
@@ -7452,6 +7481,9 @@ fn main() {
 		viewport_height: initial_viewport_height
 	}
 	main_checkpoint = debug_timing_checkpoint('startup_browser_state', main_checkpoint)
+	if !options.headless_smoke && !options.headless_layout_tree {
+		app.initialize_browser_history()
+	}
 	app.install_chrome_widget_input_bridge()
 	main_checkpoint = debug_timing_checkpoint('startup_input_bridge', main_checkpoint)
 	if markup != '' {

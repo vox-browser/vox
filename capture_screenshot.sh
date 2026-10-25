@@ -21,6 +21,7 @@ if [ ! -x "$browser" ] \
     || [ ! -f "$repo_dir/Build/v/Vox.app/Contents/Resources/Vox.icns" ] \
     || [ ! -f "$repo_dir/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin" ] \
     || [ "$repo_dir/adblock/engine.snapshot.bin" -nt "$browser" ] \
+    || [ "$repo_dir/browserhistory/history.css" -nt "$browser" ] \
     || [ "$repo_dir/packaging/Info.plist" -nt "$browser" ] \
     || [ "$repo_dir/packaging/Vox.icns" -nt "$browser" ] \
     || [ "$repo_dir/build-prod-browser.sh" -nt "$browser" ] \

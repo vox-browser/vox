@@ -18,6 +18,13 @@ static NSEvent *native_address_bar_filter_key(NSTextField *field, void *owner,
 	BOOL editing = control.currentEditor != nil
 		&& control.window.firstResponder == control.currentEditor;
 	NSEventModifierFlags mods = event.modifierFlags & NSEventModifierFlagDeviceIndependentFlagsMask;
+	// Chrome uses Cmd+Y on macOS (Cmd+Shift+H is also accepted by Vox).
+	if ((mods & NSEventModifierFlagCommand)
+		&& !(mods & (NSEventModifierFlagControl | NSEventModifierFlagOption))
+		&& ((event.keyCode == 16 && !(mods & NSEventModifierFlagShift))
+			|| (event.keyCode == 4 && (mods & NSEventModifierFlagShift)))) {
+		callback(owner, 20); return nil;
+	}
 	// Consume browser zoom before AppKit's field editor or Sokol can interpret
 	// it as address input. Shift is allowed for the '+' above '='.
 	if ((mods & NSEventModifierFlagCommand)

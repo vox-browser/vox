@@ -10,6 +10,7 @@ $if vox_ui2 ? {
 	fn C.native_browser_chrome_prepare_window(parent voidptr)
 	fn C.native_browser_chrome_restore_window()
 	fn C.native_browser_chrome_style_controls(toolbar voidptr, back voidptr, forward voidptr, reload voidptr, address voidptr)
+	fn C.native_browser_chrome_style_history(control voidptr)
 	fn C.native_browser_chrome_start_memory(control voidptr)
 	fn C.native_browser_chrome_stop_memory()
 }
@@ -64,7 +65,7 @@ fn (mut app BrowserApp) toggle_browser_debug() {
 fn (app &BrowserApp) browser_chrome_snapshot_path(resource_url string) string {
 	// Keep previous chrome layouts and debug-only diagnostics out of normal
 	// startup snapshots, while retaining the shared snapshots cache directory.
-	return cached_snapshot_path('${resource_url}\nclassic-chrome-v3:${app.chrome_debug}:${app.browser_tab_snapshot_key()}:zoom=${app.page_zoom}')
+	return cached_snapshot_path('${resource_url}\nclassic-chrome-v4:${app.chrome_debug}:${app.browser_tab_snapshot_key()}:zoom=${app.page_zoom}')
 }
 
 fn (app &BrowserApp) chrome_footer() string {
@@ -106,7 +107,7 @@ $if vox_ui2 ? {
 
 	fn browser_chrome_elements(chrome BrowserChromeState) []ui2.Element {
 		width := f64(chrome.width)
-		address_width := if width > 128 { width - 104 } else { 24.0 }
+		address_width := if width > 162 { width - 138 } else { 24.0 }
 		footer_width := if width > 224 { width - 224 } else { 0.0 }
 		memory := ui2.text('memory')
 		return [
@@ -126,6 +127,11 @@ $if vox_ui2 ? {
 					text_style:  ui2.TextStyle{ size: 12 }
 				) or { panic(err) },
 				ui2.Element{
+					...chrome_navigation_button('history', '◷', width - 32, true)
+					tooltip: 'History'
+					accessibility_label: 'History'
+				},
+				ui2.Element{
 					...ui2.label('load-status', chrome.status, ui2.rect(12, tab_strip_height + toolbar_height, width - 24, debug_status_height), ui2.TextStyle{ color: 0x555555, size: 12 })
 					hidden: !chrome.debug
 				},
@@ -141,6 +147,7 @@ $if vox_ui2 ? {
 		C.native_browser_chrome_style_controls(ui2.embedded_browser_control('toolbar'),
 			ui2.embedded_browser_control('back'), ui2.embedded_browser_control('forward'),
 			ui2.embedded_browser_control('reload'), ui2.embedded_browser_control('address'))
+		C.native_browser_chrome_style_history(ui2.embedded_browser_control('history'))
 	}
 
 	fn (mut app BrowserApp) mount_ui2_chrome(parent voidptr, width int, height int) !voidptr {
@@ -174,6 +181,7 @@ fn (mut app BrowserApp) activate_browser_chrome(action string) {
 		return
 	}
 	match action {
+		'history' { app.open_browser_history() }
 		'back' {
 			app.blur_address_bar()
 			app.history_go(-1)

@@ -17,7 +17,7 @@ static NSTitlebarSeparatorStyle vox_chrome_original_separator;
 - (NSView *)hitTest:(NSPoint)point { return nil; }
 - (void)drawRect:(NSRect)dirty {
 	[[NSColor colorWithSRGBRed:.969 green:.969 blue:.969 alpha:1] setFill]; NSRectFill(self.bounds);
-	NSRect address = NSMakeRect(78.5, 32.5, MAX(0, self.bounds.size.width-85), 22);
+	NSRect address = NSMakeRect(78.5, 32.5, MAX(0, self.bounds.size.width-119), 22);
 	NSBezierPath *outline = [NSBezierPath bezierPathWithRoundedRect:address xRadius:2 yRadius:2];
 	[NSColor.whiteColor setFill]; [outline fill];
 	[[NSColor colorWithSRGBRed:.77 green:.77 blue:.77 alpha:1] setStroke]; [outline stroke];
@@ -31,6 +31,16 @@ static NSTitlebarSeparatorStyle vox_chrome_original_separator;
 }
 @end
 static VoxBrowserToolbarBackground *vox_chrome_toolbar_background;
+
+static void native_browser_chrome_style_history(void *control) {
+	NSButton *button = (__bridge NSButton *)control;
+	button.bordered = NO;
+	button.title = @"";
+	button.image = [NSImage imageWithSystemSymbolName:@"clock.arrow.circlepath" accessibilityDescription:@"History"];
+	button.imagePosition = NSImageOnly;
+	button.contentTintColor = [NSColor colorWithWhite:.49 alpha:1];
+	button.focusRingType = NSFocusRingTypeNone;
+}
 
 static void native_browser_chrome_restore_window(void) {
 	[vox_chrome_toolbar_background removeFromSuperview]; vox_chrome_toolbar_background = nil;

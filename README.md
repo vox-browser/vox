@@ -237,7 +237,12 @@ status, and scrolling. On macOS the window buttons and tabs share a compact top
 row, with flat navigation icons below it. The production macOS toolbar and status bar use
 UI2 native controls; see [the embedding adapter](tools/ui2/README.md). Enter
 submits the address. Cmd+D on macOS (Ctrl+D on Windows/Linux) toggles the
-otherwise hidden HTTP/rendering diagnostic row. HTTP(S), local files, external
+otherwise hidden HTTP/rendering diagnostic row. The History toolbar button or
+Cmd+Y on macOS (Ctrl+H on Linux) opens `vox://history`, with live search,
+date groups, selection, individual removal, and deletion by time range.
+History is kept locally for up to 90 days across restarts; `VOX_PROFILE_DIR`
+overrides the profile directory. `chrome://history` and `about:history` also work.
+HTTP(S), local files, external
 stylesheets, and classic scripts feed the translated HTML, DOM, CSS, Layout,
 hit-testing,
 history, and paint-command pipeline. The LibJS frontend validates page scripts
