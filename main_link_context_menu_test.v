@@ -9,6 +9,7 @@ $if macos {
 	fn C.vox_link_test_end(voidptr)
 	fn C.vox_link_test_count() int
 	fn C.vox_link_test_cancel()
+	fn C.vox_link_test_open_in_new_tab()
 	fn C.vox_link_test_clipboard_matches(&u8, int) int
 	fn C.vox_link_test_position_matches(voidptr, f64, f64) int
 }
@@ -102,5 +103,50 @@ fn test_right_click_ignores_nonlinks_and_chrome_and_hit_tests_zoomed_links() {
 		assert C.vox_link_test_count() == 1
 		expected := 'https://cdn.example/download?q=one&lang=ru#part'
 		assert C.vox_link_test_clipboard_matches(expected.str, expected.len) == 1
+	}
+}
+
+fn test_link_context_menu_opens_a_background_tab_after_navigation_work_unwinds() {
+	$if macos {
+		window := C.vox_link_test_begin()
+		defer { C.vox_link_test_end(window) }
+		mut app := link_context_menu_test_app()
+		app.initialize_browser_tabs()
+		defer { app.cleanup_browser_tabs() }
+		document := app.document
+		x, y := link_context_menu_test_point(app, 'label')
+		link_context_menu_test_click(mut app, x, y, .right)
+		copied := 'https://cdn.example/download?q=one&lang=ru#part'
+		mut link := document.get_element_by_id('link')?
+		link.set_attribute_value('href', 'about:home')
+		app.address = 'unfinished address edit'
+		app.hovered_link = 'https://wrong.example/hovered'
+		C.vox_link_test_open_in_new_tab()
+		// Production mouse-up holds navigation work while the menu tracks.
+		app.navigation_work_depth = 1
+		app.show_link_context_menu(x, y)
+		assert C.vox_link_test_count() == 2
+		assert app.tabs.pages.len == 1
+		assert app.tabs.pending_actions == ['tab-open-background:about:home']
+		assert C.vox_link_test_clipboard_matches(copied.str, copied.len) == 1
+		app.navigation_work_depth = 0
+		pending := app.tabs.pending_actions.clone()
+		app.tabs.pending_actions.clear()
+		for action in pending { app.activate_tab_chrome(action) }
+		assert app.tabs.pages.len == 2
+		assert voidptr(app.active_browser_tab()) == voidptr(app)
+		assert voidptr(app.document) == voidptr(document)
+		assert app.document.url_string() == 'https://links.example/path/page.html'
+		assert app.tabs.pages[1].address == 'about:home'
+		assert app.tabs.pages[1].document.url_string() == 'about:home'
+		assert app.pending_native_navigation == none
+		assert app.platform_pointer_buttons == 0
+		// The same choice also opens immediately when no work scope is active.
+		link_context_menu_test_click(mut app, x, y, .right)
+		assert C.vox_link_test_count() == 3
+		assert app.tabs.pages.len == 3
+		assert app.tabs.pages[2].document.url_string() == 'about:home'
+		assert voidptr(app.active_browser_tab()) == voidptr(app)
+		assert voidptr(app.document) == voidptr(document)
 	}
 }

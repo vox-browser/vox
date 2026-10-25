@@ -4,7 +4,7 @@
 
 static IMP vox_link_test_original_popup;
 static int vox_link_test_menu_count;
-static int vox_link_test_choose_copy;
+static int vox_link_test_choose_action;
 static NSPoint vox_link_test_menu_point;
 static NSArray<NSPasteboardItem *> *vox_link_test_saved_clipboard;
 
@@ -14,10 +14,13 @@ static BOOL vox_link_test_popup(id menu, SEL command, NSMenuItem *item, NSPoint 
 	(void)command; (void)item; (void)view;
 	vox_link_test_menu_count++;
 	vox_link_test_menu_point = point;
-	NSMenuItem *copy = [(NSMenu *)menu itemAtIndex:0];
+	NSMenuItem *open = [(NSMenu *)menu itemAtIndex:0];
+	NSMenuItem *copy = [(NSMenu *)menu itemAtIndex:1];
+	NSCAssert([open.title isEqualToString:@"Open Link in New Tab"] && open.enabled, @"missing tab action");
 	NSCAssert([copy.title isEqualToString:@"Copy Link URL"] && copy.enabled, @"missing copy action");
-	if (vox_link_test_choose_copy) [NSApp sendAction:copy.action to:copy.target from:copy];
-	return vox_link_test_choose_copy;
+	NSMenuItem *selected = vox_link_test_choose_action == 2 ? open : copy;
+	if (vox_link_test_choose_action) [NSApp sendAction:selected.action to:selected.target from:selected];
+	return vox_link_test_choose_action != 0;
 }
 
 static void *vox_link_test_begin(void) {
@@ -28,7 +31,7 @@ static void *vox_link_test_begin(void) {
 	Method method = class_getInstanceMethod(VoxLinkContextMenu.class, @selector(popUpMenuPositioningItem:atLocation:inView:));
 	vox_link_test_original_popup = method_setImplementation(method, (IMP)vox_link_test_popup);
 	vox_link_test_menu_count = 0;
-	vox_link_test_choose_copy = 1;
+	vox_link_test_choose_action = 1;
 	NSPasteboard *board = [NSPasteboard generalPasteboard];
 	NSMutableArray *saved = [[NSMutableArray alloc] init];
 	for (NSPasteboardItem *item in board.pasteboardItems) {
@@ -64,7 +67,8 @@ static void vox_link_test_end(void *handle) {
 }
 
 static int vox_link_test_count(void) { return vox_link_test_menu_count; }
-static void vox_link_test_cancel(void) { vox_link_test_choose_copy = 0; }
+static void vox_link_test_cancel(void) { vox_link_test_choose_action = 0; }
+static void vox_link_test_open_in_new_tab(void) { vox_link_test_choose_action = 2; }
 static int vox_link_test_clipboard_matches(const unsigned char *bytes, int length) {
 	NSString *expected = [[NSString alloc] initWithBytes:bytes length:length encoding:NSUTF8StringEncoding];
 	BOOL matches = [[[NSPasteboard generalPasteboard] stringForType:NSPasteboardTypeString] isEqualToString:expected];
