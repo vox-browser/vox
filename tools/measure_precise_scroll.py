@@ -200,6 +200,12 @@ def main():
                VOX_PRECISE_SETTLE=str(args.settle_seconds))
     pinned = [binary, *sorted(binary.parent.glob("*.dylib")),
               Path(__file__).resolve(), source, probe, *libraries]
+    # A private replay certificate changes the accepted network responses.
+    # Retain its identity with the code, rather than just a mutable pathname.
+    if env.get("SSL_CERT_FILE"):
+        certificate = Path(env["SSL_CERT_FILE"]).resolve()
+        if certificate.is_file():
+            pinned.append(certificate)
     hashes = {str(path): sha256(path) for path in pinned}
     command = [str(binary), "--enable-javascript", "--window-width", str(args.width),
                "--window-height", str(args.height + 84), args.url]
@@ -210,7 +216,8 @@ def main():
                     schedule=dict(inputs=args.inputs, hz=args.input_hz, delta=args.delta,
                                   reverse_every=args.reverse_every, settle_seconds=args.settle_seconds),
                     environment={key: value for key, value in env.items() if key.startswith(
-                        ("VOX_", "LADYBIRD_", "DYLD_")) or key in {"HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY"}})
+                        ("VOX_", "LADYBIRD_", "DYLD_")) or key in {
+                            "HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY", "SSL_CERT_FILE"}})
     try:
         with (output / "browser.log").open("w") as log:
             child = subprocess.Popen(command, cwd=REPO, env=env, stdout=log,

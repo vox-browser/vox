@@ -1,4 +1,5 @@
 import contextlib
+import hashlib
 import io
 import json
 from pathlib import Path
@@ -29,6 +30,8 @@ class PreciseScrollTests(unittest.TestCase):
             root = Path(temporary).resolve()
             binary = root / "Vox"
             binary.write_bytes(b"fixture binary")
+            certificate = root / "replay-ca.pem"
+            certificate.write_bytes(b"fixture private trust certificate")
             output = root / "measurement"
             user_profile = root / "user-profile"
             user_profile.mkdir()
@@ -45,6 +48,7 @@ class PreciseScrollTests(unittest.TestCase):
                 self.assertEqual(Path(env["VOX_PROFILE_DIR"]), output / "profile")
                 self.assertEqual(list((output / "profile").iterdir()), [])
                 self.assertEqual(env["VOX_PROXY"], "http://127.0.0.1:9")
+                self.assertEqual(env["SSL_CERT_FILE"], str(certificate))
                 self.assertNotIn("VOX_PROFILE_FRAMES", env)
                 kwargs["stdout"].write(log_for())
                 return mock.Mock(pid=123, wait=mock.Mock(return_value=0))
@@ -56,6 +60,7 @@ class PreciseScrollTests(unittest.TestCase):
                     mock.patch.object(measure_precise_scroll.sys, "argv", arguments), \
                     mock.patch.dict(measure_precise_scroll.os.environ,
                                     VOX_PROFILE_DIR=str(user_profile), VOX_PROFILE_FRAMES="600",
+                                    SSL_CERT_FILE=str(certificate),
                                     VOX_PROXY="http://127.0.0.1:9"), \
                     mock.patch.object(measure_precise_scroll.subprocess, "run", compile_probe), \
                     mock.patch.object(measure_precise_scroll.subprocess, "Popen", launch), \
@@ -64,6 +69,9 @@ class PreciseScrollTests(unittest.TestCase):
             evidence = json.loads((output / "run.json").read_text())
             self.assertTrue(evidence["valid"])
             self.assertEqual(evidence["environment"]["VOX_PROFILE_DIR"], str(output / "profile"))
+            self.assertEqual(evidence["environment"]["SSL_CERT_FILE"], str(certificate))
+            self.assertEqual(evidence["source_and_binary_sha256"][str(certificate)],
+                             hashlib.sha256(certificate.read_bytes()).hexdigest())
             for name, content in saved.items():
                 self.assertEqual((user_profile / name).read_text(), content)
 
