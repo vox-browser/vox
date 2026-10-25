@@ -113,3 +113,14 @@ fn test_chromium_broken_image_cache_outlives_the_document_arena() {
 	assert voidptr(cached) == voidptr(bitmap)
 	assert cached.data == pixels
 }
+
+fn test_chromium_broken_image_frame_snaps_fractional_device_edges() {
+	mut commands := []PaintCommand{}
+	append_chromium_broken_image(mut commands, &painting.ImagePaintable{
+		image_rect: painting.Rect{138.9375, 1447.859375, 140, 140}
+		broken_image_fallback_scale: 2
+	}, 1)
+	assert commands.len == 2
+	assert [commands[0].x, commands[0].y, commands[0].width, commands[0].height] == [140.0, 1449.0, 138.0, 138.0]
+	assert [commands[1].x, commands[1].y] == [143.0, 1452.0]
+}

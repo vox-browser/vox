@@ -54,7 +54,10 @@ fn chromium_broken_image_bitmap(scale f64) ?&dom.Bitmap_ {
 fn append_chromium_broken_image(mut commands []PaintCommand, paintable &painting.ImagePaintable,
 	opacity f64) {
 	scale := paintable.broken_image_fallback_scale
-	r := paintable.image_rect
+	// Blink snaps the complete fallback frame to device pixels before painting.
+	converter := painting.new_device_pixel_converter(1) or { return }
+	snapped := converter.rounded_device_rect(paintable.image_rect)
+	r := painting.Rect{f64(snapped.x), f64(snapped.y), f64(snapped.width), f64(snapped.height)}
 	if r.width < 18 * scale || r.height < 18 * scale { return }
 	commands << PaintCommand{
 		kind:         'stroke_rounded_rect'
