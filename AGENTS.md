@@ -110,6 +110,8 @@
   run it inside the memory guard above with `VOX_TEST_WINDOW=1`. Record the
   executable and native-library hashes, URL, viewport, backing scale, cache and
   network policy, settle period, input schedule, and actual input timestamps.
+  Use an empty private `VOX_PROFILE_DIR` for each trial, as the tool does, so
+  saved proxy settings and bookmark-bar visibility cannot change the workload.
   Keep these conditions identical in before/after comparisons. A frozen cached
   page isolates a change; also validate the installed bundle on the live URL
   before claiming the user's live scrolling problem is fixed.

@@ -858,6 +858,9 @@ fields and do not replace full-window throughput.
 The tool selects the test display away from the pointer. `--network-policy`
 records the policy; an offline comparison must separately supply the blocking
 interposer with `--insert-library` and an identical `--cache-template`.
+Each trial uses an empty private `VOX_PROFILE_DIR`: saved proxy settings cannot
+override the selected route, and the bookmark bar stays hidden so its height
+cannot change the document viewport. The user's profile remains untouched.
 Run at least two unprofiled trials per build, alternating matched controls and
 candidates for optimization credit, then validate the installed bundle live.
 
