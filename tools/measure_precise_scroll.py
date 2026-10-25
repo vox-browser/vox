@@ -174,6 +174,10 @@ def main():
     else:
         cache.mkdir()
     shutil.rmtree(cache / "snapshots", ignore_errors=True)
+    # Saved bookmarks change the document viewport and saved proxy settings can
+    # override the requested route. Never read or update the user's profile.
+    profile = output / "profile"
+    profile.mkdir()
     digest = hashlib.sha256()
     for path in sorted(cache.rglob("*")):
         if path.is_file():
@@ -188,6 +192,7 @@ def main():
             env.pop(name)
     libraries = [path.resolve() for path in args.insert_library]
     env.update(VOX_TEST_WINDOW="1", LADYBIRD_CACHE_DIR=str(cache),
+               VOX_PROFILE_DIR=str(profile),
                DYLD_LIBRARY_PATH=str(binary.parent),
                DYLD_INSERT_LIBRARIES=":".join(map(str, [probe, *libraries])),
                VOX_PRECISE_INPUTS=str(args.inputs), VOX_PRECISE_REVERSE=str(args.reverse_every),
@@ -200,6 +205,7 @@ def main():
                "--window-height", str(args.height + 84), args.url]
     evidence = dict(command=command, compile_command=compile_command,
                     source_and_binary_sha256=hashes, cache_sha256=digest.hexdigest(),
+                    initial_profile="empty private profile; bookmark bar hidden; no saved proxy override",
                     viewport=[args.width, args.height], network_policy=args.network_policy,
                     schedule=dict(inputs=args.inputs, hz=args.input_hz, delta=args.delta,
                                   reverse_every=args.reverse_every, settle_seconds=args.settle_seconds),

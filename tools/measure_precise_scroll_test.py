@@ -1,5 +1,12 @@
+import contextlib
+import io
+import json
+from pathlib import Path
+import tempfile
 import unittest
+from unittest import mock
 
+import measure_precise_scroll
 from measure_precise_scroll import summarize
 
 
@@ -17,6 +24,49 @@ def log_for(times=None, positions=None):
 
 
 class PreciseScrollTests(unittest.TestCase):
+    def test_launch_isolates_saved_proxy_and_bookmarks_from_user_profile(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            binary = root / "Vox"
+            binary.write_bytes(b"fixture binary")
+            output = root / "measurement"
+            user_profile = root / "user-profile"
+            user_profile.mkdir()
+            saved = {"settings.json": '{"enabled":true,"host":"saved-proxy","port":"1080"}',
+                     "bookmarks.json": '{"visible":true,"items":[],"version":1}'}
+            for name, content in saved.items():
+                (user_profile / name).write_text(content)
+
+            def compile_probe(command, **kwargs):
+                Path(command[-1]).write_bytes(b"fixture probe")
+
+            def launch(command, **kwargs):
+                env = kwargs["env"]
+                self.assertEqual(Path(env["VOX_PROFILE_DIR"]), output / "profile")
+                self.assertEqual(list((output / "profile").iterdir()), [])
+                self.assertEqual(env["VOX_PROXY"], "http://127.0.0.1:9")
+                self.assertNotIn("VOX_PROFILE_FRAMES", env)
+                kwargs["stdout"].write(log_for())
+                return mock.Mock(pid=123, wait=mock.Mock(return_value=0))
+
+            arguments = ["probe", "--binary", str(binary), "--output", str(output),
+                         "--inputs", "12", "--network-policy", "fixture offline route",
+                         "--env", f"VOX_PROFILE_DIR={user_profile}"]
+            with mock.patch.object(measure_precise_scroll.sys, "platform", "darwin"), \
+                    mock.patch.object(measure_precise_scroll.sys, "argv", arguments), \
+                    mock.patch.dict(measure_precise_scroll.os.environ,
+                                    VOX_PROFILE_DIR=str(user_profile), VOX_PROFILE_FRAMES="600",
+                                    VOX_PROXY="http://127.0.0.1:9"), \
+                    mock.patch.object(measure_precise_scroll.subprocess, "run", compile_probe), \
+                    mock.patch.object(measure_precise_scroll.subprocess, "Popen", launch), \
+                    contextlib.redirect_stdout(io.StringIO()):
+                measure_precise_scroll.main()
+            evidence = json.loads((output / "run.json").read_text())
+            self.assertTrue(evidence["valid"])
+            self.assertEqual(evidence["environment"]["VOX_PROFILE_DIR"], str(output / "profile"))
+            for name, content in saved.items():
+                self.assertEqual((user_profile / name).read_text(), content)
+
     def test_uses_in_process_publication_timestamps_and_reports_actual_input_rate(self):
         result = summarize(log_for(), 12)
         self.assertEqual(result["mean_publication_fps"], 100)
