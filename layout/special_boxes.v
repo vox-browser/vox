@@ -1058,28 +1058,35 @@ pub fn TextInputBox.new(document &dom.Document, element &dom.Element, computed_v
 		BlockContainer: special_block_container_base(document, element.as_node(), computed_values)
 	}
 	box.is_text_input_box_ = true
+	box.has_auto_content_box_size_ = true
+	box.auto_content_box_size_ = text_input_auto_content_box_size(unsafe { &Node(box) })
+	return box
+}
+
+// Box.cpp's default_preferred_size_for_text_control() reads live element and
+// layout style values, including when style refresh preserves the layout box.
+fn text_input_auto_content_box_size(box_node &Node) css.SizeWithAspectRatio {
+	dom_node := box_node.dom_node() or { return css.SizeWithAspectRatio{} }
+	element := dom_node.as_element() or { return css.SizeWithAspectRatio{} }
 	// TextInputBox::compute_auto_content_box_size(). The `size` attribute is a
 	// `ch` length resolved against this box's own font, so the advance is
 	// quantized to CSSPixels before it is multiplied - not after.
 	columns := positive_integer_attribute_or_default(element, 'size', 20)
-	box_node := unsafe { &Node(box) }
 	mut width := resolve_font_dependent_length_for_node(box_node, css.Length.new(f64(columns), .ch))
-	if document.font_rendering_policy() == .chromium {
+	if box_node.document().font_rendering_policy() == .chromium {
 		width = chromium_control_intrinsic_inline_size(box_node, columns, false)
 	}
 	// `normal` depends on the selected face's metrics. Read the document-
-	// resolved values retained by the new box instead of the pre-materialized
-	// ComputedProperties passed across the tree-builder boundary.
+	// resolved values retained by the box instead of the pre-materialized
+	// ComputedProperties passed across the style boundary.
 	mut height := box_node.computed_values().line_height()
 	if box_node.computed_values().writing_mode() != .horizontal_tb {
 		width, height = height, width
 	}
-	box.has_auto_content_box_size_ = true
-	box.auto_content_box_size_ = css.SizeWithAspectRatio{
+	return css.SizeWithAspectRatio{
 		width: width
 		height: height
 	}
-	return box
 }
 
 @[heap]
