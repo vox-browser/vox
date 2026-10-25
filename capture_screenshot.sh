@@ -42,6 +42,12 @@ cleanup() {
 }
 trap cleanup EXIT HUP INT TERM
 
+# Persisted browser chrome (for example a visible bookmarks bar) changes the
+# document viewport and invalidates the fixed chrome crop below. Give each
+# capture an empty profile, including every strip of a stitched capture.
+VOX_PROFILE_DIR="$capture_tmp/profile"
+export VOX_PROFILE_DIR
+
 # The native window includes a 60px integrated tab strip and toolbar (diagnostics hidden) and 24px status bar around the requested
 # document viewport. The browser snapshots its Cocoa content view directly, avoiding macOS Screen
 # Recording permission including the integrated window controls in the cropped browser chrome.
