@@ -132,7 +132,15 @@ fn TextNodeChunkIterator.new_with_direction(text_node &TextNode, should_wrap_lin
 		retained.finish()
 		units
 	}
+	mut line_boundaries := if should_wrap_lines {
+		text_line_boundaries_from_segmenter(text_node.line_segmenter(), code_units.len)
+	} else {
+		[]bool{}
+	}
 	font_cascade, rendering_font := chunk_iterator_rendering_fonts(text_node)
+	if text_node.Node.document().font_rendering_policy() == .chromium {
+		apply_chromium_ascii_line_breaks(code_units, mut line_boundaries)
+	}
 	mut iterator := &TextNodeChunkIterator{
 		text_node: text_node
 		should_wrap_lines_: should_wrap_lines
@@ -149,11 +157,7 @@ fn TextNodeChunkIterator.new_with_direction(text_node &TextNode, should_wrap_lin
 		// No-wrap consumers still need grapheme, font and preserved-break
 		// boundaries, but never query soft-wrap opportunities. In particular,
 		// collecting innerText must not initialize the Unicode line segmenter.
-		line_boundaries: if should_wrap_lines {
-			text_line_boundaries_from_segmenter(text_node.line_segmenter(), code_units.len)
-		} else {
-			[]bool{}
-		}
+		line_boundaries: line_boundaries
 		word_break: text_node.Node.computed_values().word_break()
 		text_direction_mode: text_direction_mode
 		font: rendering_font
