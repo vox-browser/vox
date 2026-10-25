@@ -258,3 +258,41 @@ attempt), `region-resume-guard.json` (completed checks and benchmarks),
 `region-after`, `region-repeat-after` and `region-repeat-before` under
 `Build/pikabu-scroll-20261024/`. These focused native jobs use the guard's
 3 GiB budget.
+
+
+### Clipped gradient transfers
+
+Root gradients at Retina scale (`2b4dc344`) now copy only the visible rectangle to and from
+CPU memory. The GPU keeps the original full surface, geometry, clips and shader
+coordinates, preserving coverage and dither phase. CoreGraphics still applies
+the destination clip when publishing the compact image. Unsupported contexts
+and older bridge libraries use the existing full-surface fallback.
+
+| Per scroll callback | Compact-tile control | Gradient regions | Repeat control | Repeat gradient regions |
+| --- | ---: | ---: | ---: | ---: |
+| Median callback | 50.680 ms | 46.988 ms | 52.749 ms | 48.591 ms |
+| Median replay | 46.095 ms | 42.855 ms | 48.293 ms | 44.349 ms |
+| Mean retired instructions | 303.592 M | 292.501 M | 308.468 M | 297.520 M |
+
+The same 120-frame animated workload saves 11.091 M and 10.948 M instructions
+per callback (3.65% and 3.55%), with median callback reductions of 7.29% and
+7.88%. These callbacks exclude native publication and display scanout; they
+remain above the 16.67 ms budget and do not establish 60 fps.
+
+Validation passes 576 exact GPU path-region comparisons, 192 CoreGraphics
+integration comparisons, 6,986 GPU replay comparisons and headless startup.
+The new focused tests cover linear and radial gradients, alpha, strokes,
+fractional transforms, local and ancestor clips, odd pitches, unaligned storage
+and untouched padding. Integration checks include curved destination clips,
+root and isolated layers, and both render scales. Pikabu remains pixel-exact at
+1× and 2× with only its seven shimmers paused for visual comparison. The first
+pair exceeds the 5 M instruction gate; the broader native batch and all 19
+visual pages preserve the control's pixels.
+
+Receipts are `gradient-region-retry-guard.json`, `gradient-region-result.json`,
+`gradient-region-visual/`, `gradient-region-repository-tests-result.json` and
+the benchmark directories `gradient-region-after`,
+`gradient-region-repeat-after` and `gradient-region-repeat-before` under
+`Build/pikabu-scroll-20261024/`. The initial compile failure is retained in
+`gradient-region-guard.json`. This completed broad batch is the new instruction
+savings baseline for subsequent native raster experiments.
