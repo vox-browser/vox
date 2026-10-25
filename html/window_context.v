@@ -1498,8 +1498,9 @@ fn document_settings_has_cross_site_ancestor(settings_pointer voidptr) bool {
 	return unsafe { &EnvironmentSettingsObject(settings_pointer) }.has_cross_site_ancestor()
 }
 
-fn document_structured_deserialize(_ voidptr, record dom.DOMSerializationRecord) ?dom.JSValue {
-	return structured_deserialize(SerializationRecord{
+fn document_structured_deserialize(target voidptr, record dom.DOMSerializationRecord) ?dom.JSValue {
+	window := unsafe { &WindowModel(target) }
+	return window.history().deserialize_state(SerializationRecord{
 		// SessionHistoryEntry::classic_history_api_state is always a
 		// StorageSerializationRecord, including across the DOM cycle boundary.
 		type_: .storage
@@ -1604,6 +1605,7 @@ fn WindowModel.create_with_global(document &dom.Document, context &BrowsingConte
 	}
 	_ = NavigableModel.create(host_navigable, context)!
 	mut history := History.create(document.url, dom.js_null())!
+	history.set_associated_document(document)
 	mut navigation := Navigation.create(document)
 	history.set_navigation(navigation)
 	close_watcher_manager := CloseWatcherManager.create()

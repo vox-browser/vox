@@ -1580,13 +1580,17 @@ pub fn perform_url_and_history_update_steps(document &dom.Document, new_url dom.
 		history.index++
 		history.length = history.index + 1
 	}
-	mutable_document.set_url(new_url)
-	mutable_document.set_latest_entry(&dom.SessionHistoryEntry{
+	document_entry := &dom.SessionHistoryEntry{
 		url: new_url
 		classic_history_api_state: dom.DOMSerializationRecord{
 			data: new_entry.classic_history_api_state.data.clone()
 		}
-	})
+	}
+	if serialized_data != none {
+		mutable_document.restore_the_history_object_state(document_entry)
+	}
+	mutable_document.set_url(new_url)
+	mutable_document.set_latest_entry(document_entry)
 	active_document := model.active_document() or {
 		return error('InvalidStateError: navigable has no active document')
 	}

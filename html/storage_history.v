@@ -236,6 +236,9 @@ mut:
 	state_          dom.JSValue
 	last_traversal_ HistoryTraversalRecord
 	navigation_     ?&Navigation
+	document_       ?&dom.Document
+	state_revision_ u64
+	deserialization_context_ StructuredDeserializationContext
 }
 
 pub fn History.create(initial_url dom.URL, initial_state dom.JSValue) !&History {
@@ -260,7 +263,35 @@ pub fn (mut history History) set_navigation(navigation ?&Navigation) {
 	history.navigation_ = navigation
 }
 
+pub fn (mut history History) set_associated_document(document &dom.Document) {
+	history.document_ = document
+	mut owner := unsafe { &dom.Document(document) }
+	mut state := owner.history()
+	if state.length == 0 {
+		state.length = history.entries_.len
+		state.index = history.index_
+	}
+}
+
+// Actual engine wrappers cache the deserialized state object until it changes.
+pub fn (history &History) state_revision() u64 {
+	return history.state_revision_
+}
+
+pub fn (mut history History) set_deserialization_context(context StructuredDeserializationContext) {
+	history.deserialization_context_ = context
+}
+
+pub fn (history &History) deserialize_state(record SerializationRecord) !dom.JSValue {
+	return structured_deserialize_with_context(record, history.deserialization_context_)
+}
+
 fn (history &History) require_fully_active(operation string) ! {
+	if document := history.document_ {
+		if !document.is_fully_active() {
+			return error("SecurityError: cannot perform ${operation} on a document that isn't fully active")
+		}
+	}
 	if !history.fully_active_ {
 		return error("SecurityError: cannot perform ${operation} on a document that isn't fully active")
 	}
@@ -268,11 +299,13 @@ fn (history &History) require_fully_active(operation string) ! {
 
 pub fn (history &History) length() !u64 {
 	history.require_fully_active('length')!
+	if document := history.document_ { return u64(document.history().length) }
 	return u64(history.entries_.len)
 }
 
 pub fn (history &History) state() !dom.JSValue {
 	history.require_fully_active('state')!
+	if document := history.document_ { return document.history().state }
 	return history.state_
 }
 
@@ -322,28 +355,45 @@ pub fn can_have_its_url_rewritten(document_url dom.URL, target_url dom.URL) bool
 		&& history_optional_string_equal(target_url.query(), document_url.query())
 }
 
-fn (mut history History) shared_history_push_replace_state(data dom.JSValue, url ?string, behavior HistoryHandlingBehavior) ! {
+fn (mut history History) shared_history_push_replace_state(data dom.JSValue, url ?string, behavior_ HistoryHandlingBehavior) ! {
+	behavior := if document := history.document_ {
+		if document.get_is_initial_about_blank() {
+			HistoryHandlingBehavior.replace
+		} else {
+			behavior_
+		}
+	} else {
+		behavior_
+	}
 	history.require_fully_active(if behavior == .push { 'pushState' } else { 'replaceState' })!
 	serialized := structured_serialize_for_storage(data) or {
 		structured_serialize_for_storage(dom.js_null())!
 	}
-	mut new_url := history.document_url_
+	mut new_url := history.current_url()
+	base_url := if document := history.document_ { document.base_url() } else { new_url }
 	if value := url {
 		if value != '' {
-			new_url = dom.dom_url_parse(value, history.document_url_, 'UTF-8') or {
+			new_url = dom.dom_url_parse(value, base_url, 'UTF-8') or {
 				return error('SecurityError: cannot push or replace state to incompatible URL')
 			}
-			if !can_have_its_url_rewritten(history.document_url_, new_url) {
+			if !can_have_its_url_rewritten(history.current_url(), new_url) {
 				return error('SecurityError: cannot push or replace state to incompatible URL')
 			}
 		}
 	}
 	if mut navigation := history.navigation_ {
-		type_ := if behavior == .push { dom.NavigationType.push } else { dom.NavigationType.replace }
+		type_ := if behavior_ == .push {
+			dom.NavigationType.push
+		} else {
+			dom.NavigationType.replace
+		}
 		if !navigation.fire_a_push_replace_reload_navigate_event(type_, new_url, true, .none_,
 			none, none, none, serialized) {
 			return
 		}
+	}
+	if document := history.document_ {
+		perform_url_and_history_update_steps(document, new_url, serialized, behavior)!
 	}
 	entry := &SessionHistoryEntry{
 		step:                      if behavior == .push {
@@ -353,6 +403,7 @@ fn (mut history History) shared_history_push_replace_state(data dom.JSValue, url
 		}
 		url:                       new_url
 		classic_history_api_state: serialized
+		scroll_restoration_mode:   history.entries_[history.index_].scroll_restoration_mode
 	}
 	if behavior == .push {
 		if history.index_ + 1 < history.entries_.len {
@@ -365,6 +416,7 @@ fn (mut history History) shared_history_push_replace_state(data dom.JSValue, url
 	}
 	history.document_url_ = new_url
 	history.state_ = data
+	history.state_revision_++
 }
 
 pub fn (mut history History) push_state(data dom.JSValue, unused string, url ?string) ! {
@@ -394,6 +446,7 @@ pub fn (mut history History) delta_traverse(delta int) ! {
 	entry := history.entries_[target]
 	history.document_url_ = entry.url
 	history.state_ = structured_deserialize(entry.classic_history_api_state) or { dom.js_null() }
+	history.state_revision_++
 	history.last_traversal_ = HistoryTraversalRecord{
 		action: .traverse
 		delta:  delta
@@ -414,15 +467,27 @@ pub fn (mut history History) forward() ! {
 
 pub fn (history &History) scroll_restoration() !ScrollRestorationMode {
 	history.require_fully_active('scrollRestoration')!
+	if entry := history.associated_history_entry() { return entry.scroll_restoration_mode }
 	return history.entries_[history.index_].scroll_restoration_mode
 }
 
 pub fn (mut history History) set_scroll_restoration(value ScrollRestorationMode) ! {
 	history.require_fully_active('scrollRestoration')!
+	if mut entry := history.associated_history_entry() { entry.scroll_restoration_mode = value }
 	history.entries_[history.index_].scroll_restoration_mode = value
 }
 
+fn (history &History) associated_history_entry() ?&SessionHistoryEntry {
+	document := history.document_ or { return none }
+	pointer := NavigableModel.navigable_with_active_document(document) or { return none }
+	model := unsafe { &NavigableModel(pointer) }
+	return model.active_session_history_entry()
+}
+
 pub fn (history &History) current_url() dom.URL {
+	if document := history.document_ {
+		return document.url
+	}
 	return history.document_url_
 }
 
