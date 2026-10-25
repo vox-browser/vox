@@ -11149,16 +11149,18 @@ pub fn (mut d Document) elements_from_point(x f64, y f64) []&Element {
 		sequence[i] = retarget_from_ua_internal_shadow_root(element)
 	}
 	mut deduplicated_sequence := []&Element{}
+	mut seen := map[voidptr]bool{}
 	for element in sequence {
-		if deduplicated_sequence.len == 0 || deduplicated_sequence.last() != element {
+		if !seen[voidptr(element)] {
+			seen[voidptr(element)] = true
 			deduplicated_sequence << element
 		}
 	}
 	sequence = deduplicated_sequence.clone()
 
-	// 4. If the document has a root element and it's not in the sequence, append it.
+	// 4. If the last item is not the document's root element, append that root.
 	if root := d.document_element() {
-		if sequence.len == 0 || sequence.last() != root {
+		if sequence.len == 0 || voidptr(sequence.last()) != voidptr(root) {
 			sequence << root
 		}
 	}

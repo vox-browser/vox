@@ -145,6 +145,9 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	}
 	action := json_string_property(request, 'action') or { return error('Invalid selector action') }
 	key := json_string_property(request, 'key') or { '' }
+	if action in ['elementFromPoint', 'elementsFromPoint'] {
+		return binding.hit_test_query(action, selector)
+	}
 	if action == 'state' {
 		node := binding.node_for_key(key) or { return 'null' }
 		return json2.encode(binding.node_state(node))
