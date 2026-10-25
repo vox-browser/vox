@@ -1254,8 +1254,23 @@ to investigate, without assigning an unprofiled frame-rate gain to any change.
 Two candidates preserve the existing pixel format and geometry: moving mask
 format selection outside pixel loops to permit vectorization, and copying
 raster-snapshot literal spans in bulk while preserving the encoded word stream.
-Their focused checks and production comparison are pending. Neither candidate
-has scrolling optimization credit or establishes smooth 60 fps. New fixture
+Both implementations and their focused tests are committed. Mask conversion
+passes 248 stride/tail/guard scenes, all 16,777,216 RGB triples, every alpha
+value, and ASan/UBSan; the existing 16 CoreGraphics mask-layer scenes remain
+exact. Snapshot encoding passes the existing replay and Graphite cache tests,
+11 literal-boundary cases, 1,024 reference comparisons and ASan/UBSan. The
+promoted header and tests match the private candidates exercised by those
+checks. The complete focused-check guard exits zero, peaking at 560,037,888
+sampled RSS bytes.
+
+The first conversion/snapshot microbenchmarks are noisy under host contention
+and include regressions as well as gains. They receive no optimization credit.
+Production build, paired visual checks and native scrolling trials remain
+pending behind the shared memory guard. The mask comparison freezes the
+preprocessed browser translation unit and native libraries; both variants
+include the snapshot change, so it cannot establish a snapshot FPS gain.
+Neither candidate has scrolling optimization credit or establishes smooth
+60 fps. New fixture
 checks must count eligibility during input separately from startup and settling;
 a path exercised only while loading cannot explain a scrolling timing change.
 
@@ -1264,3 +1279,11 @@ Evidence under `Build/pikabu-live-lag-20261025/cache-mask/`:
 `live-profile-v3-{result.json,sample.txt}` and
 `live-profile-v3-queued-guard.json`. The browser measurement, sample and guard
 all exit zero. This is a profiled diagnostic, not an acceptance run.
+
+Focused-check evidence under `Build/pikabu-live-lag-20261025/`: `mask-pixels-check-result.json`, `mask-pixels-full-check-guard.json`,
+`mask-pixels-{normal,sanitizers,layers}.log`, `mask-pixels-bench.jsonl`,
+`mask-pixels-bench-assembly.txt`, and
+`snapshot-literals/{result.json,comparisons-and-bench.log,sanitizer.log,
+promoted-source-sha256.json}`. The committed changes are `d5cf4d2b` and
+`c57e75f0`; these identifiers describe implementation and correctness, not
+acceptance of the scrolling target.
