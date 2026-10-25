@@ -23,7 +23,7 @@ for (const [name, hostname] of [['server', 'DNS:localhost,IP:127.0.0.1'], ['wron
     run(['req', '-new', '-key', name + '.key', '-subj', '/CN=localhost', '-out', name + '.csr']);
     run(['x509', '-req', '-in', name + '.csr', '-CA', 'ca.pem', '-CAkey', 'ca.key', '-CAcreateserial', '-days', '2', '-sha256', '-extfile', name + '.cnf', '-out', name + '.pem']);
 }
-const state = { handshakes: { h2: 0, h1: 0, wrong_host: 0 }, requests: [], active: 0, maximum_active: 0 };
+const state = { handshakes: { h2: 0, h1: 0, wrong_host: 0 }, requests: [], active: 0, maximum_active: 0, proxy_hosts: [] };
 function save() {
     fs.writeFileSync('stats.json.tmp', JSON.stringify(state));
     fs.renameSync('stats.json.tmp', 'stats.json');
@@ -36,6 +36,8 @@ function request(req, res) {
     save();
     res.on('finish', () => { state.active--; save(); });
     if (req.url === '/dir/redirect') { res.writeHead(302, { location: '../binary?allowed=1' }); res.end(); return; }
+    if (req.url === '/proxy-to-direct') { res.writeHead(302, { location: `http://127.0.0.1:${http_port}/binary` }); res.end(); return; }
+    if (req.url === '/direct-to-proxy') { res.writeHead(302, { location: `http://remote-dns.invalid:${http_port}/binary` }); res.end(); return; }
     if (req.url === '/blocked-redirect') { res.writeHead(302, { location: 'https://www.google-analytics.com/g/collect?v=2' }); res.end(); return; }
     const gzip = req.url === '/gzip';
     const body = gzip ? gzipSync(binary) : binary;
@@ -72,6 +74,8 @@ const proxy = net.createServer(client => {
         if (!length) { client.destroy(); return; }
         if (buffer.length < 4 + length + 2) return;
         const host = type === 1 ? [...buffer.subarray(4, 8)].join('.') : buffer.subarray(5, 4 + length).toString();
+        state.proxy_hosts.push(host);
+        save();
         const port = buffer.readUInt16BE(4 + length);
         const pending = buffer.subarray(6 + length);
         stage = 'connected';

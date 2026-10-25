@@ -51,6 +51,10 @@ struct ProxyFixturePorts {
 	wrong_host_port int
 }
 
+struct ScopedProxyStats {
+	proxy_hosts []string
+}
+
 fn test_socks_proxy_carries_navigation_redirects_binary_data_and_verified_tls() {
 	node := os.find_abs_path_of_executable('node') or { panic(err) }
 	openssl := os.find_abs_path_of_executable('openssl') or { panic(err) }
@@ -123,5 +127,24 @@ fn test_socks_proxy_carries_navigation_redirects_binary_data_and_verified_tls() 
 	}
 	browsersettings.save(browsersettings.Proxy{})!
 	assert get(adblock.Request{url: target, source_url: target, request_type: 'main_frame'}, ca)!.response.status_code == 200
+	// A scoped proxy applies to request destinations, including subresources and
+	// each redirect hop, rather than inheriting the source page's route.
+	browsersettings.save(browsersettings.Proxy{ enabled: true, port: ports.proxy_port.str(), sites: 'remote-dns.invalid' })!
+	assert get(adblock.Request{ url: '${address}/binary', source_url: target, request_type: 'image' }, ca)!.response.status_code == 200
+	assert get(adblock.Request{ url: target, source_url: address, request_type: 'image' }, ca)!.response.status_code == 200
+	before_redirects := json2.decode[ScopedProxyStats](os.read_file(os.join_path(directory, 'stats.json'))!)!.proxy_hosts.len
+	for redirect in ['${address}/proxy-to-direct',
+		'http://127.0.0.1:${ports.http_port}/direct-to-proxy'] {
+		assert get(adblock.Request{ url: redirect, source_url: redirect, request_type: 'main_frame' }, ca)!.response.status_code == 200
+	}
+	after_redirects := json2.decode[ScopedProxyStats](os.read_file(os.join_path(directory, 'stats.json'))!)!.proxy_hosts
+	assert after_redirects[before_redirects..] == ['remote-dns.invalid', 'remote-dns.invalid']
+	// Unlisted hosts still connect directly if the selected proxy is offline;
+	// listed hosts fail rather than silently escaping the configured proxy.
+	browsersettings.save(browsersettings.Proxy{ enabled: true, port: '1', sites: 'remote-dns.invalid' })!
+	assert get(adblock.Request{ url: target, source_url: address, request_type: 'image' }, ca)!.response.status_code == 200
+	if response := get(adblock.Request{ url: '${address}/binary', source_url: target, request_type: 'image' }, ca) {
+		assert false, 'scoped proxy was bypassed: ${response.url}'
+	}
 	http.close_idle_connections()
 }

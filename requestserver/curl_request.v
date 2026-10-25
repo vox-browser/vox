@@ -83,7 +83,7 @@ pub fn (mut connection CurlConnection) start_fetch(params &fetch.FetchParams, in
 	check_curl_result(C.vox_curl_setopt_long(native.easy_, C.CURLOPT_NOSIGNAL, 1), C.CURLE_OK)
 	check_curl_result(C.vox_curl_setopt_pointer(native.easy_, C.CURLOPT_ACCEPT_ENCODING, c''), C.CURLE_OK)
 	check_curl_result(C.vox_curl_setopt_pointer(native.easy_, C.CURLOPT_URL, request.current_url().serialize().str), C.CURLE_OK)
-	if proxy := browsersettings.proxy_override() {
+	if proxy := browsersettings.proxy_override(request.current_url().serialize()) {
 		check_curl_result(C.vox_curl_setopt_pointer(native.easy_, C.CURLOPT_PROXY, proxy.str), C.CURLE_OK)
 		check_curl_result(C.vox_curl_setopt_pointer(native.easy_, C.CURLOPT_NOPROXY, c''), C.CURLE_OK)
 	} else if proxy := os.getenv_opt('VOX_PROXY') {

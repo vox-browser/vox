@@ -45,7 +45,7 @@ fn serve_native_socks_font_proxy(mut listener net.TcpListener) {
 		request += chunk[..count].bytestr()
 	}
 	assert request.starts_with('GET /font.woff ')
-	socket.write_string('HTTP/1.1 200 OK\r\nContent-Type: font/woff\r\nContent-Length: 4\r\nConnection: close\r\n\r\nfont') or { panic(err) }
+	socket.write_string('HTTP/1.1 200 OK\r\nContent-Type: font/woff\r\nAccess-Control-Allow-Origin: *\r\nContent-Length: 4\r\nConnection: close\r\n\r\nfont') or { panic(err) }
 }
 
 fn restore_native_proxy_test_environment(name string, previous ?string) {
@@ -111,6 +111,17 @@ fn test_saved_proxy_routes_native_fetch_and_disabled_settings_override_the_envir
 	proxy_server := spawn serve_native_socks_font_proxy(mut listener)
 	native_settings_fetch('http://vox-font-proxy.invalid/owner', '/font.woff', 200, 'font')
 	proxy_server.wait()
+	// A listed subresource on an unlisted page uses SOCKS5. The reverse stays
+	// direct even with an ambient proxy, proving routing uses the destination.
+	browsersettings.save(browsersettings.Proxy{ enabled: true, port: listener.addr()!.port()!.str(), sites: 'vox-font-proxy.invalid' })!
+	scoped_proxy_server := spawn serve_native_socks_font_proxy(mut listener)
+	native_settings_fetch('http://unlisted.invalid/owner', 'http://vox-font-proxy.invalid/font.woff', 200, 'font')
+	scoped_proxy_server.wait()
+	mut scoped_direct_listener := net.listen_tcp(.ip, '127.0.0.1:0')!
+	defer { scoped_direct_listener.close() or {} }
+	scoped_direct_server := spawn serve_streaming_response(mut scoped_direct_listener)
+	native_settings_fetch('http://vox-font-proxy.invalid/owner', 'http://${scoped_direct_listener.addr()!}/stream', 201, 'reality')
+	scoped_direct_server.wait()
 	// Clearing the saved checkbox must explicitly disable the ambient proxy.
 	browsersettings.save(browsersettings.Proxy{})!
 	os.setenv('NO_PROXY', '', true)
@@ -145,7 +156,7 @@ fn serve_streaming_response(mut listener net.TcpListener) {
 	defer { socket.close() or {} }
 	mut input := []u8{len: 4096}
 	_ := socket.read(mut input) or { panic(err) }
-	socket.write_string('HTTP/1.1 201 Native reason\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Length: 7\r\nX-Transport: curl\r\nConnection: close\r\n\r\nreal') or { panic(err) }
+	socket.write_string('HTTP/1.1 201 Native reason\r\nContent-Type: text/plain; charset=UTF-8\r\nAccess-Control-Allow-Origin: *\r\nContent-Length: 7\r\nX-Transport: curl\r\nConnection: close\r\n\r\nreal') or { panic(err) }
 	time.sleep(35 * time.millisecond)
 	socket.write_string('ity') or { panic(err) }
 }

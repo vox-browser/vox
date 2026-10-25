@@ -16,14 +16,15 @@ static int native_test_settings_shortcut(void) {
     return [NSApp.mainMenu performKeyEquivalent:event];
 }
 
-static int native_test_settings_controls(void *host, void *port, void *checkbox, void *apply) {
+static int native_test_settings_controls(void *host, void *port, void *sites, void *checkbox, void *apply) {
     NSView *field = (__bridge NSView *)host;
     return [field isKindOfClass:NSTextField.class]
         && [(__bridge id)port isKindOfClass:NSTextField.class]
+        && [(__bridge id)sites isKindOfClass:NSTextField.class]
         && [(__bridge id)checkbox isKindOfClass:NSButton.class]
         && [(__bridge id)apply isKindOfClass:NSButton.class]
         && field.window == vox_settings_window
-        && NSEqualSizes(vox_settings_window.contentView.bounds.size, NSMakeSize(500, 300));
+        && NSEqualSizes(vox_settings_window.contentView.bounds.size, NSMakeSize(500, 380));
 }
 
 static int native_test_settings_close_shortcut(void) {

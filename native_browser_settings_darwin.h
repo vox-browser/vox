@@ -63,7 +63,7 @@ static void native_browser_settings_install(void (*callback)(void)) {
 
 static void *native_browser_settings_content(void) {
     if (!vox_settings_window) {
-        vox_settings_window = [[VoxSettingsWindow alloc] initWithContentRect:NSMakeRect(0, 0, 500, 300)
+        vox_settings_window = [[VoxSettingsWindow alloc] initWithContentRect:NSMakeRect(0, 0, 500, 380)
             styleMask:NSWindowStyleMaskTitled | NSWindowStyleMaskClosable
             backing:NSBackingStoreBuffered defer:NO];
         vox_settings_window.title = @"Vox Settings";

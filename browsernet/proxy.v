@@ -60,7 +60,7 @@ fn configured_proxy(resource_url string, environment map[string]string) !string 
 }
 
 fn request_proxy(resource_url string) !string {
-	if proxy := browsersettings.proxy_override() {
+	if proxy := browsersettings.proxy_override(resource_url) {
 		return configured_proxy(resource_url, { 'VOX_PROXY': proxy })
 	}
 	mut environment := map[string]string{}
