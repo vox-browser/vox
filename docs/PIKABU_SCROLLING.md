@@ -525,3 +525,49 @@ conversion on the pooled implementation both produce mixed timing and no
 repeatable instruction reduction. They remain excluded from the implementation
 and receive zero savings credit (`msaa-discard-result.json`,
 `pooled-wide-result.json`).
+
+
+### Borrow the fresh document frame (`74d53691`)
+
+The document now paints into its freshly claimed RGBA frame when the complete
+bitmap, transform, clip and color space match the separate canvas. Nested
+layers retain their own canvases. Filtered roots snapshot their input and clear
+the destination before compositing, including when snapshot allocation fails.
+
+This cohort uses the newer frozen V executable with viewport reuse
+(`9075134f`); the older buffer-pool timings above are not its control.
+
+| Per callback | Separate canvas | Borrowed frame | Repeat control | Repeat borrowed |
+| --- | ---: | ---: | ---: | ---: |
+| Median callback | 31.871 ms | 29.107 ms | 34.446 ms | 32.875 ms |
+| Median replay | 27.564 ms | 25.012 ms | 29.880 ms | 28.462 ms |
+| Mean retired instructions | 199.851 M | 190.907 M | 200.078 M | 195.575 M |
+| Native completion cadence | 27.69 fps | 32.16 fps | 27.29 fps | 28.79 fps |
+
+The matched 240-frame pairs save 8.943 M and 4.503 M instructions and reduce
+callback medians by 8.67% and 4.56%. The visual driver's first-pair 8.943 M
+saving crosses the broad-test threshold; its 19 preservation comparisons and
+paused Pikabu at 1×/2× all pass exactly. The benchmark's stricter minimum-pair
+gate is false; it does not itself claim a broad pass. The completed visual
+batch advances this scrolling cohort's broad baseline to `74d53691`.
+
+Optimized and ASan/UBSan fixtures pass 42 canvas comparisons with 24 rejected
+borrow conditions, 846 bitmap comparisons with 281 guarded fallbacks, and
+1,728 publication comparisons each. An isolated staged-source run passes the
+same checks. This batch does not rerun the separate 6,986-case GPU replay suite.
+
+A current-repository production build, strict signature verification, headless
+startup, 240-frame scrolling profile and the requested Pikabu launch all pass.
+That production profile records a 23.451 ms median callback, 20.399 ms median
+replay and 36.87 fps native completion cadence. It is a separate measurement,
+not a paired improvement claim or a display scanout measurement. **60 fps
+remains unachieved.**
+
+Evidence: `frame-borrow-benchmark-result.json`,
+`frame-borrow-repository-retry/result.json`,
+`frame-borrow-index-check/result.json`, `frame-borrow-visual-guard.json`,
+`frame-borrow-visual/{gate,focused,broad}.json` and
+`frame-borrow-production-retry-result.json`, all under
+`Build/pikabu-scroll-20261024/`. The original production setup failure is
+preserved in `frame-borrow-production-guard.json`; the compiler wrapper's V
+library path was corrected before the successful retry.
