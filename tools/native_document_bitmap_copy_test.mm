@@ -86,7 +86,26 @@ static void paint_document(id view, SEL selector, NSRect rect)
 
 static std::vector<uint8_t> render(NSView *view)
 {
-    auto image = native_layer_raster_frame(view, scale, (IMP)paint_document);
+    // Keep exercising the RGBA-to-BGRA compatibility path even though normal
+    // frame allocation now uses RGBA and borrows that canvas directly.
+    auto color = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+    size_t width = ceil(view.bounds.size.width * scale);
+    size_t height = ceil(view.bounds.size.height * scale);
+    auto context = CGBitmapContextCreate(nullptr, width, height, 8, width * 4, color,
+        kCGImageAlphaPremultipliedFirst | kCGBitmapByteOrder32Little);
+    CGColorSpaceRelease(color);
+    assert(context);
+    CGContextScaleCTM(context, scale, scale);
+    [NSGraphicsContext saveGraphicsState];
+    NSGraphicsContext.currentContext = [NSGraphicsContext graphicsContextWithCGContext:context flipped:NO];
+    native_layer_document_bitmap = context;
+    native_layer_document_bitmap_claimed = NO;
+    paint_document(view, @selector(drawRect:), view.bounds);
+    auto image = CGBitmapContextCreateImage(context);
+    native_layer_document_bitmap = nullptr;
+    native_layer_document_bitmap_claimed = NO;
+    [NSGraphicsContext restoreGraphicsState];
+    CGContextRelease(context);
     assert(image);
     auto bytes = CGDataProviderCopyData(CGImageGetDataProvider(image));
     assert(bytes);

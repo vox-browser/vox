@@ -116,6 +116,38 @@ static BOOL native_layer_copy_document_bitmap(CGContextRef source,
     return YES;
 }
 
+// Only the enclosing document may borrow the fresh, unpainted frame. Its
+// initial state must match the separate RGBA canvas that would be allocated.
+static BOOL native_layer_begin_document_canvas(CGContextRef context,
+    CGFloat canvas_width, CGFloat canvas_height, CGFloat scale) {
+    if (!context || context != native_layer_document_bitmap
+        || !native_layer_document_bitmap_claimed || !isfinite(scale) || scale <= 0
+        || !isfinite(canvas_width) || !isfinite(canvas_height)
+        || canvas_width <= 0 || canvas_height <= 0) return NO;
+    size_t width = CGBitmapContextGetWidth(context);
+    size_t height = CGBitmapContextGetHeight(context);
+    CGAffineTransform ctm = CGContextGetCTM(context);
+    if (!width || !height || canvas_width * scale != (CGFloat)width
+        || canvas_height * scale != (CGFloat)height
+        || ctm.a != scale || ctm.d != scale || ctm.b != 0 || ctm.c != 0
+        || ctm.tx != 0 || ctm.ty != 0
+        || CGBitmapContextGetBitsPerComponent(context) != 8
+        || CGBitmapContextGetBitsPerPixel(context) != 32
+        || CGBitmapContextGetBitmapInfo(context) !=
+            (kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big)
+        || !CGRectEqualToRect(CGContextGetClipBoundingBox(context),
+            CGRectMake(0, 0, canvas_width, canvas_height))) return NO;
+    CGColorSpaceRef color = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+    BOOL same_color = color && CGBitmapContextGetColorSpace(context)
+        && CFEqual(color, CGBitmapContextGetColorSpace(context));
+    if (color) CGColorSpaceRelease(color);
+    if (!same_color) return NO;
+    CGContextSaveGState(context);
+    CGContextSetShouldAntialias(context, true);
+    CGContextSetInterpolationQuality(context, kCGInterpolationHigh);
+    return YES;
+}
+
 static void native_layer_draw_document_image(CGContextRef context, CGRect rect,
     CGImageRef image, int fresh_destination) {
     if (fresh_destination) {
@@ -182,7 +214,7 @@ static CGImageRef native_layer_raster_frame(NSView *view, CGFloat scale, IMP dra
     if (!width || !height || width > SIZE_MAX / 4 / height) return NULL;
     CGColorSpaceRef color = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
     CGContextRef bitmap = CGBitmapContextCreate(NULL, width, height, 8, width * 4,
-        color, kCGImageAlphaPremultipliedFirst | kCGBitmapByteOrder32Little);
+        color, kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
     CGColorSpaceRelease(color);
     if (!bitmap) return NULL;
     CGContextScaleCTM(bitmap, scale, scale);

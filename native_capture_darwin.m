@@ -2306,6 +2306,7 @@ typedef struct {
 	int routes_pattern_paint;
 	int active;
 	int copies_to_fresh_frame;
+	int borrows_fresh_frame;
 } NativeCSSFilterLayer;
 
 static NativeCSSFilterLayer native_css_filter_stack[NATIVE_CSS_FILTER_MAX_DEPTH];
@@ -2521,7 +2522,21 @@ void native_begin_font_compositing_layer(float width, float height) {
 	CGContextRef destination = [[NSGraphicsContext currentContext] CGContext];
 	int fresh_destination = native_layer_claim_document_bitmap(destination);
 	int previous_depth = native_css_filter_stack_depth;
-	native_begin_css_filter_layer(width, height);
+	CGFloat scale = native_svg_mask_backing_scale();
+	if (fresh_destination && previous_depth < NATIVE_CSS_FILTER_MAX_DEPTH
+		&& native_layer_begin_document_canvas(destination, width, height, scale)) {
+		NativeCSSFilterLayer layer = {
+			.context = CGContextRetain(destination), .destination = destination,
+			.canvas_width = width, .canvas_height = height, .scale = scale,
+			.active = 1, .copies_to_fresh_frame = 1, .borrows_fresh_frame = 1,
+		};
+		[NSGraphicsContext saveGraphicsState];
+		[NSGraphicsContext setCurrentContext:
+			[NSGraphicsContext graphicsContextWithCGContext:destination flipped:NO]];
+		native_css_filter_stack[native_css_filter_stack_depth++] = layer;
+	} else {
+		native_begin_css_filter_layer(width, height);
+	}
 	if (fresh_destination && native_css_filter_stack_depth == previous_depth + 1) {
 		NativeCSSFilterLayer *layer = &native_css_filter_stack[previous_depth];
 		if (layer->active && layer->destination == destination)
@@ -2556,11 +2571,19 @@ void native_begin_backdrop_filter_layer(float canvas_width, float canvas_height,
 	}
 	CGContextRef destination = [[NSGraphicsContext currentContext] CGContext];
 	CGContextRef source = destination;
+	CGContextRef transparent_source = NULL;
 	if (source_outside_current_filter && native_css_filter_stack_depth > 0) {
 		NativeCSSFilterLayer const *current_filter =
 			&native_css_filter_stack[native_css_filter_stack_depth - 1];
 		if (current_filter->destination != NULL) {
 			source = current_filter->destination;
+			if (current_filter->borrows_fresh_frame) {
+				transparent_source = CGBitmapContextCreate(NULL,
+					CGBitmapContextGetWidth(source), CGBitmapContextGetHeight(source),
+					8, CGBitmapContextGetBytesPerRow(source),
+					CGBitmapContextGetColorSpace(source), CGBitmapContextGetBitmapInfo(source));
+				source = transparent_source;
+			}
 		}
 	}
 	NativeCSSFilterLayer layer = {
@@ -2591,6 +2614,7 @@ void native_begin_backdrop_filter_layer(float canvas_width, float canvas_height,
 			&& !CGRectIsNull(layer.backdrop_bounds)
 			&& !CGRectIsEmpty(layer.backdrop_bounds);
 	}
+	if (transparent_source) CGContextRelease(transparent_source);
 	native_css_filter_stack[native_css_filter_stack_depth++] = layer;
 }
 
@@ -3656,6 +3680,15 @@ void native_end_css_filter_layer(void) {
 		native_free_svg_filter_graph(&layer);
 		return;
 	}
+	if (layer.borrows_fresh_frame && layer.operation_count == 0
+		&& layer.graph_node_count == 0) {
+		CGContextRestoreGState(layer.context);
+		[NSGraphicsContext restoreGraphicsState];
+		CGContextRelease(layer.context);
+		free(layer.operations);
+		native_free_svg_filter_graph(&layer);
+		return;
+	}
 	if (layer.copies_to_fresh_frame && layer.operation_count == 0
 		&& layer.graph_node_count == 0
 		&& native_layer_copy_document_bitmap(layer.context, layer.destination,
@@ -3666,10 +3699,22 @@ void native_end_css_filter_layer(void) {
 		native_free_svg_filter_graph(&layer);
 		return;
 	}
-	CGImageRef source_image = layer.operation_count == 0 && layer.graph_node_count == 0
-		? native_take_bitmap_image_for_destination(layer.context, layer.destination)
-		: native_take_bitmap_image(layer.context);
+	CGImageRef source_image;
+	if (layer.borrows_fresh_frame) {
+		// A filter attached to the enclosing layer still needs an isolated source.
+		// Quartz snapshots retain their pixels when the fresh target is cleared.
+		source_image = CGBitmapContextCreateImage(layer.context);
+		CGContextRestoreGState(layer.context);
+		CGContextRelease(layer.context);
+	} else {
+		source_image = layer.operation_count == 0 && layer.graph_node_count == 0
+			? native_take_bitmap_image_for_destination(layer.context, layer.destination)
+			: native_take_bitmap_image(layer.context);
+	}
 	[NSGraphicsContext restoreGraphicsState];
+	if (layer.borrows_fresh_frame)
+		CGContextClearRect(layer.destination,
+			CGRectMake(0, 0, layer.canvas_width, layer.canvas_height));
 	if (source_image == NULL) {
 		free(layer.operations);
 		native_free_svg_filter_graph(&layer);
