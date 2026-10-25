@@ -371,3 +371,14 @@ normal line height instead of inheriting the control's 48px line height.
 The reference was captured with Brave 155.1.97.57 at 1024×768 and device
 scale 1. Exact RGBA equality covers this reduced control, not the complete
 live Maps page.
+
+`hacker-news-item-50231722` freezes the discussion at
+<https://news.ycombinator.com/item?id=50231722>, with scripts removed and render
+assets stored beside the HTML. Its unchanged Brave 156.1.98.60 reference uses
+a 1024×2048 viewport at device scale 1 and includes the footer search field.
+Run the complete pixel comparison on macOS with:
+
+```sh
+V_BIN=~/code/v-latest/v python3 tools/run_memory_bounded.py \
+  --report Build/hacker-news-pixels-job.json -- python3 tools/hacker_news_pixels_test.py
+```
