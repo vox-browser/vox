@@ -2651,6 +2651,16 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Focused viewport exact; broad87bothGC/sixactual0/174executions;canonical13/19pass/12exact/controller1;all19matchingexact/unchanged bounds;checkpointpending canonical baseline.
   Initial screenshot helper permission failure actual1 occurs before browser launch; original evidence retained, execute mode repaired, unfinished screenshot stage resumed without replaying completed cases.
   Separate current4 measured44590917;carry54,475,673;legacy179ledger/canonical/GUI/foreign preserved;Chrome parity open.
+  Compact private matching-rule candidates October25 (`574f072a`):private rule/shadow record48→24bytes;public scope metadata and result owner unchanged.
+  Normal beforeBoehm/finalBoehm/finalnone:25 active cases/24835/18643/18643assertions;6192extra before zero-byte checks across258records. Ownership-only finalprealloc:26/19804;zero instruction credit.
+  Declared3pairs/512complete public matching passes:local118,350,584→116,736,331/1.363959%/3wins/sixactual0/checksum49664/zero pagecredit.
+  Current4 matching30pairs14,238,233,433.5→14,312,404,318.5/1wins/point-74,170,885;pairedCI[-87,673,275,-67,862,265]/repeatable0;seed187/30000bootstrap.
+  HarfBuzz upgrade provenance1 and ICU link1 retained;private original14.5bytes and versioned ICU78.3 for both apps/control code-data exact;frontend/tests/diagnostic/C-audit retained;canonical initialhashUNKNOWN.
+  All60actual0/60PNGs/strictcontent;first preparation1/3/3/1;later refreshes separate;no retries/replacements/recoveries/extensions;private APFS cache copies byte-authenticated.
+  Strict whole-C permits new private record/four exact affected bodies/one authenticated unchanged option typedef relocation;public record/allotherCexact;all128native inputs/exactargs match;isolated app/sign/smoke/GC1+override2 actual0.
+  Focused viewport exact;broad87bothGC/sixactual0/174executions;canonical13/19pass/12exact/controller1;all19matchingexact/unchanged bounds;checkpointpending canonical baseline.
+  Interrupted initial native/guard exits UNKNOWN retained; no tests/primaries had run; unfinished build regenerated on SSD;125native objects recovered byte-exact against parent hashes.
+  Separate current4 measured574f072a;carry54,475,673;legacy179ledger/canonical/GUI/foreign preserved;Chrome parity open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

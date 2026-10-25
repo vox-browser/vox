@@ -5,6 +5,184 @@ shared offline capture diagnostic is below; the original October 13–14
 measurements and subsequent frozen first-frame optimization rounds follow.
 Chrome parity remains open.
 
+## Compact private matching-rule candidates, October 25
+
+Commit `574f072a` stores only the matching-rule pointer and optional shadow
+root in transient candidate buffers. The generated record shrinks from 48 to
+24 bytes. Scope-root resolution still precedes selector matching where needed;
+successful matches retain the root and proximity in the unchanged public
+`ScopedMatchingRule` result.
+Candidate traversal, result order, nested buffer ownership, pool bounds and
+live-prefix clearing retain their existing behavior.
+
+| Fixed first-document-paint cohort | Retired CPU instructions |
+| --- | ---: |
+| Before median | 14,238,233,433.5 |
+| Final median | 14,312,404,318.5 |
+| Observed saving | -74,170,885 (-0.520928%) |
+| Paired 95% interval for median saving | -87,673,275–-67,862,265 |
+| Improving pairs | 1 / 30 |
+| Repeatable instruction credit | 0 |
+
+The predeclared 30 pairs alternate before/final on odd pairs and final/before
+on even pairs. Bootstrap uses 30,000 paired resamples, seed 187. All 60 actual
+browser exits are zero with 60 document PNGs at 1024×768 and strict sealed
+content checks. No completed primary is replayed, filtered or replaced; the
+cohort is never extended. Private APFS cache copies are byte-authenticated.
+First-primary preparation is one install, three geometry builds, three
+geometry attachments and one paint. Later refreshes remain separate.
+Only a positive lower confidence bound earns repeatable page credit.
+
+The named first-paint scope is an internal frame boundary. Source inspection
+found that capture mode can defer document pixel replay while still emitting
+that report and marking the document presented. Retained logs do not establish
+whether that branch was taken in any particular observation. The fixed cohort
+and counts remain unchanged; later PNG/content validation does not establish
+pixel readiness at the earlier counter boundary. This prevents interpreting
+the internal scope as a verified visual first paint or a Chrome comparison.
+The source-only finding is retained separately in
+`first-paint-source-boundary-audit-20261025.json` alongside the current4 attempts.
+
+Normal before/Boehm, final/Boehm and final/no-GC configurations each run 25
+active functional cases: respectively 24,835,
+18,643 and 18,643
+assertions. The before build checks 6,192 additional cleared bytes because
+258 candidate records are twice as large; behavioral assertions and inputs
+match. The ownership-only final/prealloc run has 26 active cases and
+19,804 assertions, with zero instruction credit.
+The retained coverage audit distinguishes gated cases from active cases.
+Tests cover candidate growth and every cleared live byte, cloned rule and
+shadow identity across forced GC, nested queries, public resolved scope roots
+and proximity, pseudo targets, namespaces, bucket order and live cache edits.
+
+The fixed local diagnostic runs three alternating pairs of 512 complete public
+matching passes over eight named layers and 97 author rules. Setup, eight
+warmups, forced GC and assertions stay outside the hardware counter.
+All six actual exits are zero with checksum 49,664. Medians are
+118,350,584→116,736,331, saving 1.363959%;
+3 of three pairs improve. This local result earns zero page credit.
+
+The strict whole-program C audit permits the new private two-field record and
+four affected runtime bodies: buffer acquisition, buffer release, candidate
+append and candidate iteration. Exact projections pass in focused Boehm,
+no-GC and prealloc builds. An isolated native compilation of the actual emitted
+record definitions confirms public size 48 and private size 24. The public
+record and every other generated body compare exactly after authenticated
+path, string-length, scratch and executable-directory normalization, plus the
+exact unchanged optional-shadow-root typedef moving before the private record.
+The initial whole-program audit and three controllers exited 1 on that declaration
+move; their original tools, diff, logs and receipts remain archived. The resumed
+audit authenticates the unique declaration bytes and both exact surrounding
+anchors before comparison; no completed runtime check or measurement is replayed.
+Both runtime V paths, the five adapted test paths, all 128 native input bytes and
+native arguments are authenticated after the explicit dependency mapping below. The preceding lazy result-capacity
+final audit completes before this edit; that boundary transfers no credit.
+
+The browser frontend completed successfully, then its build provenance check
+actually failed because Homebrew upgraded HarfBuzz from 14.5 to 15.0. The failed
+build guard and three waiting controller exits remain 1 in `harfbuzz-upgrade-v1`.
+No page primary existed. The retained 14.5 library exactly matches the control's
+recorded SHA-256 and is copied unchanged into a private directory. Both measured
+apps redirect only that dependency there. Every code and data section and every
+other load command in the reused control remain byte-identical; signing metadata
+and the dependency path change. Actual loaded-library smoke logs authenticate
+the private library in both apps, with fresh signature, startup and GC checks.
+The candidate links that same library and uses privately pinned 14.5 headers;
+historical header hashes were not recorded. The strict C audit authenticates only
+these explicit library/include path mappings, preserving all original native
+input hashes and the whole-program C comparison. Successful frontend, functional
+checks and diagnostics are retained without replay. The initial canonical-app
+hash was never captured and remains unknown; the canonical app is preserved.
+Dependency recovery receipt: `aa56540288145e103b1ec8d127e9ab2e8e554dcbcec7954f7e06522309227bd8`.
+
+The first resumed native link exited 1 after an unversioned ICU search path
+selected ICU79, while the reused native objects and generated browser require
+ICU78. The failed native log, guard and three controller exits remain archived
+in `icu-link-selection-v1`. The repair changes exactly one search-path argument
+to the versioned ICU78 directory. Its ICU78.3 library and data bytes match the
+control's retained runtime hashes, and actual loaded-library logs confirm them
+in both apps. The successful whole-C audit remains retained, with the exact
+link-selector transformation authenticated separately; no frontend, completed
+functional test, diagnostic or page primary is replayed. Broad harness builds
+also select those retained ICU headers/libraries and the frozen HarfBuzz14.5.
+ICU link recovery receipt: `06e6aac4032b96b7228a93d98a4c9f5e562cb2ad4cdd851c6366e6f897c79965`.
+
+The initial focused build's frontend exited zero, but its native compiler and
+controller were interrupted before a terminal status was retained. Their exits
+remain unknown. The RAM scratch volume subsequently disappeared; no functional
+test, diagnostic or page primary had run. The original receipts and partial
+logs are retained under `interrupted-build-v1`, with a hashed archive manifest.
+Only the unfinished build was resumed, regenerating C from frozen inputs in a
+task-owned SSD directory. All 125 lost cached native objects were separately
+regenerated from the original immutable tab-paint source and compiler; every
+object matches its retained parent SHA-256 exactly. Their explicit path mapping
+is authenticated by `native-cache-recovery/result.json`
+(`f227f2b471ba897c8ea8754d7269d7fdfa3c4544dbb26b5ae61dc62e2be68404`). No completed case or observation
+was replayed, and no unknown exit was converted to success.
+
+The resumed SSD build's first native attempt reached the guard's 1,800-second
+timeout under host contention. Its wrapper returned 125 and its direct child
+was killed with status -9; the compiler's own terminal status was not retained.
+Peak sampled process-tree RSS was below the unchanged 12 GiB limit. Original
+guard, controller failures, native command, partial log and successful frontend
+evidence are retained under `native-timeout-v1` with a hashed archive manifest.
+Only native compilation restarted, using byte-identical generated C and native
+arguments. Long-running job timeout became 7,200 seconds; memory limits and all
+measurement endpoints, cohorts and per-observation rules stayed unchanged.
+No completed frontend, functional check, diagnostic or primary was replayed.
+
+That native retry was subsequently stopped deliberately after source inspection
+found three direct rule-reference assertions generating 19.7 MB of recursive
+owner-comparison and formatting C in two test bodies. The owned compiler received
+SIGTERM; its Clang driver, checker, guard wrapper and waiting controllers actually
+exited 1. Those failures and the original successful frontend remain archived
+under `owner-identity-build-v1`; they receive no build or runtime pass credit.
+The test revision changes exactly those three assertions to explicit pointer
+identity in both frozen variants. Runtime sources, fixture inputs, case counts
+and declared diagnostic/page cohorts stay unchanged. New frontend builds are
+required for these changed test sources and their emitted test-body sizes are
+checked before native compilation. No functional run, diagnostic observation
+or page primary existed before this revision; none was replayed.
+
+The accumulated observed saving crosses the 5M broad gate. Selected CSS31,
+SVG10 and layout46 harnesses pass under both Boehm and no-GC: six actual zero
+runtime exits and 174 case executions. Fixture bodies and numeric bounds remain
+those of the preceding authenticated current4 batch. The focused 1024×768
+viewport is pixel-exact. Canonical comparisons have 13 passes
+and 12 exact images out of 19 under unchanged bounds.
+All 19 matching control/final images are exact; authenticated control captures
+are reused and final captures are fresh.
+
+Canonical failures retained: inline-node (14,940 pixels), ordered-list (4,900 pixels), text-decorations (29,116 pixels), default-ignorable-code-points-not-painted (1,712 pixels), abspos-inside-opacity-inside-relpos (10,000 pixels), select-line-height-ignored (10,239 pixels).
+The validation controller actually exits 1. The current4 broad checkpoint
+remains pending the canonical screenshot baseline;
+outstanding observed carry is 54,475,673 instructions.
+Matching images do not turn a failed canonical comparison into a pass.
+
+The isolated measured app is
+`Build/instructions/normal-sealed-current4-20261023/compact-rule-candidates-attempt/Vox.app`.
+Signing, signature verification, startup and actual GC collections pass with
+default marker 1 and override 2. Canonical app, GUI and foreign changes are
+preserved. The legacy accepted179 ledger remains unchanged. Fresh matched
+observations determine savings; historical medians are not subtracted.
+Chrome parity remains open: the retained Chrome navigation-to-PNG cohort uses
+a different endpoint, and this feature has no new matching Chrome cohort.
+
+Receipts and raw logs remain in `compact-rule-candidates-attempt/`, including
+`page-observations/{plan,summary}.json`, `capture-audit.json`,
+`generated-c-audit.json`, `focused-c-target-review.json`,
+`focused-coverage-audit.json`, `validation-result.json`,
+`screenshots-result.json`, `performance-ledger.json` and `final-audit.json`.
+
+| Durable artifact | SHA-256 |
+| --- | --- |
+| Measured executable | `296430fe217060c727220bd7eee29881e2cb3ec6affe1fd5587e387c92df067a` |
+| Raw browser C | `39422e6231782790ac05808c495e4949f20df4efc147ab681cd881bcb08245e6` |
+| `browser.c.gz` | `7c2f24cc6d06834c026b08d36b113a18d66c1bd1d89487f41c4b4e42b53fd680` |
+| Page summary | `08d4bab49c4df3cd19d1c30c5639d528e8d4d3ee1eb7850e65d88e08334570fe` |
+| Source-only first-paint boundary audit | `ecb1d1776c57654db3836fb817adcd1659ad3075c5db5e963343ffeca4c24c54` |
+| Native-timeout archive manifest | `cae024173485c2e16ccdffca429410d883642d5c6a7a5a1f963bdb1c216eb100` |
+
 ## Lazy matching-rule result capacity, October 25
 
 Commit `44590917` reserves up to eight matching-rule result entries after
