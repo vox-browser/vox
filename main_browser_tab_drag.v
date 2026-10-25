@@ -34,6 +34,7 @@ fn (mut app BrowserApp) handle_browser_tab_drag(event &gg.Event, width int) bool
 			end: end
 			width: tab_width
 			start: event.mouse_x
+			start_y: event.mouse_y
 			offset: f64(event.mouse_x) - left
 			x: event.mouse_x
 			target: index
@@ -57,13 +58,16 @@ fn (mut app BrowserApp) handle_browser_tab_drag(event &gg.Event, width int) bool
 		return false
 	}
 	drag.x = event.mouse_x
-	drag.moving = !drag.cancelled && (drag.moving || math.abs(drag.x - drag.start) >= 4)
+	drag.moving = !drag.cancelled && (drag.moving || math.abs(drag.x - drag.start) >= 4
+		|| math.abs(f64(event.mouse_y) - drag.start_y) >= 4)
 	drag.target = math.max(drag.first, math.min(drag.end - 1,
 		drag.first + int(math.floor((drag.x - tab_strip_leading_width) / drag.width))))
 	app.tabs.drag = drag
 	if event.typ == .mouse_up {
 		app.tabs.drag = none
-		if drag.moving && event.mouse_y >= 0 && event.mouse_y < tab_strip_height {
+		if drag.moving && event.mouse_y >= tab_strip_height + 24 {
+			app.activate_tab_chrome('tab-detach:${app.browser_tab_index(drag.page)}')
+		} else if drag.moving && event.mouse_y >= 0 && event.mouse_y < tab_strip_height {
 			from := app.browser_tab_index(drag.page)
 			app.activate_tab_chrome('tab-move:${from}:${drag.target}')
 		}

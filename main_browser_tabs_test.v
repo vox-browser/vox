@@ -1,6 +1,11 @@
 module main
 
 import gg
+import dom
+import html
+import json2
+import os
+import time
 import page
 import platform
 import sokol.sapp
@@ -120,7 +125,7 @@ fn test_tab_drag_moves_in_both_directions_and_captures_page_release() {
 	assert voidptr(app.tabs.pages[0]) == voidptr(app)
 	assert browser_tabs_test_pointer(mut app, .mouse_down, 100, 15)
 	assert browser_tabs_test_pointer(mut app, .mouse_move, 470, 15)
-	assert browser_tabs_test_pointer(mut app, .mouse_up, 470, 200)
+	assert browser_tabs_test_pointer(mut app, .mouse_up, 470, 40)
 	assert app.tabs.selected == 0
 	assert voidptr(app.tabs.pages[0]) == voidptr(app)
 }
@@ -406,7 +411,7 @@ $if vox_ui2 ? {
 		C.native_test_tabs_drag(2, -368, 0)
 		assert app.tabs.selected == 0
 		assert voidptr(app.tabs.pages[0]) == voidptr(app)
-		C.native_test_tabs_drag(0, 368, 100)
+		C.native_test_tabs_drag(0, 368, 25)
 		assert app.tabs.selected == 0
 		assert voidptr(app.tabs.pages[0]) == voidptr(app)
 		C.native_test_tabs_drag(0, 2, 0)
@@ -471,5 +476,158 @@ $if vox_ui2 ? {
 		app.update_browser_chrome(640, 600)
 		assert C.native_test_tabs_count() == 1
 		assert C.native_test_tabs_geometry() == 1
+	}
+}
+
+fn tab_detach_test_accept(path string) ! {
+	_ = read_detached_tab_session(path)!
+}
+
+fn tab_detach_test_fail(_ string) ! { return error('test launch failure') }
+
+fn test_tab_detach_launch_options_and_session_validation() {
+	path := os.join_path(os.temp_dir(), 'vox tab session-${time.sys_mono_now()}.json')
+	defer { os.rm(path) or {} }
+	options := parse_launch_options(['--restore-tab', path])!
+	assert options.restore_tab == path
+	if _ := parse_launch_options(['--restore-tab']) {
+		assert false, 'a restore requires a session path'
+	}
+	os.write_file(path, json2.encode(DetachedTabSession{
+		url: 'https://tabs.example/invalid'
+		width: 0
+		height: 600
+		history_index: -1
+	}))!
+	if _ := read_detached_tab_session(path) {
+		assert false, 'invalid window dimensions must not start a detached window'
+	}
+}
+
+fn test_tab_detach_restores_history_zoom_scroll_and_form_values() {
+	mut app := browser_tabs_test_app()
+	defer { browser_tabs_test_cleanup(mut app) }
+	app.install_loaded_page(LoadedPage{
+		url: 'https://tabs.example/forms'
+		markup: '<!doctype html><input id="text" value="old"><input id="check" type="checkbox"><textarea id="area">old</textarea><select><option>A</option><option id="chosen">B</option></select><div style="height:2000px"></div>'
+		content_type: 'text/html'
+	}, true)
+	text_element := app.document.get_element_by_id('text') or { panic('missing text input') }
+	mut text := html.HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(text_element) })
+	text.set_value('unsaved text')!
+	check_element := app.document.get_element_by_id('check') or { panic('missing checkbox') }
+	mut check := html.HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(check_element) })
+	check.set_checked(true)
+	check.set_indeterminate(true)
+	area_element := app.document.get_element_by_id('area') or { panic('missing textarea') }
+	mut area := html.html_text_area_element_model_for_dom_element(unsafe { &dom.HTMLTextAreaElement(area_element) })
+	area.set_value('unsaved\ntextarea')
+	chosen := app.document.get_element_by_id('chosen') or { panic('missing option') }
+	html.html_option_element_set_selected(unsafe { &dom.HTMLOptionElement(chosen) }, true)
+	app.page_zoom = 1.25
+	app.scroll_y = 125
+	// Retain forward history, too.
+	app.history << HistoryEntry{url: 'https://tabs.example/forward', markup: '<p>Forward</p>'}
+	session := json2.decode[DetachedTabSession](json2.encode(app.detached_tab_session()))!
+	mut restored := browser_tabs_test_app()
+	defer { browser_tabs_test_cleanup(mut restored) }
+	restored.restore_detached_tab(session)
+	assert restored.source_label == app.source_label
+	assert restored.history == app.history
+	assert restored.history_index == app.history_index
+	assert restored.page_zoom == 1.25 && restored.scroll_y == 125
+	assert restored.page_model.client().zoom_level_ == 1.25
+	restored_session := restored.detached_tab_session()
+	assert restored_session.forms == session.forms
+	restored.history_go(1)
+	assert restored.source_label == 'https://tabs.example/forward'
+}
+
+fn test_tab_detach_waits_for_ready_and_tracks_the_owner_after_reordering() {
+	mut app := browser_tabs_test_app()
+	defer { browser_tabs_test_cleanup(mut app) }
+	app.tabs.open_window = tab_detach_test_accept
+	app.activate_tab_chrome('tab-new')
+	selected := app.active_browser_tab()
+	app.activate_tab_chrome('tab-detach:0')
+	assert app.tabs.pages.len == 2
+	assert app.tabs.pending_detaches.len == 1
+	folder := app.tabs.pending_detaches[0].folder
+	defer { os.rmdir_all(folder) or {} }
+	app.activate_tab_chrome('tab-detach:0') // Ignore duplicate drops during launch.
+	assert app.tabs.pending_detaches.len == 1
+	app.activate_tab_chrome('tab-move:0:1')
+	os.write_file(os.join_path(folder, 'ready'), 'ready')!
+	app.poll_detached_tab_windows()
+	assert app.tabs.pages.len == 1
+	assert voidptr(app.active_browser_tab()) == voidptr(selected)
+	assert app.tabs.pending_detaches.len == 0
+	assert !os.exists(folder)
+}
+
+fn test_tab_detach_failure_timeout_and_final_tab_keep_a_useful_window() {
+	mut app := browser_tabs_test_app()
+	defer { browser_tabs_test_cleanup(mut app) }
+	app.tabs.open_window = tab_detach_test_fail
+	app.activate_tab_chrome('tab-detach:0')
+	assert app.tabs.pages.len == 1 && app.tabs.pending_detaches.len == 0
+	assert app.status.contains('test launch failure')
+	app.tabs.open_window = tab_detach_test_accept
+	app.activate_tab_chrome('tab-detach:0')
+	pending := app.tabs.pending_detaches[0]
+	app.tabs.pending_detaches[0] = PendingTabDetach{...pending, started: time.sys_mono_now() - 61_000_000_000}
+	app.poll_detached_tab_windows()
+	assert app.tabs.pages.len == 1 && app.tabs.pending_detaches.len == 0
+	assert app.status.contains('timed out')
+	assert !os.exists(pending.folder)
+	app.activate_tab_chrome('tab-detach:0')
+	folder := app.tabs.pending_detaches[0].folder
+	os.write_file(os.join_path(folder, 'ready'), 'ready')!
+	app.poll_detached_tab_windows()
+	assert app.tabs.pages.len == 1 && app.tabs.pending_detaches.len == 0
+	assert app.active_browser_tab().source_label == browser_new_tab_url
+}
+
+fn test_tab_detach_vertical_drag_requires_a_drop_below_the_strip() {
+	mut app := browser_tabs_test_app()
+	defer { browser_tabs_test_cleanup(mut app) }
+	app.tabs.open_window = tab_detach_test_accept
+	assert browser_tabs_test_pointer(mut app, .mouse_down, 100, 15)
+	assert browser_tabs_test_pointer(mut app, .mouse_up, 100, 50)
+	assert app.tabs.pending_detaches.len == 0
+	assert browser_tabs_test_pointer(mut app, .mouse_down, 100, 15)
+	assert browser_tabs_test_pointer(mut app, .mouse_move, 100, 60)
+	assert browser_tabs_test_pointer(mut app, .mouse_up, 100, 80)
+	assert app.tabs.pages.len == 1 && app.tabs.pending_detaches.len == 1
+	folder := app.tabs.pending_detaches[0].folder
+	defer { os.rmdir_all(folder) or {} }
+	assert read_detached_tab_session(os.join_path(folder, 'session.json'))!.url == 'https://tabs.example/first'
+}
+
+$if vox_ui2 ? {
+	fn test_native_tab_vertical_drag_opens_a_window_after_the_detach_threshold() {
+		window := C.native_test_address_window()
+		mut app := browser_tabs_test_app()
+		app.ctx = gg.new_context(native_rendering: true)
+		app.tabs.open_window = tab_detach_test_accept
+		mut owner := unsafe { address_bar_owner }
+		owner.app = app
+		app.mount_ui2_chrome(C.native_test_address_parent(window), 800, 600)!
+		defer {
+			for pending in app.tabs.pending_detaches { os.rmdir_all(pending.folder) or {} }
+			app.unmount_address_bar()
+			browser_tabs_test_cleanup(mut app)
+			C.native_test_address_close(window)
+		}
+		app.activate_tab_chrome('tab-new')
+		app.active_browser_tab().update_browser_chrome(800, 600)
+		C.native_test_tabs_drag(0, 0, 25)
+		assert app.tabs.pending_detaches.len == 0
+		C.native_test_tabs_drag(0, 0, 80)
+		assert app.tabs.pages.len == 2 && app.tabs.pending_detaches.len == 1
+		assert voidptr(app.tabs.pending_detaches[0].page) == voidptr(app)
+		os.write_file(os.join_path(app.tabs.pending_detaches[0].folder, 'ready'), 'ready')!
+		app.poll_detached_tab_windows()
+		assert app.tabs.pages.len == 1
 	}
 }

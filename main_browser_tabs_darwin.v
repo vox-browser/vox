@@ -31,6 +31,7 @@ $if vox_ui2 ? {
 			3 { app.activate_tab_chrome('tab-previous') }
 			4 { app.activate_tab_chrome('tab-next') }
 			5 { app.activate_tab_chrome('tab-move:${index}:${destination}') }
+			6 { app.activate_tab_chrome('tab-detach:${index}') }
 			else {}
 		}
 	}

@@ -503,6 +503,7 @@ mut:
 	// widget presses run through Page::EventHandler in event_fn and must not also
 	// enter the browser's compact DOM-click fallback.
 	suppress_next_click_for_chrome bool
+	restore_tab_path string
 	platform_pointer_buttons u32
 	pending_tab_link ?string
 	platform_pointer_modifiers u32
@@ -520,6 +521,7 @@ mut:
 	js_engine                  browserjs.Engine = .javascriptcore
 	script_policy              BrowserScriptPolicy
 	source                     string
+	restore_tab                string
 	headless_smoke             bool
 	headless_layout_tree       bool
 	screenshot                 string
@@ -776,6 +778,10 @@ fn parse_launch_options(arguments []string) !LaunchOptions {
 			options.screenshot_scroll_y = non_negative_dimension(arguments[index], '--screenshot-scroll-y')!
 		} else if argument.starts_with('--screenshot-scroll-y=') {
 			options.screenshot_scroll_y = non_negative_dimension(argument.all_after('='), '--screenshot-scroll-y')!
+		} else if argument == '--restore-tab' {
+			if index + 1 >= arguments.len { return error('--restore-tab requires a session path') }
+			index++
+			options.restore_tab = arguments[index]
 		} else if argument == '--window-width' {
 			if index + 1 >= arguments.len {
 				return error('--window-width requires a value')
@@ -7094,6 +7100,7 @@ fn (mut app BrowserApp) draw() {
 	app.finish_frame_memory_activity(frame_finished_ns, paint_before_frame)
 	if !app.initial_window_frame_presented {
 		app.initial_window_frame_presented = true
+		app.finish_detached_tab_restore()
 		if app.pending_cached_page != none {
 			// Let AppKit commit the inexpensive chrome-only frame before doing the
 			// cached DOM/style/layout work on the next browser frame.
@@ -7540,9 +7547,19 @@ fn main() {
 	install_browser_font_resource_cache()
 	defer { requestserver.close_native_font_fetch_host() }
 	xpath.install_dom_xpath_bridge()
-	options := parse_launch_options(os.args[1..]) or {
+	mut options := parse_launch_options(os.args[1..]) or {
 		eprintln('Ladybird V: ${err.msg()}')
 		exit(2)
+	}
+	restored_tab := read_detached_tab_session(options.restore_tab) or {
+		eprintln('Vox: could not restore tab: ${err.msg()}')
+		exit(2)
+	}
+	if restored_tab.version > 0 {
+		options.js_engine = restored_tab.engine_value()
+		options.script_policy = restored_tab.policy_value()
+		options.width = restored_tab.width
+		options.height = restored_tab.height
 	}
 	needs_native_font_replay := !options.headless_smoke && !options.headless_layout_tree
 	$if macos {
@@ -7559,7 +7576,9 @@ fn main() {
 		}
 	}
 	// Keep the engine/JavaScript smoke fixture independent of the start page.
-	initial_url, markup, source_label := initial_document(if options.headless_smoke && options.source == '' {
+	initial_url, markup, source_label := initial_document(if restored_tab.version > 0 {
+		'<!doctype html>'
+	} else if options.headless_smoke && options.source == '' {
 		'about:home'
 	} else { options.source })
 	mut main_checkpoint := debug_timing_checkpoint('startup', main_started)
@@ -7578,6 +7597,7 @@ fn main() {
 	main_checkpoint = debug_timing_checkpoint('startup_page_model', main_checkpoint)
 	mut app := &BrowserApp{
 		markup: markup
+		restore_tab_path: options.restore_tab
 		scroll_profile: scroll_profile_from_environment()
 		paint_canvas_culling_disabled: os.getenv('VOX_DISABLE_CANVAS_CULLING') == '1'
 		source_label: source_label
@@ -7608,7 +7628,9 @@ fn main() {
 	}
 	app.install_chrome_widget_input_bridge()
 	main_checkpoint = debug_timing_checkpoint('startup_input_bridge', main_checkpoint)
-	if markup != '' {
+	if restored_tab.version > 0 {
+		app.restore_detached_tab(restored_tab)
+	} else if markup != '' {
 		app.install_loaded_page(LoadedPage{
 			url: initial_url
 			markup: markup

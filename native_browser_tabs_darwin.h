@@ -167,6 +167,7 @@ static NSBezierPath *vox_tab_path(NSRect r) {
 			frame.origin.x = MAX(62, MIN(self.dragPoint.x - self.dragOffset,
 				62 + (self.endTab - self.firstTab - 1) * self.tabWidth));
 		button.frame = frame;
+		button.alphaValue = button == dragged && self.dragPoint.y >= self.bounds.size.height + 24 ? .55 : 1;
 	}
 	if (dragged) [self addSubview:dragged positioned:NSWindowAbove relativeTo:nil];
 }
@@ -186,18 +187,20 @@ static NSBezierPath *vox_tab_path(NSRect r) {
 		NSPoint point = [self convertPoint:next.locationInWindow fromView:nil];
 		if (self.trackingTab) {
 			self.dragPoint = point;
-			self.draggingTab |= fabs(point.x - start.x) >= 4;
+			self.draggingTab |= fabs(point.x - start.x) >= 4 || fabs(point.y - start.y) >= 4;
 			self.dropTab = MAX(self.firstTab, MIN(self.endTab - 1,
 				self.firstTab + (int)floor((point.x - 62) / self.tabWidth)));
 			[self layoutDraggedTab];
 		}
 		if (next.type != NSEventTypeLeftMouseUp) continue;
 		BOOL move = self.trackingTab && self.draggingTab && point.y >= 0 && point.y < self.bounds.size.height;
+		BOOL detach = self.trackingTab && self.draggingTab && point.y >= self.bounds.size.height + 24;
 		BOOL refreshRange = self.trackingTab && (self.firstTab != self.requestedFirstTab || self.endTab != self.requestedEndTab);
 		int from = self.draggedTab, to = self.dropTab;
 		self.trackingTab = self.draggingTab = NO;
 		[self layoutDraggedTab];
-		if (move && from != to) self.callback(self.owner, 5, from, to);
+		if (detach) self.callback(self.owner, 6, from, 0);
+		else if (move && from != to) self.callback(self.owner, 5, from, to);
 		else if (refreshRange) self.callback(self.owner, 5, from, from);
 		break;
 	}

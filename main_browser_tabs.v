@@ -3,6 +3,7 @@ module main
 import gg
 import layout
 import math
+import os
 import page
 import platform
 
@@ -18,6 +19,8 @@ mut:
 	selected        int
 	pending_actions []string
 	drag            ?BrowserTabDrag
+	pending_detaches []PendingTabDetach
+	open_window fn (string) ! = open_detached_browser_window
 }
 
 struct BrowserTabDrag {
@@ -26,6 +29,7 @@ struct BrowserTabDrag {
 	end    int
 	width  f64
 	start  f64
+	start_y f64
 	offset f64
 mut:
 	x         f64
@@ -156,6 +160,8 @@ fn (mut app BrowserApp) activate_tab_chrome(action string) {
 			} else if action.starts_with('tab-move:') {
 				indices := action.all_after(':').split(':')
 				if indices.len == 2 { app.move_browser_tab(indices[0].int(), indices[1].int()) }
+			} else if action.starts_with('tab-detach:') {
+				app.detach_browser_tab(action.all_after(':').int())
 			}
 		}
 	}
@@ -298,6 +304,7 @@ fn (mut app BrowserApp) draw_browser_tabs() {
 		app.tabs.pending_actions.clear()
 		for action in pending { app.activate_tab_chrome(action) }
 	}
+	app.poll_detached_tab_windows()
 	mut active := app.active_browser_tab()
 	if app.tabs != unsafe { nil } {
 		for i in 0 .. app.tabs.pages.len {
@@ -325,6 +332,8 @@ fn (mut app BrowserApp) poll_background_browser_tab() {
 fn (mut app BrowserApp) cleanup_browser_tabs() {
 	app.unmount_address_bar()
 	if app.tabs != unsafe { nil } {
+		for pending in app.tabs.pending_detaches { os.rmdir_all(pending.folder) or {} }
+		app.tabs.pending_detaches.clear()
 		for mut tab in app.tabs.pages { tab.dispose_browser_tab() }
 		app.tabs.pages.clear()
 	}
