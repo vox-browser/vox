@@ -144,7 +144,7 @@ int main()
         int direct_cases = 0;
         for (int scale : {1, 2}) for (int clip : {0, 1, 2})
         for (int color_case : {0, 1, 2, 3}) for (int background : {0, 1, 2, 3})
-        for (int stroke_case : {0, 1, 2}) {
+        for (int stroke_case : {0, 1, 2}) for (int placement : {0, 1, 2, 3, 4}) {
             int width = 160 * scale, height = 120 * scale, pitch = width * 4 + 16;
             std::vector<uint8_t> expected(size_t(pitch) * height);
             for (size_t i = 0; i < expected.size(); ++i) {
@@ -183,6 +183,8 @@ int main()
             shape.matrix[0] = shape.matrix[4] = scale; shape.matrix[8] = 1;
             float data[] {11, 7, 100, 82, 5, 4, 3, 2, 4, 5, 2, 3};
             std::copy_n(data, 12, shape.rect);
+            float positions[][2] {{11, 7}, {-19, -13}, {102, 78}, {-200, -150}, {200, 150}};
+            shape.rect[0] = positions[placement][0]; shape.rect[1] = positions[placement][1];
             shape.red = red; shape.green = green; shape.blue = blue; shape.alpha = 255;
             shape.fill = stroke_case == 0; shape.anti_alias = 1;
             shape.thickness = stroke_case == 2 ? 1 : 2;
@@ -193,7 +195,7 @@ int main()
             CGContextFlush(before); CGContextFlush(after);
             if (expected != actual) {
                 std::cerr << "Direct rounded parts mismatch scale=" << scale << " clip=" << clip
-                    << " stroke=" << stroke_case << " color=" << color_case << " background=" << background << '\n';
+                    << " placement=" << placement << " stroke=" << stroke_case << " color=" << color_case << " background=" << background << '\n';
                 int differences = 0;
                 for (size_t i = 0; i < expected.size(); ++i) if (expected[i] != actual[i]) {
                     if (differences++ < 24) std::cerr << " byte=" << i << " x=" << (i % pitch) / 4 << " y=" << i / pitch
@@ -215,7 +217,7 @@ int main()
             ++comparisons; ++direct_cases;
             CGContextRelease(before); CGContextRelease(after);
         }
-        assert(direct_cases == 288);
+        assert(direct_cases == 1440);
         std::cout << "Direct rounded parts: " << direct_cases << " exact comparisons passed\n";
         reference_grid(nullptr, 0, 0, 0, 0);
         ladybird_v_skia_set_msaa_grid(nullptr, 0, 0, 0, 0);

@@ -2235,28 +2235,49 @@ static bool draw_chromium_sparse_rounded(CGContextRef destination, VoxGraphiteSh
         }
     }
     // One publication keeps Quartz's original image footprint and clipping.
-    // The opaque rectangle supplies the interior; the original GPU tiles
-    // supply every corner and its guard pixels. Preserve the backdrop outside.
+    // Assemble in the readable destination's RGBA order. Only the small GPU
+    // corner patches need channel conversion; the full backdrop and output
+    // image retain their existing format. Every pixel is initialized by
+    // either the backdrop copy or the opaque rectangle below.
     if (size_t(width) * height > 8 * 1024 * 1024) return false;
-    std::vector<uint32_t> pixels(size_t(width) * height);
+    size_t pixel_count = size_t(width) * height;
+    std::unique_ptr<uint32_t[]> pixels(new (std::nothrow) uint32_t[pixel_count]);
+    if (!pixels) return false;
     RasterRegion covered {
         int(std::clamp<double>(edges[0], 0, width)),
         int(std::clamp<double>(edges[1], 0, height)),
         int(std::clamp<double>(edges[2], 0, width)),
         int(std::clamp<double>(edges[3], 0, height))
     };
-    copy_backdrop_pixels(backdrop, width, height, pixels, shape.fill ? covered : RasterRegion {});
+    auto omitted = shape.fill ? covered : RasterRegion {};
+    for (int y = 0; y < height; ++y) {
+        auto copy = [&](int left, int right) {
+            std::memcpy(pixels.get() + size_t(y) * width + left,
+                backdrop.pixels + size_t(y) * backdrop.pitch + size_t(left) * 4,
+                size_t(right - left) * 4);
+        };
+        if (y >= omitted.top && y < omitted.bottom) {
+            copy(0, omitted.left); copy(omitted.right, width);
+        } else copy(0, width);
+    }
     auto rectangle = shape;
     std::fill(rectangle.rect + 4, rectangle.rect + 12, 0);
+    std::swap(rectangle.red, rectangle.blue);
     bool filled = rectangle.fill
-        ? vox_draw_solid_rect(reinterpret_cast<uint8_t*>(pixels.data()), width, height, width * 4, true, rectangle)
-        : vox_draw_solid_stroke(reinterpret_cast<uint8_t*>(pixels.data()), width, height, width * 4, true, rectangle);
+        ? vox_draw_solid_rect(reinterpret_cast<uint8_t*>(pixels.get()), width, height, width * 4, true, rectangle)
+        : vox_draw_solid_stroke(reinterpret_cast<uint8_t*>(pixels.get()), width, height, width * 4, true, rectangle);
     if (!filled) return false;
     for (auto const& part : parts) for (int y = 0; y < part.height; ++y)
-        std::copy_n(part.pixels.data() + size_t(y) * part.width, part.width,
-            pixels.data() + size_t(part.top + y) * width + part.left);
-    return composite_pixels(destination, std::move(pixels), width, height,
-        region.left, canvas_height - region.bottom, region.width(), region.height(), true);
+        swap_red_blue_pixels(reinterpret_cast<uint8_t*>(pixels.get() + size_t(part.top + y) * width + part.left),
+            reinterpret_cast<uint8_t const*>(part.pixels.data() + size_t(y) * part.width), part.width);
+    auto provider = CGDataProviderCreateWithData(nullptr, pixels.get(), pixel_count * sizeof(uint32_t),
+        [](void*, void const* bytes, size_t) { delete[] static_cast<uint32_t const*>(bytes); });
+    if (provider) pixels.release();
+    auto image = image_from_provider(provider, width, height, true);
+    int result = composite_image(destination, image,
+        CGRectMake(region.left, canvas_height - region.bottom, region.width(), region.height()), true);
+    if (image) CGImageRelease(image);
+    return result;
 }
 
 extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
