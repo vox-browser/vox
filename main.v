@@ -4606,6 +4606,7 @@ fn image_bytes_are_webp(bytes []u8) bool {
 }
 
 fn (mut app BrowserApp) create_image_from_resource_bytes(image_url string, bytes []u8) !gg.Image {
+	if image_bytes_are_ico(bytes) { return app.create_ico_resource_image(bytes) }
 	$if macos {
 		if image_bytes_are_webp(bytes) {
 			// Share the document decoder's pixels with native image and background

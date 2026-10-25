@@ -2,9 +2,34 @@ module main
 
 import dom
 import encoding.binary
+import gg
+import sokol.gfx
 
 fn image_bytes_are_ico(bytes []u8) bool {
 	return bytes.len >= 6 && bytes[0] == 0 && bytes[1] == 0 && bytes[2] == 1 && bytes[3] == 0
+}
+
+// The paint resource loader must use the same ICO decoder as the image model;
+// gg's standard byte loader cannot decode the icon container.
+fn (mut app BrowserApp) create_ico_resource_image(bytes []u8) !gg.Image {
+	bitmap := browser_decode_ico_image_bytes(bytes)!
+	$if macos {
+		if app.ctx.native_rendering {
+			C.native_tag_image_color_profile(bitmap.data.data, bitmap.width, bitmap.height,
+				bytes.data, usize(bytes.len), 0)
+		}
+	}
+	mut image := gg.Image{
+		width: bitmap.width
+		height: bitmap.height
+		nr_channels: if app.ctx.native_rendering { native_bitmap_channel_marker(bitmap, false) } else { 4 }
+		ok: true
+		data: bitmap.data.data
+		texture_filter: app.ctx.config.texture_filter
+	}
+	if !app.ctx.native_rendering && gfx.is_valid() { image.init_sokol_image() }
+	image.id = app.ctx.cache_image(image)
+	return image
 }
 
 // ICO stores either PNG images or BMP DIBs with a separate transparency mask.

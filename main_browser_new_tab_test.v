@@ -5,6 +5,7 @@ import css
 import dom
 import encoding.base64
 import encoding.binary
+import gg
 import html
 import os
 import page
@@ -191,6 +192,35 @@ fn test_new_tab_favicon_defaults_to_the_site_origin_and_rejects_unsafe_metadata(
 		url: 'https://example.com/'
 		favicon_url: icon
 	}) == icon
+}
+
+fn test_new_tab_ico_favicons_reach_the_paint_resource_cache() {
+	mut app := new_tab_test_app()
+	defer { new_tab_test_close(mut app) }
+	icon_url := 'https://curl.se/favicon.ico'
+	bytes := os.read_bytes('${@VMODROOT}/pixel_tests/sites/curl/curl.se/favicon.ico')!
+	app.resource_cache[icon_url] = PreloadedResource{url: icon_url, body: bytes.bytestr(), request_type: 'image'}
+	app.browsing_history.record('https://curl.se/', 'curl documentation', browserhistory.now())!
+	app.navigate('about:newtab', true)
+	image := css.query_selector(app.document.as_node(), '.site-favicon')?
+	model := html.html_image_element_model_for_dom_element(unsafe { &dom.HTMLImageElement(image) })
+	assert model.current_request().state() == .completely_available
+	assert model.natural_width() == 32
+	assert app.paint_commands.any(it.kind == 'draw_replaced_image' && it.image().image_url == icon_url)
+	expected := model.current_image_frame()?.bitmap()
+	// Model availability alone does not prove that the native/portable paint
+	// loader can decode the URL's bytes into its own resource cache.
+	for native in [false, true] {
+		mut painter := BrowserApp{ctx: gg.new_context(native_rendering: native)}
+		paint_image := painter.create_image_from_resource_bytes(icon_url, bytes)!
+		assert paint_image.ok && paint_image.width == 32 && paint_image.height == 32
+		cached := painter.ctx.get_cached_image_by_idx(paint_image.id)
+		pixels := unsafe { (&u8(cached.data)).vbytes(32 * 32 * 4) }
+		assert pixels == expected.data
+		assert pixels.any(it != 0)
+		assert paint_image.nr_channels == if native { 6 } else { 4 }
+		if native { assert !paint_image.simg_ok }
+	}
 }
 
 fn test_new_tab_starts_uncached_favicon_requests_in_the_background() {
