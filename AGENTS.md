@@ -154,6 +154,10 @@
   window. A path used only while loading cannot explain scrolling gains.
   Conversion microbenchmarks and load-time samples are diagnostic evidence,
   not scrolling fps measurements.
+  Retain host CPU count, load averages and run timestamps, as the precise
+  measurement tool records. Assess contention and variation across controls;
+  do not attribute a faster trial to code when unmatched host load or widely
+  varying controls leave the cause unresolved. Keep those results in the report.
   Validate the probe's executable identity and symbol ranges. With injected
   libraries, dyld image zero may be the probe rather than Vox; use the actual
   executable header when filtering caller addresses. Zero counters from an
