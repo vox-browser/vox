@@ -2961,6 +2961,10 @@ fn run_document_script_sources_with_image_fetch_hooks(document &dom.Document, cu
 		messages << 'JavaScript PerformanceObserver bindings: ${err.msg()}'
 		return none
 	}
+	mutable_runtime.install_performance_binding() or {
+		messages << 'JavaScript Performance bindings: ${err.msg()}'
+		return none
+	}
 	mutable_runtime.install_window_media_query_binding() or {
 		messages << 'JavaScript media query bindings: ${err.msg()}'
 		return none
