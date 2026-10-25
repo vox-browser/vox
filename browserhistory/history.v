@@ -11,10 +11,11 @@ const maximum_visits = 50000
 
 pub struct Visit {
 pub:
-	id         i64
-	url        string
-	title      string
-	visited_at i64
+	id          i64
+	url         string
+	title       string
+	favicon_url string
+	visited_at  i64
 }
 
 // Shared by all tabs. The browser owns this record outside document arenas.
@@ -57,11 +58,16 @@ pub fn eligible_url(address string) bool {
 }
 
 pub fn (mut store Store) record(address string, title string, now i64) ! {
+	store.record_with_favicon(address, title, '', now)!
+}
+
+pub fn (mut store Store) record_with_favicon(address string, title string, favicon_url string, now i64) ! {
 	if !eligible_url(address) { return }
 	// Only the new strings and the reusable visit array outlive this operation.
 	persistent := platform.enter_persistent()
 	owned_address := address.clone()
 	owned_title := title.clone()
+	owned_favicon := favicon_url.clone()
 	platform.leave_persistent(persistent)
 	scratch := platform.begin_thread_scratch('browser history update')
 	defer { scratch.finish() }
@@ -69,9 +75,9 @@ pub fn (mut store Store) record(address string, title string, now i64) ! {
 	// A cached document followed by its network refresh is one visit.
 	if visits.len > 0 && visits[0].url == address && now >= visits[0].visited_at
 		&& now - visits[0].visited_at < 60 {
-		visits[0] = Visit{ ...visits[0], title: owned_title, visited_at: now }
+		visits[0] = Visit{ ...visits[0], title: owned_title, favicon_url: owned_favicon, visited_at: now }
 	} else {
-		visits.insert(0, Visit{ id: store.next_id, url: owned_address, title: owned_title, visited_at: now })
+		visits.insert(0, Visit{ id: store.next_id, url: owned_address, title: owned_title, favicon_url: owned_favicon, visited_at: now })
 		store.next_id++
 	}
 	if visits.len > maximum_visits { visits = visits[..maximum_visits].clone() }

@@ -1526,6 +1526,7 @@ fn browser_decode_raster_image_bytes(bytes []u8) !&dom.Bitmap_ {
 	if bytes.len == 0 {
 		return error('Empty image resource')
 	}
+	if image_bytes_are_ico(bytes) { return browser_decode_ico_image_bytes(bytes) }
 	$if macos {
 		if image_bytes_are_webp(bytes) {
 			mut width := 0
@@ -3526,6 +3527,7 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 	} else {
 		none
 	}
+	app.install_browser_new_tab_image_fetch_hooks()
 	image_loader.finish_initialization(app.js_runtime != unsafe { nil })
 	if debug_timing_enabled() {
 		mut source_bytes := 0
@@ -3543,7 +3545,7 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 	if app.js_runtime != unsafe { nil } {
 		_ = prepare_document_render_heap(app.document)
 	}
-	if app.js_runtime == unsafe { nil } {
+	if app.js_runtime == unsafe { nil } && !is_browser_new_tab_url(loaded.url) {
 		install_static_browser_image_fetch_hooks(app.document, app.nonrendered_image_preloads)
 	}
 	if cookie_blocker_enabled_by_default {

@@ -6,6 +6,7 @@ pub struct MostVisitedSite {
 pub:
 	url          string
 	title        string
+	favicon_url  string
 	host         string
 	visits       int
 	last_visited i64
@@ -33,6 +34,7 @@ pub fn (store &Store) most_visited(limit int, now i64) []MostVisitedSite {
 				...previous
 				url: if latest { visit.url } else { previous.url }
 				title: if latest { visit.title } else { previous.title }
+				favicon_url: if latest { visit.favicon_url } else { previous.favicon_url }
 				visits: previous.visits + 1
 				last_visited: if latest { visit.visited_at } else { previous.last_visited }
 			}
@@ -41,6 +43,7 @@ pub fn (store &Store) most_visited(limit int, now i64) []MostVisitedSite {
 			sites << MostVisitedSite{
 				url: visit.url
 				title: visit.title
+				favicon_url: visit.favicon_url
 				host: key
 				visits: 1
 				last_visited: visit.visited_at

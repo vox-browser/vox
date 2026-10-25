@@ -65,13 +65,29 @@ fn test_record_owns_temporary_navigation_strings() {
 		scratch := platform.begin_thread_scratch('history test navigation')
 		address := 'https://example.com/${index}'
 		title := 'Page ${index}'
-		store.record(address, title, 10000000 + index * 100)!
+		store.record_with_favicon(address, title, 'https://example.com/icon${index}.png', 10000000 + index * 100)!
 		scratch.finish()
 	}
 	assert store.visits.len == 5
 	assert store.visits[0].url == 'https://example.com/4'
 	assert store.visits[4].title == 'Page 0'
+	assert store.visits[0].favicon_url == 'https://example.com/icon4.png'
 	store.remove([store.visits[2].id])!
 	assert store.visits.len == 4
 	assert store.visits[2].url == 'https://example.com/1'
+}
+
+fn test_favicon_metadata_persists_and_old_history_remains_readable() {
+	directory := os.join_path(os.temp_dir(), 'vox-history-favicons-${os.getpid()}')
+	defer { os.rmdir_all(directory) or {} }
+	os.mkdir_all(directory)!
+	path := os.join_path(directory, 'history.json')
+	os.write_file(path, '[{"id":1,"url":"https://example.com/","title":"Old","visited_at":10000000}]')!
+	mut store := open(path, 10000000)!
+	assert store.visits[0].favicon_url == ''
+	store.record_with_favicon('https://example.com/', 'Updated', 'https://cdn.example/icon.png', 10000001)!
+	assert store.visits.len == 1
+	assert open(path, 10000002)!.most_visited(8, 10000002)[0].favicon_url == 'https://cdn.example/icon.png'
+	store.record_with_favicon('https://example.com/guide', 'Guide', 'https://example.com/guide.svg', 10000100)!
+	assert open(path, 10000101)!.most_visited(8, 10000101)[0].favicon_url == 'https://example.com/guide.svg'
 }

@@ -77,9 +77,24 @@ fn (mut app BrowserApp) record_browser_visit(loaded LoadedPage) {
 	}
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
-	app.browsing_history.record(loaded.url, document_title(app.document), browserhistory.now()) or {
+	app.browsing_history.record_with_favicon(loaded.url, document_title(app.document),
+		browser_document_favicon_url(app.document), browserhistory.now()) or {
 		app.browsing_history_error = 'History could not be saved: ${err.msg()}'
 	}
+}
+
+fn browser_document_favicon_url(document &dom.Document) string {
+	// The last declared icon wins. Resolve against the live document base so
+	// relative and CDN-hosted icons survive navigation and browser restarts.
+	mut favicon := ''
+	for link in css.query_selector_all(document.as_node(), 'link[rel][href]') {
+		if 'icon' !in link_relations(link) { continue }
+		href := link.get_attribute_value('href').trim_space()
+		if href == '' { continue }
+		address := document.encoding_parse_url(href) or { continue }
+		if browser_new_tab_allows_favicon_url(address) { favicon = address.serialize() }
+	}
+	return favicon
 }
 
 fn browser_history_host(address string) string {

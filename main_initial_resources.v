@@ -19,7 +19,7 @@ fn (mut app BrowserApp) preload_initial_document_resources(base_url string) map[
 	// Script-enabled documents retain the existing capacity hint; HTML/CSS-only
 	// documents let their managed heap grow with actual live state.
 	_ = prepare_document_render_heap(app.document)
-	if app.document.as_node().is_scripting_enabled() {
+	if app.document.as_node().is_scripting_enabled() || is_browser_new_tab_url(app.document.url_string()) {
 		types := document_preload_resource_types(app.document, base_url)
 		// Images do not block scripts or the first document frame. Their native
 		// request models consume cached bytes or complete on the owning thread.
