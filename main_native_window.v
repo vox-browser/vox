@@ -38,9 +38,31 @@ fn configure_native_browser_context(mut context gg.Context) {
 }
 
 fn dispatch_native_browser_event(event_pointer &sapp.Event, user_data voidptr) {
-	event := unsafe { &gg.Event(event_pointer) }
+	// Sokol's C integer fields are 32-bit; GG's V integers can be 64-bit.
+	// Copy fields instead of aliasing incompatible event layouts.
+	event := gg.Event{
+		frame_count: event_pointer.frame_count
+		typ: event_pointer.type
+		key_code: gg.KeyCode(event_pointer.key_code)
+		char_code: event_pointer.char_code
+		key_repeat: event_pointer.key_repeat
+		modifiers: event_pointer.modifiers
+		mouse_button: gg.MouseButton(event_pointer.mouse_button)
+		mouse_x: event_pointer.mouse_x
+		mouse_y: event_pointer.mouse_y
+		mouse_dx: event_pointer.mouse_dx
+		mouse_dy: event_pointer.mouse_dy
+		scroll_x: event_pointer.scroll_x
+		scroll_y: event_pointer.scroll_y
+		num_touches: event_pointer.num_touches
+		touches: event_pointer.touches
+		window_width: event_pointer.window_width
+		window_height: event_pointer.window_height
+		framebuffer_width: event_pointer.framebuffer_width
+		framebuffer_height: event_pointer.framebuffer_height
+	}
 	if event.typ != .resized {
-		C.gg__gg_event_fn(event_pointer, user_data)
+		C.gg__gg_event_fn(&event, user_data)
 		return
 	}
 	mut context := unsafe { &gg.Context(user_data) }
@@ -48,9 +70,9 @@ fn dispatch_native_browser_event(event_pointer &sapp.Event, user_data voidptr) {
 	// deliberately leaves ft nil; only the shared dimensions and scale apply.
 	// Preserve GG's ordering: general event callback, cached size, resize hook.
 	if context.config.event_fn != unsafe { nil } {
-		context.config.event_fn(event, context.user_data)
+		context.config.event_fn(&event, context.user_data)
 	} else if context.config.on_event != unsafe { nil } {
-		context.config.on_event(context.user_data, event)
+		context.config.on_event(context.user_data, &event)
 	}
 	context.scale = native_browser_context_scale(sapp.dpi_scale())
 	context.width = event.window_width
@@ -58,7 +80,7 @@ fn dispatch_native_browser_event(event_pointer &sapp.Event, user_data voidptr) {
 	context.window.width = event.window_width
 	context.window.height = event.window_height
 	if context.config.resized_fn != unsafe { nil } {
-		context.config.resized_fn(event, context.user_data)
+		context.config.resized_fn(&event, context.user_data)
 	}
 }
 

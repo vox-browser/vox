@@ -202,6 +202,10 @@ fn test_native_browser_resize_adapter_preserves_gg_keyboard_and_pointer_dispatch
 		user_data: state
 		event_fn: fn (event &gg.Event, user_data voidptr) {
 			mut state := unsafe { &NativeBrowserContextTestState(user_data) }
+			assert event.window_width == 1600
+			assert event.window_height == 900
+			assert event.framebuffer_width == 3200
+			assert event.framebuffer_height == 1800
 			state.callbacks << 'event:${event.typ}'
 		}
 		keydown_fn: fn (key gg.KeyCode, modifiers gg.Modifier, user_data voidptr) {
@@ -223,10 +227,10 @@ fn test_native_browser_resize_adapter_preserves_gg_keyboard_and_pointer_dispatch
 	context.window.init_userdata_cb(context)
 	defer { context.window.cleanup_userdata_cb(context) }
 	context.scale = 2
-	mut key := sapp.Event{type: .key_down, key_code: .l, modifiers: u32(gg.Modifier.super)}
+	mut key := sapp.Event{type: .key_down, key_code: .l, modifiers: u32(gg.Modifier.super), window_width: 1600, window_height: 900, framebuffer_width: 3200, framebuffer_height: 1800}
 	context.window.event_userdata_cb(&key, context)
 	assert context.pressed_keys[int(gg.KeyCode.l)]
-	mut click := sapp.Event{type: .mouse_down, mouse_button: .left, mouse_x: 24, mouse_y: 36}
+	mut click := sapp.Event{type: .mouse_down, mouse_button: .left, mouse_x: 24, mouse_y: 36, window_width: 1600, window_height: 900, framebuffer_width: 3200, framebuffer_height: 1800}
 	context.window.event_userdata_cb(&click, context)
 	assert context.mouse_pos_x == 12
 	assert context.mouse_pos_y == 18
