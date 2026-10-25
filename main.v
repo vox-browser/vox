@@ -1405,18 +1405,25 @@ fn script_sources(document &dom.Document, base_url string, preloaded map[string]
 	if !browser_document_can_load_scripts(document) { return [] }
 	root := unsafe { &dom.Node(document) }
 	mut sources := []browserjs.ScriptSource{}
+	mut deferred_sources := []browserjs.ScriptSource{}
 	for script_element in css.query_selector_all(root, 'script') {
 		type_ := script_element.get_attribute_value('type').trim_space().to_lower()
 		if type_ != '' && type_ !in ['text/javascript', 'application/javascript', 'module'] {
 			continue
 		}
+		// The compact loader collects scripts after parsing. Classic inline scripts
+		// still precede deferred external scripts and non-async modules, whose
+		// relative document order must survive until DOMContentLoaded.
+		deferred := !script_element.has_attribute('async') && (type_ == 'module'
+			|| (script_element.has_attribute('src') && script_element.has_attribute('defer')))
+		mut source := browserjs.ScriptSource{}
 		if src := script_element.get_attribute('src') {
 			resolved_url := resolve_document_reference(src, base_url)
 			filtered := browsernet.filter(adblock.Request{url: resolved_url, source_url: document.url.serialize(), request_type: 'script'}) or {
 				messages << 'Script ${src}: ${err.msg()}'
 				continue
 			}
-			source := if replacement := filtered.replacement {
+			code := if replacement := filtered.replacement {
 				replacement.body
 			} else if resource := preloaded[resolved_url] {
 				filtered_resource := filter_preloaded_resource(resource, document.url.serialize(), 'script') or {
@@ -1430,19 +1437,25 @@ fn script_sources(document &dom.Document, base_url string, preloaded map[string]
 					continue
 				}
 			}
-			sources << browserjs.ScriptSource{
-				code: source
+			source = browserjs.ScriptSource{
+				code: code
 				url: resolved_url
 				source_type: if type_ == 'module' { .module } else { .script }
 			}
 		} else {
-			sources << browserjs.ScriptSource{
+			source = browserjs.ScriptSource{
 				code: script_element.as_node().text_content() or { '' }
 				url: document.url.serialize()
 				source_type: if type_ == 'module' { .module } else { .script }
 			}
 		}
+		if deferred {
+			deferred_sources << source
+		} else {
+			sources << source
+		}
 	}
+	sources << deferred_sources
 	return sources
 }
 
