@@ -6,6 +6,14 @@ Overlay scrollbars are drawn afterward, so movement and fading cannot leave old
 thumbs in the cached page. The cache is capped at 64 MiB; a 1024×768 viewport at
 2× density uses 12 MiB. It does not grow with document length.
 
+The retained rows form a ring. Scrolling advances its origin, restores the
+overlapping pixels to the fresh canvas and writes only the exposed rows back
+after painting. Each contiguous row transfer uses at most two copies when the
+ring wraps; wider canvas pitches retain a row-by-row fallback. Reused frames clear
+only the exposed document strip. Cached images are culled using their retained
+image rectangle or background clip, including transforms and raster fringes,
+before image decoding or upload. Unknown bounds remain eligible for replay.
+
 Content invalidation advances a document paint revision. Navigation, resizing,
 density changes and fractional device-pixel movement fall back to complete
 replay. Fixed/sticky content, independent media, unsupported effects and deferred
@@ -115,7 +123,7 @@ performance credit. The table above uses the accepted frozen-source pair.
 
 A subsequent production rebuild and repeat passes the full 600-callback trace
 comparison, including identical executable/native-library hashes, resources,
-scroll positions and paint-command counts. The current executable SHA-256 is
+scroll positions and paint-command counts. That repeat's executable SHA-256 is
 `6cf799d7a3e2f3ea4898677236622141f201d1ad0b24af9d4f127a60e324f0a2`.
 Complete replay has median 6.643 ms and p95 16.753 ms; viewport reuse has median
 3.487 ms and p95 14.674 ms, a 47.51% median reduction. The reused run has
@@ -128,5 +136,82 @@ executable/native-library identity are verified afterward. See
 `installed-performance-summary.json` and `final-main-app-identity.json`.
 
 For diagnostics, `VOX_DISABLE_SCROLL_RASTER_REUSE=1` selects complete replay.
+`VOX_DISABLE_SCROLL_RASTER_DAMAGE_OPTIMIZATIONS=1` keeps viewport reuse while
+selecting the previous full-canvas clear, full cache writeback and image replay
+path for a matched comparison. An empty value keeps the optimized path.
 The existing profiler can collect the matched workload with
 `python3 tools/measure_browser_scroll.py --help`.
+
+## 100 fps optimization
+
+A further matched 1,200-callback comparison uses the same cached page, 1024×768
+viewport, wheel trace, executable and native libraries. Each run uses an isolated
+profile with bookmarks hidden. Both paths retain viewport reuse; the diagnostic
+switch above selects the previous damage handling. Source is pinned to committed
+renderer dependencies through `97ccca78` plus the scroll change.
+
+| Per callback | Previous damage path | Optimized damage path |
+| --- | ---: | ---: |
+| Median | 4.440 ms | 3.899 ms |
+| 95th percentile | 19.257 ms | 19.764 ms |
+| Maximum | 45.753 ms | 49.007 ms |
+| Callbacks exceeding 10 ms | 75 / 1,200 | 75 / 1,200 |
+| Retired instructions, total | 48.907 billion | 43.939 billion |
+| Mean native completion cadence | 109.90 fps | 110.47 fps |
+
+Median callback work falls 12.17%, saving 4,967,359,749 observed retired
+instructions over the identical trace. Both runs reuse the viewport in 1,185
+callbacks and have 15 full replays. After the first 60 callbacks, all remaining
+1,140 reuse the viewport. Their optimized median is 3.868 ms, p95 7.279 ms and
+maximum 22.776 ms, with mean completion cadence 122.87 fps. Eighteen of those
+callbacks exceed the 10 ms budget; all eighteen occur before callback 90.
+Early slow frames remain included in the full-run results. The full-run tail
+latency does not improve. These receipt-based averages exceed 100 fps, but do
+not establish uninterrupted 100 fps or display scanout.
+
+The accepted comparison and source pins are retained under
+`Build/urr-100fps-20261025/`: `isolated-1200-{before,after}/summary.json`,
+`isolated-performance-summary.json`, `isolated-viewport-proof.json` and
+`source-identity.json`. Executable, native-library, resource-cache, wheel-position
+and per-frame command-count checks all match. Earlier unisolated runs inherited
+a visible bookmarks bar, reducing document height by 28 pixels despite the
+requested viewport metadata; they are retained separately and receive no credit
+in this table. The initial build failed because the validation copy lacked an
+upstream include link; its receipt remains retained without passing credit.
+
+A stable copy of the combined main app also passes strict signing and headless
+startup. Its independent isolated-profile 1,200-callback run averages 110.74 fps,
+with median 4.054 ms and p95 19.283 ms callback work. After the first 60 callbacks,
+the remaining 1,140 average 122.88 fps, with median 4.030 ms and p95 7.573 ms;
+18 callbacks exceed 10 ms. This standalone run earns no matched reduction credit.
+`production-identity.json` pins executable SHA-256
+`bbff479d4be0471325283794884cfae79d757a91c4d91270583c1461c63d055e`
+and native libraries. Its recorded working-source hashes describe validation
+time, not build provenance. Later concurrent builds of the main app receive no
+timing credit from this copy. See `isolated-production-performance-summary.json`
+and `isolated-production-1200/summary.json`.
+
+Implementation commit `4264f040` contains the optimization and focused tests.
+`committed-source-proof.json` verifies that its four complete scroll files equal
+the tested source bytes and its `main.v` change applies identically to the
+frozen dependency snapshot and the actual commit parent.
+
+The measured instruction saving triggers broad verification. The tested snapshot
+passes 70 root/layout cases in both preallocated and Boehm configurations (140
+case executions). Optimized native tests pass with strict compiler warnings and
+compare complete canvas buffers against full replay, including ring wrap in both
+directions, padded row strides, zero movement, nearly full-height movement,
+diagnostic mode changes and 1×/2× density. Build, strict signing and headless
+startup pass. See `root-regressions-summary.json`, `root-{compile,run}-batch-guard.json`
+and `runtime-batch-guard.json`.
+
+Two isolated-profile Reddit viewport pairs are pixel-exact against full replay
+at 1× and 2× after 45 wheels, covering both scroll directions and all 1024×768
+document pixels. All 11 default smoke captures exactly preserve the independent
+prior build. The smoke command still exits 1 for the four existing canonical
+font differences listed above; no references or tolerances change. The first
+unisolated smoke attempt retained the bookmarks-bar offset and failed the
+preservation check; its original failure receipt remains retained. All eight SVG
+mutation comparisons pass with zero differing pixels. See
+`isolated-pixels-*-equality.json`, `smoke-isolated-baseline-preservation.json`,
+`svg-isolated.log` and `isolated-batch-guard.json`.
