@@ -20,7 +20,11 @@ class PreciseScrollTests(unittest.TestCase):
     def test_uses_in_process_publication_timestamps_and_reports_actual_input_rate(self):
         result = summarize(log_for(), 12)
         self.assertEqual(result["mean_publication_fps"], 100)
-        self.assertEqual(result["mean_scroll_fps"], 100)
+        self.assertAlmostEqual(result["mean_scroll_fps"], 10 / .11)
+        self.assertEqual(result["mean_scroll_interval_fps"], 100)
+        self.assertEqual(result["measurement_window_us"], 110000)
+        self.assertEqual(result["first_publication_delay_us"], 5000)
+        self.assertEqual(result["last_publication_gap_us"], 5000)
         self.assertEqual(result["input_delivery_hz"], 100)  # nominal rate was 60
         self.assertEqual(result["completed_publications"], 12)
         self.assertEqual(result["measured_publications"], 11)
@@ -28,7 +32,7 @@ class PreciseScrollTests(unittest.TestCase):
 
     def test_keeps_slow_intervals_including_startup_and_reports_deadline_misses(self):
         result = summarize(log_for(times=[1000, 50000, 55000, 60000, 65000, 70000,
-                                         75000, 80000, 85000, 90000, 95000, 115000]), 12)
+                                         75000, 80000, 85000, 95000, 105000, 115000]), 12)
         self.assertEqual(result["scroll_interval_us"]["max"], 49000)
         self.assertEqual(result["intervals_over_budget"], 1)
         self.assertEqual(result["fraction_over_budget"], .1)
@@ -37,8 +41,22 @@ class PreciseScrollTests(unittest.TestCase):
     def test_animated_publications_without_scroll_movement_cannot_inflate_scroll_fps(self):
         result = summarize(log_for(positions=[i // 2 * 8.4 for i in range(12)]), 12)
         self.assertEqual(result["mean_publication_fps"], 100)
-        self.assertEqual(result["mean_scroll_fps"], 50)
+        self.assertAlmostEqual(result["mean_scroll_fps"], 5 / .11)
+        self.assertEqual(result["mean_scroll_interval_fps"], 50)
         self.assertEqual(result["fraction_over_budget"], 1)
+
+    def test_average_includes_time_before_first_and_after_last_publication(self):
+        result = summarize(log_for(times=[80000 + i * 2000 for i in range(11)] + [115000]), 12)
+        self.assertEqual(result["mean_scroll_interval_fps"], 500)
+        self.assertAlmostEqual(result["mean_scroll_fps"], 10 / .11)
+        self.assertEqual(result["first_publication_delay_us"], 80000)
+        self.assertEqual(result["last_publication_gap_us"], 10000)
+        self.assertEqual(result["first_counted_scroll_delay_us"], 82000)
+        self.assertEqual(result["last_scroll_publication_gap_us"], 10000)
+
+    def test_rejects_publication_that_precedes_its_input(self):
+        with self.assertRaisesRegex(ValueError, "precedes"):
+            summarize(log_for().replace("t_us=15000 frame_us", "t_us=9000 frame_us"), 12)
 
     def test_rejects_missing_duplicate_or_out_of_order_samples(self):
         good = log_for()

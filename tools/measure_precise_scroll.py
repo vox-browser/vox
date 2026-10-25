@@ -5,7 +5,9 @@ Run under tools/run_memory_bounded.py. This measures native publication, not
 physical display scanout. The main-thread input timer is nominal: actual input
 timestamps and cadence are reported, including late delivery during stalls.
 mean_scroll_fps counts publications with a changed scroll position separately
-from animation-only publications. Retain raw evidence and run matched trials.
+from animation-only publications over the entire input window. The first
+publication has no known prior position and supplies only the reference sample.
+Retain raw evidence and run matched trials.
 """
 
 import argparse
@@ -82,6 +84,9 @@ def summarize(log, expected_inputs, target_hz=60):
     selected = [f for f in frames if inputs[0]["t_us"] <= f["t_us"] <= inputs[-1]["t_us"]]
     gaps = intervals(selected)
     input_gaps = intervals(inputs)
+    if any(f["t_us"] < inputs[int(f["inputs"]) - 1]["t_us"] for f in frames):
+        raise ValueError("Publication precedes its recorded input")
+    window_us = inputs[-1]["t_us"] - inputs[0]["t_us"]
     positions = [f["scroll_y"] for f in selected]
     moving = sum(a != b for a, b in zip(positions, positions[1:]))
     if max(positions) - min(positions) < 1 or moving < 2:
@@ -92,11 +97,18 @@ def summarize(log, expected_inputs, target_hz=60):
             scrolled.append(frame)
     scroll_gaps = intervals(scrolled)
     budget = 1_000_000 / target_hz
-    return dict(endpoint=ENDPOINT, start=starts[0], completion=ends[0],
+    return dict(protocol_version=2, endpoint=ENDPOINT, start=starts[0], completion=ends[0],
                 completed_inputs=len(inputs), completed_publications=len(frames),
                 measured_publications=len(selected), moving_intervals=moving,
-                mean_publication_fps=1_000_000 / statistics.mean(gaps),
-                mean_scroll_fps=1_000_000 / statistics.mean(scroll_gaps),
+                measurement_window_us=window_us,
+                mean_publication_fps=len(selected) * 1_000_000 / window_us,
+                mean_scroll_fps=moving * 1_000_000 / window_us,
+                mean_publication_interval_fps=1_000_000 / statistics.mean(gaps),
+                mean_scroll_interval_fps=1_000_000 / statistics.mean(scroll_gaps),
+                first_publication_delay_us=selected[0]["t_us"] - inputs[0]["t_us"],
+                last_publication_gap_us=inputs[-1]["t_us"] - selected[-1]["t_us"],
+                first_counted_scroll_delay_us=scrolled[1]["t_us"] - inputs[0]["t_us"],
+                last_scroll_publication_gap_us=inputs[-1]["t_us"] - scrolled[-1]["t_us"],
                 input_delivery_hz=1_000_000 / statistics.mean(input_gaps),
                 input_interval_us=distribution(input_gaps),
                 publication_interval_us=distribution(gaps),
