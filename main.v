@@ -399,6 +399,7 @@ mut:
 	bookmarks_error                     string
 	bookmark_bar_first                  int
 	history_page                        &BrowserHistoryPage = unsafe { nil }
+	new_tab_history_version             u64
 	browser_chrome                      BrowserChromeState
 	browser_text_cache_                 &BrowserChromeTextCache = unsafe { nil }
 	chrome_debug                        bool
@@ -705,6 +706,7 @@ fn (mut app BrowserApp) initialize_native_window() {
 		}
 		app.mount_address_bar()
 	}
+	if app.source_label == browser_new_tab_url { app.focus_address_bar() }
 	app.update_window_title()
 }
 
@@ -845,6 +847,9 @@ fn bundled_workspace_relative_file_path(source string, executable_path string) ?
 
 fn initial_document(argument string) (string, string, string) {
 	if argument == '' {
+		return browser_new_tab_url, '<!doctype html><title>New Tab</title>', browser_new_tab_url
+	}
+	if argument == 'about:home' {
 		return 'about:home', demo_markup, 'built-in translated-engine demo'
 	}
 	if argument.trim_space().starts_with('<') {
@@ -873,6 +878,7 @@ fn initial_document(argument string) (string, string, string) {
 fn resolve_url(reference string, base string) string {
 	trimmed := reference.trim_space()
 	if is_browser_history_url(trimmed) { return browser_history_url }
+	if is_browser_new_tab_url(trimmed) { return browser_new_tab_url }
 	if trimmed == '' {
 		return base
 	}
@@ -3408,6 +3414,8 @@ fn document_has_window_event_handlers(document &dom.Document) bool {
 fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history bool) {
 	loaded := if is_browser_history_url(input_loaded.url) {
 		LoadedPage{...input_loaded, url: browser_history_url, markup: app.browser_history_markup(), content_type: 'text/html'}
+	} else if is_browser_new_tab_url(input_loaded.url) {
+		LoadedPage{...input_loaded, url: browser_new_tab_url, markup: app.browser_new_tab_markup(), content_type: 'text/html'}
 	} else { input_loaded }
 	mut navigation_work := app.begin_navigation_work()
 	defer { navigation_work.finish() }
@@ -3420,7 +3428,7 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 	app.source_label = loaded.url
 	if mut old_loader := app.image_request_loader { old_loader.cancel() }
 	app.image_request_loader = none
-	app.address = loaded.url
+	app.address = if loaded.url == browser_new_tab_url { '' } else { loaded.url }
 	app.address_cursor = app.address.runes().len
 	app.address_select = false
 	app.sync_address_bar()
@@ -3626,13 +3634,13 @@ fn (mut app BrowserApp) navigate(address string, add_history bool) {
 		''
 	}
 	resolved := resolve_url(address, base)
-	if resolved == browser_history_url {
+	if resolved in [browser_history_url, browser_new_tab_url] {
 		app.navigation_generation++
 		app.pending_navigation = none
 		app.pending_cached_page = none
 		app.cancel_page_preload()
 		app.pending_native_navigation = none
-		app.install_loaded_page(LoadedPage{url: browser_history_url, status: 'History', content_type: 'text/html'}, add_history)
+		app.install_loaded_page(LoadedPage{url: resolved, status: if resolved == browser_new_tab_url { 'New Tab' } else { 'History' }, content_type: 'text/html'}, add_history)
 		return
 	}
 	if parsed := url.parse(resolved) {
@@ -6857,6 +6865,7 @@ fn (mut app BrowserApp) draw() {
 	app.poll_deferred_navigation_input()
 	app.poll_deferred_page_input()
 	app.poll_browser_history_page()
+	app.poll_browser_new_tab_page()
 	// Profile wheels enter like physical input, outside the frame's navigation
 	// work scope; inside it they would be deferred to the next frame untimed.
 	app.begin_scroll_profile_frame()
@@ -7487,7 +7496,10 @@ fn main() {
 			html.set_display_device_pixel_ratio(C.native_display_device_pixel_ratio())
 		}
 	}
-	initial_url, markup, source_label := initial_document(options.source)
+	// Keep the engine/JavaScript smoke fixture independent of the start page.
+	initial_url, markup, source_label := initial_document(if options.headless_smoke && options.source == '' {
+		'about:home'
+	} else { options.source })
 	mut main_checkpoint := debug_timing_checkpoint('startup', main_started)
 	initial_viewport_height := if options.screenshot_viewport_height > 0 {
 		options.screenshot_viewport_height

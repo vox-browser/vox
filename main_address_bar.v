@@ -92,7 +92,8 @@ fn (mut app BrowserApp) submit_address_bar() {
 
 fn (mut app BrowserApp) cancel_address_bar() {
 	if app.history_index >= 0 && app.history_index < app.history.len {
-		app.address = app.history[app.history_index].url
+		address := app.history[app.history_index].url
+		app.address = if is_browser_new_tab_url(address) { '' } else { address }
 	}
 	app.sync_address_bar()
 	app.blur_address_bar()

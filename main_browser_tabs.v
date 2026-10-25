@@ -119,8 +119,7 @@ fn (mut app BrowserApp) activate_tab_chrome(action string) {
 			app.tabs.pages << tab
 			app.select_browser_tab(app.tabs.pages.len - 1)
 			tab.install_loaded_page(LoadedPage{
-				url:          'about:blank'
-				markup:       '<!doctype html><html><head><title>New Tab</title></head><body></body></html>'
+				url:          browser_new_tab_url
 				content_type: 'text/html'
 				status:       'New Tab'
 			}, true)
