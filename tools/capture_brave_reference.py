@@ -253,6 +253,8 @@ def main() -> None:
                 cdp.call("Emulation.setScriptExecutionDisabled", {"value": True})
             cdp.call("Emulation.setFocusEmulationEnabled", {"enabled": True})
             navigation = cdp.call("Page.navigate", {"url": args.url})
+            if navigation.get('errorText'):
+                raise RuntimeError('Brave navigation failed: ' + navigation['errorText'])
             deadline = time.monotonic() + args.timeout
             while True:
                 state = cdp.call("Runtime.evaluate", {"expression": "document.readyState",
@@ -276,8 +278,6 @@ def main() -> None:
                 metadata = cdp.call('Runtime.evaluate', {
                     'expression': "({url:location.href,title:document.title,logged_in:document.body.classList.contains('loggedin'),width:innerWidth,height:innerHeight,scale:devicePixelRatio})",
                     'returnByValue': True})['result']['value']
-                if navigation.get('errorText'):
-                    metadata['navigation_error'] = navigation['errorText']
                 metadata['native_scale'] = args.native_scale
                 metadata['color_profile'] = 'sRGB'
                 metadata['scroll_x'] = position['x']

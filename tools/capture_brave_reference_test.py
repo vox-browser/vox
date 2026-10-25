@@ -11,6 +11,21 @@ from capture_brave_reference import BRAVE, imported_cookies, launch_command, res
 
 
 class BraveReferenceTests(unittest.TestCase):
+    @unittest.skipUnless(Path(BRAVE).is_file(), 'Brave is required for navigation')
+    def test_failed_navigation_cannot_write_a_reference_image_or_fixture(self):
+        tool = Path(__file__).with_name('capture_brave_reference.py')
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            png, frozen = root / 'error.png', root / 'error.html'
+            result = subprocess.run([
+                sys.executable, str(tool), '--url', (root / 'missing.html').as_uri(),
+                '--out', str(png), '--freeze', str(frozen), '--settle', '0',
+            ], capture_output=True, text=True, timeout=30)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn('ERR_FILE_NOT_FOUND', result.stderr)
+            self.assertFalse(png.exists())
+            self.assertFalse(frozen.exists())
+
     @unittest.skipUnless(Path(BRAVE).is_file(), 'Brave is required for DOM serialization')
     def test_legacy_encoding_survives_a_frozen_utf8_document_round_trip(self):
         title = 'Ответ на пост — Пикабу'
