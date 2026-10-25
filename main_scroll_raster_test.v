@@ -3,6 +3,7 @@ module main
 import html
 import dom
 import layout
+import math
 import page
 import painting
 import time
@@ -129,6 +130,61 @@ fn test_scroll_raster_damage_keeps_exposed_strips_overlay_edges_and_unknown_ink(
 	assert damage.skips(&ordinary)
 	damage.reused = false
 	assert !damage.skips(&ordinary)
+}
+
+fn test_scroll_raster_culls_cached_images_using_retained_output_geometry() {
+	mut damage := ScrollRasterDamage{ reused: true, delta: 10, width: 200, height: 200 }
+	// Compatibility rectangles deliberately disagree with retained output.
+	image := layout.PaintCommand{
+		kind: 'draw_replaced_image', x: 20, y: 190, width: 20, height: 20
+		image_paintable: &painting.ImagePaintable{
+			image_rect: painting.Rect{20, 40, 20, 20}
+		}
+	}
+	background := layout.PaintCommand{
+		kind: 'draw_background_image', x: 20, y: 190, width: 20, height: 20
+		image_data: &layout.PaintImageData{
+			image_clip_x: 20, image_clip_y: 40, image_clip_width: 20, image_clip_height: 20
+		}
+	}
+	for command in [image, background] {
+		assert damage.skips(&command)
+		// Retained transforms, rather than compatibility boxes, bring the
+		// pixels back into the newly exposed bottom strip.
+		assert !damage.skips(&layout.PaintCommand{
+			...command, transform: [f64(1), 0, 0, 1, 0, 145]!
+		})
+		assert !damage.skips(&layout.PaintCommand{
+			...command, transform: [f64(1), 0, 0, 1, 0, math.nan()]!
+		})
+	}
+	// One pixel of image snapping plus the native raster fringe is retained.
+	assert !damage.skips(&layout.PaintCommand{
+		...image, image_paintable: &painting.ImagePaintable{
+			image_rect: painting.Rect{20, 166, 20, 20}
+		}
+	})
+	assert damage.skips(&layout.PaintCommand{
+		...image, image_paintable: &painting.ImagePaintable{
+			image_rect: painting.Rect{20, 165, 20, 20}
+		}
+	})
+	damage.delta = -10
+	for command in [image, background] {
+		assert damage.skips(&command)
+		assert !damage.skips(&layout.PaintCommand{
+			...command, transform: [f64(1), 0, 0, 1, 0, -45]!
+		})
+	}
+	damage.unoptimized = true
+	assert !damage.skips(&image)
+	assert !damage.skips(&background)
+	damage.unoptimized = false
+	damage.delta = 0
+	assert damage.skips(&image)
+	assert damage.skips(&background)
+	damage.reused = false
+	assert !damage.skips(&image)
 }
 
 fn test_scroll_profile_settles_once_and_keeps_scrolling_during_lazy_loads() {

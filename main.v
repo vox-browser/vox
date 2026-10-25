@@ -6943,16 +6943,21 @@ fn (mut app BrowserApp) draw() {
 				C.native_discard_scroll_raster()
 			}
 		}
-		draw_srgb_rect(app.ctx, 0, 0, f32(window.width), f32(window.height), gg.rgb(255, 255, 255))
 		$if macos {
 			if app.ctx.native_rendering && app.document != unsafe { nil }
 				&& app.document.font_rendering_policy() == .chromium {
-				scroll_damage = app.begin_scroll_raster()
-				app.scroll_profile.scroll_raster_reused = scroll_damage.reused
-				if scroll_damage.reused {
+				// Diagnostic baseline retains the previous full-canvas clear.
+				if os.getenv('VOX_DISABLE_SCROLL_RASTER_DAMAGE_OPTIMIZATIONS') != '' {
 					draw_srgb_rect(app.ctx, 0, 0, f32(window.width), f32(window.height), gg.rgb(255, 255, 255))
 				}
+				scroll_damage = app.begin_scroll_raster()
+				app.scroll_profile.scroll_raster_reused = scroll_damage.reused
 			}
+		}
+		// Reused frames already contain overlapping document pixels. The native
+		// damage clip limits this clear and subsequent replay to the exposed strip.
+		if !scroll_damage.unoptimized || scroll_damage.reused {
+			draw_srgb_rect(app.ctx, 0, 0, f32(window.width), f32(window.height), gg.rgb(255, 255, 255))
 		}
 		page_y := app.page_top()
 		mut culling := PaintCanvasCulling{}

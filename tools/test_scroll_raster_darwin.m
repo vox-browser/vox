@@ -7,6 +7,7 @@
 #pragma clang diagnostic pop
 
 static BOOL redraw_during_paint;
+static int canvas_extra_width;
 // An offscreen NSView may discard its dirty bit. Keep that bit observable while
 // exercising the real layer publication and main-queue redraw delivery.
 @interface VoxScrollRasterTestView : NSView {
@@ -114,18 +115,29 @@ static void overlays(CGContextRef context, int width, int height, int top,
 static void frame(int width, int height, int top, int scale, double scroll,
     uint64_t owner, uint64_t revision, int eligible, int expected_reuse, double opacity) {
     int canvas_height = height + top + 13;
-    CGContextRef actual = canvas(width, canvas_height, scale);
-    CGContextRef expected = canvas(width, canvas_height, scale);
+    CGContextRef actual = canvas(width + canvas_extra_width, canvas_height, scale);
+    CGContextRef expected = canvas(width + canvas_extra_width, canvas_height, scale);
     [NSGraphicsContext saveGraphicsState];
     [NSGraphicsContext setCurrentContext:
         [NSGraphicsContext graphicsContextWithCGContext:actual flipped:NO]];
-    white(actual, width, canvas_height);
+    const char *disable_damage = getenv("VOX_DISABLE_SCROLL_RASTER_DAMAGE_OPTIMIZATIONS");
+    if (disable_damage && *disable_damage)
+        white(actual, width + canvas_extra_width, canvas_height);
     double delta = 0;
+    double previous_scroll = native_scroll_raster.scroll;
     assert(native_begin_scroll_raster(owner, revision, scroll, top, width, height,
         eligible, &delta) == expected_reuse);
+    if (native_scroll_raster.active) {
+        size_t stored_rows = native_scroll_raster.damage_optimized && expected_reuse
+            ? (size_t)llround(fabs(scroll - previous_scroll) * scale) : height * scale;
+        assert(native_scroll_raster.dirty_rows == stored_rows);
+        assert(native_scroll_raster.row_origin < native_scroll_raster.height);
+    }
+    white(actual, width + canvas_extra_width, canvas_height);
     paint(actual, width, height, top, scroll, scale);
     native_end_scroll_raster();
     overlays(actual, width, height, top, scroll, scale, opacity);
+    white(expected, width + canvas_extra_width, canvas_height);
     paint(expected, width, height, top, scroll, scale);
     overlays(expected, width, height, top, scroll, scale, opacity);
     assert(CGBitmapContextGetBytesPerRow(actual) == CGBitmapContextGetBytesPerRow(expected));
@@ -163,6 +175,31 @@ int main(void) {
             assert(!native_scroll_raster.pixels);
             unsetenv("VOX_DISABLE_SCROLL_RASTER_REUSE");
             frame(161, 121, 9, scale, 392.25, 2, 2, 1, 0, 0.5);
+            // Wrap the ring repeatedly in either direction, including partial
+            // viewport widths where the canvas pitch exceeds a cache row.
+            for (int padded = 0; padded < 2; ++padded) {
+                canvas_extra_width = padded ? 17 : 0;
+                native_discard_scroll_raster();
+                frame(161, 121, 9, scale, 0, 2, 2, 1, 0, 0);
+                for (int scroll = 60; scroll <= 600; scroll += 60)
+                    frame(161, 121, 9, scale, scroll, 2, 2, 1, 1, 0.5);
+                for (int scroll = 540; scroll >= 0; scroll -= 60)
+                    frame(161, 121, 9, scale, scroll, 2, 2, 1, 1, 0.3);
+                frame(161, 121, 9, scale, 0, 2, 2, 1, 1, 0);
+                frame(161, 121, 9, scale, 120, 2, 2, 1, 1, 0.5);
+                frame(161, 121, 9, scale, 121, 2, 2, 1, 1, 0.5);
+                frame(161, 121, 9, scale, 242, 2, 2, 1, 0, 0.5);
+                setenv("VOX_DISABLE_SCROLL_RASTER_DAMAGE_OPTIMIZATIONS", "1", 1);
+                frame(161, 121, 9, scale, 243, 2, 2, 1, 0, 0.5);
+                frame(161, 121, 9, scale, 244, 2, 2, 1, 1, 0.5);
+                unsetenv("VOX_DISABLE_SCROLL_RASTER_DAMAGE_OPTIMIZATIONS");
+                frame(161, 121, 9, scale, 245, 2, 2, 1, 0, 0.5);
+                frame(161, 121, 9, scale, 246, 2, 2, 1, 1, 0.5);
+                setenv("VOX_DISABLE_SCROLL_RASTER_DAMAGE_OPTIMIZATIONS", "", 1);
+                frame(161, 121, 9, scale, 247, 2, 2, 1, 1, 0.5);
+                unsetenv("VOX_DISABLE_SCROLL_RASTER_DAMAGE_OPTIMIZATIONS");
+            }
+            canvas_extra_width = 0;
         }
         // A density change must not shift pixels from a different device grid.
         frame(161, 121, 9, 1, 399.25, 2, 2, 1, 0, 0.5);

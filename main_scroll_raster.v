@@ -2,6 +2,7 @@ module main
 
 import layout
 import math
+import os
 
 fn C.native_begin_scroll_raster(u64, u64, f64, f64, f64, f64, int, &f64) int
 fn C.native_end_scroll_raster()
@@ -14,10 +15,15 @@ mut:
 	delta               f64
 	width               f64
 	height              f64
+	unoptimized         bool
 }
 
 fn (app &BrowserApp) begin_scroll_raster() ScrollRasterDamage {
-	mut damage := ScrollRasterDamage{ width: app.viewport_width, height: app.viewport_height }
+	mut damage := ScrollRasterDamage{
+		width: app.viewport_width
+		height: app.viewport_height
+		unoptimized: os.getenv('VOX_DISABLE_SCROLL_RASTER_DAMAGE_OPTIMIZATIONS') != ''
+	}
 	$if macos {
 		viewport := app.document.viewport_rect()
 		// Shared SVG pictures finish after the font layer; their deferred
@@ -40,10 +46,9 @@ fn (damage &ScrollRasterDamage) skips(command &layout.PaintCommand) bool {
 	// Checkbox fills can defer their pixels to the following border draw.
 	// Keep both operations so culling cannot pair an underlay with a later box.
 	if command.underlays_next || command.kind == 'stroke_rounded_rect' { return false }
-	// Replaced images resolve their destination from a separate paintable;
-	// background tiles resolve it from their origin and clip. Let the native
-	// image renderer test its final bounds against the damage clip.
-	if command.kind in ['draw_replaced_image', 'draw_background_image'] { return false }
+	// Use retained image/clip geometry below, before decoding or uploading an
+	// image whose pixels already came from the scroll cache.
+	if damage.unoptimized && command.kind in ['draw_replaced_image', 'draw_background_image'] { return false }
 	if damage.delta == 0 { return true }
 	top := if damage.delta < 0 {
 		0.0
