@@ -27,6 +27,9 @@ fn paint_local_offset(node &Node, state &LayoutState, used &UsedValues) css.CSSP
 				}
 			}
 		}
+		// Atomic fragments are positioned against their block containing box,
+		// bypassing the inline ancestors whose relative offsets still move them.
+		offset = css_pixel_point_add(offset, inline_relative_offset(node, state))
 	}
 	if used.node().computed_values().position() == .relative {
 		offset = css_pixel_point_add(offset, css.CSSPixelPoint.from_values(used.inset_left.to_double(), used.inset_top.to_double()))

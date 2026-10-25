@@ -1,0 +1,13 @@
+<!doctype html>
+<style>
+body { margin: 0; font: 24px/28px Arial }
+.line { width: 450px; height: 40px }
+.relative { position: relative; left: 3px; top: 2px }
+.box { display: inline-block; width: 24px; height: 24px; vertical-align: text-top; background: red }
+svg { width: 16px; height: 16px; padding: 1px 0 }
+</style>
+<div class="line"><span class="relative"><i id="plain" class="box"></i></span></div>
+<div class="line"><span class="relative"><span style="position:relative;left:5px;top:4px"><i id="nested" class="box"></i></span></span></div>
+<div class="line"><span class="relative"><i id="own" class="box" style="position:relative;left:7px;top:6px"></i></span></div>
+<div class="line"><span class="relative"><i id="svg-box" class="box"><svg id="svg" viewBox="0 0 16 16"><rect width="16" height="16"/></svg></i></span></div>
+<div class="line"><span class="relative"><i id="content-box" class="box" style="font-size:10px;line-height:12px"><span id="content">Hi</span></i></span></div>
