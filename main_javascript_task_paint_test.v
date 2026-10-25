@@ -48,7 +48,7 @@ fn test_input_listener_query_flushed_mutation_still_refreshes_and_adopts_geometr
 	assert target.get_attribute_value('class') == 'changed'
 	assert runtime.evaluate_host('taskPaintFilterRuns')! == '1'
 	box := app.root_box.find_box(i64(target.as_node().unique_id()))?
-	assert box.border_box().width == 80
+	assert box.border_box().width == 80 * document.layout_coordinate_scale()
 	assert app.paint_commands.any(it.color == 'rgb(81 82 83)')
 }
 
@@ -175,7 +175,7 @@ fn test_timer_native_mutation_with_an_already_recorded_list_is_adopted() {
 	assert voidptr(document.cached_display_list() or { panic('missing native paint') }) != voidptr(old)
 	app.poll_javascript_tasks()
 	assert app.paint_commands.any(it.color == 'rgb(81 82 83)')
-	assert app.root_box.bounding_rect_for(target)?.width == 80
+	assert app.root_box.bounding_rect_for(target)?.width == 80 * document.layout_coordinate_scale()
 }
 
 fn test_timer_canvas_and_selection_effects_are_replayed() {
