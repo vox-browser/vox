@@ -363,3 +363,11 @@ Brave reference remain in
 [`diagnostic/background-sprite-device-layout.html`](diagnostic/background-sprite-device-layout.html)
 and its adjacent PNG; fractional explicit sizes, repeated tiles, and `round`
 tiling still have differences. These diagnostic cases are not parity claims.
+
+`input-placeholder-clamped-line-height` reduces the Maps search field to a
+padded input with an automatic height clamped by equal minimum and maximum
+heights. In the Chromium profile, input placeholders use the UA's important
+normal line height instead of inheriting the control's 48px line height.
+The reference was captured with Brave 155.1.97.57 at 1024×768 and device
+scale 1. Exact RGBA equality covers this reduced control, not the complete
+live Maps page.

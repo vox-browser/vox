@@ -11883,6 +11883,7 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 	if abstract_element.pseudo_element() == none {
 		adjust_element_computed_style(mut properties, abstract_element.element())
 	}
+	adjust_chromium_input_placeholder_style(mut properties, abstract_element)
 
 	if s.css_transition_storage_ != unsafe { nil } {
 		mut transition_storage := s.css_transition_storage_

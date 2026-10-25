@@ -1,0 +1,43 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Input placeholder in a padded, height-clamped control</title>
+<style>
+body { margin: 0; }
+.input {
+    display: inline-flex;
+    align-items: center;
+    box-sizing: border-box;
+    width: 280px;
+    vertical-align: middle;
+    line-height: normal;
+}
+.input__context {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+.input__control {
+    position: relative;
+    display: inline-block;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 16px 0;
+    border: 0;
+    font: 500 14px/48px Arial;
+    width: 100%;
+    vertical-align: initial;
+    height: auto;
+    min-height: 48px;
+    max-height: 48px;
+    background: none;
+}
+.input__control::-webkit-input-placeholder {
+    font-size: 14px;
+    line-height: 16px;
+    height: auto;
+    min-height: inherit;
+    max-height: inherit;
+}
+</style>
+<span class="input"><span class="input__context"><input class="input__control" placeholder="Search for and select places"></span></span>

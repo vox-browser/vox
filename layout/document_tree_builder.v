@@ -1826,11 +1826,12 @@ fn build_input_internal_layout_children(document &dom.Document, element &dom.Ele
 				return []
 			}
 			placeholder_base := static_control_placeholder_style(document, element, host_computed)
+			// Keep the pseudo-element line height; Chromium input placeholders reset
+			// the host's author line height to normal in the UA style.
 			mut placeholder_overrides := {
 				css.PropertyID.display:              'block'
 				css.PropertyID.width:                '100%'
 				css.PropertyID.height:               inner_height
-				css.PropertyID.line_height:          inner_line_height
 				css.PropertyID.overflow_x:           'hidden'
 				css.PropertyID.overflow_y:           'hidden'
 				css.PropertyID.white_space_collapse: 'collapse'
