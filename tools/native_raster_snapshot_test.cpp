@@ -121,6 +121,23 @@ int main()
         assert(snapshot.copy_to(decoded.data(), row_bytes, row_bytes, height));
         assert(decoded == original);
     }
+    // Literal spans cross rows and SIMD-sized boundaries. Check the exact
+    // retained word count as well as padded replay and mutation detection.
+    for (size_t literals : {1, 2, 3, 15, 16, 17, 31, 32, 33, 255, 1024}) {
+        constexpr size_t width = 7, prefix = 1025;
+        size_t height = (prefix + literals + 1031 + width - 1) / width;
+        std::vector<uint8_t> bytes(width * height * 4);
+        for (size_t i = 0; i < width * height; ++i) {
+            uint32_t value = i < prefix ? 0x2718abcd
+                : i < prefix + literals ? uint32_t((i - prefix) * 7919 + 17)
+                : 0xaebc3347;
+            std::memcpy(bytes.data() + i * 4, &value, 4);
+        }
+        auto owned = bytes;
+        VoxRasterSnapshot snapshot(std::move(owned));
+        assert(snapshot.size() == (literals + 5) * 4);
+        check(bytes, width * 4, height, true);
+    }
     VoxRasterSnapshot empty;
     assert(empty.equal(nullptr, 0, 0, 0));
     assert(empty.copy_to(nullptr, 0, 0, 0));

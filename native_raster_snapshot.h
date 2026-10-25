@@ -46,8 +46,8 @@ private:
             std::memcpy(bytes + i * 8, &pattern, 8);
         if (words & 1) std::memcpy(bytes + pairs * 8, &value, 4);
     }
-    template<typename Emit>
-    static void encode(uint8_t const* bytes, size_t words, Emit emit)
+    template<typename Run, typename Literal>
+    static void encode(uint8_t const* bytes, size_t words, Run run, Literal literal)
     {
         size_t at = 0;
         while (at < words) {
@@ -55,8 +55,7 @@ private:
             uint32_t value = word(bytes + at * 4);
             while (end < words && word(bytes + end * 4) == value) ++end;
             if (end - at >= 3) {
-                emit(uint32_t((end - at) * 2 + 1));
-                emit(value);
+                run(end - at, value);
                 at = end;
                 continue;
             }
@@ -67,8 +66,7 @@ private:
                     && word(bytes + at * 4) == word(bytes + (at + 2) * 4)) break;
                 ++at;
             }
-            emit(uint32_t((at - start) * 2));
-            for (size_t i = start; i < at; ++i) emit(word(bytes + i * 4));
+            literal(bytes + start * 4, at - start);
         }
     }
     static bool equal_span(uint8_t const* first, uint8_t const* second,
@@ -142,10 +140,22 @@ public:
         // word length, including when this helper is used outside the cache.
         if (raw_.size() < 4096 || raw_.size() % 4 || raw_.size() / 4 > 0x7fffffff) return;
         size_t count = 0;
-        encode(raw_.data(), raw_.size() / 4, [&](uint32_t) { ++count; });
+        encode(raw_.data(), raw_.size() / 4,
+            [&](size_t, uint32_t) { count += 2; },
+            [&](uint8_t const*, size_t words) { count += words + 1; });
         if (count * 4 >= raw_.size() - raw_.size() / 8) return;
-        packed_.reserve(count);
-        encode(raw_.data(), raw_.size() / 4, [&](uint32_t value) { packed_.push_back(value); });
+        packed_.resize(count);
+        size_t at = 0;
+        encode(raw_.data(), raw_.size() / 4,
+            [&](size_t words, uint32_t value) {
+                packed_[at++] = uint32_t(words * 2 + 1);
+                packed_[at++] = value;
+            },
+            [&](uint8_t const* bytes, size_t words) {
+                packed_[at++] = uint32_t(words * 2);
+                std::memcpy(packed_.data() + at, bytes, words * 4);
+                at += words;
+            });
         std::vector<uint8_t>().swap(raw_);
     }
     size_t size() const { return raw_.size() + packed_.size() * 4; }
