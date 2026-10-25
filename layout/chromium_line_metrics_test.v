@@ -5,6 +5,27 @@ import math
 
 // Expected values were measured in Brave 1.97 (Chromium 155) on macOS.
 
+fn test_browser_text_edge_atomic_boxes_do_not_raise_the_line_baseline() {
+	$if macos {
+		mut document := html.parse_document('<!doctype html><style>
+			body { margin:0; font:24px/28px Arial }
+			.line { width:450px }
+			.small { font-size:20px; vertical-align:text-top }
+			.box { display:inline-block; width:24px; height:24px }
+			.top { vertical-align:text-top } .bottom { vertical-align:text-bottom }
+		</style><div id="top" class="line"><span class="small">Heading</span><i class="box top"></i></div>
+		<div id="bottom" class="line">Heading<i class="box bottom"></i></div>
+		<div id="nested" class="line"><span class="small">Heading</span>&#8288;<span style="position:relative;top:2px">&#8288;<i class="box top"></i></span></div>')
+		document.set_font_rendering_policy(.chromium)
+		result := run_document_layout(document, 1024, 768) or { panic('layout failed') }
+		for id in ['top', 'bottom', 'nested'] {
+			used := chromium_used_for_id(result, id)
+			assert used.content_height().to_double() == 28, id
+			assert used.line_boxes.len == 1
+		}
+	}
+}
+
 fn test_browser_text_edge_alignment_uses_the_parent_font() {
 	$if macos {
 		mut document := html.parse_document('<!doctype html><style>
