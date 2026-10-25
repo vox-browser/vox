@@ -15,7 +15,7 @@ fn (app &BrowserApp) update_window_title() {
 	// are also installed before window creation and in non-windowed modes.
 	if app.ctx == unsafe { nil } || app.document == unsafe { nil } || !app.is_active_browser_tab() { return }
 	title := document_title(app.document)
-	gg.set_window_title(if title != '' { '${title} — vox' } else { 'vox' })
+	gg.set_window_title(browser_window_title(title))
 }
 
 // The macOS shell draws directly into its Cocoa view. GG's default lifecycle
