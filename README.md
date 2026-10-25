@@ -236,8 +236,12 @@ reload, an editable address/search field, link navigation, loading and console
 status, and scrolling. On macOS the window buttons and tabs share a compact top
 row, with flat navigation icons below it. The production macOS toolbar and status bar use
 UI2 native controls; see [the embedding adapter](tools/ui2/README.md). Enter
-submits the address. Cmd+D on macOS (Ctrl+D on Windows/Linux) toggles the
-otherwise hidden HTTP/rendering diagnostic row. The History toolbar button or
+submits the address. Cmd+Shift+B toggles the bookmarks bar and Cmd+D saves the
+current page on macOS (use Ctrl instead of Cmd on Windows/Linux). Bookmarks and
+bar visibility persist across restarts in the profile directory. Click a bookmark
+to open it. On macOS, right-click to remove it, or use the overflow menu for more entries.
+Cmd+Shift+D (Ctrl+Shift+D on Windows/Linux) toggles the otherwise hidden
+HTTP/rendering diagnostic row. The History toolbar button or
 Cmd+Y on macOS (Ctrl+H on Linux) opens `vox://history`, with live search,
 date groups, selection, individual removal, and deletion by time range.
 History is kept locally for up to 90 days across restarts; `VOX_PROFILE_DIR`

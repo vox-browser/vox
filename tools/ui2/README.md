@@ -8,9 +8,16 @@ the empty tab-strip background supports dragging and double-click zoom.
 
 Enter submits the address; there is no Go button. The diagnostic row (HTTP
 status, response bytes, paint count and document dimensions) is hidden by
-default. Cmd+D on macOS or Ctrl+D on Windows/Linux toggles it, including during
-address editing. The combined tab strip and toolbar is 60px high normally and 92px with diagnostics;
-the document viewport and pointer coordinates follow that height. Cached
+default. Cmd+Shift+D on macOS or Ctrl+Shift+D on Windows/Linux toggles it, including during
+address editing. Cmd+Shift+B toggles the bookmarks bar, and Cmd+D saves the loaded
+page's URL and title even while the address field contains unsubmitted edits.
+Windows/Linux use Ctrl for those shortcuts. Bookmarks and bar visibility are
+shared across tabs and saved in the profile's `bookmarks.json`. Native bookmark
+buttons open pages, offer removal through their context menus, and overflow
+into a menu when the window is narrow.
+The combined tab strip and toolbar is 60px high normally and 92px with diagnostics;
+the bookmarks bar adds 28px when visible.
+The document viewport and pointer coordinates follow that height. Cached
 full-window images are keyed by visibility and discarded on a toggle, so a
 debug image cannot reintroduce diagnostics into normal browsing.
 
@@ -44,6 +51,16 @@ Tab ownership, native tab actions, keyboard routing and modified link clicks:
 ```sh
 sh tools/test_browser_tabs.sh
 sh tools/test_browser_tabs.sh -gc none
+```
+
+Bookmark shortcuts, tab sharing, native bar geometry, navigation and overflow:
+
+```sh
+python3 tools/run_memory_bounded.py --report Build/bookmarks-chrome-test.json -- \
+  env VOX_CHROME_TEST_FILE=main_browser_bookmarks_test.v \
+  sh tools/test_address_bar.sh -memory-limit 10G
+python3 tools/run_memory_bounded.py --limit-gib 3 --report Build/bookmarks-store-test.json -- \
+  v -enable-globals -memory-limit 10G test browserbookmarks
 ```
 
 The integrated title row, real window-button selectors, top-row hit testing,
