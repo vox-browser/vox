@@ -215,3 +215,88 @@ preservation check; its original failure receipt remains retained. All eight SVG
 mutation comparisons pass with zero differing pixels. See
 `isolated-pixels-*-equality.json`, `smoke-isolated-baseline-preservation.json`,
 `svg-isolated.log` and `isolated-batch-guard.json`.
+
+## 120 fps optimization
+
+Viewport raster eligibility already requires overlay scrollbars to form a
+trailing command suffix. Scrollbar replay now finds that suffix from the end
+and preserves each command's original order and raster-layer index. It avoids
+scanning and copying every document paint command again after document painting.
+The optimized ARM64 disassembly confirms direct marker loads during suffix
+discovery. `VOX_DISABLE_SCROLLBAR_TAIL_REPLAY=1` selects the previous scan for
+diagnostics; an empty value keeps the optimization enabled.
+
+Three interleaved pairs each run the same 1,200-callback cached Reddit trace
+through the same signed production executable and native libraries. Isolated
+profiles hide bookmarks, the document viewport is 1024×768, and network access
+is disabled. Executable, libraries, cached resources, scroll positions and
+per-callback paint-command counts match across all six runs. No CPU sampling
+is active.
+
+| Median across three runs | Previous scan | Scrollbar suffix |
+| --- | ---: | ---: |
+| Full-run callback median | 2.963 ms | 2.783 ms |
+| Full-run native completion cadence | 118.668 fps | 118.392 fps |
+| Settled completion cadence | 119.995 fps | 120.002 fps |
+| Settled retired instructions | 30,540,964,646 | 30,351,081,623 |
+
+Median callback work falls 6.06%. The settled instruction comparison saves
+189,883,023 retired instructions over the same final 1,110 callbacks, exceeding
+the repository's 5,000,000-instruction broad-verification threshold. All six
+runs reuse the viewport in 1,185 callbacks and in every settled callback.
+Optimized settled callback medians are 2.756–2.807 ms, p95 values are
+3.186–3.272 ms, and maxima are 4.677–5.140 ms. None exceeds 8.333 ms.
+The previous scan also fits that settled callback budget; the change reduces
+CPU work without establishing a full-run cadence improvement. Initial slow
+callbacks remain included above: the optimized runs have 27–29 callbacks over
+8.333 ms, all within the first 90 callbacks. Completion-log receipts include
+scheduling and log-delivery latency; they do not measure physical display
+scanout. Callback timings exclude native bitmap acquisition and layer
+publication. Live Reddit behavior and Brave parity remain unmeasured.
+
+All four document comparisons are pixel-exact: suffix replay versus the
+previous scan, and viewport reuse versus complete replay, at both 1× and 2×
+after 45 wheel events. Production build, strict signing and headless startup
+pass. Evidence is retained under `Build/urr-120fps-20261025/` in
+`tail-performance-summary.json`, `tail-repeat-*/summary.json`,
+`tail-frame-pixels-*-equality.json`, `tail-canonical-guard.json` and
+`tail-runtime-guard.json`. The stable tested bundle is `tail-app/Vox.app`;
+`tail-app-identity.json` pins executable SHA-256
+`55b4724666ec512ac785d49db3693311939d9a60bd2482f910381e6f4c63a7cf`
+and all bundled libraries. `tail-canonical-source-{before,after}.json` records
+the combined working tree around compilation; the owned scroll files are
+unchanged, while unrelated concurrent source changes are listed separately in
+`tail-canonical-build-result.json` and receive no feature credit.
+
+Frame-buffer pooling experiments were rejected and removed from the source.
+Their final matched comparison increased callback work and retired
+instructions without improving completion cadence; those results remain in
+`resident-performance-summary.json`. No pooling implementation ships with
+the scrollbar optimization.
+
+Implementation commit `4293c031` contains the optimization and its focused test.
+`tail-committed-source-proof.json` verifies that both complete scroll files in
+the commit match the tested source bytes. All seven scroll cases pass in each
+of the preallocated and Boehm configurations. The related 85-case batch runs
+in both configurations: 82 cases pass and the same three native UI cases fail
+in each. Two unchanged native pixel tests expect BGRA bytes while the committed
+renderer creates RGBA frames. The third failure is in concurrent, uncommitted
+native tab-drag work. None calls scrollbar suffix replay. The broad batch remains
+red; no clean broad-verification checkpoint is credited. See
+`tail-root-regressions-summary.json`, `tail-root-test-call-proof.json`,
+`tail-root-compile-guard.json`, `tail-root-run-retry-guard.json` and
+`tail-root-boehm-remaining-guard.json`.
+
+The original regression-run attempt exhausted disk space before launching a
+test. Its empty guard receipt and separate infrastructure-failure record remain
+retained; completed compilation and performance checks were reused. The retry
+does not hide those native UI failures or receive passing credit for them.
+
+A native-only probe compiled from unmodified committed headers reproduces both
+pixel failures without linking the V browser or scrollbar code: result masks
+are 29 versus 31 and 964 versus 1023, with a red pixel stored as RGBA
+`255,0,0,255`. Compilation succeeds; the diagnostic exits 1 because the
+original assertions still fail. `tail-native-baseline/identity.json` pins
+the source headers, `tail-native-baseline/result.json` records the output,
+and `tail-native-baseline-guard.json` records the guarded execution. These
+baseline failures remain reported as failures.
