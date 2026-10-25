@@ -5679,10 +5679,9 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 						C.native_end_clip()
 						return
 					}
-					for nested_command in command.nested_viewport_commands {
-						transformed := layout.paint_command_for_nested_viewport(nested_command, command.transform, painting.IntPoint{result.nested_rect.x, result.nested_rect.y}, command.opacity)
-						app.draw_command(transformed, page_x, page_y, window_height)
-					}
+					app.draw_nested_svg_commands(command.nested_viewport_commands, command.transform,
+						painting.IntPoint{result.nested_rect.x, result.nested_rect.y}, command.opacity,
+						page_x, page_y, window_height)
 					app.flush_rounded_rect_underlay(page_x, page_y, window_height)
 					C.native_end_clip()
 					return
@@ -6520,11 +6519,9 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 					nested_commands := svg_background_paint_commands(&image_data,
 						replay.viewport_width, replay.viewport_height)
 					if commands := nested_commands {
-						for nested_command in commands {
-							transformed := layout.paint_command_for_nested_viewport(nested_command, replay.transform,
-								if chromium_svg { painting.IntPoint{} } else { painting.IntPoint{destination.x, destination.y} }, command.opacity)
-							app.draw_command(transformed, page_x, page_y, window_height)
-						}
+						app.draw_nested_svg_commands(commands, replay.transform,
+							if chromium_svg { painting.IntPoint{} } else { painting.IntPoint{destination.x, destination.y} },
+							command.opacity, page_x, page_y, window_height)
 						app.flush_rounded_rect_underlay(page_x, page_y, window_height)
 					}
 					$if macos {
@@ -6952,9 +6949,9 @@ fn (mut app BrowserApp) draw() {
 		}
 		mut raster_layer := -1
 		mut replay_scratch := app.begin_native_replay_scratch()
-		mut shared_gradient_end := 0
+		mut shared_svg_end := 0
 		for command_index in 0 .. app.paint_commands.len {
-			if command_index < shared_gradient_end { continue }
+			if command_index < shared_svg_end { continue }
 			platform.cooperative_work_checkpoint()
 			mut command := unsafe { &app.paint_commands[command_index] }
 			if app.page_zoom != 1 {
@@ -6977,8 +6974,12 @@ fn (mut app BrowserApp) draw() {
 				}
 			}
 			if command.kind == 'draw_svg_path' {
-				shared_gradient_end = app.draw_chromium_svg_gradient_group(command_index, page_y)
-				if shared_gradient_end > command_index { continue }
+				shared_svg_end = app.draw_chromium_svg_gradient_group(command_index, page_y)
+				if shared_svg_end == command_index {
+					shared_svg_end = app.draw_chromium_svg_solid_group(app.paint_commands,
+						app.chromium_raster_plan.command_layers, command_index, 0, page_y)
+				}
+				if shared_svg_end > command_index { continue }
 			}
 			if app.scroll_profile.active && app.scroll_profile.replay_kinds {
 				before := platform.thread_arena_usage().used
