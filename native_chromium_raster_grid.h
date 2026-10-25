@@ -11,8 +11,43 @@ struct VoxChromiumRasterGrid {
     }
 };
 
-// Tile ownership is constant across each cell span. Resolve it once per
-// horizontal span and reuse the row throughout the same vertical span.
+// Enumerate disjoint rectangles with constant tile ownership. Keep the grid
+// compact even when a leaf covers millions of pixels.
+template<typename Selected>
+void vox_chromium_msaa_rects(int width, int height,
+    long first_x, long first_y, int tile_width, int tile_height, int columns,
+    std::vector<int> const& tiles, Selected selected)
+{
+    if (width <= 0 || height <= 0 || tile_width <= 2 || tile_height <= 2
+        || columns <= 0 || tiles.empty()) return;
+    int start_x = first_x < 0 ? (first_x <= -long(width) ? width : int(-first_x)) : 0;
+    int y = first_y < 0 ? (first_y <= -long(height) ? height : int(-first_y)) : 0;
+    auto owner = [](long coordinate, int size) {
+        return coordinate <= size - 2 ? 0L : (coordinate - 1) / (size - 2);
+    };
+    auto span = [](long coordinate, int size) {
+        long spacing = size - 2;
+        return coordinate <= spacing ? spacing - coordinate + 1
+            : spacing - (coordinate - 1) % spacing;
+    };
+    for (; y < height;) {
+        long coordinate_y = first_y + y;
+        long row = owner(coordinate_y, tile_height);
+        int rows = int(std::min(long(height - y), span(coordinate_y, tile_height)));
+        for (int x = start_x; x < width;) {
+            long coordinate_x = first_x + x;
+            long column = std::min(owner(coordinate_x, tile_width), long(columns - 1));
+            int count = column == columns - 1 ? width - x
+                : int(std::min(long(width - x), span(coordinate_x, tile_width)));
+            int cell = static_cast<int>(row * columns + column);
+            if (std::binary_search(tiles.begin(), tiles.end(), cell))
+                selected(x, y, count, rows);
+            x += count;
+        }
+        y += rows;
+    }
+}
+
 inline std::vector<char> vox_chromium_msaa_pixel_mask(int width, int height,
     long first_x, long first_y, int tile_width, int tile_height, int columns,
     std::vector<int> const& tiles)
@@ -51,6 +86,38 @@ inline std::vector<char> vox_chromium_msaa_pixel_mask(int width, int height,
         y += rows;
     }
     return mask;
+}
+
+// Both modes see the original backdrop. Resolve only selected tile spans,
+// avoiding a per-pixel mask and full-mask scans on every fractional scroll.
+template<typename Draw>
+bool vox_draw_with_chromium_msaa_grid(std::vector<uint32_t>& pixels, int width, int height,
+    long first_x, long first_y, int tile_width, int tile_height, int columns,
+    std::vector<int> const& tiles, Draw draw)
+{
+    struct Rect { int x, y, width, height; };
+    std::vector<Rect> selected;
+    size_t count = 0;
+    vox_chromium_msaa_rects(width, height, first_x, first_y, tile_width, tile_height, columns,
+        tiles, [&](int x, int y, int w, int h) {
+            selected.push_back({x, y, w, h});
+            count += size_t(w) * h;
+        });
+    if (count == 0) return draw(pixels, false);
+    if (count == size_t(width) * height) return draw(pixels, true);
+    auto original = pixels;
+    auto multisampled = original;
+    if (!draw(multisampled, true) || !draw(pixels, false)) {
+        pixels = std::move(original);
+        return false;
+    }
+    for (auto const& rect : selected) {
+        for (int y = rect.y; y < rect.y + rect.height; ++y) {
+            size_t offset = size_t(y) * width + rect.x;
+            std::copy_n(multisampled.begin() + offset, rect.width, pixels.begin() + offset);
+        }
+    }
+    return true;
 }
 
 // Draw each intersecting raster tile from the same immutable backdrop. Its

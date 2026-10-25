@@ -44,10 +44,57 @@ static void check_msaa_masks()
     std::printf("Tile MSAA masks: %zu exact per-pixel reference comparisons passed\n",cases);
 }
 
+static void check_msaa_grid_compositing()
+{
+    size_t cases = 0;
+    auto check = [&](int w, int h, long x, long y, int tw, int th, int cols, auto const& tiles) {
+        auto mask = reference_msaa_mask(w, h, x, y, tw, th, cols, tiles);
+        std::vector<uint32_t> pixels(size_t(w) * h);
+        for (size_t i = 0; i < pixels.size(); ++i) pixels[i] = uint32_t(i + 37);
+        auto backdrop = pixels;
+        int calls = 0;
+        assert(vox_draw_with_chromium_msaa_grid(pixels, w, h, x, y, tw, th, cols, tiles,
+            [&](auto& target, bool msaa) {
+                ++calls;
+                assert(target == backdrop);
+                for (auto& pixel : target) pixel += msaa ? 1000 : 2000;
+                return true;
+            }));
+        size_t selected = std::count(mask.begin(), mask.end(), char(1));
+        assert(calls == (selected == 0 || selected == pixels.size() ? 1 : 2));
+        for (size_t i = 0; i < pixels.size(); ++i)
+            assert(pixels[i] == backdrop[i] + (mask[i] ? 1000 : 2000));
+        if (selected && selected < pixels.size()) for (bool fail_msaa : {false, true}) {
+            pixels = backdrop;
+            assert(!vox_draw_with_chromium_msaa_grid(pixels, w, h, x, y, tw, th, cols, tiles,
+                [&](auto& target, bool msaa) {
+                    assert(target == backdrop);
+                    std::fill(target.begin(), target.end(), 0xDEADBEEFU);
+                    return msaa != fail_msaa;
+                }));
+            assert(pixels == backdrop);
+        }
+        ++cases;
+    };
+    for (unsigned pattern = 0; pattern < 64; ++pattern) {
+        std::vector<int> tiles;
+        for (int cell = 0; cell < 6; ++cell) if (pattern & (1u << cell)) tiles.push_back(cell);
+        for (int cols : {1, 3}) for (int tw : {3, 7}) for (int th : {3, 5})
+        for (long x : {-17L, -1L, 0L, 5L, 19L}) for (long y : {-13L, -1L, 0L, 3L, 17L})
+            check(17, 13, x, y, tw, th, cols, tiles);
+    }
+    for (long x : {-1L, 0L, 543L}) for (long y : {-1L, 0L, 255L})
+        check(1024, 848, x, y, 544, 256, 3, std::vector<int>{0, 2, 4, 6, 8});
+    check(2, 2, std::numeric_limits<long>::min(), 0, 544, 256, 3, std::vector<int>{0});
+    check(2, 2, 0, std::numeric_limits<long>::min(), 544, 256, 3, std::vector<int>{0});
+    std::printf("Tile MSAA compositing: %zu exact backdrop/mode/rollback comparisons passed\n", cases);
+}
+
 
 int main()
 {
     check_msaa_masks();
+    check_msaa_grid_compositing();
     size_t comparisons = 0;
     for (long first_y : {0L, 2L, 3L, 4L, 5L})
     for (long first_x : {0L, 3L, 4L, 5L, 6L})

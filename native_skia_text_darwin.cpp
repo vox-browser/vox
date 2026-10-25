@@ -2020,14 +2020,15 @@ extern "C" void ladybird_v_skia_set_msaa_grid(int const* tiles, int count,
     s_msaa_grid_columns = tile_width > 2 && tile_height > 2 ? std::max(columns, 0) : 0;
 }
 
-static std::vector<char> chromium_layer_msaa_pixel_mask(RasterRegion const& region,
-    int width, int height, float page_x, float page_y, float scroll_y, float scale)
+template<typename Draw>
+static bool draw_chromium_layer_msaa(std::vector<uint32_t>& pixels, RasterRegion const& region,
+    int width, int height, float page_x, float page_y, float scroll_y, float scale, Draw draw)
 {
     long first_x = std::lround((region.left - page_x - s_raster_origin_x) * scale);
     long first_y = std::lround((region.top - page_y + scroll_y - s_raster_origin_y
         + (s_raster_layer_is_root ? s_root_raster_scroll_y : 0)) * scale);
-    return vox_chromium_msaa_pixel_mask(width, height, first_x, first_y,
-        s_msaa_grid_width, s_msaa_grid_height, s_msaa_grid_columns, s_msaa_grid_tiles);
+    return vox_draw_with_chromium_msaa_grid(pixels, width, height, first_x, first_y,
+        s_msaa_grid_width, s_msaa_grid_height, s_msaa_grid_columns, s_msaa_grid_tiles, draw);
 }
 
 template<bool Compact = false, typename Draw>
@@ -2492,11 +2493,8 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
             // pixel mask and copying/rasterizing two complete backdrops.
             drawn = true;
         } else if (drawn && s_msaa_grid_columns > 0) {
-            auto mask = chromium_layer_msaa_pixel_mask(region, raster_width, raster_height,
-                page_x, page_y, scroll_y, destination_scale);
-            // A one-pixel span lets the two-pass compositor preserve both
-            // horizontal and vertical tile boundaries over the same backdrop.
-            drawn = vox_draw_with_msaa_rows(pixels, 1, mask, [&](auto& target, bool msaa) {
+            drawn = draw_chromium_layer_msaa(pixels, region, raster_width, raster_height,
+                page_x, page_y, scroll_y, destination_scale, [&](auto& target, bool msaa) {
                 descriptor.force_msaa = msaa;
                 return draw(reinterpret_cast<uint8_t*>(target.data()), raster_width,
                     raster_height, raster_width * 4, has_background, &descriptor) != 0;
