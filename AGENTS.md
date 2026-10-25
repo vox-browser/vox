@@ -150,6 +150,10 @@
   Timing differences cannot be attributed to a path that remains ineligible.
   Check eligibility in a separate diagnostic run before timing a new fixture;
   a loaded archived page can exercise different paint paths from the live page.
+  Separate startup/settle counters from counters during the actual input
+  window. A path used only while loading cannot explain scrolling gains.
+  Conversion microbenchmarks and load-time samples are diagnostic evidence,
+  not scrolling fps measurements.
   Validate the probe's executable identity and symbol ranges. With injected
   libraries, dyld image zero may be the probe rather than Vox; use the actual
   executable header when filtering caller addresses. Zero counters from an
