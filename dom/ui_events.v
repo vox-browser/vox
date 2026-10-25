@@ -15,6 +15,7 @@ import math
 pub enum EventInterface {
 	event
 	font_face_set_load_event
+	media_query_list_event
 	ui_event
 	mouse_event
 	keyboard_event

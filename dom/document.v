@@ -4464,7 +4464,11 @@ pub fn (d &Document) viewport_rect() Rect {
 
 pub fn (mut d Document) set_viewport_rect(rect Rect) {
 	scroll_offset_changed := d.viewport_rect_.x != rect.x || d.viewport_rect_.y != rect.y
+	viewport_size_changed := d.viewport_rect_.width != rect.width || d.viewport_rect_.height != rect.height
 	d.viewport_rect_ = rect
+	if viewport_size_changed {
+		d.set_needs_media_query_evaluation()
+	}
 	if scroll_offset_changed {
 		d.invalidate_scroll_state()
 		// LocalNavigable::perform_scroll_of_viewport_scrolling_box() retains the

@@ -119,16 +119,17 @@ pub mut:
 	matches bool
 }
 
+@[heap]
 pub struct MediaQueryListEvent {
+	dom.Event
 pub mut:
-	event    &dom.Event = unsafe { nil }
 	media_   string
 	matches_ bool
 }
 
 pub fn MediaQueryListEvent.create(event_name string, event_init MediaQueryListEventInit) &MediaQueryListEvent {
 	mut event := MediaQueryListEvent.new(event_name, event_init)
-	event.event.set_is_trusted(true)
+	event.set_is_trusted(true)
 	return event
 }
 
@@ -138,7 +139,15 @@ pub fn MediaQueryListEvent.construct_impl(event_name string, event_init MediaQue
 
 pub fn MediaQueryListEvent.new(event_name string, event_init MediaQueryListEventInit) &MediaQueryListEvent {
 	return &MediaQueryListEvent{
-		event:    dom.Event.new_with_init(event_name, event_init.EventInit)
+		Event: dom.Event{
+			interface_: .media_query_list_event
+			type_: event_name
+			bubbles_: event_init.bubbles
+			cancelable_: event_init.cancelable
+			composed_: event_init.composed
+			initialized_: true
+			time_stamp_: dom.current_event_timestamp()
+		}
 		media_:   event_init.media
 		matches_: event_init.matches
 	}
@@ -154,7 +163,7 @@ pub fn (e MediaQueryListEvent) matches() bool {
 
 pub fn (mut e MediaQueryListEvent) initialize() {
 	// WEB_SET_PROTOTYPE_FOR_INTERFACE(MediaQueryListEvent);
-	e.event.initialize()
+	e.Event.initialize()
 }
 
 // --- FontFaceSetLoadEvent ---

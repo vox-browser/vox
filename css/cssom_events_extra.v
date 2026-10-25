@@ -17,7 +17,7 @@ pub fn (event &TransitionEvent) base_event() &dom.Event {
 }
 
 pub fn (event &MediaQueryListEvent) base_event() &dom.Event {
-	return event.event
+	return unsafe { &dom.Event(event) }
 }
 
 pub fn (event &FontFaceSetLoadEvent) base_event() &dom.Event {
