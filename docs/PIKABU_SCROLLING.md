@@ -1287,3 +1287,37 @@ Focused-check evidence under `Build/pikabu-live-lag-20261025/`: `mask-pixels-che
 promoted-source-sha256.json}`. The committed changes are `d5cf4d2b` and
 `c57e75f0`; these identifiers describe implementation and correctness, not
 acceptance of the scrolling target.
+
+
+### CPU diagnostics and production compiler retry (October 26)
+
+Separate CPU-time diagnostics complete successfully under the shared guard.
+For the 1,492 by 1,696 mask, median thread CPU time across three pairs changes
+from 1,203.171 to 287.585 microseconds for A8 conversion, 1,508.130 to
+345.194 microseconds for RGBA alpha, and 2,308.801 to 383.402 microseconds
+for luminance. These are conversion diagnostics, not scrolling measurements.
+Snapshot construction improves on four of five diagnostic scenes, but the
+uncompressible noise scene regresses from 435.995 to 464.917 microseconds
+(6.63%). Retain that regression when assessing the change; the diagnostic does
+not establish an application frame-rate gain.
+
+The first production attempt exits one before compiling the browser because
+`/Users/alex/code/v/v` lacks the bounded prealloc allocator required by the
+production build. The guard exits one after 40.941 seconds, with 456,785,920
+sampled peak RSS bytes. No visual or scrolling acceptance run follows that
+failed build. A retry selects `/Users/alex/code/v-latest/v`, whose library has
+the required allocator helper, and remains queued for build, paired visual
+checks and native scrolling trials. Production settings remain unchanged.
+
+The precise measurement tool now records CPU count, load averages and run
+start/end timestamps in `run.json`; its 11 mocked Python checks pass. Agent
+instructions require assessing contention and control variation before
+attributing timing changes to code. Neither this tooling change nor the CPU
+diagnostics closes the 60 fps target.
+
+Evidence under `Build/pikabu-live-lag-20261025/`:
+`mask-pixels-production-v1/{result.json,build.log,build-visual-guard.json,
+mask-cpu-diagnostic.log,snapshot-cpu-diagnostic.log,
+measurement-tool-focused-check.json}` and
+`mask-pixels-production-v2/retry-reason.json`. The measurement-tool and
+instruction commits are `9a27b77c` and `4baaa110`.
