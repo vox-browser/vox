@@ -355,3 +355,11 @@ python3 tools/check_pixel_equality.py \
   Tests/Browser/Brave/expected/device-layout-image-fallback.png \
   Build/image-fallback.png Build/image-fallback.diff.png
 ```
+
+`background-sprite-device-layout` uses the same 800×600 viewport and native
+scale 2 against Brave 156.1.98.60. Its natural-size sprite, `contain`, and
+`cover` cases require exact RGBA equality. The original expanded fixture and
+Brave reference remain in
+[`diagnostic/background-sprite-device-layout.html`](diagnostic/background-sprite-device-layout.html)
+and its adjacent PNG; fractional explicit sizes, repeated tiles, and `round`
+tiling still have differences. These diagnostic cases are not parity claims.
