@@ -56,3 +56,24 @@ passed with normal GC. Five browser binding cases passed with normal GC and
 with the production arena allocator (`-prealloc -gc none`). The guarded report
 is `Build/pikabu-story-idb-core-job.json`; its sampled process-tree peak was
 3,194,159,104 bytes and child exit was zero. A fresh production capture is pending.
+
+The PerformanceObserver binding at `7d9d986a` connects each observer to its
+owning Window's native performance timeline. It supports observation by type
+or entry-type list, buffered entries, queued callback delivery, disconnect,
+takeRecords, and sorted entry-list queries. Resource observers continue to
+receive new entries when the primary resource timing buffer is full. The
+callback runs through the owning document's task and script settings.
+
+Five timeline, three entry-list, two native-global, four existing-global, and
+four resource-timing cases passed. Three JavaScriptCore binding cases passed
+with normal GC and again with `-prealloc -gc none`. Individual exit codes and
+log paths are in `Build/pikabu-story-observer-stages.json`; the retained first
+binding attempt failed before the successful retry. The later root paint-test
+compile hit a mixed-vlib HTTP error; `3dd2d1cf` makes the chrome harness stage
+the same compiler-compatible HTTP modules as production builds.
+
+The observer exposes the base PerformanceEntry attributes. ResourceTiming's
+additional attributes and a JavaScript performance global remain separate
+work. These passing binding tests do not establish successful live Pikabu
+startup; fresh production captures of the live URL and retained archive are
+still queued under the shared build guard.
