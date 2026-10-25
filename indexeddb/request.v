@@ -28,26 +28,28 @@ pub type IDBEventHandler = fn ()
 @[heap]
 pub struct IDBRequest {
 pub mut:
-	source_name   string
-	global_scope  &IndexedDBGlobalScope
-	ready_state   IDBRequestReadyState = .pending
-	result_kind   RequestResultKind
-	value         Value
-	key           ?Key
-	values        []Value
-	keys          []Key
-	count         u64
-	records       []IDBRecord
-	cursor        &IDBCursor   = unsafe { nil }
-	database      &IDBDatabase = unsafe { nil }
-	error_message string
-	events        []string
-	processed     bool
-	aborted       bool
-	transaction_  ?&IDBTransaction
-	uuid_         string
-	onsucceed_    ?IDBEventHandler
-	onerror_      ?IDBEventHandler
+	source_name           string
+	global_scope          &IndexedDBGlobalScope
+	ready_state           IDBRequestReadyState = .pending
+	result_kind           RequestResultKind
+	value                 Value
+	key                   ?Key
+	values                []Value
+	keys                  []Key
+	count                 u64
+	records               []IDBRecord
+	cursor                &IDBCursor   = unsafe { nil }
+	database              &IDBDatabase = unsafe { nil }
+	error_message         string
+	events                []string
+	processed             bool
+	aborted               bool
+	transaction_          ?&IDBTransaction
+	uuid_                 string
+	onsucceed_            ?IDBEventHandler
+	onerror_              ?IDBEventHandler
+	error_event_canceled_ bool
+	event_listener_threw_ bool
 }
 
 pub fn IDBRequest.create(source_name string) &IDBRequest {
@@ -116,7 +118,8 @@ fn (request &IDBRequest) finish_transaction_request() {
 @[heap]
 pub struct IDBOpenDBRequest {
 mut:
-	queue_ &RequestList = unsafe { nil }
+	queue_                  &RequestList = unsafe { nil }
+	upgrade_abort_finished_ bool
 pub mut:
 	request               &IDBRequest
 	factory               &IDBFactory = unsafe { nil }

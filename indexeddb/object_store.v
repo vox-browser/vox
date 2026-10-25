@@ -24,6 +24,10 @@ pub mut:
 	transaction &IDBTransaction
 	name_       string
 	store_      ?&ObjectStoreData
+mut:
+	// The asynchronous browser entry points execute against the same request
+	// that was returned to the caller, rather than creating a second request.
+	operation_request_ ?&IDBRequest
 }
 
 fn (store &IDBObjectStore) load() !&ObjectStoreData {
@@ -101,7 +105,7 @@ pub fn (mut store IDBObjectStore) put(value Value, key ?Key) !&IDBRequest {
 }
 
 fn (mut store IDBObjectStore) store_record(input Value, supplied_key ?Key, no_overwrite bool) !&IDBRequest {
-	store.transaction.require_writable()!
+	if store.operation_request_ == none { store.transaction.require_writable()! }
 	mut data := store.load()!
 	mutation_position := data.mutation_log_position()
 	mut value := input.clone()
@@ -154,7 +158,7 @@ fn (mut store IDBObjectStore) store_record(input Value, supplied_key ?Key, no_ov
 		}
 	}
 	data.store_a_record(ObjectStoreRecord{
-		key: key
+		key:   key
 		value: value
 	})!
 	for _, mut index in data.indexes {
@@ -169,7 +173,7 @@ fn (mut store IDBObjectStore) store_record(input Value, supplied_key ?Key, no_ov
 		}
 		for index_key in index_keys {
 			index.store_a_record(IndexRecord{
-				key: index_key
+				key:         index_key
 				primary_key: key
 			})!
 		}
@@ -187,6 +191,9 @@ fn completed_error_request(mut store IDBObjectStore, message string) &IDBRequest
 }
 
 fn (mut store IDBObjectStore) new_request() &IDBRequest {
+	if request := store.operation_request_ {
+		return request
+	}
 	mut request := IDBRequest.create_for_global_scope(store.relevant_global_object(), store.name_)
 	request.transaction_ = store.transaction
 	store.transaction.request_list_.append(request)
@@ -194,7 +201,7 @@ fn (mut store IDBObjectStore) new_request() &IDBRequest {
 }
 
 pub fn (mut store IDBObjectStore) get(range IDBKeyRange) !&IDBRequest {
-	store.transaction.require_active()!
+	if store.operation_request_ == none { store.transaction.require_active()! }
 	data := store.load()!
 	mut request := store.new_request()
 	for record in data.records {
@@ -262,9 +269,9 @@ pub fn (mut store IDBObjectStore) get_all_records(options IDBGetAllOptions) !&ID
 	}
 	mut request := store.new_request()
 	request.records = records.map(IDBRecord{
-		key: it.key.clone()
+		key:         it.key.clone()
 		primary_key: it.key.clone()
-		value: it.value.clone()
+		value:       it.value.clone()
 	})
 	request.succeed(.records)
 	return request
@@ -338,9 +345,9 @@ pub fn (mut store IDBObjectStore) create_index(name string, key_path KeyPath, pa
 		}
 	}
 	mut index := IndexData{
-		name: name
-		key_path: clone_key_path(key_path)
-		unique: parameters.unique
+		name:        name
+		key_path:    clone_key_path(key_path)
+		unique:      parameters.unique
 		multi_entry: parameters.multi_entry
 	}
 	rebuild_index(data, mut index)!
@@ -352,11 +359,11 @@ pub fn (mut store IDBObjectStore) create_index(name string, key_path KeyPath, pa
 		log.note_index_created(stored_index)
 	}
 	return IDBIndex{
-		transaction: store.transaction
-		store_name: store.name_
-		name_: name
-		store_: data
-		index_: stored_index
+		transaction:          store.transaction
+		store_name:           store.name_
+		name_:                name
+		store_:               data
+		index_:               stored_index
 		object_store_handle_: *store
 	}
 }
@@ -367,11 +374,11 @@ pub fn (store &IDBObjectStore) index(name string) !IDBIndex {
 		return error('NotFoundError: index does not exist')
 	}
 	return IDBIndex{
-		transaction: store.transaction
-		store_name: store.name_
-		name_: name
-		store_: data
-		index_: data.indexes[name] or { return error('NotFoundError: index does not exist') }
+		transaction:          store.transaction
+		store_name:           store.name_
+		name_:                name
+		store_:               data
+		index_:               data.indexes[name] or { return error('NotFoundError: index does not exist') }
 		object_store_handle_: *store
 	}
 }

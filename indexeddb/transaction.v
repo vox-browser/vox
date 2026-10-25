@@ -49,6 +49,7 @@ pub mut:
 	aborted_             bool
 	cleanup_event_loop_  voidptr
 	committed_callback_  ?fn ()
+	aborted_callback_    ?fn ()
 	object_store_handles map[string]IDBObjectStore
 	index_handles_       []IDBIndex
 	onabort_             ?IDBEventHandler
@@ -58,10 +59,10 @@ pub mut:
 
 pub fn IDBTransaction.create(database &IDBDatabase, mode IDBTransactionMode, durability IDBTransactionDurability, scope []string) &IDBTransaction {
 	mut transaction := &IDBTransaction{
-		database: database
-		mode: mode
-		durability: durability
-		scope_names: scope.clone()
+		database:         database
+		mode:             mode
+		durability:       durability
+		scope_names:      scope.clone()
 		original_version: database.data.version
 	}
 	if mode != .readonly {
@@ -119,8 +120,8 @@ pub fn (mut transaction IDBTransaction) object_store(name string) !IDBObjectStor
 	}
 	return IDBObjectStore{
 		transaction: &transaction
-		name_: name
-		store_: store
+		name_:       name
+		store_:      store
 	}
 }
 
@@ -154,6 +155,10 @@ pub fn (mut transaction IDBTransaction) abort(reason string) ! {
 		}
 	}
 	transaction.finish_connection_if_needed()
+	if callback := transaction.aborted_callback_ {
+		transaction.aborted_callback_ = none
+		callback()
+	}
 }
 
 fn (mut transaction IDBTransaction) finish_connection_if_needed() {

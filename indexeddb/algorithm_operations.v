@@ -120,6 +120,8 @@ pub fn commit_a_transaction(mut transaction IDBTransaction) ! {
 		}
 		queue_a_database_task_for_global_scope(pending.relevant_global_scope(), fn [transaction_pointer] () {
 			mut transaction := unsafe { &IDBTransaction(transaction_pointer) }
+			// A request may fail after an explicit commit queued completion.
+			if transaction.state != .committing { return }
 			if transaction.mode == .versionchange {
 				transaction.database.data.upgrade_transaction = none
 			}

@@ -165,6 +165,14 @@ fn (mut request IDBOpenDBRequest) complete_connection_request() {
 }
 
 pub fn (mut request IDBOpenDBRequest) finish_upgrade() ! {
+	request.prepare_upgrade_completion()!
+	mut upgrade := request.upgrade_transaction
+	upgrade.commit()!
+}
+
+// Install completion before firing the browser's upgrade event. Its queued
+// requests may finish in later tasks and enqueue further requests from handlers.
+pub fn (mut request IDBOpenDBRequest) prepare_upgrade_completion() ! {
 	request_ptr := voidptr(&request)
 	if isnil(request.upgrade_transaction) {
 		return error('InvalidStateError: request has no upgrade transaction')
@@ -184,7 +192,10 @@ pub fn (mut request IDBOpenDBRequest) finish_upgrade() ! {
 			completed.complete_connection_request()
 		})
 	}
-	upgrade.commit()!
+	upgrade.aborted_callback_ = fn [request_ptr] () {
+		mut pending := unsafe { &IDBOpenDBRequest(request_ptr) }
+		pending.abort_upgrade(pending.upgrade_transaction.error_message) or {}
+	}
 }
 
 pub fn (mut request IDBOpenDBRequest) abort_upgrade(reason string) ! {
@@ -192,8 +203,10 @@ pub fn (mut request IDBOpenDBRequest) abort_upgrade(reason string) ! {
 	if isnil(request.upgrade_transaction) {
 		return error('InvalidStateError: request has no upgrade transaction')
 	}
+	if request.upgrade_abort_finished_ { return }
+	request.upgrade_abort_finished_ = true
 	mut upgrade := request.upgrade_transaction
-	upgrade.abort(reason)!
+	if upgrade.state != .aborted { upgrade.abort(reason)! }
 	mut connection := request.connection
 	connection.upgrade_active = false
 	connection.data.upgrade_transaction = none
