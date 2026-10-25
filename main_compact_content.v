@@ -162,6 +162,7 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 		binding.node_for_key(key) or { return error('TypeError: Invalid Element receiver') }
 	}
 	if action == 'removeChild' { return binding.remove_child_query(root, selector) }
+	if action == 'insertAdjacentHTML' { return binding.insert_adjacent_html_query(root, selector) }
 	if action in ['createText', 'createFragment', 'childNodes', 'nodeText', 'setNodeText', 'appendNode', 'insertNode'] {
 		return binding.node_tree_query(root, action, selector)
 	}

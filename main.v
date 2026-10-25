@@ -1863,6 +1863,7 @@ fn javascript_bootstrap() string {
 		compact_class_collection_bootstrap(),
 		compact_last_child_bootstrap(),
 		compact_node_children_bootstrap(),
+		compact_insert_adjacent_html_bootstrap(),
 		compact_element_geometry_bootstrap(),
 		compact_remove_child_bootstrap(),
 		compact_tag_collection_bootstrap(),
