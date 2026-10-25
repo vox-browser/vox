@@ -24,7 +24,7 @@ if [ "$#" -eq 3 ]; then
     esac
     skia_root="$upstream_dir/Build/release/vcpkg_installed/${LADYBIRD_VCPKG_TRIPLET:-$default_triplet}"
     graphite_dir=$(CDPATH= cd -- "$(dirname -- "$2")" && pwd)
-    for name in native_skia_rounded_parts_test native_skia_solid_replay_test; do
+    for name in native_skia_rounded_parts_test native_skia_solid_replay_test native_skia_sparse_layer_test; do
         clang++ -std=c++20 -O2 -x objective-c++ \
             -I"$skia_root/include/skia" -I"$skia_root/include" \
             "$repo_dir/tools/$name.cpp" \

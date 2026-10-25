@@ -2153,10 +2153,196 @@ static void clip_out_rects(SkCanvas* canvas)
 
 // Keep each original GPU tile, but stage only its rounded corners. Assemble
 // the constant interior and staged corners into one original-size leaf image.
+// Stage rounded edges in compact GPU readbacks while retaining the original
+// non-root surface geometry and per-tile MSAA ownership.
+static bool draw_chromium_sparse_layer_rounded(CGContextRef destination, VoxGraphiteShape const& shape,
+    SkPaint const& paint, RasterRegion const& region, float scale,
+    float page_x, float page_y, float scroll_y, float canvas_height)
+{
+    auto draw = graphite_rounded_parts_draw();
+    if (!draw || s_raster_layer_is_root || s_msaa_grid_columns <= 0
+        || s_msaa_grid_width <= 2 || s_msaa_grid_height <= 2 || shape.alpha != 255
+        || (scale != 1 && scale != 2)
+        || paint.getColor4f() != SkColor4f::FromColor(SkColorSetRGB(shape.red, shape.green, shape.blue))) return false;
+    auto ctm = CGContextGetCTM(destination);
+    if (ctm.a != scale || ctm.d != scale) return false;
+    auto space = CGBitmapContextGetColorSpace(destination);
+    auto name = space ? CGColorSpaceCopyName(space) : nullptr;
+    bool srgb = name && CFEqual(name, kCGColorSpaceSRGB);
+    if (name) CFRelease(name);
+    if (!srgb) return false;
+    int width = raster_dimension(region.width(), scale), height = raster_dimension(region.height(), scale);
+    if (size_t(width) * height <= 16384 || size_t(width) * height > 8 * 1024 * 1024
+        || width > 16384 || height > 16384) return false;
+    auto backdrop = read_backdrop(destination, region, scale, width, height);
+    if (!backdrop.pixels) return false;
+    long first_x = std::lround((region.left - page_x - s_raster_origin_x) * scale);
+    long first_y = std::lround((region.top - page_y + scroll_y - s_raster_origin_y) * scale);
+    float edges[4];
+    if (shape.has_underlay || shape.clip_out_count || !vox_axis_aligned_rect(shape, edges)) return false;
+    float hx = shape.fill ? 0 : shape.thickness * shape.matrix[0] / 2;
+    float hy = shape.fill ? 0 : shape.thickness * shape.matrix[4] / 2;
+    if (!shape.fill && (!(hx > 0 && hy > 0) || !std::isfinite(hx) || !std::isfinite(hy)
+            || edges[2] - edges[0] <= hx * 2 || edges[3] - edges[1] <= hy * 2)) return false;
+    bool aligned = true;
+    for (int i = 0; i < 4; ++i) {
+        float half = i % 2 ? hy : hx;
+        for (float edge : {edges[i] - half, edges[i] + half}) {
+            if (!std::isfinite(edge)) return false;
+            aligned = aligned && edge == std::floor(edge);
+        }
+    }
+    if (!shape.fill && !aligned) return false;
+    if (!aligned) {
+        for (float value : shape.rect)
+            if (!std::isfinite(value) || std::abs(value) > 32768) return false;
+        for (float value : shape.matrix)
+            if (!std::isfinite(value) || std::abs(value) > 65536) return false;
+    }
+    float rx = 0, ry = 0;
+    for (int i = 4; i < 12; i += 2) {
+        if (!std::isfinite(shape.rect[i]) || !std::isfinite(shape.rect[i + 1])
+            || shape.rect[i] < 0 || shape.rect[i + 1] < 0) return false;
+        rx = std::max(rx, shape.rect[i]); ry = std::max(ry, shape.rect[i + 1]);
+    }
+    if (rx == 0 || ry == 0) return false;
+    float cw = std::ceil(rx * shape.matrix[0] + hx) + 2, ch = std::ceil(ry * shape.matrix[4] + hy) + 2;
+    if (cw * 2 >= edges[2] - edges[0] || ch * 2 >= edges[3] - edges[1] || cw * ch > 4096) return false;
+    double lcut = std::ceil(edges[0] + cw), rcut = std::floor(edges[2] - cw);
+    double tcut = std::ceil(edges[1] + ch), bcut = std::floor(edges[3] - ch);
+    struct Part { int left, top, width, height; std::vector<uint32_t> pixels; };
+    std::vector<Part> parts;
+    auto add = [&](double l, double t, double r, double b) {
+        int left = int(std::clamp(l, 0.0, double(width))), top = int(std::clamp(t, 0.0, double(height)));
+        int right = int(std::clamp(r, 0.0, double(width))), bottom = int(std::clamp(b, 0.0, double(height)));
+        if (left >= right || top >= bottom) return;
+        Part part {left, top, right - left, bottom - top, std::vector<uint32_t>(size_t(right - left) * (bottom - top))};
+        Backdrop source {backdrop.pixels + size_t(top) * backdrop.pitch + size_t(left) * 4, backdrop.pitch};
+        copy_backdrop_pixels(source, part.width, part.height, part.pixels);
+        parts.push_back(std::move(part));
+    };
+    if (aligned) {
+        add(edges[0] - hx - 2, edges[1] - hy - 2, lcut, tcut);
+        add(rcut, edges[1] - hy - 2, edges[2] + hx + 2, tcut);
+        add(edges[0] - hx - 2, bcut, lcut, edges[3] + hy + 2);
+        add(rcut, bcut, edges[2] + hx + 2, edges[3] + hy + 2);
+    } else {
+        // Fractional opaque fills retain every edge and corner from the
+        // original GPU surface. Four disjoint bands keep the compact-view API.
+        double left = std::floor(edges[0]) - 2, top = std::floor(edges[1]) - 2;
+        double right = std::ceil(edges[2]) + 2, bottom = std::ceil(edges[3]) + 2;
+        add(left, top, right, tcut);
+        add(left, bcut, right, bottom);
+        add(left, tcut, lcut, bcut);
+        add(rcut, tcut, right, bcut);
+    }
+    // Retain the original leaf surface extent in both raster modes. Transfer
+    // only edge patches, then resolve the same per-layer MSAA tile ownership.
+    struct Selection { int part, left, top, width, height; };
+    std::vector<Selection> selections;
+    size_t selected = 0, total = 0;
+    for (int i = 0; i < int(parts.size()); ++i) {
+        auto const& part = parts[i];
+        total += size_t(part.width) * part.height;
+        vox_chromium_msaa_rects(part.width, part.height,
+            first_x + part.left, first_y + part.top,
+            s_msaa_grid_width, s_msaa_grid_height, s_msaa_grid_columns,
+            s_msaa_grid_tiles, [&](int x, int y, int w, int h) {
+                selections.push_back({i, x, y, w, h});
+                selected += size_t(w) * h;
+            });
+    }
+    auto render = [&](auto& patches, bool msaa) {
+        if (patches.empty()) return true;
+        VoxGraphitePixelRegion views[4];
+        for (int i = 0; i < int(patches.size()); ++i) {
+            auto& part = patches[i];
+            views[i] = {part.left, part.top, part.width, part.height,
+                part.width * 4, reinterpret_cast<uint8_t*>(part.pixels.data())};
+        }
+        auto descriptor = shape;
+        descriptor.force_msaa = msaa;
+        return draw(views, int(patches.size()), width, height, 1, &descriptor) != 0;
+    };
+    if (selected == 0 || selected == total) {
+        if (!render(parts, selected != 0)) return false;
+    } else {
+        auto multisampled = parts;
+        if (!render(multisampled, true) || !render(parts, false)) return false;
+        for (auto const& selection : selections) {
+            auto& part = parts[selection.part];
+            auto const& msaa = multisampled[selection.part];
+            for (int y = selection.top; y < selection.top + selection.height; ++y) {
+                size_t offset = size_t(y) * part.width + selection.left;
+                std::copy_n(msaa.pixels.data() + offset, selection.width,
+                    part.pixels.data() + offset);
+            }
+        }
+    }
+    // One publication keeps Quartz's original image footprint and clipping.
+    // Assemble in the readable destination's RGBA order. Only the small GPU
+    // corner patches need channel conversion; the full backdrop and output
+    // image retain their existing format. Every pixel is initialized by
+    // either the backdrop copy or the opaque rectangle below.
+    if (size_t(width) * height > 8 * 1024 * 1024) return false;
+    size_t pixel_count = size_t(width) * height;
+    auto allocation = s_sparse_raster_pool.acquire(pixel_count);
+    if (!allocation) return false;
+    auto* pixels = allocation->pixels.get();
+    RasterRegion covered {
+        int(std::clamp<double>(std::ceil(edges[0]), 0, width)),
+        int(std::clamp<double>(std::ceil(edges[1]), 0, height)),
+        int(std::clamp<double>(std::floor(edges[2]), 0, width)),
+        int(std::clamp<double>(std::floor(edges[3]), 0, height))
+    };
+    auto omitted = shape.fill ? covered : RasterRegion {};
+    for (int y = 0; y < height; ++y) {
+        auto copy = [&](int left, int right) {
+            std::memcpy(pixels + size_t(y) * width + left,
+                backdrop.pixels + size_t(y) * backdrop.pitch + size_t(left) * 4,
+                size_t(right - left) * 4);
+        };
+        if (y >= omitted.top && y < omitted.bottom) {
+            copy(0, omitted.left); copy(omitted.right, width);
+        } else copy(0, width);
+    }
+    auto rectangle = shape;
+    std::fill(rectangle.rect + 4, rectangle.rect + 12, 0);
+    std::swap(rectangle.red, rectangle.blue);
+    if (!aligned) {
+        uint32_t color = 0xff000000u | uint32_t(rectangle.red) << 16
+            | uint32_t(rectangle.green) << 8 | rectangle.blue;
+        if (covered.left < covered.right) for (int y = covered.top; y < covered.bottom; ++y)
+            std::fill_n(pixels + size_t(y) * width + covered.left, covered.right - covered.left, color);
+    } else {
+        bool filled = rectangle.fill
+            ? vox_draw_solid_rect(reinterpret_cast<uint8_t*>(pixels), width, height, width * 4, true, rectangle)
+            : vox_draw_solid_stroke(reinterpret_cast<uint8_t*>(pixels), width, height, width * 4, true, rectangle);
+        if (!filled) return false;
+    }
+    for (auto const& part : parts) for (int y = 0; y < part.height; ++y)
+        swap_red_blue_pixels(reinterpret_cast<uint8_t*>(pixels + size_t(part.top + y) * width + part.left),
+            reinterpret_cast<uint8_t const*>(part.pixels.data() + size_t(y) * part.width), part.width);
+    auto provider = CGDataProviderCreateWithData(allocation.get(), pixels, pixel_count * sizeof(uint32_t),
+        [](void* owner, void const*, size_t) {
+            s_sparse_raster_pool.release(std::unique_ptr<VoxRasterBufferPool::Buffer>(static_cast<VoxRasterBufferPool::Buffer*>(owner)));
+        });
+    if (provider) allocation.release();
+    auto image = image_from_provider(provider, width, height, true);
+    int result = composite_image(destination, image,
+        CGRectMake(region.left, canvas_height - region.bottom, region.width(), region.height()), true);
+    if (image) CGImageRelease(image);
+    return result;
+}
+
+
 static bool draw_chromium_sparse_rounded(CGContextRef destination, VoxGraphiteShape const& shape,
     SkPaint const& paint, RasterRegion const& region, float scale,
     float page_x, float page_y, float scroll_y, float canvas_height)
 {
+    if (!s_raster_layer_is_root)
+        return draw_chromium_sparse_layer_rounded(destination, shape, paint, region,
+            scale, page_x, page_y, scroll_y, canvas_height);
     auto draw = graphite_rounded_parts_draw();
     if (!draw || !s_raster_layer_is_root || s_msaa_grid_columns <= 0
         || s_msaa_grid_width <= 2 || s_msaa_grid_height <= 2 || shape.alpha != 255
