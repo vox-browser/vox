@@ -31,6 +31,8 @@ fn device_layout_font(font PlatformFont, factor f64, pixel_size f64) PlatformFon
 	return PlatformFont{
 		...font
 		point_size:           f32(f64(font.point_size) * factor)
+		// Native Chromium layout measures the selected physical face. Rounding
+		// CSS metrics first changes a 12px Verdana strut from 29 to 30 at 2x.
 		pixel_size_override_: if font.font_rendering_policy == .chromium {
 			?f32(browser_font_size_for_rendering(pixel_size))
 		} else {

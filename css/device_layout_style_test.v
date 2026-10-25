@@ -191,3 +191,15 @@ fn test_transferred_wrapper_properties_keep_the_scaled_font_after_mutations() {
 		assert voidptr(style.cached_computed_font_list_?) == voidptr(projected.cached_computed_font_list_?)
 	}
 }
+
+fn test_device_layout_verdana_normal_strut_rounds_the_physical_font() {
+	$if macos {
+		mut document, source := device_layout_test_style('font:12px Verdana')
+		defer { document.finalize() }
+		document.set_layout_coordinate_scale(2)
+		projected := computed_style_in_layout_coordinates(source, document)
+		metrics := projected.cached_computed_font_list_?.fonts[0].font.font_for_rendering().inline_metrics()
+		// Native Brave at 2x lays out its 12px Verdana navigation at 14.5 CSS px.
+		assert metrics.ascent + metrics.descent + metrics.line_gap == 29
+	}
+}
