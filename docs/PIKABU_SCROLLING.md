@@ -884,3 +884,42 @@ not change. These new results count changed contents and report scroll-changing
 publications separately; they cannot supply a paired regression claim against
 that older endpoint. Both new browser processes exit zero. Evidence is under
 `Build/pikabu-live-lag-20261025/precise-tool-validation{,-repeat}/`.
+
+### Rejected buffer and recorder reuse experiments
+
+Two private candidates were evaluated with the precise-input protocol. Buffer
+reuse retains up to eight released rounded-raster vectors within 32 MiB; live
+image providers retain exclusive ownership. Recorder reuse extends the bounded
+rounded-shape recorder to small shapes, compact regions and rounded parts.
+Neither candidate is included in production: buffer reuse regresses in the
+first pair, while recorder reuse reverses direction between pairs. The latter
+results also show substantial machine/workload variability. These trials do
+not establish an optimization gain.
+
+All eight trials use the same frozen `recorder-runtime.app` executable, with
+only the candidate native library replaced, cached Pikabu resources, blocked
+external network, a 1024×764 document viewport at 2× scale, a 12-second settle,
+and 600 precise events at nominal 60 Hz, reversing every 60 events. Each
+candidate is compared with its adjacent control. All processes exit zero with
+unchanged binary/library identities and complete input/publication records.
+The endpoint is changed native contents after `updateLayer`, not scanout.
+
+| Trial | Scroll fps | Median ms | p95 ms | Maximum ms | Intervals >16.67 ms | Input Hz | Publications |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Buffer reuse, control 1 | 33.20 | 28.851 | 47.935 | 74.165 | 377/393 | 50.13 | 419 |
+| Buffer reuse, candidate 1 | 32.99 | 29.100 | 49.695 | 70.236 | 389/410 | 47.83 | 440 |
+| Buffer reuse, control 2 | 31.16 | 31.456 | 52.095 | 72.616 | 371/378 | 49.01 | 403 |
+| Buffer reuse, candidate 2 | 31.77 | 30.385 | 49.702 | 70.998 | 350/361 | 52.29 | 390 |
+| Recorder reuse, control 1 | 24.91 | 39.183 | 63.113 | 87.763 | 303/304 | 48.52 | 324 |
+| Recorder reuse, candidate 1 | 20.88 | 47.102 | 70.552 | 91.447 | 259/259 | 47.86 | 273 |
+| Recorder reuse, control 2 | 21.02 | 46.220 | 70.199 | 94.461 | 252/252 | 49.36 | 269 |
+| Recorder reuse, candidate 2 | 25.42 | 37.036 | 64.976 | 92.877 | 295/296 | 50.80 | 319 |
+
+The buffer candidate passes optimized and ASan/UBSan ownership checks,
+1,440 direct cases, 3,168 native rounded comparisons and 2,304 native solid
+comparisons. The recorder candidate passes 6,984 full-shape comparisons across
+cache teardown epochs and the compact-region and rounded-part GPU checks.
+Correctness alone does not supply performance credit. Raw inputs, publications,
+hashes and summaries are under
+`Build/pikabu-live-lag-20261025/{vector,all-recorder}-{control,candidate}-{1,2}/`;
+`vector-pool-guard.json` records the completed serialized experiment job.
