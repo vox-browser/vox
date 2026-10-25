@@ -760,3 +760,32 @@ savings and retains `add65da5` as its broad verification baseline.
 Evidence: `Build/pikabu-live-lag-20261025/solid-comparison.log`,
 `solid-comparison-guard.json`, `precise-grid-{baseline,spans}*/summary.json`,
 `long-profile-guard.json`, and `long-{baseline,grid-spans}/sample.txt`.
+
+### Bounded rounded-shape recorder reuse
+
+`1b8461df` keeps the large rounded-shape recorder alive between cache misses,
+with a 16 MiB resource budget and the existing GPU mutex. Both explicit and
+idle context teardown discard it before destroying the context. Surface size,
+origin, geometry, backdrop, coverage, and readback remain unchanged.
+
+The dominant card's four fill/stroke and antialiasing draws take 20–28% less
+time in three alternating native trials. The same precise-wheel page probe
+gives a smaller, repeatable gain:
+
+| Measurement | Control | Recorder reuse | Repeat control | Repeat reuse |
+| --- | ---: | ---: | ---: | ---: |
+| Mean native completion cadence | 31.72 fps | 32.63 fps | 33.65 fps | 34.61 fps |
+| Median native frame | 27.506 ms | 26.601 ms | 26.844 ms | 25.167 ms |
+
+The 60 fps target remains open. These runs keep the earlier production V
+executable fixed and isolate the native library change; they do not establish
+the performance of a later full V rebuild. No additional retired-instruction
+savings are credited.
+
+Focused checks pass 6,984 byte-exact full-shape comparisons, including repeated
+context teardown and changing surface dimensions, plus the existing 2,520
+unsupported-shape, 3,312 rounded-part, 1,440 direct-part, 3,168 native rounded,
+and 2,304 solid replay checks. Evidence is under
+`Build/pikabu-live-lag-20261025/`: `recorder.log`, `recorder-runtime.log`,
+`recorder-runtime-guard.json`, `recorder-runtime-selection.json`, and
+`precise-recorder-runtime*/summary.json`.
