@@ -1064,6 +1064,9 @@ pub fn TextInputBox.new(document &dom.Document, element &dom.Element, computed_v
 	columns := positive_integer_attribute_or_default(element, 'size', 20)
 	box_node := unsafe { &Node(box) }
 	mut width := resolve_font_dependent_length_for_node(box_node, css.Length.new(f64(columns), .ch))
+	if document.font_rendering_policy() == .chromium {
+		width = chromium_control_intrinsic_inline_size(box_node, columns, false)
+	}
 	// `normal` depends on the selected face's metrics. Read the document-
 	// resolved values retained by the new box instead of the pre-materialized
 	// ComputedProperties passed across the tree-builder boundary.
@@ -1118,6 +1121,14 @@ pub fn TextAreaBox.new(document &dom.Document, element &dom.Element, computed_va
 	box_node := unsafe { &Node(box) }
 	mut width := resolve_font_dependent_length_for_node(box_node, css.Length.new(f64(columns), .ch))
 	mut height := resolve_font_dependent_length_for_node(box_node, css.Length.new(f64(rows), .lh))
+	if document.font_rendering_policy() == .chromium {
+		width = chromium_control_intrinsic_inline_size(box_node, columns, true)
+		values := box_node.computed_values()
+		inline_overflow := if values.writing_mode() == .horizontal_tb { values.overflow_x() } else { values.overflow_y() }
+		if inline_overflow == .scroll {
+			height = height.plus(chromium_control_scrollbar_thickness(box_node))
+		}
+	}
 	if computed_values.writing_mode() != .horizontal_tb {
 		width, height = height, width
 	}

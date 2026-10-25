@@ -891,6 +891,8 @@ pub mut:
 	// A square fill_rect that Blink rasterizes as an antialiased GPU rectangle,
 	// such as a text decoration with fractional ends.
 	antialiased_rect bool
+	// Native text fields use non-AA paint flags, including their fill underlay.
+	disable_antialias bool
 	// A rounded fill_rect that the following border draws first in its GPU pass.
 	underlays_next bool
 	text      string // for 'draw_text'
@@ -1630,6 +1632,12 @@ fn (b &BlockBox) append_overlay_commands(mut commands []PaintCommand, metrics pa
 	if !overlay.has_resizer {
 		return
 	}
+	if b.snaps_background_rect && b.layout_handle != unsafe { nil } {
+		scale := unsafe { &Node(b.layout_handle) }.document().layout_coordinate_scale()
+		append_chromium_resizer(mut commands, LayoutRect{padding_rect.x, padding_rect.y,
+			padding_rect.width, padding_rect.height}, overlay.chrome_mirrored, scale, opacity)
+		return
+	}
 	// Translation of the overlay gripper loop in PaintableBox::paint(). Device
 	// scale is one in this display list, so the rounded 12px box becomes the same
 	// 8px inner line area.
@@ -2103,6 +2111,9 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 		border_width := box.width + box.padding.left + box.padding.right + box.border.left + box.border.right
 		border_height := box.height + box.padding.top + box.padding.bottom + box.border.top + box.border.bottom
 		border_rect := LayoutRect{border_left, border_top, border_width, border_height}
+		native_text_control := if !empty_cell_hidden && !box.skip_background_paint {
+			chromium_native_text_control(box)
+		} else { '' }
 		background_border_rect := if box.canvas().paints_canvas_background && box.canvas().canvas_width > 0 && box.canvas().canvas_height > 0 {
 			rect_union(border_rect, LayoutRect{box.canvas().canvas_x, box.canvas().canvas_y, box.canvas().canvas_width, box.canvas().canvas_height})
 		} else if box.snaps_background_rect {
@@ -2185,7 +2196,10 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 			color_rect, color_radii = chromium_background_under_opaque_border(color_rect,
 				color_radii, box.border, effective_border_colors(box.border_colors, box.border_color), box.border_styles)
 		}
-		if !box.skip_background_paint && !empty_cell_hidden && box.background_color.a > 0 && !box.canvas().paints_canvas_background && !box_radii_are_zero(color_radii) {
+		if native_text_control != '' {
+			scale := unsafe { &Node(box.layout_handle) }.document().layout_coordinate_scale()
+			append_chromium_native_text_control(mut commands, border_rect, native_text_control, scale, opacity)
+		} else if !box.skip_background_paint && !empty_cell_hidden && box.background_color.a > 0 && !box.canvas().paints_canvas_background && !box_radii_are_zero(color_radii) {
 			if box_radii_are_uniform_circles(color_radii) {
 				commands << PaintCommand{
 					kind: 'fill_rect'
@@ -2470,7 +2484,7 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 		border_start := commands.len
 		// PaintableBox::paint() skips ordinary borders for collapsed cells and
 		// for the collapsed table principal. Their shared edges are painted below.
-		if !box.table_cell && !(box.uses_collapsed_borders && box.table_inside) {
+		if native_text_control == '' && !box.table_cell && !(box.uses_collapsed_borders && box.table_inside) {
 			border_colors := effective_border_colors(box.border_colors, box.border_color)
 			if fieldset := box.media().fieldset_paintable {
 				converter := painting.new_device_pixel_converter(1.0) or { return commands }

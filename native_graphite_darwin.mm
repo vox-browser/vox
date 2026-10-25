@@ -643,7 +643,7 @@ static void draw_shape_on_canvas(SkCanvas* canvas, VoxGraphiteShape const& shape
     canvas->setMatrix(matrix);
     if (shape.has_underlay) {
         SkPaint underlay;
-        underlay.setAntiAlias(true);
+        underlay.setAntiAlias(shape.anti_alias != 0);
         underlay.setColor(SkColorSetARGB(shape.underlay_rgba[3], shape.underlay_rgba[0],
             shape.underlay_rgba[1], shape.underlay_rgba[2]));
         canvas->drawRRect(rounded_rect(shape.underlay_rect), underlay);

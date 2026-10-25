@@ -125,6 +125,7 @@ fn own_static_svg_command(command &PaintCommand) ?PaintCommand {
 		apply_force_dark_to_image:        command.apply_force_dark_to_image
 		line_box_debug:                   command.line_box_debug
 		antialiased_rect:                 command.antialiased_rect
+		disable_antialias:                command.disable_antialias
 		underlays_next:                   command.underlays_next
 		font_size:                        command.font_size
 		bold:                             command.bold

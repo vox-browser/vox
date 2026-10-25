@@ -4,6 +4,7 @@ import css
 import html
 
 fn test_device_layout_control_auto_sizes_use_the_projected_font_once() {
+	mut logical_widths := map[string]f64{}
 	for scale in [1.0, 2.0] {
 		mut document := html.parse_document('<!doctype html><style>
 			html,body{margin:0}input,textarea{font:16px/20px monospace}
@@ -27,7 +28,14 @@ fn test_device_layout_control_auto_sizes_use_the_projected_font_once() {
 				assert auto_size.height or { panic('control height') } == computed.line_height().times_float(f64(rows))
 			}
 			columns := if id in ['text', 'area'] { 10 } else { 20 }
-			assert auto_size.width or { panic('control width') } == resolve_font_dependent_length_for_node(node, css.Length.new(f64(columns), .ch))
+			width := auto_size.width or { panic('control width') }
+			if id == 'range' {
+				assert width == resolve_font_dependent_length_for_node(node, css.Length.new(f64(columns), .ch))
+			} else if scale == 1 {
+				logical_widths[id] = width.to_double()
+			} else {
+				assert width.to_double() / scale == logical_widths[id]
+			}
 			if id == 'search' {
 				used := result.state.try_get(node.as_node_with_style() or { panic('style') }) or { panic('geometry') }
 				assert used.content_height() == computed.line_height()

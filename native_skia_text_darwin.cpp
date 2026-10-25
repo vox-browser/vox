@@ -2324,7 +2324,7 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
     SkPaint underlay_paint;
     if (has_underlay) {
         underlay_rect = rounded_rect_from_data(s_rounded_rect_underlay);
-        underlay_paint.setAntiAlias(true);
+        underlay_paint.setAntiAlias(anti_alias != 0);
         underlay_paint.setColor(SkColorSetARGB(s_rounded_rect_underlay_rgba[3],
             s_rounded_rect_underlay_rgba[0], s_rounded_rect_underlay_rgba[1],
             s_rounded_rect_underlay_rgba[2]));
