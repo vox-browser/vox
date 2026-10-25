@@ -182,7 +182,7 @@ The control/candidate unsigned main executable SHA-256 is
 Graphite control SHA-256 is
 `a36151a5d563b3a2875b4ed5d634b878f8d55d88f4199990c67f88fa9cefcf65`;
 candidate SHA-256 is
-`d570416e38bb99496c7d4a4b5201f85090321cfd6851ab4bca03e857515e1b36`.
+`d570416e38bb99496c7d4a4b5201f85090321cfd6851ab4b0262daafbfe645d3`.
 Complete signed executable and dependency identities, including unchanged
 Skia and Dawn libraries, are in `region-reuse-pair-source-verified.json`.
 Live trials launched fresh processes from the installed candidate bundle.
