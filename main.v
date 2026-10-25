@@ -7680,5 +7680,6 @@ fn main() {
 			C.native_prepare_test_window()
 		}
 	}
+	prepare_browser_window_state(options)
 	app.ctx.run()
 }

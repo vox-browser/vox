@@ -106,12 +106,20 @@ fn initialize_native_browser_context(user_data voidptr) {
 		context.config.init_fn(context.user_data)
 	}
 	context.has_started = true
+	$if macos {
+		if sapp.isvalid() {
+			C.native_restore_browser_window_state(sapp.macos_get_window())
+		}
+	}
 }
 
 fn cleanup_native_browser_context(user_data voidptr) {
 	mut context := unsafe { &gg.Context(user_data) }
 	if !context.has_started {
 		return
+	}
+	$if macos {
+		C.native_finish_browser_window_state()
 	}
 	if context.config.cleanup_fn != unsafe { nil } {
 		context.config.cleanup_fn(context.user_data)
