@@ -1855,6 +1855,14 @@ pub fn (c &ComputedProperties) clone_for_button_flex_wrapper() &ComputedProperti
 	return clone
 }
 
+// AnonymousBoxStyle.cpp's ButtonContentBox: the button's content must be
+// allowed to shrink below its intrinsic block size inside the flex wrapper.
+pub fn (c &ComputedProperties) clone_for_button_content_box(display Display) &ComputedProperties {
+	mut clone := c.clone_for_anonymous_with_display(display)
+	clone.set_property_without_modifying_flags(.min_height, dom_style_value_from_value_logic(StyleValue(LengthStyleValue.create(Length.make_px(0)))))
+	return clone
+}
+
 // A fieldset keeps its special block layout so the rendered legend can be
 // positioned independently. Flex layout and alignment apply to this anonymous
 // content wrapper instead.
