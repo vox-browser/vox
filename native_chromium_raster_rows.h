@@ -28,8 +28,16 @@ bool vox_draw_with_msaa_rows(std::vector<uint32_t>& pixels, int width,
         pixels = std::move(original);
         return false;
     }
-    for (size_t row = 0; row < rows.size(); ++row)
-        if (rows[row]) std::copy_n(multisampled.begin() + row * width, width,
-            pixels.begin() + row * width);
+    // Pixel masks use width=1 to preserve horizontal tile boundaries. Copy
+    // complete selected spans rather than dispatching one copy per pixel.
+    auto cursor = rows.begin();
+    while (cursor != rows.end()) {
+        auto first = std::find(cursor, rows.end(), char(1));
+        auto end = std::find(first, rows.end(), char(0));
+        auto offset = size_t(first - rows.begin()) * width;
+        auto count = size_t(end - first) * width;
+        std::copy_n(multisampled.begin() + offset, count, pixels.begin() + offset);
+        cursor = end;
+    }
     return true;
 }

@@ -25,4 +25,20 @@ int main() {
         }));
         assert(pixels == std::vector<uint32_t>(12, 37));
     }
+    // Exhaustive short masks cover leading/trailing runs and alternating
+    // single pixels, with both pixel masks and multi-pixel raster rows.
+    for (int width : {1, 3, 17}) for (unsigned mask = 0; mask < 256; ++mask) {
+        std::vector<char> rows(8);
+        std::vector<uint32_t> pixels(8 * width);
+        for (size_t i = 0; i < pixels.size(); ++i) pixels[i] = uint32_t(i);
+        auto original = pixels;
+        for (size_t row = 0; row < rows.size(); ++row) rows[row] = (mask >> row) & 1;
+        assert(vox_draw_with_msaa_rows(pixels, width, rows, [&](auto& target, bool msaa) {
+            assert(target == original);
+            for (auto& pixel : target) pixel += msaa ? 1000 : 2000;
+            return true;
+        }));
+        for (size_t i = 0; i < pixels.size(); ++i)
+            assert(pixels[i] == original[i] + (rows[i / width] ? 1000 : 2000));
+    }
 }
