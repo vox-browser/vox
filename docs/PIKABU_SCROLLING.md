@@ -296,3 +296,9 @@ the benchmark directories `gradient-region-after`,
 `Build/pikabu-scroll-20261024/`. The initial compile failure is retained in
 `gradient-region-guard.json`. This completed broad batch is the new instruction
 savings baseline for subsequent native raster experiments.
+
+The broad native checkpoint compiles the frozen gradient-region text bridge,
+as well as loading its Graphite library. Its successful source-specific receipt
+is `gradient-region-promoted-native-result.json`, with the full output in
+`gradient-region-promoted-native-retry.log`. The earlier harness attempt lacked
+the repository include path and receives no pass credit.
