@@ -430,3 +430,34 @@ Neither failed attempt receives broad-verification credit.
 Clean production-library promotion also passes the optimized and sanitizer mask
 checks, 3,312 exact rounded-part GPU comparisons and the required native
 fast-path/rejection checks (`tile-mask-promote-retry-guard.json`, exit 0).
+
+
+The signed span-mask libraries are installed in `Build/v/Vox.app`. Installation
+preserves the production executable payload, passes strict signature verification
+and the headless startup check, and opens the requested Pikabu URL. The receipt
+is `canonical-tile-mask-installed.json` (guard exit 0).
+
+Subsequent experiments remain outside the canonical implementation:
+
+| Experiment | Control / candidate callback, first pair | Control / candidate, reverse pair | Decision |
+| --- | ---: | ---: | --- |
+| Glyph cache hash index | 30.863 / 29.091 ms | 29.385 / 32.329 ms | Mixed timing; reject |
+| Bulk multisample run copies | 31.101 / 29.750 ms | 29.358 / 30.808 ms | Mixed timing; reject |
+| Compact multisample spans | 33.769 / 35.830 ms | 36.041 / 36.717 ms | Slower in both orders; reject |
+| Wider channel conversion | 38.242 / 39.265 ms | 39.703 / 38.153 ms | Mixed timing; pending fresh measurement |
+
+The compact-span helper passes 15,443 mask/reference comparisons and 324
+transaction/failure cases in optimized and sanitizer configurations; its native
+integration batch also passes. The bulk-copy experiment passes 88,644 reference
+cases; the wider conversion passes 640 reference cases including in-place,
+unaligned and tail handling in both configurations. Correctness alone does not
+establish a scrolling improvement. These experiments receive no accepted
+instruction-savings credit. Their `*-result.json` and `*-metrics.json` receipts
+are under the same evidence directory.
+
+Two known task-owned URL launches were still running during these cohorts and
+were stopped after the final paired run (`stale-owned-browser-cleanup.json`).
+Fresh scheduling measurements use a separately frozen production executable;
+its different V/native scheduling changes are not attributed to the span-mask
+implementation. Ambient activity from other repository tasks remains outside
+this benchmark's control.
