@@ -148,6 +148,12 @@
   supply unprofiled performance credit.
   Independently verify that the proposed fast path executes on this workload.
   Timing differences cannot be attributed to a path that remains ineligible.
+  Check eligibility in a separate diagnostic run before timing a new fixture;
+  a loaded archived page can exercise different paint paths from the live page.
+  Validate the probe's executable identity and symbol ranges. With injected
+  libraries, dyld image zero may be the probe rather than Vox; use the actual
+  executable header when filtering caller addresses. Zero counters from an
+  unvalidated probe are inconclusive.
 - Report mean scroll-changing publication fps together with median, p95 and
   maximum scroll intervals, the fraction exceeding the target frame budget (16.67 ms at
   60 Hz), and the completed input/frame counts. Use the entire first-to-last
