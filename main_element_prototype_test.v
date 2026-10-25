@@ -4,7 +4,9 @@ import browserjs
 import html
 
 fn test_compact_element_prototype_preserves_specialized_native_facades_and_receiver_brand() {
-	$if !darwin { return }
+	$if !darwin {
+		return
+	}
 	mut document :=
 		html.parse_document('<!doctype html><div id="ordinary"></div><img id="picture"><video id="movie"></video><svg id="vector"></svg>')
 	mut runtime := browserjs.Runtime.create()
@@ -19,7 +21,9 @@ for(const element of [ordinary,picture,movie,vector,document.createElement("span
  if(!(element instanceof Element)||!(element instanceof EventTarget))throw new Error("element inheritance");
  if(Element.prototype.matches.call(element,"*")!==true)throw new Error("native match");
 }
-if(Object.getPrototypeOf(ordinary)!==Element.prototype||Object.getPrototypeOf(picture)!==HTMLImageElement.prototype||Object.getPrototypeOf(movie)!==HTMLVideoElement.prototype)throw new Error("specialized facade");
+if(Object.getPrototypeOf(ordinary)!==HTMLElement.prototype||Object.getPrototypeOf(picture)!==HTMLImageElement.prototype||Object.getPrototypeOf(movie)!==HTMLVideoElement.prototype)throw new Error("specialized facade");
+if(![ordinary,picture,movie].every(element=>element instanceof HTMLElement))throw new Error("HTML ancestry");
+for(const Constructor of [HTMLImageElement,HTMLMediaElement,HTMLTrackElement])if(Object.getPrototypeOf(Constructor)!==HTMLElement)throw new Error("HTML constructor ancestry");
 if(document.createDocumentFragment() instanceof Element)throw new Error("fragment is an element");
 for(const construct of [()=>Element(),()=>new Element()]){let failed=false;try{construct()}catch(error){failed=error instanceof TypeError}if(!failed)throw new Error("illegal constructor");}
 let traps=0;
@@ -39,7 +43,9 @@ console.log("prototype passed");
 }
 
 fn test_compact_element_selectors_use_native_css_and_live_dom_mutations() {
-	$if !darwin { return }
+	$if !darwin {
+		return
+	}
 	mut document :=
 		html.parse_document('<!doctype html><section id="ancestor" class="region"><div id="parent"><span id="leaf" class="choice" data-kind="yes">first</span><span class="choice">second</span></div></section>')
 	mut runtime := browserjs.Runtime.create()
@@ -71,7 +77,9 @@ console.log("selectors passed");
 }
 
 fn test_compact_queries_import_inner_html_children_with_live_native_identity_and_content() {
-	$if !darwin { return }
+	$if !darwin {
+		return
+	}
 	mut document :=
 		html.parse_document('<!doctype html><strong id="collision">first</strong><div id="parent"></div>')
 	mut runtime := browserjs.Runtime.create()
