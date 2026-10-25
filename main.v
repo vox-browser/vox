@@ -2942,6 +2942,10 @@ fn run_document_script_sources_with_image_fetch_hooks(document &dom.Document, cu
 		messages << 'JavaScript Screen bindings: ${err.msg()}'
 		return none
 	}
+	mutable_runtime.install_base64_binding() or {
+		messages << 'JavaScript base64 bindings: ${err.msg()}'
+		return none
+	}
 	mutable_runtime.install_window_media_query_binding() or {
 		messages << 'JavaScript media query bindings: ${err.msg()}'
 		return none

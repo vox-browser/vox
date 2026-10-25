@@ -55,13 +55,21 @@ pub fn (scope &UniversalGlobalScopeMixin) atob(data string) !string {
 			stripped << character
 		}
 	}
+	// Forgiving-base64 removes at most two trailing padding characters, and
+	// only from an input whose original length is divisible by four.
+	if stripped.len % 4 == 0 && stripped.len > 0 && stripped.last() == `=` {
+		stripped.delete_last()
+		if stripped.len > 0 && stripped.last() == `=` {
+			stripped.delete_last()
+		}
+	}
 	if stripped.len % 4 == 1 {
 		return error('InvalidCharacterError: Input is not valid base64 data')
 	}
 	for character in stripped {
 		if !((character >= `A` && character <= `Z`)
 			|| (character >= `a` && character <= `z`)
-			|| (character >= `0` && character <= `9`) || character in [`+`, `/`, `=`]) {
+			|| (character >= `0` && character <= `9`) || character in [`+`, `/`]) {
 			return error('InvalidCharacterError: Input is not valid base64 data')
 		}
 	}
