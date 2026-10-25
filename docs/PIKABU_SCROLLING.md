@@ -849,12 +849,19 @@ For a live production trial, use a unique output and guard report:
 python3 tools/run_memory_bounded.py --report Build/pikabu-precise-live-1-guard.json -- \
   python3 tools/measure_precise_scroll.py \
   --binary Build/v/Vox.app/Contents/MacOS/Vox --url https://pikabu.ru \
+  --require-title 'Пикабу' --settle-seconds 20 \
   --network-policy 'live external network; independent empty cache' \
   --output Build/pikabu-precise-live-1
 ```
 
 The defaults are 600 events at nominal 60 Hz, 2-pixel precise wheel deltas,
 reversing every 60 events, a 12-second settle, and a 1024×764 document viewport.
+The live example waits for the `Пикабу` title before its 20-second settle.
+`--require-title` checks document identity before settling and again when input
+starts; losing that identity restarts the settle. It does not establish network
+idle. Without this option the settle starts at process startup, which can let
+slow navigation overlap the measured input window. Such a run cannot establish
+steady scrolling performance. Preserve readiness failures and timeouts.
 Protocol version 2 divides observed scroll changes by the entire first-to-last
 input period, including time before the first publication and after the last.
 The first publication supplies a reference position and is conservatively
@@ -875,6 +882,8 @@ the original URL. Retain its source, body hash, request log, route and private
 trust configuration. The probe records and pins an explicit `SSL_CERT_FILE`.
 Run at least two unprofiled trials per build, alternating matched controls and
 candidates for optimization credit, then validate the installed bundle live.
+Use a separate diagnostic run to verify that the candidate path actually
+executes. An ineligible path cannot explain timing differences between runs.
 
 Keep `browser.log`, `run.json`, `summary.json`, and the outer guard report.
 The evidence includes executable/library/probe hashes, cache hash, commands,

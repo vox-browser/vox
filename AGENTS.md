@@ -122,6 +122,11 @@
   Record the new PID and build identity. A successful `open` against an already
   running app does not prove that the rebuilt executable was launched.
 - Verify that the intended document loaded successfully before measuring.
+  For Pikabu pass `--require-title 'Пикабу'`; the settle period then starts
+  after the requested title appears and restarts if that identity changes.
+  A fixed delay from process startup can include navigation in the input
+  window and is not a readiness check. A matching title establishes document
+  identity, not network idle; retain the settle period and recorded start title.
   Cached files alone do not guarantee an offline navigation will succeed.
   When navigation requires a fetch, replay the archived response at its original
   URL and record the fixture, response-body hash, proxy route and private TLS
@@ -138,6 +143,8 @@
   every result, and report regressions as well as gains. Profile separately;
   samples, instrumentation, or changed animation/paint/raster settings cannot
   supply unprofiled performance credit.
+  Independently verify that the proposed fast path executes on this workload.
+  Timing differences cannot be attributed to a path that remains ineligible.
 - Report mean scroll-changing publication fps together with median, p95 and
   maximum scroll intervals, the fraction exceeding the target frame budget (16.67 ms at
   60 Hz), and the completed input/frame counts. Use the entire first-to-last
