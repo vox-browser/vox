@@ -59,8 +59,24 @@ fn (damage &ScrollRasterDamage) skips(command &layout.PaintCommand) bool {
 		damage.width, math.min(damage.height, math.abs(damage.delta)))
 }
 
+// Raster eligibility permits only trailing viewport scrollbars. Find that
+// suffix without walking the document commands again after painting it.
+fn scroll_raster_scrollbar_start(commands []layout.PaintCommand) int {
+	mut start := commands.len
+	for start > 0 && commands[start - 1].scrollbar_axis != '' {
+		start--
+	}
+	return start
+}
+
 fn (mut app BrowserApp) draw_scroll_raster_scrollbars(page_y f32, window_height int) {
-	for index, command in app.paint_commands {
+	start := if os.getenv('VOX_DISABLE_SCROLLBAR_TAIL_REPLAY') != '' {
+		0
+	} else {
+		scroll_raster_scrollbar_start(app.paint_commands)
+	}
+	for index in start .. app.paint_commands.len {
+		command := app.paint_commands[index]
 		if command.scrollbar_axis == '' { continue }
 		if index < app.chromium_raster_plan.command_layers.len {
 			app.select_chromium_raster_layer(app.chromium_raster_plan.command_layers[index])

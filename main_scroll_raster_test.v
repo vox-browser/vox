@@ -96,6 +96,44 @@ fn test_scroll_raster_excludes_nontranslating_and_independent_content() {
 	assert layout.viewport_scroll_raster_reusable(document, [layout.PaintCommand{ ...ordinary, scrollbar_axis: 'vertical', x: 190, width: 6 }], 200, 200)
 }
 
+fn test_scroll_raster_overlay_tail_preserves_eligibility_order_and_layer_indices() {
+	mut document := html.parse_document('<!doctype html><div style="height:1000px;background:green"></div>')
+	defer { document.finalize() }
+	mut app := BrowserApp{ document: document }
+	app.relayout(200, 232)
+	content := layout.PaintCommand{ kind: 'fill_rect', width: 30, height: 30 }
+	vertical := layout.PaintCommand{
+		kind: 'fill_rect', x: 190, width: 6, height: 30, scrollbar_axis: 'vertical'
+	}
+	horizontal := layout.PaintCommand{
+		kind: 'fill_rect', y: 190, width: 30, height: 6, scrollbar_axis: 'horizontal'
+	}
+	assert scroll_raster_scrollbar_start([]layout.PaintCommand{}) == 0
+	for commands in [[content], [vertical], [content, content, vertical, horizontal]] {
+		assert layout.viewport_scroll_raster_reusable(document, commands, 200, 200)
+		mut expected_axes := []string{}
+		mut expected_indices := []int{}
+		for index, command in commands {
+			if command.scrollbar_axis != '' {
+				expected_axes << command.scrollbar_axis
+				expected_indices << index
+			}
+		}
+		mut actual_axes := []string{}
+		mut actual_indices := []int{}
+		for index in scroll_raster_scrollbar_start(commands) .. commands.len {
+			actual_axes << commands[index].scrollbar_axis
+			actual_indices << index
+		}
+		assert actual_axes == expected_axes
+		// Layer selection uses the original command index, even after skipping
+		// the document prefix. Sorting or rebasing this suffix changes painting.
+		assert actual_indices == expected_indices
+	}
+	// This arrangement must fall back to complete replay before tail replay.
+	assert !layout.viewport_scroll_raster_reusable(document, [vertical, content], 200, 200)
+}
+
 fn test_scroll_raster_damage_keeps_exposed_strips_overlay_edges_and_unknown_ink() {
 	mut damage := ScrollRasterDamage{ reused: true, delta: 10, width: 200, height: 200 }
 	ordinary := layout.PaintCommand{ kind: 'fill_rect', x: 30, y: 60, width: 20, height: 20 }
