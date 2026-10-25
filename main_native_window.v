@@ -30,6 +30,9 @@ fn configure_native_browser_context(mut context gg.Context) {
 		// The Cocoa child paints the browser. Its MetalKit parent still starts
 		// before our init callback, so avoid allocating its unused MSAA target.
 		context.window.sample_count = 1
+		// Cocoa/Sokol already schedules native draws. GG's software limiter also
+		// runs for the unused parent callback and can make the child wait twice.
+		context.config = gg.Config{ ...context.config, swap_interval: 0 }
 		C.native_install_browser_layer_presentation()
 		context.window.init_userdata_cb = initialize_native_browser_context
 		context.window.cleanup_userdata_cb = cleanup_native_browser_context

@@ -25,26 +25,28 @@ fn scroll_profile_collections() u64 {
 // No page script is injected.
 struct BrowserScrollProfile {
 mut:
-	enabled        bool
-	settled_at     u64
-	frame          int
-	frames         int = 120
-	settle_ns      u64 = 1_000_000_000
-	active         bool
-	started        u64
-	wheel_finished u64
-	prepared       u64
-	instructions   processmetrics.InstructionSnapshot
-	start_y        f64
-	allocated      u64
-	collections    u64
-	idle           bool
-	arena_start    i64
-	phase_count    int
-	phase_names    [24]string
-	phase_used     [24]i64
-	replay_kinds      bool
-	replay_kind_bytes map[string]i64
+	enabled              bool
+	settled              bool
+	settled_at           u64
+	frame                int
+	frames               int = 120
+	settle_ns            u64 = 1_000_000_000
+	active               bool
+	scroll_raster_reused bool
+	started              u64
+	wheel_finished       u64
+	prepared             u64
+	instructions         processmetrics.InstructionSnapshot
+	start_y              f64
+	allocated            u64
+	collections          u64
+	idle                 bool
+	arena_start          i64
+	phase_count          int
+	phase_names          [24]string
+	phase_used           [24]i64
+	replay_kinds         bool
+	replay_kind_bytes    map[string]i64
 }
 
 // scroll_profile_allocated returns bytes allocated so far by this thread: the
@@ -68,21 +70,32 @@ fn (mut app BrowserApp) begin_scroll_profile_frame() {
 	mut profile := &app.scroll_profile
 	if !profile.enabled { return }
 	if app.document == unsafe { nil } || !app.document_presented
-		|| app.pending_navigation != none || app.background_resource_pending.len > 0 {
+		|| app.pending_navigation != none {
+		profile.settled = false
 		profile.settled_at = 0
 		return
 	}
-	now := time.sys_mono_now()
-	if profile.settled_at == 0 {
-		profile.settled_at = now
-		return
+	if !profile.settled {
+		if app.background_resource_pending.len > 0 {
+			profile.settled_at = 0
+			return
+		}
+		now := time.sys_mono_now()
+		if profile.settled_at == 0 {
+			profile.settled_at = now
+			return
+		}
+		if now - profile.settled_at < profile.settle_ns { return }
+		// Later lazy image requests must not reapply the startup quiet period
+		// between wheels: physical scrolling continues while those loads run.
+		profile.settled = true
 	}
-	if now - profile.settled_at < profile.settle_ns { return }
 	if !profile.idle && app.maximum_scroll(app.viewport_height + app.chrome_height()) <= 0 {
 		eprintln('Vox scroll profile: document has no scrollable overflow')
 		exit(1)
 	}
 	profile.active = true
+	profile.scroll_raster_reused = false
 	profile.started = time.sys_mono_now()
 	profile.instructions = processmetrics.instruction_snapshot()
 	profile.start_y = app.scroll_y
@@ -112,6 +125,12 @@ fn (mut app BrowserApp) scroll_profile_prepared() {
 
 fn (mut app BrowserApp) finish_scroll_profile_frame() {
 	mut profile := &app.scroll_profile
+	// Queue the next synthetic wheel only after this frame's preparation.
+	// A wake serviced during layout belongs to the current frame and can be
+	// consumed before publication, leaving profiling waiting for an idle timer.
+	$if macos {
+		if profile.enabled { C.native_wake_browser_after(0) }
+	}
 	if !profile.active { return }
 	finished := time.sys_mono_now()
 	reading := processmetrics.instruction_snapshot()
@@ -126,7 +145,7 @@ fn (mut app BrowserApp) finish_scroll_profile_frame() {
 	}
 	arena := platform.thread_arena_usage()
 	collections := scroll_profile_collections() - profile.collections
-	eprintln('Vox scroll frame: ${profile.frame} wheel_us=${(profile.wheel_finished - profile.started) / 1000} prepare_us=${(profile.prepared - profile.wheel_finished) / 1000} replay_us=${(finished - profile.prepared) / 1000} total_us=${(finished - profile.started) / 1000} instructions=${count} before_y=${profile.start_y} after_y=${app.scroll_y} commands=${app.paint_commands.len} allocated_kb=${allocated_kb} collections=${collections} heap_mb=${heap.heap_size / (1024 * 1024)} arena_mb=${arena.used / (1024 * 1024)} arena_blocks=${arena.blocks} phases=${phases.join(',')}')
+	eprintln('Vox scroll frame: ${profile.frame} wheel_us=${(profile.wheel_finished - profile.started) / 1000} prepare_us=${(profile.prepared - profile.wheel_finished) / 1000} replay_us=${(finished - profile.prepared) / 1000} total_us=${(finished - profile.started) / 1000} instructions=${count} before_y=${profile.start_y} after_y=${app.scroll_y} commands=${app.paint_commands.len} scroll_raster_reused=${int(profile.scroll_raster_reused)} paint_revision=${app.document.paint_content_revision()} allocated_kb=${allocated_kb} collections=${collections} heap_mb=${heap.heap_size / (1024 * 1024)} arena_mb=${arena.used / (1024 * 1024)} arena_blocks=${arena.blocks} phases=${phases.join(',')}')
 	C.fflush(C.stderr)
 	profile.frame++
 	profile.active = false
@@ -148,15 +167,15 @@ fn (mut app BrowserApp) finish_scroll_profile_frame() {
 
 fn scroll_profile_from_environment() BrowserScrollProfile {
 	return BrowserScrollProfile{
-		enabled: os.getenv('VOX_PROFILE_SCROLL') == '1'
-		idle:    os.getenv('VOX_SCROLL_PROFILE_IDLE') == '1'
+		enabled:      os.getenv('VOX_PROFILE_SCROLL') == '1'
+		idle:         os.getenv('VOX_SCROLL_PROFILE_IDLE') == '1'
 		replay_kinds: os.getenv('VOX_SCROLL_PROFILE_REPLAY_KINDS') == '1'
-		frames:  if os.getenv('VOX_SCROLL_PROFILE_FRAMES').int() > 0 {
+		frames:       if os.getenv('VOX_SCROLL_PROFILE_FRAMES').int() > 0 {
 			os.getenv('VOX_SCROLL_PROFILE_FRAMES').int()
 		} else {
 			120
 		}
-		settle_ns: if os.getenv('VOX_SCROLL_PROFILE_SETTLE_MS').int() > 0 {
+		settle_ns:    if os.getenv('VOX_SCROLL_PROFILE_SETTLE_MS').int() > 0 {
 			u64(os.getenv('VOX_SCROLL_PROFILE_SETTLE_MS').int()) * 1_000_000
 		} else {
 			1_000_000_000

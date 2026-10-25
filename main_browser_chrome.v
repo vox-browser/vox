@@ -29,6 +29,15 @@ struct BrowserChromeState {
 	debug   bool
 }
 
+fn browser_chrome_requires_update(previous BrowserChromeState, next BrowserChromeState) bool {
+	// Layout diagnostics change on every scroll. They have no visible control
+	// while the debug strip is hidden, and must not rebuild the toolbar/tabs.
+	if !previous.debug && !next.debug {
+		return previous != BrowserChromeState{ ...next, status: previous.status }
+	}
+	return previous != next
+}
+
 fn browser_toolbar_height(debug bool) f64 {
 	return toolbar_height + if debug { debug_status_height } else { 0.0 }
 }
@@ -167,9 +176,10 @@ fn (mut app BrowserApp) update_browser_chrome(width int, height int) {
 	$if vox_ui2 ? {
 		if !app.native_address_bar { return }
 		chrome := app.browser_chrome_state(width, height)
-		if app.browser_chrome == chrome { return }
-		ui2.update_embedded_browser(browser_chrome_elements(chrome))
+		changed := browser_chrome_requires_update(app.browser_chrome, chrome)
 		app.browser_chrome = chrome
+		if !changed { return }
+		ui2.update_embedded_browser(browser_chrome_elements(chrome))
 		app.style_native_browser_chrome()
 		app.update_native_browser_tabs(chrome)
 	}

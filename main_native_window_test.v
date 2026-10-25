@@ -52,6 +52,8 @@ fn test_native_browser_context_uses_cocoa_lifecycle_without_gpu_or_font_setup() 
 		context.window.sample_count = 4
 		configure_native_browser_context(mut context)
 		assert context.window.sample_count == 1
+		assert context.config.swap_interval == 0
+		assert context.window.swap_interval == 1
 		assert context.window.frame_userdata_cb == original_frame
 		assert context.window.event_userdata_cb != original_event
 		assert !context.has_started
@@ -83,6 +85,7 @@ fn test_native_browser_context_preserves_other_renderers_callbacks() {
 	context.window.sample_count = 4
 	configure_native_browser_context(mut context)
 	assert context.window.sample_count == 4
+	assert context.config.swap_interval == 1
 	assert context.window.init_userdata_cb == original_init
 	assert context.window.cleanup_userdata_cb == original_cleanup
 	assert context.window.frame_userdata_cb == original_frame

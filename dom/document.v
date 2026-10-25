@@ -4471,7 +4471,7 @@ pub fn (mut d Document) set_viewport_rect(rect Rect) {
 		// display list upstream. Scroll snapshots are lowered into this port's
 		// commands, so re-record them while keeping the scroll-independent
 		// hit-test plan.
-		d.set_needs_repaint_with_invalidation(.paint_commands)
+		d.mark_needs_repaint_internal(.paint_commands, true)
 	}
 }
 
@@ -4585,11 +4585,21 @@ pub fn (mut d Document) run_unloading_cleanup_steps() {
 }
 
 fn (mut d Document) mark_needs_repaint(invalidation InvalidateDisplayList) {
+	d.mark_needs_repaint_internal(invalidation, false)
+}
+
+fn (mut d Document) mark_needs_repaint_internal(invalidation InvalidateDisplayList, viewport_scroll_only bool) {
 	// Document repaint requests do not invalidate PaintableBox phase caches.
 	// PaintCommands keeps the retained hit-test plan, while the full mode drops
 	// it as well. No is used by compositor-only changes.
 	if invalidation != .no {
-		d.invalidate_display_list()
+		if viewport_scroll_only {
+			d.cached_display_list_ = unsafe { nil }
+		} else {
+			d.invalidate_display_list()
+		}
+	} else if !viewport_scroll_only {
+		d.paint_content_revision_++
 	}
 	d.needs_repaint = true
 	if paintable := d.unsafe_paintable() {
@@ -5537,6 +5547,7 @@ pub mut:
 	cached_display_list_ &DisplayList = unsafe { nil }
 	cached_display_list_viewport_only_ bool
 	recording_viewport_only_ bool
+	paint_content_revision_ u64
 
 	// Segmenters (lazy)
 	grapheme_segmenter_ &Segmenter = unsafe { nil }
@@ -11544,6 +11555,14 @@ pub fn (mut d Document) set_cached_navigable(navigable ?&Navigable) {
 
 pub fn (mut d Document) invalidate_display_list() {
 	d.cached_display_list_ = unsafe { nil }
+	d.paint_content_revision_++
+}
+
+// Viewport scrolling replaces lowered commands without changing their source
+// pixels. Every other paint invalidation advances this revision, including
+// compositor-only changes which keep the display list.
+pub fn (d &Document) paint_content_revision() u64 {
+	return d.paint_content_revision_
 }
 
 pub fn (d &Document) cached_display_list() ?&DisplayList {

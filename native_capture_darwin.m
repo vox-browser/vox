@@ -21,6 +21,7 @@ static void native_capture_instruction_checkpoint(const char *label) {
 }
 
 #include "native_layer_presentation_darwin.h"
+#include "native_scroll_raster_darwin.h"
 #include "native_deferred_font_darwin.h"
 #include "native_svg_mask_layer_darwin.h"
 
@@ -4698,6 +4699,9 @@ static void native_update_animated_image_frame(NSImage *image) {
 	}
 	if (animated_representation == nil)
 		return;
+	// The native image timeline advances independently of DOM invalidation.
+	// Keep its visible frames on complete replay rather than retaining a still.
+	native_scroll_raster_independent_content();
 	NSInteger frame_count = [[animated_representation valueForProperty:NSImageFrameCount] integerValue];
 	// The screenshot JavaScript host resolves its image-animation checkpoint at
 	// frame 1. Keep native decoding at the same checkpoint; otherwise the capture
@@ -5636,3 +5640,9 @@ void schedule_native_document_screenshot(string output_path, double top, double 
                                          void *owner, void (*callback)(void *)) {
 	native_schedule_screenshot(output_path, YES, top, width, height, owner, callback);
 }
+
+// Cocoa imports tgmath macros; V emits the C math declarations after this file.
+// Leave the ordinary function name available for those declarations.
+#ifdef remainder
+#undef remainder
+#endif

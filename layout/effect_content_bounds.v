@@ -28,8 +28,18 @@ fn effect_leaf_ink_bounds_with_precision_guard(command &PaintCommand, native_pre
 	mut outset := f64(0)
 	match command.kind {
 		'fill_rect', 'fill_rounded_rect', 'fill_ellipse', 'begin_background_text_clip',
-		'draw_replaced_image', 'draw_svg_image' {
+		'draw_svg_image' {
 			if command.outer_shadow || command.blur != 0 { return none }
+		}
+		'draw_replaced_image' {
+			if command.outer_shadow || command.blur != 0 { return none }
+			// Replay clips the fitted image to its retained paintable rectangle.
+			// The compatibility command can still carry the unshifted box bounds
+			// (notably for inline images), which can cull visible thumbnail rows.
+			image := command.image_paintable or { return none }
+			rect = LayoutRect{image.image_rect.x, image.image_rect.y,
+				image.image_rect.width, image.image_rect.height}
+			outset = 1
 		}
 		'draw_background_image' {
 			// Background origin and clip may differ (for example padding-box

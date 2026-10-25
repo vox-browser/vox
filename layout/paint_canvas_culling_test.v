@@ -1,6 +1,27 @@
 module layout
 
 import math
+import painting
+
+fn test_canvas_culling_uses_replaced_image_replay_bounds() {
+	command := PaintCommand{
+		kind: 'draw_replaced_image', x: 20, y: 150, width: 20, height: 20
+		image_paintable: &painting.ImagePaintable{
+			image_rect: painting.Rect{20, 90, 20, 20}
+		}
+	}
+	assert !paint_leaf_is_outside_canvas(command, 0, 0, 100, 100)
+	assert paint_leaf_is_outside_canvas(command, 0, -120, 100, 100)
+	// Missing retained geometry must disable culling, rather than trust the
+	// compatibility rectangle. A transformed image uses its replay rectangle.
+	assert !paint_leaf_is_outside_canvas(PaintCommand{
+		kind: 'draw_replaced_image', x: 20, y: 150, width: 20, height: 20
+	}, 0, 0, 100, 100)
+	assert !paint_leaf_is_outside_canvas(PaintCommand{
+		...command
+		transform: [f64(1), 0, 0, 1, 0, -150]!
+	}, 0, 100, 100, 100)
+}
 
 fn test_canvas_culling_keeps_visible_edges_and_a_native_raster_fringe() {
 	for x in [f64(-13), 103] {

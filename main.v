@@ -4696,6 +4696,7 @@ fn (mut app BrowserApp) poll_background_resources() {
 	mut completed_script_images := app.request_script_inserted_images()
 	mut changed_svg_resources := []string{}
 	mut completed_nonrendered_images := []string{}
+	mut resource_pixels_changed := false
 	for app.background_resource_results.len > 0 {
 		select {
 			resource := <-app.background_resource_results {
@@ -4716,6 +4717,7 @@ fn (mut app BrowserApp) poll_background_resources() {
 					&& resource.url.all_before('#').all_before('?').to_lower().ends_with('.svg')
 				if app.resource_cache.len < max_cached_resources || resource.url in app.resource_cache {
 					app.resource_cache[resource.url] = resource
+					resource_pixels_changed = true
 				}
 				if publish_browser_svg_resource(resource) || failed_previous_svg {
 					changed_svg_resources << resource.url.all_before('#')
@@ -4728,6 +4730,11 @@ fn (mut app BrowserApp) poll_background_resources() {
 				break
 			}
 		}
+	}
+	if resource_pixels_changed && app.document != unsafe { nil } {
+		// Raster backgrounds can finish without changing layout or the retained
+		// commands. Their new pixels still invalidate any cached viewport.
+		app.document.set_needs_repaint_with_invalidation(.no)
 	}
 	script_images_updated := completed_script_images.len > 0 && app.document != unsafe { nil }
 		&& app.complete_script_inserted_images(url_set(completed_script_images))
@@ -6898,6 +6905,7 @@ fn (mut app BrowserApp) draw() {
 	app.paint_effect_depth = 0
 	paint_document := app.document_pixels_ready_for_frame()
 	if paint_document {
+		mut scroll_damage := ScrollRasterDamage{}
 		$if macos {
 			if app.ctx.native_rendering && app.document != unsafe { nil }
 				&& app.document.font_rendering_policy() == .chromium {
@@ -6909,9 +6917,22 @@ fn (mut app BrowserApp) draw() {
 				// Backdrop commands need a snapshot of pixels already painted in this
 				// frame. Keep the ordinary fast path direct-to-window.
 				C.native_begin_css_filter_layer(f32(app.ctx.width), f32(app.ctx.height))
+				C.native_discard_scroll_raster()
+			} else if app.ctx.native_rendering {
+				C.native_discard_scroll_raster()
 			}
 		}
 		draw_srgb_rect(app.ctx, 0, 0, f32(window.width), f32(window.height), gg.rgb(255, 255, 255))
+		$if macos {
+			if app.ctx.native_rendering && app.document != unsafe { nil }
+				&& app.document.font_rendering_policy() == .chromium {
+				scroll_damage = app.begin_scroll_raster()
+				app.scroll_profile.scroll_raster_reused = scroll_damage.reused
+				if scroll_damage.reused {
+					draw_srgb_rect(app.ctx, 0, 0, f32(window.width), f32(window.height), gg.rgb(255, 255, 255))
+				}
+			}
+		}
 		page_y := app.page_top()
 		mut culling := PaintCanvasCulling{}
 		$if macos {
@@ -6929,6 +6950,8 @@ fn (mut app BrowserApp) draw() {
 			if culling.skip(command, 0, f64(page_y), f64(window.width), f64(window.height)) {
 				continue
 			}
+			if scroll_damage.separate_scrollbars && command.scrollbar_axis != '' { continue }
+			if scroll_damage.skips(command) { continue }
 			$if macos {
 				if app.ctx.native_rendering && command_index < app.chromium_raster_plan.command_layers.len {
 					next_layer := app.chromium_raster_plan.command_layers[command_index]
@@ -6959,6 +6982,10 @@ fn (mut app BrowserApp) draw() {
 		$if macos {
 			if app.ctx.native_rendering && app.document != unsafe { nil }
 				&& app.document.font_rendering_policy() == .chromium {
+				C.native_end_scroll_raster()
+				if scroll_damage.separate_scrollbars {
+					app.draw_scroll_raster_scrollbars(page_y, window.height)
+				}
 				C.native_set_chromium_msaa_tiles(unsafe { nil }, 0, chromium_min_gpu_raster_tile_rows)
 				C.native_set_chromium_raster_layer(0, 0, 1)
 				C.native_end_font_compositing_layer()
@@ -6969,6 +6996,7 @@ fn (mut app BrowserApp) draw() {
 		}
 		replay_scratch.finish()
 	} else {
+		$if macos { C.native_discard_scroll_raster() }
 		draw_srgb_rect(app.ctx, 0, 0, f32(window.width), f32(window.height), gg.rgb(255, 255, 255))
 	}
 

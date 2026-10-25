@@ -308,6 +308,17 @@ static void native_layer_update(id self, SEL command) {
     } @finally {
         native_layer_presenting = NO;
     }
+    // AppKit clears needsDisplay after updateLayer returns. Input or timers
+    // serviced during replay can dirty this very layer, then lose that dirty
+    // bit at the end of the current display pass. Deliver the retained request
+    // once the pass has finished rather than waiting for an unrelated timer.
+    NSView *view = self;
+    NSNumber *painted = objc_getAssociatedObject(view, &native_layer_frame_generation_key);
+    if (painted && painted.unsignedLongLongValue != native_layer_redraw_generation) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            view.needsDisplay = YES;
+        });
+    }
 }
 
 static void native_layer_moved_to_window(id self, SEL command) {

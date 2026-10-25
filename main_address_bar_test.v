@@ -342,6 +342,29 @@ $if vox_ui2 ? {
 		assert !app.memory_status.sampled
 	}
 
+	fn test_ui2_hidden_scroll_diagnostics_keep_controls_until_debug_is_shown() {
+		window := C.native_test_address_window()
+		mut app, field := address_bar_test_app(C.native_test_address_parent(window))
+		defer {
+			app.unmount_address_bar()
+			C.native_test_address_close(window)
+		}
+		hidden_status := ui2.text('load-status')
+		for y in 1 .. 20 {
+			app.status = 'scroll y=${y}'
+			app.update_browser_chrome(800, 600)
+			assert app.browser_chrome.status == app.status
+			assert ui2.text('load-status') == hidden_status
+			assert ui2.embedded_browser_control('address') == field
+		}
+		app.toggle_browser_debug()
+		assert ui2.text('load-status') == 'scroll y=19'
+		assert C.native_test_chrome_hidden(ui2.embedded_browser_control('load-status')) == 0
+		app.status = 'scroll y=20'
+		app.update_browser_chrome(800, 600)
+		assert ui2.text('load-status') == app.status
+	}
+
 	fn test_ui2_chrome_unmount_clears_controls_and_sampling_and_can_mount_again() {
 		window := C.native_test_address_window()
 		mut app, _ := address_bar_test_app(C.native_test_address_parent(window))
