@@ -571,3 +571,60 @@ Evidence: `frame-borrow-benchmark-result.json`,
 `Build/pikabu-scroll-20261024/`. The original production setup failure is
 preserved in `frame-borrow-production-guard.json`; the compiler wrapper's V
 library path was corrected before the successful retry.
+
+
+### Reuse clipped-path render targets (`5a60e4b3`)
+
+Clipped gradient paths reuse a bounded set of Graphite surfaces instead of
+creating a recorder and render target for each draw. Every draw still clears
+the full target and uses its original coordinates, backdrop and readback.
+The cache holds at most 32 surfaces and 4 MiB of color pixels; its recorder has
+a 16 MiB GPU budget. Larger targets retain the temporary allocation path.
+Idle and explicit graphics purges destroy the surfaces before their recorder
+and context.
+
+This is the same newer frozen V executable and viewport workload as the
+borrowed-frame cohort above, with four matched 240-frame runs.
+
+| Per callback | Control | Reused target | Repeat control | Repeat reused |
+| --- | ---: | ---: | ---: | ---: |
+| Median callback | 29.884 ms | 27.941 ms | 31.362 ms | 30.662 ms |
+| Median replay | 25.808 ms | 23.306 ms | 27.053 ms | 26.193 ms |
+| Mean retired instructions | 196.890 M | 181.240 M | 195.512 M | 192.977 M |
+| Native completion cadence | 31.05 fps | 32.35 fps | 29.66 fps | 29.86 fps |
+
+Both orders improve callback time and instruction count, saving 15.650 M and
+2.535 M instructions. The stricter minimum-pair broad gate is false. The visual
+driver's first pair crosses the 5 M threshold and its completed broad batch
+advances this scrolling cohort's baseline to `5a60e4b3` with zero accumulated
+savings after that batch.
+
+A clean official Graphite build passes 776 exact path comparisons, including
+stale-content, cache-budget, oversized-target and idle-release cases, and 192
+native gradient integration comparisons. The ASan/UBSan path harness also
+passes all 776 comparisons; the dynamically loaded libraries use optimized
+builds. The broad batch passes the frozen native clipping, compositing, glyph,
+shape and tiled replay checks, all 19 visual preservation pages, and paused
+Pikabu at 1×/2×. It does not rerun the separate 6,986-case GPU replay suite.
+
+The first visual attempt retained two unloaded sidebar avatars (518 pixels).
+Its failure remains recorded. With an eight-second resource settle, both
+Pikabu comparisons are exact; no pixels are masked or tolerance increased.
+
+Evidence under `Build/pikabu-scroll-20261024/`:
+`gradient-target-result.json`, `gradient-target-clean-retry-result.json`,
+`gradient-target-clean-retry-guard.json`,
+`gradient-target-visual-retry/{gate,focused,broad}.json` and
+`gradient-target-verify-retry-guard.json`. The original clean-build setup
+failure and shorter-settle visual failure are preserved in their original
+reports. **60 fps remains unachieved.**
+
+The canonical production bundle now contains the clean Graphite library. Its
+existing unsigned V executable and text/Dawn libraries were preserved; strict
+bundle signing, startup and the requested Pikabu launch pass. A fresh 240-frame
+production run records a 35.605 ms median callback, 48.187 ms p95, 30.300 ms
+median replay, 182.132 M mean instructions and 26.24 fps native completion.
+This unpaired run is recorded separately from the matched improvements above;
+it measures native completion rather than display scanout. Its evidence is
+`canonical-gradient-target-installed.json`, `gradient-target-install-guard.json`
+and `gradient-target-production-profile/summary.json`.
