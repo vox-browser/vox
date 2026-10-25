@@ -184,6 +184,16 @@ auto graphite_shape_region_draw()
     return draw;
 }
 
+auto graphite_path_region_draw()
+{
+    static auto draw = [] {
+        void* library = dlopen("@rpath/libVoxGraphite.dylib", RTLD_LAZY | RTLD_LOCAL);
+        return library ? reinterpret_cast<decltype(&vox_graphite_draw_path_region_pixels)>(
+            dlsym(library, "vox_graphite_draw_path_region_pixels")) : nullptr;
+    }();
+    return draw;
+}
+
 auto graphite_path_draw()
 {
     static auto draw = [] {
@@ -2926,6 +2936,42 @@ static bool draw_chromium_root_gradient_tiles(
     return true;
 }
 
+// A clipped root gradient keeps its full GPU target, AA and dither phase.
+// Reduce only the CPU backdrop, readback and CoreGraphics image to its visible
+// rectangle, with two logical pixels of guard around the destination clip.
+static bool draw_clipped_root_gradient(CGContextRef destination, RasterRegion const& region,
+    float scale, float canvas_height, int width, int height, VoxGraphitePath const& path)
+{
+    if (scale != 2 || !s_raster_layer_is_root) return false;
+    auto draw = graphite_path_region_draw();
+    if (!draw) return false;
+    auto clip = CGContextGetClipBoundingBox(destination);
+    if (CGRectIsEmpty(clip) || CGRectIsInfinite(clip) || CGRectIsNull(clip)
+        || !std::isfinite(CGRectGetMinX(clip)) || !std::isfinite(CGRectGetMaxX(clip))
+        || !std::isfinite(CGRectGetMinY(clip)) || !std::isfinite(CGRectGetMaxY(clip))) return false;
+    // Clamp before integer conversion, including extreme finite clip bounds.
+    RasterRegion visible {
+        int(std::floor(std::clamp(CGRectGetMinX(clip) - 2, double(region.left), double(region.right)))),
+        int(std::floor(std::clamp(double(canvas_height) - CGRectGetMaxY(clip) - 2, double(region.top), double(region.bottom)))),
+        int(std::ceil(std::clamp(CGRectGetMaxX(clip) + 2, double(region.left), double(region.right)))),
+        int(std::ceil(std::clamp(double(canvas_height) - CGRectGetMinY(clip) + 2, double(region.top), double(region.bottom))))
+    };
+    int view_width = raster_dimension(visible.width(), scale);
+    int view_height = raster_dimension(visible.height(), scale);
+    if (visible.width() <= 0 || visible.height() <= 0
+        || size_t(view_width) * view_height * 2 > size_t(width) * height) return false;
+    auto backdrop = read_backdrop(destination, visible, scale, view_width, view_height);
+    if (!backdrop.pixels) return false;
+    std::vector<uint32_t> pixels(size_t(view_width) * view_height);
+    copy_backdrop_pixels(backdrop, view_width, view_height, pixels);
+    VoxGraphitePixelRegion view {int((visible.left - region.left) * scale),
+        int((visible.top - region.top) * scale), view_width, view_height, view_width * 4,
+        reinterpret_cast<uint8_t*>(pixels.data())};
+    if (!draw(&view, width, height, 1, &path)) return false;
+    return composite_pixels(destination, std::move(pixels), view_width, view_height,
+        visible.left, canvas_height - visible.bottom, visible.width(), visible.height(), true);
+}
+
 template<typename MakeShader>
 static int draw_svg_gradient_path(CGContextRef destination, float const* data,
     int segment_count, int even_odd, float transform_a, float transform_b,
@@ -3015,8 +3061,7 @@ static int draw_svg_gradient_path(CGContextRef destination, float const* data,
         / static_cast<float>(region.width());
     auto raster_scale_y = static_cast<float>(raster_height)
         / static_cast<float>(region.height());
-    std::vector<uint32_t> pixels(static_cast<size_t>(raster_width)
-        * static_cast<size_t>(raster_height));
+    std::vector<uint32_t> pixels;
     if (s_chromium_painting) {
         // Chromium fills and strokes SVG paths with its GPU rasterizer.
         std::vector<float> stops;
@@ -3025,8 +3070,6 @@ static int draw_svg_gradient_path(CGContextRef destination, float const* data,
             stops.insert(stops.end(), {colors[index].fR, colors[index].fG,
                 colors[index].fB, colors[index].fA, positions[index]});
         }
-        bool has_background = s_raster_layer_is_root && opaque_backdrop && copy_backdrop(destination, region,
-            destination_scale, raster_width, raster_height, pixels);
         VoxGraphitePath descriptor {
             .matrix = {}, .segments = data, .segment_count = segment_count,
             .even_odd = even_odd, .stroke = stroke, .line_cap = line_cap,
@@ -3047,6 +3090,11 @@ static int draw_svg_gradient_path(CGContextRef destination, float const* data,
         }
         raster_matrix(matrix, region, raster_scale_x, raster_scale_y).get9(descriptor.matrix);
         gradient_matrix.get9(descriptor.gradient_matrix);
+        if (opaque_backdrop && draw_clipped_root_gradient(destination, region,
+                destination_scale, canvas_height, raster_width, raster_height, descriptor)) return 1;
+        pixels.resize(size_t(raster_width) * raster_height);
+        bool has_background = s_raster_layer_is_root && opaque_backdrop && copy_backdrop(destination, region,
+            destination_scale, raster_width, raster_height, pixels);
         auto draw = graphite_path_draw();
         int tile_width = static_cast<int>(std::ceil(canvas_width));
         bool drawn;
@@ -3090,6 +3138,7 @@ static int draw_svg_gradient_path(CGContextRef destination, float const* data,
         }
         std::fill(pixels.begin(), pixels.end(), 0);
     }
+    pixels.resize(size_t(raster_width) * raster_height);
     auto image_info = SkImageInfo::Make(raster_width, raster_height,
         kBGRA_8888_SkColorType, kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
     auto surface = SkSurfaces::WrapPixels(image_info, pixels.data(),

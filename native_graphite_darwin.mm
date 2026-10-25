@@ -968,6 +968,51 @@ int vox_graphite_draw_path_pixels(uint8_t* pixels, int width, int height,
     return result;
 }
 
+// Preserve the GPU surface and shader coordinates while transferring only the
+// caller-visible pixels. The remainder of the input backdrop is transparent.
+extern "C" __attribute__((visibility("default")))
+int vox_graphite_draw_path_region_pixels(VoxGraphitePixelRegion const* region,
+    int width, int height, int has_background, VoxGraphitePath const* path)
+{
+    if (!region || !region->pixels || !path || !path->segments || path->segment_count <= 0
+        || width <= 0 || height <= 0 || width > 16384 || height > 16384
+        || region->x < 0 || region->y < 0 || region->width <= 0 || region->height <= 0
+        || region->width > width || region->height > height || region->pitch <= 0
+        || region->x > width - region->width || region->y > height - region->height
+        || size_t(region->pitch) < size_t(region->width) * 4) return 0;
+    std::lock_guard lock(gpu_mutex);
+    auto* gpu = context();
+    if (!gpu) return 0;
+    auto recorder = gpu->makeRecorder();
+    auto info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
+        kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
+    auto surface = SkSurfaces::RenderTarget(recorder.get(), info);
+    if (!surface) return 0;
+    auto* canvas = surface->getCanvas();
+    canvas->clear(SK_ColorTRANSPARENT);
+    auto view_info = info.makeWH(region->width, region->height);
+    if (has_background) surface->writePixels(SkPixmap(view_info, region->pixels,
+            region->pitch), region->x, region->y);
+    if (!draw_path_on_canvas(canvas, path)) return 0;
+    auto recording = recorder->snap();
+    skgpu::graphite::InsertRecordingInfo insertion;
+    insertion.fRecording = recording.get();
+    if (gpu->insertRecording(insertion) != skgpu::graphite::InsertStatus::kSuccess) return 0;
+    std::unique_ptr<const SkImage::AsyncReadResult> result;
+    gpu->asyncRescaleAndReadPixels(surface.get(), view_info,
+        SkIRect::MakeXYWH(region->x, region->y, region->width, region->height),
+        SkImage::RescaleGamma::kSrc, SkImage::RescaleMode::kNearest,
+        [](void* target, std::unique_ptr<const SkImage::AsyncReadResult> data) {
+            *static_cast<std::unique_ptr<const SkImage::AsyncReadResult>*>(target) = std::move(data);
+        }, &result);
+    if (!gpu->submit(skgpu::graphite::SubmitInfo(skgpu::graphite::SyncToCpu::kYes)) || !result) return 0;
+    for (int row = 0; row < region->height; ++row)
+        std::memcpy(region->pixels + size_t(row) * region->pitch,
+            static_cast<uint8_t const*>(result->data(0)) + size_t(row) * result->rowBytes(0),
+            size_t(region->width) * 4);
+    return 1;
+}
+
 // An SVG image is one recording. Resolve multisample coverage after its last
 // path, so adjacent fills and non-scaling strokes share the same samples.
 extern "C" __attribute__((visibility("default")))

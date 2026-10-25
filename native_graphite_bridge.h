@@ -106,6 +106,8 @@ int vox_graphite_draw_shape_region_pixels(const VoxGraphitePixelRegion *region,
     int surface_width, int surface_height, int has_background, const VoxGraphiteShape *shape);
 int vox_graphite_draw_path_pixels(uint8_t *pixels, int width, int height,
     int pitch, int has_background, const VoxGraphitePath *path);
+int vox_graphite_draw_path_region_pixels(const VoxGraphitePixelRegion *region,
+    int surface_width, int surface_height, int has_background, const VoxGraphitePath *path);
 int vox_graphite_draw_path_batch_pixels(uint8_t *pixels, int width, int height,
     int pitch, int has_background, const VoxGraphitePath *paths, int count);
 int vox_graphite_draw_svg_image_pixels(uint8_t *pixels, int width, int height,
