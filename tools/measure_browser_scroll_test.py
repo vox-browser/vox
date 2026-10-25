@@ -22,6 +22,8 @@ class ScrollMeasurementTests(unittest.TestCase):
         self.assertEqual(result["moving"]["frames"], 2)
         self.assertEqual(result["moving"]["total_us"]["sum"], 1010)
         self.assertEqual(result["all"]["instructions"]["sum"], 300)
+        self.assertEqual(result["benchmark_kind"], "synthetic self-paced draw-callback scrolling")
+        self.assertFalse(result["precise_scrolling_acceptance"])
 
     def test_summarizes_collector_fields_when_frames_report_them(self):
         log = (frame(0, 0, 42).rstrip("\n") + " allocated_kb=512 collections=0 heap_mb=300\n"
@@ -44,6 +46,7 @@ class ScrollMeasurementTests(unittest.TestCase):
         self.assertEqual(cadence["intervals"], 2)
         self.assertAlmostEqual(cadence["mean_fps"], 2_000_000 / 116000)
         self.assertEqual(cadence["interval_us"]["max"], 100000)
+        self.assertIn("not native publication timestamps", cadence["endpoint"])
         self.assertNotIn("native_frame_cadence", summarize(frame(0, 0, 42), 1))
         for invalid in (receipts[:2], [(0, 5), (1, 5), (2, 7)]):
             with self.assertRaises(ValueError):

@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-"""Measure settled native wheel handling and paint replay, with optional sampling.
+"""Measure synthetic draw-callback scrolling, with optional sampling.
 
 Use identical URL, viewport, frame count and cache template for comparisons.
+This uses self-paced integer wheel steps (42 CSS pixels), not precise Cocoa
+wheel input. Use measure_precise_scroll.py for scrolling acceptance measurements.
 Frames include normal JavaScript, layout, paint and GC work inside the browser's
 frame callback, including synchronous GPU waits. A pipe reader timestamps each flushed
-frame completion; its intervals include publication and scheduling between
+callback completion; its intervals include scheduling between
 callbacks, plus log delivery latency. They do not measure display scanout.
 """
 
@@ -69,7 +71,9 @@ def summarize(log, expected_frames, idle=False, receipts=None):
                            "max": values[-1], "sum": sum(values)}
         return result
 
-    result = {"all": distribution(rows), "moving": distribution(moved), "rows": rows}
+    result = {"benchmark_kind": "synthetic self-paced draw-callback scrolling",
+              "precise_scrolling_acceptance": False,
+              "all": distribution(rows), "moving": distribution(moved), "rows": rows}
     if receipts is not None:
         if [number for number, _ in receipts] != list(range(expected_frames)):
             raise ValueError("Frame completion receipts do not match the measured frames")
@@ -79,7 +83,7 @@ def summarize(log, expected_frames, idle=False, receipts=None):
             if intervals[0] <= 0:
                 raise ValueError("Native frame intervals must be positive")
             result["native_frame_cadence"] = {
-                "endpoint": "flushed native frame completion log receipts; includes inter-frame publication, scheduling and log delivery latency; not display scanout",
+                "endpoint": "synthetic callback completion log receipts; includes scheduling and log delivery latency; not native publication timestamps or display scanout",
                 "intervals": len(intervals),
                 "mean_fps": 1_000_000 * len(intervals) / sum(intervals),
                 "interval_us": {"median": statistics.median(intervals),
