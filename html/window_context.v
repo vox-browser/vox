@@ -1302,6 +1302,7 @@ pub struct WindowPostMessageOptions {
 pub:
 	target_origin string = '/'
 	transfer      []&MessagePort
+	source        ?&dom.WindowProxy
 }
 
 pub struct PostedWindowMessage {
@@ -1953,18 +1954,14 @@ pub fn (window &WindowModel) has_pending_animation_frame_callback(handle u32) bo
 }
 
 pub fn (mut window WindowModel) window_post_message_steps(message dom.JSValue, source_origin dom.Origin, options WindowPostMessageOptions) ! {
-	mut target_origin := options.target_origin
-	if target_origin == '/' {
-		target_origin = source_origin.serialize()
-	} else if target_origin != '*' {
-		parsed := dom.dom_url_parse(target_origin, source_origin_url(source_origin), 'UTF-8') or {
-			return error("SyntaxError: Invalid target origin '${target_origin}'")
-		}
-		target_origin = parsed.origin().serialize()
-	}
-	if target_origin != '*' && target_origin != window.associated_document().origin().serialize() {
-		return
-	}
+	// The serialized record and task capture outlive the current script work.
+	// Put them in the recipient's retained payload even inside a scratch scope.
+	mut storage := window.associated_document().native_storage()
+	mut allocation_scope := platform.RetainedArenaScope{}
+	if storage != unsafe { nil } { allocation_scope = storage.enter_nested() }
+	defer { allocation_scope.finish() }
+	parsed_target := window_post_message_target_origin(source_origin, options.target_origin)!
+	target_origin := parsed_target.origin
 	mut transfer := []StructuredTransfer{cap: options.transfer.len}
 	for port in options.transfer {
 		transfer << StructuredTransfer(MessagePortTransfer{
@@ -1972,29 +1969,63 @@ pub fn (mut window WindowModel) window_post_message_steps(message dom.JSValue, s
 		})
 	}
 	record := structured_serialize_with_transfer(message, transfer)!
-	deserialized := structured_deserialize_with_transfer(record)!
+	mut target := &window
+	// Snapshot the sender and serialize now; check the recipient's origin only
+	// when its posted-message task runs, after any intervening navigation.
+	source := options.source
+	queue_global_task(.posted_message, &window.Window, fn [mut target, target_origin, source_origin, source, record] () {
+		target.deliver_posted_window_message(record, target_origin, source_origin, source)
+	})
+}
+
+// Window::prepare_post_message parses targetOrigin without a base URL. Keeping
+// an Origin record also distinguishes unrelated opaque origins from "null".
+pub struct WindowPostMessageTargetOrigin {
+pub:
+	origin ?dom.Origin
+}
+
+pub fn window_post_message_target_origin(source_origin dom.Origin, target_origin string) !WindowPostMessageTargetOrigin {
+	if target_origin == '*' { return WindowPostMessageTargetOrigin{} }
+	if target_origin == '/' { return WindowPostMessageTargetOrigin{origin: source_origin} }
+	url := dom.URL{ value: target_origin }
+	_ = url.parsed() or { return error("SyntaxError: Invalid target origin '${target_origin}'") }
+	return WindowPostMessageTargetOrigin{origin: url.origin()}
+}
+
+fn (mut window WindowModel) deliver_posted_window_message(record SerializedTransferRecord, target_origin ?dom.Origin, source_origin dom.Origin, source ?&dom.WindowProxy) {
+	mut storage := window.associated_document().native_storage()
+	mut allocation_scope := platform.RetainedArenaScope{}
+	if storage != unsafe { nil } { allocation_scope = storage.enter_nested() }
+	defer { allocation_scope.finish() }
+	if origin := target_origin {
+		if !origin.is_same_origin(window.associated_document().origin()) { return }
+	}
+	event_source := if proxy := source { ?MessageEventSource(WindowMessageEventSource{value: proxy}) } else { none }
+	deserialized := structured_deserialize_with_transfer(record) or {
+		mut event := MessageEvent.create('messageerror', MessageEventInit{origin: source_origin, source: event_source})
+		event.set_is_trusted(true)
+		window.Window.EventTarget.dispatch_event(unsafe { &dom.Event(event) })
+		return
+	}
 	data := deserialized.deserialized
 	window.posted_messages_ << PostedWindowMessage{
 		data: data
 		origin: source_origin.serialize()
-		target_origin: target_origin
+		target_origin: if origin := target_origin { origin.serialize() } else { '*' }
 	}
 	mut event := MessageEvent.create('message', MessageEventInit{
 		data: data
 		origin: source_origin
+		source: event_source
+		ports: deserialized.transferred_ports
 	})
+	event.set_is_trusted(true)
 	window.Window.EventTarget.dispatch_event(unsafe { &dom.Event(event) })
 }
 
 pub fn (mut window WindowModel) post_message(message dom.JSValue, source_origin dom.Origin, options WindowPostMessageOptions) ! {
 	window.window_post_message_steps(message, source_origin, options)!
-}
-
-fn source_origin_url(origin dom.Origin) dom.URL {
-	if origin.is_opaque() {
-		return dom.url_about_blank()
-	}
-	return dom.URL{value: origin.serialize() + '/'}
 }
 
 pub fn (window &WindowModel) posted_messages() []PostedWindowMessage {

@@ -12,6 +12,15 @@ fn unloading_cleanup_websocket_disappears() bool {
 	return true
 }
 
+fn window_test_deliver_messages() {
+	mut loop := main_thread_event_loop()
+	mut queue := loop.task_queue()
+	for {
+		task := queue.take_first_runnable_matching(fn (task &Task) bool { return task.source() == .posted_message }) or { break }
+		task.execute()
+	}
+}
+
 fn window_test_document(url string) &dom.Document {
 	parsed := dom.URL{value: url}
 	return &dom.Document{
@@ -276,11 +285,14 @@ fn test_window_core_relations_close_animation_and_post_message() {
 	window.post_message(dom.js_string('hello'), document.origin(), WindowPostMessageOptions{
 		target_origin: 'https://example.test'
 	})!
+	assert window.posted_messages().len == 0
+	window_test_deliver_messages()
 	assert window.posted_messages().len == 1
 	assert window.posted_messages()[0].data.string_data == 'hello'
 	window.post_message(dom.js_string('ignored'), document.origin(), WindowPostMessageOptions{
 		target_origin: 'https://other.test'
 	})!
+	window_test_deliver_messages()
 	assert window.posted_messages().len == 1
 
 	window.close()
