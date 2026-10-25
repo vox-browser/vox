@@ -1182,3 +1182,58 @@ Evidence under `Build/pikabu-live-lag-20261025/`:
 `integrated-stage-result.json`, `production-sparse-{signature,headless}.log`,
 `production-sparse-{replay,live}-{1,2}/{run.json,summary.json,browser.log}`,
 `production-sparse-live-sample.txt`, and `readiness-guard-v1.json`.
+
+### Mask experiments rejected after integration (October 26)
+
+No further mask change is installed. Reducing the mask's pixel format or
+dimensions changes Quartz's fractional-edge sampling, even for an entirely
+transparent image. Exact comparisons rejected A8, gray-plus-alpha, constant
+one-pixel, and transparent-only one-pixel replacements. The transparent-only
+replacement fails 132 of 1,536 DestinationIn scenes, despite passing all 1,536
+ClipToMask scenes. The two operations require separate validation.
+
+A sparse-image draw preserves the original image, rectangle, and boundary
+bands, clearing transparent interiors and clipping image drawing to the
+remaining support. It passes 3,072 exact comparisons and ASan/UBSan, including
+fractional positioning, interpolation, nested effects, and fallback transforms.
+Its first archived-page diagnostic records zero eligible draws, so the archive
+timings receive no optimization credit. A later live diagnostic verifies 664
+fast draws among 4,332 mask draws. The following alternating unprofiled trials
+complete with the frozen production executable and libraries unchanged:
+
+| Measurement | Control 1 | Candidate 1 | Control 2 | Candidate 2 |
+| --- | ---: | ---: | ---: | ---: |
+| Scroll throughput | 23.655 fps | 7.332 fps | 4.843 fps | 8.156 fps |
+| Median interval | 42.345 ms | 108.727 ms | 183.460 ms | 119.326 ms |
+| p95 interval | 54.470 ms | 173.174 ms | 270.276 ms | 158.638 ms |
+| Maximum interval | 80.078 ms | 2,668.826 ms | 348.044 ms | 177.754 ms |
+| Intervals over 16.67 ms | 264/264 | 105/105 | 63/63 | 95/95 |
+| Inputs / changed publications | 600 / 276 | 600 / 108 | 600 / 67 | 600 / 99 |
+| Actual input delivery | 53.673 Hz | 41.827 Hz | 46.049 Hz | 51.423 Hz |
+| First scroll publication delay | 123.906 ms | 147.013 ms | 1,341.945 ms | 291.303 ms |
+| Final scroll publication gap | 37.377 ms | 62.409 ms | 38.175 ms | 83.698 ms |
+
+Each trial uses an independent empty cache/profile, the ambient proxy, a
+20-second settle after the Pikabu title, and the same viewport and precise
+input schedule as the installed checks. The endpoint and throughput denominator
+are unchanged. Live responses vary between trials, and the control variation
+is substantial. These results show no repeatable gain and do not justify
+promoting the sparse draw. Replacing the complex clip with rectangular clips
+also fails 96 exact DestinationIn comparisons involving an active shadow.
+No performance trials follow those failed pixel checks.
+
+The agent instructions now require a separate eligibility diagnostic before
+timing a new fixture and verification of the actual executable's probe ranges.
+An injected library can occupy dyld image zero. Earlier probes using that image
+as the executable base produced false zero counters; those counters are
+inconclusive. The corrected probe uses `_NSGetMachExecuteHeader()` and records
+the actual mask path. An interrupted first live run is retained as invalid.
+No frame-rate or retired-instruction improvement is credited to these experiments.
+
+Evidence under `Build/pikabu-live-lag-20261025/`:
+`alpha-mask/{a8,gray-alpha}*`,
+`alpha-mask/{metrics-base.c,metrics-base/browser.log,metrics-base-guard.json}`,
+`sparse-mask/{test.c,check-retry-guard.json,live-interrupted.json}`,
+`sparse-mask/live-v2/{live-result.json,live-*/run.json,live-*/browser.log}`,
+`sparse-mask/live-v2-guard.json`, and
+`{rectangular-mask,constant-mask,clear-mask}/{test.c,check-guard.json}`.
