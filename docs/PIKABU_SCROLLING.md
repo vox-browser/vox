@@ -302,3 +302,49 @@ as well as loading its Graphite library. Its successful source-specific receipt
 is `gradient-region-promoted-native-result.json`, with the full output in
 `gradient-region-promoted-native-retry.log`. The earlier harness attempt lacked
 the repository include path and receives no pass credit.
+
+
+### Staged rounded corners (`05af5dc5`)
+
+Large opaque root rectangles now retain their original GPU tiles while reading
+back only the rounded corners. The bridge assembles those pixels and the exact
+constant interior into one image before publishing it through the original
+CoreGraphics clip. Unsupported contexts retain the complete-tile fallback;
+failures leave destination pixels untouched. The production linker now exports
+all 14 bridge functions, including the compact shape and gradient functions
+that were missing from clean builds.
+
+These pairs use the freshly rebuilt production executable frozen as
+`production-20261025.app`. They share executable payload, input cache, viewport,
+scroll positions, commands and fingerprints. Their absolute instruction counts
+must not be compared with earlier pairs built from a different V revision.
+
+| Per scroll callback | Fresh production control | Staged corners | Repeat control | Repeat staged corners |
+| --- | ---: | ---: | ---: | ---: |
+| Median callback | 52.800 ms | 47.433 ms | 53.289 ms | 46.146 ms |
+| Median replay | 48.329 ms | 42.756 ms | 48.682 ms | 41.709 ms |
+| Mean retired instructions | 311.351 M | 279.744 M | 312.268 M | 279.833 M |
+
+The 120-frame pairs save 31.607 M and 32.434 M instructions per callback
+(10.15% and 10.39%). Callback medians improve by 10.17% and 13.40%. Publication
+and scanout remain outside this measurement, and 60 fps remains unachieved.
+
+Validation passes 2,184 direct GPU comparisons, 720 unsupported-case byte
+preservation checks, 1,824 native comparisons including 96 required fast-path
+cases and 192 anisotropic rejection checks, 6,986 GPU replay comparisons,
+headless startup, strict bundle verification, and pixel-exact Pikabu captures
+at 1× and 2×. The broader native batch passes 15 clipping, 720 composite, 6,240
+glyph, 864 shape, 288 tiled and 44 batched cases against the frozen candidate
+source. All 19 visual pages preserve the control pixels; the existing upstream
+reference differences remain unchanged. This completed batch advances the
+instruction-savings baseline to staged corners.
+
+Receipts under `Build/pikabu-scroll-20261024/` are
+`rounded-staged-measurements.json`, `rounded-staged-guard.json`,
+`rounded-staged-verify-retry-guard.json`, `rounded-staged-visual/` and
+`rounded-staged-promote-retry-guard.json`. The clean production rebuild also
+passes graphics cache lifetime checks and the exact 14-symbol export check.
+The initial verification precheck rejected a signature-only executable hash
+change; the retry verifies the identical Mach-O payload separately. The initial
+clean-build focused test caught the missing exports; its failed receipt remains
+in `rounded-staged-promote-guard.json`, followed by the successful fixed retry.
