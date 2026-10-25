@@ -30,7 +30,7 @@ import subprocess, sys
 symbols = {line.split()[-1] for line in subprocess.check_output(['nm', '-gU', sys.argv[1]], text=True).splitlines() if line.strip()}
 expected = {'_vox_graphite_draw_shadow_pixels', '_vox_graphite_draw_image_pixels',
     '_vox_graphite_draw_shape_pixels', '_vox_graphite_draw_path_pixels',
-    '_vox_graphite_draw_shape_region_pixels',
+    '_vox_graphite_draw_shape_region_pixels', '_vox_graphite_draw_path_region_pixels',
     '_vox_graphite_draw_image_tiles', '_vox_graphite_draw_path_batch_pixels',
     '_vox_graphite_draw_svg_image_pixels', '_vox_graphite_convert_icc_rgba',
     '_vox_graphite_release_unused_graphics_memory', '_vox_graphite_release_idle_graphics_memory',
