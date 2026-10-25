@@ -6411,16 +6411,13 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			mut resolved_layer := ?painting.ResolvedBackgroundLayer(none)
 			if background_data := image_data.background_layer_data {
 				resolved_layer = if natural := svg_natural_size {
-					painting.resolve_background_layer_with_natural_size(background_data.layer,
-						image_data.image_url, area, background_data.resolution_context, natural)
+					background_data.resolve_image(image_data.image_url, area, natural)
 				} else {
-					painting.resolve_background_layer(painting.BackgroundLayerResolutionInput{
-					layer: background_data.layer
-					image_id: image_data.image_url
-					natural_width: f64(intrinsic_width)
-					natural_height: f64(intrinsic_height)
-					background_positioning_area: area
-					resolution_context: background_data.resolution_context
+					background_data.resolve_image(image_data.image_url, area, css.SizeWithAspectRatio{
+						width: css.CSSPixels.nearest_value_for(intrinsic_width)
+						height: css.CSSPixels.nearest_value_for(intrinsic_height)
+						aspect_ratio: css.CSSPixelFraction.new(css.CSSPixels.nearest_value_for(intrinsic_width),
+							css.CSSPixels.nearest_value_for(intrinsic_height))
 					})
 				}
 			}

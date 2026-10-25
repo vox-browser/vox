@@ -1602,6 +1602,7 @@ fn computed_background_image_layers(node &Node, element &dom.Element, computed &
 			attachment: computed_coordinated_background_value(computed, .background_attachment, index, 'scroll')
 			computed_layer: computed_layer
 			resolution_context: computed.length_resolution_context()
+			layout_coordinate_scale: computed.layout_coordinate_scale()
 			color_scheme: color_scheme
 		}
 	}

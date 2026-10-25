@@ -65,6 +65,7 @@ pub:
 	attachment         string
 	computed_layer     ?css.BackgroundLayerData
 	resolution_context css.LengthResolutionContext
+	layout_coordinate_scale f64 = 1
 	color_scheme       css.PreferredColorScheme = .auto_
 }
 
@@ -802,6 +803,7 @@ pub struct PaintBackgroundLayerData {
 pub:
 	layer              css.BackgroundLayerData
 	resolution_context css.LengthResolutionContext
+	layout_coordinate_scale f64 = 1
 }
 
 // Source-shaped geometry retained only by inner and outer box shadows.
@@ -1278,6 +1280,7 @@ fn retained_background_layer_data(layer BackgroundImageLayer) ?&PaintBackgroundL
 	return &PaintBackgroundLayerData{
 		layer: computed_layer
 		resolution_context: layer.resolution_context
+		layout_coordinate_scale: layer.layout_coordinate_scale
 	}
 }
 
