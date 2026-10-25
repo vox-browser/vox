@@ -1,5 +1,9 @@
 # Pikabu scrolling profile
 
+The 60 fps goal remains open. The sections below retain historical workloads;
+use the [precise-input protocol](#precise-input-measurement-protocol) for new
+scrolling claims rather than the synthetic callback profiler.
+
 Scrolling `https://pikabu.ru/` was dominated by the collector, not by painting.
 The page keeps about 75 infinite CSS animations running (skeleton shimmers on
 tag and story placeholders, a progress spinner), so every frame restyled those
@@ -823,3 +827,60 @@ experiment adds no retired-instruction credit or completed production fix.
 Evidence: `Build/pikabu-live-lag-20261025/shape-pair-runtime-selection.json`,
 `shape-pair-measurement.log`, `shape-pair-measurement-guard.json`, and
 `precise-shape-pair*/summary.json`. The 60 fps goal remains open.
+
+### Precise-input measurement protocol
+
+`tools/measure_precise_scroll.py` injects precise Cocoa wheel events through
+the native input view and timestamps changed layer contents after `updateLayer`
+returns. It records rendered scroll positions so animation-only publications
+cannot inflate scrolling fps. This endpoint is native publication, not physical
+display scanout. The main-thread input timer can run late; its actual delivery
+timestamps and cadence are retained separately.
+
+For a live production trial, use a unique output and guard report:
+
+```sh
+python3 tools/run_memory_bounded.py --report Build/pikabu-precise-live-1-guard.json -- \
+  python3 tools/measure_precise_scroll.py \
+  --binary Build/v/Vox.app/Contents/MacOS/Vox --url https://pikabu.ru \
+  --network-policy 'live external network; independent empty cache' \
+  --output Build/pikabu-precise-live-1
+```
+
+The defaults are 600 events at nominal 60 Hz, 2-pixel precise wheel deltas,
+reversing every 60 events, a 12-second settle, and a 1024×764 document viewport.
+The tool selects the test display away from the pointer. `--network-policy`
+records the policy; an offline comparison must separately supply the blocking
+interposer with `--insert-library` and an identical `--cache-template`.
+Run at least two unprofiled trials per build, alternating matched controls and
+candidates for optimization credit, then validate the installed bundle live.
+
+Keep `browser.log`, `run.json`, `summary.json`, and the outer guard report.
+The evidence includes executable/library/probe hashes, cache hash, commands,
+environment, actual browser exit code, input/publication counts, timestamps,
+median/p95/maximum intervals, and the fraction over the target frame budget.
+Missing frames, stationary input, crashes, timeouts, and identity changes
+invalidate a run. Compilation alone does not execute a test. Agent requirements
+are in `AGENTS.md` under "Scrolling performance measurements".
+
+Two 240-input tool-validation runs use the unchanged frozen
+`recorder-runtime.app` and the same cached resources, offline policy, 2× scale,
+viewport, and settle time. They establish that the new probe runs end to end;
+they do not establish a new renderer improvement or current installed/live
+performance:
+
+| Measurement | Validation | Repeat |
+| --- | ---: | ---: |
+| Mean scroll-changing publication cadence | 27.48 fps | 24.40 fps |
+| Median scroll interval | 34.644 ms | 39.483 ms |
+| p95 scroll interval | 58.092 ms | 63.071 ms |
+| Maximum scroll interval | 81.582 ms | 91.506 ms |
+| Scroll intervals over 16.67 ms | 128/128 | 121/121 |
+| Actual input delivery | 49.84 Hz | 46.85 Hz |
+| Completed inputs / changed publications | 240 / 145 | 240 / 139 |
+
+The earlier native probe counted `updateLayer` returns even when contents did
+not change. These new results count changed contents and report scroll-changing
+publications separately; they cannot supply a paired regression claim against
+that older endpoint. Both new browser processes exit zero. Evidence is under
+`Build/pikabu-live-lag-20261025/precise-tool-validation{,-repeat}/`.
