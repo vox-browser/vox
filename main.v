@@ -6936,6 +6936,7 @@ fn (mut app BrowserApp) draw() {
 	mut paint_checkpoint := time.sys_mono_now()
 	first_paint_start := paint_checkpoint
 	window := browser_window_size()
+	sync_native_browser_paint_size(mut app.ctx, window)
 	content_viewport_height := if app.screenshot_viewport_height > 0 {
 		app.screenshot_viewport_height
 	} else {
