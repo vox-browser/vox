@@ -2480,6 +2480,17 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
             });
         if (tiled) {
             drawn = true;
+        } else if (drawn
+            && (!has_float_color || paint.getColor4f() == SkColor4f::FromColor(
+                SkColorSetARGB(alpha, red, green, blue)))
+            && (vox_draw_solid_rect(reinterpret_cast<uint8_t*>(pixels.data()),
+                    raster_width, raster_height, raster_width * 4, has_background, descriptor)
+                || vox_draw_solid_stroke(reinterpret_cast<uint8_t*>(pixels.data()),
+                    raster_width, raster_height, raster_width * 4, has_background, descriptor))) {
+            // These exact opaque device-pixel rectangles produce the same
+            // output in either MSAA mode. Resolve them before constructing a
+            // pixel mask and copying/rasterizing two complete backdrops.
+            drawn = true;
         } else if (drawn && s_msaa_grid_columns > 0) {
             auto mask = chromium_layer_msaa_pixel_mask(region, raster_width, raster_height,
                 page_x, page_y, scroll_y, destination_scale);
