@@ -861,6 +861,12 @@ interposer with `--insert-library` and an identical `--cache-template`.
 Each trial uses an empty private `VOX_PROFILE_DIR`: saved proxy settings cannot
 override the selected route, and the bookmark bar stays hidden so its height
 cannot change the document viewport. The user's profile remains untouched.
+Confirm that navigation actually loaded the intended document. Current
+navigation fetches the main response rather than displaying the saved page
+first; copying cached files and denying the network can therefore produce a
+navigation-error page. An offline fixture must serve the archived response at
+the original URL. Retain its source, body hash, request log, route and private
+trust configuration. The probe records and pins an explicit `SSL_CERT_FILE`.
 Run at least two unprofiled trials per build, alternating matched controls and
 candidates for optimization credit, then validate the installed bundle live.
 
@@ -939,3 +945,32 @@ Correctness alone does not supply performance credit. Raw inputs, publications,
 hashes and summaries are under
 `Build/pikabu-live-lag-20261025/{vector,all-recorder}-{control,candidate}-{1,2}/`;
 `vector-pool-guard.json` records the completed serialized experiment job.
+
+### Production rebuild and runtime validation
+
+The loader-arena production rebuild succeeds with current V and the 10 GiB
+compiler limit. The frozen `loader-arena.app` passes strict signature
+verification and the headless startup check. Its executable SHA-256 is
+`8c5842339359da6d62bbe609d0bcbe36b26e3d29be3ee48804546268602df228`.
+
+The four focused canvas cases now execute successfully in both default GC
+and preallocated/no-GC modes: CSSOM repaint, a 1024² native canvas with resize,
+compact mutation deltas, and canvas/DOM/selection operation ordering. This uses
+the staged compatible main-module fixture with the unchanged focused test
+sources; the source pins are retained in the results. The earlier compile-only
+checks did not establish these runtime passes.
+
+The first 600-input offline production trial is invalid: its title is
+`Navigation error — vox`, every rendered scroll position is zero, and the
+probe rejects it. Its 570 changed publications receive no scrolling FPS
+credit. The navigation implementation now requires a successful main fetch;
+the old cached-page/blocked-network setup does not supply one. Remaining
+measurements require a response replay or live access.
+
+Evidence under `Build/pikabu-live-lag-20261025/`:
+`canvas-finalize-executed-results.json`,
+`canvas-finalize-executed-{gc,prealloc}.log`,
+`loader-arena-build-identity.json`, `loader-arena-build.log`,
+`loader-arena-smoke.log`, `loader-arena-production-guard.json`, and
+`loader-arena-precise/{run.json,browser.log}`. The guard exits 1 because the
+scrolling acceptance trial failed; the preceding executed checks pass.

@@ -115,6 +115,11 @@
   Keep these conditions identical in before/after comparisons. A frozen cached
   page isolates a change; also validate the installed bundle on the live URL
   before claiming the user's live scrolling problem is fixed.
+- Verify that the intended document loaded successfully before measuring.
+  Cached files alone do not guarantee an offline navigation will succeed.
+  When navigation requires a fetch, replay the archived response at its original
+  URL and record the fixture, response-body hash, proxy route and private TLS
+  trust. Reject navigation-error pages even if their animations publish frames.
 - Count changed native frame publications after `updateLayer` completes. Report
   scroll-changing publications separately so animations cannot inflate scrolling
   fps. Verify that the document scroll position moves. Report the measurement
