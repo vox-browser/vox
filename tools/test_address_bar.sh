@@ -4,6 +4,7 @@ set -eu
 repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 v_compiler=${V_BIN:-$(command -v v || printf '%s' "$HOME/code/v/v")}
 ui2_modules=$(python3 "$repo_dir/tools/prepare_ui2.py" "$v_compiler")
+http_modules=$(python3 "$repo_dir/tools/prepare_http_compat.py" "$v_compiler")
 test_dir="$repo_dir/Build/v/address-bar-tests"
 test_file=${VOX_CHROME_TEST_FILE:-main_address_bar_test.v}
 mkdir -p "$test_dir"
@@ -15,5 +16,5 @@ for source in "$repo_dir"/*.v; do
 done
 ln -sf "$repo_dir/$test_file" "$test_dir/$test_file"
 "$v_compiler" -exclude @vlib/time/zoneinfo.native.v -enable-globals \
-    -d vox_ui2 -path "$ui2_modules|$repo_dir|@vmodules|@vlib" \
+    -d vox_ui2 -path "$ui2_modules|$repo_dir|$http_modules|@vmodules|@vlib" \
     -cflags "-DLARGE_CONFIG=1 -O0 -I$repo_dir" "$@" "$test_dir/$test_file"
