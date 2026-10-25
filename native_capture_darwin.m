@@ -24,6 +24,7 @@ static void native_capture_instruction_checkpoint(const char *label) {
 #include "native_scroll_raster_darwin.h"
 #include "native_deferred_font_darwin.h"
 #include "native_svg_mask_layer_darwin.h"
+#include "native_svg_mask_pixels.h"
 
 #include "native_ffmpeg_darwin.h"
 #include "native_webp_darwin.h"
@@ -4319,26 +4320,9 @@ static CGImageRef native_finalize_svg_mask_cache(void) {
 		if (source != NULL && mask_context != NULL) {
 			uint8_t *mask = CGBitmapContextGetData(mask_context);
 			size_t mask_stride = CGBitmapContextGetBytesPerRow(mask_context);
-			for (size_t y = 0; y < height; ++y) {
-				for (size_t x = 0; x < width; ++x) {
-					uint8_t alpha;
-					if (native_svg_clip_build_is_color) {
-						uint8_t *pixel = source + y * source_stride + x * 4;
-						alpha = native_svg_clip_build_is_luminance
-							? (uint8_t)((54u * pixel[0] + 183u * pixel[1]
-								+ 19u * pixel[2]) >> 8)
-							: pixel[3];
-					} else {
-						alpha = source[y * source_stride + x];
-					}
-					uint8_t *output = mask + y * mask_stride + x * 4;
-					// Premultiplied white mask pixels have RGB == alpha.
-					output[0] = alpha;
-					output[1] = alpha;
-					output[2] = alpha;
-					output[3] = alpha;
-				}
-			}
+			native_convert_svg_mask_pixels(source, source_stride, mask, mask_stride,
+				width, height, native_svg_clip_build_is_color,
+				native_svg_clip_build_is_luminance);
 			native_svg_clip_image = CGBitmapContextCreateImage(mask_context);
 		}
 		if (mask_context != NULL) {
