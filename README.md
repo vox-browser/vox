@@ -17,7 +17,12 @@ On macOS, **Cmd+,** or **Vox → Settings…** opens the native UI2 settings
 window. Enable **Use SOCKS5 proxy**, enter its host and port, and choose
 **Apply**. Destination DNS lookups go through the proxy, and changes take
 effect for new requests without restarting. Turning the checkbox off and
-applying selects direct connections. **Cancel** discards edits. Settings
+applying selects direct connections. To proxy selected sites, fill **Only for
+these sites** with comma-separated hostnames, such as `example.com, another.org`.
+Each domain includes its subdomains; IP addresses match exactly. Other
+destinations connect directly. Routing follows each request's destination,
+including redirects and subresources, so add any separate CDN domains you need.
+Leave the list empty to proxy all sites. **Cancel** discards edits. Settings
 persist in `~/Library/Application Support/Vox/settings.json`, or in
 `VOX_PROFILE_DIR/settings.json` when that profile override is set. Existing
 proxy environment variables remain available until settings are first saved;
