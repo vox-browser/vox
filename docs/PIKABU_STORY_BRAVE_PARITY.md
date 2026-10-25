@@ -35,8 +35,9 @@ are retained beside the captures.
 The same live capture still reports missing IndexedDB, PerformanceObserver, and
 WebSocket interfaces, plus a separate randomized script reference error.
 The advertisement reservation and cookie notice do not initialize, moving the
-story 200 pixels above the retained Brave layout. The archived page has no
-JavaScript diagnostics; it cannot establish successful live initialization.
+story 200 pixels above the retained Brave layout. The archived page contains no
+script elements, so its empty diagnostics cannot establish successful live
+initialization.
 
 The IndexedDB binding at `106cb5bb` connects JavaScriptCore to the owning
 Window's existing typed factory and database-access task source. It supplies
@@ -73,7 +74,22 @@ compile hit a mixed-vlib HTTP error; `3dd2d1cf` makes the chrome harness stage
 the same compiler-compatible HTTP modules as production builds.
 
 The observer exposes the base PerformanceEntry attributes. ResourceTiming's
-additional attributes and a JavaScript performance global remain separate
-work. These passing binding tests do not establish successful live Pikabu
-startup; fresh production captures of the live URL and retained archive are
-still queued under the shared build guard.
+additional attributes remain separate work.
+
+The Performance global at `1ff39587` uses the owning Window's native clock,
+time origin, entry buffers, and resource-buffer event target. Timeline queries
+reuse the same entry wrappers as PerformanceObserver; clearing entries and
+resizing the resource buffer update the native timeline. This slice does not
+expose JavaScript mark/measure creation or legacy timing/navigation objects.
+
+Three binding cases passed with normal GC and again with the production arena
+allocator (`-prealloc -gc none`). They cover entry identity across observers and
+queries, native clock bounds, receiver brands and conversion exceptions,
+buffer mutation, and queued resource-buffer events with reentrant clearing.
+The receipts are in `Build/pikabu-story-latest-v-stages.json`; the compiler is
+current V `1e63d0f`, SHA-256
+`dfd0ac6c17cd0c10e804be6720f363c13fe242bdaba5d4315f1a6961c06ce607`.
+
+These passing binding tests do not establish successful live Pikabu startup.
+Fresh production captures of the live URL and retained archive remain pending
+under the shared build guard.
