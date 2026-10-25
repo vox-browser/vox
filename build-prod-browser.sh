@@ -134,8 +134,10 @@ if [ -f "$skia_root/lib/libavformat.dylib" ] && [ -f "$skia_root/include/libavfo
     extra_cflags="$extra_cflags -DLADYBIRD_V_HAS_FFMPEG -I$skia_root/include"
     # Adding the vcpkg include root also selects that ICU's versioned C API
     # declarations in the LibUnicode bridges, so link its matching runtime.
+    # Other modules also add Homebrew ICU search paths. Use the exact library
+    # so their earlier -L flags cannot select a different ICU major version.
     # Codec entry points load on first use through native_ffmpeg_darwin.h.
-    extra_ldflags="$extra_ldflags -L$skia_root/lib -licuuc -Wl,-rpath,$skia_root/lib"
+    extra_ldflags="$extra_ldflags $skia_root/lib/libicuuc.dylib -Wl,-rpath,$skia_root/lib"
 fi
 
 # This V checkout currently selects both the C and native `time.zoneinfo`
