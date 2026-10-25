@@ -12,6 +12,9 @@ mut:
 	cleaned_up  int
 	width       int
 	height      int
+	key_code    int
+	key_down    int
+	key_up      int
 }
 
 fn native_browser_context_test_init(user_data voidptr) {
@@ -239,4 +242,47 @@ fn test_native_browser_resize_adapter_preserves_gg_keyboard_and_pointer_dispatch
 	assert context.mouse_pos_y == 18
 	assert state.callbacks == ['event:key_down', 'keydown', 'event:mouse_down', 'click']
 	assert context.ft == unsafe { nil }
+}
+
+fn test_native_browser_event_adapter_preserves_full_width_key_codes() {
+	$if !macos { return }
+	mut state := &NativeBrowserContextTestState{}
+	mut context := gg.new_context(
+		native_rendering: true
+		user_data: state
+		event_fn: fn (event &gg.Event, user_data voidptr) {
+			state := unsafe { &NativeBrowserContextTestState(user_data) }
+			assert int(event.key_code) == state.key_code
+		}
+		keydown_fn: fn (key gg.KeyCode, modifiers gg.Modifier, user_data voidptr) {
+			mut state := unsafe { &NativeBrowserContextTestState(user_data) }
+			assert int(key) == state.key_code
+			assert browser_tab_shortcut(key, modifiers) == ''
+			state.key_down++
+		}
+		keyup_fn: fn (key gg.KeyCode, modifiers gg.Modifier, user_data voidptr) {
+			mut state := unsafe { &NativeBrowserContextTestState(user_data) }
+			assert int(key) == state.key_code
+			state.key_up++
+		}
+	)
+	configure_native_browser_context(mut context)
+	context.scale = 1
+	// Use numeric Sokol values so an enum-width regression cannot narrow both
+	// the event under test and its expected value to the same incorrect key.
+	for code in [256, 257, 262, 263, 340, 341, 342, 343, 344, 345, 346, 347] {
+		state.key_code = code
+		for event_type in [sapp.EventType.key_down, .key_up] {
+			event := sapp.Event{
+				type: event_type
+				key_code: unsafe { sapp.KeyCode(code) }
+				modifiers: if code in [343, 347] { u32(gg.Modifier.super) } else { u32(0) }
+			}
+			context.window.event_userdata_cb(&event, context)
+			assert context.pressed_keys[code] == (event_type == .key_down)
+			assert !context.pressed_keys[87]
+		}
+	}
+	assert state.key_down == 12
+	assert state.key_up == 12
 }

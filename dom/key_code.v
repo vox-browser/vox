@@ -7,7 +7,10 @@ module dom
 
 import encoding.utf8
 
-pub enum KeyCode as u8 {
+// Keep the default enum storage here. Current V can apply an explicitly backed
+// enum to another module's same-named enum; a u8 backing also narrows
+// gg.KeyCode, turning LeftSuper (343) into W (87) in native input events.
+pub enum KeyCode {
 	invalid           = 0x00
 	backspace         = 0x08
 	tab               = 0x09
