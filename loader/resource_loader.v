@@ -10,6 +10,7 @@ module loader
 import dom
 import http
 import os
+import platform
 import strconv
 import time
 import url as liburl
@@ -94,6 +95,8 @@ mut:
 }
 
 pub fn ResourceLoader.create() &ResourceLoader {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	return &ResourceLoader{
 		user_agent_:       default_user_agent()
 		platform_:         default_platform()
@@ -178,8 +181,8 @@ pub fn (resource_loader &ResourceLoader) platform() string {
 	return resource_loader.platform_
 }
 
-pub fn (mut resource_loader ResourceLoader) set_platform(platform string) {
-	resource_loader.platform_ = platform
+pub fn (mut resource_loader ResourceLoader) set_platform(platform_name string) {
+	resource_loader.platform_ = platform_name
 }
 
 pub fn (resource_loader &ResourceLoader) preferred_languages() []string {
@@ -222,7 +225,21 @@ pub fn (mut resource_loader ResourceLoader) register_about_page(path string, con
 }
 
 pub fn (mut resource_loader ResourceLoader) register_network_response(url string, response NetworkResponse) {
-	resource_loader.network_responses[url] = response
+	// Completed native resources can arrive during document/paint work. Own
+	// both the map backing and response bytes independently of that scope.
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	mut headers := []http.Header{cap: response.headers.len}
+	for header in response.headers {
+		headers << http.Header{header.name.clone(), header.value.clone()}
+	}
+	resource_loader.network_responses[url] = NetworkResponse{
+		...response
+		data: response.data.clone()
+		headers: headers
+		reason_phrase: response.reason_phrase.clone()
+		error_message: if message := response.error_message { message.clone() } else { none }
+	}
 }
 
 pub fn (resource_loader &ResourceLoader) prepare_connection(url dom.URL, source_url dom.URL, preconnect bool) ConnectionPreparation {
@@ -664,6 +681,11 @@ fn (mut resource_loader ResourceLoader) start_network_request(request &LoadReque
 		_ := log_failure(request, 'Failed to initiate load')
 		return none
 	}
+	// Empty V maps allocate on first insertion. SVG loads can begin while
+	// building a temporary paint tree, but request tracking belongs to the
+	// loader and must remain valid after that tree is retired.
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	request_id := resource_loader.next_request_id
 	resource_loader.next_request_id++
 	resource_loader.pending_loads_++
@@ -699,6 +721,9 @@ fn (mut resource_loader ResourceLoader) handle_network_response_headers(request 
 }
 
 fn (mut resource_loader ResourceLoader) finish_network_request(protocol_request StartedNetworkRequest) {
+	// Deletion may allocate tombstone storage or compact the map as well.
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	resource_loader.pending_loads_--
 	resource_loader.active_requests.delete(protocol_request.id)
 }
