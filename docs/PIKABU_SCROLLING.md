@@ -461,3 +461,67 @@ Fresh scheduling measurements use a separately frozen production executable;
 its different V/native scheduling changes are not attributed to the span-mask
 implementation. Ambient activity from other repository tasks remains outside
 this benchmark's control.
+
+### Destination-order sparse rasters (`79dd6b31`)
+
+Sparse rounded rasters assemble their opaque interiors and copied backdrops in
+RGBA order, converting only the small GPU corner patches. Every output pixel
+is initialized, including entirely offscreen shapes and padded rows. This
+removes an unnecessary zero initialization and a full-surface channel swap.
+
+| Per callback | Control | RGBA staging | Repeat control | Repeat staging |
+| --- | ---: | ---: | ---: | ---: |
+| Median callback | 23.013 ms | 23.154 ms | 23.311 ms | 22.105 ms |
+| Mean retired instructions | 223.389 M | 212.676 M | 224.557 M | 212.476 M |
+| Native completion cadence | 42.08 fps | 41.80 fps | 41.43 fps | 43.20 fps |
+
+The two 240-frame pairs save 10.713 M and 12.081 M instructions. Wall time is
+mixed; this change does not establish a repeatable frame-rate improvement.
+The expanded native batch passes 3,168 exact comparisons, including 1,440
+required sparse-helper cases and 2,880 anisotropic rejection checks. Clean
+production promotion also passes 3,312 GPU comparisons and 2,520 unsupported
+cases. Full native checks, paused Pikabu at 1×/2× and all 19 visual preservation
+comparisons pass, advancing the broad baseline to RGBA staging. This batch does
+not include the separate 6,986-comparison GPU replay suite.
+
+### Bounded raster reuse (`0a04e03f`)
+
+Quartz providers return sparse raster allocations to a pool only after their
+last image reference is released. The pool retains at most eight allocations
+and 32 MiB, expires on idle cleanup, and uses generations to prevent a delayed
+release from refilling an explicitly purged pool.
+
+| Per callback | Staging control | Buffer reuse | Repeat control | Repeat reuse |
+| --- | ---: | ---: | ---: | ---: |
+| Median callback | 21.481 ms | 20.715 ms | 21.634 ms | 20.677 ms |
+| Median replay | 19.080 ms | 18.337 ms | 19.283 ms | 18.330 ms |
+| Mean retired instructions | 213.100 M | 205.713 M | 214.306 M | 208.434 M |
+| Native completion cadence | 45.58 fps | 46.56 fps | 45.04 fps | 46.18 fps |
+
+Callback medians improve by 3.57% and 4.43%; the pairs save 7.387 M and
+5.872 M instructions. Ownership, late release, purge, budget and concurrent
+reuse checks pass optimized and sanitizer builds. The same focused native/GPU
+checks and full native/visual batch pass for the pool implementation, advancing
+the broad baseline again; accumulated savings since that batch are zero.
+
+These pairs use the same separately frozen production executable, animated
+cache, positions and viewport. Changes in that executable's scheduling are
+excluded from the native optimization credit. Native completion cadence
+includes publication, scheduling and log delivery; it does not measure display
+scanout. **60 fps remains unachieved.** Timing across different cohorts is not
+a before/after comparison.
+
+Evidence is under `Build/pikabu-scroll-20261024/`: `rgba-stage-result.json`,
+`rgba-stage-steady-metrics.json`, `rgba-stage-verify-retry-guard.json`,
+`rgba-pool-result.json`, `rgba-pool-metrics.json`,
+`rgba-pool-verify-guard.json` and both `*-promote-guard.json` receipts.
+The signed pool library is installed in the canonical production app while
+preserving its executable and Graphite libraries. Strict signing, headless
+startup and the requested Pikabu launch pass
+(`canonical-rgba-pool-installed.json`).
+
+Removing the mixed-MSAA rollback copy and repeating the wider channel
+conversion on the pooled implementation both produce mixed timing and no
+repeatable instruction reduction. They remain excluded from the implementation
+and receive zero savings credit (`msaa-discard-result.json`,
+`pooled-wide-result.json`).
