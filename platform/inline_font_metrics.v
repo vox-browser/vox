@@ -7,13 +7,16 @@ import math
 pub fn (font &Font) inline_metrics() FontPixelMetrics {
 	metrics := font.pixel_metrics()
 	if font.font_rendering_policy != .chromium { return metrics }
+	// Blink's zero-sized font contributes no strut. SkFont's one-pixel
+	// fallback metrics belong to the upstream font API, not HTML line layout.
+	if font.point_size == 0 { return FontPixelMetrics{ floor_inline_leading: true } }
 	ascent := math.round(f64(metrics.ascent))
 	descent := math.round(f64(metrics.descent))
 	return FontPixelMetrics{
 		...metrics
-		ascent: f32(ascent + chromium_legacy_ascent_adjustment(font, ascent, descent))
-		descent: f32(descent)
-		line_gap: f32(math.round(f64(metrics.line_gap)))
+		ascent:               f32(ascent + chromium_legacy_ascent_adjustment(font, ascent, descent))
+		descent:              f32(descent)
+		line_gap:             f32(math.round(f64(metrics.line_gap)))
 		floor_inline_leading: true
 	}
 }

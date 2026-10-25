@@ -297,8 +297,8 @@ fn (font &Font) decoded_face_pixel_metrics(face &ttf.TTF_File, zero_advance f32)
 	}
 	// SkFont preserves the typeface's one-pixel metrics when constructed with a
 	// zero text size, even though glyph advances are zero. Gfx::Font copies
-	// those metrics verbatim; Layout therefore still gets a non-zero baseline
-	// for font-size:0 text.
+	// those metrics verbatim. Chromium HTML inline layout separately suppresses
+	// that fallback strut through inline_metrics().
 	metric_size := if font.point_size == 0 { f32(1) } else { font.point_size }
 	scale := metric_size / units_per_em
 	// Gfx::Font::pixel_metrics() takes SkFont::measureText("0"), and the SkFont
