@@ -59,6 +59,9 @@
   `-no-memory-limit`. This sampled guard can overshoot between observations;
   it is not a kernel allocation limit. Do not run broad suites concurrently or
   format complete DOM/layout/paint owner graphs in test assertions.
+  Release the shared lock when the submitted checks finish. Do not keep it
+  through idle polling for follow-up commands or user input; submit the next
+  bounded job after preparing its commands and inputs.
 
 - Build the native macOS bundle from this repository with:
 
