@@ -27,6 +27,11 @@ pub fn update_embedded_browser(elements []Element) {
 	parent_height := native_bounds(st.root_view).height
 	flipped := macos.msg_bool(st.root_view, 'isFlipped')
 	mut active := map[string]bool{}
+	// The settings window shares UI2's control registry, but owns its native
+	// root. Toolbar reconciliation must retain that separate subtree.
+	for key, _ in st.nodes {
+		if key == 'vox-settings' || key.starts_with('vox-settings/') { active[key] = true }
+	}
 	for i, element in elements {
 		frame := element.frame
 		placed := Element{
@@ -39,6 +44,24 @@ pub fn update_embedded_browser(elements []Element) {
 		key := reconciliation_child_key('', i, placed)
 		render_element(st.root_view, placed, key, mut active)
 	}
+	remove_stale_nodes(active)
+}
+
+pub fn update_embedded_settings(parent voidptr, element Element) {
+	mut active := map[string]bool{}
+	render_element(parent, element, 'vox-settings', mut active)
+	remove_stale_nodes_below('vox-settings', active)
+}
+
+pub fn remove_embedded_settings() {
+	st := state()
+	// UI2 removes native nodes separately from its public control-ID registry.
+	clear_subtree_registrations('vox-settings')
+	mut active := map[string]bool{}
+	for key, _ in st.nodes {
+		if key != 'vox-settings' && !key.starts_with('vox-settings/') { active[key] = true }
+	}
+	// Include the root itself; remove_stale_nodes_below retains its root.
 	remove_stale_nodes(active)
 }
 

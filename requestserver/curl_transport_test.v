@@ -1,5 +1,6 @@
 module requestserver
 
+import browsersettings
 import dom
 import fetch
 import html
@@ -85,6 +86,58 @@ fn test_vox_proxy_routes_native_fetch_through_socks5h_with_remote_dns() {
 	assert request.response_text()! == 'font'
 	assert connection.active_request_count() == 0
 	server.wait()
+}
+
+fn test_saved_proxy_routes_native_fetch_and_disabled_settings_override_the_environment() {
+	$if !darwin && !linux { return }
+	directory := os.join_path(os.temp_dir(), 'vox-curl-settings-${os.getpid()}-${time.sys_mono_now()}')
+	browsersettings.initialize(os.join_path(directory, 'settings.json'))!
+	previous := os.getenv_opt('VOX_PROXY')
+	previous_no_proxy := os.getenv_opt('NO_PROXY')
+	previous_lower_no_proxy := os.getenv_opt('no_proxy')
+	defer {
+		restore_native_proxy_test_environment('VOX_PROXY', previous)
+		restore_native_proxy_test_environment('NO_PROXY', previous_no_proxy)
+		restore_native_proxy_test_environment('no_proxy', previous_lower_no_proxy)
+		browsersettings.initialize(os.join_path(directory, 'absent.json')) or { panic(err) }
+		os.rmdir_all(directory) or {}
+	}
+	os.setenv('VOX_PROXY', 'socks5h://127.0.0.1:1', true)
+	os.setenv('NO_PROXY', '*', true)
+	os.setenv('no_proxy', '*', true)
+	mut listener := net.listen_tcp(.ip, '127.0.0.1:0')!
+	defer { listener.close() or {} }
+	browsersettings.save(browsersettings.Proxy{ enabled: true, port: listener.addr()!.port()!.str() })!
+	proxy_server := spawn serve_native_socks_font_proxy(mut listener)
+	native_settings_fetch('http://vox-font-proxy.invalid/owner', '/font.woff', 200, 'font')
+	proxy_server.wait()
+	// Clearing the saved checkbox must explicitly disable the ambient proxy.
+	browsersettings.save(browsersettings.Proxy{})!
+	os.setenv('NO_PROXY', '', true)
+	os.setenv('no_proxy', '', true)
+	mut direct_listener := net.listen_tcp(.ip, '127.0.0.1:0')!
+	defer { direct_listener.close() or {} }
+	direct_server := spawn serve_streaming_response(mut direct_listener)
+	native_settings_fetch('http://${direct_listener.addr()!}/owner', '/stream', 201, 'reality')
+	direct_server.wait()
+}
+
+fn native_settings_fetch(address string, path string, status u16, body string) {
+	settings, owner := native_transport_settings(address)
+	mut connection := CurlConnection.create() or { panic(err) }
+	defer { connection.close() }
+	mut request := xhr.XMLHttpRequest.construct_in_settings(settings, connection.fetch_host())
+	request.open('GET', path, true, none, none) or { panic(err) }
+	request.send() or { panic(err) }
+	deadline := time.sys_mono_now() + 3 * time.second
+	mut loop := owner
+	loop.spin_until(fn [request, deadline] () bool {
+		return request.state == .done || time.sys_mono_now() >= deadline
+	})
+	assert request.state == .done
+	assert request.status() == status
+	assert request.response_text() or { panic(err) } == body
+	assert connection.active_request_count() == 0
 }
 
 fn serve_streaming_response(mut listener net.TcpListener) {

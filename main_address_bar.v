@@ -30,12 +30,16 @@ fn (mut app BrowserApp) mount_address_bar() {
 			panic(err)
 		}
 		C.native_address_bar_install_shortcuts(field, app, address_bar_shortcut)
+		C.native_browser_settings_install(show_browser_settings)
 	}
 }
 
 fn (mut app BrowserApp) unmount_address_bar() {
 	$if vox_ui2 ? {
 		if !app.native_address_bar { return }
+		C.native_browser_settings_hide()
+		ui2.remove_embedded_settings()
+		C.native_browser_settings_remove()
 		C.native_browser_tabs_remove()
 		C.native_browser_bookmarks_remove()
 		C.native_browser_chrome_restore_window()
@@ -101,6 +105,10 @@ fn (mut app BrowserApp) cancel_address_bar() {
 
 $if vox_ui2 ? {
 	fn address_bar_event(event string) {
+		if event.starts_with('settings-') {
+			browser_settings_event(event)
+			return
+		}
 		if address_bar_owner.app == unsafe { nil } { return }
 		mut app := address_bar_owner.app.active_browser_tab()
 		match event {

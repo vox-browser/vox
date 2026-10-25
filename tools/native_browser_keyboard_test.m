@@ -15,10 +15,36 @@ static NSData *original_pixels;
 static unsigned step;
 static unsigned attempts;
 
+static NSWindow *settings_window(void) {
+    for (NSWindow *window in NSApp.windows) {
+        if ([window.title isEqualToString:@"Vox Settings"] && window.visible) return window;
+    }
+    return nil;
+}
+
+static void native_command(NSWindow *window, unsigned short code, NSString *characters) {
+    for (NSNumber *type in @[@(NSEventTypeKeyDown), @(NSEventTypeKeyUp)]) {
+        [NSApp sendEvent:[NSEvent keyEventWithType:type.unsignedIntegerValue location:NSZeroPoint
+            modifierFlags:NSEventModifierFlagCommand timestamp:NSProcessInfo.processInfo.systemUptime
+            windowNumber:window.windowNumber context:nil characters:characters
+            charactersIgnoringModifiers:characters isARepeat:NO keyCode:code]];
+    }
+}
+
 static NSView *find_view(NSView *view, NSString *class_name) {
     if ([view isKindOfClass:NSClassFromString(class_name)]) return view;
     for (NSView *child in view.subviews) {
         NSView *found = find_view(child, class_name);
+        if (found) return found;
+    }
+    return nil;
+}
+
+static NSButton *find_button(NSView *view, NSString *title) {
+    if ([view isKindOfClass:NSButton.class]
+        && [((NSButton *)view).title isEqualToString:title]) return (NSButton *)view;
+    for (NSView *child in view.subviews) {
+        NSButton *found = find_button(child, title);
         if (found) return found;
     }
     return nil;
@@ -145,7 +171,50 @@ static void advance(void) {
                 fail("Cmd+T did not create a tab");
             command(13, @"w");
             break;
+        case 13:
+            assert_page_preserved();
+            [test_window makeFirstResponder:input_view];
+            native_command(test_window, 43, @",");
+            break;
+        case 14: {
+            NSWindow *settings = settings_window();
+            if (!settings || ![settings isKindOfClass:NSClassFromString(@"VoxSettingsWindow")]
+                || !find_view(settings.contentView, @"NSTextField")
+                || !find_view(settings.contentView, @"NSButton"))
+                fail("Cmd+, from the document did not open native settings");
+            native_command(settings, 13, @"w");
+            break;
+        }
+        case 15:
+            if (settings_window()) fail("Cmd+W did not close settings");
+            command(37, @"l");
+            native_command(test_window, 43, @",");
+            break;
+        case 16: {
+            if (!settings_window()) fail("Cmd+, from the address field did not open settings");
+            NSButton *apply = find_button(settings_window().contentView, @"Apply");
+            if (!apply) fail("settings Apply button is missing");
+            [apply performClick:nil];
+            break;
+        }
+        case 17: {
+            if (settings_window()) fail("Apply did not close settings");
+            NSString *profile = NSProcessInfo.processInfo.environment[@"VOX_PROFILE_DIR"];
+            NSData *data = [NSData dataWithContentsOfFile:[profile stringByAppendingPathComponent:@"settings.json"]];
+            NSDictionary *saved = data ? [NSJSONSerialization JSONObjectWithData:data options:0 error:NULL] : nil;
+            if (!saved || [saved[@"enabled"] boolValue]
+                || ![saved[@"host"] isEqualToString:@"127.0.0.1"]
+                || ![saved[@"port"] isEqualToString:@"1080"])
+                fail("Apply did not persist the native settings");
+            native_command(test_window, 43, @",");
+            break;
+        }
+        case 18:
+            if (!settings_window()) fail("saved settings did not reopen");
+            native_command(settings_window(), 13, @"w");
+            break;
         default:
+            if (settings_window()) fail("settings remained visible after closing");
             assert_page_preserved();
             fprintf(stderr, "PASS native browser modifiers and Command shortcuts\n");
             fflush(stderr);

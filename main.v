@@ -3,6 +3,7 @@ module main
 import color
 import adblock
 import browsernet
+import browsersettings
 import browserjs
 import browserhistory
 import browserbookmarks
@@ -7214,6 +7215,7 @@ fn (mut app BrowserApp) handle_event(event &gg.Event) {
 					&& event.key_code in [.l, .r])
 					|| browser_tab_shortcut(event.key_code, unsafe { gg.Modifier(event.modifiers) }) != ''
 					|| browser_bookmark_shortcut(event.key_code, unsafe { gg.Modifier(event.modifiers) }) != ''
+					|| is_browser_settings_shortcut(event.key_code, unsafe { gg.Modifier(event.modifiers) })
 					|| is_browser_debug_shortcut(event.key_code, unsafe { gg.Modifier(event.modifiers) }))
 			if !chrome_shortcut { app.defer_page_input(event) }
 		}
@@ -7337,6 +7339,10 @@ fn (mut app BrowserApp) handle_character(code u32) {
 }
 
 fn (mut app BrowserApp) handle_key(key gg.KeyCode, modifier gg.Modifier) {
+	if is_browser_settings_shortcut(key, modifier) {
+		show_browser_settings()
+		return
+	}
 	bookmark_action := browser_bookmark_shortcut(key, modifier)
 	if bookmark_action != '' {
 		app.activate_browser_bookmarks(bookmark_action)
@@ -7453,6 +7459,10 @@ fn main() {
 	}
 	main_started := time.sys_mono_now()
 	_ = platform.initialize_browser_heap_policy()
+	browsersettings.initialize(browsersettings.default_path()) or {
+		eprintln('Vox: could not load settings: ${err.msg()}')
+		exit(1)
+	}
 	link_translated_modules()
 	requestserver.install_native_font_fetch_host() or {
 		eprintln('Ladybird V: failed to initialize the font RequestServer transport: ${err.msg()}')

@@ -1,5 +1,6 @@
 module browsernet
 
+import browsersettings
 import net.http
 import net.urllib
 import os
@@ -59,6 +60,9 @@ fn configured_proxy(resource_url string, environment map[string]string) !string 
 }
 
 fn request_proxy(resource_url string) !string {
+	if proxy := browsersettings.proxy_override() {
+		return configured_proxy(resource_url, { 'VOX_PROXY': proxy })
+	}
 	mut environment := map[string]string{}
 	for key in ['VOX_PROXY', 'http_proxy', 'HTTP_PROXY', 'https_proxy', 'HTTPS_PROXY',
 		'all_proxy', 'ALL_PROXY', 'no_proxy', 'NO_PROXY'] {

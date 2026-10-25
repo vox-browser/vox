@@ -28,7 +28,8 @@ def main():
             "-framework", "Cocoa", "-framework", "QuartzCore",
             str(repo / "tools/native_browser_keyboard_test.m"), "-o", str(library),
         ], check=True)
-        env = dict(os.environ, VOX_TEST_WINDOW="1", LADYBIRD_CACHE_DIR=str(output / "cache"),
+        env = dict(os.environ, VOX_TEST_WINDOW="1", VOX_PROFILE_DIR=str(output / "profile"),
+                   LADYBIRD_CACHE_DIR=str(output / "cache"),
                    DYLD_INSERT_LIBRARIES=str(library))
         for name in ("LADYBIRD_SCREENSHOT_DELAY_SECONDS", "LADYBIRD_SCREENSHOT_SCALE",
                      "VOX_PROFILE_SCROLL", "VOX_PROFILE_INSTRUCTIONS"):

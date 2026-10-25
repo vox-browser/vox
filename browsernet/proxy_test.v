@@ -1,6 +1,7 @@
 module browsernet
 
 import adblock
+import browsersettings
 import json2
 import net.http
 import os
@@ -109,5 +110,18 @@ fn test_socks_proxy_carries_navigation_redirects_binary_data_and_verified_tls() 
 	if response := get(adblock.Request{url: target, source_url: target, request_type: 'main_frame'}, ca) {
 		assert false, 'failed proxy was bypassed: ${response.url}'
 	}
+	// Applying saved settings switches the very next request, overriding both
+	// a broken environment proxy and an ambient bypass list.
+	browsersettings.initialize(os.join_path(directory, 'settings.json'))!
+	defer { browsersettings.initialize(os.join_path(directory, 'absent.json')) or { panic(err) } }
+	os.setenv('NO_PROXY', '*', true)
+	browsersettings.save(browsersettings.Proxy{ enabled: true, port: ports.proxy_port.str() })!
+	assert get(adblock.Request{url: '${address}/binary', source_url: address, request_type: 'main_frame'}, ca)!.response.body.bytes() == [u8(0), 1, 127, 128, 255, 0, 42]
+	browsersettings.save(browsersettings.Proxy{ enabled: true, port: '1' })!
+	if response := get(adblock.Request{url: target, source_url: target, request_type: 'main_frame'}, ca) {
+		assert false, 'saved proxy was bypassed: ${response.url}'
+	}
+	browsersettings.save(browsersettings.Proxy{})!
+	assert get(adblock.Request{url: target, source_url: target, request_type: 'main_frame'}, ca)!.response.status_code == 200
 	http.close_idle_connections()
 }
