@@ -348,3 +348,44 @@ The initial verification precheck rejected a signature-only executable hash
 change; the retry verifies the identical Mach-O payload separately. The initial
 clean-build focused test caught the missing exports; its failed receipt remains
 in `rounded-staged-promote-guard.json`, followed by the successful fixed retry.
+
+
+### Staged rounded borders (`a527a6df`)
+
+Aligned opaque borders use the same staged-corner path as fills. Straight
+border strips are produced exactly on the CPU; corners retain the original
+GPU target, tile origin, multisampling and backdrop. One assembled image goes
+through the original CoreGraphics clip. Unsupported widths, collapsed inner
+rectangles, transforms, colors and contexts retain the existing fallback.
+
+| Per scroll callback | Staged-fill control | Staged borders | Repeat control | Repeat staged borders |
+| --- | ---: | ---: | ---: | ---: |
+| Median callback | 30.621 ms | 27.807 ms | 31.566 ms | 27.743 ms |
+| Median replay | 27.734 ms | 24.966 ms | 28.515 ms | 24.693 ms |
+| Mean retired instructions | 273.244 M | 260.006 M | 272.730 M | 260.513 M |
+
+These fresh 120-frame pairs save 13.238 M and 12.216 M instructions per
+callback (4.84% and 4.48%), with callback reductions of 9.19% and 12.11%.
+Both pairs use the same production executable payload and animated offline
+Pikabu cache. Earlier wall times were measured in different load conditions;
+only the paired controls establish this change's improvement. Callback timing
+excludes native publication and scanout, and remains above 16.67 ms.
+
+Validation passes 3,312 direct GPU comparisons, 2,520 unsupported-case
+preservation checks, 2,016 native comparisons including 288 required helper
+cases and 576 anisotropic rejection checks, plus 6,986 replay comparisons.
+Coverage includes one-device-pixel borders centered on half pixels, arbitrary
+backdrops, curved and fractional destination clips, unaligned storage and
+untouched padding. Pikabu is pixel-exact at 1× and 2×; all 19 visual pages
+preserve the control pixels. The frozen candidate source passes the full native
+clipping/composite/glyph/shape/tile batch. The clean production library build
+also passes cache lifetime checks and the exact 14-export check.
+
+Receipts under `Build/pikabu-scroll-20261024/` are
+`root-stroke-staged-result.json`, `root-stroke-staged-guard.json`,
+`root-stroke-staged-verify-guard.json`, `root-stroke-staged-visual/` and
+`root-stroke-staged-promote-guard.json`. This completed broad batch advances
+the instruction-savings baseline to staged borders. A separate readback-polling
+experiment passed focused correctness checks but increased instructions by
+about 25 M per callback; it was rejected and receives no savings credit
+(`readback-poll-result.json`).
