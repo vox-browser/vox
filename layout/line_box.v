@@ -615,7 +615,7 @@ fn (line &LineBox) chained_text_item(layout_node &Node, start int, run &platform
 	}
 	last := line.fragments_[line.fragments_.len - 1]
 	if last.chains_item_ && layout_nodes_same(last.layout_node_, layout_node)
-		&& last.start_ + last.length_in_code_units_ == start
+		&& chromium_text_item_continues(layout_node, last.start_ + last.length_in_code_units_, start)
 		&& last.inline_offset_.plus(last.inline_length_) == line.inline_length_ {
 		return last
 	}
