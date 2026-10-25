@@ -72,6 +72,7 @@ function __compactNodeWrapper(state){
  function write(receiver,value,nullable){const own=record(receiver);if(typeof value==="symbol")throw new TypeError("Cannot convert a Symbol to a string");__queryElements(own.bridgeKey,"setNodeValue",nullable&&value===null?"":String(value));__compactInvalidateContent(own);}
  Object.defineProperties(node,{
   __state:{value:state},nodeType:{value:state.nodeType},nodeName:{value:state.nodeName},ownerDocument:{value:document},
+  contains:{value:__compactNodeContains,writable:true,enumerable:true,configurable:true},
   parentNode:{get(){return __compactNativeParent(record(this));}},
   parentElement:{get(){const parent=this.parentNode;return parent&&parent.nodeType===1?parent:null;}},
   firstChild:{get(){return __queryElements(record(this).bridgeKey,"firstChild","");}},

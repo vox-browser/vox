@@ -165,6 +165,7 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 		binding.node_for_key(key) or { return error('TypeError: Invalid Element receiver') }
 	}
 	if action == 'removeChild' { return binding.remove_child_query(root, selector) }
+	if action == 'contains' { return binding.contains_query(root, selector) }
 	if action == 'insertAdjacentHTML' { return binding.insert_adjacent_html_query(root, selector) }
 	if action == 'dataset' { return compact_dataset_query(root, selector) }
 	if action == 'inlineStyle' { return compact_inline_style_query(root, selector, binding.runtime) }
