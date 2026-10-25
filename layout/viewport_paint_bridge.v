@@ -3888,6 +3888,11 @@ fn compatibility_hit_test_fragments(document &dom.Document, box &BlockBox, x f64
 	}
 	for line in box.lines {
 		for fragment in line.fragments {
+			fragment_rect := fragment.paintable_fragment.absolute_rect()
+			// Exact pointer hits cannot use an out-of-bounds fragment. Avoid
+			// querying its style and DOM ancestry while scanning long documents.
+			// Cursor hit testing still considers nearby fragment edges.
+			if type_ == .exact && !fragment_rect.contains(local_position) { continue }
 			if fragment.layout_handle == unsafe { nil } {
 				continue
 			}
@@ -3898,7 +3903,6 @@ fn compatibility_hit_test_fragments(document &dom.Document, box &BlockBox, x f64
 				continue
 			}
 			dom_node := layout_node.dom_node() or { continue }
-			fragment_rect := fragment.paintable_fragment.absolute_rect()
 			if fragment_rect.contains(local_position) {
 				index_in_node := if layout_node.is_text_node() {
 					fragment.paintable_fragment.index_in_node_for_point(local_position)
