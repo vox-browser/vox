@@ -1,0 +1,135 @@
+# 4chan scrolling through SOCKS
+
+Investigated 2026-10-25–26 using
+<https://boards.4chan.org/pol/thread/544908349/what-has-the-world-come-to>.
+The acceptance endpoint is a changed native layer publication after
+`updateLayer` completes. This does not measure physical display scanout.
+
+## Baseline and bottleneck
+
+The original production bundle published 39.81 scroll-changing frames/s on the
+live SOCKS5h route `127.0.0.1:1337`. Its median/p95/maximum scroll intervals were
+21.79/47.85/70.84 ms; 76.38% exceeded the 16.67 ms frame budget. Two later
+installed-build live trials measured 42.09 and 41.84 frames/s; those builds also
+contain concurrent changes and provide no isolated optimization credit.
+
+A separate native-wheel diagnostic profile identified SVG-path replay as a
+large cost. These paths are the reply boxes' bottom and right CSS borders,
+with a large empty interior. Whole-rectangle backdrop copies, GPU readbacks,
+and short-lived recorders made thin borders expensive. The page contains no
+SVG markup; CSS border painting uses the general path renderer.
+
+The border optimization transfers conservative, disjoint device-pixel regions
+around straight contours. It retains the original path, transformation, GPU
+surface extent, and coverage calculation, submits the readbacks together,
+and caches owned geometry, region positions, backdrops, and resulting pixels
+within the existing bounded path cache. Unsupported geometry retains full
+replay. Native comparisons cover fractional scrolling, scale 1/2, curved and
+rectangular clips, translucent backdrops/fills, source mutation, cache reuse,
+odd pitches, untouched padding, and invalid region rejection.
+
+An independent hit-test fix skips out-of-bounds text fragments before checking
+style and DOM ancestry. It preserves nearest-text-cursor behavior and does not
+supply scrolling performance credit by itself.
+
+## Measurement protocol and retained evidence
+
+Raw logs, exact commands, input/publication timestamps, source fingerprints,
+executable/native-library SHA-256 hashes, compiler/test exit codes, and memory
+guard reports are retained in `Build/pol-scroll-20261025-2210/`.
+
+All timed runs use fresh processes/private profiles, a 1024×764 CSS-pixel
+document viewport, backing scale 2, 20 seconds of settling after the required
+thread title appears, and 360 precise native wheel inputs at nominal 60 Hz,
+delta 12, reversing every 120 inputs. The browser applies 25.2 CSS pixels per
+input. Actual input delivery times are retained. Throughput uses the entire
+first-to-last input period; leading/trailing publication gaps are reported
+separately. Animation-only publications do not count as scroll changes.
+
+Frozen trials replay the original response at its original HTTPS URL through
+a local CONNECT proxy with private TLS trust and no forwarding. The archived
+main body SHA-256 is
+`b248d4a5975efcfdc3aa67edbd26cb4b53e674829ba2929e8a2cfabc2f114afa`.
+The resource manifest records 57 successful archived resource responses.
+Matched control/candidate trials alternate twice. The control disables only
+the new native sparse-path call. After removing code signatures from copies,
+the main executables are byte-identical; unaffected native libraries match.
+Signed executable bytes differ because signing covers the changed library. Two additional candidate trials use the live SOCKS route.
+Profiles run separately and supply no unprofiled performance credit.
+
+
+## Results and acceptance status
+
+**The requested smooth 60 fps has not been achieved.** Retain the target as
+open: high average throughput alone would also be insufficient with frequent
+16.67 ms deadline misses.
+
+The first border-only alternating series retained six valid browser trials,
+but its outer memory guard was interrupted and left an empty report. Its
+frozen control/candidate rates were 15.65/18.39 and 21.39/23.67 frames/s; live
+candidate rates were 26.76/26.12 frames/s. These are incomplete acceptance
+evidence. Independent samples showed the sparse-path function executing on
+the requested thread; timing alone does not establish attribution. Different
+build families and ambient host load cannot be compared as isolated changes.
+
+A subsequent root-fill experiment extended sparse rendering to fractional
+opaque fills. All 2,700 exact native GPU comparisons passed, including 1,350
+successful direct helper calls. This did **not** produce a measured gain.
+The complete guarded alternating series below retained all regressions.
+The experiment was subsequently reverted. A separate diagnostic, with counters
+split between startup and the input window, recorded only helper rejections
+and no successful sparse root-fill calls. Its timings cannot establish a gain
+from that path on this page. The rejected source and diagnostic logs remain
+under `root-fill-diagnostic-v2*` and
+`native_skia_text_darwin.cpp.root-fill-rejected-candidate` in the evidence directory.
+Its frozen control/candidate bundles have the same unsigned main executable
+SHA-256 `388f692e1d24f26c739a1dd72280359cdda9189b4d252013d4440c5d91fb3da5`.
+Only their Skia bridge differs; full identities are in
+`root-fill-pair-source-verified.json`. Live runs use the installed candidate
+bundle via SOCKS, with identity verified before each launch.
+
+| Trial | Scroll publications/s | Median / p95 / maximum interval (ms) | Over 16.67 ms | Moving intervals / measured publications / inputs |
+| --- | ---: | --- | ---: | --- |
+| root-fill-control-frozen-1 | 40.63 | 21.54 / 51.60 / 85.08 | 71.81% | 259 / 280 / 360 |
+| root-fill-candidate-frozen-1 | 39.23 | 21.49 / 51.01 / 82.46 | 70.52% | 251 / 270 / 360 |
+| root-fill-control-frozen-2 | 41.25 | 21.88 / 51.15 / 68.88 | 67.46% | 252 / 277 / 360 |
+| root-fill-candidate-frozen-2 | 38.60 | 21.78 / 55.21 / 104.24 | 73.86% | 241 / 260 / 360 |
+| root-fill-candidate-live-1 | 33.19 | 26.01 / 67.80 / 140.36 | 89.35% | 216 / 222 / 360 |
+| root-fill-candidate-live-2 | 23.17 | 37.64 / 92.26 / 153.42 | 100.00% | 156 / 158 / 360 |
+
+Each trial completed 360 inputs with browser exit 0 and valid publication
+records. `root-fill-measurement-guard.json` records guard exit 0 and peak
+aggregate RSS 1.04 GB. Boundary gaps and actual input cadence follow; leading
+gaps refer to the first counted scroll change, trailing gaps to the last
+scroll publication relative to the final input.
+
+| Trial | Actual input Hz | First-to-last input period (s) | Leading / trailing scroll gap (ms) |
+| --- | ---: | ---: | --- |
+| root-fill-control-frozen-1 | 56.32 | 6.375 | 194.58 / 0.21 |
+| root-fill-candidate-frozen-1 | 56.11 | 6.398 | 349.64 / 0.20 |
+| root-fill-control-frozen-2 | 58.77 | 6.109 | 190.16 / 0.25 |
+| root-fill-candidate-frozen-2 | 57.50 | 6.243 | 170.50 / 0.24 |
+| root-fill-candidate-live-1 | 55.16 | 6.508 | 192.34 / 18.25 |
+| root-fill-candidate-live-2 | 53.32 | 6.734 | 216.25 / 0.31 |
+
+The production build and headless startup check passed. The 11-case screenshot
+smoke set passed seven cases; the four failures were pixel-identical between
+the pinned control and candidate. They remain pre-existing conformance
+failures, not passing screenshot results. Commands, comparison images and
+actual exits are retained in `root-fill-postbuild-commands.json`,
+`root-fill-screenshot-smoke.json` and `root-fill-control-screenshot.json`.
+
+The next profile showed substantial synchronous Metal readback time for small
+shapes and images, in addition to paths. Further work must reduce that cost
+and pass another matched native-input series plus installed live SOCKS trials.
+
+A separate recorder/surface reuse candidate and a fractional-phase viewport
+cache prototype are pending validation. Neither has performance credit. The
+actual wheel sequence advances by approximately 25.200001001 CSS pixels per
+event because the native adapter converts deltas through 32-bit floats. An
+idealized 25.2-pixel sequence therefore cannot establish cache reuse for the
+measured workload. A cache-state probe in the second root-fill diagnostic did
+not load because the measurement tool replaced `DYLD_INSERT_LIBRARIES`; those
+absent counters are inconclusive. Its corrected retry uses the tool's
+`--insert-library` option and must validate executable identity and symbol
+ranges before interpreting cache state.
