@@ -3,11 +3,12 @@ module main
 import time
 import processmetrics
 
-// Native frame submission timing. This is not the web Performance API's FCP:
-// it includes all document installation work and ends at the first submitted
-// document frame, without waiting for screenshot capture or background refresh.
+// Legacy V draw-tail timing, retained as a distinct historical endpoint. It
+// does not prove document replay or native layer submission. The submission
+// state below tracks that later boundary without changing this lifecycle.
 struct BrowserPaintTiming {
 mut:
+	submission                DocumentSubmissionTiming
 	navigation_start_ns       i64
 	document_install_start_ns i64
 	navigation_painted        bool

@@ -5,6 +5,7 @@
 #import <objc/runtime.h>
 #include <math.h>
 #include <stdint.h>
+#include "native_document_submission_darwin.h"
 #if defined(__aarch64__)
 #include <arm_neon.h>
 #endif
@@ -202,7 +203,8 @@ static CGFloat native_layer_effective_scale(NSView *view) {
 // The image owns its bitmap storage after the temporary CGContext is released.
 // A complete immutable frame becomes one Core Animation image, avoiding Quartz
 // uploading and retaining a separate texture for each Skia primitive.
-static CGImageRef native_layer_raster_frame(NSView *view, CGFloat scale, IMP draw) {
+static CGImageRef native_layer_raster_frame_with_submission(NSView *view, CGFloat scale, IMP draw,
+    NativeDocumentSubmissionFrame *submission) {
     NSRect bounds = view.bounds;
     if (!draw || !isfinite(scale) || scale <= 0
         || !isfinite(bounds.size.width) || !isfinite(bounds.size.height)
@@ -223,7 +225,11 @@ static CGImageRef native_layer_raster_frame(NSView *view, CGFloat scale, IMP dra
     CGImageRef image = NULL;
     CGContextRef previous_bitmap = native_layer_document_bitmap;
     BOOL previous_claimed = native_layer_document_bitmap_claimed;
+    NativeDocumentSubmissionFrame frame = { .bitmap = bitmap,
+        .token = ++native_document_submission_sequence };
+    NativeDocumentSubmissionFrame *previous_submission = native_document_submission_current;
     @try {
+        native_document_submission_current = &frame;
         native_layer_document_bitmap = bitmap;
         native_layer_document_bitmap_claimed = NO;
         NSGraphicsContext.currentContext = [NSGraphicsContext
@@ -231,12 +237,18 @@ static CGImageRef native_layer_raster_frame(NSView *view, CGFloat scale, IMP dra
         ((void (*)(id, SEL, NSRect))draw)(view, @selector(drawRect:), bounds);
         image = CGBitmapContextCreateImage(bitmap);
     } @finally {
+        native_document_submission_current = previous_submission;
         native_layer_document_bitmap = previous_bitmap;
         native_layer_document_bitmap_claimed = previous_claimed;
         NSGraphicsContext.currentContext = previous;
         CGContextRelease(bitmap);
     }
+    if (image && submission) *submission = frame;
     return image;
+}
+
+static CGImageRef native_layer_raster_frame(NSView *view, CGFloat scale, IMP draw) {
+    return native_layer_raster_frame_with_submission(view, scale, draw, NULL);
 }
 
 static void native_layer_present_frame(NSView *view, CGFloat scale, IMP draw) {
@@ -246,8 +258,9 @@ static void native_layer_present_frame(NSView *view, CGFloat scale, IMP draw) {
     uint64_t previous_generation = native_layer_paint_generation;
     native_layer_paint_started = NO;
     CGImageRef image = NULL;
+    NativeDocumentSubmissionFrame submission = {0};
     @try {
-        image = native_layer_raster_frame(view, scale, draw);
+        image = native_layer_raster_frame_with_submission(view, scale, draw, &submission);
         if (native_layer_paint_started) generation = native_layer_paint_generation;
     } @finally {
         native_layer_paint_started = previous_started;
@@ -263,6 +276,7 @@ static void native_layer_present_frame(NSView *view, CGFloat scale, IMP draw) {
     view.layer.contentsScale = scale;
     view.layer.contents = (__bridge id)image;
     [CATransaction commit];
+    native_document_submission_acknowledge(&submission);
     objc_setAssociatedObject(view, &native_layer_frame_generation_key,
         @(generation), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     objc_setAssociatedObject(view, &native_layer_frame_bounds_key,

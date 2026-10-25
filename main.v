@@ -3436,6 +3436,7 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 	install_start := checkpoint
 	app.paint_timing.document_install_start_ns = i64(install_start)
 	app.paint_timing.installation_instructions = processmetrics.begin_instructions()
+	app.paint_timing.submission.begin_installation(app.navigation_generation, app.paint_timing.installation_instructions)
 	initiator_origin := if app.document != unsafe { nil } { ?dom.Origin(app.document.origin()) } else { none }
 	previous_document := if app.document != unsafe { nil } { ?&dom.Document(app.document) } else { ?&dom.Document(none) }
 	previous_layout := if app.document != unsafe { nil } { app.document.layout_engine_handle() } else { unsafe { nil } }
@@ -3641,6 +3642,7 @@ fn (mut app BrowserApp) navigate(address string, add_history bool) {
 		}
 	}
 	app.paint_timing.begin_navigation()
+	app.paint_timing.submission.begin_navigation(app.navigation_generation + 1, app.paint_timing.navigation_instructions)
 	app.load_status = 'Loading ${resolved}'
 	app.status = app.load_status
 	app.navigation_generation++
@@ -6908,6 +6910,9 @@ fn (mut app BrowserApp) draw() {
 	begin_browser_frame(app.ctx)
 	app.paint_effect_depth = 0
 	paint_document := app.document_pixels_ready_for_frame()
+	submission_claim := if paint_document && processmetrics.instructions_enabled() {
+		app.paint_timing.submission.claim(app.navigation_generation)
+	} else { DocumentSubmissionClaim{} }
 	if paint_document {
 		mut scroll_damage := ScrollRasterDamage{}
 		$if macos {
@@ -7012,6 +7017,9 @@ fn (mut app BrowserApp) draw() {
 		}
 	}
 	end_browser_frame(app.ctx)
+	if submission_claim.installation != 0 {
+		app.stage_native_document_submission(submission_claim)
+	}
 	app.finish_scroll_profile_frame()
 	processmetrics.instruction_checkpoint('frame_complete')
 	css.report_diagnostic_instruction_scopes()
