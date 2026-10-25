@@ -2664,6 +2664,12 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Rejected after final-audit0:median candidate regression74,170,885/+0.520928%;paired increaseCI[67,862,265,87,673,275].
   Runtime restored by1115393e;all7files exact completed before harness/25cases/24835assertions;new ownership tests and pointer-identity fixes retained/no completed replay.
   Measured isolated candidate retained as historical evidence;repeatablecredit0/carry54,475,673/pending canonical baseline unchanged;Chrome parity open.
+  Native document layer submission endpoint October25 (`948f56f4`):new navigation/install hardware scopes end after layer.contents assignment and local CATransaction.commit;not physical display/FCP.
+  Legacy draw-tail scope/functions/lifecycle unchanged;ready replay/current navigation+installation/native frame required;once per installation/navigation;failed/cached/unrelated contexts cannot acknowledge.
+  Four state cases bothGC C-O2/six focused build-run actual0/native seven cases pass;source/generated bridge ordering and130native inputs verified;no matching-C optimization claim.
+  Initial completed integration browser0/error-pagePNG1024x740/proxy502/controller1 retained;separate proxy-cleared 880px-window delayed-image diagnostic actual0/exact1024x768;legacy997450381/native-nav1231516268/native-install356142066,each once;no completed primary replay.
+  Isolated snapshot app/sign/verify/smoke/realGC default1+override2 actual0;precompiler/pre-sign/prerequisite controller failures retained/completed stages reused.
+  Zero optimization credit/no broad reset/current4 carry54,475,673+pending canonical baseline/legacy179ledger unchanged/canonical+GUI+foreign preserved;Chrome parity open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

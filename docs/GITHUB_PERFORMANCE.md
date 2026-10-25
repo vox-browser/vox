@@ -19445,3 +19445,122 @@ build-result,result,final-audit,completion-result}.json` and
 Binary SHA256: `acdac910d54774e535e7b52c9b2887b96eaea826bf3b9fb03661bd5109959055`.
 Durable generated-C archive SHA256: `b4aa3bc5dc49517097ea0e87b6b1c164f00c029ef0a23c4418b20d1e2cda933b`.
 Raw log SHA256: `b82e15989add34a6edee34f9bf86896570e31d97271140d122ca46881b31b9f1`.
+
+## First native document layer submission endpoint (October 25, 2026)
+
+`948f56f4` adds two hardware retired-instruction scopes:
+`navigation_to_first_native_layer_submission` and
+`document_install_to_first_native_layer_submission`. Their ending snapshot is
+read synchronously after the newly rasterized document image is assigned to
+`CALayer.contents` and the local `CATransaction.commit` returns. This boundary
+proves the local layer update; it does not prove render-server consumption or
+physical display presentation. It is also separate from web FCP. Navigation and
+installation starts reuse their existing instruction snapshots.
+
+The historical `navigation_to_first_document_paint` scope remains a V draw-tail
+endpoint. Its timing functions, state transitions and report positions are
+unchanged. Pending resources can make that endpoint precede document replay;
+changing its meaning would invalidate comparisons with retained cohorts. No old
+primary observations or ledgers are rewritten by this change.
+
+A scalar navigation/installation identity and native frame token connect the
+completed replay to its own bitmap. Only a ready document replay can stage a
+claim. Unrelated drawing contexts, cached image copies, rasterization without
+layer assignment, failed frames, stale installations and retired navigation
+identities cannot acknowledge it. A successful installation reports once;
+navigation reports once across replacement installations. History installations
+without a matching navigation clock get only the installation scope. Native
+callbacks run synchronously and retain no Document owner.
+
+Four focused state cases pass in both Boehm and no-GC C-O2 builds. The real Cocoa
+header harness reports seven passing cases, including failure and nested-frame
+paths. All six focused build/run commands actually exit zero. The source and
+generated bridge audits verify replay-before-stage and layer-assignment/commit-
+before-acknowledgment order, unchanged legacy timing code, exact frozen inputs,
+and all 130 native input hashes. This is a bridge/order audit of an integration
+snapshot containing independent concurrent source, rather than a matching
+optimization C projection.
+
+Independent commit `74d53691` subsequently changed the native bitmap to the
+fresh-RGBA renderer. A separate frozen merged-header check compiles and runs the
+seven-case native submission harness against that header, with both actual exits
+zero. The original focused checks and browser binary were not rebuilt or replayed;
+the browser integration below covers its recorded frozen sources.
+
+The first integration browser actually exited zero but its capture showed a
+proxy load-error page at 1024×740: inherited proxy settings sent localhost through
+a failing tunnel, and the frozen bookmarks bar added 28 pixels to browser chrome.
+The localhost server received zero requests. That completed observation, its PNG
+and both native instruction scopes remain unchanged in `integration-final/`;
+its controller exit is 1. It receives no delayed-image or viewport pass credit.
+
+A separately declared corrected-environment/geometry diagnostic clears inherited
+proxies and uses an 880-pixel window height for the 1024×768 document viewport.
+That delayed-image integration observation actually exits zero.
+Its document-only PNG is exactly 1024×768 and matches an independently constructed
+blue background with a 16×16 green image, with zero differing pixels. The server
+records the image response delayed by at least 0.5 seconds. Each of the following
+scopes appears exactly once:
+
+| Hardware scope | Retired instructions |
+| --- | ---: |
+| Legacy navigation to first document paint | 997,450,381 |
+| Navigation to first native layer submission | 1,231,516,268 |
+| Installation to first native layer submission | 356,142,066 |
+
+The new navigation snapshot appears after the legacy snapshot. These counts are
+a focused boundary diagnostic, not a cached GitHub page benchmark or an observed
+optimization saving. No completed primary is retried or replaced.
+
+The isolated bundle passes actual signing, strict signature verification and
+headless smoke. Its GC probes perform real collections with default marker count
+1 and `GC_MARKERS=2`. The first build controller failed before invoking the
+compiler because its guard path was relative to the frozen source. The resumed
+helper, frontend and native compilation completed successfully; a subsequent
+signing launcher failed before `codesign` started because it used `execv` with a
+relative command. Both failure receipts remain. The final continuation reuses
+those completed build stages and runs only the unfinished signing, verification
+and smoke work. Earlier integration and GC controllers failed on prerequisites
+before launching a browser; their receipts also remain. The first attempted GC
+continuation also stopped on the failed viewport prerequisite before launching
+any GC probe. The completed corrected observation and GC runs have separate
+directories; they do not replace the retained error-page observation.
+
+The application is private at
+`Build/instructions/first-native-submission-20261025/Vox.app`; this job does not
+write the canonical app or restart the user's GUI browser. Its frozen integration
+sources include independent work and receive no optimization credit. The
+current4 observed carry stays 54,475,673 with its canonical baseline pending; the
+legacy round-179 ledger remains byte-identical. No broad optimization gate is
+reset. Chrome parity remains open: the new endpoint requires a newly declared,
+content-matched baseline and comparison.
+
+The SSD filled during this work. After their completed final audits, copied
+input caches from `compact-rule-candidates-attempt`, `lazy-rule-capacity-attempt`, `table-noop-attempt`, `table-borrow-attempt` were archived losslessly to free space.
+All 127,200 archived files passed byte/hash and file-mode checks
+before only those cache copies were removed. Primary JSON, logs, PNGs, counters,
+source, binaries and the original cached fixture remain in place and were
+hash-checked as unchanged. The archives and exact per-file size, hash, mode and
+nanosecond timestamps are under `completed-input-cache-archives/`. This changes
+storage only and receives zero performance credit. Future audits requiring the
+original per-observation cache paths must restore them first; historical pass
+receipts describe the pre-archival files and remain unchanged.
+`Build/instructions/restore-completed-current4-cache-copies-20261025.py ATTEMPT
+--destination ORIGINAL_SOURCE` restores those paths; `ORIGINAL_SOURCE` is in the
+verified receipt. A temporary one-file restore check passed without restoring
+the full caches or launching a browser. One redundant raw broad-test C file was
+also removed only after its durable gzip archive decompressed to the exact
+recorded bytes; `space-recovery-first.json` retains that verification.
+
+Evidence under `Build/instructions/first-native-submission-20261025/`:
+`focused-result.json`, `source-audit.json`, `generated-source-audit.json`,
+`merged-native-header/result.json`,
+`completed-build/browser-build-result.json`, `integration-corrected/result.json`,
+`integration-corrected/pixel-result.json`, `gc-corrected/result.json`, and
+`gc-corrected/policy.json`. Failed controller receipts remain in `browser-build-result.json`,
+`resumed-build/`, `integration/`, `integration-final/`, `gc/` and `gc-final/`.
+Lossless cache-archival receipt: `completed-input-cache-archives/result.json`.
+Its SHA256 is `9f8a97ae55ea2ad0256042dbbd0317acff79b2a575c512065e142509820c148b`.
+Binary SHA256: `e36d1f9a53075c6b6c3dfc0cf8d57d83c4352b2b4523438437b0c7fbe608145f`.
+Durable generated-C archive SHA256: `692d483f2bf904c520cb07567b75cbb479f847174a07403d2b46da60fef1cc8c`.
+Integration log SHA256: `de67d15a2618e1fe203110a811ad20f99020925d2b1275f2fa32273b9f28a01d`.
