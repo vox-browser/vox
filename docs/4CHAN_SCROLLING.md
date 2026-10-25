@@ -140,11 +140,15 @@ transforms, clips, alpha, MSAA, odd pitches and untouched padding. A separate
 diagnostic confirmed successful image and small-shape pool hits during the
 original archived page's input window.
 
-The complete alternating series follows. Both frozen pairs improved, by
-7.61% and 19.83%, respectively. These two pairs do not establish a stable
-general gain: other compiler jobs loaded the host, and these timings cannot
-be compared as isolated changes against the earlier build families. The live
-SOCKS result still misses the 60 fps target substantially.
+The complete alternating series follows. The candidate was faster in both
+frozen pairs, by 7.61% and 19.83%, respectively. Attribution remains unresolved:
+other compiler jobs loaded the host, and these runs lack matched load-average
+records. Per-trial process snapshots are retained as `*-ambient.txt`; they
+cannot establish equal host contention. These timings provide no isolated
+optimization credit and cannot be compared as isolated changes against the
+earlier build families. The live SOCKS result still misses the 60 fps target
+substantially. New runs must retain the measurement tool's host CPU count,
+load averages and timestamps as well as the existing browser identities.
 
 | Trial | Scroll publications/s | Median / p95 / maximum interval (ms) | Over 16.67 ms | Moving intervals / measured publications / inputs |
 | --- | ---: | --- | ---: | --- |
