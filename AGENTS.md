@@ -115,6 +115,12 @@
   Keep these conditions identical in before/after comparisons. A frozen cached
   page isolates a change; also validate the installed bundle on the live URL
   before claiming the user's live scrolling problem is fixed.
+- Launch a fresh process for each measured or manually checked build. An
+  existing Vox process can keep the old executable and native libraries mapped
+  after the bundle on disk is replaced. The measurement tool spawns directly;
+  for a manual check use `VOX_TEST_WINDOW=1 open -n Build/v/Vox.app --args URL`.
+  Record the new PID and build identity. A successful `open` against an already
+  running app does not prove that the rebuilt executable was launched.
 - Verify that the intended document loaded successfully before measuring.
   Cached files alone do not guarantee an offline navigation will succeed.
   When navigation requires a fetch, replay the archived response at its original

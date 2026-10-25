@@ -4,6 +4,12 @@ The 60 fps goal remains open. The sections below retain historical workloads;
 use the [precise-input protocol](#precise-input-measurement-protocol) for new
 scrolling claims rather than the synthetic callback profiler.
 
+Launch a fresh process when checking a rebuilt bundle:
+`VOX_TEST_WINDOW=1 open -n Build/v/Vox.app --args https://pikabu.ru`.
+Ordinary `open` can reuse a process that still maps the previous executable and
+native libraries, even though their paths point into the rebuilt bundle. The
+precise-input tool spawns the executable directly for each trial.
+
 Scrolling `https://pikabu.ru/` was dominated by the collector, not by painting.
 The page keeps about 75 infinite CSS animations running (skeleton shimmers on
 tag and story placeholders, a progress spinner), so every frame restyled those
