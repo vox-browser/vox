@@ -1159,3 +1159,35 @@ RSS in 102.92 seconds within 3 GiB. The assembly/validation guard/child exited
 retained the pinned V executable and Dawn library and rebuilt both the Metal
 Graphite candidate and accepted Skia bridge; the latter removed the previously
 rejected image-batch prototype from the artifact used for these trials.
+
+
+### Rectangle prefetch correctness checks; performance pending (2026-10-26)
+
+An opt-in prototype speculates on thin opaque underline rectangles across text
+commands in the same raster layer. It leaves ordinary replay in order and
+validates each actual backdrop before accepting a cached result. Clearing the
+GPU cache between the reference render and prefetch forced cold misses: normal
+and ASan/UBSan executions each passed 432 exact ordered comparisons. These
+cover two grid sizes, 1×/2× scales, three MSAA modes, fractional positions,
+clips, and intervening backdrop changes. Prefetch left the destination intact.
+The 3 GiB runtime guard completed with child exit 0, sampled peak RSS
+711,131,136 bytes and elapsed time 46.59 seconds.
+
+A separate private backend compared a one-device-pixel patch guard for thin,
+plain opaque rectangles against the full GPU renderer, bypassing the patch,
+CPU and raster-cache paths in the reference. All 5,376 comparisons passed,
+including 1,008 eligible reduced patches. Cases include cache misses and hits,
+changed and transparent backgrounds, cropped edges, padded row pitches,
+1×/2× scales, MSAA on/off, and fractional coordinates next to integer
+boundaries. This diagnostic does not change the production patch guard.
+
+Raw commands, source hashes, binaries and results remain under
+`Build/pol-scroll-20261025-2210/rect-prefetch-v1/cold-cache-tests/` and
+`rect-prefetch-guard-oracle/`, with runtime reports in
+`rect-prefetch-v1/build-recovery-1/`. The first focused V compilation was
+incorrectly capped at 3 GiB and was killed at 3,251,011,584 bytes sampled RSS;
+its tests did not run. The queued retry gives compilation the normal 12 GiB
+job budget and retains the 3 GiB cap for focused runtime execution. Actual-input
+eligibility, browser pixels and alternating unprofiled timings remain pending.
+These correctness checks supply no scrolling performance credit; smooth
+60 fps remains unmet.
