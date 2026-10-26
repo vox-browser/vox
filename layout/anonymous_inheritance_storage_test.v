@@ -20,7 +20,7 @@ fn test_repeated_anonymous_style_propagation_preserves_snapshots_without_documen
 	mut styled_child := unsafe { &NodeWithStyle(child) }
 	assert css.layout_inheritance_is_current(styled_child.inherited_style_proof_,
 		styled_child.computed_values_, source, document)
-	before := owner.arena.usage().used
+	before := if owner != unsafe { nil } { owner.arena.usage().used } else { i64(0) }
 	for _ in 0 .. 1024 { parent.propagate_style_to_anonymous_wrappers() }
 	$if prealloc { assert owner.arena.usage().used - before < 8 * 1024 }
 	previous := *styled_child.computed_values_
