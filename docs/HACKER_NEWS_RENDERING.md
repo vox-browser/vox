@@ -320,3 +320,30 @@ executable and exact pixels. Of 412 sampled main-install stacks, 155 include
 `Font.system_face`; 115 end in `access` and 37 in environment lookup. The
 diagnostic identifies repeated font queries for investigation. Sampling is not
 an instruction measurement and receives no performance credit.
+
+## Constrained table-column measurements
+
+Commit `c41ca812` omits a max-content probe for constrained columns whose final
+maximum is derived only from their specified width and min-content result.
+Unconstrained columns retain both intrinsic probes, and fixed-layout columns
+retain their existing direct path. The three focused cases cover both font
+policies, separate and collapsed borders, both box-sizing modes, and the
+unconstrained and fixed-layout fallbacks. They also compare the result against
+the same calculation after populating the previously unused max-content cache.
+
+`Build/hn-small-text/column-width-1/results.json` records successful compilation
+and execution in Boehm and preallocated no-GC modes: six case executions, with
+both compiler exits and both runtime exits zero and unchanged checked sources.
+The enclosing 12 GiB guard exits zero, with a sampled peak aggregate RSS of
+9,035,874,304 bytes and elapsed time of 340.400 seconds. Both runtime checks
+also pass their separate 3 GiB guards. Production eligibility, pixels and
+instruction savings require separate validation; no savings are credited by
+these focused tests.
+
+The first rendered-ASCII-cache test attempt is retained in
+`Build/hn-small-text/ascii-text-1/`. Its compiler exits zero and its Boehm runtime
+exits one because the test incorrectly expected a V string slice to borrow
+the original bytes. V's string slicing allocates and copies; the invalid
+pointer-identity assertion was removed. The implementation continues to return
+owned strings. That failed attempt did not execute its preallocated variant;
+the corrected tests are rerun separately.
