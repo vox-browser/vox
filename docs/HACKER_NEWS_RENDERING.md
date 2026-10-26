@@ -998,3 +998,69 @@ workers, worker exit, foreign processes and bounded membership churn
 test invocation also selected native pixel integration and was stopped during
 a stale-bundle rebuild; it supplies no native validation or performance credit.
 A fresh complete font cohort is required before accepting page savings.
+
+The fresh cohort now passes all 30 alternating pairs with exact full-page
+pixels and unchanged compiler and measurement inputs
+(`font-cascade-projection-measurement-2`). Control and candidate medians are
+6,410,157,343 and 6,320,903,084.5 instructions. The median paired saving is
+93,890,866; its seeded bootstrap 95% interval is
+[81,435,157.5, 101,455,208]. Twenty-nine pairs improve; the remaining pair
+regresses by 20,902,046 instructions and is retained. The two preceding
+projection changes have negative lower bounds totaling 35,007,815, so the
+cumulative lower bound since the prior broad checkpoint is 46,427,342.5.
+`font-cascade-projection-checkpoint-2` passes the required regression check:
+546 selected executions across both GC modes include 540 passes and the same
+six baseline failures, whose normalized diagnostics remain identical. All 100
+upstream AST fixtures compare exactly. Nineteen visual comparisons retain
+their previous outcomes and all 34 decoded control images; the three Brave
+fixtures are pixel-exact, startup and both live identity checks exit zero,
+and all input pins remain unchanged. The enclosing pipeline exits one only
+after the next isolated inline candidate fails compilation because its new
+caller references a helper absent from the control's generated C. No inline
+page credit is assigned; the failed compile and its guard receipt remain
+retained. The pipeline takes 753.840 seconds with sampled peak RSS
+9,299,755,008 bytes (`font-intrinsic-measurements-3`).
+
+The independent native Metal comparison completes 30 alternating exact-pixel
+pairs (`metal-precision-isolated-2`). Control and candidate medians are
+6,369,595,610.5 and 6,077,892,963.5 instructions; the median paired saving is
+285,687,373, with bootstrap 95% interval [262,997,121, 315,309,335]. All 30
+pairs improve, and the cold first candidate observation of 3,946,071,874
+instructions remains in the raw cohort. Both libraries use the same frozen
+native sources and flags apart from the authenticated precision patch. Both
+bundles sign, verify and pass startup; four native pixel probes pass. The
+original visual stage fails because the frozen HTML files lack their relative
+CSS and image assets, despite its 19 broad outcomes, 34 decoded control images,
+startup and two live checks remaining unchanged. The separate
+`brave-fixture-seal-2` authenticates all three HTML files and four assets against
+commit `02ba3207`. `metal-precision-visual-recovery-1` carries the successful
+checks with their hashes and retries only the three corrected fixture
+captures; all are pixel-exact, pins are unchanged and its guard exits zero
+(9.005 seconds, peak RSS 262,488,064 bytes). The original failed result and
+guard are preserved. This native branch's cumulative lower bound is
+227,989,306 instructions; it does not include the independent font branch.
+
+`profile-15` again has successful browser and sampler exits and exact page
+pixels, but its samples do not establish the required installation call
+graph. Its validation and guard exit one. The response/settle delays and all
+profile observations remain diagnostic, with zero instruction credit.
+
+Native screenshot encoding now uses ImageIO's fixed lossless SUB filter
+(`4b4cdc23`) while retaining synchronous encoding before the existing
+instruction endpoint. The focused prototype reduces median encoding work
+from 947,871,049 to 360,162,919.5 instructions on the frozen page bitmap,
+with identical decoded pixels and profile, and increases its file from
+384,689 to 424,467 bytes. These component counts supply no page credit. The
+first focused run catches extra default-resolution metadata. The correction
+preserves Cocoa's omission at normal scale and its resolution tags at Retina
+and fractional sizes. `png-focused-2` passes all 27 combinations of RGB/alpha
+format, color profile and logical size in both ARC and non-ARC builds,
+including exact decoded pixels, ICC, density and all non-image-data chunks;
+it also verifies that every encoded row uses SUB. Its 3 GiB guard exits zero
+after 1.480 seconds, peak RSS 146,915,328 bytes. The actual native entry-point
+tests pass in both modes (`png-capture-idle-2`, guard zero, 1.951 seconds,
+peak RSS 157,761,536 bytes), including deferred capture, retained pixels,
+logical scale, invalid bounds, path lifetime and counting after complete
+encoding. All source pins remain unchanged. The initial failure is retained;
+the isolated page comparison is pending. The last strict production
+Vox/Brave ratio is still 3.656719, above the required 0.90.
