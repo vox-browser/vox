@@ -11,6 +11,7 @@
 module html
 
 import dom
+import platform
 
 pub struct MessagePortTransfer {
 pub:
@@ -181,6 +182,9 @@ mut:
 }
 
 pub fn MessagePort.create() &MessagePort {
+	// The process registry retains ports beyond temporary caller allocations.
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	port := &MessagePort{}
 	html_all_message_ports << port
 	return port
@@ -322,6 +326,8 @@ fn transfer_contains_port(transfer []StructuredTransfer, needle &MessagePort) bo
 }
 
 fn (mut port MessagePort) message_port_post_message_steps(message dom.JSValue, options StructuredSerializeOptions) ! {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	if transfer_contains_port(options.transfer, &port) {
 		return error('DataCloneError: cannot transfer a MessagePort to itself')
 	}
@@ -365,6 +371,8 @@ pub fn (mut port MessagePort) read_from_transport() {
 }
 
 fn (mut port MessagePort) schedule_pending_messages() {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	for port.enabled_ && port.pending_messages_.len > 0 {
 		record := port.pending_messages_[0]
 		port.pending_messages_.delete(0)
@@ -382,6 +390,9 @@ fn (mut port MessagePort) schedule_pending_messages() {
 }
 
 fn (mut port MessagePort) post_message_task_steps(record SerializedTransferRecord) {
+	// Event wrappers can keep the deserialized data after this task returns.
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	if !port.enabled_ || port.detached_ {
 		return
 	}

@@ -36,6 +36,11 @@ fn (runtime &Runtime) require_native_clone_non_platform(value voidptr) ! {
 			return native_clone_unsupported('Cannot serialize platform objects')
 		}
 	}
+	if binding := message_channel_bindings_[owner] {
+		if _ := binding.channels[value] {
+			return native_clone_unsupported('Cannot serialize platform objects')
+		}
+	}
 	if host := runtime.native_clone_font_face_host() {
 		if _ := host.faces[value] {
 			return native_clone_unsupported('Cannot serialize platform objects')

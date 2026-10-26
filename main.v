@@ -2982,6 +2982,10 @@ fn run_document_script_sources_with_image_fetch_hooks(document &dom.Document, cu
 		messages << 'JavaScript Window messaging bindings: ${err.msg()}'
 		return none
 	}
+	mutable_runtime.install_message_channel_binding() or {
+		messages << 'JavaScript MessageChannel bindings: ${err.msg()}'
+		return none
+	}
 	mutable_runtime.install_indexed_db_binding() or {
 		messages << 'JavaScript IndexedDB bindings: ${err.msg()}'
 		return none
