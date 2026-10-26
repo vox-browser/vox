@@ -666,9 +666,43 @@ hashes verified before and after copying. The preserved bundle manifest is
 `preserved-compiled-bundle.json` beside it. A separate guarded continuation
 removes only compiler scratch directories from that copy, signs and verifies
 it, and runs the pending browser checks. It reuses the passing frozen tests
-and compilation. This continuation is queued with
-`Build/pikabu-pixel-20261026/template-production-guard-9.json`; it has no
-browser or pixel-conformance credit until those stages execute.
+and compilation. This continuation has completed:
+`Build/pikabu-pixel-20261026/template-production-guard-9.json` records exit one,
+494.925 seconds, and sampled peak RSS 5,652,824,064 bytes. All frozen source,
+executable, and library identity checks pass. The signed executable SHA-256 is
+`a1167c7abc73b8b0ac45f1d3eb0f5ace4f1b44375df75dff3108af46f0de2123`.
+
+The headless smoke check, both poisoned/unpoisoned SVG ownership browser
+checks, and all ten SVG mutation regressions pass. The template fixture passes
+in fresh ordinary and screenshot processes, with complete, fully active
+documents and no JavaScript errors; its Brave comparison is pixel-exact.
+Results are in `Build/pikabu-story-template-acceptance-1793051891784472000/`.
+
+The image-dimension browser fixture exposes a remaining compatibility mistake:
+Brave rounds fractional rendered content sizes, while the translated native
+image getter truncates them. The fixture previously expected truncation and
+therefore passed only in Vox. Its Brave title reports failure; the 8,844 changed
+pixels are a failed acceptance result. The bridge and fixture are being
+corrected together, with no conformance credit until their checks execute.
+
+The four gradient/mask fixtures load and exit successfully but still fail exact
+pixel comparison. Small rounded masks have 56 changed pixels per case; large
+rounded SVG backgrounds inside masks have 488. The main remaining differences
+are rounded-edge rasterization. Their raw results remain in
+`Build/pikabu-gradient-mask-visual-1793051849540162000/`.
+
+The live requested URL and bundled archive both load and exit successfully at
+1024 by 768, scale one. The bundled archive has 17,953 differing pixels (2.2828%),
+maximum channel error 42, with 70 pixels above three. The live page has 514,689
+differing pixels (65.4461%), maximum error 255. Brave displays a 200px advertising
+reservation, a cookie notice, and a Yandex sign-in panel; Vox lacks those live
+startup changes. The template clone error is gone. The next observed startup
+failure is an unhandled `ReferenceError` for `FormData` in the site's request
+option preparation. URL-based canvas SVG filters are also still absent in this
+binary. These failures motivate the next focused fixes; neither live parity nor
+canvas-filter correctness is established by this run. Commands, captures,
+audits, pixel metrics, and actual exits are in the preserved bundle directory's
+`resume-results.json` and `comparison/`.
 
 The mask effect-scope correction and native gradient-raster changes remain
 uncommitted pending their visual checks. Whole-page pixel parity and the
