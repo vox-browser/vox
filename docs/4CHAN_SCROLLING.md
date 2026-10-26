@@ -881,3 +881,67 @@ The signed candidate's Vox/Skia/Graphite/Dawn SHA256 values are
 and `cb98233f4dd44223964522e972655d739d701da23ddf0a3a4fc794c8722b9b52`.
 The browser/build guard and child exited 0, sampled peak RSS 921,452,544
 bytes within 12 GiB, elapsed 489.90 seconds.
+
+### Rejected descriptor index (2026-10-26)
+
+`cache-index-v2` added hash buckets in front of the raster cache's exact
+source, descriptor and backdrop comparisons, preserving MRU order and byte
+validation. Its focused differential test passed 64,000 operations with
+10,401 identical hits across bounded capacities, collisions, padding,
+mutations, delayed completion and eviction. Native cache, batch and region
+regressions and AddressSanitizer/UndefinedBehaviorSanitizer checks passed.
+Separate diagnostics confirmed the indexed lookup ran during actual input,
+with fewer candidate descriptors and the expected loaded library path.
+Thirteen native screenshot pairs were identical; the same four pre-existing
+upstream screenshot differences remained in both modes.
+
+The four alternating unprofiled runs used the sealed disk fixture at its
+original HTTPS URL, denied external network, private TLS trust, fresh
+process/profile, required title, 20-second settle, 1024×764 CSS viewport at
+scale two, and 360 nominal 60 Hz precise wheel inputs (delta 12, reverse
+every 120). The endpoint is changed native layer publication after
+`updateLayer`, not physical display scanout.
+
+| Trial | Scroll fps | Median / p95 / max interval, ms | Over 16.67 ms | Moving intervals / publications / inputs |
+| --- | ---: | --- | ---: | --- |
+| control-1 | 43.67 | 21.06 / 43.16 / 70.97 | 64.34% | 272 / 324 / 360 |
+| candidate-1 | 44.99 | 20.15 / 42.25 / 60.74 | 64.29% | 280 / 333 / 360 |
+| control-2 | 45.72 | 19.48 / 44.05 / 60.79 | 61.65% | 279 / 326 / 360 |
+| candidate-2 | 43.65 | 20.66 / 44.94 / 63.61 | 65.06% | 269 / 314 / 360 |
+
+| Trial | Actual input Hz | Input period, s | Leading / trailing publication gap, ms | First scroll publication, ms |
+| --- | ---: | ---: | --- | ---: |
+| control-1 | 57.63 | 6.229 | 101.06 / 0.23 | 160.09 |
+| candidate-1 | 57.68 | 6.224 | 95.36 / 18.46 | 124.89 |
+| control-2 | 58.83 | 6.102 | 98.44 / 0.25 | 155.26 |
+| candidate-2 | 58.26 | 6.162 | 107.68 / 0.18 | 139.07 |
+
+Throughput changed +3.03% and −4.52%; the second candidate also regressed
+median, p95 and deadline misses. The index was removed because these trials
+do not establish a repeatable gain. All runs moved the requested document,
+completed 360 inputs, retained binary identities and exited 0. The 18-CPU
+host's one-minute load before/after each run was 4.63/5.27, 5.27/6.86,
+6.95/6.84 and 6.61/5.99. Start times were 06:43:52.498, 06:44:21.940,
+06:44:51.354 and 06:45:21.292 UTC. Lower contention than the preceding
+25–26 fps trials also raised controls; that cross-session change is not an
+optimization gain. **Smooth 60 fps remains unmet.**
+
+Evidence under `Build/pol-scroll-20261025-2210/` includes
+`cache-index-v2-source/`, `cache-index-v2-owned.patch`,
+`cache-index-v2-source-identity.json`, `cache-index-v2-build-identity.json`,
+`cache-index-v2-build-check-commands.json`, `cache-index-v2-validation/`
+and `cache-index-v2-trial-summary.json`. Vox/Skia/Graphite/Dawn SHA256 values:
+`47794dbe646a2e8aabd74b04c1672b0084ed7648eab66e22d4f924a71975fa56`,
+`e8dbb3c2078f2ecc248a87b37693875ece64fd92741fe38f280bf0424050867f`,
+`262c99e2c90aad90a00859faa89ab3b654e8297eafbda1789ab3ca4d3ab414e6`,
+`cb98233f4dd44223964522e972655d739d701da23ddf0a3a4fc794c8722b9b52`.
+The build/browser guard and child exited 0, with sampled peak RSS
+924,073,984 bytes within 12 GiB and elapsed 394.53 seconds.
+
+A separate fractional-rectangle coverage oracle rejected a CPU-only edge
+formula: 184 of 480 cases differed from the retained GPU implementation,
+including coverage ties and one-byte color rounding. No approximate edge
+rasterizer was installed. `fractional-rect-oracle.cpp`, its commands/log and
+`fractional-rect-oracle-guard.json` retain this diagnostic (guard/child 0,
+117,112,832-byte sampled peak within 3 GiB, elapsed 1.07 seconds); its exit
+code records oracle completion, not pixel equivalence or scrolling credit.
