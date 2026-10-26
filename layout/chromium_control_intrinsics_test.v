@@ -44,3 +44,23 @@ fn test_chromium_control_theme_preserves_author_borders_and_backgrounds() {
 	assert commands.any(it.kind == 'fill_rect' && it.color == 'rgb(255 255 0)')
 	assert commands.any(it.color == 'rgb(0 255 0)')
 }
+
+fn test_chromium_textarea_intrinsic_width_rounds_after_device_projection() {
+	$if !macos {
+		return
+	}
+	mut document := html.parse_document('<style>input,textarea{font:10pt monospace}</style>
+		<textarea id="comment" cols="80" rows="8"></textarea><input id="search" size="17">')
+	defer { document.finalize() }
+	document.set_font_rendering_policy(.chromium)
+	for scale in [1.0, 2.0, 1.0] {
+		document.set_layout_coordinate_scale(scale)
+		run_document_layout(document, 1024, 768) or { panic('layout') }
+		comment := document.get_element_by_id('comment') or { panic('comment') }
+		// Native Brave 156, macOS monospace, including padding and border.
+		expected := if scale == 2 { 664.5 } else { 665.0 }
+		assert comment.get_bounding_client_rect().width == expected
+		search := document.get_element_by_id('search') or { panic('search') }
+		assert search.get_bounding_client_rect().width == 149
+	}
+}

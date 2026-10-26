@@ -11,7 +11,9 @@ fn chromium_control_intrinsic_inline_size(node &Node, columns int, textarea bool
 	if !textarea && maximum > average {
 		width += maximum - average
 	}
-	mut result := CSSPixels.nearest_value_for(math.ceil(f64(width)) * scale)
+	// Blink rounds in the font's layout coordinate space. On Retina, rounding
+	// CSS pixels first adds half a CSS pixel to an 80-column monospace textarea.
+	mut result := CSSPixels.nearest_value_for(math.ceil(f64(width) * scale))
 	values := node.computed_values()
 	block_overflow := if values.writing_mode() == .horizontal_tb {
 		values.overflow_y()
