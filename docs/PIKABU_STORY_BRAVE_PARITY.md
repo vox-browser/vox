@@ -329,3 +329,63 @@ its termination cause and aggregate memory peak are unestablished. It receives
 no production-build, broad-test, or screenshot credit. Raw output remains in
 `Build/pikabu-story-libjs-broad-job-4.log`. Whole-page pixel parity and the
 broader regression checkpoint remain open.
+
+
+## Startup callbacks, outlines, and the next production checkpoint
+
+`de4decfd` gives the window, media-query and IndexedDB event-wrapper providers
+separate owners, preserving each provider when the others are installed.
+`b23c9c77` preserves IndexedDB clone failures as DOMExceptions and preserves
+original exceptions from author getters. `95c4b43a` materializes the optional
+FileList reference before projecting its field with current V. `0be72d3f`
+requests a browser frame after asynchronous compact-document changes; requests
+coalesce, late installation delivers pending work, and close releases the hook.
+The 24-file, 76-case bridge selection passed in both normal and arena modes:
+`Build/pikabu-story-bridge-regressions/{normal,arena}.json`. Both modes compiled
+and executed successfully with unchanged source snapshots. Ordinary-window
+and screenshot-mode callback observations also passed on the fresh pinned
+production bundle; see
+`Build/pikabu-story-async-observation-1792998509939372000/results.json`.
+
+`b42d62a0` keeps the outline fixture's retained display-list lease alive while
+replacing its scene. `b79bfc61` paints uniform solid Chromium rounded outlines
+with the analytic stroke used for matching borders. Seven layout cases in four
+files passed in normal and poisoned arena modes, with unchanged sources:
+`Build/pikabu-story-outline-tests-1792997668924263000/results.json`.
+The 12-box outline fixture is pixel-exact against Brave; its retained control
+has 1,018 differing pixels (maximum channel error 66).
+
+The combined production attempt completed with child exit 1 because the broad
+screenshot checkpoint failed. Its default 12 GiB guard recorded a peak of
+9,303,654,400 bytes and elapsed time of 1,160.698195 seconds:
+`Build/pikabu-story-visual-job-10.json`. Build, signing, preservation, startup,
+bridge checks and callback observations succeeded. The pinned executable is
+`Build/pikabu-story-font-visual-1792997668532372000/Vox.app`, SHA-256
+`3eecb47bb83dcb044ccb704c3603354f062b65e3d1931776058bf8ec84ec7f2c`.
+Six native graphics source files changed in another workflow during the build;
+this bundle is not isolated evidence attributing a production change to one fix.
+
+The 21-case renderer checkpoint completed all captures in
+`Build/pikabu-story-broad-visual-1792998420484769000/`. Three comparisons fail:
+inline-node (5,766 differing pixels), ordered-list (4,421), and text-decorations
+(31,985). Default-ignorable-code-points is now exact after the explicit font
+selection fix. All ten SVG guards, the selection/caret cases and line-clamp are
+exact; canvas-text passes its existing fuzzy limits. No tolerances were widened.
+The broad checkpoint remains open.
+
+Visual receipts are retained in
+`Build/pikabu-story-callback-visual-1792998520697467000/`. The six startup
+fixtures and shadow-precision fixture are exact. The bundled story has 16,820
+differing pixels, including 72 with channel error above three; it remains
+inexact. The pending rounded SVG-background optimization improves transparent
+edges but introduces colored-backing fringes, so it has no acceptance credit.
+A revised composition is undergoing separate validation.
+
+Both live captures loaded the requested URL and Pikabu title. The live pages
+differ by 513,517 pixels (65.2971% of the 1024 by 768 viewport). Their ad-blocking
+policies differ: Vox hides the top banner. Vox also lacks the SVG sprite icons,
+and both screenshot and ordinary-window diagnostics report missing
+`IntersectionObserver` and `WebSocket` globals. Ordinary navigation reached
+`complete`, remained visible and fully active, and loaded all three normal
+Roboto weights. Successful navigation therefore does not establish successful
+application initialization. Whole-page Brave parity remains open.
