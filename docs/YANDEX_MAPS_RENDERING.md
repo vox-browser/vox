@@ -446,3 +446,19 @@ delivery and ArrayBuffer transfers as well as script execution. The current
 MessageChannel binding still rejects nonempty transfer lists. This inspection
 uses the saved `yandex.com` worker URL; it neither executes the script nor
 establishes acceptance for the requested live `yandex.ru` page.
+
+Launcher inspection follows the saved page's `base` bundle through
+`vector-map-engine` and `ymaps-vector`. The base bundle combines the configured
+base URL with the content-provider worker's pathname; the communicator calls
+`new Worker(url)` without module options, assigns `onmessage`, registers an
+`error` listener and flushes message batches with their transfer lists. Its
+nested-worker relay likewise constructs workers from URLs. These inspected
+construction paths use classic URL workers; the bundle's Blob URL helpers
+serve image decoding rather than these worker constructors.
+
+The retrieved launcher has SHA-256
+`42be67c0ca1987be6cc555c1ed110242ee6f8dfeade7adde192e4cd39c41a200`.
+HTTP receipts, source bodies and bounded call-site excerpts are retained in
+`worker-loader-inspection-1793028304307830000/` and
+`worker-launcher-inspection-1793028387826668000/`. This is source inspection
+only; it adds no worker execution or screenshot acceptance credit.
