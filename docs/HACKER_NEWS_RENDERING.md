@@ -69,7 +69,13 @@ The measured interval starts at navigation request and ends when the encoded
 document PNG is available. Both browsers use fresh processes, profiles and
 caches with the same frozen page and local HTTP replay. Vox's native marker
 precedes file writing; Brave's CDP endpoint includes PNG base64/IPC delivery
-and readiness polling. Both use inactive native windows away from the pointer.
+and readiness polling. Vox requests its initial navigation before its first
+native window frame, while Brave creates and resizes an `about:blank` window
+before requesting the measured navigation. Consequently Vox's interval also
+includes initial window work that Brave completes before its interval. The
+existing counts retain these boundaries; they must not be presented as an
+isolated comparison of page rendering. Both use inactive native windows away
+from the pointer.
 Exclusive resource-coalition counts include live and exited helpers and owned
 Metal compiler services. GPU execution and services outside those coalitions
 are excluded. This compares the capture workflows; their internal endpoints
