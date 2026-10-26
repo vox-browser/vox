@@ -888,6 +888,32 @@ requires it. Its two new differential cases compare nine absolute units and
 checking source immutability. All 21 focused cases pass in each GC mode (42
 executions), with compiler/runtime exits zero and unchanged input pins
 (`lazy-length-context-1`). Its sealed input handoff preserves the exact tested
-bytes before the next font-cache candidate. Page-level instruction measurement
-for this fix is pending; it currently earns no performance credit. The official
-10%-below-Brave target remains open at the preceding 3.656719 strict ratio.
+bytes before the next font-cache candidate.
+
+Its isolated 30-pair comparison completes with 60 zero browser exits, all 101
+comments and exact 3,145,728-pixel captures (`lazy-length-context-isolated-1`).
+The control/candidate medians are 6,343,878,613.5 and 6,352,038,907.5 instructions.
+The paired median saving is -990,330.5 instructions, with seeded 10,000-resample
+95% interval [-20,805,073, 12,549,517.5]. Fifteen pairs improve; the worst pair
+regresses by 83,339,233 instructions. Repeatable performance credit is **zero**.
+The strict worst-candidate/best-control ratio is 1.019877, a Vox/Vox diagnostic
+that does not establish Brave acceptance. On the 18-CPU host, load averages move
+from 10.272/17.757/26.463 to 16.370/18.769/25.050. All source pins remain unchanged,
+all 12 audited shared records match, and reversing the single tested body
+reconstructs the whole control C byte for byte. The production graph-token
+initializer retains both generation fields. The signed cumulative lower bounds
+since the preceding broad checkpoint total -35,007,815 instructions, below the
+5M gate; no new broad checkpoint is due.
+
+The `lazy-length-context-followup-1` supervisor exits zero. Its enclosing
+`lazy-font-intrinsic-followup-1` job exits one after 425.457 seconds, with sampled
+peak RSS 9,127,936,000 bytes, because the independent font/inline focused checks
+failed. Font attempt 2 fails compilation on an immutable range field; the next
+fixture replaces the complete entry. Inline attempt 2 compiles and fails its
+unsupported-tab assertion: normal whitespace handling has already collapsed
+that tab to a supported space. The corrected fixture compares that case with
+the full width algorithm and retains a preserved-tab fallback case. Neither
+failed attempt earns test or performance credit; their raw receipts remain
+under `font-cascade-projection-2` and `intrinsic-inline-2`. Corrected focused
+checks are pending. The official 10%-below-Brave target remains open at the
+preceding 3.656719 strict ratio.
