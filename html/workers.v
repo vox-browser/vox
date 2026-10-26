@@ -37,7 +37,7 @@ pub:
 	shared_worker ?&SharedWorker
 }
 
-pub type WorkerScriptFetchHook = fn(dom.URL, &ScriptingRealm) !&ClassicScript
+pub type WorkerScriptFetchHook = fn (dom.URL, &ScriptingRealm) !&ClassicScript
 
 pub type WorkerGlobalOwner = SerializedDocument | SerializedWorkerGlobalScope
 
@@ -66,12 +66,12 @@ pub mut:
 
 pub fn WorkerGlobalScope.create(url dom.URL, worker_type WorkerType, name string, realm &ScriptingRealm) &WorkerGlobalScope {
 	mut scope := &WorkerGlobalScope{
-		realm: realm
-		event_loop: EventLoop.create(.worker)
-		url_: url
-		worker_type: worker_type
-		name_: name
-		navigator_: WorkerNavigator.create(url)
+		realm:         realm
+		event_loop:    EventLoop.create(.worker)
+		url_:          url
+		worker_type:   worker_type
+		name_:         name
+		navigator_:    WorkerNavigator.create(url)
 		global_scope_: WindowOrWorkerGlobalScopeMixin.create(url.origin(), is_url_potentially_trustworthy(url), false)
 	}
 	scope.location_ = WorkerLocation.create(scope)
@@ -262,7 +262,7 @@ pub fn (mut scope WorkerGlobalScope) import_scripts(urls []string, fetch_script 
 
 pub fn (scope &WorkerGlobalScope) set_onerror(callback ?&dom.CallbackType) {
 	unsafe { &dom.EventTarget(scope) }
-	.set_event_handler_attribute('error', callback)
+		.set_event_handler_attribute('error', callback)
 }
 
 pub fn (scope &WorkerGlobalScope) onerror() ?&dom.CallbackType {
@@ -280,6 +280,8 @@ pub fn DedicatedWorkerGlobalScope.create(url dom.URL, options WorkerOptions, rea
 	mut scope := &DedicatedWorkerGlobalScope{
 		WorkerGlobalScope: *WorkerGlobalScope.create(url, options.type_, options.name, realm)
 	}
+	// The embedded base has a new address; Location must follow this scope.
+	scope.location_ = WorkerLocation.create(&scope.WorkerGlobalScope)
 	scope.global_scope_.error_reporting_target_ = scope.this_impl()
 	scope.global_scope_.dedicated_worker_ = scope
 	return scope
@@ -316,7 +318,7 @@ pub fn (scope &DedicatedWorkerGlobalScope) post_message(message dom.JSValue, opt
 
 pub fn (scope &DedicatedWorkerGlobalScope) set_onmessage(callback ?&dom.CallbackType) {
 	unsafe { &dom.EventTarget(scope) }
-	.set_event_handler_attribute('message', callback)
+		.set_event_handler_attribute('message', callback)
 	if port := scope.internal_port_ {
 		mut mutable_port := unsafe { &MessagePort(port) }
 		mutable_port.start()
@@ -329,7 +331,7 @@ pub fn (scope &DedicatedWorkerGlobalScope) onmessage() ?&dom.CallbackType {
 
 pub fn (scope &DedicatedWorkerGlobalScope) set_onmessageerror(callback ?&dom.CallbackType) {
 	unsafe { &dom.EventTarget(scope) }
-	.set_event_handler_attribute('messageerror', callback)
+		.set_event_handler_attribute('messageerror', callback)
 }
 
 @[heap]
@@ -345,7 +347,7 @@ pub mut:
 }
 
 __global (
-	html_shared_worker_global_scopes = []&SharedWorkerGlobalScope{}
+	html_shared_worker_global_scopes   = []&SharedWorkerGlobalScope{}
 	html_next_worker_agent_owner_token u64
 )
 
@@ -359,14 +361,15 @@ pub fn SharedWorkerGlobalScope.create(url dom.URL, options WorkerOptions, storag
 		.same_origin { fetch.CredentialsMode.same_origin }
 		.include { fetch.CredentialsMode.include }
 	}
-	scope := &SharedWorkerGlobalScope{
-		WorkerGlobalScope: *WorkerGlobalScope.create(url, options.type_, options.name, realm)
-		storage_key: storage_key
-		secure_context: secure_context
+	mut scope := &SharedWorkerGlobalScope{
+		WorkerGlobalScope:   *WorkerGlobalScope.create(url, options.type_, options.name, realm)
+		storage_key:         storage_key
+		secure_context:      secure_context
 		constructor_origin_: url.origin()
-		constructor_url_: url
-		credentials_: credentials
+		constructor_url_:    url
+		credentials_:        credentials
 	}
+	scope.location_ = WorkerLocation.create(&scope.WorkerGlobalScope)
 	html_shared_worker_global_scopes << scope
 	return scope
 }
@@ -406,7 +409,7 @@ pub fn (mut scope SharedWorkerGlobalScope) initialize_web_interfaces_impl() {
 
 pub fn (scope &SharedWorkerGlobalScope) set_onconnect(callback ?&dom.CallbackType) {
 	unsafe { &dom.EventTarget(scope) }
-	.set_event_handler_attribute('connect', callback)
+		.set_event_handler_attribute('connect', callback)
 }
 
 pub fn (scope &SharedWorkerGlobalScope) onconnect() ?&dom.CallbackType {
@@ -441,8 +444,8 @@ pub fn Worker.create(script_url string, base_url dom.URL, options WorkerOptions,
 	}
 	channel := MessageChannel.construct_impl()!
 	mut worker := &Worker{
-		script_url: url
-		options: options
+		script_url:    url
+		options:       options
 		outside_port_: channel.port1()
 	}
 	mut scope := DedicatedWorkerGlobalScope.create(url, options, realm)
@@ -499,7 +502,7 @@ pub fn (worker &Worker) scope() ?&DedicatedWorkerGlobalScope {
 
 pub fn (worker &Worker) set_onmessage(callback ?&dom.CallbackType) {
 	unsafe { &dom.EventTarget(worker) }
-	.set_event_handler_attribute('message', callback)
+		.set_event_handler_attribute('message', callback)
 }
 
 pub fn (worker &Worker) onmessage() ?&dom.CallbackType {
@@ -508,7 +511,7 @@ pub fn (worker &Worker) onmessage() ?&dom.CallbackType {
 
 pub fn (worker &Worker) set_onmessageerror(callback ?&dom.CallbackType) {
 	unsafe { &dom.EventTarget(worker) }
-	.set_event_handler_attribute('messageerror', callback)
+		.set_event_handler_attribute('messageerror', callback)
 }
 
 pub fn (worker &Worker) set_onerror(callback ?&dom.CallbackType) {
@@ -595,12 +598,12 @@ pub fn SharedWorker.create(script_url string, base_url dom.URL, options WorkerOp
 	inside.start()
 	worker := &SharedWorker{
 		script_url: url
-		options: options
-		port_: outside
-		scope_: scope
+		options:    options
+		port_:      outside
+		scope_:     scope
 	}
 	mut event := MessageEvent.create('connect', MessageEventInit{
-		data: dom.js_string('')
+		data:  dom.js_string('')
 		ports: [inside]
 	})
 	event.set_is_trusted(true)
@@ -640,16 +643,16 @@ pub mut:
 	owner_token_                         string
 	terminated_                          bool
 	ipc_callbacks_configured_            bool
-	worker_script_load_failure_callback_ ?fn()
-	worker_exception_callback_            ?fn(string, string, u32, u32)
+	worker_script_load_failure_callback_ ?fn ()
+	worker_exception_callback_           ?fn (string, string, u32, u32)
 }
 
 pub fn WorkerAgentParent.create(url dom.URL, options WorkerOptions, outside_settings &EnvironmentSettingsObject, outside_port &MessagePort, worker_event_target &dom.EventTarget) &WorkerAgentParent {
 	return &WorkerAgentParent{
-		url: url
-		options: options
-		outside_settings: outside_settings
-		outside_port: outside_port
+		url:                 url
+		options:             options
+		outside_settings:    outside_settings
+		outside_port:        outside_port
 		worker_event_target: worker_event_target
 	}
 }
@@ -681,7 +684,7 @@ pub fn (mut parent WorkerAgentParent) initialize() ! {
 		mut client := page_model.client()
 		parent.agent_id_ = client.start_worker_agent(page.WorkerAgentStartRequest{
 			owner_token: parent.owner_token_
-			script_url: parent.url.serialize()
+			script_url:  parent.url.serialize()
 		})
 	}
 	parent.started = true
@@ -729,11 +732,11 @@ pub fn (mut parent WorkerAgentParent) setup_worker_ipc_callbacks() {
 				EventInit: dom.EventInit{
 					cancelable: true
 				}
-				message: message
-				filename: filename
-				lineno: lineno
-				colno: colno
-				error: dom.js_null()
+				message:   message
+				filename:  filename
+				lineno:    lineno
+				colno:     colno
+				error:     dom.js_null()
 			})
 			base_event := unsafe { &dom.Event(error_event) }
 			if target.dispatch_event(base_event) {

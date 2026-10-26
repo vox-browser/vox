@@ -20,6 +20,37 @@ fn test_location_reflects_the_worker_global_scope_url_live() {
 	assert location.search() == '?q=1'
 }
 
+fn test_dedicated_worker_location_retains_its_concrete_scope_after_url_changes() {
+	mut scope := DedicatedWorkerGlobalScope.create(dom.URL{ value: 'https://worker.test/start.js' },
+		WorkerOptions{}, &ScriptingRealm{})
+	location := scope.location()
+	assert voidptr(location.global_scope_) == voidptr(&scope.WorkerGlobalScope)
+	scope.set_url(dom.URL{ value: 'https://redirected.test:8443/final.js?lang=ru#map' })
+	assert voidptr(scope.location()) == voidptr(location)
+	assert location.href() == 'https://redirected.test:8443/final.js?lang=ru#map'
+	assert location.origin() == 'https://redirected.test:8443'
+	assert location.pathname() == '/final.js'
+	assert location.search() == '?lang=ru'
+	assert location.hash() == '#map'
+}
+
+fn test_shared_worker_location_retains_its_concrete_scope_after_url_changes() {
+	mut scope := SharedWorkerGlobalScope.create(dom.URL{ value: 'https://worker.test/start.js' },
+		WorkerOptions{}, 'location-owner', true, &ScriptingRealm{})
+	defer { scope.close() }
+	location := scope.location()
+	assert voidptr(location.global_scope_) == voidptr(&scope.WorkerGlobalScope)
+	scope.set_url(dom.URL{ value: 'http://redirected.test/final.js' })
+	assert voidptr(scope.location()) == voidptr(location)
+	assert location.href() == 'http://redirected.test/final.js'
+	assert location.origin() == 'http://redirected.test'
+	assert location.protocol() == 'http:'
+	assert location.host() == 'redirected.test'
+	assert location.port() == ''
+	assert location.search() == ''
+	assert location.hash() == ''
+}
+
 fn test_full_url_components() {
 	l := loc('https://user:pass@example.com:8443/a/b?x=1&y=2#frag')
 	assert l.href() == 'https://user:pass@example.com:8443/a/b?x=1&y=2#frag'
