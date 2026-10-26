@@ -343,7 +343,7 @@ fn test_image_payload_background_producers_match_original_fields_and_gradients()
 				2,
 				3,
 				4,
-			], painting.Point{13, 17}, .pixelated, fixed_context, LayoutRect{0, 0, 240, 160}, false) or { panic('missing new command') }
+			], painting.Point{13, 17}, .pixelated, fixed_context, LayoutRect{0, 0, 240, 160}, false, none) or { panic('missing new command') }
 			expected := image_payload_legacy_background_layer_command(layer, LayoutRect{3, 4, 120, 80}, LayoutRect{5, 6, 90, 60}, BoxRadii{ top_left: CornerRadius{3, 7} }, 0.7, 9, [
 				f64(1),
 				2,

@@ -91,7 +91,17 @@ void shared_recording_image(CGContextRef destination, SkMatrix const& matrix,
     if (!canvas) return;
     auto target = SkRect::MakeXYWH(image.destination[0], image.destination[1],
         image.destination[2], image.destination[3]);
-    if ((image.flags & 4) || image.has_color_profile || size_t(image.width) * image.height > 8 * 1024 * 1024
+    if (image.has_background_color)
+        target.join(SkRect::MakeXYWH(image.clip[0], image.clip[1], image.clip[2], image.clip[3]));
+    if (image.border_width > 0) {
+        auto border = SkRect::MakeXYWH(image.border_rect[0], image.border_rect[1],
+            image.border_rect[2], image.border_rect[3]);
+        border.outset(image.border_width / 2, image.border_width / 2);
+        target.join(border);
+    }
+    if ((image.flags & 4) || image.has_color_profile || image.has_background_color
+        || image.border_width > 0
+        || size_t(image.width) * image.height > 8 * 1024 * 1024
         || std::any_of(image.clip + 4, image.clip + 12, [](float radius) { return radius != 0; })) {
         shared_recording_block(matrix.mapRect(target));
         return;

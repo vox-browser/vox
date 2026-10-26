@@ -48,12 +48,46 @@ int main()
         auto changed = images; changed[placement].opacity = .5f; miss(changed);
         changed = images; changed[placement].nearest = 1; miss(changed);
         changed = images; changed[placement].flags = VOX_GRAPHITE_IMAGE_FORCE_MSAA; miss(changed);
+        changed = images; changed[placement].flags = VOX_GRAPHITE_IMAGE_REPEAT_X; miss(changed);
+        changed = images; changed[placement].flags = VOX_GRAPHITE_IMAGE_REPEAT_Y; miss(changed);
         changed = images; changed[placement].has_color_profile = 1; miss(changed);
+        changed = images; changed[placement].has_background_color = 1; miss(changed);
     }
     auto changed = images;
     std::swap(changed[0], changed[1]); miss(changed);
     changed.pop_back(); miss(changed);
     changed = images; changed.push_back(images[0]); miss(changed);
+    // A color change under a transparent pattern changes the resolved pixels.
+    changed = images;
+    changed[0].has_background_color = 1;
+    changed[0].background_rgba[3] = 255;
+    pixels = backdrop;
+    auto colored = cache.prepare_tiles(changed.data(), 2, 2, 2, 8, true, pixels.data());
+    assert(colored.pending && !colored.hit);
+    cache.finish(std::move(colored), pixels.data(), 8);
+    for (int channel = 0; channel < 4; ++channel) {
+        auto modified = changed;
+        modified[0].background_rgba[channel]++;
+        pixels = backdrop;
+        assert(!cache.prepare_tiles(modified.data(), 2, 2, 2, 8, true, pixels.data()).hit);
+    }
+    changed[0].border_width = 2;
+    pixels = backdrop;
+    auto bordered = cache.prepare_tiles(changed.data(), 2, 2, 2, 8, true, pixels.data());
+    assert(bordered.pending && !bordered.hit);
+    cache.finish(std::move(bordered), pixels.data(), 8);
+    for (int component = 0; component < 12; ++component) {
+        auto modified = changed;
+        modified[0].border_rect[component]++;
+        pixels = backdrop;
+        assert(!cache.prepare_tiles(modified.data(), 2, 2, 2, 8, true, pixels.data()).hit);
+    }
+    for (int channel = 0; channel < 4; ++channel) {
+        auto modified = changed;
+        modified[0].border_rgba[channel]++;
+        pixels = backdrop;
+        assert(!cache.prepare_tiles(modified.data(), 2, 2, 2, 8, true, pixels.data()).hit);
+    }
     pixels = backdrop; pixels[3]++;
     assert(!cache.prepare_tiles(images.data(), 2, 2, 2, 8, true, pixels.data()).hit);
     pixels = backdrop;

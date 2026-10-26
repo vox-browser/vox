@@ -458,6 +458,7 @@ static void draw_prepared_image(SkCanvas* canvas, VoxGraphiteImage const* image,
     matrix.set9(image->matrix);
     canvas->setMatrix(matrix);
     auto rect = [](float const* r) { return SkRect::MakeXYWH(r[0], r[1], r[2], r[3]); };
+    canvas->save();
     // An image already covers its destination rectangle. An identical square
     // clip is redundant, and changes Graphite's image shader interpolation.
     // Retain actual cropping and rounded corners.
@@ -466,6 +467,13 @@ static void draw_prepared_image(SkCanvas* canvas, VoxGraphiteImage const* image,
         || std::any_of(image->clip + 4, image->clip + 12,
             [](float radius) { return radius != 0; });
     if (clips_destination) canvas->clipRRect(rounded_rect(image->clip), true);
+    if (image->has_background_color) {
+        SkPaint background;
+        background.setAntiAlias(true);
+        auto const* rgba = image->background_rgba;
+        background.setColor(SkColorSetARGB(rgba[3], rgba[0], rgba[1], rgba[2]));
+        canvas->drawRect(rect(image->clip), background);
+    }
     SkPaint paint;
     paint.setAntiAlias(true);
     paint.setAlphaf(std::clamp(image->opacity, 0.0f, 1.0f));
@@ -477,7 +485,14 @@ static void draw_prepared_image(SkCanvas* canvas, VoxGraphiteImage const* image,
     // Blink records a full image in natural coordinates and puts its scale
     // on the canvas. Keep that operation order: folding it into destination
     // geometry changes fractional GPU sampling even with the same outer bounds.
-    if (whole_source) {
+    if (image->flags & (VOX_GRAPHITE_IMAGE_REPEAT_X | VOX_GRAPHITE_IMAGE_REPEAT_Y)) {
+        auto local_matrix = SkMatrix::RectToRect(source_rect, rect(image->destination));
+        paint.setShader(texture->makeShader(
+            image->flags & VOX_GRAPHITE_IMAGE_REPEAT_X ? SkTileMode::kRepeat : SkTileMode::kClamp,
+            image->flags & VOX_GRAPHITE_IMAGE_REPEAT_Y ? SkTileMode::kRepeat : SkTileMode::kClamp,
+            sampling, &local_matrix));
+        canvas->drawRect(rect(image->destination), paint);
+    } else if (whole_source) {
         auto natural = rect(image->source);
         canvas->concat(SkMatrix::RectToRect(natural, rect(image->destination)));
         canvas->drawImageRect(texture, source_rect, natural, sampling, &paint,
@@ -485,6 +500,16 @@ static void draw_prepared_image(SkCanvas* canvas, VoxGraphiteImage const* image,
     } else {
         canvas->drawImageRect(texture, source_rect, rect(image->destination), sampling,
             &paint, SkCanvas::kStrict_SrcRectConstraint);
+    }
+    canvas->restore();
+    if (image->border_width > 0) {
+        SkPaint border;
+        border.setAntiAlias(true);
+        border.setStyle(SkPaint::kStroke_Style);
+        border.setStrokeWidth(image->border_width);
+        auto const* rgba = image->border_rgba;
+        border.setColor(SkColorSetARGB(rgba[3], rgba[0], rgba[1], rgba[2]));
+        canvas->drawRRect(rounded_rect(image->border_rect), border);
     }
 }
 

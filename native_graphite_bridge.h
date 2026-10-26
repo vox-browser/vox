@@ -4,7 +4,11 @@
 #include <stdint.h>
 #include <stddef.h>
 
-enum { VOX_GRAPHITE_IMAGE_FORCE_MSAA = 32 };
+enum {
+    VOX_GRAPHITE_IMAGE_FORCE_MSAA = 32,
+    VOX_GRAPHITE_IMAGE_REPEAT_X = 64,
+    VOX_GRAPHITE_IMAGE_REPEAT_Y = 128
+};
 
 // Only pixels and plain values cross this boundary. The compatibility GPU
 // backend owns its Skia objects independently of the translated engine's Skia.
@@ -26,6 +30,13 @@ typedef struct {
     // red, green, blue and white chromaticities. Untagged images are sRGB.
     int has_color_profile;
     float color_profile[10];
+    // Background color and image share one rounded clip and MSAA coverage.
+    int has_background_color;
+    uint8_t background_rgba[4];
+    // An adjacent CSS border restores the image clip before its stroke, while
+    // retaining the render pass's multisample coverage.
+    float border_rect[12], border_width;
+    uint8_t border_rgba[4];
 } VoxGraphiteImage;
 
 typedef struct {

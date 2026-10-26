@@ -78,6 +78,12 @@ class VoxGraphiteRasterCache {
             && !std::memcmp(&a.opacity, &b.opacity, sizeof(a.opacity))
             && a.width == b.width && a.height == b.height && a.flags == b.flags
             && a.nearest == b.nearest && a.has_color_profile == b.has_color_profile
+            && a.has_background_color == b.has_background_color
+            && (!a.has_background_color || !std::memcmp(a.background_rgba, b.background_rgba,
+                sizeof(a.background_rgba)))
+            && a.border_width == b.border_width
+            && (a.border_width == 0 || (!std::memcmp(a.border_rect, b.border_rect, sizeof(a.border_rect))
+                && !std::memcmp(a.border_rgba, b.border_rgba, sizeof(a.border_rgba))))
             && (!a.has_color_profile || !std::memcmp(a.color_profile, b.color_profile,
                 sizeof(a.color_profile)));
     }

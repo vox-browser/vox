@@ -49,6 +49,8 @@ extern void ladybird_v_skia_set_raster_layer(double origin_x, double origin_y, i
 extern void ladybird_v_skia_set_msaa_tiles(const int *tiles, int count, int tile_rows);
 extern void ladybird_v_skia_set_rect_clip_outs(const float *rects, int count);
 extern void ladybird_v_skia_set_rounded_rect_underlay(const float *rect, uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha);
+extern void ladybird_v_skia_set_image_background(uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha);
+extern void ladybird_v_skia_set_image_border(float const* rect, float width, uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha);
 extern void ladybird_v_skia_set_shared_recording(int, int, int);
 extern void ladybird_v_skia_record_rect(CGContextRef, float, float, float, float,
     uint8_t, uint8_t, uint8_t, uint8_t);
@@ -2490,6 +2492,20 @@ void native_set_rounded_rect_underlay(const float *rect, gg__Color color) {
 	ladybird_v_skia_set_rounded_rect_underlay(rect, color.r, color.g, color.b, color.a);
 #else
 	(void)rect; (void)color;
+#endif
+}
+
+void native_set_image_background(gg__Color color) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	ladybird_v_skia_set_image_background(color.r, color.g, color.b, color.a);
+#else
+	(void)color;
+#endif
+}
+
+void native_set_image_border(float const* rect, float width, gg__Color color) {
+#if defined(LADYBIRD_V_HAS_SKIA_TEXT)
+	ladybird_v_skia_set_image_border(rect, width, color.r, color.g, color.b, color.a);
 #endif
 }
 
@@ -5090,6 +5106,47 @@ void native_draw_image_part_transformed(gg__Image *image, float destination_x,
 		source_height, clip_x, clip_y, clip_width, clip_height, transform_a,
 		transform_b, transform_c, transform_d, transform_e, transform_f, page_x,
 		page_y, scroll_y, canvas_width, canvas_height, opacity, nearest_neighbor, clip_radii);
+}
+
+// A gapless background crossing a tile boundary is one image shader. Cropping
+// and clamping separate tiles loses the bilinear samples from the next repeat.
+int native_draw_image_pattern_transformed(gg__Image *image,
+	float tile_x, float tile_y, float tile_width, float tile_height,
+	float bounds_x, float bounds_y, float bounds_width, float bounds_height,
+	float clip_x, float clip_y, float clip_width, float clip_height,
+	float transform_a, float transform_b, float transform_c, float transform_d,
+	float transform_e, float transform_f, float page_x, float page_y,
+	float scroll_y, float canvas_width, float canvas_height, float opacity,
+	int nearest_neighbor, float const *clip_radii, int pattern_flags) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
+	if (context == NULL || image == NULL || !(tile_width > 0) || !(tile_height > 0)
+		|| !(clip_width > 0) || !(clip_height > 0)
+		|| !(pattern_flags & (VOX_GRAPHITE_IMAGE_REPEAT_X | VOX_GRAPHITE_IMAGE_REPEAT_Y)))
+		return 0;
+	float left = (pattern_flags & VOX_GRAPHITE_IMAGE_REPEAT_X) ? bounds_x : fmaxf(bounds_x, tile_x);
+	float top = (pattern_flags & VOX_GRAPHITE_IMAGE_REPEAT_Y) ? bounds_y : fmaxf(bounds_y, tile_y);
+	float right = (pattern_flags & VOX_GRAPHITE_IMAGE_REPEAT_X) ? bounds_x + bounds_width : fminf(bounds_x + bounds_width, tile_x + tile_width);
+	float bottom = (pattern_flags & VOX_GRAPHITE_IMAGE_REPEAT_Y) ? bounds_y + bounds_height : fminf(bounds_y + bounds_height, tile_y + tile_height);
+	if (!(right > left) || !(bottom > top))
+		return 0;
+	NativeSkiaImageSource source;
+	if (!native_begin_skia_image_source(context, image, &source))
+		return 0;
+	float sx = image->width / tile_width, sy = image->height / tile_height;
+	int drawn = ladybird_v_skia_draw_rgba_image(context, source.pixels,
+		image->width, image->height, source.pitch, left, top, right - left,
+		bottom - top, (left - tile_x) * sx, (top - tile_y) * sy,
+		(right - left) * sx, (bottom - top) * sy, clip_x, clip_y, clip_width,
+		clip_height, transform_a, transform_b, transform_c, transform_d,
+		transform_e, transform_f, page_x, page_y, scroll_y, canvas_width,
+		canvas_height, opacity, nearest_neighbor, source.flags | pattern_flags,
+		clip_radii);
+	native_end_skia_image_source(&source);
+	return drawn;
+#else
+	return 0;
+#endif
 }
 
 // A background's tiles, eight floats each: the destination and source

@@ -46,3 +46,29 @@ fn test_tiny_background_tiles_keep_the_unbounded_repeated_bitmap_primitive() {
 	}
 	assert !chromium_background_bitmap_tiles_are_bounded(plan, painting.Rect{0, 0, 1024, 768}, 4096)
 }
+
+fn test_background_patterns_crop_single_tiles_and_repeat_across_tile_edges() {
+	plan := painting.BackgroundTilePlan{
+		first_tile: painting.Rect{20, 30, 140, 1751}
+		repeat_x:   true
+		repeat_y:   true
+		x_step:     140
+		y_step:     1751
+	}
+	assert chromium_background_bitmap_pattern_flags(plan, painting.Rect{20, 30, 35, 16}) == 0
+	assert chromium_background_bitmap_pattern_flags(plan, painting.Rect{20, 30, 140, 1751}) == 0
+	for clip in [painting.Rect{19, 30, 35, 16}, painting.Rect{20, 29, 35, 16}] {
+		assert chromium_background_bitmap_pattern_flags(plan, clip) == chromium_bitmap_repeat_x | chromium_bitmap_repeat_y
+	}
+	clip := painting.Rect{19, 29, 35, 16}
+	corrected := chromium_background_bitmap_plan(plan, clip)
+	assert chromium_background_bitmap_pattern_flags(corrected, clip) == chromium_bitmap_repeat_x | chromium_bitmap_repeat_y
+	assert chromium_background_bitmap_pattern_flags(painting.BackgroundTilePlan{
+		...plan
+		repeat_x_has_gap: true
+	}, clip) == 0
+	assert chromium_background_bitmap_pattern_flags(painting.BackgroundTilePlan{
+		...plan
+		repeat_x: false
+	}, clip) == chromium_bitmap_repeat_y
+}

@@ -1691,6 +1691,32 @@ extern "C" int ladybird_v_skia_draw_rgba_image_tiles(CGContextRef destination,
         static_cast<float>(region.width()), static_cast<float>(region.height()), has_background);
 }
 
+static bool s_has_image_background = false;
+static uint8_t s_image_background_rgba[4];
+static float s_image_border_rect[12], s_image_border_width;
+static uint8_t s_image_border_rgba[4];
+
+extern "C" void ladybird_v_skia_set_image_border(float const* rect, float width,
+    uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha)
+{
+    s_image_border_width = rect ? width : 0;
+    if (rect) std::copy_n(rect, 12, s_image_border_rect);
+    s_image_border_rgba[0] = red;
+    s_image_border_rgba[1] = green;
+    s_image_border_rgba[2] = blue;
+    s_image_border_rgba[3] = alpha;
+}
+
+extern "C" void ladybird_v_skia_set_image_background(uint8_t red, uint8_t green,
+    uint8_t blue, uint8_t alpha)
+{
+    s_has_image_background = alpha != 0;
+    s_image_background_rgba[0] = red;
+    s_image_background_rgba[1] = green;
+    s_image_background_rgba[2] = blue;
+    s_image_background_rgba[3] = alpha;
+}
+
 extern "C" int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
     uint8_t const* source_pixels, int image_width, int image_height,
     int image_pitch, float destination_x, float destination_y,
@@ -1702,6 +1728,10 @@ extern "C" int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
     float canvas_width, float canvas_height, float opacity, int nearest_neighbor,
     int image_flags, float const* clip_radii)
 {
+    bool const has_image_background = s_has_image_background;
+    s_has_image_background = false;
+    float const image_border_width = s_image_border_width;
+    s_image_border_width = 0;
     // Flags: premultiplied RGBA (1), readable opaque page backdrop (2),
     // or a tightly packed Y/U/V 4:2:0 payload in place of RGBA (4).
     if (!destination || !source_pixels || image_width <= 0 || image_height <= 0
@@ -1720,8 +1750,15 @@ extern "C" int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
     auto local_clip = SkRect::MakeXYWH(clip_x, clip_y, clip_width, clip_height);
     auto device_bounds = matrix.mapRect(local_destination);
     auto device_clip = matrix.mapRect(local_clip);
+    if (has_image_background) device_bounds.join(device_clip);
     if (!device_bounds.intersect(device_clip))
         return 1;
+    if (image_border_width > 0) {
+        auto border_bounds = SkRect::MakeXYWH(s_image_border_rect[0], s_image_border_rect[1],
+            s_image_border_rect[2], s_image_border_rect[3]);
+        border_bounds.outset(image_border_width / 2, image_border_width / 2);
+        device_bounds.join(matrix.mapRect(border_bounds));
+    }
     RasterRegion region;
     if (!clipped_raster_region(device_bounds, canvas_width, canvas_height, 0.0f,
             region))
@@ -1748,8 +1785,16 @@ extern "C" int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
             .clip = {clip_x, clip_y, clip_width, clip_height},
             .opacity = opacity, .width = image_width, .height = image_height,
             .pitch = image_pitch, .flags = image_flags, .nearest = nearest_neighbor == 1,
-            .pixels = source_pixels, .has_color_profile = s_has_image_color_profile
+            .pixels = source_pixels, .has_color_profile = s_has_image_color_profile,
+            .has_background_color = has_image_background ? 1 : 0
         };
+        if (has_image_background)
+            std::copy_n(s_image_background_rgba, 4, descriptor.background_rgba);
+        descriptor.border_width = image_border_width;
+        if (image_border_width > 0) {
+            std::copy_n(s_image_border_rect, 12, descriptor.border_rect);
+            std::copy_n(s_image_border_rgba, 4, descriptor.border_rgba);
+        }
         std::copy_n(s_image_color_profile, 10, descriptor.color_profile);
         if (clip_radii) std::copy_n(clip_radii, 8, descriptor.clip + 4);
         shared_recording_image(destination, matrix, descriptor);
@@ -1827,6 +1872,7 @@ extern "C" int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
     if (!has_background) canvas->clear(SK_ColorTRANSPARENT);
     canvas->setMatrix(raster_matrix(matrix, region, raster_scale_x,
         raster_scale_y));
+    canvas->save();
     if (clip_radii) {
         SkVector radii[4] {{clip_radii[0], clip_radii[1]}, {clip_radii[2], clip_radii[3]},
             {clip_radii[4], clip_radii[5]}, {clip_radii[6], clip_radii[7]}};
@@ -1834,6 +1880,13 @@ extern "C" int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
         clip.setRectRadii(local_clip, radii);
         canvas->clipRRect(clip, true);
     } else canvas->clipRect(local_clip, true);
+    if (has_image_background) {
+        SkPaint background;
+        background.setAntiAlias(true);
+        background.setColor(SkColorSetARGB(s_image_background_rgba[3],
+            s_image_background_rgba[0], s_image_background_rgba[1], s_image_background_rgba[2]));
+        canvas->drawRect(local_clip, background);
+    }
     SkPaint paint;
     paint.setAntiAlias(true);
     paint.setAlphaf(std::clamp(opacity, 0.0f, 1.0f));
@@ -1849,9 +1902,33 @@ extern "C" int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
         if (!shader) return 0;
         paint.setShader(std::move(shader));
         canvas->drawRect(local_destination, paint);
+    } else if (image_flags & (VOX_GRAPHITE_IMAGE_REPEAT_X | VOX_GRAPHITE_IMAGE_REPEAT_Y)) {
+        auto local_matrix = SkMatrix::RectToRect(source_rect, local_destination);
+        paint.setShader(source_image->makeShader(
+            image_flags & VOX_GRAPHITE_IMAGE_REPEAT_X ? SkTileMode::kRepeat : SkTileMode::kClamp,
+            image_flags & VOX_GRAPHITE_IMAGE_REPEAT_Y ? SkTileMode::kRepeat : SkTileMode::kClamp,
+            sampling, &local_matrix));
+        canvas->drawRect(local_destination, paint);
     } else {
         canvas->drawImageRect(source_image.get(), source_rect, local_destination,
             sampling, &paint, SkCanvas::kStrict_SrcRectConstraint);
+    }
+    canvas->restore();
+    if (image_border_width > 0) {
+        SkVector radii[4] {{s_image_border_rect[4], s_image_border_rect[5]},
+            {s_image_border_rect[6], s_image_border_rect[7]},
+            {s_image_border_rect[8], s_image_border_rect[9]},
+            {s_image_border_rect[10], s_image_border_rect[11]}};
+        SkRRect rect;
+        rect.setRectRadii(SkRect::MakeXYWH(s_image_border_rect[0], s_image_border_rect[1],
+            s_image_border_rect[2], s_image_border_rect[3]), radii);
+        SkPaint border;
+        border.setAntiAlias(true);
+        border.setStyle(SkPaint::kStroke_Style);
+        border.setStrokeWidth(image_border_width);
+        border.setColor(SkColorSetARGB(s_image_border_rgba[3], s_image_border_rgba[0],
+            s_image_border_rgba[1], s_image_border_rgba[2]));
+        canvas->drawRRect(rect, border);
     }
     if (!float_pixels.empty()) {
         SkPixmap result(working_info, float_pixels.data(), working_pitch);

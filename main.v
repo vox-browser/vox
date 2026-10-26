@@ -202,6 +202,7 @@ fn C.native_draw_inner_box_shadow_corners_srgb(outer_x f32, outer_y f32, outer_w
 fn C.native_draw_image_part(image &gg.Image, destination_x f32, destination_y f32, destination_width f32, destination_height f32, source_x f32, source_y f32, source_width f32, source_height f32, canvas_height f32, opacity f32)
 
 fn C.native_draw_image_tiles_transformed(image &gg.Image, tiles &f32, tile_count int, clip_x f32, clip_y f32, clip_width f32, clip_height f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32, opacity f32, nearest_neighbor int, clip_radii &f32)
+fn C.native_draw_image_pattern_transformed(image &gg.Image, tile_x f32, tile_y f32, tile_width f32, tile_height f32, bounds_x f32, bounds_y f32, bounds_width f32, bounds_height f32, clip_x f32, clip_y f32, clip_width f32, clip_height f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32, opacity f32, nearest_neighbor int, clip_radii &f32, pattern_flags int) int
 fn C.native_draw_image_part_transformed(image &gg.Image, destination_x f32, destination_y f32, destination_width f32, destination_height f32, source_x f32, source_y f32, source_width f32, source_height f32, clip_x f32, clip_y f32, clip_width f32, clip_height f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32, opacity f32, nearest_neighbor int, clip_radii &f32)
 
 fn C.native_draw_repeated_image_transformed(image &gg.Image, destination_x f32, destination_y f32, destination_width f32, destination_height f32, clip_x f32, clip_y f32, clip_width f32, clip_height f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_height f32, opacity f32, nearest_neighbor int, repeat_x int, repeat_y int)
@@ -287,6 +288,8 @@ fn C.native_set_chromium_msaa_tiles(tiles &i32, count int, tile_rows int)
 fn C.native_set_rect_clip_outs(rects &f64, count int)
 fn C.native_rounded_rect_underlay_supported() int
 fn C.native_set_rounded_rect_underlay(rect &f32, color gg.Color)
+fn C.native_set_image_background(color gg.Color)
+fn C.native_set_image_border(rect &f32, width f32, color gg.Color)
 fn C.native_set_rounded_border_widths(widths &f32)
 fn C.native_end_font_compositing_layer()
 
@@ -473,6 +476,8 @@ mut:
 	draw_command_depth  int
 	native_replay_scratch &platform.Arena = unsafe { nil }
 	rounded_rect_underlay_source        ?layout.PaintCommand
+	background_image_border            ?layout.PaintCommand
+	background_image_border_consumed   bool
 	nonrendered_image_preloads          map[string]bool
 	screenshot_path                     string
 	screenshot_scheduled                bool
@@ -5361,7 +5366,9 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 				|| source_command.kind == 'paint_uniform_border')
 				&& source_command.clip_outs == pending.clip_outs)
 			|| (source_command.kind == 'fill_rect' && source_command.antialiased_rect
-				&& !source_command.underlays_next && source_command.clip_outs == pending.clip_outs)) {
+				&& !source_command.underlays_next && source_command.clip_outs == pending.clip_outs)
+			|| (source_command.kind == 'draw_background_image'
+				&& source_command.clip_outs == pending.clip_outs)) {
 			app.flush_rounded_rect_underlay(page_x, page_y, window_height)
 		}
 	}
@@ -6391,6 +6398,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			}
 		}
 		'draw_background_image' {
+			defer { app.flush_rounded_rect_underlay(page_x, page_y, window_height) }
 			image_data := command.image()
 			if (image_data.background_svg_document != none || image_data.background_static_svg_resource != none)
 				&& !background_image_clip_intersects_viewport(command, f64(page_x), f64(page_y),
@@ -6430,6 +6438,11 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 				&& app.document != unsafe { nil } && app.document.font_rendering_policy() == .chromium
 			original_clip := painting.Rect{image_data.image_clip_x, image_data.image_clip_y, image_data.image_clip_width, image_data.image_clip_height}
 			clip := if snap_bitmap { pixel_snapped_background_bitmap_rect(original_clip) } else { original_clip }
+			image_bounds := if snap_bitmap {
+				if bounds := image_data.background_image_destination {
+					pixel_snapped_background_bitmap_rect(painting.Rect{bounds.x, bounds.y, bounds.width, bounds.height})
+				} else { clip }
+			} else { clip }
 			mut resolved_layer := ?painting.ResolvedBackgroundLayer(none)
 			if background_data := image_data.background_layer_data {
 				resolved_layer = if natural := svg_natural_size {
@@ -6488,12 +6501,18 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 				}
 			}
 			layer := resolved_layer or { return }
-			original_plan := painting.background_tile_plan(layer, painting.Point{command.image_scroll_offset_x, command.image_scroll_offset_y}, clip)
-			plan := if snap_bitmap { chromium_background_bitmap_plan(original_plan, clip) } else { original_plan }
+			original_plan := painting.background_tile_plan(layer, painting.Point{command.image_scroll_offset_x, command.image_scroll_offset_y}, image_bounds)
+			plan := if snap_bitmap { chromium_background_bitmap_plan(original_plan, image_bounds) } else { original_plan }
 			// Keep the repeated primitive for tiny patterns rather than truncating
 			// their materialized tiles at the compatibility player's allocation cap.
 			gpu_bitmap_tiles := snap_bitmap && (!plan.can_use_repeated_bitmap()
-				|| chromium_background_bitmap_tiles_are_bounded(plan, clip, 4096))
+				|| chromium_background_bitmap_tiles_are_bounded(plan, image_bounds, 4096))
+			pattern_flags := if gpu_bitmap_tiles {
+				chromium_background_bitmap_pattern_flags(plan, image_bounds)
+			} else { 0 }
+			if pattern_flags == 0 {
+				app.flush_rounded_rect_underlay(page_x, page_y, window_height)
+			}
 			if paint_command_image_allows_force_dark(*command, plan.first_tile.width,
 				plan.first_tile.height, image) {
 				image = app.force_dark_image_for_url(image_data.image_url, image)
@@ -6509,10 +6528,40 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 					if layer.blend_mode != .normal {
 						C.native_begin_background_blend_mode(int(layer.blend_mode))
 					}
+					if pattern_flags != 0 && image_data.background_svg_document == none
+						&& image_data.background_static_svg_resource == none {
+						tile := pixel_snapped_background_bitmap_rect(plan.first_tile)
+						scaling_mode := painting.to_gfx_scaling_mode(image_data.image_rendering,
+							painting.IntSize{image.width, image.height},
+							painting.IntSize{int(math.max(1.0, tile.width)), int(math.max(1.0, tile.height))})
+						clip_radii := [f32(radii.top_left.x), f32(radii.top_left.y), f32(radii.top_right.x), f32(radii.top_right.y), f32(radii.bottom_right.x), f32(radii.bottom_right.y), f32(radii.bottom_left.x), f32(radii.bottom_left.y)]!
+						if underlay := app.rounded_rect_underlay {
+							C.native_set_image_background(app.paint_colors.color(underlay.color, underlay.opacity))
+						}
+						if border := app.background_image_border {
+							r := border.corner_radii
+							rect := [f32(border.x), f32(border.y), f32(border.width), f32(border.height),
+								f32(r.top_left.x), f32(r.top_left.y), f32(r.top_right.x), f32(r.top_right.y),
+								f32(r.bottom_right.x), f32(r.bottom_right.y), f32(r.bottom_left.x), f32(r.bottom_left.y)]!
+							alpha := if border.group_opacity > 0 { border.opacity / border.group_opacity } else { 1.0 }
+							C.native_set_image_border(&rect[0], f32(border.stroke_width), app.paint_colors.color(border.color, alpha))
+						}
+						used_native_repeated_bitmap = C.native_draw_image_pattern_transformed(image, f32(tile.x), f32(tile.y), f32(tile.width), f32(tile.height), f32(image_bounds.x), f32(image_bounds.y), f32(image_bounds.width), f32(image_bounds.height), f32(clip.x), f32(clip.y), f32(clip.width), f32(clip.height), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), f32(command.opacity), if scaling_mode == .nearest_neighbor { 1 } else { 0 }, &clip_radii[0], pattern_flags) == 1
+						C.native_set_image_background(gg.rgba(0, 0, 0, 0))
+						C.native_set_image_border(unsafe { nil }, 0, gg.rgba(0, 0, 0, 0))
+						if used_native_repeated_bitmap {
+							app.background_image_border_consumed = app.background_image_border != none
+							app.rounded_rect_underlay = none
+							app.rounded_rect_underlay_source = none
+						} else {
+							app.flush_rounded_rect_underlay(page_x, page_y, window_height)
+						}
+					}
 					// BackgroundPainting records one repeated-bitmap operation when
 					// repetition has no `space` gaps. Keeping that operation intact also
 					// preserves the decoded image's native top-to-bottom orientation.
-					// Chromium instead clips each tile in its GPU image operation.
+					// Bounded gapless patterns use the image shader above; this
+					// fallback also covers patterns too small to materialize safely.
 					if !gpu_bitmap_tiles && plan.can_use_repeated_bitmap() && image_data.background_svg_document == none
 						&& image_data.background_static_svg_resource == none {
 						converter := painting.new_device_pixel_converter(1.0) or { return }
@@ -6541,7 +6590,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			tiles := if used_native_repeated_bitmap {
 				[]painting.Rect{}
 			} else {
-				painting.background_tiles_from_plan_limited(plan, clip, 4096)
+				painting.background_tiles_from_plan_limited(plan, image_bounds, 4096)
 			}
 			// GPU bitmap tiles draw in one native pass rather than one per tile.
 			mut native_tiles := []f32{}
@@ -6597,10 +6646,10 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 					}
 					continue
 				}
-				left := math.max(tile.x, clip.x)
-				top := math.max(tile.y, clip.y)
-				right_edge := math.min(tile.right(), clip.right())
-				bottom_edge := math.min(tile.bottom(), clip.bottom())
+				left := math.max(tile.x, image_bounds.x)
+				top := math.max(tile.y, image_bounds.y)
+				right_edge := math.min(tile.right(), image_bounds.right())
+				bottom_edge := math.min(tile.bottom(), image_bounds.bottom())
 				if right_edge > left && bottom_edge > top {
 					source_x := f32((left - tile.x) * f64(intrinsic_width) / tile.width)
 					source_y := f32((top - tile.y) * f64(intrinsic_height) / tile.height)
@@ -7048,6 +7097,13 @@ fn (mut app BrowserApp) draw() {
 						app.chromium_raster_plan.command_layers, command_index, 0, page_y)
 				}
 				if shared_svg_end > command_index { continue }
+			}
+			if command.kind == 'draw_background_image' {
+				group_end := app.draw_chromium_background_border_group(command_index, *command, page_y, window.height)
+				if group_end > command_index {
+					shared_svg_end = group_end
+					continue
+				}
 			}
 			if app.scroll_profile.active && app.scroll_profile.replay_kinds {
 				before := platform.thread_arena_usage().used

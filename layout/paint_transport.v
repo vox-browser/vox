@@ -843,6 +843,9 @@ pub:
 	image_clip_width            f64
 	image_clip_height           f64
 	image_clip_radii            BoxRadii
+	// Opaque block borders can obscure part of an image without moving its
+	// positioning area or the rounded clip shared with the background color.
+	background_image_destination ?LayoutRect = none
 	image_attachment            string
 	background_layer_data       ?&PaintBackgroundLayerData = none
 	background_blend_mode       painting.BlendMode
@@ -894,7 +897,7 @@ pub mut:
 	antialiased_rect bool
 	// Native text fields use non-AA paint flags, including their fill underlay.
 	disable_antialias bool
-	// A rounded fill_rect that the following border draws first in its GPU pass.
+	// A rounded fill_rect drawn with the following border or background image.
 	underlays_next bool
 	text      string // for 'draw_text'
 	font_size f64 = 16.0 // for 'draw_text'
@@ -1295,7 +1298,7 @@ fn background_layer_command(layer BackgroundImageLayer, origin LayoutRect, clip 
 	clip_radii BoxRadii, opacity f64, radius f64, points []f64,
 	background_scroll_offset painting.Point, image_rendering css.ImageRendering,
 	fixed_background_visual_context ?int, initial_containing_block LayoutRect,
-	snap_generated_image bool) ?PaintCommand {
+	snap_generated_image bool, image_destination ?LayoutRect) ?PaintCommand {
 	blend_mode := background_image_layer_blend_mode(layer)
 	mut positioning_area := origin
 	mut visual_context_index := ?int(none)
@@ -1374,6 +1377,7 @@ fn background_layer_command(layer BackgroundImageLayer, origin LayoutRect, clip 
 			image_position_x: layer.position_x
 			image_position_y: layer.position_y
 			image_rendering: image_rendering
+			background_image_destination: image_destination
 			image_clip_x: clip.x
 			image_clip_y: clip.y
 			image_clip_width: clip.width
@@ -2273,11 +2277,22 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 			for layer_index := box.decorations().background_images.len - 1; layer_index >= 0; layer_index-- {
 				layer := box.decorations().background_images[layer_index]
 				origin := background_box_rect(box, layer.origin)
-				clip := background_box_rect_from_border(box, layer.clip, background_border_rect)
-				clip_radii := if box.canvas().paints_canvas_background {
+				image_destination := if box.snaps_background_rect && layer.clip == 'border-box'
+					&& !box.canvas().paints_canvas_background && !box.table_cell
+					&& !box.uses_collapsed_borders {
+					?LayoutRect(chromium_background_image_destination(background_border_rect,
+						box.border, effective_border_colors(box.border_colors, box.border_color), box.border_styles))
+				} else { none }
+				mut clip := background_box_rect_from_border(box, layer.clip, background_border_rect)
+				mut clip_radii := if box.canvas().paints_canvas_background {
 					BoxRadii{}
 				} else {
 					background_box_radii(box, layer.clip, box_radii, clip)
+				}
+				if box.snaps_background_rect && layer.clip == 'border-box'
+					&& !box.canvas().paints_canvas_background && !box_radii_are_zero(clip_radii) {
+					clip, clip_radii = chromium_background_under_opaque_border(clip,
+						clip_radii, box.border, effective_border_colors(box.border_colors, box.border_color), box.border_styles)
 				}
 				if command := background_layer_command(layer, origin, clip, clip_radii, opacity, if box.canvas().paints_canvas_background {
 					0.0
@@ -2288,8 +2303,11 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 					y: 0
 					width: b.canvas().viewport_width
 					height: b.canvas().viewport_height
-				}, box.snaps_background_rect) {
+				}, box.snaps_background_rect, image_destination) {
 					commands << command
+					if box.snaps_background_rect {
+						chromium_pair_background_image_color(mut commands)
+					}
 				}
 			}
 		}
@@ -3981,8 +3999,11 @@ fn inline_fragment_commands(fragments []TextFragment, opacity f64) InlineFragmen
 			layer := first.background_images[layer_index]
 			origin := inline_background_box_rect(decorating_fragment, layer.origin, border_rect)
 			clip := inline_background_box_rect(decorating_fragment, layer.clip, border_rect)
-			if command := background_layer_command(layer, origin, clip, fragment_radii, opacity, radius, []f64{}, painting.Point{}, .auto_, none, LayoutRect{}, first_is_chromium) {
+			if command := background_layer_command(layer, origin, clip, fragment_radii, opacity, radius, []f64{}, painting.Point{}, .auto_, none, LayoutRect{}, first_is_chromium, none) {
 				commands << command
+				if first_is_chromium {
+					chromium_pair_background_image_color(mut commands)
+				}
 			}
 		}
 		if background_isolated {

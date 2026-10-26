@@ -1,0 +1,20 @@
+<!doctype html>
+<meta charset="utf-8">
+<style>
+html,body{margin:0;background:white}
+.pattern{position:absolute;left:31px;top:31px;width:99px;height:38px;
+ border:1px solid #444;border-radius:3px;background:white url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAADCAYAAAC09K7GAAAAFElEQVR4nGOs3hHwnwEJMCFzsAIAebkChj/Y2v8AAAAASUVORK5CYII=) repeat 1px 1px}
+.y{left:161px;background-repeat:repeat-y}
+.x{left:291px;background-repeat:repeat-x}
+.single{left:421px;width:2px;height:1px;background-position:0 0}
+.inline{position:absolute;left:31px;top:121px;font:12px Verdana;line-height:20px}
+.msaa{top:225.5px}
+.diagonal{position:absolute;left:701px;top:230px;width:0;height:0;
+ border-left:7px solid transparent;border-bottom:7px solid black}
+a{border:1px solid #444;padding:1px 6px;background:white url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAADCAYAAAC09K7GAAAAFElEQVR4nGOs3hHwnwEJMCFzsAIAebkChj/Y2v8AAAAASUVORK5CYII=) repeat 0 0;
+ color:white;font:bold 10px Verdana;line-height:20px;border-radius:3px}
+</style>
+<div class="pattern"></div><div class="pattern y"></div>
+<div class="pattern x"></div><div class="pattern single"></div>
+<span class="inline"><a>join</a></span>
+<div class="diagonal"></div><span class="inline msaa"><a>join</a></span>
