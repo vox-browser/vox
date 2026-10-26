@@ -889,7 +889,7 @@ fn (mut iterator InlineLevelIterator) enter_text_node(text_node &TextNode) {
 	reserve_inline_items_in_storage(mut iterator.items, chunks.len, iterator.item_storage_)
 	iterator.has_text_node_context = true
 	iterator.text_node_context = InlineTextNodeContext{
-		chromium_context_run: iterator.chromium_latin_context_run(text_node, chunks)
+		chromium_context_run: iterator.chromium_single_script_context_run(text_node, chunks)
 		chunks: chunks
 		should_collapse_whitespace: white_space_collapse in [.collapse, .preserve_breaks]
 		should_wrap_lines: should_wrap_lines

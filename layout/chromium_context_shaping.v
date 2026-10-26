@@ -2,15 +2,14 @@ module layout
 
 import platform
 
-// Blink shapes across soft word boundaries. In particular, Arial kerns a
-// space followed by A, so shaping "N. America" as three independent chunks
-// changes both its width and the position of the second word.
-fn (iterator &InlineLevelIterator) chromium_latin_context_run(text_node &TextNode,
+// Blink shapes across soft word boundaries, including hyphens. Shaping
+// "N. America" or "Что-то" as independent chunks loses their boundary kerning.
+fn (iterator &InlineLevelIterator) chromium_single_script_context_run(text_node &TextNode,
 	chunks []TextNodeChunk) ?&platform.GlyphRun {
 	if chunks.len < 2 { return none }
 	if !iterator.is_unidirectional_left_to_right {
 		style := text_node.Node.computed_values()
-		// A Latin LTR isolate is independent of the containing paragraph's
+		// An LTR isolate is independent of the containing paragraph's
 		// directional runs. Keep context when its punctuation became a chunk.
 		if style.direction() != .ltr || style.unicode_bidi() != .isolate { return none }
 	}
@@ -19,13 +18,7 @@ fn (iterator &InlineLevelIterator) chromium_latin_context_run(text_node &TextNod
 	text := text_node.text_for_rendering()
 	mut units := []u16{}
 	if !text.is_ascii() {
-		// A single Latin shaping script, including combining marks and common
-		// punctuation. Other scripts keep the segmented shaping path.
-		for character in text.runes() {
-			if u32(character) > 0x036f && u32(character) !in u32(0x2000)..u32(0x2070) {
-				return none
-			}
-		}
+		if !chromium_context_has_single_supported_script(text) { return none }
 		units = utf16_code_units_for_line_box(text)
 	}
 	for chunk in chunks {
@@ -35,16 +28,47 @@ fn (iterator &InlineLevelIterator) chromium_latin_context_run(text_node &TextNod
 		}
 		if units.len > 0 {
 			if chunk.start + chunk.length > units.len || chunk.view !=
-				string_from_utf16_code_units_for_line_box(units[chunk.start..chunk.start + chunk.length]) { return none }
+				string_from_utf16_code_units_for_line_box(units[chunk.start..chunk.start + chunk.length]) {
+				return none
+			}
 		} else if chunk.start + chunk.length > text.len
-			|| chunk.view != text[chunk.start..chunk.start + chunk.length] { return none }
+			|| chunk.view != text[chunk.start..chunk.start + chunk.length] {
+			return none
+		}
 	}
 	letter_spacing :=
 		resolved_text_spacing_for_node(unsafe { &Node(text_node) }, .letter_spacing).to_double()
 	word_spacing :=
 		resolved_text_spacing_for_node(unsafe { &Node(text_node) }, .word_spacing).to_double()
-	return iterator.shape_text_for_layout(text_node, 0, f32(letter_spacing), f32(word_spacing),
+	run := iterator.shape_text_for_layout(text_node, 0, f32(letter_spacing), f32(word_spacing),
 		text, font, .ltr).glyph_run
+	// A cluster may emit multiple glyphs, each retaining its complete UTF-16
+	// span. Summing those spans would misidentify every later chunk boundary.
+	// Keep segmented shaping until the run carries explicit cluster offsets.
+	mut covered_units := 0
+	for glyph in run.glyphs_ { covered_units += glyph.length_in_code_units }
+	if covered_units != if units.len > 0 { units.len } else { text.len } { return none }
+	return run
+}
+
+fn chromium_context_has_single_supported_script(text string) bool {
+	mut has_latin := false
+	mut has_cyrillic := false
+	for character in text.runes() {
+		code_point := u32(character)
+		if code_point in u32(`A`) .. u32(`Z` + 1) || code_point in u32(`a`) .. u32(`z` + 1)
+			|| code_point in u32(0x00c0) .. u32(0x0300) {
+			has_latin = true
+		} else if code_point in u32(0x0400) .. u32(0x0530) {
+			has_cyrillic = true
+		} else if code_point > 0x036f && code_point !in u32(0x2000) .. u32(0x2070) {
+			return false
+		}
+		// Common punctuation and combining marks can share either script's
+		// context. Mixed scripts need itemization and keep segmented shaping.
+		if has_latin && has_cyrillic { return false }
+	}
+	return true
 }
 
 fn chromium_context_slice(run &platform.GlyphRun, chunk TextNodeChunk) ?platform.ShapedText {
@@ -83,8 +107,9 @@ fn chromium_context_slice(run &platform.GlyphRun, chunk TextNodeChunk) ?platform
 	mut trailing_advance := f32(0)
 	for index := glyphs.len - 1; index >= 0; index-- {
 		glyph := glyphs[index]
-		if glyph.code_point != u32(` `) { break
-		 }
+		if glyph.code_point != u32(` `) {
+			break
+		}
 		trailing_length += glyph.length_in_code_units
 		trailing_advance += glyph.advance
 	}

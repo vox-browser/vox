@@ -1,0 +1,19 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Cyrillic context across soft breaks</title>
+<style>
+  @font-face {
+    font-family: "Context Test";
+    src: url("../resources/cyrillic-context.ttf");
+  }
+  body { margin: 0; background: white; color: #333; font: 16px/24px Arial; }
+  .case { margin: 16px 24px; width: 372px; }
+  .center { text-align: center; }
+  .isolate { direction: ltr; unicode-bidi: isolate; }
+  .kern { font: 20px/28px "Context Test"; }
+  .wrap { width: 88px; }
+</style>
+<div class="case center">Что-то пошло не так. Попробуйте обновить или зайдите позже</div>
+<div class="case kern center">Т-то Т-то Т-то</div>
+<div class="case kern isolate">Т-то Т-то</div>
+<div class="case kern wrap">Т-то Т-то Т-то</div>
