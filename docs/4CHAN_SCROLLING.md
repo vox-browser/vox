@@ -1227,5 +1227,26 @@ The completed pipeline's commands, provenance and all diagnostics are in
 12 GiB budget, sampled peak RSS 937,476,096 bytes, elapsed 607.13 seconds.
 Both eligibility decisions explicitly disable unprofiled acceptance. These
 instrumented diagnostics supply no scrolling performance credit; smooth
-60 fps remains unmet. A separate read-only command/gate probe is needed before
-attributing the absent work to a particular eligibility condition.
+60 fps remains unmet.
+
+A subsequent read-only gate probe identified the rejection. It validated the
+actual executable image and symbol ranges, called the compiled leaf/scanner
+functions with the recorded V array layout, and observed native prefetch entry.
+The executable's draw-loop disassembly also contains the prefetch call. Both
+120-input archived-page trials reached eligible command groups; native entry
+ran 484 and 466 times during input. The first 128 recorded input entries in
+each trial all returned 0 with a 2048×384 root tile. That tile contains 786,432
+device pixels, exceeding the prototype's 262,144-pixel admission limit. The
+other recorded native state gates admitted those calls. The earlier absent
+batch logs therefore cannot assess either patch margin's cache usefulness.
+
+The probe and its exact ABI declarations, commands, symbols, disassemblies,
+source and bundle identities, raw trials, and parsed diagnosis are retained in
+`rect-prefetch-gate-diagnostic-v1/`; the complete draw disassembly is
+`rect-prefetch-draw-disassembly.txt`. The enclosing report is
+`rect-prefetch-gate-queue-20261026-222119/guard.json`: child exit 0, 12 GiB
+budget, sampled peak RSS 855,113,728 bytes, elapsed 52.92 seconds. These
+instrumented observations establish the blocking gate and supply no
+performance credit. An expanded admission limit with batches split at the
+backend's unchanged aggregate pixel limit still requires correctness,
+actual-input eligibility, and unprofiled acceptance checks.
