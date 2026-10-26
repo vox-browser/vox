@@ -85,6 +85,7 @@ mut:
 	// runtime's bindings own and release when it closes.
 	owned_closures_ []voidptr
 	document_state_dirty_ bool
+	document_state_wakeup_ ?fn ()
 	document_replay_effects_pending_ bool
 	scripting_settings_ ?&html.EnvironmentSettingsObject
 }
@@ -344,6 +345,11 @@ pub fn (mut runtime Runtime) close() {
 		return
 	}
 	runtime.closed = true
+	if wakeup := runtime.document_state_wakeup_ {
+		runtime.document_state_wakeup_ = none
+		platform.release_closure(voidptr(wakeup))
+	}
+	runtime.document_state_dirty_ = false
 	for handler in runtime.close_handlers_ {
 		handler()
 		platform.release_closure(voidptr(handler))
@@ -392,10 +398,35 @@ pub fn (mut runtime Runtime) add_close_handler(handler fn ()) { runtime.close_ha
 // Release callback, a closure that only this runtime's bindings call, when the
 // runtime closes.
 pub fn (mut runtime Runtime) own_closure(callback voidptr) { runtime.owned_closures_ << callback }
-pub fn (mut runtime Runtime) mark_document_state_dirty() { runtime.document_state_dirty_ = true }
+
+// The embedding owns frame scheduling. Wake it once per pending replay, even
+// when a callback changes only compact state and creates no native invalidation.
+// This runtime owns the supplied closure until replacement or close.
+pub fn (mut runtime Runtime) set_document_state_wakeup(wakeup ?fn ()) {
+	if previous := runtime.document_state_wakeup_ {
+		platform.release_closure(voidptr(previous))
+	}
+	runtime.document_state_wakeup_ = none
+	if runtime.closed {
+		if callback := wakeup { platform.release_closure(voidptr(callback)) }
+		return
+	}
+	runtime.document_state_wakeup_ = wakeup
+	if runtime.document_state_dirty_ {
+		if callback := wakeup { callback() }
+	}
+}
+
+pub fn (mut runtime Runtime) mark_document_state_dirty() {
+	if runtime.closed || runtime.document_state_dirty_ { return }
+	runtime.document_state_dirty_ = true
+	if wakeup := runtime.document_state_wakeup_ { wakeup() }
+}
+
 pub fn (runtime &Runtime) has_pending_document_state() bool {
 	return runtime.document_state_dirty_
 }
+
 pub fn (mut runtime Runtime) take_document_state_dirty() bool {
 	dirty := runtime.document_state_dirty_
 	runtime.document_state_dirty_ = false

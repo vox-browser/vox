@@ -3701,7 +3701,8 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 }
 
 fn create_browser_script_runtime(engine browserjs.Engine) &browserjs.Runtime {
-	runtime := browserjs.Runtime.create_with_engine(engine)
+	mut runtime := browserjs.Runtime.create_with_engine(engine)
+	runtime.set_document_state_wakeup(request_browser_frame)
 	if engine == .libjs {
 		mut agent_event_loop := html.main_thread_event_loop()
 		agent_event_loop.bind_vm(runtime.libjs_vm())
