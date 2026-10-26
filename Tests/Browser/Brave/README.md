@@ -119,9 +119,9 @@ they improve from 123 to 96 differing pixels, with maximum channel error 12.
 word boundaries, fractional max-content tables with emergency wrapping, and
 font-relative inline margins. The Chromium profile keeps exact glyph advances
 inside an item and rounds its outer advance upward to 1/64px. Normal fitting
-and emergency breaking use that same cumulative advance. ASCII runs with one
-font can share shaping across word chunks; other scripts and mixed-font runs
-retain the existing shaping path.
+and emergency breaking use that same cumulative advance. Compatible runs with
+one font can share shaping across word chunks; the script and fallback-font
+limits are described below.
 
 `list-symbols` checks outside disc, circle and square markers and authored
 marker text. The Chromium profile derives horizontal LTR symbol geometry from
@@ -138,7 +138,11 @@ vertical alignment; selection and layout geometry retain their fractions.
 `latin-context` extends shared shaping to Latin letters, combining marks and
 common punctuation, including LTR `unicode-bidi:isolate` text. Chunk slicing
 uses UTF-16 offsets so multibyte quotes and accents cannot shift source ranges.
-Other scripts and mixed-font text continue through segmented shaping.
+The layout context tests also cover Cyrillic and contiguous segments on either
+side of a fallback-font symbol, including supplementary characters. Each
+segment must use one font and one supported script. Unsupported scripts,
+incompatible bidi paths, discontinuities and multi-glyph clusters retain
+ordinary shaping. These tests do not establish full-page pixel parity.
 
 `opaque-box-shadow` checks opaque rounded backgrounds, solid borders, fractional
 block offsets, a one-pixel shadow source, and an inline rounded border. Opaque
