@@ -1,0 +1,27 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>IntersectionObserver startup</title>
+<style>
+html,body{margin:0;background:#fcfdff}
+#target{position:absolute;left:32px;top:32px;width:80px;height:48px;background:#f7b259}
+#paint-probe{position:absolute;left:144px;top:32px;width:80px;height:48px;background:#c22}
+</style>
+<div id="target"></div><div id="paint-probe"></div>
+<script>
+const target=document.getElementById('target'),probe=document.getElementById('paint-probe');
+let phase=0;
+const observer=new IntersectionObserver(function(entries,receiver){
+  if(this!==observer||receiver!==observer||entries.length!==1)throw Error('callback');
+  const entry=entries[0],rect=entry.boundingClientRect;
+  if(!(entry instanceof IntersectionObserverEntry)||entry.target!==target||!(rect instanceof DOMRectReadOnly)||rect.width!==80||rect.height!==48)throw Error('entry');
+  if(phase===0){
+    if(!entry.isIntersecting||entry.intersectionRatio!==1||rect.x!==32)throw Error('visible target');
+    phase=1;target.setAttribute('style','left:1100px');
+  }else if(phase===1){
+    if(entry.isIntersecting||entry.intersectionRatio!==0||rect.x!==1100)throw Error('hidden target');
+    phase=2;observer.disconnect();target.removeAttribute('style');
+    probe.setAttribute('style','background:#008000');document.title='IntersectionObserver PASS';
+  }
+},{threshold:[1,0.5,0]});
+observer.observe(target);
+</script>

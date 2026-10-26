@@ -3002,6 +3002,14 @@ fn run_document_script_sources_with_image_fetch_hooks(document &dom.Document, cu
 		return none
 	}
 	layout.install_document_layout_hook(document)
+	mutable_runtime.install_intersection_observer_binding(fn [document] (callback_runtime &browserjs.Runtime) ! {
+		state := callback_runtime.evaluate_host('__ladybirdFinalize()')!
+		mut replay_messages := []string{}
+		apply_javascript_runtime_state(document, state, callback_runtime, mut replay_messages)
+	}) or {
+		messages << 'JavaScript IntersectionObserver bindings: ${err.msg()}'
+		return none
+	}
 	mutable_runtime.install_window_find_binding(fn [document] (callback_runtime &browserjs.Runtime) ! {
 		state := callback_runtime.evaluate_host('__ladybirdFinalize()')!
 		mut replay_messages := []string{}
