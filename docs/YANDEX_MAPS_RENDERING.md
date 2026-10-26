@@ -142,3 +142,25 @@ The production comparison retained fresh baseline/reference captures in
 pass is credited. Production-only recovery carries those completed captures
 and uses a longer build deadline within the unchanged memory budget. Full-map
 improvement and the queued broader checks are not yet credited.
+
+
+## Unused perspective raster contexts
+
+`5e6cc65b` delays the whole-document raster fallback until a paint command
+actually uses a perspective or scroll-compensation context. Unsupported state
+propagates through descendant contexts, so painted perspective descendants
+still use the conservative root fallback. Empty perspective containers no
+longer disable independent scroll layers; their own backgrounds retain the
+ordinary parent context. Reusing the planner clears the retained state.
+
+All ten raster-layer cases pass with both Boehm and `-gc none`, including three
+new cases for unused perspective, painted descendants, and referenced versus
+unused scroll compensation. Compilation and actual execution exit zero; the
+three implementation/test hashes stay unchanged. Evidence is retained in
+`Build/yandex-maps/unused-raster-context-1792990767506049000/focused-1792992189956745000/`.
+The preceding attempt failed during C compilation because the private staged
+harness omitted a sibling native-header path; no tests ran in that attempt.
+
+Production eligibility, full-map pixels, and the broader regression checkpoint
+remain pending. This focused renderer correction does not establish live-site
+or JavaScript-engine parity.
