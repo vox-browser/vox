@@ -139,11 +139,11 @@ fn test_indexed_db_binding_values_outlive_temporary_allocation_and_promises_keep
 	deliver_indexed_db_binding_tasks()
 	assert runtime.evaluate_host('JSON.stringify(log)')! == '[1,"Русский 😀",1,"1,true,","strict","complete"]'
 	assert runtime.evaluate_host(r'
- const store=db.transaction("items","readwrite").objectStore("items");let cloneErrors=0;const marker={};let same=false;
- for(const value of [()=>0,new Map(),1n,new Array(2),(()=>{const x={};x.self=x;return x})()]){try{store.put(value)}catch(e){if(e instanceof DOMException&&e.name==="DataCloneError")cloneErrors++;}}
+ const store=db.transaction("items","readwrite").objectStore("items");const cloneErrors=[];const marker={};let same=false;
+ for(const value of [()=>0,{nested:Symbol()},new Map(),1n,new Array(2),(()=>{const x={};x.self=x;return x})()]){try{store.put(value);cloneErrors.push("accepted");}catch(e){cloneErrors.push(e instanceof DOMException?e.name:e.constructor.name);}}
  try{store.put({get text(){throw marker}})}catch(e){same=e===marker}
- cloneErrors===5&&same;
- ')! == 'true'
+ JSON.stringify({cloneErrors,same});
+ ')! == '{"cloneErrors":["DataCloneError","DataCloneError","DataCloneError","DataCloneError","DataCloneError","DataCloneError"],"same":true}'
 	deliver_indexed_db_binding_tasks()
 }
 

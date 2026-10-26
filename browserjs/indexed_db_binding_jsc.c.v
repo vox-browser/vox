@@ -67,6 +67,10 @@ pub fn (mut runtime Runtime) install_indexed_db_binding() ! {
 		defer { allocation_scope.finish() }
 		return runtime.indexed_db_operation(mut binding, args) or {
 			if err is JavaScriptValueException { return err }
+			value := webidl.exception_value(err)
+			if value.dom_exception_ != none {
+				return runtime.actual_javascript_exception(runtime.javascript_dom_exception(value)!)
+			}
 			message := err.msg()
 			if message.contains(':') {
 				name := message.all_before(':')
