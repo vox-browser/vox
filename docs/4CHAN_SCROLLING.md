@@ -825,3 +825,59 @@ exits and summaries remain in `glyph-pool-validation-commands.json`,
 `glyph-pool-pixel-comparisons.json`, `glyph-pool-trial-summary.json`, each
 trial's `run.json`/`summary.json`, the diagnostic result files and
 `glyph-pool-browser-validation-guard.json` in the evidence directory above.
+
+### Rejected small-patch load reuse (2026-10-26)
+
+The `patch-load-v1` experiment omitted the full GPU target clear when an
+existing small-shape patch replaced every pixel in its conservative readback
+rectangle with the input backdrop. Background-free draws still cleared.
+It passed 1,920 independent full/region/batch pixel comparisons, including
+reused targets, translucent backdrops, compound shapes and both raster modes;
+the same cases passed AddressSanitizer and UndefinedBehaviorSanitizer.
+The cache, batch, region, composite, backdrop and grid checks also passed.
+Separate browser diagnostics verified sixteen actual input-window executions
+per candidate and zero per disabled control, with the loaded library path
+validated. Thirteen native screenshot pairs were pixel-identical; the four
+existing upstream smoke differences were identical in both modes.
+
+Four alternating unprofiled trials used the sealed disk fixture, original
+HTTPS URL, private TLS trust, denied external network, required title,
+20-second settle, 1024×764 CSS viewport at scale two, fresh process/profile,
+and 360 nominal 60 Hz precise wheel inputs with delta 12 and reversal every
+120 inputs. The endpoint is changed Cocoa layer publication after
+`updateLayer`, not physical scanout. All trials moved the document and exited
+0 with unchanged binaries and successful archived responses.
+
+| Trial | Scroll fps | Median / p95 / max interval, ms | Over 16.67 ms | Moving intervals / publications / inputs |
+| --- | ---: | --- | ---: | --- |
+| control-1 | 25.87 | 34.56 / 74.74 / 99.59 | 99.44% | 177 / 186 / 360 |
+| candidate-1 | 25.67 | 35.52 / 68.31 / 111.07 | 100% | 174 / 185 / 360 |
+| control-2 | 25.12 | 35.11 / 72.75 / 89.67 | 98.79% | 165 / 173 / 360 |
+| candidate-2 | 25.74 | 35.40 / 68.59 / 82.25 | 99.40% | 167 / 177 / 360 |
+
+| Trial | Actual input Hz | Input period, s | Leading / trailing publication gap, ms | First scroll publication, ms |
+| --- | ---: | ---: | --- | ---: |
+| control-1 | 52.48 | 6.841 | 159.84 / 19.97 | 259.43 |
+| candidate-1 | 52.96 | 6.779 | 144.71 / 22.28 | 223.54 |
+| control-2 | 54.66 | 6.567 | 150.53 / 19.86 | 240.20 |
+| candidate-2 | 55.32 | 6.489 | 143.26 / 31.85 | 222.73 |
+
+The throughput changes were −0.80% and +2.43%; median intervals and deadline
+miss fractions regressed in both candidates. This does not establish a useful
+gain, so the implementation and its production switch were removed. The
+18-CPU host's one-minute load before/after each trial was 24.28/25.90,
+25.90/23.84, 23.37/22.53 and 22.53/22.09; variation and contention remain
+material. Trials began at 06:17:31.709, 06:18:03.589, 06:18:35.854 and
+06:19:07.547 UTC. **Smooth 60 fps remains unmet.**
+
+Evidence is retained under `Build/pol-scroll-20261025-2210/` in
+`patch-load-v1-source/`, `patch-load-v1-owned.patch`,
+`patch-load-v1-build-identity.json`, `patch-load-v1-focused-checks/`,
+`patch-load-v1-validation/` and `patch-load-v1-trial-summary.json`.
+The signed candidate's Vox/Skia/Graphite/Dawn SHA256 values are
+`b6c8a5514bef0082723c5a003f277c750bcd11a9bdb91c49327be0923d1f0b83`,
+`e8dbb3c2078f2ecc248a87b37693875ece64fd92741fe38f280bf0424050867f`,
+`a9f0d19177154232d915c13ff4256c8f5d8a08c7f8fa69d7d5e1c9b996693f6a`
+and `cb98233f4dd44223964522e972655d739d701da23ddf0a3a4fc794c8722b9b52`.
+The browser/build guard and child exited 0, sampled peak RSS 921,452,544
+bytes within 12 GiB, elapsed 489.90 seconds.
