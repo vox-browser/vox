@@ -347,3 +347,15 @@ the original bytes. V's string slicing allocates and copies; the invalid
 pointer-identity assertion was removed. The implementation continues to return
 owned strings. That failed attempt did not execute its preallocated variant;
 the corrected tests are rerun separately.
+
+Commit `0087357b` caches ASCII classification alongside the rendered text and
+clears it through the existing text invalidation hook. Fragment slicing uses
+that classification; non-ASCII text retains the UTF-16 path. The seven focused
+cases in `Build/hn-small-text/ascii-text-2/` pass in both Boehm and preallocated
+no-GC modes: fourteen case executions, both compiler exits zero, both runtime
+exits zero, and unchanged checked source hashes. Coverage includes transformed
+first-letter ranges, cached and uncached fragment offsets, malformed UTF-8,
+combining sequences, emoji and live DOM text replacement. The enclosing guard
+exits zero, with sampled peak aggregate RSS of 9,096,560,640 bytes and elapsed
+time of 328.258 seconds; both separate 3 GiB runtime guards also exit zero.
+These focused checks establish behavior, not a measured instruction reduction.
