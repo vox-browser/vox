@@ -2375,10 +2375,8 @@ fn apply_decoded_javascript_state(document &dom.Document, state map[string]json2
 		body := document.body()
 		body_text := json_string_property(state, 'bodyText') or { '' }
 		if mut body_element := body {
-			if body_text != (body_element.as_node().text_content() or { '' }) {
-				mut body_node := unsafe { &dom.Node(body_element) }
-				body_node.set_text_content(body_text) or { messages << err.msg() }
-			}
+			mut body_node := unsafe { &dom.Node(body_element) }
+			body_node.set_text_content(body_text) or { messages << err.msg() }
 		}
 	}
 	mut element_by_bridge_key := canvas_elements.clone()
@@ -2433,8 +2431,8 @@ fn apply_decoded_javascript_state(document &dom.Document, state map[string]json2
 					}
 				}
 				if text := json_string_property(element_state, 'textContent') {
-					current_text := element.as_node().text_content() or { '' }
-					if json_bool_property(element_state, 'textContentDirty') && text != current_text && (json_string_property(element_state, 'innerHTML') or {
+					// Equal text can still replace non-text children or Text identity.
+					if json_bool_property(element_state, 'textContentDirty') && (json_string_property(element_state, 'innerHTML') or {
 						''
 					}) == '' {
 						mut node := unsafe { &dom.Node(element) }
