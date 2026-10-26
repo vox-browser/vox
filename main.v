@@ -1875,7 +1875,6 @@ fn javascript_bootstrap() string {
 		compact_select_bootstrap(),
 		compact_element_names_bootstrap(),
 		browserjs.view_transition_bootstrap(),
-		'Object.defineProperty(document, "title", { get: function () { return __state.title; }, set: function (v) { __state.title = String(v); } });',
 		'const __htmlState=__elementStates().find(function(s){return s.tagName.toLowerCase()==="html";}),__headState=__elementStates().find(function(s){return s.tagName.toLowerCase()==="head";}),__bodyState=__elementStates().find(function(s){return s.tagName.toLowerCase()==="body";});document.documentElement=__htmlState?__element(__htmlState):{classList:{add:function(){},remove:function(){},contains:function(){return false;}}};document.head=__headState?__element(__headState):null;document.body=__bodyState?__element(__bodyState):{appendChild:function(child){return child;}};',
 		compact_document_bootstrap(),
 		'const console = { log: function () { __state.logs.push(Array.prototype.map.call(arguments, String).join(" ")); }, info: function () { __state.logs.push(Array.prototype.map.call(arguments, String).join(" ")); }, warn: function () { this.log.apply(this, arguments); }, error: function () { this.log.apply(this, arguments); } };',
@@ -2665,14 +2664,6 @@ fn apply_decoded_javascript_state(document &dom.Document, state map[string]json2
 				if entry is string {
 					messages << entry
 				}
-			}
-		}
-	}
-	if title := json_string_property(state, 'title') {
-		if mut title_element := css.query_selector(root, 'title') {
-			if title != (title_element.as_node().text_content() or { '' }) {
-				mut title_node := unsafe { &dom.Node(title_element) }
-				title_node.set_text_content(title) or {}
 			}
 		}
 	}

@@ -114,7 +114,6 @@ fn javascript_initial_state_with_policy(document &dom.Document, current_url stri
 
 	model := html.NavigableModel.navigable_with_active_document(document)
 	return {
-		'title':                        json2.Any(document_title(document))
 		'bodyHTMLDirty':                json2.Any(false)
 		'bodyTextDirty':                json2.Any(false)
 		'location':                     json2.Any(current_url)

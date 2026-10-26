@@ -19,7 +19,7 @@ fn test_compact_finalization_sends_only_pending_elements_and_keeps_full_snapshot
 	assert (decoded['elements'] or { panic('missing elements') }).as_map().len == 0
 	full := json2.decode[map[string]json2.Any](runtime.evaluate_host('__ladybirdSnapshot()')!)!
 	assert (full['elements'] or { panic('missing snapshot') }).as_map().len == 6
-	runtime.evaluate_host('changed.setAttribute("data-updated","yes");changed.textContent="next";document.title="new title";console.log("once")')!
+	runtime.evaluate_host('document.title="new title";changed.setAttribute("data-updated","yes");changed.textContent="next";console.log("once")')!
 	updated := runtime.evaluate_host('__ladybirdFinalize()')!
 	updated_state := json2.decode[map[string]json2.Any](updated)!
 	assert (updated_state['elements'] or { panic('missing delta') }).as_map().len == 1
