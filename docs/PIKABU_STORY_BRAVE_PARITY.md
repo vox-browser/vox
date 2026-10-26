@@ -425,3 +425,48 @@ by 514,878 pixels and retains the missing API and policy differences described
 above. The visual driver completed successfully while retaining those failed
 pixel comparisons; its exit zero is not whole-page parity or a broad-check
 cadence reset.
+
+
+## Native observer startup bindings
+
+`2dac6be3` exposes native `DOMRectReadOnly` geometry. `04241481` binds
+`IntersectionObserver` to translated layout observations and asynchronous HTML
+tasks, including native target identity, threshold conversion, callback exception
+reporting, and runtime shutdown. Five focused cases pass in normal and poisoned
+arena modes with unchanged sources:
+`Build/pikabu-story-api-tests-1793000652259797000/results.json`.
+Entry construction and visibility reporting retain the upstream implementation's
+limits; this does not establish complete IntersectionObserver API parity.
+
+The signed production bundle builds and passes headless startup. Its pinned
+executable is `Build/pikabu-story-api-production-1793000650758526000/Vox.app`,
+SHA-256 `36f04911d3237a4ac8d6cbae08a5e7e282c8bcc4bc5a3a86382cf110febe29de`.
+The compiler is current V `1e63d0f`, executable SHA-256
+`dfd0ac6c17cd0c10e804be6720f363c13fe242bdaba5d4315f1a6961c06ce607`.
+Twelve files changed in independent workflows during production compilation;
+the recorded source manifest prevents attributing this whole bundle to one fix.
+The combined guard exits 1, with sampled peak RSS 7,771,635,712 bytes:
+`Build/pikabu-story-api-job-2.json`. Its first observer fixture incorrectly
+required identical JavaScript objects from repeated `boundingClientRect` reads;
+Brave rejects that assertion. The fixture now tests geometry and interface
+identity without imposing that unsupported object-identity requirement.
+
+The corrected fixture passes in fresh screenshot and ordinary Vox processes,
+with no JavaScript diagnostics or reported native exceptions, and is pixel-exact
+against fresh Brave at 1024 by 768. All binary, library, Brave and fixture hashes
+remain unchanged. The separate guard exits 0 (sampled peak RSS 966,656,000 bytes):
+`Build/pikabu-story-api-job-3.json`. Commands, hashes and zero-difference pixels
+are retained in
+`Build/pikabu-story-intersection-acceptance-1793001659029448000/results.json`.
+All ten SVG regressions also remain exact:
+`Build/pikabu-story-svg-regression-1793001437213226000/results.json`.
+
+Live evidence in `Build/pikabu-story-callback-visual-1793001076203847000/`
+shows 971 SVG symbols and 103 uses after the observer binding. Both native
+capture modes load the requested story and title; application startup next
+reports missing `queueMicrotask`. A separate third-party script still reports
+missing `WebSocket`. The six earlier startup fixtures, shadow precision, and
+rounded outlines remain exact. The live page still differs from Brave by
+514,771 pixels (65.4565%); whole-page parity and the earlier three failing
+broad screenshot cases remain open. No comparison limits or broad-check
+cadence were reset.
