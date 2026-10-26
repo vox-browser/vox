@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Measure one native address navigation, with fast page switching on or off.
 
-Run alternating matched trials under tools/run_memory_bounded.py. The endpoint
-is a changed Cocoa layer publication after updateLayer with the target title,
-not physical display scanout. Captures retain the first and settled frames for
-pixel validation. Use --diagnostic separately from timed acceptance trials.
+Run alternating matched trials under tools/run_memory_bounded.py. The probe
+records first and last changed document publications followed by a quiet window,
+not physical display scanout or network idle. Captures retain the first, last
+changed and settled frames. Use --diagnostic separately from timed trials.
 """
 import argparse
 from contextlib import contextmanager
@@ -24,6 +24,7 @@ from page_archive import Replay
 
 REPO = Path(__file__).resolve().parents[1]
 ENDPOINT = 'native address submission to changed Cocoa layer contents after updateLayer with target title; not physical scanout'
+SETTLED_ENDPOINT = 'native address submission to last changed document publication followed by the requested quiet window; quiet delay excluded; not network idle or physical scanout'
 
 
 def sha256(path):
@@ -73,10 +74,13 @@ def main():
     parser.add_argument('--width', type=int, default=1024)
     parser.add_argument('--height', type=int, default=768, help='Document viewport height without chrome')
     parser.add_argument('--settle-seconds', type=float, default=4)
+    parser.add_argument('--quiet-seconds', type=float, default=2,
+                        help='Observe unchanged destination pixels for this long; excluded from settled latency')
     args = parser.parse_args()
     if sys.platform != 'darwin':
         parser.error('Requires macOS')
-    if args.width <= 0 or args.height <= 0 or not 0 <= args.settle_seconds <= 60:
+    if (args.width <= 0 or args.height <= 0 or not 0 <= args.settle_seconds <= 60
+            or not .5 <= args.quiet_seconds <= 30):
         parser.error('Invalid viewport or settle period')
     if args.archive and args.ca:
         parser.error('--archive creates its own process-local certificate; omit --ca')
@@ -126,7 +130,8 @@ def measure(args, binary, output, replay=None):
                DYLD_LIBRARY_PATH=str(binary.parent), DYLD_INSERT_LIBRARIES=str(probe),
                VOX_SWITCH_FROM=args.from_url, VOX_SWITCH_TO=args.to_url,
                VOX_SWITCH_FROM_TITLE=args.from_title, VOX_SWITCH_TO_TITLE=args.to_title,
-               VOX_SWITCH_OUTPUT=str(output), VOX_SWITCH_SETTLE=str(args.settle_seconds))
+               VOX_SWITCH_OUTPUT=str(output), VOX_SWITCH_SETTLE=str(args.settle_seconds),
+               VOX_SWITCH_QUIET=str(args.quiet_seconds))
     if args.ca:
         env['SSL_CERT_FILE'] = str(args.ca.resolve())
     if args.proxy:
@@ -141,11 +146,13 @@ def measure(args, binary, output, replay=None):
     hashes = {str(path): sha256(path) for path in pinned}
     command = [str(binary), '--enable-javascript', '--window-width', str(args.width),
                '--window-height', str(args.height+84), args.from_url]
-    evidence = dict(endpoint=ENDPOINT, mode=args.mode, diagnostic=args.diagnostic,
+    evidence = dict(endpoint=ENDPOINT, settled_endpoint=SETTLED_ENDPOINT,
+                    mode=args.mode, diagnostic=args.diagnostic,
                     command=command, compile_command=compile_command, source_and_binary_sha256=hashes,
                     cache_sha256=cache_digest.hexdigest(), initial_settings=settings,
                     profile_policy='fresh private profile per trial', viewport=[args.width,args.height],
                     network_policy=args.network_policy, settle_seconds=args.settle_seconds,
+                    quiet_seconds=args.quiet_seconds,
                     settle_basis='matching source document title', started_unix=time.time(),
                     host=dict(cpu_count=os.cpu_count(), load_average_before=list(os.getloadavg())))
     if replay:
@@ -166,19 +173,30 @@ def measure(args, binary, output, replay=None):
             raise RuntimeError(f'Invalid browser completion, exit {code}; inspect browser.log')
         starts = [line for line in text.splitlines() if line.startswith('PAGE_SWITCH_START ')]
         results = [line for line in text.splitlines() if line.startswith('PAGE_SWITCH_RESULT ')]
-        if len(starts) != 1 or len(results) != 1 or args.from_title not in starts[0] or args.to_title not in results[0]:
+        stable = [line for line in text.splitlines() if line.startswith('PAGE_SWITCH_STABLE ')]
+        if (len(starts) != 1 or len(results) != 1 or len(stable) != 1
+                or args.from_title not in starts[0] or args.to_title not in results[0]
+                or args.to_title not in stable[0]):
             raise RuntimeError('Missing matching source/target publication')
         numbers = dict(re.findall(r'(navigation_ms|callback_ms|scale|width|height|submitted_s|published_s)=([\d.]+)', results[0]))
         evidence.update({key: float(value) for key,value in numbers.items()})
         if len(numbers) != 7:
             raise RuntimeError('Incomplete native timing record')
+        settled = dict(re.findall(r'(navigation_ms|callback_ms|published_s|document_publications|quiet_seconds)=([\d.]+)', stable[0]))
+        if (len(settled) != 5 or float(settled['quiet_seconds']) != args.quiet_seconds
+                or float(settled['published_s']) < evidence['published_s']):
+            raise RuntimeError('Incomplete or inconsistent settled timing record')
+        evidence.update(settled_navigation_ms=float(settled['navigation_ms']),
+                        settled_callback_ms=float(settled['callback_ms']),
+                        settled_published_s=float(settled['published_s']),
+                        document_publications=int(settled['document_publications']))
         if evidence['width'] != args.width or evidence['height'] != args.height+84:
             raise RuntimeError('Native viewport differs from requested geometry')
-        evidence['captures_sha256'] = {name:sha256(output/name) for name in ['hot.png','first-new.png','settled-new.png']}
+        evidence['captures_sha256'] = {name:sha256(output/name) for name in ['hot.png','first-new.png','loaded-new.png','settled-new.png']}
         if hashes != {str(path):sha256(path) for path in pinned}:
             raise RuntimeError('Build or probe identity changed during trial')
-        evidence.update(valid=True, start=starts[0], publication=results[0])
-        print(json.dumps({key:evidence[key] for key in ['mode','diagnostic','navigation_ms','callback_ms','scale','valid']}), flush=True)
+        evidence.update(valid=True, start=starts[0], publication=results[0], settled_publication=stable[0])
+        print(json.dumps({key:evidence[key] for key in ['mode','diagnostic','navigation_ms','settled_navigation_ms','callback_ms','scale','valid']}), flush=True)
     except Exception as error:
         evidence.update(valid=False, error=str(error))
         raise
