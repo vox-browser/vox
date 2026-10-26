@@ -7,6 +7,7 @@ not physical display scanout. Captures retain the first and settled frames for
 pixel validation. Use --diagnostic separately from timed acceptance trials.
 """
 import argparse
+from contextlib import contextmanager
 import hashlib
 import json
 import os
@@ -15,8 +16,11 @@ import re
 import shutil
 import subprocess
 import sys
+import threading
 import time
 from urllib.parse import urlsplit
+
+from page_archive import Replay
 
 REPO = Path(__file__).resolve().parents[1]
 ENDPOINT = 'native address submission to changed Cocoa layer contents after updateLayer with target title; not physical scanout'
@@ -24,6 +28,30 @@ ENDPOINT = 'native address submission to changed Cocoa layer contents after upda
 
 def sha256(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+@contextmanager
+def archive_route(archive, output):
+    replay = Replay(archive, output/'replay')
+    server = threading.Thread(target=replay.server.serve_forever, daemon=True)
+    server.start()
+    try:
+        yield replay.ready
+    finally:
+        replay.server.shutdown()
+        replay.server.server_close()
+        server.join(timeout=5)
+
+
+def proxy_configuration(address):
+    proxy = urlsplit(address)
+    if (proxy.scheme not in {'http', 'socks5', 'socks5h'} or not proxy.hostname
+            or not proxy.port or proxy.username is not None or proxy.password is not None
+            or proxy.path not in {'', '/'} or proxy.query or proxy.fragment):
+        raise ValueError('--proxy requires an HTTP or SOCKS5 hostname and port without credentials')
+    # Saved proxy settings select SOCKS5; HTTP replay uses the process override.
+    return (dict(enabled=True, host=proxy.hostname, port=str(proxy.port), sites='')
+            if proxy.scheme != 'http' else {})
 
 
 def main():
@@ -38,7 +66,9 @@ def main():
     parser.add_argument('--diagnostic', action='store_true')
     parser.add_argument('--cache-template', type=Path)
     parser.add_argument('--network-policy', required=True)
-    parser.add_argument('--proxy', help='SOCKS5 replay or live route; uses a private settings profile')
+    route = parser.add_mutually_exclusive_group()
+    route.add_argument('--proxy', help='HTTP or SOCKS5 replay/live route')
+    route.add_argument('--archive', type=Path, help='Sealed page_archive.py archive; replay from disk only')
     parser.add_argument('--ca', type=Path, help='Process-local replay certificate')
     parser.add_argument('--width', type=int, default=1024)
     parser.add_argument('--height', type=int, default=768, help='Document viewport height without chrome')
@@ -48,8 +78,23 @@ def main():
         parser.error('Requires macOS')
     if args.width <= 0 or args.height <= 0 or not 0 <= args.settle_seconds <= 60:
         parser.error('Invalid viewport or settle period')
+    if args.archive and args.ca:
+        parser.error('--archive creates its own process-local certificate; omit --ca')
+    if args.proxy:
+        try:
+            proxy_configuration(args.proxy)
+        except ValueError as error:
+            parser.error(str(error))
     binary, output = args.binary.resolve(), args.output.resolve()
     output.mkdir(parents=True, exist_ok=False)
+    if args.archive:
+        with archive_route(args.archive, output) as ready:
+            args.proxy, args.ca = ready['proxy'], Path(ready['ca'])
+            return measure(args, binary, output, ready)
+    return measure(args, binary, output)
+
+
+def measure(args, binary, output, replay=None):
     source = REPO/'tools/measure_page_switch_darwin.m'
     probe = output/'page-switch.dylib'
     compile_command = ['clang', '-O2', '-Wall', '-Wextra', '-Werror', '-dynamiclib',
@@ -70,10 +115,7 @@ def main():
     profile.mkdir()
     settings = dict(experimental_fast_page_switch=args.mode == 'on', enabled=False)
     if args.proxy:
-        proxy = urlsplit(args.proxy)
-        if proxy.scheme not in {'socks5', 'socks5h'} or not proxy.hostname or not proxy.port or proxy.username:
-            parser.error('--proxy requires a SOCKS5 hostname and port')
-        settings.update(enabled=True, host=proxy.hostname, port=str(proxy.port), sites='')
+        settings.update(proxy_configuration(args.proxy))
     (profile/'settings.json').write_text(json.dumps(settings)+'\n')
     env = dict(os.environ)
     for name in list(env):
@@ -87,11 +129,15 @@ def main():
                VOX_SWITCH_OUTPUT=str(output), VOX_SWITCH_SETTLE=str(args.settle_seconds))
     if args.ca:
         env['SSL_CERT_FILE'] = str(args.ca.resolve())
+    if args.proxy:
+        env.update(VOX_PROXY=args.proxy, NO_PROXY='')
     if args.diagnostic:
         env['VOX_PAGE_SWITCH_DIAGNOSTICS'] = '1'
     pinned = [binary, *sorted(binary.parent.glob('*.dylib')), source, probe, Path(__file__).resolve()]
     if args.ca:
         pinned.append(args.ca.resolve())
+    if replay:
+        pinned += [REPO/'tools/page_archive.py', args.archive.resolve()/'manifest.json']
     hashes = {str(path): sha256(path) for path in pinned}
     command = [str(binary), '--enable-javascript', '--window-width', str(args.width),
                '--window-height', str(args.height+84), args.from_url]
@@ -102,6 +148,8 @@ def main():
                     network_policy=args.network_policy, settle_seconds=args.settle_seconds,
                     settle_basis='matching source document title', started_unix=time.time(),
                     host=dict(cpu_count=os.cpu_count(), load_average_before=list(os.getloadavg())))
+    if replay:
+        evidence['archive_replay'] = replay
     try:
         with (output/'browser.log').open('w') as log:
             child = subprocess.Popen(command, cwd=REPO, env=env, stdout=log, stderr=subprocess.STDOUT)
