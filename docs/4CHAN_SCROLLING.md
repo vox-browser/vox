@@ -1275,3 +1275,65 @@ retained in `rect-prefetch-device-grid-v1/`; the enclosing report is
 `rect-prefetch-device-grid-queue-20261026-233829/guard.json` (child exit 1,
 565,166,080-byte sampled peak, 23.08 seconds). The native child aborted with
 exit -6 and its wrapper returned 134. Smooth 60 fps remains unmet.
+
+### Device-grid prefetch validation: no established gain (2026-10-26 UTC)
+
+The corrected admission check accepts only effective device scales one and two.
+The expanded normal and ASan/UBSan executions each passed 1,296 exact ordered
+comparisons: 972 admitted cases and 324 deliberately declined cases. Both
+focused 3 GiB commands exited 0; sampled peaks were 175,390,720 and
+1,096,679,424 bytes, with elapsed times 104.30 and 206.24 seconds. The sanitizer
+log also retains one Skia `Unfinished command buffer status: 3` warning; it
+contains no reported ASan/UBSan violation. All three focused V scanner tests
+were compiled and executed successfully (3 GiB runtime peak 11,501,568 bytes,
+0.64 seconds).
+
+Four alternating 120-input diagnostics established that prefetch executes
+during scrolling: candidates completed 222 and 228 successful input batches;
+controls completed zero. Sampled ordinary input cache hits/calls were
+503/1,024, 532/932, 412/1,024 and 533/947 in control/candidate order. These
+logs are capped at 1,024 per phase and stage, not whole-run hit rates.
+Recorded declined calls had fewer than two collected jobs, and the recorded
+page matrices independently confirmed half-scale transforms on the Retina
+destination. These instrumented observations supply no performance credit.
+
+Signing verification and headless startup passed. All thirteen native browser
+control/candidate pixel pairs were exact, including compound fixtures at 1×
+and 2×. Both reference smoke commands exited 1 with pre-existing mismatches;
+no reference allowances were changed. The four unprofiled trials used the
+same sealed archive, original URL, 1024×764 CSS viewport at scale two,
+360 nominal 60 Hz delta-12 inputs with reversal every 120, title-gated
+20-second settling, and a fresh process, private profile and cache per run.
+
+| Trial | Scroll fps | Median / p95 / max interval, ms | Over 16.67 ms | Moving intervals / publications / inputs |
+| --- | ---: | --- | ---: | --- |
+| control-1 | 34.35 | 25.63 / 56.14 / 74.86 | 91.45% | 234 / 246 / 360 |
+| candidate-1 | 29.08 | 30.20 / 66.90 / 112.18 | 96.39% | 194 / 204 / 360 |
+| control-2 | 29.51 | 30.82 / 57.25 / 80.55 | 98.41% | 189 / 199 / 360 |
+| candidate-2 | 29.65 | 29.63 / 71.19 / 100.48 | 95.96% | 198 / 210 / 360 |
+
+| Trial | Actual input Hz | Entire input period, s | Leading / trailing publication gap, ms | First counted scroll delay, ms |
+| --- | ---: | ---: | --- | ---: |
+| control-1 | 52.70 | 6.812 | 126.93 / 1.51 | 162.10 |
+| candidate-1 | 53.82 | 6.671 | 152.69 / 19.83 | 243.41 |
+| control-2 | 56.05 | 6.405 | 110.83 / 19.31 | 168.08 |
+| candidate-2 | 53.76 | 6.678 | 136.31 / 19.74 | 213.32 |
+
+All four browsers exited 0, moved the requested document and used only
+archived responses. Paired throughput changes were −15.33% and +0.47%;
+controls varied by 16.40%. The 18-CPU host's one-minute loads before/after
+each run were 29.77/26.45, 26.45/23.91, 23.91/20.04 and 20.04/16.80.
+All load averages and timestamps remain in the raw results. This variation
+and contention preclude attributing a gain to prefetch; the regression is
+retained. The prototype remains opt-in and has not been installed as a
+default speed fix. Smooth 60 fps remains unmet. The endpoint is changed native
+publication after `updateLayer`, not physical display scanout or live SOCKS
+acceptance.
+
+Evidence is in `rect-prefetch-device-grid-v2/` and
+`rect-prefetch-device-grid-v2-validation/`, including `acceptance-summary.json`,
+`decline-analysis.json`, immutable source and dependency identities, raw
+commands, pixels, actual input/frame timestamps and browser exits. The
+enclosing `rect-prefetch-device-grid-queue-20261027-000135/guard.json` reports
+child exit 0, 12 GiB budget, sampled peak RSS 8,432,549,888 bytes and elapsed
+931.24 seconds. No production patch margin was changed by this experiment.
