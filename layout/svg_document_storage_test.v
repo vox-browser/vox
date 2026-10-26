@@ -1,6 +1,10 @@
 module layout
 
 import dom
+import html
+import http
+import loader
+import painting
 import platform
 
 fn test_native_svg_payload_and_retained_scene_survive_host_workspace_and_retirement() {
@@ -26,6 +30,7 @@ fn test_native_svg_payload_and_retained_scene_survive_host_workspace_and_retirem
 	mut image_scope := child_owner.enter_nested()
 	enable_native_paint_tree_storage(image)
 	_ = run_document_layout(image, 60, 40) or { panic('missing SVG layout') }
+	assert child_owner.arena.contains(image.layout_engine_handle())
 	list := image.record_display_list() or { panic('missing SVG paint') }
 	reader := retain_display_list_scene(list)
 	expected_dump := list.dump()
@@ -68,6 +73,7 @@ fn test_svg_document_header_survives_nested_native_paint_scratch_and_early_retir
 	mut image_scope := child_owner.enter_nested()
 	enable_native_paint_tree_storage(image)
 	_ = run_document_layout(image, 20, 20) or { panic('missing SVG layout') }
+	assert child_owner.arena.contains(image.layout_engine_handle())
 	_ = image.record_display_list() or { panic('missing SVG paint') }
 	image_scope.finish()
 	retire_svg_image_document(image)
@@ -78,4 +84,53 @@ fn test_svg_document_header_survives_nested_native_paint_scratch_and_early_retir
 	host.finalize()
 	host.release_native_storage()
 	assert image.native_storage() == unsafe { nil }
+}
+
+fn test_svg_mask_vector_layout_outlives_the_host_paint_workspace() {
+	$if !prealloc {
+		return
+	}
+	address := 'https://svg-mask-owner.test/mask.svg'
+	mut resources := if loader.is_initialized() {
+		loader.ResourceLoader.the()
+	} else {
+		loader.initialize()
+	}
+	resources.register_network_response(address, loader.NetworkResponse{
+		data:    '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><path d="M0 0H20V20H0Z" fill="white"/></svg>'.bytes()
+		headers: [http.Header{ name: 'Content-Type', value: 'image/svg+xml' }]
+	})
+	mut host := html.parse_document('<!doctype html><div style="width:20px;height:20px"></div>')
+	host.enable_native_storage()
+	mut host_scope := host.enter_native_storage()
+	_ = run_document_layout(host, 100, 80) or { panic('missing host layout') }
+	result := document_layout_result(host) or { panic('missing host result') }
+	mut workspace := platform.new_arena('SVG mask host projection')
+	entry := workspace.enter()
+	scratch := platform.begin_thread_scratch('SVG mask host replay')
+	mut collection := SVGMaskPaintCollection{}
+	assert collect_svg_vector_image_paint_operations(result.root, address,
+		painting.Rect{0, 0, 20, 20}, .light, mut collection)
+	assert collection.operations.len == 1
+	assert collection.operations[0].path.segments.len > 0
+	mut image := svg_image_document_for_source_in_viewport(result.root, address, .light) or {
+		panic('missing cached mask image')
+	}
+	mut child_owner := image.native_storage()
+	assert child_owner != unsafe { nil }
+	handle := image.layout_engine_handle()
+	assert child_owner.arena.contains(handle)
+	assert !workspace.contains(handle)
+	scratch.finish()
+	workspace.leave(entry)
+	workspace.release()
+	host_scope.finish()
+	assert image.layout_engine_handle() == handle
+	_ = document_layout_result(image) or { panic('mask layout did not survive workspace release') }
+	retire_native_document_layout(host.layout_engine_handle())
+	host.finalize()
+	host.release_native_storage()
+	assert image.native_storage() == unsafe { nil }
+	assert image.layout_engine_handle() == unsafe { nil }
+	assert child_owner.arena.usage().used == 0
 }

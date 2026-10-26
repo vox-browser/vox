@@ -3226,9 +3226,21 @@ fn collect_svg_vector_image_paint_operations(node &Node, image_url string,
 	svg_document := svg_image_document_for_source_in_viewport(node, image_url, color_scheme) or {
 		return false
 	}
+	// Mask collection can run inside the host's temporary paint projection.
+	// The image's retained layout must belong to its own document, just as it
+	// does when replayed as a background. Restore the caller before collecting
+	// the operations, which belong to the host's projection instead.
+	mut owner := svg_document.native_storage()
+	mut allocations := if owner != unsafe { nil } {
+		owner.enter_nested()
+	} else {
+		platform.RetainedArenaScope{}
+	}
 	nested_layout := run_document_layout(svg_document, image_rect.width, image_rect.height) or {
+		allocations.finish()
 		return false
 	}
+	allocations.finish()
 	mut nested_collection := SVGMaskPaintCollection{}
 	collect_svg_mask_paint_operations(nested_layout.root, nested_layout.state, svg.AffineTransform{},
 		true, false, true, mut nested_collection)
