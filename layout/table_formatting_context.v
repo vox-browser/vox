@@ -1526,6 +1526,10 @@ fn table_cell_intrinsic_width_measures(mut state LayoutState, cell &Node, collap
 	}
 	max_content_width := if fixed_mode {
 		width
+	} else if column_is_constrained {
+		// Constrained columns derive their maximum from the specified width and
+		// min-content contribution below; max-content cannot affect the result.
+		CSSPixels.new(0)
 	} else {
 		calculate_max_content_width(mut state, box)
 	}
