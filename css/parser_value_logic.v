@@ -15563,6 +15563,11 @@ fn dom_style_value_from_value_logic(value StyleValue) &dom.StyleValue {
 }
 
 fn serialize_dom_style_value(value StyleValue) string {
+	// Keyword serialization returns a static spelling. It already outlives
+	// the DOM value and needs neither temporary storage nor an owned copy.
+	if value is KeywordStyleValue {
+		return value.serialize(.normal)
+	}
 	$if prealloc {
 		// Only the final text belongs to the opaque DOM value. Builders,
 		// escaped components and shorthand probes can retire immediately.

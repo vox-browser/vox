@@ -2,6 +2,30 @@ module css
 
 import platform
 
+fn test_dom_keyword_serialization_needs_no_retained_or_temporary_text() {
+	mut keywords := []Keyword{}
+	$for member in Keyword.values {
+		keywords << Keyword(member.value)
+	}
+	mut spellings := []string{cap: keywords.len}
+	for keyword in keywords {
+		value := StyleValue(KeywordStyleValue.create(keyword))
+		before := platform.thread_arena_usage().used
+		text := serialize_dom_style_value(value)
+		$if prealloc {
+			assert platform.thread_arena_usage().used == before
+		}
+		assert text == string_from_keyword(keyword)
+		spellings << text
+	}
+	mut reuse := platform.begin_thread_scratch('reuse keyword serialization workspace')
+	_ = []u8{len: 64 * 1024, init: 0xa5}
+	reuse.finish()
+	for index, keyword in keywords {
+		assert spellings[index] == string_from_keyword(keyword)
+	}
+}
+
 fn test_dom_value_serialization_retains_only_final_list_text() {
 	mut values := []StyleValue{cap: 2048}
 	for _ in 0 .. 2048 {
