@@ -513,6 +513,7 @@ mut:
 	platform_pointer_buttons u32
 	pending_tab_link ?string
 	platform_pointer_modifiers u32
+	pointer_clicks BrowserPointerClicks
 }
 
 struct ChromePointerDispatchResult {
@@ -3386,8 +3387,23 @@ fn (mut app BrowserApp) dispatch_chrome_pointer_event_at_viewport_point(event_ty
 	mut screen_x := x
 	mut screen_y := y + f64(app.page_top())
 	$if macos { C.native_pointer_screen_position(x, screen_y, &screen_x, &screen_y) }
-	_ = handler.handle_platform_pointer_event(event_type, input_target, page.PixelPoint{x: x / app.page_zoom, y: y / app.page_zoom},
-		page.PixelPoint{x: screen_x, y: screen_y}, u32(button), app.platform_pointer_buttons, app.platform_pointer_modifiers, 1)
+	click_count := if event_type == 'pointerdown' {
+		app.pointer_clicks.press(document, button, x, y, i64(time.sys_mono_now() / u64(time.millisecond)))
+	} else { app.pointer_clicks.count }
+	position := page.PixelPoint{x: x / app.page_zoom, y: y / app.page_zoom}
+	result := handler.handle_platform_pointer_event(event_type, input_target, position,
+		page.PixelPoint{x: screen_x, y: screen_y}, u32(button), app.platform_pointer_buttons, app.platform_pointer_modifiers, click_count)
+	if event_type == 'pointerdown' && button == 0 && result == .handled
+		&& target == '' && !had_capture && !handler.has_captured_chrome_widget()
+		&& voidptr(app.document) == voidptr(document) && document.is_fully_active() {
+		$if macos {
+			if app.platform_pointer_modifiers & dom.modifier_ctrl == 0 {
+				handler.select_mouse_text(document, position, click_count, browser_text_word_range)
+			}
+		} $else {
+			handler.select_mouse_text(document, position, click_count, browser_text_word_range)
+		}
+	}
 	handled := target != '' || had_capture || handler.has_captured_chrome_widget()
 	// Hover, focus, listeners and chrome widgets can all invalidate the retained
 	// tree during dispatch. Commit that state before the embedder's next frame.

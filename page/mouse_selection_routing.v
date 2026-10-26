@@ -30,12 +30,16 @@ fn caret_position_from_document_hit(document &dom.Document, position PixelPoint,
 	} else {
 		hit.index_in_node
 	}
+	layout_node := node.layout_node() or { unsafe { nil } }
 	return CaretPosition{
 		boundary: dom.BoundaryPoint{
 			node: node
 			offset: offset
 		}
-		layout_node: node.layout_node() or { unsafe { nil } }
+		layout_node: layout_node
+		user_select_used_value: if layout_node != unsafe { nil } && layout_node.user_select_none_ {
+			.none_
+		} else { .auto_ }
 	}
 }
 
