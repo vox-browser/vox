@@ -457,3 +457,11 @@ scripts sharing one URL, followed by a chained script inserted by a load
 handler. It turns green only after all executions and trusted load events
 complete in order and the window load event follows the chain. Capture at
 800×600, scale 1; the native browser and Brave reference are pixel-exact.
+
+`chromium-select` checks the catalog's three menus, right-to-left placement,
+an authored tall control, `appearance: none`, and a narrow control. Its Brave
+156.1.98.60 reference uses an 800×600 CSS-pixel viewport at native scale 2
+(1600×1200 image pixels). Compare the complete native-resolution viewport
+with exact RGBA equality. The executed reference comparison has zero differing
+pixels; dynamic option-label width invalidation is covered separately by layout
+tests.
