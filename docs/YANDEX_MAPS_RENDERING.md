@@ -434,3 +434,15 @@ site can select its vector renderer. The last valid live comparison remains
 328,981 differing pixels, and the archived fixture retains 424 differing
 pixels with maximum channel error 8. No new screenshot parity or LibJS runtime
 parity is claimed.
+
+Dependency inspection on October 26 retrieves the previously recorded Yandex
+content-provider worker entry with HTTP 200. The 966,384-byte script has SHA-256
+`78b9e7c2d957e78562824931f68ef988957b85d401deae4a0ef14304820eb301`;
+its body and response receipt are retained in
+`worker-entry-inspection-1793024580858316000/`. It installs worker-global message
+handlers, batches messages with transfer lists, fetches binary resources and
+instantiates WebAssembly. Worker startup therefore needs working message
+delivery and ArrayBuffer transfers as well as script execution. The current
+MessageChannel binding still rejects nonempty transfer lists. This inspection
+uses the saved `yandex.com` worker URL; it neither executes the script nor
+establishes acceptance for the requested live `yandex.ru` page.
