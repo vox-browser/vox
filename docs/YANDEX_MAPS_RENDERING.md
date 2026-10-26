@@ -495,3 +495,17 @@ ArrayBuffer transfer tests are pending a fresh guarded browser run. The worker
 agent is still not installed as a browser Worker constructor; these component
 checks add no live-map or screenshot acceptance credit. The last valid live and
 archived differences remain 328,981 and 424 pixels respectively.
+
+`fce731f9` routes MessagePort delivery through the receiving environment's
+event loop and realm, including worker-owned ports. The JavaScriptCore
+MessageChannel binding now uses its actual scripting environment instead of
+requiring a Window. Queued transport records and binding registrations retain
+their storage across scratch-arena resets.
+
+The unchanged inputs are recorded in
+`Build/yandex-maps/message-port-commit-evidence-1793051170072685000.json`.
+Three focused HTML ownership cases pass in both allocator modes, and three
+worker MessageChannel cases pass in the Boehm browser selection. The later
+worker-fetch failure still prevents claiming an overall browser no-GC pass.
+Classic worker startup, process messaging and native browser integration are
+pending their expanded validation; this commit adds no live screenshot result.
