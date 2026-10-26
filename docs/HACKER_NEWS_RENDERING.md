@@ -203,3 +203,20 @@ comment screenshot visibly renders “This statement stood out to me.” at the
 body's font size. The enclosing live-check guard returned zero, with a sampled
 peak aggregate RSS of 1,132,789,760 bytes. Live loading and the reported font
 correction passed; the frozen fixtures establish exact Brave pixel agreement.
+
+## Declarative-shadow traversal follow-up
+
+Commit `eee01edd` skips child snapshots for leaf nodes during declarative-shadow
+materialization. The parent still independently revisits an attached shadow
+root, including a host with no light children. All three focused storage and
+mutation cases compiled and executed successfully in both Boehm and prealloc
+configurations: six case executions, with actual compiler and runtime exits
+zero. Commands, source hashes, binaries and logs are retained in
+`Build/hn-small-text/shadow-leaf-1`.
+
+The enclosing job subsequently stopped at a CSS test compilation error caused
+by an invalid enum-iteration expression. That failure is retained with its
+actual exit 1; the guard reports a sampled peak aggregate RSS of
+5,587,763,200 bytes. It does not invalidate the completed shadow tests. No
+matched instruction reduction or broad-verification credit is claimed for
+this change.
