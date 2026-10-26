@@ -2543,7 +2543,7 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 		// PaintableBox::paint() inflates the border rect and radii, then sends outlines through the
 		// same BorderPainting.cpp dispatcher as ordinary borders.
 		outline_start := commands.len
-		append_translated_outline_commands(mut commands, box.decorations().outline_width, box.decorations().outline_offset, box.outline_color, box.outline_style, box.outline_is_auto, box_radii, border_left, border_top, border_width, border_height, opacity)
+		append_translated_outline_commands(mut commands, box.decorations().outline_width, box.decorations().outline_offset, box.outline_color, box.outline_style, box.outline_is_auto, box_radii, border_left, border_top, border_width, border_height, opacity, box.snaps_background_rect)
 		outline_end := commands.len
 		foreground_content_start := commands.len
 		if box.svg_data != unsafe { nil } && box.svg_path().path.len > 0 {
@@ -4014,7 +4014,7 @@ fn inline_fragment_commands(fragments []TextFragment, opacity f64) InlineFragmen
 		border_colors := effective_border_colors(first.border_colors, first.border_color)
 		chromium_border := first_is_chromium
 		append_translated_border_commands(mut commands, effective_border, border_colors, first.border_styles, fragment_radii, left, top, width, height, opacity, chromium_border)
-		append_translated_outline_commands(mut outlines, first.outline_width, first.outline_offset, first.outline_color, first.outline_style, first.outline_is_auto, fragment_radii, left, top, width, height, opacity)
+		append_translated_outline_commands(mut outlines, first.outline_width, first.outline_offset, first.outline_color, first.outline_style, first.outline_is_auto, fragment_radii, left, top, width, height, opacity, first_is_chromium)
 		set_force_dark_backdrop_for_range(mut commands, decoration_start, commands.len,
 			first.background_color)
 		set_force_dark_backdrop_for_range(mut outlines, outline_start, outlines.len,
@@ -4789,7 +4789,7 @@ fn inflated_outline_corner(radius CornerRadius, horizontal f64, vertical f64) Co
 fn append_translated_outline_commands(mut commands []PaintCommand, outline_width f64,
 	outline_offset f64, outline_color css.Color, outline_style painting.LineStyle,
 	outline_is_auto bool, border_radii BoxRadii, border_x f64, border_y f64, border_width f64,
-	border_height f64, opacity f64) {
+	border_height f64, opacity f64, chromium bool) {
 	start := commands.len
 	outline_painting_color := painting.Color{outline_color.r, outline_color.g, outline_color.b, outline_color.a}
 	outline_borders := painting.borders_data_for_outline(outline_painting_color, outline_style, outline_width) or { return }
@@ -4818,8 +4818,16 @@ fn append_translated_outline_commands(mut commands []PaintCommand, outline_width
 		width: border_width + left_inflate + right_inflate
 		height: border_height + top_inflate + bottom_inflate
 	})
-	for display_command in painting.paint_all_borders(outline_rect, painting_radii_from_transport(outline_radii), outline_borders.to_device_pixels(converter)) {
-		append_painting_display_command(mut commands, display_command, opacity)
+	widths := BoxEdges{outline_width, outline_width, outline_width, outline_width}
+	colors := BoxColors{outline_color, outline_color, outline_color, outline_color}
+	styles := BoxBorderStyles{outline_style, outline_style, outline_style, outline_style}
+	// Solid outlines use the same analytic rounded stroke as solid borders.
+	// Four separately rasterized paths otherwise leave seams at their corners.
+	if !chromium || !append_chromium_uniform_border(mut commands, widths, colors, styles,
+		outline_radii, outline_rect, opacity) {
+		for display_command in painting.paint_all_borders(outline_rect, painting_radii_from_transport(outline_radii), outline_borders.to_device_pixels(converter)) {
+			append_painting_display_command(mut commands, display_command, opacity)
+		}
 	}
 	set_force_dark_role_for_range(mut commands, start, commands.len, if outline_is_auto {
 		painting.ForceDarkRole.none_

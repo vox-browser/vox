@@ -1,0 +1,19 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Rounded outlines</title>
+<style>
+html,body{margin:0;background:#f6f6f6}
+.row{position:absolute;left:24px;display:flex;gap:24px}
+.row div{width:88px;height:32px;border-radius:8px;outline:1px solid #70ad46;outline-offset:-1px}
+.inset{top:24px}
+.outset{top:96px}
+.outset div{outline-width:2px;outline-offset:3px}
+.rounded{top:168px}
+.rounded div{height:44px;border-radius:22px;outline-color:#292a2e}
+.row div:nth-child(2){background:white}
+.row div:nth-child(3){border-radius:8px 0 8px 0}
+.row div:nth-child(4){border-radius:0}
+</style>
+<div class="row inset"><div></div><div></div><div></div><div></div></div>
+<div class="row outset"><div></div><div></div><div></div><div></div></div>
+<div class="row rounded"><div></div><div></div><div></div><div></div></div>
