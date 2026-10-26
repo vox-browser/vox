@@ -509,3 +509,20 @@ worker MessageChannel cases pass in the Boehm browser selection. The later
 worker-fetch failure still prevents claiming an overall browser no-GC pass.
 Classic worker startup, process messaging and native browser integration are
 pending their expanded validation; this commit adds no live screenshot result.
+
+An October 27 native JavaScriptCore probe isolates a second transfer blocker.
+`JSObjectGetArrayBufferBytesPtr` leaves an otherwise ordinary ArrayBuffer
+non-detachable: a subsequent native `transfer(0)` retains its original bytes
+and live view. Calling only `JSObjectGetArrayBufferByteLength` preserves normal
+detachment. The probe then executes the pending clone bridge's captured byte
+operations, borrows only a private copy's pointer, and verifies the bytes
+`0,128,255` plus successful detachment of both source and reconstructed buffers.
+It also poisons author constructors, species, iterators and byte-copy methods.
+
+The native diagnostic exits 0 under the 3 GiB guard, with sampled peak RSS of
+18,432,000 bytes. Its results and actual guard exit are retained in
+`Build/yandex-maps/native-transfer-20261027-results.json` and
+`Build/yandex-maps/native-transfer-20261027-guard.json`. This checks the captured
+JavaScript operations and C API behavior; the changed V serializer and complete
+Worker stack still require their queued component tests. The available
+production bundle predates those changes and supplies baseline evidence only.
