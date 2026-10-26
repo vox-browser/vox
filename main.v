@@ -461,6 +461,7 @@ mut:
 	resource_cache                      map[string]PreloadedResource
 	background_resource_results         chan PreloadedResource
 	image_request_loader                ?&BrowserImageRequestLoader
+	script_request_loader               ?&BrowserScriptRequestLoader
 	background_resource_pending         map[string]bool
 	// Remote stylesheets requested for links that scripts inserted, and the DOM
 	// tree version last scanned for them.
@@ -1411,6 +1412,10 @@ fn script_sources(document &dom.Document, base_url string, preloaded map[string]
 		if type_ != '' && type_ !in ['text/javascript', 'application/javascript', 'module'] {
 			continue
 		}
+		if script_element.is_html_element() {
+			mut script_model := html.html_script_element_model_for_dom_element(unsafe { &dom.HTMLScriptElement(script_element) })
+			script_model.set_already_started(true)
+		}
 		// The compact loader collects scripts after parsing. Classic inline scripts
 		// still precede deferred external scripts and non-async modules, whose
 		// relative document order must survive until DOMContentLoaded.
@@ -1442,12 +1447,14 @@ fn script_sources(document &dom.Document, base_url string, preloaded map[string]
 				url: resolved_url
 				source_type: if type_ == 'module' { .module } else { .script }
 				external_element: script_element
+				element: script_element
 			}
 		} else {
 			source = browserjs.ScriptSource{
 				code: script_element.as_node().text_content() or { '' }
 				url: document.url.serialize()
 				source_type: if type_ == 'module' { .module } else { .script }
+				element: script_element
 			}
 		}
 		if deferred {
@@ -1792,6 +1799,7 @@ fn javascript_bootstrap() string {
 		'function __isTrackElementState(s){return s.namespaceURI==="http://www.w3.org/1999/xhtml"&&(s.tagName==="track"||__trackApply(__trackEndsWith,s.tagName,[":track"]));}',
 		'const __bindElementWheel = globalThis.__ladybirdElementWheelBind;',
 		'const __bindScriptElement = globalThis.__ladybirdScriptElementBind;',
+		'globalThis.__ladybirdFlushPendingScriptMutations=function(){__queryElements("","querySelectorAll","script[src]");};',
 		'const __nativeImageGet = globalThis.__ladybirdImageGet;',
 		'const __listeners = Object.create(null);',
 		browserjs.compact_attribute_bootstrap(),
@@ -2693,6 +2701,10 @@ fn run_document_script_sources_with_image_fetch(document &dom.Document, current_
 }
 
 fn run_document_script_sources_with_image_fetch_hooks(document &dom.Document, current_url string, sources []browserjs.ScriptSource, runtime &browserjs.Runtime, image_fetch browserjs.ImageRequestFetchHook, image_async_fetch ?browserjs.ImageAsyncRequestFetchHook, mut messages []string) ?string {
+	return run_document_script_sources_with_resource_loaders(document, current_url, sources, runtime, image_fetch, image_async_fetch, none, mut messages)
+}
+
+fn run_document_script_sources_with_resource_loaders(document &dom.Document, current_url string, sources []browserjs.ScriptSource, runtime &browserjs.Runtime, image_fetch browserjs.ImageRequestFetchHook, image_async_fetch ?browserjs.ImageAsyncRequestFetchHook, script_loader ?&BrowserScriptRequestLoader, mut messages []string) ?string {
 	phase_mark := platform.arena_phase_begin()
 	defer {
 		platform.arena_phase_end('scripts', phase_mark)
@@ -3066,7 +3078,7 @@ fn run_document_script_sources_with_image_fetch_hooks(document &dom.Document, cu
 	processmetrics.instruction_checkpoint('javascript_adblock_scriptlets')
 	for source in sources {
 		if !compact_document_can_run_script(document) { continue }
-		runtime.run_document_scripts([source]) or {
+		run_compact_document_script(document, source, runtime) or {
 			messages << 'JavaScript: ${err.msg()}'
 			return none
 		}
@@ -3079,7 +3091,13 @@ fn run_document_script_sources_with_image_fetch_hooks(document &dom.Document, cu
 	}
 	for name in ['DOMContentLoaded', 'load'] {
 		if !compact_document_can_run_script(document) { continue }
-		if name == 'load' && image_async_fetch != none && document.anything_is_delaying_the_load_event() { continue }
+		if name == 'load' {
+			if mut loader := script_loader {
+				runtime.evaluate_host('__ladybirdFlushPendingScriptMutations()') or { messages << 'JavaScript script preparation: ${err.msg()}' }
+				loader.discover()
+			}
+		}
+		if name == 'load' && (image_async_fetch != none || script_loader != none) && document.anything_is_delaying_the_load_event() { continue }
 		runtime.dispatch_document_readiness_event(name) or {
 			messages << 'JavaScript: ${err.msg()}'
 			return none
@@ -3534,6 +3552,8 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 	app.source_label = loaded.url
 	if mut old_loader := app.image_request_loader { old_loader.cancel() }
 	app.image_request_loader = none
+	if mut old_loader := app.script_request_loader { old_loader.cancel() }
+	app.script_request_loader = none
 	app.address = if loaded.url == browser_new_tab_url { '' } else { loaded.url }
 	app.address_cursor = app.address.runes().len
 	app.address_select = false
@@ -3623,12 +3643,14 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 	sources := script_sources(app.document, resource_base_url, preloaded_resources, mut app.js_messages)
 	mut image_loader := new_browser_image_request_loader(app.document, preloaded_resources)
 	app.image_request_loader = image_loader
+	mut script_loader := &BrowserScriptRequestLoader{document: app.document}
+	app.script_request_loader = script_loader
 	javascript_navigation := if app.document.as_node().is_scripting_enabled()
 		&& (sources.len > 0 || document_has_window_event_handlers(app.document)
 		|| browser_adblock_requires_runtime(app.document)) {
 		app.js_runtime = create_browser_script_runtime(app.js_engine)
-		run_document_script_sources_with_image_fetch_hooks(app.document, loaded.url, sources, app.js_runtime,
-			browser_fetch_image_request, image_loader.callback(), mut app.js_messages)
+		run_document_script_sources_with_resource_loaders(app.document, loaded.url, sources, app.js_runtime,
+			browser_fetch_image_request, image_loader.callback(), script_loader, mut app.js_messages)
 	} else {
 		none
 	}
@@ -3813,6 +3835,7 @@ fn (mut app BrowserApp) poll_navigation_and_background_resources() {
 	document_before_navigation := voidptr(app.document)
 	app.poll_navigation()
 	if voidptr(app.document) == document_before_navigation {
+		app.poll_browser_script_requests()
 		app.poll_browser_image_requests()
 		app.poll_background_resources()
 	} else {

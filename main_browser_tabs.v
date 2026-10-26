@@ -260,6 +260,8 @@ fn (mut app BrowserApp) dispose_browser_tab() {
 	app.deferred_page_input = []DeferredPageInput{}
 	if mut loader := app.image_request_loader { loader.cancel() }
 	app.image_request_loader = none
+	if mut loader := app.script_request_loader { loader.cancel() }
+	app.script_request_loader = none
 	if app.js_runtime != unsafe { nil } {
 		app.js_runtime.close()
 		app.js_runtime = unsafe { nil }

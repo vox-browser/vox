@@ -178,7 +178,7 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	} else {
 		binding.node_for_key(key) or { return error('TypeError: Invalid Element receiver') }
 	}
-	if action in ['createHTMLDocument', 'documentNode', 'documentValue', 'setDocumentTitle',
+	if action in ['createHTMLDocument', 'documentNode', 'documentValue', 'documentCurrentScript', 'setDocumentTitle',
 		'documentCreateElement', 'documentCreateElementNS', 'documentElementById', 'ownerDocument', 'elementURL'] {
 		return binding.document_query(root, action, selector)
 	}
@@ -252,6 +252,7 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 		// Node.cloneNode() on the live element: the detached copy keeps a bridge
 		// key, so later attribute writes, queries and insertion reach it.
 		copy := root.clone_node_binding(selector == 'deep')!
+		copy_compact_script_started_state(root, copy)
 		return json2.encode(binding.node_state(copy))
 	}
 	if action == 'getElementById' {

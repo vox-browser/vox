@@ -55,6 +55,11 @@ fn (mut binding CompactElementQueryBinding) document_query(root &dom.Node, actio
 		return json2.encode(root.document().encoding_parse_and_serialize_url(attribute) or { attribute })
 	}
 	mut document := root.as_document() or { return error('TypeError: Invalid Document receiver') }
+	if action == 'documentCurrentScript' {
+		return if script := document.current_script() {
+			json2.encode(binding.element_state(unsafe { &dom.Element(script) }))
+		} else { 'null' }
+	}
 	if action == 'createHTMLDocument' {
 		request := json2.decode[map[string]json2.Any](value)!
 		created := document.implementation().create_html_document(json_string_property(request, 'title'))!
@@ -154,6 +159,7 @@ Object.setPrototypeOf(document,HTMLDocument.prototype);
 __elementApply(__elementRecordSet,__compactDocuments,[document,{bridgeKey:"",nodeType:9}]);
 for(const name of ["documentElement","head","body","doctype"]){Object.defineProperty(Document.prototype,name,{get:function(){return __queryElements(__compactDocumentState(this).bridgeKey,"documentNode",name);},enumerable:true,configurable:true});}
 for(const name of ["title","URL","documentURI","baseURI","contentType","compatMode","characterSet","readyState"]){Object.defineProperty(Document.prototype,name,{get:function(){return __queryElements(__compactDocumentState(this).bridgeKey,"documentValue",name);},set:name==="title"?function(value){const state=__compactDocumentState(this);__queryElements(state.bridgeKey,"setDocumentTitle",__compactDocumentString(value));for(const title of __queryElements(state.bridgeKey,"querySelectorAll","title"))__compactInvalidateContent(__compactNodeState(title));}:undefined,enumerable:true,configurable:true});}
+Object.defineProperty(Document.prototype,"currentScript",{get:function(){return __queryElements(__compactDocumentState(this).bridgeKey,"documentCurrentScript","");},enumerable:true,configurable:true});
 for(const [name,value] of [["nodeType",9],["nodeName","#document"],["ownerDocument",null],["parentNode",null],["parentElement",null],["nodeValue",null],["textContent",null],["defaultView",null],["location",null]])Object.defineProperty(Document.prototype,name,{get:function(){__compactDocumentState(this);return value;},enumerable:true,configurable:true});
 Object.defineProperty(Document.prototype,"childNodes",{get:function(){return __compactChildNodes(this,__compactDocumentState(this));},enumerable:true,configurable:true});
 for(const name of ["firstChild","lastChild"])Object.defineProperty(Document.prototype,name,{get:function(){return __queryElements(__compactDocumentState(this).bridgeKey,name,"");},enumerable:true,configurable:true});

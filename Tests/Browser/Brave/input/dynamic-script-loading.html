@@ -1,0 +1,34 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Dynamic scripts pending</title>
+<style>
+html,body{margin:0;background:#fff}
+#result{position:absolute;left:32px;top:32px;width:240px;height:96px;background:#c22}
+</style>
+<div id="result"></div>
+<script id="bootstrap">
+globalThis.dynamicScriptOrder=[];
+globalThis.dynamicScriptChecks=[document.currentScript===document.getElementById('bootstrap')];
+for(const id of ['first','second']){
+  const script=document.createElement('script');
+  script.id=id;script.async=false;script.src='dynamic-script-loading-ordered.js';
+  script.onload=function(event){
+    dynamicScriptChecks.push(event.isTrusted&&event.target===this&&document.currentScript===null);
+    dynamicScriptOrder.push('load-'+id);
+    if(id==='second'){
+      const next=document.createElement('script');
+      next.id='chained';next.src='dynamic-script-loading-chained.js';
+      next.onload=()=>dynamicScriptOrder.push('load-chained');
+      document.head.appendChild(next);
+    }
+  };
+  document.head.appendChild(script);
+}
+window.addEventListener('load',()=>{
+  const expected='first,load-first,second,load-second,chained,load-chained';
+  if(dynamicScriptChecks.every(Boolean)&&dynamicScriptOrder.join(',')===expected){
+    document.getElementById('result').setAttribute('style','background:#008000');
+    document.title='Dynamic scripts PASS';
+  }
+});
+</script>
