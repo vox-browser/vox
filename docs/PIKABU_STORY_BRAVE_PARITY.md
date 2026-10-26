@@ -470,3 +470,41 @@ rounded outlines remain exact. The live page still differs from Brave by
 514,771 pixels (65.4565%); whole-page parity and the earlier three failing
 broad screenshot cases remain open. No comparison limits or broad-check
 cadence were reset.
+
+## Native microtask startup binding
+
+`1d26bec0` binds `queueMicrotask` to JavaScriptCore's native job queue, using
+private captured Promise intrinsics. It preserves callback order, reports thrown
+exceptions, ignores returned thenables, and releases rooted callbacks at runtime
+shutdown. Five focused microtask cases plus six related callback cases pass in
+normal and poisoned arena modes, with unchanged sources:
+`Build/pikabu-story-microtask-tests-1793002303020416000/results.json`.
+
+The production build, signing and headless startup pass with unchanged source
+manifests. The retained bundle is
+`Build/pikabu-story-microtask-production-1793003067169331000/Vox.app`, executable
+SHA-256 `a69af7b6fd0be2c138148b0ed3f5d0737d6a261df5f35505e17cc2fbbaea187a`.
+Fresh screenshot and ordinary-window processes both pass the microtask fixture
+without JavaScript diagnostics or native exceptions; the screenshot is exact
+against fresh Brave at 1024 by 768, scale one. Binary, library, Brave and fixture
+identities remain stable:
+`Build/pikabu-story-microtask-acceptance-1793003324291640000/results.json`.
+All ten SVG regressions remain exact:
+`Build/pikabu-story-svg-regression-1793003787670194000/results.json`.
+
+The visual checkpoint retains eight exact startup fixtures, exact shadow
+precision and rounded outlines. The bundled story remains at 16,814 differing
+pixels, including 70 with channel error above three, maximum error 42. Live
+navigation in both native modes reaches the requested story and title, but
+application startup now reports missing `ResizeObserver`. The live comparison
+still differs by 514,794 pixels (65.4594%); policy differences and whole-page
+parity remain open. Evidence is in
+`Build/pikabu-story-microtask-visual-1793003359268327000/`.
+
+Both attempts at the additional mask-isolation diagnostic crash during shutdown
+with exit 139 after writing their images. Those images have diagnostic value
+only. The visual driver's exit zero omits this diagnostic from its acceptance
+gate; it does not make the entire checkpoint successful. The outer guard also
+exits zero, sampled peak RSS 7,651,819,520 bytes, elapsed 767.823791417 seconds:
+`Build/pikabu-story-microtask-job-3.json`. The mask crash and prior three broad
+screenshot failures remain open; no bounds or verification cadence were reset.
