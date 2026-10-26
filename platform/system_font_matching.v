@@ -1,6 +1,8 @@
 @[has_globals]
 module platform
 
+import os
+
 // A variation coordinate. The layout matches hb_variation_t, so a slice of
 // these can be passed to HarfBuzz directly.
 pub struct FontVariationAxis {
@@ -62,12 +64,19 @@ pub fn system_font_matching_supported() bool {
 
 fn (font &Font) uses_system_font_matching() bool {
 	return font.font_rendering_policy == .chromium && system_font_matching_supported()
+		&& !layout_test_font_is_configured()
+}
+
+fn layout_test_font_is_configured() bool {
+	path := os.getenv('LADYBIRD_LAYOUT_TEST_FONT')
+	return path != '' && os.is_file(path)
 }
 
 // Whether CoreText can match a family for a document with the Chromium
 // policy. Other families continue through the configured and bundled faces.
 pub fn chromium_system_font_family_available(family string) bool {
-	return system_font_matching_supported() && system_font_matching_family_available(family)
+	return system_font_matching_supported() && !layout_test_font_is_configured()
+		&& system_font_matching_family_available(family)
 }
 
 // Chromium's default macOS font preferences for generic and internal names.

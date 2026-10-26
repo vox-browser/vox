@@ -233,7 +233,7 @@ pub fn (font &Font) font_path() ?string {
 // CSS weight selects the regular or bold member of the macOS collections used
 // by the pages under test. Standalone and downloaded faces always use index 0.
 pub fn (font &Font) face_index() int {
-	if font.source_path != '' {
+	if font.source_path != '' || layout_test_font_is_configured() {
 		return 0
 	}
 	if face := font.system_face() {
