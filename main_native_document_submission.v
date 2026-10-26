@@ -1,5 +1,6 @@
 module main
 
+import os
 import processmetrics
 import time
 
@@ -14,7 +15,9 @@ fn native_document_layer_submitted(target voidptr, generation i64, installation 
 		app.navigation_generation, frame)
 	// Keep the wall-clock endpoint beside the instruction endpoint. The draw
 	// callback can finish before Cocoa has submitted the document's image.
-	if debug_timing_enabled() && (report.installation || report.navigation) {
+	// The narrow flag leaves detailed phase and style profiling disabled.
+	if (report.installation || report.navigation)
+		&& (debug_timing_enabled() || os.getenv('VOX_MEASURE_NATIVE_SUBMISSION') == '1') {
 		now := time.sys_mono_now()
 		if report.installation && app.paint_timing.document_install_start_ns > 0 {
 			eprintln('Ladybird V timing: document_install_to_first_native_layer_submission ${(now - app.paint_timing.document_install_start_ns) / 1_000_000} ms')

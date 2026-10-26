@@ -1,5 +1,6 @@
 module adblock
 
+import os
 import time
 
 #flag @DIR/worker_transport_native.o
@@ -53,6 +54,10 @@ pub fn prepare_default_worker() !bool {
 	previous_error := C.vox_adblock_get_error()
 	if previous_error != unsafe { nil } {
 		return error(unsafe { cstring_to_vstring(previous_error) })
+	}
+	// Diagnose cold preparation while still holding the request lock.
+	if os.getenv('LADYBIRD_DEBUG_TIMING') != '' {
+		eprintln('Ladybird V filter preparation: helper_pid_before=${C.vox_adblock_worker_get_pid()}')
 	}
 	_ = evaluate_default_worker('void 0')!
 	default_engine_last_used_ns = time.sys_mono_now()
