@@ -853,3 +853,41 @@ sampled peak RSS 9,286,844,416 bytes
 through `55ce0a17`; the next optimization starts a fresh credit interval.
 The latest official production/Brave comparison remains the 3.656719 strict
 ratio above. The 10%-below-Brave target remains open.
+
+The used-color-scheme projection fix (`126a8656`) avoids constructing a
+color-resolution context when projection needs only the already computed scheme.
+Its focused 19 cases pass in each GC mode (38 executions), including the retained
+prealloc recovery after the first guarded compile failed. The sealed focused
+inputs and the exact single-body generated-C transplant remain authenticated;
+all 12 shared record layouts match and reverse transplantation reproduces the
+whole control C byte for byte (`scheme-projection-3`,
+`scheme-projection-sealed-handoff-1`, `scheme-projection-isolated-1`).
+
+All 30 alternating control/candidate pairs complete with 60 zero browser exits,
+101 comments and pixel-exact 3,145,728-pixel captures. Control/candidate medians
+are 6,358,800,315 and 6,364,877,356 instructions. The paired median saving is
+negative: -2,061,960 instructions; its seeded 10,000-resample 95% interval is
+[-14,202,742, 10,769,069.5]. Fourteen pairs improve; the worst pair regresses by
+1,286,780,493 instructions. Repeatable performance credit is **zero**. The strict
+worst-candidate/best-control ratio is 1.234392; this remains a Vox/Vox diagnostic,
+not a Brave acceptance run. All observations, including regressions, are retained
+under `scheme-projection-isolated-1/paired`.
+
+The 18-CPU host is heavily contended: load averages start at
+107.843/87.736/66.172 and end at 86.726/98.709/82.247. This run does not establish
+a causal improvement. The required broad checkpoint is deferred below the 5M
+cumulative reduction gate, with signed accumulated savings -14,202,742 since the
+preceding invariant-projection checkpoint. The followup supervisor and its guard
+exit zero after 1,013.811 seconds, with sampled peak RSS 5,310,988,288 bytes;
+that duration includes the independent lazy-context focused checks below.
+
+The lazy length-context fix (`5dc544d5`) resolves absolute units using only the
+coordinate scale and constructs a full font/viewport context only when a value
+requires it. Its two new differential cases compare nine absolute units and
+11 relative/nested value forms at four scales against the full resolver, while
+checking source immutability. All 21 focused cases pass in each GC mode (42
+executions), with compiler/runtime exits zero and unchanged input pins
+(`lazy-length-context-1`). Its sealed input handoff preserves the exact tested
+bytes before the next font-cache candidate. Page-level instruction measurement
+for this fix is pending; it currently earns no performance credit. The official
+10%-below-Brave target remains open at the preceding 3.656719 strict ratio.
