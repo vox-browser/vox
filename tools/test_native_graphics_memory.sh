@@ -29,8 +29,10 @@ python3 - "$output_dir/libVoxGraphite.dylib" <<'PY'
 import subprocess, sys
 symbols = {line.split()[-1] for line in subprocess.check_output(['nm', '-gU', sys.argv[1]], text=True).splitlines() if line.strip()}
 expected = {'_vox_graphite_draw_shadow_pixels', '_vox_graphite_draw_image_pixels',
+    '_vox_graphite_draw_image_region_pixels',
     '_vox_graphite_draw_shape_pixels', '_vox_graphite_draw_path_pixels',
     '_vox_graphite_draw_shape_region_pixels', '_vox_graphite_draw_path_region_pixels',
+    '_vox_graphite_draw_shape_regions_pixels', '_vox_graphite_draw_path_parts_pixels',
     '_vox_graphite_draw_rounded_parts_pixels',
     '_vox_graphite_draw_image_tiles', '_vox_graphite_draw_path_batch_pixels',
     '_vox_graphite_draw_svg_image_pixels', '_vox_graphite_convert_icc_rgba',
