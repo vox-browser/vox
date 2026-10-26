@@ -565,3 +565,49 @@ circles at both integral and fractional origins. These changes have no runtime
 or pixel-conformance credit until the commands execute. Whole-page parity,
 the prior three broad screenshot failures, and the mask diagnostic shutdown
 crash remain open.
+
+## Legacy radial gradients and the next live startup blocker
+
+Commit `3acf4371` parses the legacy `-webkit-radial-gradient` grammar used by
+Pikabu's avatar masks, including its repeating variant. The translated value
+retains the legacy prefix, shape and extent through absolutization and
+serialization. The exact Pikabu declaration now has Brave's serialized value.
+This does not establish general CSSOM serialization parity: explicit center
+positions and double-position stops still serialize differently.
+
+Twelve focused parser, prefix and interpolation tests pass in normal and
+poisoned arena modes, with compile and runtime exits zero and unchanged tested
+sources. Evidence is in
+`Build/pikabu-story-webkit-radial-tests-1793031584344259000/results.json`.
+The corresponding accepted/rejected syntax and serialization probe from Brave
+is `Build/pikabu-story-webkit-brave/parser.json`.
+
+Production attempt seven builds, signs and passes headless startup. The pinned
+executable SHA-256 is
+`3dfe0d02d85f97f7ca93ca71e58572f1072ace6c189142e2934079d75fcb59a0`;
+the bundle and native-library identities, commands and actual exits are under
+`Build/pikabu-story-resize-production-1793030624127672000/`. Both browsers load
+the requested live URL and story title at 1024 by 768 CSS pixels, scale one.
+ResizeObserver startup succeeds; the next application exception is
+`t.content.cloneNode is not a function`. The live screenshot differs from Brave
+at 482,730 of 786,432 pixels (61.3823%). The header offset, photograph sizing
+and missing cookie notice remain visibly different. Whole-page parity is open.
+
+The candidate and baseline native captures of the bundled archive are exactly
+equal. Against the baseline Brave reference, the candidate retains the prior
+16,814 differing pixels, maximum channel error 42, including 70 pixels above
+three. The fresh Brave reference instead contains a gray avatar placeholder;
+that image-state difference increases the comparison to 17,098 changed pixels,
+maximum error 194. It is not evidence of a native mask regression. Future
+captures must verify visible image readiness before recording a reference.
+
+The outer guard exits one, with sampled peak RSS 9,409,052,672 bytes and elapsed
+time 1,108.682 seconds:
+`Build/pikabu-pixel-20261026/production-guard-7.json`. Gradient-mask visual
+checks and the existing three broad screenshot cases still fail. Ten SVG
+mutation regression cases and the ResizeObserver browser acceptance fixture
+pass. Independently edited sources also changed during the build, so the
+whole-checkout source-stability gate fails. Mask tests pass separately, but
+their implementation remains uncommitted while the mask-isolation shutdown
+crash and pixel differences are investigated. No failed acceptance gate is
+relaxed.
