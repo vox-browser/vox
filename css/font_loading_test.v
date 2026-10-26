@@ -105,5 +105,9 @@ fn test_font_preparation_retains_the_receiving_document_outside_its_allocation_s
 	deadline := time.sys_mono_now() + 2 * time.second
 	for !state.done && time.sys_mono_now() < deadline { platform.pump_native_events(0.05) }
 	assert state.done
-	assert storage.arena.usage().used == 0
+	$if prealloc {
+		assert storage.arena.usage().used == 0
+	} $else {
+		assert storage == unsafe { nil }
+	}
 }

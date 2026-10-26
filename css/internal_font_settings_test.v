@@ -84,8 +84,12 @@ fn test_internal_non_normal_maps_keep_duplicate_conversion_and_independent_stora
 	assert features.font_feature_settings['liga'] == 2
 	assert features.font_feature_settings['kern'] == 0
 	assert features.font_variant_caps == .small_caps
-	variations['wght'] = 900
-	features.font_feature_settings['liga'] = 9
+	// Deliberately mutate these returned maps without cloning: the following
+	// assertions verify their storage is independent of the immutable owners.
+	unsafe {
+		variations['wght'] = 900
+		features.font_feature_settings['liga'] = 9
+	}
 	gc_collect()
 	assert computer.variation_settings_for_computation(style)['wght'] == 450
 	assert computer.feature_data_for_computation(style).font_feature_settings['liga'] == 2
