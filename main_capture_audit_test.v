@@ -86,6 +86,33 @@ fn test_capture_audit_does_not_materialize_missing_image_or_font_state() {
 	assert after_fonts == before_fonts
 }
 
+fn test_capture_audit_counts_native_async_errors_without_replaying_or_clearing_them() {
+	mut document := html.parse_document('<!doctype html><title>Native errors</title>')
+	defer { document.finalize() }
+	window := html.WindowModel.create_top_level(document, none, 'capture-errors')!
+	mut scope := window.window_or_worker_global_scope()
+	scope.report_error(dom.js_string('timer failed'))
+	scope.report_error(dom.js_string('event failed'))
+	app := BrowserApp{document: document}
+	first := app.collect_capture_audit(CaptureAuditConfig{})!
+	second := app.collect_capture_audit(CaptureAuditConfig{})!
+	assert first.javascript_diagnostics == []string{}
+	assert first.native_reported_error_count == 2
+	assert second.native_reported_error_count == 2
+	assert scope.reported_errors().len == 2
+	assert scope.reported_errors()[0].string_data == 'timer failed'
+}
+
+fn test_capture_audit_does_not_create_a_scripting_environment_to_count_errors() {
+	mut document := dom.Document.create(dom.URL{value: 'about:blank'})
+	defer { document.finalize() }
+	assert document.relevant_settings_object() == unsafe { nil }
+	app := BrowserApp{document: document}
+	audit := app.collect_capture_audit(CaptureAuditConfig{})!
+	assert audit.native_reported_error_count == 0
+	assert document.relevant_settings_object() == unsafe { nil }
+}
+
 fn test_capture_audit_rejects_invalid_config_and_retains_empty_selector_results() {
 	mut document := html.parse_document('<!doctype html><p>Content</p>')
 	css.install_document_selector_query_hook(document)

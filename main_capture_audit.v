@@ -96,6 +96,8 @@ struct CaptureAudit {
 	font_faces             []CaptureAuditFontFace
 	paint_commands         int
 	javascript_diagnostics []string
+	// Native HTML timer/event exceptions bypass the compact bridge log.
+	native_reported_error_count int
 	selections             []CaptureAuditSelection
 	note                   string = 'Retained DOM/layout/image snapshot. Document-only captures collect after PNG encoding; other captures collect when scheduled. Collection is included in process-exit instruction totals.'
 }
@@ -189,6 +191,14 @@ fn (app &BrowserApp) collect_capture_audit(config CaptureAuditConfig) !CaptureAu
 			}
 		}
 	}
+	mut native_reported_error_count := 0
+	record := app.document.relevant_settings_object()
+	if record != unsafe { nil } {
+		settings := unsafe { &html.EnvironmentSettingsObject(record) }
+		if scope := settings.window_or_worker_global_scope() {
+			native_reported_error_count = scope.reported_errors().len
+		}
+	}
 	return CaptureAudit{
 		url: app.document.url.serialize()
 		title: app.document.title()
@@ -202,6 +212,7 @@ fn (app &BrowserApp) collect_capture_audit(config CaptureAuditConfig) !CaptureAu
 		font_faces: font_faces
 		paint_commands: app.paint_commands.len
 		javascript_diagnostics: app.js_messages.clone()
+		native_reported_error_count: native_reported_error_count
 		selections: selections
 	}
 }
