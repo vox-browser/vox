@@ -1364,7 +1364,7 @@ _TABLE_METHOD_MAPPINGS: dict[str, tuple[tuple[str, str | None], ...]] = {
     "distribute_excess_width_to_columns_fixed_mode": (
         ("distribute_table_width_to_columns", None),
     ),
-    "compute_row_content_height": (("compute_table_row_intrinsic_measures", None),),
+    "compute_row_content_height": (("compute_table_row_minimum_heights", None),),
     "use_fixed_mode_layout": (("table_uses_fixed_mode_layout", None),),
     "border_is_less_specific": (("table_border_is_less_specific", None),),
     "winning_conflicting_edge": (("winning_table_border", None),),
