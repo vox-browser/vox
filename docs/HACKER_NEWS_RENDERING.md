@@ -1146,7 +1146,7 @@ with sampled peak RSS 5,769,101,312 bytes. It carries the already authenticated
 font checkpoint, validates the negative inline cohort and diagnostic, and
 skips broad verification below the cumulative reduction threshold. Its
 running lower-bound balance is -82,164,340 instructions. Focused execution
-checks of the restored path are pending.
+checks of the restored path are recorded below.
 
 `instruction-scopes-8` retains exact 2048 by 1536 pixels and unchanged inputs.
 It observes 208 accepted inline probes and 3,375 font-projection cache hits.
@@ -1205,7 +1205,35 @@ become declarative after mutation. `shadow-presence-focused-1` selects 69 HTML
 cases per GC mode; its generated-C isolation, eligibility probe, 30-pair page
 comparison and conditional broad checkpoint are prepared but have not run.
 
-All three candidates and `intrinsic-inline-restore-3` remain unverified behind
-the shared guard. The current available production app contains none of the
-three candidates. No new production build is queued, and no pending job earns
-instruction credit or changes the last strict production ratio of 3.656719.
+All three candidates still require full-page measurements. The current
+available production app contains none of them. No new production build is
+queued, and no pending job earns instruction credit.
+
+## Completed rollback and production reuse check
+
+`19f7a803` restores the full intrinsic layout path after the negative page
+cohort. `intrinsic-inline-restore-3` executes all 21 selected cases in each of
+Boehm and preallocated no-GC mode, with compiler and runtime exits zero and
+unchanged inputs. Its guard completes with exit zero after 309.354 seconds;
+sampled peak process-tree RSS is 9,133,522,944 bytes. The rollback receives no
+new instruction credit.
+
+The fresh `production-reuse-1/check-1` check verifies the available bundle's
+signature, startup, all three frozen pixel comparisons and both live pages.
+Every frozen comparison is pixel-exact, including all 101 comment rows. Its
+three-pair Brave cohort retains Vox counts of 9,457,434,608, 7,157,291,503 and
+7,159,694,937 instructions. Brave's lower interval bounds are 6,963,471,281,
+1,786,403,871 and 1,798,982,405. The first, cold pair is retained. The Vox
+median is 7,159,694,937 and Brave's median lower bound is 1,798,982,405;
+the acceptance statistic, worst Vox divided by best Brave lower bound, is
+5.294119, above the required 0.90. The overall guard exits one because the
+performance target fails; rendering and live identity checks pass. Elapsed
+time is 70.008 seconds with sampled peak RSS 1,353,531,392 bytes. Input hashes
+remain unchanged. This newer shared bundle is a baseline, with zero isolated
+optimization credit; the earlier 3.656719 production ratio remains historical
+evidence rather than the latest result.
+
+`png-none-focused-1` passes both native PNG and capture entry-point checks with
+unchanged input hashes. Its retry guard exits zero after 12.254 seconds, with
+sampled peak RSS 186,384,384 bytes. Full-page measurement and conditional broad
+verification remain pending; these focused results establish no page saving.
