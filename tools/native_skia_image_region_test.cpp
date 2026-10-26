@@ -1,4 +1,4 @@
-// Root-grid image crops must match full-tile replay, including tile seams,
+// Layer-grid image crops must match full-tile replay, including tile seams,
 // fractional scrolling, Retina rendering and destination clips.
 #include "../native_skia_text_darwin.cpp"
 #include <cassert>
@@ -22,12 +22,19 @@ int main()
         dlsym(library, "ladybird_v_skia_set_raster_layer_size"));
     auto root_scroll = reinterpret_cast<decltype(&ladybird_v_skia_set_root_raster_scroll_y)>(
         dlsym(library, "ladybird_v_skia_set_root_raster_scroll_y"));
-    assert(reference && mode && grid && layer && size && root_scroll && graphite_image_region_draw());
+    auto background = reinterpret_cast<decltype(&ladybird_v_skia_set_image_background)>(
+        dlsym(library, "ladybird_v_skia_set_image_background"));
+    auto border = reinterpret_cast<decltype(&ladybird_v_skia_set_image_border)>(
+        dlsym(library, "ladybird_v_skia_set_image_border"));
+    assert(reference && mode && grid && layer && size && root_scroll && background && border
+        && graphite_image_region_draw());
     int comparisons = 0;
     for (int scale : {1, 2}) for (int clip : {0, 1, 2})
     for (int backdrop : {0, 2}) for (int root : {0, 1})
+    for (float origin : {0.f, 17.5f}) for (int repeat : {0, 1})
     for (float offset : {0.f, .375f, -32.f})
     for (float scroll : {0.f, 3.75f}) for (int nearest : {0, 1}) {
+        if (root && origin != 0) continue;
         int width = 160 * scale, height = 120 * scale, pitch = width * 4 + 16;
         std::vector<uint8_t> expected(size_t(pitch) * height);
         for (size_t i = 0; i < expected.size(); ++i)
@@ -55,22 +62,38 @@ int main()
         for (int pass : {0, 1, 2}) {
             if (pass == 2) source.back() ^= 1;
             auto draw = [&](CGContextRef destination, bool control) {
+                float shift = origin;
                 (control ? mode : &ladybird_v_skia_set_chromium_painting)(1);
                 (control ? grid : &ladybird_v_skia_set_msaa_grid)(tiles, 4, 66 * scale, 50 * scale, 3);
-                (control ? layer : &ladybird_v_skia_set_raster_layer)(0, 0, root);
+                // At a zero origin, the old bridge's root tiles are also an
+                // oracle for independent layers. Its non-root path used a
+                // tight leaf surface, which changed image interpolation.
+                // Keep local geometry and the final matrix identical: move
+                // the reference's page offset into its transform instead.
+                (control ? layer : &ladybird_v_skia_set_raster_layer)(
+                    control ? 0 : shift, control ? 0 : shift,
+                    control && backdrop ? 1 : root);
                 (control ? size : &ladybird_v_skia_set_raster_layer_size)(160, 120);
-                (control ? root_scroll : &ladybird_v_skia_set_root_raster_scroll_y)(scroll);
+                (control ? root_scroll : &ladybird_v_skia_set_root_raster_scroll_y)(
+                    control && !root ? 0 : scroll);
+                float image_border[] {8 + offset + shift, 8 + offset + shift, 120, 96,
+                    4, 4, 7, 7, 3, 3, 0, 0};
+                (control ? background : &ladybird_v_skia_set_image_background)(255, 255, 255,
+                    repeat ? 255 : 0);
+                (control ? border : &ladybird_v_skia_set_image_border)(
+                    repeat ? image_border : nullptr, 1, 37, 91, 173, 255);
                 return (control ? reference : &ladybird_v_skia_draw_rgba_image)(destination,
-                    source.data(), 37, 29, 37 * 4, 8 + offset, 8 + offset, 120, 96,
-                    2, 3, 31, 23, 8 + offset, 8 + offset, 120, 96,
-                    1, 0, 0, 1, 0, 0, 0, 0, scroll, 160, 120,
-                    .8f, nearest, backdrop, clip == 2 ? radii : nullptr);
+                    source.data(), 37, 29, 37 * 4, 8 + offset + shift, 8 + offset + shift, 120, 96,
+                    2, 3, 31, 23, 8 + offset + shift, 8 + offset + shift, 120, 96,
+                    1, 0, 0, 1, control ? -shift : 0, control ? -shift : 0,
+                    control ? 0 : -shift, control ? 0 : -shift, scroll, 160, 120,
+                    .8f, nearest, backdrop | (repeat ? 192 : 0), clip == 2 ? radii : nullptr);
             };
             assert(draw(before, true) && draw(after, false));
             CGContextFlush(before); CGContextFlush(after);
             if (expected != actual) {
-                std::fprintf(stderr, "Image grid mismatch scale=%d clip=%d backdrop=%d root=%d offset=%g scroll=%g nearest=%d pass=%d\n",
-                    scale, clip, backdrop, root, offset, scroll, nearest, pass);
+                std::fprintf(stderr, "Image grid mismatch scale=%d clip=%d backdrop=%d root=%d origin=%g repeat=%d offset=%g scroll=%g nearest=%d pass=%d\n",
+                    scale, clip, backdrop, root, origin, repeat, offset, scroll, nearest, pass);
                 return 1;
             }
             ++comparisons;
