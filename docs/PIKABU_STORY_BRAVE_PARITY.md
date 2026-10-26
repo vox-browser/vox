@@ -389,3 +389,39 @@ and both screenshot and ordinary-window diagnostics report missing
 `complete`, remained visible and fully active, and loaded all three normal
 Roboto weights. Successful navigation therefore does not establish successful
 application initialization. Whole-page Brave parity remains open.
+
+## Rounded SVG background composition
+
+`9e41f1dc` composes the SVG and its deferred backing color in one native
+layer before applying their common rounded boundary. Rectangular internal SVG
+clips retain their actual geometry. Curved clips and other unsupported effects
+continue through ordinary replay, including the deferred backing color.
+
+All twelve supported panels in
+`Tests/Browser/Brave/input/rounded-svg-background-coverage.html` are pixel-exact
+against Brave: both 156px and 20px sizes, transparent/gray/red backing colors,
+and unclipped/rectangularly clipped SVG content. The two curved-clip fallback
+panels are byte-identical to the retained control. Their existing 624 differing
+pixels against Brave remain unresolved. Focused SVG tests pass in both normal
+and poisoned arena modes:
+`Build/pikabu-story-svg-background-tests-1792999467415444000/results.json`.
+The backing-color layout case also passed in the earlier seven-case layout
+selection recorded above.
+
+The new production bundle built, signed, and passed startup with unchanged
+source manifests. Its executable SHA-256 is
+`b0d794a2a61d4dfcbc48f7fee86a4a9c791252e5867430dd0ea0ee50d2d13d1b`,
+retained at `Build/pikabu-story-svg-layer-visual-1792999466181563000/Vox.app`.
+The outer guard completed with child exit zero, sampled peak RSS of
+8,234,909,696 bytes and elapsed time 596.318709 seconds:
+`Build/pikabu-story-visual-job-11.json`.
+
+Visual evidence is in
+`Build/pikabu-story-callback-visual-1792999753634106000/`. The six startup
+fixtures, shadow precision and rounded outlines remain exact. The bundled story
+has 16,814 differing pixels, including 70 with channel error above three;
+maximum channel error falls from 49 to 42. The live comparison still differs
+by 514,878 pixels and retains the missing API and policy differences described
+above. The visual driver completed successfully while retaining those failed
+pixel comparisons; its exit zero is not whole-page parity or a broad-check
+cadence reset.
