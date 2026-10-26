@@ -31,6 +31,7 @@ static void native_capture_instruction_checkpoint(const char *label) {
 #include "native_jpeg_darwin.h"
 #include "native_png_color_darwin.h"
 #include "native_opacity_group_darwin.h"
+#include "native_opacity_canvas_pool_darwin.h"
 #include "native_bitmap_snapshot_darwin.h"
 
 int native_prefers_overlay_scrollbars(void) {
@@ -886,17 +887,10 @@ static int native_begin_offscreen_opacity_group(NativeOpacityGroup *group, CGCon
 	if (left >= right || top >= bottom) {
 		return 0;
 	}
-	uint8_t *pixels = calloc(height, width * 4);
-	if (pixels == NULL) {
-		return 0;
-	}
-	CGContextRef context = CGBitmapContextCreate(pixels, width, height, 8, width * 4,
-		CGBitmapContextGetColorSpace(parent),
-		kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
-	if (context == NULL) {
-		free(pixels);
-		return 0;
-	}
+	VoxOpacityCanvas canvas = native_acquire_opacity_canvas(width, height,
+		CGBitmapContextGetColorSpace(parent));
+	CGContextRef context = canvas.context;
+	if (context == NULL) return 0;
 	CGContextConcatCTM(context, CGContextGetCTM(parent));
 	CGContextClipToRect(context, clip);
 	CGContextSetShouldAntialias(context, true);
@@ -906,7 +900,7 @@ static int native_begin_offscreen_opacity_group(NativeOpacityGroup *group, CGCon
 	[NSGraphicsContext setCurrentContext:
 		[NSGraphicsContext graphicsContextWithCGContext:context flipped:flipped]];
 	*group = (NativeOpacityGroup){
-		.offscreen = 1, .parent = parent, .context = context, .pixels = pixels,
+		.offscreen = 1, .parent = parent, .context = context, .pixels = canvas.pixels,
 		.opacity = MIN(MAX(opacity, 0.0f), 1.0f),
 		.left = left, .top = top, .right = right, .bottom = bottom,
 	};
@@ -956,8 +950,8 @@ static void native_end_offscreen_opacity_group(NativeOpacityGroup *group) {
 			CGContextRelease(result_context);
 		}
 	}
-	CGContextRelease(group->context);
-	free(group->pixels);
+	native_release_opacity_canvas((VoxOpacityCanvas){group->context, group->pixels},
+		group->left, group->top, group->right, group->bottom);
 }
 
 void native_begin_css_effect_layer(float opacity, int blend_mode) {
@@ -2338,6 +2332,7 @@ void native_schedule_idle_graphics_cleanup(void) {
 	dispatch_after(dispatch_time(DISPATCH_TIME_NOW, NSEC_PER_SEC), dispatch_get_main_queue(), ^{
 		native_when_document_work_idle(^{
 			native_idle_graphics_cleanup_scheduled = NO;
+			native_discard_opacity_canvas_pool();
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
 			// A first check can precede the renderer's two-second idle
 			// threshold. Keep polling until the final live context retires,
@@ -2359,6 +2354,7 @@ void native_schedule_idle_graphics_cleanup(void) {
 static void native_release_unused_graphics_memory(void) {
 	if (![NSThread isMainThread]) return;
 	@autoreleasepool {
+		native_discard_opacity_canvas_pool();
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
 		ladybird_v_skia_release_unused_graphics_memory();
 #endif
