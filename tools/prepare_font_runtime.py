@@ -14,12 +14,27 @@ from prepare_http_compat import compiler_vlib
 def glyph_index_initializer(source):
     signature = "pub fn (mut tf TTF_File) init()"
     matches = list(re.finditer(re.escape(signature) + r"\s*\{(.*?)^\}", source, re.M | re.S))
-    if len(matches) != 1 or matches[0][1].count("tf.read_cmap_table()") != 1:
+    if (len(matches) != 1 or matches[0][1].count("tf.read_cmap_table()") != 1
+            or matches[0][1].count("tf.read_offset_tables()") != 1):
         raise RuntimeError("Unsupported x.ttf initializer: expected one explicit cmap-table read")
     body = matches[0][1].replace("tf.read_cmap_table()", "// Unicode lookup belongs to the caller.")
+    body = body.replace("tf.read_offset_tables()", "tf.read_normalized_offset_tables()")
+    signature = "fn (mut tf TTF_File) read_offset_tables()"
+    tables = list(re.finditer(re.escape(signature) + r"\s*\{(.*?)^\}", source, re.M | re.S))
+    checksum = re.compile(
+        r"(?m)^[\t ]*if tag != 'head' \{\n[\t ]*"
+        r"assert tf\.calc_checksum\(tf\.tables\[tag\]\.offset, tf\.tables\[tag\]\.length\)"
+        r" == tf\.tables\[tag\]\.checksum\n[\t ]*\}\n")
+    if (len(tables) != 1 or len(checksum.findall(tables[0][1])) != 1
+            or tables[0][1].count("tf.calc_checksum(") != 1):
+        raise RuntimeError("Unsupported x.ttf directory: expected one table-checksum assertion")
+    directory = checksum.sub("", tables[0][1])
     return ("module ttf\n\n"
-            "// Same metadata, outlines and kerning as init(), without dense Unicode caches.\n"
-            "pub fn (mut tf TTF_File) init_for_glyph_indices() {" + body + "}\n")
+            "// For bounds-checked sfnt buffers normalized by decode_outline_face().\n"
+            "// Preserve metadata, outlines and kerning; omit dense Unicode caches\n"
+            "// and the immediate recheck of the checksums the caller just computed.\n"
+            "pub fn (mut tf TTF_File) init_for_glyph_indices() {" + body + "}\n\n"
+            "fn (mut tf TTF_File) read_normalized_offset_tables() {" + directory + "}\n")
 
 
 def prepare(compiler, output_root=None):
