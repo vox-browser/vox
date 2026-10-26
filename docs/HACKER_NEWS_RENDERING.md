@@ -485,3 +485,66 @@ exits zero and retains exact pixels. Of 149 installation stack samples, 25 end
 in libc environment lookup. Sample counts guide the next optimization; they
 are not retired instruction counts. Verified isolated savings remain zero,
 and the 10% instruction target remains open.
+
+
+## Per-layout font-policy snapshot
+
+Commit `cc5ba890` snapshots `LADYBIRD_LAYOUT_TEST_FONT` for one synchronous
+layout pass, including nested work on that thread. Unscoped lookups remain
+live, and a new outer pass observes environment and file changes. This removes
+repeated environment scans from cached font-face queries without extending the
+snapshot across document updates or sharing it with another thread.
+
+The focused `font-policy-1` and `font-policy-layout-2` receipts record 14 cases
+executed in both Boehm and prealloc/no-GC modes: 28 passing case executions.
+They cover nested scopes, idempotent cleanup, early returns, thread isolation,
+file and environment changes, cached font resolution, existing inline/font
+metrics, and the anonymous comment opener at device scales 1, 2, then 1.
+The source manifests remain unchanged during all accepted checks. The layout
+check's 12 GiB guard records peak sampled aggregate RSS 9,099,018,240 bytes;
+focused runtime children use 3 GiB guards. The earlier layout-one preparation
+attempt was interrupted before a compiler or test started; it receives no test
+credit and its termination receipt remains available.
+
+The separate `font-policy-count-probe` diagnostic makes 16,384 warmed
+`Font.system_face()` calls per observation, in ten alternating control/candidate
+pairs. All 20 observations validate their resolved font and checksum. Median
+retired instructions fall from 15,556,566 to 1,057,677.5, a 93.201% component
+reduction. This is neither a full-page measurement nor Brave target acceptance;
+verified whole-page credit remains zero pending a matched page comparison.
+
+Production attempt one stops before browser compilation because its compiler
+wrapper directory lacks the V library link required by UI staging. Build exit
+one, unchanged source manifests and the guard receipt are preserved under
+`Build/hn-small-text/font-policy-production-1/`. The replacement wrapper supplies
+that link and logs the production C compiler command without adding output to
+the staging scripts' compiler-root probes.
+
+Production attempt two completes the official current-V/prealloc build with
+unchanged source and compiler manifests. The pinned executable SHA256 is
+`8c3d7d76fbde694a98d9edaf748d0794229f1e2fff6cd8ec9320ad10cb986c92`.
+All three raw DPR2 comparisons (the comment opener, complete 50231722 viewport,
+and device-layout inline precision) have zero differing pixels. Startup exits
+zero, as do fresh live-discussion PID 67189 and live-comment PID 67287; their
+URL, title and comment identities validate. The latter screenshot, inspected
+visually, is `font-policy-production-2/live-comment/document.png` beneath
+`Build/hn-small-text/` and displays the opening sentence at the correct size.
+
+All six authenticated browser trials pass pixel and full-comment identity
+checks. The instruction target fails:
+
+| Pair | Vox instructions | Brave lower–upper bound |
+| --- | ---: | ---: |
+| 1 | 7,947,671,569 | 6,949,226,698–7,002,564,981 |
+| 2 | 6,817,817,749 | 1,788,256,601–1,837,530,369 |
+| 3 | 6,801,397,820 | 1,778,207,780–1,822,742,471 |
+
+The strict all-trial worst-Vox/best-Brave ratio is 4.469484, above 0.90.
+These use the same capture-workflow endpoint and limitations described above;
+they do not isolate the font-policy change from other repository changes.
+The cold first pair is retained. The outer 12 GiB guard records 366.095 seconds,
+peak sampled aggregate RSS 10,690,166,784 bytes and child exit one because the
+performance gate fails. Detailed build, launch, comparison and count receipts
+remain under `Build/hn-small-text/font-policy-production-2/` and its guard JSON.
+The Brave target remains open, with zero isolated whole-page optimization
+credit at this checkpoint.
