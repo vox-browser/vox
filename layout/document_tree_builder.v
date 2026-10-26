@@ -2116,7 +2116,10 @@ fn build_select_internal_layout_children(document &dom.Document, element &dom.El
 	outer_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
 		return []
 	}
+	// These compact label/chevron nodes are detached presentation objects.
+	// Let the select host receive clicks instead of exposing them as targets.
 	outer_style := computed_style_with_overrides(host_computed, {
+		css.PropertyID.pointer_events: 'none'
 		css.PropertyID.display:     'flex'
 		css.PropertyID.align_items: 'center'
 		css.PropertyID.height:      '100%'
@@ -2127,6 +2130,7 @@ fn build_select_internal_layout_children(document &dom.Document, element &dom.El
 		return []
 	}
 	mut text_overrides := {
+		css.PropertyID.pointer_events: 'none'
 		css.PropertyID.display:     'block'
 		css.PropertyID.flex_grow:   '1'
 		css.PropertyID.flex_shrink: '1'
@@ -2155,6 +2159,7 @@ fn build_select_internal_layout_children(document &dom.Document, element &dom.El
 		return []
 	}
 	mut arrow_overrides := {
+		css.PropertyID.pointer_events: 'none'
 		css.PropertyID.display:  'block'
 		css.PropertyID.position: 'absolute'
 		css.PropertyID.top:      'calc(50% - 8px)'
@@ -2171,6 +2176,7 @@ fn build_select_internal_layout_children(document &dom.Document, element &dom.El
 	}
 	svg_element.set_attribute_value('viewBox', '0 0 24 24')
 	svg_style := computed_style_with_overrides(host_computed, {
+		css.PropertyID.pointer_events: 'none'
 		css.PropertyID.display: 'inline'
 		css.PropertyID.width:   '16px'
 		css.PropertyID.height:  '16px'
@@ -2185,6 +2191,7 @@ fn build_select_internal_layout_children(document &dom.Document, element &dom.El
 	path_data := 'M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z'
 	path_element.set_attribute_value('d', path_data)
 	path_style := computed_style_with_overrides(host_computed, {
+		css.PropertyID.pointer_events: 'none'
 		css.PropertyID.display: 'inline'
 		css.PropertyID.d:       'path("${path_data}")'
 	})

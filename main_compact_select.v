@@ -27,6 +27,12 @@ fn compact_select_selected_index(select_element &dom.HTMLSelectElement) i32 {
 fn compact_select_bootstrap() string {
 	return r'
 function __compactSelect(o,s){
+ Object.defineProperty(o,"value",{configurable:true,enumerable:true,get:function(){
+  return __queryElements(s.bridgeKey,"selectValue","");
+ },set:function(value){
+  if(typeof value==="symbol")throw new TypeError("Cannot convert a Symbol to a string");
+  __queryElements(s.bridgeKey,"setSelectValue",String(value));
+ }});
  Object.defineProperty(o,"selectedIndex",{configurable:true,enumerable:true,get:function(){
   if(s.created&&!s.parentKey)return -1;
   return __queryElements(s.bridgeKey,"selectedIndex","");

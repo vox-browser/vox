@@ -37,3 +37,31 @@ fn test_compact_select_facades_read_and_set_the_live_selected_index() {
 	style := document.get_element_by_id('styleSelector') or { panic('missing style selector') }
 	assert html.html_select_element_value(unsafe { &dom.HTMLSelectElement(style) }) == 'Tomorrow'
 }
+
+fn test_compact_select_value_tracks_native_selection_and_updates_live_options() {
+	$if !darwin {
+		return
+	}
+	mut document := html.parse_document('<!doctype html><select id="sort"><option value="alt">Bump order</option><option value="r">Reply count</option></select><select id="cleared"><option>First</option><option>Second</option></select>')
+	mut runtime := browserjs.Runtime.create()
+	defer {
+		runtime.close()
+		document.finalize()
+	}
+	mut messages := []string{}
+	run_document_javascript(document, 'https://boards.4chan.org/pol/catalog', [
+		'globalThis.control=document.getElementById("sort");globalThis.before=control.value;const cleared=document.getElementById("cleared");cleared.selectedIndex=-1;globalThis.clearedValue=cleared.value+":"+cleared.selectedIndex;',
+	], runtime, mut messages)
+	assert messages == [], messages.str()
+	assert runtime.evaluate_host('before')! == 'alt'
+	assert runtime.evaluate_host('clearedValue')! == ':-1'
+	control := document.get_element_by_id('sort')?
+	select_element := unsafe { &dom.HTMLSelectElement(control) }
+	html.set_html_select_element_selected_index(select_element, 1)
+	assert runtime.evaluate_host('control.value+":"+control.selectedIndex')! == 'r:1'
+	assert runtime.evaluate_host('control.value="alt";control.value+":"+control.selectedIndex')! == 'alt:0'
+	assert html.html_select_element_value(select_element) == 'alt'
+	assert runtime.evaluate_host('control.value="missing";control.value+":"+control.selectedIndex')! == ':-1'
+	assert html.html_select_element_selected_index(select_element) == -1
+	assert messages == []
+}

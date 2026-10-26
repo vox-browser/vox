@@ -76,7 +76,7 @@ function __compactInputValue(receiver,write,value){
 }
 Object.defineProperty(HTMLInputElement.prototype,"value",{get:function(){return __compactInputValue(this,false);},set:function(value){__compactInputValue(this,true,value);},enumerable:true,configurable:true});
 function __compactElementValue(object,state){
- if(!__compactIsInputState(state))Object.defineProperty(object,"value",{get:function(){return state.value;},set:function(value){state.value=String(value);}});
+ if(!__compactIsInputState(state)&&!(state.namespaceURI==="http://www.w3.org/1999/xhtml"&&state.tagName==="select"))Object.defineProperty(object,"value",{get:function(){return state.value;},set:function(value){state.value=String(value);}});
 }
 '
 }

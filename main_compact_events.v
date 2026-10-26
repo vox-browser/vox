@@ -1,7 +1,7 @@
 module main
 
 // Compact listeners use the same stable element identity as DOM mutation replay.
-// Capture the path before callbacks can remove or move the clicked control.
+// Capture the path before callbacks can remove or move the control.
 fn compact_event_dispatch_bootstrap() string {
 	return r'
 window.__ladybirdDispatch = function (name, id, replay) {
@@ -10,7 +10,8 @@ window.__ladybirdDispatch = function (name, id, replay) {
  if (replay && !s) return window.__ladybirdFinalize();
  const target = s ? __element(s) : document;
  const path = [s];
- if (s && name === "click") {
+ const bubbles = name === "click" || name === "input" || name === "change";
+ if (s && bubbles) {
   if(s.nativeParent){
    const ancestors=__queryElements(s.bridgeKey,"eventAncestors","");
    for(let index=0;index<ancestors.length;index++){
@@ -23,9 +24,9 @@ window.__ladybirdDispatch = function (name, id, replay) {
   }
   path.push(null);
  }
- const event = {type:name, target:target, currentTarget:null, bubbles:name === "click",
-  cancelable:true, defaultPrevented:false, button:0, which:1,
-  preventDefault(){this.defaultPrevented = true;},
+ const event = {type:name, target:target, currentTarget:null, bubbles:bubbles,
+  cancelable:name !== "input" && name !== "change", defaultPrevented:false, button:0, which:1,
+  preventDefault(){if(this.cancelable)this.defaultPrevented = true;},
   stopPropagation(){this.cancelBubble = true;},
   stopImmediatePropagation(){this.cancelBubble = true; this.immediateStopped = true;}};
  for (const current of path) {
@@ -38,11 +39,16 @@ window.__ladybirdDispatch = function (name, id, replay) {
   const nativeMedia = current && current.namespaceURI === "http://www.w3.org/1999/xhtml" &&
    (current.tagName === "audio" || current.tagName === "video");
   const raw = current === s && replay && Object.prototype.hasOwnProperty.call(replay, "raw") ? replay.raw :
-   (current && !nativeMedia ? (current.attributes.onclick || "") : "");
+   (current && !nativeMedia ? (current.attributes["on" + name] || "") : "");
   if (!event.immediateStopped) {
    try {
-    if (current && name === "click" && raw && Function("event", raw).call(receiver, event) === false)
-     event.preventDefault();
+    if (current) {
+     const handler = !nativeMedia && receiver["on" + name];
+     if (typeof handler === "function") {
+      if (handler.call(receiver, event) === false) event.preventDefault();
+     } else if (raw && (nativeMedia || !Object.prototype.hasOwnProperty.call(receiver, "on" + name)) &&
+      Function("event", raw).call(receiver, event) === false) event.preventDefault();
+    }
     if (!current && typeof window["on" + name] === "function" && window["on" + name].call(window, event) === false)
      event.preventDefault();
    } catch (error) { console.error(error); }

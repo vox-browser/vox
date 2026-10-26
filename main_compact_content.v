@@ -238,17 +238,32 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 		}
 		return if element := found { json2.encode(binding.element_state(element)) } else { 'null' }
 	}
-	if action == 'selectedIndex' || action == 'setSelectedIndex' {
-		// HTMLSelectElement.selectedIndex over the live select's options.
+	if action in ['selectedIndex', 'setSelectedIndex', 'selectValue', 'setSelectValue'] {
+		// HTMLSelectElement value and selectedIndex over the live options.
 		element := root.as_element() or { return error('TypeError: Invalid Element receiver') }
 		if !element.is_html_element() || element.local_name() != 'select' {
 			return error('TypeError: Illegal HTMLSelectElement receiver')
 		}
 		select_element := unsafe { &dom.HTMLSelectElement(element) }
+		if action == 'selectValue' || action == 'setSelectValue' {
+			mut model := html.HTMLSelectElementModel.create(select_element)
+			// Plain parsed documents may be queried before layout initializes the
+			// control. Initialize once, preserving explicitly cleared selections.
+			if element.shadow_root() == none { html.html_select_element_update_selectedness(select_element) }
+			model.create_shadow_tree_if_needed()
+			if action == 'setSelectValue' { html.set_html_select_element_value(select_element, selector) }
+			return json2.encode(html.html_select_element_value(select_element))
+		}
 		if action == 'setSelectedIndex' {
+			mut model := html.HTMLSelectElementModel.create(select_element)
+			model.create_shadow_tree_if_needed()
 			html.set_html_select_element_selected_index(select_element, i32(selector.int()))
 		}
-		return json2.encode(compact_select_selected_index(select_element))
+		return json2.encode(if element.shadow_root() != none {
+			html.html_select_element_selected_index(select_element)
+		} else {
+			compact_select_selected_index(select_element)
+		})
 	}
 	if action == 'cloneNode' {
 		// Node.cloneNode() on the live element: the detached copy keeps a bridge
