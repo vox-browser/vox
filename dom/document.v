@@ -839,7 +839,10 @@ pub mut:
 	selectedness_update_index_     u64
 	selectedness_initialized_      bool
 	cached_nearest_select_element_ ?&HTMLSelectElement
+	label_changed_hook_            ?OptionElementLabelChangedHook
 }
+
+pub type OptionElementLabelChangedHook = fn (&HTMLOptionElement)
 
 @[heap]
 pub struct HTMLOutputElement {

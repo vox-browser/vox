@@ -2715,6 +2715,13 @@ pub fn (mut e Element) run_attribute_change_steps(local_name string, old_value ?
 	} else {
 		e.attribute_changed(local_name, old_value, value, namespace_)
 	}
+	if namespace_ == none && e.is_html_element() && e.local_name() == 'option'
+		&& local_name == 'label' {
+		option := unsafe { &HTMLOptionElement(&e) }
+		if hook := option.label_changed_hook_ {
+			hook(option)
+		}
+	}
 	if namespace_ == none && e.is_html_element() && e.local_name() == 'track'
 		&& to_ascii_lowercase(local_name) in ['kind', 'label', 'srclang', 'src', 'id'] {
 		track := unsafe { &HTMLTrackElement(&e) }

@@ -30,6 +30,27 @@ fn test_chromium_select_intrinsics_include_every_option_at_native_scale() {
 	}
 }
 
+fn test_chromium_select_intrinsics_refresh_when_an_unselected_label_changes() {
+	$if !macos {
+		return
+	}
+	mut document := html.parse_document('<!doctype html><style>select{font:10pt Arial}</style>
+		<select id="control"><option selected>On</option><option id="other">Off</option></select>')
+	defer { document.finalize() }
+	document.set_font_rendering_policy(.chromium)
+	document.set_layout_coordinate_scale(2)
+	run_document_layout(document, 800, 600) or { panic('initial layout') }
+	control := document.get_element_by_id('control') or { panic('control') }
+	assert control.get_bounding_client_rect().width == 36
+	mut other := document.get_element_by_id('other') or { panic('option') }
+	other.set_attribute_value('label', 'Creation date')
+	run_document_layout(document, 800, 600) or { panic('changed label layout') }
+	assert control.get_bounding_client_rect().width == 98.5
+	other.remove_attribute('label')
+	run_document_layout(document, 800, 600) or { panic('restored label layout') }
+	assert control.get_bounding_client_rect().width == 36
+}
+
 fn test_chromium_select_theme_keeps_authored_geometry_and_paint() {
 	mut document := html.parse_document('<!doctype html><style>
 		select{font:10pt Arial}#styled{width:120px;height:30px;border:3px solid red;background:blue;color:yellow}

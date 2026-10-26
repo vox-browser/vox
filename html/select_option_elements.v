@@ -31,6 +31,8 @@ fn option_node(option &dom.HTMLOptionElement) &dom.Node {
 }
 
 fn initialize_option_selectedness(option &dom.HTMLOptionElement) {
+	mut mutable_option := unsafe { &dom.HTMLOptionElement(option) }
+	mutable_option.label_changed_hook_ = html_option_element_update_selection_label
 	if option.selectedness_initialized_ {
 		return
 	}
@@ -40,7 +42,6 @@ fn initialize_option_selectedness(option &dom.HTMLOptionElement) {
 		removed_from: html_option_node_removed_from
 		moved_from: html_option_node_moved_from
 	})
-	mut mutable_option := unsafe { &dom.HTMLOptionElement(option) }
 	mutable_option.selectedness_initialized_ = true
 	if option_dom_element(option).has_attribute('selected') {
 		html_option_element_set_selected_internal(option, true)
@@ -103,6 +104,12 @@ pub fn html_option_element_selected_attribute_changed(option &dom.HTMLOptionElem
 }
 
 pub fn html_option_element_update_selection_label(option &dom.HTMLOptionElement) {
+	// A menu's intrinsic width includes unselected options as well. Such an
+	// option has no rendered box of its own, so invalidate its owning select.
+	if select_element := html_option_element_nearest_select(option) {
+		mut node := select_dom_element(select_element).as_node()
+		node.set_needs_layout_update(.style_change)
+	}
 	if !html_option_element_selected(option) {
 		return
 	}
