@@ -459,3 +459,113 @@ peak RSS 1,082,048,512 bytes and elapsed time 430.21 seconds. Commands, actual
 timestamps, exits and summaries are in `tile-batch-validation-commands.json`,
 `tile-batch-pixel-comparisons.json`, `tile-batch-trial-summary.json`, each
 trial's `run.json`/`summary.json` and `tile-batch-browser-validation-guard.json`.
+
+## Rejected glyph raster buffer pool experiment
+
+The prototype reused provider-released pixel allocations instead of
+allocating and zeroing another vector on every cache miss. Its pool kept at
+most eight idle allocations and four MiB of pixel storage. Its
+retained glyph cache charged each allocation's full capacity, including unused
+pixels, against its eight MiB limit. Quartz owned each allocation until its
+last image provider releases it; purge generations prevented delayed callbacks
+from refilling an emptied pool. Every used pixel was initialized by a complete
+backdrop copy or transparent clear before drawing. Raster dimensions, text
+coverage, clipping and image compositing were unchanged.
+`VOX_DISABLE_GLYPH_RASTER_POOL=1` selected the preceding allocation path.
+
+The preceding live profile selected this work: among 4,018 main-thread samples,
+589 entered glyph drawing. Its main branch included 66 samples in glyph raster
+zero-initialization and 84 in cache insertion/eviction; these inclusive counts
+are diagnostic, not timing credit. The executable and Skia UUIDs, actual loaded
+image ranges and sampled symbol addresses were checked against `nm` output.
+See `tile-batch-native-sample.txt`, `tile-batch-profile-symbol-validation.json`
+and `tile-batch-profile-glyph-children.json`.
+
+The focused suite passed 16,416 exact comparisons against the preceding
+production text library in both optimized and ASan/UBSan modes. It covers
+fractional scroll phases, changing backdrops, clips, transforms, color spaces,
+RGBA/BGRA storage, shadows and smoothing. Provider lifetime, concurrent
+release, oversized allocation accounting, purge generations and pool limits
+also passed. Existing native checks passed 720 compositing, 6,240 glyph-cache,
+1,080 shape-backdrop and 288 tiled-image comparisons, plus the clipping cases.
+The production native build and headless startup passed. The build/check guard
+and child exited 0 with sampled peak RSS 705,839,104 bytes and elapsed time
+32.46 seconds. An earlier interrupted attempt is preserved under
+`glyph-pool-attempt1-*`; it receives no acceptance or timing credit.
+
+The unsigned V executable remained byte-identical to the preceding build.
+Freshly signed SHA-256 values are:
+
+- Vox: `8745d92aca5c0e5488b43e0d29f1d233acbdfc231babf17ab0f52fb52a81d14a`.
+- Graphite: `23eaccf96e0bf85b56350784606e39ee4d7addc07884ba2956a7f9be36a56b59`.
+- Skia: `c4fbc23f7ce0602df3f06a713ebc1d7a9603370fa414bf73b5d4307733466810`.
+- Dawn: `cb98233f4dd44223964522e972655d739d701da23ddf0a3a4fc794c8722b9b52`.
+
+The immutable source snapshot and compiler commands are retained in
+`glyph-pool-source-identity.json`, `glyph-pool-build-check-commands.json`,
+`glyph-pool-build-identity.json` and `glyph-pool-main-provenance.json`. Both
+modes share all binaries and source inputs, including concurrent native image
+changes already present in the preceding snapshot; only the pool switch
+changes. Cross-family timings cannot isolate this pool's effect.
+
+The experiment was rejected and its implementation removed from the working
+source after validation. The immutable prototype, tests and owned patch remain
+under `glyph-pool-source/` and `glyph-pool-owned.patch` for reproducibility.
+There is no production glyph-pool switch or performance credit from this work.
+
+All 13 control/candidate native viewport comparisons were pixel-exact: eleven
+smoke captures and the nested opacity fixture at logical and Retina scales.
+Seven smoke references passed upstream; the four existing failures
+(`inline-node`, `ordered-list`, `text-decorations` and
+`default-ignorable-code-points-not-painted`) remained unchanged. Separate
+frozen and live diagnostics each confirmed sixteen provider-released buffer
+reuses during actual wheel input; the disabled control confirmed zero.
+
+The protocol matched the preceding tile-batch experiment: original URL and
+required document title, twenty-second settle after title readiness,
+1024×764 CSS viewport at scale two, fresh process and private profile per trial,
+360 native precise wheel events at nominal 60 Hz, delta 12 (actual CSS step
+25.200001001), direction reversal every 120 events. Frozen trials replayed the
+archived original HTTPS response with private TLS trust and no forwarding;
+live trials used `socks5h://127.0.0.1:1337`, empty cache and the temporarily
+installed candidate. The prior installed bundle was restored afterwards.
+Both switch states used identical signed binaries. Input-period throughput
+counts scroll-changing publications after native `updateLayer` completion;
+this endpoint does not measure physical display presentation.
+
+| Trial | Scroll fps | Median / p95 / max interval, ms | Over 16.67 ms | Moving intervals / publications / inputs |
+| --- | ---: | --- | ---: | --- |
+| glyph-pool-control-frozen-1 | 46.77 | 18.88 / 40.01 / 58.21 | 62.67% | 292 / 337 / 360 |
+| glyph-pool-candidate-frozen-1 | 46.77 | 19.15 / 38.93 / 65.85 | 63.76% | 287 / 334 / 360 |
+| glyph-pool-control-frozen-2 | 47.94 | 18.61 / 39.10 / 55.14 | 59.46% | 296 / 346 / 360 |
+| glyph-pool-candidate-frozen-2 | 45.32 | 19.92 / 40.09 / 67.67 | 63.51% | 285 / 325 / 360 |
+| glyph-pool-control-live-1 | 40.16 | 21.00 / 57.27 / 73.53 | 83.53% | 255 / 264 / 360 |
+| glyph-pool-candidate-live-1 | 45.51 | 17.96 / 47.06 / 63.87 | 62.63% | 281 / 326 / 360 |
+| glyph-pool-control-live-2 | 45.04 | 18.12 / 47.90 / 67.70 | 62.37% | 279 / 310 / 360 |
+| glyph-pool-candidate-live-2 | 43.25 | 18.19 / 48.05 / 216.13 | 65.43% | 269 / 310 / 360 |
+
+| Trial | Actual input Hz | Input period, s | Leading / trailing publication gap, ms |
+| --- | ---: | ---: | --- |
+| glyph-pool-control-frozen-1 | 57.50 | 6.244 | 168.10 / 0.21 |
+| glyph-pool-candidate-frozen-1 | 58.51 | 6.136 | 169.57 / 0.16 |
+| glyph-pool-control-frozen-2 | 58.14 | 6.175 | 123.89 / 0.18 |
+| glyph-pool-candidate-frozen-2 | 57.09 | 6.289 | 128.17 / 6.46 |
+| glyph-pool-control-live-1 | 56.54 | 6.350 | 174.06 / 17.96 |
+| glyph-pool-candidate-live-1 | 58.14 | 6.175 | 185.09 / 19.21 |
+| glyph-pool-control-live-2 | 57.95 | 6.195 | 169.07 / 0.17 |
+| glyph-pool-candidate-live-2 | 57.73 | 6.219 | 119.58 / 0.17 |
+
+Frozen throughput changed +0.01% and −5.46%; live changed +13.31% and −3.96%.
+Three pairs had a higher deadline-miss fraction, and the second live candidate
+had a 216.13 ms interval versus its control's 67.70 ms maximum. These mixed
+results do not establish an improvement. Ambient host load also varied; the
+one-minute load before/after the eight trials was 3.62/3.12, 3.12/2.93, 2.93/3.05, 3.93/4.32, 4.32/6.77, 6.77/5.29, 5.29/4.58, 4.58/6.28. **Smooth 60 fps remains unmet.**
+
+All eight trials completed their 360 inputs, moved the document, retained the
+expected build identity and exited 0. The browser guard and child exited 0
+with a 3 GiB budget, sampled peak RSS 1,081,638,912 bytes and elapsed 431.09 s.
+Raw commands, actual input timestamps, cache and response hashes, publications,
+exits and summaries remain in `glyph-pool-validation-commands.json`,
+`glyph-pool-pixel-comparisons.json`, `glyph-pool-trial-summary.json`, each
+trial's `run.json`/`summary.json`, the diagnostic result files and
+`glyph-pool-browser-validation-guard.json` in the evidence directory above.
