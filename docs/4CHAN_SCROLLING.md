@@ -184,6 +184,83 @@ the enclosing leaf timings or interpreted as scrolling fps. They motivate
 extending compact readbacks to small controls with underlays and clip
 exclusions while preserving the original GPU coordinates and surface extent.
 
+### Small compound-shape patches
+
+Commit `d2bfc81f` extends conservative compact GPU transfers to small controls
+with a background underlay or rectangular clip exclusions. It preserves the
+original GPU matrix and surface extent, unions the underlay bounds with the
+foreground stroke, and owns clip bytes in the bounded raster cache. Patches
+are at most 16,384 pixels and less than one quarter of the original tile.
+Unsupported descriptors retain the full draw. The diagnostic control is
+`VOX_DISABLE_COMPOUND_SHAPE_PATCHES=1`; both modes use identical signed binaries.
+
+Separate eligibility runs on this exact archive recorded sixteen successful
+compound patches during input per candidate (eleven underlays, five clip
+exclusions), with zero in disabled controls. Startup counters are separate;
+`dladdr` verified the loaded candidate library. Production native compilation,
+headless startup, 15,104 GPU batch comparisons, 14,336 GPU region comparisons,
+1,728 native shape-backdrop comparisons and 6,912 serial raster comparisons
+passed, along with the existing MSAA, grid, shadow, snapshot and cache checks.
+ASan/UBSan batch and owned-clip cache checks also passed. All thirteen browser
+control/candidate screenshot pairs were pixel-exact: eleven canonical smoke
+cases and the checkbox/clipped-link fixture at scales one and two. The same
+four previously recorded smoke reference failures remain in both modes.
+
+Fresh-process disk trials used the archived original HTTPS origins, private
+TLS trust, no forwarding and denied external connections. Each used an empty
+private profile, title readiness followed by twenty seconds settling,
+1024×764 CSS viewport at backing scale two, and 360 native precise wheel
+inputs at nominal 60 Hz, delta 12, reversing every 120 inputs. Diagnostics and
+sampling were disabled for these alternating trials. Throughput uses the
+entire first-to-last input period and counts scroll-changing publications
+after `updateLayer`; it does not measure physical display presentation.
+
+| Trial | Scroll fps | Median / p95 / max interval, ms | Over 16.67 ms | Moving intervals / publications / inputs |
+| --- | ---: | --- | ---: | --- |
+| control-1 | 22.68 | 39.74 / 77.60 / 100.14 | 100.00% | 153 / 163 / 360 |
+| candidate-1 | 25.73 | 33.69 / 79.23 / 172.88 | 96.83% | 189 / 205 / 360 |
+| control-2 | 21.09 | 43.38 / 82.39 / 123.38 | 100.00% | 141 / 150 / 360 |
+| candidate-2 | 25.88 | 34.58 / 72.20 / 93.07 | 97.22% | 180 / 190 / 360 |
+
+| Trial | Actual input Hz | Input period, s | Leading / trailing publication gap, ms | First scroll change, ms |
+| --- | ---: | ---: | --- | ---: |
+| control-1 | 53.21 | 6.747 | 159.22 / 21.29 | 256.54 |
+| candidate-1 | 48.87 | 7.346 | 50.95 / 21.70 | 135.74 |
+| control-2 | 53.69 | 6.686 | 163.53 / 1.37 | 266.71 |
+| candidate-2 | 51.62 | 6.955 | 165.92 / 20.10 | 231.59 |
+
+Observed throughput increased 13.45% and 22.72%, but the host was severely
+contended: eighteen CPUs, with one-minute load before/after each trial of
+69.99/74.13, 77.49/78.49, 78.49/75.00 and 75.00/84.25. Controls also varied;
+these results do not establish a reliable gain magnitude or isolate ambient
+contention from the implementation. Regressions include pair one's p95 and
+maximum intervals, its slower actual input cadence, and pair two's larger
+boundary gaps. Both candidate trials still missed nearly every 16.67 ms
+scroll deadline. **Smooth 60 fps remains unmet.** These disk results do not
+establish that the installed bundle fixes live SOCKS scrolling.
+
+Trials started at 05:43:58, 05:44:30, 05:45:02 and 05:45:34 UTC on October 26,
+2026. All completed their 360 inputs, moved the document, retained their build
+identity and exited 0. Every replay request returned an archived HTTP-200 body.
+The build/check guard and child exited 0, with a twelve GiB budget, sampled
+peak RSS 1,233,125,376 bytes and elapsed time 564.15 seconds.
+
+Pinned SHA-256 identities:
+
+- Vox: `7530bb0386801b6d0f7db80802d19574254e58b5823e6ad547a62491a2e1cfe3`.
+- Skia: `e8dbb3c2078f2ecc248a87b37693875ece64fd92741fe38f280bf0424050867f`.
+- Graphite: `92e137b45b2e14496331fd96386bfd88d2ccf15a70b59bf4bdb2006b97b2fc3b`.
+- Dawn: `cb98233f4dd44223964522e972655d739d701da23ddf0a3a4fc794c8722b9b52`.
+
+The unsigned V executable is unchanged from the disk baseline; signing reflects
+the candidate native libraries. Source snapshots, compiler commands and build
+identities are retained in `compound-patches-v1-source-identity.json`,
+`compound-patches-v1-build-check-commands.json` and
+`compound-patches-v1-build-identity.json`. Raw eligibility, pixel comparisons,
+commands, input timestamps, host loads, browser exits and summaries are under
+`compound-patches-v1-validation/`, `compound-patches-v1-trial-summary.json`
+and `compound-patches-v1-build-check-guard.json` in the evidence directory.
+
 ## Baseline and bottleneck
 
 The original production bundle published 39.81 scroll-changing frames/s on the
