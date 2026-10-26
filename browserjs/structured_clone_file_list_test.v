@@ -116,7 +116,12 @@ fn test_source_file_list_clone_target_exposure_and_direct_nested_file_gate_bypas
 		})!
 		assert target.evaluate_host('__sourceFileListClone() instanceof sourceFileListTargetOriginal&&__sourceFileListClone().length===1&&__sourceFileListClone()[0].name==="source.txt"&&__sourceFileListClone()[0].lastModified===-5&&__sourceFileListClone()[0].size===1')! == 'true'
 		assert target.native_file_list(cloned)!.item(0)?.raw_bytes() == [u8(7)]
-		file_record := bridge.serialize(source.javascript_file(list.item(0)?)!, storage)!
+		// Materialize the optional reference before forwarding it: current V
+		// otherwise passes the address of the option payload as the File itself.
+		file := list.item(0)?
+		file_wrapper := source.javascript_file(file)!
+		assert voidptr(source.native_file(file_wrapper)!) == voidptr(file)
+		file_record := bridge.serialize(file_wrapper, storage)!
 		if _ := target_bridge.deserialize(file_record) {
 			assert false
 		} else {
