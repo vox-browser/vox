@@ -1,6 +1,7 @@
 module main
 
 import processmetrics
+import time
 
 fn C.vox_browser_stage_document_submission(fn (voidptr, i64, u64, u64), voidptr, i64, u64) u64
 
@@ -11,6 +12,18 @@ fn native_document_layer_submitted(target voidptr, generation i64, installation 
 	mut app := unsafe { &BrowserApp(target) }
 	report := app.paint_timing.submission.accept(DocumentSubmissionClaim{int(generation), installation},
 		app.navigation_generation, frame)
+	// Keep the wall-clock endpoint beside the instruction endpoint. The draw
+	// callback can finish before Cocoa has submitted the document's image.
+	if debug_timing_enabled() && (report.installation || report.navigation) {
+		now := time.sys_mono_now()
+		if report.installation && app.paint_timing.document_install_start_ns > 0 {
+			eprintln('Ladybird V timing: document_install_to_first_native_layer_submission ${(now - app.paint_timing.document_install_start_ns) / 1_000_000} ms')
+		}
+		if report.navigation && app.paint_timing.navigation_start_ns > 0 {
+			eprintln('Ladybird V timing: navigation_to_first_native_layer_submission ${(now - app.paint_timing.navigation_start_ns) / 1_000_000} ms')
+		}
+		C.fflush(C.stderr)
+	}
 	if report.installation {
 		processmetrics.report_instructions('document_install_to_first_native_layer_submission',
 			app.paint_timing.submission.installation_instructions, end)
