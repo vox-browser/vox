@@ -978,6 +978,43 @@ changed delays and all profiler counts are excluded from instruction acceptance.
 Font, inline-width and native page comparisons remain pending. The last strict
 production Vox/Brave ratio remains 3.656719, above the required 0.90.
 
+The adaptive-encoder restoration passes `png-adaptive-restore-1`: all 27
+pixel/profile/density/metadata cases execute under both ARC and non-ARC (54
+cases), with byte-identical Cocoa output. Both actual native capture entry
+points also pass their deferred-delivery, scale, lifetime and invalid-input
+checks in both modes. The rescheduled 3 GiB guard exits zero in 4.726 seconds
+with sampled peak RSS 183,320,576 bytes. This validates the restoration and
+earns no new instruction credit.
+
+The first intrinsic-restoration harness fails to compile because it overlays
+newer context-shaping tests onto an older accepted source snapshot. Those tests
+require an iterator method absent from that snapshot. No runtime success is
+claimed. `intrinsic-inline-restore-2` keeps the source and focused tests from
+the same authenticated snapshot, retaining the original failed logs. Its
+execution remains pending. The queued canonical production follow-ups are
+deferred before starting while the next candidate is prepared; the focused
+restoration check remains queued. The cancellation receipt is
+`combined-production-2-followups-deferred.json`.
+
+`profile-16` completes with unchanged inputs, browser and sampler exit zero,
+and all 3,145,728 pixels exact. It samples the frozen inline-candidate app
+(`e4f972e998b9ccd4afce23cc96c468f4faa5438df707e05fdda1591f7300b55d`)
+after gating the document response for seven seconds. The 30-second sample
+and 35-second capture delay are diagnostic settings, so this run earns zero
+performance credit. Recursively overlapping style and layout stacks cannot
+be interpreted as independent costs. The raw sample hash is
+`00d88b0597e93051b9a2b05eac4adadfff278f58b80a06eaf0c3f936edb3b419`.
+
+`png-filter-prototype-2` repeats the component diagnostic on the actual full
+page and a reconstruction of the native premultiplied capture bitmap. All
+48 encodings preserve decoded pixels and color profiles. For the reconstructed
+bitmap, warm median encoding instructions are 374,309,979 for Cocoa,
+548,405,324 for SUB, 326,543,338 for UP and 312,934,803 for NONE. NONE produces
+383,892 bytes versus Cocoa's 416,388 on this fixture. These isolated counts
+earn zero page credit. The next unfiltered candidate requires focused native
+checks, an alternating 30-pair complete-page cohort, and broad verification
+only if it establishes the required cumulative reduction.
+
 The first font-cascade page comparison now retains all 30 alternating pairs
 under `font-cascade-projection-isolated-1/paired`. It is invalid: pair 23's
 control and pair 28's candidate fail the private-helper ownership check before
