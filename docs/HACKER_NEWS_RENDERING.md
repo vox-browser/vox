@@ -579,3 +579,71 @@ and uses a private Clang filesystem overlay for both builds; it does not edit
 the concurrent native work. Its matched measurements and the checksum
 comparison remain pending. The latest accepted Brave comparison is still the
 production-2 result above; the 10% instruction target remains open.
+
+The completed isolated comparisons supersede the pending measurements above.
+Each uses 30 fresh, alternating control/candidate pairs on the frozen
+101-comment page at 1024×768 CSS pixels and DPR2. All 180 browser observations
+exit zero, authenticate the complete comment identity, and have zero differing
+pixels against the same Brave reference. They measure navigation through PNG
+availability, using the existing capture workflow, and compare Vox with Vox.
+They do not establish the requested 0.90 Vox/Brave instruction ratio.
+
+| Isolated change | Control median | Candidate median | Median paired saving | Bootstrap 95% interval for paired median saving |
+| --- | ---: | ---: | ---: | ---: |
+| Per-layout font-policy snapshot | 7,053,785,695.5 | 6,737,573,321 | 318,385,728.5 | 284,260,090.5–329,758,776.5 |
+| Word-at-a-time font checksums | 6,749,256,353.5 | 6,582,938,198.5 | 163,878,506.5 | 155,797,834.5–169,317,279 |
+| Normalized font directory initialization | 6,572,910,729 | 6,442,902,600.5 | 123,156,624.5 | 111,310,963.5–146,179,732.5 |
+
+The fixed-seed bootstrap uses 10,000 resamples. Its lower endpoints provide
+284,260,090.5, 155,797,834.5, and 111,310,963.5 instructions of repeatable
+marginal page credit respectively. These are separate comparisons with
+successive controls; their intervals must not be added and described as a
+joint confidence interval. The respective winning-pair counts are 30, 30,
+and 29. Every cold trial is retained, including the normalized candidate's
+first-pair regression of 1,279,568,534 instructions. Strict worst-candidate /
+best-control ratios are 1.122431, 0.990556, and 1.210301; the paired reductions
+do not imply an all-trial speed guarantee.
+
+The frozen production-C builds change only the tested implementation regions.
+All remaining C bytes, compiler arguments, native inputs, and page assets are
+pinned. The policy build freezes 1,901 native/header/archive inputs, recovering
+concurrent native files from the accepted production source manifest without
+editing that work. The normalized comparison adds its tested directory helper
+and replaces the initializer call; its complete generated-C diff is 1,632 bytes.
+Detailed per-trial counts, launch identities, host loads, pixel checks, build
+commands, source manifests, and all failed attempts remain under:
+
+- `Build/hn-small-text/font-policy-isolated-2/`
+- `Build/hn-small-text/font-checksum-isolated-3/`
+- `Build/hn-small-text/font-normalized-isolated-3/`
+
+Their outer guards exit zero, with elapsed times of 440.818, 201.606, and
+337.426 seconds and sampled peak aggregate RSS of 5,501,468,672, 119,504,896,
+and 5,210,947,584 bytes. LaunchServices-spawned browser work can fall outside
+the guard's process-tree RSS sample; coalition instruction counting retains
+its separate browser ownership checks. Each host has 18 CPUs. Final load
+averages are respectively 4.411/5.260/6.994, 4.823/4.990/5.768, and
+5.068/6.257/6.801. The first checksum build's disk-full failure and the next
+attempt's ambient-proxy rejection remain retained without acceptance credit.
+The normalized source-pin failures also remain retained; the third attempt's
+before/after manifests match.
+
+Commit `47e479cf` removes the immediate duplicate checksum verification only
+for a bounds-checked sfnt buffer already normalized by `decode_outline_face()`.
+It retains metadata, outlines, kerning, and the ordinary initializer's
+validation contract. Five Python generator checks and 22 focused V cases in
+each of Boehm and prealloc/no-GC modes pass, including exact comparison of the
+normalized and complete initialization results. All compiler and guarded
+runtime exits are zero. These receipts are in `font-normalized-init-1/`.
+
+The instruction reduction crosses the broad-verification threshold. The
+unchanged official LibJS AST driver compares all 100 current upstream fixtures
+exactly with `--all` and no case overrides (`font-broad-ast-1`, guard exit zero,
+4.219 seconds, peak sampled RSS 589,742,080 bytes). The remaining selected
+CSS/layout/SVG/platform cases and 19 screenshot comparisons are being
+completed as a composed checkpoint. Initial preparation failures, a missing
+embedded data file, and compiler compatibility errors in existing fixtures
+receive no whole-suite pass credit; passing files will not be repeated.
+The latest accepted complete Brave cohort remains production attempt two:
+strict ratio **4.469484**, required **0.90**. The user’s instruction target
+remains open.
