@@ -58,6 +58,38 @@ fn msaa_test_underline(y f64, clips int) layout.PaintCommand {
 	}
 }
 
+fn test_css_border_diagonal_miters_multisample_but_orthogonal_edges_do_not() {
+	for index, points in [
+		[f32(0), 10, 20, 1, 30, 20, 1, 30, 40, 1, 10, 40, 5, 0, 0],
+		[f32(0), 10, 20, 1, 30, 21, 1, 30, 40, 5, 0, 0],
+		[f32(0), 10, 20, 1, 30, 20, 1, 30, 40, 5, 0, 0],
+		[f32(0), 10, 20, 3, 30, 40, 5, 0, 0],
+	] {
+		mut data := []f32{}
+		for offset := 0; offset < points.len; offset += 3 {
+			mut segment := []f32{len: layout.compatibility_clip_path_segment_stride}
+			segment[0] = points[offset]
+			segment[1] = points[offset + 1]
+			segment[2] = points[offset + 2]
+			if segment[0] == 3 {
+				segment[3] = 20
+				segment[4] = 20
+				segment[5] = 30
+				segment[6] = 40
+			}
+			data << segment
+		}
+		command := layout.PaintCommand{
+			kind: 'draw_svg_path'
+			force_dark_role: .border
+			transform: [f64(1), 0, 0, 1, 0, 250]!
+			svg_data: &layout.PaintSVGPathData{path_data: data}
+		}
+		assert chromium_border_has_diagonal_path(command) == (index != 0)
+		assert chromium_msaa_tiles([command], 1, 256) == if index == 0 { []int{} } else { [1] }
+	}
+}
+
 // Chromium's GPU tiles cover a quarter of the viewport plus two border texels,
 // in multiples of 32 rows and at least 256 rows.
 fn test_chromium_gpu_raster_tiles_follow_the_viewport_height() {
@@ -67,8 +99,8 @@ fn test_chromium_gpu_raster_tiles_follow_the_viewport_height() {
 }
 
 // A skip-ink underline clipped around two or more glyphs, or an SVG path,
-// multisamples every tile that rasterizes its rows. CSS borders, which Chromium
-// paints as rectangles, and an underline clipped once do not.
+// multisamples every tile that rasterizes its rows. An orthogonal CSS border
+// rectangle and an underline clipped once do not.
 fn test_chromium_msaa_tiles_come_from_multiply_clipped_draws_and_svg_paths() {
 	// 4chan's file link underline crosses two descenders at row 620, in the third
 	// 256-row tile (rows 508 to 763).

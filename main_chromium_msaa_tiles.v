@@ -18,11 +18,11 @@ fn chromium_gpu_raster_tile_rows(viewport_device_height int) int {
 }
 
 // Graphite multisamples a tile's whole render pass when any draw in it needs
-// MSAA: an SVG path, or a draw clipped by two or more rectangles, such as a
-// skip-ink underline crossing two glyphs. The tile's other anti-aliased shapes
-// then take multisampled coverage too. Returns the indices of those tiles; a
-// draw affects every tile whose raster rows, including border texels, it
-// touches.
+// MSAA: an SVG path, a CSS border with diagonal corner clips, or a draw clipped
+// by two or more rectangles, such as a skip-ink underline crossing two glyphs.
+// The tile's other anti-aliased shapes then take multisampled coverage too.
+// Returns the indices of those tiles; a draw affects every tile whose raster
+// rows, including border texels, it touches.
 struct ChromiumMSAATrigger {
 	command_index int
 	top           f64
@@ -130,9 +130,9 @@ fn chromium_msaa_trigger_rect(command layout.PaintCommand) ?layout.LayoutRect {
 				command.height)
 		}
 		'draw_svg_path' {
-			// Chromium paints CSS borders as rectangles and rounded rectangles;
-			// only SVG content and other genuine paths take the path renderer.
-			if command.force_dark_role == .border {
+			// Uniform CSS borders use rectangles. Differently colored sides
+			// also need diagonal corner clips, which take the path renderer.
+			if command.force_dark_role == .border && !chromium_border_has_diagonal_path(command) {
 				return none
 			}
 			// Read the payload directly: calling an accessor on this by-value
@@ -189,6 +189,39 @@ fn chromium_msaa_trigger_rect(command layout.PaintCommand) ?layout.LayoutRect {
 			return none
 		}
 	}
+}
+
+fn chromium_border_has_diagonal_path(command layout.PaintCommand) bool {
+	if command.svg_data == unsafe { nil } { return false }
+	data := command.svg_data.path_data
+	stride := layout.compatibility_clip_path_segment_stride
+	mut x := f32(0)
+	mut y := f32(0)
+	mut start_x := f32(0)
+	mut start_y := f32(0)
+	mut has_point := false
+	for index := 0; index + stride <= data.len; index += stride {
+		kind := int(data[index])
+		if kind == 5 {
+			if has_point && x != start_x && y != start_y { return true }
+			x = start_x
+			y = start_y
+			continue
+		}
+		if kind > 1 { return true }
+		next_x := data[index + 1]
+		next_y := data[index + 2]
+		if kind == 0 {
+			start_x = next_x
+			start_y = next_y
+		} else if has_point && next_x != x && next_y != y {
+			return true
+		}
+		x = next_x
+		y = next_y
+		has_point = true
+	}
+	return false
 }
 
 fn transformed_row_bounds(transform [6]f64, x f64, y f64, width f64, height f64) []f64 {
