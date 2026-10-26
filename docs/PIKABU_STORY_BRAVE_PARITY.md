@@ -169,3 +169,30 @@ the console logs are
 This is a bounded compact bridge slice, not complete Document or
 DOMImplementation conformance. Passing the archived vendor module does not
 establish successful live page initialization or whole-page pixel parity.
+
+The subsequent native capture does run that archived jQuery startup fixture
+successfully and matches Brave exactly. The fresh production executable has
+SHA-256 `dd79a7f37a79bd5b32459e07dce644f31716fe2b0a67e9397c76bfdd183aa7e6`;
+`Build/pikabu-story-idb.metadata.json` records the source manifest, compiler,
+native libraries, profiles, and capture exits. Its bundle is retained at
+`Build/pikabu-story-document-verified.app`. A concurrent edit to
+`native_rounded_single_border.h` occurred during this build, so rendering
+differences cannot be attributed to the document bridge alone. The executable,
+native libraries, and Brave identity remained stable throughout the captures.
+
+All ten SVG regression comparisons in that run are pixel-exact. At 1024 × 768
+and scale 1, the bundled story still has 16,934 differing pixels (199 with
+channel error above 3, maximum 43). The intended live document loads in both
+browsers, but has 514,959 differing pixels. An ordinary visible, fully active
+20-second observation confirms that the jQuery failure is gone and startup
+now fails at a missing `MessageChannel` in Pikabu's BroadcastChannel polyfill.
+Missing WebSocket and the randomized inline reference error remain. Brave's
+passive exception log contains network/CORS failures but neither missing API
+exception. No live parity is established.
+
+The bundled page also fails strict comparisons at verified scroll positions
+512, 1024, and 1536: respectively 17,736, 104,299, and 74,110 differing pixels.
+These are screenshot checks, not scrolling performance measurements. Raw
+captures, identity records, exits, and pixel metrics use the
+`Build/pikabu-story-idb-` prefix; the outer check is
+`Build/pikabu-story-document-and-visual-retry-9-20261026.json`.
