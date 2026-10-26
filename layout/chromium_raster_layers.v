@@ -193,6 +193,18 @@ fn chromium_raster_chunk_bounds(box &BlockBox, command &PaintCommand) LayoutRect
 		return LayoutRect{}
 	}
 	mut rect := box.border_box()
+	// Canvas backgrounds cover the viewport and scrollable overflow, rather
+	// than only the root box. Layer merging must see that painted extent too;
+	// otherwise ordinary page chunks can be split by the sparsity threshold.
+	if command.paint_phase == .background && box.canvas().paints_canvas_background {
+		canvas := box.canvas()
+		rect = chromium_layer_bounds_union(rect, LayoutRect{
+			x: canvas.canvas_x
+			y: canvas.canvas_y
+			width: canvas.canvas_width
+			height: canvas.canvas_height
+		})
+	}
 	if !(rect.width > 0 && rect.height > 0) {
 		rect = LayoutRect{
 			x:      command.x
