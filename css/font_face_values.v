@@ -3611,6 +3611,7 @@ pub mut:
 	last_resort_font &PlatformFont = unsafe { nil }
 mut:
 	invisible_font_storage_ &FontCascadeInvisibleStorage = unsafe { nil }
+	device_layout_font_projection_ &FontCascadeList = unsafe { nil }
 }
 
 pub fn FontCascadeList.create() &FontCascadeList {

@@ -42,7 +42,71 @@ fn device_layout_font(font PlatformFont, factor f64, pixel_size f64) PlatformFon
 	}
 }
 
+fn device_layout_font_matches_projection(source &PlatformFont, projected &PlatformFont, factor f64, pixel_size f64) bool {
+	expected_pixel_size := if source.font_rendering_policy == .chromium {
+		?f32(browser_font_size_for_rendering(pixel_size))
+	} else {
+		none
+	}
+	return voidptr(source.typeface) == voidptr(projected.typeface)
+		&& projected.point_size == f32(f64(source.point_size) * factor)
+		&& projected.pixel_size_override_ == expected_pixel_size
+		&& source.variations.weight == projected.variations.weight
+		&& source.variations.width == projected.variations.width
+		&& source.variations.opsz == projected.variations.opsz
+		&& source.variations.axis_values_equal(&projected.variations)
+		&& source.features == projected.features
+		&& source.is_invisible == projected.is_invisible
+		&& source.font_rendering_policy == projected.font_rendering_policy
+		&& source.italic == projected.italic
+}
+
+fn device_layout_fonts_match_projection(source &FontCascadeList, projected &FontCascadeList, factor f64, pixel_size f64) bool {
+	if source.pending_faces.len != 0 || projected.pending_faces.len != 0
+		|| source.fonts.len != projected.fonts.len {
+		return false
+	}
+	for index, entry in source.fonts {
+		other := projected.fonts[index]
+		if entry.unicode_ranges != other.unicode_ranges
+			|| !device_layout_font_matches_projection(&entry.font, &other.font, factor, pixel_size) {
+			return false
+		}
+	}
+	if source.last_resort_font != unsafe { nil } {
+		return projected.last_resort_font != unsafe { nil }
+			&& device_layout_font_matches_projection(source.last_resort_font,
+				projected.last_resort_font, factor, pixel_size)
+	}
+	return projected.last_resort_font == unsafe { nil }
+}
+
+fn device_layout_fonts_can_cache(source &FontCascadeList) bool {
+	$if prealloc {
+		owner := platform.current_retained_arena()
+		if owner != unsafe { nil } {
+			// A standalone computer can outlive the current document. Its source
+			// cascade must never retain a pointer into that document's arena.
+			return owner.arena.contains(voidptr(source))
+		}
+		return !platform.transient_arena_entered()
+	}
+	return true
+}
+
 fn device_layout_fonts(source &FontCascadeList, factor f64, pixel_size f64) &FontCascadeList {
+	can_cache := source.pending_faces.len == 0 && device_layout_fonts_can_cache(source)
+	previous := source.device_layout_font_projection_
+	if can_cache && previous != unsafe { nil }
+		&& device_layout_fonts_match_projection(source, previous, factor, pixel_size) {
+		return previous
+	}
+	mut retained := if can_cache {
+		platform.enter_retained_allocations()
+	} else {
+		platform.RetainedAllocationScope{}
+	}
+	defer { retained.finish() }
 	mut result := FontCascadeList.create()
 	for entry in source.fonts {
 		result.add(device_layout_font(entry.font, factor, pixel_size), entry.unicode_ranges)
@@ -50,7 +114,11 @@ fn device_layout_fonts(source &FontCascadeList, factor f64, pixel_size f64) &Fon
 	result.pending_faces = source.pending_faces.clone()
 	if source.last_resort_font != unsafe { nil } {
 		last_resort := device_layout_font(*source.last_resort_font, factor, pixel_size)
-		result.last_resort_font = &PlatformFont{ ...last_resort }
+		result.last_resort_font = owned_platform_font_ref(&last_resort)
+	}
+	if can_cache {
+		mut mutable_source := unsafe { &FontCascadeList(source) }
+		mutable_source.device_layout_font_projection_ = result
 	}
 	return result
 }
