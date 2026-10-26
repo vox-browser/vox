@@ -3553,6 +3553,7 @@ static bool draw_chromium_layer_image_tiles(std::vector<uint32_t>& pixels,
             long document_row = first_row + row;
             if (chromium_raster_tile_for_row(document_row) != tile) continue;
             long tile_row = document_row - origin;
+            if (tile_row < 0 || tile_row >= s_msaa_tile_rows) continue;
             std::copy_n(tile_pixels.begin() + tile_row * tile_width + offset_x,
                 raster_width, result.begin() + static_cast<size_t>(row) * raster_width);
         }
