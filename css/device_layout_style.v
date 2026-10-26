@@ -198,10 +198,13 @@ pub fn computed_style_in_layout_coordinates(source &ComputedProperties,
 	target.cached_computed_font_list_generation_ = source.cached_computed_font_list_generation_
 	target.cached_computed_font_list_owner_ = source.cached_computed_font_list_owner_
 	target.cached_first_available_computed_font_ = scaled_fonts.font_for_code_point(u32(` `))
-	color_context := ColorResolutionContext.for_computed_properties(source, document)
+	// Absolutization only consumes the used scheme. Resolving current/accent
+	// colors would also build an unused source length context for every style.
 	mut context := ComputationContext{
 		length_resolution_context: target.length_resolution_context()
-		color_scheme:              color_context.color_scheme
+		color_scheme:              source.color_scheme(
+			preferred_color_scheme_from_string(document.preferred_color_scheme()),
+			document.supported_color_schemes())
 	}
 	context.length_resolution_context.absolute_length_scale = factor
 	if element := source.subject_element_ {

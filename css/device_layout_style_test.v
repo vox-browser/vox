@@ -244,3 +244,56 @@ fn test_device_layout_projection_preserves_unscaled_values_and_keyword_widths() 
 		assert voidptr(computed_style_in_layout_coordinates(source, document)) == voidptr(projected)
 	}
 }
+
+fn device_projection_page_preference(target voidptr) string {
+	return unsafe { *(&string(target)) }
+}
+
+fn test_device_layout_projection_preserves_used_color_scheme_in_nested_values() {
+	for preference in ['light', 'dark'] {
+		for schemes in ['normal', 'light', 'light dark'] {
+			for document_dark in [false, true] {
+				mut document, mut source := device_layout_test_style('font:16px Arial;color-scheme:${schemes};color:light-dark(red,blue);accent-color:CanvasText')
+				defer { document.finalize() }
+				document.set_page(&dom.Page{
+					target: unsafe { voidptr(&preference) }
+					preferred_color_scheme_callback: device_projection_page_preference
+				})
+				if document_dark {
+					document.set_supported_color_schemes(['dark'], false)
+				}
+				legacy := ColorResolutionContext.for_computed_properties(source, document)
+				expected := if schemes == 'light' { PreferredColorScheme.light }
+					else if schemes == 'light dark' { preferred_color_scheme_from_string(preference) }
+					else if document_dark { PreferredColorScheme.dark }
+					else { PreferredColorScheme.light }
+				assert legacy.color_scheme? == expected
+
+				// Install unresolved nested colors after style computation so the
+				// projection itself must select the scheme and scale the stop.
+				gradient := parse_css_value_logic(.background_image,
+					'linear-gradient(Canvas 1px, light-dark(red, blue) 50%)')?
+				source.set_property_without_modifying_flags(.background_image,
+					dom_style_value_from_value_logic(gradient))
+				for scale in [0.5, 2.0, 3.0] {
+					document.set_layout_coordinate_scale(scale)
+					projected := computed_style_in_layout_coordinates(source, document)
+					mut reference_context := ComputationContext{
+						length_resolution_context: projected.length_resolution_context()
+						color_scheme: legacy.color_scheme
+					}
+					reference_context.length_resolution_context.absolute_length_scale = scale
+					if element := source.subject_element_ {
+						reference_context.abstract_element = dom.AbstractElement.new(element, none)
+					}
+					property := projected.property(.background_image, .yes)?
+					actual := style_value_logic_from_dom(.background_image, property)?
+					reference := gradient.absolutized(reference_context)
+					assert actual.equals(reference)
+					assert !actual.serialize(.normal).contains('light-dark')
+					assert source.property(.background_image, .yes)?.css_text.contains('1px')
+				}
+			}
+		}
+	}
+}
