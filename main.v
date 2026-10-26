@@ -5352,6 +5352,11 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 	app.paint_effect_depth = background_clip_effect_depth_after_command(app.paint_effect_depth,
 		source_command.kind)
 	mut command := app.enter_draw_command(source_command)
+	$if macos {
+		if app.ctx.native_rendering {
+			command.resolve_chromium_checkbox_geometry()
+		}
+	}
 	defer {
 		app.draw_command_depth--
 	}

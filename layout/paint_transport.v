@@ -920,6 +920,8 @@ pub mut:
 	// Box-local CSS border geometry resolves its snapped origin against the
 	// current retained transform, including compositor-only animation updates.
 	local_border_data &PaintLocalBorderData = unsafe { nil }
+	// NativeTheme keeps CSS-sized geometry at the snapped device-pixel origin.
+	checkbox_theme_data &PaintCheckboxThemeData = unsafe { nil }
 	// Rectangles clipped out of an antialiased 'fill_rect' without
 	// antialiasing, as left, top, right and bottom: skip-ink decoration gaps.
 	clip_outs []f64
@@ -4366,6 +4368,7 @@ fn chromium_snapped_control_rect(x f64, y f64, width f64, height f64) painting.I
 // one pass, as Brave's GPU rasterization draws them into one raster tile: a
 // multisampled tile resolves their shared edge pixels together.
 fn append_chromium_unchecked_checkbox(mut commands []PaintCommand, rect painting.IntRect, scale f64, opacity f64) {
+	theme := &PaintCheckboxThemeData{rect, scale}
 	commands << PaintCommand{
 		kind:                'fill_rect'
 		x:                   f64(rect.x) + 0.2 * scale
@@ -4374,6 +4377,7 @@ fn append_chromium_unchecked_checkbox(mut commands []PaintCommand, rect painting
 		height:              f64(rect.height) - 0.4 * scale
 		radius:              2 * scale
 		underlays_next:      true
+		checkbox_theme_data: theme
 		color:               'rgb(255 255 255)'
 		opacity:             opacity
 		force_dark_role:     .background
@@ -4387,6 +4391,7 @@ fn append_chromium_unchecked_checkbox(mut commands []PaintCommand, rect painting
 		height:              f64(rect.height) - scale
 		radius:              2 * scale
 		stroke_width:        scale
+		checkbox_theme_data: theme
 		color:               'rgb(118 118 118)'
 		opacity:             opacity
 		force_dark_role:     .border

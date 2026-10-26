@@ -16,20 +16,71 @@ fn test_chromium_unchecked_checkbox_uses_blink_theme_geometry() {
 	assert commands.len == 2
 	assert commands[0].kind == 'fill_rect' && commands[0].radius == 2
 	assert commands[0].color == 'rgb(255 255 255)'
-	assert [commands[0].x, commands[0].y, commands[0].width, commands[0].height] == [299.2, 625.2,
-		12.6, 12.6]
+	assert [commands[0].x, commands[0].y, commands[0].width, commands[0].height] == [
+		299.2,
+		625.2,
+		12.6,
+		12.6,
+	]
 	// The border draws the background first in its own GPU pass.
 	assert commands[0].underlays_next && !commands[1].underlays_next
 	assert commands[1].kind == 'stroke_rounded_rect' && commands[1].radius == 2
 	assert commands[1].stroke_width == 1 && commands[1].color == 'rgb(118 118 118)'
-	assert [commands[1].x, commands[1].y, commands[1].width, commands[1].height] == [299.5, 625.5,
-		12.0, 12.0]
+	assert [commands[1].x, commands[1].y, commands[1].width, commands[1].height] == [
+		299.5,
+		625.5,
+		12.0,
+		12.0,
+	]
 	mut projected := []PaintCommand{}
 	append_chromium_unchecked_checkbox(mut projected, painting.IntRect{598, 1250, 26, 26}, 2, 1)
 	assert projected[0].radius == 4
 	assert projected[1].stroke_width == 2 && projected[1].radius == 4
-	assert [projected[1].x, projected[1].y, projected[1].width, projected[1].height] == [599.0,
-		1251.0, 24.0, 24.0]
+	assert [projected[1].x, projected[1].y, projected[1].width, projected[1].height] == [
+		599.0,
+		1251.0,
+		24.0,
+		24.0,
+	]
+}
+
+fn test_chromium_unchecked_checkbox_replays_at_anchored_css_geometry() {
+	for scale in [1.0, 2.0] {
+		mut commands := []PaintCommand{}
+		append_chromium_unchecked_checkbox(mut commands, painting.IntRect{100, 40, int(13 * scale), int(13 * scale)}, scale, 1)
+		for index in 0 .. commands.len {
+			physical := commands[index]
+			mut native := physical
+			native.resolve_chromium_checkbox_geometry()
+			assert native.checkbox_theme_data == unsafe { nil }
+			assert native.radius == 2
+			assert native.transform == [scale, 0, 0, scale, 100 * (1 - scale), 40 * (1 - scale)]!
+			if index == 0 {
+				assert native.x == f64(f32(100) + f32(0.2))
+				assert native.y == f64(f32(40) + f32(0.2))
+				assert native.x + native.width == f64(f32(113) - f32(0.2))
+				assert native.y + native.height == f64(f32(53) - f32(0.2))
+			} else {
+				assert [native.x, native.y, native.width, native.height] == [100.5, 40.5, 12.0,
+					12.0]
+				assert native.stroke_width == 1
+			}
+			// Retained bounds remain physical; resolving a working copy is idempotent.
+			assert commands[index].x == physical.x
+			before := native.transform
+			native.resolve_chromium_checkbox_geometry()
+			assert native.transform == before
+		}
+	}
+}
+
+fn test_chromium_checkbox_theme_keeps_ancestor_transforms() {
+	mut commands := []PaintCommand{}
+	append_chromium_unchecked_checkbox(mut commands, painting.IntRect{100, 40, 26, 26}, 2, 1)
+	mut border := commands[1]
+	border.transform = [f64(0), 1, -1, 0, 12, 18]!
+	border.resolve_chromium_checkbox_geometry()
+	assert border.transform == [f64(0), 2, -2, 0, 52, -82]!
 }
 
 fn test_chromium_checked_checkbox_projects_theme_radius_and_check_path() {
