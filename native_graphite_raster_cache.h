@@ -137,6 +137,7 @@ class VoxGraphiteRasterCache {
             && !std::memcmp(a.rect, b.rect, sizeof(a.rect))
             && !std::memcmp(&a.thickness, &b.thickness, sizeof(a.thickness))
             && a.red == b.red && a.green == b.green && a.blue == b.blue && a.alpha == b.alpha
+            && (a.fill < 2 || !std::memcmp(a.border_widths, b.border_widths, sizeof(a.border_widths)))
             && a.fill == b.fill && a.anti_alias == b.anti_alias && a.force_msaa == b.force_msaa
             && a.clip_out_count == b.clip_out_count && a.has_float_color == b.has_float_color
             && (!a.has_float_color || !std::memcmp(a.float_color, b.float_color, sizeof(a.float_color)))

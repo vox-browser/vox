@@ -98,6 +98,22 @@ fn test_chromium_gpu_raster_tiles_follow_the_viewport_height() {
 	assert chromium_gpu_raster_tile_rows(2000) == 512
 }
 
+fn test_single_rounded_border_clips_multisample_their_transformed_tiles() {
+	for side in ['top', 'right', 'bottom', 'left'] {
+		command := layout.PaintCommand{
+			kind: 'paint_rounded_border_' + side
+			x: 20
+			y: 250
+			width: 100
+			height: 20
+			transform: [f64(1), 0, 0, 1, 0, 10]!
+		}
+		assert chromium_msaa_trigger_bounds(command)? == [f64(260), 280]
+		assert chromium_msaa_tiles([command], 1, 256) == [1]
+		assert chromium_msaa_tiles([command], 2, 256) == [2]
+	}
+}
+
 // A skip-ink underline clipped around two or more glyphs, or an SVG path,
 // multisamples every tile that rasterizes its rows. An orthogonal CSS border
 // rectangle and an underline clipped once do not.

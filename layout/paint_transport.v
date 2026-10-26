@@ -2517,6 +2517,8 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 			}
 		}
 		border_end := commands.len
+		chromium_pair_rounded_border_background(mut commands, background_paint_start,
+			border_start, border_end)
 		table_border_start := commands.len
 		box.append_table_border_commands(mut commands, opacity)
 		table_border_end := commands.len
@@ -4743,6 +4745,10 @@ fn append_translated_border_commands(mut commands []PaintCommand, border BoxEdge
 		set_force_dark_role_for_range(mut commands, start, commands.len, .border)
 		return
 	}
+	if chromium && append_chromium_single_rounded_border(mut commands, border, colors, styles, radii, rect, opacity) {
+		set_force_dark_role_for_range(mut commands, start, commands.len, .border)
+		return
+	}
 	for display_command in painting.paint_all_borders(rect, painting_radii_from_transport(radii), painting_borders_from_transport(border, colors, styles)) {
 		append_painting_display_command(mut commands, display_command, opacity)
 	}
@@ -5603,6 +5609,13 @@ pub fn (b &BlockBox) render_svg(width f64, height f64) string {
 				pieces += '<rect x="${fmt_px(command.x)}" y="${fmt_px(command.y + command.height - bottom)}" width="${fmt_px(command.width)}" height="${fmt_px(bottom)}"/>'
 			}
 			body << '<g clip-path="url(#${clip_id})"${filter} fill="${command.color}" fill-opacity="${fmt_px(command.opacity)}">${pieces}</g>'
+		} else if rounded_single_border_mode(command.kind) > 0 {
+			for fallback in rounded_single_border_fallback(command) {
+				if fallback.svg_data != unsafe { nil } {
+					path := fallback.svg_data
+					body << '<path d="${path.path}" fill="${fallback.color}" fill-opacity="${fmt_px(fallback.opacity)}"/>'
+				}
+			}
 		} else if command.kind == 'paint_uniform_border' {
 			path := rounded_rect_svg_path(command.x, command.y, command.width, command.height, command.corner_radii)
 			body << '<path d="${path}" fill="none" stroke="${command.color}" stroke-opacity="${fmt_px(command.opacity)}" stroke-width="${fmt_px(command.stroke_width)}"/>'

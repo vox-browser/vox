@@ -161,6 +161,20 @@ int main()
     value = shape; value.fill = 0; shape_misses(value);
     value = shape; value.anti_alias = 0; shape_misses(value);
     value = shape; value.force_msaa = 1; shape_misses(value);
+    // Geometrically present transparent sides change a single rounded edge.
+    {
+        auto single = shape; single.fill = 4;
+        single.border_widths[0] = single.border_widths[1] = single.border_widths[3] = 1;
+        single.border_widths[2] = 2;
+        auto request = cache.prepare(single, 2, 2, 8, true, pixels.data());
+        assert(!request.hit && request.pending);
+        cache.finish(std::move(request), pixels.data(), 8);
+        assert(cache.prepare(single, 2, 2, 8, true, pixels.data()).hit);
+        for (int side = 0; side < 4; ++side) {
+            auto changed = single; changed.border_widths[side] += .5f;
+            assert(!cache.prepare(changed, 2, 2, 8, true, pixels.data()).hit);
+        }
+    }
     value = shape; value.has_underlay = 0; shape_misses(value);
     value = shape; value.has_float_color = 0; shape_misses(value);
     value = shape; value.clip_out_count = 0; shape_misses(value);

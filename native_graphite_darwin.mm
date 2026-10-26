@@ -17,6 +17,7 @@
 #include "include/core/SkColorFilter.h"
 #include "include/effects/SkGradient.h"
 #include "include/core/SkRRect.h"
+#include "native_rounded_single_border.h"
 #include "include/core/SkSurface.h"
 #include "include/core/SkYUVAPixmaps.h"
 #include "include/gpu/graphite/Context.h"
@@ -657,12 +658,13 @@ static void draw_shape_on_canvas(SkCanvas* canvas, VoxGraphiteShape const& shape
         canvas->clipRect(SkRect::MakeLTRB(clip[0], clip[1], clip[2], clip[3]),
             SkClipOp::kDifference, false);
     }
+    SkPaint underlay;
     if (shape.has_underlay) {
-        SkPaint underlay;
         underlay.setAntiAlias(shape.anti_alias != 0);
         underlay.setColor(SkColorSetARGB(shape.underlay_rgba[3], shape.underlay_rgba[0],
             shape.underlay_rgba[1], shape.underlay_rgba[2]));
-        canvas->drawRRect(rounded_rect(shape.underlay_rect), underlay);
+        if (shape.fill < 2)
+            canvas->drawRRect(rounded_rect(shape.underlay_rect), underlay);
     }
     SkPaint paint;
     paint.setAntiAlias(shape.anti_alias != 0);
@@ -674,7 +676,11 @@ static void draw_shape_on_canvas(SkCanvas* canvas, VoxGraphiteShape const& shape
         paint.setStyle(SkPaint::kStroke_Style);
         paint.setStrokeWidth(std::max(0.0f, shape.thickness));
     }
-    canvas->drawRRect(rounded_rect(shape.rect), paint);
+    if (shape.fill >= 2)
+        vox_draw_rounded_single_border(canvas, rounded_rect(shape.rect), paint, shape.fill,
+            shape.border_widths, shape.has_underlay ? &underlay : nullptr);
+    else
+        canvas->drawRRect(rounded_rect(shape.rect), paint);
 }
 
 // Read back only the border of large rounded shapes. Opaque fills have a flat
@@ -688,7 +694,7 @@ static bool draw_large_rounded_shape(uint8_t* pixels, int width, int height,
     float edges[4];
     auto solid = shape;
     solid.fill = 1;
-    if (shape.has_underlay || shape.clip_out_count || (shape.fill && shape.alpha != 255)
+    if (shape.fill >= 2 || shape.has_underlay || shape.clip_out_count || (shape.fill && shape.alpha != 255)
         || !vox_axis_aligned_rect(solid, edges)) return false;
     float half_x = shape.fill ? 0 : shape.thickness * shape.matrix[0] / 2;
     float half_y = shape.fill ? 0 : shape.thickness * shape.matrix[4] / 2;
@@ -859,7 +865,7 @@ static bool draw_rounded_parts(VoxGraphitePixelRegion const* regions, int count,
     float edges[4];
     auto solid = shape;
     solid.fill = 1;
-    if (shape.has_underlay || shape.clip_out_count || (shape.fill && shape.alpha != 255)
+    if (shape.fill >= 2 || shape.has_underlay || shape.clip_out_count || (shape.fill && shape.alpha != 255)
         || !vox_axis_aligned_rect(solid, edges)) return false;
     float half_x = shape.fill ? 0 : shape.thickness * shape.matrix[0] / 2;
     float half_y = shape.fill ? 0 : shape.thickness * shape.matrix[4] / 2;

@@ -27,7 +27,7 @@ inline bool vox_axis_aligned_rect(VoxGraphiteShape const& shape, float (&edges)[
 
 inline bool vox_aligned_opaque_rect(VoxGraphiteShape const& shape, float (&edges)[4])
 {
-    if (!shape.fill || shape.alpha != 255 || shape.has_underlay || shape.clip_out_count
+    if (shape.fill != 1 || shape.alpha != 255 || shape.has_underlay || shape.clip_out_count
         || !vox_axis_aligned_rect(shape, edges)) return false;
     for (float edge : edges) if (edge != std::floor(edge)) return false;
     return true;

@@ -122,6 +122,12 @@ fn chromium_msaa_trigger_bounds(command layout.PaintCommand) ?[]f64 {
 
 fn chromium_msaa_trigger_rect(command layout.PaintCommand) ?layout.LayoutRect {
 	match command.kind {
+		'paint_rounded_border_top', 'paint_rounded_border_right', 'paint_rounded_border_bottom', 'paint_rounded_border_left' {
+			// A single rounded side is filled through intersecting outer and
+			// inner clips (and corner miters), requiring a multisampled pass.
+			return transformed_raster_bounds(command.transform, command.x, command.y,
+				command.width, command.height)
+		}
 		'fill_rect' {
 			if command.clip_outs.len < 8 {
 				return none

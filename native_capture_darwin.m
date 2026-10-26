@@ -2493,6 +2493,16 @@ void native_set_rounded_rect_underlay(const float *rect, gg__Color color) {
 #endif
 }
 
+// Insets retained by a single visible rounded border, including transparent sides.
+void native_set_rounded_border_widths(const float *widths) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+    extern void ladybird_v_skia_set_rounded_border_widths(const float *);
+    ladybird_v_skia_set_rounded_border_widths(widths);
+#else
+    (void)widths;
+#endif
+}
+
 // Rectangles clipped out of the next anti-aliased rectangle, as left, top,
 // right and bottom; a count of zero clears them.
 void native_set_rect_clip_outs(const double *rects, int count) {

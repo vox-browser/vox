@@ -287,6 +287,7 @@ fn C.native_set_chromium_msaa_tiles(tiles &i32, count int, tile_rows int)
 fn C.native_set_rect_clip_outs(rects &f64, count int)
 fn C.native_rounded_rect_underlay_supported() int
 fn C.native_set_rounded_rect_underlay(rect &f32, color gg.Color)
+fn C.native_set_rounded_border_widths(widths &f32)
 fn C.native_end_font_compositing_layer()
 
 fn C.native_begin_backdrop_filter_layer(canvas_width f32, canvas_height f32, region_x f32, region_y f32, region_width f32, region_height f32, top_left_x f32, top_left_y f32, top_right_x f32, top_right_y f32, bottom_right_x f32, bottom_right_y f32, bottom_left_x f32, bottom_left_y f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, source_outside_current_filter int)
@@ -5320,7 +5321,7 @@ fn (mut app BrowserApp) add_native_css_filter(filter painting.GfxFilter, transfo
 	app.add_native_svg_filter_graph(filter, transform, page_x, page_y)
 }
 
-// Draws a check box background deferred to a border that did not follow it.
+// Draws a rounded background deferred to a border that did not follow it.
 fn (mut app BrowserApp) flush_rounded_rect_underlay(page_x f32, page_y f32, window_height int) {
 	source := app.rounded_rect_underlay_source or { return }
 	app.rounded_rect_underlay = none
@@ -5344,6 +5345,9 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 	// in the same render pass, retaining fractional coverage between draws.
 	if pending := app.rounded_rect_underlay_source {
 		if !((source_command.kind == 'stroke_rounded_rect' && source_command.points.len < 4)
+			|| ((layout.rounded_single_border_mode(source_command.kind) != 0
+				|| source_command.kind == 'paint_uniform_border')
+				&& source_command.clip_outs == pending.clip_outs)
 			|| (source_command.kind == 'fill_rect' && source_command.antialiased_rect
 				&& !source_command.underlays_next && source_command.clip_outs == pending.clip_outs)) {
 			app.flush_rounded_rect_underlay(page_x, page_y, window_height)
@@ -5859,12 +5863,47 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			if top > 0 { draw_srgb_rect(app.ctx, x, y, w, top, fill) }
 			if bottom > 0 { draw_srgb_rect(app.ctx, x, y + h - bottom, w, bottom, fill) }
 		}
+		'paint_rounded_border_top', 'paint_rounded_border_right', 'paint_rounded_border_bottom', 'paint_rounded_border_left' {
+			$if macos {
+				if app.ctx.native_rendering && C.native_rounded_rect_underlay_supported() != 0 {
+					r := command.corner_radii
+					border_color := app.paint_colors.color(command.color, command.opacity)
+					if command.points.len != 4 { return }
+					widths := [f32(command.points[0]), f32(command.points[1]), f32(command.points[2]), f32(command.points[3])]!
+					C.native_set_rounded_border_widths(&widths[0])
+					if underlay := app.rounded_rect_underlay {
+						app.rounded_rect_underlay = none
+						app.rounded_rect_underlay_source = none
+						radius := f32(underlay.radius)
+						rect := [f32(underlay.x), f32(underlay.y), f32(underlay.width), f32(underlay.height),
+							radius, radius, radius, radius, radius, radius, radius, radius]!
+						C.native_set_rounded_rect_underlay(&rect[0], app.paint_colors.color(underlay.color, underlay.opacity))
+					}
+					set_native_chromium_paint_color(*command)
+					C.native_draw_rounded_rect_srgb(f32(command.x), f32(command.y), f32(command.width), f32(command.height), f32(r.top_left.x), f32(r.top_left.y), f32(r.top_right.x), f32(r.top_right.y), f32(r.bottom_right.x), f32(r.bottom_right.y), f32(r.bottom_left.x), f32(r.bottom_left.y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), border_color, int(layout.rounded_single_border_mode(command.kind)), f32(command.stroke_width), 1)
+					C.native_set_rounded_rect_underlay(unsafe { nil }, gg.Color{})
+					return
+				}
+			}
+			for fallback in layout.rounded_single_border_fallback(*command) {
+				app.draw_command(fallback, page_x, page_y, window_height)
+			}
+		}
 		'paint_uniform_border' {
 			stroke := app.paint_colors.color(command.color, command.opacity)
 			$if macos {
 				if app.ctx.native_rendering {
 					r := command.corner_radii
+					if underlay := app.rounded_rect_underlay {
+						app.rounded_rect_underlay = none
+						app.rounded_rect_underlay_source = none
+						radius := f32(underlay.radius)
+						rect := [f32(underlay.x), f32(underlay.y), f32(underlay.width), f32(underlay.height),
+							radius, radius, radius, radius, radius, radius, radius, radius]!
+						C.native_set_rounded_rect_underlay(&rect[0], app.paint_colors.color(underlay.color, underlay.opacity))
+					}
 					C.native_draw_rounded_rect_srgb(f32(command.x), f32(command.y), f32(command.width), f32(command.height), f32(r.top_left.x), f32(r.top_left.y), f32(r.top_right.x), f32(r.top_right.y), f32(r.bottom_right.x), f32(r.bottom_right.y), f32(r.bottom_left.x), f32(r.bottom_left.y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), stroke, 0, f32(command.stroke_width), if command.disable_antialias { 0 } else { 1 })
+					C.native_set_rounded_rect_underlay(unsafe { nil }, gg.Color{})
 					return
 				}
 			}

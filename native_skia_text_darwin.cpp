@@ -40,6 +40,7 @@
 #include "include/core/SkSerialProcs.h"
 #include "include/core/SkPath.h"
 #include "include/core/SkRRect.h"
+#include "native_rounded_single_border.h"
 #include "include/core/SkSize.h"
 #include "include/core/SkSurface.h"
 #include "include/core/SkSurfaceProps.h"
@@ -2109,6 +2110,12 @@ extern "C" void ladybird_v_skia_set_unrounded_paint_color(float const* color)
     s_has_unrounded_paint_color = color != nullptr;
     if (color) std::copy_n(color, 4, s_unrounded_paint_color);
 }
+static float s_rounded_border_widths[4];
+extern "C" void ladybird_v_skia_set_rounded_border_widths(float const* widths)
+{
+    if (widths) std::copy_n(widths, 4, s_rounded_border_widths);
+    else std::fill_n(s_rounded_border_widths, 4, 0.f);
+}
 static float s_rounded_rect_underlay[12];
 static uint8_t s_rounded_rect_underlay_rgba[4];
 
@@ -2526,6 +2533,9 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
     uint8_t green, uint8_t blue, uint8_t alpha, int fill, float thickness,
     int anti_alias, int opaque_backdrop)
 {
+    float border_widths[4];
+    std::copy_n(s_rounded_border_widths, 4, border_widths);
+    std::fill_n(s_rounded_border_widths, 4, 0.f);
     bool const has_underlay = s_has_rounded_rect_underlay;
     s_has_rounded_rect_underlay = false;
     bool const has_float_color = s_has_unrounded_paint_color;
@@ -2569,8 +2579,12 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
         canvas->save();
         canvas->setMatrix(matrix);
         clip_out_rects(canvas);
-        if (has_underlay) canvas->drawRRect(underlay_rect, underlay_paint);
-        canvas->drawRRect(rounded_rect, paint);
+        if (has_underlay && fill < 2) canvas->drawRRect(underlay_rect, underlay_paint);
+        if (fill >= 2)
+            vox_draw_rounded_single_border(canvas, rounded_rect, paint, fill, border_widths,
+                has_underlay ? &underlay_paint : nullptr);
+        else
+            canvas->drawRRect(rounded_rect, paint);
         canvas->restore();
     }
     if (s_raster_command_group
@@ -2581,9 +2595,13 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
         canvas->setMatrix(raster_matrix(matrix, group.region, group.scale_x,
             group.scale_y));
         clip_out_rects(canvas);
-        if (has_underlay)
+        if (has_underlay && fill < 2)
             canvas->drawRRect(underlay_rect, underlay_paint);
-        canvas->drawRRect(rounded_rect, paint);
+        if (fill >= 2)
+            vox_draw_rounded_single_border(canvas, rounded_rect, paint, fill, border_widths,
+                has_underlay ? &underlay_paint : nullptr);
+        else
+            canvas->drawRRect(rounded_rect, paint);
         canvas->restore();
         return 1;
     }
@@ -2607,7 +2625,7 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
     auto raster_height = raster_dimension(region.height(), destination_scale);
     auto raster_scale_x = static_cast<float>(raster_width) / static_cast<float>(region.width());
     auto raster_scale_y = static_cast<float>(raster_height) / static_cast<float>(region.height());
-    if (s_chromium_painting && opaque_backdrop && !has_underlay && s_rect_clip_outs.empty()) {
+    if (s_chromium_painting && fill < 2 && opaque_backdrop && !has_underlay && s_rect_clip_outs.empty()) {
         VoxGraphiteShape sparse {
             .matrix = {}, .rect = {x, y, rect_width, rect_height,
                 top_left_x, top_left_y, top_right_x, top_right_y,
@@ -2630,7 +2648,7 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
         RasterRegion covered;
         // The opaque center is independent of the input backdrop. Preserve all
         // edge/corner pixels and a two-device-pixel guard for GPU coverage.
-        if (fill && alpha == 255 && s_rect_clip_outs.empty()
+        if (fill == 1 && alpha == 255 && s_rect_clip_outs.empty()
             && matrix.getScaleX() > 0 && matrix.getScaleY() > 0
             && matrix.getSkewX() == 0 && matrix.getSkewY() == 0) {
             float rx = 0, ry = 0;
@@ -2664,6 +2682,7 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
             .has_underlay = has_underlay ? 1 : 0,
             .has_float_color = has_float_color ? 1 : 0
         };
+        std::copy_n(border_widths, 4, descriptor.border_widths);
         if (has_float_color) std::copy_n(s_unrounded_paint_color, 4, descriptor.float_color);
         raster_matrix(matrix, region, raster_scale_x, raster_scale_y).get9(descriptor.matrix);
         if (has_underlay) {
@@ -2683,7 +2702,7 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
         bool drawn = draw != nullptr;
         auto draw_region = graphite_shape_region_draw();
         bool tiled = draw_region && has_background && !has_underlay && s_rect_clip_outs.empty()
-            && size_t(raster_width) * raster_height <= 16384
+            && (fill >= 2 || size_t(raster_width) * raster_height <= 16384)
             && draw_chromium_root_raster_grid<true>(pixels,
             raster_width, raster_height, region, page_x, page_y, scroll_y,
             destination_scale, [&](auto& target, long offset_x, long offset_y, bool msaa,
@@ -2758,9 +2777,13 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
     canvas->clear(SK_ColorTRANSPARENT);
     canvas->setMatrix(raster_matrix(matrix, region, raster_scale_x, raster_scale_y));
     clip_out_rects(canvas);
-    if (has_underlay)
+    if (has_underlay && fill < 2)
         canvas->drawRRect(underlay_rect, underlay_paint);
-    canvas->drawRRect(rounded_rect, paint);
+    if (fill >= 2)
+        vox_draw_rounded_single_border(canvas, rounded_rect, paint, fill, border_widths,
+                has_underlay ? &underlay_paint : nullptr);
+    else
+        canvas->drawRRect(rounded_rect, paint);
     surface.reset();
     return composite_pixels(destination, std::move(pixels), raster_width, raster_height,
         static_cast<float>(region.left), canvas_height - static_cast<float>(region.bottom),

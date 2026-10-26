@@ -6,18 +6,21 @@ import painting
 // antialiased outer edge from bleeding through the border's coverage.
 fn chromium_background_under_opaque_border(rect LayoutRect, radii BoxRadii,
 	border BoxEdges, colors BoxColors, styles BoxBorderStyles) (LayoutRect, BoxRadii) {
-	if border.top <= 0 || border.right <= 0 || border.bottom <= 0 || border.left <= 0
-		|| colors.top.a != 255 || colors.right.a != 255 || colors.bottom.a != 255
-		|| colors.left.a != 255 || styles.top != .solid || styles.right != .solid
-		|| styles.bottom != .solid || styles.left != .solid {
-		return rect, radii
+	// Missing sides do not expose a translucent border. Blink can still move
+	// the background halfway beneath each visible opaque solid side.
+	widths := [border.top, border.right, border.bottom, border.left]
+	side_colors := [colors.top, colors.right, colors.bottom, colors.left]
+	side_styles := [styles.top, styles.right, styles.bottom, styles.left]
+	for side, width in widths {
+		if width > 0 && (side_colors[side].a != 255 || side_styles[side] != .solid) {
+			return rect, radii
+		}
 	}
 	top := border.top / 2
 	right := border.right / 2
 	bottom := border.bottom / 2
 	left := border.left / 2
-	return LayoutRect{rect.x + left, rect.y + top, non_negative(rect.width - left - right), non_negative(
-		rect.height - top - bottom)}, BoxRadii{
+	return LayoutRect{rect.x + left, rect.y + top, non_negative(rect.width - left - right), non_negative(rect.height - top - bottom)}, BoxRadii{
 		top_left:     shrink_corner_radius(radii.top_left, left, top)
 		top_right:    shrink_corner_radius(radii.top_right, right, top)
 		bottom_right: shrink_corner_radius(radii.bottom_right, right, bottom)
