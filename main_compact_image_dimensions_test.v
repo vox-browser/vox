@@ -18,15 +18,15 @@ fn test_compact_image_dimensions_use_live_css_content_size_for_backdrop_canvases
 	mut messages := []string{}
 	run_document_javascript(document, 'about:blank', [r'
 const photo=document.getElementById("photo");
-if(photo.width!==125||photo.height!==73)throw new Error("image content size excludes edges and transform: "+photo.width+"x"+photo.height);
+if(photo.width!==126||photo.height!==74)throw new Error("image content size rounds without edges or transform: "+photo.width+"x"+photo.height);
 const backdrop=document.createElement("canvas");
 if(backdrop.width!==300||backdrop.height!==150)throw new Error("canvas defaults");
 backdrop.width=photo.width;backdrop.height=photo.height;
-if(backdrop.width!==125||backdrop.height!==73)throw new Error("backdrop dimensions");
+if(backdrop.width!==126||backdrop.height!==74)throw new Error("backdrop dimensions");
 photo.style.width="211.5px";photo.style.height="93.25px";
-if(photo.width!==211||photo.height!==93)throw new Error("pending image style update");
+if(photo.width!==212||photo.height!==93)throw new Error("pending image style update");
 photo.style.boxSizing="border-box";photo.style.width="231.5px";photo.style.height="113.25px";
-if(photo.width!==211||photo.height!==93)throw new Error("border-box image content size");
+if(photo.width!==212||photo.height!==93)throw new Error("border-box image content size");
 photo.style.display="none";
 if(photo.width!==640||photo.height!==480)throw new Error("unrendered image attributes");
 photo.width=23;photo.height=31;
@@ -53,7 +53,7 @@ if(image.width!==0||image.height!==0)throw new Error("detached image defaults");
 image.width=17;image.height=29;
 if(image.width!==17||image.height!==29)throw new Error("detached image attributes");
 host.appendChild(image);
-if(image.width!==62||image.height!==41)throw new Error("inserted image dimensions");
+if(image.width!==63||image.height!==42)throw new Error("inserted image dimensions");
 image.style.width="80px";image.style.height="48px";
 if(image.width!==80||image.height!==48)throw new Error("created image style update");
 image.remove();

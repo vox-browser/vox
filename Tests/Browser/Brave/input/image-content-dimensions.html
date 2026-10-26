@@ -11,12 +11,12 @@ html,body{margin:0;background:#fcfdff}
 addEventListener("load",()=>{
  try {
   const photo=document.getElementById("photo"),backdrop=document.createElement("canvas");
-  if(photo.width!==125||photo.height!==73)throw Error("displayed dimensions");
+  if(photo.width!==126||photo.height!==74)throw Error("displayed dimensions: "+photo.width+"x"+photo.height);
   if(backdrop.width!==300||backdrop.height!==150)throw Error("canvas defaults");
   backdrop.width=photo.width;backdrop.height=photo.height;
-  if(backdrop.width!==125||backdrop.height!==73)throw Error("backdrop dimensions");
+  if(backdrop.width!==126||backdrop.height!==74)throw Error("backdrop dimensions");
   photo.style.width="211.5px";photo.style.height="93.25px";
-  if(photo.width!==211||photo.height!==93)throw Error("live dimensions");
+  if(photo.width!==212||photo.height!==93)throw Error("live dimensions");
   photo.style.width="125.75px";photo.style.height="73.875px";
   probe.style.background="#00a060";document.title="Image dimensions PASS";
  } catch(error) { document.title="Image dimensions FAIL: "+error.message;throw error; }

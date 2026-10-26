@@ -2,7 +2,23 @@ module main
 
 import dom
 import html
+import math
 import x.json2
+
+fn compact_image_dimension(image &dom.HTMLImageElement, width bool) u32 {
+	// Flush pending layout through the translated getter, retaining its attribute
+	// and intrinsic-size fallback for images without a rendered box. Blink rounds
+	// the rendered content size to the nearest CSS pixel rather than truncating.
+	fallback := if width { html.html_image_element_width(image) } else { html.html_image_element_height(image) }
+	element := unsafe { &dom.Element(image) }
+	if node := element.as_node().layout_node() {
+		if node.has_geometry_ {
+			value := if width { node.content_width_ } else { node.content_height_ }
+			return u32(math.floor(value / element.document().layout_coordinate_scale() + .5))
+		}
+	}
+	return fallback
+}
 
 // Use the translated CSSOM View algorithms after the shared query boundary has
 // flushed pending DOM and style mutations. Menu positioning must see live boxes.
@@ -20,11 +36,7 @@ fn compact_element_geometry_query(root &dom.Node, name string) !string {
 			return error('TypeError: Invalid HTMLImageElement receiver')
 		}
 		image := unsafe { &dom.HTMLImageElement(element) }
-		return if name == 'imageWidth' {
-			html.html_image_element_width(image).str()
-		} else {
-			html.html_image_element_height(image).str()
-		}
+		return compact_image_dimension(image, name == 'imageWidth').str()
 	}
 	if name == 'rect' {
 		rect := element.get_bounding_client_rect()
