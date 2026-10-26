@@ -462,3 +462,10 @@ HTTP receipts, source bodies and bounded call-site excerpts are retained in
 `worker-loader-inspection-1793028304307830000/` and
 `worker-launcher-inspection-1793028387826668000/`. This is source inspection
 only; it adds no worker execution or screenshot acceptance credit.
+
+The same worker entry was also retrieved directly from the requested
+`yandex.ru` origin on October 26. It returns HTTP 200 without a redirect and
+has the same 966,384-byte body and SHA-256 as the inspected `yandex.com` entry.
+The response receipt and body are retained in
+`worker-ru-entry-inspection-1793031667552697000/`. This verifies the entry on
+the requested host; execution and the live visual comparison remain pending.
