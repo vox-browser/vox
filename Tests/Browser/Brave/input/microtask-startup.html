@@ -1,0 +1,32 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Microtask startup</title>
+<style>
+html,body{margin:0;background:#fcfdff}
+#probe{position:absolute;left:32px;top:32px;width:192px;height:48px;background:#c22}
+</style>
+<div id="probe"></div>
+<script>
+const order=[];
+Promise.resolve().then(()=>{order.push('p1');queueMicrotask(()=>order.push('p1q'))});
+queueMicrotask(()=>{order.push('q1');Promise.resolve().then(()=>order.push('q1p'));queueMicrotask(()=>order.push('q1q'))});
+Promise.resolve().then(()=>order.push('p2'));
+queueMicrotask(()=>order.push('q2'));
+order.push('sync');
+if(order.join(',')!=='sync')throw Error('synchronous microtask');
+setTimeout(()=>{
+  if(order.join(',')!=='sync,p1,q1,p2,q2,p1q,q1p,q1q')throw Error('job ordering');
+  let errors=0;
+  for(const run of [()=>queueMicrotask(),()=>queueMicrotask(null),()=>new queueMicrotask(()=>{}),()=>queueMicrotask.call({},()=>{})])try{run()}catch(e){if(e instanceof TypeError)errors++}
+  if(errors!==4)throw Error('WebIDL checks');
+  queueMicrotask(function(){
+    'use strict';
+    if(this!==undefined||arguments.length!==0)throw Error('callback invocation');
+    queueMicrotask(()=>{
+      document.getElementById('probe').setAttribute('style','background:#008000');
+      document.title='Microtask PASS';
+    });
+    return {get then(){throw Error('callback result adopted')}};
+  });
+},30);
+</script>

@@ -2985,6 +2985,10 @@ fn run_document_script_sources_with_image_fetch_hooks(document &dom.Document, cu
 		messages << 'JavaScript MessageChannel bindings: ${err.msg()}'
 		return none
 	}
+	mutable_runtime.install_microtask_binding() or {
+		messages << 'JavaScript queueMicrotask bindings: ${err.msg()}'
+		return none
+	}
 	mutable_runtime.install_indexed_db_binding() or {
 		messages << 'JavaScript IndexedDB bindings: ${err.msg()}'
 		return none
