@@ -27,6 +27,7 @@ typedef void (*VoxTabAction)(void *, int, int, int);
 @interface VoxTabButton : NSButton
 @property BOOL selectedTab;
 @property BOOL smallButton;
+@property(strong) NSImage *siteIcon;
 @end
 
 // The low, sloping shoulders and overlapping edges follow the classic Chrome
@@ -88,7 +89,14 @@ static NSBezierPath *vox_tab_path(NSRect r) {
 	NSRect text = NSMakeRect(self.smallButton ? 4 : 30, 3,
 		self.bounds.size.width-(self.smallButton ? 8 : 56), 18);
 	[self.title drawInRect:text withAttributes:attrs];
-	if (!self.smallButton && [self.title isEqualToString:@"Apps"]) {
+	if (!self.smallButton && self.siteIcon) {
+		NSSize size = self.siteIcon.size;
+		CGFloat scale = MIN(16 / MAX(1, size.width), 16 / MAX(1, size.height));
+		NSRect icon = NSMakeRect(12 + (16 - size.width * scale) / 2,
+			4 + (16 - size.height * scale) / 2, size.width * scale, size.height * scale);
+		[self.siteIcon drawInRect:icon fromRect:NSZeroRect operation:NSCompositingOperationSourceOver
+			fraction:1 respectFlipped:YES hints:nil];
+	} else if (!self.smallButton && [self.title isEqualToString:@"Apps"]) {
 		NSArray<NSColor *> *colors = @[[NSColor colorWithSRGBRed:.91 green:.33 blue:.28 alpha:1],
 			[NSColor colorWithSRGBRed:.96 green:.72 blue:.22 alpha:1], [NSColor colorWithSRGBRed:.28 green:.66 blue:.45 alpha:1]];
 		for (int row=0; row<3; ++row) for (int col=0; col<3; ++col) {
@@ -214,6 +222,9 @@ static NSBezierPath *vox_tab_path(NSRect r) {
 static VoxBrowserTabStrip *vox_browser_tab_strip;
 static void native_browser_tabs_remove(void) {
 	vox_browser_tab_strip.trackingTab = vox_browser_tab_strip.draggingTab = NO;
+	for (NSView *child in vox_browser_tab_strip.subviews) {
+		if ([child isKindOfClass:VoxTabButton.class]) ((VoxTabButton *)child).siteIcon = nil;
+	}
 	[vox_browser_tab_strip removeFromSuperview]; vox_browser_tab_strip = nil;
 }
 static void native_browser_tabs_update(void *toolbar_pointer, void *owner, VoxTabAction callback,
@@ -232,7 +243,10 @@ static void native_browser_tabs_update(void *toolbar_pointer, void *owner, VoxTa
 	if (strip.trackingTab) { first = strip.firstTab; end = strip.endTab; }
 	strip.tabCount = count; strip.firstTab = first; strip.endTab = end; strip.tabWidth = width;
 	strip.frame = NSMakeRect(0, toolbar.isFlipped ? 0 : toolbar.bounds.size.height-29, toolbar.bounds.size.width, 29);
-	for (NSView *child in strip.subviews.copy) [child removeFromSuperview];
+	for (NSView *child in strip.subviews.copy) {
+		if ([child isKindOfClass:VoxTabButton.class]) ((VoxTabButton *)child).siteIcon = nil;
+		[child removeFromSuperview];
+	}
 	for (int i = first; i < end; ++i) {
 		VoxTabButton *button = [[VoxTabButton alloc] initWithFrame:NSMakeRect(62+(i-first)*width, 5, width+10, 24)];
 		button.title = @"New Tab";
@@ -277,4 +291,18 @@ static void native_browser_tab_title(int index, const unsigned char *bytes, int 
 		close.accessibilityLabel = [@"Close " stringByAppendingString:title];
 		button.needsDisplay = YES;
 	}
+}
+
+static void native_browser_tab_icon(int index, const unsigned char *bytes, int length) {
+	NSImage *icon = length > 0 ? [[NSImage alloc] initWithData:[NSData dataWithBytes:bytes length:length]] : nil;
+	for (NSView *view in vox_browser_tab_strip.subviews) {
+		if (![view isKindOfClass:VoxTabButton.class]) continue;
+		VoxTabButton *button = (VoxTabButton *)view;
+		if (button.smallButton || button.tag != index) continue;
+		button.siteIcon = icon;
+		button.needsDisplay = YES;
+	}
+#if !__has_feature(objc_arc)
+	[icon release];
+#endif
 }

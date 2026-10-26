@@ -25,6 +25,7 @@ struct BrowserChromeState {
 	forward bool
 	reload  bool
 	tab_titles []string
+	tab_favicons []int
 	selected_tab int
 	debug   bool
 	bookmarks_visible bool
@@ -93,6 +94,7 @@ fn (app &BrowserApp) browser_chrome_state(width int, height int) BrowserChromeSt
 	titles := app.cached_browser_tab_titles()
 	return BrowserChromeState{
 		tab_titles: titles
+		tab_favicons: app.cached_browser_tab_favicons()
 		selected_tab: if app.tabs != unsafe { nil } { app.tabs.selected } else { 0 }
 		width:   width
 		height:  height

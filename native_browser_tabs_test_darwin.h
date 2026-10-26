@@ -30,6 +30,29 @@ static int native_test_tabs_geometry(void) {
 	}
 	return 1;
 }
+static int native_test_tabs_has_icon(int index) {
+	for (NSView *view in vox_browser_tab_strip.subviews) {
+		if ([view isKindOfClass:VoxTabButton.class] && !((VoxTabButton *)view).smallButton
+			&& view.tag == index) return ((VoxTabButton *)view).siteIcon != nil;
+	}
+	return 0;
+}
+static unsigned int native_test_tabs_icon_pixel(int index, int x, int y) {
+	for (NSView *view in vox_browser_tab_strip.subviews) {
+		if (![view isKindOfClass:VoxTabButton.class] || ((VoxTabButton *)view).smallButton
+			|| view.tag != index) continue;
+		NSBitmapImageRep *bitmap = [view bitmapImageRepForCachingDisplayInRect:view.bounds];
+		[view cacheDisplayInRect:view.bounds toBitmapImageRep:bitmap];
+		CGFloat scale = bitmap.pixelsWide / view.bounds.size.width;
+		NSColor *color = [[bitmap colorAtX:x * scale y:y * scale]
+			colorUsingColorSpace:NSColorSpace.sRGBColorSpace];
+		return ((unsigned int)round(color.redComponent * 255) << 24)
+			| ((unsigned int)round(color.greenComponent * 255) << 16)
+			| ((unsigned int)round(color.blueComponent * 255) << 8)
+			| (unsigned int)round(color.alphaComponent * 255);
+	}
+	return 0;
+}
 // Feed window-coordinate events directly: AppKit rewrites Quartz locations of
 // posted synthetic mouse events when the fixture window is not on screen.
 static NSArray<NSEvent *> *native_test_tab_drag_events;

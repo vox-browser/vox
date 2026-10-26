@@ -15,6 +15,12 @@ mut:
 	footer            string
 	footer_valid      bool
 	tab_titles        []string
+	favicon_document_id dom.UniqueNodeID
+	favicon_url       string
+	favicon_image_id  int = -1
+	favicon_complete  bool
+	favicon_fallback  bool
+	tab_favicons      []int
 }
 
 fn (app &BrowserApp) browser_text_cache() &BrowserChromeTextCache {
