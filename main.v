@@ -2982,6 +2982,10 @@ fn run_document_script_sources_with_image_fetch_hooks(document &dom.Document, cu
 		messages << 'JavaScript TextEncoder bindings: ${err.msg()}'
 		return none
 	}
+	mutable_runtime.install_text_decoder_binding() or {
+		messages << 'JavaScript TextDecoder bindings: ${err.msg()}'
+		return none
+	}
 	mutable_runtime.install_window_message_binding() or {
 		messages << 'JavaScript Window messaging bindings: ${err.msg()}'
 		return none
