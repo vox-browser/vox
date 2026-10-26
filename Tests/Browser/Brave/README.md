@@ -389,6 +389,42 @@ V_BIN=~/code/v-latest/v python3 tools/run_memory_bounded.py \
   --report Build/hacker-news-pixels-job.json -- python3 tools/hacker_news_pixels_test.py
 ```
 
+The same test includes `hacker-news-comment-initial-text`, reduced from
+<https://news.ycombinator.com/item?id=50225695#50226323>. Its opening sentence,
+“This statement stood out to me.”, is bare text preceding paragraph blocks.
+Anonymous block wrappers must inherit the same physical font as those blocks.
+The reference uses a native Brave 156.1.98.60 window at 800×600 CSS pixels and
+device scale 2 (`--windowed --native-scale`),
+then the screenshot workflow's `sips --resampleHeightWidth 600 800` conversion
+to logical pixels. The layout test also checks both document modes, scale
+changes, and live font-size changes.
+
+`hacker-news-item-50231722-complete` retains all 101 comment rows from the
+response frozen on 2026-10-25, including collapsed and hidden rows. Its Brave
+reference uses a native 1024×768 CSS viewport at device scale 2 and retains the raw
+2048×1536 PNG. The pixel test normalizes that reference to logical pixels; the
+instruction gate checks every comment ID and exact native-resolution pixels
+for every fresh-process observation:
+
+```sh
+python3 tools/run_memory_bounded.py --report Build/hn-instructions-job.json -- \
+  python3 tools/hacker_news_browser_instructions.py --output Build/hn-instructions
+```
+
+The gate requires Vox's largest instruction count to be at most 90% of
+Brave's smallest lower bound across at least two alternating pairs (three by
+default). It records exclusive resource-coalition counters, including exited
+helpers and coalition-owned Metal compiler services, executable and dependency
+hashes, raw observations, real exit status,
+and the loopback replay policy. The interval runs from navigation request to
+encoded document PNG availability. Vox's native endpoint precedes file writing;
+Brave's CDP endpoint includes PNG base64 and IPC delivery and readiness polling.
+Both browsers use inactive native windows away from the pointer; their capture
+workflows have different internal endpoints. GPU execution and services outside
+the coalition are excluded. The gate does not establish pure first-render parity.
+See [the rendering report](../../../docs/HACKER_NEWS_RENDERING.md) for provenance
+and validation results.
+
 `device-layout-inline-precision` checks native scale 2 fractional form-control
 heights, fixed line heights, `ex` widths, middle alignment and soft line breaks.
 `device-layout-display-density` checks resolution media queries at the same
