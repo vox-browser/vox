@@ -127,6 +127,63 @@ execution. `hotspots.json`, `sample.txt`, `result.json` and
 The guard's sampled process-tree RSS peaked at 950,042,624 bytes within its
 12 GiB budget, over 47.03 seconds including browser startup and settling.
 
+### Larger-shape batch follow-up: no gain
+
+A second prototype reached the archived workload, but only once during each
+120-input eligibility diagnostic. Native comparisons and sanitizer checks
+passed, and all thirteen control/candidate browser screenshot pairs were
+pixel-exact. Four subsequent alternating, unprofiled 360-input runs completed
+successfully, with the same archive and protocol as above:
+
+| Trial | Scroll fps | Median / p95 / max interval, ms | Over 16.67 ms | Moving intervals / publications / inputs |
+| --- | ---: | --- | ---: | --- |
+| control-1 | 22.00 | 40.51 / 75.14 / 128.53 | 100% | 151 / 161 / 360 |
+| candidate-1 | 19.80 | 45.76 / 87.85 / 109.99 | 100% | 132 / 141 / 360 |
+| control-2 | 21.45 | 41.90 / 77.76 / 108.96 | 100% | 146 / 158 / 360 |
+| candidate-2 | 20.39 | 44.72 / 85.84 / 141.73 | 100% | 137 / 148 / 360 |
+
+| Trial | Actual input Hz | Entire input period, s | Leading / trailing publication gap, ms | First counted scroll delay, ms |
+| --- | ---: | ---: | --- | ---: |
+| control-1 | 52.32 | 6.862 | 176.93 / 20.27 | 280.41 |
+| candidate-1 | 53.85 | 6.667 | 174.67 / 20.43 | 274.31 |
+| control-2 | 52.73 | 6.808 | 177.90 / 20.06 | 286.86 |
+| candidate-2 | 53.44 | 6.718 | 179.35 / 19.89 | 280.62 |
+
+The 18-CPU host's one-minute loads before/after these trials were
+83.93/103.31, 101.12/98.37, 98.37/102.31 and 105.81/103.49. These heavily
+contended runs provide no optimization credit; both candidate regressions are
+retained. The infrequently executed path does not address the common draws.
+The prototype was removed; `large-batch-v2-validated-rejected.patch` and
+`large-batch-v2-decision.json` preserve that decision. Its executable, text
+bridge, Graphite and Dawn hashes are `38ab89cf…`, `8fc5ef3f…`, `9d08dda8…`
+and `cb98233f…`; full identities and commands are in
+`large-batch-v2-build-identity.json` and `large-batch-v2-build-check-commands.json`.
+The original validation stopped at an overstrict eligibility assertion and
+exited 1; `large-batch-v2-validation-resume-1/` retains the completed pixel and
+timing checks, their commands, timestamps, actual inputs, host loads and
+browser exits. The enclosing resumed guard later exited 1 at a separate
+viewport-projection regression test; that prototype was also removed.
+
+### Small-shape cost diagnostic
+
+`disk-shape-cost-profile-v3/` separates startup from the actual input window
+using a marker installed by the precise-input probe. This separate instrumented
+360-input run uses the same archive, title readiness and settling period,
+and supplies no unprofiled performance credit. The driver and six-second
+sampler exited 0, and all replay requests returned archived HTTP-200 bodies.
+The probe identifies the executable, resolves all four Graphite entry points
+to the pinned library, and checks the text bridge's leaf image. Source,
+library hashes, addresses, commands and results remain with the raw logs.
+
+During input, full-tile rounded strokes with an underlay made 1,319 calls
+and consumed 708.81 ms inside the native API. Unrounded fills with two
+clip exclusions made 365 calls and consumed 208.24 ms. Existing regional and
+batched fills were already active. Only three larger-shape batches executed
+during input. These API timings include nested work and must not be added to
+the enclosing leaf timings or interpreted as scrolling fps. They motivate
+extending compact readbacks to small controls with underlays and clip
+exclusions while preserving the original GPU coordinates and surface extent.
+
 ## Baseline and bottleneck
 
 The original production bundle published 39.81 scroll-changing frames/s on the
