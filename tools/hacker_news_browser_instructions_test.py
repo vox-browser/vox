@@ -1,6 +1,7 @@
 from pathlib import Path
 from dataclasses import dataclass
-from unittest.mock import patch
+from unittest.mock import Mock, patch
+import plistlib
 import tempfile
 import unittest
 from urllib.error import HTTPError
@@ -8,7 +9,8 @@ import urllib.request
 
 from hacker_news_browser_instructions import (
     ASSETS, WIDTH, HEIGHT, METAL_COMPILER, accepted_coalition_executable,
-    check_content, document_comments, evaluate_pairs, exact_coalition_membership, fixture_server,
+    check_content, code_sign_clone_identity, document_comments, evaluate_pairs,
+    exact_coalition_membership, fixture_server,
 )
 
 
@@ -93,6 +95,66 @@ class HackerNewsInstructionGateTests(unittest.TestCase):
             with patch('hacker_news_browser_instructions.processes', return_value=rows[:1]):
                 with self.assertRaisesRegex(RuntimeError, 'exclusive coalition'):
                     exact_coalition_membership(API(), ProcessAPI(), 10, app, 1, time.monotonic(), [])
+
+    def test_code_sign_clone_requires_exact_path_private_argv_and_binary_bytes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            app = root / 'measured/Brave Browser.app'
+            binary = app / 'Contents/MacOS/Brave Browser'
+            binary.parent.mkdir(parents=True)
+            binary.write_bytes(b'pinned browser executable')
+            (app / 'Contents/Info.plist').write_bytes(plistlib.dumps(dict(
+                CFBundleIdentifier='com.brave.Browser', CFBundleExecutable=binary.name)))
+            relative = Path('X/com.brave.Browser.code_sign_clone/code_sign_clone.123/'
+                            'Brave Browser.app.bundle/Contents/MacOS/Brave Browser')
+            mapped = root / relative
+            mapped.parent.mkdir(parents=True)
+            mapped.write_bytes(binary.read_bytes())
+            command = str(binary) + ' --user-data-dir=private-profile'
+            with patch('hacker_news_browser_instructions.tempfile.gettempdir', return_value=str(root / 'T')):
+                identity = code_sign_clone_identity(mapped, app, command)
+                self.assertEqual(identity['mapped'], str(mapped.resolve()))
+                self.assertEqual(identity['original'], str(binary))
+                # Identical bytes elsewhere and an unrelated process's argv are insufficient.
+                for changed in [root / 'other/Brave Browser',
+                                root / str(relative).replace('com.brave.Browser.', 'com.other.'),
+                                root / str(relative).replace('code_sign_clone.123', 'other.123'),
+                                root / str(relative).replace('app.bundle', 'other.bundle')]:
+                    changed.parent.mkdir(parents=True, exist_ok=True)
+                    changed.write_bytes(binary.read_bytes())
+                    self.assertIsNone(code_sign_clone_identity(changed, app, command))
+                self.assertIsNone(code_sign_clone_identity(mapped, app, '/other/Brave Browser --args'))
+                mapped.write_bytes(b'another executable')
+                self.assertIsNone(code_sign_clone_identity(mapped, app, command))
+
+    def test_coalition_clone_exception_is_limited_to_the_authenticated_root(self):
+        import os
+        import time
+        @dataclass
+        class Reading:
+            tasks_started: int = 1
+            tasks_exited: int = 0
+        reading = Reading()
+        api = Mock()
+        api.read.return_value = reading
+        api.resource_coalition.return_value = 10
+        process_api = Mock()
+        process_api.path.return_value = '/macOS/mapped/root'
+        app = Path('/private/fixture/Brave.app')
+        rows = [dict(pid=1, uid=os.getuid(), command='private-root-argv')]
+        with patch('hacker_news_browser_instructions.processes', return_value=rows), \
+             patch('hacker_news_browser_instructions.code_sign_clone_identity', return_value={
+                 'sha256': 'authenticated'}) as authenticate:
+            scan = exact_coalition_membership(api, process_api, 10, app, 1, time.monotonic(), [])
+            self.assertEqual(scan['members'][0]['code_sign_clone_identity']['sha256'], 'authenticated')
+            authenticate.assert_called_once_with('/macOS/mapped/root', app, 'private-root-argv')
+            authenticate.reset_mock()
+            rows.append(dict(pid=2, uid=os.getuid(), command='unrelated-helper'))
+            reading.tasks_started = 2
+            with self.assertRaisesRegex(RuntimeError, 'exclusive coalition'):
+                exact_coalition_membership(api, process_api, 10, app, 1, time.monotonic(), [])
+            # A matching clone is authenticated only for the measured root PID.
+            authenticate.assert_called_once_with('/macOS/mapped/root', app, 'private-root-argv')
 
     def test_replay_serves_only_the_frozen_document_and_its_assets(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -20,10 +20,12 @@ import json
 import mimetypes
 import os
 from pathlib import Path
+import plistlib
 import select
 import shutil
 import statistics
 import subprocess
+import tempfile
 import time
 import threading
 import traceback
@@ -237,6 +239,30 @@ def accepted_coalition_executable(path, app):
     return path.is_relative_to((app / 'Contents').resolve()) or path == METAL_COMPILER.resolve()
 
 
+def code_sign_clone_identity(path, app, command):
+    """Authenticate macOS's temporary mapping of the private app's main binary."""
+    app = Path(app)
+    info = plistlib.loads((app / 'Contents/Info.plist').read_bytes())
+    name, identifier = info['CFBundleExecutable'], info['CFBundleIdentifier']
+    original = app / 'Contents/MacOS' / name
+    if not command.startswith(str(original) + ' '):
+        return None
+    path = Path(path).resolve()
+    try:
+        parts = path.relative_to((Path(tempfile.gettempdir()).parent / 'X').resolve()).parts
+    except ValueError:
+        return None
+    if (len(parts) != 6 or parts[0] != identifier + '.code_sign_clone'
+            or not parts[1].startswith('code_sign_clone.')
+            or parts[2:] != (app.name + '.bundle', 'Contents', 'MacOS', name)):
+        return None
+    original_sha, mapped_sha = sha(original), sha(path)
+    if original_sha != mapped_sha:
+        return None
+    return dict(original=str(original), mapped=str(path), sha256=mapped_sha,
+                method='Exact macOS code_sign_clone path, private root argv, identical binary bytes')
+
+
 def exact_coalition_membership(api, process_api, cid, app, pid, deadline, attempts):
     """Identify every live task; never subtract Metal's CPU work from the counter."""
     while True:
@@ -249,8 +275,13 @@ def exact_coalition_membership(api, process_api, cid, app, pid, deadline, attemp
                 if api.resource_coalition(row['pid']) != cid:
                     continue
                 executable = process_api.path(row['pid'])
-                members.append(dict(row, executable=executable,
-                                    accepted=accepted_coalition_executable(executable, app)))
+                accepted = accepted_coalition_executable(executable, app)
+                clone = None
+                if not accepted and row['pid'] == pid:
+                    clone = code_sign_clone_identity(executable, app, row['command'])
+                    accepted = clone is not None
+                members.append(dict(row, executable=executable, accepted=accepted,
+                                    code_sign_clone_identity=clone))
             except OSError as error:
                 if error.errno not in (2, 3):
                     raise
