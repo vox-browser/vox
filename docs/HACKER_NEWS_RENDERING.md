@@ -699,3 +699,85 @@ The checkpoint covers the three measured font optimizations through
 `47e479cf`; subsequent isolated candidates start a new verification interval.
 It does not replace the latest complete Brave cohort: strict ratio
 **4.469484**, required **0.90**, with the instruction target still open.
+
+
+The borrowed-value projection fast path inspects the retained typed value before
+converting it to the CSS value union. Dimensionless values and zero CSS pixels
+remain shared with the cloned property store. Border-width keywords, nonzero
+lengths, nested values, and untyped values retain the existing projection path.
+The tests cover pointer identity, nested transform lengths, untyped calculations,
+border keywords, animation values, and invalidation after a source mutation.
+All 32 focused executions pass across Boehm and preallocated/no-GC modes
+(`borrowed-projection-2`, unchanged source manifests).
+
+The isolated comparison changes only the tested projection functions and their
+helper/prototypes in frozen production C. It preserves the independent production
+raw-generation initializer and verifies identical shared record layouts.
+`borrowed-projection-isolated-5` retains 30 alternating matched pairs, all 60
+actual-zero browser exits, exact captures, and all 101 expected comment rows.
+Control/candidate instruction medians are 6,474,586,348/6,452,940,969. The paired
+median saving is 18,177,258.5 instructions; its seeded 10,000-resample bootstrap
+95% interval is [12,252,661.5, 27,509,165]. The lower bound supplies
+12,252,661.5 repeatable page credit for this verification interval.
+
+There are 21 improving pairs and nine regressions. The first cold candidate
+uses 8,248,461,327 instructions against 6,480,835,105 for its control; that
+1,767,626,222-instruction regression is retained. Control counts span
+6,393,078,551–6,557,591,850 and candidate counts
+6,384,823,477–8,248,461,327. The strict candidate/control ratio is 1.290217;
+this is a Vox/Vox experiment, not Brave acceptance. The 18-CPU host runs other
+builds. The first control load averages are 10.088/9.635/4.698, with
+9.739/10.164/6.135 at completion; contention and the cold outlier limit causal
+claims beyond the paired result. The outer guard exits zero after 339.224
+seconds, with sampled peak RSS 5,311,414,272 bytes. All build/native/source
+pins remain unchanged. Earlier failed or incomplete attempts retain their
+actual receipts and receive zero acceptance credit.
+
+The projection checkpoint executes 152 CSS, 29 layout, and 79 SVG cases in
+each GC mode (520 executions): 514 pass. The same three layout assertions
+listed above fail in both modes, with complete diagnostics identical to the
+prior checkpoint and a byte-identical merged layout fixture (SHA256
+`1da462776e329bbf66ee6c5b97a17a91d9cee859c78256a4cfe608576b4b5c61`).
+`projection-broad-comparison-1/result.json` records successful regression
+attribution; the full selected suite still fails. All source manifests remain
+unchanged. The guard exits one after 293.796 seconds with peak sampled RSS
+9,192,620,032 bytes. The unchanged 208 platform cases per mode carry from the
+preceding checkpoint; they are not rerun or counted among these 520 executions.
+
+All 19 screenshot comparisons complete for this projection candidate: 13 exact,
+one within its existing bounds, and the five known failures unchanged. All 34
+actual/reference images compare pixel-exact with the preceding font candidate
+(`projection-visual-1/control-comparisons.json`). All three Hacker News fixtures
+remain exact at their native 2x capture scale; signature verification, startup,
+and both fresh live document checks exit zero. The corrected opening sentence
+is visibly the same size as the rest of the comment in the inspected
+`projection-visual-1/live-comment/document.png`. The unchanged official LibJS
+AST driver matches all 100 current upstream fixtures with `--all` and no case
+overrides (`projection-broad-ast-1`). Both checks retain unchanged input pins.
+This completes the projection checkpoint through `2a695111` with the baseline
+failures above retained; it does not establish a whole-suite pass or the Brave
+instruction target.
+
+The subsequent canonical production build also passes all three native-scale
+Hacker News comparisons, signature verification, startup, and fresh live
+discussion/comment checks (`projection-production-1`). Its executable SHA256 is
+`309468f5235acd8a1f388e311dcf0f1d8c7f7d5fb5d0ea6c44b71bdbc1cbc2e8`;
+the authenticated build manifest is
+`72daefe83187a90d258ab746455966aaa1cc1c23497b872216420c07f1cb650d`.
+The inspected corrected screenshot is
+`projection-production-1/live-comment/document.png`. The build includes
+independent native changes, with eight subsequently changed input paths recorded
+separately; neither the current HEAD alone nor this comparison isolates the
+projection optimization. All validation pins remain unchanged during this run.
+
+The unchanged official Brave tool completes three alternating pairs: all six
+browser exits are zero, every capture is exact, and all 101 expected comment rows
+are present. Vox's median is 6,480,116,123 instructions; Brave's median lower
+bound is 1,774,843,916. The strict largest-Vox/smallest-Brave ratio is
+**3.656719**, against the required **0.90**. Brave's first, cold observation is
+also retained ([6,954,944,577, 7,010,257,106] instructions); the other two bounds
+are [1,774,843,916, 1,815,172,170] and [1,774,507,731, 1,821,439,998].
+The previously documented endpoint asymmetry remains. The guard exits one
+because the performance target fails, after 57.261 seconds with peak sampled
+RSS 1,258,995,712 bytes. Pixel/live validation passes, isolated optimization
+credit is zero, and the 10%-below-Brave instruction target remains open.
