@@ -359,3 +359,37 @@ combining sequences, emoji and live DOM text replacement. The enclosing guard
 exits zero, with sampled peak aggregate RSS of 9,096,560,640 bytes and elapsed
 time of 328.258 seconds; both separate 3 GiB runtime guards also exit zero.
 These focused checks establish behavior, not a measured instruction reduction.
+
+## Font and grapheme lookup follow-up
+
+Commit `e9c99daf` reuses an already resolved non-legacy font face when computing
+Chromium inline ascent. Legacy faces, explicit overrides and unresolved faces
+retain the live policy lookup. Four new cases compare the shortcut with the
+previous calculation across cached families, overrides, test-font policies,
+heights and fractional metrics. Together with the existing inline and cached
+pixel-metric cases, all sixteen case executions pass in Boehm and preallocated
+no-GC modes. All six compile/runtime pairs exit zero, with unchanged checked
+platform sources and successful separate 3 GiB runtime guards. Receipts are in
+`Build/hn-small-text/font-cache-1/`.
+
+Commit `c9c84ace` uses binary searches over the node's sorted grapheme boundaries
+when splitting overflowing text. The selected interval borrows the immutable
+cached array; rendered-text invalidation replaces that array. Membership checks
+also avoid rebuilding a boundary map for every split. Three new cases cover
+boundary vectors and ranges, retained-array ownership through invalidation and
+collection, and repeated splits compared with the previous implementation.
+All nine cases pass in both memory modes: eighteen case executions, both compiler
+exits zero, both runtime exits zero and both separate 3 GiB runtime guards zero.
+
+The combined queue stops before the production build because its deliberately
+broad source guard detects changes to five unrelated files during the second
+grapheme compilation. The original failure remains recorded in
+`font-and-ascii-production-1-guard.json` (child exit one) and
+`grapheme-range-1/results.json`. The subsequent
+`grapheme-range-1/input-scope-audit.json` checks the compiler's source-selection
+rules: those files belong to the browser's root `main` module or are unselected
+test files. All other 5,042 checked source hashes match before compilation,
+after compilation and at audit time in both modes. The audit preserves the
+original failed guard instead of changing its result. Production rendering,
+fast-path eligibility and instruction checks resume separately. Verified
+instruction-saving credit remains zero; the 10% target remains open.
