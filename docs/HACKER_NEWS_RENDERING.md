@@ -243,3 +243,42 @@ completion evidence. Completed tests are retained, and unfinished production,
 pixel, live-page and instruction checks resume separately. These focused results
 do not establish production acceptance or instruction savings. The 10% target
 and the existing broad-verification ledger remain unchanged.
+
+## Resumed production rendering verification
+
+Commit `9ad918d3` reads the rendered UTF-16 cache before checking an entire
+string for ASCII when inspecting a fragment's trailing whitespace. Its five
+focused cases pass in both Boehm and preallocated no-GC modes: both compiler
+exits and both executed test-binary exits are zero. The cases cover cached and
+uncached UTF-16 offsets, invalidation, and allocation-free repeated whitespace
+reads. Commands, source and binary hashes, and the 3 GiB runtime guard reports
+are retained in `Build/hn-small-text/chunk-read-1/`.
+
+The resumed production bundle in
+`Build/hn-small-text/table-minimum-resume-1/Vox.app` builds successfully with
+current V. Its executable SHA-256 is
+`fc13e8102e770e061b2fe591a73698fc2c31d07a8611eff3eae5fa02d5301d1f`,
+and its `libLadybirdVSkiaText.dylib` SHA-256 is
+`f4757faec2bd9cda9cc6a4d72ffb7263d799bc82a097d853b030adf292f4c3f7`.
+The before/after source manifests contain no changed build inputs. The shared
+working tree includes independent changes, so these results are not isolated
+optimization evidence for one commit.
+
+Fresh native-scale captures of `hacker-news-comment-initial-text`,
+`hacker-news-item-50231722-complete`, and `device-layout-inline-precision`
+all have zero differing pixels, zero maximum channel error, and zero MAE/RMSE
+against their raw Brave references. All three browser exits are zero. The
+startup smoke check also exits zero. Fresh private-profile live navigations
+to both the requested discussion (PID 28144) and the reported comment
+(PID 28784) pass document identity/readiness checks and exit zero. The live
+comment screenshot, `live-comment/document.png`, shows its opening sentence at
+the correct body-text size. Per-launch commands, environments, identities,
+actual exits, screenshots and comparisons are retained with that bundle.
+
+The enclosing guard exits one because a subsequent LLDB eligibility probe
+stopped before browser execution; this does not turn the completed rendering
+checks into failures. Its child exit is one, sampled peak RSS is 8,980,037,632
+bytes within the default 12 GiB budget, and elapsed time is 718.680 seconds.
+The invalid probe is retained in `table-shortcut-probe/`. Eligibility and
+unprofiled instruction checks resume separately. No instruction reduction or
+completion of the 10% target is claimed from these rendering results.
