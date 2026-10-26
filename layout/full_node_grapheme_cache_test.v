@@ -44,6 +44,70 @@ fn grapheme_cache_previous_iterator(text_node &TextNode, should_wrap_lines bool,
 	return iterator
 }
 
+fn (item &InlineLevelItem) grapheme_cache_previous_shaped_overflow(node &Node,
+	boundaries []int, maximum_width CSSPixels,
+	take_first_grapheme_when_none_fits bool) ?OverflowItemSplit {
+	run := item.glyph_run or { return none }
+	if run.text_type() == .rtl || run.glyphs_.len < 2 {
+		return none
+	}
+	mut shaped_length := 0
+	for glyph in run.glyphs_ {
+		shaped_length += glyph.length_in_code_units
+	}
+	if shaped_length != item.length_in_node {
+		return none
+	}
+	mut boundary_set := map[int]bool{}
+	for boundary in boundaries {
+		boundary_set[boundary] = true
+	}
+	leading_width := css_pixels_sum3(item.margin_start, item.border_start, item.padding_start)
+	mut split_glyph_index := -1
+	mut split_code_units := 0
+	mut code_units := run.glyphs_[0].length_in_code_units
+	for glyph_index := 1; glyph_index < run.glyphs_.len; glyph_index++ {
+		glyph := run.glyphs_[glyph_index]
+		if glyph.length_in_code_units == 0 {
+			continue
+		}
+		offset := item.offset_in_node + code_units
+		if boundary_set[offset] {
+			prefix_width := CSSPixels.nearest_value_for(f64(glyph.position.x))
+			if leading_width.plus(prefix_width).raw_value() > maximum_width.raw_value() {
+				if split_glyph_index < 0 && take_first_grapheme_when_none_fits {
+					split_glyph_index = glyph_index
+					split_code_units = code_units
+				}
+				break
+			}
+			split_glyph_index = glyph_index
+			split_code_units = code_units
+		}
+		code_units += glyph.length_in_code_units
+	}
+	if split_glyph_index < 0 {
+		return none
+	}
+
+	split_x := run.glyphs_[split_glyph_index].position.x
+	prefix_glyphs := run.glyphs_[..split_glyph_index].clone()
+	mut remainder_glyphs := run.glyphs_[split_glyph_index..].clone()
+	for index in 0 .. remainder_glyphs.len {
+		remainder_glyphs[index].position.translate_by(-split_x, 0)
+	}
+	mut prefix_run := platform.GlyphRun.new_with_face(run.font(), run.text_type(), prefix_glyphs,
+		run.face())
+	mut remainder_run := platform.GlyphRun.new_with_face(run.font(), run.text_type(), remainder_glyphs,
+		run.face())
+	prefix_run.width_ = split_x
+	remainder_run.width_ = run.width() - split_x
+	prefix, remainder := overflow_split_items(item, node,
+		item.offset_in_node + split_code_units, prefix_run, remainder_run, TrailingWhitespace{},
+		TrailingWhitespace{})
+	return OverflowItemSplit{prefix, remainder}
+}
+
 fn (item &InlineLevelItem) grapheme_cache_previous_overflow(maximum_width CSSPixels, take_first_grapheme_when_none_fits bool) ?(InlineLevelItem, InlineLevelItem) {
 	node := item.node or { return none }
 	text_node := node.as_text_node() or { return none }
@@ -64,7 +128,7 @@ fn (item &InlineLevelItem) grapheme_cache_previous_overflow(maximum_width CSSPix
 	if boundaries.len == 0 {
 		return none
 	}
-	if split := item.split_overflow_item_at_shaped_glyph(node, boundaries, maximum_width,
+	if split := item.grapheme_cache_previous_shaped_overflow(node, boundaries, maximum_width,
 		take_first_grapheme_when_none_fits) {
 		return split.prefix, split.remainder
 	}
@@ -347,6 +411,103 @@ fn test_full_node_grapheme_cache_overflow_matches_old_full_context_and_glyph_ran
 					}
 				}
 			}
+		}
+	}
+}
+
+// Compare to the old linear filter and map membership, including duplicate
+// entries, absent endpoints, empty intervals and UTF-16 grapheme positions.
+fn test_overflow_boundary_binary_lookup_matches_linear_filter_and_membership() {
+	mut vectors := [[]int{}, [0], [0, 0, 1, 1, 4, 4, 8],
+		text_grapheme_boundaries('Á😀👩‍👩‍👧‍👦🇦🇺B')]
+	for mask in 0 .. 256 {
+		mut boundaries := []int{}
+		for index in 0 .. 8 {
+			if mask & (1 << index) != 0 { boundaries << index }
+		}
+		vectors << boundaries
+	}
+	for boundaries in vectors {
+		for start in -2 .. 26 {
+			assert has_sorted_grapheme_boundary(boundaries, start) == (start in boundaries)
+			for end in -2 .. 26 {
+				mut expected := []int{}
+				for boundary in boundaries {
+					if boundary > start && boundary < end { expected << boundary }
+				}
+				actual := grapheme_boundaries_between(boundaries, start, end)
+				assert actual == expected
+			}
+		}
+	}
+}
+
+fn grapheme_cache_inner_boundary_view(text &TextNode) []int {
+	boundaries := text.grapheme_boundaries_for_rendered_text()
+	view := grapheme_boundaries_between(boundaries, 0, boundaries.last())
+	assert view.len > 0
+	expected_view := boundaries[1..boundaries.len - 1]
+	assert voidptr(view.data) == voidptr(expected_view.data)
+	return view
+}
+
+fn test_overflow_boundary_slice_retains_cached_vector_after_text_invalidation() {
+	_, _, mut text := grapheme_cache_fixture('Á😀👩‍💻B', '', '', false)
+	view := grapheme_cache_inner_boundary_view(text)
+	expected := view.clone()
+	source := text.dom_node() or { panic('source') }
+	mut data := source.as_character_data() or { panic('data') }
+	for replacement in ['אבג', '', 'áb😀c'] {
+		data.replace_data_with_mutation_steps(0, data.data().len, replacement) or { panic(err) }
+		text.invalidate_text_for_rendering()
+		current := text.grapheme_boundaries_for_rendered_text()
+		assert current == text_grapheme_boundaries(text.text_for_rendering())
+		for _ in 0 .. 3 { gc_collect() }
+		assert view == expected
+	}
+}
+
+fn test_overflow_boundary_lookup_matches_every_successive_shaped_split() {
+	for value in ['abcdefghijklmno'.repeat(4), 'Á😀👩‍💻ab🇦🇺cdef',
+		'office affine ffi fi fl', 'abc אבג def'] {
+		_, _, text := grapheme_cache_fixture(value, 'white-space:pre-wrap;overflow-wrap:anywhere', '', true)
+		units := utf16_code_units_for_line_box(text.text_for_rendering())
+		run := platform.shape_text_with_spacing(0, 0, 0, text.text_for_rendering(),
+			text.font_for_rendering(), .ltr).glyph_run
+		for width in [0, 12, 40] {
+			mut item := InlineLevelItem{
+				type_:          .text
+				node:           unsafe { &Node(text) }
+				glyph_run:      run
+				length_in_node: units.len
+				width:          CSSPixels.nearest_value_for(f64(run.width()))
+				padding_start:  CSSPixels.new(1)
+				padding_end:    CSSPixels.new(2)
+				border_start:   CSSPixels.new(3)
+				border_end:     CSSPixels.new(4)
+				margin_start:   CSSPixels.new(5)
+				margin_end:     CSSPixels.new(6)
+			}
+			mut splits := 0
+			for {
+				actual := grapheme_cache_split(item, CSSPixels.new(width), true, false)
+				expected := grapheme_cache_split(item, CSSPixels.new(width), true, true)
+				if a := actual {
+					b := expected or { panic('legacy split missing') }
+					grapheme_cache_assert_item(a.prefix, b.prefix)
+					grapheme_cache_assert_item(a.remainder, b.remainder)
+					assert a.prefix.length_in_node > 0
+					assert a.remainder.offset_in_node > item.offset_in_node
+					assert a.remainder.offset_in_node + a.remainder.length_in_node == units.len
+					item = a.remainder
+					splits++
+					assert splits < units.len
+				} else {
+					assert expected == none
+					break
+				}
+			}
+			assert splits > 0
 		}
 	}
 }

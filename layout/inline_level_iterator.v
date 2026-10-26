@@ -109,6 +109,37 @@ fn overflow_split_items(item &InlineLevelItem, node &Node, split int,
 	return prefix, remainder
 }
 
+// The node retains a sorted, immutable boundary vector. Binary lookup avoids
+// rescanning and copying the complete text for every overflowing remainder.
+fn sorted_grapheme_boundary_index(boundaries []int, offset int, after_equal bool) int {
+	mut first := 0
+	mut last := boundaries.len
+	for first < last {
+		middle := first + (last - first) / 2
+		boundary := boundaries[middle]
+		if boundary < offset || (after_equal && boundary == offset) {
+			first = middle + 1
+		} else {
+			last = middle
+		}
+	}
+	return first
+}
+
+fn grapheme_boundaries_between(boundaries []int, start int, end int) []int {
+	if end <= start { return []int{} }
+	first := sorted_grapheme_boundary_index(boundaries, start, true)
+	last := sorted_grapheme_boundary_index(boundaries, end, false)
+	// Array slices retain the immutable buffer. Rendered-text invalidation
+	// replaces that buffer instead of mutating it beneath existing consumers.
+	return boundaries[first..last]
+}
+
+fn has_sorted_grapheme_boundary(boundaries []int, offset int) bool {
+	index := sorted_grapheme_boundary_index(boundaries, offset, false)
+	return index < boundaries.len && boundaries[index] == offset
+}
+
 fn (item &InlineLevelItem) split_overflow_item_at_shaped_glyph(node &Node,
 	boundaries []int, maximum_width CSSPixels,
 	take_first_grapheme_when_none_fits bool) ?OverflowItemSplit {
@@ -123,10 +154,6 @@ fn (item &InlineLevelItem) split_overflow_item_at_shaped_glyph(node &Node,
 	if shaped_length != item.length_in_node {
 		return none
 	}
-	mut boundary_set := map[int]bool{}
-	for boundary in boundaries {
-		boundary_set[boundary] = true
-	}
 	leading_width := css_pixels_sum3(item.margin_start, item.border_start, item.padding_start)
 	mut split_glyph_index := -1
 	mut split_code_units := 0
@@ -137,7 +164,7 @@ fn (item &InlineLevelItem) split_overflow_item_at_shaped_glyph(node &Node,
 			continue
 		}
 		offset := item.offset_in_node + code_units
-		if boundary_set[offset] {
+		if has_sorted_grapheme_boundary(boundaries, offset) {
 			prefix_width := CSSPixels.nearest_value_for(f64(glyph.position.x))
 			if leading_width.plus(prefix_width).raw_value() > maximum_width.raw_value() {
 				if split_glyph_index < 0 && take_first_grapheme_when_none_fits {
@@ -186,12 +213,8 @@ fn (item &InlineLevelItem) split_for_overflow_break(maximum_width CSSPixels, tak
 		return none
 	}
 
-	mut boundaries := []int{}
-	for boundary in text_node.grapheme_boundaries_for_rendered_text() {
-		if boundary > start && boundary < end {
-			boundaries << boundary
-		}
-	}
+	boundaries := grapheme_boundaries_between(text_node.grapheme_boundaries_for_rendered_text(),
+		start, end)
 	if boundaries.len == 0 {
 		return none
 	}
