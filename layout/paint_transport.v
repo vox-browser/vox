@@ -378,6 +378,7 @@ mut:
 	own_effects_visual_context_idx                 int
 	own_transform_visual_context_idx               int
 	fixed_background_visual_context                ?int
+	canvas_background_scroll_context               ?int
 	fixed_to_viewport                              bool
 	// PaintableBox retains one Scrollbar object per axis. Their hover/grab state
 	// survives display-list rebuilds and selects thin versus gutter geometry.
@@ -2306,7 +2307,11 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 					width: b.canvas().viewport_width
 					height: b.canvas().viewport_height
 				}, box.snaps_background_rect, image_destination) {
-					commands << command
+					// Canvas images move with the viewport's scroll frame. The
+					// canvas color and fixed layers stay in the box's own context.
+					commands << if box.canvas().paints_canvas_background && layer.attachment == 'scroll' {
+						PaintCommand{ ...command, visual_context_index: box.canvas_background_scroll_context }
+					} else { command }
 					if box.snaps_background_rect {
 						chromium_pair_background_image_color(mut commands)
 					}

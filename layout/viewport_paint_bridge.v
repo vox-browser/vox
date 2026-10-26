@@ -698,6 +698,7 @@ fn assign_compatibility_visual_contexts(mut box BlockBox, visual_parent ?&BlockB
 
 fn assign_compatibility_visual_contexts_with_coordinate_root(mut box BlockBox, visual_parent ?&BlockBox, boxes_by_layout map[u64]&BlockBox, coordinate_root int, mut tree painting.AccumulatedVisualContextTree) {
 	box.fixed_background_visual_context = none
+	box.canvas_background_scroll_context = none
 	mut inherited_state := coordinate_root
 	mut inherited_plane_root := coordinate_root
 	mut fixed_to_viewport := false
@@ -814,6 +815,14 @@ fn assign_compatibility_visual_contexts_with_coordinate_root(mut box BlockBox, v
 		own_state = tree.append(*svg_clip, own_state)
 	}
 	box.accumulated_visual_context_index = own_state
+	if box.canvas().paints_canvas_background && box.own_scroll_frame_index > 0 {
+		// The root paints the propagated body background outside its content
+		// subtree. Scroll image layers with that subtree without moving the
+		// canvas color or fixed backgrounds.
+		box.canvas_background_scroll_context = tree.append(painting.ScrollVisualData{
+			scroll_frame_index: box.own_scroll_frame_index
+		}, own_state)
+	}
 
 	if box.decorations().background_images.any(it.attachment == 'fixed') {
 		// CSS Transforms makes fixed backgrounds on transformed non-root boxes
