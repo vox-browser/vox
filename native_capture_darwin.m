@@ -1560,17 +1560,18 @@ void native_add_path_clip(const float *data, int segment_count, int even_odd,
 #include "native_graphite_bridge.h"
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
 extern int ladybird_v_skia_draw_svg_path_batch(CGContextRef, const VoxGraphitePath*, int,
-    const float*, float, float, float, float, float, float, float, float, float, int);
+    const float*, float, float, float, float, float, float, float, float, float, int, const float*);
 #endif
 
 int native_draw_svg_path_batch(const VoxGraphitePath *paths, int count,
     const float *outer, float x, float y, float width, float height,
-    float page_x, float page_y, float scroll_y, float canvas_width, float canvas_height) {
+    float page_x, float page_y, float scroll_y, float canvas_width, float canvas_height,
+    const float *rounded_clip) {
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
     CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
     return ladybird_v_skia_draw_svg_path_batch(context, paths, count, outer,
         x, y, width, height, page_x, page_y, scroll_y, canvas_width, canvas_height,
-        context == native_font_compositing_context && native_font_compositing_transparency_depth == 0);
+        context == native_font_compositing_context && native_font_compositing_transparency_depth == 0, rounded_clip);
 #else
     return 0;
 #endif

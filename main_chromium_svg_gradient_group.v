@@ -145,7 +145,7 @@ fn (mut app BrowserApp) draw_chromium_svg_gradient_group(start int, page_y f32) 
 		identity := [f32(1), 0, 0, 1, 0, 0]!
 		if C.native_draw_svg_path_batch(paths.data, paths.len, &identity[0], f32(left),
 			f32(top), f32(right - left), f32(bottom - top), 0, page_y, 0,
-			f32(app.ctx.width), f32(app.ctx.height)) != 0 {
+			f32(app.ctx.width), f32(app.ctx.height), unsafe { nil }) != 0 {
 			return end
 		}
 	}

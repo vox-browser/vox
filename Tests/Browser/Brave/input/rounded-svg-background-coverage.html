@@ -1,0 +1,18 @@
+<!doctype html><meta charset="utf-8"><title>Rounded opaque SVG background isolation</title>
+<style>html,body{margin:0;background:#fcfdff}.outer{position:absolute;overflow:hidden;border-radius:100%}.inner{width:100%;height:100%;border-radius:100%;background-size:cover;background-position:center;background-repeat:no-repeat}.solid{background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20156%20156%22%3E%3Cpath%20fill%3D%22%23f7b259%22%20d%3D%22M0%200h156v156H0z%22%2F%3E%3C%2Fsvg%3E")}.clipped{background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20156%20156%22%3E%3Cpath%20fill%3D%22%23f7b259%22%20d%3D%22M0%200h156v156H0z%22%2F%3E%3Cg%20clip-path%3D%22url%28%23a%29%22%3E%3Cpath%20fill%3D%22%236a3614%22%20d%3D%22M0%200h156v156H0z%22%2F%3E%3C%2Fg%3E%3Cdefs%3E%3CclipPath%20id%3D%22a%22%3E%3Cpath%20d%3D%22M15%2016h126v111H15z%22%2F%3E%3C%2FclipPath%3E%3C%2Fdefs%3E%3C%2Fsvg%3E")}</style>
+<div class="outer" style="left:24px;top:24px;width:156px;height:156px"><div class="inner solid" style="background-color:transparent"></div></div>
+<div class="outer" style="left:224px;top:24px;width:156px;height:156px"><div class="inner solid" style="background-color:#d3d3d3"></div></div>
+<div class="outer" style="left:424px;top:24px;width:156px;height:156px"><div class="inner solid" style="background-color:#ff0000"></div></div>
+<div class="outer" style="left:24px;top:440px;width:20px;height:20px"><div class="inner solid" style="background-color:transparent"></div></div>
+<div class="outer" style="left:224px;top:440px;width:20px;height:20px"><div class="inner solid" style="background-color:#d3d3d3"></div></div>
+<div class="outer" style="left:424px;top:440px;width:20px;height:20px"><div class="inner solid" style="background-color:#ff0000"></div></div>
+<div class="outer" style="left:24px;top:224px;width:156px;height:156px"><div class="inner clipped" style="background-color:transparent"></div></div>
+<div class="outer" style="left:224px;top:224px;width:156px;height:156px"><div class="inner clipped" style="background-color:#d3d3d3"></div></div>
+<div class="outer" style="left:424px;top:224px;width:156px;height:156px"><div class="inner clipped" style="background-color:#ff0000"></div></div>
+<div class="outer" style="left:24px;top:500px;width:20px;height:20px"><div class="inner clipped" style="background-color:transparent"></div></div>
+<div class="outer" style="left:224px;top:500px;width:20px;height:20px"><div class="inner clipped" style="background-color:#d3d3d3"></div></div>
+<div class="outer" style="left:424px;top:500px;width:20px;height:20px"><div class="inner clipped" style="background-color:#ff0000"></div></div>
+<!-- Curved internal clips retain ordinary replay, including the backing color. -->
+<style>.curved{background-image:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20156%20156'%3E%3Cpath%20fill='%23f7b259'%20d='M0%200h156v156H0z'/%3E%3Cg%20clip-path='url(%23c)'%3E%3Cpath%20fill='%236a3614'%20d='M35%2040h85v70H35z'/%3E%3C/g%3E%3Cdefs%3E%3CclipPath%20id='c'%3E%3Ccircle%20cx='78'%20cy='78'%20r='50'/%3E%3C/clipPath%3E%3C/defs%3E%3C/svg%3E")}</style>
+<div class="outer" style="left:624px;top:24px;width:156px;height:156px"><div class="inner curved" style="background-color:#ff0000"></div></div>
+<div class="outer" style="left:624px;top:440px;width:20px;height:20px"><div class="inner curved" style="background-color:#ff0000"></div></div>

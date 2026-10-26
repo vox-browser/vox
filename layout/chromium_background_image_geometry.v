@@ -39,7 +39,6 @@ fn chromium_pair_background_image_color(mut commands []PaintCommand) {
 		|| background.opacity != image_command.opacity
 		|| background.clip_outs.len != 0 || image_command.clip_outs.len != 0
 		|| image.background_blend_mode != .normal || image.image_attachment == 'fixed'
-		|| image.background_svg_document != none || image.background_static_svg_resource != none
 		|| [background.x, background.y, background.width, background.height] !=
 			[image.image_clip_x, image.image_clip_y, image.image_clip_width, image.image_clip_height] {
 		return

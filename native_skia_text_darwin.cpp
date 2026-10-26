@@ -3066,11 +3066,16 @@ static long chromium_raster_tile_for_row(long row);
 // Retain identical path/stroke operations for shared root tiles and isolated
 // SVG compositor layers. Both replay through Chromium's Dawn raster backend.
 static void record_chromium_svg_path_batch(SkCanvas* canvas,
-    VoxGraphitePath const* paths, int count, SkMatrix const& matrix, SkRect viewport)
+    VoxGraphitePath const* paths, int count, SkMatrix const& matrix, SkRect viewport,
+    float const* rounded_clip)
 {
     canvas->save();
     canvas->setMatrix(matrix);
     canvas->clipRect(viewport);
+    if (rounded_clip) {
+        canvas->clipRRect(rounded_rect_from_data(rounded_clip), SkClipOp::kIntersect, true);
+        canvas->saveLayer(nullptr, nullptr);
+    }
     for (int index = 0; index < count; ++index) {
         auto const& source = paths[index];
         SkMatrix local;
@@ -3084,6 +3089,10 @@ static void record_chromium_svg_path_batch(SkCanvas* canvas,
         canvas->save();
         canvas->setMatrix(matrix);
         canvas->concat(local);
+        if (source.has_clip)
+            canvas->clipRRect(rounded_rect_from_data(source.clip), SkClipOp::kIntersect, true);
+        if (source.has_ancestor_clip)
+            canvas->clipRRect(rounded_rect_from_data(source.ancestor_clip), SkClipOp::kIntersect, true);
         if (source.stroke) {
             paint.setStyle(SkPaint::kStroke_Style);
             paint.setStrokeWidth(source.stroke_width);
@@ -3099,13 +3108,14 @@ static void record_chromium_svg_path_batch(SkCanvas* canvas,
         canvas->drawPath(geometry, paint);
         canvas->restore();
     }
+    if (rounded_clip) canvas->restore();
     canvas->restore();
 }
 
 extern "C" int ladybird_v_skia_draw_svg_path_batch(CGContextRef destination,
     VoxGraphitePath const* paths, int count, float const* outer, float x, float y,
     float width, float height, float page_x, float page_y, float scroll_y,
-    float canvas_width, float canvas_height, int opaque_backdrop)
+    float canvas_width, float canvas_height, int opaque_backdrop, float const* rounded_clip)
 {
     auto draw = graphite_svg_image_draw();
     if (!s_chromium_painting || !destination || !draw || !paths || !outer
@@ -3120,7 +3130,7 @@ extern "C" int ladybird_v_skia_draw_svg_path_batch(CGContextRef destination,
         else {
             shared_recording_svg(destination, bounds, page_y);
             record_chromium_svg_path_batch(canvas, paths, count, matrix,
-                SkRect::MakeXYWH(x, y, width, height));
+                SkRect::MakeXYWH(x, y, width, height), rounded_clip);
         }
     }
     RasterRegion region;
@@ -3147,7 +3157,7 @@ extern "C" int ladybird_v_skia_draw_svg_path_batch(CGContextRef destination,
             SkPictureRecorder recorder;
             auto* canvas = recorder.beginRecording(SkRect::MakeWH(target_width, target_height));
             record_chromium_svg_path_batch(canvas, paths, count, parent,
-                SkRect::MakeXYWH(x, y, width, height));
+                SkRect::MakeXYWH(x, y, width, height), rounded_clip);
             auto picture = recorder.finishRecordingAsPicture();
             auto bytes = picture->serialize();
             float identity[] {1, 0, 0, 0, 1, 0, 0, 0, 1};
@@ -3157,7 +3167,7 @@ extern "C" int ladybird_v_skia_draw_svg_path_batch(CGContextRef destination,
         }
         return draw(reinterpret_cast<uint8_t*>(target.data()), target_width,
             target_height, target_width * 4, has_background, paths, count,
-            parent_values, viewport) != 0;
+            parent_values, viewport, rounded_clip) != 0;
     };
     constexpr size_t maximum_tile_pixels = 8 * 1024 * 1024;
     int layer_width = raster_dimension(s_raster_layer_is_root ? canvas_width : s_raster_layer_width, scale);

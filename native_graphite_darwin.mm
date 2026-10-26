@@ -1578,7 +1578,7 @@ int vox_graphite_draw_path_batch_pixels(uint8_t* pixels, int width, int height,
 extern "C" __attribute__((visibility("default")))
 int vox_graphite_draw_svg_image_pixels(uint8_t* pixels, int width, int height,
     int pitch, int has_background, VoxGraphitePath const* paths, int count,
-    float const* parent_values, float const* viewport)
+    float const* parent_values, float const* viewport, float const* rounded_clip)
 {
     if (!pixels || !paths || !parent_values || !viewport || count <= 0 || count > 65536
         || width <= 0 || height <= 0 || pitch <= 0
@@ -1601,7 +1601,12 @@ int vox_graphite_draw_svg_image_pixels(uint8_t* pixels, int width, int height,
     auto* canvas = surface->getCanvas();
     canvas->setMatrix(parent);
     canvas->clipRect(SkRect::MakeXYWH(viewport[0], viewport[1], viewport[2], viewport[3]), true);
+    if (rounded_clip) {
+        canvas->clipRRect(rounded_rect(rounded_clip), SkClipOp::kIntersect, true);
+        canvas->saveLayer(nullptr, nullptr);
+    }
     for (int index = 0; index < count; ++index)
         if (!draw_path_on_canvas(canvas, paths + index, &parent)) return 0;
+    if (rounded_clip) canvas->restore();
     return read_pixels(gpu, recorder.get(), surface.get(), info, pixels, pitch);
 }

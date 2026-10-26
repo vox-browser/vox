@@ -30,9 +30,13 @@ struct C.VoxGraphitePath {
 	opacity            f32
 	stops              &f32
 	has_float_alpha    int
+	has_clip           int
+	clip               [12]f32
+	has_ancestor_clip  int
+	ancestor_clip      [12]f32
 }
 
-fn C.native_draw_svg_path_batch(&C.VoxGraphitePath, int, &f32, f32, f32, f32, f32, f32, f32, f32, f32, f32) int
+fn C.native_draw_svg_path_batch(&C.VoxGraphitePath, int, &f32, f32, f32, f32, f32, f32, f32, f32, f32, f32, &f32) int
 
 // Simple vector images can share one GPU recording. Effects, inner clips,
 // gradients, dashes and non-path content retain their ordinary replay path.
@@ -117,7 +121,7 @@ fn (mut app BrowserApp) draw_chromium_svg_image_group(command layout.PaintComman
 		return C.native_draw_svg_path_batch(paths.data, paths.len, &outer[0],
 			f32(result.clip_rect.x - result.nested_rect.x), f32(result.clip_rect.y - result.nested_rect.y), f32(result.clip_rect.width),
 			f32(result.clip_rect.height), page_x, page_y, f32(scroll_y), f32(app.ctx.width),
-			f32(app.ctx.height)) != 0
+			f32(app.ctx.height), unsafe { nil }) != 0
 	}
 	return false
 }

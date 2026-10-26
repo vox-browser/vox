@@ -5572,6 +5572,16 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 	}
 	// The retained viewport scroll frame is already folded into each command's
 	// visual-context transform. Fixed contexts bypass that frame upstream.
+	if command.kind == 'draw_background_image' {
+		if app.draw_chromium_rounded_svg_background(command, page_x, page_y) { return }
+		if command.image_data != unsafe { nil }
+			&& (command.image_data.background_svg_document != none
+				|| command.image_data.background_static_svg_resource != none) {
+			// A deferred SVG backing color belongs to its original clip scope.
+			// Replay it before the fallback adds the image's rounded clips.
+			app.flush_rounded_rect_underlay(page_x, page_y, window_height)
+		}
+	}
 	scroll_y := 0.0
 	gpu_image_ancestor_clip := if app.document != unsafe { nil }
 		&& app.document.font_rendering_policy() == .chromium {
