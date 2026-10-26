@@ -51,6 +51,16 @@
 
 ## Build and run Vox
 
+- All sessions share this `master` checkout and `Build/v/Vox.app`. Reuse the
+  latest successfully completed production browser by default. Check the bundle
+  and build receipts before scheduling a build; do not queue duplicate production
+  builds or wait hours for one when a completed bundle is available. Rebuild only
+  on explicit request or evidence that no available bundle contains the required
+  change. If the build guard is busy, use the available bundle for applicable
+  checks and report validation that still needs a newer build. An older bundle
+  cannot establish that new code works. Preserve the memory guard below and pin
+  build identity for comparisons.
+
 - Serialize expensive builds, test binaries and benchmarks through
   `python3 tools/run_memory_bounded.py --report Build/UNIQUE-job.json -- COMMAND...`.
   Keep its default 12 GiB aggregate process-tree RSS budget; use `--limit-gib 3`
