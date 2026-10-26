@@ -323,7 +323,9 @@ pub fn Response.create_opaque_redirect_filtered_response(internal &Response) &Re
 }
 
 pub fn is_valid_status_text(value string) bool {
-	return value.runes().all(it == `\t` || (u32(it) >= 0x20 && u32(it) <= 0xff))
+	// Status messages are HTTP octets, including obs-text (0x80-0xff).
+	// Decoding them as UTF-8 rejects a valid single high byte.
+	return value.bytes().all(it == `\t` || (it >= 0x20 && it != 0x7f))
 }
 
 // Web-exposed Response object adapters.

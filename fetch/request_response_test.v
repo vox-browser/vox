@@ -275,3 +275,14 @@ fn test_response_status_text_accepts_obs_text_and_filtered_getters_delegate() {
 	assert filtered_object.status() == 202
 	assert filtered_object.redirected()
 }
+
+fn test_response_status_text_validates_http_octets() {
+	text := [u8(9), 32, 33, 126, 128, 255].bytestr()
+	response := ResponseObject.construct(none, ResponseInit{ status_text: text })!
+	assert response.status_text().bytes() == text.bytes()
+	for invalid in [u8(0), 10, 13, 31, 127] {
+		if _ := ResponseObject.construct(none, ResponseInit{ status_text: [invalid].bytestr() }) {
+			assert false, 'invalid status octet ${invalid}'
+		}
+	}
+}
