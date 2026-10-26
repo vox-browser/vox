@@ -653,3 +653,49 @@ receive no whole-suite pass credit; passing files will not be repeated.
 The latest accepted complete Brave cohort remains production attempt two:
 strict ratio **4.469484**, required **0.90**. The user’s instruction target
 remains open.
+
+
+The composed font checkpoint is now complete, with known baseline failures
+retained. It executes 466 selected cases in each GC mode (932 executions):
+150 CSS, 79 SVG, 208 platform, and 29 layout. Of these, 926 pass. The remaining
+three layout assertions fail in both modes with exactly the same values after
+restoring all three measured font changes to their parent implementations:
+
+- Nested block/flex inline baseline fixture: height 768, expected 64.
+- Chromium text-control baseline fixture: 13.5, expected 13.
+- Projected control intrinsic width fixture: 165.5, expected 166.
+
+No assertion is relaxed. `font-broad-layout-comparison-1/result.json` records
+the comparison of the complete failure diagnostics; both source manifests
+remain unchanged. The baseline and candidate guards both exit one because
+those assertions fail (106.469/106.630 seconds, peak sampled RSS
+9,253,371,904/9,217,966,080 bytes). This is regression attribution, not a
+whole-suite pass. The anonymous ownership test now avoids reading a native
+arena in the ordinary Boehm build, while retaining the preallocated arena
+bounds and release checks; it passes in both configurations.
+
+The composed receipts are `font-broad-4` (412 passing platform executions),
+`font-broad-platform-assets-1` (four remaining platform executions after
+restoring omitted WOFF assets), `font-broad-css-2` (300),
+`font-broad-layout-svg-1` (158 SVG), and `font-broad-layout-2` (52 passing
+layout executions and six baseline failures). The SVG fixture's explicit
+image pointer and the font fixtures' GC ownership corrections are committed
+separately. Initial failing attempts remain available.
+
+The 19 screenshot comparisons complete: 13 are exact, one passes its existing
+bounds, and five fail. A matched pre-font control has identical actual and
+reference pixels for each failing case (`inline-node`, `ordered-list`,
+`text-decorations`, `abspos-inside-opacity-inside-relpos`, and
+`select-line-height-ignored`). Receipts are `font-normalized-visual-1` and
+`font-visual-baseline-1`; no bounds change. The three Hacker News comparisons
+remain pixel-exact, startup passes, and fresh live discussion/comment launches
+exit zero with authenticated document identities. The inspected corrected
+comment screenshot is `font-normalized-visual-1/live-comment/document.png`.
+This validates the frozen generated-C candidate; it is not a fresh build of
+later independent canonical changes.
+
+The unchanged `--all` AST driver passes all 100 fixtures as recorded above.
+The checkpoint covers the three measured font optimizations through
+`47e479cf`; subsequent isolated candidates start a new verification interval.
+It does not replace the latest complete Brave cohort: strict ratio
+**4.469484**, required **0.90**, with the instruction target still open.
