@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "native_layer_presentation_darwin.h"
+#include "native_snapshot_png_darwin.h"
 
 static unsigned termination_calls;
 @interface CaptureApplication : NSApplication

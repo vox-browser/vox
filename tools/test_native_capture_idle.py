@@ -45,12 +45,13 @@ def main():
     # Refuse to overwrite prior evidence, including a failed attempt.
     assert not (output / "result.json").exists(), output
     header = source / "native_layer_presentation_darwin.h"
+    png_header = source / "native_snapshot_png_darwin.h"
     implementation = source / "native_capture_darwin.m"
     fixture = source / "tools/native_capture_idle_test.m"
     extracted = output / "native_capture_entry_points.inc"
     extracted.write_text(entry_points(implementation))
     compiler = Path(shutil.which("clang")).resolve()
-    pins = {str(path): sha256(path) for path in (header, implementation, fixture, extracted, compiler, Path(__file__).resolve())}
+    pins = {str(path): sha256(path) for path in (header, png_header, implementation, fixture, extracted, compiler, Path(__file__).resolve())}
     result = {"status": "running", "pins": pins, "jobs": {}}
     for mode, flag in (("nonarc", "-fno-objc-arc"), ("arc", "-fobjc-arc")):
         directory = output / mode
@@ -58,7 +59,7 @@ def main():
         artifacts = directory / "artifacts"
         artifacts.mkdir()
         command = [str(compiler), flag, "-fblocks", "-framework", "Cocoa", "-framework", "QuartzCore",
-                   "-framework", "CoreGraphics", "-I", str(source), "-I", str(output), str(fixture),
+                   "-framework", "CoreGraphics", "-framework", "ImageIO", "-I", str(source), "-I", str(output), str(fixture),
                    "-o", str(directory / "tests")]
         row = {"command": command}
         with (directory / "compile.log").open("w") as log:

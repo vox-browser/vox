@@ -1,4 +1,5 @@
 #include <Cocoa/Cocoa.h>
+#include "native_snapshot_png_darwin.h"
 #include "native_allocator_policy_darwin.h"
 #include "native_test_window_darwin.h"
 #include <CoreImage/CoreImage.h>
@@ -675,7 +676,7 @@ void native_cache_browser_snapshot(string path_value) {
 		if (encoded_bitmap == nil) {
 			encoded_bitmap = bitmap;
 		}
-		NSData *png = [encoded_bitmap representationUsingType:NSBitmapImageFileTypePNG properties:@{}];
+		NSData *png = native_encode_snapshot_png(encoded_bitmap);
 		if (png == nil) {
 			if (debug_snapshot) {
 				fprintf(stderr, "Ladybird V: cached snapshot PNG encoding failed\n");
@@ -5725,7 +5726,7 @@ static void native_schedule_screenshot(string output_path, BOOL document_only,
 			encodedBitmap = bitmap;
 		}
 		native_capture_instruction_checkpoint("capture_converted");
-		NSData *png = [encodedBitmap representationUsingType:NSBitmapImageFileTypePNG properties:@{}];
+		NSData *png = native_encode_snapshot_png(encodedBitmap);
 		if (!document_only) native_capture_instruction_checkpoint("capture_encoded");
 		if (png == nil) {
 			fprintf(stderr, "Ladybird V: could not encode the window screenshot as PNG\n");
