@@ -621,3 +621,55 @@ whole-checkout source-stability gate fails. Mask tests pass separately, but
 their implementation remains uncommitted while the mask-isolation shutdown
 crash and pixel differences are investigated. No failed acceptance gate is
 relaxed.
+
+## Template fragments, image dimensions, and SVG mask storage
+
+Three additional focused fixes are committed on master:
+
+- `c57ea93c` exposes the native inert fragment through the read-only,
+  receiver-checked `HTMLTemplateElement.content` getter. Cloning, insertion,
+  nested template contents, selectors, serialization, and saved live child
+  collections now use the fragment's actual owner instead of the unrelated
+  reflected `content` string attribute.
+- `2bca669c` reads HTML image width and height from the native image IDL
+  algorithms. CSS content dimensions exclude padding, borders and transforms;
+  detached or hidden images retain their attribute fallback. Canvas defaults
+  remain 300 by 150. Pikabu uses these values when creating photograph backdrops.
+- `310e8e4b` allocates an SVG mask image's retained layout inside that image
+  document's storage, then restores the host paint workspace for collecting
+  temporary commands. Previously the layout handle could point into a released
+  workspace and crash during retirement.
+
+The frozen snapshot in
+`Build/pikabu-template-tests-1793046874641855000/results.json` passes all 30
+selected bridge/mask tests in normal and poisoned arena modes, plus all 13
+selected layout tests in poisoned arena mode. Every compile and runtime exit is
+zero; no test is omitted and no frozen input changes. Two unrelated live
+prefetch files changed during validation, so the production check builds the
+unchanged frozen inputs. These are three completed fixes for the next broad
+regression checkpoint; this focused run does not reset the broad-test cadence.
+
+The first production wrapper stops before compilation because its V-library
+path is absent. Its nonzero build/guard exits remain recorded in
+`Build/pikabu-story-template-production-1793047663883957000/` and
+`Build/pikabu-pixel-20261026/template-job-guard-7.json`. This failure executes no
+browser acceptance checks. A corrected wrapper compiles the frozen production source successfully, then
+fails bundle signing because an old `.Vox.v3cc.*` compiler directory remains
+inside the shared bundle. That actual build/guard exit is one, sampled peak RSS
+is 10,555,916,288 bytes, and elapsed time is 1,070.573 seconds:
+`Build/pikabu-pixel-20261026/template-production-guard-8.json`. No browser check
+runs in this failed attempt.
+
+The compiled executable and all three libraries are copied into
+`Build/pikabu-story-template-production-1793048177500118000/Vox.app` with
+hashes verified before and after copying. The preserved bundle manifest is
+`preserved-compiled-bundle.json` beside it. A separate guarded continuation
+removes only compiler scratch directories from that copy, signs and verifies
+it, and runs the pending browser checks. It reuses the passing frozen tests
+and compilation. This continuation is queued with
+`Build/pikabu-pixel-20261026/template-production-guard-9.json`; it has no
+browser or pixel-conformance credit until those stages execute.
+
+The mask effect-scope correction and native gradient-raster changes remain
+uncommitted pending their visual checks. Whole-page pixel parity and the
+previously recorded broad screenshot failures remain open.
