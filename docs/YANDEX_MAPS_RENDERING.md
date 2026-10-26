@@ -526,3 +526,16 @@ The native diagnostic exits 0 under the 3 GiB guard, with sampled peak RSS of
 JavaScript operations and C API behavior; the changed V serializer and complete
 Worker stack still require their queued component tests. The available
 production bundle predates those changes and supplies baseline evidence only.
+
+The expanded Worker component run in
+`Build/yandex-maps/worker-child-1793056940063085000/` compiles the Boehm
+browser selection successfully, then exits 1 in the clone-detachment fixture.
+That fixture reused a read-only host-callback global, so its next iteration
+received the first, already-detached clone. The pending corrections give each
+clone case a distinct callback and each resizable-transfer case its own realm.
+Formatting and diff checks pass; their runtime rerun is queued under
+`worker-child-retry-4-20261027-guard.json`. The real Yandex worker probe runs
+only after a complete component pass. Neither correction has runtime or visual
+acceptance credit yet. The same run's old-bundle startup check passes, but its
+Worker fixture remains pending and its live capture exceeds the 3 GiB guard;
+that interrupted capture supplies no comparison result.
