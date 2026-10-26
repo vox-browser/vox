@@ -19,6 +19,17 @@ Existing cmap glyphs, Unicode clusters, advances, cache lifetimes, and the
 LibWeb policy remain covered by focused tests. This corrects the Yandex heading
 and the weather widget's horizontal position.
 
+`e55a6d22` retains full-opacity compositor surfaces for the Chromium policy's
+transform, translate, rotate, scale, perspective and transform-style
+`will-change` hints. The hints are suppressed below `will-change: contents`,
+including through unboxed ancestors and shadow-DOM slots. Existing 3D-transform
+surfaces survive that suppression; opacity and hint surfaces coalesce.
+This follows Chromium's
+[compositing reason selection](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/third_party/blink/renderer/core/paint/compositing/compositing_reason_finder.cc).
+The new `will-change-transform-shadows` fixture improves from 13,134 differing
+pixels to zero at 800 × 600, scale 1. This independently verified correction
+does not reduce the archived map's remaining 4,967 differing pixels.
+
 ## Latest reproducible archived comparison
 
 Both browsers render the same script-free archived DOM at 1024 × 768 logical
@@ -73,3 +84,25 @@ The latest fresh headless Brave live capture returned “Are you not a robot?”
 Its pixels are excluded from acceptance metrics. Vox loaded the map, but that
 alone cannot prove matching live state or pixel-perfect rendering. A valid
 fresh live reference and zero differing pixels are still required.
+
+## Transform-hint verification
+
+The nine transform-surface tests pass with both Boehm and `-gc none`; the
+raster-layer tests also pass. Production build, startup and signature checks
+pass. All six controlled map-shadow palette cases and the existing
+`box-shadow-blur`, `opaque-box-shadow` and `scroll-overlap-gradient-layer`
+references are pixel-exact. Broader suites are not credited for this slice.
+
+Evidence is retained in `transform-hints-focused-1792982221259709000/` and
+`transform-hints-production-1792982479436352000/` under `Build/yandex-maps/`.
+Their guard receipts record exit 0 and peak sampled process-tree RSS of
+8,374,091,776 and 9,641,984,000 bytes respectively. The tested implementation
+and fixtures stayed unchanged. One unrelated CSS test changed during the
+production build; the source-scope receipt records it. The preserved tested
+executable's SHA-256 is
+`235819c3007251306a780a235bf810494a72272651e444215f211992b4eafd8e`;
+`identity.json` also records its native libraries.
+
+The same archived DOM still differs at 4,967 / 786,432 pixels, with MAE
+0.0140216 and maximum channel error 64. The fresh live Brave reference again
+returned the robot check and is excluded from acceptance metrics.
