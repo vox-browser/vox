@@ -977,3 +977,24 @@ alive longer with explicitly diagnostic response and settle delays. Those
 changed delays and all profiler counts are excluded from instruction acceptance.
 Font, inline-width and native page comparisons remain pending. The last strict
 production Vox/Brave ratio remains 3.656719, above the required 0.90.
+
+The first font-cascade page comparison now retains all 30 alternating pairs
+under `font-cascade-projection-isolated-1/paired`. It is invalid: pair 23's
+control and pair 28's candidate fail the private-helper ownership check before
+capture. The other 58 runs exit zero with exact pixels and exact instruction
+intervals. No pairs are discarded and no savings are credited. The supervisor
+and guard exit one; sampled peak RSS is 9,174,253,568 bytes, elapsed time
+2,177.381 seconds. The candidate's compilation, strict bundle signature,
+startup smoke check and compiler-input pins remain valid.
+
+The ownership verifier now brackets its private-process and CDP queries with
+the coalition's monotonic task counts (`25e629ca`). When a worker starts or
+exits after the exact membership scan, it repeats the whole scan within the
+original watchdog. Stable unaccounted private or CDP processes still fail;
+no task instructions are subtracted and measurement endpoints stay unchanged.
+All 15 focused Python tests pass, including five new cases for late fetch/CDP
+workers, worker exit, foreign processes and bounded membership churn
+(`coalition-ownership-race-2`, unchanged source pins). The interrupted first
+test invocation also selected native pixel integration and was stopped during
+a stale-bundle rebuild; it supplies no native validation or performance credit.
+A fresh complete font cohort is required before accepting page savings.
