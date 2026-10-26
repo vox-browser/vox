@@ -393,3 +393,40 @@ after compilation and at audit time in both modes. The audit preserves the
 original failed guard instead of changing its result. Production rendering,
 fast-path eligibility and instruction checks resume separately. Verified
 instruction-saving credit remains zero; the 10% target remains open.
+
+## Production follow-up attempts
+
+The three subsequent production attempts retain their original failures under
+`Build/hn-small-text/`; none supplies additional rendering or performance credit.
+
+| Attempt | Result | Guard elapsed | Sampled peak RSS |
+| --- | --- | ---: | ---: |
+| `ascii-production-1` | Build exits zero; source guard exits one | 384.073 s | 7,633,960,960 bytes |
+| `ascii-production-2` | Focused-input continuity check exits one before building | 1.727 s | 32,997,376 bytes |
+| `ascii-production-3` | Build and enclosing guard exit one | 29.567 s | 452,476,928 bytes |
+
+All three guards complete within their 12 GiB limits. Attempt one's report is
+`ascii-production-1-resume-guard.json`. Its source manifest catches concurrent
+changes to the native renderer, its shape-batch header and a standalone native
+test. The resulting bundle is not accepted as a pinned production candidate.
+Attempt two's conservative focused-test audit catches two unselected test files;
+the later audit follows the compiler's actual test-file selection instead.
+
+Attempt three freezes the native renderer inputs. Its temporary compiler proxy
+changes CMake's cached compiler identity, causing CMake to discard the supplied
+options and configure Dawn again with default Debug/dependency settings. The
+dependency configuration fails before the V browser build. Its before/after
+source manifests are identical. The next preparation uses the real absolute
+compiler paths and a fresh generated CMake cache, preserving the production
+configuration options. This is a correction to the local evidence harness;
+the repository's production build driver is unchanged.
+
+The separate `profile-6-font-policy-source-audit.json` confirms that the earlier
+profile used executable SHA256
+`fc13e8102e770e061b2fe591a73698fc2c31d07a8611eff3eae5fa02d5301d1f`.
+Static disassembly shows an unconditional filesystem check after environment
+lookup in that binary's `Font.system_face`. Current source skips that check when
+the layout-test font path is empty. The old profile therefore does not establish
+that this syscall remains a hot spot in a newly built candidate. This diagnostic
+receives no instruction credit. The last valid strict Vox/Brave ratio remains
+6.026 against the required 0.90.
