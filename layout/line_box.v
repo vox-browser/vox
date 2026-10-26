@@ -251,17 +251,19 @@ fn (fragment &LineBoxFragment) code_unit_at(relative_index int) ?u16 {
 	text_node := fragment.layout_node_.as_text_node() or { return none }
 	absolute_index := fragment.start_ + relative_index
 	value := text_node.text_for_rendering()
-	if value.is_ascii() {
-		if absolute_index < 0 || absolute_index >= value.len {
-			return none
-		}
-		return u16(value[absolute_index])
-	}
+	// Chunk iteration already decodes the rendered text, including ASCII.
+	// Read that immutable cache before scanning the entire string again.
 	if units := text_node.cached_utf16_code_units_ {
 		if absolute_index < 0 || absolute_index >= units.len {
 			return none
 		}
 		return units[absolute_index]
+	}
+	if value.is_ascii() {
+		if absolute_index < 0 || absolute_index >= value.len {
+			return none
+		}
+		return u16(value[absolute_index])
 	}
 	units := utf16_code_units_for_line_box(value)
 	if absolute_index < 0 || absolute_index >= units.len {

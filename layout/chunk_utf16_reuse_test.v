@@ -2,6 +2,7 @@ module layout
 
 import css
 import dom
+import platform
 
 fn reusable_units_test_node(document &dom.Document, source string, declarations string) &TextNode {
 	mut element := document.create_element('div') or { panic(err) }
@@ -75,4 +76,63 @@ fn test_rendered_unit_cache_rebuilds_after_first_letter_source_range_changes() {
 	assert second.code_units == [u16(`B`), u16(`C`)]
 	assert first.view == '😀'
 	assert first.code_units == [u16(0xd83d), u16(0xde00)]
+}
+
+fn test_line_fragments_read_cached_and_uncached_rendered_units_with_utf16_offsets() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	defer { document.finalize() }
+	for source in ['prefix word \t\n', 'A😀אב \t', 'A\u0301👩‍👩‍👧‍👦 ', ''] {
+		text := reusable_units_test_node(document, source, '')
+		expected := utf16_code_units_for_line_box(text.text_for_rendering())
+		for cached in [false, true] {
+			if cached {
+				_ = TextNodeChunkIterator.new(text, true, true)
+				assert text.cached_utf16_code_units_ != none
+			}
+			for start in 0 .. expected.len + 1 {
+				fragment := LineBoxFragment{
+					layout_node_: unsafe { &Node(text) }
+					start_: start
+					length_in_code_units_: expected.len - start
+				}
+				assert fragment.code_unit_at(-1) == none
+				assert fragment.code_unit_at(fragment.length_in_code_units_) == none
+				for index in 0 .. fragment.length_in_code_units_ {
+					assert fragment.code_unit_at(index) or { panic('missing unit') } == expected[start + index]
+				}
+				if fragment.length_in_code_units_ > 0 {
+					assert fragment.ends_in_whitespace() == is_ascii_space_code_unit(expected.last())
+				}
+			}
+		}
+	}
+}
+
+fn test_cached_fragment_whitespace_reads_allocate_nothing_and_follow_text_invalidation() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	defer { document.finalize() }
+	mut text := reusable_units_test_node(document, 'prefix '.repeat(4096), '')
+	_ = TextNodeChunkIterator.new(text, true, true)
+	mut fragment := LineBoxFragment{
+		layout_node_: unsafe { &Node(text) }
+		start_: text.text_for_rendering().len - 1
+		length_in_code_units_: 1
+	}
+	before := platform.thread_arena_usage().used
+	for _ in 0 .. 1024 {
+		assert fragment.ends_in_whitespace()
+		assert fragment.is_justifiable_whitespace()
+	}
+	$if prealloc {
+		assert platform.thread_arena_usage().used == before
+	}
+	text.source_text_ = '😀Z'
+	text.invalidate_text_for_rendering()
+	assert fragment.code_unit_at(0) == none
+	fragment.start_ = 2
+	assert fragment.code_unit_at(0) or { panic('missing updated unit') } == u16(`Z`)
+	assert !fragment.ends_in_whitespace()
+	assert !fragment.is_justifiable_whitespace()
+	_ = TextNodeChunkIterator.new(text, true, true)
+	assert fragment.code_unit_at(0) or { panic('missing cached updated unit') } == u16(`Z`)
 }
