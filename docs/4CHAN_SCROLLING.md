@@ -1337,3 +1337,65 @@ commands, pixels, actual input/frame timestamps and browser exits. The
 enclosing `rect-prefetch-device-grid-queue-20261027-000135/guard.json` reports
 child exit 0, 12 GiB budget, sampled peak RSS 8,432,549,888 bytes and elapsed
 931.24 seconds. No production patch margin was changed by this experiment.
+
+### Reduced patch guard on the real root grid (2026-10-26 UTC)
+
+The next matched experiment kept the same archived original HTTPS URL,
+1024×764 CSS viewport, 2× backing scale, fresh private profiles, title-gated
+20-second settle, and 360 precise wheel inputs at nominal 60 Hz (delta 12,
+reversing every 120 inputs). All responses came from `disk-fixture-final/`
+over the loopback CONNECT replay and private TLS trust; SOCKS and external
+network traffic were excluded. The fixture manifest and response body retain
+the hashes recorded above. Only the conditional thin-rectangle patch guard
+changed from two to one device pixels, using the earlier reduced-guard
+backend with the validated device-grid frontend. Prefetch remains opt-in.
+
+Four native oracle executions passed: control and candidate each ran 1,296
+ordered comparisons normally and with AddressSanitizer/UndefinedBehaviorSanitizer
+(972 admitted, 324 declined per execution). Each focused execution stayed
+under its sampled 3 GiB budget and exited 0. The identical three V scanner
+cases reuse their authenticated, executed device-grid-v2 results. Signing
+and headless startup passed. Eleven canonical screenshots and two compound
+fixtures at 1×/2× were pixel-exact between modes. Both canonical comparison
+commands retained their existing reference mismatches and exit 1; no
+allowance changed. All required driver commands exited 0.
+
+In separate 120-input diagnostics, ordinary replay cache hits increased
+from 43.07% to 74.61%, and from 39.41% to 73.97% in the two pairs.
+These are capped diagnostic samples, not whole-frame hit rates or timing
+credit. Candidate input windows executed 314 and 236 successful prefetch
+batches; controls executed zero. This met the predeclared eligibility gate.
+
+Unprofiled alternating trials measured changed native frame publications
+after `updateLayer` over the entire first-to-last input period:
+
+| Trial | Scroll fps | Median / p95 / maximum interval, ms | Over 16.67 ms | Moving intervals / publications / inputs |
+| --- | ---: | --- | ---: | --- |
+| control-1 | 25.71 | 35.18 / 72.79 / 84.23 | 99.43% | 175 / 187 / 360 |
+| candidate-1 | 25.17 | 35.69 / 72.75 / 92.40 | 99.42% | 172 / 181 / 360 |
+| control-2 | 26.15 | 33.53 / 66.62 / 123.34 | 100.00% | 177 / 187 / 360 |
+| candidate-2 | 25.41 | 35.75 / 66.06 / 88.97 | 100.00% | 166 / 176 / 360 |
+
+| Trial | Actual input Hz | Entire input period, s | Leading / trailing publication gap, ms | First counted scroll delay, ms |
+| --- | ---: | ---: | --- | ---: |
+| control-1 | 52.75 | 6.805 | 117.54 / 21.24 | 197.99 |
+| candidate-1 | 52.54 | 6.833 | 135.30 / 26.70 | 225.75 |
+| control-2 | 53.04 | 6.768 | 116.16 / 19.42 | 196.73 |
+| candidate-2 | 54.94 | 6.534 | 131.25 / 1.58 | 219.69 |
+
+Paired throughput changes were -2.11% and -2.85%;
+controls varied by 1.70%. All four browsers exited 0 and moved the
+requested archived document. The 18-CPU host had high contention: one-minute
+loads before/after each trial were 73.56/65.36, 65.36/61.18, 59.24/53.65, 53.65/58.31.
+The results establish no performance gain, despite improved sampled cache
+hits. Smooth 60 fps remains unmet; these are native publications, not display
+scanout or live SOCKS acceptance. No default patch margin was changed.
+
+Evidence is in `rect-prefetch-device-grid-reduced-v2/` and
+`rect-prefetch-device-grid-reduced-v2-validation/`, including the complete
+`acceptance-summary.json`, eligibility decision, commands, executable/library
+and dependency hashes, pixel comparisons, actual input/frame timestamps,
+host load and browser exits. The enclosing
+`rect-prefetch-device-grid-reduced-queue-20261027-003300/guard.json` reports
+child exit 0, 12 GiB budget, sampled peak RSS 1,218,396,160 bytes
+and elapsed 742.53 seconds.
