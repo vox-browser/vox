@@ -22,6 +22,6 @@ its regression test remain a separate pending fix.
 
 This is the fourth completed catalog fix after retained broad baseline
 `f2e223c9`. It does not reset the shared ten-fix regression cadence. Full
-catalog pixel parity and fresh live navigation remain open. The next prepared
-validation pipeline is `Build/4chan-catalog-20261027-label-2/`; it reuses the
-completed shared production bundle and records changes absent from that bundle.
+catalog pixel parity remains open. Fresh live navigation passed with the
+available production bundle; the remaining pixel differences and pending
+validation are recorded in [the catalog comparison](CHROMIUM_CATALOG_PARITY.md).
