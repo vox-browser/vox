@@ -548,3 +548,34 @@ performance gate fails. Detailed build, launch, comparison and count receipts
 remain under `Build/hn-small-text/font-policy-production-2/` and its guard JSON.
 The Brave target remains open, with zero isolated whole-page optimization
 credit at this checkpoint.
+
+The follow-up checksum change (`0e233aa4`) keeps the complete padded-table
+bounds check, then reads its big-endian words directly instead of repeating
+optional-result construction and bounds checks for every word. Three focused
+cases cover unaligned offsets, stored padding, wrapping sums, excluded `head`
+checksums, empty tables, invalid ranges, and truncated directories. These and
+the fallback metrics, BMP cmap, and layout font-policy tests pass: four files,
+17 cases per mode, 34 executed cases across Boehm and preallocated/no-GC builds.
+Every compile and guarded runtime exits zero and the platform source hashes
+remain unchanged. Receipts are in `Build/hn-small-text/font-checksum-1/`; its
+outer guard exits zero, peaks at 420,872,192 sampled RSS bytes, and completes
+in 20.915 seconds. This supplies correctness evidence, with no whole-page
+instruction credit yet.
+
+The separate `profile-10` diagnostic uses the retained production-2 executable
+and frozen page. Browser and sampler exit zero, its screenshot remains exact,
+and the executable hash is unchanged. Its first installation/relayout subtree
+contains 130 samples; environment lookup accounts for two self samples, versus
+25 of 149 in the earlier profile. Repeated temporary font decoding and
+style/layout construction remain visible. These samples do not measure retired
+instruction savings. The guard exits zero, peaks at 494,518,272 sampled RSS
+bytes, and completes in 29.387 seconds.
+
+The first isolated font-policy rebuild fails compilation: a concurrent native
+header introduces a field named `complex`, conflicting with the system macro.
+The failed attempt and actual exit 1 remain under `font-policy-isolated-1`.
+The retry recovers native source bytes against the production-2 source manifest
+and uses a private Clang filesystem overlay for both builds; it does not edit
+the concurrent native work. Its matched measurements and the checksum
+comparison remain pending. The latest accepted Brave comparison is still the
+production-2 result above; the 10% instruction target remains open.
