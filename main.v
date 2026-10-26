@@ -5822,11 +5822,9 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 				if app.ctx.native_rendering {
 					shadow := command.corner_radii
 					content := shadow_geometry.content_radii
-					scale_x := math.sqrt(matrix[0] * matrix[0] + matrix[1] * matrix[1])
-					scale_y := math.sqrt(matrix[2] * matrix[2] + matrix[3] * matrix[3])
-					blur_scale := math.min(scale_x, scale_y)
+					// Skia transforms the local blur together with the shadow geometry.
 					set_native_chromium_paint_color(*command)
-					C.native_draw_outer_box_shadow_corners_srgb(f32(command.x), f32(command.y), f32(command.width), f32(command.height), f32(shadow.top_left.x), f32(shadow.top_left.y), f32(shadow.top_right.x), f32(shadow.top_right.y), f32(shadow.bottom_right.x), f32(shadow.bottom_right.y), f32(shadow.bottom_left.x), f32(shadow.bottom_left.y), f32(shadow_geometry.content_rect.x), f32(shadow_geometry.content_rect.y), f32(shadow_geometry.content_rect.width), f32(shadow_geometry.content_rect.height), f32(content.top_left.x), f32(content.top_left.y), f32(content.top_right.x), f32(content.top_right.y), f32(content.bottom_right.x), f32(content.bottom_right.y), f32(content.bottom_left.x), f32(content.bottom_left.y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), f32(command.blur * blur_scale), fill)
+					C.native_draw_outer_box_shadow_corners_srgb(f32(command.x), f32(command.y), f32(command.width), f32(command.height), f32(shadow.top_left.x), f32(shadow.top_left.y), f32(shadow.top_right.x), f32(shadow.top_right.y), f32(shadow.bottom_right.x), f32(shadow.bottom_right.y), f32(shadow.bottom_left.x), f32(shadow.bottom_left.y), f32(shadow_geometry.content_rect.x), f32(shadow_geometry.content_rect.y), f32(shadow_geometry.content_rect.width), f32(shadow_geometry.content_rect.height), f32(content.top_left.x), f32(content.top_left.y), f32(content.top_right.x), f32(content.top_right.y), f32(content.bottom_right.x), f32(content.bottom_right.y), f32(content.bottom_left.x), f32(content.bottom_left.y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), f32(command.blur), fill)
 					return
 				}
 			}

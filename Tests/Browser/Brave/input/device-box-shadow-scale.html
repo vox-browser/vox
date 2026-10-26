@@ -1,0 +1,18 @@
+<!doctype html>
+<meta charset="utf-8">
+<style>
+body { margin: 0; background: #ffffee; }
+.shadow { position: absolute; width: 150px; height: 100px; background: #def; box-shadow: 0 0 5px rgb(0 0 0 / 25%); }
+.normal { left: 40px; top: 40px; }
+.half { left: 280px; top: 40px; transform: scale(.5); transform-origin: top left; }
+.double { left: 440px; top: 40px; transform: scale(2); transform-origin: top left; }
+.rounded { left: 40px; top: 320px; border-radius: 12px; }
+.offset { left: 280px; top: 320px; box-shadow: 3px 7px 8px 2px rgb(0 0 0 / 40%); }
+.rotated { left: 520px; top: 320px; transform: rotate(12deg); }
+</style>
+<div class="shadow normal"></div>
+<div class="shadow half"></div>
+<div class="shadow double"></div>
+<div class="shadow rounded"></div>
+<div class="shadow offset"></div>
+<div class="shadow rotated"></div>

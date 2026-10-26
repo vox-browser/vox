@@ -4678,7 +4678,11 @@ void native_draw_outer_box_shadow_corners_srgb(float shadow_x, float shadow_y,
 	CGContextAddPath(context, canvas_content);
 	CGContextEOClip(context);
 	CGColorRef cg_color = native_srgb_color(color);
-	native_fill_blurred_path(context, canvas_shadow, false, blur, cg_color);
+	// The fallback paths are already in canvas coordinates. Skia above instead
+	// consumes local geometry and applies this transform to its blur mask too.
+	float canvas_blur = blur * fminf(hypotf(transform_a, transform_b),
+		hypotf(transform_c, transform_d));
+	native_fill_blurred_path(context, canvas_shadow, false, canvas_blur, cg_color);
 	CGColorRelease(cg_color);
 	CGContextRestoreGState(context);
 	CGPathRelease(canvas_content);

@@ -2179,7 +2179,7 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 			paintable_box_paint_box_shadow(mut commands, box_shadows.filter(!it.inset),
 				box.border, effective_border_colors(box.border_colors, box.border_color),
 				box.border_styles, box_radii, border_rect, border_rect, opacity)
-			chromium_inset_opaque_shadow_clips(mut commands, outer_start)
+			chromium_inset_opaque_shadow_clips(mut commands, outer_start, box.layout_handle)
 			box_shadows = box_shadows.filter(it.inset)
 		}
 		background_isolated := box.decorations().background_images.any(background_image_layer_blend_mode(it) != .normal)
@@ -3955,7 +3955,7 @@ fn inline_fragment_commands(fragments []TextFragment, opacity f64) InlineFragmen
 				&& first.text == ''
 		}
 		if first_is_chromium && first.background_color.a == 255 {
-			chromium_inset_opaque_shadow_clips(mut commands, outer_start)
+			chromium_inset_opaque_shadow_clips(mut commands, outer_start, first.layout_handle)
 		}
 		background_start := commands.len
 		background_isolated := first.background_images.any(background_image_layer_blend_mode(it) != .normal)
