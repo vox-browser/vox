@@ -24,6 +24,16 @@ pub fn (font &Font) inline_metrics() FontPixelMetrics {
 // Blink on macOS preserves Safari's ascent for Times, Helvetica and Courier
 // by adding 15% of the rounded font height.
 fn chromium_legacy_ascent_adjustment(font &Font, ascent f64, descent f64) f64 {
+	// A resolved non-legacy face (or miss) cannot acquire the adjustment when
+	// layout-test fonts suppress system matching. Avoid querying that live
+	// policy again for every line. Legacy faces and explicit overrides still
+	// go through system_face(), preserving their policy and precedence rules.
+	if font.system_face_override == none && font.system_face_resolved_ {
+		cached := font.resolved_system_face_ or { return 0 }
+		if cached.family_name !in ['Times', 'Helvetica', 'Courier'] {
+			return 0
+		}
+	}
 	face := font.system_face() or { return 0 }
 	if face.family_name !in ['Times', 'Helvetica', 'Courier'] {
 		return 0
