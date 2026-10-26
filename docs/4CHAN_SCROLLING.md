@@ -945,3 +945,21 @@ rasterizer was installed. `fractional-rect-oracle.cpp`, its commands/log and
 `fractional-rect-oracle-guard.json` retain this diagnostic (guard/child 0,
 117,112,832-byte sampled peak within 3 GiB, elapsed 1.07 seconds); its exit
 code records oracle completion, not pixel equivalence or scrolling credit.
+
+### Rejected direct RGBA glyph raster (2026-10-26)
+
+Two prototypes rasterized glyphs directly into the document's RGBA byte order
+to avoid backdrop/output channel conversion. The first failed a focused pixel
+comparison for RGBA grayscale text with smoothing flags zero. Restricting the
+change to Chromium text with an existing backdrop still failed at smoothing
+flags 48. Both implementations were removed. Neither reached scrolling trials
+or supplies performance credit; text pixels retain the existing raster path.
+
+Immutable sources, commands, failure logs and the decision are retained in
+`Build/pol-scroll-20261025-2210/glyph-rgba-v1-source/`,
+`glyph-rgba-v2-source/`, their source identity manifests, focused output
+directories and `glyph-rgba-rejected.json`. Both focused guards completed with
+child exit 1 within 3 GiB. Their sampled peak RSS/elapsed values were
+406,634,496 bytes/2.81 seconds and 407,748,608 bytes/6.65 seconds respectively,
+as recorded in `glyph-rgba-v1-focused-guard.json` and
+`glyph-rgba-v2-focused-guard.json`.
