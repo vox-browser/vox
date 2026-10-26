@@ -430,3 +430,58 @@ the layout-test font path is empty. The old profile therefore does not establish
 that this syscall remains a hot spot in a newly built candidate. This diagnostic
 receives no instruction credit. The last valid strict Vox/Brave ratio remains
 6.026 against the required 0.90.
+
+## Production pixels and authenticated instruction rerun
+
+The accepted `ascii-production-5` candidate has executable SHA256
+`65cceaf15ce9a1ece46f3e28feff4b4af94d0adbb985290e0983d8df6f375ab8`.
+Its provenance authenticates a shared, successfully guarded production build,
+the complete matching source manifests, compiler, native libraries, build
+configuration and bundle signature. All three raw native DPR2 captures match
+the immutable Brave pixels with zero differing pixels: the comment opener,
+the complete 1024 by 768 discussion viewport, and the inline-precision fixture.
+Startup and fresh-process checks of both live URLs exit zero and pass document
+identity checks. The corrected live comment screenshot is
+`Build/hn-small-text/ascii-production-5/live-comment/document.png`.
+
+The separate eligibility probe also exits zero, preserves exact pixels and
+authenticates the loaded executable and symbol ranges. It observes 836 column
+measurements, including two constrained-auto columns, and the expected 834
+max-content probes; cached font and grapheme lookup paths execute. These
+instrumented observations supply no performance credit.
+
+The original attempt-five instruction cohort is invalid: macOS maps one Brave
+root executable through a `code_sign_clone` directory outside its private app.
+The harness rejects that root even though the other coalition members are
+accepted. Its failed guard and every observation remain unchanged.
+Commit `f099a1ae` authenticates this macOS mapping only for the measured root:
+the original argv, bundle-derived exact clone path and executable SHA256 must
+all agree. Helpers still require their original exact ownership checks. Ten
+harness unit cases pass, including altered-byte, path, argv and helper rejection.
+
+The fresh complete cohort in
+`Build/hn-small-text/ascii-production-6-instructions/` passes all six browser
+exits, full 101-comment identity checks and exact pixel comparisons. It fails
+the instruction target:
+
+| Alternating pair | Vox instructions | Brave instruction interval |
+| --- | ---: | ---: |
+| 1, Vox then Brave | 12,107,859,595 | 7,010,099,223–7,033,723,193 |
+| 2, Brave then Vox | 7,036,003,946 | 1,796,563,851–1,835,999,057 |
+| 3, Vox then Brave | 7,075,890,507 | 1,797,023,591–1,830,534,409 |
+
+The strict worst-Vox/best-Brave-lower-bound ratio is **6.739454**, against the
+required **0.90**. Medians are 7,075,890,507 and 1,797,023,591 respectively.
+The cold first pair is retained. This measures the documented navigation-to-PNG
+capture workflow with different internal browser endpoints, including exclusive
+coalition work; it is not an identical internal layout-only comparison.
+The 18-CPU host's one-minute load averages are 10.295 before and 10.907 after.
+The 12 GiB guard completes with child exit one because the target fails, elapsed
+35.425 seconds and sampled peak aggregate RSS 134,774,784 bytes. This is a valid
+negative result, not a passing performance claim or isolated optimization credit.
+
+The separately gated `profile-9` diagnostic authenticates the same executable,
+exits zero and retains exact pixels. Of 149 installation stack samples, 25 end
+in libc environment lookup. Sample counts guide the next optimization; they
+are not retired instruction counts. Verified isolated savings remain zero,
+and the 10% instruction target remains open.
