@@ -59,7 +59,7 @@ def main():
         artifacts = directory / "artifacts"
         artifacts.mkdir()
         command = [str(compiler), flag, "-fblocks", "-framework", "Cocoa", "-framework", "QuartzCore",
-                   "-framework", "CoreGraphics", "-framework", "ImageIO", "-I", str(source), "-I", str(output), str(fixture),
+                   "-framework", "CoreGraphics", "-I", str(source), "-I", str(output), str(fixture),
                    "-o", str(directory / "tests")]
         row = {"command": command}
         with (directory / "compile.log").open("w") as log:

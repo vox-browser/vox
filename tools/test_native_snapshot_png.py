@@ -9,7 +9,6 @@ import struct
 import subprocess
 import tempfile
 import traceback
-import zlib
 from PIL import Image
 
 
@@ -41,24 +40,9 @@ def compare(reference, actual):
                    profile_exact=expected.info.get('icc_profile') == observed.info.get('icc_profile'),
                    density_exact=expected.info.get('dpi') == observed.info.get('dpi'),
                    metadata_exact=chunks(reference) == chunks(actual))
-    # ImageIO silently ignores a filter option outside the PNG dictionary.
-    # Verify its encoded rows as well as the lossless result.
-    data = actual.read_bytes()
-    offset = 8
-    compressed = bytearray()
-    while offset < len(data):
-        length = struct.unpack('>I', data[offset:offset + 4])[0]
-        kind = data[offset + 4:offset + 8]
-        body = data[offset + 8:offset + 8 + length]
-        if kind == b'IHDR':
-            width, height, depth, color, _, _, interlace = struct.unpack('>IIBBBBB', body)
-            assert depth == 8 and color in (2, 6) and interlace == 0
-        elif kind == b'IDAT':
-            compressed.extend(body)
-        offset += length + 12
-    raw = zlib.decompress(compressed)
-    stride = 1 + width * (3 if color == 2 else 4)
-    row['fixed_sub_filter'] = len(raw) == height * stride and set(raw[::stride]) == {1}
+    # Preserve adaptive filtering too: fixed SUB encoding regressed the actual
+    # complete-page workload despite a favorable small-image prototype.
+    row['encoding_exact'] = reference.read_bytes() == actual.read_bytes()
     row['passed'] = all(row.values())
     return row
 
@@ -84,7 +68,7 @@ def main():
             artifacts = directory / 'artifacts'
             artifacts.mkdir()
             command = [str(compiler), flag, '-O2', '-Wall', '-Wextra', '-Werror',
-                       '-framework', 'Cocoa', '-framework', 'ImageIO', '-I', str(source),
+                       '-framework', 'Cocoa', '-I', str(source),
                        str(source / 'tools/native_snapshot_png_test.m'), '-o', str(directory / 'tests')]
             row = dict(command=command, passed=False)
             result['jobs'][name] = row
