@@ -682,8 +682,15 @@ The image-dimension browser fixture exposes a remaining compatibility mistake:
 Brave rounds fractional rendered content sizes, while the translated native
 image getter truncates them. The fixture previously expected truncation and
 therefore passed only in Vox. Its Brave title reports failure; the 8,844 changed
-pixels are a failed acceptance result. The bridge and fixture are being
-corrected together, with no conformance credit until their checks execute.
+pixels are a failed acceptance result. Commit `61f75650` corrects the bridge
+and fixture to round rendered content dimensions, including fractional sizes,
+border-box subtraction, transforms, detached fallback, and document scale.
+Both focused tests compile and execute successfully in normal and poisoned
+arena modes, with unchanged frozen inputs:
+`Build/pikabu-image-rounding-tests-1793052535602480000/results.json`.
+This is the fourth completed fix since the preceding broad checkpoint. Browser
+acceptance still needs a bundle containing the correction; the older bundle's
+failed comparison supplies no conformance credit for it.
 
 The four gradient/mask fixtures load and exit successfully but still fail exact
 pixel comparison. Small rounded masks have 56 changed pixels per case; large
