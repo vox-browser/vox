@@ -220,3 +220,26 @@ actual exit 1; the guard reports a sampled peak aggregate RSS of
 5,587,763,200 bytes. It does not invalidate the completed shadow tests. No
 matched instruction reduction or broad-verification credit is claimed for
 this change.
+
+## Keyword serialization and table measurement follow-up
+
+Commit `527164ca` reuses static CSS keyword spellings when exposing typed values
+to the DOM. Commit `845e1b53` skips unused intrinsic-content probes when deriving
+minimum row heights for nonspanning Chromium tables. Spanning tables and the
+LibWeb font policy retain the complete measurement path; final-width cell
+layout continues to supply Chromium content heights.
+
+`Build/hn-small-text/table-minimum-1/results.json` records successful compilation
+and execution of four serialization cases, four table-minimum cases and the
+existing final-width footer case in both Boehm and prealloc modes: 18 case
+executions, with all six compiler/runtime pairs exiting zero. The table cases
+cover standards and quirks modes, both box-sizing modes, separate and collapsed
+borders, spanning cells and the LibWeb fallback. The audit mapping's 18 focused
+tests also pass, and the upstream method inventory resolves the renamed helper.
+
+FuseCode interrupted the subsequent production compilation. Its build and guard
+exit statuses are unknown; `table-minimum-1/interruption.json` records the missing
+completion evidence. Completed tests are retained, and unfinished production,
+pixel, live-page and instruction checks resume separately. These focused results
+do not establish production acceptance or instruction savings. The 10% target
+and the existing broad-verification ledger remain unchanged.
