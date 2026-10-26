@@ -2835,6 +2835,14 @@ fn run_document_script_sources_with_image_fetch_hooks(document &dom.Document, cu
 		messages << 'JavaScript XMLHttpRequest bindings: ${err.msg()}'
 		return none
 	}
+	mut fetch_host := browserjs.FetchHost.create_native(document) or {
+		messages << 'JavaScript Fetch bindings: ${err.msg()}'
+		return none
+	}
+	fetch_host.install(mut mutable_runtime) or {
+		messages << 'JavaScript Fetch bindings: ${err.msg()}'
+		return none
+	}
 	mut transition_host := browserjs.ViewTransitionHost.create(document, fn [document] (callback_runtime &browserjs.Runtime) ! {
 		state := callback_runtime.evaluate_host('__ladybirdFinalize()')!
 		mut replay_messages := []string{}
