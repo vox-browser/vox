@@ -196,3 +196,57 @@ These are screenshot checks, not scrolling performance measurements. Raw
 captures, identity records, exits, and pixel metrics use the
 `Build/pikabu-story-idb-` prefix; the outer check is
 `Build/pikabu-story-document-and-visual-retry-9-20261026.json`.
+
+## Native message channels and Window event targets
+
+`32736ea4` fires posted Window message events with the Window itself as the
+target. It retains the separate legacy Document target override used by
+Window's virtual dispatch path. Native assertions check the retained event's
+target and cleared currentTarget; the JavaScript regression checks the actual
+Window wrapper. Standalone HTTPS test documents now explicitly install their
+URL origins, matching navigation-created documents rather than relying on the
+constructor's default opaque origin.
+
+`6c315f1d` exposes MessageChannel and MessagePort in browser JavaScript through
+the existing native channel entanglement, port queues, structured serializer,
+posted-message task source, EventTarget, and MessageEvent. The binding covers
+clone-at-send-time delivery, queue activation, onmessage handlers, start/close,
+receiver brands, interface identity, argument conversion, and runtime shutdown.
+Retained ports, queued records and delivered event data allocate outside
+caller/task scratch regions. The existing process port registry still retains
+closed native ports; this slice does not add port garbage collection.
+
+Nonempty transfer lists explicitly fail with DataCloneError: JavaScript
+transferable projection and nonempty MessageEvent.ports are not implemented.
+The existing native transfer model remains unchanged. This is not complete
+MessagePort or BroadcastChannel conformance.
+
+Five new binding cases, two existing Window message cases, and the actual
+archived Pikabu BroadcastChannel module 89800 passed in each allocation mode:
+normal GC and production `-prealloc -gc none`. The poisoned arena run includes
+sending and delivering from separate temporary allocation regions, then reading
+retained non-ASCII event data after collection. The eight-case receipts are
+`Build/pikabu-story-channel-tests/normal-4.json` and `arena-1.json`;
+outer guards are `Build/pikabu-story-channel-normal-job-5.json` and
+`Build/pikabu-story-channel-arena-job-1.json`. Their source manifests remained
+unchanged during validation.
+
+All sixteen native cases from `html/window_post_message_test.v` and
+`html/messaging_test.v` also passed in both modes. Receipts are
+`Build/pikabu-story-native-message-tests/normal-2.json` and `arena-1.json`,
+with the outer actual-zero receipt at
+`Build/pikabu-story-native-message-both-job-3.json`. The first staged native
+attempt failed before tests because its embedded stylesheet was missing; the
+preserved runtime retry then exposed the opaque-origin fixture assumptions.
+Neither failed attempt receives pass credit. The staged resource and fixture
+repairs preserve the tested behavior and original origin assertions.
+
+The Pikabu parity sequence now contains ten completed behavioral slices:
+Window messaging (`fc9239f4`), IndexedDB (`106cb5bb`), PerformanceObserver
+(`7d9d986a`), empty observer-array ownership (`8453ff2a`), Performance
+(`1ff39587`), adjacent SVG gradients (`f4e8f816`), adjacent solid fills
+(`bcec0c16`), detached HTML documents (`27793c48`), posted-message targets
+(`32736ea4`), and native channel bindings (`6c315f1d`). A broader regression
+checkpoint is pending under the ten-fix cadence; no cadence reset or unrelated
+workflow's broad credit is claimed. Fresh production startup and live pixel
+comparisons are queued. Whole-page parity remains open.
