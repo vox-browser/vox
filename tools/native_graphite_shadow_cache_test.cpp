@@ -36,6 +36,20 @@ int main()
     changed = shadow; changed.green++; different(changed);
     changed = shadow; changed.blue++; different(changed);
     changed = shadow; changed.alpha++; different(changed);
+    changed = shadow; changed.has_float_color = 1; different(changed);
+    auto precise = shadow;
+    precise.has_float_color = 1;
+    precise.float_color[3] = .25f;
+    reset();
+    auto precise_miss = cache.prepare(precise, 2, 2, 8, true, pixels.data());
+    assert(!precise_miss.hit && precise_miss.pending);
+    cache.finish(std::move(precise_miss), pixels.data(), 8);
+    assert(cache.prepare(precise, 2, 2, 8, true, pixels.data()).hit);
+    for (int index = 0; index < 4; ++index) {
+        auto other = precise;
+        other.float_color[index] += .001f;
+        different(other);
+    }
     reset(); pixels[15]++;
     assert(!cache.prepare(shadow, 2, 2, 8, true, pixels.data()).hit);
     reset();

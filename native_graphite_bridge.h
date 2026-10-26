@@ -18,6 +18,8 @@ typedef struct {
     float content[12];
     float blur;
     uint8_t red, green, blue, alpha;
+    int has_float_color;
+    float float_color[4];
 } VoxGraphiteShadow;
 
 typedef struct {

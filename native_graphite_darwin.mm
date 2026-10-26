@@ -265,6 +265,9 @@ int vox_graphite_draw_shadow_pixels(uint8_t* pixels, int width, int height,
     SkPaint paint;
     paint.setAntiAlias(true);
     paint.setColor(SkColorSetARGB(shadow->alpha, shadow->red, shadow->green, shadow->blue));
+    if (shadow->has_float_color)
+        paint.setColor4f({shadow->float_color[0], shadow->float_color[1],
+            shadow->float_color[2], shadow->float_color[3]}, nullptr);
     paint.setMaskFilter(SkMaskFilter::MakeBlur(kNormal_SkBlurStyle, std::max(shadow->blur, 0.0f) / 2.0f));
     canvas->drawRRect(rounded_rect(shadow->shadow), paint);
     int result = read_pixels(gpu, recorder.get(), surface.get(), info, pixels, pitch);

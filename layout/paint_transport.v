@@ -1106,6 +1106,7 @@ pub:
 	spread   f64
 	color    css.Color
 	inset    bool
+	srgb_color_data &PaintSRGBColor = unsafe { nil }
 }
 
 fn painting_shadow_data_from_transport(shadow BoxShadow) painting.ShadowData {
@@ -1152,7 +1153,7 @@ fn paintable_box_paint_box_shadow(mut commands []PaintCommand, shadows []BoxShad
 	}
 	converter := painting.new_device_pixel_converter(1.0) or { return }
 	resolved := painting.paint_box_shadow(painting.Rect{border_rect.x, border_rect.y, border_rect.width, border_rect.height}, painting.Rect{padding_rect.x, padding_rect.y, padding_rect.width, padding_rect.height}, painting_border_data_from_transport(border, colors, styles), painting_border_radii_data_from_transport(radii), layers, converter)
-	for shadow in resolved {
+	for index, shadow in resolved {
 		if shadow.placement == .outer {
 			commands << PaintCommand{
 				kind: 'paint_outer_box_shadow'
@@ -1161,6 +1162,7 @@ fn paintable_box_paint_box_shadow(mut commands []PaintCommand, shadows []BoxShad
 				width: shadow.shadow_rect.width
 				height: shadow.shadow_rect.height
 				color: painting_color_string(shadow.color)
+				srgb_color_data: shadows[shadows.len - 1 - index].srgb_color_data
 				force_dark_role: .foreground
 				force_dark_role_set: true
 				opacity: opacity

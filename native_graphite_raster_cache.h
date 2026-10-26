@@ -157,7 +157,9 @@ class VoxGraphiteRasterCache {
             && !std::memcmp(a.shadow, b.shadow, sizeof(a.shadow))
             && !std::memcmp(a.content, b.content, sizeof(a.content))
             && !std::memcmp(&a.blur, &b.blur, sizeof(a.blur))
-            && a.red == b.red && a.green == b.green && a.blue == b.blue && a.alpha == b.alpha;
+            && a.red == b.red && a.green == b.green && a.blue == b.blue && a.alpha == b.alpha
+            && a.has_float_color == b.has_float_color
+            && (!a.has_float_color || !std::memcmp(a.float_color, b.float_color, sizeof(a.float_color)));
     }
     static bool same_path(VoxGraphitePath const& a, VoxGraphitePath const& b)
     {

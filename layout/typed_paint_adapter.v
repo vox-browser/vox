@@ -946,11 +946,25 @@ fn computed_shadow_transport(shadow_data []css.ShadowData, context css.LengthRes
 	return shadows
 }
 
-fn computed_box_shadows(computed &css.ComputedValues) []BoxShadow {
+fn computed_box_shadows(node &Node, computed &css.ComputedValues) []BoxShadow {
 	shadows := computed.box_shadow()
 	if shadows.len == 0 { return []BoxShadow{} }
 	context := css.LengthResolutionContext.for_computed_properties(computed)
-	return computed_shadow_transport(shadows, context)
+	mut resolved := computed_shadow_transport(shadows, context)
+	if node.document().font_rendering_policy() != .chromium { return resolved }
+	value := computed.typed_property_value(.box_shadow) or { return resolved }
+	if value !is css.StyleValueList { return resolved }
+	for index, layer in value.values() {
+		if index >= resolved.len { break }
+		if layer !is css.ShadowStyleValue { continue }
+		shadow_value := layer as css.ShadowStyleValue
+		components := shadow_value.color().srgb_paint_components() or { continue }
+		resolved[index] = BoxShadow{
+			...resolved[index]
+			srgb_color_data: &PaintSRGBColor{resolved[index].color.serialize(), components}
+		}
+	}
+	return resolved
 }
 
 fn computed_text_shadows(computed &css.ComputedValues) []BoxShadow {
@@ -3667,7 +3681,7 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 		outline_offset = computed.resolve_length_percentage_value_px(outline_offset_value, 0) or {
 			0.0
 		}
-		shadows = computed_box_shadows(computed)
+		shadows = computed_box_shadows(node, computed)
 		if shadows.len > 0 {
 			shadow = shadows[0]
 		}
@@ -4402,7 +4416,7 @@ fn uncached_text_lines_from_typed_layout(container &Node, used &UsedValues, stat
 						css.StyleValue(css.LengthStyleValue.create(css.Length.make_px(0)))
 					}
 					outline_offset = owner_computed.resolve_length_percentage_value_px(outline_offset_value, 0) or { 0.0 }
-					inline_shadows = computed_box_shadows(owner_computed)
+					inline_shadows = computed_box_shadows(inline_owner, owner_computed)
 					if inline_shadows.len > 0 {
 						inline_shadow = inline_shadows[0]
 					}

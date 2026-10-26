@@ -2952,6 +2952,8 @@ extern "C" int ladybird_v_skia_draw_outer_box_shadow(CGContextRef destination,
     float canvas_height, float blur, uint8_t red, uint8_t green, uint8_t blue,
     uint8_t alpha, int opaque_backdrop)
 {
+    bool const has_float_color = s_has_unrounded_paint_color;
+    s_has_unrounded_paint_color = false;
     if (!destination || shadow_width <= 0 || shadow_height <= 0
         || content_width < 0 || content_height < 0 || canvas_width <= 0
         || canvas_height <= 0)
@@ -3019,8 +3021,10 @@ extern "C" int ladybird_v_skia_draw_outer_box_shadow(CGContextRef destination,
                 content_top_left_x, content_top_left_y, content_top_right_x,
                 content_top_right_y, content_bottom_right_x, content_bottom_right_y,
                 content_bottom_left_x, content_bottom_left_y},
-            .blur = blur, .red = red, .green = green, .blue = blue, .alpha = alpha
+            .blur = blur, .red = red, .green = green, .blue = blue, .alpha = alpha,
+            .has_float_color = has_float_color, .float_color = {}
         };
+        if (has_float_color) std::copy_n(s_unrounded_paint_color, 4, descriptor.float_color);
         raster_matrix(matrix, region, raster_scale_x, raster_scale_y).get9(descriptor.matrix);
         if (auto draw = graphite_shadow_draw(); draw && draw(reinterpret_cast<uint8_t*>(pixels.data()),
                 raster_width, raster_height, raster_width * 4, has_background, &descriptor)) {
@@ -3050,6 +3054,9 @@ extern "C" int ladybird_v_skia_draw_outer_box_shadow(CGContextRef destination,
     SkPaint paint;
     paint.setAntiAlias(true);
     paint.setColor(SkColorSetARGB(alpha, red, green, blue));
+    if (has_float_color)
+        paint.setColor4f({s_unrounded_paint_color[0], s_unrounded_paint_color[1],
+            s_unrounded_paint_color[2], s_unrounded_paint_color[3]}, nullptr);
     paint.setMaskFilter(SkMaskFilter::MakeBlur(kNormal_SkBlurStyle,
         std::max(blur, 0.0f) / 2.0f));
     canvas->drawRRect(shadow, paint);
