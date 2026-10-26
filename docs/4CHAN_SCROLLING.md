@@ -1023,3 +1023,50 @@ and `glyph-bypass-v1-rejected.json` with timestamps, load and boundary gaps.
 The browser driver recorded exit 0, but the outer resume guard's report is
 empty; its final exit and peak memory cannot be recovered. This incomplete
 guard evidence supplies no acceptance credit. Smooth 60 fps remains unmet.
+
+
+### Rejected direct BGRA glyph replay (2026-10-26)
+
+Drawing text directly into the fresh document backdrop avoided a separate
+bitmap snapshot and glyph raster cache. Its guarded root-canvas path executed
+in all 16 sampled input draws in each of two eligibility trials. The eight
+focused normal and sanitizer checks passed, including 6,240 glyph comparisons,
+48 snapshot cases and clip rejection. All 13 control/candidate screenshot
+pairs were pixel-identical. The production build, native regressions, signing
+and headless startup passed. The path still produced no scrolling gain and was
+removed; its sealed patch remains in `glyph-inplace-integrated-v1-rejected-source/`.
+
+| Alternating trial | Scroll fps | Median / p95 / max interval (ms) | Over 16.67 ms | Moving / publications / inputs |
+| --- | ---: | --- | ---: | --- |
+| Control 1 | 49.14 | 18.42 / 39.36 / 54.49 | 60.66% | 305 / 379 / 360 |
+| Direct glyph 1 | 48.92 | 18.43 / 39.11 / 58.02 | 60.60% | 302 / 395 / 360 |
+| Control 2 | 48.34 | 18.28 / 38.26 / 58.88 | 61.20% | 299 / 363 / 360 |
+| Direct glyph 2 | 47.43 | 18.67 / 41.79 / 60.15 | 63.85% | 296 / 379 / 360 |
+
+The complete first-to-last input windows lasted 6.17–6.24 seconds with actual
+input delivery of 57.53–58.16 Hz. Leading publication gaps were 96.05–124.47 ms;
+leading counted-scroll gaps were 123.59–180.24 ms. Trailing publication gaps
+were 0.12–18.79 ms and trailing scroll gaps 0.19–26.14 ms. All four browsers
+exited 0 with valid archived navigation and 360 inputs. Paired changes were
+-0.44% and -1.88%. The 18-CPU host's one-minute load declined from 5.70 to 3.16;
+these results cannot attribute the improvement over older controls to code.
+The endpoint remains native publication after `updateLayer`, not scanout.
+Smooth 60 fps remains unmet.
+
+Evidence under `Build/pol-scroll-20261025-2210/` includes
+`glyph-inplace-integrated-v1-summary.json` (every trial, hash, timestamp, host
+load and boundary gap), `glyph-inplace-integrated-v1-validation/`, the sealed
+source, and two separately sampled profiles in
+`glyph-inplace-integrated-v1-profile/`. Both profiles validated the actual
+executable UUID and symbol ranges. GPU submission/waits accounted for 956/2,694
+and 1,118/3,058 samples inside the main draw routine. Image rendering accounted
+for 562 and 683 samples; these diagnostics supply no unprofiled fps credit.
+The focused guard exited 0 at 700,596,224 bytes sampled peak RSS in 19.76 s
+within 3 GiB. The successful production/validation guard exited 0 at
+10,440,474,624 bytes in 598.30 s within 12 GiB; earlier disk, wrapper and C
+macro build failures are retained separately.
+
+A second CPU fractional-rectangle oracle also failed exact pixels: its best
+float coverage/rounding models differed in 100 of 240 cases, including MSAA
+coverage outside the analytical edge. `fractional-rect-float-oracle-v2.cpp`
+and its recorded output remain diagnostic evidence only.
