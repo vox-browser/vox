@@ -1646,11 +1646,15 @@ fn css_mask_image_for_box(element &dom.Element, computed &css.ComputedProperties
 				css.RadialGradientStyleValue { css.StyleValue(selected) }
 			}
 		}
-		image := effective_item.as_image() or {
-			// A transparent gradient contributes no coverage. Other generated
-			// mask images remain available for the subsequent gradient slice.
+		if effective_item is css.LinearGradientStyleValue || effective_item is css.RadialGradientStyleValue {
+			colors := color_resolution_context_for_typed_node(node, node.computed_values().color())
+			if operation := css_gradient_mask_operation(effective_item, border_rect,
+				computed.length_resolution_context(), colors) {
+				operations << operation
+			}
 			continue
 		}
+		image := effective_item.as_image() or { continue }
 		source := image.url_.url()
 		resolved_url := if base := base_url {
 			if parsed := dom.dom_url_parse(source, dom.URL{value: base}, '') {

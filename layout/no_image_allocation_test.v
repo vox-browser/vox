@@ -13,7 +13,8 @@ fn no_image_test_style(declaration string) (&dom.Document, &dom.Element, &css.Co
 	mut computer := css.StyleComputer.new(document)
 	computed := computer.compute_style(dom.AbstractElement.new(element, none))
 	_ = css.resolve_computed_values_for_document(computed, document)
-	return document, element, computed, Node.new(document, element.as_node())
+	node := NodeWithStyle.new(document, element.as_node(), computed)
+	return document, element, computed, unsafe { &Node(node) }
 }
 
 fn test_absent_background_and_mask_images_need_no_per_box_heap_storage() {
@@ -22,7 +23,8 @@ fn test_absent_background_and_mask_images_need_no_per_box_heap_storage() {
 	// A non-coordinating list must retain the old fallback, even when its
 	// individual tokens spell `none`.
 	assert !computed_image_value_has_no_layers(css.StyleValue(css.StyleValueList.create([no_image], .space, .yes)))
-	for declaration in ['', 'background-image:none;mask-image:none', 'background-image:none,none;mask-image:none,none'] {
+	for declaration in ['', 'background-image:none;mask-image:none',
+		'background-image:none,none;mask-image:none,none'] {
 		mut document, element, computed, node := no_image_test_style(declaration)
 		defer { document.finalize() }
 		background := computed.typed_property_value(.background_image) or {
@@ -87,7 +89,7 @@ fn test_none_entries_preserve_nonempty_background_order_and_box_context() {
 	}) == voidptr(element)
 }
 
-fn test_none_mask_entries_preserve_image_geometry_and_gradient_fallback() {
+fn test_none_mask_entries_preserve_image_geometry_and_generated_masks() {
 	mut document, element, computed, node :=
 		no_image_test_style('mask-image:none,linear-gradient(transparent,transparent),url("../mask.png"),none;image-rendering:pixelated')
 	defer { document.finalize() }
@@ -95,17 +97,23 @@ fn test_none_mask_entries_preserve_image_geometry_and_gradient_fallback() {
 	mask := css_mask_image_for_box(element, computed, rect, node) or { panic('missing image mask') }
 	assert mask.bounding_rect == painting.IntRect{7, 9, 120, 60}
 	assert mask.mask_type == .alpha
-	assert mask.operations.len == 1
-	assert mask.operations[0].kind == .image
-	assert mask.operations[0].image_url == 'https://example.test/mask.png'
-	assert mask.operations[0].image_rect == rect
-	assert mask.operations[0].image_rendering == .pixelated
-	paintable := mask.operations[0].image_paintable or { panic('missing mask image paintable') }
+	assert mask.operations.len == 2
+	assert mask.operations[0].kind == .path
+	assert mask.operations[1].kind == .image
+	assert mask.operations[1].image_url == 'https://example.test/mask.png'
+	assert mask.operations[1].image_rect == rect
+	assert mask.operations[1].image_rendering == .pixelated
+	paintable := mask.operations[1].image_paintable or { panic('missing mask image paintable') }
 	assert paintable.object_fit == .fill
 	assert paintable.image_rect == rect
 	assert voidptr(paintable.resolution_context.subject_element or { panic('missing mask subject') }) == voidptr(element)
 	mut gradient_document, gradient_element, gradient_computed, gradient_node :=
 		no_image_test_style('mask-image:linear-gradient(transparent,transparent)')
 	defer { gradient_document.finalize() }
-	assert css_mask_image_for_box(gradient_element, gradient_computed, rect, gradient_node) == none
+	transparent := css_mask_image_for_box(gradient_element, gradient_computed, rect, gradient_node) or {
+		panic('transparent mask must still hide its contents')
+	}
+	assert transparent.operations.len == 1
+	gradient := transparent.operations[0].fill_linear_gradient or { panic('missing gradient') }
+	assert gradient.gradient.color_stops.all(it.color.a == 0)
 }
