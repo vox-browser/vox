@@ -10,6 +10,9 @@ fn test_local_outline_refresh_preserves_geometry_and_matches_full_recording() {
 	mut control := document.get_element_by_id('control')?
 	mut result := document_layout_result(document)?
 	old := document.record_display_list()?
+	// Command payloads remain borrowed from their recyclable display-list scene.
+	old_scene := retain_display_list_scene(old)
+	defer { release_display_list_scene(old_scene) }
 	old_commands := display_list_commands(old)
 	old_snapshot := old_commands.map('${it.kind}:${it.x}:${it.y}:${it.color}:${it.text}')
 	for class_name in ['on', '', 'on'] {
