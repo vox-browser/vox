@@ -143,3 +143,29 @@ expose it in this captured build. Missing WebSocket and a randomized script
 reference error also remain. An ordinary visible, fully active window with a
 20-second observation records the same failure, so it is not specific to the
 screenshot launch mode. The script-free archive cannot establish live parity.
+
+## Detached HTML document bridge
+
+`27793c48` makes the compact bridge expose the native
+`document.implementation.createHTMLDocument()` operation. Detached documents
+use their own native tree, fragment parser, selectors, title, and base URL.
+Factories and live collections retain document ownership through adoption;
+collection caches also distinguish documents with identical mutation counters.
+The live `children` wrapper cache is excluded from mutation snapshots to avoid
+recursive native queries while flushing an `innerHTML` update.
+
+Five new regression cases and eighteen neighboring compact DOM cases passed
+with normal GC and with the production allocator (`-prealloc -gc none`). Each
+run also executed Pikabu's archived jQuery 3.6.3 module and its startup validator:
+both forms parsed, relative URLs resolved against the detached base, and a node
+was adopted into the displayed document. All 24 cases passed in each mode,
+without source changes during either check. Exact compiler inputs, source
+hashes, and runtime exits are retained in
+`Build/pikabu-story-document-tests/normal-8.json` and `arena-1.json`;
+the console logs are
+`Build/pikabu-story-document-binding-v1-continued-8.log` and
+`Build/pikabu-story-document-binding-arena-v1-continued-1.log`.
+
+This is a bounded compact bridge slice, not complete Document or
+DOMImplementation conformance. Passing the archived vendor module does not
+establish successful live page initialization or whole-page pixel parity.
