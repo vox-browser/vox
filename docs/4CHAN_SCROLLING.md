@@ -1399,3 +1399,33 @@ host load and browser exits. The enclosing
 `rect-prefetch-device-grid-reduced-queue-20261027-003300/guard.json` reports
 child exit 0, 12 GiB budget, sampled peak RSS 1,218,396,160 bytes
 and elapsed 742.53 seconds.
+
+### Scratch lookahead native checks (2026-10-26 UTC)
+
+The next opt-in prototype replays intervening text into a private bitmap to
+predict the backgrounds of later thin rectangles. Normal ordered painting
+still checks each exact background before using a prefetched cache entry.
+The prototype remains disabled by default; these native checks establish no
+scrolling performance gain.
+
+Normal and ASan/UBSan executions each passed all 1,296 existing ordered
+prefetch comparisons (972 admitted and 324 deliberately declined). Both
+executions of the new scratch oracle also passed all 288 ordered pixel
+comparisons: 216 admitted cases and 72 deliberately declined cases. Each
+scratch execution additionally verified 272 exact text-dependent backdrop
+predictions. Cases cover real Arial glyph replay, translucent intervening
+painting, patterned backgrounds, rectangular and elliptical clipping,
+overlapping rectangles, 1×/2× destinations, half-scale/unit transforms,
+fractional phases, and the real 2048×384 root grid. The real destination
+remained unchanged until normal replay; cancellation, duplicate/incomplete
+submission, nesting and malformed geometry were checked as well.
+
+All eight compile/runtime commands exited 0, with no reported sanitizer
+violation. Immutable source and dependency identities, exact commands, logs
+and exits are in `rect-prefetch-scratch-v1/` under the existing evidence
+root. Its `memory.json` reports child exit 0, a 3 GiB sampled budget,
+1,257,897,984-byte sampled peak RSS and 401.97 seconds elapsed. Cocoa/V
+wrapper checks and full-browser eligibility, pixels and unprofiled timing
+remain pending. The completed shared production bundle lacks the scratch
+implementation and can supply baseline evidence only. Smooth 60 fps remains
+unmet; no live SOCKS fix is claimed.
