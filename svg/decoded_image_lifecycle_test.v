@@ -54,7 +54,7 @@ fn test_svg_page_client_routes_and_suppresses_frame_requests() {
 	assert !second.has_pending_client_notification()
 	client.unsuppress_frame_requests()
 
-	client.set_current_svg_image_data(first)
+	client.set_current_svg_image_data(&first)
 	client.request_frame()
 	assert first.has_pending_client_notification()
 	assert !second.has_pending_client_notification()
