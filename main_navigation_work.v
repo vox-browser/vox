@@ -89,6 +89,11 @@ fn (app &BrowserApp) native_frame_consumed_work() bool {
 		// all document work reached that frame. Keep unadopted asynchronous work.
 		if app.document == unsafe { nil } || app.background_resource_pending.len > 0
 			|| app.pending_navigation != none || app.paint_commands_pending { return false }
+		// Fetches can finish after the resource poll, while a layout checkpoint
+		// consumes their wake. Their buffered responses still need another frame.
+		if loader := app.image_request_loader {
+			if loader.results.len > 0 { return false }
+		}
 		if app.js_runtime != unsafe { nil } && app.js_runtime.has_pending_document_state() {
 			return false
 		}

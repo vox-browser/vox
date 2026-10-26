@@ -70,6 +70,22 @@ fn test_native_frame_consumes_preparation_wakes_but_retains_pending_document_wor
 	app.background_resource_pending['https://frame-work.example/image'] = true
 	assert !app.native_frame_consumed_work()
 	app.background_resource_pending.clear()
+	mut images := &BrowserImageRequestLoader{
+		document: document
+		results: chan PreloadedResource{cap: 1}
+		active_fetches: 1
+	}
+	app.image_request_loader = images
+	// Waiting on a fetch does not need continuous frames. A completion arriving
+	// after the resource poll must keep its wake, even before the paint boundary.
+	assert app.native_frame_consumed_work()
+	images.results <- PreloadedResource{url: 'https://frame-work.example/image'}
+	C.vox_test_queue_navigation_redraw()
+	for _ in 0 .. 1000 { if C.vox_service_navigation_ui() != 0 { break } }
+	C.vox_browser_frame_prepared()
+	assert !app.native_frame_consumed_work()
+	_ = <-images.results
+	assert app.native_frame_consumed_work()
 	mut runtime := browserjs.Runtime.create()
 	defer { runtime.close() }
 	app.js_runtime = runtime
