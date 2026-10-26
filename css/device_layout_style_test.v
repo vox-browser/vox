@@ -119,7 +119,7 @@ fn test_device_layout_projection_reuses_only_matching_source_revisions_and_scale
 	assert rescaled.length_percentage_to_px(.width, 2400)? == 21.296875
 }
 
-fn test_device_layout_fonts_preserve_optical_axes_and_recompute_cache_precision() {
+fn test_device_layout_fonts_preserve_optical_axes_and_physical_cache_precision() {
 	typeface := &PlatformTypeface{ family_name: 'Fixture' }
 	font := PlatformFont{
 		typeface:              typeface
@@ -133,10 +133,25 @@ fn test_device_layout_fonts_preserve_optical_axes_and_recompute_cache_precision(
 	source.last_resort_font = &PlatformFont{ ...font }
 	scaled := device_layout_fonts(source, 2, 20.258)
 	assert scaled.fonts[0].font.pixel_size_override_? == f32(20.25)
+	rescaled := device_layout_fonts(scaled, 1.5, 30.387)
+	assert rescaled.fonts[0].font.pixel_size_override_? == f32(30.38)
 	assert source.fonts[0].font.pixel_size_override_? == f32(10.12)
 	assert scaled.fonts[0].font.variations.opsz? == 10.129
 	assert scaled.last_resort_font.variations.opsz? == 10.129
 	assert voidptr(scaled.fonts[0].font.typeface) == voidptr(source.fonts[0].font.typeface)
+}
+
+fn test_device_layout_fractional_comment_header_uses_physical_font_precision() {
+	mut document, source := device_layout_test_style('font:8pt Verdana')
+	defer { document.finalize() }
+	for index, scale in [2.0, 3.0] {
+		document.set_layout_coordinate_scale(scale)
+		projected := computed_style_in_layout_coordinates(source, document)
+		assert projected.cached_computed_font_list_?.fonts[0].font.pixel_size_override_? == [
+			f32(21.33),
+			f32(32),
+		][index]
+	}
 }
 
 fn test_anonymous_layout_wrappers_keep_their_projected_font_and_scale() {

@@ -36,6 +36,8 @@ fn assert_anonymous_comment_fonts(comment &dom.Element, paragraph &dom.Element, 
 	paragraph_bridge := paragraph.as_node().layout_node() or { panic('paragraph layout') }
 	paragraph_node := unsafe { &Node(paragraph_bridge.layout_handle) }
 	assert paragraph_node.computed_values().resolved_font_size_px() == font_size
+	metrics := paragraph_node.first_available_font().inline_metrics()
+	assert paragraph_node.computed_values().line_height().to_double() == f64(metrics.ascent + metrics.descent + metrics.line_gap)
 	mut wrappers := 0
 	for child in parent.children() {
 		if !child.is_anonymous() { continue }
@@ -43,6 +45,7 @@ fn assert_anonymous_comment_fonts(comment &dom.Element, paragraph &dom.Element, 
 		assert child.computed_values().resolved_font_size_px() == font_size
 		assert child.computed_values().layout_coordinate_scale() == scale
 		assert child.computed_values().font_size() == paragraph_node.computed_values().font_size()
+		assert child.first_available_font().inline_metrics() == metrics
 	}
 	assert wrappers == 2
 }
