@@ -37,17 +37,18 @@ pixels, backing scale 1, with an eight-second settle period. External resources
 still use the network; this is not an offline fixture or a live-site acceptance
 run. Every capture starts a new process and private profile.
 
-| Measurement | Before synthesized hyphens | After |
+| Measurement | Matched pre-Cyrillic baseline | Cyrillic + raster correction |
 | --- | ---: | ---: |
-| Differing pixels / 786,432 | 5,779 | 4,967 |
-| Differing fraction | 0.73484% | 0.63159% |
-| Mean absolute channel error | 0.0557243 | 0.0140216 |
-| Maximum channel error | 134 | 64 |
+| Differing pixels / 786,432 | 4,968 | 4,533 |
+| Differing fraction | 0.63171% | 0.57640% |
+| Mean absolute channel error | 0.0140351 | 0.0030543 |
+| Maximum channel error | 64 | 8 |
 
 The heading's rectangle now matches Brave at `(24, 73, 164.140625, 24)`;
 the weather widget starts at `x = 196.140625`. The remaining differences are
-mostly single-channel color steps around map-control shadows, plus several
-text glyphs in the sidebar error message. These counts are exact pixel
+mostly one-level channel differences around map-control shadows. Of the
+remaining differing pixels, 4,512 have maximum error 1, twenty have error 2,
+and one footer-text pixel has error 8. These counts are exact pixel
 comparisons, not a perceptual similarity score.
 
 Local evidence under `Build/yandex-maps/`:
@@ -80,8 +81,8 @@ in a separate file and the verified preserved bundle completed successfully;
 `coretext-hyphen-recovery-guard.json` records exit 0 and peak sampled process-tree
 RSS of 9,599,107,072 bytes. The budget was not raised.
 
-The latest fresh headless Brave live capture returned “Are you not a robot?”.
-Its pixels are excluded from acceptance metrics. Vox loaded the map, but that
+Fresh headless Brave live captures have returned a robot check or an empty
+title without the map. Their pixels are excluded from acceptance metrics. Vox loaded the map, but that
 alone cannot prove matching live state or pixel-perfect rendering. A valid
 fresh live reference and zero differing pixels are still required.
 
@@ -132,16 +133,20 @@ execution and captures exited zero; the guard's sampled peak RSS was
 8,410,120,192 bytes. The six implementation/test/fixture source hashes stayed
 unchanged. The exact fixture capture used the preceding preserved Cyrillic
 bundle; the final multi-glyph-cluster fallback is covered by the focused
-runtime checks. A rebuilt production bundle still requires separate visual
-verification.
+runtime checks. The rebuilt production bundle has now repeated that exact
+fixture result; the production evidence is recorded below.
 
 The production comparison retained fresh baseline/reference captures in
 `cyrillic-context-production-1792988556062138000/`, then exceeded its
 900-second build deadline during C compilation. Its guard reports child exit
 1, `remaining_children`, and peak sampled RSS 6,988,578,816 bytes; no production
-pass is credited. Production-only recovery carries those completed captures
-and uses a longer build deadline within the unchanged memory budget. Full-map
-improvement and the queued broader checks are not yet credited.
+pass is credited for that attempt. Recovery completed compilation but signing
+failed because an abandoned `.Vox.*` compiler directory remained in the bundle.
+After checking that its owning process had exited, that directory was retained
+separately and the preserved bundle was ad-hoc signed. Strict signature
+verification, startup, and all controlled text captures then passed. The
+original failed guard receipts remain retained; recovery does not change their
+exit codes.
 
 
 ## Unused perspective raster contexts
@@ -161,6 +166,55 @@ three implementation/test hashes stay unchanged. Evidence is retained in
 The preceding attempt failed during C compilation because the private staged
 harness omitted a sibling native-header path; no tests ran in that attempt.
 
-Production eligibility, full-map pixels, and the broader regression checkpoint
-remain pending. This focused renderer correction does not establish live-site
-or JavaScript-engine parity.
+The preserved production bundle now exercises this path: a separate LLDB
+diagnostic records 44 plans, 44 independent-layer plans and zero root fallbacks.
+The matched baseline recorded 45 plans and 45 root fallbacks. These loading
+counters establish eligibility, not scrolling performance.
+
+## Production recovery and remaining pixels
+
+`cyrillic-context-production-1792988556062138000/` retains the matched
+reference/baseline/candidate images, region metrics, process identities and
+source-scope receipts. Its executable SHA-256 is
+`2a18f0222c6856fe7552751524951f4220c87616f3cc9ed7651eb4885932e6a3`;
+`identity.json` pins its native libraries. The compiled Cyrillic and raster
+inputs match their focused receipts. Subsequent unrelated checkout changes,
+including inline-iterator changes, are recorded separately and receive no
+credit from this preserved executable.
+
+The Cyrillic fixture and three text regressions are pixel-exact. The sidebar
+message improves from 244 differing pixels (maximum error 64) to seventeen
+(maximum error 1). The map-controls region regresses slightly from 4,045 to
+4,101 differing pixels, retaining maximum error 2; that regression remains
+included in the full-map totals above.
+
+The eleven-case screenshot smoke check on this preserved bundle reports seven
+exact comparisons and `canvas-text` within its existing sparse bounds.
+`inline-node`, `ordered-list`, and `text-decorations` fail. This executable
+predates `bb4ae5c5`, which repairs explicit layout-test font selection under
+the Chromium policy. The new production validation must verify that fix;
+there is no full screenshot-batch pass for this bundle, and its SVG group did
+not run after the smoke failure. No tolerances were changed.
+
+## Native document title binding
+
+`0ca27dc3` removes the compact document's cached own `title` property and stale
+snapshot title replay. The existing native `Document.prototype.title` accessor
+now reads the live DOM, and its setter invalidates cached title content and
+notifies the owning document. Titles inserted into the head by
+`insertAdjacentHTML` survive subsequent queries and finalization. Character
+data edits, tree order, title creation, DOMString conversion and detached
+documents have focused coverage.
+
+The selected main-package checkpoint executes 37 cases in both Boehm and
+`-gc none`, including three new title cases. Compilation and actual test
+execution pass. Own title sources stayed unchanged; an unrelated native
+Graphite header changed during the no-GC check. Evidence is retained in
+`map-regression-batch-1792994476858141000/`. The following browserjs compile
+failed because the private staging harness omitted its package-native header;
+no browserjs tests executed in that attempt. Remaining package checks resume
+with the corrected harness rather than repeating the passing main cases.
+
+This title fix postdates the preserved renderer bundle above. Its native
+production probe and fresh live comparison remain pending. Pixel-perfect live
+rendering and LibJS runtime parity remain open.
