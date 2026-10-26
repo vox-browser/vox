@@ -106,3 +106,39 @@ executable's SHA-256 is
 The same archived DOM still differs at 4,967 / 786,432 pixels, with MAE
 0.0140216 and maximum channel error 64. The fresh live Brave reference again
 returned the robot check and is excluded from acceptance metrics.
+
+## Cyrillic context shaping
+
+`e2e364fc` extends Chromium-policy shaping across soft word boundaries to
+single-script Cyrillic runs. A hyphen can now retain its kerning context in
+“Что-то”, including inside an LTR isolate. Mixed scripts, font changes, hard
+breaks and unsupported scripts retain segmented shaping. Runs whose glyphs
+repeat a multi-glyph cluster's UTF-16 span also retain segmented shaping;
+summing those spans cannot identify safe chunk boundaries.
+
+The focused checks pass eight context-shaping cases in both Boehm and
+`-gc none`, plus the precise-inline-advance regression in Boehm: 17 executed
+cases. The controlled `cyrillic-context` fixture improves from 2,312 differing
+pixels to zero against a fresh Brave capture at 800 × 600, scale 1. Its
+file-backed test font contains original rectangular glyphs and a deliberate
+cross-boundary kerning pair; it avoids depending on installed-font kerning.
+The font generator reproduces SHA-256
+`dc9d355e69cdfa05e0a40227d8c548bdb1270d2e42a05844f0f845c1fdf14e5f`.
+
+Evidence is retained under `Build/yandex-maps/` in
+`cyrillic-context-focused-1792988060569311000/` and
+`cyrillic-context-cluster-focused-guard.json`. Compilation, actual test
+execution and captures exited zero; the guard's sampled peak RSS was
+8,410,120,192 bytes. The six implementation/test/fixture source hashes stayed
+unchanged. The exact fixture capture used the preceding preserved Cyrillic
+bundle; the final multi-glyph-cluster fallback is covered by the focused
+runtime checks. A rebuilt production bundle still requires separate visual
+verification.
+
+The production comparison retained fresh baseline/reference captures in
+`cyrillic-context-production-1792988556062138000/`, then exceeded its
+900-second build deadline during C compilation. Its guard reports child exit
+1, `remaining_children`, and peak sampled RSS 6,988,578,816 bytes; no production
+pass is credited. Production-only recovery carries those completed captures
+and uses a longer build deadline within the unchanged memory budget. Full-map
+improvement and the queued broader checks are not yet credited.
