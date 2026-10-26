@@ -302,18 +302,30 @@ def exact_coalition_membership(api, process_api, cid, app, pid, deadline, attemp
 
 
 def membership(api, cid, app, pid, deadline, attempts, browser=None):
-    scan = exact_coalition_membership(api, MacCounters(), cid, app, pid,
-                                     min(deadline, time.monotonic() + 20), attempts)
-    owned = {row['pid'] for row in processes()
-             if row['command'].startswith(str(app) + '/Contents/')}
-    require(owned <= {row['pid'] for row in scan['members']},
-            'A private browser helper is outside its resource coalition')
-    if browser:
-        infos = browser.call('SystemInfo.getProcessInfo')['processInfo']
-        require({int(row['id']) for row in infos} <= {row['pid'] for row in scan['members']},
+    limit = min(deadline, time.monotonic() + 20)
+    while True:
+        scan = exact_coalition_membership(api, MacCounters(), cid, app, pid, limit, attempts)
+        owned = {row['pid'] for row in processes()
+                 if row['command'].startswith(str(app) + '/Contents/')}
+        scan['private_app_pids'] = sorted(owned)
+        infos = browser.call('SystemInfo.getProcessInfo')['processInfo'] if browser else []
+        if browser:
+            scan['cdp_processes'] = infos
+        after = asdict(api.read(cid))
+        scan['after_ownership_snapshot'] = after
+        # Fetch workers and Metal services can start after the exact scan. Keep
+        # the ownership queries inside its stable task-membership interval too.
+        # Retrying the scan still includes every exited task in the counters.
+        scan['ownership_stable'] = all(scan['after_snapshot'][key] == after[key]
+                                       for key in ('tasks_started', 'tasks_exited'))
+        if not scan['ownership_stable']:
+            require(time.monotonic() < limit, 'No stable exclusive coalition ownership check')
+            continue
+        members = {row['pid'] for row in scan['members']}
+        require(owned <= members, 'A private browser helper is outside its resource coalition')
+        require({int(row['id']) for row in infos} <= members,
                 'A Brave browser task is outside its exclusive resource coalition')
-        scan['cdp_processes'] = infos
-    return scan
+        return scan
 
 
 def run_browser(engine, app, folder, args):

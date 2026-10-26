@@ -10,7 +10,7 @@ import urllib.request
 from hacker_news_browser_instructions import (
     ASSETS, WIDTH, HEIGHT, METAL_COMPILER, accepted_coalition_executable,
     check_content, code_sign_clone_identity, document_comments, evaluate_pairs,
-    exact_coalition_membership, fixture_server,
+    exact_coalition_membership, fixture_server, membership,
 )
 
 
@@ -95,6 +95,88 @@ class HackerNewsInstructionGateTests(unittest.TestCase):
             with patch('hacker_news_browser_instructions.processes', return_value=rows[:1]):
                 with self.assertRaisesRegex(RuntimeError, 'exclusive coalition'):
                     exact_coalition_membership(API(), ProcessAPI(), 10, app, 1, time.monotonic(), [])
+
+    def check_ownership_race(self, *, exited=False, cdp=False):
+        import time
+        @dataclass
+        class Reading:
+            tasks_started: int
+            tasks_exited: int = 0
+        app = Path('/private/fixture/Vox.app')
+        first = dict(members=[dict(pid=1), dict(pid=2)] if exited else [dict(pid=1)],
+                     after_snapshot=dict(tasks_started=2 if exited else 1, tasks_exited=0))
+        reading = Reading(2, 1 if exited else 0)
+        second = dict(members=[dict(pid=1)] if exited else [dict(pid=1), dict(pid=2)],
+                      after_snapshot=dict(tasks_started=reading.tasks_started,
+                                          tasks_exited=reading.tasks_exited))
+        rows = [dict(pid=1, command=str(app / 'Contents/MacOS/Vox'))]
+        if not exited and not cdp:
+            rows.append(dict(pid=2, command=str(app / 'Contents/MacOS/Vox') + ' --fetch-worker'))
+        api = Mock()
+        api.read.return_value = reading
+        browser = Mock() if cdp else None
+        if browser:
+            browser.call.return_value = dict(processInfo=[dict(id=1), dict(id=2)])
+        with patch('hacker_news_browser_instructions.exact_coalition_membership',
+                   side_effect=[first, second]) as exact, \
+             patch('hacker_news_browser_instructions.processes', return_value=rows):
+            result = membership(api, 10, app, 1, time.monotonic() + 10, [], browser)
+        self.assertEqual(exact.call_count, 2)
+        self.assertIs(result, second)
+        self.assertFalse(first['ownership_stable'])
+        self.assertTrue(second['ownership_stable'])
+        self.assertEqual(second['after_ownership_snapshot']['tasks_exited'], reading.tasks_exited)
+        if browser:
+            self.assertEqual(browser.call.call_count, 2)
+
+    def test_fetch_worker_started_after_exact_scan_requires_a_new_exact_scan(self):
+        self.check_ownership_race()
+
+    def test_worker_exit_during_ownership_queries_requires_a_new_exact_scan(self):
+        self.check_ownership_race(exited=True)
+
+    def test_cdp_worker_started_after_exact_scan_requires_a_new_exact_scan(self):
+        self.check_ownership_race(cdp=True)
+
+    def test_stable_unaccounted_private_or_cdp_worker_still_fails_closed(self):
+        import time
+        @dataclass
+        class Reading:
+            tasks_started: int = 1
+            tasks_exited: int = 0
+        app = Path('/private/fixture/Vox.app')
+        api = Mock()
+        api.read.return_value = Reading()
+        for cdp in [False, True]:
+            scan = dict(members=[dict(pid=1)], after_snapshot=dict(tasks_started=1, tasks_exited=0))
+            rows = [dict(pid=1, command=str(app / 'Contents/MacOS/Vox'))]
+            browser = Mock() if cdp else None
+            if browser:
+                browser.call.return_value = dict(processInfo=[dict(id=1), dict(id=2)])
+            else:
+                rows.append(dict(pid=2, command=str(app / 'Contents/MacOS/Vox') + ' --fetch-worker'))
+            with patch('hacker_news_browser_instructions.exact_coalition_membership',
+                       return_value=scan), \
+                 patch('hacker_news_browser_instructions.processes', return_value=rows):
+                with self.assertRaisesRegex(RuntimeError, 'outside its .*coalition'):
+                    membership(api, 10, app, 1, time.monotonic() + 10, [], browser)
+            self.assertTrue(scan['ownership_stable'])
+
+    def test_membership_churn_obeys_the_original_watchdog(self):
+        import time
+        @dataclass
+        class Reading:
+            tasks_started: int = 2
+            tasks_exited: int = 0
+        api = Mock()
+        api.read.return_value = Reading()
+        scan = dict(members=[dict(pid=1)], after_snapshot=dict(tasks_started=1, tasks_exited=0))
+        with patch('hacker_news_browser_instructions.exact_coalition_membership',
+                   return_value=scan) as exact, \
+             patch('hacker_news_browser_instructions.processes', return_value=[]):
+            with self.assertRaisesRegex(RuntimeError, 'stable exclusive coalition ownership'):
+                membership(api, 10, Path('/private/fixture/Vox.app'), 1, time.monotonic() - 1, [])
+        self.assertEqual(exact.call_count, 1)
 
     def test_code_sign_clone_requires_exact_path_private_argv_and_binary_bytes(self):
         with tempfile.TemporaryDirectory() as directory:
