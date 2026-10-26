@@ -11,6 +11,7 @@ fn window_message_fixture() !(&Runtime, &dom.Document) {
 	mut runtime := Runtime.create()
 	runtime.bind_scripting_environment(unsafe { &html.EnvironmentSettingsObject(document.relevant_settings_object()) })!
 	runtime.install_window_message_binding()!
+	runtime.install_document_window_event_binding(document, runtime.evaluate_host_value('({})')!)!
 	return runtime, document
 }
 

@@ -2007,7 +2007,7 @@ fn (mut window WindowModel) deliver_posted_window_message(record SerializedTrans
 	deserialized := structured_deserialize_with_transfer(record) or {
 		mut event := MessageEvent.create('messageerror', MessageEventInit{origin: source_origin, source: event_source})
 		event.set_is_trusted(true)
-		window.Window.EventTarget.dispatch_event(unsafe { &dom.Event(event) })
+		dom.EventDispatcher.dispatch(unsafe { &dom.EventTarget(window) }, unsafe { &dom.Event(event) }, false)
 		return
 	}
 	data := deserialized.deserialized
@@ -2023,7 +2023,9 @@ fn (mut window WindowModel) deliver_posted_window_message(record SerializedTrans
 		ports: deserialized.transferred_ports
 	})
 	event.set_is_trusted(true)
-	window.Window.EventTarget.dispatch_event(unsafe { &dom.Event(event) })
+	// Firing a message event targets the Window itself. The legacy Document
+	// override belongs to Window's virtual dispatch path, not these fire steps.
+	dom.EventDispatcher.dispatch(unsafe { &dom.EventTarget(window) }, unsafe { &dom.Event(event) }, false)
 }
 
 pub fn (mut window WindowModel) post_message(message dom.JSValue, source_origin dom.Origin, options WindowPostMessageOptions) ! {

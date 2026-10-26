@@ -11,6 +11,7 @@ mut:
 
 fn test_window_post_message_dispatches_a_trusted_event_with_the_sender_proxy() {
 	mut document := dom.Document.create(dom.URL{ value: 'https://message.test/' })
+	document.set_origin(document.url.origin())
 	mut window := WindowModel.create_top_level(document, none, '')!
 	defer { document.finalize() }
 	mut observation := &WindowMessageObservation{}
@@ -27,6 +28,8 @@ fn test_window_post_message_dispatches_a_trusted_event_with_the_sender_proxy() {
 	drain_window_message_tasks()
 	assert observation.events.len == 1
 	event := observation.events[0]
+	assert voidptr(event.target() or { panic('Missing message target') }) == voidptr(window)
+	assert event.current_target() == none
 	assert event.data().number_data == 7
 	assert event.origin() == 'https://message.test'
 	source := event.source() or { panic('Missing sender') }
@@ -50,6 +53,7 @@ fn drain_window_message_tasks() {
 
 fn test_window_post_message_clones_at_call_time_and_delivers_on_its_task_source() {
 	mut document := dom.Document.create(dom.URL{ value: 'https://message.test/' })
+	document.set_origin(document.url.origin())
 	mut window := WindowModel.create_top_level(document, none, '')!
 	defer { document.finalize() }
 	mut array := StructuredObject.create(.array)
@@ -66,6 +70,7 @@ fn test_window_post_message_clones_at_call_time_and_delivers_on_its_task_source(
 
 fn test_window_post_message_survives_the_callers_temporary_allocations() {
 	mut document := dom.Document.create(dom.URL{ value: 'https://message.test/' })
+	document.set_origin(document.url.origin())
 	document.enable_native_storage()
 	mut window := WindowModel.create_top_level(document, none, '')!
 	defer {
@@ -92,6 +97,7 @@ fn test_window_post_message_survives_the_callers_temporary_allocations() {
 
 fn test_window_post_message_checks_recipient_origin_when_the_task_runs() {
 	mut document := dom.Document.create(dom.URL{ value: 'https://first.test/' })
+	document.set_origin(document.url.origin())
 	mut window := WindowModel.create_top_level(document, none, '')!
 	defer { document.finalize() }
 	window.post_message(dom.js_string('old'), document.origin(), WindowPostMessageOptions{})!
