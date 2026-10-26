@@ -963,3 +963,33 @@ child exit 1 within 3 GiB. Their sampled peak RSS/elapsed values were
 406,634,496 bytes/2.81 seconds and 407,748,608 bytes/6.65 seconds respectively,
 as recorded in `glyph-rgba-v1-focused-guard.json` and
 `glyph-rgba-v2-focused-guard.json`.
+
+
+### Rejected fractional root-border extension (2026-10-26)
+
+The root-layer prototype preserved the original tile coordinates and GPU
+coverage while reading only fractional edge bands, batching independent tile
+readbacks behind one wait. Normal and ASan/UBSan checks passed: 74,880 exact
+serial batch comparisons, 6,336 atomic rejection cases, 4,392 original-renderer
+rounded comparisons, and 1,440 exact root replay comparisons. The production
+native build, matching-baseline clip/glyph/image regressions, public exports,
+memory check and headless startup also passed.
+
+Actual-input eligibility rejected this optimization for the archived thread.
+Both candidate trials completed all 120 wheel inputs, but the extended path
+executed zero times during the first input window and only once during the
+second. Each candidate recorded one extended draw overall. A matching title
+and successful navigation did not make this loading/header path representative
+of scrolling. The two controls recorded no extended draws. Screenshot and
+unprofiled timing stages were deliberately not reached, and the prototype was
+removed. This supplies no scrolling performance credit; smooth 60 fps remains
+unmet.
+
+Evidence under `Build/pol-scroll-20261025-2210/` includes the sealed
+`root-stroke-v1-source/`, source/build identity manifests, owned patch,
+focused/build command logs, `root-stroke-v1-validation/eligibility/`, and
+`root-stroke-v1-rejected.json`. The focused guard/child exited 0 with sampled
+peak RSS 704,888,832 bytes within 3 GiB and elapsed 34.17 seconds. The build and
+browser guard/child exited 1 at the eligibility assertion, with sampled peak
+RSS 875,790,336 bytes within 12 GiB and elapsed 138.49 seconds. All four browser
+processes exited 0; failure records insufficient fast-path use, not a crash.
