@@ -2,10 +2,22 @@ module layout
 
 import platform
 
+struct ChromiumTextContextRun {
+	start int
+	end   int
+	run   &platform.GlyphRun
+}
+
 // Blink shapes across soft word boundaries, including hyphens. Shaping
 // "N. America" or "Что-то" as independent chunks loses their boundary kerning.
 fn (iterator &InlineLevelIterator) chromium_single_script_context_run(text_node &TextNode,
 	chunks []TextNodeChunk) ?&platform.GlyphRun {
+	return iterator.chromium_context_run_for_text(text_node, chunks,
+		text_node.text_for_rendering(), 0)
+}
+
+fn (iterator &InlineLevelIterator) chromium_context_run_for_text(text_node &TextNode,
+	chunks []TextNodeChunk, text string, text_start int) ?&platform.GlyphRun {
 	if chunks.len < 2 { return none }
 	if !iterator.is_unidirectional_left_to_right {
 		style := text_node.Node.computed_values()
@@ -15,7 +27,6 @@ fn (iterator &InlineLevelIterator) chromium_single_script_context_run(text_node 
 	}
 	font := chunks[0].font
 	if font.font_rendering_policy != .chromium { return none }
-	text := text_node.text_for_rendering()
 	mut units := []u16{}
 	if !text.is_ascii() {
 		if !chromium_context_has_single_supported_script(text) { return none }
@@ -23,16 +34,17 @@ fn (iterator &InlineLevelIterator) chromium_single_script_context_run(text_node 
 	}
 	for chunk in chunks {
 		if voidptr(chunk.font) != voidptr(font) || chunk.has_breaking_newline
-			|| chunk.has_breaking_tab || chunk.start < 0 {
+			|| chunk.has_breaking_tab || chunk.start < text_start {
 			return none
 		}
+		start := chunk.start - text_start
 		if units.len > 0 {
-			if chunk.start + chunk.length > units.len || chunk.view !=
-				string_from_utf16_code_units_for_line_box(units[chunk.start..chunk.start + chunk.length]) {
+			if start + chunk.length > units.len || chunk.view !=
+				string_from_utf16_code_units_for_line_box(units[start..start + chunk.length]) {
 				return none
 			}
-		} else if chunk.start + chunk.length > text.len
-			|| chunk.view != text[chunk.start..chunk.start + chunk.length] {
+		} else if start + chunk.length > text.len
+			|| chunk.view != text[start..start + chunk.length] {
 			return none
 		}
 	}
@@ -49,6 +61,65 @@ fn (iterator &InlineLevelIterator) chromium_single_script_context_run(text_node 
 	for glyph in run.glyphs_ { covered_units += glyph.length_in_code_units }
 	if covered_units != if units.len > 0 { units.len } else { text.len } { return none }
 	return run
+}
+
+// A fallback symbol must not remove the kerning context of later words in
+// the primary face. Keep each compatible, contiguous font segment independent;
+// unsupported scripts, bidi paths and multi-glyph clusters still fall back.
+fn (iterator &InlineLevelIterator) chromium_segmented_context_runs(text_node &TextNode,
+	chunks []TextNodeChunk) []ChromiumTextContextRun {
+	mut runs := []ChromiumTextContextRun{}
+	text := text_node.text_for_rendering()
+	units := if text.is_ascii() { []u16{} } else { utf16_code_units_for_line_box(text) }
+	mut first := 0
+	for index, chunk in chunks {
+		eligible := chunk.font.font_rendering_policy == .chromium
+			&& !chunk.has_breaking_newline && !chunk.has_breaking_tab
+			&& chromium_context_has_single_supported_script(chunk.view)
+		boundary := !eligible || (index > first
+			&& (voidptr(chunk.font) != voidptr(chunks[first].font)
+				|| chunk.start != chunks[index - 1].start + chunks[index - 1].length))
+		if boundary {
+			if run := iterator.chromium_context_segment(text_node, chunks[first..index], text, units) {
+				runs << run
+			}
+			first = if eligible { index } else { index + 1 }
+		}
+	}
+	if run := iterator.chromium_context_segment(text_node, chunks[first..], text, units) {
+		runs << run
+	}
+	return runs
+}
+
+fn (iterator &InlineLevelIterator) chromium_context_segment(text_node &TextNode,
+	chunks []TextNodeChunk, text string, units []u16) ?ChromiumTextContextRun {
+	if chunks.len < 2 { return none }
+	start := chunks[0].start
+	end := chunks.last().start + chunks.last().length
+	if start < 0 || end < start { return none }
+	segment := if units.len > 0 {
+		if end > units.len { return none }
+		string_from_utf16_code_units_for_line_box(units[start..end])
+	} else {
+		if end > text.len { return none }
+		text[start..end]
+	}
+	run := iterator.chromium_context_run_for_text(text_node, chunks, segment, start)?
+	return ChromiumTextContextRun{start, end, run}
+}
+
+fn chromium_segmented_context_slice(runs []ChromiumTextContextRun,
+	chunk TextNodeChunk) ?platform.ShapedText {
+	for segment in runs {
+		if chunk.start >= segment.start && chunk.start + chunk.length <= segment.end {
+			return chromium_context_slice(segment.run, TextNodeChunk{
+				...chunk
+				start: chunk.start - segment.start
+			})
+		}
+	}
+	return none
 }
 
 fn chromium_context_has_single_supported_script(text string) bool {

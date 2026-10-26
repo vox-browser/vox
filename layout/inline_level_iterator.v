@@ -274,6 +274,7 @@ mut:
 struct InlineTextNodeContext {
 mut:
 	chromium_context_run       ?&platform.GlyphRun
+	chromium_segment_runs      []ChromiumTextContextRun
 	chunks                     []TextNodeChunk
 	next_chunk_index           int
 	should_collapse_whitespace bool
@@ -707,7 +708,9 @@ fn (mut iterator InlineLevelIterator) generate_next_item() ?InlineLevelItem {
 				iterator.shape_text_for_layout(text_node, f32(x), f32(letter_spacing), f32(word_spacing), shaped_text, chunk.font, text_type)
 			}
 		} else {
-			iterator.shape_text_for_layout(text_node, f32(x), f32(letter_spacing), f32(word_spacing), shaped_text, chunk.font, text_type)
+			chromium_segmented_context_slice(context.chromium_segment_runs, chunk) or {
+				iterator.shape_text_for_layout(text_node, f32(x), f32(letter_spacing), f32(word_spacing), shaped_text, chunk.font, text_type)
+			}
 		}
 		glyph_run := shaped.glyph_run
 		chunk_width := shaped_inline_width(glyph_run, x)
@@ -910,9 +913,15 @@ fn (mut iterator InlineLevelIterator) enter_text_node(text_node &TextNode) {
 	// forced line breaks. Reserve their known demand once instead of growing
 	// and copying the wide item vector while emitting that text node.
 	reserve_inline_items_in_storage(mut iterator.items, chunks.len, iterator.item_storage_)
+	context_run := iterator.chromium_single_script_context_run(text_node, chunks)
+	segment_runs := if context_run == none
+		&& text_node.Node.document().font_rendering_policy() == .chromium {
+		iterator.chromium_segmented_context_runs(text_node, chunks)
+	} else { []ChromiumTextContextRun{} }
 	iterator.has_text_node_context = true
 	iterator.text_node_context = InlineTextNodeContext{
-		chromium_context_run: iterator.chromium_single_script_context_run(text_node, chunks)
+		chromium_context_run: context_run
+		chromium_segment_runs: segment_runs
 		chunks: chunks
 		should_collapse_whitespace: white_space_collapse in [.collapse, .preserve_breaks]
 		should_wrap_lines: should_wrap_lines

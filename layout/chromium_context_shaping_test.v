@@ -187,6 +187,7 @@ fn test_cyrillic_context_keeps_segmented_shaping_for_multi_glyph_clusters() {
 	assert chunks.len > 2
 	iterator := InlineLevelIterator{}
 	assert iterator.chromium_single_script_context_run(text_node, chunks) == none
+	assert iterator.chromium_segmented_context_runs(text_node, chunks).len == 0
 }
 
 fn test_cyrillic_context_keeps_cross_chunk_kerning_from_a_file_backed_face() {
@@ -225,4 +226,89 @@ fn test_cyrillic_context_keeps_cross_chunk_kerning_from_a_file_backed_face() {
 	assert segmented_width - run.width() > 7.19
 	assert segmented_width - run.width() < 7.21
 	assert context_width == run.width()
+}
+
+fn test_fallback_symbols_preserve_following_font_context_and_utf16_offsets() {
+	for prefix in ['▶', '😀'] {
+		mut document := html.parse_document('<!doctype html><div id="text" style="font:20px Arial">${prefix}Т-то Т-то</div>')
+		defer { document.finalize() }
+		document.set_font_rendering_policy(.chromium)
+		_ = layout_document_typed_in_viewport(document, 320, 100)
+		element := css.query_selector(document.as_node(), '#text') or { panic('element') }
+		child := element.as_node().first_child() or { panic('text') }
+		bridge := child.layout_node() or { panic('layout') }
+		node := unsafe { &Node(bridge.real_layout_handle()) }
+		text_node := node.as_text_node() or { panic('text layout') }
+		font := &platform.Font{
+			family: 'Vox Cyrillic Context Test'
+			source_path: os.join_path(os.dir(os.dir(@FILE)), 'Tests/Browser/Brave/resources/cyrillic-context.ttf')
+			point_size: 20
+			font_rendering_policy: .chromium
+		}
+		mut chunks := []TextNodeChunk{}
+		mut splitter := TextNodeChunkIterator.new_with_direction(text_node, true, false, .unidirectional_left_to_right)
+		for {
+			chunk := splitter.next() or { break }
+			chunks << if chunk.view.contains(prefix) { chunk } else { TextNodeChunk{ ...chunk, font: font } }
+		}
+		iterator := InlineLevelIterator{ is_unidirectional_left_to_right: true }
+		assert iterator.chromium_single_script_context_run(text_node, chunks) == none
+		runs := iterator.chromium_segmented_context_runs(text_node, chunks)
+		assert runs.len == 1, prefix
+		assert runs[0].start == if prefix == '😀' { 2 } else { 1 }
+		assert runs[0].end == runs[0].start + 9
+		whole := platform.shape_text(0, 0, 'Т-то Т-то', font, .ltr)
+		assert runs[0].run.width() == whole.width()
+		mut segmented_width := f32(0)
+		mut context_width := f32(0)
+		for chunk in chunks {
+			if shaped := chromium_segmented_context_slice(runs, chunk) {
+				assert voidptr(shaped.glyph_run.font()) == voidptr(font)
+				assert shaped.glyph_run.glyphs_[0].position.x == 0
+				context_width += shaped.glyph_run.width()
+				segmented_width += platform.shape_text(0, 0, chunk.view, font, .ltr).width()
+			} else {
+				assert chunk.view.contains(prefix)
+			}
+		}
+		assert segmented_width - context_width > 7.19
+		assert segmented_width - context_width < 7.21
+		assert context_width == whole.width()
+	}
+}
+
+fn test_fallback_symbols_separate_contexts_without_enabling_bidi_shaping() {
+	// A div's UA style is an isolate; use an ordinary inline run to exercise
+	// the paragraph bidi gate rather than the deliberately supported isolate.
+	mut document := html.parse_document('<!doctype html><span id="text" style="font:20px Arial;unicode-bidi:normal">Т-то▶Т-то</span>')
+	defer { document.finalize() }
+	document.set_font_rendering_policy(.chromium)
+	_ = layout_document_typed_in_viewport(document, 320, 100)
+	element := css.query_selector(document.as_node(), '#text') or { panic('element') }
+	child := element.as_node().first_child() or { panic('text') }
+	bridge := child.layout_node() or { panic('layout') }
+	node := unsafe { &Node(bridge.real_layout_handle()) }
+	text_node := node.as_text_node() or { panic('text layout') }
+	font := &platform.Font{
+		family: 'Vox Cyrillic Context Test'
+		source_path: os.join_path(os.dir(os.dir(@FILE)), 'Tests/Browser/Brave/resources/cyrillic-context.ttf')
+		point_size: 20
+		font_rendering_policy: .chromium
+	}
+	mut chunks := []TextNodeChunk{}
+	mut splitter := TextNodeChunkIterator.new_with_direction(text_node, true, false, .unidirectional_left_to_right)
+	for {
+		chunk := splitter.next() or { break }
+		chunks << if chunk.view.contains('▶') { chunk } else { TextNodeChunk{ ...chunk, font: font } }
+	}
+	iterator := InlineLevelIterator{ is_unidirectional_left_to_right: true }
+	runs := iterator.chromium_segmented_context_runs(text_node, chunks)
+	assert runs.len == 2
+	assert runs[0].start == 0 && runs[0].end == 4
+	assert runs[1].start == 5 && runs[1].end == 9
+	for run in runs {
+		assert run.run.width() == platform.shape_text(0, 0, 'Т-то', font, .ltr).width()
+	}
+	bidi_iterator := InlineLevelIterator{}
+	assert bidi_iterator.chromium_segmented_context_runs(text_node, chunks).len == 0
 }
