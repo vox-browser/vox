@@ -2660,6 +2660,15 @@ static bool draw_chromium_sparse_rounded(CGContextRef destination, VoxGraphiteSh
     return result;
 }
 
+// Speculation never writes to the destination. Normal replay still validates
+// each complete backdrop through the exact raster cache before using a result.
+struct PlainRectPrefetchJob {
+    VoxGraphiteShape shape;
+    VoxGraphitePixelRegion view;
+    std::vector<uint32_t> pixels;
+};
+static std::vector<PlainRectPrefetchJob>* s_plain_rect_prefetch = nullptr;
+
 extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
     float x, float y, float rect_width, float rect_height, float top_left_x,
     float top_left_y, float top_right_x, float top_right_y, float bottom_right_x,
@@ -2762,7 +2771,7 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
     auto raster_height = raster_dimension(region.height(), destination_scale);
     auto raster_scale_x = static_cast<float>(raster_width) / static_cast<float>(region.width());
     auto raster_scale_y = static_cast<float>(raster_height) / static_cast<float>(region.height());
-    if (s_chromium_painting && fill < 2 && opaque_backdrop && !has_underlay && s_rect_clip_outs.empty()) {
+    if (!s_plain_rect_prefetch && s_chromium_painting && fill < 2 && opaque_backdrop && !has_underlay && s_rect_clip_outs.empty()) {
         VoxGraphiteShape sparse {
             .matrix = {}, .rect = {x, y, rect_width, rect_height,
                 top_left_x, top_left_y, top_right_x, top_right_y,
@@ -2846,6 +2855,23 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
         bool region_eligible = draw_region && has_background
             && (!compound || !compound_patches_disabled)
             && ((!compound && fill >= 2) || size_t(raster_width) * raster_height <= 16384);
+        if (s_plain_rect_prefetch) {
+            if (region_eligible)
+                draw_chromium_root_raster_grid<true>(pixels, raster_width, raster_height,
+                    region, page_x, page_y, scroll_y, destination_scale,
+                    [&](auto& target, long offset_x, long offset_y, bool msaa,
+                        int x, int y, int width, int height) {
+                        if (s_plain_rect_prefetch->size() >= 32) return false;
+                        auto shape = descriptor;
+                        shape.matrix[2] += offset_x;
+                        shape.matrix[5] += offset_y;
+                        shape.force_msaa = msaa;
+                        s_plain_rect_prefetch->push_back({shape,
+                            {x, y, width, height, width * 4, nullptr}, target});
+                        return true;
+                    });
+            return 1;
+        }
         bool tiled = region_eligible && draw_chromium_root_shape_batch(pixels,
             raster_width, raster_height, region, page_x, page_y, scroll_y,
             destination_scale, descriptor);
@@ -2915,6 +2941,7 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
                 static_cast<float>(region.width()), static_cast<float>(region.height()), has_background);
         }
     }
+    if (s_plain_rect_prefetch) return 1;
     auto surface = SkSurfaces::WrapPixels(image_info, pixels.data(), row_bytes);
     if (!surface)
         return 0;
@@ -2935,6 +2962,101 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
         static_cast<float>(region.left), canvas_height - static_cast<float>(region.bottom),
         static_cast<float>(region.width()), static_cast<float>(region.height()));
 }
+
+static bool plain_rect_prefetch_allowed(CGContextRef destination)
+{
+    if (!destination || !graphite_shape_regions_draw()
+        || !s_chromium_painting || !s_raster_layer_is_root || s_msaa_grid_columns <= 0
+        || s_raster_command_group || s_plain_rect_prefetch || s_has_rounded_rect_underlay
+        || s_has_unrounded_paint_color || !s_rect_clip_outs.empty()
+        || s_shared_root_enabled) return false;
+    for (float width : s_rounded_border_widths) if (width != 0) return false;
+    // Keep allocations, raster coordinates and the GPU batch bounded even
+    // when the caller supplies malformed or transformed page geometry.
+    if (s_msaa_grid_width <= 0 || s_msaa_grid_height <= 0
+        || size_t(s_msaa_grid_width) * s_msaa_grid_height > 1024 * 1024) return false;
+    return true;
+}
+
+static bool plain_rect_prefetch_shape_allowed(VoxGraphiteShape const& shape,
+    float destination_scale)
+{
+    // Patch caching accepts unit or double scale in device space. A
+    // half-scale paint transform therefore needs a 2x destination.
+    auto raster_scale = shape.matrix[0] * destination_scale;
+    if (shape.fill != 1 || !shape.anti_alias || shape.alpha != 255
+        || shape.clip_out_count || shape.has_underlay || shape.thickness != 0
+        || (shape.matrix[0] != 1 && shape.matrix[0] != .5f)
+        || shape.matrix[4] != shape.matrix[0]
+        || (raster_scale != 1 && raster_scale != 2)
+        || shape.matrix[1] != 0 || shape.matrix[3] != 0
+        || shape.matrix[6] != 0 || shape.matrix[7] != 0 || shape.matrix[8] != 1
+        || !(shape.rect[2] > 0 && shape.rect[2] <= 1024)
+        || !(shape.rect[3] > 0 && shape.rect[3] <= 3)) return false;
+    for (float f : shape.matrix) if (!std::isfinite(f)) return false;
+    for (float f : shape.rect) if (!std::isfinite(f)) return false;
+    if (shape.has_float_color)
+        for (float f : shape.float_color) if (!std::isfinite(f)) return false;
+    for (int r = 4; r < 12; ++r) if (shape.rect[r] != 0) return false;
+    return true;
+}
+
+static void collect_plain_rect_prefetch(CGContextRef destination,
+    VoxGraphiteShape const& shape, float page_x, float page_y,
+    float canvas_width, float canvas_height)
+{
+    ladybird_v_skia_set_unrounded_paint_color(shape.has_float_color ? shape.float_color : nullptr);
+    ladybird_v_skia_draw_rounded_rect(destination,
+        shape.rect[0], shape.rect[1], shape.rect[2], shape.rect[3],
+        0, 0, 0, 0, 0, 0, 0, 0,
+        shape.matrix[0], shape.matrix[3], shape.matrix[1], shape.matrix[4],
+        shape.matrix[2], shape.matrix[5], page_x, page_y, 0,
+        canvas_width, canvas_height, shape.red, shape.green, shape.blue, shape.alpha, 1, 0, 1, 1);
+}
+
+static int submit_plain_rect_prefetch(std::vector<PlainRectPrefetchJob>& jobs)
+{
+    auto draw = graphite_shape_regions_draw();
+    if (!draw) return 0;
+    if (jobs.size() < 2) return 0;
+    std::vector<VoxGraphitePixelRegion> views;
+    std::vector<VoxGraphiteShape> descriptors;
+    views.reserve(jobs.size()); descriptors.reserve(jobs.size());
+    for (auto& job : jobs) {
+        job.view.pixels = reinterpret_cast<uint8_t*>(job.pixels.data());
+        views.push_back(job.view); descriptors.push_back(job.shape);
+    }
+    // Match the backend's per-surface and aggregate pixel limits. A root tile
+    // can be 2048 by 384 at 2x; twelve jobs then need more than one batch.
+    auto batch_limit = std::min(size_t(32), size_t(8 * 1024 * 1024)
+        / (size_t(s_msaa_grid_width) * s_msaa_grid_height));
+    for (size_t first = 0; first < jobs.size(); first += batch_limit) {
+        auto batch_size = std::min(batch_limit, jobs.size() - first);
+        if (!draw(views.data() + first, descriptors.data() + first, int(batch_size),
+                s_msaa_grid_width, s_msaa_grid_height, 1)) return 0;
+    }
+    return 1;
+}
+
+extern "C" int ladybird_v_skia_prefetch_plain_rects(CGContextRef destination,
+    VoxGraphiteShape const* shapes, int count, float page_x, float page_y,
+    float canvas_width, float canvas_height)
+{
+    if (!shapes || count < 2 || count > 32 || !plain_rect_prefetch_allowed(destination)) return 0;
+    auto destination_scale = screenshot_uses_logical_pixels()
+        ? 1.0f : raster_scale_for_context(destination);
+    for (int i = 0; i < count; ++i)
+        if (!plain_rect_prefetch_shape_allowed(shapes[i], destination_scale)) return 0;
+    std::vector<PlainRectPrefetchJob> jobs;
+    jobs.reserve(32);
+    s_plain_rect_prefetch = &jobs;
+    for (int i = 0; i < count; ++i)
+        collect_plain_rect_prefetch(destination, shapes[i], page_x, page_y, canvas_width, canvas_height);
+    s_plain_rect_prefetch = nullptr;
+    return submit_plain_rect_prefetch(jobs);
+}
+
+#include "native_skia_rect_prefetch_scratch.h"
 
 extern "C" int ladybird_v_skia_draw_outer_box_shadow(CGContextRef destination,
     float shadow_x, float shadow_y, float shadow_width, float shadow_height,
