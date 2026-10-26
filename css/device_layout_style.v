@@ -69,9 +69,66 @@ fn device_layout_value_contains_lengths(value &StyleValue) bool {
 	}
 }
 
+fn device_layout_edge_is_projection_invariant(value &EdgeStyleValue) bool {
+	// Even a dimensionless edge keyword must first become its computed offset.
+	if value.edge_ != none { return false }
+	if offset := value.offset_ {
+		return device_layout_value_is_projection_invariant(&offset)
+	}
+	return false
+}
+
+// Only recognize values whose absolutized() result is already identical.
+// Compound initial values otherwise allocate wrappers and compare whole value
+// graphs, even when all their leaves are percentages, keywords or zero pixels.
+fn device_layout_value_is_projection_invariant(value &StyleValue) bool {
+	return match value {
+		LengthStyleValue { value.length_.is_px() && value.raw_value() == 0 }
+		KeywordStyleValue { value.keyword() == .currentcolor || !value.has_color() }
+		NumberStyleValue { value.number() == value.number() }
+		PercentageStyleValue { value.raw_value() == value.raw_value() }
+		ColorStyleValue, CustomIdentStyleValue, IntegerStyleValue, StringStyleValue { true }
+		StyleValueList {
+			mut invariant := true
+			for child in value.values_ {
+				if !device_layout_value_is_projection_invariant(&child) {
+					invariant = false
+					break
+				}
+			}
+			invariant
+		}
+		BackgroundSizeStyleValue {
+			device_layout_value_is_projection_invariant(&value.size_x_)
+				&& device_layout_value_is_projection_invariant(&value.size_y_)
+		}
+		BorderRadiusStyleValue {
+			device_layout_value_is_projection_invariant(&value.horizontal_radius)
+				&& device_layout_value_is_projection_invariant(&value.vertical_radius)
+		}
+		BorderRadiusRectStyleValue {
+			device_layout_value_is_projection_invariant(&value.top_left_)
+				&& device_layout_value_is_projection_invariant(&value.top_right_)
+				&& device_layout_value_is_projection_invariant(&value.bottom_right_)
+				&& device_layout_value_is_projection_invariant(&value.bottom_left_)
+		}
+		EdgeStyleValue { device_layout_edge_is_projection_invariant(value) }
+		PositionStyleValue {
+			device_layout_edge_is_projection_invariant(&value.edge_x_)
+				&& device_layout_edge_is_projection_invariant(&value.edge_y_)
+		}
+		TextIndentStyleValue {
+			device_layout_value_is_projection_invariant(&value.length_percentage_)
+		}
+		// Calculations, colors, transforms (including dimensionless matrix
+		// translations), and unknown containers retain ordinary absolutization.
+		else { false }
+	}
+}
+
 fn device_layout_value_needs_projection(property_id PropertyID, value &StyleValue) bool {
 	if device_layout_value_contains_lengths(value) {
-		return !(value is LengthStyleValue && value.length_.is_px() && value.raw_value() == 0)
+		return !device_layout_value_is_projection_invariant(value)
 	}
 	return property_id in [.border_top_width, .border_right_width, .border_bottom_width,
 		.border_left_width, .outline_width, .column_rule_width]
@@ -163,9 +220,8 @@ pub fn computed_style_in_layout_coordinates(source &ComputedProperties,
 		typed := style_value_logic_from_dom(property_id, value) or { continue }
 		mut scaled := typed
 		if device_layout_value_contains_lengths(typed) {
-			// Zero CSS pixels stay zero in every layout coordinate system. Most
-			// initial margins and padding need neither a new value nor comparison.
-			if typed is LengthStyleValue && typed.length_.is_px() && typed.raw_value() == 0 {
+			// Apply the same check to values received through the parser path.
+			if device_layout_value_is_projection_invariant(&typed) {
 				continue
 			}
 			scaled = typed.absolutized(context)
