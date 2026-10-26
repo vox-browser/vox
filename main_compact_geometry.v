@@ -15,6 +15,17 @@ fn compact_element_geometry_query(root &dom.Node, name string) !string {
 		return json2.encode(value)
 	}
 	element := root.as_element() or { return error('TypeError: Invalid Element receiver') }
+	if name in ['imageWidth', 'imageHeight'] {
+		if !element.is_html_element() || element.local_name() != 'img' {
+			return error('TypeError: Invalid HTMLImageElement receiver')
+		}
+		image := unsafe { &dom.HTMLImageElement(element) }
+		return if name == 'imageWidth' {
+			html.html_image_element_width(image).str()
+		} else {
+			html.html_image_element_height(image).str()
+		}
+	}
 	if name == 'rect' {
 		rect := element.get_bounding_client_rect()
 		return json2.encode({
