@@ -218,3 +218,29 @@ fn test_device_layout_verdana_normal_strut_rounds_the_physical_font() {
 		assert metrics.ascent + metrics.descent + metrics.line_gap == 29
 	}
 }
+
+fn test_device_layout_projection_preserves_unscaled_values_and_keyword_widths() {
+	mut document, source := device_layout_test_style('font:17px Arial;width:0px;height:40%;margin:0px;padding:0px;border-style:solid;border-top-width:thin;border-right-width:medium;border-bottom-width:thick;border-left-width:0px;opacity:.5;color:rgb(20,40,60);position:relative;transform:matrix(1,0,0,1,0,3)')
+	defer { document.finalize() }
+	for scale in [0.5, 1.25, 2.0, 3.0] {
+		document.set_layout_coordinate_scale(scale)
+		projected := computed_style_in_layout_coordinates(source, document)
+		for property in [PropertyID.width, .margin_top, .margin_right, .margin_bottom,
+			.margin_left, .padding_top, .padding_right, .padding_bottom, .padding_left,
+			.border_left_width, .height, .opacity, .color, .position] {
+			assert voidptr(projected.property(property, .yes)?) == voidptr(source.property(property, .yes)?)
+		}
+		for index, property in [PropertyID.border_top_width, .border_right_width, .border_bottom_width] {
+			property_value := projected.property(property, .yes) or { panic('missing projected width') }
+			value := style_value_logic_from_dom(property, property_value) or { panic('missing typed width') }
+			assert value is LengthStyleValue
+			assert (value as LengthStyleValue).raw_value() == [1.0, 3.0, 5.0][index] * scale
+		}
+		assert projected.length_percentage_to_px(.height, 1000)? == 400
+		transform := device_layout_transform_values(projected)
+		assert transform[4].as_number().number() == 0
+		assert transform[5].as_number().number() == 3 * scale
+		assert source.resolved_font_size_px() == 17
+		assert voidptr(computed_style_in_layout_coordinates(source, document)) == voidptr(projected)
+	}
+}

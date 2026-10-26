@@ -146,7 +146,14 @@ pub fn computed_style_in_layout_coordinates(source &ComputedProperties,
 		value := source.property(property_id, .yes) or { continue }
 		typed := style_value_logic_from_dom(property_id, value) or { continue }
 		mut scaled := typed
-		if property_id in [.border_top_width, .border_right_width, .border_bottom_width,
+		if device_layout_value_contains_lengths(typed) {
+			// Zero CSS pixels stay zero in every layout coordinate system. Most
+			// initial margins and padding need neither a new value nor comparison.
+			if typed is LengthStyleValue && typed.length_.is_px() && typed.raw_value() == 0 {
+				continue
+			}
+			scaled = typed.absolutized(context)
+		} else if property_id in [.border_top_width, .border_right_width, .border_bottom_width,
 			.border_left_width, .outline_width, .column_rule_width] {
 			width := match typed.to_keyword() {
 				.thin { 1.0 }
@@ -154,12 +161,12 @@ pub fn computed_style_in_layout_coordinates(source &ComputedProperties,
 				.thick { 5.0 }
 				else { 0.0 }
 			}
-			if width != 0 {
-				scaled = StyleValue(LengthStyleValue.create(Length.make_px(width * factor)))
-			}
-		}
-		if device_layout_value_contains_lengths(typed) {
-			scaled = typed.absolutized(context)
+			if width == 0 { continue }
+			scaled = StyleValue(LengthStyleValue.create(Length.make_px(width * factor)))
+		} else {
+			// Colors, keywords, numbers and other dimensionless values are already
+			// shared by the clone. Avoid comparing their unchanged value graphs.
+			continue
 		}
 		if !scaled.equals(typed) {
 			target.set_property_without_modifying_flags(property_id, dom_style_value_from_value_logic(scaled))
