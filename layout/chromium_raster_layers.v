@@ -27,10 +27,11 @@ mut:
 
 struct ChromiumRasterPropertyState {
 mut:
-	scroll_frame      int
-	sticky_frame      int
-	effect_scope      u64
-	fixed_to_viewport bool
+	scroll_frame         int
+	sticky_frame         int
+	effect_scope         u64
+	fixed_to_viewport    bool
+	requires_root_raster bool
 }
 
 struct ChromiumRasterChunk {
@@ -274,13 +275,12 @@ pub fn update_chromium_raster_layer_plan(document &dom.Document, commands []Pain
 			} else if scratch.composited_scrolls[node.data.scroll_frame_index] {
 				scratch.properties[index].scroll_frame = node.data.scroll_frame_index
 			}
-		} else if node.data is painting.ScrollCompensationVisualData {
-			// Compensated backgrounds need a separate transform/raster policy.
-			chromium_root_raster_plan_into(commands.len, mut plan)
-			return
-		} else if node.data is painting.PerspectiveVisualData {
-			chromium_root_raster_plan_into(commands.len, mut plan)
-			return
+		} else if node.data is painting.ScrollCompensationVisualData
+			|| node.data is painting.PerspectiveVisualData {
+			// These contexts need a separate transform/raster policy only when
+			// painting uses them. Empty perspective containers still contribute
+			// retained nodes, but must not disable independent page layers.
+			scratch.properties[index].requires_root_raster = true
 		}
 	}
 	mut index := 0
@@ -339,6 +339,10 @@ pub fn update_chromium_raster_layer_plan(document &dom.Document, commands []Pain
 			}
 
 			if context < 0 || context >= scratch.properties.len {
+				chromium_root_raster_plan_into(commands.len, mut plan)
+				return
+			}
+			if scratch.properties[context].requires_root_raster {
 				chromium_root_raster_plan_into(commands.len, mut plan)
 				return
 			}
