@@ -989,9 +989,13 @@ earns no new instruction credit.
 The first intrinsic-restoration harness fails to compile because it overlays
 newer context-shaping tests onto an older accepted source snapshot. Those tests
 require an iterator method absent from that snapshot. No runtime success is
-claimed. `intrinsic-inline-restore-2` keeps the source and focused tests from
-the same authenticated snapshot, retaining the original failed logs. Its
-execution remains pending. The queued canonical production follow-ups are
+claimed. `intrinsic-inline-restore-2` also stops before compilation because
+the selected-test snapshot omits the requested test files. The third harness
+reads those tests from immutable revision `47e479cf`, matching the accepted
+source and its iterator API. It verifies that the restored implementation is
+byte-identical to the accepted snapshot. Both failed runs are retained;
+`intrinsic-inline-restore-3` is queued and supplies no runtime validation yet.
+The queued canonical production follow-ups are
 deferred before starting while the next candidate is prepared; the focused
 restoration check remains queued. The cancellation receipt is
 `combined-production-2-followups-deferred.json`.
@@ -1154,3 +1158,23 @@ added together or used as acceptance counts. Three style/layout entries do
 not imply three full rebuilds: later entries reuse the retained results.
 This diagnostic supplies zero instruction credit. The last accepted strict
 production Vox/Brave ratio remains 3.656719, above the required 0.90.
+
+
+The shared completed production app is reused under `production-reuse-1`;
+no additional production build is queued for this task. Its eight files match
+both the installed app and the preserved successful production stage after
+normalizing fingerprint keys to relative paths. The executable SHA256 is
+`a1167c7abc73b8b0ac45f1d3eb0f5ace4f1b44375df75dff3108af46f0de2123`.
+Strict signature verification succeeds. The earlier failed clone assertion
+compared absolute paths in different directories, not different file contents.
+`available-bundle.json` records the identities, source hashes and build receipt.
+
+This bundle includes the anonymous-font fix but predates the integer-length
+serializer and unfiltered-PNG candidates. Its prepared fresh-process check
+covers the three frozen pixel fixtures, startup, both live pages and the Brave
+instruction comparison. The first standard guard attempt exits 125 with
+`reason: busy` before launching a browser; the same check is now queued under
+`check-1-queued-guard.json`. No fresh rendering or performance result is claimed.
+The two candidate test pipelines remain pending behind the shared guard and
+receive zero credit. The last strict production ratio remains 3.656719;
+the required ratio is at most 0.90.
