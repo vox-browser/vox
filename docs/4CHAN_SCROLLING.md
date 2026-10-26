@@ -1,9 +1,105 @@
-# 4chan scrolling through SOCKS
+# 4chan scrolling through SOCKS and from disk
 
 Investigated 2026-10-25–26 using
 <https://boards.4chan.org/pol/thread/544908349/what-has-the-world-come-to>.
 The acceptance endpoint is a changed native layer publication after
 `updateLayer` completes. This does not measure physical display scanout.
+
+## Disk-only capture and baseline
+
+At the user's request, subsequent experiments use a sealed local capture to
+remove SOCKS reliability from the measurement. The fixture is
+`Build/pol-scroll-20261025-2210/disk-fixture-final/`: 65 HTTP-200 responses and
+1,135,177 body bytes, including original HTML, all four external scripts,
+stylesheets, image resources and three explicitly archived JSON API endpoints.
+Its manifest SHA-256 is
+`a6eea835480b8fe1073227f6717ca49f91b19a630499861230d4cb45d5619562`.
+The original 334,163-byte HTML has SHA-256
+`b248d4a5975efcfdc3aa67edbd26cb4b53e674829ba2929e8a2cfabc2f114afa`;
+its inline scripts and external script references remain unchanged.
+
+Existing raw cached responses were reused without refetching. Eight missing
+resources were captured once through SOCKS into `disk-fixture/`, then the tail
+JSON endpoint was added once to `disk-fixture-final/`. Per-response provenance,
+download commands and the two sealed manifest identities are retained in
+`disk-fixture-provenance.json`. Captures span October 25–26; this is a fixed
+response collection, rather than a claim that all endpoints were fetched at
+one instant.
+
+`tools/page_archive.py` replays saved bodies from disk at their original HTTPS
+origins through a loopback server with private TLS trust and no forwarding.
+`tools/measure_disk_scroll.py` removes inherited proxy settings and injects the
+tested external DNS/IPv4/IPv6 `connect`/`connectx` deny interposer. No SOCKS or
+external page access is available during these runs. Every fresh process has
+an initially empty private cache and profile. Both trials requested the same
+32 distinct archived resources, including all four external scripts, with zero
+archive misses; extra archived responses remain available for dynamic requests.
+The native guard test and four archive tests passed, as did eleven existing
+precise-probe regression tests. See [repeat commands](DISK_SCROLL_BENCHMARK.md).
+
+These two baseline runs use the pinned production small-shape batch bundle
+`tile-batch-candidate.app`, with executable/Skia/Graphite/Dawn hashes
+`3764c693…`, `b5c00fd6…`, `23eaccf9…`, and `cb98233f…` respectively;
+the full hashes are in `disk-baseline/build-sha256.json`. Both runs completed
+360 inputs, moved the document, retained identical build/archive/tool hashes,
+and exited 0. The required thread title was present before twenty seconds of
+settling. The schedule is the 1024×764 CSS viewport, backing scale two, nominal
+60 Hz precise input, delta 12 and reversal every 120 inputs described below.
+The input view, including browser chrome, reports 1024×848.
+
+| Trial | Scroll fps | Median / p95 / max interval, ms | Over 16.67 ms | Moving intervals / publications / inputs |
+| --- | ---: | --- | ---: | --- |
+| disk-baseline/browser-1 | 27.61 | 32.89 / 67.64 / 89.57 | 95.68% | 185 / 196 / 360 |
+| disk-baseline/browser-2 | 29.87 | 29.67 / 62.92 / 88.64 | 90.31% | 196 / 208 / 360 |
+
+| Trial | Actual input Hz | Entire input period, s | Leading / trailing publication gap, ms | First counted scroll delay, ms |
+| --- | ---: | ---: | --- | ---: |
+| disk-baseline/browser-1 | 53.57 | 6.702 | 118.22 / 0.33 | 193.99 |
+| disk-baseline/browser-2 | 54.71 | 6.562 | 140.28 / 20.03 | 223.58 |
+
+The runs began at 02:49:13 and 02:49:44 UTC on October 26, with fresh browser
+PIDs 68794 and 69363. The 18-CPU host's one-minute load before/after each run
+was 10.27/8.99 and 8.99/9.17. Preserve this contention and variation when
+interpreting results. These fresh-cache, original-script disk trials are a
+different workload from earlier cache-seeded frozen trials; cross-family
+timings do not isolate a code change. The page remains slow with SOCKS removed,
+and smooth 60 fps is still unmet. These are native publication measurements,
+not physical display presentation or a new live-page result.
+
+Raw requests, original URL, private certificate identity, source/build hashes,
+commands, actual input timestamps, frame records, exit codes and summaries are
+under `disk-baseline/`. The benchmark driver and every child command exited 0;
+the enclosing job later exited 1 at the separate experiment's eligibility gate
+described next. Its memory guard reports normal process completion, child exit
+1, a 3 GiB budget, sampled peak RSS 840,974,336 bytes and 296.08 seconds elapsed
+in `large-batch-build-check-guard.json`. This failed experiment does not supply
+an acceptance result; the two completed baseline trials retain their own
+successful commands and browser exits.
+
+### Rejected larger-shape batch experiment
+
+A prototype broadened tile readback batching beyond small shapes, retaining
+original GPU surface coordinates and reading back only caller-owned regions.
+Native checks passed: 45,056 exact GPU tile comparisons both normally and with
+AddressSanitizer/UndefinedBehaviorSanitizer; 6,912 serial ownership/backdrop
+comparisons both normally and under sanitizers; and the existing shape-region,
+MSAA mask/compositing and raster-grid checks. Headless startup also passed.
+
+The new archive was then checked in separate 120-input control/candidate
+diagnostics before timing. Both browsers exited 0 and scrolled the expected
+document, with zero missing disk resources. Neither run logged a successful
+larger-shape batch at startup or during input. The eligibility assertion failed,
+so screenshot comparisons and alternating performance trials were not run.
+There is no optimization credit from this prototype, and no claim that an
+unexecuted path explains the baseline's slowdown.
+
+The prototype and its focused tests were removed from the working source;
+their immutable snapshot, patch, build identities, commands, sanitizer output,
+diagnostics and rejection record remain in `large-batch-source/`,
+`large-batch-owned.patch`, `large-batch-build-identity.json`,
+`large-batch-build-check-commands.json`, `large-batch-validation-commands.json`
+and `large-batch-rejection.json`. The disk archive and benchmark tooling are
+the retained change.
 
 ## Baseline and bottleneck
 
