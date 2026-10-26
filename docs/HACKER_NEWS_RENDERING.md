@@ -781,3 +781,75 @@ The previously documented endpoint asymmetry remains. The guard exits one
 because the performance target fails, after 57.261 seconds with peak sampled
 RSS 1,258,995,712 bytes. Pixel/live validation passes, isolated optimization
 credit is zero, and the 10%-below-Brave instruction target remains open.
+
+The invariant-compound projection optimization recursively borrows lists,
+background sizes, radii, positions, and text indents only when their complete
+absolutized values are identical at every coordinate scale. Relative lengths,
+nonzero absolute lengths, calculations, unresolved edges, system colors,
+transforms (including number-only matrices), and NaN values retain ordinary
+dispatch. Typed and parser-created values use the same proof; no source
+property graph is mutated. The two new cases also check nested replacement
+and all three scales, 0.5, 2, and 3.
+
+`invariant-projection-2` passes 18 focused cases in both GC modes (36
+executions), with compile/runtime/guard exits zero and unchanged input pins.
+Its guard takes 74.103 seconds with peak sampled RSS 3,506,356,224 bytes.
+The retained `invariant-projection-1` attempt fails compilation because of an
+extra closing parenthesis in the new fixture; no test runs or credit came
+from that attempt. The correction changes only the fixture construction.
+
+`invariant-projection-isolated-1` transplants only the two tested projection
+function bodies and two new helpers into the preceding accepted production C.
+All 12 shared record declarations match. Removing the helper definitions and
+prototypes and restoring the two original bodies reconstructs the complete
+control C byte for byte; the production graph-token initializer is preserved.
+No independent canonical changes enter this experiment. Signature verification
+and startup pass, and all compiler/native/source pins remain unchanged.
+
+All 30 alternating matched pairs complete (60 zero browser exits), each with
+101 comment rows and an exact 3,145,728-pixel image. Control and candidate
+medians are 6,458,624,202 and 6,335,498,326 instructions. The median paired
+saving is 124,666,130.5; its seeded 10,000-resample 95% interval is
+[112,351,039.5, 136,783,443.5]. Conservative repeatable credit is
+112,351,039.5, crossing the 5M broad-checkpoint threshold. All 30 pairs improve;
+the smallest paired saving is 14,577,396. Every raw observation is retained.
+The first cold control/candidate counts are 11,221,218,469 and 7,870,452,184;
+control counts span 6,407,221,380–11,221,218,469 and candidate counts
+6,275,182,163–7,870,452,184. The strict worst-candidate/best-control ratio is
+1.228372. These are Vox/Vox diagnostics, not Brave acceptance. The 18-CPU host
+load averages are 3.231/5.072/6.797 before the first control and
+2.725/3.962/5.956 at completion; cold-start and host variation limit causal
+claims beyond the paired result. The guard exits zero after 292.997 seconds
+with peak sampled RSS 5,251,006,464 bytes.
+
+The completed checkpoint for `55ce0a17` carries those 18 focused cases per GC
+mode and freshly executes 136 CSS, 29 layout and 79 SVG cases per mode: 488
+new executions and a disjoint union of 524. Of that union, 518 pass; the same
+three layout assertions fail in each mode. All six broad compilations pass,
+and CSS/SVG runtimes pass. The complete normalized layout diagnostics and
+merged layout fixture are byte-identical to the preceding checkpoint (fixture
+SHA256 `1da462776e329bbf66ee6c5b97a17a91d9cee859c78256a4cfe608576b4b5c61`).
+The broad child exits one for those known failures; the checkpoint supervisor
+accepts the unchanged regression comparison, not a whole-suite pass. The
+unchanged 208 platform cases per mode carry prior evidence and are not new
+executions (`invariant-projection-broad-1`,
+`invariant-projection-broad-comparison-1`).
+
+All 19 screenshot comparisons retain their preceding results: 13 exact, one
+within existing bounds and five unchanged known failures. All 34 actual and
+reference images are pixel-identical to the preceding checkpoint. All three
+Hacker News fixtures remain exact at native 2x scale. Signature verification,
+startup and both fresh live discussion/comment checks pass. The inspected
+`invariant-projection-visual-1/live-comment/document.png` shows the opening
+sentence at the corrected body size. These captures use the frozen measured
+candidate, not a newly built canonical production bundle. The unchanged
+LibJS AST driver matches all 100 current upstream fixtures with `--all` and
+no overrides (`invariant-projection-broad-ast-1`). All validation source pins
+remain unchanged.
+
+The checkpoint supervisor and guard exit zero after 418.319 seconds, with
+sampled peak RSS 9,286,844,416 bytes
+(`invariant-projection-checkpoint-1`). This completes the required checkpoint
+through `55ce0a17`; the next optimization starts a fresh credit interval.
+The latest official production/Brave comparison remains the 3.656719 strict
+ratio above. The 10%-below-Brave target remains open.
