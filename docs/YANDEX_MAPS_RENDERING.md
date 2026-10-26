@@ -215,6 +215,46 @@ failed because the private staging harness omitted its package-native header;
 no browserjs tests executed in that attempt. Remaining package checks resume
 with the corrected harness rather than repeating the passing main cases.
 
-This title fix postdates the preserved renderer bundle above. Its native
-production probe and fresh live comparison remain pending. Pixel-perfect live
-rendering and LibJS runtime parity remain open.
+The rebuilt production bundle passes the native title probe: a title inserted
+as a head fragment, including non-breaking spaces, entities and Russian text,
+agrees between JavaScript and the native DOM. Build, signing and startup also
+pass. Evidence is retained in
+`native-title-production-1792995978219967000/`; its executable SHA-256 is
+`a06e5e600e77f7428ec572219bc249207a2aa61c5b5ddd6f33d5812eb967dc3b`.
+An unrelated Graphite raster-cache header changed during that build and is
+recorded in its source-scope receipt.
+
+The archived map differs from Brave at 4,533 pixels, with maximum channel error
+8. The fresh live Vox capture loads the requested map but differs at 427,427
+pixels from a valid windowed Brave reference. Brave initializes its interactive
+map while Vox retains the server-rendered view. The headless Brave robot-check
+response is excluded. Seven screenshot smoke cases are exact and `canvas-text`
+stays within its existing bounds; `inline-node`, `ordered-list` and
+`text-decorations` still fail, including with the explicit layout-test font fix
+present. All nine SVG mutation comparisons are exact. The enclosing production
+check therefore fails; no tolerances were changed.
+
+## Independent-layer box shadows
+
+`fccd848d` rasterizes independent-layer box shadows against transparency. Only
+the root raster path may incorporate an opaque destination backdrop; doing so
+inside an independent layer rounds colors before the layer is composited and
+darkens control edges.
+
+The native regression checks 36 independent-layer combinations at scales 1 and
+2, with padded destination rows, three clip shapes, three alpha values and both
+paint modes. Another 36 exact comparisons against the preserved old native
+library verify unchanged root output. The pre-fix control fails the new
+independent-layer assertion. The isolated native suite passes all 72 shadow
+comparisons, 15 clip cases, 720 composite comparisons, 6,240 glyph-cache
+comparisons, 864 GPU-backdrop comparisons and 288 tiled-image cases.
+
+Evidence is retained in `shadow-isolated-1792997298517100000/`. The native
+suite's guard records actual execution exit 0 and sampled peak RSS of
+407,044,096 bytes under its 3 GiB budget. Its immutable source hashes remain
+unchanged. The enclosing private harness later failed on a signed-executable
+identity assertion, so that attempt receives no production validation pass.
+Matched compiled-library captures are queued with corrected identity checks;
+the earlier injected-shadow diagnostic's improvement from 4,533 to 424 pixels
+is not yet a production result. Pixel-perfect live rendering and LibJS runtime
+parity remain open.
