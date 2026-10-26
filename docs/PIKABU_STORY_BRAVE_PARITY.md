@@ -508,3 +508,48 @@ gate; it does not make the entire checkpoint successful. The outer guard also
 exits zero, sampled peak RSS 7,651,819,520 bytes, elapsed 767.823791417 seconds:
 `Build/pikabu-story-microtask-job-3.json`. The mask crash and prior three broad
 screenshot failures remain open; no bounds or verification cadence were reset.
+
+
+## Native ResizeObserver startup binding
+
+The native ResizeObserver bridge is committed in `ec3dd1cc`; its implementation
+status and limits are documented in `63c999c2`. The bridge connects JavaScript
+observers to committed native layout metrics and the existing rendering-update
+observer delivery. It exposes read-only entries, frozen box-size arrays,
+argument and receiver validation, callback exception reporting, and runtime
+shutdown. Observations and retained snapshots allocate in document storage so
+callback/task scratch reclamation cannot invalidate them. The compact DOM is
+flushed before observing a target.
+
+Four JavaScript binding cases and five related native/geometry cases pass in
+both normal and poisoned arena modes. Eleven core observer cases also pass in
+each mode. Compile and runtime exits for all four selections are zero:
+`Build/pikabu-story-resize-tests-1793018008591901000/results.json`.
+The enclosing source-manifest gate exits one because an independent workflow
+changed `html/message_port.v` during the check. No ResizeObserver source changed.
+The guard records sampled peak RSS 7,537,197,056 bytes and elapsed time
+457.878 seconds in `Build/pikabu-pixel-20261026/focused-guard.json`.
+
+This slice retains the translated upstream device-pixel box calculation and
+physical width/height behavior; it does not establish complete ResizeObserver
+conformance. JavaScript entry/size wrappers stay rooted until runtime shutdown.
+The browser fixture is
+`Tests/Browser/Brave/input/resize-observer-startup.html`; a fresh production
+comparison is required before crediting it with successful live page startup.
+
+A pinned pre-change bundle still renders the bundled archive with 16,814
+changed pixels out of 786,432, including 70 with a channel error above three;
+maximum error is 42. The larger errors cluster at avatar and icon edges.
+The fresh live baseline loaded a native navigation-error page, so its pixel
+comparison is invalid and excluded from acceptance. Raw evidence and the
+explicit invalidation are in `Build/pikabu-pixel-20261026/baseline/`.
+
+The first two production attempts fail before launch in independently edited
+page-switch code; the first also reports the subsequently corrected favicon
+compile error. Their actual nonzero exits are retained in
+`Build/pikabu-pixel-20261026/production-guard.json` and
+`Build/pikabu-pixel-20261026/production-guard-2.json`. The third queued attempt
+was interrupted before acquiring the shared guard. A retry is queued with
+`Build/pikabu-pixel-20261026/production-guard-4.json`; it has no acceptance
+credit until its commands finish. Whole-page parity, the prior three broad
+screenshot failures, and the mask diagnostic shutdown crash remain open.
