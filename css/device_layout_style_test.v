@@ -297,3 +297,67 @@ fn test_device_layout_projection_preserves_used_color_scheme_in_nested_values() 
 		}
 	}
 }
+
+fn test_device_projection_absolute_units_match_complete_length_context() {
+	mut document, mut source := device_layout_test_style('font:17px/1.3 Arial')
+	defer { document.finalize() }
+	for token in ['.75px', '-1.25px', '0cm', '.33in', '-2.1cm', '3.7mm', '-1.5q', '2.3pt', '-.7pc'] {
+		original := parse_css_value_logic(.margin_left, token)?
+		retained := dom_style_value_from_value_logic(original)
+		source.set_property_without_modifying_flags(.margin_left, retained)
+		for scale in [0.5, 1.25, 2.0, 3.0] {
+			document.set_layout_coordinate_scale(scale)
+			projected := computed_style_in_layout_coordinates(source, document)
+			mut context := ComputationContext{
+				length_resolution_context: projected.length_resolution_context()
+			}
+			context.length_resolution_context.absolute_length_scale = scale
+			property := projected.property(.margin_left, .yes)?
+			actual := style_value_logic_from_dom(.margin_left, property)?
+			reference := original.absolutized(context)
+			assert actual.equals(reference)
+			assert actual is LengthStyleValue
+			assert (actual as LengthStyleValue).length_.is_px()
+			source_property := source.property(.margin_left, .yes)?
+			assert voidptr(source_property) == voidptr(retained)
+			assert source_property.css_text == retained.css_text
+		}
+	}
+}
+
+fn test_device_projection_relative_and_nested_values_keep_complete_length_context() {
+	properties := [PropertyID.margin_left, .margin_right, .margin_top, .margin_bottom,
+		.width, .height, .padding_top, .padding_left, .border_top_left_radius,
+		.background_image, .transform]
+	tokens := ['1.3em', '2.1ex', '1.1rem', '2lh', '3rlh', '7vh', '4cqw',
+		'calc(1em + 1.25px)', '1em 2px',
+		'linear-gradient(Canvas 1em, light-dark(red,blue) 2px)', 'translate(1em, 2px)']
+	for index, id in properties {
+		mut document, mut source := device_layout_test_style('font:17px/1.3 Arial;color-scheme:light dark')
+		defer { document.finalize() }
+		original := parse_css_value_logic(id, tokens[index])?
+		retained := dom_style_value_from_value_logic(original)
+		source.set_property_without_modifying_flags(id, retained)
+		for scale in [0.5, 1.25, 2.0, 3.0] {
+			document.set_layout_coordinate_scale(scale)
+			projected := computed_style_in_layout_coordinates(source, document)
+			mut context := ComputationContext{
+				length_resolution_context: projected.length_resolution_context()
+				color_scheme: source.color_scheme(
+					preferred_color_scheme_from_string(document.preferred_color_scheme()),
+					document.supported_color_schemes())
+			}
+			context.length_resolution_context.absolute_length_scale = scale
+			if element := source.subject_element_ {
+				context.abstract_element = dom.AbstractElement.new(element, none)
+			}
+			property := projected.property(id, .yes)?
+			actual := style_value_logic_from_dom(id, property)?
+			reference := original.absolutized(context)
+			assert actual.equals(reference)
+			source_property := source.property(id, .yes)?
+			assert voidptr(source_property) == voidptr(retained)
+			assert source_property.css_text == retained.css_text
+		}
+	}
+}

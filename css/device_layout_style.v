@@ -201,12 +201,12 @@ pub fn computed_style_in_layout_coordinates(source &ComputedProperties,
 	// Absolutization only consumes the used scheme. Resolving current/accent
 	// colors would also build an unused source length context for every style.
 	mut context := ComputationContext{
-		length_resolution_context: target.length_resolution_context()
+		length_resolution_context: LengthResolutionContext{ absolute_length_scale: factor }
 		color_scheme:              source.color_scheme(
 			preferred_color_scheme_from_string(document.preferred_color_scheme()),
 			document.supported_color_schemes())
 	}
-	context.length_resolution_context.absolute_length_scale = factor
+	mut has_length_context := false
 	if element := source.subject_element_ {
 		context.abstract_element = dom.AbstractElement.new(element, none)
 	}
@@ -226,6 +226,17 @@ pub fn computed_style_in_layout_coordinates(source &ComputedProperties,
 			// Apply the same check to values received through the parser path.
 			if device_layout_value_is_projection_invariant(&typed) {
 				continue
+			}
+			// Bare absolute lengths consume only the coordinate scale. Relative
+			// and nested values still resolve against the complete physical context.
+			needs_length_context := match typed {
+				LengthStyleValue { !typed.length_.is_absolute() }
+				else { true }
+			}
+			if needs_length_context && !has_length_context {
+				context.length_resolution_context = target.length_resolution_context()
+				context.length_resolution_context.absolute_length_scale = factor
+				has_length_context = true
 			}
 			scaled = typed.absolutized(context)
 		} else if property_id in [.border_top_width, .border_right_width, .border_bottom_width,
