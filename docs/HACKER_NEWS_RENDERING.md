@@ -917,3 +917,26 @@ failed attempt earns test or performance credit; their raw receipts remain
 under `font-cascade-projection-2` and `intrinsic-inline-2`. Corrected focused
 checks are pending. The official 10%-below-Brave target remains open at the
 preceding 3.656719 strict ratio.
+
+The physical font-cascade cache (`52b6f5fc`) now passes its corrected focused
+checks: 32 cases in each GC configuration, with both compilers and runtimes
+exiting zero and all input pins unchanged (`font-cascade-projection-3`). The
+committed implementation and tests match the tested snapshot byte for byte.
+The cache checks native face identity, size, axes, features, ranges, fallback and
+pending-face state before reuse. Preallocated projections stay within their
+allocation owner; mutable state and owner retirement invalidate reuse. Tests
+also exercise 1,024 repeated projections without new allocations or native
+font handles. The isolated page comparison has not run, so this fix receives
+no instruction-count credit yet.
+
+The next inline-width candidate passes all 21 normal-GC focused cases. Its
+preallocation compiler exits one while writing generated C with `No space left
+on device`; that configuration runs no tests (`intrinsic-inline-3`). The
+`font-intrinsic-measurements-1` supervisor and guard consequently exit one
+(1,617.326 seconds, peak sampled RSS 9,149,202,432 bytes). All 3,341 sealed
+inputs remain unchanged after the failure. A separate retry retains the
+successful normal-GC evidence and original failure, and retries only the
+unfinished configuration. That candidate is not committed or credited yet.
+Completed artifacts were compressed with SHA256-verified restoration before
+removing their uncompressed copies; raw logs and archive ledgers remain under
+`Build/hn-small-text`. The official Brave target remains unmet.
