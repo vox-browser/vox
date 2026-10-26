@@ -217,7 +217,35 @@ and no shared-recording path. Consequently, cache eligibility must be
 resolved before a fractional-phase cache can help this page. The validated
 probe's command, identities and state records are retained in
 `scroll-cache-diagnostic-v3-result.json`; no timing credit is assigned to it.
-An instrumented build is pending to identify the eligibility rejection.
+The instrumented build subsequently identified `begin_css_effect_layer` as
+the unsupported command on both the original frozen fixture and the live
+SOCKS page. Actual input records show the other gates passing: zoom 1,
+culling enabled, viewport origin following document scroll and shared
+recording inactive. Neither page currently enters the viewport scroll-cache
+fast path. The command's generic zero bounds do not describe its effect clip.
+
+An independent read-only opacity probe validated its executable header,
+symbol ranges and 56-byte group record before observing actual input. Both
+pages paint normal-blend groups at opacity 0.800000012. Typical clips are
+81 by 59 or 60 device pixels, while each group allocates a 2,048 by 1,696
+bitmap. This supports investigating allocation reuse while preserving the
+original device space; it does not establish an optimization or a frame rate.
+The instrumented executable SHA-256 is
+`94aa1cdc5cc9f66a6b24889a9ec63115fe913dc64fbfe8c0dca39b8ceb2f24f8`.
+Commands, identities, raw browser logs and exits are retained in
+`scroll-eligibility-{diagnostic,live-diagnostic}-result.json`,
+`opacity-group-{frozen,live}-diagnostic-result.json` and
+`opacity-group-probe-identity.json`. Both diagnostic browser series exited 0;
+their timings receive no performance credit.
+
+The native scroll-raster tests passed with diagnostics both disabled and
+enabled. The current-V focused test compiled successfully and then passed
+at runtime with the pinned bundle's dylib directory supplied explicitly.
+Its runtime guard exited 0 with peak RSS 39,305,216 bytes. Earlier attempts
+failed on a missing include path and then a missing runtime dylib; neither
+executed the tests. Those failures remain recorded alongside the successful
+`scroll-eligibility-focused-runtime-result.json` and
+`scroll-eligibility-focused-runtime-guard.json`.
 
 A fresh availability request through `socks5h://127.0.0.1:1337` returned HTTP
 200 on October 26. The thread had grown to 222 posts and 482,754 response bytes,
@@ -225,5 +253,6 @@ compared with the saved 154-post fixture. Its response SHA-256 is
 `fbfce9f74a54d5de4b8444e9848143cc30bb37ea6de63d2697be97153013ad14`;
 the command, timestamp, title and exit 0 are retained in
 `live-availability-20261026.json`. A successful fetch establishes availability,
-not browser readiness or scrolling performance. The pending eligibility check
-will exercise both the original frozen fixture and the current live page.
+not browser readiness or scrolling performance. The eligibility checks above
+also verified the requested document title before their settle and input
+periods on both pages.
