@@ -2303,6 +2303,9 @@ pub mut:
 	repeating_                  GradientRepeating
 	color_interpolation_method_ ?ColorInterpolationMethodStyleValue
 	color_syntax_               ColorSyntax
+	webkit_                     bool
+	webkit_shape_specified_     bool
+	webkit_extent_keyword_      string
 }
 
 pub fn RadialGradientStyleValue.create(ending_shape RadialGradientEndingShape, size StyleValue, position PositionStyleValue, color_stop_list []ColorStopListElement, repeating GradientRepeating, color_interpolation_method ?ColorInterpolationMethodStyleValue) RadialGradientStyleValue {
@@ -2334,6 +2337,19 @@ pub fn (style_value RadialGradientStyleValue) interpolation_method() ColorInterp
 }
 
 pub fn (style_value RadialGradientStyleValue) serialize(mode SerializationMode) string {
+	if style_value.webkit_ {
+		mut result := if style_value.is_repeating() { '-webkit-repeating-radial-gradient(' } else { '-webkit-radial-gradient(' }
+		result += if style_value.position_.is_center(mode) { 'center' } else { style_value.position_.serialize(mode) }
+		if style_value.webkit_shape_specified_ || style_value.webkit_extent_keyword_ != '' {
+			result += ', ' + if style_value.ending_shape_ == .circle { 'circle' } else { 'ellipse' }
+			result += ' ' + if style_value.webkit_extent_keyword_ != '' { style_value.webkit_extent_keyword_ } else { 'cover' }
+		} else if size := style_value.size_.as_radial_size() {
+			if size.components().len == 2 {
+				result += ', ' + style_value.size_.serialize(mode)
+			}
+		}
+		return result + ', ' + serialize_color_stop_list(style_value.color_stop_list_, mode) + ')'
+	}
 	mut result := ''
 	if style_value.is_repeating() {
 		result += 'repeating-'
@@ -2394,7 +2410,11 @@ pub fn (style_value RadialGradientStyleValue) absolutized(context ComputationCon
 		?ColorInterpolationMethodStyleValue(none)
 	}
 
-	return RadialGradientStyleValue.create(style_value.ending_shape_, style_value.size_.absolutized(context), (style_value.position_.absolutized(context) as PositionStyleValue), absolutized_color_stops, style_value.repeating_, absolutized_color_interpolation_method)
+	mut result := RadialGradientStyleValue.create(style_value.ending_shape_, style_value.size_.absolutized(context), (style_value.position_.absolutized(context) as PositionStyleValue), absolutized_color_stops, style_value.repeating_, absolutized_color_interpolation_method)
+	result.webkit_ = style_value.webkit_
+	result.webkit_shape_specified_ = style_value.webkit_shape_specified_
+	result.webkit_extent_keyword_ = style_value.webkit_extent_keyword_
+	return result
 }
 
 // --- ConicGradientStyleValue ---

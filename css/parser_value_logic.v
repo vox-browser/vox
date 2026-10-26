@@ -176,7 +176,8 @@ fn (parser Parser) calculation_context() CalculationContext {
 			}
 			FunctionContext {
 				name := to_ascii_lowercase(value_context.name)
-				if name in ['linear-gradient', 'repeating-linear-gradient', 'radial-gradient',
+				if name in ['linear-gradient', 'repeating-linear-gradient', '-webkit-radial-gradient',
+					'-webkit-repeating-radial-gradient', 'radial-gradient',
 					'repeating-radial-gradient', 'conic-gradient', 'repeating-conic-gradient',
 					'circle', 'ellipse', 'inset', 'polygon', 'rect', 'xywh', 'view'] {
 					return CalculationContext{
@@ -14514,7 +14515,7 @@ fn (mut parser Parser) parse_image_value_allowing_image_set(mut tokens Component
 		gradient := parser.parse_linear_gradient_function(component_value.function().name, mut inner) or { return none }
 		return CSSImageSourceStyleValue(gradient)
 	}
-	if component_value.is_function_named('radial-gradient') || component_value.is_function_named('repeating-radial-gradient') {
+	if component_value.is_function_named('radial-gradient') || component_value.is_function_named('repeating-radial-gradient') || component_value.is_function_named('-webkit-radial-gradient') || component_value.is_function_named('-webkit-repeating-radial-gradient') {
 		parser.push_temporary_value_parsing_context(ValueParsingContext(FunctionContext{
 			name: component_value.function().name
 		}))
@@ -14522,7 +14523,7 @@ fn (mut parser Parser) parse_image_value_allowing_image_set(mut tokens Component
 			parser.pop_temporary_value_parsing_context()
 		}
 		mut inner := ComponentValueStream.new(component_value.function().value)
-		gradient := parser.parse_radial_gradient_function(component_value.function().name, mut inner) or { return none }
+		gradient := parser.parse_radial_gradient_function(to_ascii_lowercase(component_value.function().name), mut inner) or { return none }
 		return CSSImageSourceStyleValue(gradient)
 	}
 	if component_value.is_function_named('conic-gradient') || component_value.is_function_named('repeating-conic-gradient') {
@@ -15292,6 +15293,9 @@ fn (mut parser Parser) parse_color_stop_position(mut tokens ComponentValueStream
 }
 
 fn (mut parser Parser) parse_radial_gradient_function(function_name string, mut tokens ComponentValueStream) ?RadialGradientStyleValue {
+	if function_name.starts_with('-webkit-') {
+		return parser.parse_webkit_radial_gradient_function(function_name, mut tokens)
+	}
 	repeating := if function_name.contains('repeating') {
 		GradientRepeating.yes
 	} else {
@@ -15390,6 +15394,85 @@ fn (mut parser Parser) parse_radial_gradient_function(function_name string, mut 
 	}
 	color_stops := parser.parse_linear_color_stop_list(mut tokens) or { return none }
 	return RadialGradientStyleValue.create(ending_shape, size, position, color_stops, repeating, interpolation_method)
+}
+
+// Blink's prefixed radial grammar puts the optional one/two-value position
+// before a comma, then shape/extent or two explicit radii. It is not the
+// standard grammar with an alias: `at`, a single radius and color hints differ.
+fn (mut parser Parser) parse_webkit_radial_gradient_function(function_name string, mut tokens ComponentValueStream) ?RadialGradientStyleValue {
+	mut position := PositionStyleValue.create_center()
+	mut probe := tokens.clone()
+	if parsed_position := parser.parse_css_position_value(mut probe, .normal) {
+		mut component_count := 0
+		for component in tokens.values[tokens.index..probe.index] {
+			if !component.is(.whitespace) { component_count++ }
+		}
+		if component_count > 2 || !probe.consume_a_comma() { return none }
+		position = parsed_position as PositionStyleValue
+		tokens = probe
+	}
+	mut shape := RadialGradientEndingShape.ellipse
+	mut shape_specified := false
+	mut extent_keyword := ''
+	mut extent := RadialExtent.farthest_corner
+	for _ in 0 .. 2 {
+		tokens.consume_whitespace()
+		next := tokens.peek() or { break }
+		if !next.is(.ident) { break }
+		ident := to_ascii_lowercase(next.token().ident())
+		if ident in ['circle', 'ellipse'] && !shape_specified {
+			shape = if ident == 'circle' { RadialGradientEndingShape.circle } else { RadialGradientEndingShape.ellipse }
+			shape_specified = true
+		} else if extent_keyword == '' && ident in ['closest-side', 'closest-corner', 'farthest-side', 'farthest-corner', 'contain', 'cover'] {
+			extent_keyword = ident
+			extent = match ident {
+				'contain' { .closest_side }
+				'cover' { .farthest_corner }
+				else { radial_extent_from_string(ident) or { return none } }
+			}
+		} else { break }
+		tokens.consume()
+	}
+	mut size := StyleValue(RadialSizeStyleValue.create([
+		RadialSizeStyleValueComponent(RadialExtentComponent{ extent: extent }),
+	]))
+	if shape_specified || extent_keyword != '' {
+		tokens.consume_a_comma()
+	} else {
+		mut sizes := tokens.clone()
+		if horizontal := parser.parse_nonnegative_length_percentage_value(mut sizes) {
+			vertical := parser.parse_nonnegative_length_percentage_value(mut sizes) or { return none }
+			size = StyleValue(RadialSizeStyleValue.create([
+				RadialSizeStyleValueComponent(horizontal),
+				RadialSizeStyleValueComponent(vertical),
+			]))
+			sizes.consume_a_comma()
+			tokens = sizes
+		}
+	}
+	mut stops := []ColorStopListElement{}
+	for {
+		color := parser.parse_color_value(mut tokens) or { return none }
+		mut stop := ColorStop{ color: color }
+		mut offsets := tokens.clone()
+		if offset := parser.parse_color_stop_position(mut offsets, false) {
+			stop.position = offset
+			tokens = offsets
+			if second := parser.parse_color_stop_position(mut offsets, false) {
+				stop.second_position = second
+				tokens = offsets
+			}
+		}
+		stops << ColorStopListElement{ color_stop: stop }
+		if !tokens.has_more_tokens() { break }
+		if !tokens.consume_a_comma() { return none }
+	}
+	mut gradient := RadialGradientStyleValue.create(shape, size, position, stops,
+		if function_name.contains('repeating') { GradientRepeating.yes } else { GradientRepeating.no }, none)
+	gradient.webkit_ = true
+	gradient.webkit_shape_specified_ = shape_specified
+	gradient.webkit_extent_keyword_ = extent_keyword
+	return gradient
 }
 
 fn (mut parser Parser) parse_conic_gradient_function(function_name string, mut tokens ComponentValueStream) ?ConicGradientStyleValue {
