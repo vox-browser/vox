@@ -111,6 +111,8 @@ int vox_graphite_draw_shape_regions_pixels(VoxGraphitePixelRegion const* regions
         if (!patch.pixels.empty())
             copy_shape_patch(regions[i], patch.pixels.data(), patch.bounds.left, patch.bounds.top,
                 patch.bounds.width, patch.bounds.height, true);
+        if (!patch.pixels.empty())
+            diagnose_compound_shape_patch(shapes[i], patch.bounds, width, height, "batch");
     }
     static bool diagnostic = std::getenv("VOX_SHAPE_BATCH_DIAGNOSTIC") != nullptr;
     if (diagnostic) {

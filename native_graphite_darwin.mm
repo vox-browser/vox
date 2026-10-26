@@ -29,14 +29,19 @@
 #include "include/gpu/graphite/mtl/MtlBackendContext.h"
 #include "native_svg_path_segments.h"
 #include <algorithm>
+#include <atomic>
 #include <cmath>
+#include <cstdio>
+#include <cstdlib>
 #include <cstring>
+#include <dlfcn.h>
 #include <memory>
 #include <list>
 #include <mutex>
 #include <pthread.h>
 #include <vector>
 #include <chrono>
+#include <unistd.h>
 
 namespace {
 std::mutex gpu_mutex;
@@ -1077,11 +1082,26 @@ int vox_graphite_draw_rounded_parts_pixels(VoxGraphitePixelRegion const* regions
 // the surface extent changes GPU coverage rounding. Only the conservative
 // affected rectangle needs a backdrop, readback or retained cache entry.
 struct SmallShapePatchBounds { int left, top, width, height; };
+static bool compound_shape_patches_disabled()
+{
+    static bool disabled = [] {
+        auto* value = std::getenv("VOX_DISABLE_COMPOUND_SHAPE_PATCHES");
+        return value && *value;
+    }();
+    return disabled;
+}
+
 static bool small_shape_patch_bounds(VoxGraphiteShape const& shape, int width, int height,
     SmallShapePatchBounds& patch)
 {
-    if (width > 16384 || height > 16384 || shape.has_underlay || shape.clip_out_count)
+    if (width > 16384 || height > 16384 || shape.clip_out_count < 0
+        || shape.clip_out_count > 4096 || (shape.clip_out_count && !shape.clip_outs)
+        || ((shape.has_underlay || shape.clip_out_count) && compound_shape_patches_disabled()))
         return false;
+    // Difference clips cannot expand the affected area. Their bytes still
+    // belong to the cache key, rather than the caller's borrowed pointer.
+    for (int i = 0; i < shape.clip_out_count * 4; ++i)
+        if (!std::isfinite(shape.clip_outs[i]) || std::abs(shape.clip_outs[i]) > 65536) return false;
     auto const* m = shape.matrix;
     if ((m[0] != 1 && m[0] != 2) || (m[4] != 1 && m[4] != 2)
         || m[1] != 0 || m[3] != 0 || m[6] != 0 || m[7] != 0 || m[8] != 1)
@@ -1100,6 +1120,15 @@ static bool small_shape_patch_bounds(VoxGraphiteShape const& shape, int width, i
     }
     SkRect storage;
     auto local = paint.computeFastBounds(rounded_rect(shape.rect).rect(), &storage);
+    if (shape.has_underlay) {
+        for (float value : shape.underlay_rect)
+            if (!std::isfinite(value) || std::abs(value) > 32768) return false;
+        if (!(shape.underlay_rect[2] > 0 && shape.underlay_rect[3] > 0)) return false;
+        // A control's background can extend beyond its foreground stroke.
+        // Single-side borders clip their underlay to the outer border, but
+        // including the whole underlay remains conservative for those draws.
+        local.join(rounded_rect(shape.underlay_rect).rect());
+    }
     SkMatrix matrix;
     matrix.set9(m);
     auto bounds = matrix.mapRect(local);
@@ -1116,6 +1145,26 @@ static bool small_shape_patch_bounds(VoxGraphiteShape const& shape, int width, i
     if (count > 16384 || count * 4 >= size_t(width) * height) return false;
     patch = {left, top, patch_width, patch_height};
     return true;
+}
+
+static void diagnose_compound_shape_patch(VoxGraphiteShape const& shape,
+    SmallShapePatchBounds const& bounds, int width, int height, char const* route)
+{
+    static bool diagnostic = [] {
+        auto* value = std::getenv("VOX_COMPOUND_SHAPE_PATCH_DIAGNOSTIC");
+        return value && *value;
+    }();
+    if (!diagnostic || (!shape.has_underlay && !shape.clip_out_count)) return;
+    static std::atomic<unsigned> samples[2];
+    auto* marker = std::getenv("VOX_POL_INPUT_MARKER");
+    int input = marker && access(marker, F_OK) == 0;
+    if (samples[input].fetch_add(1, std::memory_order_relaxed) < 16) {
+        Dl_info image {};
+        dladdr(reinterpret_cast<void*>(&diagnose_compound_shape_patch), &image);
+        std::fprintf(stderr, "VOX_COMPOUND_SHAPE_PATCH_EXECUTED input=%d route=%s underlay=%d clips=%d patch_pixels=%d tile_pixels=%d image=%s\n",
+            input, route, shape.has_underlay, shape.clip_out_count,
+            bounds.width * bounds.height, width * height, image.dli_fname ? image.dli_fname : "unknown");
+    }
 }
 
 static bool draw_small_shape_patch(VoxGraphitePixelRegion const& region, int width, int height,
@@ -1183,6 +1232,7 @@ static bool draw_small_shape_patch(VoxGraphitePixelRegion const& region, int wid
     }
     if (!has_background) clear_shape_region(region);
     copy_shape_patch(region, patch.data(), left, top, patch_width, patch_height, true);
+    diagnose_compound_shape_patch(shape, bounds, width, height, "single");
     return true;
 }
 

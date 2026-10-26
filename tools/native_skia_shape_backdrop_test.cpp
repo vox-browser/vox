@@ -90,10 +90,13 @@ int main()
             dlsym(library, "ladybird_v_skia_set_raster_layer"));
         auto reference_size = reinterpret_cast<decltype(&ladybird_v_skia_set_raster_layer_size)>(
             dlsym(library, "ladybird_v_skia_set_raster_layer_size"));
-        assert(reference_grid && reference_layer && reference_size);
+        auto reference_underlay = reinterpret_cast<decltype(&ladybird_v_skia_set_rounded_rect_underlay)>(
+            dlsym(library, "ladybird_v_skia_set_rounded_rect_underlay"));
+        assert(reference_grid && reference_layer && reference_size && reference_underlay);
         for (int scale : {1, 2}) for (int clip : {0, 1, 2})
         for (float x : {11.f, 57.f, 62.375f}) for (float y : {7.f, 41.f, 46.25f})
-        for (int fill : {0, 1}) for (int alpha : {97, 255}) {
+        for (int fill : {0, 1}) for (int alpha : {97, 255})
+        for (int compound : {0, 1, 2, 3}) {
             int width = 160 * scale, height = 120 * scale, pitch = width * 4 + 16;
             std::vector<uint8_t> expected(size_t(pitch) * height);
             for (size_t i = 0; i < expected.size(); ++i)
@@ -122,16 +125,25 @@ int main()
                 (control ? reference_size : &ladybird_v_skia_set_raster_layer_size)(160, 120);
                 (control ? reference_grid : &ladybird_v_skia_set_msaa_grid)(
                     tiles, 4, 64 * scale + 2, 48 * scale + 2, 3);
-                return (control ? reference : &ladybird_v_skia_draw_rounded_rect)(context,
+                float underlay[] {x - 3, y - 2, 34, 18, 5, 4, 3, 2, 4, 5, 2, 3};
+                (control ? reference_underlay : &ladybird_v_skia_set_rounded_rect_underlay)(
+                    compound & 1 ? underlay : nullptr, 71, 97, 131, 173);
+                float clip_outs[] {x + 3, y - 1, x + 11, y + 19, x + 17, y - 1, x + 23, y + 11};
+                auto set_clips = control ? reference_clips : &ladybird_v_skia_set_rect_clip_outs;
+                set_clips(compound & 2 ? clip_outs : nullptr, compound & 2 ? 2 : 0);
+                auto result = (control ? reference : &ladybird_v_skia_draw_rounded_rect)(context,
                     x, y, 28, 14, 5, 4, 3, 2, 4, 5, 2, 3,
                     1, 0, 0, 1, 0, 0, 0, 0, 0, 160, 120,
                     197, 37, 83, alpha, fill, 1.25, 1, 1);
+                set_clips(nullptr, 0);
+                return result;
             };
             assert(draw(before, true) && draw(after, false));
             CGContextFlush(before); CGContextFlush(after);
             if (expected != actual) {
                 std::cerr << "Root shape grid mismatch scale=" << scale << " clip=" << clip
-                    << " x=" << x << " y=" << y << " fill=" << fill << " alpha=" << alpha << '\n';
+                    << " x=" << x << " y=" << y << " fill=" << fill << " alpha=" << alpha
+                    << " compound=" << compound << '\n';
                 return 1;
             }
             ++comparisons;

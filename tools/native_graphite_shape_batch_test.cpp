@@ -1,4 +1,5 @@
 #include "../native_graphite_bridge.h"
+#include <algorithm>
 #include <cassert>
 #include <cstdio>
 #include <cstring>
@@ -25,6 +26,7 @@ int main(int argc, char** argv)
     for (int background : {0, 1}) for (int fill : {0, 1, 2, 3, 4, 5})
     for (int fractional : {0, 1}) for (int rounded : {0, 1}) {
         std::vector<VoxGraphiteShape> shapes(count);
+        std::vector<std::vector<float>> clips(count, {9, 3, 14, 21, 22, 1, 25, 17});
         std::vector<VoxGraphitePixelRegion> regions(count);
         std::vector<std::vector<uint8_t>> backdrops(count, std::vector<uint8_t>(pitch * vh, 0xA9));
         for (int i = 0; i < count; ++i) {
@@ -42,6 +44,16 @@ int main(int argc, char** argv)
             shape.has_float_color = 1;
             shape.float_color[0] = .7713f; shape.float_color[1] = .2861f;
             shape.float_color[2] = .4367f; shape.float_color[3] = shape.alpha / 255.f;
+            // Mixed plain, background/stroke, clipped and combined jobs in
+            // the same submission, including translucent rounded underlays.
+            shape.has_underlay = i % 4 & 1;
+            std::copy_n(shape.rect, 12, shape.underlay_rect);
+            shape.underlay_rect[0] -= 3; shape.underlay_rect[1] -= 2;
+            shape.underlay_rect[2] += 6; shape.underlay_rect[3] += 4;
+            uint8_t underlay[] {57, 89, 123, 173};
+            std::copy_n(underlay, 4, shape.underlay_rgba);
+            shape.clip_out_count = i % 4 & 2 ? 2 : 0;
+            shape.clip_outs = shape.clip_out_count ? clips[i].data() : nullptr;
             regions[i] = {13 + i % 3, 17, vw, vh, pitch, nullptr};
             for (int y = 0; y < vh; ++y) for (int x = 0; x < vw; ++x) {
                 auto* pixel = backdrops[i].data() + y * pitch + x * 4;
@@ -49,9 +61,10 @@ int main(int argc, char** argv)
                 pixel[2] = 41; pixel[3] = uint8_t(i % 2 ? 173 : 255);
             }
         }
-        for (int pass = 0; pass < 4; ++pass) {
+        for (int pass = 0; pass < 6; ++pass) {
             if (pass == 2) for (auto& backdrop : backdrops) backdrop[3 * pitch + 7] ^= 0x15;
             if (pass == 3) for (auto& shape : shapes) shape.matrix[5] += .125f;
+            if (pass == 4) for (auto& clip : clips) clip[0] += 7;
             auto actual = backdrops;
             std::vector<std::vector<uint8_t>> expected(count, std::vector<uint8_t>(width * height * 4));
             for (int i = 0; i < count; ++i) {
@@ -73,9 +86,10 @@ int main(int argc, char** argv)
         // A failure in the last tile cannot publish earlier tiles.
         auto actual = backdrops;
         for (int i = 0; i < count; ++i) regions[i].pixels = actual[i].data();
-        shapes.back().has_underlay = 1;
+        auto valid_clip_count = shapes.back().clip_out_count;
+        shapes.back().clip_out_count = -1;
         assert(!batch(regions.data(), shapes.data(), count, width, height, 1));
-        shapes.back().has_underlay = 0;
+        shapes.back().clip_out_count = valid_clip_count;
         regions.back().pitch = 1;
         assert(!batch(regions.data(), shapes.data(), count, width, height, 1));
         assert(actual == backdrops);

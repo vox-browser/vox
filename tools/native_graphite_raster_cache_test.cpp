@@ -238,7 +238,27 @@ int main()
     std::fill(pixels.begin(), pixels.end(), 19); pixels[15]++;
     assert(!cache.prepare_patches(shape, 631, 303, 4, true, pixels.data()).hit);
     shape.clip_out_count = 1;
-    assert(!cache.prepare_patches(shape, 631, 303, 4, true, pixels.data()).pending);
+    // Packed compound shapes own the clip bytes, including when the caller
+    // mutates or frees that allocation between otherwise identical draws.
+    std::vector<float> packed_clips {0, 0, 1, 1};
+    shape.clip_outs = packed_clips.data();
+    std::fill(pixels.begin(), pixels.end(), 19);
+    request = cache.prepare_patches(shape, 631, 303, 4, true, pixels.data());
+    assert(request.pending && !request.hit);
+    std::fill(pixels.begin(), pixels.end(), 83);
+    cache.finish(std::move(request), pixels.data(), 16);
+    packed_clips[0]++;
+    std::fill(pixels.begin(), pixels.end(), 19);
+    assert(!cache.prepare_patches(shape, 631, 303, 4, true, pixels.data()).hit);
+    packed_clips.clear(); packed_clips.shrink_to_fit();
+    float replacement_clips[] {0, 0, 1, 1};
+    shape.clip_outs = replacement_clips;
+    assert(cache.prepare_patches(shape, 631, 303, 4, true, pixels.data()).hit);
+    assert(pixels == std::vector<uint8_t>(16, 83));
+    value = shape; value.clip_outs = nullptr;
+    assert(!cache.prepare_patches(value, 631, 303, 4, true, pixels.data()).pending);
+    value = shape; value.clip_out_count = -1;
+    assert(!cache.prepare_patches(value, 631, 303, 4, true, pixels.data()).pending);
     shape.clip_out_count = 0;
     assert(!cache.prepare_patches(shape, 0, 303, 4, true, pixels.data()).pending);
     assert(!cache.prepare_patches(shape, 631, 303, -1, true, pixels.data()).pending);

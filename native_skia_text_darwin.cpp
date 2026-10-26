@@ -2826,8 +2826,14 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
         auto draw = graphite_shape_draw();
         bool drawn = draw != nullptr;
         auto draw_region = graphite_shape_region_draw();
-        bool region_eligible = draw_region && has_background && !has_underlay && s_rect_clip_outs.empty()
-            && (fill >= 2 || size_t(raster_width) * raster_height <= 16384);
+        static bool compound_patches_disabled = [] {
+            auto* value = std::getenv("VOX_DISABLE_COMPOUND_SHAPE_PATCHES");
+            return value && *value;
+        }();
+        bool compound = has_underlay || !s_rect_clip_outs.empty();
+        bool region_eligible = draw_region && has_background
+            && (!compound || !compound_patches_disabled)
+            && ((!compound && fill >= 2) || size_t(raster_width) * raster_height <= 16384);
         bool tiled = region_eligible && draw_chromium_root_shape_batch(pixels,
             raster_width, raster_height, region, page_x, page_y, scroll_y,
             destination_scale, descriptor);
