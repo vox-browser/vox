@@ -407,6 +407,15 @@ mut:
 	headers_  &Headers = unsafe { nil }
 }
 
+// Response.cpp::create(response, guard): retain the filtered infrastructure
+// response and its live body instead of reconstructing a buffered response.
+pub fn ResponseObject.from_response(response &Response, guard HeadersGuard) &ResponseObject {
+	return &ResponseObject{
+		response_: response
+		headers_: Headers.from_header_list(response.header_list, guard)
+	}
+}
+
 pub fn Response.create_with_body(init ResponseInit, body_with_type ?BodyWithType) !&ResponseObject {
 	mut response := Response.create()
 	mut object := &ResponseObject{
