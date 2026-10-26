@@ -14179,6 +14179,10 @@ fn collect_element_presentational_hints(mut properties []StyleProperty, element 
 }
 
 fn html_dimension_presentational_hint(source string, property_id PropertyID, reject_zero bool) ?StyleValue {
+	return html_dimension_presentational_hint_with_precision(source, property_id, reject_zero, false)
+}
+
+fn html_dimension_presentational_hint_with_precision(source string, property_id PropertyID, reject_zero bool, retain_fraction bool) ?StyleValue {
 	_ = property_id
 	// https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#rules-for-parsing-dimension-values
 	mut position := 0
@@ -14215,12 +14219,16 @@ fn html_dimension_presentational_hint(source string, property_id PropertyID, rej
 	if position < source.len && source[position] == `%` {
 		return StyleValue(PercentageStyleValue.create(Percentage.new(f64(value))))
 	}
-	return StyleValue(LengthStyleValue.create(Length.make_px(CSSPixels.nearest_value_for(f64(value)).to_double())))
+	// Chromium quantizes used lengths after device projection. Rounding an
+	// HTML image's fractional dimension here loses that native precision.
+	pixels := if retain_fraction { f64(value) } else { CSSPixels.nearest_value_for(f64(value)).to_double() }
+	return StyleValue(LengthStyleValue.create(Length.make_px(pixels)))
 }
 
 fn collect_dimension_attribute(mut properties []StyleProperty, element &dom.Element, attribute_name string, property_id PropertyID, properties_to_cascade ComputedInterpolationPropertyIDs) {
 	attribute := element.get_attribute(attribute_name) or { return }
-	parsed_value := html_dimension_presentational_hint(attribute, property_id, false) or { return }
+	parsed_value := html_dimension_presentational_hint_with_precision(attribute, property_id, false,
+		element.document().font_rendering_policy() == .chromium) or { return }
 	set_html_presentational_hint(mut properties, properties_to_cascade, property_id, parsed_value)
 }
 
