@@ -368,3 +368,94 @@ a native test initially lacked CoreFoundation at link time; a build whose
 source changed during compilation was rejected before measurement; and a
 validation launch ran out of disk space before starting the browser. None
 supplies passing evidence or performance credit.
+
+## Independent small-shape tile batches
+
+Commit `cfe0298f` queues the independent Chromium tiles of one small shape
+before one synchronous GPU submission. Each tile keeps its original surface
+dimensions, device coordinates, MSAA mode and immutable CPU backdrop. CPU
+glyphs and other leaves retain their paint order. Failure publishes none of
+the batch's CPU output. Temporary work is bounded to 64 jobs, one million
+compact pixels and eight million original GPU tile pixels; larger work uses
+the existing serial path. `VOX_DISABLE_SHAPE_TILE_BATCH=1` selects that path.
+
+The focused checks passed 10,112 exact GPU tile comparisons against full
+surface draws, plus 6,912 serial-grid ownership/backdrop comparisons in both
+optimized and ASan/UBSan runs. Existing region, compositing, MSAA and native
+backdrop regressions passed. The production native libraries and headless
+startup passed; the V executable's unsigned bytes match the preceding
+production build. The native build/check guard exited 0 with sampled peak
+RSS 693,125,120 bytes. All 13 control/candidate browser screenshots remained
+pixel-exact. The same seven upstream smoke cases passed, and the same four
+pre-existing conformance failures listed above remained in both modes.
+
+Separate, unprofiled diagnostic launches established that the batch executes
+during actual wheel input on both frozen and live pages. They recorded
+multiple GPU readbacks sharing one submission; the disabled control recorded
+no batches. These diagnostic timings receive no performance credit. Raw
+counters are in `tile-batch-*-diagnostic-result.json` and browser logs.
+
+The control and candidate below use identical binaries, with only the batch
+switch changed. The freshly signed executable SHA-256 is
+`3764c693711dbf8bd4a2810a3e7af2c684cfe668c17849274a1a636737b61bb5`;
+Graphite is `23eaccf96e0bf85b56350784606e39ee4d7addc07884ba2956a7f9be36a56b59`;
+Skia is `b5c00fd68ce5a4cb8fb4579ebee148517f62e489d7bcc074c23af8e0f8143ac6`;
+Dawn remains `cb98233f4dd44223964522e972655d739d701da23ddf0a3a4fc794c8722b9b52`.
+The immutable native source snapshot, official compiler commands and unsigned
+executable comparison are retained in `tile-batch-source-identity.json`,
+`tile-batch-graphite-command.json`, `tile-batch-build-identity.json` and
+`tile-batch-main-provenance.json`. The snapshot includes concurrent native
+image changes; they are identical in this series' control and candidate.
+Do not compare across build families to assign batching credit.
+
+These eight trials use the preceding protocol unchanged: 1024x764 CSS viewport,
+2x backing scale, matching title followed by 20 seconds settling, nominal
+60 Hz precise wheel input, 360 events, reversal every 120 events, fresh
+processes/private profiles and approximately 25.200001001 CSS pixels per
+event. Frozen trials use the same archived cache and private TLS replay;
+live trials use empty caches and explicit `socks5h://127.0.0.1:1337`. Each live
+trial directly launches the temporarily installed candidate, verifying all
+four binary hashes. The prior installed bundle was restored afterward.
+
+| Trial | Scroll publications/s | Median / p95 / maximum interval (ms) | Over 16.67 ms | Moving intervals / measured publications / inputs |
+| --- | ---: | --- | ---: | --- |
+| tile-batch-control-frozen-1 | 44.68 | 19.86 / 43.83 / 61.08 | 65.83% | 278 / 314 / 360 |
+| tile-batch-candidate-frozen-1 | 45.78 | 19.12 / 39.54 / 70.34 | 64.34% | 286 / 331 / 360 |
+| tile-batch-control-frozen-2 | 42.74 | 20.76 / 49.70 / 69.17 | 64.93% | 268 / 292 / 360 |
+| tile-batch-candidate-frozen-2 | 45.31 | 20.29 / 41.89 / 66.10 | 60.00% | 285 / 330 / 360 |
+| tile-batch-control-live-1 | 45.96 | 17.97 / 46.45 / 68.05 | 64.46% | 287 / 326 / 360 |
+| tile-batch-candidate-live-1 | 47.48 | 17.02 / 48.91 / 66.18 | 54.61% | 293 / 335 / 360 |
+| tile-batch-control-live-2 | 44.79 | 17.44 / 56.98 / 74.65 | 61.21% | 281 / 317 / 360 |
+| tile-batch-candidate-live-2 | 45.74 | 17.52 / 48.40 / 72.02 | 64.66% | 283 / 314 / 360 |
+
+| Trial | Actual input Hz | First-to-last input period (s) | Leading / trailing scroll gap (ms) |
+| --- | ---: | ---: | --- |
+| tile-batch-control-frozen-1 | 57.70 | 6.222 | 166.52 / 0.15 |
+| tile-batch-candidate-frozen-1 | 57.47 | 6.247 | 172.76 / 0.20 |
+| tile-batch-control-frozen-2 | 57.25 | 6.270 | 169.74 / 0.21 |
+| tile-batch-candidate-frozen-2 | 57.08 | 6.290 | 126.04 / 0.18 |
+| tile-batch-control-live-1 | 57.49 | 6.244 | 175.32 / 0.13 |
+| tile-batch-candidate-live-1 | 58.17 | 6.171 | 177.25 / 0.19 |
+| tile-batch-control-live-2 | 57.22 | 6.274 | 176.44 / 0.13 |
+| tile-batch-candidate-live-2 | 58.02 | 6.188 | 128.05 / 0.16 |
+
+All trials moved the document, completed 360 inputs and exited 0 with stable
+build identities. Total completed publications were respectively 322, 340,
+300, 337, 334, 344, 325 and 322. Throughput counts scroll changes separately
+from animation over the entire first-to-last input period; this endpoint
+measures native publication, not physical display presentation.
+
+Observed throughput increased 2.47% and 6.01% in the frozen pairs and 3.30%
+and 2.12% in the live pairs. Regressions remain: frozen pair one's maximum
+interval rose from 61.08 to 70.34 ms and its leading gap grew; live pair one's
+p95 rose from 46.45 to 48.91 ms; live pair two's deadline-miss fraction rose
+from 61.21% to 64.66%. Two pairs do not establish statistical significance.
+The host's one-minute load averages before/after each trial were 3.38/3.57,
+3.57/3.42, 3.42/4.14, 4.05/3.71, 3.71/2.88, 2.88/2.65, 2.65/2.81 and
+2.81/2.74. Ambient load remains a limitation. **Smooth 60 fps remains unmet.**
+
+The browser-validation guard and child exited 0, with a 3 GiB limit, sampled
+peak RSS 1,082,048,512 bytes and elapsed time 430.21 seconds. Commands, actual
+timestamps, exits and summaries are in `tile-batch-validation-commands.json`,
+`tile-batch-pixel-comparisons.json`, `tile-batch-trial-summary.json`, each
+trial's `run.json`/`summary.json` and `tile-batch-browser-validation-guard.json`.
