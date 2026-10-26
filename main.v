@@ -407,6 +407,7 @@ mut:
 	viewport_width                      int
 	viewport_height                     int
 	page_zoom                           f64 = 1
+	zoom_levels                         &browsersettings.ZoomLevels = unsafe { nil }
 	applied_page_zoom                   f64 = 1
 	scroll_y                            f64
 	overlay_scrollbars                  BrowserOverlayScrollbars
@@ -3505,6 +3506,7 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 	app.address_select = false
 	app.sync_address_bar()
 	app.scroll_y = 0
+	app.restore_browser_zoom(loaded.url)
 	// A screenshot strip scrolls the replacement document to its offset again.
 	app.screenshot_scroll_applied = false
 	app.load_status = loaded.status
@@ -7570,6 +7572,7 @@ fn main() {
 	}
 	main_checkpoint = debug_timing_checkpoint('startup_browser_state', main_checkpoint)
 	if !options.headless_smoke && !options.headless_layout_tree {
+		app.initialize_browser_zoom()
 		app.initialize_browser_history()
 		app.initialize_browser_bookmarks()
 	}

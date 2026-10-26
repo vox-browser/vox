@@ -130,6 +130,10 @@ fn (session DetachedTabSession) policy_value() BrowserScriptPolicy {
 }
 
 fn (mut app BrowserApp) restore_detached_tab(session DetachedTabSession) {
+	app.ensure_browser_zoom_levels()
+	app.zoom_levels.set_for_url(session.url, session.zoom) or {
+		eprintln('Vox: could not restore domain zoom: ${err.msg()}')
+	}
 	app.page_zoom = session.zoom
 	app.js_engine = session.engine_value()
 	app.script_policy = session.policy_value()
@@ -150,6 +154,8 @@ fn (mut app BrowserApp) restore_detached_tab(session DetachedTabSession) {
 		app.history_index = session.history_index
 	}
 	if app.document != unsafe { nil } {
+		// Domainless pages keep their explicitly transferred session zoom too.
+		app.set_browser_zoom(session.zoom)
 		elements := css.query_selector_all(app.document.as_node(), 'input,textarea,option')
 		for saved in session.forms {
 			if saved.index < 0 || saved.index >= elements.len { continue }

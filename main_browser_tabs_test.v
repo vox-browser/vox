@@ -171,6 +171,48 @@ fn test_tabs_keep_zoom_across_navigation_and_start_new_tabs_at_normal_scale() {
 	assert app.active_browser_tab().page_zoom == 0.9
 }
 
+fn test_tabs_share_domain_zoom_and_reset_without_changing_other_domains() {
+	mut app := browser_tabs_test_app()
+	defer { browser_tabs_test_cleanup(mut app) }
+	app.activate_browser_zoom('zoom-in')
+	app.activate_tab_chrome('tab-new')
+	mut second := app.active_browser_tab()
+	second.install_loaded_page(LoadedPage{
+		url: 'http://tabs.example:8080/second'
+		markup: '<!doctype html><p>Same domain</p>'
+		content_type: 'text/html'
+	}, true)
+	assert second.page_zoom == 1.1
+	assert second.page_model.client().zoom_level() == 1.1
+	app.scroll_y = 110
+	app.snapshot_cached = true
+	app.snapshot_hold = true
+	second.activate_browser_zoom('zoom-in')
+	assert second.page_zoom == 1.25 && app.page_zoom == 1.25
+	assert app.scroll_y > 124.999999 && app.scroll_y < 125.000001
+	assert !app.snapshot_cached && !app.snapshot_hold
+	app.activate_tab_chrome('tab-new')
+	mut third := app.active_browser_tab()
+	third.install_loaded_page(LoadedPage{
+		url: 'https://other.example/'
+		markup: '<!doctype html><p>Different domain</p>'
+		content_type: 'text/html'
+	}, true)
+	third.activate_browser_zoom('zoom-out')
+	assert third.page_zoom == 0.9
+	second.activate_browser_zoom('zoom-reset')
+	assert app.page_zoom == 1 && second.page_zoom == 1
+	assert third.page_zoom == 0.9
+	app.activate_tab_chrome('tab-select:0')
+	assert app.page_model.client().zoom_level() == 1
+	app.install_loaded_page(LoadedPage{
+		url: 'https://tabs.example/after-reset'
+		markup: '<!doctype html><p>Reset</p>'
+		content_type: 'text/html'
+	}, true)
+	assert app.page_zoom == 1
+}
+
 fn test_tabs_keep_independent_dom_javascript_history_and_scroll() {
 	mut app := browser_tabs_test_app()
 	defer { browser_tabs_test_cleanup(mut app) }
@@ -541,6 +583,7 @@ fn test_tab_detach_restores_history_zoom_scroll_and_form_values() {
 	assert restored_session.forms == session.forms
 	restored.history_go(1)
 	assert restored.source_label == 'https://tabs.example/forward'
+	assert restored.page_zoom == 1.25
 }
 
 fn test_tab_detach_waits_for_ready_and_tracks_the_owner_after_reordering() {

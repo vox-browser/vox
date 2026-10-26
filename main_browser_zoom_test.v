@@ -1,9 +1,86 @@
 module main
 
+import browsersettings
 import dom
 import gg
 import layout
+import os
 import page
+import time
+
+fn domain_zoom_test_app() !&BrowserApp {
+	return &BrowserApp{
+		page_model: page.Page.create(1)!
+		script_policy: .disabled
+		viewport_width: 800
+		viewport_height: 600
+	}
+}
+
+fn domain_zoom_test_load(mut app BrowserApp, address string) {
+	app.install_loaded_page(LoadedPage{
+		url: address
+		markup: '<!doctype html><style>html,body{margin:0}</style><p>Domain zoom</p>'
+		content_type: 'text/html'
+	}, true)
+}
+
+fn test_domain_zoom_restores_on_navigation_history_and_browser_restart() {
+	directory := os.join_path(os.temp_dir(), 'vox-browser-zoom-${os.getpid()}-${time.sys_mono_now()}')
+	defer { os.rmdir_all(directory) or {} }
+	path := os.join_path(directory, 'zoom.json')
+	mut app := domain_zoom_test_app()!
+	app.zoom_levels = browsersettings.open_zoom_levels(path)!
+	defer { app.dispose_browser_tab() }
+	domain_zoom_test_load(mut app, 'https://first.test/start')
+	app.activate_browser_zoom('zoom-in')
+	app.activate_browser_zoom('zoom-in')
+	assert app.page_zoom == 1.25
+	domain_zoom_test_load(mut app, 'https://second.test/')
+	assert app.page_zoom == 1
+	assert app.page_model.client().zoom_level() == 1
+	app.activate_browser_zoom('zoom-out')
+	app.history_go(-1)
+	assert app.document.url_string() == 'https://first.test/start'
+	assert app.page_zoom == 1.25
+	assert app.document.viewport_rect().width == 640
+	app.history_go(1)
+	assert app.page_zoom == 0.9
+	domain_zoom_test_load(mut app, 'http://first.test:8080/other')
+	assert app.page_zoom == 1.25
+	assert app.document.viewport_rect().height == 480
+	domain_zoom_test_load(mut app, 'https://unvisited.test/')
+	assert app.page_zoom == 1
+	// A new owner reads only the persisted profile, as a fresh process does.
+	mut restarted := domain_zoom_test_app()!
+	restarted.zoom_levels = browsersettings.open_zoom_levels(path)!
+	defer { restarted.dispose_browser_tab() }
+	domain_zoom_test_load(mut restarted, 'https://first.test/return')
+	assert restarted.page_zoom == 1.25
+	assert restarted.page_model.client().zoom_level() == 1.25
+	assert restarted.document.viewport_rect().width == 640
+	restarted.activate_browser_zoom('zoom-reset')
+	assert browsersettings.open_zoom_levels(path)!.for_url('https://first.test/') == 1
+	assert browsersettings.open_zoom_levels(path)!.for_url('https://second.test/') == 0.9
+}
+
+fn test_domain_zoom_uses_committed_document_and_internal_pages_do_not_inherit_it() {
+	mut app := domain_zoom_test_app()!
+	defer { app.dispose_browser_tab() }
+	domain_zoom_test_load(mut app, 'https://committed.test/final-redirect-url')
+	app.address = 'https://unsubmitted.test/'
+	app.focus_address_bar()
+	app.activate_browser_zoom('zoom-in')
+	assert app.zoom_levels.for_url('https://committed.test/') == 1.1
+	assert app.zoom_levels.for_url('https://unsubmitted.test/') == 1
+	assert app.address == 'https://unsubmitted.test/'
+	assert app.address_active && app.address_select
+	domain_zoom_test_load(mut app, 'about:blank')
+	assert app.page_zoom == 1
+	app.activate_browser_zoom('zoom-out')
+	domain_zoom_test_load(mut app, 'https://committed.test/return')
+	assert app.page_zoom == 1.1
+}
 
 fn test_zoom_shortcuts_preserve_selected_address_and_ignore_shortcut_characters() {
 	modifier := $if macos { gg.Modifier.super } $else { gg.Modifier.ctrl }

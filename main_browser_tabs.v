@@ -40,6 +40,7 @@ mut:
 
 fn (mut app BrowserApp) initialize_browser_tabs() {
 	if app.tabs != unsafe { nil } { return }
+	app.ensure_browser_zoom_levels()
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
 	app.tabs = &BrowserTabs{ pages: [unsafe { &BrowserApp(app) }] }
@@ -116,6 +117,7 @@ fn (mut app BrowserApp) activate_tab_chrome(action string) {
 			client.set_request_frame_hook(request_browser_frame)
 			mut tab := &BrowserApp{
 				tabs:                           app.tabs
+				zoom_levels:                    current.zoom_levels
 				browsing_history:               current.browsing_history
 				browsing_history_error:         current.browsing_history_error
 				bookmarks:                      current.bookmarks
