@@ -2,6 +2,7 @@ module layout
 
 import css
 import dom
+import html
 import platform
 
 fn reusable_units_test_node(document &dom.Document, source string, declarations string) &TextNode {
@@ -65,6 +66,7 @@ fn test_rendered_unit_cache_rebuilds_after_first_letter_source_range_changes() {
 	text.source_range_length_ = 2
 	first := TextNodeChunkIterator.new(text, false, false)
 	assert first.view == '😀'
+	assert !text.rendered_text_is_ascii_
 	assert first.code_units.len == 2
 	text.source_range_start_ = 3
 	text.source_range_length_ = 2
@@ -73,6 +75,7 @@ fn test_rendered_unit_cache_rebuilds_after_first_letter_source_range_changes() {
 	second := TextNodeChunkIterator.new(text, false, false)
 	gc_collect()
 	assert second.view == 'BC'
+	assert text.rendered_text_is_ascii_
 	assert second.code_units == [u16(`B`), u16(`C`)]
 	assert first.view == '😀'
 	assert first.code_units == [u16(0xd83d), u16(0xde00)]
@@ -135,4 +138,51 @@ fn test_cached_fragment_whitespace_reads_allocate_nothing_and_follow_text_invali
 	assert !fragment.is_justifiable_whitespace()
 	_ = TextNodeChunkIterator.new(text, true, true)
 	assert fragment.code_unit_at(0) or { panic('missing cached updated unit') } == u16(`Z`)
+}
+
+fn test_fragment_text_slices_ascii_unicode_and_invalid_bytes_with_or_without_cached_units() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	defer { document.finalize() }
+	for source in ['prefix word \t\n', '', 'A😀אב', 'A\u0301👩‍👩‍👧‍👦',
+		[u8(0xff), 0xed, 0xa0, 0x80, 0x41].bytestr()] {
+		text := reusable_units_test_node(document, source, '')
+		value := text.text_for_rendering()
+		units := utf16_code_units_for_line_box(value)
+		for cached in [false, true] {
+			if cached { _ = TextNodeChunkIterator.new(text, true, true) }
+			for start in -2 .. units.len + 2 {
+				for length in [-2, 0, 1, 3, units.len + 2] {
+					fragment := LineBoxFragment{
+						layout_node_: unsafe { &Node(text) }
+						start_: start
+						length_in_code_units_: length
+					}
+					actual := fragment.text() or { panic('missing fragment text') }
+					assert actual == utf16_substring_for_line_box(value, start, length)
+				}
+			}
+		}
+	}
+}
+
+fn test_fragment_text_refreshes_ascii_classification_after_live_dom_text_changes() {
+	mut document := html.parse_document('<!doctype html><p id="target">ASCII text</p>')
+	defer { document.finalize() }
+	result := run_document_layout(document, 300, 100) or { panic('missing layout') }
+	assert result.root.is_viewport()
+	target := document.get_element_by_id('target') or { panic('missing target') }
+	mut source := (target.first_child() or { panic('missing text') }).as_character_data() or { panic('not text') }
+	bridge := source.layout_node() or { panic('missing boundary') }
+	text := unsafe { &TextNode(bridge.layout_handle) }
+	fragment := LineBoxFragment{
+		layout_node_: unsafe { &Node(text) }
+		start_: 1
+		length_in_code_units_: 2
+	}
+	for value in ['A😀B', 'new ASCII', '', 'éZ', 'ASCII again'] {
+		source.set_data(value)
+		assert fragment.text() or { panic('missing changed text') } == utf16_substring_for_line_box(value, 1, 2)
+		_ = TextNodeChunkIterator.new(text, true, true)
+		assert fragment.text() or { panic('missing changed cached text') } == utf16_substring_for_line_box(value, 1, 2)
+	}
 }

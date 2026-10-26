@@ -2108,6 +2108,7 @@ pub mut:
 	source_text_                  string
 	text_for_rendering_           string
 	text_for_rendering_valid_     bool
+	rendered_text_is_ascii_       bool
 	rendered_utf16_length_        int
 	font_for_rendering_           ?&platform.Font
 	line_segmenter_               &dom.Segmenter = unsafe { nil }
@@ -2220,6 +2221,7 @@ pub fn (n &TextNode) text_for_rendering() string {
 pub fn (mut n TextNode) invalidate_text_for_rendering() {
 	n.text_for_rendering_valid_ = false
 	n.text_for_rendering_ = ''
+	n.rendered_text_is_ascii_ = false
 	n.rendered_utf16_length_ = 0
 	n.rendered_text_edits_.clear()
 	n.cached_inline_chunks_ = none
@@ -2364,7 +2366,8 @@ fn (mut n TextNode) compute_text_for_rendering() {
 		text = unsafe { (&u8(bytes.data)).vstring_with_len(text.len) }
 	}
 	n.text_for_rendering_ = text
-	n.rendered_utf16_length_ = utf16_length_for_line_box(text)
+	n.rendered_text_is_ascii_ = text.is_ascii()
+	n.rendered_utf16_length_ = if n.rendered_text_is_ascii_ { text.len } else { utf16_length_for_line_box(text) }
 	n.text_for_rendering_valid_ = true
 }
 

@@ -231,8 +231,8 @@ pub fn (fragment &LineBoxFragment) text() ?string {
 	}
 	text_node := fragment.layout_node_.as_text_node() or { return none }
 	value := text_node.text_for_rendering()
-	if value.is_ascii() {
-		return utf16_substring_for_line_box(value, fragment.start_, fragment.length_in_code_units_)
+	if text_node.rendered_text_is_ascii_ {
+		return ascii_substring_for_line_box(value, fragment.start_, fragment.length_in_code_units_)
 	}
 	if units := text_node.cached_utf16_code_units_ {
 		return utf16_substring_from_code_units_for_line_box(units, fragment.start_, fragment.length_in_code_units_)
@@ -252,14 +252,14 @@ fn (fragment &LineBoxFragment) code_unit_at(relative_index int) ?u16 {
 	absolute_index := fragment.start_ + relative_index
 	value := text_node.text_for_rendering()
 	// Chunk iteration already decodes the rendered text, including ASCII.
-	// Read that immutable cache before scanning the entire string again.
+	// Read that immutable cache directly when it is available.
 	if units := text_node.cached_utf16_code_units_ {
 		if absolute_index < 0 || absolute_index >= units.len {
 			return none
 		}
 		return units[absolute_index]
 	}
-	if value.is_ascii() {
+	if text_node.rendered_text_is_ascii_ {
 		if absolute_index < 0 || absolute_index >= value.len {
 			return none
 		}
@@ -893,19 +893,23 @@ fn string_from_utf16_code_units_for_line_box(code_units []u16) string {
 
 fn utf16_substring_for_line_box(value string, start int, length int) string {
 	if value.is_ascii() {
-		safe_start := if start < 0 {
-			0
-		} else if start > value.len {
-			value.len
-		} else {
-			start
-		}
-		requested_end := safe_start + if length < 0 { 0 } else { length }
-		safe_end := if requested_end > value.len { value.len } else { requested_end }
-		return value[safe_start..safe_end]
+		return ascii_substring_for_line_box(value, start, length)
 	}
 	units := utf16_code_units_for_line_box(value)
 	return utf16_substring_from_code_units_for_line_box(units, start, length)
+}
+
+fn ascii_substring_for_line_box(value string, start int, length int) string {
+	safe_start := if start < 0 {
+		0
+	} else if start > value.len {
+		value.len
+	} else {
+		start
+	}
+	requested_end := safe_start + if length < 0 { 0 } else { length }
+	safe_end := if requested_end > value.len { value.len } else { requested_end }
+	return value[safe_start..safe_end]
 }
 
 fn utf16_substring_from_code_units_for_line_box(units []u16, start int, length int) string {
