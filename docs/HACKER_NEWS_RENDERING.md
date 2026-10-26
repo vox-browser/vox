@@ -190,3 +190,16 @@ acceptance gate; sampled peak aggregate RSS was 7,604,387,840 bytes.
 These observations do not isolate the projection change from the other
 working-tree changes since the earlier build. No matched Vox optimization
 savings, broad-verification credit or ledger reset are claimed.
+
+Fresh live checks of the projection bundle also passed. The discussion process
+was PID 30850 and the reported-comment process was PID 30923; both exited zero
+and passed URL, title and readiness checks. The comment audit also verified its
+identity and opening sentence. Each launch used a new private profile, an
+inactive test window, a 1024×768 document viewport at backing scale 2, and a
+three-second settle period. The executable hash above was checked again.
+`projection-2/live-discussion` and `projection-2/live-comment` retain the native
+document-only screenshots, audits, browser logs and actual exit codes. The
+comment screenshot visibly renders “This statement stood out to me.” at the
+body's font size. The enclosing live-check guard returned zero, with a sampled
+peak aggregate RSS of 1,132,789,760 bytes. Live loading and the reported font
+correction passed; the frozen fixtures establish exact Brave pixel agreement.
