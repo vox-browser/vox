@@ -38,3 +38,32 @@ fn test_declarative_shadow_content_survives_snapshot_retirement() {
 	assert root_node.descendant_text_content() == 'beforelightafter'
 	assert unsafe { &dom.Node(nested) }.descendant_text_content() == 'nested'
 }
+
+fn test_shadow_traversal_revisits_roots_on_hosts_without_light_children() {
+	mut document := parse_document('<main id="outer"><template shadowrootmode="open"><section></section></template></main>')
+	defer { document.finalize() }
+	outer := document.get_element_by_id('outer') or { panic('missing outer') }
+	assert !outer.as_node().has_children()
+	root := outer.shadow_root() or { panic('missing outer root') }
+	root_node := unsafe { &dom.Node(root) }
+	inner_child := root_node.first_child() or { panic('missing inner child') }
+	inner := inner_child.as_element() or { panic('missing inner') }
+	mut template_element := document.create_element('template') or { panic(err) }
+	template_element.set_attribute_value('shadowrootmode', 'closed')
+	template := unsafe { &dom.HTMLTemplateElement(template_element) }
+	mut content := template.content().as_node()
+	content.append_child(document.create_text_node('nested shadow text').as_node()) or { panic(err) }
+	mut inner_node := inner.as_node()
+	inner_node.append_child(template_element.as_node()) or { panic(err) }
+
+	materialize_declarative_shadow_roots(document.as_node())
+	assert !outer.as_node().has_children()
+	assert !inner_node.has_children()
+	nested := inner.shadow_root() or { panic('missing nested root') }
+	assert nested.mode() == .closed
+	assert unsafe { &dom.Node(nested) }.descendant_text_content() == 'nested shadow text'
+	// Both hosts are now leaves in their light trees; their shadow trees must
+	// remain intact when visited again.
+	materialize_declarative_shadow_roots(document.as_node())
+	assert unsafe { &dom.Node(nested) }.descendant_text_content() == 'nested shadow text'
+}

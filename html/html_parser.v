@@ -820,6 +820,9 @@ pub fn HTMLParser.the_end(document &dom.Document, parser ?&HTMLParser) {
 // roots by attaching that fragment to the template's parent and removing the
 // template element. Processing the fragment first also handles nested roots.
 fn materialize_declarative_shadow_roots(node &dom.Node) {
+	// A leaf has no templates or descendants to inspect. Its parent's walk
+	// still visits any shadow root attached to it separately below.
+	if !node.has_children() { return }
 	// Descendant processing can attach roots and invoke DOM hooks. Keep the
 	// pointer snapshot alive across that work, but allocate DOM changes in the
 	// caller's owner rather than the snapshot workspace.
