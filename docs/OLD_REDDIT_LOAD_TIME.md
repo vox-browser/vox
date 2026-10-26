@@ -96,10 +96,12 @@ The corrected matched run failed before compilation when the main volume ran
 out of space (`frozen-validation.guard.json`, actual child exit 1). Its log and
 command are retained as `frozen-candidate.*.disk-full`. Verified duplicate
 generated C was replaced with a hard link; private compiler scratch moved to
-the existing temporary test volume. The unchanged-source retry is queued behind
-the shared guard (`frozen-validation-retry.guard.json`); no matched performance
-result is available yet. The successful production build and focused
-tests above do not establish a load-time improvement.
+the existing temporary test volume. Two subsequent queued CLI attempts ended
+before execution; their empty guard reports are not results. The current retry
+runs independently of the CLI session, with its command, PID and log recorded in
+`socks-resume-20261026-212904.start.json`. It remains queued behind the shared
+guard; no matched performance result is available yet. The successful production
+build and focused tests above do not establish a load-time improvement.
 
 ## Access limitation
 
@@ -113,4 +115,16 @@ The fresh live check launches the preserved candidate bundle directly, recording
 its PID and executable hash; it does not reuse an already running application.
 An independent local HTTP access check at 19:14:36 MSK on 2026-10-26 still
 received HTTP 403 (`live-access-refresh.json`); it is not a browser benchmark.
+
+The supplied SOCKS route, `socks5h://127.0.0.1:1337`, connected successfully
+at approximately 21:08 MSK on 2026-10-26, but Reddit returned HTTP 403 with a
+1,522-byte network-policy block page (`socks-access.json`). A separate HTTP
+access check using the existing imported session at 21:35 MSK timed out during
+connection establishment (`socks-session-access.json`, curl exit 28); it did not
+receive the requested document. Neither check supplies browser timing credit.
+Fresh Vox and Brave checks through this same route are queued before the
+archived comparison. They test anonymous access and the existing imported
+session separately, with fresh profiles and caches and without reusing running
+browser processes. Private cookie values are excluded from logs and commits.
+
 No scrolling or display-presentation claim follows from these load measurements.
