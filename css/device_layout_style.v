@@ -55,7 +55,7 @@ fn device_layout_fonts(source &FontCascadeList, factor f64, pixel_size f64) &Fon
 	return result
 }
 
-fn device_layout_value_contains_lengths(value StyleValue) bool {
+fn device_layout_value_contains_lengths(value &StyleValue) bool {
 	return match value {
 		LengthStyleValue, CalculatedStyleValue, BackgroundSizeStyleValue, BasicShapeStyleValue,
 		BorderRadiusRectStyleValue, BorderRadiusStyleValue, ConicGradientStyleValue,
@@ -67,6 +67,15 @@ fn device_layout_value_contains_lengths(value StyleValue) bool {
 		}
 		else { false }
 	}
+}
+
+fn device_layout_value_needs_projection(property_id PropertyID, value &StyleValue) bool {
+	if device_layout_value_contains_lengths(value) {
+		return !(value is LengthStyleValue && value.length_.is_px() && value.raw_value() == 0)
+	}
+	return property_id in [.border_top_width, .border_right_width, .border_bottom_width,
+		.border_left_width, .outline_width, .column_rule_width]
+		&& value is KeywordStyleValue && value.keyword() in [.thin, .medium, .thick]
 }
 
 // Preserve the CSSOM's original style. Only the layout projection changes
@@ -144,6 +153,13 @@ pub fn computed_style_in_layout_coordinates(source &ComputedProperties,
 	for property_id in computed_interpolation_longhand_property_ids() {
 		if property_id == .font_size { continue }
 		value := source.property(property_id, .yes) or { continue }
+		// Inspect retained typed values before conversion and dispatch.
+		// Dimensionless values and zero pixels already belong to the cloned
+		// store. Untyped values still take the parser path.
+		if value.css_value_handle != unsafe { nil } {
+			box := unsafe { &TypedStyleValueBox(value.css_value_handle) }
+			if !device_layout_value_needs_projection(property_id, &box.value) { continue }
+		}
 		typed := style_value_logic_from_dom(property_id, value) or { continue }
 		mut scaled := typed
 		if device_layout_value_contains_lengths(typed) {
