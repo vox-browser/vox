@@ -3001,7 +3001,10 @@ extern "C" int ladybird_v_skia_draw_outer_box_shadow(CGContextRef destination,
     auto raster_scale_y = static_cast<float>(raster_height) / static_cast<float>(region.height());
     std::vector<uint32_t> pixels(static_cast<size_t>(raster_width)
         * static_cast<size_t>(raster_height));
-    bool has_background = opaque_backdrop && copy_backdrop(destination,
+    // Independent layers rasterize their shadows against transparency, then
+    // composite over the page. Baking the root backdrop into the shadow rounds
+    // its colors before that composition and produces darker control edges.
+    bool has_background = s_raster_layer_is_root && opaque_backdrop && copy_backdrop(destination,
         region, destination_scale, raster_width, raster_height, pixels);
     auto image_info = SkImageInfo::Make(raster_width, raster_height,
         kBGRA_8888_SkColorType, kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
