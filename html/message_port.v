@@ -63,10 +63,13 @@ fn is_transferable_interface_exposed_on_target_realm(name TransferType, target_r
 }
 
 fn create_transferred_value(name TransferType, target_realm &ScriptingRealm, item SerializedTransferItem) !StructuredTransferredValue {
-	_ = target_realm
 	return match name {
 		.message_port {
-			mut port := MessagePort.create()
+			mut port := if settings := settings_object_of_realm(target_realm) {
+				MessagePort.create_for_settings(settings)
+			} else {
+				MessagePort.create()
+			}
 			port.transfer_receiving_steps(item)!
 			StructuredTransferredValue{ port: port }
 		}
@@ -126,7 +129,7 @@ pub fn structured_serialize_with_transfer(message dom.JSValue, transfer []Struct
 				mut bitmap := (item as ImageBitmapTransfer).value
 				transfers << SerializedTransferItem{
 					type_: .image_bitmap
-					data: bitmap.transfer_steps()
+					data:  bitmap.transfer_steps()
 				}
 			}
 			MessagePortTransfer {
@@ -137,15 +140,19 @@ pub fn structured_serialize_with_transfer(message dom.JSValue, transfer []Struct
 	}
 	return SerializedTransferRecord{
 		serialized: serialized
-		transfers: transfers
+		transfers:  transfers
 	}
 }
 
 pub fn structured_deserialize_with_transfer(record SerializedTransferRecord) !DeserializedTransferRecord {
+	return structured_deserialize_with_transfer_in_realm(record, &ScriptingRealm{})
+}
+
+// Received ports belong to the receiving realm, including its worker loop.
+pub fn structured_deserialize_with_transfer_in_realm(record SerializedTransferRecord, target_realm &ScriptingRealm) !DeserializedTransferRecord {
 	data := structured_deserialize(record.serialized)!
 	mut ports := []&MessagePort{}
 	mut images := []&ImageBitmap{}
-	target_realm := &ScriptingRealm{}
 	for item in record.transfers {
 		transferred := structured_deserialize_with_transfer_internal(item, target_realm)!
 		if port := transferred.port {
@@ -156,8 +163,8 @@ pub fn structured_deserialize_with_transfer(record SerializedTransferRecord) !De
 		}
 	}
 	return DeserializedTransferRecord{
-		deserialized: data
-		transferred_ports: ports
+		deserialized:       data
+		transferred_ports:  ports
 		transferred_images: images
 	}
 }
@@ -170,31 +177,41 @@ __global (
 pub struct MessagePort {
 	dom.EventTarget
 mut:
-	remote_port_         ?&MessagePort
-	has_been_shipped_    bool
-	detached_            bool
-	enabled_             bool
-	pending_messages_    []SerializedTransferRecord
-	pending_outgoing_messages_ []SerializedTransferRecord
-	message_task_generation_ u64
+	remote_port_                    ?&MessagePort
+	has_been_shipped_               bool
+	detached_                       bool
+	enabled_                        bool
+	pending_messages_               []SerializedTransferRecord
+	pending_outgoing_messages_      []SerializedTransferRecord
+	message_task_generation_        u64
 	fail_next_transfer_for_testing_ bool
-	worker_event_target_ ?&dom.EventTarget
+	worker_event_target_            ?&dom.EventTarget
+	settings_                       ?&EnvironmentSettingsObject
 }
 
 pub fn MessagePort.create() &MessagePort {
+	return MessagePort.create_with_settings(none)
+}
+
+// Equivalent to upstream's relevant global event target ownership.
+pub fn MessagePort.create_for_settings(settings &EnvironmentSettingsObject) &MessagePort {
+	return MessagePort.create_with_settings(settings)
+}
+
+fn MessagePort.create_with_settings(settings ?&EnvironmentSettingsObject) &MessagePort {
 	// The process registry retains ports beyond temporary caller allocations.
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
-	port := &MessagePort{}
+	port := &MessagePort{ settings_: settings }
 	html_all_message_ports << port
 	return port
 }
 
-pub fn for_each_message_port(callback fn(&MessagePort)) {
+pub fn for_each_message_port(callback fn (&MessagePort)) {
 	MessagePort.for_each_message_port(callback)
 }
 
-pub fn MessagePort.for_each_message_port(callback fn(&MessagePort)) {
+pub fn MessagePort.for_each_message_port(callback fn (&MessagePort)) {
 	for port in html_all_message_ports {
 		callback(port)
 	}
@@ -290,8 +307,8 @@ pub fn (mut port MessagePort) transfer_steps() !SerializedTransferItem {
 	messages := port.pending_messages_.clone()
 	port.pending_messages_.clear()
 	return SerializedTransferItem{
-		type_: .message_port
-		port_remote: remote
+		type_:         .message_port
+		port_remote:   remote
 		port_messages: messages
 	}
 }
@@ -346,11 +363,39 @@ fn (mut port MessagePort) message_port_post_message_steps(message dom.JSValue, o
 }
 
 pub fn (mut port MessagePort) send_message_on_transport(record SerializedTransferRecord) ! {
+	// Upstream's transport encodes an owning copy. A caller can release or
+	// mutate its serialized buffers as soon as this nonblocking send returns.
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	remote := port.remote_port_ or { return error('MessagePort transport is not open') }
 	mut mutable_remote := unsafe { &MessagePort(remote) }
-	mutable_remote.pending_messages_ << record
+	mutable_remote.pending_messages_ << record.copy_for_transport()
 	if mutable_remote.enabled_ {
 		mutable_remote.read_from_transport()
+	}
+}
+
+fn (record SerializedTransferRecord) copy_for_transport() SerializedTransferRecord {
+	mut transfers := []SerializedTransferItem{cap: record.transfers.len}
+	for item in record.transfers {
+		mut messages := []SerializedTransferRecord{cap: item.port_messages.len}
+		for message in item.port_messages {
+			messages << message.copy_for_transport()
+		}
+		transfers << SerializedTransferItem{
+			type_:         item.type_
+			port_remote:   item.port_remote
+			port_messages: messages
+			data:          item.data.clone()
+		}
+	}
+	return SerializedTransferRecord{
+		serialized: SerializationRecord{
+			data:                 record.serialized.data.clone()
+			shared_array_buffers: record.serialized.shared_array_buffers.clone()
+			type_:                record.serialized.type_
+		}
+		transfers:  transfers
 	}
 }
 
@@ -373,12 +418,18 @@ pub fn (mut port MessagePort) read_from_transport() {
 fn (mut port MessagePort) schedule_pending_messages() {
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
+	loop := if settings := port.settings_ {
+		settings.responsible_event_loop()
+	} else {
+		main_thread_event_loop()
+	}
+	document := if settings := port.settings_ { settings.responsible_document() } else { none }
 	for port.enabled_ && port.pending_messages_.len > 0 {
 		record := port.pending_messages_[0]
 		port.pending_messages_.delete(0)
 		port_identity := u64(voidptr(&port))
 		message_task_generation := port.message_task_generation_
-		queue_a_task(.posted_message, main_thread_event_loop(), none, fn [port_identity, record, message_task_generation] () {
+		queue_a_task(.posted_message, loop, document, fn [port_identity, record, message_task_generation] () {
 			target_pointer := message_port_with_identity(port_identity) or { return }
 			mut target := unsafe { &MessagePort(target_pointer) }
 			if target.message_task_generation_ != message_task_generation {
@@ -397,14 +448,15 @@ fn (mut port MessagePort) post_message_task_steps(record SerializedTransferRecor
 		return
 	}
 	target := port.worker_event_target_ or { unsafe { &dom.EventTarget(&port) } }
-	deserialized := structured_deserialize_with_transfer(record) or {
+	target_realm := if settings := port.settings_ { settings.realm() } else { &ScriptingRealm{} }
+	deserialized := structured_deserialize_with_transfer_in_realm(record, target_realm) or {
 		mut event := MessageEvent.create('messageerror', MessageEventInit{})
 		event.set_is_trusted(true)
 		target.dispatch_event(unsafe { &dom.Event(event) })
 		return
 	}
 	mut event := MessageEvent.create('message', MessageEventInit{
-		data: deserialized.deserialized
+		data:  deserialized.deserialized
 		ports: deserialized.transferred_ports
 	})
 	event.set_is_trusted(true)
@@ -437,8 +489,10 @@ pub fn (mut port MessagePort) discard_pending_messages() {
 }
 
 pub fn (port &MessagePort) set_onmessageerror(handler ?&dom.CallbackType) {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	unsafe { &dom.EventTarget(port) }
-	.set_event_handler_attribute('messageerror', handler)
+		.set_event_handler_attribute('messageerror', handler)
 }
 
 pub fn (port &MessagePort) onmessageerror() ?&dom.CallbackType {
@@ -446,8 +500,10 @@ pub fn (port &MessagePort) onmessageerror() ?&dom.CallbackType {
 }
 
 pub fn (port &MessagePort) set_onmessage(handler ?&dom.CallbackType) {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	unsafe { &dom.EventTarget(port) }
-	.set_event_handler_attribute('message', handler)
+		.set_event_handler_attribute('message', handler)
 	mut mutable_port := unsafe { &MessagePort(port) }
 	mutable_port.start()
 }
@@ -468,8 +524,18 @@ mut:
 }
 
 pub fn MessageChannel.construct_impl() !&MessageChannel {
-	mut port1 := MessagePort.create()
-	port2 := MessagePort.create()
+	return MessageChannel.create_with_settings(none)
+}
+
+pub fn MessageChannel.create_for_settings(settings &EnvironmentSettingsObject) &MessageChannel {
+	return MessageChannel.create_with_settings(settings)
+}
+
+fn MessageChannel.create_with_settings(settings ?&EnvironmentSettingsObject) &MessageChannel {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	mut port1 := MessagePort.create_with_settings(settings)
+	port2 := MessagePort.create_with_settings(settings)
 	port1.entangle_with(port2)
 	return &MessageChannel{
 		port1_: port1

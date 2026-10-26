@@ -21,7 +21,7 @@ pub fn (mut runtime Runtime) install_message_channel_binding() ! {
 	runtime.require_javascript_value_context()!
 	owner := voidptr(&runtime)
 	if owner in message_channel_bindings_ { return }
-	runtime.install_window_message_binding()!
+	runtime.install_message_event_binding()!
 	mut binding := &MessageChannelBinding{ clone: StructuredCloneBridge.create(&runtime)! }
 	operation := runtime.make_value_host_function(fn [owner, mut binding] (_ voidptr, args []voidptr) !voidptr {
 		mut runtime := unsafe { &Runtime(owner) }
@@ -69,7 +69,8 @@ fn (mut runtime Runtime) message_channel_operation(mut binding MessageChannelBin
 	method := runtime.binding_dom_string(args[0])!
 	receiver := args[1]
 	if method == 'construct' {
-		channel := html.MessageChannel.construct_impl()!
+		settings := runtime.scripting_settings_ or { return error('MessageChannel requires its owning settings') }
+		channel := html.MessageChannel.create_for_settings(settings)
 		binding.channels[receiver] = channel
 		runtime.retain_javascript_value(receiver)!
 		runtime.message_channel_port_wrapper(mut binding, channel.port1())!
