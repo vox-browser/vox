@@ -1070,3 +1070,52 @@ A second CPU fractional-rectangle oracle also failed exact pixels: its best
 float coverage/rounding models differed in 100 of 240 cases, including MSAA
 coverage outside the analytical edge. `fractional-rect-float-oracle-v2.cpp`
 and its recorded output remain diagnostic evidence only.
+
+
+### Rejected independent image-tile readback batching (2026-10-26)
+
+Queuing independent image-tile readbacks before one GPU submission executed
+throughout both actual-input eligibility trials: 16 bounded input records per
+candidate, with 2–8 tile jobs sharing one submission. Controls used the serial
+path. Normal and sanitizer checks each passed 7,808 exact batch comparisons
+and 11 atomic rejection cases, alongside 1,920 GPU-region and 2,592 native
+caller comparisons. All 13 browser screenshot pairs were pixel-identical.
+Production signing, headless startup, document canvas, native regression and
+graphics memory checks passed. Timings did not repeat the gain, so the
+prototype was removed.
+
+| Alternating trial | Scroll fps | Median / p95 / max interval (ms) | Over 16.67 ms | Moving / publications / inputs |
+| --- | ---: | --- | ---: | --- |
+| Serial control 1 | 44.71 | 20.45 / 42.25 / 71.42 | 61.87% | 278 / 321 / 360 |
+| Image batch 1 | 46.15 | 19.07 / 42.27 / 60.71 | 63.07% | 287 / 327 / 360 |
+| Serial control 2 | 44.47 | 20.53 / 40.47 / 65.90 | 62.50% | 272 / 322 / 360 |
+| Image batch 2 | 44.38 | 20.19 / 42.07 / 64.73 | 66.43% | 280 / 320 / 360 |
+
+These use the frozen original-origin archive and unchanged 1024×764 viewport,
+2× backing scale, title-gated 20-second settle, and 360 precise wheel inputs.
+Full input windows lasted 6.12–6.31 seconds; actual delivery was 56.90–58.69 Hz.
+Leading publication gaps were 98.21–101.88 ms and leading counted-scroll gaps
+126.77–160.91 ms. Trailing gaps were 0.21–0.97 ms. All four browsers exited 0
+with valid document navigation and completed input. Paired throughput changes
+were +3.22% and -0.20%, while both candidate deadline-miss fractions increased.
+The 18-CPU host's one-minute load declined from 10.03 to 6.36; these trials
+supply no repeatable optimization credit. The endpoint is completed native
+layer publication after `updateLayer`, not physical display scanout. Smooth
+60 fps remains unmet.
+
+Evidence under `Build/pol-scroll-20261025-2210/` includes the sealed
+`image-batch-v1-rejected-source/`, `image-batch-v1-summary.json`, production
+source/build identities, focused logs, and `image-batch-v1-validation/` with
+eligibility, pixels and every alternating trial. The focused guard/child
+exited 0 at 784,138,240 bytes sampled peak RSS in 89.03 seconds within 3 GiB.
+The production/validation guard/child exited 0 at 12,223,315,968 bytes in
+681.77 seconds within 12 GiB. Earlier failed attempts remain separately.
+The pinned executable SHA-256 is
+`309468f5235acd8a1f388e311dcf0f1d8c7f7d5fb5d0ea6c44b71bdbc1cbc2e8`;
+all library hashes and raw timestamps remain in the evidence manifests.
+
+Two separate sampled runs in `image-batch-v1-profile/` validated the actual
+Vox executable UUID and C/V symbol ranges. GPU waits accounted for 892/3,150
+and 986/3,433 native drawing samples. Rounded rectangle calls accounted for
+920 and 1,009 samples, and glyph calls for 630 and 622. These profiles are
+diagnostics and supply no unprofiled scrolling performance credit.
