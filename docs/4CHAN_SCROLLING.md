@@ -256,3 +256,115 @@ the command, timestamp, title and exit 0 are retained in
 not browser readiness or scrolling performance. The eligibility checks above
 also verified the requested document title before their settle and input
 periods on both pages.
+
+## Bounded opacity-canvas reuse
+
+Commit `7032ea1b` reuses up to two idle opacity-group bitmap contexts, bounded
+by 32 MiB of pixel storage. It preserves the original full-canvas extent,
+color space, transform and compositing math. Each group owns its context
+until release; release clears its clipped write region, and acquisition
+resets graphics state, paths, text geometry and context antialiasing switches.
+Idle cleanup and memory pressure discard the pool. Oversized groups retain
+the allocation path.
+
+A separate read-only diagnostic validated the executable header, symbol
+ranges and group ABI, then distinguished new bitmap generations from reused
+addresses. During actual wheel input, the frozen control recorded 773 groups
+and zero reuse; the frozen candidate recorded 764 groups and 761 reuses; the
+live candidate recorded 767 groups and 764 reuses. All three recorded zero
+invalid groups. Diagnostic timings receive no performance credit. Commands,
+identities and counters are retained in `opacity-pool-probe-identity.json`
+and `opacity-pool-*-diagnostic-result.json`.
+
+Both optimized and ASan/UBSan native tests passed 2,304 exact comparisons
+each, covering changing dimensions and color spaces, nested ownership,
+fractional clips and transforms, state reset, retained image snapshots,
+eviction, overflow and budget limits. The 3 GiB native-check guard exited 0
+with sampled peak RSS 465,321,984 bytes. The standard production build and
+headless startup passed. All 13 control/candidate browser image comparisons
+were pixel-exact: the 11 screenshot smoke cases and nested-opacity fixtures
+at 1x and 2x. Seven upstream smoke cases passed; `inline-node`, `ordered-list`,
+`text-decorations` and `default-ignorable-code-points-not-painted` remain
+pre-existing conformance failures in both modes.
+
+The control and candidate use the same executable and native libraries;
+`VOX_DISABLE_OPACITY_CANVAS_POOL=1` disables only this pool for the control.
+The pinned executable SHA-256 is
+`10645512ab9992c87430d4d626678a194cb55767559c40d19c0a7d2fe1528b53`.
+Graphite SHA-256 is
+`b5cccbe30e94b3080e7a7b370b4f31db66bc4dbf6a060967f3407af417cc0687`;
+Skia SHA-256 is
+`69ae7b64a6045a99c6e84dfcdb6a09466cdeb6b24873abc2f13ba407837ddfa1`;
+Dawn SHA-256 is
+`cb98233f4dd44223964522e972655d739d701da23ddf0a3a4fc794c8722b9b52`.
+The completed standard build was pinned from a concurrent build whose source
+manifest verifies unchanged production inputs throughout compilation. Its
+only manifest change was an excluded test file. Full provenance, including
+the native sources' before/after hashes, is retained in
+`opacity-pool-clean-standard-build-provenance.json` and
+`opacity-pool-build-identity.json`.
+
+The following eight unprofiled trials alternate control and candidate twice
+on each route. All use the protocol above, including title readiness, the
+20-second settle period, fresh processes and private profiles. The actual
+wheel increment remains approximately 25.200001001 CSS pixels. Frozen runs
+start from the same archived cache template, SHA-256
+`f819364b2d07047045f6203829e9ec23922499cf540ec41d099349d2ed57b5ea`.
+Live runs start with empty caches and explicitly select
+`VOX_PROXY=socks5h://127.0.0.1:1337`; this override takes precedence over the
+ambient HTTP proxy, and the thread host is outside `NO_PROXY`. Every live
+trial launches the temporarily installed pinned bundle with all four binary
+hashes verified. The previously installed bundle was restored afterward.
+
+| Trial | Scroll publications/s | Median / p95 / maximum interval (ms) | Over 16.67 ms | Moving intervals / measured publications / inputs |
+| --- | ---: | --- | ---: | --- |
+| opacity-pool-control-frozen-1 | 40.90 | 21.84 / 47.65 / 71.96 | 69.85% | 262 / 284 / 360 |
+| opacity-pool-candidate-frozen-1 | 42.37 | 21.32 / 50.72 / 70.90 | 66.42% | 265 / 296 / 360 |
+| opacity-pool-control-frozen-2 | 40.71 | 21.86 / 50.29 / 74.47 | 69.41% | 255 / 283 / 360 |
+| opacity-pool-candidate-frozen-2 | 42.89 | 20.46 / 47.54 / 71.15 | 67.17% | 265 / 294 / 360 |
+| opacity-pool-control-live-1 | 45.31 | 18.18 / 42.04 / 73.87 | 66.55% | 284 / 315 / 360 |
+| opacity-pool-candidate-live-1 | 46.49 | 18.22 / 44.53 / 67.20 | 63.45% | 290 / 320 / 360 |
+| opacity-pool-control-live-2 | 45.19 | 18.27 / 51.73 / 68.17 | 65.59% | 279 / 309 / 360 |
+| opacity-pool-candidate-live-2 | 45.55 | 17.97 / 42.75 / 78.63 | 63.16% | 285 / 320 / 360 |
+
+| Trial | Actual input Hz | First-to-last input period (s) | Leading / trailing scroll gap (ms) |
+| --- | ---: | ---: | --- |
+| opacity-pool-control-frozen-1 | 56.05 | 6.405 | 131.02 / 0.17 |
+| opacity-pool-candidate-frozen-1 | 57.40 | 6.255 | 128.99 / 0.19 |
+| opacity-pool-control-frozen-2 | 57.31 | 6.264 | 131.22 / 0.16 |
+| opacity-pool-candidate-frozen-2 | 58.10 | 6.179 | 129.32 / 0.16 |
+| opacity-pool-control-live-1 | 57.27 | 6.269 | 174.10 / 6.51 |
+| opacity-pool-candidate-live-1 | 57.55 | 6.238 | 174.65 / 0.72 |
+| opacity-pool-control-live-2 | 58.14 | 6.174 | 168.89 / 8.27 |
+| opacity-pool-candidate-live-2 | 57.38 | 6.257 | 186.93 / 0.19 |
+
+Every browser completed 360 inputs, moved the document, retained its binary
+identity and exited 0. Total completed publications, including those outside
+the measured window, were respectively 291, 304, 290, 303, 323, 329, 317 and
+329. Throughput above uses the full first-to-last input window and counts
+scroll changes separately from animation. It measures native publication,
+not physical display presentation.
+
+Observed throughput increased by 3.58% and 5.36% in the frozen pairs and
+2.61% and 0.81% in the live pairs. Tail latency also regressed: frozen pair
+one's p95 rose from 47.65 to 50.72 ms, live pair one's p95 rose from 42.04 to
+44.53 ms, and live pair two's maximum rose from 68.17 to 78.63 ms. Its leading
+gap also rose from 168.89 to 186.93 ms. Two pairs do not establish statistical
+significance. The 18-CPU host's one-minute load averages before/after each
+trial were 2.22/2.55, 2.55/2.35, 2.35/3.03, 3.03/4.59, 4.59/3.98,
+3.98/3.03, 3.03/2.51 and 2.51/2.51. Per-trial load records and process
+snapshots are retained; ambient load remains a limitation. These figures
+cannot be compared with different build families as an isolated pool gain.
+**Smooth 60 fps remains unmet:** approximately 63% of the live candidate's
+scroll intervals still exceed the frame budget.
+
+The complete browser-validation guard and child exited 0, with a 3 GiB limit,
+sampled peak RSS 1,140,899,840 bytes and elapsed time 439.82 seconds. Raw
+commands, exits, timestamps and summaries are in
+`opacity-pool-validation-commands.json`, `opacity-pool-pixel-comparisons.json`,
+`opacity-pool-trial-summary.json`, each trial's `run.json` and `summary.json`,
+and `opacity-pool-validation-retry2-guard.json`. Earlier failures are retained:
+a native test initially lacked CoreFoundation at link time; a build whose
+source changed during compilation was rejected before measurement; and a
+validation launch ran out of disk space before starting the browser. None
+supplies passing evidence or performance credit.
