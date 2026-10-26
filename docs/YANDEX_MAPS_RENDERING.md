@@ -469,3 +469,29 @@ has the same 966,384-byte body and SHA-256 as the inspected `yandex.com` entry.
 The response receipt and body are retained in
 `worker-ru-entry-inspection-1793031667552697000/`. This verifies the entry on
 the requested host; execution and the live visual comparison remain pending.
+
+Worker prerequisite validation on October 26 fixes three independently checked
+issues. `5a8a08f5` corrects the Runtime pointer captured by the writable-stream
+callback test; `3e391318` attaches WorkerLocation to the concrete dedicated or
+shared worker scope instead of its copied base; `f4624a11` seeds structured-clone
+serialization and deserialization memories in transfer-list order. The latter
+preserves references, cycles, views and unused transfer entries without itself
+performing native transfers or detaching buffers.
+
+The frozen-source results in
+`Build/yandex-maps/worker-runtime-corrected-1793034313234967000/` retain 36
+passing HTML cases in each of Boehm and preallocated/no-GC modes, including
+seven WorkerLocation cases and four transfer-memory cases. The browser selection
+passes 50 cases under Boehm; an isolated four-case writable-stream selection also
+passes without GC. All source and toolchain hashes in that receipt remain
+unchanged. These focused successes do not make the complete run pass: the
+browser no-GC selection exits 138 during the poisoned worker-fetch scratch
+lifetime check, and the outer guard exits 1. Its sampled process-tree peak is
+7,844,511,744 bytes under the 12 GiB budget.
+
+The failure identifies native callbacks retaining stream-wrapper lookup tables
+allocated in a temporary arena. A persistent-allocation boundary and actual
+ArrayBuffer transfer tests are pending a fresh guarded browser run. The worker
+agent is still not installed as a browser Worker constructor; these component
+checks add no live-map or screenshot acceptance credit. The last valid live and
+archived differences remain 328,981 and 424 pixels respectively.
