@@ -101,6 +101,32 @@ diagnostics and rejection record remain in `large-batch-source/`,
 and `large-batch-rejection.json`. The disk archive and benchmark tooling are
 the retained change.
 
+### Profile of the original-script disk workload
+
+A separate six-second native sample started at 03:52:16 UTC on October 26,
+after title readiness, twenty seconds of settling and the start of precise
+wheel input. It used the same sealed archive and pinned small-shape batch
+bundle as the disk baseline, with 900 inputs to keep the sample within the
+scrolling window. This is diagnostic evidence, with no performance credit.
+Browser, driver, sampler and memory guard exited 0; all replay requests were
+archived HTTP-200 responses. Raw evidence is in `disk-native-profile/`.
+
+Of 3,760 main-thread samples, 1,552 included rounded-rectangle drawing (41.3%)
+and 832 ended in a GPU completion wait (22.1%). These counts overlap. GPU waits
+included 275 samples in full-shape drawing, 214 in regional shape drawing and
+166 in the existing small-shape batch. Viewport visibility traversal accounted
+for 85 samples (2.3%). This prioritizes reducing repeated shape submissions
+and readbacks; culling alone cannot explain most of this workload's cost.
+
+`symbol-validation.json` verifies the executable and native library SHA-256s,
+Mach-O UUIDs, loaded image bases and 550 executable, 56 text-bridge and 88
+Graphite sampled symbol addresses against their symbol ranges. The optional
+Dawn library was not loaded; its absent samples are not treated as zero-cost
+execution. `hotspots.json`, `sample.txt`, `result.json` and
+`disk-native-profile-guard.json` retain the analysis, commands and actual exits.
+The guard's sampled process-tree RSS peaked at 950,042,624 bytes within its
+12 GiB budget, over 47.03 seconds including browser startup and settling.
+
 ## Baseline and bottleneck
 
 The original production bundle published 39.81 scroll-changing frames/s on the
