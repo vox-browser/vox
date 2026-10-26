@@ -76,7 +76,7 @@ fn test_solid_svg_runs_reject_clips_that_need_individual_replay() {
 	}
 }
 
-fn test_solid_svg_runs_reject_strokes_gradients_and_flattened_opacity() {
+fn test_solid_svg_runs_reject_combined_fill_stroke_gradients_and_flattened_opacity() {
 	fill := svg_solid_group_test_command()
 	gradient := layout.PaintCommand{
 		...fill
@@ -97,6 +97,57 @@ fn test_solid_svg_runs_reject_strokes_gradients_and_flattened_opacity() {
 	] {
 		assert chromium_svg_solid_run_end([fill, fill, barrier, fill], [], 0) == 2
 		assert chromium_svg_solid_run_end([barrier, barrier], [], 0) == 0
+	}
+}
+
+fn test_solid_svg_runs_share_translucent_resize_grip_strokes() {
+	fill := svg_solid_group_test_command()
+	dark := layout.PaintCommand{
+		...fill
+		color:        ''
+		stroke_color: 'rgba(0, 0, 0, 0.6)'
+		stroke_width: 2
+		svg_data:     &layout.PaintSVGPathData{
+			path_data: [f32(0), 0, 14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 14, 0, 0, 0, 0, 0, 0, 0, 0,
+				0, 0]
+		}
+	}
+	light := layout.PaintCommand{ ...dark, stroke_color: 'rgba(255, 255, 255, 0.6)' }
+	assert chromium_svg_solid_run_end([dark, light], [], 0) == 2
+	assert chromium_svg_solid_run_end([fill, dark, light], [], 0) == 3
+	mut joined := dark.svg_data.path_data.clone()
+	joined << [f32(1), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+	mut curve := dark.svg_data.path_data.clone()
+	curve[layout.compatibility_clip_path_segment_stride] = 2
+	for barrier in [
+		layout.PaintCommand{ ...dark, stroke_width: 0 },
+		layout.PaintCommand{ ...dark, stroke_width: -1 },
+		layout.PaintCommand{
+			...dark
+			svg_data: &layout.PaintSVGPathData{ ...dark.svg_data, stroke_dasharray: [
+				2.0,
+				1.0,
+			] }
+		},
+		layout.PaintCommand{
+			...dark
+			svg_data: &layout.PaintSVGPathData{ ...dark.svg_data, non_scaling_stroke: true }
+		},
+		layout.PaintCommand{
+			...dark
+			svg_data: &layout.PaintSVGPathData{ ...dark.svg_data, stroke_linecap: 2 }
+		},
+		layout.PaintCommand{
+			...dark
+			svg_data: &layout.PaintSVGPathData{ ...dark.svg_data, path_data: joined }
+		},
+		layout.PaintCommand{
+			...dark
+			svg_data: &layout.PaintSVGPathData{ ...dark.svg_data, path_data: curve }
+		},
+	] {
+		assert chromium_svg_solid_run_end([barrier, barrier], [], 0) == 0
+		assert chromium_svg_solid_run_end([dark, light, barrier], [], 0) == 2
 	}
 }
 

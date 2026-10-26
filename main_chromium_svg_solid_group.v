@@ -4,11 +4,14 @@ import layout
 import math
 import painting
 
-// Keep coverage between adjacent SVG fills, including fills inside a mask.
+// Keep coverage between adjacent solid SVG paths, including translucent
+// strokes such as the native textarea grip, until their shared MSAA resolve.
 // The surrounding command stream retains ownership of masks and effects.
-fn chromium_svg_solid_fill_supported(command &layout.PaintCommand) bool {
-	if command.kind != 'draw_svg_path' || command.opacity != 1 || command.group_opacity != 1 || command.color == ''
-		|| command.svg_data == unsafe { nil } || command.stroke_color != ''
+fn chromium_svg_solid_path_supported(command &layout.PaintCommand) bool {
+	has_fill := command.color != ''
+	has_stroke := command.stroke_color != '' && command.stroke_width > 0
+	if command.kind != 'draw_svg_path' || command.opacity != 1 || command.group_opacity != 1
+		|| has_fill == has_stroke || command.svg_data == unsafe { nil }
 		|| command.clip_outs.len != 0 || command.recording_clip != none {
 		return false
 	}
@@ -17,6 +20,24 @@ fn chromium_svg_solid_fill_supported(command &layout.PaintCommand) bool {
 		|| data.stroke_dasharray.len != 0 || data.fill_pattern != none
 		|| data.stroke_pattern != none || data.svg_gradient_data != none {
 		return false
+	}
+	if has_stroke {
+		// The scalar bounds below enclose transformed butt-ended line
+		// segments. Curves, joins and non-scaling strokes keep their existing
+		// replay path, which computes the complete stroked outline bounds.
+		if data.non_scaling_stroke || data.stroke_linecap != 0 { return false }
+		mut at_start := false
+		stride := layout.compatibility_clip_path_segment_stride
+		for offset := 0; offset + stride <= data.path_data.len; offset += stride {
+			kind := int(data.path_data[offset])
+			if kind == 0 {
+				at_start = true
+			} else if kind == 1 && at_start {
+				at_start = false
+			} else {
+				return false
+			}
+		}
 	}
 	if command.has_clip && command.clip_list != unsafe { nil } {
 		for clip in command.clip_list.items {
@@ -32,7 +53,7 @@ fn chromium_svg_solid_fill_supported(command &layout.PaintCommand) bool {
 
 fn chromium_svg_solid_run_end(commands []layout.PaintCommand, layers []int, start int) int {
 	if start < 0 || start >= commands.len || (layers.len != 0 && layers.len != commands.len)
-		|| !chromium_svg_solid_fill_supported(&commands[start]) {
+		|| !chromium_svg_solid_path_supported(&commands[start]) {
 		return start
 	}
 	first := &commands[start]
@@ -42,7 +63,7 @@ fn chromium_svg_solid_run_end(commands []layout.PaintCommand, layers []int, star
 		// Axis-aligned rectangular clips are fully represented by the scalar
 		// intersection, even when nested viewport mapping copied their lists.
 		if (layers.len != 0 && layers[end] != layers[start])
-			|| !chromium_svg_solid_fill_supported(next) || next.has_clip != first.has_clip
+			|| !chromium_svg_solid_path_supported(next) || next.has_clip != first.has_clip
 			|| next.clip_x != first.clip_x || next.clip_y != first.clip_y
 			|| next.clip_width != first.clip_width || next.clip_height != first.clip_height {
 			break
@@ -75,19 +96,40 @@ fn (mut app BrowserApp) draw_chromium_svg_solid_group(commands []layout.PaintCom
 			right = math.max(right, bounds.x + bounds.width)
 			bottom = math.max(bottom, bounds.y + bounds.height)
 			matrix := multiply_paint_transforms(command.transform, data.path_transform)
-			color := app.paint_colors.color_with_retained(command.color, 1, command.retained_svg_fill_color())
+			stroke := command.color == ''
+			color := if stroke {
+				app.paint_colors.color_with_retained(command.stroke_color, 1,
+					command.retained_svg_stroke_color())
+			} else {
+				app.paint_colors.color_with_retained(command.color, 1,
+					command.retained_svg_fill_color())
+			}
 			paths << C.VoxGraphitePath{
-				matrix:          [f32(matrix[0]), f32(matrix[2]), f32(matrix[4]), f32(matrix[1]),
+				matrix:             [f32(matrix[0]), f32(matrix[2]), f32(matrix[4]), f32(matrix[1]),
 					f32(matrix[3]), f32(matrix[5]), f32(0), f32(0), f32(1)]!
-				segments:        data.path_data.data
-				segment_count:   data.path_data.len / layout.compatibility_clip_path_segment_stride
-				even_odd:        int(data.fill_even_odd)
-				red:             color.r
-				green:           color.g
-				blue:            color.b
-				alpha:           color.a
-				has_float_alpha: 1
-				opacity:         f32(f64(color.a) / 255 * data.fill_opacity)
+				segments:           data.path_data.data
+				segment_count:      data.path_data.len / layout.compatibility_clip_path_segment_stride
+				even_odd:           int(data.fill_even_odd)
+				red:                color.r
+				green:              color.g
+				blue:               color.b
+				alpha:              color.a
+				stroke:             int(stroke)
+				line_cap:           data.stroke_linecap
+				line_join:          data.stroke_linejoin
+				non_scaling_stroke: int(data.non_scaling_stroke)
+				stroke_width:       f32(command.stroke_width * if data.non_scaling_stroke {
+					app.document.layout_coordinate_scale()
+				} else {
+					1.0
+				})
+				miter_limit:        f32(data.stroke_miterlimit)
+				has_float_alpha:    1
+				opacity:            f32(f64(color.a) / 255 * if stroke {
+					data.stroke_opacity
+				} else {
+					data.fill_opacity
+				})
 			}
 		}
 		first := &commands[start]
