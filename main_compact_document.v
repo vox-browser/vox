@@ -16,6 +16,14 @@ fn install_compact_document_binding(binding &CompactElementQueryBinding, mut run
 			if next > u64(9007199254740991) || version > u64(9007199254740991) - next { return -1 }
 			version += next
 		}
+		// Template fragments belong to an inert document. Its mutation clock
+		// keeps saved live collections current after queued writes are replayed.
+		// The embedding document owns this document's lifetime.
+		for _, document in binding.template_documents {
+			next := document.dom_tree_version()
+			if next > u64(9007199254740991) || version > u64(9007199254740991) - next { return -1 }
+			version += next
+		}
 		return if version <= u64(9007199254740991) { f64(version) } else { -1.0 }
 	})!
 	runtime.add_close_handler(fn [binding] () {

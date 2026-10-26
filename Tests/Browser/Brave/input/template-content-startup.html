@@ -1,0 +1,26 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Template content startup</title>
+<style>
+html,body{margin:0;background:#fcfdff}
+#host{position:absolute;left:32px;top:32px}
+.tile{width:80px;height:48px;background:#f7b259}
+#probe{position:absolute;left:160px;top:32px;width:80px;height:48px;background:#c22}
+</style>
+<template id="source"><div class="tile"></div></template>
+<div id="host"></div><div id="probe"></div>
+<script>
+const template=document.getElementById('source'),host=document.getElementById('host');
+const content=template.content,copy=content.cloneNode(true);
+if(!(template instanceof HTMLTemplateElement)||content!==template.content||content.ownerDocument===document)throw Error('template content');
+const tile=copy.querySelector('.tile');
+host.appendChild(copy);
+if(copy.childNodes.length||host.firstChild!==tile||tile.ownerDocument!==document||!tile.isConnected)throw Error('fragment insertion');
+const detached=document.createElement('template'),children=detached.content.childNodes;
+detached.innerHTML='<span>first</span>';
+if(children.length!==1)throw Error('live content children');
+detached.content.firstChild.textContent='updated';
+if(detached.innerHTML!=='<span>updated</span>')throw Error('serialize content mutation');
+document.getElementById('probe').setAttribute('style','background:#008000');
+document.title='Template content PASS';
+</script>

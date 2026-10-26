@@ -14,6 +14,7 @@ struct CompactElementQueryBinding {
 mut:
 	elements map[string]&dom.Element
 	documents map[string]&dom.Document
+	template_documents map[voidptr]&dom.Document
 	nodes    map[string]&dom.Node
 	keys     map[voidptr]string
 	materialized map[string]bool
@@ -150,6 +151,7 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	action := json_string_property(request, 'action') or { return error('Invalid selector action') }
 	key := json_string_property(request, 'key') or { '' }
 	if action == 'inputValue' { return binding.input_value_query(key, selector) }
+	if action == 'templateContent' { return binding.template_content_query(key, selector) }
 	if action in ['elementFromPoint', 'elementsFromPoint'] {
 		return binding.hit_test_query(action, selector)
 	}
