@@ -1,0 +1,336 @@
+module browsertabs
+
+import json2
+import os
+import rand
+import platform
+
+#include "@DIR/process.h"
+
+fn C.vox_tabs_lock(&char) i32
+fn C.vox_tabs_unlock(i32)
+fn C.vox_tabs_spawn(&char, &&char, &&char) i32
+fn C.vox_tabs_alive(i32) i32
+fn C.vox_tabs_terminate(i32)
+fn C.vox_tabs_reap(i32) i32
+
+pub struct Tab {
+pub mut:
+	id       string
+	pid      int
+	title    string = 'New Tab'
+	url      string
+	favicon  string
+	ready    bool
+	activate bool
+	detach   bool
+}
+
+pub struct Frame {
+pub mut:
+	x      f64
+	y      f64
+	width  f64
+	height f64
+}
+
+pub struct State {
+pub mut:
+	version  int = 1
+	tabs     []Tab
+	selected string
+	frame    Frame
+}
+
+// Only chrome metadata crosses this boundary. Documents, JSC realms, native
+// renderers and their allocation arenas stay entirely in their owning process.
+@[heap]
+pub struct Session {
+pub:
+	folder string
+	id     string
+pub mut:
+	state    State
+	revision u64
+mut:
+	children []int
+	storage  &platform.RetainedArena = unsafe { nil }
+	encoded  string
+}
+
+pub fn create(frame Frame) !&Session {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	_ = json2.encode(State{ tabs: [Tab{}] })
+	folder := os.join_path(os.temp_dir(), 'vox-tabs-${rand.uuid_v4()}')
+	os.mkdir(folder)!
+	os.chmod(folder, 0o700)!
+	id := rand.uuid_v4()
+	mut session := &Session{ folder: folder.clone(), id: id.clone() }
+	fd := session.lock()!
+	defer { C.vox_tabs_unlock(fd) }
+	state := State{ tabs: [Tab{ id: id, pid: os.getpid(), ready: true }], selected: id, frame: frame }
+	session.save(state)!
+	session.remember(state)
+	return session
+}
+
+pub fn join(folder string, id string) !&Session {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	_ = json2.encode(State{ tabs: [Tab{}] })
+	if !os.is_abs_path(folder) || id == '' { return error('invalid tab process session') }
+	mut session := &Session{ folder: folder.clone(), id: id.clone() }
+	fd := session.lock()!
+	defer { C.vox_tabs_unlock(fd) }
+	state := session.load()!
+	if !state.tabs.any(it.id == id && it.pid == os.getpid()) {
+		return error('tab process is no longer in its session')
+	}
+	session.remember(state)
+	return session
+}
+
+fn (session &Session) lock() !i32 {
+	path := os.join_path(session.folder, 'lock')
+	fd := C.vox_tabs_lock(&char(path.str))
+	if fd < 0 { return error('could not lock tab session') }
+	return fd
+}
+
+fn (session &Session) load() !State {
+	state := json2.decode[State](os.read_file(os.join_path(session.folder, 'state.json'))!)!
+	if state.version != 1 { return error('unsupported tab session') }
+	return state
+}
+
+fn (session &Session) save(state State) ! {
+	path := os.join_path(session.folder, 'state.json')
+	temporary := '${path}.${os.getpid()}'
+	defer { os.rm(temporary) or {} }
+	os.write_file(temporary, json2.encode(state))!
+	os.chmod(temporary, 0o600)!
+	os.rename(temporary, path)!
+}
+
+fn (mut state State) remove(id string) {
+	index := tab_index(state.tabs, id)
+	if index < 0 { return }
+	state.tabs.delete(index)
+	if state.selected == id {
+		state.selected = ''
+		for i := index; i >= 0; i-- {
+			if i < state.tabs.len && state.tabs[i].ready {
+				state.selected = state.tabs[i].id
+				break
+			}
+		}
+		if state.selected == '' {
+			for tab in state.tabs {
+				if tab.ready {
+					state.selected = tab.id
+					break
+				}
+			}
+		}
+	}
+}
+
+fn tab_index(tabs []Tab, id string) int {
+	for i, tab in tabs { if tab.id == id { return i } }
+	return -1
+}
+
+pub fn (session &Session) find(id string) int { return tab_index(session.state.tabs, id) }
+
+pub fn (session &Session) index() int {
+	return tab_index(session.state.tabs, session.id)
+}
+
+pub fn (session &Session) selected_index() int {
+	return tab_index(session.state.tabs, session.state.selected)
+}
+
+pub fn (session &Session) visible() bool { return session.state.selected == session.id }
+
+// A dead tab is removed without affecting its siblings. Each launcher reaps
+// only its own children; closing the original process does not own their lives.
+pub fn (mut session Session) poll(title string, address string, favicon string, ready bool) ! {
+	scratch := platform.begin_thread_scratch('tab session poll')
+	defer { scratch.finish() }
+	session.poll_state(title, address, favicon, ready) or {
+		scratch.leave()
+		return error(err.msg().clone())
+	}
+}
+
+fn (mut session Session) poll_state(title string, address string, favicon string, ready bool) ! {
+	for i := session.children.len - 1; i >= 0; i-- {
+		if C.vox_tabs_reap(i32(session.children[i])) != 0 { session.children.delete(i) }
+	}
+	fd := session.lock()!
+	defer { C.vox_tabs_unlock(fd) }
+	mut state := session.load()!
+	before := json2.encode(state)
+	for tab in state.tabs.clone() {
+		if C.vox_tabs_alive(i32(tab.pid)) == 0 { state.remove(tab.id) }
+	}
+	index := tab_index(state.tabs, session.id)
+	if index >= 0 {
+		mut tab := state.tabs[index]
+		tab.title = title
+		tab.url = address
+		tab.favicon = favicon
+		if ready && !tab.ready {
+			tab.ready = true
+			if tab.activate { state.selected = tab.id }
+			tab.activate = false
+		}
+		state.tabs[index] = tab
+	}
+	if json2.encode(state) != before { session.save(state)! }
+	session.remember(state)
+}
+
+pub fn (mut session Session) open(executable string, arguments []string, background bool, frame Frame) !int {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	fd := session.lock()!
+	defer { C.vox_tabs_unlock(fd) }
+	mut state := session.load()!
+	id := rand.uuid_v4()
+	mut environment := os.environ()
+	environment['VOX_TAB_GROUP'] = session.folder
+	environment['VOX_TAB_ID'] = id
+	mut entries := []string{}
+	for key, value in environment { entries << '${key}=${value}' }
+	mut argv := []&char{}
+	argv << &char(executable.str)
+	for argument in arguments { argv << &char(argument.str) }
+	argv << unsafe { &char(nil) }
+	mut envp := []&char{}
+	for entry in entries { envp << &char(entry.str) }
+	envp << unsafe { &char(nil) }
+	pid := int(C.vox_tabs_spawn(&char(executable.str), argv.data, envp.data))
+	if pid <= 0 { return error('could not start tab process') }
+	if !background {
+		for mut tab in state.tabs { tab.activate = false }
+	}
+	state.tabs << Tab{ id: id, pid: pid, activate: !background }
+	state.frame = frame
+	// Retain ownership even if publishing the new tab fails: the terminated
+	// child still needs to be reaped by the next poll.
+	session.children << pid
+	session.save(state) or {
+		C.vox_tabs_terminate(i32(pid))
+		return err
+	}
+	session.remember(state)
+	return pid
+}
+
+pub fn (mut session Session) select(index int, frame Frame) ! {
+	fd := session.lock()!
+	defer { C.vox_tabs_unlock(fd) }
+	mut state := session.load()!
+	if index < 0 || index >= state.tabs.len { return }
+	// Selecting a starting tab transfers focus when its first frame is ready.
+	for mut tab in state.tabs { tab.activate = false }
+	if state.tabs[index].ready {
+		state.selected = state.tabs[index].id
+	} else {
+		state.tabs[index].activate = true
+	}
+	state.frame = frame
+	session.save(state)!
+	session.remember(state)
+}
+
+pub fn (mut session Session) move(from int, to int) ! {
+	fd := session.lock()!
+	defer { C.vox_tabs_unlock(fd) }
+	mut state := session.load()!
+	if from < 0 || to < 0 || from >= state.tabs.len || to >= state.tabs.len { return }
+	tab := state.tabs[from]
+	state.tabs.delete(from)
+	state.tabs.insert(to, tab)
+	session.save(state)!
+	session.remember(state)
+}
+
+pub fn (mut session Session) detach(index int) ! {
+	fd := session.lock()!
+	defer { C.vox_tabs_unlock(fd) }
+	mut state := session.load()!
+	if index < 0 || index >= state.tabs.len { return }
+	state.tabs[index].detach = true
+	session.save(state)!
+	session.remember(state)
+}
+
+// The same live document moves to a new window group. Keep reaping children
+// launched before detaching, even though their tab metadata stays in that group.
+pub fn (mut session Session) detach_self(frame Frame) !&Session {
+	mut detached := create(frame)!
+	session.leave() or {
+		detached.leave() or {}
+		return err
+	}
+	detached.children = session.children
+	session.children = []int{}
+	return detached
+}
+
+pub fn (mut session Session) close(index int, frame Frame) ! {
+	fd := session.lock()!
+	defer { C.vox_tabs_unlock(fd) }
+	mut state := session.load()!
+	if index < 0 || index >= state.tabs.len { return }
+	tab := state.tabs[index]
+	state.remove(tab.id)
+	state.frame = frame
+	session.save(state)!
+	session.remember(state)
+	// A hung page must also be closable from another tab's responsive chrome.
+	if tab.id != session.id { C.vox_tabs_terminate(i32(tab.pid)) }
+}
+
+pub fn (mut session Session) leave() ! {
+	fd := session.lock()!
+	defer { C.vox_tabs_unlock(fd) }
+	mut state := session.load()!
+	state.remove(session.id)
+	session.save(state)!
+	session.remember(state)
+	if state.tabs.len == 0 { os.rmdir_all(session.folder)! }
+}
+
+// Replace the metadata arena only when chrome changes. Idle polling allocates
+// entirely in scratch storage, including JSON decoding under -prealloc.
+fn (mut session Session) remember(state State) {
+	encoded := json2.encode(state)
+	if encoded == session.encoded { return }
+	mut storage := platform.new_retained_arena('tab session metadata')
+	mut scope := storage.enter_nested()
+	session.encoded = encoded.clone()
+	session.state = json2.decode[State](session.encoded) or { panic(err) }
+	session.revision++
+	scope.finish()
+	if session.storage != unsafe { nil } { session.storage.release() }
+	session.storage = storage
+}
+
+pub fn (session &Session) encoded_state() string { return session.encoded }
+
+// Native window close / application quit closes the complete visible group.
+// A tab close removes only that tab and exits through leave() instead.
+pub fn (mut session Session) shutdown() ! {
+	fd := session.lock()!
+	defer { C.vox_tabs_unlock(fd) }
+	state := session.load()!
+	session.save(State{})!
+	for tab in state.tabs {
+		if tab.id != session.id { C.vox_tabs_terminate(i32(tab.pid)) }
+	}
+	os.rmdir_all(session.folder)!
+}

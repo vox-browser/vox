@@ -1,6 +1,9 @@
 #pragma once
 #include <Cocoa/Cocoa.h>
 
+static BOOL vox_process_tab_mode;
+static void native_browser_tabs_process_mode(int enabled) { vox_process_tab_mode = enabled != 0; }
+
 typedef void (*VoxTabAction)(void *, int, int, int);
 @interface VoxBrowserTabStrip : NSView
 @property void *owner;
@@ -188,7 +191,7 @@ static NSBezierPath *vox_tab_path(NSRect r) {
 	self.draggingTab = NO;
 	// Selecting can rebuild every button. Track on the strip, which survives
 	// chrome refreshes, rather than retaining the removed NSButton as the drag UI.
-	[self selectTab:sender];
+	if (!vox_process_tab_mode) [self selectTab:sender];
 	for (;;) {
 		NSEvent *next = [NSApp nextEventMatchingMask:NSEventMaskLeftMouseDragged|NSEventMaskLeftMouseUp
 			untilDate:NSDate.distantFuture inMode:NSEventTrackingRunLoopMode dequeue:YES];
@@ -210,6 +213,7 @@ static NSBezierPath *vox_tab_path(NSRect r) {
 		if (detach) self.callback(self.owner, 6, from, 0);
 		else if (move && from != to) self.callback(self.owner, 5, from, to);
 		else if (refreshRange) self.callback(self.owner, 5, from, from);
+		if (vox_process_tab_mode && !detach) self.callback(self.owner, 0, move ? to : from, 0);
 		break;
 	}
 }

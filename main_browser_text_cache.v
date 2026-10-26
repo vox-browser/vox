@@ -6,21 +6,21 @@ import platform
 @[heap]
 struct BrowserChromeTextCache {
 mut:
-	document_id       dom.UniqueNodeID
-	tree_version      u64
-	character_version u64
-	title_valid       bool
-	title             string
-	message           string
-	footer            string
-	footer_valid      bool
-	tab_titles        []string
+	document_id         dom.UniqueNodeID
+	tree_version        u64
+	character_version   u64
+	title_valid         bool
+	title               string
+	message             string
+	footer              string
+	footer_valid        bool
+	tab_titles          []string
 	favicon_document_id dom.UniqueNodeID
-	favicon_url       string
-	favicon_image_id  int = -1
-	favicon_complete  bool
-	favicon_fallback  bool
-	tab_favicons      []int
+	favicon_url         string
+	favicon_image_id    int = -1
+	favicon_complete    bool
+	favicon_fallback    bool
+	tab_favicons        []int
 }
 
 fn (app &BrowserApp) browser_text_cache() &BrowserChromeTextCache {
@@ -72,10 +72,12 @@ fn (app &BrowserApp) cached_browser_console_footer() string {
 
 fn (app &BrowserApp) cached_browser_tab_titles() []string {
 	mut cache := app.browser_text_cache()
-	count := if app.tabs != unsafe { nil } { app.tabs.pages.len } else { 1 }
+	count := app.browser_tab_count()
 	mut unchanged := cache.tab_titles.len == count
 	for index in 0 .. count {
-		title := if app.tabs != unsafe { nil } {
+		title := if app.process_tabs() {
+			app.tabs.session.state.tabs[index].title
+		} else if app.tabs != unsafe { nil } {
 			app.tabs.pages[index].browser_tab_title()
 		} else {
 			app.browser_tab_title()
@@ -89,7 +91,9 @@ fn (app &BrowserApp) cached_browser_tab_titles() []string {
 	// only when its values change; keep each published list immutable.
 	mut titles := []string{cap: count}
 	for index in 0 .. count {
-		titles << if app.tabs != unsafe { nil } {
+		titles << if app.process_tabs() {
+			app.tabs.session.state.tabs[index].title.clone()
+		} else if app.tabs != unsafe { nil } {
 			app.tabs.pages[index].browser_tab_title()
 		} else {
 			app.browser_tab_title()

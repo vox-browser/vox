@@ -82,11 +82,28 @@ fn (mut app BrowserApp) browser_tab_favicon_id() int {
 
 fn (app &BrowserApp) cached_browser_tab_favicons() []int {
 	mut cache := app.browser_text_cache()
-	count := if app.tabs != unsafe { nil } { app.tabs.pages.len } else { 1 }
+	count := app.browser_tab_count()
 	mut icons := unsafe { cache.tab_favicons }
 	mut changed := icons.len != count
 	if changed { icons = []int{len: count, init: -1} }
 	for index in 0 .. count {
+		if app.process_tabs() {
+			address := app.tabs.session.state.tabs[index].favicon
+			mut owner := unsafe { &BrowserApp(app) }
+			icon := if address != '' {
+				if image := owner.background_image(address) { image.id } else { -1 }
+			} else {
+				-1
+			}
+			if icons[index] != icon {
+				if !changed {
+					icons = icons.clone()
+					changed = true
+				}
+				icons[index] = icon
+			}
+			continue
+		}
 		mut tab := if app.tabs != unsafe { nil } {
 			app.tabs.pages[index]
 		} else {

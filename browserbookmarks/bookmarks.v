@@ -1,6 +1,7 @@
 module browserbookmarks
 
 import browserhistory
+import processlock
 import json2
 import os
 import platform
@@ -26,7 +27,8 @@ pub mut:
 	items   []Bookmark
 	version u64
 mut:
-	path string
+	profile_hash [32]u8
+	path         string
 }
 
 pub fn default_path() string {
@@ -43,7 +45,9 @@ pub fn open(path string) !&Store {
 	}
 	mut store := &Store{ path: path.clone() }
 	if path != '' && os.exists(path) {
-		saved := json2.decode[SavedBookmarks](os.read_file(path)!)!
+		contents := os.read_file(path)!
+		store.profile_hash = processlock.fingerprint(contents)
+		saved := json2.decode[SavedBookmarks](contents)!
 		store.visible = saved.visible
 		store.version = saved.version
 		for item in saved.items {
@@ -61,7 +65,11 @@ pub fn eligible_url(address string) bool {
 }
 
 pub fn (mut store Store) add(address string, title string) ! {
-	if !eligible_url(address) || store.items.any(it.url == address) { return }
+	if !eligible_url(address) { return }
+	guard := processlock.acquire(store.path)!
+	defer { guard.release() }
+	store.reload()!
+	if store.items.any(it.url == address) { return }
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
 	mut items := store.items.clone()
@@ -76,12 +84,18 @@ pub fn (mut store Store) remove(index int) ! {
 	if index < 0 || index >= store.items.len { return }
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
-	mut items := store.items.clone()
-	items.delete(index)
+	address := store.items[index].url
+	guard := processlock.acquire(store.path)!
+	defer { guard.release() }
+	store.reload()!
+	mut items := store.items.filter(it.url != address)
 	store.persist(store.visible, items)!
 }
 
 pub fn (mut store Store) toggle_visible() ! {
+	guard := processlock.acquire(store.path)!
+	defer { guard.release() }
+	store.reload()!
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
 	store.persist(!store.visible, store.items)!
@@ -100,14 +114,15 @@ fn (mut store Store) persist(visible bool, items []Bookmark) ! {
 	store.version++
 }
 
-fn (store &Store) write_profile(visible bool, items []Bookmark) ! {
+fn (mut store Store) write_profile(visible bool, items []Bookmark) ! {
 	if store.path != '' {
 		os.mkdir_all(os.dir(store.path))!
 		temporary := '${store.path}.tmp-${os.getpid()}'
 		mut file := os.open_file(temporary, 'w', 0o600)!
-		file.write_string(json2.encode(SavedBookmarks{ visible: visible, items: items, version: store.version + 1 },
+		encoded := json2.encode(SavedBookmarks{ visible: visible, items: items, version: store.version + 1 },
 			escape_unicode: true
-		)) or {
+		)
+		file.write_string(encoded) or {
 			file.close()
 			os.rm(temporary) or {}
 			return err
@@ -117,5 +132,26 @@ fn (store &Store) write_profile(visible bool, items []Bookmark) ! {
 			os.rm(temporary) or {}
 			return err
 		}
+		store.profile_hash = processlock.fingerprint(encoded)
 	}
+}
+
+pub fn (mut store Store) reload() ! {
+	if store.path == '' || !os.exists(store.path) { return }
+	scratch := platform.begin_thread_scratch('bookmark profile refresh')
+	defer { scratch.finish() }
+	contents := os.read_file(store.path) or {
+		scratch.leave()
+		return error(err.msg().clone())
+	}
+	hash := processlock.fingerprint(contents)
+	if hash == store.profile_hash { return }
+	fresh := open(store.path) or {
+		scratch.leave()
+		return error(err.msg().clone())
+	}
+	store.items = fresh.items
+	store.visible = fresh.visible
+	store.version = fresh.version
+	store.profile_hash = fresh.profile_hash
 }

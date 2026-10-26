@@ -61,6 +61,16 @@ fn (mut app BrowserApp) initialize_browser_history() {
 
 fn (mut app BrowserApp) open_browser_history() {
 	app.initialize_browser_tabs()
+	if app.process_tabs() {
+		for index, tab in app.tabs.session.state.tabs {
+			if is_browser_history_url(tab.url) {
+				app.activate_tab_chrome('tab-select:${index}')
+				return
+			}
+		}
+		app.activate_tab_chrome('tab-open:${browser_history_url}')
+		return
+	}
 	for index, tab in app.tabs.pages {
 		if is_browser_history_url(tab.source_label) {
 			app.activate_tab_chrome('tab-select:${index}')

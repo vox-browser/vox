@@ -1,5 +1,6 @@
 module main
 
+import browsertabs
 import gg
 import layout
 import math
@@ -10,27 +11,38 @@ import platform
 const tab_strip_height = 29.0
 const tab_strip_leading_width = 62.0
 
-// Each tab keeps a stable BrowserApp address: document and platform callbacks
-// retain that owner. Only the window and its chrome are shared.
+// GUI tabs own separate processes; only tab-strip metadata is shared. The
+// page list also supports non-windowed fixtures with stable callback owners.
 @[heap]
 struct BrowserTabs {
 mut:
-	pages           []&BrowserApp
-	selected        int
-	pending_actions []string
-	drag            ?BrowserTabDrag
-	pending_detaches []PendingTabDetach
-	open_window fn (string) ! = open_detached_browser_window
+	session                 &browsertabs.Session = unsafe { nil }
+	process_timer           &platform.Timer      = unsafe { nil }
+	process_visible         bool
+	process_initializing    bool
+	profile_refresh_at      i64
+	polling_process         bool
+	close_after_replacement bool
+	closing_process         bool
+	process_icon_id         int = -1
+	process_icon            string
+	pages                   []&BrowserApp
+	selected                int
+	pending_actions         []string
+	drag                    ?BrowserTabDrag
+	pending_detaches        []PendingTabDetach
+	open_window             fn (string) ! = open_detached_browser_window
 }
 
 struct BrowserTabDrag {
-	page   &BrowserApp = unsafe { nil }
-	first  int
-	end    int
-	width  f64
-	start  f64
-	start_y f64
-	offset f64
+	process_id string
+	page       &BrowserApp = unsafe { nil }
+	first      int
+	end        int
+	width      f64
+	start      f64
+	start_y    f64
+	offset     f64
 mut:
 	x         f64
 	target    int
@@ -97,6 +109,11 @@ fn (mut app BrowserApp) activate_tab_chrome(action string) {
 		app.tabs.pending_actions << action.clone()
 		platform.leave_persistent(persistent)
 		request_browser_frame()
+		return
+	}
+	app.start_process_tabs()
+	if app.process_tabs() {
+		app.activate_process_tab(action)
 		return
 	}
 	mut current := app.active_browser_tab()
@@ -172,7 +189,9 @@ fn (mut app BrowserApp) activate_tab_chrome(action string) {
 
 fn (mut app BrowserApp) move_browser_tab(from int, to int) {
 	if app.tabs == unsafe { nil } || from < 0 || to < 0
-		|| from >= app.tabs.pages.len || to >= app.tabs.pages.len { return }
+		|| from >= app.tabs.pages.len || to >= app.tabs.pages.len {
+		return
+	}
 	// Move owners, never their contents: document callbacks retain these addresses.
 	moving := app.tabs.pages[from]
 	if from < to {
@@ -189,7 +208,9 @@ fn (mut app BrowserApp) move_browser_tab(from int, to int) {
 		app.tabs.selected++
 	}
 	mut selected := app.active_browser_tab()
-	$if macos { C.native_hide_cached_snapshot() }
+	$if macos {
+		C.native_hide_cached_snapshot()
+	}
 	selected.snapshot_visible = false
 	selected.snapshot_hold = false
 	selected.snapshot_cached = true
@@ -252,7 +273,11 @@ fn (mut app BrowserApp) close_browser_tab(index int) {
 fn (mut app BrowserApp) dispose_browser_tab() {
 	app.release_native_replay_scratch()
 	mut retiring := app.document
-	layout_handle := if retiring != unsafe { nil } { retiring.layout_engine_handle() } else { unsafe { nil } }
+	layout_handle := if retiring != unsafe { nil } {
+		retiring.layout_engine_handle()
+	} else {
+		unsafe { nil }
+	}
 	app.navigation_generation++
 	app.pending_navigation = none
 	app.cancel_page_preload()
@@ -288,6 +313,7 @@ fn (mut app BrowserApp) dispose_browser_tab() {
 }
 
 fn (mut app BrowserApp) draw_browser_tabs() {
+	app.start_process_tabs()
 	$if macos {
 		if app.ctx != unsafe { nil } && app.ctx.native_rendering
 			&& C.vox_browser_has_paint_context() == 0 {
@@ -307,6 +333,7 @@ fn (mut app BrowserApp) draw_browser_tabs() {
 		app.tabs.pending_actions.clear()
 		for action in pending { app.activate_tab_chrome(action) }
 	}
+	app.poll_process_tabs()
 	app.poll_detached_tab_windows()
 	mut active := app.active_browser_tab()
 	if app.tabs != unsafe { nil } {
@@ -331,6 +358,14 @@ fn (mut app BrowserApp) poll_background_browser_tab() {
 }
 
 fn (mut app BrowserApp) cleanup_browser_tabs() {
+	if app.process_tabs() {
+		if app.tabs.process_timer != unsafe { nil } { app.tabs.process_timer.stop() }
+		if app.tabs.closing_process {
+			app.tabs.session.leave() or {}
+		} else {
+			app.tabs.session.shutdown() or {}
+		}
+	}
 	app.unmount_address_bar()
 	if app.tabs != unsafe { nil } {
 		for pending in app.tabs.pending_detaches { os.rmdir_all(pending.folder) or {} }
@@ -362,6 +397,7 @@ fn browser_tab_shortcut(key gg.KeyCode, modifier gg.Modifier) string {
 }
 
 fn (app &BrowserApp) browser_tab_snapshot_key() string {
+	if app.process_tabs() { return app.tabs.session.encoded_state() }
 	if app.tabs == unsafe { nil } { return 'single' }
 	mut parts := ['${app.tabs.selected}']
 	for tab in app.tabs.pages { parts << '${tab.address}:${tab.browser_tab_title()}' }

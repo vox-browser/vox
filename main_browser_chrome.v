@@ -95,7 +95,7 @@ fn (app &BrowserApp) browser_chrome_state(width int, height int) BrowserChromeSt
 	return BrowserChromeState{
 		tab_titles: titles
 		tab_favicons: app.cached_browser_tab_favicons()
-		selected_tab: if app.tabs != unsafe { nil } { app.tabs.selected } else { 0 }
+		selected_tab: app.browser_selected_tab()
 		width:   width
 		height:  height
 		address: app.address

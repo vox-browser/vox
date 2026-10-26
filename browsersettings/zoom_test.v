@@ -42,7 +42,7 @@ fn test_zoom_levels_persist_independently_and_reset_removes_preference() {
 	assert !os.read_file(path)!.contains('first.test')
 	assert open_zoom_levels(path)!.for_url('https://first.test/') == 1
 	assert open_zoom_levels(path)!.for_url('https://second.test/') == 0.8
-	assert os.ls(directory)!.len == 1
+	assert os.ls(directory)!.len == 2
 	assert (os.stat(path)!.mode & 0o777) == 0o600
 }
 
@@ -72,7 +72,7 @@ fn test_zoom_save_failure_keeps_existing_file_and_preference() {
 	if _ := store.set_for_url('https://example.test/', 2) { assert false }
 	assert store.for_url('https://example.test/') == 1.25
 	assert os.read_file(path)! == before
-	assert os.ls(directory)!.len == 2
+	assert os.ls(directory)!.len == 4
 }
 
 fn test_zoom_profile_filters_invalid_entries_and_preserves_corrupt_json() {

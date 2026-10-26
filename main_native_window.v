@@ -113,6 +113,8 @@ fn initialize_native_browser_context(user_data voidptr) {
 				begin_browser_history_swipe, commit_browser_history_swipe)
 		}
 	}
+	mut app := unsafe { &BrowserApp(context.user_data) }
+	app.start_process_tabs()
 }
 
 fn cleanup_native_browser_context(user_data voidptr) {

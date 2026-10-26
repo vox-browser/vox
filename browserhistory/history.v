@@ -1,5 +1,6 @@
 module browserhistory
 
+import processlock
 import json2
 import os
 import platform
@@ -25,8 +26,10 @@ pub mut:
 	visits  []Visit
 	version u64
 mut:
-	path    string
-	next_id i64 = 1
+	profile_hash [32]u8
+	path         string
+	next_id      i64 = 1
+	updated_at   i64
 }
 
 pub fn open(path string, now i64) !&Store {
@@ -34,10 +37,14 @@ pub fn open(path string, now i64) !&Store {
 	defer { platform.leave_persistent(persistent) }
 	// json2 retains per-type field metadata after its first encode. Initialize
 	// it here so a later save cannot leave that cache in a temporary arena.
-	$if prealloc { _ := json2.encode(Visit{}) }
-	mut store := &Store{ path: path.clone() }
+	$if prealloc {
+		_ := json2.encode(Visit{})
+	}
+	mut store := &Store{ path: path.clone(), updated_at: now }
 	if path != '' && os.exists(path) {
-		store.visits = json2.decode[[]Visit](os.read_file(path)!)!
+		contents := os.read_file(path)!
+		store.visits = json2.decode[[]Visit](contents)!
+		store.profile_hash = processlock.fingerprint(contents)
 	}
 	mut retained := []Visit{}
 	for visit in store.visits {
@@ -63,6 +70,10 @@ pub fn (mut store Store) record(address string, title string, now i64) ! {
 
 pub fn (mut store Store) record_with_favicon(address string, title string, favicon_url string, now i64) ! {
 	if !eligible_url(address) { return }
+	guard := processlock.acquire(store.path)!
+	defer { guard.release() }
+	store.reload_at(now)!
+	store.updated_at = now
 	// Only the new strings and the reusable visit array outlive this operation.
 	persistent := platform.enter_persistent()
 	owned_address := address.clone()
@@ -102,6 +113,9 @@ fn matches(visit Visit, terms []string) bool {
 }
 
 pub fn (mut store Store) remove(ids []i64) ! {
+	guard := processlock.acquire(store.path)!
+	defer { guard.release() }
+	store.reload_at(store.updated_at)!
 	scratch := platform.begin_thread_scratch('browser history update')
 	defer { scratch.finish() }
 	mut selected := map[i64]bool{}
@@ -114,6 +128,9 @@ pub fn (mut store Store) remove(ids []i64) ! {
 
 // A zero cutoff means all history; time ranges include their starting instant.
 pub fn (mut store Store) clear_since(cutoff i64) ! {
+	guard := processlock.acquire(store.path)!
+	defer { guard.release() }
+	store.reload_at(store.updated_at)!
 	scratch := platform.begin_thread_scratch('browser history update')
 	defer { scratch.finish() }
 	store.persist(store.visits.filter(cutoff != 0 && it.visited_at < cutoff)) or {
@@ -127,7 +144,8 @@ fn (mut store Store) persist(visits []Visit) ! {
 		os.mkdir_all(os.dir(store.path))!
 		temporary := '${store.path}.tmp-${os.getpid()}'
 		mut file := os.open_file(temporary, 'w', 0o600)!
-		file.write_string(json2.encode(visits, escape_unicode: true, time_as_unix: true)) or {
+		encoded := json2.encode(visits, escape_unicode: true, time_as_unix: true)
+		file.write_string(encoded) or {
 			file.close()
 			os.rm(temporary) or {}
 			return err
@@ -137,6 +155,7 @@ fn (mut store Store) persist(visits []Visit) ! {
 			os.rm(temporary) or {}
 			return err
 		}
+		store.profile_hash = processlock.fingerprint(encoded)
 	}
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
@@ -157,3 +176,30 @@ pub fn default_path() string {
 }
 
 pub fn now() i64 { return time.now().unix() }
+
+// Renamed profile files are complete snapshots. Avoid persistent allocations
+// while an unchanged profile is polled by a background tab.
+pub fn (mut store Store) reload() ! {
+	store.reload_at(now())!
+}
+
+fn (mut store Store) reload_at(timestamp i64) ! {
+	if store.path == '' || !os.exists(store.path) { return }
+	scratch := platform.begin_thread_scratch('history profile refresh')
+	defer { scratch.finish() }
+	contents := os.read_file(store.path) or {
+		scratch.leave()
+		return error(err.msg().clone())
+	}
+	hash := processlock.fingerprint(contents)
+	if hash == store.profile_hash { return }
+	fresh := open(store.path, timestamp) or {
+		scratch.leave()
+		return error(err.msg().clone())
+	}
+	store.visits = fresh.visits
+	store.next_id = fresh.next_id
+	store.profile_hash = fresh.profile_hash
+	store.updated_at = timestamp
+	store.version++
+}

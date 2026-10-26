@@ -19,7 +19,7 @@ $if !vox_ui2 ? {
 			mut slot := i
 			if drag := app.tabs.drag {
 				if drag.moving {
-					from := app.browser_tab_index(drag.page)
+					from := app.browser_drag_tab_index(drag)
 					if i == from { continue }
 					if from < i && i <= drag.target { slot-- }
 					if drag.target <= i && i < from { slot++ }
@@ -30,10 +30,11 @@ $if !vox_ui2 ? {
 		}
 		if drag := app.tabs.drag {
 			if drag.moving {
-				mut dragged_page := drag.page
+				index := app.browser_drag_tab_index(drag)
+				if index < 0 || index >= chrome.tab_titles.len { return }
 				x := math.clamp(drag.x - drag.offset, tab_strip_leading_width,
 					tab_strip_leading_width + f64(end - first - 1) * tab_width)
-				app.draw_portable_browser_tab(dragged_page.browser_tab_title(), dragged_page.browser_tab_favicon_id(), f32(x), tab_width, true)
+				app.draw_portable_browser_tab(chrome.tab_titles[index], chrome.tab_favicons[index], f32(x), tab_width, true)
 			}
 		}
 		x := f32(tab_strip_leading_width + 12 + f64(end - first) * tab_width)
@@ -42,8 +43,8 @@ $if !vox_ui2 ? {
 
 	fn (mut app BrowserApp) draw_portable_browser_tab(label string, favicon int, x f32, width f64, selected bool) {
 		fill := if selected { gg.rgb(247, 247, 247) } else { gg.rgb(210, 210, 210) }
-		draw_browser_polygon(app.ctx, [x, f32(tab_strip_height), x + 10, f32(5),
-			x + f32(width) - 10, f32(5), x + f32(width), f32(tab_strip_height)], fill)
+		draw_browser_polygon(app.ctx, [x, f32(tab_strip_height), x + 10, f32(5), x + f32(width) - 10,
+			f32(5), x + f32(width), f32(tab_strip_height)], fill)
 		if favicon >= 0 {
 			image := app.ctx.get_cached_image_by_idx(favicon)
 			scale := f32(16) / f32(math.max(image.width, image.height))
