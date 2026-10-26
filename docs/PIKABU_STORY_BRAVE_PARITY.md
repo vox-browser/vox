@@ -304,3 +304,28 @@ their existing criteria, including canvas-text's upstream fuzzy bounds.
 Font selection and the failed bridge checkpoint require repair and revalidation;
 neither checkpoint resets the broad-check cadence. Whole-page parity remains
 open.
+
+## Explicit layout-test font selection
+
+`bb4ae5c5` preserves an explicit `LADYBIRD_LAYOUT_TEST_FONT` when Chromium font
+matching is active. Family availability and face selection use the configured
+font, including its initial face index, instead of replacing it with a system
+match. Ordinary Chromium font matching remains the default when no valid
+override exists.
+
+Seven focused font cases passed with normal GC and with `-prealloc -gc none`.
+Both compilers and test processes exited zero, and the source manifest stayed
+unchanged. The receipt is
+`Build/pikabu-story-font-tests-1792993913172551000/results.json`; runtime
+receipts are `normal-runtime.json` and `arena-runtime.json` beside it. The
+compiler remains current V `1e63d0f`, with the SHA-256 recorded above.
+
+This does not yet repair the failed screenshot checkpoint by evidence: its
+21 captures still require a fresh production rerun. Subsequent local checks
+also exposed fixture setup errors and a retraced-rectangle acceptance error
+in the pending SVG-background candidate. The fourth combined attempt ended
+with a memory-guard cleanup `PermissionError` and an empty guard report, so
+its termination cause and aggregate memory peak are unestablished. It receives
+no production-build, broad-test, or screenshot credit. Raw output remains in
+`Build/pikabu-story-libjs-broad-job-4.log`. Whole-page pixel parity and the
+broader regression checkpoint remain open.
