@@ -15,6 +15,36 @@ fn test_native_device_layout_retains_css_layout_for_embedded_user_spaces() {
 	assert browser_document_supports_device_layout(document)
 }
 
+fn test_native_device_layout_ignores_only_unboxed_embedded_user_spaces() {
+	for markup in ['<iframe></iframe>', '<svg><foreignObject><canvas></canvas></foreignObject></svg>',
+		'<math><mi>x</mi></math>', '<object></object><embed><video></video><audio></audio>'] {
+		mut document := html.parse_document('<!doctype html><style>.hidden { display:none }</style><div class="hidden"><div style="display:block">${markup}</div></div>')
+		assert browser_document_supports_device_layout(document), markup
+		document.finalize()
+	}
+	for display in ['visibility:hidden', 'opacity:0', 'display:contents'] {
+		mut document := html.parse_document('<!doctype html><div style="${display}"><iframe></iframe></div>')
+		assert !browser_document_supports_device_layout(document), display
+		document.finalize()
+	}
+}
+
+fn test_native_device_layout_rechecks_live_display_changes() {
+	mut document := html.parse_document('<!doctype html><style>.hidden { display:none }</style><div id="slot" class="hidden"><iframe id="frame"></iframe></div>')
+	defer { document.finalize() }
+	mut slot := document.get_element_by_id('slot') or { panic('missing slot') }
+	mut frame := document.get_element_by_id('frame') or { panic('missing frame') }
+	assert browser_document_supports_device_layout(document)
+	slot.remove_attribute('class')
+	assert !browser_document_supports_device_layout(document)
+	frame.set_attribute_value('style', 'display:none')
+	assert browser_document_supports_device_layout(document)
+	frame.remove_attribute('style')
+	assert !browser_document_supports_device_layout(document)
+	slot.set_attribute_value('class', 'hidden')
+	assert browser_document_supports_device_layout(document)
+}
+
 fn test_native_device_viewport_is_independent_of_emulated_raster_scale() {
 	commands := [layout.PaintCommand{ kind: 'fill_rect', x: 10, y: 10, width: 10, height: 10 }]
 	plan := layout.ChromiumRasterLayerPlan{

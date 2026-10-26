@@ -5,15 +5,26 @@ import html
 import os
 
 fn browser_document_supports_device_layout(document &dom.Document) bool {
-	return document.as_node().for_each_in_inclusive_subtree(fn (node &dom.Node) dom.TraversalDecision {
+	root := document.as_node()
+	mut current := root.first_child()
+	mut hidden_by_element := map[u64]bool{}
+	for {
+		node := current or { break }
 		if element := node.as_element() {
 			if !element.is_html_element() || element.local_name() in ['iframe', 'object', 'embed',
 				'canvas', 'video', 'audio'] {
-				return .@break
+				// display:none subtrees consume no layout coordinates. In particular,
+				// cosmetic filtering of an ad frame must not reduce the precision
+				// of text elsewhere in the document. Resolve current ancestor styles
+				// just as the preload planner does, including live display changes.
+				if !preload_element_has_no_display_box(element, mut hidden_by_element) {
+					return false
+				}
 			}
 		}
-		return .@continue
-	}) != .@break
+		current = node.next_in_pre_order(root)
+	}
+	return true
 }
 
 // Native Chromium windows use display density for layout as well as raster.
