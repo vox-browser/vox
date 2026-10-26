@@ -17,10 +17,20 @@ mut:
 __global window_message_bindings_ = map[voidptr]&WindowMessageBinding{}
 
 pub fn (mut runtime Runtime) install_window_message_binding() ! {
+	runtime.install_window_event_handler_binding()!
+	runtime.install_message_event_binding()!
+}
+
+// MessageEvent is also exposed in worker realms. Its event wrappers and clone
+// projection do not require a Window or install Window.postMessage there.
+pub fn (mut runtime Runtime) install_message_event_binding() ! {
 	runtime.require_javascript_value_context()!
 	owner := voidptr(&runtime)
 	if owner in window_message_bindings_ { return }
-	runtime.install_window_event_handler_binding()!
+	runtime.install_event_target_binding()!
+	settings := runtime.scripting_settings_ or { return error('MessageEvent requires its owning settings') }
+	window_messaging := settings.global_object().data.kind == .window
+	if window_messaging { runtime.install_window_event_handler_binding()! }
 	mut binding := &WindowMessageBinding{ clone: StructuredCloneBridge.create(&runtime)! }
 	operation := runtime.make_value_host_function(fn [owner, mut binding] (_ voidptr, args []voidptr) !voidptr {
 		mut runtime := unsafe { &Runtime(owner) }
@@ -42,6 +52,7 @@ pub fn (mut runtime Runtime) install_window_message_binding() ! {
 	values := runtime.retain_javascript_value(runtime.call_javascript_function(factory, global, [
 		operation,
 		global,
+		C.JSValueMakeBoolean(runtime.context, window_messaging),
 	])!)!
 	defer { runtime.release_javascript_value(values) }
 	mut exception := unsafe { nil }

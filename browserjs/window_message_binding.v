@@ -1,9 +1,9 @@
 module browserjs
 
-// Window.postMessage and MessageEvent use the owning Window's event target and
-// the translated posted-message task source, including structured cloning.
+// MessageEvent is shared by Window and worker realms. Only Window receives
+// the Window.postMessage overloads; a dedicated worker supplies its own sender.
 fn window_message_binding_factory() string {
-	return r'(function(operate,global){
+	return r'(function(operate,global,windowMessaging){
  const define=Object.defineProperty,descriptor=Object.getOwnPropertyDescriptor,create=Object.create,freeze=Object.freeze;
  const T=global.TypeError,Parent=global.Event,ports=new WeakMap();
  const object=value=>value!==null&&(typeof value==="object"||typeof value==="function");
@@ -24,7 +24,7 @@ fn window_message_binding_factory() string {
   if(arguments.length<1)throw new T("initMessageEvent requires one argument");
   operate("init",this,type,bubbles,cancelable,data,origin,lastEventId,source,sequence(ports));
  }};
- define(global,"postMessage",{value:methods.postMessage,writable:true,enumerable:true,configurable:true});
+ if(windowMessaging)define(global,"postMessage",{value:methods.postMessage,writable:true,enumerable:true,configurable:true});
  const prototype=create(Parent.prototype);
  const MessageEvent=new Proxy(function MessageEvent(type,eventInitDict={}){throw new T("MessageEvent constructor requires new")},{construct(target,args,newTarget){
   if(args.length<1)throw new T("MessageEvent requires one argument");
