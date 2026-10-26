@@ -1178,3 +1178,34 @@ instruction comparison. The first standard guard attempt exits 125 with
 The two candidate test pipelines remain pending behind the shared guard and
 receive zero credit. The last strict production ratio remains 3.656719;
 the required ratio is at most 0.90.
+
+## Pending serialization and parser experiments
+
+`integer-length-focused-1` compiles in both modes and passes its 12 Boehm
+cases, but the preallocated run fails the existing keyword-storage check:
+one keyword conversion retains 28 unexpected bytes. Its guard exits 1 after
+275.405 seconds, with peak RSS 3,506,651,136 bytes. Generated C shows that
+passing the narrowed length by address makes V heap-copy the entire incoming
+style value before the keyword branch. The helper now takes the small length
+record by value. `integer-length-focused-2` and its full-page follow-up are
+queued; the failure remains preserved and no saving is credited.
+
+The original unfiltered-PNG supervisor disappears without a completed exit
+receipt or focused output. `png-none-pipeline-1-interrupted.json` records the
+unknown exit rather than assigning success. Its separate retry,
+`png-none-pipeline-2`, is queued with fresh guard receipts.
+
+The parser candidate adds an allocation-free presence walk before declarative
+shadow materialization. It follows ordinary children and existing closed or
+open shadow roots. Documents without templates can skip the allocating,
+mutation-safe materialization walk; documents with templates retain that walk
+unchanged. Three new tests cover allocation-free ordinary traversal, templates
+inserted into an existing closed root, and initially inert templates that
+become declarative after mutation. `shadow-presence-focused-1` selects 69 HTML
+cases per GC mode; its generated-C isolation, eligibility probe, 30-pair page
+comparison and conditional broad checkpoint are prepared but have not run.
+
+All three candidates and `intrinsic-inline-restore-3` remain unverified behind
+the shared guard. The current available production app contains none of the
+three candidates. No new production build is queued, and no pending job earns
+instruction credit or changes the last strict production ratio of 3.656719.
