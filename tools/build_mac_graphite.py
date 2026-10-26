@@ -10,6 +10,7 @@ import posixpath
 import shutil
 import subprocess
 import tarfile
+import tempfile
 import urllib.request
 
 # Chromium 155.0.8059.80 DEPS. Keep this separate from LibWeb's Skia ABI.
@@ -25,8 +26,41 @@ PATCH_INPUTS = {
         "fa91fe6d9e448e04c136fc0756710105bfe9e91c880a67d07ca6f79da0a10a72"),
     "src/gpu/graphite/mtl/MtlGraphiteUtils.mm": (
         "dbf4db49c1a09e7c80a3107cec108b1c76e8d99551d429c5f268b45a8096f76d",
-        "761dc0b22373b425120adda011b9d74c40ca572ec7c179bfd3979c5c09554a23"),
+        "f8e0e89321a5877e35e5ef7a9427299c91cd5a1999c40a64fc06025e13a00ec7"),
 }
+LEGACY_MSL_SHA256 = "761dc0b22373b425120adda011b9d74c40ca572ec7c179bfd3979c5c09554a23"
+
+
+def prepare_precision_patch(source, archive, patch):
+    """Apply the pinned patch or upgrade the previous, authenticated patch."""
+    actual = {name: hashlib.sha256((source / name).read_bytes()).hexdigest()
+              for name in PATCH_INPUTS}
+    original = {name: hashes[0] for name, hashes in PATCH_INPUTS.items()}
+    patched = {name: hashes[1] for name, hashes in PATCH_INPUTS.items()}
+    legacy = dict(patched)
+    legacy["src/gpu/graphite/mtl/MtlGraphiteUtils.mm"] = LEGACY_MSL_SHA256
+    if actual == patched:
+        return
+    if actual != original and actual != legacy:
+        raise SystemExit("Unexpected or partially patched Skia dependency")
+    # Stage and authenticate every result before modifying the private checkout.
+    with tempfile.TemporaryDirectory(prefix="vox-skia-precision-") as temporary:
+        staged = Path(temporary)
+        with tarfile.open(archive) as bundle:
+            for name, digest in original.items():
+                contents = bundle.extractfile(f"skia-{REVISION}/{name}").read()
+                if hashlib.sha256(contents).hexdigest() != digest:
+                    raise SystemExit(f"Unexpected original Skia source: {name}")
+                target = staged / name
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(contents)
+        subprocess.run(["patch", "--batch", "--fuzz=0", "-p1", "-i", str(patch)],
+                       cwd=staged, check=True)
+        for name, digest in patched.items():
+            if hashlib.sha256((staged / name).read_bytes()).hexdigest() != digest:
+                raise SystemExit(f"Unexpected patched Skia source: {name}")
+        for name in PATCH_INPUTS:
+            (source / name).write_bytes((staged / name).read_bytes())
 
 
 def executable(name, fallback=None):
@@ -83,17 +117,7 @@ def main():
     # half uniforms and arithmetic. Promote both the uniforms and generated
     # MSL together; changing just one corrupts shader bindings. The patch is
     # confined to this private, revision-pinned dependency.
-    for relative, (original, patched) in PATCH_INPUTS.items():
-        digest = hashlib.sha256((source / relative).read_bytes()).hexdigest()
-        if digest not in (original, patched):
-            raise SystemExit(f"Unexpected Skia source changes: {relative}")
-    digests = [hashlib.sha256((source / p).read_bytes()).hexdigest()
-               for p in PATCH_INPUTS]
-    if digests == [pair[0] for pair in PATCH_INPUTS.values()]:
-        subprocess.run(["patch", "-p1", "-i", str(repo / "tools/skia_chromium_metal.patch")],
-                       cwd=source, check=True)
-    elif digests != [pair[1] for pair in PATCH_INPUTS.values()]:
-        raise SystemExit("Partially patched Skia dependency")
+    prepare_precision_patch(source, archive, repo / "tools/skia_chromium_metal.patch")
 
     gn = executable("gn", args.skia_root / "tools/gn/gn")
     ninja = executable("ninja")
