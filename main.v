@@ -7617,6 +7617,10 @@ fn (mut app BrowserApp) handle_key(key gg.KeyCode, modifier gg.Modifier) {
 	}
 	if app.navigation_work_depth > 0 { return }
 	if app.handle_page_editing_key(key, modifier) { return }
+	if key == .left && modifier == .super {
+		app.activate_browser_chrome('back')
+		return
+	}
 	match key {
 		.up { app.scroll_by(-42.0, height) }
 		.down { app.scroll_by(42.0, height) }

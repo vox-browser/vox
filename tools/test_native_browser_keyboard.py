@@ -22,6 +22,9 @@ def main():
         page.write_text('<!doctype html><title>Keyboard regression</title>'
                         '<body style="margin:0;background:#159b53">'
                         '<h1>Command must preserve this page</h1>')
+        (output / "keyboard-next.html").write_text(
+            '<!doctype html><title>Keyboard destination</title>'
+            '<body style="margin:0;background:#394cad"><h1>Go back with Command–Left</h1>')
         library = output / "keyboard.dylib"
         subprocess.run([
             "clang", "-dynamiclib", "-fobjc-arc", "-fblocks",

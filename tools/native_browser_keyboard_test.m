@@ -126,7 +126,10 @@ static void poll(void) {
             break;
         }
     }
-    if (test_window && page_pixels()) {
+    BOOL destination_ready = step != 19
+        || [test_window.title hasPrefix:@"Keyboard destination"];
+    BOOL back_ready = step != 21 || [test_window.title isEqualToString:original_title];
+    if (test_window && page_pixels() && destination_ready && back_ready) {
         if (step == 0) {
             original_address = [address_field.stringValue copy];
             original_title = [test_window.title copy];
@@ -213,6 +216,38 @@ static void advance(void) {
             if (!settings_window()) fail("saved settings did not reopen");
             native_command(settings_window(), 13, @"w");
             break;
+        case 19: {
+            if (settings_window()) fail("settings remained visible after closing");
+            assert_page_preserved();
+            native_command(test_window, 37, @"l");
+            NSTextView *editor = (NSTextView *)address_field.currentEditor;
+            if (!editor) fail("address editor did not open for navigation");
+            NSURL *next = [[[NSURL URLWithString:original_address] URLByDeletingLastPathComponent]
+                URLByAppendingPathComponent:@"keyboard-next.html"];
+            [editor insertText:next.absoluteString replacementRange:editor.selectedRange];
+            [editor doCommandBySelector:@selector(insertNewline:)];
+            break;
+        }
+        case 20: {
+            native_command(test_window, 37, @"l");
+            NSTextView *editor = (NSTextView *)address_field.currentEditor;
+            if (!editor) fail("address editor did not open on destination page");
+            editor.selectedRange = NSMakeRange(editor.string.length, 0);
+            native_command(test_window, 123, @"\uF702");
+            break;
+        }
+        case 21: {
+            if (![test_window.title hasPrefix:@"Keyboard destination"])
+                fail("Cmd+Left navigated while editing the address");
+            NSTextView *editor = (NSTextView *)address_field.currentEditor;
+            if (!editor || !NSEqualRanges(editor.selectedRange, NSMakeRange(0, 0)))
+                fail("Cmd+Left did not move the address caret to the start");
+            [NSApp sendEvent:key_event(NSEventTypeKeyDown, 53, 0, @"\033")];
+            [NSApp sendEvent:key_event(NSEventTypeKeyUp, 53, 0, @"\033")];
+            [test_window makeFirstResponder:input_view];
+            native_command(test_window, 123, @"\uF702");
+            break;
+        }
         default:
             if (settings_window()) fail("settings remained visible after closing");
             assert_page_preserved();
