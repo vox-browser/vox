@@ -940,3 +940,40 @@ unfinished configuration. That candidate is not committed or credited yet.
 Completed artifacts were compressed with SHA256-verified restoration before
 removing their uncompressed copies; raw logs and archive ledgers remain under
 `Build/hn-small-text`. The official Brave target remains unmet.
+
+
+The inline-width retry now passes (`0aa4506a`). The retained normal-GC run and
+fresh preallocated/no-GC run each compile and execute all 21 focused cases,
+for 42 passing executions. The retry runtime exits zero, peaks at 138,166,272
+sampled RSS bytes under its 3 GiB guard, and takes 3.754 seconds. All 3,341
+sealed inputs remain unchanged, and the three committed files match the tested
+snapshot byte for byte. Ordinary supported inline text now measures minimum
+and maximum content widths together, preserving projected text rounding;
+unsupported containers, bidi, spacing and atomic content retain full layout.
+The isolated page comparison is pending and supplies no instruction credit yet.
+
+The Metal precision rewrite (`ef7c1e1e`) replaces two regular-expression passes
+with one linear scan while retaining their byte-level substitutions. Its focused
+release and ASan/UBSan builds each pass 23,699 differential cases against the
+old expressions. Pristine installation, idempotency, authenticated legacy
+upgrade, and atomic rejection of unknown or partial inputs also pass. The
+focused guard exits zero after 77.327 seconds, with sampled peak RSS
+499,351,552 bytes (`metal-precision-1`). The canonical files match the tested
+snapshot. These component checks do not establish page instruction savings.
+
+The first native comparison exits one before any build because its manifest
+mixes 63 structured fingerprints with four plain SHA256 strings. All 67 content
+hashes still match: this is a metadata-format failure, not changed source.
+`metal-precision-build-input-seal-2` verifies every original digest, copies the
+same bytes, and normalizes those four entries without relaxing verification.
+The failed receipt is retained under `metal-precision-isolated-1`; the separate
+retry carries the successful focused checks without replaying them.
+
+Diagnostic `profile-14` has browser and sampler exits zero, exact page pixels,
+unchanged input pins and the encoded-PNG endpoint marker, but an empty call
+graph. Its validation and guard therefore exit one, with zero performance
+credit. A separate profiler retry eagerly collects symbols and keeps the task
+alive longer with explicitly diagnostic response and settle delays. Those
+changed delays and all profiler counts are excluded from instruction acceptance.
+Font, inline-width and native page comparisons remain pending. The last strict
+production Vox/Brave ratio remains 3.656719, above the required 0.90.
