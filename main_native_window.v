@@ -109,6 +109,8 @@ fn initialize_native_browser_context(user_data voidptr) {
 	$if macos {
 		if sapp.isvalid() {
 			C.native_restore_browser_window_state(sapp.macos_get_window())
+			C.native_history_swipe_install(sapp.macos_get_window(), context.user_data,
+				begin_browser_history_swipe, commit_browser_history_swipe)
 		}
 	}
 }
@@ -119,6 +121,7 @@ fn cleanup_native_browser_context(user_data voidptr) {
 		return
 	}
 	$if macos {
+		C.native_history_swipe_remove()
 		C.native_finish_browser_window_state()
 	}
 	if context.config.cleanup_fn != unsafe { nil } {

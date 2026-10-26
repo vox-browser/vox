@@ -46,6 +46,13 @@ fn (mut app BrowserApp) scroll_element_at_viewport_point(point page.PixelPoint,
 fn (mut app BrowserApp) handle_wheel_at_viewport_point(client page.PixelPoint,
 	screen page.PixelPoint, button u32, buttons u32, modifiers u32,
 	delta_x f64, delta_y f64, async_default_action bool) page.EventResult {
+	return app.handle_wheel_input(client, screen, button, buttons, modifiers,
+		delta_x, delta_y, async_default_action, false)
+}
+
+fn (mut app BrowserApp) handle_wheel_input(client page.PixelPoint,
+	screen page.PixelPoint, button u32, buttons u32, modifiers u32,
+	delta_x f64, delta_y f64, async_default_action bool, horizontal_only bool) page.EventResult {
 	if app.document == unsafe { nil } || app.page_model == unsafe { nil } || client.x < 0
 		|| client.y < 0 || client.x >= f64(app.viewport_width)
 		|| client.y >= f64(app.viewport_height) {
@@ -78,7 +85,15 @@ fn (mut app BrowserApp) handle_wheel_at_viewport_point(client page.PixelPoint,
 	// Use this dispatch's deltas: a nested wheel callback may have replaced the
 	// handler's last-wheel metadata before the outer default action resumes.
 	x := if modifiers & dom.modifier_shift != 0 { delta_y } else { delta_x }
-	y := if modifiers & dom.modifier_shift != 0 { delta_x } else { delta_y }
+	// A native horizontal gesture locks the default action to that axis. DOM
+	// listeners still receive both original deltas above and can cancel it.
+	y := if horizontal_only {
+		0.0
+	} else if modifiers & dom.modifier_shift != 0 {
+		delta_x
+	} else {
+		delta_y
+	}
 	if app.scroll_element_at_viewport_point(client, x, y) {
 		return .handled
 	}
