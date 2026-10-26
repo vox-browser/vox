@@ -2,11 +2,15 @@ module layout
 
 import dom
 import painting
+import os
 
-// Compile with -d vox_scroll_raster_diagnostics for eligibility diagnostics.
-// Production builds fold these constant false returns without logging.
+// Compile with -d vox_scroll_raster_diagnostics for scroll diagnostics, or set
+// VOX_PAGE_SWITCH_DIAGNOSTICS=1 for the experimental navigation probe.
 @[inline]
 fn reject_scroll_raster(reason string) bool {
+	if os.getenv('VOX_PAGE_SWITCH_DIAGNOSTICS') == '1' {
+		eprintln('VOX_PAGE_SWITCH_RASTER_REJECT reason=${reason}')
+	}
 	$if vox_scroll_raster_diagnostics ? {
 		eprintln('VOX_SCROLL_RASTER_REJECT reason=${reason}')
 	}
@@ -61,9 +65,14 @@ pub fn viewport_scroll_raster_reusable(document &dom.Document, commands []PaintC
 			}
 			'fill_rect', 'fill_rounded_rect', 'stroke_rounded_rect', 'fill_ellipse',
 			'stroke_ellipse', 'paint_uniform_border', 'draw_line', 'fill_polygon', 'draw_text',
+			'paint_rounded_border_top', 'paint_rounded_border_right',
+			'paint_rounded_border_bottom', 'paint_rounded_border_left',
 			'draw_replaced_image', 'draw_background_image', 'draw_svg_path' {
 			}
 			else {
+				if os.getenv('VOX_PAGE_SWITCH_DIAGNOSTICS') == '1' {
+					eprintln('VOX_PAGE_SWITCH_RASTER_COMMAND kind=${command.kind}')
+				}
 				$if vox_scroll_raster_diagnostics ? {
 					eprintln('VOX_SCROLL_RASTER_COMMAND kind=${command.kind} bounds=${command.x},${command.y},${command.width},${command.height} transform=${command.transform}')
 				}

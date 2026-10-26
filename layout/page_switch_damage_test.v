@@ -2,6 +2,8 @@ module layout
 
 import platform
 import painting
+import html
+import math
 
 fn test_page_switch_tiles_repaint_changed_removed_and_unknown_inputs() {
 	before := [PaintCommand{ kind: 'fill_rect', x: 10, y: 10, width: 20, height: 20, color: 'red' }]
@@ -75,11 +77,55 @@ fn test_page_switch_native_checkmark_dirties_only_its_bounds() {
 	moved := PaintCommand{...path, transform: [1.0, 0.0, 0.0, 1.0, 140.0, 0.0]!}
 	assert page_switch_tiles([moved], 384, 256).keys[1] == ''
 	assert page_switch_tiles([moved], 384, 256).keys.filter(it == '').len == 1
-	// Curves, unknown/malformed segments and non-scaling strokes stay unbounded.
+	// Missing initial moves, malformed segments and non-scaling strokes stay unbounded.
 	path_data := path.svg()
 	for data in [PaintSVGPathData{...path_data, non_scaling_stroke: true},
 		PaintSVGPathData{path_data: [f32(2)].repeat(compatibility_clip_path_segment_stride)},
 		PaintSVGPathData{path_data: [f32(1)]}] {
 		assert page_switch_tiles([PaintCommand{...path, svg_data: &data}], 384, 256).keys.all(it == '')
 	}
+}
+
+fn test_page_switch_bounds_include_bezier_controls_arc_radius_correction_and_strokes() {
+	move := [f32(0), 20, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+	for segment in [
+		[f32(2), 40, 40, 80, 80, 0, 0, 0, 0, 0, 0, 0],
+		[f32(3), 40, 40, 80, 80, 60, 70, 0, 0, 0, 0, 0],
+		[f32(4), 40, 40, 0, 0, 0, 0, 2, 2, 0.5, 1, 1],
+	] {
+		mut packed := move.clone()
+		packed << segment
+		command := PaintCommand{kind: 'draw_svg_path', stroke_width: 2,
+			svg_data: &PaintSVGPathData{path_data: packed}}
+		assert page_switch_tiles([command], 384, 256).keys.filter(it == '').len == 1
+		// A changed/removed unsupported path always invalidates its own tile.
+		assert page_switch_tiles([command], 384, 256).damage(page_switch_tiles([], 384, 256)).len == 1
+		assert page_switch_tiles([PaintCommand{...command, transform: [1.0, 0, 0, 1, 140, 0]!}], 384, 256).keys[1] == ''
+	}
+	mut packed := move.clone()
+	packed << [f32(3), 40, 40, 170, 80, 60, 70, 0, 0, 0, 0, 0]
+	curve := PaintCommand{kind: 'draw_svg_path', svg_data: &PaintSVGPathData{path_data: packed}}
+	assert page_switch_tiles([curve], 384, 256).keys[1] == '' // control hull crosses tile
+	packed[15] = f32(math.nan())
+	assert page_switch_tiles([PaintCommand{...curve, svg_data: &PaintSVGPathData{path_data: packed}}], 384, 256).keys.all(it == '')
+}
+
+fn test_page_switch_rounded_sidebar_borders_do_not_disable_raster_or_dirty_posts() {
+	mut document := html.parse_document('<!doctype html><style>
+		body{margin:0;background:white}aside{margin-left:270px;width:90px;height:40px;
+		border-radius:3px;background:#4f86b5;border-bottom:2px solid #4270a2}
+	</style><aside></aside>')
+	defer { document.finalize() }
+	document.set_font_rendering_policy(.chromium)
+	root := layout_document_typed_in_viewport(document, 384, 256)
+	commands := root.paint_commands()
+	assert commands.any(it.kind == 'paint_rounded_border_bottom')
+	assert viewport_scroll_raster_reusable(document, commands, 384, 256)
+	tiles := page_switch_tiles(commands, 384, 256)
+	assert tiles.keys[0] != ''
+	border := commands.filter(it.kind == 'paint_rounded_border_bottom')[0]
+	assert page_switch_leaf_key(border) != none
+	assert page_switch_leaf_key(border) != page_switch_leaf_key(PaintCommand{...border, points: [1.0, 1, 3, 1]})
+	assert page_switch_tiles([border], 384, 256).damage(page_switch_tiles([], 384, 256)).len == 1
+	assert !viewport_scroll_raster_reusable(document, [PaintCommand{kind: 'unknown'}], 384, 256)
 }

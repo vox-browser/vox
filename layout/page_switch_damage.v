@@ -62,7 +62,9 @@ fn page_switch_value_fields[T](mut key strings.Builder, command &T) bool {
 // This avoids retaining stale decoded images, video, SVG and font-face data.
 fn page_switch_leaf_key(command &PaintCommand) ?string {
 	if command.kind !in ['fill_rect', 'fill_rounded_rect', 'stroke_rounded_rect', 'fill_ellipse',
-		'stroke_ellipse', 'paint_uniform_border', 'draw_line', 'fill_polygon', 'draw_text']
+		'stroke_ellipse', 'paint_uniform_border', 'paint_rounded_border_top',
+		'paint_rounded_border_right', 'paint_rounded_border_bottom', 'paint_rounded_border_left',
+		'draw_line', 'fill_polygon', 'draw_text']
 		|| command.blur != 0 || command.outer_shadow || command.underlays_next
 		|| command.local_border_data != unsafe { nil }
 		|| command.checkbox_theme_data != unsafe { nil }
@@ -130,8 +132,9 @@ fn page_switch_leaf_key(command &PaintCommand) ?string {
 }
 
 fn page_switch_outside(command &PaintCommand, x f64, y f64, width f64, height f64) bool {
-	// Native checkbox ticks and number-control arrows contain packed straight
-	// paths. They remain dirty, but must not invalidate unrelated sidebar tiles.
+	// Native controls and CSS borders contain packed paths. They remain dirty,
+	// but must not invalidate unrelated header/sidebar tiles. Bézier ink stays
+	// within its control hull; arcs use an enclosing disk after radius correction.
 	// Accept only translation in the inner path matrix; arbitrary SVG keeps the
 	// conservative whole-viewport fallback, including non-scaling strokes.
 	if command.kind == 'draw_svg_path' && command.svg_data != unsafe { nil } {
@@ -148,19 +151,52 @@ fn page_switch_outside(command &PaintCommand, x f64, y f64, width f64, height f6
 		mut top := math.inf(1)
 		mut right := math.inf(-1)
 		mut bottom := math.inf(-1)
+		mut current_x := f64(0)
+		mut current_y := f64(0)
+		mut start_x := f64(0)
+		mut start_y := f64(0)
+		if data.path_data[0] != 0 { return false }
 		for offset := 0; offset < data.path_data.len; offset += stride {
 			kind := data.path_data[offset]
-			if kind == 5 { continue }
-			if kind != 0 && kind != 1 { return false }
-			px := f64(data.path_data[offset + 1]) + matrix[4]
-			py := f64(data.path_data[offset + 2]) + matrix[5]
-			if math.is_nan(px) || math.is_inf(px, 0) || math.is_nan(py) || math.is_inf(py, 0) {
-				return false
+			if kind == 5 { current_x = start_x; current_y = start_y; continue }
+			if kind !in [f32(0), 1, 2, 3, 4] { return false }
+			point_count := if kind == 3 { 3 } else if kind == 2 { 2 } else { 1 }
+			for index in 0 .. point_count {
+				px := f64(data.path_data[offset + 1 + index * 2])
+				py := f64(data.path_data[offset + 2 + index * 2])
+				if math.is_nan(px) || math.is_inf(px, 0) || math.is_nan(py) || math.is_inf(py, 0) {
+					return false
+				}
+				left = math.min(left, px)
+				top = math.min(top, py)
+				right = math.max(right, px)
+				bottom = math.max(bottom, py)
 			}
-			left = math.min(left, px)
-			top = math.min(top, py)
-			right = math.max(right, px)
-			bottom = math.max(bottom, py)
+			px := f64(data.path_data[offset + 1])
+			py := f64(data.path_data[offset + 2])
+			if kind == 4 {
+				rx := math.abs(f64(data.path_data[offset + 7]))
+				ry := math.abs(f64(data.path_data[offset + 8]))
+				angle := f64(data.path_data[offset + 9])
+				if math.is_nan(rx) || math.is_inf(rx, 0) || math.is_nan(ry) || math.is_inf(ry, 0)
+					|| math.is_nan(angle) || math.is_inf(angle, 0) { return false }
+				if rx > 0 && ry > 0 {
+					dx := (current_x - px) / 2
+					dy := (current_y - py) / 2
+					u := (math.cos(angle) * dx + math.sin(angle) * dy) / rx
+					v := (-math.sin(angle) * dx + math.cos(angle) * dy) / ry
+					// Every point lies within two corrected maximum radii of
+					// the starting point, for either sweep and large-arc flag.
+					radius := 2 * math.max(rx, ry) * math.max(1, math.sqrt(u * u + v * v))
+					left = math.min(left, current_x - radius)
+					top = math.min(top, current_y - radius)
+					right = math.max(right, current_x + radius)
+					bottom = math.max(bottom, current_y + radius)
+				}
+			}
+			current_x = px
+			current_y = py
+			if kind == 0 { start_x = px; start_y = py }
 		}
 		if !(right >= left && bottom >= top) || math.is_nan(data.stroke_miterlimit)
 			|| math.is_inf(data.stroke_miterlimit, 0) || math.is_nan(command.stroke_width)
@@ -169,8 +205,12 @@ fn page_switch_outside(command &PaintCommand, x f64, y f64, width f64, height f6
 		// caps and the native hairline fringe. The shared helper adds AA guards.
 		outset := math.max(1, math.abs(command.stroke_width) * math.max(1, math.abs(data.stroke_miterlimit)))
 		return paint_leaf_is_outside_canvas(PaintCommand{...command, kind: 'fill_rect',
-			x: left - outset, y: top - outset, width: right - left + outset * 2,
+			x: left + matrix[4] - outset, y: top + matrix[5] - outset, width: right - left + outset * 2,
 			height: bottom - top + outset * 2}, x, y, width, height)
+	}
+	if rounded_single_border_mode(command.kind) != 0 && command.local_border_data == unsafe { nil } {
+		// Single-side borders are clipped to their complete outer rectangle.
+		return paint_leaf_is_outside_canvas(PaintCommand{...command, kind: 'fill_rect'}, x, y, width, height)
 	}
 	if command.kind == 'paint_uniform_border' && command.local_border_data == unsafe { nil } {
 		return paint_leaf_is_outside_canvas(PaintCommand{...command, kind: 'stroke_rounded_rect'}, x, y, width, height)
@@ -196,6 +236,9 @@ pub fn page_switch_tiles(commands []PaintCommand, width int, height int) PageSwi
 		leaf := if in_group { ?string(none) } else { page_switch_leaf_key(command) }
 		if leaf == none && os.getenv('VOX_PAGE_SWITCH_DIAGNOSTICS') == '1' {
 			unsupported[command.kind]++
+			if !page_switch_outside(command, -width * 2, -height * 2, width, height) {
+				eprintln('VOX_PAGE_SWITCH_UNBOUNDED kind=${command.kind} rect=${command.x},${command.y},${command.width},${command.height} underlay=${command.underlays_next} local_border=${command.local_border_data != unsafe { nil }} svg=${command.svg_data != unsafe { nil }}')
+			}
 		}
 		for index in 0 .. builders.len {
 			if dirty[index] { continue }
