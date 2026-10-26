@@ -1064,3 +1064,56 @@ logical scale, invalid bounds, path lifetime and counting after complete
 encoding. All source pins remain unchanged. The initial failure is retained;
 the isolated page comparison is pending. The last strict production
 Vox/Brave ratio is still 3.656719, above the required 0.90.
+
+## Rejected full-page encoding and intrinsic experiments
+
+The subsequent complete-page cohorts reject both experimental paths. Each
+cohort contains 30 alternating control/candidate pairs, with fresh private
+profiles, identical frozen full HTML and assets, and the original navigation
+through synchronously encoded PNG endpoint. All 60 observations in each
+cohort exit zero and retain exact reference pixels and authenticated inputs.
+The `passed` field establishes cohort validity; neither result accepts the
+Brave target or supplies instruction-saving credit.
+
+| Experiment | Control median | Candidate median | Median paired saving | Bootstrap 95% interval | Improved pairs |
+| --- | ---: | ---: | ---: | --- | ---: |
+| `png-filter-isolated-2` | 6,318,984,293.5 | 6,473,094,414 | -158,153,091.5 | [-171,466,641, -134,312,907.5] | 0/30 |
+| `intrinsic-inline-isolated-2` | 6,318,025,514 | 6,380,283,436.5 | -52,119,701.5 | [-82,164,340, -16,845,966] | 8/30 |
+
+Every observation remains in the cohorts, including the inline experiment's
+cold first-pair regression of 2,154,628,174 instructions. The host has 18 CPUs;
+the respective ending load averages are [17.018, 16.162, 27.931] and
+[31.413, 26.613, 28.117]. Negative results receive zero credit rather than
+being attributed to reduced contention. The PNG cohort's guard exits zero
+after 420.987 seconds with sampled peak RSS 4,990,582,784 bytes. Its queued
+broad follow-up is cancelled before starting because no reduction was
+established; the cancellation receipt and supervisor exit -15 are retained.
+
+The actual complete-page PNG explains why the favorable component prototype
+was insufficient. Cocoa's adaptive encoding produces 416,388 bytes, whereas
+fixed SUB produces 461,476 bytes. On pair 20 the encoding stage retires
+380,275,629 versus 553,120,848 instructions. The original prototype used a
+different bitmap representation. The source is restored to Cocoa's adaptive
+encoder, and the focused regression now requires byte-for-byte agreement with
+Cocoa in addition to decoded pixels, profile and metadata. Its new focused
+checks are pending; the rejected fixed-SUB observations remain unchanged.
+
+The intrinsic one-pass helper is also removed, restoring
+`layout/intrinsic_sizing.v` exactly to the parent of `0aa4506a`. The
+`intrinsic-inline-measurements-5` pipeline exits zero after 1,054.815 seconds
+with sampled peak RSS 5,769,101,312 bytes. It carries the already authenticated
+font checkpoint, validates the negative inline cohort and diagnostic, and
+skips broad verification below the cumulative reduction threshold. Its
+running lower-bound balance is -82,164,340 instructions. Focused execution
+checks of the restored path are pending.
+
+`instruction-scopes-8` retains exact 2048 by 1536 pixels and unchanged inputs.
+It observes 208 accepted inline probes and 3,375 font-projection cache hits.
+The diagnostic records substantial style, table and inline work: style update
+761,896,745 instructions, coordinate projection 450,455,938, layout-tree
+construction 777,708,628 and completed layout 1,085,592,252. These scopes
+overlap, include instrumentation and concurrent process work, and must not be
+added together or used as acceptance counts. Three style/layout entries do
+not imply three full rebuilds: later entries reuse the retained results.
+This diagnostic supplies zero instruction credit. The last accepted strict
+production Vox/Brave ratio remains 3.656719, above the required 0.90.
