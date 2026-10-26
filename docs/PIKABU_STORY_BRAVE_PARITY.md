@@ -250,3 +250,57 @@ Window messaging (`fc9239f4`), IndexedDB (`106cb5bb`), PerformanceObserver
 checkpoint is pending under the ten-fix cadence; no cadence reset or unrelated
 workflow's broad credit is claimed. Fresh production startup and live pixel
 comparisons are queued. Whole-page parity remains open.
+
+## Encoding startup and failed regression checkpoint
+
+`39932d9a` exposes native TextEncoder, including encodeInto's complete-code-point
+writes, through the existing encoding implementation and actual JavaScriptCore
+typed-array storage. `9b4462ba` exposes TextDecoder's label lookup, streaming
+decoder, fatal errors, BOM handling, and BufferSource conversion. Both bindings
+preserve receiver brands, original conversion exceptions, captured intrinsics,
+and retained storage across temporary allocation scopes. Shared fixed buffers
+are supported; resizable and growable BufferSource storage remains rejected.
+
+The three encoder cases and five decoder cases each passed with normal GC and
+production `-prealloc -gc none`, including poisoned temporary arenas. Compiler
+and runtime exits are zero and source manifests stayed unchanged. Receipts are
+`Build/pikabu-story-encoder-tests/{normal,arena}-1.json` and
+`Build/pikabu-story-decoder-tests/{normal,arena}-1.json`. The encompassing guard,
+`Build/pikabu-story-resume-checks-3-job.json`, exited one because later checks
+failed; it is not a passing broad checkpoint.
+
+The production build and headless startup passed. Its preserved bundle is
+`Build/pikabu-story-encoder-visual-1792985339052998000/Vox.app`, executable SHA-256
+`4d030c8926b28de65a658a5ce10005a8f06c19cc8fafca9b8ecd22c962ebfbf7`.
+The capture directory contains source manifests, native-library and Brave
+identities, private profiles, audit snapshots, raw logs, and pixel verdicts.
+Concurrent IndexedDB and canvas-test edits occurred during compilation, so
+these observations do not isolate rendering changes to the encoding bindings.
+Executable and library identities remained stable during capture.
+
+At 1024 × 768, scale 1, after eight seconds, the archived Pikabu encoder and
+decoder startup fixtures both report PASS and match Brave exactly. The jQuery
+fixture also remains exact. Window messaging and BroadcastChannel fixtures
+remain pending and fail their pixel comparisons. A native callback exception
+is recorded for the channel fixture; absent compact-console diagnostics alone
+does not establish successful callback execution. The bundled story still
+fails strict pixel equality.
+
+The screenshot-mode live navigation produced a Navigation error page and is
+rejected: it has no live parity metric. A separate ordinary window successfully
+loaded the requested Pikabu URL and title, was visible and fully active, and
+remained interactive at the 20-second observation. Its compact console records
+the randomized inline reference error, without the earlier missing TextEncoder
+failure. This does not establish completed page initialization or live parity.
+
+The 21-case screenshot checkpoint in
+`Build/pikabu-story-broad-visual-1792985239506266000/` also failed. It used the
+previous pinned channel bundle, explicit Serenity Sans, and unchanged inputs.
+All ten SVG cases are pixel-exact. Four smoke cases fail: inline-node (14,944
+pixels), ordered-list (4,900), text-decorations (29,823), and default-ignorable
+code points (3,421). The actual inline-node capture selects a system face
+instead of the configured layout-test font. The seven other smoke cases pass
+their existing criteria, including canvas-text's upstream fuzzy bounds.
+Font selection and the failed bridge checkpoint require repair and revalidation;
+neither checkpoint resets the broad-check cadence. Whole-page parity remains
+open.
