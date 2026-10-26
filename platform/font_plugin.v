@@ -349,6 +349,11 @@ pub fn (font &Font) glyph_width(code_point u32) f32 {
 // .notdef glyph at index zero. Fonts without a concrete source retain the
 // synthetic fallback behavior used by standalone and unit-test configurations.
 pub fn (font &Font) contains_glyph(code_point u32) bool {
+	// Chromium on macOS also accepts CoreText's synthesized hyphens from
+	// downloaded fonts, even when their raw cmap has neither character.
+	if code_point in [u32(0x2010), 0x2011] && font.uses_system_font_matching() {
+		return harfbuzz_font_contains_glyph(font, code_point) or { false }
+	}
 	// Installed faces chosen by system font matching can use any cmap format;
 	// HarfBuzz is the authoritative coverage probe for them.
 	if font.system_face() != none {
