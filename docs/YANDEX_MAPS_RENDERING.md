@@ -335,3 +335,70 @@ The resumed comparison/regression run completes, with guard child exit 1
 because the recorded diagnostic interruption and existing smoke failures
 remain failures; sampled peak RSS is 7,197,294,592 bytes. It is not an overall
 passing acceptance run. The live map and LibJS parity goals remain open.
+
+## Shared native session cookies
+
+`25ed7179` and `c4c986ce` give navigation, native Fetch/XHR and
+`document.cookie` one session cookie store. Previously response cookies were
+not available consistently to later requests or scripts. The startup
+diagnostic recorded successful recommendation responses followed by handled
+`Invalid csrf token` rejections. The signed production build with shared
+cookies now renders the recommendation heading and photo cards.
+
+The store matches host/domain, path, expiry, Secure, HttpOnly and SameSite;
+protects cookie prefixes and existing secure/HttpOnly values; and respects
+Fetch's credentials flag for both sending and accepting cookies. Navigation
+stores each redirect response's repeated Set-Cookie fields before following
+the redirect. Script reads query the current store rather than a stale
+document snapshot. Retained data survives production scratch-arena resets.
+The adapter remains process-local: disk persistence, partitioned cookies and
+the full ancestor-context treatment of SameSite are still absent.
+
+The focused validation executes eleven store cases in each of Boehm and
+production `-prealloc -gc none` modes, a credentials-flag case, and twelve
+combined browser cases. The latter include two end-to-end local-server cases
+covering redirect cookies, HttpOnly exclusion, fresh Document reads, script
+writes, Fetch's three credentials modes, native XHR and credentialed CORS.
+Existing document-state, script-event and scheduling cases also pass.
+Evidence is in `session-cookies-1793008179516107000/`; the enclosing guard
+records actual exit 0 and sampled peak RSS of 7,092,928,512 bytes under 12 GiB.
+The combined test executable's separate 3 GiB runtime guard records exit 0
+and peak RSS of 155,074,560 bytes.
+
+Production validation builds committed master `c4c986ce` with current V and
+the production allocator, excluding independent uncommitted renderer/CSS
+experiments. Its preserved native libraries include the preceding raster and
+shadow fixes. The bundle passes signature verification and headless startup;
+all captured source and executable/library hashes remain unchanged. A fresh
+process and private profile load the requested live map at 1024 by 768,
+scale 1, with a twelve-second settle period. The document reaches its expected
+Russian title and complete readiness, with no native errors and only the two
+expected advertising/metrics script blocks. Recommendations render, but the
+map still has no canvas and uses raster tiles. The dynamic-script fixture
+remains exact against the unchanged Brave reference at all 800 by 600 pixels.
+
+Evidence is in `cookie-production-1793008682465484000/` and
+`session-cookie-production-1.guard.json`. That guard records actual exit 0,
+sampled peak RSS of 10,036,199,424 bytes under 12 GiB and elapsed time of
+200.241 seconds. This validates the cookie change; it does not establish
+pixel-perfect live rendering. The browser still executes scripts through
+JavaScriptCore; translated LibJS runtime parity remains open.
+
+The follow-up startup probe records Yandex's own vector feature report:
+`supported:false`, with the sole reason `WindowPropertyNotExist-Worker`.
+Its WebGL draw test, shader precision, vertex-array extension, WebGL 2 and
+WebAssembly checks pass. The discovery feed returns HTTP 200 without the
+previous handled CSRF rejection. This identifies native worker execution as
+the next startup blocker; declaring an unimplemented constructor would not
+validate vector rendering. Diagnostic evidence is in
+`dynamic-script-startup-bounded-1793013308086133000/`.
+
+The unchanged production bundle also retains nine pixel-exact SVG mutation
+reftests. Its eleven-case screenshot smoke batch keeps the three existing
+failures, seven exact cases and the existing canvas-text allowance. A fresh
+windowed Brave reference attempt reaches Yandex's CAPTCHA, so its image is
+rejected and supplies no live comparison metric. The enclosing follow-up
+guard exits 1, with sampled peak RSS of 10,145,693,696 bytes under 12 GiB;
+this is not a passing acceptance run. Results and actual step exit codes are
+in `cookie-followup-1793013308051869000/` and
+`map-visual-batch-1793013325215588000/`.
