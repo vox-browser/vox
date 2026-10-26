@@ -650,6 +650,8 @@ pub fn run_document_layout_for_tree_dump(document &dom.Document, viewport_width 
 
 fn run_document_layout_with_renderer_mode(document &dom.Document, viewport_width f64,
 	viewport_height f64, build_paint_tree bool) ?DocumentLayoutResult {
+	mut font_policy := platform.begin_layout_font_policy_scope()
+	defer { font_policy.finish() }
 	mut allocations := document.enter_native_storage()
 	defer { allocations.finish() }
 	phase_mark := platform.arena_phase_begin()

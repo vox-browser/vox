@@ -68,6 +68,10 @@ fn (font &Font) uses_system_font_matching() bool {
 }
 
 fn layout_test_font_is_configured() bool {
+	cached := C.vox_layout_font_policy_cached()
+	if cached >= 0 {
+		return cached != 0
+	}
 	path := os.getenv('LADYBIRD_LAYOUT_TEST_FONT')
 	return path != '' && os.is_file(path)
 }
