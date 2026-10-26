@@ -523,7 +523,14 @@ fn normalize_table_checksums(mut bytes []u8) {
 		}
 		mut sum := u32(0)
 		for word in 0 .. words {
-			sum += font_u32_at(bytes, offset + word * 4) or { 0 }
+			// The complete padded table was checked above. Read each word
+			// directly so checksum normalization does not repeat four bounds
+			// checks and construct an optional result for every word.
+			position := offset + word * 4
+			sum += unsafe {
+				(u32(bytes[position]) << 24) | (u32(bytes[position + 1]) << 16)
+					| (u32(bytes[position + 2]) << 8) | u32(bytes[position + 3])
+			}
 		}
 		bytes[record + 4] = u8(sum >> 24)
 		bytes[record + 5] = u8(sum >> 16)
