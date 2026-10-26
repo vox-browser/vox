@@ -143,3 +143,50 @@ screenshots and audits are in `retina-controls-9/live-discussion` and
 `retina-controls-9/live-comment`. The latter visibly renders the opener at the
 comment body's font size. These live checks establish loading and the reported
 font correction; exact comparison uses the frozen fixtures above.
+
+## Device projection follow-up
+
+Commit `f207dcb9` skips unchanged dimensionless values and zero pixel lengths
+when projecting a computed style into device coordinates. Keyword border
+widths and dimensional transforms still scale. The regression checks shared
+property identity, percentages, keyword widths, matrix translations and cache
+reuse at four scales. Both `device_layout_style_test.v` (12 cases) and
+`device_layout_projection_storage_test.v` (two cases) compiled and executed
+successfully. The initial new-test crash and its corrected optional-value
+handling remain in `Build/hn-small-text/projection-1` and `projection-2`.
+
+The diagnostic sample in `Build/hn-small-text/profile-5` contains real page
+installation, CSS projection and table layout stacks; its capture matches the
+raw Brave reference exactly. Earlier samples missed rendering and remain
+marked unsuitable for attribution. The delayed-response diagnostic earns no
+instruction credit.
+
+The current pinned production bundle is `Build/hn-small-text/projection-2/Vox.app`:
+
+- Executable SHA-256: `768900a341df3d56a999e1e8b222d48b403beff0257543ed5fbe06b0db5bd106`.
+- Graphite SHA-256: `8cd61beccc720e6e8a1c579b15ff8ddaec87f9b05c16bcdfbbe4575517646a23`.
+
+The production build, startup smoke and all three raw native pixel comparisons
+passed. Source manifests preserve the shared working-tree inputs. During the
+build HEAD advanced from `d4a75b41` to `1f9184c2`; only the independent
+`html/window_post_message_test.v` changed in the source manifest. The two
+projection files were unchanged throughout compilation and verification.
+
+The fresh three-pair acceptance check is retained in `projection-2/instructions`:
+
+| Pair | Vox instructions | Brave lower bound | Brave upper bound |
+| --- | ---: | ---: | ---: |
+| 1 | 9,449,779,492 | 6,966,571,659 | 7,025,559,875 |
+| 2 | 7,738,148,309 | 1,792,062,357 | 1,844,963,273 |
+| 3 | 7,732,440,745 | 1,739,734,765 | 1,809,886,421 |
+
+All six browsers exited zero, matched the reference exactly and retained all
+101 comment rows. **The 10% instruction target still fails**: the strict ratio
+is 5.4317 versus the required 0.90. The median Vox count is 7.738 billion and
+the median Brave lower bound is 1.792 billion. Both first observations remain
+in the results. The benchmark and enclosing guard returned 1 for the failed
+acceptance gate; sampled peak aggregate RSS was 7,604,387,840 bytes.
+
+These observations do not isolate the projection change from the other
+working-tree changes since the earlier build. No matched Vox optimization
+savings, broad-verification credit or ledger reset are claimed.
