@@ -106,6 +106,51 @@ fn test_worker_source_and_result_exact_bytes_match_direct_javascriptcore() {
 	assert C.vox_adblock_get_context() == unsafe { nil }
 }
 
+fn test_prepared_worker_retains_filtering_and_release_lifecycle() {
+	_ = release_unused_engine()
+	set_enabled(false)
+	assert !prepare_default_worker()!
+	assert default_worker_pid() == 0
+	set_enabled(true)
+	defer { _ = release_unused_engine() }
+	assert prepare_default_worker()!
+	pid := default_worker_pid()
+	assert pid > 0
+	assert C.vox_adblock_get_context() == unsafe { nil }
+	assert prepare_default_worker()!
+	assert default_worker_pid() == pid
+	request := Request{url: 'https://securepubads.g.doubleclick.net/tag/js/gpt.js?startup-preparation', source_url: 'https://www.theverge.com/', request_type: 'script'}
+	assert check(request).blocked
+	assert default_worker_pid() == pid
+	assert !release_default_engine_if_idle(5000)
+	assert release_unused_engine()
+	assert default_worker_pid() == 0
+	assert prepare_default_worker()!
+	assert default_worker_pid() > 0
+	assert default_worker_pid() != pid
+	assert check(request).blocked
+}
+
+fn prepare_worker_during_filter_test() string {
+	prepare_default_worker() or { return err.msg() }
+	return ''
+}
+
+fn test_worker_preparation_can_race_the_first_filter_request() {
+	_ = release_unused_engine()
+	set_enabled(true)
+	defer { _ = release_unused_engine() }
+	preparation := spawn prepare_worker_during_filter_test()
+	// A distinct URL prevents an earlier test's memoized result bypassing the helper.
+	decision := check(Request{url: 'https://securepubads.g.doubleclick.net/tag/js/gpt.js?startup-concurrent',
+		source_url: 'https://www.theverge.com/', request_type: 'script'})
+	assert preparation.wait() == ''
+	assert decision.error == ''
+	assert decision.blocked
+	assert default_worker_pid() > 0
+	assert C.vox_adblock_get_context() == unsafe { nil }
+}
+
 fn test_worker_evaluation_exception_retains_state_and_does_not_restart() {
 	assert evaluate_engine('globalThis.errorCounter=1; errorCounter')! == '1'
 	pid := default_worker_pid()
@@ -166,6 +211,9 @@ fn test_worker_initialization_error_is_sticky_across_release_and_configuration()
 	assert default_worker_pid() == 0
 	assert !release_unused_engine()
 	os.setenv('VOX_AB_FAKE_MODE', 'echo', true)
+	mut preparation_error := ''
+	_ = prepare_default_worker() or { preparation_error = err.msg(); false }
+	assert preparation_error == first
 	assert evaluate_engine('2') or { err.msg() } == first
 	assert default_worker_pid() == 0
 	assert C.vox_adblock_get_context() == unsafe { nil }
@@ -176,6 +224,8 @@ fn test_worker_opt_in_can_be_cleared_without_changing_ordinary_direct_backend() 
 	configure_default_worker('')!
 	defer { restore_actual_worker() }
 	assert C.vox_adblock_worker_is_configured() == 0
+	assert !prepare_default_worker()!
+	assert C.vox_adblock_get_context() == unsafe { nil }
 	assert evaluate_engine('42')! == '42'
 	assert C.vox_adblock_get_context() != unsafe { nil }
 	assert default_worker_pid() == 0

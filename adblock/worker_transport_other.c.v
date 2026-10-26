@@ -13,6 +13,7 @@ $if !macos {
 		configure_default_worker(helper)!
 	}
 	pub fn default_worker_pid() int { return 0 }
+	pub fn prepare_default_worker() !bool { return false }
 	pub fn default_worker_memory_bytes() !u64 { return 0 }
 	pub fn run_default_worker_role(arguments []string) ?int { return none }
 }

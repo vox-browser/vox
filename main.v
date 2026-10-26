@@ -7712,6 +7712,11 @@ fn main() {
 		1
 	}
 	defer_remote_navigation := markup == '' && !options.headless_smoke && !options.headless_layout_tree
+	$if macos {
+		if defer_remote_navigation && (initial_url.starts_with('https://') || initial_url.starts_with('http://')) {
+			spawn prepare_initial_navigation_filter_worker()
+		}
+	}
 	page_model := page.Page.create(1.0) or { panic(err) }
 	mut page_client := page_model.client()
 	page_client.set_event_recording(false)

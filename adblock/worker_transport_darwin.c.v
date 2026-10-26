@@ -1,5 +1,7 @@
 module adblock
 
+import time
+
 #flag @DIR/worker_transport_native.o
 #include "@DIR/worker_transport_api.h"
 
@@ -37,6 +39,24 @@ pub fn default_worker_pid() int {
 	C.vox_adblock_lock()
 	defer { C.vox_adblock_unlock() }
 	return C.vox_adblock_worker_get_pid()
+}
+
+// A network-navigation host can overlap snapshot restoration with window setup.
+// Keep this under the request lock: a concurrent check waits for the same helper
+// and still evaluates its real request before any network access is allowed.
+pub fn prepare_default_worker() !bool {
+	C.vox_adblock_lock()
+	defer { C.vox_adblock_unlock() }
+	if C.vox_adblock_get_enabled() == 0 || C.vox_adblock_worker_is_configured() == 0 {
+		return false
+	}
+	previous_error := C.vox_adblock_get_error()
+	if previous_error != unsafe { nil } {
+		return error(unsafe { cstring_to_vstring(previous_error) })
+	}
+	_ = evaluate_default_worker('void 0')!
+	default_engine_last_used_ns = time.sys_mono_now()
+	return true
 }
 
 fn owned_worker_payload(bytes &u8, size usize) string {
