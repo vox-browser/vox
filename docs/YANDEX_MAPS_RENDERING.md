@@ -258,3 +258,80 @@ Matched compiled-library captures are queued with corrected identity checks;
 the earlier injected-shadow diagnostic's improvement from 4,533 to 424 pixels
 is not yet a production result. Pixel-perfect live rendering and LibJS runtime
 parity remain open.
+
+## Dynamically inserted classic scripts
+
+`7d2c8a73` adds external classic-script loading to the compact native browser.
+Previously it collected only the initial scripts, leaving bundles inserted by
+Yandex's startup code unexecuted. Requests now belong to individual script
+elements, with bounded background fetching, default async completion order,
+`async = false` ordering, native trusted completion events and live
+`document.currentScript`. Duplicate URLs share an in-flight fetch but execute
+for each element. Chained bundles keep the document's load event pending;
+navigation releases those delays and discards the outgoing requests.
+
+The focused suite executes twelve cases with both Boehm and `-gc none`: 24
+passing cases. Coverage includes late `src` and type changes without a tree
+mutation, buffered out-of-order async responses, duplicate URLs, removal and
+adoption, navigation cancellation, already-started clones, a real local-file
+fetch, chained load handlers, the eight-request concurrency bound, and initial
+inline/deferred-script identity. All ten recorded implementation/test hashes
+stay unchanged. Evidence is retained in
+`dynamic-scripts-1793002425304678000/`; the enclosing guard records child exit
+0 and sampled peak process-tree RSS of 7,132,839,936 bytes under its default
+12 GiB budget. Both test binaries actually execute under separate 3 GiB guards.
+
+The browser fixture `dynamic-script-loading.html` checks two ordered elements
+sharing a URL and a bundle inserted by a load handler. It turns green only
+after all three execute, their events have the expected identity, and
+`window.load` follows the complete chain. The native fixture reaches
+`Dynamic scripts PASS`, has no JavaScript diagnostics or native errors, and
+matches the independently captured Brave reference at all 800 by 600 pixels.
+The reference is retained in `Tests/Browser/Brave/expected/` (`a08fba2f`).
+The adjacent nine script-load-event, scheduling and asynchronous-image tests
+also compile and execute successfully; their runtime guard records exit 0
+and sampled peak RSS of 169,951,232 bytes under 3 GiB. Evidence is in
+`dynamic-script-regressions-1793005878480323000/`.
+Dynamic inline scripts and module fetching/linking remain outside this slice.
+
+## Images extending above the root raster
+
+`e994661a` bounds the output copy from a root image tile. Negative document
+rows belong to tile zero, but their derived tile-row indices are negative.
+The input copy already excluded those rows; the output copy did not. The
+archived map reproducibly crashed in that copy with SIGBUS before this fix.
+An AddressSanitizer control reports a heap-buffer-overflow in the same path.
+The fixed implementation passes 42 exact comparisons against an independent
+full-root draw, covering two scales, three tile heights and seven vertical
+origins, including negative origins. The native raster suite also passes its
+15 clip cases, 720 composite, 36 shadow-layer, 6,240 glyph-cache, 864 GPU
+backdrop and 288 tiled-image comparisons. The enclosing 3 GiB guard records
+exit 0 and sampled peak RSS of 559,235,072 bytes. Evidence is in
+`image-root-rows-1793005472614057000/`.
+
+The production check reuses the source-pinned V executable built in
+`Build/hn-small-text/font-policy-production-2/` and rebuilds its native renderer
+from committed headers plus this fix. Independent native glyph experiments
+in the shared checkout are excluded. The preserved bundle is signed and
+verified, passes headless startup, and keeps the dynamic-script fixture exact.
+Its fresh-process archived-map capture succeeds with 424 differing pixels
+and maximum channel error 8 against the unchanged Brave reference. This is a
+compiled native-library result, confirming the earlier injected-shadow
+observation. It does not establish pixel-perfect rendering.
+
+The fresh live capture reaches the requested Yandex Maps title and complete
+readiness, but still has no map canvas. A valid windowed Brave capture has a
+canvas; their 1024 by 768 viewport comparison differs at 328,981 pixels with
+maximum channel error 255. The nine SVG source/paint-server mutation reftests
+remain exact. The smoke batch retains the existing inline-node, ordered-list
+and text-decorations failures; seven other cases are exact and canvas-text
+stays within its existing sparse allowance. No tolerances changed.
+
+Evidence is in `image-root-production-1793005715607370000/` and
+`map-visual-batch-1793005985563844000/`. An injected startup diagnostic hit the
+default 12 GiB memory guard (sampled 12,946,128,896 bytes, child exit -9),
+interrupting the first enclosing run after its successful native captures.
+The resumed comparison/regression run completes, with guard child exit 1
+because the recorded diagnostic interruption and existing smoke failures
+remain failures; sampled peak RSS is 7,197,294,592 bytes. It is not an overall
+passing acceptance run. The live map and LibJS parity goals remain open.

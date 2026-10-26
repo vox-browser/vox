@@ -447,3 +447,9 @@ with differently colored sides and diagonal corner clips. Those clips make the
 shared GPU raster tile multisampled; a rounded border in the next tile retains
 its independent raster mode. These three references use Brave 156.1.98.60 at
 800×600 CSS pixels and native scale 2, and require exact RGBA equality.
+
+`dynamic-script-loading` checks two ordered dynamically inserted classic
+scripts sharing one URL, followed by a chained script inserted by a load
+handler. It turns green only after all executions and trusted load events
+complete in order and the window load event follows the chain. Capture at
+800×600, scale 1; the native browser and Brave reference are pixel-exact.
