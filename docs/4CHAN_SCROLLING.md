@@ -993,3 +993,33 @@ peak RSS 704,888,832 bytes within 3 GiB and elapsed 34.17 seconds. The build and
 browser guard/child exited 1 at the eligibility assertion, with sampled peak
 RSS 875,790,336 bytes within 12 GiB and elapsed 138.49 seconds. All four browser
 processes exited 0; failure records insufficient fast-path use, not a crash.
+
+### Rejected glyph-cache bypass (2026-10-26)
+
+Bypassing the glyph raster cache executed during actual wheel input and kept
+all 13 control/candidate screenshot pairs identical. Matching-baseline native
+clip, composite, glyph, shape-backdrop and image tests also passed. It produced
+no repeatable scrolling gain, so the production cache remains enabled.
+
+| Alternating trial | Scroll fps | Median / p95 / max interval (ms) | Over 16.67 ms | Moving / publications / inputs |
+| --- | ---: | --- | ---: | --- |
+| Cache control 1 | 43.41 | 21.25 / 46.32 / 64.83 | 62.17% | 267 / 301 / 360 |
+| Bypass 1 | 41.88 | 21.54 / 45.87 / 71.78 | 64.23% | 260 / 301 / 360 |
+| Cache control 2 | 40.83 | 21.92 / 52.97 / 64.18 | 66.54% | 254 / 289 / 360 |
+| Bypass 2 | 41.90 | 22.68 / 42.96 / 69.88 | 65.28% | 265 / 292 / 360 |
+
+Throughput uses each complete 6.15–6.32 second input window; actual input
+delivery was 56.76–58.37 Hz. First publication gaps were 104.71–107.90 ms;
+first counted scroll gaps were 136.19–168.80 ms, and trailing gaps were
+0.19–0.26 ms. All four browser processes exited 0 with valid navigation and
+completed inputs. The 18-CPU host's one-minute load ranged from 6.18 to 9.14;
+the varying controls and mixed -3.51%/+2.61% changes do not establish a gain.
+These are native layer publications after `updateLayer`, not display scanout.
+
+Evidence under `Build/pol-scroll-20261025-2210/` includes the sealed
+`glyph-bypass-v1-source/`, matching-baseline regression source manifest,
+`glyph-bypass-v1-validation/` with eligibility, pixels, commands and raw timing,
+and `glyph-bypass-v1-rejected.json` with timestamps, load and boundary gaps.
+The browser driver recorded exit 0, but the outer resume guard's report is
+empty; its final exit and peak memory cannot be recovered. This incomplete
+guard evidence supplies no acceptance credit. Smooth 60 fps remains unmet.
