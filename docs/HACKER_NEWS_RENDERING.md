@@ -282,3 +282,41 @@ bytes within the default 12 GiB budget, and elapsed time is 718.680 seconds.
 The invalid probe is retained in `table-shortcut-probe/`. Eligibility and
 unprofiled instruction checks resume separately. No instruction reduction or
 completion of the 10% target is claimed from these rendering results.
+
+## Completed table eligibility and instruction check
+
+The corrected, separate LLDB probe in `table-minimum-resume-1/table-shortcut-probe-2`
+validates the executable UUID and symbol range before resuming the browser. It
+observes 420 table-cell entries, zero requests for maximum row measurements and
+zero full intrinsic row probes. Browser and debugger exits are zero, the
+executable hash is unchanged, and the resulting screenshot has zero differing
+pixels. This establishes eligibility only; instrumented execution receives no
+instruction-saving credit.
+
+`Build/hn-small-text/table-minimum-resume-2/instructions` retains three alternating,
+unprofiled pairs against the same pinned production bundle. All six browser and
+kernel exits are zero, all contain the complete 101-comment fixture, all native
+captures are pixel-exact, and all checked resource-coalition members are owned.
+`acceptance-audit.json` records the independent audit and unchanged executable,
+native-library, harness and fixture identities.
+
+| Pair | Vox instructions | Brave instruction bounds |
+| --- | ---: | ---: |
+| 1 | 10,780,005,021 | 6,995,089,720–7,030,309,035 |
+| 2 | 8,380,853,904 | 1,788,907,721–1,822,466,697 |
+| 3 | 8,316,277,880 | 1,800,995,959–1,837,543,220 |
+
+The median is 8,380,853,904 for Vox and 1,800,995,959 for Brave's lower bound.
+The strict worst-Vox/best-Brave ratio is 6.026, above the required 0.90. No first
+trial was discarded. On this 18-CPU host, the one-minute load average falls
+from 72.897 to 60.487 during the trials; the full load averages and timestamps
+remain in the host records. These observations do not isolate an optimization
+gain. The instruction gate and enclosing guard exit one; the guard's sampled
+peak is 4,227,776,512 bytes. The 10% target remains open and cumulative verified
+instruction-saving credit remains zero.
+
+The separate `Build/hn-small-text/profile-6` diagnostic succeeds with the same
+executable and exact pixels. Of 412 sampled main-install stacks, 155 include
+`Font.system_face`; 115 end in `access` and 37 in environment lookup. The
+diagnostic identifies repeated font queries for investigation. Sampling is not
+an instruction measurement and receives no performance credit.
