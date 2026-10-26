@@ -1,0 +1,28 @@
+<!doctype html><meta charset="utf-8">
+<style>
+html,body{margin:0;background:rgb(146,210,247)}
+.surface{position:absolute;width:220px;height:180px}
+.card{position:absolute;left:24px;top:24px;width:160px;height:40px;
+  border-radius:12px;background:white;box-shadow:0 2px 6px rgba(0,0,0,.2)}
+.small{left:100px;top:88px;width:40px;height:40px;background:rgb(77,77,77)}
+.transform{left:16px;top:16px;will-change:transform}
+.translate{left:280px;top:16px;will-change:translate}
+.rotate{left:544px;top:16px;will-change:rotate}
+.scale{left:16px;top:208px;will-change:scale}
+.perspective{left:280px;top:208px;will-change:perspective}
+.style{left:544px;top:208px;will-change:transform-style}
+.suppressed{position:absolute;left:16px;top:400px;will-change:contents}
+.suppressed .surface{will-change:transform}
+.unboxed{display:contents;will-change:contents}
+.unboxed .surface{left:280px;top:400px;will-change:transform}
+.ordinary{left:544px;top:400px}
+</style>
+<div class="surface transform"><div class="card"></div><div class="card small"></div></div>
+<div class="surface translate"><div class="card"></div><div class="card small"></div></div>
+<div class="surface rotate"><div class="card"></div><div class="card small"></div></div>
+<div class="surface scale"><div class="card"></div><div class="card small"></div></div>
+<div class="surface perspective"><div class="card"></div><div class="card small"></div></div>
+<div class="surface style"><div class="card"></div><div class="card small"></div></div>
+<div class="suppressed"><div class="surface"><div class="card"></div><div class="card small"></div></div></div>
+<div class="unboxed"><div class="surface"><div class="card"></div><div class="card small"></div></div></div>
+<div class="surface ordinary"><div class="card"></div><div class="card small"></div></div>

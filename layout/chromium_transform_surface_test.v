@@ -61,6 +61,94 @@ fn test_chromium_3d_surface_coalesces_with_existing_opacity() {
 	assert groups[0].visual_layer().opacity == .5
 }
 
+fn test_chromium_transform_hints_retain_surface_without_a_transform() {
+	for chromium in [false, true] {
+		for hint in ['transform', 'translate', 'rotate', 'scale', 'perspective', 'transform-style',
+			'auto', 'contents', 'scroll-position', 'width', 'z-index'] {
+			mut document := html.parse_document('<!doctype html><div style="will-change:${hint};width:40px;height:40px;background:rgb(1 2 3)"><div style="width:20px;height:20px;background:rgb(4 5 6)"></div></div>')
+			defer { document.finalize() }
+			if chromium { document.set_font_rendering_policy(.chromium) }
+			_ = layout_document_typed_in_viewport(document, 100, 100)
+			commands := display_list_commands(document.record_display_list() or { panic('missing paint') })
+			groups := commands.filter(it.kind == 'begin_css_effect_layer')
+			expected := chromium && hint in ['transform', 'translate', 'rotate', 'scale', 'perspective',
+				'transform-style']
+			assert groups.len == if expected { 1 } else { 0 }, hint
+			if !expected { continue }
+			assert groups[0].visual_layer().opacity == 1
+			mut depth := 0
+			mut painted := 0
+			for command in commands {
+				if command.kind == 'begin_css_effect_layer' { depth++ }
+				if command.color in ['rgb(1 2 3)', 'rgb(4 5 6)'] {
+					assert depth == 1
+					painted++
+				}
+				if command.kind == 'end_css_effect_layer' { depth-- }
+			}
+			assert painted == 2 && depth == 0
+		}
+	}
+}
+
+fn test_chromium_contents_hint_suppresses_transform_hints_but_keeps_3d_surface() {
+	for display in ['block', 'contents'] {
+		for transform in ['none', 'translateZ(0)'] {
+			mut document := html.parse_document('<!doctype html><div style="display:${display};will-change:contents"><div style="width:20px;height:20px;background:red;will-change:transform;transform:${transform}"></div></div>')
+			defer { document.finalize() }
+			document.set_font_rendering_policy(.chromium)
+			_ = layout_document_typed_in_viewport(document, 100, 100)
+			commands := display_list_commands(document.record_display_list() or { panic('missing paint') })
+			assert commands.filter(it.kind == 'begin_css_effect_layer').len == if transform == 'none' {
+				0
+			} else {
+				1
+			}
+		}
+	}
+}
+
+fn test_chromium_contents_hint_follows_slot_ancestry() {
+	for hint in ['auto', 'contents'] {
+		mut document := html.parse_document('<!doctype html><div id="host"><div style="will-change:transform;width:20px;height:20px;background:red"></div></div>')
+		defer { document.finalize() }
+		document.set_font_rendering_policy(.chromium)
+		mut host := document.get_element_by_id('host') or { panic('missing host') }
+		shadow := host.attach_shadow(dom.ShadowRootInit{ mode: .open }) or { panic(err) }
+		mut slot := document.create_element_ns(dom.namespace_html_uri, 'slot') or { panic(err) }
+		slot.set_attribute_value('style', 'display:contents;will-change:${hint}')
+		mut shadow_node := shadow.as_node()
+		shadow_node.append_child(slot.as_node()) or { panic(err) }
+		_ = layout_document_typed_in_viewport(document, 100, 100)
+		commands := display_list_commands(document.record_display_list() or { panic('missing paint') })
+		assert commands.filter(it.kind == 'begin_css_effect_layer').len == if hint == 'contents' {
+			0
+		} else {
+			1
+		}
+	}
+}
+
+fn test_chromium_transform_hint_does_not_composite_non_transformable_inline() {
+	mut document := html.parse_document('<!doctype html><span style="will-change:transform;background:red">text</span>')
+	defer { document.finalize() }
+	document.set_font_rendering_policy(.chromium)
+	_ = layout_document_typed_in_viewport(document, 100, 100)
+	commands := display_list_commands(document.record_display_list() or { panic('missing paint') })
+	assert !commands.any(it.kind == 'begin_css_effect_layer')
+}
+
+fn test_chromium_transform_hint_coalesces_with_opacity_surface() {
+	mut document := html.parse_document('<!doctype html><div style="will-change:transform;opacity:.5;width:20px;height:20px;background:red"></div>')
+	defer { document.finalize() }
+	document.set_font_rendering_policy(.chromium)
+	_ = layout_document_typed_in_viewport(document, 100, 100)
+	commands := display_list_commands(document.record_display_list() or { panic('missing paint') })
+	groups := commands.filter(it.kind == 'begin_css_effect_layer')
+	assert groups.len == 1
+	assert groups[0].visual_layer().opacity == .5
+}
+
 fn test_chromium_surface_changes_when_animated_transform_has_the_same_matrix() {
 	for opacity in ['1', '.5'] {
 		mut document := html.parse_document('<!doctype html><div id="target" style="width:20px;height:20px;background:red;transform:translateX(0);opacity:${opacity}"></div>')
