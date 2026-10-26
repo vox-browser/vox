@@ -49,7 +49,7 @@ pub fn (mut runtime Runtime) install_window_message_binding() ! {
 	binding.validate_ports = runtime.retain_javascript_value(C.JSObjectGetPropertyAtIndex(runtime.context, values, 1, &exception))!
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	runtime.install_event_wrapper_provider(EventWrapperProvider{
-		owner:  owner
+		owner:  voidptr(binding)
 		create: fn [owner, binding] (event &dom.Event) !voidptr {
 			if event.interface_ != .message_event { return unsafe { nil } }
 			mut runtime := unsafe { &Runtime(owner) }

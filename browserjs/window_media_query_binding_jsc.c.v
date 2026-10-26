@@ -40,7 +40,7 @@ pub fn (mut runtime Runtime) install_window_media_query_binding() ! {
 	binding.event_prototype = runtime.retain_javascript_value(C.JSObjectGetPropertyAtIndex(runtime.context, prototypes, 1, &exception))!
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	runtime.install_event_wrapper_provider(EventWrapperProvider{
-		owner:  owner
+		owner:  voidptr(binding)
 		create: fn [owner, binding] (event &dom.Event) !voidptr {
 			if event.interface_ != .media_query_list_event { return unsafe { nil } }
 			mut runtime := unsafe { &Runtime(owner) }
