@@ -1119,3 +1119,43 @@ Vox executable UUID and C/V symbol ranges. GPU waits accounted for 892/3,150
 and 986/3,433 native drawing samples. Rounded rectangle calls accounted for
 920 and 1,009 samples, and glyph calls for 630 and 622. These profiles are
 diagnostics and supply no unprofiled scrolling performance credit.
+
+
+### Rejected bounded GPU readback polling (2026-10-26)
+
+Submitting asynchronously and polling for up to 200 microseconds before the
+blocking wait did not remove the waits: all 32 sampled actual-input readbacks
+across two eligibility trials exhausted that budget. The prototype was removed.
+Normal and sanitizer completion/failure tests passed, alongside the existing
+shape, rounded-parts, image, path, native clip and graphics-memory checks. All
+13 control/candidate screenshot pairs were pixel-identical. The two screenshot
+smoke commands each returned 1 for existing reference differences; their
+control/candidate outputs matched exactly. Signing and headless startup passed.
+
+| Alternating trial | Scroll fps | Median / p95 / max interval (ms) | Over 16.67 ms | Moving / publications / inputs |
+| --- | ---: | --- | ---: | --- |
+| Blocking control 1 | 45.90 | 19.98 / 38.68 / 61.72 | 63.41% | 287 / 347 / 360 |
+| Bounded polling 1 | 37.91 | 24.18 / 47.91 / 69.01 | 83.87% | 248 / 260 / 360 |
+| Blocking control 2 | 44.28 | 20.79 / 43.10 / 68.28 | 64.89% | 282 / 320 / 360 |
+| Bounded polling 2 | 47.01 | 19.24 / 38.65 / 63.74 | 64.51% | 293 / 362 / 360 |
+
+The frozen original-origin archive, viewport, backing scale, settle period and
+wheel schedule were unchanged. Full input windows lasted 6.23–6.54 seconds;
+actual delivery was 54.88–57.59 Hz. Leading publication gaps were 94.08–100.11 ms
+and leading scroll gaps 123.33–158.55 ms. Trailing publication gaps were
+0.12–18.82 ms and trailing scroll gaps 0.19–18.82 ms. Every browser exited 0
+with valid navigation and 360 inputs. Paired changes were -17.41% and +6.15%;
+the 18-CPU host's one-minute load varied from 3.04 to 5.88. This supplies no
+repeatable optimization credit. The endpoint remains native layer publication
+after updateLayer, not display scanout. Smooth 60 fps remains unmet.
+
+Evidence under `Build/pol-scroll-20261025-2210/` includes
+`readback-poll-v1-rejected-source/`, `readback-poll-v1-summary.json`,
+`readback-poll-v1-focused/`, `readback-poll-v1-assembly/`, production identities
+and `readback-poll-v1-validation/` with every raw trial, input timestamp and
+load record. The focused guard/child exited 0 at 679,477,248 bytes sampled peak
+RSS in 102.92 seconds within 3 GiB. The assembly/validation guard/child exited
+0 at 934,182,912 bytes in 507.31 seconds within 12 GiB. This native-only build
+retained the pinned V executable and Dawn library and rebuilt both the Metal
+Graphite candidate and accepted Skia bridge; the latter removed the previously
+rejected image-batch prototype from the artifact used for these trials.
