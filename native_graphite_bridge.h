@@ -115,6 +115,11 @@ int vox_graphite_draw_rounded_parts_pixels(const VoxGraphitePixelRegion *regions
     int width, int height, int has_background, const VoxGraphiteShape *shape);
 int vox_graphite_draw_shape_region_pixels(const VoxGraphitePixelRegion *region,
     int surface_width, int surface_height, int has_background, const VoxGraphiteShape *shape);
+// Independent tiles of one leaf, each with its own immutable backdrop and
+// descriptor. Wait once for the batch; failure leaves all CPU views untouched.
+int vox_graphite_draw_shape_regions_pixels(const VoxGraphitePixelRegion *regions,
+    const VoxGraphiteShape *shapes, int count, int surface_width, int surface_height,
+    int has_background);
 int vox_graphite_draw_path_pixels(uint8_t *pixels, int width, int height,
     int pitch, int has_background, const VoxGraphitePath *path);
 int vox_graphite_draw_path_region_pixels(const VoxGraphitePixelRegion *region,

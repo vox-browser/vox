@@ -13,6 +13,7 @@
 #include "native_chromium_raster_phase.h"
 #include "native_chromium_raster_rows.h"
 #include "native_chromium_raster_grid.h"
+#include "native_chromium_raster_batch.h"
 #import <Metal/Metal.h>
 #include "include/gpu/ganesh/GrDirectContext.h"
 #include "include/gpu/ganesh/SkSurfaceGanesh.h"
@@ -206,6 +207,16 @@ auto graphite_shape_region_draw()
         void* library = dlopen("@rpath/libVoxGraphite.dylib", RTLD_LAZY | RTLD_LOCAL);
         return library ? reinterpret_cast<decltype(&vox_graphite_draw_shape_region_pixels)>(
             dlsym(library, "vox_graphite_draw_shape_region_pixels")) : nullptr;
+    }();
+    return draw;
+}
+
+auto graphite_shape_regions_draw()
+{
+    static auto draw = [] {
+        void* library = dlopen("@rpath/libVoxGraphite.dylib", RTLD_LAZY | RTLD_LOCAL);
+        return library ? reinterpret_cast<decltype(&vox_graphite_draw_shape_regions_pixels)>(
+            dlsym(library, "vox_graphite_draw_shape_regions_pixels")) : nullptr;
     }();
     return draw;
 }
@@ -2092,6 +2103,43 @@ static bool draw_chromium_root_raster_grid(std::vector<uint32_t>& pixels,
         });
 }
 
+static bool draw_chromium_root_shape_batch(std::vector<uint32_t>& pixels,
+    int width, int height, RasterRegion const& region, float page_x,
+    float page_y, float scroll_y, float scale, VoxGraphiteShape const& descriptor)
+{
+    static bool disabled = [] {
+        auto* value = std::getenv("VOX_DISABLE_SHAPE_TILE_BATCH");
+        return value && *value;
+    }();
+    if (disabled || !s_raster_layer_is_root || s_msaa_grid_columns <= 0) return false;
+    auto draw = graphite_shape_regions_draw();
+    if (!draw) return false;
+    long first_x = std::lround((region.left - page_x) * scale);
+    long first_y = std::lround((region.top - page_y + scroll_y + s_root_raster_scroll_y) * scale);
+    int content_height = std::max(1, static_cast<int>(std::ceil(s_raster_layer_height * scale)));
+    int rows = std::max(1, (content_height - 2 + s_msaa_grid_height - 3) / (s_msaa_grid_height - 2));
+    VoxChromiumRasterGrid grid{s_msaa_grid_width, s_msaa_grid_height, s_msaa_grid_columns, rows};
+    return vox_draw_chromium_raster_grid_batch(pixels, width, height, first_x, first_y, grid,
+        [&](auto& regions) {
+            std::vector<VoxGraphitePixelRegion> views;
+            std::vector<VoxGraphiteShape> shapes;
+            views.reserve(regions.size());
+            shapes.reserve(regions.size());
+            for (auto& tile : regions) {
+                auto shape = descriptor;
+                shape.matrix[2] += tile.offset_x;
+                shape.matrix[5] += tile.offset_y;
+                shape.force_msaa = std::binary_search(s_msaa_grid_tiles.begin(),
+                    s_msaa_grid_tiles.end(), tile.cell);
+                shapes.push_back(shape);
+                views.push_back({tile.x, tile.y, tile.width, tile.height, tile.width * 4,
+                    reinterpret_cast<uint8_t*>(tile.pixels.data())});
+            }
+            return draw(views.data(), shapes.data(), int(views.size()),
+                grid.width, grid.height, 1) != 0;
+        });
+}
+
 extern "C" void ladybird_v_skia_set_rect_clip_outs(float const* rects, int count)
 {
     s_rect_clip_outs.assign(rects, rects + (rects && count > 0 ? count * 4 : 0));
@@ -2701,9 +2749,12 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
         auto draw = graphite_shape_draw();
         bool drawn = draw != nullptr;
         auto draw_region = graphite_shape_region_draw();
-        bool tiled = draw_region && has_background && !has_underlay && s_rect_clip_outs.empty()
-            && (fill >= 2 || size_t(raster_width) * raster_height <= 16384)
-            && draw_chromium_root_raster_grid<true>(pixels,
+        bool region_eligible = draw_region && has_background && !has_underlay && s_rect_clip_outs.empty()
+            && (fill >= 2 || size_t(raster_width) * raster_height <= 16384);
+        bool tiled = region_eligible && draw_chromium_root_shape_batch(pixels,
+            raster_width, raster_height, region, page_x, page_y, scroll_y,
+            destination_scale, descriptor);
+        if (!tiled) tiled = region_eligible && draw_chromium_root_raster_grid<true>(pixels,
             raster_width, raster_height, region, page_x, page_y, scroll_y,
             destination_scale, [&](auto& target, long offset_x, long offset_y, bool msaa,
                                    int x, int y, int width, int height) {

@@ -1051,8 +1051,9 @@ int vox_graphite_draw_rounded_parts_pixels(VoxGraphitePixelRegion const* regions
 // Small controls still rasterize in their original Chromium tile: changing
 // the surface extent changes GPU coverage rounding. Only the conservative
 // affected rectangle needs a backdrop, readback or retained cache entry.
-static bool draw_small_shape_patch(VoxGraphitePixelRegion const& region, int width, int height,
-    bool has_background, VoxGraphiteShape const& shape)
+struct SmallShapePatchBounds { int left, top, width, height; };
+static bool small_shape_patch_bounds(VoxGraphiteShape const& shape, int width, int height,
+    SmallShapePatchBounds& patch)
 {
     if (width > 16384 || height > 16384 || shape.has_underlay || shape.clip_out_count)
         return false;
@@ -1088,6 +1089,17 @@ static bool draw_small_shape_patch(VoxGraphitePixelRegion const& region, int wid
     int patch_width = right - left, patch_height = bottom - top;
     size_t count = size_t(patch_width) * patch_height;
     if (count > 16384 || count * 4 >= size_t(width) * height) return false;
+    patch = {left, top, patch_width, patch_height};
+    return true;
+}
+
+static bool draw_small_shape_patch(VoxGraphitePixelRegion const& region, int width, int height,
+    bool has_background, VoxGraphiteShape const& shape)
+{
+    SmallShapePatchBounds bounds;
+    if (!small_shape_patch_bounds(shape, width, height, bounds)) return false;
+    auto [left, top, patch_width, patch_height] = bounds;
+    size_t count = size_t(patch_width) * patch_height;
     if (!count) {
         if (!has_background) clear_shape_region(region);
         return true;
@@ -1161,6 +1173,8 @@ int vox_graphite_draw_shape_region_pixels(VoxGraphitePixelRegion const* region,
         || size_t(region->pitch) < size_t(region->width) * 4) return 0;
     return draw_small_shape_patch(*region, width, height, has_background != 0, *shape);
 }
+
+#include "native_graphite_shape_batch.h"
 
 extern "C" __attribute__((visibility("default")))
 int vox_graphite_draw_shape_pixels(uint8_t* pixels, int width, int height,
