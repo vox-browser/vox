@@ -5,6 +5,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef VOX_SCROLL_RASTER_DIAGNOSTICS
+#include <stdio.h>
+#endif
 
 // One bounded viewport, never a growing document-sized backing store. The
 // caller supplies a content revision and excludes non-translating content.
@@ -95,6 +98,15 @@ static int native_begin_scroll_raster(uint64_t owner, uint64_t revision,
             (kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big)
         || canvas_width > SIZE_MAX / 4 || pitch < canvas_width * 4
         || device_width * device_height * 4 > 64 * 1024 * 1024) {
+#ifdef VOX_SCROLL_RASTER_DIAGNOSTICS
+        fprintf(stderr, "VOX_SCROLL_RASTER_NATIVE_REJECT pixels=%d ctm=%g,%g,%g,%g,%g,%g scroll=%.12g viewport=%g,%g,%g canvas=%zu,%zu pitch=%zu bits=%zu,%zu info=%u\n",
+            pixels != NULL, ctm.a, ctm.b, ctm.c, ctm.d, ctm.tx, ctm.ty,
+            scroll, device_width, device_height, device_top,
+            canvas_width, canvas_height, pitch,
+            CGBitmapContextGetBitsPerComponent(context),
+            CGBitmapContextGetBitsPerPixel(context),
+            (unsigned)CGBitmapContextGetBitmapInfo(context));
+#endif
         native_discard_scroll_raster();
         return 0;
     }

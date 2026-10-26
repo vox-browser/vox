@@ -34,6 +34,11 @@ fn (app &BrowserApp) begin_scroll_raster() ScrollRasterDamage {
 			&& layout.viewport_scroll_raster_reusable(app.document, app.paint_commands,
 				damage.width, damage.height)
 		damage.separate_scrollbars = eligible
+		$if vox_scroll_raster_diagnostics ? {
+			marker := os.getenv('VOX_SCROLL_RASTER_INPUT_MARKER')
+			input := marker != '' && os.exists(marker)
+			eprintln('VOX_SCROLL_RASTER_GATE input=${input} eligible=${eligible} zoom=${app.page_zoom} culling_disabled=${app.paint_canvas_culling_disabled} viewport=${viewport.x},${viewport.y} scroll=${app.scroll_y} shared=${chromium_shared_recording_supported(app.paint_commands, app.chromium_raster_plan)} commands=${app.paint_commands.len}')
+		}
 		damage.reused = C.native_begin_scroll_raster(u64(app.document.unique_id().value()),
 			app.document.paint_content_revision(), app.scroll_y, app.page_top(),
 			damage.width, damage.height, int(eligible), &damage.delta) != 0
