@@ -590,8 +590,18 @@ the bundle and native-library identities, commands and actual exits are under
 the requested live URL and story title at 1024 by 768 CSS pixels, scale one.
 ResizeObserver startup succeeds; the next application exception is
 `t.content.cloneNode is not a function`. The live screenshot differs from Brave
-at 482,730 of 786,432 pixels (61.3823%). The header offset, photograph sizing
-and missing cookie notice remain visibly different. Whole-page parity is open.
+at 482,730 of 786,432 pixels (61.3823%). The header offset, missing blurred
+photograph backdrop and missing cookie notice remain visibly different.
+Whole-page parity is open.
+
+The photograph itself has the same 625.796875 by 533 CSS-pixel image box in
+both browsers. Brave also creates a `canvas.pkb-blured-image-bg` behind it,
+with the same displayed dimensions; the native document has no such canvas.
+The site's `object-fit: contain` image and separate `object-fit: cover` backdrop
+therefore account for the apparent width difference without establishing an
+image-sizing defect. Evidence is in the production attempt's
+`comparison/live.audit.json` and `comparison/live-brave.rects.json`, with the
+page stylesheet saved as `Build/pikabu-pixel-20261026/live-style.css`.
 
 The candidate and baseline native captures of the bundled archive are exactly
 equal. Against the baseline Brave reference, the candidate retains the prior
