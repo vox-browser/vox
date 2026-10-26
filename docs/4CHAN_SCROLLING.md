@@ -1429,3 +1429,42 @@ wrapper checks and full-browser eligibility, pixels and unprofiled timing
 remain pending. The completed shared production bundle lacks the scratch
 implementation and can supply baseline evidence only. Smooth 60 fps remains
 unmet; no live SOCKS fix is claimed.
+
+### Reused shared production baseline (2026-10-26 UTC)
+
+Two fresh-process, unprofiled trials reused the latest completed signed
+production bundle, executable SHA256
+`a1167c7abc73b8b0ac45f1d3eb0f5ace4f1b44375df75dff3108af46f0de2123`.
+This bundle does not contain the scratch-prefetch implementation. Its native
+library hashes, source receipts and unchanged cloned identity are retained in
+`shared-baseline-20261027-015031/identity.json`.
+
+The workload remained the archived original HTTPS thread at 1024×764 CSS
+pixels and 2× backing scale, with fresh empty private profiles and caches,
+20 seconds settling after the matching title, and 360 precise wheel inputs
+at nominal 60 Hz (delta 12, reversing every 120). The loopback replay served
+only archived HTTP 200 responses with private TLS trust; external network
+access and SOCKS were excluded. Manifest and response-body hashes match the
+fixture above. Native publications were counted after `updateLayer`, over
+the full first-to-last input period.
+
+| Trial | Scroll fps | Median / p95 / maximum interval, ms | Over 16.67 ms | Moving intervals / publications / inputs |
+| --- | ---: | --- | ---: | --- |
+| browser-1 | 33.55 | 25.69 / 55.33 / 97.98 | 90.91% | 231 / 243 / 360 |
+| browser-2 | 32.36 | 27.15 / 57.56 / 75.19 | 93.55% | 217 / 232 / 360 |
+
+| Trial | Actual input Hz | Entire input period, s | Leading / trailing publication gap, ms | First counted scroll delay, ms |
+| --- | ---: | ---: | --- | ---: |
+| browser-1 | 52.14 | 6.886 | 325.66 / 19.47 | 397.87 |
+| browser-2 | 53.54 | 6.705 | 111.37 / 1.45 | 180.58 |
+
+Both browsers exited 0, completed all inputs and moved the intended document.
+The 18-CPU host's one-minute loads before/after the trials were
+34.26/27.25 and 27.25/24.21. These baseline results differ in build and
+host contention from earlier experiments and establish no optimization gain.
+Smooth 60 fps remains unmet; physical scanout and live SOCKS acceptance are
+not established. Full commands, raw timestamps, requests, identities, host
+loads and exits are under `shared-baseline-20261027-015031/trials/`;
+`reviewed-results.json` records the independent evidence checks. The enclosing
+memory guard exited 0, with a 12 GiB budget, sampled peak RSS
+870,645,760 bytes and 68.93 seconds elapsed.
