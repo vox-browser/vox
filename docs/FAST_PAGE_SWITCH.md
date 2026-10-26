@@ -31,17 +31,25 @@ site or navigation will load faster.
 ## Measurement
 
 `tools/measure_page_switch.py` submits the destination through the native address
-control and times the first changed Cocoa layer publication with the destination
-title after `updateLayer` finishes. This endpoint is not physical display scanout
-or network idle. The tool captures the source, first destination and settled
-destination frames, records executable/native-library/probe hashes, cache and
+control and records two latencies after `updateLayer` finishes: the first changed
+Cocoa layer publication with the destination title (`navigation_ms`), and the
+last changed document publication followed by two seconds of unchanged document
+pixels (`settled_navigation_ms`). The quiet delay is excluded from that latency;
+`--quiet-seconds` controls the observation window. The second endpoint includes
+late images observed during the window, but neither endpoint establishes network
+idle or physical display scanout. A later update outside the window remains
+possible. Chrome-only updates do not extend the settled latency.
+
+The tool captures the source, first destination, last changed destination and
+end-of-observation frames, records executable/native-library/probe hashes, cache and
 profile policy, viewport/backing scale, host load, timestamps and browser exit.
 Run it under `tools/run_memory_bounded.py`, in alternating matched off/on trials.
 Use `--diagnostic` in a separate trial to verify `VOX_PAGE_SWITCH reused=true`;
 do not credit timings to a path that did not execute. Compare document captures
-between modes, and retain failed runs as well as successful ones. For a frozen
-static fixture, require the first destination document pixels to match the
-settled capture; a title change alone cannot establish that the posts rendered.
+between modes, and retain failed runs as well as successful ones. Require the
+last changed destination pixels to match the end-of-observation capture and the
+control. Record first-versus-settled pixel differences separately; a title change
+alone cannot establish that images finished rendering.
 
 Live unauthenticated access to the screenshot's subreddit redirected `/new/` to
 login on 2026-10-26; the configured external proxy returned HTTP 403. A direct
@@ -67,6 +75,13 @@ the derived post-order fixture described above. Fresh download attempts for
 both URLs returned HTTP 403 and are retained in
 `Build/page-switch-20261027-local-download/`.
 
+A separate `benchmark-archive/` retains those pages and assets while freezing the
+author-visible `Date` clock at the saved capture time. This prevents relative
+timestamps from changing pixels between trials. Author scripts, native timers
+and `performance.now()` remain enabled. This additional derivation and both
+page hashes are recorded in `benchmark-fixture.json`; the original local archive
+is unchanged. Use the benchmark archive for reproducible pixel comparisons.
+
 Use `--archive` to load the saved bytes locally. The timing tool starts and stops
 a loopback replay server, creates a private certificate for that browser process,
 and retains the original HTTPS URLs. This keeps relative assets and the
@@ -89,8 +104,8 @@ python3 tools/run_memory_bounded.py --report Build/switch-off.guard.json -- \
   --to-url https://old.reddit.com/r/UkraineRussiaReport/new/ \
   --from-title 'Ukraine/Russia War Report' \
   --to-title 'newest submissions : UkraineRussiaReport' \
-  --archive Build/old-reddit-local-20261027/archive \
-  --network-policy 'Disk-only HTTPS archive, no forwarding; derived new fixture'
+  --archive Build/old-reddit-local-20261027/benchmark-archive \
+  --network-policy 'Disk-only HTTPS archive, no forwarding; derived new; frozen Date'
 ```
 
 For a comparison, pin one completed production bundle for all trials and verify
@@ -102,26 +117,43 @@ The saved archive's hot/new bodies and a downloaded stylesheet also passed a
 byte-for-byte local HTTPS load check; its receipt is
 `Build/old-reddit-local-20261027/local-load-check.json`.
 
-The browser timing comparison is still pending. A new archive diagnostic launch
-was refused by the occupied shared guard (exit 125, `reason=busy`), recorded in
-`Build/old-reddit-local-20261027/diagnostic-guard.json`. The earlier queued
-comparison has since started under that guard and also uses frozen local
-responses. Neither the transport check nor a busy guard supplies browser timing
-or fast-path execution evidence.
+The earlier local comparison reached native browser execution. Its diagnostic
+confirmed `VOX_PAGE_SWITCH reused=true`, with 47 dirty tiles out of 48 (770,048 of
+786,432 CSS pixel area repainted). The first off trial published the destination
+at 623.93 ms, but its first and two-second captures differed by 63,572 backing
+pixels as thumbnails and relative timestamps arrived. The batch correctly
+rejected that result and stopped; it provides no accepted off/on timing or
+speedup claim. Keep the failed batch and guard exit 1 in
+`Build/page-switch-20261026/validation-11/` and
+`Build/page-switch-benchmark-12.json`.
+
+The follow-up uses the quiet-window endpoint and the clock-frozen benchmark
+archive. Its native probe test explicitly publishes a late document change and
+then a chrome-only change, checking that only the former advances the measured
+latency. Both native sources pass strict compiler syntax checks, but the new
+native test and browser trials have **not executed**: the bounded launch attempt
+returned exit 125 with `reason=busy` after a 600-second wait. Its receipt is
+`Build/old-reddit-local-20261027/benchmark-1.guard.json`; the prepared batch is
+`benchmark-1.py` beside it. No production build was queued. The transport checks
+and busy-guard receipts provide no new browser timing evidence.
 
 Document pixels occupy CSS coordinates `(0, 60, width, height)` in the captured
 native view; multiply by the recorded backing scale when cropping the PNGs.
 Exclude browser chrome from pixel comparisons because native address editing
 and focus can legitimately differ. The destination must differ from the source,
-and both destination captures must match the control in every measured trial.
+and the last changed and settled destination captures must match the control in
+every measured trial. Retain early-frame differences as diagnostic evidence.
 
 ### Production bundle and fixture identity
 
 The comparison uses a frozen copy of the rebuilt canonical production bundle,
 `Build/page-switch-20261026/reused-prod-11.app`. Its executable SHA-256 is
 `a1167c7abc73b8b0ac45f1d3eb0f5ace4f1b44375df75dff3108af46f0de2123`.
-All 22 page-switch validation inputs match both the production source snapshot
-and the previously executed focused-test inputs. The bundle's executable and
+At the time of freezing, all 22 recorded page-switch validation inputs matched
+both the production source snapshot and the previously executed focused-test
+inputs. The measurement tool was subsequently extended for local archives and
+quiet-window observations; each trial pins its actual tool/probe hashes. The
+bundle's executable and
 three native libraries match its signed, smoke-tested production build record.
 The original production script exited 1 during signing because a compiler
 scratch directory remained inside the bundle; removing that directory from the
@@ -159,11 +191,15 @@ Fixture construction and replay receipts are retained in
   navigation owner/revision checks, multiple or empty damage regions, invalid
   geometry and full-replay fallback.
 - The measurement probe compiled with `-Wall -Wextra -Werror` and the Python
-  driver passed `py_compile`.
+  driver passed `py_compile`. The later quiet-window probe and its native
+  fixture pass those warning flags with `-fsyntax-only`; runtime verification
+  of that extension remains pending as described above.
 
 Local receipts are retained in `Build/page-switch-20261026/`: the
 `routes-check.log` and `settings-check.log`, `validation-3/native-final.log`,
-and `validation-7/damage-final.log` plus `damage-runtime.json`.
+and `validation-7/damage-final.log` plus `damage-runtime.json`. The six-case layout
+check also passed at runtime in `validation-11/damage-runtime.json`, under its
+3 GiB focused budget; the overall comparison batch still failed pixel validation.
 Earlier failed build attempts are retained and receive no whole-run pass credit.
 
 The focused follow-up fix `69ad2273` adds conservative bounds for native control
