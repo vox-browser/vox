@@ -113,3 +113,21 @@ fn test_saved_site_scope_survives_restart_and_invalid_apply_preserves_route() {
 	save(Proxy{ ...current(), enabled: true, sites: '' })!
 	assert proxy_override('https://unlisted.test/') or { panic('missing override') } != ''
 }
+
+fn test_experimental_page_switch_is_opt_in_and_persisted_independently_of_proxy() {
+	directory := os.join_path(os.temp_dir(), 'vox-page-switch-settings-${os.getpid()}-${time.sys_mono_now()}')
+	defer { os.rmdir_all(directory) or {} }
+	path := os.join_path(directory, 'settings.json')
+	initialize(path)!
+	assert !current().experimental_fast_page_switch
+	save(Proxy{experimental_fast_page_switch: true})!
+	initialize(path)!
+	assert current().experimental_fast_page_switch
+	assert !current().enabled
+	save(Proxy{...current(), enabled: true})!
+	assert current().experimental_fast_page_switch
+	save(Proxy{...current(), experimental_fast_page_switch: false})!
+	initialize(path)!
+	assert !current().experimental_fast_page_switch
+	assert current().enabled
+}

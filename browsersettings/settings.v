@@ -14,6 +14,8 @@ pub:
 	port    string = '1080'
 	// Empty selects every destination; otherwise comma-separated hostnames.
 	sites string
+	// Off by default; known-site paint comparison preserves normal navigation.
+	experimental_fast_page_switch bool
 }
 
 @[heap]

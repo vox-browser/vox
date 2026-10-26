@@ -491,6 +491,7 @@ mut:
 	paint_display_list                  &dom.DisplayList = unsafe { nil }
 	// Frame activity compares revisions without rooting the previous list.
 	paint_generation                    u64
+	fast_page_switch                    FastPageSwitch
 	// Storage behind paint_commands, retained until the next adoption.
 	paint_scene      voidptr
 	paint_status_key PaintStatusKey
@@ -3555,6 +3556,7 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 		&& (app.page_model == unsafe { nil } || app.page_model.is_scripting_enabled())
 	mut heap_scope := platform.begin_browser_activity_heap_scope_for_scripting(heap_scripting_enabled)
 	defer { heap_scope.finish() }
+	app.prepare_fast_page_switch(loaded.url)
 	app.markup = loaded.markup
 	app.content_type = loaded.content_type
 	app.source_label = loaded.url
@@ -7196,7 +7198,11 @@ fn (mut app BrowserApp) draw() {
 		}
 		replay_scratch.finish()
 	} else {
-		$if macos { C.native_discard_scroll_raster() }
+		// Font readiness may defer the replacement's first replay. Keep the
+		// bounded outgoing raster until the pending switch is checked.
+		$if macos {
+			if app.fast_page_switch.to == '' { C.native_discard_scroll_raster() }
+		}
 		draw_srgb_rect(app.ctx, 0, 0, f32(window.width), f32(window.height), gg.rgb(255, 255, 255))
 	}
 
