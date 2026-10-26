@@ -15,7 +15,7 @@ fn test_native_writable_pending_start_write_close_backpressure_capabilities_and_
 	mut host := WritableStreamHost.create(native_writable_document())!
 	host.install(mut runtime)!
 	settings := host.settings
-	owner_handle := voidptr(&runtime)
+	owner_handle := voidptr(runtime)
 	runtime.define_value_host_function('__writableOwnerContext', fn [settings, owner_handle] (_ voidptr, _ []voidptr) !voidptr {
 		owner := unsafe { &Runtime(owner_handle) }
 		assert owner.libjs_vm().has_running_execution_context()
