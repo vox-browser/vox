@@ -549,7 +549,19 @@ page-switch code; the first also reports the subsequently corrected favicon
 compile error. Their actual nonzero exits are retained in
 `Build/pikabu-pixel-20261026/production-guard.json` and
 `Build/pikabu-pixel-20261026/production-guard-2.json`. The third queued attempt
-was interrupted before acquiring the shared guard. A retry is queued with
-`Build/pikabu-pixel-20261026/production-guard-4.json`; it has no acceptance
-credit until its commands finish. Whole-page parity, the prior three broad
-screenshot failures, and the mask diagnostic shutdown crash remain open.
+was interrupted before acquiring the shared guard. The fourth attempt exits 1
+during focused-test compilation: select-control code assigns four immutable
+rectangle fields. Constructing a replacement rectangle corrects that compile
+blocker, but the failed attempt executes no mask tests or browser acceptance
+checks. Its guard records sampled peak RSS 1,698,807,808 bytes and elapsed time
+267.398 seconds in `Build/pikabu-pixel-20261026/production-guard-4.json`.
+
+The fifth attempt is queued with
+`Build/pikabu-pixel-20261026/production-guard-5.json`. Pending mask tests cover
+linear/radial gradients, preservation of opaque and transparent mask groups,
+cache identity, and SVG image-document lifetime during temporary paint work.
+The prepared visual checks include rounded-mask isolation and full-viewport
+circles at both integral and fractional origins. These changes have no runtime
+or pixel-conformance credit until the commands execute. Whole-page parity,
+the prior three broad screenshot failures, and the mask diagnostic shutdown
+crash remain open.
