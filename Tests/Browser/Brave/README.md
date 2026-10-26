@@ -430,3 +430,20 @@ heights, fixed line heights, `ex` widths, middle alignment and soft line breaks.
 `device-layout-display-density` checks resolution media queries at the same
 800×600 viewport and scale 2. Both references use Brave 156.1.98.60 and require
 exact RGBA equality.
+
+`rounded-single-border-device-layout` checks all four single solid rounded
+border sides, both with zero-width adjacent sides and with transparent adjacent
+borders. The transparent widths still inset the inner rounded rectangle and
+position the corner miter clips.
+
+`repeating-sprite-boundaries` checks gapless bitmap repetition in both axes and
+in each axis separately, including rounded inline borders. Image shaders filter
+across repeat boundaries instead of clamping each materialized tile. A rounded
+background color, repeated image and adjacent uniform border retain their
+multisample coverage in one native pass.
+
+`border-miter-raster-tile` places rounded borders beside a rectangular border
+with differently colored sides and diagonal corner clips. Those clips make the
+shared GPU raster tile multisampled; a rounded border in the next tile retains
+its independent raster mode. These three references use Brave 156.1.98.60 at
+800×600 CSS pixels and native scale 2, and require exact RGBA equality.
