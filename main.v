@@ -3026,6 +3026,14 @@ fn run_document_script_sources_with_resource_loaders(document &dom.Document, cur
 		messages << 'JavaScript IntersectionObserver bindings: ${err.msg()}'
 		return none
 	}
+	mutable_runtime.install_resize_observer_binding(fn [document] (callback_runtime &browserjs.Runtime) ! {
+		state := callback_runtime.evaluate_host('__ladybirdFinalize()')!
+		mut replay_messages := []string{}
+		apply_javascript_runtime_state(document, state, callback_runtime, mut replay_messages)
+	}) or {
+		messages << 'JavaScript ResizeObserver bindings: ${err.msg()}'
+		return none
+	}
 	mutable_runtime.install_window_find_binding(fn [document] (callback_runtime &browserjs.Runtime) ! {
 		state := callback_runtime.evaluate_host('__ladybirdFinalize()')!
 		mut replay_messages := []string{}

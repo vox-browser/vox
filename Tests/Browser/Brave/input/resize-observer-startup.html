@@ -1,0 +1,28 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>ResizeObserver startup</title>
+<style>
+html,body{margin:0;background:#fcfdff}
+#target{position:absolute;left:32px;top:32px;width:80px;height:48px;padding:4px 6px;border:2px solid #222;background:#f7b259}
+#paint-probe{position:absolute;left:160px;top:32px;width:80px;height:48px;background:#c22}
+</style>
+<div id="target"></div><div id="paint-probe"></div>
+<script>
+const target=document.getElementById('target'),probe=document.getElementById('paint-probe');
+let phase=0,saved;
+const observer=new ResizeObserver(function(entries,receiver){
+  if(this!==observer||receiver!==observer||entries.length!==1)throw Error('callback');
+  const entry=entries[0],rect=entry.contentRect;
+  if(!(entry instanceof ResizeObserverEntry)||entry.target!==target||!(rect instanceof DOMRectReadOnly)||rect.x!==6||rect.y!==4)throw Error('entry');
+  if(!Object.isFrozen(entry.contentBoxSize)||!(entry.borderBoxSize[0] instanceof ResizeObserverSize))throw Error('sizes');
+  if(phase===0){
+    if(rect.width!==80||rect.height!==48||entry.borderBoxSize[0].inlineSize!==96)throw Error('initial size');
+    saved=entry;phase=1;target.setAttribute('style','width:96px;height:64px');
+  }else if(phase===1){
+    if(rect.width!==96||rect.height!==64||saved.contentRect.width!==80||entry.borderBoxSize[0].blockSize!==76)throw Error('changed size');
+    phase=2;observer.disconnect();target.removeAttribute('style');
+    probe.setAttribute('style','background:#008000');document.title='ResizeObserver PASS';
+  }
+});
+observer.observe(target);
+</script>

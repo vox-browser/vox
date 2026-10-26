@@ -402,3 +402,35 @@ guard exits 1, with sampled peak RSS of 10,145,693,696 bytes under 12 GiB;
 this is not a passing acceptance run. Results and actual step exit codes are
 in `cookie-followup-1793013308051869000/` and
 `map-visual-batch-1793013325215588000/`.
+
+## Worker execution foundations
+
+`9c530b92` adds a bounded, nonblocking process transport for an isolated script
+agent. Frames preserve arbitrary binary bytes, limit retained output, and make
+progress in bounded event-loop turns. Termination reaps the child; a separate
+parent-lifetime pipe also shuts down an orphaned agent. No V, DOM or
+JavaScriptCore heap is shared across these processes. This is transport only;
+it does not expose a JavaScript `Worker` constructor.
+
+`16bb0a12` installs the native `MessageEvent` binding in actual worker realms.
+Its event target and scripting environment belong to that worker, without
+installing Window messaging globals. Tests cover constructor behavior,
+receiver identity, trusted structured-clone delivery and exception handling.
+
+Evidence is in `worker-process-v-1793015825524307000/` and
+`worker-process-v-3.guard.json`. The native transport passes five grouped cases
+in each of normal and AddressSanitizer/UndefinedBehaviorSanitizer builds. The
+V transport, worker/window MessageEvent and MessageChannel selection passes
+eleven cases in each of Boehm and `-prealloc -gc none` modes, including poisoned
+caller/sender/receiver scratch scopes. Both modes compile their own private
+native helper. Recorded input hashes remain unchanged. The outer guard exits
+0, with sampled peak RSS 7,541,293,056 bytes under 12 GiB; the two 3 GiB runtime
+guards also exit 0. Independent CSS edits are excluded through a recorded
+committed snapshot.
+
+These checks establish native runtime components, not live-map acceptance.
+Script loading, agent startup and browser integration must work before the
+site can select its vector renderer. The last valid live comparison remains
+328,981 differing pixels, and the archived fixture retains 424 differing
+pixels with maximum channel error 8. No new screenshot parity or LibJS runtime
+parity is claimed.

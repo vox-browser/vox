@@ -9,6 +9,7 @@ module resizeobserver
 
 import dom
 import geometry
+import platform
 
 // Ladybird keeps weak pointers here and prunes them after a GC sweep. V does
 // not expose a weak-reference container, so raw pointers plus the explicit
@@ -59,7 +60,8 @@ pub mut:
 @[heap]
 pub struct ResizeTarget {
 pub:
-	element &dom.Element
+	element       &dom.Element
+	live_metrics_ bool
 pub mut:
 	metrics ResizeTargetMetrics
 	alive_  bool = true
@@ -89,27 +91,28 @@ mut:
 }
 
 pub fn ResizeObserverSize.compute_box_size(target &ResizeTarget, observed_box ResizeObserverBoxOptions) ResizeObserverSize {
-	if !target.metrics.has_layout_box {
+	metrics := target.resolved_metrics()
+	if !metrics.has_layout_box {
 		return ResizeObserverSize{}
 	}
 	return match observed_box {
 		.border_box {
 			ResizeObserverSize{
-				inline_size_: target.metrics.border_width
-				block_size_: target.metrics.border_height
+				inline_size_: metrics.border_width
+				block_size_:  metrics.border_height
 			}
 		}
 		.content_box {
 			ResizeObserverSize{
-				inline_size_: target.metrics.content_width
-				block_size_: target.metrics.content_height
+				inline_size_: metrics.content_width
+				block_size_:  metrics.content_height
 			}
 		}
 		.device_pixel_content_box {
 			// Preserve current upstream: this multiplies border-box dimensions.
 			ResizeObserverSize{
-				inline_size_: target.metrics.border_width * target.metrics.device_pixel_ratio
-				block_size_: target.metrics.border_height * target.metrics.device_pixel_ratio
+				inline_size_: metrics.border_width * metrics.device_pixel_ratio
+				block_size_:  metrics.border_height * metrics.device_pixel_ratio
 			}
 		}
 	}
@@ -205,16 +208,17 @@ pub fn ResizeObserverEntry.create_and_populate(target &ResizeTarget) &ResizeObse
 	device := ResizeObserverSize.compute_box_size(target, .device_pixel_content_box)
 	mut x := 0.0
 	mut y := 0.0
-	if !target.metrics.is_svg_element && target.metrics.has_layout_box {
-		x = target.metrics.absolute_padding_x
-		y = target.metrics.absolute_padding_y
+	metrics := target.resolved_metrics()
+	if !metrics.is_svg_element && metrics.has_layout_box {
+		x = metrics.absolute_padding_x
+		y = metrics.absolute_padding_y
 	}
 	return &ResizeObserverEntry{
-		target_: target
-		border_box_size_: [border]
-		content_box_size_: [content]
+		target_:                        target
+		border_box_size_:               [border]
+		content_box_size_:              [content]
 		device_pixel_content_box_size_: [device]
-		content_rect_: geometry.DOMRectReadOnly.construct(x, y, content.inline_size(), content.block_size())
+		content_rect_:                  geometry.DOMRectReadOnly.construct(x, y, content.inline_size(), content.block_size())
 	}
 }
 
@@ -494,6 +498,8 @@ pub fn (mut observer ResizeObserver) unregister_observer_if_needed() {
 }
 
 pub fn (mut observer ResizeObserver) gather_active_observations_at_depth(depth int) {
+	mut allocations := observer.enter_storage()
+	defer { allocations.finish() }
 	observer.remove_dead_observations()
 	observer.active_targets_.clear()
 	observer.skipped_targets_.clear()
@@ -511,6 +517,8 @@ pub fn (mut observer ResizeObserver) gather_active_observations_at_depth(depth i
 }
 
 pub fn (mut observer ResizeObserver) broadcast_active_resize_observations() int {
+	mut allocations := observer.enter_storage()
+	defer { allocations.finish() }
 	if observer.active_targets_.len == 0 {
 		return max_int
 	}
@@ -553,11 +561,18 @@ pub fn (observer &ResizeObserver) has_skipped_observations() bool {
 }
 
 pub fn (mut observer ResizeObserver) gather_active_observations() {
+	mut allocations := observer.enter_storage()
+	defer { allocations.finish() }
 	observer.remove_dead_observations()
 	observer.active_targets_.clear()
 	for observation in observer.observation_targets_ {
 		if observation.is_active() { observer.active_targets_ << observation }
 	}
+}
+
+fn (observer &ResizeObserver) enter_storage() platform.RetainedArenaScope {
+	if document := observer.document_ { return document.enter_native_storage() }
+	return platform.RetainedArenaScope{}
 }
 
 // Mirrors the GC finalizer: unregister document ownership and release the
