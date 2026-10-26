@@ -27,10 +27,10 @@ fn test_tag_collection_unchanged_reads_avoid_the_json_query_boundary() {
 const collection=__tagCollection("root","*");
 if(collection.length!==1)throw new Error("initial membership");
 for(let index=0;index<1024;index++)if(collection.item(0)!==members[0])throw new Error("member identity");
-if(queries!==1||versionReads!==1024)throw new Error("unchanged reads repeated JSON queries");
+if(queries!==1||versionReads!==1025)throw new Error("unchanged reads repeated JSON queries");
 // Capture the native reader before author code can replace its global slot.
 globalThis.__ladybirdDOMTreeVersion=()=>"stale";
-if(collection.length!==1||queries!==1||versionReads!==1025)throw new Error("native version reader replaced");
+if(collection.length!==1||queries!==1||versionReads!==1026)throw new Error("native version reader replaced");
 true;
 ')! == 'true'
 }

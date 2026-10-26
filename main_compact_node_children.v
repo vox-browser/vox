@@ -6,10 +6,10 @@ import x.json2
 
 fn (mut binding CompactElementQueryBinding) node_tree_query(root &dom.Node, action string, value string) !string {
 	if action == 'createText' {
-		return json2.encode(binding.node_state(binding.document.create_text_node(value).as_node()))
+		return json2.encode(binding.node_state(root.document().create_text_node(value).as_node()))
 	}
 	if action == 'createFragment' {
-		return json2.encode(binding.node_state(binding.document.create_document_fragment().as_node()))
+		return json2.encode(binding.node_state(root.document().create_document_fragment().as_node()))
 	}
 	if action == 'childNodes' {
 		mut nodes := []json2.Any{cap: root.children.len}
@@ -24,7 +24,19 @@ fn (mut binding CompactElementQueryBinding) node_tree_query(root &dom.Node, acti
 	} else {
 		request := json2.decode[map[string]json2.Any](value)!
 		key := json_string_property(request, 'child') or { return error('TypeError: Invalid child node') }
-		child := binding.node_for_key(key) or { return error('TypeError: Invalid child node') }
+		child := binding.node_for_key(key) or {
+			state := request['state'] or { return error('TypeError: Invalid child node') }
+			if state !is map[string]json2.Any { return error('TypeError: Invalid child node') }
+			mut elements := binding.elements.clone()
+			created := javascript_created_node(binding.document, state as map[string]json2.Any, mut elements) or {
+				return error('TypeError: Invalid child node')
+			}
+			for element_key, element in elements {
+				binding.elements[element_key] = element
+				binding.keys[voidptr(element)] = element_key
+			}
+			created
+		}
 		was_connected := child.is_connected()
 		if action == 'insertNode' {
 			reference_key := json_string_property(request, 'reference') or { '' }
@@ -64,7 +76,7 @@ Object.defineProperty(NodeList.prototype,Symbol.iterator,{value:NodeList.prototy
 Object.defineProperty(NodeList.prototype,"forEach",{value:function forEach(callback,thisArg){const nodes=__compactChildRead(this);if(typeof callback!=="function")throw new TypeError("callback must be callable");for(let i=0;i<nodes.length;i++){const current=__compactChildRead(this);if(i<current.length)callback.call(thisArg,current[i],i,this);}},writable:true,enumerable:true,configurable:true});
 function __compactNodeState(node){if(node===document)return{bridgeKey:"",nodeType:9};const state=__elementApply(__elementRecordGet,__elementRecords,[node])||__elementApply(__compactNodeGet,__compactNodeRecords,[node]);if(!state)throw new TypeError("Expected a Node");return state;}
 function __compactInvalidateContent(state){for(let current=state;current;current=current.parentKey&&__state.elements[current.parentKey]){if(!current.textContentDirty)delete current.textContent;if(!current.innerHTMLDirty)delete current.innerHTML;current.nativeContent=true;}}
-function __compactInsertNode(parent,child,reference,insert){const own=__compactNodeState(parent),target=__compactNodeState(child),ref=reference==null?null:__compactNodeState(reference),moving=target.nodeType===11?__queryElements(target.bridgeKey,"childNodes",""):[child],oldParents=moving.map(node=>__state.elements[__compactNodeState(node).parentKey]).filter(Boolean);try{__queryElements(own.bridgeKey,insert?"insertNode":"appendNode",JSON.stringify({child:target.bridgeKey,reference:ref?ref.bridgeKey:""}));}catch(error){const match=/^(HierarchyRequestError|NotFoundError|NotSupportedError):\s*(.*)/.exec(String(error.message));if(match)throw new DOMException(match[2],match[1]);throw error;}for(const state of oldParents)__compactInvalidateContent(state);for(const node of moving){const state=__compactNodeState(node);state.parentKey=own.bridgeKey;state.nativeParent=true;state.removed=false;}__compactInvalidateContent(own);return child;}
+function __compactInsertNode(parent,child,reference,insert){const own=__compactNodeState(parent),target=__compactNodeState(child),ref=reference==null?null:__compactNodeState(reference),moving=target.nodeType===11?__queryElements(target.bridgeKey,"childNodes",""):[child],oldParents=moving.map(node=>__state.elements[__compactNodeState(node).parentKey]).filter(Boolean);try{__queryElements(own.bridgeKey,insert?"insertNode":"appendNode",JSON.stringify({child:target.bridgeKey,reference:ref?ref.bridgeKey:"",state:target}));}catch(error){const match=/^(HierarchyRequestError|NotFoundError|NotSupportedError):\s*(.*)/.exec(String(error.message));if(match)throw new DOMException(match[2],match[1]);throw error;}for(const state of oldParents)__compactInvalidateContent(state);for(const node of moving){const state=__compactNodeState(node);state.parentKey=own.bridgeKey;state.nativeParent=true;state.removed=false;}__compactInvalidateContent(own);return child;}
 function __compactChildNodes(receiver,state){
  const cached=__elementApply(__compactNodeGet,__compactChildLists,[receiver]);if(cached)return cached;
  let version=-1,nodes=[];

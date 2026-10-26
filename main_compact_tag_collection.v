@@ -16,13 +16,16 @@ fn install_compact_dom_tree_version_binding(document &dom.Document, mut runtime 
 fn (mut binding CompactElementQueryBinding) tag_collection_query(root &dom.Node, input string) !string {
 	request := json2.decode[map[string]json2.Any](input)!
 	name := json_string_property(request, 'name') or { return error('Missing tag name') }
-	version := binding.document.dom_tree_version().str()
+	version := root.document().dom_tree_version().str()
+	owner := root.document().as_node().unique_id().str()
 	// Iterating an unchanged live collection must not serialize every member for
 	// every indexed read. Pending script writes have already been replayed here;
 	// native insertions and removals also advance the document's tree version.
-	if (json_string_property(request, 'version') or { '' }) == version {
+	if (json_string_property(request, 'version') or { '' }) == version
+		&& (json_string_property(request, 'owner') or { '' }) == owner {
 		return json2.encode({
 			'version':  json2.Any(version)
+			'owner':    json2.Any(owner)
 			'elements': json2.Any(json2.Null{})
 		})
 	}
@@ -34,6 +37,7 @@ fn (mut binding CompactElementQueryBinding) tag_collection_query(root &dom.Node,
 	}
 	return json2.encode({
 		'version':  json2.Any(version)
+		'owner':    json2.Any(owner)
 		'elements': json2.Any(result)
 	})
 }
@@ -42,11 +46,12 @@ fn compact_tag_collection_bootstrap() string {
 	return r'
 const __tagTreeVersion=globalThis.__ladybirdDOMTreeVersion;
 function __tagCollection(key,name){
- let version="",numericVersion=-1,elements=[];
+ let version="",owner="",numericVersion=-1,elements=[];
  return __classCollection(key,"",()=>{
-  if(version!==""&&__state.operations.length===0&&__dirtyElementStates.size===0&&__tagTreeVersion()===numericVersion)return elements;
-  const snapshot=__queryElements(key,"getElementsByTagName",JSON.stringify({name,version}));
-  if(snapshot.elements!==null){elements=snapshot.elements.map(__queryElement);version=snapshot.version;numericVersion=Number(version);}
+  if(version!==""&&numericVersion>=0&&__state.operations.length===0&&__dirtyElementStates.size===0&&__tagTreeVersion()===numericVersion)return elements;
+  const snapshot=__queryElements(key,"getElementsByTagName",JSON.stringify({name,version,owner}));
+  if(snapshot.elements!==null){elements=snapshot.elements.map(__queryElement);version=snapshot.version;owner=snapshot.owner;}
+  numericVersion=__tagTreeVersion();
   return elements;
  });
 }

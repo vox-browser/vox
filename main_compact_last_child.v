@@ -5,6 +5,7 @@ import dom
 import x.json2
 
 fn (mut binding CompactElementQueryBinding) node_state(node &dom.Node) json2.Any {
+	if node.is_document() { return binding.document_state(node.document()) }
 	if element := node.as_element() { return binding.element_state(element) }
 	key := '__node_${node.unique_id()}'
 	binding.nodes[key] = node
@@ -63,7 +64,7 @@ fn compact_last_child_bootstrap() string {
 	return r'
 const __compactNodeRecords=new WeakMap(),__compactNodeGet=WeakMap.prototype.get;
 function __compactNodeWrapper(state){
- if(state.nodeType===9)return document;
+ if(state.nodeType===9)return __compactDocumentWrapper(state);
  if(state.tagName!=="#node")return __element(state);
  if(state.__object)return state.__object;
  const node={};
@@ -71,7 +72,7 @@ function __compactNodeWrapper(state){
  function read(){return __queryElements(record(this).bridgeKey,"nodeValue","");}
  function write(receiver,value,nullable){const own=record(receiver);if(typeof value==="symbol")throw new TypeError("Cannot convert a Symbol to a string");__queryElements(own.bridgeKey,"setNodeValue",nullable&&value===null?"":String(value));__compactInvalidateContent(own);}
  Object.defineProperties(node,{
-  __state:{value:state},nodeType:{value:state.nodeType},nodeName:{value:state.nodeName},ownerDocument:{value:document},
+  __state:{value:state},nodeType:{value:state.nodeType},nodeName:{value:state.nodeName},ownerDocument:{get:function(){record(this);return __compactOwnerDocument(this);}},
   contains:{value:__compactNodeContains,writable:true,enumerable:true,configurable:true},
   isConnected:{get:__compactNodeConnected,enumerable:true,configurable:true},
   parentNode:{get(){return __compactNativeParent(record(this));}},

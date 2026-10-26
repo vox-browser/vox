@@ -59,7 +59,9 @@ fn (mut host ElementWheelHost) element_for_wheel_binding(key string, tag string,
 		} else {
 			element.local_name()
 		}
-		if voidptr(element.document()) != voidptr(host.document) || name != tag || (element.namespace_uri() or {
+		// The realm registry also owns elements in createHTMLDocument() trees.
+		// Adoption changes their document without changing their native identity.
+		if name != tag || (element.namespace_uri() or {
 			''
 		}) != namespace {
 			return error('TypeError: Element wrapper metadata does not match its native owner')

@@ -13,6 +13,7 @@ struct CompactElementQueryBinding {
 	runtime  &browserjs.Runtime
 mut:
 	elements map[string]&dom.Element
+	documents map[string]&dom.Document
 	nodes    map[string]&dom.Node
 	keys     map[voidptr]string
 	materialized map[string]bool
@@ -26,12 +27,12 @@ fn install_compact_element_content_binding(document &dom.Document, mut runtime b
 }
 
 fn install_compact_element_content_binding_with_policy(document &dom.Document, mut runtime browserjs.Runtime, policy CompactInitialElementPolicy) ! {
-	install_compact_dom_tree_version_binding(document, mut runtime)!
 	elements := css.query_selector_all(unsafe { &dom.Node(document) }, '*')
 	mut binding := &CompactElementQueryBinding{
 		document: document
 		runtime:  &runtime
 	}
+	install_compact_document_binding(binding, mut runtime)!
 	for index, element in elements {
 		key := '__element_${index}'
 		binding.elements[key] = element
@@ -112,8 +113,11 @@ fn (mut binding CompactElementQueryBinding) element_state(element &dom.Element) 
 		''
 	}
 	index := if key.starts_with('__element_') { key['__element_'.len..].int() } else { -1 }
-	state := javascript_initial_element_state(element, key, index, parent_key,
-		binding.document.url.serialize(), true)
+	mut state := javascript_initial_element_state(element, key, index, parent_key,
+		element.document().url.serialize(), true)
+	if voidptr(element.document()) != voidptr(binding.document) {
+		state['ownerDocumentKey'] = json2.Any('__document_${element.document().as_node().unique_id()}')
+	}
 	return json2.Any(state)
 }
 
@@ -159,10 +163,23 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 		}
 		return json2.encode(states)
 	}
+	// A script-created element can remain entirely in the compact realm until
+	// its first insertion. Once materialized, its live native owner also tracks
+	// subtree adoption and removal without relying on a cached parent key.
+	if action == 'ownerDocument' && key.starts_with('__created_') {
+		if node := binding.node_for_key(key) {
+			return binding.document_query(node, action, selector)
+		}
+		return json2.encode(binding.document_state(binding.document))
+	}
 	root := if key == '' {
 		unsafe { &dom.Node(binding.document) }
 	} else {
 		binding.node_for_key(key) or { return error('TypeError: Invalid Element receiver') }
+	}
+	if action in ['createHTMLDocument', 'documentNode', 'documentValue', 'setDocumentTitle',
+		'documentCreateElement', 'documentCreateElementNS', 'documentElementById', 'ownerDocument', 'elementURL'] {
+		return binding.document_query(root, action, selector)
 	}
 	if action == 'removeChild' { return binding.remove_child_query(root, selector) }
 	if action == 'contains' { return binding.contains_query(root, selector) }
@@ -348,10 +365,12 @@ Object.defineProperty(Element.prototype,"getElementsByClassName",{value:function
 Object.defineProperty(Element.prototype,"children",{get:function(){
  const state=__elementApply(__elementRecordGet,__elementRecords,[this]);
  if(!state)throw new TypeError("Illegal Element receiver");
- if(!state.__children)state.__children=__classCollection(state.bridgeKey,"",function(){
+ // Wrapper caches must not enter mutation snapshots: serializing a live
+ // collection would query native state while that snapshot is being flushed.
+ if(!state.__children)Object.defineProperty(state,"__children",{value:__classCollection(state.bridgeKey,"",function(){
   if(state.created&&!state.parentKey)return [];
   return __queryElements(state.bridgeKey,"querySelectorAll",":scope > *");
- });
+ })});
  return state.__children;
 },enumerable:true,configurable:true});
 // Element navigation read from the live document. An element that exists only

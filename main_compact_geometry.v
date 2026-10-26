@@ -75,7 +75,7 @@ function __compactElementGeometry(object,state){
 const __compactScrollFinite=Number.isFinite;
 Object.defineProperty(Element.prototype,"ownerDocument",{get:function(){
  if(!__elementApply(__elementRecordGet,__elementRecords,[this]))throw new TypeError("Illegal Node receiver");
- return document;
+ return __compactOwnerDocument(this);
 },enumerable:true,configurable:true});
 Object.defineProperty(document,"defaultView",{get(){return globalThis;},enumerable:true,configurable:true});
 for(const [name,axis] of [["pageXOffset","scrollX"],["pageYOffset","scrollY"],["scrollX","scrollX"],["scrollY","scrollY"]]){
