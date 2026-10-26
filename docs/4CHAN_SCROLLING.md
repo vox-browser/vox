@@ -1161,7 +1161,7 @@ Graphite candidate and accepted Skia bridge; the latter removed the previously
 rejected image-batch prototype from the artifact used for these trials.
 
 
-### Rectangle prefetch correctness checks; performance pending (2026-10-26)
+### Rectangle prefetch correctness and eligibility checks (2026-10-26)
 
 An opt-in prototype speculates on thin opaque underline rectangles across text
 commands in the same raster layer. It leaves ordinary replay in order and
@@ -1186,8 +1186,46 @@ Raw commands, source hashes, binaries and results remain under
 `rect-prefetch-guard-oracle/`, with runtime reports in
 `rect-prefetch-v1/build-recovery-1/`. The first focused V compilation was
 incorrectly capped at 3 GiB and was killed at 3,251,011,584 bytes sampled RSS;
-its tests did not run. The queued retry gives compilation the normal 12 GiB
-job budget and retains the 3 GiB cap for focused runtime execution. Actual-input
-eligibility, browser pixels and alternating unprofiled timings remain pending.
-These correctness checks supply no scrolling performance credit; smooth
-60 fps remains unmet.
+its tests did not run. A subsequent compile attempt failed against a mismatched
+ICU installation; that attempt likewise supplies no V test result. The resumed
+pipeline reused a pinned production executable containing the exact prototype
+sources and recorded its build provenance rather than treating the current,
+independently changing checkout as the compiled source. Its corrected focused
+V test command was conditional on actual-input eligibility and did not run.
+
+Four alternating 120-input diagnostics completed for the original patch guard,
+then four for a private one-device-pixel guard. Every browser exited 0, loaded
+the required thread title, moved the document and requested only archived
+responses. Neither candidate recorded prefetch cache calls or completed
+prefetch batches at startup or during input. Ordinary replay continued to use
+the existing cache:
+
+| Patch guard | Trial | Sampled ordinary replay cache hits / calls during input | Recorded input prefetch batches |
+| --- | --- | ---: | ---: |
+| Original | control-1 | 436 / 1,024 | 0 |
+| Original | candidate-1 | 448 / 1,024 | 0 |
+| Original | control-2 | 419 / 1,024 | 0 |
+| Original | candidate-2 | 457 / 1,024 | 0 |
+| Reduced | control-1 | 399 / 980 | 0 |
+| Reduced | candidate-1 | 493 / 1,024 | 0 |
+| Reduced | control-2 | 459 / 1,024 | 0 |
+| Reduced | candidate-2 | 466 / 1,024 | 0 |
+
+The cache log is capped at 1,024 entries per phase; these are sampled counts,
+not whole-run hit rates. Zero batch logs do not identify the blocking gate:
+logging occurs only after native job collection. They do not establish that
+cache margins are responsible or that V/native prefetch entry was reached.
+Neither variant qualified for browser pixel comparisons or unprofiled
+acceptance timing. The reduced guard also passed 432 exact ordered comparisons
+in each of its normal and sanitizer control/candidate executions; it remains a
+private experiment and does not change the production patch guard.
+
+The completed pipeline's commands, provenance and all diagnostics are in
+`rect-prefetch-v1/build-recovery-3/`, `rect-prefetch-v1/diagnostic/` and
+`rect-prefetch-reduced-guard-v1/`. Its enclosing memory report is
+`rect-prefetch-v1/queue-recovery-20261026-201058/guard.json`: child exit 0,
+12 GiB budget, sampled peak RSS 937,476,096 bytes, elapsed 607.13 seconds.
+Both eligibility decisions explicitly disable unprofiled acceptance. These
+instrumented diagnostics supply no scrolling performance credit; smooth
+60 fps remains unmet. A separate read-only command/gate probe is needed before
+attributing the absent work to a particular eligibility condition.
