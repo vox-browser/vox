@@ -50,6 +50,7 @@ fn create_browser_navigation_document(document_url dom.URL, origin dom.Origin, p
 	document.set_font_size_keyword_policy(.chromium)
 	document.set_font_rendering_policy(.chromium)
 	document.set_display_device_pixel_ratio(html.display_device_pixel_ratio())
+	install_browser_document_cookie_client(mut document)
 	return document
 }
 

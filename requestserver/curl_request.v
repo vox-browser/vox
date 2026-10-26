@@ -7,6 +7,7 @@
 module requestserver
 
 import browsersettings
+import browsercookies
 import fetch
 import http
 import os
@@ -104,6 +105,11 @@ pub fn (mut connection CurlConnection) start_fetch(params &fetch.FetchParams, in
 	}
 	for header in request.header_list.headers() {
 		native.append_curl_header(if header.value == '' { '${header.name};' } else { '${header.name}: ${header.value}' })
+	}
+	if request.includes_credentials() {
+		cookie := browsercookies.request_header(request.current_url().serialize(), request.serialize_origin(),
+			request.mode == .navigate && !request.target_is_nested_navigable, request.method)
+		if cookie != '' { native.append_curl_header('Cookie: ${cookie}') }
 	}
 	if native.headers_ != unsafe { nil } {
 		check_curl_result(C.vox_curl_setopt_pointer(native.easy_, C.CURLOPT_HTTPHEADER, native.headers_), C.CURLE_OK)
@@ -207,6 +213,13 @@ fn (mut request CurlRequest) transfer_headers_to_client_if_needed() bool {
 		request.adblock_blocked_ = true
 		request.pending_.resolve(filtered)
 		return false
+	}
+	if request.request_.includes_credentials() {
+		// HeaderList retains repeated Set-Cookie fields, including redirects.
+		values := request.response_headers_.headers().filter(it.name.to_lower() == 'set-cookie').map(it.value)
+		browsercookies.store_response_cookies(request.request_.current_url().serialize(),
+			request.request_.serialize_origin(), request.request_.mode == .navigate
+				&& !request.request_.target_is_nested_navigable, request.request_.method, values)
 	}
 	response.set_request_server_request(request.request_handle())
 	request.receiver_.set_response(response)

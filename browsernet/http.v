@@ -1,6 +1,7 @@
 module browsernet
 
 import adblock
+import browsercookies
 import dom
 import encoding.base64
 import loader
@@ -187,6 +188,10 @@ pub fn get(input adblock.Request, ca_bundle string) !HTTPResult {
 			request_type: input.request_type
 			method: input.method
 		}, response)!
+		// Keep each Set-Cookie field separate (Expires contains a comma), and
+		// store redirect cookies before constructing the next hop's headers.
+		browsercookies.store_response_cookies(resource_url, input.source_url,
+			input.request_type == 'main_frame', 'GET', response.header.custom_values('Set-Cookie'))
 		if response.status_code !in [301, 302, 303, 307, 308] {
 			return HTTPResult{
 				url:      resource_url

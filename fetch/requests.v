@@ -530,6 +530,13 @@ pub fn (mut request Request) add_origin_header() {
 	request.header_list.append(http.Header{ name: 'Origin', value: serialized })
 }
 
+// HTTP-network-or-cache fetch and the native transport must use the same
+// credentials flag, including after a redirect changes response tainting.
+pub fn (request &Request) includes_credentials() bool {
+	return (request.credentials_mode == .include || (request.credentials_mode == .same_origin && request.response_tainting == .basic))
+		&& request.cross_origin_embedder_policy_allows_credentials()
+}
+
 pub fn (request &Request) cross_origin_embedder_policy_allows_credentials() bool {
 	if request.mode != .no_cors || !request.client_present || !request.embedder_policy_credentialless {
 		return true

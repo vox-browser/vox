@@ -1268,7 +1268,7 @@ pub fn http_network_or_cache_fetch(params &FetchParams, host &FetchHost) &Pendin
 			})
 		}
 	}
-	include_credentials := (request.credentials_mode == .include || (request.credentials_mode == .same_origin && request.response_tainting == .basic)) && request.cross_origin_embedder_policy_allows_credentials()
+	include_credentials := request.includes_credentials()
 	if determine_the_http_cache_partition(http_request) == none {
 		http_request.cache_mode = .no_store
 	}
