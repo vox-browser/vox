@@ -2142,6 +2142,19 @@ fn build_select_internal_layout_children(document &dom.Document, element &dom.El
 	} else {
 		'20px'
 	}
+	chromium_theme := html.html_select_element_uses_chromium_menu_list(element)
+		&& host_computed.appearance() != .none_
+	if chromium_theme {
+		text_overrides[inline_start_margin_property(host_computed)] = '4px'
+		text_overrides[inline_end_margin_property(host_computed)] = '${1 + html.chromium_menu_list_arrow_padding()}px'
+		if host_computed.writing_mode() == .horizontal_tb {
+			text_overrides[css.PropertyID.padding_top] = '1px'
+			text_overrides[css.PropertyID.padding_bottom] = '1px'
+		} else {
+			text_overrides[css.PropertyID.padding_left] = '1px'
+			text_overrides[css.PropertyID.padding_right] = '1px'
+		}
+	}
 	text_style := computed_style_with_overrides(host_computed, text_overrides)
 	mut text_box := unsafe {
 		&Node(BlockContainer.new(document, text_element.as_node(), text_style))
@@ -2150,7 +2163,7 @@ fn build_select_internal_layout_children(document &dom.Document, element &dom.El
 	text_box.append_child(unsafe { &Node(TextNode.new(document, text.as_node(), selected_text)) })
 	text_box.set_children_are_inline(true)
 	outer.append_child(text_box)
-	if host_computed.appearance() == .none_ {
+	if host_computed.appearance() == .none_ || chromium_theme {
 		outer.set_children_are_inline(false)
 		return [outer]
 	}

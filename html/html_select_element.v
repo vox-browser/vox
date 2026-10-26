@@ -8,6 +8,7 @@
 module html
 
 import aria
+import css
 import dom
 import infra
 
@@ -406,9 +407,11 @@ pub fn (mut model HTMLSelectElementModel) form_associated_element_attribute_chan
 }
 
 pub fn (mut model HTMLSelectElementModel) computed_properties_changed(appearance_is_none bool) {
+	chromium_theme := !appearance_is_none
+		&& html_select_element_uses_chromium_menu_list(select_dom_element(model.element))
 	if chevron := model.chevron_icon_element_ {
 		mut element := unsafe { &dom.Element(chevron) }
-		element.set_attribute_value('style', if appearance_is_none {
+		element.set_attribute_value('style', if appearance_is_none || chromium_theme {
 			'display:none;position:absolute;inset-inline-end:0;top:calc(50% - 8px);width:16px;height:16px;'
 		} else {
 			'display:block;position:absolute;inset-inline-end:0;top:calc(50% - 8px);width:16px;height:16px;'
@@ -416,7 +419,9 @@ pub fn (mut model HTMLSelectElementModel) computed_properties_changed(appearance
 	}
 	if inner_text := model.inner_text_element_ {
 		mut element := unsafe { &dom.Element(inner_text) }
-		element.set_attribute_value('style', if appearance_is_none {
+		element.set_attribute_value('style', if chromium_theme {
+			chromium_select_label_style()
+		} else if appearance_is_none {
 			'flex:1;min-width:0;overflow:clip;text-overflow:inherit;margin-inline-end:0;'
 		} else {
 			'flex:1;min-width:0;overflow:clip;text-overflow:inherit;margin-inline-end:20px;'
@@ -428,6 +433,11 @@ pub fn (mut model HTMLSelectElementModel) create_shadow_tree_if_needed() {
 	mut element := unsafe { &dom.Element(select_dom_element(model.element)) }
 	if element.shadow_root() != none {
 		return
+	}
+	appearance_is_none := if style := css.computed_properties_for_element(element) {
+		style.appearance() == .none_
+	} else {
+		false
 	}
 	shadow := element.attach_a_user_agent_shadow_root(.named)
 	mut border := dom.create_element(element.document(), 'div', ns_html, none, none, false) or {
@@ -463,6 +473,7 @@ pub fn (mut model HTMLSelectElementModel) create_shadow_tree_if_needed() {
 	shadow_node.append_child(border.as_node()) or { return }
 	model.inner_text_element_ = inner_text
 	model.chevron_icon_element_ = chevron
+	model.computed_properties_changed(appearance_is_none)
 	model.clone_selected_option_into_select_button()
 }
 

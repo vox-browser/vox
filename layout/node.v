@@ -1741,7 +1741,7 @@ pub fn (n &Box) natural_size() css.SizeWithAspectRatio {
 }
 
 pub fn (n &Box) has_auto_content_box_size() bool {
-	return n.has_auto_content_box_size_
+	return n.has_auto_content_box_size_ || chromium_menu_list(unsafe { &Node(n) })
 }
 
 pub fn (n &Box) auto_content_box_size() css.SizeWithAspectRatio {
@@ -1751,6 +1751,9 @@ pub fn (n &Box) auto_content_box_size() css.SizeWithAspectRatio {
 			width: node.explicit_intrinsic_inner_width() or { CSSPixels.new(0) }
 			height: node.explicit_intrinsic_inner_height() or { CSSPixels.new(0) }
 		}
+	}
+	if chromium_menu_list(unsafe { &Node(n) }) {
+		return chromium_menu_list_auto_size(unsafe { &Node(n) })
 	}
 	if n.has_auto_content_box_size_ {
 		node := unsafe { &Node(n) }

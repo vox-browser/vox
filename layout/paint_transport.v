@@ -2546,6 +2546,7 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 		append_translated_outline_commands(mut commands, box.decorations().outline_width, box.decorations().outline_offset, box.outline_color, box.outline_style, box.outline_is_auto, box_radii, border_left, border_top, border_width, border_height, opacity, box.snaps_background_rect)
 		outline_end := commands.len
 		foreground_content_start := commands.len
+		append_chromium_menu_list_arrow(mut commands, box, border_rect, opacity)
 		if box.svg_data != unsafe { nil } && box.svg_path().path.len > 0 {
 			commands << PaintCommand{
 				kind: 'draw_svg_path'
