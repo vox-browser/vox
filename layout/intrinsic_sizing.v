@@ -271,12 +271,6 @@ fn calculate_min_content_width(mut state LayoutState, box &Box) CSSPixels {
 	if cached := cache.min_content_width {
 		return cached
 	}
-	if widths := calculate_inline_intrinsic_widths(mut state, box) {
-		cache = mutable_box.cached_intrinsic_sizes()
-		cache.min_content_width = widths.minimum
-		cache.max_content_width = widths.maximum
-		return widths.minimum
-	}
 	result := calculate_content_width_with_constraint(mut state, box, .min_content)
 	cache = mutable_box.cached_intrinsic_sizes()
 	cache.min_content_width = result
@@ -370,12 +364,6 @@ fn calculate_max_content_width(mut state LayoutState, box &Box) CSSPixels {
 	mut cache := mutable_box.cached_intrinsic_sizes()
 	if cached := cache.max_content_width {
 		return cached
-	}
-	if widths := calculate_inline_intrinsic_widths(mut state, box) {
-		cache = mutable_box.cached_intrinsic_sizes()
-		cache.min_content_width = widths.minimum
-		cache.max_content_width = widths.maximum
-		return widths.maximum
 	}
 	result := calculate_content_width_with_constraint(mut state, box, .max_content)
 	cache = mutable_box.cached_intrinsic_sizes()
