@@ -1250,3 +1250,28 @@ instrumented observations establish the blocking gate and supply no
 performance credit. An expanded admission limit with batches split at the
 backend's unchanged aggregate pixel limit still requires correctness,
 actual-input eligibility, and unprofiled acceptance checks.
+
+The expanded-grid prototype then passed 648 exact ordered comparisons in
+each normal and ASan/UBSan execution, including the real 2048×384 root tile.
+The focused 3 GiB runs exited 0 at sampled peaks of 103,645,184 and
+710,737,920 bytes, in 37.72 and 61.18 seconds respectively. Four alternating
+120-input diagnostics loaded the archived thread, moved its scroll position,
+used only archived responses and exited 0. Prefetch still produced zero
+batches during startup and input. Sampled ordinary input cache hits/calls
+were 400/974, 468/1,024, 477/1,024 and 435/1,008 in control/candidate order.
+These counters remain capped and do not establish whole-run hit rates.
+The eligibility decision rejected acceptance timing; this experiment supplies
+no performance credit. Evidence is in `rect-prefetch-large-grid-v1/` with
+enclosing report `rect-prefetch-large-grid-queue-20261026-230412/guard.json`
+(child exit 0, 12 GiB budget, 958,529,536-byte sampled peak, 283.57 seconds).
+
+A subsequent test expansion to half-scale paint transforms aborted on its
+first native comparison, before sanitizer, browser eligibility, pixel or
+timing checks ran. That case applies a half-scale transform to a 1× surface,
+outside the backend patch cache's supported device scales of one and two.
+The admission check and test expectations require correction before the
+Retina half-scale case can be evaluated. The failed command and source are
+retained in `rect-prefetch-device-grid-v1/`; the enclosing report is
+`rect-prefetch-device-grid-queue-20261026-233829/guard.json` (child exit 1,
+565,166,080-byte sampled peak, 23.08 seconds). The native child aborted with
+exit -6 and its wrapper returned 134. Smooth 60 fps remains unmet.
