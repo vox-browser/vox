@@ -152,11 +152,37 @@ fn browser_svg_source_changed(document &dom.Document, source string, changed map
 	return address.all_before('#') in changed
 }
 
+// An HTML image request owns its decoded SVG independently of the shell's
+// resource cache. Loading that URL again for a favicon or CSS background does
+// not replace the image's document or change its intrinsic size. Only skip the
+// dependency when the committed image box actually uses that decoded document;
+// generated content and images still waiting for bytes keep their invalidation.
+fn browser_svg_image_owns_decoded_document(node &layout.Node) bool {
+	image := node.as_image_box() or { return false }
+	isolated := image.svg_image_document() or { return false }
+	dom_node := node.dom_node() or { return false }
+	if !dom_node.is_html_image_element() { return false }
+	model := html.html_image_element_model_for_dom_element(unsafe { &dom.HTMLImageElement(dom_node) })
+	decoded := model.decoded_image_data() or { return false }
+	return if decoded is html.SVGDecodedImageData {
+		voidptr(isolated) == voidptr(decoded.svg_document)
+	} else { false }
+}
+
 fn browser_svg_dom_resource_needs_layout(node &dom.Node, changed map[string]bool) bool {
 	element := node.as_element() or { return false }
 	document := node.document()
 	if element.is_html_element() {
 		name := element.local_name()
+		if name == 'img' {
+			if placeholder := node.unsafe_layout_node() {
+				handle := placeholder.real_layout_handle()
+				if handle != unsafe { nil }
+					&& browser_svg_image_owns_decoded_document(unsafe { &layout.Node(handle) }) {
+					return false
+				}
+			}
+		}
 		if name in ['img', 'input', 'source'] {
 			if browser_svg_source_changed(document, element.get_attribute_value('src'), changed) {
 				return true
@@ -181,7 +207,8 @@ fn browser_svg_dom_resource_needs_layout(node &dom.Node, changed map[string]bool
 
 fn browser_svg_layout_resource_needs_layout(node &layout.Node, changed map[string]bool) bool {
 	if image := node.as_image_box() {
-		if browser_svg_source_changed(node.document(), image.source(), changed) { return true }
+		if browser_svg_source_changed(node.document(), image.source(), changed)
+			&& !browser_svg_image_owns_decoded_document(node) { return true }
 	}
 	if styled := node.as_node_with_style() {
 		if image := styled.list_style_image() {
