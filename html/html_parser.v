@@ -819,7 +819,30 @@ pub fn HTMLParser.the_end(document &dom.Document, parser ?&HTMLParser) {
 // DocumentFragment. Once parsing is complete, materialize declarative shadow
 // roots by attaching that fragment to the template's parent and removing the
 // template element. Processing the fragment first also handles nested roots.
+// This read-only walk invokes no DOM hooks, so it can follow sibling links
+// without owning snapshots. Most documents have no templates to materialize.
+fn has_declarative_shadow_templates(node &dom.Node) bool {
+	mut child := node.first_child()
+	for child != none {
+		current := child or { break }
+		if element := current.as_element() {
+			if element.local_name() == 'template' { return true }
+			if root := element.shadow_root() {
+				if has_declarative_shadow_templates(root.as_node()) { return true }
+			}
+		}
+		if has_declarative_shadow_templates(current) { return true }
+		child = current.next_sibling()
+	}
+	return false
+}
+
 fn materialize_declarative_shadow_roots(node &dom.Node) {
+	if !has_declarative_shadow_templates(node) { return }
+	materialize_declarative_shadow_roots_with_templates(node)
+}
+
+fn materialize_declarative_shadow_roots_with_templates(node &dom.Node) {
 	// A leaf has no templates or descendants to inspect. Its parent's walk
 	// still visits any shadow root attached to it separately below.
 	if !node.has_children() { return }
@@ -834,15 +857,15 @@ fn materialize_declarative_shadow_roots(node &dom.Node) {
 		if element := child.as_element() {
 			if element.local_name() == 'template' {
 				template := unsafe { &dom.HTMLTemplateElement(element) }
-				materialize_declarative_shadow_roots(template.content().as_node())
+				materialize_declarative_shadow_roots_with_templates(template.content().as_node())
 			} else {
-				materialize_declarative_shadow_roots(child)
+				materialize_declarative_shadow_roots_with_templates(child)
 			}
 			if shadow_root := element.shadow_root() {
-				materialize_declarative_shadow_roots(unsafe { &dom.Node(shadow_root) })
+				materialize_declarative_shadow_roots_with_templates(unsafe { &dom.Node(shadow_root) })
 			}
 		} else {
-			materialize_declarative_shadow_roots(child)
+			materialize_declarative_shadow_roots_with_templates(child)
 		}
 	}
 	templates_scratch := platform.begin_thread_scratch('declarative shadow templates')
