@@ -24,7 +24,7 @@ static int native_test_settings_controls(void *host, void *port, void *sites, vo
         && [(__bridge id)checkbox isKindOfClass:NSButton.class]
         && [(__bridge id)apply isKindOfClass:NSButton.class]
         && field.window == vox_settings_window
-        && NSEqualSizes(vox_settings_window.contentView.bounds.size, NSMakeSize(500, 490));
+        && NSEqualSizes(vox_settings_window.contentView.bounds.size, NSMakeSize(500, 380));
 }
 
 static int native_test_settings_close_shortcut(void) {

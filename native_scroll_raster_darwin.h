@@ -191,42 +191,6 @@ static int native_begin_scroll_raster(uint64_t owner, uint64_t revision,
     return 1;
 }
 
-// Cross-document reuse is authorized only after comparing owned paint
-// signatures. Share the existing bounded viewport, never a second cache.
-static int native_begin_page_switch_raster(uint64_t old_owner, uint64_t old_revision,
-    uint64_t owner, uint64_t revision, double page_top, double width, double height,
-    const double *damage, int count) {
-    VoxScrollRaster *cache = &native_scroll_raster;
-    if (!cache->valid || cache->owner != old_owner || cache->revision != old_revision
-        || cache->scroll != 0 || count < 0 || count > 4096 || (count && !damage)
-        || getenv("VOX_DISABLE_SCROLL_RASTER_DAMAGE_OPTIMIZATIONS")) return 0;
-    CGRect rects[4096];
-    CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
-    if (!context) return 0;
-    double bottom = CGBitmapContextGetHeight(context) / cache->scale - page_top - height;
-    for (int i = 0; i < count; ++i) {
-        const double *r = damage + i * 4;
-        if (!isfinite(r[0]) || !isfinite(r[1]) || !isfinite(r[2]) || !isfinite(r[3])
-            || r[0] < 0 || r[1] < 0 || r[2] <= 0 || r[3] <= 0
-            || r[0] + r[2] > width || r[1] + r[3] > height) return 0;
-        rects[i] = CGRectMake(r[0], bottom + height - r[1] - r[3], r[2], r[3]);
-    }
-    double delta = 0;
-    if (!native_begin_scroll_raster(old_owner, old_revision, 0, page_top, width, height, 1, &delta))
-        return 0;
-    // Begin restored every row and installed an empty scroll strip. Replace
-    // that strip with the union of changed tiles in the new document.
-    CGContextRestoreGState(context);
-    CGContextSaveGState(context);
-    if (count) CGContextClipToRects(context, rects, count);
-    else CGContextClipToRect(context, CGRectZero);
-    cache->owner = owner;
-    cache->revision = revision;
-    cache->dirty_first = 0;
-    cache->dirty_rows = cache->height;
-    return 1;
-}
-
 // Finish before the document layer is published or chrome is painted. A new
 // invalidation, navigation, scale, resize or fractional device-pixel scroll
 // forces the ordinary complete replay on the next begin.

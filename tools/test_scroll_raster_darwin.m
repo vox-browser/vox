@@ -149,51 +149,6 @@ static void frame(int width, int height, int top, int scale, double scroll,
     CGContextRelease(expected);
 }
 
-static void test_page_switch_damage(int scale) {
-    const int width = 160, height = 120, top = 8;
-    native_discard_scroll_raster();
-    frame(width, height, top, scale, 0, 41, 7, 1, 0, 0);
-    CGContextRef actual = canvas(width, height + top + 13, scale);
-    CGContextRef expected = canvas(width, height + top + 13, scale);
-    [NSGraphicsContext saveGraphicsState];
-    [NSGraphicsContext setCurrentContext:[NSGraphicsContext graphicsContextWithCGContext:actual flipped:NO]];
-    white(actual, width, height + top + 13);
-    double dirty[] = {4, 6, 35, 27, 110, 70, 50, 50};
-    assert(!native_begin_page_switch_raster(40, 7, 42, 1, top, width, height, dirty, 2));
-    assert(!native_begin_page_switch_raster(41, 6, 42, 1, top, width, height, dirty, 2));
-    assert(!native_begin_page_switch_raster(41, 7, 42, 1, top, width, height, NULL, 1));
-    assert(!native_begin_page_switch_raster(41, 7, 42, 1, top, width, height, dirty, -1));
-    assert(!native_begin_page_switch_raster(41, 7, 42, 1, top, width, height, dirty, 4097));
-    double invalid[] = {0, 0, width + 1, height};
-    assert(!native_begin_page_switch_raster(41, 7, 42, 1, top, width, height, invalid, 1));
-    invalid[2] = NAN;
-    assert(!native_begin_page_switch_raster(41, 7, 42, 1, top, width, height, invalid, 1));
-    assert(native_begin_page_switch_raster(41, 7, 42, 1, top, width, height, dirty, 2));
-    white(actual, width, height + top + 13);
-    CGContextSetRGBFillColor(actual, 1, 0, 0, 1);
-    CGContextFillRect(actual, CGRectMake(0, 13, width, height));
-    native_end_scroll_raster();
-    white(expected, width, height + top + 13);
-    paint(expected, width, height, top, 0, scale);
-    CGContextSetRGBFillColor(expected, 1, 0, 0, 1);
-    for (int i = 0; i < 2; ++i) {
-        double *r = dirty + i * 4;
-        CGContextFillRect(expected, CGRectMake(r[0], 13 + height-r[1]-r[3], r[2], r[3]));
-    }
-    CGContextFlush(expected);
-    size_t bytes = CGBitmapContextGetBytesPerRow(actual) * CGBitmapContextGetHeight(actual);
-    assert(!memcmp(CGBitmapContextGetData(actual), CGBitmapContextGetData(expected), bytes));
-    assert(native_scroll_raster.owner == 42 && native_scroll_raster.revision == 1);
-    assert(native_begin_page_switch_raster(42, 1, 43, 1, top, width, height, NULL, 0));
-    white(actual, width, height + top + 13);
-    native_end_scroll_raster();
-    assert(!memcmp(CGBitmapContextGetData(actual), CGBitmapContextGetData(expected), bytes));
-    [NSGraphicsContext restoreGraphicsState];
-    CGContextRelease(actual);
-    CGContextRelease(expected);
-    native_discard_scroll_raster();
-}
-
 int main(void) {
     @autoreleasepool {
         for (int scale = 1; scale <= 2; ++scale) {
@@ -259,8 +214,6 @@ int main(void) {
         [NSGraphicsContext restoreGraphicsState];
         CGContextRelease(translated);
         native_discard_scroll_raster();
-        test_page_switch_damage(1);
-        test_page_switch_damage(2);
         test_independent_image_pixels_are_not_reused();
         test_redraw_survives_layer_display();
         puts("Scroll raster: exact pixels across scroll direction, overlay fades, revision, navigation, resize, density and fallback");

@@ -55,9 +55,6 @@ $if vox_ui2 ? {
 		sites := ui2.embedded_browser_control('settings-sites')
 		checkbox := ui2.embedded_browser_control('settings-enabled')
 		apply := ui2.embedded_browser_control('settings-apply')
-		fast := ui2.embedded_browser_control('settings-fast-page-switch')
-		assert !ui2.control_checked('settings-fast-page-switch')
-		C.native_test_chrome_click(fast)
 		assert C.native_test_settings_controls(host, port, sites, checkbox, apply) != 0
 		assert C.native_test_chrome_enabled(host) == 0
 		assert C.native_test_chrome_enabled(port) == 0
@@ -85,7 +82,6 @@ $if vox_ui2 ? {
 		ui2.set_text('settings-sites', 'Example.com, another.org')
 		assert C.native_test_settings_submit(port) != 0
 		assert C.native_browser_settings_visible() == 0
-		assert browsersettings.current().experimental_fast_page_switch
 		assert browsersettings.current().host == 'localhost'
 		assert browsersettings.current().port == '9050'
 		assert browsersettings.current().sites == 'example.com, another.org'
@@ -94,13 +90,11 @@ $if vox_ui2 ? {
 		assert ui2.text('settings-port') == '9050'
 		assert ui2.text('settings-sites') == 'example.com, another.org'
 		C.native_test_settings_capture()
-		C.native_test_chrome_click(fast)
 		C.native_test_settings_edit(sites, c'discarded.example')
 		C.native_test_chrome_click(ui2.embedded_browser_control('settings-cancel'))
 		show_browser_settings()
 		assert ui2.text('settings-host') == 'localhost'
 		assert ui2.text('settings-sites') == 'example.com, another.org'
-		assert ui2.control_checked('settings-fast-page-switch')
 		assert ui2.text('settings-error') == ''
 		C.native_test_settings_edit(host, c'closed.example')
 		assert C.native_test_settings_close_shortcut() != 0

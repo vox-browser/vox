@@ -39,7 +39,7 @@ $if vox_ui2 ? {
 	}
 
 	fn browser_settings_elements(proxy browsersettings.Proxy) ui2.Element {
-		return ui2.view('settings-root', ui2.rect(0, 0, 500, 490), ui2.BoxStyle{}, [
+		return ui2.view('settings-root', ui2.rect(0, 0, 500, 380), ui2.BoxStyle{}, [
 			ui2.label('settings-heading', 'Network', ui2.rect(24, 20, 452, 24), ui2.TextStyle{ size: 18 }),
 			ui2.checkbox('settings-enabled', 'Use SOCKS5 proxy', proxy.enabled, ui2.rect(24, 60, 452, 24), ui2.TextStyle{ size: 13 }),
 			ui2.label('settings-host-label', 'Host', ui2.rect(24, 99, 320, 20), ui2.TextStyle{ size: 13 }),
@@ -51,12 +51,9 @@ $if vox_ui2 ? {
 			ui2.label('settings-sites-help', 'Includes subdomains. Separate with commas; leave empty for all.', ui2.rect(24, 224, 452, 20), ui2.TextStyle{ size: 12 }),
 			ui2.label('settings-help', 'Other sites connect directly. Proxied DNS uses SOCKS5.', ui2.rect(24, 245, 452, 20), ui2.TextStyle{ size: 12 }),
 			ui2.label('settings-request-help', 'Changes apply to new requests.', ui2.rect(24, 266, 452, 20), ui2.TextStyle{ size: 12 }),
-			ui2.label('settings-experimental-heading', 'Experimental', ui2.rect(24, 300, 452, 24), ui2.TextStyle{ size: 18 }),
-			ui2.checkbox('settings-fast-page-switch', 'Fast website page switching', proxy.experimental_fast_page_switch, ui2.rect(24, 334, 452, 24), ui2.TextStyle{ size: 13 }),
-			ui2.label('settings-fast-page-help', 'Reuse unchanged pixels on Old Reddit listing pages.', ui2.rect(24, 364, 452, 20), ui2.TextStyle{ size: 12 }),
-			ui2.label('settings-error', '', ui2.rect(24, 402, 452, 24), ui2.TextStyle{ size: 12, color: 0xb42318 }),
-			ui2.with_native_style(ui2.button('settings-cancel', 'Cancel', ui2.rect(294, 444, 86, 28), ui2.BoxStyle{}, ui2.TextStyle{ size: 13 })),
-			ui2.with_native_style(ui2.button('settings-apply', 'Apply', ui2.rect(390, 444, 86, 28), ui2.BoxStyle{}, ui2.TextStyle{ size: 13 })),
+			ui2.label('settings-error', '', ui2.rect(24, 294, 452, 24), ui2.TextStyle{ size: 12, color: 0xb42318 }),
+			ui2.with_native_style(ui2.button('settings-cancel', 'Cancel', ui2.rect(294, 334, 86, 28), ui2.BoxStyle{}, ui2.TextStyle{ size: 13 })),
+			ui2.with_native_style(ui2.button('settings-apply', 'Apply', ui2.rect(390, 334, 86, 28), ui2.BoxStyle{}, ui2.TextStyle{ size: 13 })),
 		])
 	}
 
@@ -78,10 +75,10 @@ $if vox_ui2 ? {
 		proxy := browsersettings.current()
 		ui2.update_embedded_settings(C.native_browser_settings_content(), browser_settings_elements(proxy))
 		for id in ['settings-heading', 'settings-host-label', 'settings-port-label', 'settings-host',
-			'settings-port', 'settings-sites-label', 'settings-sites', 'settings-experimental-heading'] {
+			'settings-port', 'settings-sites-label', 'settings-sites'] {
 			C.native_browser_settings_style_control(ui2.embedded_browser_control(id), 0)
 		}
-		for id in ['settings-help', 'settings-sites-help', 'settings-request-help', 'settings-fast-page-help'] {
+		for id in ['settings-help', 'settings-sites-help', 'settings-request-help'] {
 			C.native_browser_settings_style_control(ui2.embedded_browser_control(id), 1)
 		}
 		C.native_browser_settings_style_control(ui2.embedded_browser_control('settings-error'), 2)
@@ -92,7 +89,6 @@ $if vox_ui2 ? {
 		ui2.set_text('settings-sites', proxy.sites)
 		ui2.set_text('settings-error', '')
 		ui2.set_control_checked('settings-enabled', proxy.enabled)
-		ui2.set_control_checked('settings-fast-page-switch', proxy.experimental_fast_page_switch)
 		update_browser_settings_enabled()
 		C.native_browser_settings_show()
 	}
@@ -107,7 +103,6 @@ $if vox_ui2 ? {
 					host:    ui2.text('settings-host')
 					port:    ui2.text('settings-port')
 					sites:   ui2.text('settings-sites')
-					experimental_fast_page_switch: ui2.control_checked('settings-fast-page-switch')
 				}) or {
 					ui2.set_text('settings-error', err.msg())
 					return
