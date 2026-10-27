@@ -61,15 +61,18 @@ fn (iterator &InlineLevelIterator) chromium_context_run_for_text(text_node &Text
 		resolved_text_spacing_for_node(unsafe { &Node(text_node) }, .letter_spacing).to_double()
 	word_spacing :=
 		resolved_text_spacing_for_node(unsafe { &Node(text_node) }, .word_spacing).to_double()
+	context := chromium_collapsed_context_text(text_node, text)
 	run := iterator.shape_text_for_layout(text_node, 0, f32(letter_spacing), f32(word_spacing),
-		text, font, .ltr).glyph_run
+		context.text, font, .ltr).glyph_run
 	// A cluster may emit multiple glyphs, each retaining its complete UTF-16
 	// span. Summing those spans would misidentify every later chunk boundary.
 	// Keep segmented shaping until the run carries explicit cluster offsets.
 	mut covered_units := 0
 	for glyph in run.glyphs_ { covered_units += glyph.length_in_code_units }
-	if covered_units != if units.len > 0 { units.len } else { text.len } { return none }
-	return run
+	if covered_units != if context.source_offsets.len > 0 {
+		context.source_offsets.len
+	} else if units.len > 0 { units.len } else { text.len } { return none }
+	return context.restore_source_offsets(run)
 }
 
 // A fallback symbol must not remove the kerning context of later words in
