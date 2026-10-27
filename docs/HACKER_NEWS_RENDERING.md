@@ -1323,3 +1323,29 @@ identity checks exit zero. Repeatable page credit is the measured interval's
 lower bound, 210,790,143.5 instructions. This independent result is not added
 to other candidate savings. The installed production bundle predates this
 change; its latest Brave acceptance ratio remains 5.294119 against 0.90.
+
+## Accepted shadow-template presence scan
+
+`3d2f23db` checks for templates through sibling links before entering the
+existing mutation-safe materialization walk. Ordinary documents avoid its
+temporary child snapshots. The presence scan includes existing closed shadow
+roots; three focused tests cover allocation-free ordinary trees, nested roots,
+inert templates and later attribute mutations.
+
+`shadow-presence-isolated-1` changes only the authenticated presence helper,
+materializer wrapper and recursive worker. A separate eligibility run confirms
+both calls take the no-template path. All 60 captures in 30 alternating pairs
+retain exact pixels for all 101 comments. Control and candidate medians are
+6,316,284,087.5 and 6,233,092,734 instructions. The median paired saving is
+88,074,050, with bootstrap 95% interval [74,022,882, 97,762,623.5]. Every pair
+improves; the smallest saving, 16,875,673, is retained.
+
+`shadow-presence-checkpoint-1` passes with unchanged authenticated inputs.
+Its distinct test union has 684 executions: 678 passes and the same six known
+layout failures. All 100 upstream AST fixtures compare exactly. The 19 visual
+cases retain all 34 control images, including the six existing reference
+mismatches. All three HN fixtures are exact; startup and both live identity
+checks pass. Repeatable page credit is the interval lower bound, 74,022,882
+instructions. This independent candidate result does not establish combined
+savings or Brave parity. The installed production bundle predates the change;
+its latest acceptance ratio remains 5.294119 against 0.90.
