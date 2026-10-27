@@ -5,7 +5,12 @@ import browsercookies
 
 pub fn request_accept_header(request_type string) string {
 	if request_type in ['main_frame', 'sub_frame'] {
-		// Fetch/Fetching/Fetching.h::document_accept_header_value.
+		$if macos {
+			// Advertise the native image formats on navigations too. Servers can
+			// choose image URLs while generating the HTML response (e.g. Pikabu).
+			return 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8'
+		}
+		// Fetch/Fetching/Fetching.h::document_accept_header_value otherwise.
 		return 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
 	}
 	if request_type == 'image' {
