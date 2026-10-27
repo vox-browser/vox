@@ -1894,3 +1894,53 @@ aggregate peak RSS 9,319,153,664 bytes under the 12 GiB guard. Evidence is under
 `Build/hn-small-text/text-metrics-submission-3/attempt-012.json`. This comparison
 measures the isolated optimization against its parent. It does not establish
 the requested 10% fewer instructions than Brave; that target remains open.
+
+
+## Intrinsic line fitting without unused projected widths, 2026-10-27
+
+`4e404983` skips projected-width shaping only when a soft-wrap decision has an
+intrinsic or indefinite constraint. Min-content always breaks and max-content
+and indefinite constraints never break, independent of the measured advance.
+Definite lines, float-reduced widths and actual overflow splitting retain full
+measurement. Two new tests compare decisions across empty/populated lines,
+signed/zero advances and all constraints, and verify min-content overflow still
+splits into correctly measured glyphs. All 58 focused executions pass in Boehm
+and preallocation/no-GC modes, including generated glyph ABI checks.
+
+`Build/hn-small-text/intrinsic-fit-isolated-1` is a frozen generated-C composition,
+not a fresh canonical production build. Reversing the two call replacements and
+one helper restores the complete parent C byte for byte; 12 shared records,
+nine shared helpers, all 252 O2 objects and native libraries remain unchanged.
+Executable SHA256 is
+`2109cce54961d337e773aff3c8f82c05e0da999f58a44fbdc573937f83217219`.
+The separate eligibility diagnostic records 19,347 calls and 12,898 intrinsic
+hits, exact pixels and all 101 comments. It receives no performance credit.
+
+Thirty alternating unprofiled pairs preserve every pixel and all comments.
+Control/candidate medians are 7,427,138,379 / 6,962,427,923 instructions. The median
+paired saving is 458,330,584; bootstrap 95% interval is
+[446,881,098, 492,501,144.5]. All 30 pairs improve, with a minimum saving of
+333,236,366. The strict worst-candidate/best-control ratio is 0.956386. The
+18-CPU host ends at load averages 21.4155/27.0640/32.4995; raw trials, identities,
+commands and actual exits are retained.
+
+The conservative 446,881,098-instruction credit triggers the broad checkpoint.
+Its 482 new and 288 distinct carried executions give 764 passes and the six
+unchanged baseline layout failures. All 100 upstream AST fixtures match exactly.
+All 34 fresh control/candidate images remain unchanged: 14 of 19 canonical cases
+are exact, with five existing reference failures unchanged. Three HN fixtures
+and startup pass. The first live check loaded a navigation-error document, so
+pipeline 1 correctly failed. Pipeline 2 stopped before any checks because free
+disk space was below 1 GiB. Both failures remain retained. Transparent filesystem
+compression recovered 1,185,505,280 allocated bytes from generated C with verified
+identical SHA256 content; no evidence was removed. Pipeline 3 reuses pinned,
+passing checks, passes both fresh live identity checks and completes the AST
+comparison. No tolerance changes. Pending broad credit resets to zero.
+
+The initial guard exits 1 after 1,238.344 seconds with sampled peak RSS
+9,323,560,960 bytes. The successful recovery exits zero after 28.436 seconds,
+with peak 1,275,871,232 bytes under the 12 GiB guard. Receipts are retained in
+`Build/hn-small-text/intrinsic-fit-submission-{1,2,3}`; the successful checkpoint
+is `intrinsic-fit-checkpoint-2` and pipeline is `intrinsic-fit-pipeline-3`.
+This validates savings against the parent candidate. The requested 10% fewer
+instructions than Brave remains open; independent gains are not added.
