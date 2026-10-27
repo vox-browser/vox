@@ -278,7 +278,7 @@ fn run_uncached_inline_formatting_context(mut state LayoutState, containing_bloc
 					if is_whitespace && next_width.raw_value() > 0 {
 						line_builder.note_soft_wrap_opportunity()
 						sequence_width := if node.document().font_rendering_policy() == .chromium {
-							line_builder.projected_text_sequence_width(item,
+							line_builder.projected_text_sequence_width_for_line_break(item,
 								iterator.next_non_whitespace_sequence_items())
 						} else { item.border_box_width().plus(next_width) }
 						broke_line := if iterator.next_non_whitespace_text_allows_overflow_break() {
@@ -303,7 +303,7 @@ fn run_uncached_inline_formatting_context(mut state LayoutState, containing_bloc
 						} else {
 							[]InlineLevelItem{}
 						}
-						projected_width := line_builder.projected_text_sequence_width(item, glued)
+						projected_width := line_builder.projected_text_sequence_width_for_line_break(item, glued)
 						line_builder.note_soft_wrap_opportunity()
 						if overflow_break_allowed {
 							line_builder.break_if_needed_before_overflow_breakable_item(projected_width)

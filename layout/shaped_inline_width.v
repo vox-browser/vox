@@ -120,3 +120,15 @@ fn (mut builder LineBuilder) projected_text_sequence_width(item &InlineLevelItem
 	}
 	return width.plus(projection.chromium_line_end_correction())
 }
+
+// Intrinsic constraints decide soft wrapping without consulting a measured
+// advance: min-content always breaks, while max-content and indefinite never
+// do. Keep the ordinary projected width for definite lines, including widths
+// reduced by floats. Overflow splitting still uses the full measurement.
+fn (mut builder LineBuilder) projected_text_sequence_width_for_line_break(item &InlineLevelItem,
+	following []InlineLevelItem) CSSPixels {
+	if !builder.available_width_for_current_line.is_definite() {
+		return CSSPixels.new(0)
+	}
+	return builder.projected_text_sequence_width(item, following)
+}
