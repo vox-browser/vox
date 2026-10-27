@@ -877,3 +877,52 @@ These focused results do not establish whole-page parity. A diagnostic
 production build containing these changes and a fresh live/frozen-page
 comparison are in progress. The strict page, readback, and Retina rounded-mask
 gates remain open.
+
+## Fresh browser comparison after DOM and Canvas fixes
+
+The diagnostic production build completed successfully and passed strict bundle
+signing and a fresh headless startup check. Its executable SHA-256 is
+`e10853851e59334a646337d36dce1d4f4fc9e21ae0fc4ffd150bc858ee8a5160`.
+The build and preserved bundle are in
+`Build/pikabu-dom-canvas-production-1793083416732516000/`; the guard recorded
+1,001.6 seconds and a sampled peak RSS of approximately 7.18 GiB. This bundle
+contains the committed DOM and Canvas fixes above, but does not contain the
+subsequent fragment element-accessor work.
+
+Fresh browser captures retain this executable and native-library identity,
+empty private profiles, a 1024 by 768 document viewport, and scale one.
+The bundled page comparison fails with 17,858 differing pixels, maximum channel
+error 42. Independent live loads also fail, with 98,442 differing pixels
+(12.52 percent), maximum channel error 226. Their article-text region is exact,
+but the photo backdrop and missing cookie notice remain substantial failures.
+The backdrop canvas is now created; its side bands still differ from Brave.
+Changing live counters can contribute additional differences. Raw captures,
+audits, commands, and pixel reports are retained in
+`Build/pikabu-dom-canvas-visual-1793083853339213000/`. Neither comparison passes
+the zero-difference gate.
+
+The browser Canvas fixture passes all eleven image/filter regions with zero
+differing screenshot pixels. This covers ordinary scaling, SVG and CSS filters,
+cropping, relative filter URLs, merge inputs, alpha, live mutations, and filter
+color spaces. Direct RGBA readback still differs. A separate Brave GPU diagnostic
+confirms Graphite/Dawn/Metal and retrieves premultiplied Canvas pixels: all three
+native plain-image, SVG-filter, and CSS-filter buffers match those bytes exactly.
+The remaining readback discrepancy occurs during conversion to straight-alpha
+RGBA, rather than in those fixture's filtered premultiplied output. This does
+not establish that the larger, cropped live-photo filter is exact. Diagnostic
+inputs and results are in
+`Build/pikabu-brave-canvas-gpu-diagnostic-1793084670326151000/`.
+
+The broad screenshot checkpoint passes 18 of 21 cases, including all ten SVG
+mutation and mask guards. `inline-node`, `ordered-list`, and `text-decorations`
+fail against their upstream expectations; a baseline comparison is pending to
+establish whether these are inherited. Results remain in
+`Build/pikabu-story-broad-visual-1793085045442418000/`.
+
+An archived-startup diagnostic with temporary fragment-accessor shims clears
+the prior HTML-parsing error, but still produces no cookie notice. This is
+diagnostic evidence only and does not validate the native accessor implementation.
+Remaining analytics errors include `PerformanceResourceTiming` and a blocked
+advertising initializer. The startup diagnostic is retained in
+`Build/pikabu-fragment-startup-diagnostic-1793085248796138000/`.
+Whole-page, Canvas readback, and Retina rounded-mask parity remain unresolved.
