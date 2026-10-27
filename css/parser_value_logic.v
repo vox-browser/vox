@@ -15645,11 +15645,41 @@ fn dom_style_value_from_value_logic(value StyleValue) &dom.StyleValue {
 	}
 }
 
+// The common computed integer length needs just one owned string. Build its
+// digits and unit on the stack instead of opening a scratch arena, allocating
+// intermediate number text, and copying the final serialization back out.
+fn serialize_dom_integer_length(value LengthStyleValue) ?string {
+	raw := value.raw_value()
+	if raw != raw || raw < -2147483648.0 || raw > 2147483647.0 { return none }
+	integer := i64(raw)
+	if raw != f64(integer) { return none }
+	unit := value.unit_name()
+	mut buffer := [32]u8{}
+	if unit.len > buffer.len - 11 { return none }
+	mut start := buffer.len - unit.len
+	for index in 0 .. unit.len { buffer[start + index] = unit[index] }
+	mut magnitude := u64(if integer < 0 { -integer } else { integer })
+	for {
+		start--
+		buffer[start] = u8(magnitude % 10) + `0`
+		magnitude /= 10
+		if magnitude == 0 { break }
+	}
+	if integer < 0 {
+		start--
+		buffer[start] = `-`
+	}
+	return unsafe { tos(&buffer[start], buffer.len - start).clone() }
+}
+
 fn serialize_dom_style_value(value StyleValue) string {
 	// Keyword serialization returns a static spelling. It already outlives
 	// the DOM value and needs neither temporary storage nor an owned copy.
 	if value is KeywordStyleValue {
 		return value.serialize(.normal)
+	}
+	if value is LengthStyleValue {
+		if text := serialize_dom_integer_length(value) { return text }
 	}
 	$if prealloc {
 		// Only the final text belongs to the opaque DOM value. Builders,
