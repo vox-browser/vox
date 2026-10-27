@@ -1,0 +1,20 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Outer shadows across root raster tiles</title>
+<style>
+html, body { margin: 0; background: #ffffee; }
+body { height: 1400px; }
+.shadow { position: absolute; width: 150px; height: 106px; background: #def; box-shadow: 0 0 5px #00000040; }
+.first { left: 77px; top: 401px; }
+.second { left: 410.5px; top: 401px; }
+.boundary { left: 220px; top: 204px; height: 12px; }
+.bottom { left: 77px; top: 754px; }
+.rounded { left: 610px; top: 180px; border-radius: 12px; }
+.offset { left: 610px; top: 401px; box-shadow: 3px 7px 8px 2px #00000066; }
+</style>
+<div class="shadow first"></div>
+<div class="shadow second"></div>
+<div class="shadow boundary"></div>
+<div class="shadow bottom"></div>
+<div class="shadow rounded"></div>
+<div class="shadow offset"></div>

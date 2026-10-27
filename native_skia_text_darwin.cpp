@@ -3148,11 +3148,28 @@ extern "C" int ladybird_v_skia_draw_outer_box_shadow(CGContextRef destination,
         };
         if (has_float_color) std::copy_n(s_unrounded_paint_color, 4, descriptor.float_color);
         raster_matrix(matrix, region, raster_scale_x, raster_scale_y).get9(descriptor.matrix);
-        if (auto draw = graphite_shadow_draw(); draw && draw(reinterpret_cast<uint8_t*>(pixels.data()),
-                raster_width, raster_height, raster_width * 4, has_background, &descriptor)) {
-            return composite_pixels(destination, std::move(pixels), raster_width, raster_height,
-                static_cast<float>(region.left), canvas_height - static_cast<float>(region.bottom),
-                static_cast<float>(region.width()), static_cast<float>(region.height()), has_background);
+        if (auto draw = graphite_shadow_draw()) {
+            // Analytic blur interpolates its lookup coordinates across the
+            // render target. Match Chromium's full raster tiles, as for root
+            // shapes, rather than changing that interpolation with each
+            // shadow's tightly cropped temporary surface.
+            bool rendered = draw_chromium_root_raster_grid(pixels, raster_width,
+                raster_height, region, page_x, page_y, scroll_y, destination_scale,
+                [&](auto& tile, long offset_x, long offset_y, bool) {
+                    auto tiled = descriptor;
+                    tiled.matrix[2] += offset_x;
+                    tiled.matrix[5] += offset_y;
+                    return draw(reinterpret_cast<uint8_t*>(tile.data()),
+                        s_msaa_grid_width, s_msaa_grid_height, s_msaa_grid_width * 4,
+                        has_background, &tiled) != 0;
+                });
+            if (!rendered) rendered = draw(reinterpret_cast<uint8_t*>(pixels.data()),
+                raster_width, raster_height, raster_width * 4, has_background, &descriptor);
+            if (rendered) {
+                return composite_pixels(destination, std::move(pixels), raster_width, raster_height,
+                    static_cast<float>(region.left), canvas_height - static_cast<float>(region.bottom),
+                    static_cast<float>(region.width()), static_cast<float>(region.height()), has_background);
+            }
         }
     }
     auto* gpu = s_chromium_painting ? image_gpu_context() : nullptr;

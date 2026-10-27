@@ -465,3 +465,15 @@ an authored tall control, custom borders and colors, and `appearance: none`. Its
 with exact RGBA equality. The executed reference comparison has zero differing
 pixels. Focused layout tests also cover intrinsic sizes and persistent UA
 shadow-tree label geometry.
+
+`shadow-raster-grid` places outer shadows at integer and fractional positions,
+across a root raster tile boundary and at the viewport edge. It includes
+rounded corners and an offset, spread shadow. The reference uses Brave
+156.1.98.60 at 1024×768 and native device scale 2; the full-resolution
+`expected/shadow-raster-grid@2x.png` requires exact RGBA equality. Root shadows
+retain the complete Chromium raster tile extent while independent layers keep
+their existing surfaces. The scale-1 diagnostic retains 1,424 differing pixels
+in both the baseline and candidate, confined to the fractional box and rounded
+background; it does not establish scale-1 parity. See
+[`CHROMIUM_CATALOG_PARITY.md`](../../../docs/translation-audit/CHROMIUM_CATALOG_PARITY.md)
+for capture identities and results.
