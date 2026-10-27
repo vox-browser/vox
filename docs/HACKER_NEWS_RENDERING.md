@@ -1564,3 +1564,27 @@ fix. A redundant integration check is cancelled while still queued, before
 it starts or snapshots source. Broad verification remains deferred below the
 repeatable 5,000,000-instruction gate. The combined Brave ratio remains
 3.439494; the performance target is open.
+
+
+## Latest completed production baseline, 2026-10-27
+
+`Build/hn-small-text/production-reuse-3/check-1` reuses the latest completed
+production browser from `Build/4chan-catalog-20261027-catalog-production-3`,
+preserved in a sealed app before the shared bundle changes. Its executable
+SHA256 is `18ed315192d7be1bbc3a6c0f16a4a710cc664dc3f126c897e0413fff96ceddf9`.
+No production rebuild is requested. This build includes collapsed-space
+Chromium context shaping but excludes the rejected context-slice cache and
+the pending property-page projection cache. The full app, native libraries,
+source receipt, fixture and measurement inputs remain pinned and unchanged.
+
+All three frozen HN fixtures are pixel-exact; both live identity checks pass.
+Three fresh Vox/Brave pairs preserve all 101 comments and exact pixels.
+Vox's median is 11,841,703,712 retired instructions, against Brave's median
+lower accounting bound of 1,841,710,731. The strict worst-Vox/best-Brave ratio
+is **6.457878**, exceeding the required **0.90** and regressing against the
+older combined candidate. This comparison is baseline evidence, not an
+isolated attribution or optimization credit. The performance cohort, driver
+and memory guard all exit 1 because acceptance fails. The guard records
+92.1896 seconds and 3,227,566,080 bytes sampled peak RSS. Diagnostics are
+pending to locate the added work; pixel correctness does not establish
+Brave performance parity.
