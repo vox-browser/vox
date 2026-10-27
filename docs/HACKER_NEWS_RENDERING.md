@@ -1237,3 +1237,31 @@ evidence rather than the latest result.
 unchanged input hashes. Its retry guard exits zero after 12.254 seconds, with
 sampled peak RSS 186,384,384 bytes. Full-page measurement and conditional broad
 verification remain pending; these focused results establish no page saving.
+
+## Accepted unfiltered PNG encoding
+
+`6d89c3bc` selects ImageIO's lossless NONE filter for native snapshots. The
+focused native checks execute 27 cases with ARC and without ARC, plus both
+capture entry points. All 54 PNG cases preserve decoded pixels, color profile,
+density and non-image metadata. The earlier rejected SUB experiment remains
+separate evidence.
+
+`png-none-isolated-1` changes only the authenticated native snapshot overlay;
+its generated browser C is unchanged. All 30 alternating pairs retain exact
+pixels for the complete 101-comment page, with zero browser failures. The
+control median is 6,340,728,960 instructions and the candidate median is
+6,267,956,667. The median paired saving is 70,432,867, with bootstrap 95%
+interval [62,428,225, 87,593,967.5]; all 30 pairs improve. The cold first-pair
+saving of 2,655,587,914 remains in the cohort. The guard completes with exit
+zero after 348.737 seconds and sampled peak RSS 5,020,565,504 bytes.
+
+`png-none-checkpoint-1` passes with unchanged authenticated inputs. It carries
+the accepted generated-C parent's V and AST verification, and executes the
+19-case visual batch: 13 cases are exact and all 34 comparison images match
+the control. Six existing reference mismatches remain, so this is a passing
+regression comparison rather than a wholly passing reference suite. The three
+HN fixtures are exact; startup and both live-page identity checks exit zero.
+The checkpoint credits the measured interval's lower bound, 62,428,225
+instructions. It does not sum savings from other experiments or establish
+Brave parity. The installed production app predates this change; the latest
+production acceptance ratio remains 5.294119 against the required 0.90.
