@@ -1945,6 +1945,55 @@ is `intrinsic-fit-checkpoint-2` and pipeline is `intrinsic-fit-pipeline-3`.
 This validates savings against the parent candidate. The requested 10% fewer
 instructions than Brave remains open; independent gains are not added.
 
+## Reuse rendered-text ASCII eligibility, 2026-10-27
+
+`4b8b075b` reads the ASCII fact refreshed with `text_for_rendering()` instead
+of rescanning the entire text node for every safe-line query. The existing
+invalidation and transformed-source-range handling remain authoritative. Two
+new tests compare every valid and invalid range against the independent original
+scan/allocation path, including live DOM changes, UTF-16 source ranges, uppercase
+expansion, combining characters, emoji, tabs, newlines and empty text. All 52
+focused executions pass in Boehm and preallocation modes, including glyph ABI
+assertions.
+
+`Build/hn-small-text/safe-line-ascii-isolated-2` is a frozen generated-C
+composition, not a fresh canonical production build. Its single writer reverses
+to the complete parent C byte for byte; 12 shared records, 11 shared helpers,
+252 O2 objects and native libraries remain unchanged. Executable SHA256 is
+`77e2758cb36efdccb48fd01305b7a66ee95a48ac00cf90fa0b5916de5ac345c8`.
+The separate instrumented eligibility run records 67,427 queries and cached
+ASCII reads, exact pixels and all 101 comments. It receives no performance credit.
+
+Thirty alternating unprofiled pairs retain exact pixels and all comments.
+Control/candidate medians are 6,753,159,217 / 6,655,149,007 instructions.
+Median paired saving is 102,282,724; bootstrap 95% interval is
+[81,007,034.5, 112,236,612]. All 30 pairs improve, with a minimum saving of
+13,251,684. The strict worst-candidate/best-control ratio is 1.0021092. The
+18-CPU host ends at load averages 3.1934/2.5117/1.7280. Raw trials, commands,
+actual exits and identities remain retained.
+
+The conservative 81,007,034.5-instruction credit triggers the broad checkpoint.
+Its 482 new and 298 distinct carried executions give 774 passes and the six
+unchanged baseline layout failures. All 100 upstream AST fixtures match exactly.
+All 34 fresh control/candidate images remain unchanged: 14 of 19 canonical cases
+are exact, with five existing reference failures unchanged. Three HN fixtures,
+startup and both fresh live identity checks pass. No tolerance changes. The
+visual receipt inherited the preceding rejection experiment's descriptive label;
+its pinned executable, launch commands and captures identify the ASCII candidate.
+Pending broad credit resets to zero.
+
+Pipeline 1 stops at its disk-space check. Pipeline 2 completes the focused
+checks and candidate build, then fails in the eligibility driver before launching
+its diagnostic. Both failures remain retained. Pipeline 3 verifies and carries
+that identical signed build, uses the corrected eligibility driver and completes
+the paired measurements and checkpoint. Its guard exits zero after 589.704
+seconds, with sampled aggregate peak RSS 9,389,408,256 bytes under the 12 GiB
+limit. Evidence is in `safe-line-ascii-pipeline-3`,
+`safe-line-ascii-checkpoint-1` and
+`safe-line-ascii-submission-3/attempt-000.json`, below `Build/hn-small-text/`.
+The requested 10% fewer instructions than Brave remains open; these savings
+are measured against the previous Vox candidate.
+
 ## Rejected fixed-point advance prefix experiment, 2026-10-27
 
 `Build/hn-small-text/safe-prefix-source-1` tried an immutable fixed-point
