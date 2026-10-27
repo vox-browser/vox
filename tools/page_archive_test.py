@@ -72,10 +72,21 @@ class PageArchiveTests(unittest.TestCase):
             thread = threading.Thread(target=replay.server.serve_forever, daemon=True)
             thread.start()
             try:
-                def request(target):
+                def tunnel(raw, host, port=443):
+                    raw.sendall(b'\x05\x01\x00')
+                    self.assertEqual(page_archive.Replay.receive(raw, 2), b'\x05\x00')
+                    encoded = host.encode('ascii')
+                    raw.sendall(b'\x05\x01\x00\x03' + bytes([len(encoded)]) + encoded
+                                + port.to_bytes(2, 'big'))
+                    return page_archive.Replay.receive(raw, 10)[1]
+
+                def request(target, transport):
                     with socket.create_connection(replay.server.server_address) as raw:
-                        raw.sendall(b'CONNECT archive.invalid:443 HTTP/1.1\r\n\r\n')
-                        self.assertIn(b'200', raw.recv(4096))
+                        if transport == 'socks':
+                            self.assertEqual(tunnel(raw, 'archive.invalid'), 0)
+                        else:
+                            raw.sendall(b'CONNECT archive.invalid:443 HTTP/1.1\r\n\r\n')
+                            self.assertIn(b'200', raw.recv(4096))
                         context = ssl.create_default_context(cafile=replay.ready['ca'])
                         with context.wrap_socket(raw, server_hostname='archive.invalid') as sock:
                             sock.sendall(f'GET {target} HTTP/1.1\r\nHost: archive.invalid\r\n\r\n'.encode())
@@ -83,16 +94,25 @@ class PageArchiveTests(unittest.TestCase):
                             while part := sock.recv(4096):
                                 chunks.append(part)
                             return b''.join(chunks)
-                response = request('/thread/1')
-                self.assertTrue(response.endswith(bodies[url][0]))
-                self.assertIn(b'Access-Control-Allow-Origin: *', response)
-                self.assertIn(b'404', request('/not-archived'))
+                for transport in ['http', 'socks']:
+                    with self.subTest(transport=transport):
+                        response = request('/thread/1', transport)
+                        self.assertTrue(response.endswith(bodies[url][0]))
+                        self.assertIn(b'Access-Control-Allow-Origin: *', response)
+                        self.assertIn(b'404', request('/not-archived', transport))
+                for host, port in [('external.invalid', 443), ('archive.invalid', 80)]:
+                    with socket.create_connection(replay.server.server_address) as sock:
+                        self.assertEqual(tunnel(sock, host, port), 2)
                 with socket.create_connection(replay.server.server_address) as sock:
                     sock.sendall(b'CONNECT external.invalid:443 HTTP/1.1\r\n\r\n')
                     self.assertIn(b'403', sock.recv(4096))
                 rows = [json.loads(line) for line in (root / 'replay/requests.jsonl').read_text().splitlines()]
-                self.assertEqual([row['archived'] for row in rows], [True, False, False])
+                self.assertEqual([row['archived'] for row in rows],
+                                 [True, False, True, False, False, False, False])
                 self.assertFalse(replay.ready['forwarding'])
+                with socket.create_connection(replay.server.server_address) as sock:
+                    sock.sendall(b'\x05\x01\x02')
+                    self.assertEqual(sock.recv(2), b'\x05\xff')
             finally:
                 replay.server.shutdown()
                 replay.server.server_close()
