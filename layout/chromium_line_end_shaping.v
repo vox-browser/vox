@@ -39,6 +39,9 @@ fn (fragment &LineBoxFragment) chromium_shape_without_trailing_whitespace(at_bre
 fn (fragment &LineBoxFragment) chromium_width_without_trailing_whitespace(at_break bool) ?f32 {
 	visible := fragment.chromium_visible_line_end(at_break) or { return none }
 	run := fragment.glyph_run_ or { return none }
+	if width := chromium_cached_safe_line_end(fragment.layout_node_, fragment.start_, visible.len, run) {
+		return width
+	}
 	return chromium_line_end_width(fragment.layout_node_, visible, run)
 }
 
@@ -96,8 +99,11 @@ fn (projection &ProjectedTextAdvance) chromium_line_end_correction() CSSPixels {
 	text_node := projection.node.as_text_node() or { return CSSPixels.new(0) }
 	text := utf16_substring_for_line_box(text_node.text_for_rendering(),
 		projection.segment_start, projection.segment_length)
-	advance := chromium_line_end_width(projection.node, text, projection.run) or {
-		return CSSPixels.new(0)
+	advance := chromium_cached_safe_line_end(projection.node, projection.segment_start,
+		projection.segment_length, projection.run) or {
+		chromium_line_end_width(projection.node, text, projection.run) or {
+			return CSSPixels.new(0)
+		}
 	}
 	width := inline_advance_to_css_pixels(projection.precise - projection.segment_width +
 		f64(advance), projection.run.font())

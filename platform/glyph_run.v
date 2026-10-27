@@ -47,6 +47,9 @@ pub mut:
 	offset_x             f32
 	length_in_code_units int = 1
 	should_paint         bool = true
+	// Zero means unknown; HarfBuzz marks proven ASCII boundaries as safe (1)
+	// or unsafe (2). Keep manually constructed/fallback glyphs conservative.
+	shaping_break_safety u8
 }
 
 // Conservative painted bounds in CSS pixels, relative to a run's baseline

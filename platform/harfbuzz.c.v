@@ -118,6 +118,8 @@ fn C.hb_buffer_get_glyph_infos(buffer voidptr, length &u32) &C.hb_glyph_info_t
 
 fn C.hb_buffer_get_glyph_positions(buffer voidptr, length &u32) &C.hb_glyph_position_t
 
+fn C.hb_glyph_info_get_glyph_flags(info &C.hb_glyph_info_t) u32
+
 fn C.hb_face_reference_table(face voidptr, tag u32) voidptr
 
 fn C.hb_blob_get_length(blob voidptr) u32
@@ -865,6 +867,21 @@ fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, word_spacing f32,
 		skia_advances = chromium_outline_face_advances(font, face, hb_font, infos, positions,
 			int(glyph_count))
 	}
+	// UNSAFE_TO_BREAK is meaningful only at cluster starts. Reject duplicate,
+	// decreasing or missing cluster coverage rather than inferring offsets.
+	mut known_breaks := is_ascii && !uses_emoji && text_type == .ltr
+		&& font.font_rendering_policy == .chromium && glyph_count > 0
+	if known_breaks {
+		mut previous := -1
+		for index in 0 .. int(glyph_count) {
+			cluster := int(unsafe { infos[index] }.cluster)
+			if (index == 0 && cluster != 0) || cluster <= previous || cluster >= text.len {
+				known_breaks = false
+				break
+			}
+			previous = cluster
+		}
+	}
 	mut glyphs := []Glyph{cap: int(glyph_count)}
 	mut point_x := initial_x
 	trailing_length := trailing_whitespace_length(text)
@@ -915,6 +932,12 @@ fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, word_spacing f32,
 			offset_x:             offset_x
 			length_in_code_units: length_in_code_units
 			should_paint:         should_paint
+			shaping_break_safety: if known_breaks {
+				flags := C.hb_glyph_info_get_glyph_flags(unsafe { &infos[index] })
+				if flags & u32(1) == 0 { u8(1) } else { u8(2) }
+			} else {
+				u8(0)
+			}
 		}
 		if !is_default_ignorable && starting_offset >= first_trailing_offset {
 			trailing_advance += advance
