@@ -1487,14 +1487,18 @@ Neither attempt receives runtime-test credit.
 The same-budget retry in `scratch-scope-focused-v3/` retains the exact V
 wrapper body and mocks only the command fields it consumes; production
 compilation must still check the real layout type. The dependent coordinator
-in `scratch-browser-isolated-v5/` waits outside the guard. It prefers the
-already-running catalog production build, whose frozen scratch implementation,
-Cocoa bridge and main replay integration match this experiment exactly. Reuse
-requires the signed, startup-checked shared bundle and its matching source
-receipt. An isolated build is permitted only if no available completed bundle
-can exercise the change. The earlier dedicated-build coordinator was cancelled
-before submitting a build; the prior one withheld its build after the focused
-guard failure.
+in `scratch-browser-isolated-v6/` waits outside the guard. The catalog
+production build exceeded its unchanged 12 GiB guard: the receipt at
+`Build/4chan-catalog-20261027-background-1/guard-retry-icu78.json` records
+child exit -9, sampled peak 12,885,606,400 bytes and 572.49 seconds elapsed.
+It produced no usable candidate. Another session's queued retry at
+`Build/4chan-catalog-20261027-final-1/` contains byte-identical scratch files
+and separates V generation from native compilation to reduce peak memory.
+Reuse still requires a completed signed, startup-checked shared bundle and its
+matching source receipt. The coordinator submits no independent production
+build. Earlier coordinators were cancelled before submission or withheld their
+build after a focused prerequisite failure. The focused V wrapper retry remains
+queued; no V runtime pass is recorded.
 Browser eligibility, pixel comparisons and alternating unprofiled acceptance
 remain pending. The candidate is disabled by default; 60 fps and a live SOCKS
 fix remain unestablished.
