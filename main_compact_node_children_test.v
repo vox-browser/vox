@@ -3,6 +3,40 @@ module main
 import browserjs
 import html
 
+fn test_compact_element_insert_before_preserves_text_comment_anchors_and_live_content() {
+	mut document := html.parse_document('<!doctype html><div id="host"></div><div id="other"></div>')
+	mut runtime := browserjs.Runtime.create()
+	defer { runtime.close(); document.finalize() }
+	mut messages := []string{}
+	run_document_javascript(document, 'https://insertion.test/', [r'
+const host=document.getElementById("host"),other=document.getElementById("other");
+const start=document.createTextNode("["),end=document.createTextNode("]"),comment=document.createComment("anchor");
+host.appendChild(start);host.appendChild(end);host.appendChild(comment);
+const middle=document.createElement("b");middle.textContent="middle";
+if(host.insertBefore(middle,end)!==middle)throw new Error("insertion return value");
+if(Array.from(host.childNodes).map(n=>n.nodeName).join(",")!=="#text,B,#text,#comment"||host.textContent!=="[middle]")throw new Error("text anchor insertion");
+const tail=document.createElement("i");tail.textContent="tail";
+host.insertBefore(tail,comment);
+if(host.textContent!=="[middle]tail"||comment.previousSibling!==tail||tail.parentNode!==host)throw new Error("comment anchor insertion");
+other.insertBefore(middle,null);
+if(host.textContent!=="[]tail"||other.textContent!=="middle"||other.firstChild!==middle)throw new Error("moving element content");
+host.insertBefore(middle,start);
+if(host.textContent!=="middle[]tail"||other.textContent!==""||host.firstChild!==middle)throw new Error("first text anchor insertion");
+const fragment=document.createDocumentFragment(),leaf=document.createElement("em");leaf.textContent="fragment";fragment.appendChild(leaf);
+host.insertBefore(fragment,end);
+if(fragment.firstChild!==null||end.previousSibling!==leaf||host.textContent!=="middle[fragment]tail")throw new Error("fragment insertion");
+let absent=false;try{host.insertBefore(document.createElement("u"),other);}catch(e){absent=e.name==="NotFoundError";}
+let cycle=false;try{middle.insertBefore(host,null);}catch(e){cycle=e.name==="HierarchyRequestError";}
+let invalid=false;try{host.insertBefore({},null);}catch(e){invalid=e instanceof TypeError;}
+if(!absent||!cycle||!invalid)throw new Error("insertion validation");
+globalThis.anchoredInsertionPassed=true;
+'], runtime, mut messages)
+	assert messages == []string{}
+	assert runtime.evaluate_host('anchoredInsertionPassed')! == 'true'
+	host := document.get_element_by_id('host') or { panic('missing host') }
+	assert host.as_node().text_content()? == 'middle[fragment]tail'
+}
+
 fn test_compact_child_nodes_remain_live_and_include_text_comments_and_fragment_children() {
  mut document := html.parse_document('<!doctype html><div id="host">a<b>bold</b><!--tail--></div>')
  mut runtime := browserjs.Runtime.create()
