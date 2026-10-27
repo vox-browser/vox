@@ -102,7 +102,7 @@ fn chromium_shared_recording_layer_supported(commands []layout.PaintCommand,
 	indices := layer.command_indices
 	if layer.legacy_raster || indices.len < 3 { return false }
 	mut scope := u64(0)
-	mut has_vectors := false
+	mut has_shared_content := false
 	mut svg_end := 0
 	for position, command_index in indices {
 		if command_index < 0 || command_index >= commands.len
@@ -136,12 +136,23 @@ fn chromium_shared_recording_layer_supported(commands []layout.PaintCommand,
 			svg_end = chromium_svg_solid_run_end(commands, plan.command_layers, command_index)
 		}
 		if svg_end > command_index {
-			has_vectors = true
+			has_shared_content = true
+			continue
+		}
+		// Shadows must draw directly into the same isolated surface as their
+		// contents. A separately rounded shadow bitmap changes overlapping blur
+		// pixels. External clips and legacy shadow commands keep their fallback.
+		if command.kind == 'paint_outer_box_shadow' {
+			if command.box_shadow_data == unsafe { nil } || command.has_clip
+				|| command.clip_list != unsafe { nil } || command.clip_outs.len > 0 {
+				return false
+			}
+			has_shared_content = true
 			continue
 		}
 		supported, vectors := chromium_shared_recording_leaf_supported(command)
 		if !supported { return false }
-		has_vectors = has_vectors || vectors
+		has_shared_content = has_shared_content || vectors
 	}
-	return has_vectors
+	return has_shared_content
 }

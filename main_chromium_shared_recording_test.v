@@ -239,3 +239,45 @@ fn test_shared_recording_accepts_painted_compositor_layers_with_svg_viewport_cli
 		assert !chromium_shared_recording_layer_supported(rounded, plan, 2)
 	}
 }
+
+fn test_shared_recording_accepts_outer_shadows_only_in_complete_isolated_layers() {
+	base := shared_recording_layer_commands(.5)
+	shadow := layout.PaintCommand{
+		kind: 'paint_outer_box_shadow'
+		blur: 20
+		box_shadow_data: &layout.PaintBoxShadowData{
+			content_rect: layout.LayoutRect{0, 0, 100, 50}
+		}
+	}
+	commands := [base[0], shadow, base[1], base[3]]
+	plan := shared_recording_layer_plan(commands.len)
+	assert chromium_shared_recording_layer_supported(commands, plan, 1)
+	assert !chromium_shared_recording_supported([shadow, base[2]], layout.ChromiumRasterLayerPlan{
+		layers: [layout.ChromiumRasterLayer{}]
+		command_layers: [0, 0]
+	})
+	for unsupported in [
+		layout.PaintCommand{...shadow, box_shadow_data: unsafe { nil }},
+		layout.PaintCommand{...shadow, kind: 'paint_inner_box_shadow'},
+		layout.PaintCommand{...shadow, has_clip: true, clip_width: 1, clip_height: 1},
+		layout.PaintCommand{...shadow, clip_list: &layout.PaintClipList{}},
+		layout.PaintCommand{...shadow, clip_outs: [f64(0), 0, 1, 1]},
+		layout.PaintCommand{kind: 'fill_rect', outer_shadow: true},
+	] {
+		assert !chromium_shared_recording_layer_supported([base[0], unsupported, base[1], base[3]], plan, 1)
+	}
+}
+
+fn test_shared_recording_accepts_painted_compositor_box_shadows_at_both_scales() {
+	mut document := html.parse_document(os.read_file('${@VMODROOT}/Tests/Browser/Brave/input/compositor-box-shadows.html') or { panic(err) })
+	defer { document.finalize() }
+	document.set_font_rendering_policy(.chromium)
+	_ = layout.layout_document_typed_in_viewport(document, 1024, 768)
+	commands := layout.display_list_commands(document.record_display_list() or { panic('missing paint') })
+	assert commands.filter(it.kind == 'paint_outer_box_shadow').len == 3
+	for scale in [1.0, 2.0] {
+		plan := layout.chromium_raster_layer_plan(document, commands, scale)
+		assert plan.layers.len == 2
+		assert chromium_shared_recording_layer_supported(commands, plan, 1)
+	}
+}

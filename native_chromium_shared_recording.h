@@ -13,7 +13,7 @@ struct SharedRootRecording {
     double scroll_y = 0;
     bool root = true;
     float origin_x = 0, origin_y = 0, layer_width = 0, layer_height = 0;
-    std::vector<SkRect> svg_bounds;
+    std::vector<SkRect> replay_bounds;
     std::vector<SkRect> blocked_bounds;
 };
 std::unique_ptr<SharedRootRecording> s_shared_root_recording;
@@ -66,11 +66,11 @@ void shared_recording_block(SkRect bounds)
         s_shared_root_recording->blocked_bounds.push_back(bounds.makeOutset(2, 2));
 }
 
-void shared_recording_svg(CGContextRef destination, SkRect bounds, float page_y, float scroll_y)
+void shared_recording_content(CGContextRef destination, SkRect bounds, float page_y, float scroll_y)
 {
     if (!shared_recording_canvas(destination) || s_msaa_grid_columns <= 0) return;
     auto& group = *s_shared_root_recording;
-    group.svg_bounds.push_back(bounds);
+    group.replay_bounds.push_back(bounds);
     group.page_y = page_y;
     group.scroll_y = group.root ? s_root_raster_scroll_y : scroll_y;
     group.tile_width = s_msaa_grid_width;
@@ -179,7 +179,7 @@ void shared_recording_image(CGContextRef destination, SkMatrix const& matrix,
 void finish_shared_recording()
 {
     auto group = std::move(s_shared_root_recording);
-    if (!group || group->svg_bounds.empty() || !group->columns) return;
+    if (!group || group->replay_bounds.empty() || !group->columns) return;
     if (int64_t(group->columns) * group->rows > INT32_MAX) return;
     auto picture = group->recorder->finishRecordingAsPicture();
     SkSerialProcs procs;
@@ -194,11 +194,26 @@ void finish_shared_recording()
             || !std::isfinite(group->layer_height)
             || group->layer_width * group->scale > 16384
             || group->layer_height * group->scale > 16384) return;
-        int width = std::ceil(group->layer_width * group->scale);
-        int height = std::ceil(group->layer_height * group->scale);
-        if (size_t(width) * height > 8 * 1024 * 1024) return;
         float left = group->origin_x;
         float top = group->origin_y + group->page_y - group->scroll_y;
+        auto bounds = SkRect::MakeXYWH(left, top, group->layer_width, group->layer_height);
+        // Shadows and SVG overflow can paint beyond the compositor box. Replace
+        // their complete ink together with the contents, including the blur tail.
+        for (auto ink : group->replay_bounds) {
+            if (!ink.isFinite()) return;
+            bounds.join(ink);
+        }
+        if (!bounds.intersect(SkRect::MakeWH(group->canvas_width, group->canvas_height))) return;
+        // Retain the local raster phase when no leading overflow needs extra
+        // pixels; rounding every origin also shifts existing fractional SVGs.
+        if (bounds.left() != left)
+            left = std::floor(bounds.left() * group->scale) / group->scale;
+        if (bounds.top() != top)
+            top = std::floor(bounds.top() * group->scale) / group->scale;
+        int width = std::ceil((bounds.right() - left) * group->scale);
+        int height = std::ceil((bounds.bottom() - top) * group->scale);
+        if (width <= 0 || height <= 0 || width > 16384 || height > 16384
+            || size_t(width) * height > 8 * 1024 * 1024) return;
         float matrix[] {group->scale, 0, -left * group->scale,
             0, group->scale, -top * group->scale, 0, 0, 1};
         std::vector<uint32_t> pixels(size_t(width) * height);
@@ -213,7 +228,7 @@ void finish_shared_recording()
     if (width <= 2 || height <= 2 || size_t(width) * height > 8 * 1024 * 1024) return;
     std::set<int> candidates;
     VoxChromiumRasterGrid grid{width, height, group->columns, group->rows};
-    for (auto bounds : group->svg_bounds) {
+    for (auto bounds : group->replay_bounds) {
         if (!bounds.isFinite() || !bounds.intersect(SkRect::MakeXYWH(0, group->page_y,
                 group->viewport_width, group->viewport_height))) continue;
         bounds.offset(0, group->scroll_y - group->page_y);

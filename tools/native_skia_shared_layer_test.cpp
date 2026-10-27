@@ -67,18 +67,88 @@ static void root_background(int scale)
     SkPaint paint;
     paint.setColor(SK_ColorGREEN);
     canvas->drawRect(SkRect::MakeWH(100, 100), paint);
-    shared_recording_svg(destination, SkRect::MakeWH(100, 100), 0, 0);
+    shared_recording_content(destination, SkRect::MakeWH(100, 100), 0, 0);
     ladybird_v_skia_finish_shared_recording();
     CGContextFlush(destination);
     assert(actual == expected);
     CGContextRelease(destination);
 }
 
+static void shadow_overflow(int scale, bool switch_layer)
+{
+    constexpr int width = 1024, height = 852;
+    constexpr float x = 46, y = 312, page_y = 60, scroll_y = 13.25f;
+    constexpr float box_width = 268, box_height = 220;
+    int pitch = width * scale * 4;
+    std::vector<uint8_t> actual(size_t(pitch) * height * scale), expected(actual);
+    auto space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+    auto make = [&](auto& pixels) {
+        auto context = CGBitmapContextCreate(pixels.data(), width * scale, height * scale,
+            8, pitch, space, CGBitmapInfo(kCGImageAlphaPremultipliedLast) | kCGBitmapByteOrder32Big);
+        assert(context); CGContextScaleCTM(context, scale, scale); return context;
+    };
+    auto destination = make(actual), control = make(expected);
+    CGColorSpaceRelease(space);
+    ladybird_v_skia_set_shared_recording(0, width, height);
+    ladybird_v_skia_set_raster_layer(x, y, 0);
+    ladybird_v_skia_set_raster_layer_size(box_width, box_height);
+    int cell = 0;
+    ladybird_v_skia_set_msaa_grid(&cell, 1, 270 * scale, 222 * scale, 1);
+    ladybird_v_skia_set_layer_shared_recording(1);
+    for (auto blur : {20.f, 1.f})
+        assert(ladybird_v_skia_draw_outer_box_shadow(destination,
+            x, y + 4, box_width, box_height, 0, 0, 0, 0, 0, 0, 0, 0,
+            x, y, box_width, box_height, 0, 0, 0, 0, 0, 0, 0, 0,
+            1, 0, 0, 1, 0, 0, 0, page_y, scroll_y, width, height,
+            blur, 41, 42, 46, 20, 0));
+    assert(ladybird_v_skia_draw_rounded_rect(destination, x, y,
+        box_width, box_height, 0, 0, 0, 0, 0, 0, 0, 0,
+        1, 0, 0, 1, 0, 0, 0, page_y, scroll_y, width, height,
+        255, 255, 255, 255, 1, 0, 1, 0));
+    if (switch_layer) ladybird_v_skia_set_raster_layer(0, 0, 1);
+    else ladybird_v_skia_finish_shared_recording();
+    assert(!s_shared_root_recording);
+
+    SkPictureRecorder recorder;
+    auto* canvas = recorder.beginRecording(SkRect::MakeWH(width, height));
+    auto box = SkRect::MakeXYWH(x, y + page_y - scroll_y, box_width, box_height);
+    SkPaint paint;
+    paint.setAntiAlias(true);
+    paint.setColor(SkColorSetARGB(20, 41, 42, 46));
+    for (auto blur : {20.f, 1.f}) {
+        canvas->save();
+        canvas->clipRect(box, SkClipOp::kDifference, true);
+        paint.setMaskFilter(SkMaskFilter::MakeBlur(kNormal_SkBlurStyle, blur / 2));
+        canvas->drawRect(box.makeOffset(0, 4), paint);
+        canvas->restore();
+    }
+    paint.setMaskFilter(nullptr);
+    paint.setColor(SK_ColorWHITE);
+    canvas->drawRect(box, paint);
+    auto bytes = recorder.finishRecordingAsPicture()->serialize();
+    std::vector<uint32_t> pixels(size_t(width) * height * scale * scale);
+    float matrix[] {float(scale), 0, 0, 0, float(scale), 0, 0, 0, 1};
+    assert(shared_picture_draw()(reinterpret_cast<uint8_t*>(pixels.data()),
+        width * scale, height * scale, pitch, bytes->data(), bytes->size(), matrix));
+    composite_pixels(control, std::move(pixels), width * scale, height * scale,
+        0, 0, width, height, true);
+    CGContextFlush(destination); CGContextFlush(control);
+    assert(actual == expected);
+    // The tails beyond the compositor box must come from the same picture.
+    size_t outside = (size_t(int((y + page_y - scroll_y + box_height + 4) * scale))
+        * width * scale + int((x + box_width / 2) * scale)) * 4 + 3;
+    assert(actual[outside] > 0);
+    CGContextRelease(destination); CGContextRelease(control);
+}
+
 int main()
 {
     assert(shared_picture_draw() && graphite_shape_draw());
     ladybird_v_skia_set_chromium_painting(1);
-    for (int scale : {1, 2}) root_background(scale);
+    for (int scale : {1, 2}) {
+        root_background(scale);
+        for (bool switch_layer : {false, true}) shadow_overflow(scale, switch_layer);
+    }
     int comparisons = 0;
     for (int scale : {1, 2}) for (int x : {46, 346, 746})
     for (int y : {32, 312, 492}) for (bool background : {false, true})
@@ -112,7 +182,7 @@ int main()
         auto* canvas = shared_recording_canvas(destination);
         assert(canvas && s_shared_root_recording && !s_shared_root_recording->root);
         canvas->save(); canvas->translate(x, top); icon(canvas); canvas->restore();
-        shared_recording_svg(destination, SkRect::MakeXYWH(x + 27, top + 20, 32, 32), page_y, scroll_y);
+        shared_recording_content(destination, SkRect::MakeXYWH(x + 27, top + 20, 32, 32), page_y, scroll_y);
         if (switch_layer) ladybird_v_skia_set_raster_layer(0, 0, 1);
         else ladybird_v_skia_finish_shared_recording();
         assert(!s_shared_root_recording);
@@ -135,7 +205,7 @@ int main()
         ladybird_v_skia_set_raster_layer_size(268, 220);
         ladybird_v_skia_set_layer_shared_recording(1);
         assert(shared_recording_canvas(destination));
-        shared_recording_svg(destination, SkRect::MakeXYWH(x, top, 32, 32), page_y, scroll_y);
+        shared_recording_content(destination, SkRect::MakeXYWH(x, top, 32, 32), page_y, scroll_y);
         shared_recording_block(SkRect::MakeXYWH(x, top, 32, 32));
         ladybird_v_skia_finish_shared_recording();
         CGContextFlush(destination);

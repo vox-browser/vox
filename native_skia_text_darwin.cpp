@@ -84,7 +84,7 @@ VoxRasterBufferPool s_sparse_raster_pool;
 
 SkCanvas* shared_recording_canvas(CGContextRef);
 void shared_recording_block(SkRect);
-void shared_recording_svg(CGContextRef, SkRect, float, float);
+void shared_recording_content(CGContextRef, SkRect, float, float);
 void shared_recording_image(CGContextRef, SkMatrix const&, VoxGraphiteImage const&);
 void finish_shared_recording();
 decltype(&vox_graphite_draw_picture_pixels) shared_picture_draw();
@@ -3185,6 +3185,30 @@ extern "C" int ladybird_v_skia_draw_outer_box_shadow(CGContextRef destination,
             canvas_height, 0.0f, region))
         return 1;
 
+    // Record the shadow itself, rather than its rounded temporary bitmap,
+    // into an eligible isolated compositor picture. Replay replaces the whole
+    // layer only after every operation and the GPU submission have succeeded.
+    if (!s_raster_layer_is_root) {
+        if (auto* recording = shared_recording_canvas(destination)) {
+            SkPaint paint;
+            paint.setAntiAlias(true);
+            auto color = SkColorSetARGB(alpha, red, green, blue);
+            if (has_float_color)
+                color = SkColor4f{s_unrounded_paint_color[0], s_unrounded_paint_color[1],
+                    s_unrounded_paint_color[2], s_unrounded_paint_color[3]}.toSkColor();
+            // Chromium's box-shadow paint uses the rounded sRGB color.
+            paint.setColor(color);
+            paint.setMaskFilter(SkMaskFilter::MakeBlur(kNormal_SkBlurStyle,
+                std::max(blur, 0.0f) / 2.0f));
+            recording->save();
+            recording->setMatrix(matrix);
+            recording->clipRRect(content, SkClipOp::kDifference, true);
+            recording->drawRRect(shadow, paint);
+            recording->restore();
+            shared_recording_content(destination, matrix.mapRect(local_bounds), page_y, scroll_y);
+        }
+    }
+
     auto destination_scale = screenshot_uses_logical_pixels()
         ? 1.0f
         : raster_scale_for_context(destination);
@@ -3343,7 +3367,7 @@ extern "C" int ladybird_v_skia_draw_svg_path_batch(CGContextRef destination,
         auto bounds = matrix.mapRect(SkRect::MakeXYWH(x, y, width, height));
         if (!recordable) shared_recording_block(bounds);
         else {
-            shared_recording_svg(destination, bounds, page_y, scroll_y);
+            shared_recording_content(destination, bounds, page_y, scroll_y);
             record_chromium_svg_path_batch(canvas, paths, count, matrix,
                 SkRect::MakeXYWH(x, y, width, height), rounded_clip);
         }
@@ -3550,7 +3574,7 @@ extern "C" int ladybird_v_skia_draw_svg_path(CGContextRef destination,
 		}
 	};
     if (auto* canvas = shared_recording_canvas(destination)) {
-        shared_recording_svg(destination, matrix.mapRect(local_bounds), page_y, scroll_y);
+        shared_recording_content(destination, matrix.mapRect(local_bounds), page_y, scroll_y);
         canvas->save();
         draw_path(canvas, RasterRegion{}, 1, 1);
         canvas->restore();
