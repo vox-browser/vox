@@ -1697,3 +1697,46 @@ Pending broad credit is reset to zero. Independent gains are not added.
 This validates the isolated optimization, not a fresh canonical production build
 or Vox/Brave acceptance. The latest completed production baseline above remains
 4.013862 against the required 0.90; the user's performance target stays open.
+
+
+## Decoded SVG ownership on scalar metrics, 2026-10-27
+
+`be9b0d5e` keeps a decoded SVG image's isolated layout completion from
+invalidating the HTML document when that image already owns the same decoded
+document. Other dependencies still invalidate normally. The focused SVG tests
+pass in both memory modes. `Build/hn-small-text/svg-owner-isolated-4` composes
+this change onto the measured scalar-metrics candidate, preserving the O2
+command, 252 objects and native libraries. Candidate executable SHA256 is
+`105395ffb68fa3d2e5323fc877a661005a7ea3ef9d84749a261ba33b70a2c3c3`.
+
+The separate diagnostic observes 207 ownership queries, three owned images,
+two completions and zero requested HTML rebuilds. The complete page performs
+one HTML layout and rebuild. Diagnostic instrumentation receives zero credit.
+Thirty alternating unprofiled control/candidate pairs preserve every pixel and
+all 101 comments. Control/candidate medians are 11,127,820,085 / 8,156,710,212.5
+retired instructions. Median paired saving is 2,970,719,727; the bootstrap
+95% interval is [2,946,085,014, 2,996,329,581]. All 30 pairs improve, with a
+minimum saving of 2,823,054,946. The strict worst-candidate/best-control ratio
+is 0.745520. The 18-CPU host ends at load averages 15.3101/15.1685/18.2534.
+Raw trials, commands, inputs, identities and exits remain retained.
+
+The conservative 2,946,085,014-instruction credit triggers the broad checkpoint.
+`svg-owner-checkpoint-4` records 482 new and 200 distinct carried focused
+executions: 676 pass, while six retain the baseline's three layout failures in
+both modes. All 100 official upstream AST fixtures compare exactly. All 34
+control/candidate images remain unchanged; 14 of 19 canonical cases are exact,
+and five existing reference failures remain unchanged. All three HN fixtures
+are exact; startup and both live checks pass. No tolerance changes.
+
+The first integration attempt completes its O2 build but fails to compile its
+separate eligibility probe because the probe uses an absent string macro.
+Recovery fixes only that diagnostic macro and reuses the completed O2 candidate
+byte for byte. The failed attempt and its actual exit remain retained. The
+recovery integration guard exits zero after 767.9450 seconds with sampled peak
+RSS 9,347,203,072 bytes. The checkpoint resets pending broad credit to zero;
+independent gains are not added.
+
+This validates the isolated composition, not a newly built canonical production
+browser or the Brave target. The latest completed production comparison remains
+4.013862 against the required 0.90. The combined candidate needs a fresh Brave
+comparison; the user's performance target remains open.
