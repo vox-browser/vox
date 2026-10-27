@@ -1516,3 +1516,29 @@ The largest regression, 259,494,963 instructions, remains included. The
 receives zero credit; the canonical build retains C-O2. Broader verification
 is unnecessary for this rejected compiler setting. Its guard exits zero after
 427.0078 seconds, with 5,194,186,752 bytes sampled peak RSS.
+
+
+## Containing-block visit buffer rejected
+
+`Build/hn-small-text/intrinsic-visits-isolated-1` tests eight inline visited
+indexes before allocating an overflow map during intrinsic containing-block
+seeding. Six focused cases pass in each of Boehm and prealloc/no-GC modes.
+The focused guard exits zero after 134.4549 seconds, with 9,294,643,200 bytes
+sampled peak RSS. A separate diagnostic confirms 115,333 calls: 26,108 remain
+inline and 89,225 spill. It retains exact pixels and all 101 comments.
+
+All 60 unprofiled captures in 30 alternating pairs preserve exact pixels and
+all 101 comments. Control and candidate medians are 6,337,462,457 and
+6,324,289,652 instructions. Median paired saving is 18,749,848.5, with bootstrap
+95% interval [-5,358,836.5, 30,023,679.5]. There are 19 improvements and 11
+regressions. The initial candidate regresses by 2,391,240,526 instructions;
+that result remains included. The 18-CPU host ends at load averages
+14.5205/12.7617/12.7593. The isolated guard exits zero after 544.3779 seconds,
+with 5,443,911,680 bytes sampled peak RSS.
+
+The experiment earns zero repeatable instruction credit. Its four candidate
+source files are archived with verified SHA256 identities under
+`Build/hn-small-text/intrinsic-visits-rejected-1`; the two tracked files are
+restored and the two new files removed. Broad verification is deferred below
+the repeatable 5,000,000-instruction gate. The latest combined Brave ratio
+remains 3.439494; this rejected candidate does not establish parity.
