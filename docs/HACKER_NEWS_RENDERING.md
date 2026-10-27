@@ -1427,3 +1427,54 @@ Broad verification is deferred below the repeatable 5,000,000-instruction
 gate, leaving the prior broad baseline unchanged. The guard completes with
 exit zero, 306.7954 seconds and 5,192,302,592 bytes sampled peak RSS. This
 functional fix and diagnostic do not establish production or Brave parity.
+
+## Dedicated bundled filter worker
+
+`8a77e647` builds and signs `VoxAdblockWorker` beside the browser executable.
+The default self-worker configuration selects it only for a browser named
+`Vox` inside an application bundle and only when the sibling is an executable
+file. Standalone worker-capable tools retain self-exec. The helper runs the
+same filter engine, snapshot and private transport, without initializing the
+browser's unrelated module globals. Configuration remains lazy. New tests
+cover bundle selection, fallback paths, executable permissions, directories,
+configuration without engine startup, the actual selected child executable,
+real DoubleClick blocking and bounded release/reaping.
+
+`bundled-worker-focused-3-resume-1` completes the retained Boehm checks and
+resumed prealloc checks: 16 cases per mode, 32 test executions, helper startup,
+native transport, shell syntax and build-command checks. The original prealloc
+compile failed for insufficient disk space; that failed run is retained.
+The resume pins and reuses its successful Boehm results and frozen sources.
+Its guard exits zero after 23.4855 seconds, with 603,406,336 bytes sampled peak
+RSS. The isolated C candidate imports only the focused selector/configuration
+functions and helper; dependency bodies match the authenticated control, and
+reversing the substitutions restores its complete generated C. A separate
+eligibility run confirms the selected real helper PID, all 101 comments and
+exact pixels, with no observer errors.
+
+The initial 30-pair cohort is invalid: one control process exited zero but
+wrote a truncated capture-counter log. All original results remain retained;
+no individual trial is replaced. `bundled-worker-resume-1` runs an entirely
+fresh alternating cohort. All 60 captures in its 30 pairs preserve exact
+pixels and all 101 comments. Control and candidate medians are 6,325,365,608.5
+and 6,168,949,930 instructions. Median paired saving is 155,096,853, with
+bootstrap 95% interval [147,318,031, 165,990,375]. All 30 pairs improve; the
+smallest saving is 103,640,060. Child-helper instructions remain included.
+The guard exits zero after 201.9936 seconds, with 128,319,488 bytes sampled
+peak RSS. The 18-CPU host ends at load averages 3.5771/4.2490/6.5889.
+
+`bundled-worker-checkpoint-3` carries the byte-identical parent CSS/layout/SVG
+and 100-case AST evidence and verifies the complete changed adblock suite.
+Its native visual run preserves all 34 control images across 19 cases;
+13 cases are exact against their references, with the existing differences
+unchanged. Three frozen HN fixtures are pixel-exact, startup succeeds and both
+live-page identity checks pass. The checkpoint guard exits zero after
+138.2774 seconds, with 1,056,997,376 bytes sampled peak RSS. All source,
+compiler, helper and control-app pins remain unchanged.
+
+`Build/hn-small-text/bundled-worker-pipeline-6-result.json` records acceptance
+of this isolated improvement and 147,318,031 repeatable instruction credit.
+It is a frozen generated-C experiment, not validation of a newly built
+canonical production browser. It does not establish Brave parity. The latest
+production ratio remains 3.693468; independent optimization savings are not
+added. The combined candidate must be measured separately.
