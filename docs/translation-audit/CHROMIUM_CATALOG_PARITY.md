@@ -122,3 +122,28 @@ focused runtime check under the same limit in
 `Build/4chan-catalog-20261027-alpha-1/`. Modern space-separated alpha retains its
 fractional value. The completed production comparisons above now exercise
 these changes together; they do not meet strict catalog acceptance.
+
+## Wrapped line-end shaping (d68a3cf9)
+
+A discarded wrapping space retained its preceding letter's HarfBuzz kerning.
+This shifted centered teaser lines and could accept a word that overflowed
+once the line boundary was reshaped. Chromium-policy line measurement and
+painting now reshape the supported exposed boundary, preserving spacing and
+retrying the previous word when necessary. Preserved whitespace keeps its
+original context; ambiguous clusters, fallback faces and bidi remain outside
+this existing context-shaping scope.
+
+`Build/4chan-catalog-20261027-line-end-3/` records 28 focused tests passing in
+both default GC and `-gc none`, with actual compile/runtime exits 0. The shared
+12 GiB guard exits 0 at a sampled 8,471,805,952-byte peak. The companion
+`line-end-glyphs-2/` comparison matches Brave's text and horizontal origins for
+all 79 teaser lines and 14 narrow-width lines, without tolerance. These are
+layout diagnostics; production pixel validation is still pending in
+`line-end-production-1/` and cannot be credited before that bundle executes.
+
+This is fix 10/10 after broad baseline `f2e223c9`. The full affected package
+batches, full LibJS AST corpus, default screenshot smoke set and broad SVG
+checks are queued in `Build/4chan-catalog-20261027-broad-1/` and the pending
+production run. The counter has **not** reset. JPEG decode-path diagnostics
+remain pending; no JPEG or shadow fix is credited by this change. Strict
+pixel-perfect catalog acceptance remains false.
