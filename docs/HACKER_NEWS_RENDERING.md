@@ -1265,3 +1265,34 @@ The checkpoint credits the measured interval's lower bound, 62,428,225
 instructions. It does not sum savings from other experiments or establish
 Brave parity. The installed production app predates this change; the latest
 production acceptance ratio remains 5.294119 against the required 0.90.
+
+
+## Accepted text-context scan cursor
+
+`0284e529` retains a private glyph-scan cursor between chunks of the same
+immutable shaped run. It resets for a different run or a backwards request,
+while preserving partial-ligature fallback and the existing clone, offset and
+kerning behavior. Three new tests cover Unicode code-unit boundaries, partial
+ligatures, backwards requests and separated shaped segments. The focused
+11-file selection passes 26 cases in each GC mode, including the current
+segmented-run implementation.
+
+`context-cursor-isolated-1` substitutes only the single-run helper, its private
+cursor record and the iterator field/call into the authenticated generated C.
+The separate eligibility run confirms resumed scans and fewer glyph visits.
+All 60 captures in 30 alternating pairs preserve the complete 101-comment page
+pixel for pixel. Control and candidate medians are 6,339,567,752.5 and
+6,278,560,873.5 instructions. The median paired saving is 60,034,972.5, with
+bootstrap 95% interval [43,393,314.5, 74,882,487.5]. There are 29 improvements
+and one regression of 3,912,255 instructions; every pair is retained. No
+segmented-run performance saving is inferred from this single-run isolation.
+
+`context-cursor-checkpoint-1` passes with unchanged inputs: 598 distinct test
+executions include 592 passes and the same six known layout failures; all
+100 upstream AST fixtures compare exactly. The 19 visual cases retain all
+34 control images, including the six existing reference mismatches. All three
+HN fixtures are exact; startup and both live identity checks pass. Repeatable
+page credit is the interval lower bound, 43,393,314.5 instructions. This is
+independent candidate evidence, not additive credit or a production Brave
+comparison. The installed production bundle still predates this candidate;
+the latest production acceptance ratio remains 5.294119, above 0.90.
