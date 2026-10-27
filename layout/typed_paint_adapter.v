@@ -3072,13 +3072,23 @@ fn svg_clip_child_transform_to_page(node &Node, clip_box &Node, target_to_page s
 		}
 		current = candidate.parent()
 	}
-	mut transform := target_to_page
+	mut local := svg.AffineTransform{}
 	for index := chain.len - 1; index >= 0; index-- {
 		if element := svg_element_for_layout_node(chain[index]) {
-			transform = transform.multiply(svg_element_attribute_transform(element))
+			local = local.multiply(svg_element_attribute_transform(element))
 		}
 	}
-	return transform
+	// Keep the resource's float transform local until it enters page space.
+	// Rounding a subpixel clip translation after adding the page offset can
+	// move a coincident edge inward and apply antialiasing a second time.
+	return svg.AffineTransform{
+		a: target_to_page.a * local.a + target_to_page.c * local.b
+		b: target_to_page.b * local.a + target_to_page.d * local.b
+		c: target_to_page.a * local.c + target_to_page.c * local.d
+		d: target_to_page.b * local.c + target_to_page.d * local.d
+		e: target_to_page.a * local.e + target_to_page.c * local.f + target_to_page.e
+		f: target_to_page.b * local.e + target_to_page.d * local.f + target_to_page.f
+	}
 }
 
 fn collect_svg_clip_path_components(node &Node, state &LayoutState,

@@ -128,3 +128,13 @@ fn test_svg_background_path_clip_is_inverse_mapped_through_the_viewbox() {
 		assert chromium_svg_background_path_clips(&unsupported, []) == none
 	}
 }
+
+fn test_svg_background_local_clip_keeps_coincident_edges_at_different_page_offsets() {
+	scale := f64(f32(20.0 / 21.0))
+	for x in [f64(107), 407, 807, 1000007] {
+		matrix := [scale, f64(0), 0, scale, x, 162.4761962890625]!
+		page_clip := svg_background_map_rect(painting.Rect{.5, 0, 20, 20}, matrix)
+		clip := svg_background_local_clip(page_clip, matrix)
+		assert clip == [f32(.5), 0, 20, 20, 0, 0, 0, 0, 0, 0, 0, 0]!
+	}
+}

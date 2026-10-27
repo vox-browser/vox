@@ -158,6 +158,8 @@ fn (mut app BrowserApp) draw_nested_svg_commands(commands []layout.PaintCommand,
 	mut end := 0
 	for index, command in mapped {
 		if index < end { continue }
+		end = app.draw_chromium_svg_rectangular_mask(mapped, [], index, page_x, page_y)
+		if end > index { continue }
 		end = app.draw_chromium_svg_solid_group(mapped, [], index, page_x, page_y)
 		if end > index { continue }
 		app.draw_command(command, page_x, page_y, window_height)

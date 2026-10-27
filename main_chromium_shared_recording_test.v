@@ -127,6 +127,30 @@ fn shared_recording_layer_plan(count int) layout.ChromiumRasterLayerPlan {
 	}
 }
 
+fn test_shared_recording_accepts_complete_rectangular_svg_clip_scopes() {
+	mask := svg_rectangular_mask_test_commands()
+	root := layout.ChromiumRasterLayerPlan{
+		layers: [layout.ChromiumRasterLayer{}]
+		command_layers: [0, 0, 0]
+	}
+	assert chromium_shared_recording_supported(mask, root)
+	assert !chromium_shared_recording_supported(mask[..2], layout.ChromiumRasterLayerPlan{
+		layers: root.layers
+		command_layers: [0, 0]
+	})
+	base := shared_recording_layer_commands(.5)
+	commands := [base[0], base[1], mask[0], mask[1], mask[2], base[3]]
+	plan := shared_recording_layer_plan(commands.len)
+	assert chromium_shared_recording_layer_supported(commands, plan, 1)
+	mut interrupted := commands.clone()
+	interrupted[3] = layout.PaintCommand{kind: 'begin_css_filter_layer'}
+	assert !chromium_shared_recording_layer_supported(interrupted, plan, 1)
+	assert !chromium_shared_recording_layer_supported(commands, layout.ChromiumRasterLayerPlan{
+		layers: plan.layers
+		command_layers: [1, 1, 1, 2, 1, 1]
+	}, 1)
+}
+
 fn test_shared_recording_accepts_complete_isolated_css_scopes() {
 	for opacity in [0.0, 0.5, 1.0] {
 		commands := shared_recording_layer_commands(opacity)

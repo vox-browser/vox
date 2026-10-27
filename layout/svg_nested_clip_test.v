@@ -1,6 +1,7 @@
 module layout
 
 import html
+import svg
 
 fn nested_clip_node(root &Node, id string) ?&Node {
 	if dom_node := root.dom_node() {
@@ -50,4 +51,21 @@ fn test_user_space_clip_maps_through_nested_viewports_once() {
 	_, moved_x, moved_y := nested_clip_transform(result, 'moved')
 	assert f32(moved_x) == f32(shape_to_page.e + (200 + 100) * scale)
 	assert f32(moved_y) == f32(shape_to_page.f + 50 * scale)
+}
+
+fn test_user_space_clip_keeps_local_translation_before_entering_page_space() {
+	document := html.parse_document('<!doctype html><body style="margin:0"><svg width="20" height="20" viewBox="0 0 21 20">
+		<clipPath id="clip" transform="translate(.5 0)"><path d="M0 0h20v20H0z"/></clipPath>
+		<g id="target" clip-path="url(#clip)"><path d="M.5 0h20v20H.5z"/></g></svg>')
+	result := run_document_layout(document, 1024, 768) or { panic('layout failed') }
+	clip_box := nested_clip_node(result.root, 'clip') or { panic('missing clip') }
+	clip_child := clip_box.children()[0]
+	scale := f64(f32(20.0 / 21.0))
+	for x in [f64(107), 407, 807, 1000007] {
+		transform := svg_clip_child_transform_to_page(clip_child, clip_box,
+			svg.AffineTransform{a: scale, d: scale, e: x, f: 162.4761962890625})
+		assert transform.a == scale && transform.d == scale
+		assert f32((transform.e - x) / scale) == f32(.5)
+		assert transform.f == 162.4761962890625
+	}
 }

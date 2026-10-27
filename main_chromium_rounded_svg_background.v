@@ -128,14 +128,12 @@ fn chromium_svg_background_has_rounded_ancestor(command &layout.PaintCommand) bo
 	return command.clip_list.items.any(it.corner_radii != layout.BoxRadii{})
 }
 
-fn svg_background_local_clip(clip [12]f32, matrix [6]f64) [12]f32 {
-	mut result := clip
-	result[0] = f32((f64(clip[0]) - matrix[4]) / matrix[0])
-	result[1] = f32((f64(clip[1]) - matrix[5]) / matrix[3])
-	for index in 2 .. 12 {
-		result[index] = f32(f64(clip[index]) / matrix[if index % 2 == 0 { 0 } else { 3 }])
-	}
-	return result
+fn svg_background_local_clip(rect painting.Rect, matrix [6]f64) [12]f32 {
+	// Invert before converting to Skia's floats so the page origin cannot
+	// perturb an otherwise coincident path and rectangular clip edge.
+	return [f32((rect.x - matrix[4]) / matrix[0]),
+		f32((rect.y - matrix[5]) / matrix[3]), f32(rect.width / matrix[0]),
+		f32(rect.height / matrix[3]), 0, 0, 0, 0, 0, 0, 0, 0]!
 }
 
 fn chromium_svg_background_path_clips(command &layout.PaintCommand,
@@ -178,8 +176,7 @@ fn chromium_svg_background_path_clips(command &layout.PaintCommand,
 	}
 	if rect := inner {
 		descriptor.has_clip = 1
-		descriptor.clip = svg_background_local_clip([f32(rect.x), f32(rect.y), f32(rect.width),
-			f32(rect.height), 0, 0, 0, 0, 0, 0, 0, 0]!, matrix)
+		descriptor.clip = svg_background_local_clip(rect, matrix)
 	}
 	return descriptor
 }

@@ -30,7 +30,10 @@ fn chromium_shared_recording_supported(commands []layout.PaintCommand,
 		if index < svg_end { continue }
 		// The batch renderer records its rectangular viewport intersection in
 		// the picture. Individual clipped leaves do not carry that clip there.
-		svg_end = chromium_svg_solid_run_end(commands, plan.command_layers, index)
+		svg_end = chromium_svg_rectangular_mask_end(commands, plan.command_layers, index)
+		if svg_end == index {
+			svg_end = chromium_svg_solid_run_end(commands, plan.command_layers, index)
+		}
 		if svg_end > index {
 			has_vectors = true
 			continue
@@ -128,7 +131,10 @@ fn chromium_shared_recording_layer_supported(commands []layout.PaintCommand,
 			continue
 		}
 		if command_index < svg_end { continue }
-		svg_end = chromium_svg_solid_run_end(commands, plan.command_layers, command_index)
+		svg_end = chromium_svg_rectangular_mask_end(commands, plan.command_layers, command_index)
+		if svg_end == command_index {
+			svg_end = chromium_svg_solid_run_end(commands, plan.command_layers, command_index)
+		}
 		if svg_end > command_index {
 			has_vectors = true
 			continue
