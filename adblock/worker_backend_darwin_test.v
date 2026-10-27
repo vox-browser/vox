@@ -4,6 +4,8 @@ import os
 import time
 
 #include <sys/wait.h>
+#include <libproc.h>
+fn C.proc_pidpath(int, &u8, u32) int
 #include "@DIR/default_engine_release_test.h"
 fn C.vox_adblock_test_exchange_error(&char) &char
 fn C.kill(int, int) int
@@ -266,4 +268,35 @@ fn test_worker_self_path_and_bundle_lookup_ignore_injected_dyld_image_order() {
 	expected := os.real_path(os.args[0])
 	assert os.real_path(current_executable_path()!) == expected
 	assert bundled_snapshot_path() == os.join_path(os.dir(expected), '..', 'Resources', 'adblock.snapshot.bin')
+}
+
+fn test_bundled_worker_runs_the_complete_engine_in_the_selected_child() {
+	_ = release_unused_engine()
+	root := os.join_path(os.temp_dir(), 'vox real bundled worker ${os.getpid()} ${time.sys_mono_now()}')
+	directory := os.join_path(root, 'Vox.app', 'Contents', 'MacOS')
+	os.mkdir_all(directory)!
+	helper := os.join_path(directory, 'VoxAdblockWorker')
+	os.cp(os.getenv('VOX_ADBLOCK_WORKER_HELPER'), helper)!
+	os.chmod(helper, 0o755)!
+	defer {
+		_ = release_unused_engine()
+		configure_default_worker_with_deadline(os.getenv('VOX_ADBLOCK_WORKER_HELPER'), 15000) or {
+			panic(err)
+		}
+		os.rmdir_all(root) or {}
+	}
+	selected := default_self_worker_path(os.join_path(directory, 'Vox'))
+	assert selected == helper
+	configure_default_worker_with_deadline(selected, 15000)!
+	assert evaluate_engine('40 + 2')! == '42'
+	mut path := []u8{len: 4096}
+	assert C.proc_pidpath(default_worker_pid(), path.data, u32(path.len)) > 0
+	assert unsafe { cstring_to_vstring(path.data) } == os.real_path(helper)
+	assert check(Request{
+		url:          'https://securepubads.g.doubleclick.net/tag/js/gpt.js?bundled-worker'
+		source_url:   'https://www.theverge.com/'
+		request_type: 'script'
+	}).blocked
+	assert release_unused_engine()
+	assert default_worker_pid() == 0
 }

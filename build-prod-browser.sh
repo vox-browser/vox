@@ -167,7 +167,7 @@ fi
 # Anchor package names at the repository; see build-linux-browser.sh. Without
 # it, a checkout under `modules`, `.vmodules`, `vlib` or another v.mod compiles
 # `encoding` as `vox2.encoding` while imports still resolve to vlib's name.
-set -- -exclude "$zoneinfo_exclude" -enable-globals \
+set -- -memory-limit 10G -exclude "$zoneinfo_exclude" -enable-globals \
     -d vox_ui2 -path "$repo_dir|$prealloc_modules|$font_modules|$http_modules|$ui2_modules|@vmodules|@vlib"
 if [ "${VOX_KEEP_C:-0}" = 1 ]; then
     set -- "$@" -keepc
@@ -230,6 +230,32 @@ else
         -cflags "$extra_cflags" \
         -o "$binary_dir/Vox" .
 fi
+
+# Keep the filter worker's entry point independent of browser/UI initialization.
+# It uses the same engine, snapshot resource and private transport as self-exec.
+helper_tmp=$(mktemp "$binary_dir/.adblock-worker.XXXXXX")
+set -- -memory-limit 10G -exclude "$zoneinfo_exclude" -enable-globals \
+    -path "$repo_dir|$prealloc_modules|$font_modules|$http_modules|@vmodules|@vlib"
+helper_cflags=-O2
+if [ "$gc_mode" = prealloc ]; then
+    set -- "$@" -prealloc -gc none -d vox_sparse_ttf
+elif [ "$gc_mode" != none ]; then
+    set -- "$@" -gc "$gc_mode"
+    helper_cflags="$helper_cflags -DLARGE_CONFIG=1"
+    if [ "$(uname -m)" = arm64 ] && [ "$(getconf PAGESIZE)" = 16384 ]; then
+        set -- "$@" -d use_bundled_libgc
+        helper_cflags="$helper_cflags -DHBLKSIZE=16384"
+    fi
+else
+    set -- "$@" -prod -gc none
+fi
+"$v_compiler" "$@" -cflags "$helper_cflags" \
+    -o "$helper_tmp" "$repo_dir/tools/adblock-worker-mini/main.v"
+chmod 755 "$helper_tmp"
+if command -v codesign >/dev/null 2>&1; then
+    codesign --force --sign - "$helper_tmp" >/dev/null
+fi
+mv -f "$helper_tmp" "$binary_dir/VoxAdblockWorker"
 
 if [ -n "$bridge_library" ]; then
     bridge_resource_tmp=$(mktemp "$binary_dir/.skia-bridge.XXXXXX")

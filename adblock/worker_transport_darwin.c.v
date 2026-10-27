@@ -145,6 +145,23 @@ pub fn current_executable_path() !string {
 	return owned_worker_payload(bytes, size)
 }
 
+// Production bundles carry a smaller worker entry point so restoring the filter
+// engine does not initialize the browser's unrelated module globals. Standalone
+// worker-capable tools retain their own executable as the fallback.
+fn default_self_worker_path(executable string) string {
+	directory := os.dir(executable)
+	contents := os.dir(directory)
+	if os.file_name(executable) != 'Vox' || os.file_name(directory) != 'MacOS'
+		|| os.file_name(contents) != 'Contents' || !os.dir(contents).ends_with('.app') {
+		return executable
+	}
+	helper := os.join_path(directory, 'VoxAdblockWorker')
+	if os.is_file(helper) && os.is_executable(helper) {
+		return helper
+	}
+	return executable
+}
+
 pub fn configure_default_self_worker() ! {
-	configure_default_worker(current_executable_path()!)!
+	configure_default_worker(default_self_worker_path(current_executable_path()!))!
 }
