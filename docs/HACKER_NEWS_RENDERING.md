@@ -1478,3 +1478,41 @@ It is a frozen generated-C experiment, not validation of a newly built
 canonical production browser. It does not establish Brave parity. The latest
 production ratio remains 3.693468; independent optimization savings are not
 added. The combined candidate must be measured separately.
+
+## Combined accepted candidates, 2026-10-27
+
+`Build/hn-small-text/combined-accepted-2` combines the accepted font baseline
+with the text-context cursor, integer serializer, shadow presence scan,
+scroll-frame lookup, dedicated filter worker and decoded SVG ownership changes.
+Each generated-C substitution is authenticated against its focused source;
+reversing the disjoint substitutions restores the control byte for byte.
+The build retains C-O2, the original native libraries, signed worker helper,
+fixture, capture endpoint and unchanged compiler/source pins. It is a frozen
+candidate, not the installed canonical production bundle.
+
+Signature and startup checks pass. The 19-case visual comparison retains all
+34 control images: 13 cases are exact against their references and six existing
+reference differences remain unchanged. All three HN fixtures are pixel-exact,
+and both live identity checks pass. Three fresh Vox/Brave pairs preserve all
+101 comments and exact pixels. Vox's median is 5,775,605,959 instructions,
+against Brave's median lower accounting bound of 1,745,297,492. The strict
+worst-Vox/best-Brave ratio is **3.439494**, above the required **0.90**.
+The performance cohort correctly exits 1; the enclosing validation driver and
+memory guard exit zero because they retain and report that target failure.
+The guard records 370.3165 seconds and 5,396,578,304 bytes sampled peak RSS.
+No independent savings are added or credited again. The latest installed
+production acceptance ratio remains 3.693468; Brave parity is still open.
+
+## C-O3 experiment rejected
+
+`Build/hn-small-text/c-opt-level-isolated-1` changes only C-O2 to C-O3 on the
+authenticated font baseline. It uses the same source, native inputs, signing,
+startup checks and 30 alternating pairs. All 60 captures retain exact pixels
+and all 101 comments, but every pair regresses. Control and candidate medians
+are 6,366,911,761 and 6,548,317,720 instructions. Median paired saving is
+-168,947,413, with bootstrap 95% interval [-185,801,763.5, -160,146,983.5].
+The largest regression, 259,494,963 instructions, remains included. The
+18-CPU host ends at load averages 16.2236/16.8257/14.8906. The experiment
+receives zero credit; the canonical build retains C-O2. Broader verification
+is unnecessary for this rejected compiler setting. Its guard exits zero after
+427.0078 seconds, with 5,194,186,752 bytes sampled peak RSS.
