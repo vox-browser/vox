@@ -56,7 +56,7 @@ fn chromium_shape_line_end(node &Node, visible string, run &platform.GlyphRun,
 	word_spacing := f32(resolved_text_spacing_for_node(node, .word_spacing).to_double())
 	shape := platform.shape_text_with_spacing(0, letter_spacing, word_spacing, visible, run.font(), .ltr)
 	if shape.glyph_run.face() != run.face() { return none }
-	length := utf16_code_units_for_line_box(visible).len
+	length := utf16_length_for_line_box(visible)
 	mut shaped_coverage := 0
 	for glyph in shape.glyph_run.glyphs_ { shaped_coverage += glyph.length_in_code_units }
 	if shaped_coverage != length { return none }
@@ -84,7 +84,7 @@ fn chromium_line_end_width(node &Node, visible string, run &platform.GlyphRun) ?
 	metrics := platform.shaped_text_context_metrics(letter_spacing, word_spacing, visible,
 		run.font(), .ltr) or { return none }
 	if metrics.face != run.face()
-		|| metrics.length_in_code_units != utf16_code_units_for_line_box(visible).len {
+		|| metrics.length_in_code_units != utf16_length_for_line_box(visible) {
 		return none
 	}
 	return metrics.width
@@ -97,10 +97,10 @@ fn (projection &ProjectedTextAdvance) chromium_line_end_correction() CSSPixels {
 		return CSSPixels.new(0)
 	}
 	text_node := projection.node.as_text_node() or { return CSSPixels.new(0) }
-	text := utf16_substring_for_line_box(text_node.text_for_rendering(),
-		projection.segment_start, projection.segment_length)
 	advance := chromium_cached_safe_line_end(projection.node, projection.segment_start,
 		projection.segment_length, projection.run) or {
+		text := utf16_substring_for_line_box(text_node.text_for_rendering(),
+			projection.segment_start, projection.segment_length)
 		chromium_line_end_width(projection.node, text, projection.run) or {
 			return CSSPixels.new(0)
 		}

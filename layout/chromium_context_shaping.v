@@ -71,7 +71,13 @@ fn (iterator &InlineLevelIterator) chromium_context_run_for_text(text_node &Text
 	for glyph in run.glyphs_ { covered_units += glyph.length_in_code_units }
 	if covered_units != if context.source_offsets.len > 0 {
 		context.source_offsets.len
-	} else if units.len > 0 { units.len } else { text.len } { return none }
+	} else if units.len > 0 {
+		units.len
+	} else {
+		text.len
+	} {
+		return none
+	}
 	return context.restore_source_offsets(run)
 }
 
@@ -141,6 +147,7 @@ fn chromium_segmented_context_slice_with_cursor(runs []ChromiumTextContextRun,
 }
 
 fn chromium_context_has_single_supported_script(text string) bool {
+	if text.is_ascii() { return true }
 	mut has_latin := false
 	mut has_cyrillic := false
 	for character in text.runes() {
@@ -168,7 +175,7 @@ fn chromium_context_slice(run &platform.GlyphRun, chunk TextNodeChunk) ?platform
 fn chromium_context_slice_with_cursor(run &platform.GlyphRun, chunk TextNodeChunk,
 	mut cursor ChromiumContextSliceCursor) ?platform.ShapedText {
 	if voidptr(cursor.run) != voidptr(run) || chunk.start < cursor.offset {
-		cursor = ChromiumContextSliceCursor{run: run}
+		cursor = ChromiumContextSliceCursor{ run: run }
 	}
 	mut offset := cursor.offset
 	mut first := -1

@@ -9,6 +9,11 @@ fn cached_shape_safe_break_width(shape CachedShape, start int, length int,
 		|| length > text_length - start {
 		return none
 	}
+	if shape.safe_break_boundaries.len > 0 {
+		if shape.safe_break_boundaries.len - 1 != text_length { return none }
+		return cached_shape_safe_break_range_width(shape, shape.safe_break_boundaries[start],
+			shape.safe_break_boundaries[start + length])
+	}
 	mut offset := 0
 	mut first := -1
 	mut end := -1
@@ -23,7 +28,11 @@ fn cached_shape_safe_break_width(shape CachedShape, start int, length int,
 	}
 	if offset != text_length { return none }
 	if offset == start + length { end = shape.glyphs.len }
-	if first < 0 || end <= first || shape.glyphs[first].shaping_break_safety != 1
+	return cached_shape_safe_break_range_width(shape, first, end)
+}
+
+fn cached_shape_safe_break_range_width(shape CachedShape, first int, end int) ?f32 {
+	if first < 0 || first >= shape.glyphs.len || end <= first || end > shape.glyphs.len || shape.glyphs[first].shaping_break_safety != 1
 		|| (end < shape.glyphs.len && shape.glyphs[end].shaping_break_safety != 1) {
 		return none
 	}
@@ -45,4 +54,28 @@ pub fn shaped_text_safe_break_width(letter_spacing f32, word_spacing f32, text s
 	mut cache := shared_shaping_cache()
 	shape := cache.lookup(font_key, text, params) or { return none }
 	return cached_shape_safe_break_width(shape, start, length, text.len)
+}
+
+// Build the immutable boundary lookup once, inside the cache's ownership
+// scope. Width queries then visit only the requested glyph range. Large or
+// unknown runs keep the checked scan without retaining an oversized index.
+fn cached_shape_safe_break_boundaries(shape CachedShape) []int {
+	max_units := 1_048_576
+	if shape.face != .document || shape.glyphs.len == 0 { return []int{} }
+	mut length := 0
+	for glyph in shape.glyphs {
+		if glyph.length_in_code_units <= 0 || glyph.length_in_code_units > max_units - length
+			|| glyph.shaping_break_safety !in [u8(1), 2] {
+			return []int{}
+		}
+		length += glyph.length_in_code_units
+	}
+	mut boundaries := []int{len: length + 1, init: -1}
+	mut offset := 0
+	for index, glyph in shape.glyphs {
+		boundaries[offset] = index
+		offset += glyph.length_in_code_units
+	}
+	boundaries[length] = shape.glyphs.len
+	return boundaries
 }

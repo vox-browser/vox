@@ -37,9 +37,13 @@ fn (params ShapeParams) matches(other ShapeParams) bool {
 // Font supplies the retained lifetime and the requested baseline is applied to
 // a fresh glyph vector after every lookup.
 struct CachedShape {
-	glyphs              []Glyph
-	face                GlyphRunFace
-	trailing_whitespace TrailingWhitespace
+	glyphs                []Glyph
+	face                  GlyphRunFace
+	trailing_whitespace   TrailingWhitespace
+	safe_break_boundaries []int
+	context_metrics_valid bool
+	context_width         f32
+	context_length        int
 }
 
 struct ShapeForParams {
@@ -176,10 +180,15 @@ fn (mut cache ShapingCache) evict_least_recently_used_texts(font_index int) {
 }
 
 fn clone_cached_shape(shape CachedShape) CachedShape {
+	metrics := measure_cached_shape_context_metrics(shape)
 	return CachedShape{
-		glyphs: shape.glyphs.clone()
-		face: shape.face
-		trailing_whitespace: shape.trailing_whitespace
+		glyphs:                shape.glyphs.clone()
+		face:                  shape.face
+		trailing_whitespace:   shape.trailing_whitespace
+		safe_break_boundaries: cached_shape_safe_break_boundaries(shape)
+		context_metrics_valid: metrics != none
+		context_width:         if value := metrics { value.width } else { f32(0) }
+		context_length:        if value := metrics { value.length_in_code_units } else { 0 }
 	}
 }
 
@@ -407,7 +416,20 @@ pub:
 	face                 GlyphRunFace
 }
 
+// Cached glyphs are immutable. Retain the exact local f64 measurement once
+// when cloning into cache storage, including its original cluster handling.
 fn cached_shape_context_metrics(shape CachedShape) ?ShapedTextContextMetrics {
+	if shape.context_metrics_valid {
+		return ShapedTextContextMetrics{
+			width: shape.context_width
+			length_in_code_units: shape.context_length
+			face: shape.face
+		}
+	}
+	return measure_cached_shape_context_metrics(shape)
+}
+
+fn measure_cached_shape_context_metrics(shape CachedShape) ?ShapedTextContextMetrics {
 	mut length := 0
 	for glyph in shape.glyphs {
 		length += glyph.length_in_code_units
