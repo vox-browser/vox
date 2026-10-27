@@ -1,111 +1,124 @@
 # 4chan catalog comparison
 
 Pixel-perfect parity for `https://boards.4chan.org/pol/catalog` remains open.
-The retained run in `Build/4chan-catalog-20261027-label-2/` compared fresh
-processes at a 1024×768 document viewport and native scale 2 against Brave
-156.1.98.60 (Chromium 156.0.8078.48).
+The latest completed production run is
+`Build/4chan-catalog-20261027-final-1/`. It compares fresh processes at native
+scale 2 against Brave 156.1.98.60 (Chromium 156.0.8078.48).
 
-The executable SHA256 was
-`a1167c7abc73b8b0ac45f1d3eb0f5ace4f1b44375df75dff3108af46f0de2123`.
-`device-live-run.json` records its native-library hashes, fresh PID 22880,
-exit code 0, and unchanged executable/library identity. Live navigation
-reached the requested catalog with its expected title, complete readiness,
-over 100 threads and decoded thumbnails. This establishes live document
-loading, not live screenshot parity.
+## Completed browser and identity
+
+The executable SHA256 is
+`d0b28fb544c7ac9befb56b43402ed9c090f05651a2a2c1936df64f8793498d93`.
+`results.json` records the native library hashes, successful signing, startup
+smoke, installation into `Build/v/Vox.app`, and unchanged frozen source,
+capture scripts, and executable/library identity throughout the comparisons.
+The pinned copy is `device.app` in the run directory. The earlier `label-2`
+bundle cannot validate the subsequent fixes.
+
+The retry preserved generated C and the exact native compiler command, exited
+V, and then compiled the native executable separately. This avoided the
+overlap that exceeded the memory budget in the earlier production attempt.
+`guard-retry-vlib.json` records a 9,435,447,296-byte sampled process-tree peak
+against the unchanged 12 GiB budget. The overall check exits 1 because visual
+acceptance fails; the native compiler, signing and smoke each exit 0.
+The intentional compiler deferral exits V before native compilation and is
+recorded separately from compilation success. Earlier failed attempts remain
+in their original directories.
 
 ## Executed pixel results
 
+These compare every pixel without a tolerance. The replay freezes animated
+GIFs and explicitly hides `.danbo-slot` in both browsers to match Vox's enabled
+EasyList policy. This controlled oracle does not establish parity with an
+unmodified live Brave page.
+
 | Comparison | Differing pixels | Total pixels |
 | --- | ---: | ---: |
-| Initial catalog, logical pixels | 2,604 | 786,432 |
-| Initial catalog, native pixels | 6,525 | 3,145,728 |
-| Select fixture, native pixels | 0 | 1,920,000 |
+| Initial catalog, logical pixels | 1 | 786,432 |
+| Initial catalog, native pixels | 7 | 3,145,728 |
+| Catalog at 800×600, native pixels | 0 | 1,920,000 |
+| Catalog at 1280×768, native pixels | 5 | 3,932,160 |
 | Precision fixture, native pixels | 0 | 1,920,000 |
 | Teaser fixture, native pixels | 0 | 1,920,000 |
 | Transformed shadow fixture, native pixels | 19,277 | 1,920,000 |
-| Catalog scrolled to 768 CSS pixels | 476,731 | 3,145,728 |
-| Catalog scrolled to 1536 CSS pixels | 706,206 | 3,145,728 |
+| Select fixture, unchanged bundle retry | 0 | 1,920,000 |
 
-`strict-pixel-acceptance.json` reports **false** and retains all 25 comparisons.
-`scroll-coverage.json` establishes complete coverage of the 14,457-pixel
-document through 19 viewport offsets, ending at 13,689. No nonzero result was
-accepted as pixel exact.
+The final run's select capture timed out in the Brave websocket handshake.
+The unchanged select retry in `Build/4chan-catalog-20261027-filter-ready-1/`
+passed with fresh Vox PID 37915, exit 0, and the same executable/library hashes.
+`Build/4chan-catalog-20261027-acceptance-retry-1/` combines that receipt with
+unchanged final-run results. Its `strict-pixel-acceptance.json` reports false;
+no nonzero result is accepted as pixel exact. The original infrastructure
+failure remains in the final run's log.
 
-The replay freezes animated GIFs and hides `.danbo-slot` in both browsers to
-match Vox's enabled EasyList policy. An unfiltered Brave capture includes a
-728×90 advertisement slot and different vertical positions. These controlled
-replay results cannot establish parity with an unmodified live Brave page.
+`scroll-coverage.json` establishes complete coverage of the 14,457-pixel document
+through all 19 viewport offsets. Every row below compares 3,145,728 native pixels.
 
-## Remaining causes and validation
+| Scroll offset (CSS pixels) | Differing pixels |
+| ---: | ---: |
+| 0 | 7 |
+| 768 | 8 |
+| 1536 | 6 |
+| 2304 | 25,908 |
+| 3072 | 3,873 |
+| 3840 | 4 |
+| 4608 | 26,022 |
+| 5376 | 1,502 |
+| 6144 | 1 |
+| 6912 | 1,047 |
+| 7680 | 1,897 |
+| 8448 | 1,409 |
+| 9216 | 4 |
+| 9984 | 33,846 |
+| 10752 | 1,035 |
+| 11520 | 1,912 |
+| 12288 | 4,217 |
+| 13056 | 1,342 |
+| 13689 | 4 |
 
-The propagated body's `background-attachment:scroll` image remains at the top
-of Vox's viewport after scrolling. At the top-left pixel, both browsers
-initially paint RGB `(254,214,175)`; after scrolling Brave paints the canvas
-color `(255,255,238)` while Vox retains the fade. The committed fix gives scrolling
-canvas image layers the root scroll context while preserving the stationary
-canvas color and fixed layers. Its focused test covers root/body propagation,
-horizontal and vertical scrolling, local/fixed attachments, and retained
-command reuse.
+The scrolling canvas-background fix is now exercised by the browser: the
+previous 476,731 and 706,206 differences at offsets 768 and 1536 drop to 8 and
+6. Remaining scrolled differences concentrate in particular thumbnail interiors,
+some teaser text lines, and shadow edges. Their causes still need isolation.
+The seven initial differences are each one blue-channel unit at shadow corners.
 
-`shadow-region-analysis.json` records exact normal, rounded and offset shadow
-regions, with 952 differing pixels for the half-scale shadow, 17,364 for the
-double-scale shadow and 961 for the rotated shadow. Most scaled-edge errors
-are one blue-channel unit. This is diagnostic evidence, not a confirmed
-compositing fix. The new bundle also needs to exercise the one-CSS-pixel
-opaque-shadow cutout at device layout scale.
+The transformed shadow fixture remains unchanged: normal, rounded and offset
+regions match, while half-scale, double-scale and rotated regions differ by
+952, 17,364 and 961 pixels respectively. Standalone transparent/opaque raster
+probes provide diagnostic samples, not proof of a browser compositing fix.
 
-The option-label mutation regression, fractional shadow-color transport,
-device-scaled shadow cutouts, and scrolling canvas backgrounds passed 31
-focused runtime tests in `Build/4chan-catalog-20261027-background-1/`.
-`focused-slice-manifest.json` pins the source and selected functions;
-`device-select-focused-memory.json` records exit 0 under the 3 GiB runtime
-guard. Four native cache tests also passed (`native-cache.log`). These checks
-do not substitute for the pending browser captures.
+## Live Brave and filter limitations
 
-The production attempt in that directory exceeded the 12 GiB process-tree
-budget while V and its native compiler overlapped. The guard terminated it
-with child exit -9 after 572.49 seconds; it produced no validated bundle.
-`guard-retry-icu78.json` retains the failure rather than counting it as a pass.
+`device-live-run.json` records fresh Vox PID 19724, exit 0, and unchanged build
+identity. The live catalog reached its expected title, complete readiness,
+over 100 threads and decoded thumbnails. This establishes live document loading,
+not live screenshot parity.
 
-A separate shadow probe identified legacy comma-separated `rgba()` opacity
-rounding as a candidate cause of the catalog's one-channel shadow errors.
-Chromium rounds that syntax's alpha to eight bits while retaining fractional
-alpha for modern space-separated `rgb()`. Commit `89571ff2` implements that
-rounding and includes a parser-to-paint regression test for both forms and
-percentage alpha. Its focused executable compiled and ran successfully;
-`4chan-catalog-20261027-alpha-1/focused-memory.json` records child exit 0
-under the 3 GiB runtime guard. This is not yet a catalog pixel verdict.
+Both live Brave comparisons retain a 728×90 advertisement slot, while Vox's
+EasyList cosmetic rule hides it. The initial board navigation, title, post-form
+link and blotter geometry match; the controls and threads in Brave start
+103.3359375 CSS pixels lower. `live-geometry.json` reports geometry failure.
+`default-brave-live-geometry-corrected.json` resolves the default capture's
+classes from its retained raw rectangle rows, including elements that also have
+IDs; the original report and raw evidence remain intact. It also reports failure.
 
-The alpha stage's first attempt failed to compile because its isolated CSS
-package lacked source-local headers. That failure is preserved in
-`attempt-1-missing-header/`; the retry included those headers and passed the
-actual focused runtime check. A native probe found identical sampled output
-from direct paint color and Chromium's color-filter formulation, so it supplied
-no evidence for changing the native shadow painter again.
+Copying seven signed public filter components into fresh profiles did not
+reproduce the ad-hidden oracle, even with default component registration
+enabled. Both component probes differ at 882,138 native pixels. Their archives
+retain identical frozen assets and differ from the controlled oracle only by
+removing the explicit cosmetic style. No personal browsing profile was copied.
+The separate filter-readiness probe in
+`Build/4chan-catalog-20261027-filter-ready-1/` also retains the ad slot after
+reload: both its initial and reloaded captures differ at 882,138 pixels.
 
-The same stage's Brave component probe failed to reproduce the ad-hidden
-reference: copying seven signed public filter components into an empty profile
-left the 90-pixel slot visible, with 882,138 differing native pixels. No browsing
-profile state was copied. Its input archive differs from the controlled oracle
-only by removal of the explicit cosmetic style; both retain the same frozen
-image frames. This failure remains in `brave-components/oracle-comparison.json`.
-Brave's installed-version source also shows that disabled component updating
-can skip filter registration. A second probe enables default component
-registration before testing the same public assets; its result is pending.
+## Focused checks already executed
 
-`Build/4chan-catalog-20261027-final-1/` contains the frozen-source production
-retry. It preserves the exact generated C and native compiler command, exits
-V, and then runs native compilation under the same 12 GiB guard. Its first
-attempt was blocked by the failed alpha prerequisite. Its second attempt
-stopped during UI2 preparation because the compiler wrapper lacked the adjacent
-`vlib` link; no browser compilation ran. Both failures are retained in
-`attempt-1-alpha-blocked/` and `attempt-2-missing-vlib/`. The corrected retry is
-queued and has not supplied a browser pixel verdict.
-
-The planned checks include startup smoke, fresh native captures, 800×600,
-1024×768 and 1280×768 viewports at native scale 2, all 19 scroll offsets,
-strict zero-difference acceptance, and unmodified live Brave geometry. Live
-geometry is recorded separately because independent live responses contain
-changing threads, banners, and animation. The available completed production
-bundle lacks the option mutation hook, device-scaled cutout, canvas scrolling,
-and alpha rounding change, so it cannot validate those changes.
+The option-label mutation hook, fractional shadow-color transport,
+device-scaled shadow cutout, and scrolling canvas-background changes passed 31
+focused runtime tests in `Build/4chan-catalog-20261027-background-1/`, plus four
+native cache tests. The runtime receipt records exit 0 under the 3 GiB guard.
+Legacy comma-separated `rgba()` alpha rounding passed its parser-to-paint
+focused runtime check under the same limit in
+`Build/4chan-catalog-20261027-alpha-1/`. Modern space-separated alpha retains its
+fractional value. The completed production comparisons above now exercise
+these changes together; they do not meet strict catalog acceptance.
