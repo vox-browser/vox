@@ -95,7 +95,7 @@ static void published(id view, SEL selector) {
     if (![page.window.title containsString:to_title]) return;
     NSData *pixels = document_pixels(current_image());
     BOOL first = !first_publication;
-    if (!first && [last_document isEqualToData:pixels]) return;
+    if ([last_document isEqualToData:pixels]) return;
     last_document = pixels;
     last_changed = now;
     last_callback = now-before;
@@ -130,6 +130,7 @@ static void poll(void) {
             if (!method) { fprintf(stderr, "PAGE_SWITCH_ERROR no updateLayer\n"); exit(2); }
             original_update = method_setImplementation(method, (IMP)published);
             capture(@"hot.png");
+            last_document = document_pixels(current_image());
             fprintf(stderr, "PAGE_SWITCH_START from=%s to=%s settle=%g title=%s\n",
                 from_url.UTF8String, to_url.UTF8String, settle, page.window.title.UTF8String);
             address.stringValue = to_url;

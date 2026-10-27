@@ -52,10 +52,11 @@ def main():
         first = re.search(r'PAGE_SWITCH_RESULT navigation_ms=([\d.]+).*published_s=([\d.]+)', text)
         stable = re.search(r'PAGE_SWITCH_STABLE navigation_ms=([\d.]+).*published_s=([\d.]+) document_publications=(\d+)', text)
         paints = re.findall(r'FIXTURE_PAINT phase=(\d) chrome=(\d) before=([\d.]+) after=([\d.]+)', text)
-        assert first and stable and len(paints) == 3, text
+        assert first and stable and len(paints) == 4, text
         assert float(first[1]) < float(stable[1]) and int(stable[3]) == 2, text
-        assert float(paints[0][2]) <= float(first[2]) <= float(paints[0][3]), text
-        assert float(paints[1][2]) <= float(stable[2]) <= float(paints[1][3]), text
+        assert paints[0][:2] == ('0', '1'), text
+        assert float(paints[1][2]) <= float(first[2]) <= float(paints[1][3]), text
+        assert float(paints[2][2]) <= float(stable[2]) <= float(paints[2][3]), text
         images = {name: Image.open(output/(name+'.png')).convert('RGBA')
                   for name in ['first-new', 'loaded-new', 'settled-new']}
         scale = images['first-new'].width/64
@@ -68,6 +69,7 @@ def main():
         assert ImageChops.difference(images['loaded-new'], images['settled-new']).convert('RGB').getbbox()
         evidence.update(status='passed', document_publications=2,
                         late_document_counted=True, chrome_excluded=True,
+                        old_document_with_destination_title_excluded=True,
                         quiet_delay_excluded=True, loaded_pixels_match_settled=True)
     except Exception as error:
         evidence.update(status='failed', error=str(error))

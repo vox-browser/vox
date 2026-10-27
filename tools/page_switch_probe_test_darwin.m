@@ -49,6 +49,11 @@
 - (void)navigate:(id)sender {
     (void)sender;
     self.view.window.title = @"new destination";
+    // A title can change before the destination's first paint. An AppKit
+    // update of the old document, even with different chrome, must not count.
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 50*NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
+        [self paint:0 chrome:1];
+    });
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, NSEC_PER_SEC/10), dispatch_get_main_queue(), ^{
         [self paint:1 chrome:0];
     });
