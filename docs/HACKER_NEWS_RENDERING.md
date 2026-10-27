@@ -1740,3 +1740,48 @@ This validates the isolated composition, not a newly built canonical production
 browser or the Brave target. The latest completed production comparison remains
 4.013862 against the required 0.90. The combined candidate needs a fresh Brave
 comparison; the user's performance target remains open.
+
+
+## HarfBuzz safe line-end boundaries, 2026-10-27
+
+`423693e9` retains HarfBuzz's safe/unsafe cluster boundaries in the existing
+glyph-record padding. Chromium line fitting can reuse a cached ASCII range when
+both ends are safe and coverage is exact. Unknown metadata, fallback faces,
+non-LTR text, Unicode and collapsed source maps keep independent shaping.
+Painting still materializes the boundary shape. Local f64 accumulation,
+spacing keys and final rounding remain unchanged; no prefix subtraction is used.
+
+The focused checks exhaustively compare accepted ranges and projected rounding
+against independent shaping, including ligatures, negative spacing, cancellation,
+cache mutation and scratch ownership. Seventy executions pass in both memory
+modes. The initial focused build stopped at a reused test-loop name; the corrected
+tests were compiled and executed afresh. The generated-C checks preserve the
+48-byte glyph stride and all existing offsets.
+
+`Build/hn-small-text/safe-break-isolated-3` composes the slice onto the validated
+SVG-ownership candidate, retaining the O2 command, 252 objects and native libraries.
+Executable SHA256 is
+`c10ca652eca1d40a2d18c61ad4941e9bb350aa9543b940de7e223ca3b6d362d9`.
+The separate diagnostic observes 56,660 queries, 54,174 hits and 29,221 trailing
+queries, with exact pixels and all 101 comments. It receives no performance credit.
+
+Thirty alternating unprofiled pairs preserve every HN pixel and all comments.
+Control/candidate medians are 8,138,840,010.5 / 7,742,388,413 retired instructions.
+Median paired saving is 396,313,943.5; bootstrap 95% interval is
+[367,635,578, 422,593,091]. All 30 pairs improve, with a minimum saving of
+299,096,547. The strict worst-candidate/best-control ratio is 0.966232.
+The 18-CPU host ends at load averages 26.1089/21.8853/15.8921. Raw inputs,
+identities, trials, commands and actual exits are retained unchanged.
+
+The conservative 367,635,578-instruction credit triggers
+`safe-break-checkpoint-3`: 482 new executions and 210 distinct carried focused
+executions give 686 passes and the six unchanged baseline layout failures.
+All 100 upstream AST fixtures compare exactly. All 34 control/candidate images
+are unchanged; 14 of 19 canonical cases are exact, and five existing reference
+failures remain unchanged. The three HN fixtures are exact; startup and both
+live checks pass. No tolerance changes. Pending broad credit resets to zero.
+
+This validates the isolated optimization. The combined cache-density candidate
+still needs its own measurements and direct Brave comparison; independent gains
+are not added. The user's requirement of at least 10% fewer instructions than
+Brave remains open.
