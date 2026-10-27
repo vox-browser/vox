@@ -841,3 +841,39 @@ changing the temporary surface precision. The probe changes no tracked source;
 its inputs and all six runs remain in
 `Build/pikabu-mask-compositing-precision-probe-1793068045837897000/`.
 The strict rounded-mask gate remains failed.
+
+## Live DOM and Canvas filter checkpoint
+
+The startup replay exposed missing compact-script APIs used by Pikabu's image
+initialization. Commits `7f349f0f`, `45e263b0`, and `7746a640` connect
+`before()`, `after()`, and `replaceWith()` to the native ChildNode algorithms,
+expose the native `DocumentFragment` constructor, and expose
+`document.referrer`. Tests cover node moves, fragments, text, invalid
+arguments, and document ownership. Commit `ec6e254f` flushes live SVG filter
+mutations before Canvas drawing, including filter state restored by `restore()`.
+
+Capture auditing also needed an arena lifetime fix. Commit `7447f455` replaces
+the metadata-caching encoder with an encoder that does not retain allocations
+from a temporary arena. Its cold-start optional-field regression passes.
+Commit `64229a46` adds opt-in native script error details to capture audits.
+All 35 focused DOM, Canvas, and audit cases pass in normal and poisoned arena
+modes with unchanged frozen sources. The outer guard exits zero after
+439.8 seconds, with sampled peak RSS 8,067,907,584 bytes; both runtime checks
+remain below their separate 3 GiB limits. Commands and receipts are retained in
+`Build/pikabu-dom-storage-tests-1793082603533734000/`.
+
+Commit `b9dc8a64` draws Chromium Canvas images through the GPU path and applies
+image filters in a separate compositing layer. Opacity uses an alpha lookup
+table, matching Chromium's filter graph. Unsupported inputs and backend
+failures retain the CPU fallback. The native regression covers sampling,
+clipping, transforms, alpha, compositing, and preservation of existing pixels.
+The plain image, SVG backdrop filter, and CSS blur screenshots each have zero
+differing pixels against Brave. Direct `getImageData()` comparisons remain
+failed: the backdrop differs in 52 pixels and CSS blur in 74 pixels, each by
+at most one channel value. The plain image readback is exact. Retained results:
+`Build/pikabu-canvas-filter-tests-1793075380390797000/results.json`.
+
+These focused results do not establish whole-page parity. A diagnostic
+production build containing these changes and a fresh live/frozen-page
+comparison are in progress. The strict page, readback, and Retina rounded-mask
+gates remain open.
