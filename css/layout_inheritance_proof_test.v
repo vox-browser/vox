@@ -56,10 +56,14 @@ fn test_layout_inheritance_proof_observes_raw_flags_fonts_context_and_resolved_v
 	target.set_property_important(.color, .yes)
 	assert !layout_inheritance_is_current(proof, target, source, document)
 	target.set_property_important(.color, .no)
+	assert !layout_inheritance_is_current(proof, target, source, document)
+	_ = refresh_layout_inheritance_proof(proof, target, source, document)
 	assert layout_inheritance_is_current(proof, target, source, document)
 	target.set_property_inherited(.color, .no)
 	assert !layout_inheritance_is_current(proof, target, source, document)
 	target.set_property_inherited(.color, .yes)
+	assert !layout_inheritance_is_current(proof, target, source, document)
+	_ = refresh_layout_inheritance_proof(proof, target, source, document)
 	assert layout_inheritance_is_current(proof, target, source, document)
 
 	source.cached_computed_font_list_generation_++

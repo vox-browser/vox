@@ -428,6 +428,7 @@ mut:
 	paint_commands_pending              bool
 	pending_editing_scroll              ?&dom.InputEventsTarget
 	paint_effect_depth                  int
+	paint_svg_mask_depth                int
 	status                              string
 	load_status                         string
 	memory_status                       BrowserMemoryStatus
@@ -3018,6 +3019,15 @@ fn run_document_script_sources_with_resource_loaders(document &dom.Document, cur
 		messages << 'JavaScript MessageChannel bindings: ${err.msg()}'
 		return none
 	}
+	worker_settings := unsafe { &html.EnvironmentSettingsObject(document.relevant_settings_object()) }
+	mut worker_host := browserjs.WorkerHost.create(worker_settings, os.executable()) or {
+		messages << 'JavaScript Worker bindings: ${err.msg()}'
+		return none
+	}
+	worker_host.install(mut mutable_runtime) or {
+		messages << 'JavaScript Worker bindings: ${err.msg()}'
+		return none
+	}
 	mutable_runtime.install_microtask_binding() or {
 		messages << 'JavaScript queueMicrotask bindings: ${err.msg()}'
 		return none
@@ -5457,6 +5467,8 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 	}
 	app.paint_effect_depth = background_clip_effect_depth_after_command(app.paint_effect_depth,
 		source_command.kind)
+	app.paint_svg_mask_depth = background_svg_mask_depth_after_command(app.paint_svg_mask_depth,
+		source_command.kind)
 	mut command := app.enter_draw_command(source_command)
 	$if macos {
 		if app.ctx.native_rendering {
@@ -7113,6 +7125,7 @@ fn (mut app BrowserApp) draw() {
 	processmetrics.instruction_checkpoint('frame_prepared')
 	begin_browser_frame(app.ctx)
 	app.paint_effect_depth = 0
+	app.paint_svg_mask_depth = 0
 	paint_document := app.document_pixels_ready_for_frame()
 	submission_claim := if paint_document && processmetrics.instructions_enabled() {
 		app.paint_timing.submission.claim(app.navigation_generation)
@@ -7159,6 +7172,7 @@ fn (mut app BrowserApp) draw() {
 		mut raster_layer := -1
 		mut replay_scratch := app.begin_native_replay_scratch()
 		mut shared_svg_end := 0
+		mut rect_prefetch_end := 0
 		for command_index in 0 .. app.paint_commands.len {
 			if command_index < shared_svg_end { continue }
 			platform.cooperative_work_checkpoint()
@@ -7181,6 +7195,9 @@ fn (mut app BrowserApp) draw() {
 						raster_layer = next_layer
 					}
 				}
+			}
+			if command_index >= rect_prefetch_end && command.kind == 'fill_rect' {
+				rect_prefetch_end = app.prefetch_chromium_rects(command_index, page_y)
 			}
 			if command.kind == 'draw_svg_path' {
 				shared_svg_end = app.draw_chromium_svg_gradient_group(command_index, page_y)
@@ -7687,6 +7704,7 @@ fn (mut app BrowserApp) handle_key(key gg.KeyCode, modifier gg.Modifier) {
 
 fn main() {
 	// Dispatch the signed self-helper before browser heap/font/GUI setup.
+	if status := browserjs.run_worker_process_role(os.args) { exit(status) }
 	if status := adblock.run_default_worker_role(os.args) { exit(status) }
 	$if macos {
 		adblock.configure_default_self_worker() or {

@@ -15,26 +15,25 @@ enum ReadableStreamHostKind {
 
 @[heap]
 struct ReadableStreamHostRecord {
-	host &ReadableStreamHost
-	kind ReadableStreamHostKind
+	host   &ReadableStreamHost
+	kind   ReadableStreamHostKind
 	native voidptr
 mut:
 	object voidptr
 }
 
-// The owning-document binding for source ReadableStream/default-reader methods.
+// The owning-realm binding for source ReadableStream/default-reader methods.
 // JS chunks, functions, controllers and capabilities use actual engine values
 // and native records; the bridge never serializes them into JSON handles.
 @[heap]
 pub struct ReadableStreamHost {
-	document &dom.Document
 	settings &html.EnvironmentSettingsObject
 mut:
-	runtime &Runtime = unsafe { nil }
-	records map[voidptr]&ReadableStreamHostRecord
-	prototypes map[ReadableStreamHostKind]voidptr
+	runtime             &Runtime = unsafe { nil }
+	records             map[voidptr]&ReadableStreamHostRecord
+	prototypes          map[ReadableStreamHostKind]voidptr
 	read_loop_byte_copy voidptr
-	closed bool
+	closed              bool
 }
 
 pub fn ReadableStreamHost.create(document &dom.Document) !&ReadableStreamHost {
@@ -43,7 +42,13 @@ pub fn ReadableStreamHost.create(document &dom.Document) !&ReadableStreamHost {
 		_ := html.WindowModel.create_top_level(document, none, '')!
 		settings = document.relevant_settings_object()
 	}
-	return &ReadableStreamHost{ document: document, settings: unsafe { &html.EnvironmentSettingsObject(settings) } }
+	return ReadableStreamHost.create_for_settings(unsafe { &html.EnvironmentSettingsObject(settings) })!
+}
+
+// Constructor state belongs to the actual Window or Worker environment.
+pub fn ReadableStreamHost.create_for_settings(settings &html.EnvironmentSettingsObject) !&ReadableStreamHost {
+	_ = settings.window_or_worker_global_scope()!
+	return &ReadableStreamHost{ settings: settings }
 }
 
 pub fn (mut host ReadableStreamHost) close() {

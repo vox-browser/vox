@@ -28,9 +28,11 @@ fn (mut projection NativeCloneProjection) project_array_buffer(value voidptr, mu
 	if length > usize(2147483647) {
 		return native_clone_unsupported('Native ArrayBuffer exceeds the translated byte-array capacity')
 	}
-	// Source CreateByteDataBlock + CopyDataBlockBytes. The C pointer is temporary:
-	// copy its actual bytes before invoking any further engine operation.
-	pointer := C.JSObjectGetArrayBufferBytesPtr(owner.context, value, &exception)
+	// JSC permanently pins buffers whose backing pointers cross the C API.
+	// Borrow only an internal copy so serialization leaves the author's buffer
+	// detachable, including when it is transferred later in this same send.
+	copy := projection.root(bridge.engine('copy_buffer', [value])!)!
+	pointer := C.JSObjectGetTypedArrayBytesPtr(owner.context, copy, &exception)
 	if exception != unsafe { nil } { return owner.actual_javascript_exception(exception) }
 	if length != 0 && pointer == unsafe { nil } { return native_clone_unsupported('Native ArrayBuffer has no backing data') }
 	object.bytes = if length == 0 { []u8{} } else { unsafe { (&u8(pointer)).vbytes(int(length)).clone() } }
@@ -50,12 +52,15 @@ fn (mut projection NativeCloneProjection) reconstruct_array_buffer(object &html.
 		maximum = C.JSValueMakeNumber(owner.context, f64(capacity))
 	}
 	actual := projection.root(bridge.engine('create_buffer', [C.JSValueMakeNumber(owner.context, f64(object.bytes.len)), maximum])!)!
-	mut exception := unsafe { nil }
-	pointer := C.JSObjectGetArrayBufferBytesPtr(owner.context, actual, &exception)
-	if exception != unsafe { nil } { return owner.actual_javascript_exception(exception) }
-	if object.bytes.len != 0 && pointer == unsafe { nil } { return native_clone_unsupported('Native target ArrayBuffer has no backing data') }
 	if object.bytes.len != 0 {
-		unsafe { vmemcpy(pointer, object.bytes.data, object.bytes.len) }
+		// Fill through captured typed-array operations. Exposing the target's
+		// pointer here would make a received buffer impossible to transfer again.
+		mut exception := unsafe { nil }
+		bytes := C.vox_make_source_array_buffer_copy(owner.context, object.bytes.data, usize(object.bytes.len), &exception)
+		if exception != unsafe { nil } { return owner.actual_javascript_exception(exception) }
+		if bytes == unsafe { nil } { return native_clone_unsupported('Native target ArrayBuffer allocation failed') }
+		projection.root(bytes)!
+		bridge.engine('write_buffer', [actual, bytes])!
 	}
 	return actual
 }

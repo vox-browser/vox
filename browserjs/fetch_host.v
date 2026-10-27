@@ -67,12 +67,27 @@ pub fn FetchHost.create(document &dom.Document, transport &fetch.FetchHost) !&Fe
 		_ := html.WindowModel.create_top_level(document, none, '')!
 		settings = document.relevant_settings_object()
 	}
-	return &FetchHost{ settings: unsafe { &html.EnvironmentSettingsObject(settings) }, transport: transport }
+	return FetchHost.create_for_settings(unsafe { &html.EnvironmentSettingsObject(settings) }, transport)!
+}
+
+pub fn FetchHost.create_for_settings(settings &html.EnvironmentSettingsObject, transport &fetch.FetchHost) !&FetchHost {
+	_ = settings.window_or_worker_global_scope()!
+	return &FetchHost{ settings: settings, transport: transport }
 }
 
 pub fn FetchHost.create_native(document &dom.Document) !&FetchHost {
 	mut connection := requestserver.CurlConnection.create()!
 	mut host := FetchHost.create(document, connection.fetch_host()) or {
+		connection.close()
+		return err
+	}
+	host.connection = connection
+	return host
+}
+
+pub fn FetchHost.create_native_for_settings(settings &html.EnvironmentSettingsObject) !&FetchHost {
+	mut connection := requestserver.CurlConnection.create()!
+	mut host := FetchHost.create_for_settings(settings, connection.fetch_host()) or {
 		connection.close()
 		return err
 	}

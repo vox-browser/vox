@@ -4,6 +4,7 @@
 module html
 
 import crypto.rand as crypto_rand
+import platform
 
 __global html_allocated_unique_task_sources_ map[int]bool
 
@@ -13,6 +14,8 @@ pub:
 }
 
 pub fn UniqueTaskSource.create() UniqueTaskSource {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	assert html_allocated_unique_task_sources_.len < 0x7fff_ffff - 2
 	for {
 		id := int(crypto_rand.int_u64(0x7fff_ffff) or { panic(err) })
@@ -26,5 +29,7 @@ pub fn UniqueTaskSource.create() UniqueTaskSource {
 }
 
 pub fn (source &UniqueTaskSource) finalize() {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	html_allocated_unique_task_sources_.delete(int(source.source))
 }

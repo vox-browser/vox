@@ -1578,6 +1578,22 @@ int native_draw_svg_path_batch(const VoxGraphitePath *paths, int count,
 #endif
 }
 
+#include "native_rounded_svg_ancestor_darwin.h"
+
+int native_draw_svg_path_batch_with_rounded_ancestor(const VoxGraphitePath *paths,
+    int count, const float *outer, float x, float y, float width, float height,
+    float page_x, float page_y, float scroll_y, float canvas_width,
+    float canvas_height, const float *rounded_clip) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+    CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
+    return native_draw_rounded_svg_ancestor_in_context(context,
+        ladybird_v_skia_draw_svg_path_batch, paths, count, outer, x, y, width,
+        height, page_x, page_y, scroll_y, canvas_width, canvas_height, rounded_clip);
+#else
+    return 0;
+#endif
+}
+
 void native_draw_svg_path_srgb(const float *data, int segment_count, int even_odd,
 	float transform_a, float transform_b, float transform_c, float transform_d,
 	float transform_e, float transform_f, float page_x, float page_y,
@@ -2182,6 +2198,7 @@ static CGContextRef native_svg_clip_build_context;
 static CGImageRef native_svg_clip_image;
 static uint64_t native_svg_clip_build_key;
 static CGRect native_svg_clip_rect;
+static float native_svg_clip_canvas_width;
 static int native_svg_clip_build_is_color;
 static int native_svg_clip_build_is_luminance;
 
@@ -2209,6 +2226,7 @@ static uint64_t native_svg_mask_cache_key(unsigned long long input_key,
 static int native_prepare_svg_mask(unsigned long long input_key, int content_mask,
 	float canvas_width, float canvas_height, float page_x, float page_y,
 	float scroll_y) {
+	native_svg_clip_canvas_width = canvas_width;
 	native_svg_clip_cache_clock++;
 	uint64_t key = native_svg_mask_cache_key(input_key, content_mask, canvas_width,
 		canvas_height, page_x, page_y, scroll_y);
@@ -4300,6 +4318,19 @@ void native_add_svg_content_mask_linear_gradient_path(const float *data,
 	if (native_svg_clip_image != NULL || native_svg_clip_build_context == NULL) {
 		return;
 	}
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	// The mask stops already include the path opacity. Use the same rasterizer
+	// as visible SVG gradients so their alpha coverage and interpolation agree.
+	if (ladybird_v_skia_draw_svg_linear_gradient_path(native_svg_clip_build_context,
+		data, segment_count, even_odd, transform_a, transform_b, transform_c,
+		transform_d, transform_e, transform_f, page_x, page_y, scroll_y,
+		native_svg_clip_canvas_width, canvas_height, stroke, stroke_width, line_cap,
+		line_join, miter_limit, start_x, start_y, end_x, end_y, gradient_a,
+		gradient_b, gradient_c, gradient_d, gradient_e, gradient_f, spread_method,
+		linear_color_space, stop_data, stop_count, 1.0f, 0)) {
+		return;
+	}
+#endif
 	native_draw_svg_linear_gradient_path_in_context(native_svg_clip_build_context,
 		data, segment_count, even_odd, transform_a, transform_b, transform_c,
 		transform_d, transform_e, transform_f, page_x, page_y, scroll_y,
@@ -4321,6 +4352,18 @@ void native_add_svg_content_mask_radial_gradient_path(const float *data,
 	if (native_svg_clip_image != NULL || native_svg_clip_build_context == NULL) {
 		return;
 	}
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	if (ladybird_v_skia_draw_svg_radial_gradient_path(native_svg_clip_build_context,
+		data, segment_count, even_odd, transform_a, transform_b, transform_c,
+		transform_d, transform_e, transform_f, page_x, page_y, scroll_y,
+		native_svg_clip_canvas_width, canvas_height, stroke, stroke_width, line_cap,
+		line_join, miter_limit, start_x, start_y, start_radius, end_x, end_y,
+		end_radius, gradient_a, gradient_b, gradient_c, gradient_d, gradient_e,
+		gradient_f, spread_method, linear_color_space, stop_data, stop_count,
+		1.0f, 0)) {
+		return;
+	}
+#endif
 	native_draw_svg_radial_gradient_path_in_context(native_svg_clip_build_context,
 		data, segment_count, even_odd, transform_a, transform_b, transform_c,
 		transform_d, transform_e, transform_f, page_x, page_y, scroll_y,
@@ -4506,6 +4549,83 @@ extern void ladybird_v_skia_set_unrounded_paint_color(const float *color);
 void native_set_unrounded_paint_color(const float *color) {
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
     ladybird_v_skia_set_unrounded_paint_color(color);
+#endif
+}
+
+int native_plain_rect_prefetch_enabled(void) {
+    static int enabled = -1;
+    if (enabled < 0) {
+        const char *opt_in = getenv("VOX_ENABLE_RECT_PREFETCH");
+        const char *value = getenv("VOX_DISABLE_RECT_PREFETCH");
+        enabled = opt_in && *opt_in && (!value || !*value);
+    }
+    return enabled;
+}
+
+void native_prefetch_plain_rects(const VoxGraphiteShape *shapes, int count,
+    float page_x, float page_y, float canvas_width, float canvas_height) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+    extern int ladybird_v_skia_prefetch_plain_rects(CGContextRef, const VoxGraphiteShape *,
+        int, float, float, float, float);
+    CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
+    if (context && context == native_font_compositing_context
+        && native_font_compositing_transparency_depth == 0)
+        ladybird_v_skia_prefetch_plain_rects(context, shapes, count,
+            page_x, page_y, canvas_width, canvas_height);
+#endif
+}
+
+// Keep the scratch context private to a balanced lookahead replay. The normal
+// command stream resumes on its original context before GPU cache submission.
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+static CGContextRef native_rect_prefetch_parent;
+#endif
+
+int native_rect_prefetch_scratch_enabled(void) {
+    const char *value = getenv("VOX_RECT_PREFETCH_SCRATCH");
+    return value && *value;
+}
+
+int native_begin_rect_prefetch_scratch(const VoxGraphiteShape *shapes, int count,
+    float page_x, float page_y, float canvas_width, float canvas_height) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+    extern CGContextRef ladybird_v_skia_begin_rect_prefetch_scratch(CGContextRef,
+        const VoxGraphiteShape *, int, float, float, float, float);
+    CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
+    if (native_rect_prefetch_parent || !context || context != native_font_compositing_context
+        || native_font_compositing_transparency_depth != 0) return 0;
+    CGContextRef scratch = ladybird_v_skia_begin_rect_prefetch_scratch(context, shapes, count,
+        page_x, page_y, canvas_width, canvas_height);
+    if (!scratch) return 0;
+    [NSGraphicsContext saveGraphicsState];
+    [NSGraphicsContext setCurrentContext:[NSGraphicsContext graphicsContextWithCGContext:scratch flipped:NO]];
+    native_rect_prefetch_parent = context;
+    native_font_compositing_context = scratch;
+    return 1;
+#else
+    return 0;
+#endif
+}
+
+int native_append_rect_prefetch_scratch(int index) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+    extern int ladybird_v_skia_append_rect_prefetch_scratch(int);
+    return native_rect_prefetch_parent && ladybird_v_skia_append_rect_prefetch_scratch(index);
+#else
+    return 0;
+#endif
+}
+
+int native_finish_rect_prefetch_scratch(int commit) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+    extern int ladybird_v_skia_finish_rect_prefetch_scratch(int);
+    if (!native_rect_prefetch_parent) return 0;
+    [NSGraphicsContext restoreGraphicsState];
+    native_font_compositing_context = native_rect_prefetch_parent;
+    native_rect_prefetch_parent = NULL;
+    return ladybird_v_skia_finish_rect_prefetch_scratch(commit);
+#else
+    return 0;
 #endif
 }
 

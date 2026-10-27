@@ -72,7 +72,7 @@ fn inline_piece_decoration_fragment(piece InlineBoxPiece, container_position css
 	border_colors := computed_border_colors(computed)
 	radii := paintable_box_border_radii_data(computed, piece.border_box_rect.width,
 		piece.border_box_rect.height)
-	shadows := computed_box_shadows(computed)
+	shadows := computed_box_shadows(node, computed)
 	mut outline_width := 0.0
 	mut outline_style := painting.LineStyle.none
 	mut outline_color := css.Color{}

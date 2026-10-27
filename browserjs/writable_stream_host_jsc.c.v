@@ -8,7 +8,6 @@ module browserjs
 import streams
 import webidl
 
-
 __global writable_stream_bindings_ = map[voidptr]&WritableStreamHost{}
 
 pub fn (mut host WritableStreamHost) install(mut runtime Runtime) ! {
@@ -19,8 +18,9 @@ pub fn (mut host WritableStreamHost) install(mut runtime Runtime) ! {
 		if voidptr(existing) == voidptr(&host) { return }
 		return error('WritableStream binding already belongs to this runtime')
 	}
-	if _ := abort_signal_bindings_[owner_handle] {} else {
-		mut abort_host := AbortSignalHost.create(host.document)!
+	if _ := abort_signal_bindings_[owner_handle] {
+	} else {
+		mut abort_host := AbortSignalHost.create_for_settings(host.settings)!
 		abort_host.install(mut runtime)!
 	}
 	host.runtime = &runtime
@@ -36,7 +36,10 @@ pub fn (mut host WritableStreamHost) install(mut runtime Runtime) ! {
 	})!
 	installer := runtime.evaluate_host_value(writable_stream_native_bootstrap)!
 	defer { runtime.release_javascript_value(installer) }
-	prototypes := runtime.call_javascript_function(installer, C.JSValueMakeUndefined(runtime.context), [create, operate])!
+	prototypes := runtime.call_javascript_function(installer, C.JSValueMakeUndefined(runtime.context), [
+		create,
+		operate,
+	])!
 	runtime.retain_javascript_value(prototypes)!
 	defer { runtime.release_javascript_value(prototypes) }
 	for index, kind in [WritableStreamHostKind.stream, .default_writer, .default_controller] {
@@ -82,19 +85,27 @@ fn (mut host WritableStreamHost) sink_callback(object voidptr, name string) !web
 		mut host := unsafe { &WritableStreamHost(host_handle) }
 		return host.value(value)
 	})!
-	return webidl.CallbackConversion{callback: callback}
+	return webidl.CallbackConversion{ callback: callback }
 }
 
 fn (mut host WritableStreamHost) strategy(object voidptr) !streams.QueuingStrategy {
-	if C.JSValueIsUndefined(host.runtime.context, object) || C.JSValueIsNull(host.runtime.context, object) { return streams.QueuingStrategy{} }
-	if !C.JSValueIsObject(host.runtime.context, object) { return error('TypeError: strategy must be a dictionary') }
+	if C.JSValueIsUndefined(host.runtime.context, object) || C.JSValueIsNull(host.runtime.context, object) {
+		return streams.QueuingStrategy{}
+	}
+	if !C.JSValueIsObject(host.runtime.context, object) {
+		return error('TypeError: strategy must be a dictionary')
+	}
 	hwm_value := host.runtime.binding_property(object, 'highWaterMark')!
 	mut high_water_mark := ?f64(none)
-	if !C.JSValueIsUndefined(host.runtime.context, hwm_value) { high_water_mark = host.number(hwm_value)! }
+	if !C.JSValueIsUndefined(host.runtime.context, hwm_value) {
+		high_water_mark = host.number(hwm_value)!
+	}
 	size := host.runtime.binding_property(object, 'size')!
 	mut size_algorithm := ?streams.ValueSizeAlgorithm(none)
 	if !C.JSValueIsUndefined(host.runtime.context, size) {
-		if !C.JSValueIsObject(host.runtime.context, size) || !C.JSObjectIsFunction(host.runtime.context, size) { return error('TypeError: size must be callable') }
+		if !C.JSValueIsObject(host.runtime.context, size) || !C.JSObjectIsFunction(host.runtime.context, size) {
+			return error('TypeError: size must be callable')
+		}
 		host_handle := voidptr(&host)
 		callback := host.runtime.webidl_callback(size, fn [host_handle] (value webidl.Value) !voidptr {
 			mut host := unsafe { &WritableStreamHost(host_handle) }
@@ -107,7 +118,7 @@ fn (mut host WritableStreamHost) strategy(object voidptr) !streams.QueuingStrate
 			return webidl.invoke_callback(callback, webidl.undefined_value(), [host.runtime.webidl_value(actual)!])
 		}
 	}
-	return streams.QueuingStrategy{high_water_mark: high_water_mark, size_value: size_algorithm}
+	return streams.QueuingStrategy{ high_water_mark: high_water_mark, size_value: size_algorithm }
 }
 
 fn (mut host WritableStreamHost) construct(args []voidptr) !voidptr {
@@ -119,7 +130,7 @@ fn (mut host WritableStreamHost) construct(args []voidptr) !voidptr {
 		return error('TypeError: underlyingSink must be an object')
 	}
 	strategy := host.strategy(host.argument(args, 1))!
-	mut sink := streams.UnderlyingSink{underlying_sink_value: webidl.null_value()}
+	mut sink := streams.UnderlyingSink{ underlying_sink_value: webidl.null_value() }
 	if !C.JSValueIsUndefined(host.runtime.context, object) {
 		// Source generated dictionary conversion visits member names alphabetically.
 		abort := host.sink_callback(object, 'abort')!
@@ -129,14 +140,16 @@ fn (mut host WritableStreamHost) construct(args []voidptr) !voidptr {
 		write := host.sink_callback(object, 'write')!
 		// Reserved any-valued type is checked for presence without coercing it.
 		mut type_ := ?webidl.Value(none)
-		if !C.JSValueIsUndefined(host.runtime.context, type_value) { type_ = host.runtime.webidl_value(type_value)! }
+		if !C.JSValueIsUndefined(host.runtime.context, type_value) {
+			type_ = host.runtime.webidl_value(type_value)!
+		}
 		sink = streams.UnderlyingSink{
 			underlying_sink_value: host.runtime.webidl_value(object)!
-			abort_callback: abort.callback
-			close_callback: close.callback
-			start_callback: start.callback
-			write_callback: write.callback
-			type_value: type_
+			abort_callback:        abort.callback
+			close_callback:        close.callback
+			start_callback:        start.callback
+			write_callback:        write.callback
+			type_value:            type_
 		}
 	}
 	stream := host.settings.create_writable_stream(sink, strategy)!
@@ -148,10 +161,12 @@ fn (mut host WritableStreamHost) wrap(kind WritableStreamHostKind, native voidpt
 		if existing.kind != kind { return error('WritableStream native interface mismatch') }
 		return existing.object
 	}
-	mut record := &WritableStreamHostRecord{host: host, kind: kind, native: native}
+	mut record := &WritableStreamHostRecord{ host: host, kind: kind, native: native }
 	object := host.runtime.make_native_stream_wrapper(record)!
 	mut prototype := host.prototypes[kind] or { return error('WritableStream prototype is missing') }
-	if desired_prototype != unsafe { nil } && C.JSValueIsObject(host.runtime.context, desired_prototype) { prototype = desired_prototype }
+	if desired_prototype != unsafe { nil } && C.JSValueIsObject(host.runtime.context, desired_prototype) {
+		prototype = desired_prototype
+	}
 	C.JSObjectSetPrototype(host.runtime.context, object, prototype)
 	record.object = object
 	host.records[native] = record
@@ -161,9 +176,13 @@ fn (mut host WritableStreamHost) wrap(kind WritableStreamHostKind, native voidpt
 fn (host &WritableStreamHost) record(value voidptr, kind WritableStreamHostKind) !&WritableStreamHostRecord {
 	if host.closed { return error('WritableStream binding is closed') }
 	data := host.runtime.native_stream_wrapper_record(value)
-	if data == unsafe { nil } { return error('TypeError: Illegal WritableStream interface receiver') }
+	if data == unsafe { nil } {
+		return error('TypeError: Illegal WritableStream interface receiver')
+	}
 	record := unsafe { &WritableStreamHostRecord(data) }
-	if voidptr(record.host) != voidptr(host) || record.kind != kind { return error('TypeError: Illegal WritableStream interface receiver') }
+	if voidptr(record.host) != voidptr(host) || record.kind != kind {
+		return error('TypeError: Illegal WritableStream interface receiver')
+	}
 	return record
 }
 
@@ -185,7 +204,8 @@ fn (runtime &Runtime) writable_stream_host() ?&WritableStreamHost {
 fn (mut host WritableStreamHost) promise(native &webidl.Promise) !voidptr {
 	host_handle := voidptr(&host)
 	return host.runtime.javascript_webidl_promise_with_converters(native, fn [host_handle] (value webidl.Value) !voidptr {
-		mut host := unsafe { &WritableStreamHost(host_handle) }; return host.value(value)
+		mut host := unsafe { &WritableStreamHost(host_handle) }
+		return host.value(value)
 	}, fn [host_handle] (value webidl.Value) !voidptr {
 		mut host := unsafe { &WritableStreamHost(host_handle) }
 		if value.kind == .string_ && (value.string_value.starts_with('TypeError:') || value.string_value.starts_with('RangeError:')) {
@@ -206,16 +226,22 @@ fn (mut host WritableStreamHost) value(value webidl.Value) !voidptr {
 		.number { C.JSValueMakeNumber(host.runtime.context, value.number_value) }
 		.string_ { host.runtime.binding_string(value.string_value) }
 		.platform_object {
-			if value.platform_interfaces.contains('WritableStreamDefaultController') { return host.wrap(.default_controller, voidptr(value.opaque_id), unsafe { nil }) }
+			if value.platform_interfaces.contains('WritableStreamDefaultController') {
+				return host.wrap(.default_controller, voidptr(value.opaque_id), unsafe { nil })
+			}
 			return error('Missing actual writable platform wrapper')
 		}
-		.promise { host.promise(value.promise_value_ or { return error('Missing actual writable Promise capability') })! }
+		.promise {
+			host.promise(value.promise_value_ or { return error('Missing actual writable Promise capability') })!
+		}
 		else { return error('Value requires its actual writable JavaScript wrapper') }
 	}
 }
 
 fn (mut host WritableStreamHost) stream_value(value streams.Value) !voidptr {
-	if value.kind == .runtime_value { return host.value(value.runtime_value_ or { return error('Missing actual writable chunk') }) }
+	if value.kind == .runtime_value {
+		return host.value(value.runtime_value_ or { return error('Missing actual writable chunk') })
+	}
 	return match value.kind {
 		.undefined { host.value(webidl.undefined_value())! }
 		.null_ { host.value(webidl.null_value())! }
@@ -236,7 +262,9 @@ fn (mut host WritableStreamHost) operate(args []voidptr) !voidptr {
 		mut stream := unsafe { &streams.WritableStream(record.native) }
 		match operation {
 			'stream.locked' { return C.JSValueMakeBoolean(host.runtime.context, stream.locked()) }
-			'stream.abort' { return host.promise(stream.abort(streams.runtime_value(host.runtime.webidl_value(argument)!)).as_webidl_promise()) }
+			'stream.abort' {
+				return host.promise(stream.abort(streams.runtime_value(host.runtime.webidl_value(argument)!)).as_webidl_promise())
+			}
 			'stream.close' { return host.promise(stream.close().as_webidl_promise()) }
 			'stream.getWriter', 'stream.writerConstructor' {
 				writer := stream.get_writer()!
@@ -253,11 +281,23 @@ fn (mut host WritableStreamHost) operate(args []voidptr) !voidptr {
 		match operation {
 			'writer.closed' { return host.promise(writer.closed().as_webidl_promise()) }
 			'writer.ready' { return host.promise(writer.ready().as_webidl_promise()) }
-			'writer.desiredSize' { if size := writer.desired_size_for_bindings()!.value { return C.JSValueMakeNumber(host.runtime.context, size) }; return C.JSValueMakeNull(host.runtime.context) }
-			'writer.write' { return host.promise(writer.write(streams.runtime_value(host.runtime.webidl_value(argument)!)).as_webidl_promise()) }
-			'writer.abort' { return host.promise(writer.abort(streams.runtime_value(host.runtime.webidl_value(argument)!)).as_webidl_promise()) }
+			'writer.desiredSize' {
+				if size := writer.desired_size_for_bindings()!.value {
+					return C.JSValueMakeNumber(host.runtime.context, size)
+				}
+				return C.JSValueMakeNull(host.runtime.context)
+			}
+			'writer.write' {
+				return host.promise(writer.write(streams.runtime_value(host.runtime.webidl_value(argument)!)).as_webidl_promise())
+			}
+			'writer.abort' {
+				return host.promise(writer.abort(streams.runtime_value(host.runtime.webidl_value(argument)!)).as_webidl_promise())
+			}
 			'writer.close' { return host.promise(writer.close().as_webidl_promise()) }
-			'writer.releaseLock' { writer.release_lock(); return C.JSValueMakeUndefined(host.runtime.context) }
+			'writer.releaseLock' {
+				writer.release_lock()
+				return C.JSValueMakeUndefined(host.runtime.context)
+			}
 			else {}
 		}
 	}
@@ -265,8 +305,13 @@ fn (mut host WritableStreamHost) operate(args []voidptr) !voidptr {
 		record := host.record(object, .default_controller)!
 		mut controller := unsafe { &streams.WritableStreamDefaultController(record.native) }
 		match operation {
-			'controller.signal' { return host.runtime.javascript_abort_signal(controller.signal().dom_signal()) }
-			'controller.error' { streams.writable_stream_default_controller_error_if_needed(mut controller, streams.runtime_value(host.runtime.webidl_value(argument)!)); return C.JSValueMakeUndefined(host.runtime.context) }
+			'controller.signal' {
+				return host.runtime.javascript_abort_signal(controller.signal().dom_signal())
+			}
+			'controller.error' {
+				streams.writable_stream_default_controller_error_if_needed(mut controller, streams.runtime_value(host.runtime.webidl_value(argument)!))
+				return C.JSValueMakeUndefined(host.runtime.context)
+			}
 			else {}
 		}
 	}

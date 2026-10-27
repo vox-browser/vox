@@ -67,8 +67,8 @@ fn test_fading_context_refreshes_descendant_alpha_but_keeps_other_phase_storage(
 		parent_commands := commands.filter(it.color == 'rgb(51 52 53)')
 		child_commands := commands.filter(it.color == 'rgb(61 62 63)')
 		assert parent_commands.len == 1 && child_commands.len == 1
-		assert child_commands[0].opacity == parent_commands[0].opacity * .5
-		assert parent_commands[0].opacity != .8 || timestamp == 2000
+		assert child_commands[0].opacity == parent_commands[0].opacity * 0.5
+		assert parent_commands[0].opacity != 0.8 || timestamp == 2000
 		assert compositor_command_snapshot(initial_commands) == initial_snapshot
 		local_dump := local.dump()
 		local_commands := display_list_commands(local)

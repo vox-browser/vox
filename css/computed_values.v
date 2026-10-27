@@ -382,6 +382,33 @@ pub fn resolve_anonymous_block_values_for_document(source &ComputedProperties, d
 	return resolve_computed_values_for_document_impl(style, document, snapshot)
 }
 
+fn can_reuse_compositor_geometry(style &ComputedProperties, document &dom.Document,
+	previous &ComputedGeometryProvenance) bool {
+	computer := css_style_computer_for(document)
+	if !computer.animation_layout_compositor_only_
+		|| voidptr(computer.animation_layout_style_) != voidptr(style)
+		|| !style.computed_values_resolved_ || style.line_height_ != none
+		|| style.layout_coordinate_scale() != 1 || document.layout_coordinate_scale() != 1
+		|| previous == unsafe { nil } || previous.generation == 0
+		|| previous.raw_generation == 0 || !previous.compositor_only_animations
+		|| voidptr(previous.document) != voidptr(document) {
+		return false
+	}
+	context := ColorResolutionContext.for_computed_properties(style, document)
+	// Compatibility color values can parse and yield too. A callback may
+	// replace or invalidate the cache without changing the raw graph revision.
+	if voidptr(style.geometry_provenance()) != voidptr(previous)
+		|| !previous.matches_context(style) || previous.token.generation == 0
+		|| previous.raw_generation != previous.token.raw_generation
+		|| !style.has_only_compositor_animated_properties() {
+		return false
+	}
+	cache := style.computed_layout_cache()
+	return cache.computed_values_color_ == (context.current_color or { Color{0, 0, 0, 255} })
+		&& cache.computed_values_color_scheme_ == (context.color_scheme or { PreferredColorScheme.light })
+		&& cache.computed_values_accent_color_ == context.accent_color
+}
+
 fn resolve_computed_values_for_document_impl(style &ComputedProperties, document &dom.Document, anonymous_source ?AnonymousComputedGeometrySource) &ComputedValues {
 	// Hidden SVG resources can first resolve while a paint projection is
 	// entered. Every cache leaf and its provenance must share the durable
@@ -459,6 +486,10 @@ fn resolve_computed_values_for_document_impl(style &ComputedProperties, document
 	// Resolve counter definitions too before the pure geometry/color write
 	// scope: loading a custom registry can parse CSS and yield to native work.
 	resolved_list_style := style.list_style_type(document)
+	// Counter/font discovery can run callbacks. Check the saved raw/context
+	// proof only after discovery, immediately before the pure cache write.
+	reuse_compositor := anonymous_source == none
+		&& can_reuse_compositor_geometry(style, document, previous_provenance)
 	// Font discovery is complete before the pure geometry/color write scope.
 	mut initial_snapshot := begin_initial_layout_snapshot(computed_style, document)
 	owns_cache_write := computed_style.begin_computed_layout_cache_write()
@@ -469,6 +500,19 @@ fn resolve_computed_values_for_document_impl(style &ComputedProperties, document
 		computed_style.publish_computed_geometry_provenance(previous_provenance)
 		computed_style.finish_computed_layout_cache_write(owns_cache_write)
 		initial_snapshot.publish(mut computed_style)
+	}
+	if reuse_compositor {
+		mut values := unsafe { &MutableComputedValues(style) }
+		// Overwrite the whole domain, including removed animation properties,
+		// whose effective getters now return the raw cascade again.
+		values.set_opacity(style.opacity())
+		values.set_transformations(style.transformations())
+		values.set_translate(style.translate())
+		values.set_rotate(style.rotate())
+		values.set_scale(style.scale())
+		values.set_transform_origin(style.transform_origin())
+		values.set_list_style_type(resolved_list_style)
+		return unsafe { &ComputedValues(style) }
 	}
 	values := if source := resolved_anonymous_source {
 		resolve_anonymous_computed_geometry(style, source)

@@ -2087,11 +2087,17 @@ fn set_computed_property_flag(mut flags [computed_property_flag_byte_count]u8, p
 
 pub fn (mut c ComputedProperties) set_property_important(property_id PropertyID, important Important) {
 	computed_interpolation_verify_longhand_property(property_id)
+	if c.is_property_important(property_id) != (important == .yes) {
+		c.note_raw_computed_property_graph_mutation()
+	}
 	set_computed_property_flag(mut c.property_important_, property_id, important == .yes)
 }
 
 pub fn (mut c ComputedProperties) set_property_inherited(property_id PropertyID, inherited ComputedPropertyInheritance) {
 	computed_interpolation_verify_longhand_property(property_id)
+	if c.is_property_inherited(property_id) != (inherited == .yes) {
+		c.note_raw_computed_property_graph_mutation()
+	}
 	set_computed_property_flag(mut c.property_inherited_, property_id, inherited == .yes)
 }
 
@@ -2112,7 +2118,7 @@ pub fn (mut c ComputedProperties) set_property(property_id PropertyID, value &do
 }
 
 pub fn (mut c ComputedProperties) set_property_without_modifying_flags(property_id PropertyID, value &dom.StyleValue) {
-	c.note_computed_property_graph_mutation()
+	c.note_raw_computed_property_graph_mutation()
 	computed_interpolation_verify_longhand_property(property_id)
 	index := int(property_id) - int(first_longhand_property_id())
 	c.set_raw_property_at_index(index, value)
@@ -2169,7 +2175,7 @@ pub fn (c &ComputedProperties) property(property_id PropertyID, return_animated_
 }
 
 pub fn (mut c ComputedProperties) revert_property(property_id PropertyID, style_for_revert &ComputedProperties) {
-	c.note_computed_property_graph_mutation()
+	c.note_raw_computed_property_graph_mutation()
 	computed_interpolation_verify_longhand_property(property_id)
 	index := int(property_id) - int(first_longhand_property_id())
 	c.set_raw_property_at_index(index, style_for_revert.raw_property_at_index(index))
@@ -10862,6 +10868,9 @@ pub mut:
 	animation_samples_         &AnimationSampleStorage = unsafe { nil }
 	sampling_animation_frame_  bool
 	animation_layout_style_    &ComputedProperties = unsafe { nil }
+	// Only the exact target being installed may reuse its non-compositor slots.
+	// Arena rotation always rebuilds them before old samples can be retired.
+	animation_layout_compositor_only_ bool
 }
 
 pub fn StyleComputer.new(document &dom.Document) &StyleComputer {
@@ -11718,7 +11727,7 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 		if can_reuse_default_computed_value {
 			cached_default := computed_interpolation_default_computed_value_cache[property_index]
 			if cached_default != unsafe { nil } {
-				properties.note_computed_property_graph_mutation()
+				properties.note_raw_computed_property_graph_mutation()
 				properties.set_raw_property_at_index(property_index, cached_default)
 				continue
 			}

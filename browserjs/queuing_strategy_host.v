@@ -12,8 +12,8 @@ enum QueuingStrategyHostKind {
 
 @[heap]
 struct QueuingStrategyHostRecord {
-	host &QueuingStrategyHost
-	kind QueuingStrategyHostKind
+	host   &QueuingStrategyHost
+	kind   QueuingStrategyHostKind
 	native voidptr
 mut:
 	object voidptr
@@ -21,16 +21,15 @@ mut:
 
 @[heap]
 pub struct QueuingStrategyHost {
-	document &dom.Document
 	settings &html.EnvironmentSettingsObject
 mut:
-	scope &html.WindowOrWorkerGlobalScopeMixin
-	runtime &Runtime = unsafe { nil }
-	records map[voidptr]&QueuingStrategyHostRecord
-	prototypes map[QueuingStrategyHostKind]voidptr
-	functions map[voidptr]voidptr
+	scope              &html.WindowOrWorkerGlobalScopeMixin
+	runtime            &Runtime = unsafe { nil }
+	records            map[voidptr]&QueuingStrategyHostRecord
+	prototypes         map[QueuingStrategyHostKind]voidptr
+	functions          map[voidptr]voidptr
 	byte_length_get_v_ voidptr
-	closed bool
+	closed             bool
 }
 
 pub fn QueuingStrategyHost.create(document &dom.Document) !&QueuingStrategyHost {
@@ -39,8 +38,12 @@ pub fn QueuingStrategyHost.create(document &dom.Document) !&QueuingStrategyHost 
 		_ := html.WindowModel.create_top_level(document, none, '')!
 		settings = document.relevant_settings_object()
 	}
-	owner := unsafe { &html.EnvironmentSettingsObject(settings) }
-	return &QueuingStrategyHost{document: document, settings: owner, scope: owner.window_or_worker_global_scope()!}
+	return QueuingStrategyHost.create_for_settings(unsafe { &html.EnvironmentSettingsObject(settings) })!
+}
+
+// Constructor state belongs to the actual Window or Worker environment.
+pub fn QueuingStrategyHost.create_for_settings(settings &html.EnvironmentSettingsObject) !&QueuingStrategyHost {
+	return &QueuingStrategyHost{ settings: settings, scope: settings.window_or_worker_global_scope()! }
 }
 
 pub fn (mut host QueuingStrategyHost) close() {

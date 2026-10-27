@@ -146,5 +146,16 @@ fn test_socks_proxy_carries_navigation_redirects_binary_data_and_verified_tls() 
 	if response := get(adblock.Request{ url: '${address}/binary', source_url: target, request_type: 'image' }, ca) {
 		assert false, 'scoped proxy was bypassed: ${response.url}'
 	}
+	// A Settings Apply in another window must repair this process's stale
+	// route before the next navigation, without restarting or reinitializing.
+	profile := os.join_path(directory, 'settings.json')
+	external_save := '${profile}.other-window'
+	os.write_file(external_save, json2.encode(browsersettings.Proxy{
+		enabled: true
+		port: ports.proxy_port.str()
+		sites: 'remote-dns.invalid'
+	}))!
+	os.rename_dir(external_save, profile)!
+	assert get(adblock.Request{url: '${address}/binary', source_url: address, request_type: 'main_frame'}, ca)!.response.body.bytes() == [u8(0), 1, 127, 128, 255, 0, 42]
 	http.close_idle_connections()
 }

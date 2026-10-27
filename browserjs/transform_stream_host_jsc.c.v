@@ -8,7 +8,6 @@ module browserjs
 import streams
 import webidl
 
-
 __global transform_stream_bindings_ = map[voidptr]&TransformStreamHost{}
 
 pub fn (mut host TransformStreamHost) install(mut runtime Runtime) ! {
@@ -19,12 +18,15 @@ pub fn (mut host TransformStreamHost) install(mut runtime Runtime) ! {
 		if voidptr(existing) == voidptr(&host) { return }
 		return error('TransformStream binding already belongs to this runtime')
 	}
-	if _ := runtime.readable_stream_host() {} else {
-		mut readable := ReadableStreamHost.create(host.document)!
+	if _ := runtime.readable_stream_host() {
+	} else {
+		mut readable := ReadableStreamHost.create_for_settings(host.settings)!
 		readable.install(mut runtime)!
 	}
-	if existing := runtime.writable_stream_host() { host.writable_host = existing } else {
-		mut writable := WritableStreamHost.create(host.document)!
+	if existing := runtime.writable_stream_host() {
+		host.writable_host = existing
+	} else {
+		mut writable := WritableStreamHost.create_for_settings(host.settings)!
 		writable.install(mut runtime)!
 		host.writable_host = writable
 	}
@@ -40,7 +42,10 @@ pub fn (mut host TransformStreamHost) install(mut runtime Runtime) ! {
 	})!
 	installer := runtime.evaluate_host_value(transform_stream_native_bootstrap)!
 	defer { runtime.release_javascript_value(installer) }
-	prototypes := runtime.call_javascript_function(installer, C.JSValueMakeUndefined(runtime.context), [create, operate])!
+	prototypes := runtime.call_javascript_function(installer, C.JSValueMakeUndefined(runtime.context), [
+		create,
+		operate,
+	])!
 	runtime.retain_javascript_value(prototypes)!
 	defer { runtime.release_javascript_value(prototypes) }
 	for index, kind in [TransformStreamHostKind.stream, .default_controller] {
@@ -77,33 +82,39 @@ fn (mut host TransformStreamHost) transformer_callback(object voidptr, name stri
 		mut host := unsafe { &TransformStreamHost(host_handle) }
 		return host.value(value)
 	})!
-	return webidl.CallbackConversion{callback: callback}
+	return webidl.CallbackConversion{ callback: callback }
 }
 
 fn (mut host TransformStreamHost) construct(args []voidptr) !voidptr {
 	if host.closed { return error('TransformStream binding is closed') }
 	object := host.argument(args, 0)
-	if !C.JSValueIsUndefined(host.runtime.context, object) && !C.JSValueIsObject(host.runtime.context, object) { return error('TypeError: transformer must be an object') }
+	if !C.JSValueIsUndefined(host.runtime.context, object) && !C.JSValueIsObject(host.runtime.context, object) {
+		return error('TypeError: transformer must be an object')
+	}
 	writable_strategy := host.writable_host.strategy(host.argument(args, 1))!
 	readable_strategy := host.writable_host.strategy(host.argument(args, 2))!
-	mut transformer := streams.Transformer{transformer_value: webidl.null_value()}
+	mut transformer := streams.Transformer{ transformer_value: webidl.null_value() }
 	if !C.JSValueIsUndefined(host.runtime.context, object) {
 		cancel := host.transformer_callback(object, 'cancel')!
 		flush := host.transformer_callback(object, 'flush')!
 		readable_type := host.runtime.binding_property(object, 'readableType')!
 		mut readable_value := ?webidl.Value(none)
-		if !C.JSValueIsUndefined(host.runtime.context, readable_type) { readable_value = host.runtime.webidl_value(readable_type)! }
+		if !C.JSValueIsUndefined(host.runtime.context, readable_type) {
+			readable_value = host.runtime.webidl_value(readable_type)!
+		}
 		start := host.transformer_callback(object, 'start')!
 		transform := host.transformer_callback(object, 'transform')!
 		writable_type := host.runtime.binding_property(object, 'writableType')!
 		mut writable_value := ?webidl.Value(none)
-		if !C.JSValueIsUndefined(host.runtime.context, writable_type) { writable_value = host.runtime.webidl_value(writable_type)! }
+		if !C.JSValueIsUndefined(host.runtime.context, writable_type) {
+			writable_value = host.runtime.webidl_value(writable_type)!
+		}
 		transformer = streams.Transformer{
-			transformer_value: host.runtime.webidl_value(object)!
-			cancel_callback: cancel.callback
-			flush_callback: flush.callback
-			start_callback: start.callback
-			transform_callback: transform.callback
+			transformer_value:   host.runtime.webidl_value(object)!
+			cancel_callback:     cancel.callback
+			flush_callback:      flush.callback
+			start_callback:      start.callback
+			transform_callback:  transform.callback
 			readable_type_value: readable_value
 			writable_type_value: writable_value
 		}
@@ -124,10 +135,12 @@ fn (mut host TransformStreamHost) wrap(kind TransformStreamHostKind, native void
 		if existing.kind != kind { return error('TransformStream native interface mismatch') }
 		return existing.object
 	}
-	mut record := &TransformStreamHostRecord{host: host, kind: kind, native: native}
+	mut record := &TransformStreamHostRecord{ host: host, kind: kind, native: native }
 	object := host.runtime.make_native_stream_wrapper(record)!
 	mut prototype := host.prototypes[kind] or { return error('TransformStream prototype is missing') }
-	if desired_prototype != unsafe { nil } && C.JSValueIsObject(host.runtime.context, desired_prototype) { prototype = desired_prototype }
+	if desired_prototype != unsafe { nil } && C.JSValueIsObject(host.runtime.context, desired_prototype) {
+		prototype = desired_prototype
+	}
 	C.JSObjectSetPrototype(host.runtime.context, object, prototype)
 	record.object = object
 	host.records[native] = record
@@ -137,9 +150,13 @@ fn (mut host TransformStreamHost) wrap(kind TransformStreamHostKind, native void
 fn (host &TransformStreamHost) record(value voidptr, kind TransformStreamHostKind) !&TransformStreamHostRecord {
 	if host.closed { return error('TransformStream binding is closed') }
 	data := host.runtime.native_stream_wrapper_record(value)
-	if data == unsafe { nil } { return error('TypeError: Illegal TransformStream interface receiver') }
+	if data == unsafe { nil } {
+		return error('TypeError: Illegal TransformStream interface receiver')
+	}
 	record := unsafe { &TransformStreamHostRecord(data) }
-	if voidptr(record.host) != voidptr(host) || record.kind != kind { return error('TypeError: Illegal TransformStream interface receiver') }
+	if voidptr(record.host) != voidptr(host) || record.kind != kind {
+		return error('TypeError: Illegal TransformStream interface receiver')
+	}
 	return record
 }
 
@@ -173,10 +190,24 @@ fn (mut host TransformStreamHost) operate(args []voidptr) !voidptr {
 		record := host.record(object, .default_controller)!
 		mut controller := unsafe { &streams.TransformStreamDefaultController(record.native) }
 		match operation {
-			'controller.desiredSize' { if size := controller.desired_size() { return C.JSValueMakeNumber(host.runtime.context, size) }; return C.JSValueMakeNull(host.runtime.context) }
-			'controller.enqueue' { controller.enqueue(streams.runtime_value(host.runtime.webidl_value(argument)!))!; return C.JSValueMakeUndefined(host.runtime.context) }
-			'controller.error' { streams.transform_stream_default_controller_error(mut controller, streams.runtime_value(host.runtime.webidl_value(argument)!)); return C.JSValueMakeUndefined(host.runtime.context) }
-			'controller.terminate' { streams.transform_stream_default_controller_terminate(mut controller); return C.JSValueMakeUndefined(host.runtime.context) }
+			'controller.desiredSize' {
+				if size := controller.desired_size() {
+					return C.JSValueMakeNumber(host.runtime.context, size)
+				}
+				return C.JSValueMakeNull(host.runtime.context)
+			}
+			'controller.enqueue' {
+				controller.enqueue(streams.runtime_value(host.runtime.webidl_value(argument)!))!
+				return C.JSValueMakeUndefined(host.runtime.context)
+			}
+			'controller.error' {
+				streams.transform_stream_default_controller_error(mut controller, streams.runtime_value(host.runtime.webidl_value(argument)!))
+				return C.JSValueMakeUndefined(host.runtime.context)
+			}
+			'controller.terminate' {
+				streams.transform_stream_default_controller_terminate(mut controller)
+				return C.JSValueMakeUndefined(host.runtime.context)
+			}
 			else {}
 		}
 	}

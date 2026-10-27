@@ -3,6 +3,7 @@ module html
 import dom
 import fetch
 import http
+import platform
 
 @[heap]
 struct HTMLFetchTaskObservation {
@@ -65,11 +66,12 @@ fn resolve_html_pending_fetch(state &HTMLFetchTaskObservation) {
 }
 
 fn drain_html_fetch_continuations(mut queue TaskQueue) {
+	mut plugin := platform.EventLoopPlugin.the()
 	for i := 0; i < 10; i++ {
-		task := queue.last_added_task() or { return }
-		if task.source == .networking { return }
-		mut next := queue.take_first_runnable() or { panic('pending continuation was not runnable') }
-		next.execute()
+		if task := queue.last_added_task() {
+			if task.source == .networking { return }
+		}
+		assert plugin.run_one_deferred()
 	}
 	panic('fetch continuation chain did not reach handover')
 }
@@ -82,7 +84,7 @@ fn test_fetch_pending_continuations_and_response_handover_use_the_real_owner_que
 	assert queue.is_empty()
 	resolve_html_pending_fetch(state)
 	assert state.callbacks.len == 0
-	assert queue.last_added_task()?.source == .unspecified
+	assert queue.is_empty()
 	drain_html_fetch_continuations(mut queue)
 	assert state.callbacks.len == 0
 	assert queue.last_added_task()?.source == .networking
@@ -92,6 +94,87 @@ fn test_fetch_pending_continuations_and_response_handover_use_the_real_owner_que
 	assert state.callbacks == ['response']
 	assert controller.ongoing_task_count() == 0
 	assert queue.is_empty()
+}
+
+fn test_pending_fetch_progresses_on_the_native_queue_while_html_execution_is_paused() {
+	settings, mut owner := html_fetch_settings()
+	state := &HTMLFetchTaskObservation{}
+	controller := start_html_pending_fetch(settings, state)
+	queue_a_task(.timer_task, owner, none, fn [state] () {
+		mut observation := unsafe { &HTMLFetchTaskObservation(state) }
+		observation.callbacks << 'timer'
+	})
+	owner.execution_paused = true
+	defer { owner.execution_paused = false }
+	resolve_html_pending_fetch(state)
+	mut queue := owner.task_queue()
+	assert queue.take_first_runnable() == none
+	drain_html_fetch_continuations(mut queue)
+	assert queue.last_added_task()?.source == .networking
+	assert queue.take_first_runnable() == none
+	assert state.callbacks == []
+	assert controller.ongoing_task_count() == 1
+	owner.execution_paused = false
+	timer := queue.take_first_runnable() or { panic('missing original timer task') }
+	assert timer.source == .timer_task
+	timer.execute()
+	network := queue.take_first_runnable() or { panic('missing networking handover') }
+	network.execute()
+	assert state.callbacks == ['timer', 'response']
+	assert controller.ongoing_task_count() == 0
+}
+
+fn test_parallel_fetch_native_continuation_retains_its_allocation_owner_until_delivery() {
+	state := &HTMLFetchTaskObservation{}
+	mut storage := platform.new_retained_arena('pending fetch continuation')
+	storage.add_cleanup(fn [state] () {
+		mut observation := unsafe { &HTMLFetchTaskObservation(state) }
+		observation.callbacks << 'released'
+	})
+	mut scope := storage.enter()
+	queue := ParallelQueue.create()
+	text := 'native continuation'.clone()
+	queue.fetch_request_client_deferred_invoke(fn [state, text] () {
+		mut observation := unsafe { &HTMLFetchTaskObservation(state) }
+		observation.callbacks << text
+	})
+	scope.finish()
+	storage.release()
+	$if prealloc { assert state.callbacks == [] }
+	mut plugin := platform.EventLoopPlugin.the()
+	assert plugin.run_one_deferred()
+	$if prealloc {
+		assert state.callbacks == ['native continuation', 'released']
+	} $else {
+		assert state.callbacks == ['released', 'native continuation']
+	}
+}
+
+fn test_fetch_native_continuation_retains_document_storage_when_resolved_outside_its_arena() {
+	$if !prealloc { return }
+	settings, _ := html_fetch_settings()
+	mut document := settings.responsible_document() or { panic('missing document') }
+	document.enable_native_storage()
+	state := &HTMLFetchTaskObservation{}
+	mut storage := document.native_storage()
+	storage.add_cleanup(fn [state] () {
+		mut observation := unsafe { &HTMLFetchTaskObservation(state) }
+		observation.callbacks << 'released'
+	})
+	mut scope := document.enter_native_storage()
+	text := 'document continuation'.clone()
+	callback := fn [state, text] () {
+		mut observation := unsafe { &HTMLFetchTaskObservation(state) }
+		observation.callbacks << text
+	}
+	scope.finish()
+	assert platform.current_retained_arena() == unsafe { nil }
+	settings.fetch_request_client_deferred_invoke(callback)
+	document.release_native_storage()
+	assert state.callbacks == []
+	mut plugin := platform.EventLoopPlugin.the()
+	assert plugin.run_one_deferred()
+	assert state.callbacks == ['document continuation', 'released']
 }
 
 fn test_stopping_fetch_removes_the_actual_queued_networking_callback() {

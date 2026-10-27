@@ -75,3 +75,35 @@ fn test_background_clip_culling_keeps_nested_filter_inputs_without_leaf_metadata
 	depth = background_clip_effect_depth_after_command(depth, 'end_css_filter_layer')
 	assert !background_image_clip_intersects_viewport(&command, 0, 88, 1024, 88, 856, depth > 0)
 }
+
+fn test_background_clip_effect_scope_includes_masks_around_rounded_svg_images() {
+	// A CSS mask isolates coincident clips into separate paint stages.
+	mut depth := background_clip_effect_depth_after_command(0, 'begin_svg_mask_layer')
+	assert depth == 1
+	depth = background_clip_effect_depth_after_command(depth, 'draw_background_image')
+	assert depth == 1
+	depth = background_clip_effect_depth_after_command(depth, 'begin_css_filter_layer')
+	depth = background_clip_effect_depth_after_command(depth, 'begin_svg_mask_layer')
+	assert depth == 3
+	depth = background_clip_effect_depth_after_command(depth, 'end_svg_mask_layer')
+	depth = background_clip_effect_depth_after_command(depth, 'end_css_filter_layer')
+	assert depth == 1
+	depth = background_clip_effect_depth_after_command(depth, 'end_svg_mask_layer')
+	assert depth == 0
+	assert background_clip_effect_depth_after_command(depth, 'end_svg_mask_layer') == 0
+}
+
+fn test_rounded_svg_background_isolates_only_a_single_mask_effect() {
+	mut depth := background_svg_mask_depth_after_command(0, 'begin_svg_mask_layer')
+	assert depth == 1 && rounded_svg_background_effects_supported(1, depth)
+	depth = background_svg_mask_depth_after_command(depth, 'begin_css_filter_layer')
+	assert depth == 1 && !rounded_svg_background_effects_supported(2, depth)
+	depth = background_svg_mask_depth_after_command(depth, 'begin_svg_mask_layer')
+	assert depth == 2 && !rounded_svg_background_effects_supported(2, depth)
+	depth = background_svg_mask_depth_after_command(depth, 'end_svg_mask_layer')
+	assert depth == 1
+	depth = background_svg_mask_depth_after_command(depth, 'end_svg_mask_layer')
+	assert depth == 0 && rounded_svg_background_effects_supported(0, depth)
+	assert !rounded_svg_background_effects_supported(1, depth)
+	assert background_svg_mask_depth_after_command(depth, 'end_svg_mask_layer') == 0
+}

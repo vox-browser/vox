@@ -8,8 +8,9 @@ import dom
 @[heap]
 struct ComputedPropertyGraphMutationToken {
 mut:
-	generation u64 = 1
-	observed   bool
+	generation     u64 = 1
+	raw_generation u64 = 1
+	observed       bool
 }
 
 @[heap]
@@ -17,6 +18,8 @@ struct ComputedGeometryProvenance {
 	document                      &dom.Document = unsafe { nil }
 	token                         &ComputedPropertyGraphMutationToken
 	generation                    u64
+	raw_generation                u64
+	compositor_only_animations    bool
 	viewport                      CSSPixelRect
 	root_font_size                f64
 	root_line_height              f64
@@ -65,6 +68,31 @@ fn (mut c ComputedProperties) note_computed_property_graph_mutation() {
 	}
 }
 
+// Animation samples change the effective graph without changing the raw
+// cascade. Keep both revisions on the shared token so writes through a value
+// alias also invalidate an animated target's otherwise reusable geometry.
+fn (mut c ComputedProperties) note_raw_computed_property_graph_mutation() {
+	c.note_computed_property_graph_mutation()
+	if c.computed_property_graph_token_ != unsafe { nil }
+		&& c.computed_property_graph_token_.observed {
+		if c.computed_property_graph_token_.raw_generation == ~u64(0) {
+			c.computed_property_graph_token_.raw_generation = 0
+		} else if c.computed_property_graph_token_.raw_generation != 0 {
+			c.computed_property_graph_token_.raw_generation++
+		}
+	}
+}
+
+fn (c &ComputedProperties) has_only_compositor_animated_properties() bool {
+	if c.has_animated_custom_properties() { return false }
+	if c.animated_property_storage_ != unsafe { nil } {
+		for property, _ in c.animated_property_storage_.values {
+			if !property_is_compositor_animated(property) { return false }
+		}
+	}
+	return true
+}
+
 fn computed_geometry_subject_matches(first ?&dom.Element, second ?&dom.Element) bool {
 	if a := first {
 		b := second or { return false }
@@ -74,9 +102,12 @@ fn computed_geometry_subject_matches(first ?&dom.Element, second ?&dom.Element) 
 }
 
 fn (p &ComputedGeometryProvenance) matches(c &ComputedProperties) bool {
+	return p.matches_context(c) && p.generation != 0 && p.generation == p.token.generation
+}
+
+fn (p &ComputedGeometryProvenance) matches_context(c &ComputedProperties) bool {
 	fonts := c.cached_computed_font_list_ or { return false }
-	return voidptr(p.token) == voidptr(c.computed_property_graph_token_) && p.generation != 0
-		&& p.generation == p.token.generation && p.viewport == c.viewport_rect_
+	return voidptr(p.token) == voidptr(c.computed_property_graph_token_) && p.viewport == c.viewport_rect_
 		&& p.root_font_size == c.root_font_size_px_ && p.root_line_height == c.root_line_height_px_
 		&& p.root_font_depends_on_viewport == c.root_font_metrics_depend_on_viewport_metrics_
 		&& computed_geometry_subject_matches(p.subject, c.subject_element_)
@@ -100,6 +131,8 @@ fn (mut c ComputedProperties) publish_computed_geometry_provenance(previous &Com
 		document:                      c.computed_layout_cache_.document_resolution_owner
 		token:                         c.computed_property_graph_token_
 		generation:                    c.computed_property_graph_token_.generation
+		raw_generation:                c.computed_property_graph_token_.raw_generation
+		compositor_only_animations:    c.has_only_compositor_animated_properties()
 		viewport:                      c.viewport_rect_
 		root_font_size:                c.root_font_size_px_
 		root_line_height:              c.root_line_height_px_

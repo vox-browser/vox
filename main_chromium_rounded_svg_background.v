@@ -4,6 +4,8 @@ import layout
 import math
 import painting
 
+fn C.native_draw_svg_path_batch_with_rounded_ancestor(&C.VoxGraphitePath, int, &f32, f32, f32, f32, f32, f32, f32, f32, f32, f32, &f32) int
+
 fn svg_background_positive_axis_matrix(value [6]f64) ?[6]f64 {
 	matrix := normalized_paint_transform(value)
 	if matrix[0] <= 0 || matrix[3] <= 0 || matrix[1] != 0 || matrix[2] != 0 { return none }
@@ -118,6 +120,14 @@ fn chromium_svg_background_outer_clip(command &layout.PaintCommand) ?[12]f32 {
 		f32(r.bottom_right.y), f32(r.bottom_left.x), f32(r.bottom_left.y)]!
 }
 
+// Called only after validating the complete outer clip list above. Coincident
+// rounded overflow clips share one coverage stage until a mask isolates them
+// from the child's own rounded background clip.
+fn chromium_svg_background_has_rounded_ancestor(command &layout.PaintCommand) bool {
+	if !command.has_clip || command.clip_list == unsafe { nil } { return false }
+	return command.clip_list.items.any(it.corner_radii != layout.BoxRadii{})
+}
+
 fn svg_background_local_clip(clip [12]f32, matrix [6]f64) [12]f32 {
 	mut result := clip
 	result[0] = f32((f64(clip[0]) - matrix[4]) / matrix[0])
@@ -177,7 +187,8 @@ fn chromium_svg_background_path_clips(command &layout.PaintCommand,
 fn (mut app BrowserApp) draw_chromium_rounded_svg_background(command &layout.PaintCommand,
 	page_x f32, page_y f32) bool {
 	$if macos {
-		if !app.ctx.native_rendering || app.page_zoom != 1 || app.paint_effect_depth != 0
+		if !app.ctx.native_rendering || app.page_zoom != 1
+			|| !rounded_svg_background_effects_supported(app.paint_effect_depth, app.paint_svg_mask_depth)
 			|| app.document == unsafe { nil } || app.document.font_rendering_policy() != .chromium {
 			return false
 		}
@@ -255,9 +266,18 @@ fn (mut app BrowserApp) draw_chromium_rounded_svg_background(command &layout.Pai
 		if masks.len != 0 { return false }
 		m := replay.transform
 		matrix := [f32(m[0]), f32(m[1]), f32(m[2]), f32(m[3]), f32(m[4]), f32(m[5])]!
-		if C.native_draw_svg_path_batch(paths.data, paths.len, &matrix[0], 0, 0,
+		independent_ancestor := app.paint_svg_mask_depth == 1
+			&& chromium_svg_background_has_rounded_ancestor(command)
+		success := if independent_ancestor {
+			C.native_draw_svg_path_batch_with_rounded_ancestor(paths.data, paths.len, &matrix[0], 0, 0,
+				f32(replay.viewport_width), f32(replay.viewport_height), page_x, page_y, 0,
+				f32(app.ctx.width), f32(app.ctx.height), &outer[0])
+		} else {
+			C.native_draw_svg_path_batch(paths.data, paths.len, &matrix[0], 0, 0,
 			f32(replay.viewport_width), f32(replay.viewport_height), page_x, page_y, 0,
-			f32(app.ctx.width), f32(app.ctx.height), &outer[0]) == 0 {
+			f32(app.ctx.width), f32(app.ctx.height), &outer[0])
+		}
+		if success == 0 {
 			return false
 		}
 		app.rounded_rect_underlay = none

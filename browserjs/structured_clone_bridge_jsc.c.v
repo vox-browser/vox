@@ -394,10 +394,10 @@ const structured_clone_projection_intrinsic = r'(function(){
  const O=Object,A=Array,B=Boolean,N=Number,S=String,M=Map,T=Set,D=Date;
  const bv=B.prototype.valueOf,nv=N.prototype.valueOf,sv=S.prototype.valueOf,iv=BigInt.prototype.valueOf,integerText=BigInt.prototype.toString;
  const dateValue=Date.prototype.getTime,regexSource=getOwn(RegExp.prototype,"source").get;
- const AB=ArrayBuffer,bufferLength=getOwn(AB.prototype,"byteLength").get,isView=AB.isView;
+ const AB=ArrayBuffer,U8=Uint8Array,bufferLength=getOwn(AB.prototype,"byteLength").get,isView=AB.isView;
  const bufferDetached=getOwn(AB.prototype,"detached"),bufferResizable=getOwn(AB.prototype,"resizable"),bufferMaximum=getOwn(AB.prototype,"maxByteLength");
  const sharedLength=typeof SharedArrayBuffer==="function"?getOwn(SharedArrayBuffer.prototype,"byteLength").get:undefined;
- const typedPrototype=Object.getPrototypeOf(Int8Array.prototype),typedBuffer=getOwn(typedPrototype,"buffer").get,typedLength=getOwn(typedPrototype,"byteLength").get,typedOffset=getOwn(typedPrototype,"byteOffset").get,typedCount=getOwn(typedPrototype,"length").get,typedName=getOwn(typedPrototype,Symbol.toStringTag).get,typedValues=typedPrototype.values;
+ const typedPrototype=Object.getPrototypeOf(Int8Array.prototype),typedBuffer=getOwn(typedPrototype,"buffer").get,typedLength=getOwn(typedPrototype,"byteLength").get,typedOffset=getOwn(typedPrototype,"byteOffset").get,typedCount=getOwn(typedPrototype,"length").get,typedName=getOwn(typedPrototype,Symbol.toStringTag).get,typedValues=typedPrototype.values,typedSet=typedPrototype.set;
  const DV=DataView,dataBuffer=getOwn(DV.prototype,"buffer").get,dataLength=getOwn(DV.prototype,"byteLength").get,dataOffset=getOwn(DV.prototype,"byteOffset").get;
  const viewConstructors={DataView:DV,Int8Array,Uint8Array,Uint8ClampedArray,Int16Array,Uint16Array,Int32Array,Uint32Array,Float16Array:typeof Float16Array==="function"?Float16Array:undefined,Float32Array,Float64Array,BigInt64Array,BigUint64Array};
  const mapSize=getOwn(M.prototype,"size").get,setSize=getOwn(T.prototype,"size").get;
@@ -431,6 +431,8 @@ const structured_clone_projection_intrinsic = r'(function(){
   buffer_metadata(value){if(bufferDetached===undefined||bufferResizable===undefined||bufferMaximum===undefined)return undefined;const detached=apply(bufferDetached.get,value,[]);if(detached)return [true,false,undefined];const resizable=apply(bufferResizable.get,value,[]);return [false,resizable,resizable?apply(bufferMaximum.get,value,[]):undefined]},
   is_shared_buffer(value){if(sharedLength===undefined)return false;try{apply(sharedLength,value,[]);return true}catch(ignore){return false}},
   create_buffer(length,maximum){return maximum===undefined?new AB(length):new AB(length,{maxByteLength:maximum})},
+  copy_buffer(value){return new U8(new U8(value))},
+  write_buffer(value,bytes){apply(typedSet,new U8(value),[new U8(bytes)])},
   view_metadata(value){let buffer;try{buffer=apply(typedBuffer,value,[])}catch(ignore){try{return [apply(dataBuffer,value,[]),"DataView",apply(dataLength,value,[]),apply(dataOffset,value,[]),undefined]}catch(outOfBounds){return null}}try{apply(typedValues,value,[]);return [buffer,apply(typedName,value,[]),apply(typedLength,value,[]),apply(typedOffset,value,[]),apply(typedCount,value,[])]}catch(outOfBounds){return null}},
   create_view(buffer,name,offset,length){const constructor=viewConstructors[name];return constructor===undefined?undefined:new constructor(buffer,offset,length)},
   map_snapshot(value){const list=[];apply(mapEach,value,[function(item,key){append(list,[key,item])}]);return list},

@@ -48,8 +48,22 @@ fn background_image_clip_intersects_viewport(command &layout.PaintCommand, page_
 
 fn background_clip_effect_depth_after_command(depth int, kind string) int {
 	return match kind {
-		'begin_skia_command_group', 'begin_css_filter_layer' { depth + 1 }
-		'end_skia_command_group', 'end_css_filter_layer' { if depth > 0 { depth - 1 } else { 0 } }
+		'begin_skia_command_group', 'begin_css_filter_layer', 'begin_svg_mask_layer' { depth + 1 }
+		'end_skia_command_group', 'end_css_filter_layer', 'end_svg_mask_layer' {
+			if depth > 0 { depth - 1 } else { 0 }
+		}
 		else { depth }
 	}
+}
+
+fn background_svg_mask_depth_after_command(depth int, kind string) int {
+	return match kind {
+		'begin_svg_mask_layer' { depth + 1 }
+		'end_svg_mask_layer' { if depth > 0 { depth - 1 } else { 0 } }
+		else { depth }
+	}
+}
+
+fn rounded_svg_background_effects_supported(effect_depth int, mask_depth int) bool {
+	return effect_depth == 0 || (effect_depth == 1 && mask_depth == 1)
 }

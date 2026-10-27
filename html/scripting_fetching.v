@@ -545,7 +545,7 @@ pub fn fetch_classic_script(element &HTMLScriptElementModel, url dom.URL, settin
 }
 
 // https://html.spec.whatwg.org/multipage/webappapis.html#fetch-a-classic-worker-script
-pub fn fetch_classic_worker_script(url dom.URL, fetch_client &EnvironmentSettingsObject, destination fetch.Destination, settings_object &EnvironmentSettingsObject, perform_fetch ?PerformTheFetchHook, on_complete OnFetchScriptComplete) ! {
+pub fn fetch_classic_worker_script(url dom.URL, fetch_client fetch.RequestClient, destination fetch.Destination, settings_object &EnvironmentSettingsObject, perform_fetch ?PerformTheFetchHook, on_complete OnFetchScriptComplete) ! {
 	mut request := fetch.Request.create()
 	request.set_url(url)
 	request.set_client(fetch_client)

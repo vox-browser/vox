@@ -4,6 +4,7 @@
 module browserjs
 
 import webidl
+import platform
 
 
 #include "host_function_darwin.h"
@@ -37,6 +38,11 @@ fn native_value_host_function_record(function voidptr) ?&ValueHostFunctionRecord
 
 fn invoke_value_host_function_record(record &ValueHostFunctionRecord, context voidptr, receiver voidptr, count usize, arguments &voidptr, exception &voidptr) voidptr {
 	if record.runtime.closed { return host_function_error(context, 'JavaScript runtime is closed', exception) }
+	// Native callbacks can create streams, promises and wrappers retained by
+	// the realm after this engine entry. Keep those allocations out of the
+	// caller's temporary evaluation/delivery arena, including exceptional exits.
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	mut args := []voidptr{cap: int(count)}
 	for index in 0 .. int(count) { args << unsafe { arguments[index] } }
 	result := record.callback(receiver, args) or {
@@ -69,6 +75,8 @@ fn invoke_value_host_function_record(record &ValueHostFunctionRecord, context vo
 pub fn (mut runtime Runtime) retain_javascript_value(value voidptr) !voidptr {
 	runtime.require_javascript_value_context()!
 	if value == unsafe { nil } { return error('Cannot retain a missing JavaScript value') }
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	C.JSValueProtect(runtime.context, value)
 	runtime.protected_values_ << value
 	return value

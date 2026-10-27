@@ -23,6 +23,20 @@ mut:
 	path       string
 	proxy      Proxy
 	configured bool
+	file_version ?SettingsFileVersion
+}
+
+struct SettingsFileVersion {
+	device   u64
+	inode    u64
+	size     u64
+	modified i64
+	changed  i64
+}
+
+fn settings_file_version(path string) !SettingsFileVersion {
+	info := os.stat(path)!
+	return SettingsFileVersion{info.dev, info.inode, info.size, info.mtime, info.ctime}
 }
 
 const runtime = &Runtime{}
@@ -126,6 +140,9 @@ pub fn initialize(path string) ! {
 	defer { platform.leave_persistent(persistent) }
 	mut proxy := Proxy{}
 	configured := os.exists(path)
+	// Snapshot before reading: a concurrent atomic replacement will be picked
+	// up on the next read even if it happens during initialization.
+	version := settings_file_version(path) or { SettingsFileVersion{} }
 	if configured { proxy = json2.decode[Proxy](os.read_file(path)!)!.normalized()! }
 	$if prealloc {
 		_ = json2.encode(proxy)
@@ -136,12 +153,34 @@ pub fn initialize(path string) ! {
 	state.path = path.clone()
 	state.proxy = proxy
 	state.configured = configured
+	state.file_version = none
+	if configured { state.file_version = version }
+}
+
+// Windows and detached tabs have independent processes. Settings Apply uses
+// atomic replacement, so the inode also detects equal-size saves in the same
+// second. Unchanged requests need only stat the file, without parsing JSON.
+// Keep the last valid route if a replacement cannot yet be read or validated.
+fn (mut state Runtime) refresh() {
+	if state.path == '' { return }
+	version := settings_file_version(state.path) or { return }
+	if previous := state.file_version {
+		if previous == version { return }
+	}
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	proxy := json2.decode[Proxy](os.read_file(state.path) or { return }) or { return }
+	normalized := proxy.normalized() or { return }
+	state.proxy = normalized
+	state.configured = true
+	state.file_version = version
 }
 
 pub fn current() Proxy {
 	mut state := unsafe { runtime }
 	state.lock.lock()
 	defer { state.lock.unlock() }
+	state.refresh()
 	return Proxy{ ...state.proxy, host: state.proxy.host.clone(), port: state.proxy.port.clone(), sites: state.proxy.sites.clone() }
 }
 
@@ -151,6 +190,7 @@ pub fn proxy_override(resource_url string) ?string {
 	mut state := unsafe { runtime }
 	state.lock.lock()
 	defer { state.lock.unlock() }
+	state.refresh()
 	if !state.configured { return none }
 	return state.proxy.url_for(resource_url)
 }
@@ -178,4 +218,7 @@ pub fn save(input Proxy) ! {
 	// Publish only after persistence succeeds. Failed Apply keeps the old route.
 	state.proxy = Proxy{ ...proxy, host: proxy.host.clone(), port: proxy.port.clone(), sites: proxy.sites.clone() }
 	state.configured = true
+	// Read the persisted identity on the next access rather than caching a stat
+	// that could belong to another process's save immediately after our rename.
+	state.file_version = none
 }

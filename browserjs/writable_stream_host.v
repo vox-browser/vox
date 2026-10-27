@@ -13,8 +13,8 @@ enum WritableStreamHostKind {
 
 @[heap]
 struct WritableStreamHostRecord {
-	host &WritableStreamHost
-	kind WritableStreamHostKind
+	host   &WritableStreamHost
+	kind   WritableStreamHostKind
 	native voidptr
 mut:
 	object voidptr
@@ -22,14 +22,13 @@ mut:
 
 @[heap]
 pub struct WritableStreamHost {
-	document &dom.Document
 	settings &html.EnvironmentSettingsObject
 mut:
-	runtime &Runtime = unsafe { nil }
-	records map[voidptr]&WritableStreamHostRecord
+	runtime    &Runtime = unsafe { nil }
+	records    map[voidptr]&WritableStreamHostRecord
 	prototypes map[WritableStreamHostKind]voidptr
 	to_number_ voidptr
-	closed bool
+	closed     bool
 }
 
 pub fn WritableStreamHost.create(document &dom.Document) !&WritableStreamHost {
@@ -38,7 +37,13 @@ pub fn WritableStreamHost.create(document &dom.Document) !&WritableStreamHost {
 		_ := html.WindowModel.create_top_level(document, none, '')!
 		settings = document.relevant_settings_object()
 	}
-	return &WritableStreamHost{document: document, settings: unsafe { &html.EnvironmentSettingsObject(settings) }}
+	return WritableStreamHost.create_for_settings(unsafe { &html.EnvironmentSettingsObject(settings) })!
+}
+
+// Constructor state belongs to the actual Window or Worker environment.
+pub fn WritableStreamHost.create_for_settings(settings &html.EnvironmentSettingsObject) !&WritableStreamHost {
+	_ = settings.window_or_worker_global_scope()!
+	return &WritableStreamHost{ settings: settings }
 }
 
 pub fn (mut host WritableStreamHost) close() {

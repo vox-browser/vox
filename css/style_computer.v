@@ -1708,6 +1708,7 @@ fn style_computer_update_animated_style_callback(target voidptr) {
 					&& !invalidation.needs_relayout() && !invalidation.needs_layout_tree_rebuild()
 					&& compositor_only_changes
 				style_computer.animation_layout_style_ = computed
+				style_computer.animation_layout_compositor_only_ = !full_refresh && only_compositor_changes
 				if !full_refresh && !custom_properties_changed && local_paint_changes
 					&& !invalidation.needs_relayout() && !invalidation.needs_layout_tree_rebuild() {
 					// The retained paint tree refreshes this box's colors and
@@ -1721,6 +1722,7 @@ fn style_computer_update_animated_style_callback(target voidptr) {
 						only_compositor_changes)
 				}
 				style_computer.animation_layout_style_ = unsafe { nil }
+				style_computer.animation_layout_compositor_only_ = false
 			}
 		}
 

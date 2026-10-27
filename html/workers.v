@@ -138,6 +138,10 @@ pub fn (scope &WorkerGlobalScope) window_or_worker_global_scope() &WindowOrWorke
 	return scope.global_scope_
 }
 
+pub fn (scope &WorkerGlobalScope) dedicated_worker_global_scope() ?&DedicatedWorkerGlobalScope {
+	return scope.global_scope_.dedicated_worker_
+}
+
 pub fn (mut scope WorkerGlobalScope) fonts() &css.FontFaceSet {
 	if fonts := scope.fonts_ {
 		return fonts

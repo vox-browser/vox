@@ -64,6 +64,12 @@ fn test_svg_background_outer_clip_folds_only_matching_rounded_ancestors() {
 	}
 	clip := chromium_svg_background_outer_clip(&command)?
 	assert clip[0] == 116 && clip[1] == 295 && clip[4] == 10
+	assert chromium_svg_background_has_rounded_ancestor(&command)
+	assert !chromium_svg_background_has_rounded_ancestor(&layout.PaintCommand{ ...command, has_clip: false })
+	assert !chromium_svg_background_has_rounded_ancestor(&layout.PaintCommand{
+		...command
+		clip_list: &layout.PaintClipList{ items: [layout.PaintClip{ rect: layout.LayoutRect{0, 0, 1024, 768} }] }
+	})
 	for invalid in [
 		layout.PaintClip{ rect: layout.LayoutRect{117, 295, 19, 20} },
 		layout.PaintClip{ ...round, is_path: true },

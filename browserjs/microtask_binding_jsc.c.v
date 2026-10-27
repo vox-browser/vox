@@ -12,7 +12,8 @@ struct QueuedMicrotaskCallback {
 
 @[heap]
 struct MicrotaskBinding {
-	document &dom.Document
+	target   &dom.EventTarget
+	document ?&dom.Document
 mut:
 	enqueue    voidptr
 	deactivate voidptr
@@ -24,23 +25,27 @@ mut:
 __global microtask_bindings_ = map[voidptr]&MicrotaskBinding{}
 
 pub fn (mut runtime Runtime) install_microtask_binding() ! {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	runtime.require_javascript_value_context()!
 	owner := voidptr(&runtime)
 	if owner in microtask_bindings_ { return }
 	settings := runtime.scripting_settings_ or { return error('queueMicrotask requires its owning environment') }
-	if settings.global_object().data.kind != .window {
-		return error('queueMicrotask currently requires a Window')
-	}
-	document := settings.responsible_document() or { return error('queueMicrotask requires a Document') }
+	_ = settings.window_or_worker_global_scope()!
 	runtime.install_event_target_binding()!
-	mut binding := &MicrotaskBinding{ document: document }
+	mut binding := &MicrotaskBinding{
+		target: settings.global_object()
+		document: settings.responsible_document()
+	}
 	deliver := runtime.make_value_host_function(fn [owner, mut binding] (_ voidptr, args []voidptr) !voidptr {
 		mut runtime := unsafe { &Runtime(owner) }
 		undefined := C.JSValueMakeUndefined(runtime.context)
 		if binding.closed || args.len != 1 { return undefined }
-		mut storage := binding.document.native_storage()
 		mut allocation_scope := platform.RetainedArenaScope{}
-		if storage != unsafe { nil } { allocation_scope = storage.enter_nested() }
+		if document := binding.document {
+			mut storage := document.native_storage()
+			if storage != unsafe { nil } { allocation_scope = storage.enter_nested() }
+		}
 		defer { allocation_scope.finish() }
 		// This private argument is an engine Number, not a WebIDL long.
 		token := int(C.JSValueToNumber(runtime.context, args[0], unsafe { nil }))
@@ -63,15 +68,17 @@ pub fn (mut runtime Runtime) install_microtask_binding() ! {
 	queue := runtime.make_native_value_host_function('queueMicrotask', 1, fn [owner, mut binding] (receiver voidptr, args []voidptr) !voidptr {
 		mut runtime := unsafe { &Runtime(owner) }
 		target := runtime.native_event_target(receiver)!
-		if target.data.kind != .window {
+		if voidptr(target) != voidptr(binding.target) {
 			return runtime.event_binding_type_error('Illegal queueMicrotask receiver')
 		}
 		if args.len == 0 || !C.JSValueIsObject(runtime.context, args[0]) || !C.JSObjectIsFunction(runtime.context, args[0]) {
 			return runtime.event_binding_type_error('queueMicrotask requires a callback function')
 		}
-		mut storage := binding.document.native_storage()
 		mut allocation_scope := platform.RetainedArenaScope{}
-		if storage != unsafe { nil } { allocation_scope = storage.enter_nested() }
+		if document := binding.document {
+			mut storage := document.native_storage()
+			if storage != unsafe { nil } { allocation_scope = storage.enter_nested() }
+		}
 		defer { allocation_scope.finish() }
 		binding.next_token++
 		token := binding.next_token
