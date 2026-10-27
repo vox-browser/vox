@@ -1349,3 +1349,34 @@ checks pass. Repeatable page credit is the interval lower bound, 74,022,882
 instructions. This independent candidate result does not establish combined
 savings or Brave parity. The installed production bundle predates the change;
 its latest acceptance ratio remains 5.294119 against 0.90.
+
+## Shared production recheck, 2026-10-27
+
+`Build/hn-small-text/production-reuse-2/check-1` checks the latest completed
+shared production bundle, preserved from `Build/4chan-catalog-20261027-final-1`.
+The executable SHA256 is
+`d0b28fb544c7ac9befb56b43402ed9c090f05651a2a2c1936df64f8793498d93`;
+`available-bundle.json` pins all eight bundle files and its source receipt.
+This bundle contains the anonymous-font fix, integer serialization, shadow
+presence scan and PNG changes. It predates the text-context cursor, decoded
+SVG ownership, scroll-frame and dedicated-worker candidates. No new production
+build was scheduled. The original build receipt retains unrelated failed
+checks; this focused HN recheck does not turn them into passes.
+
+Signature verification, startup, all three frozen HN pixel comparisons and
+both live-page identity checks pass. Three fresh Vox/Brave pairs retain all
+101 comments with exact pixels. Vox instruction counts are 6,598,707,629,
+6,527,885,072 and 6,551,639,391. The corresponding Brave accounting intervals
+are [1,821,918,736, 1,866,312,001], [1,809,555,159, 1,845,193,682] and
+[1,786,588,340, 1,834,331,796]. Every browser exits zero. The unchanged
+navigation-through-synchronous-PNG endpoint still includes different internal
+capture workflows in the two browsers; it does not establish wall-time parity.
+
+The Vox median is 6,551,639,391 instructions, against Brave's median lower
+bound of 1,809,555,159. The strict worst-Vox/best-Brave ratio is **3.693468**,
+above the required **0.90**. This supersedes the earlier 5.294119 production
+acceptance measurement. The cohort and memory guard correctly exit 1 for the
+failed performance target, despite successful functional checks. The guard
+records 61.3005 seconds and 1,283,096,576 bytes sampled peak RSS. Inputs remain
+unchanged. This is current production baseline evidence with zero isolated
+optimization credit; independent candidate savings are not added together.
