@@ -1135,3 +1135,41 @@ live loads. Raw captures, audits, identities and failed gates are in
 `story-guard.json`. Whole-page equality, Canvas RGBA readback and Retina mask
 equality remain open. The next diagnostic checks whether the full page's
 controls qualify for the corrected compositor path.
+
+
+## Rectangular SVG clip checkpoint (`5086e28d`)
+
+Rectangular SVG clip scopes can now share the paths' sample coverage in a
+compositor picture. Both clip-transform composition and conversion back to path
+coordinates preserve the local translation before rounding to Skia floats. This
+prevents page offsets from moving coincident clip edges inward. Incomplete
+scopes, differing owners, strokes, effects and unsupported clip geometry retain
+the ordinary replay path.
+
+The new `svg-rectangular-clip-local-transform` fixture matches fresh Brave
+references at scales one and two with zero differing pixels. It covers the VK
+symbol's half-pixel rectangular clip at five page positions. All ten SVG
+mutation and viewport comparisons also remain exact. The focused mask,
+recording, clip-conversion and layout checks compile and execute successfully
+in normal and poisoned arena modes. The separately corrected CSS ownership
+checks also pass both modes.
+
+Evidence and immutable inputs are in
+`Build/pikabu-rectangular-mask-1793128123792884000/`: `results.json`,
+`css-results-v3.json`, `build-results.json`, `visual-results.json` and
+`svg/results.json`. Their successful guards are `tests-v10-guard.json`,
+`css-tests-v3-guard.json`, `build-v4-guard.json`, `visual-v4-guard.json` and
+`svg-v4-guard.json`; commands and individual exit codes remain in
+those receipts. The signed diagnostic executable SHA-256 is
+`81c9b2fb9c2307dfe8aec3f7746eb68bb7056b0f14397a650818f004cdd8f125`.
+The shared production bundle was not replaced.
+
+Fresh 1024-by-768 scale-one captures still fail strict equality: the frozen
+page differs in 7,309 pixels (maximum channel error 42), and independent live
+loads differ in 6,828 pixels (maximum error 26). All four capture processes exit
+zero and load the intended document; both pixel checks and the overall guard
+exit one. Browser, native libraries, fixtures and filter inputs remain unchanged.
+The raw captures, audits and failed gates are in `story/`, with the memory
+receipt in `story-v4-guard.json`. These results do not establish whole-page
+parity or a controlled improvement in independently timed live content. Header
+shadows, Canvas RGBA readback and Retina mask equality remain open.

@@ -477,3 +477,12 @@ in both the baseline and candidate, confined to the fractional box and rounded
 background; it does not establish scale-1 parity. See
 [`CHROMIUM_CATALOG_PARITY.md`](../../../docs/translation-audit/CHROMIUM_CATALOG_PARITY.md)
 for capture identities and results.
+
+
+`svg-rectangular-clip-local-transform` checks a half-pixel rectangular SVG clip
+inside transformed CSS surfaces at five page positions. Both references use a
+1024×768 CSS viewport; the `@2x` PNG retains scale-two device pixels. Clip
+transforms stay local until entering page space, and supported rectangular clip
+scopes share path sample coverage. Both scales require exact RGBA equality.
+Capture commands, source hashes and fresh-process identities are retained in
+`Build/pikabu-rectangular-mask-1793128123792884000/visual-results.json`.
