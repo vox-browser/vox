@@ -1841,3 +1841,56 @@ The complete guarded composition/checkpoint/profile/Brave run exits zero after
 12 GiB guard. Commands, actual child exits and inputs are retained under
 `Build/hn-small-text/safe-density-composition-4` and its guard receipt
 `Build/hn-small-text/safe-density-composition-5-guard.json`.
+
+
+## Retained shaping metrics and boundary indices, 2026-10-27
+
+`6849067b` retains scalar context metrics and a bounded UTF-16 boundary index
+with the immutable cached glyph snapshot. Queries still accumulate advances
+locally in f64 and preserve the original offset and rounding rules. Unknown,
+oversized and unsupported runs keep the checked fallback. Cache ownership,
+spacing keys, painting and invalidation remain covered by focused tests. Line-end
+queries avoid materializing an unused substring or UTF-16 vector, and ASCII
+script checks avoid decoding runes.
+
+All 110 focused executions pass in Boehm and preallocation/no-GC modes, including
+six new cases for exact rounding, cluster boundaries, conservative fallback,
+forged input metadata and scratch ownership. Generated-C checks preserve glyph
+ABI and all shared records except the explicitly asserted CachedShape tail.
+The first submission stopped at a driver fingerprint mismatch. The second
+stopped at a C `float` spelling preflight; its focused executions passed and
+were retained. The corrected third submission keeps both failed attempts and
+reuses those unchanged focused inputs.
+
+`Build/hn-small-text/text-metrics-isolated-3` composes the validated slice onto
+the combined cache-density candidate. It is a frozen generated-C composition,
+not a fresh canonical production build. Reversing nine writers and three helpers
+plus the asserted record tail restores the complete parent C byte for byte;
+the 252 O2 objects and native libraries remain unchanged. Executable SHA256 is
+`13862bf904098199ebd6fe3c54bb481404cf3b1e951fb5dbc963ca095e16f791`.
+The separate eligibility diagnostic observes 56,660 safe-range queries, 54,174
+hits, 29,221 trailing queries, 56,660 indexed queries and 19,261 scalar metric
+hits, with exact pixels and all 101 comments. It receives no performance credit.
+
+Thirty alternating unprofiled pairs retain exact screenshots and all comments.
+Control/candidate medians are 7,733,818,317 / 7,432,978,953 instructions. Median
+paired saving is 305,571,153; the bootstrap 95% interval is
+[290,501,259.5, 327,988,172]. All 30 pairs improve, with a minimum saving of
+217,709,612. The strict worst-candidate/best-control ratio is 0.974983.
+The 18-CPU host ends at load averages 57.6333/38.5986/32.8711. Raw trials,
+identities, commands, inputs and actual exits are retained.
+
+The conservative 290,501,259.5-instruction credit triggers checkpoint 3. Its 482
+new executions and 250 distinct carried focused executions give 726 passes and
+the six unchanged baseline layout failures. All 100 upstream AST fixtures match
+exactly. All 34 fresh control/candidate images remain unchanged: 14 of 19
+canonical cases are exact, with five existing reference failures unchanged.
+Three HN fixtures, startup and both live identity checks pass. No tolerance
+changes. Pending broad credit resets to zero.
+
+The complete guarded pipeline exits zero after 1,100.781 seconds, with sampled
+aggregate peak RSS 9,319,153,664 bytes under the 12 GiB guard. Evidence is under
+`Build/hn-small-text/text-metrics-pipeline-3` and guard receipt
+`Build/hn-small-text/text-metrics-submission-3/attempt-012.json`. This comparison
+measures the isolated optimization against its parent. It does not establish
+the requested 10% fewer instructions than Brave; that target remains open.
