@@ -10,6 +10,7 @@ from html.parser import HTMLParser
 import json
 from pathlib import Path
 import re
+import socket
 import socketserver
 import ssl
 import subprocess
@@ -198,13 +199,43 @@ class Replay:
         self.server = Server(('127.0.0.1', 0), Handler)
         self.ready = dict(url=self.manifest['url'], archive=str(self.archive), forwarding=False,
                           manifest_sha256=digest((self.archive / 'manifest.json').read_bytes()),
-                          proxy='http://127.0.0.1:' + str(self.server.server_address[1]),
+                          proxy='socks5h://127.0.0.1:' + str(self.server.server_address[1]),
                           ca=str(cert), certificate_sha256=digest(cert.read_bytes()))
         (self.output / 'ready.json').write_text(json.dumps(self.ready, indent=2) + '\n')
 
     def record(self, **row):
         with self.lock, (self.output / 'requests.jsonl').open('a') as log:
             log.write(json.dumps(dict(t_unix=time.time(), **row)) + '\n')
+
+    @staticmethod
+    def receive(sock, count):
+        data = bytearray()
+        while len(data) < count:
+            part = sock.recv(count - len(data))
+            if not part:
+                raise ValueError('Incomplete proxy handshake')
+            data.extend(part)
+        return bytes(data)
+
+    def socks_tunnel(self, sock, hosts):
+        # Resolve nothing and forward nothing: only archived HTTPS hosts qualify.
+        version, count = self.receive(sock, 2)
+        methods = self.receive(sock, count)
+        if version != 5 or 0 not in methods:
+            sock.sendall(b'\x05\xff')
+            raise ValueError('SOCKS5 requires unauthenticated negotiation')
+        sock.sendall(b'\x05\x00')
+        if self.receive(sock, 4) != b'\x05\x01\x00\x03':
+            sock.sendall(b'\x05\x08\x00\x01' + bytes(6))
+            raise ValueError('SOCKS5 requires a domain CONNECT')
+        host = self.receive(sock, self.receive(sock, 1)[0]).decode('ascii')
+        port = int.from_bytes(self.receive(sock, 2), 'big')
+        allowed = host in hosts and port == 443
+        sock.sendall(b'\x05' + (b'\x00' if allowed else b'\x02') + b'\x00\x01' + bytes(6))
+        if not allowed:
+            self.record(connect=f'{host}:{port}', status=403, archived=False)
+            return None
+        return host
 
     @staticmethod
     def request(sock):
@@ -221,6 +252,12 @@ class Replay:
     def handle(self, sock, hosts):
         sock.settimeout(15)
         try:
+            host = None
+            if sock.recv(1, socket.MSG_PEEK) == b'\x05':
+                host = self.socks_tunnel(sock, hosts)
+                if host is None:
+                    return
+                sock = self.tls.wrap_socket(sock, server_side=True)
             request = self.request(sock)
             if not request:
                 return
@@ -237,6 +274,7 @@ class Replay:
                 if not request:
                     return
                 method, target, _ = request
+            if host:
                 target = 'https://' + host + target
             entry = self.manifest['responses'].get(target) if method in {'GET', 'HEAD'} else None
             body = (self.archive / 'bodies' / entry['sha256']).read_bytes() if entry else b''

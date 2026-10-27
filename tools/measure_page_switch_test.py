@@ -33,12 +33,30 @@ class LocalPageSwitchTests(unittest.TestCase):
                 self.assertFalse(ready['forwarding'])
                 self.assertEqual(ready['manifest_sha256'], sha256(archive/'manifest.json'))
                 proxy = urlsplit(ready['proxy'])
+                self.assertEqual(proxy_configuration(ready['proxy']), dict(
+                    enabled=True, host=proxy.hostname, port=str(proxy.port), sites=''))
 
-                def get(url):
+                def tunnel(raw, host, port=443):
+                    raw.sendall(b'\x05\x01\x00')
+                    self.assertEqual(raw.recv(2), b'\x05\x00')
+                    encoded = host.encode('ascii')
+                    raw.sendall(b'\x05\x01\x00\x03' + bytes([len(encoded)]) + encoded
+                                + port.to_bytes(2, 'big'))
+                    reply = b''
+                    while len(reply) < 10:
+                        part = raw.recv(10-len(reply))
+                        self.assertTrue(part, 'SOCKS server closed before replying')
+                        reply += part
+                    return reply[1]
+
+                def get(url, transport):
                     address = urlsplit(url)
                     with socket.create_connection((proxy.hostname, proxy.port), timeout=5) as raw:
-                        raw.sendall(f'CONNECT {address.hostname}:443 HTTP/1.1\r\n\r\n'.encode())
-                        self.assertIn(b'200', raw.recv(4096))
+                        if transport == 'socks':
+                            self.assertEqual(tunnel(raw, address.hostname), 0)
+                        else:
+                            raw.sendall(f'CONNECT {address.hostname}:443 HTTP/1.1\r\n\r\n'.encode())
+                            self.assertIn(b'200', raw.recv(4096))
                         context = ssl.create_default_context(cafile=ready['ca'])
                         with context.wrap_socket(raw, server_hostname=address.hostname) as sock:
                             sock.sendall(f'GET {address.path} HTTP/1.1\r\nHost: {address.hostname}\r\n\r\n'.encode())
@@ -47,27 +65,35 @@ class LocalPageSwitchTests(unittest.TestCase):
                                 data.extend(part)
                             return bytes(data).split(b'\r\n\r\n', 1)
 
-                for url, body in bodies.items():
-                    headers, actual = get(url)
-                    self.assertIn(b'200', headers)
-                    self.assertEqual(actual, body)
-                headers, body = get(hot+'unavailable/')
-                self.assertIn(b'404', headers)
-                self.assertEqual(body, b'')
+                for transport in ['socks', 'http']:
+                    for url, body in bodies.items():
+                        with self.subTest(transport=transport, url=url):
+                            headers, actual = get(url, transport)
+                            self.assertIn(b'200', headers)
+                            self.assertEqual(actual, body)
+                    headers, body = get(hot+'unavailable/', transport)
+                    self.assertIn(b'404', headers)
+                    self.assertEqual(body, b'')
+                for host, port in [('unarchived.invalid', 443), ('old.reddit.com', 80)]:
+                    with socket.create_connection((proxy.hostname, proxy.port), timeout=5) as sock:
+                        self.assertEqual(tunnel(sock, host, port), 2)
+                with socket.create_connection((proxy.hostname, proxy.port), timeout=5) as sock:
+                    sock.sendall(b'\x05\x01\x02')
+                    self.assertEqual(sock.recv(2), b'\x05\xff')
                 with socket.create_connection((proxy.hostname, proxy.port), timeout=5) as sock:
                     sock.sendall(b'CONNECT unarchived.invalid:443 HTTP/1.1\r\n\r\n')
                     self.assertIn(b'403', sock.recv(4096))
             with self.assertRaises(OSError):
                 socket.create_connection((proxy.hostname, proxy.port), timeout=.2)
 
-    def test_http_replay_does_not_enable_the_saved_socks_proxy(self):
-        self.assertEqual(proxy_configuration('http://127.0.0.1:1234'), {})
+    def test_replay_route_matches_saved_socks_proxy(self):
         for scheme in ['socks5', 'socks5h']:
             self.assertEqual(proxy_configuration(scheme+'://127.0.0.1:1234'), dict(
                 enabled=True, host='127.0.0.1', port='1234', sites=''))
-        for address in ['https://localhost:1234', 'http://localhost', 'http://localhost:0',
-                        'http://localhost:1234/path', 'http://user@localhost:1234',
-                        'http://localhost:1234?bypass=1', 'http://localhost:70000']:
+        for address in ['http://127.0.0.1:1234', 'https://localhost:1234', 'socks5://localhost',
+                        'socks5://localhost:0', 'socks5://localhost:1234/path',
+                        'socks5://user@localhost:1234', 'socks5://localhost:1234?bypass=1',
+                        'socks5://localhost:70000']:
             with self.subTest(address=address), self.assertRaises(ValueError):
                 proxy_configuration(address)
 

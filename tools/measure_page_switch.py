@@ -46,13 +46,12 @@ def archive_route(archive, output):
 
 def proxy_configuration(address):
     proxy = urlsplit(address)
-    if (proxy.scheme not in {'http', 'socks5', 'socks5h'} or not proxy.hostname
+    if (proxy.scheme not in {'socks5', 'socks5h'} or not proxy.hostname
             or not proxy.port or proxy.username is not None or proxy.password is not None
             or proxy.path not in {'', '/'} or proxy.query or proxy.fragment):
-        raise ValueError('--proxy requires an HTTP or SOCKS5 hostname and port without credentials')
-    # Saved proxy settings select SOCKS5; HTTP replay uses the process override.
-    return (dict(enabled=True, host=proxy.hostname, port=str(proxy.port), sites='')
-            if proxy.scheme != 'http' else {})
+        raise ValueError('--proxy requires a SOCKS5 hostname and port without credentials')
+    # Saving the mode also configures proxy preferences, which override VOX_PROXY.
+    return dict(enabled=True, host=proxy.hostname, port=str(proxy.port), sites='')
 
 
 def main():
@@ -68,7 +67,7 @@ def main():
     parser.add_argument('--cache-template', type=Path)
     parser.add_argument('--network-policy', required=True)
     route = parser.add_mutually_exclusive_group()
-    route.add_argument('--proxy', help='HTTP or SOCKS5 replay/live route')
+    route.add_argument('--proxy', help='SOCKS5 replay/live route')
     route.add_argument('--archive', type=Path, help='Sealed page_archive.py archive; replay from disk only')
     parser.add_argument('--ca', type=Path, help='Process-local replay certificate')
     parser.add_argument('--width', type=int, default=1024)
