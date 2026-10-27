@@ -1380,3 +1380,25 @@ failed performance target, despite successful functional checks. The guard
 records 61.3005 seconds and 1,283,096,576 bytes sampled peak RSS. Inputs remain
 unchanged. This is current production baseline evidence with zero isolated
 optimization credit; independent candidate savings are not added together.
+
+## Scroll-frame ancestor lookup, uncredited
+
+`layout/viewport_paint_bridge.v` now finds the containing scroll frame only
+for boxes that create sticky, overflow or viewport frames. Ordinary boxes
+still clear stale ownership and visit their descendants. Two new tests cover
+nested scrollers, intervening ordinary boxes, stale indices, and a sticky box
+that also scrolls. `scroll-owner-focused-2` passes all nine selected cases in
+each GC mode, with unchanged sources.
+
+`scroll-owner-isolated-1` substitutes only the tested assignment function;
+shared records match exactly and literal remapping reverses byte for byte.
+The separate eligibility diagnostic records 4,029 calls, 4,023 skipped searches
+and six necessary searches. All 60 unprofiled captures in 30 alternating pairs
+retain exact pixels and all 101 comments. Control and candidate medians are
+6,333,204,263.5 and 6,320,148,603.5 instructions. The median paired saving is
+12,881,629.5, with bootstrap 95% interval [-3,010,671, 23,866,587]. There are
+18 improvements and 12 regressions. The first pair's 1,761,282,800-instruction
+regression remains included. These results do not establish a repeatable
+page improvement: instruction credit is zero. Broad verification is deferred
+below the repeatable 5,000,000-instruction gate; the prior broad baseline is
+unchanged. This experiment does not establish production or Brave parity.
