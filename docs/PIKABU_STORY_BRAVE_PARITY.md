@@ -811,3 +811,33 @@ four-pixel failure remains unresolved. The production diagnostic waits outside
 the memory lock for the navigation tests and retains strict zero-difference
 gates. Canvas browser acceptance, rounded masks, page startup, and matched live
 whole-page parity remain open.
+
+## Navigation negotiation validation
+
+Commit `12d3fa0d` advertises WebP and APNG on macOS document navigations. The
+six-case focused selection, including HTML image selection across a redirect
+and a child-frame request, passes in normal and poisoned arena modes. Frozen
+sources and compiler identities remain unchanged. The outer guard exits zero
+after 69.395 seconds, with a sampled peak RSS of 2,854,649,856 bytes. Raw
+commands, both runtime receipts, and results are retained in
+`Build/pikabu-navigation-negotiation-tests-1793068460999426000/`. This is the
+seventh completed fix since the broad checkpoint. Fresh production-browser
+acceptance is queued; these focused tests do not establish live page parity.
+
+The earlier navigation attempts remain recorded. Two exposed invalid `err`
+references in Option fallbacks, which the final test source corrects. The next
+attempt reached native compilation but lacked the frozen workspace's external
+`3rd` dependency link for the WOFF2 headers. Restoring that link, without an
+implementation change, produced the passing result above.
+
+The native rounded-mask preflight with the newer shared libraries reproduces
+the existing result: all eight scenes are exact at scale one, while scale two
+has four differing pixels with maximum channel error one. Results are in
+`Build/pikabu-rounded-mask-shared-libraries-1793067424798498000/`. A separate
+temporary-surface precision probe tests 8-bit, 16-bit floating-point, and 32-bit
+floating-point contexts. The 8-bit and 32-bit variants retain the same four
+differences; 16-bit introduces additional differences. This does not support
+changing the temporary surface precision. The probe changes no tracked source;
+its inputs and all six runs remain in
+`Build/pikabu-mask-compositing-precision-probe-1793068045837897000/`.
+The strict rounded-mask gate remains failed.
