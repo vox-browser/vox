@@ -1653,3 +1653,47 @@ This is baseline evidence, with zero isolated optimization credit. Its different
 source content prevents attributing the lower count to any one change. The
 line-end optimization continues against the sealed production-3 control that
 contains that shaping behavior. The user's performance target remains open.
+
+
+## Scalar line-end metrics, 2026-10-27
+
+`8e75f2e9` lets read-only line fitting use the shaping cache's scalar advance
+and cluster coverage. It avoids cloning glyphs and building playback buffers;
+trimming still materializes the exact boundary shape used for painting. Cache
+keys, recency, allocation ownership, script/face gates and rounding are retained.
+The focused tests compare cold/warm metrics, cancellation, cluster boundaries,
+caller mutation, scratch lifetimes and repeated read-only queries against the
+materialized shape and final trim in both GC modes: 60 executions pass.
+
+`Build/hn-small-text/line-end-metrics-isolated-2` retains the reversible generated-C
+candidate on the sealed production-3 control, using its unchanged O2 command,
+252 objects and native libraries. Candidate executable SHA256 is
+`7107f8cf87a301d7c682024cae1904954cb47e25ca5a03188d0118c84711b479`.
+The separate diagnostic observes 160,560 metric calls, 127,073 cache hits and
+58,442 trailing-width queries; it receives no timing credit. Thirty alternating
+unprofiled pairs preserve all HN pixels and 101 comments. Control/candidate
+medians are 11,866,915,038 / 11,142,270,368 retired instructions. Median paired
+saving is 709,926,114.5, bootstrap 95% interval [686,054,815.5, 738,283,012],
+with all 30 pairs improving. The strict worst-candidate/best-control ratio is
+0.951903. The 18-CPU host ends at load averages 27.8999/33.2280/33.8457;
+raw trials, identities, commands, exits and input pins are retained.
+
+The conservative 686,054,815.5-instruction credit triggers the broad checkpoint.
+`line-end-metrics-checkpoint-3` records 482 new and 166 distinct carried focused
+executions: 642 pass, while six retain the baseline's three layout failures in
+both modes. All 100 official upstream AST fixtures compare exactly. All 34
+retained control images remain unchanged; 14 of 19 canonical cases are exact,
+and five existing reference failures are unchanged. Three HN fixtures are exact;
+startup and both live checks pass. No tolerance changes.
+
+The initial checkpoint compared against an older screenshot baseline and stopped
+at a select-image mismatch. Recovery captures the exact measured production-3
+control afresh, proving that its select image is also exact. Pipeline 3 reuses
+the completed cohort and broad tests, then passes fresh control/candidate visual
+and AST checks. Its guard exits zero after 284.7712 seconds with sampled peak
+RSS 3,248,734,208 bytes. The earlier failed guard and all outputs are retained.
+Pending broad credit is reset to zero. Independent gains are not added.
+
+This validates the isolated optimization, not a fresh canonical production build
+or Vox/Brave acceptance. The latest completed production baseline above remains
+4.013862 against the required 0.90; the user's performance target stays open.
