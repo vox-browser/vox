@@ -137,6 +137,7 @@ fn (mut context SVGFormattingContext) run(mut svg_box_state UsedValues) {
 
 	element := svg_element_for_layout_node(context.context_box) or { return }
 	mut active_view_box := svg.parse_viewbox(element.get_attribute_value('viewBox'))
+	mut image_dimension_view_box := false
 	if active_view_box == none
 		&& (context.context_box.is_svg_mask_box() || context.context_box.is_svg_clip_box()) {
 		units_attribute := if context.context_box.is_svg_mask_box() {
@@ -167,6 +168,7 @@ fn (mut context SVGFormattingContext) run(mut svg_box_state UsedValues) {
 						width: natural_width.to_double()
 						height: natural_height.to_double()
 					}
+					image_dimension_view_box = true
 				}
 			}
 		}
@@ -201,8 +203,13 @@ fn (mut context SVGFormattingContext) run(mut svg_box_state UsedValues) {
 		} else {
 			1.0
 		}
+		// Chromium stretches the intrinsic coordinate system of an SVG image
+		// without an authored viewBox. preserveAspectRatio applies only to an
+		// actual viewBox; applying its default here introduces letterboxing.
 		preserve_aspect_ratio := if context.context_box.is_svg_mask_box()
-			|| context.context_box.is_svg_clip_box() {
+			|| context.context_box.is_svg_clip_box()
+			|| (image_dimension_view_box
+			&& context.context_box.document().font_rendering_policy() == .chromium) {
 			svg.PreserveAspectRatio{
 				align: .none_
 			}
