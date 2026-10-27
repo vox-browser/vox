@@ -1,6 +1,7 @@
 module main
 
 import crypto.sha256
+import browserjs
 import css
 import dom
 import html
@@ -98,9 +99,14 @@ fn test_capture_audit_counts_native_async_errors_without_replaying_or_clearing_t
 	second := app.collect_capture_audit(CaptureAuditConfig{})!
 	assert first.javascript_diagnostics == []string{}
 	assert first.native_reported_error_count == 2
+	assert first.native_reported_errors == []string{}
 	assert second.native_reported_error_count == 2
 	assert scope.reported_errors().len == 2
 	assert scope.reported_errors()[0].string_data == 'timer failed'
+	described := app.collect_capture_audit(CaptureAuditConfig{describe_native_errors: true})!
+	assert described.native_reported_errors == ['timer failed', 'event failed']
+	assert described.native_reported_error_count == 2
+	assert scope.reported_errors().len == 2
 }
 
 fn test_capture_audit_does_not_create_a_scripting_environment_to_count_errors() {
@@ -111,6 +117,31 @@ fn test_capture_audit_does_not_create_a_scripting_environment_to_count_errors() 
 	audit := app.collect_capture_audit(CaptureAuditConfig{})!
 	assert audit.native_reported_error_count == 0
 	assert document.relevant_settings_object() == unsafe { nil }
+}
+
+fn test_capture_audit_only_describes_native_javascript_errors_when_requested() {
+	$if !darwin && !linux { return }
+	mut document := html.parse_document('<!doctype html><title>Native error details</title>')
+	defer { document.finalize() }
+	window := html.WindowModel.create_top_level(document, none, 'capture-error-details')!
+	mut runtime := browserjs.Runtime.create()
+	defer { runtime.close() }
+	mut scope := window.window_or_worker_global_scope()
+	error_value := runtime.evaluate_host_value('new TypeError("backdrop failed")')!
+	scope.report_error(dom.js_webidl_value(runtime.webidl_value(error_value)!))
+	// Description can execute author code. Ordinary snapshots must not do so.
+	custom := runtime.evaluate_host_value('globalThis.auditConversions=0;({toString(){auditConversions++;return "custom failure"}})')!
+	scope.report_error(dom.js_webidl_value(runtime.webidl_value(custom)!))
+	runtime.evaluate_host('auditConversions=0')!
+	app := BrowserApp{document: document}
+	ordinary := app.collect_capture_audit(CaptureAuditConfig{})!
+	assert ordinary.native_reported_error_count == 2
+	assert ordinary.native_reported_errors == []string{}
+	assert runtime.evaluate_host('auditConversions')! == '0'
+	described := app.collect_capture_audit(CaptureAuditConfig{describe_native_errors: true})!
+	assert described.native_reported_errors == ['TypeError: backdrop failed', 'custom failure']
+	assert runtime.evaluate_host('auditConversions')! == '1'
+	assert scope.reported_errors().len == 2
 }
 
 fn test_capture_audit_rejects_invalid_config_and_retains_empty_selector_results() {

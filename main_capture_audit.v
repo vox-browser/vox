@@ -30,8 +30,9 @@ fn (mut app BrowserApp) schedule_native_observation() bool {
 }
 
 // Optional observer output for reproducible native capture benchmarks. Reading
-// this snapshot does not execute page script, materialize image/font state, or
-// force another layout. Selectors and output paths belong to the test caller.
+// this snapshot does not materialize image/font state or force another layout.
+// Error descriptions opt into JavaScript string conversion; ordinary captures
+// only count errors. Selectors and output paths belong to the test caller.
 struct CaptureAuditSelector {
 	name       string
 	selector   string
@@ -42,6 +43,7 @@ struct CaptureAuditSelector {
 
 struct CaptureAuditConfig {
 	selectors []CaptureAuditSelector
+	describe_native_errors bool
 }
 
 struct CaptureAuditImage {
@@ -98,6 +100,7 @@ struct CaptureAudit {
 	javascript_diagnostics []string
 	// Native HTML timer/event exceptions bypass the compact bridge log.
 	native_reported_error_count int
+	native_reported_errors []string
 	selections             []CaptureAuditSelection
 	note                   string = 'Retained DOM/layout/image snapshot. Document-only captures collect after PNG encoding; other captures collect when scheduled. Collection is included in process-exit instruction totals.'
 }
@@ -192,11 +195,17 @@ fn (app &BrowserApp) collect_capture_audit(config CaptureAuditConfig) !CaptureAu
 		}
 	}
 	mut native_reported_error_count := 0
+	mut native_reported_errors := []string{}
 	record := app.document.relevant_settings_object()
 	if record != unsafe { nil } {
 		settings := unsafe { &html.EnvironmentSettingsObject(record) }
 		if scope := settings.window_or_worker_global_scope() {
 			native_reported_error_count = scope.reported_errors().len
+			if config.describe_native_errors {
+				for reason in scope.reported_errors() {
+					native_reported_errors << reason.to_string_value()
+				}
+			}
 		}
 	}
 	return CaptureAudit{
@@ -213,6 +222,7 @@ fn (app &BrowserApp) collect_capture_audit(config CaptureAuditConfig) !CaptureAu
 		paint_commands: app.paint_commands.len
 		javascript_diagnostics: app.js_messages.clone()
 		native_reported_error_count: native_reported_error_count
+		native_reported_errors: native_reported_errors
 		selections: selections
 	}
 }
