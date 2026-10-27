@@ -400,6 +400,60 @@ fn shape_text_cached(baseline_start_x f32, letter_spacing f32, word_spacing f32,
 	return shaped
 }
 
+pub struct ShapedTextContextMetrics {
+pub:
+	width                f32
+	length_in_code_units int
+	face                 GlyphRunFace
+}
+
+fn cached_shape_context_metrics(shape CachedShape) ?ShapedTextContextMetrics {
+	mut length := 0
+	for glyph in shape.glyphs {
+		length += glyph.length_in_code_units
+	}
+	// Match a complete context slice, including zero-length cluster glyphs
+	// before its first code unit and after its last code unit.
+	mut offset := 0
+	mut first := -1
+	mut end := shape.glyphs.len
+	for index, glyph in shape.glyphs {
+		if offset == 0 { first = index }
+		if offset == length { end = index; break }
+		offset += glyph.length_in_code_units
+	}
+	if first < 0 || end <= first { return none }
+	mut advance := f64(0)
+	for index in first .. end {
+		advance += f64(shape.glyphs[index].advance)
+	}
+	next_offset := if end < shape.glyphs.len { f64(shape.glyphs[end].offset_x) } else { f64(0) }
+	return ShapedTextContextMetrics{
+		width: f32(advance + next_offset - f64(shape.glyphs[first].offset_x))
+		length_in_code_units: length
+		face: shape.face
+	}
+}
+
+// Line fitting needs the context's advance and cluster coverage, without a
+// mutable glyph run, native playback buffers, or painted bounds. Share the
+// ordinary shaping cache and its recency/lifetime rules in both paths.
+pub fn shaped_text_context_metrics(letter_spacing f32, word_spacing f32, text string,
+	font &Font, text_type GlyphRunTextType) ?ShapedTextContextMetrics {
+	font_key := shaping_cache_font_key(font)
+	params := ShapeParams.new(text_type, letter_spacing, word_spacing)
+	mut cache := shared_shaping_cache()
+	if shape := cache.lookup(font_key, text, params) {
+		return cached_shape_context_metrics(shape)
+	}
+	scratch := begin_thread_scratch('context-width text shaping')
+	defer { scratch.finish() }
+	shaped := shape_text_uncached(0, letter_spacing, word_spacing, text, font, text_type)
+	shape := cached_shape_from(shaped)
+	cache.store(font_key, text, params, shape)
+	return cached_shape_context_metrics(shape)
+}
+
 // Width-only callers share the exact cache used by full glyph-run callers.
 pub fn shaped_text_width(letter_spacing f32, word_spacing f32, text string, font &Font, text_type GlyphRunTextType) f32 {
 	font_key := shaping_cache_font_key(font)

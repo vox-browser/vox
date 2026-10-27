@@ -679,12 +679,22 @@ fn (mut line LineBox) calculate_or_trim_trailing_whitespace(should_remove Remove
 	// word-spacing and any shaping-specific adjustment.
 	fragment_trailing_whitespace := last_fragment.trailing_whitespace_
 	mut trailing_size := fragment_trailing_whitespace.inline_size
-	reshaped := last_fragment.chromium_shape_without_trailing_whitespace(line.has_break_
-		|| trailing_whitespace_width.raw_value() > 0 || last_fragment.has_trailing_whitespace_)
+	at_break := line.has_break_ || trailing_whitespace_width.raw_value() > 0
+		|| last_fragment.has_trailing_whitespace_
+	mut reshaped := ?&platform.GlyphRun(none)
 	mut trimmed_advance := last_fragment.trailing_whitespace_advance(fragment_trailing_whitespace)
-	if run := reshaped {
+	if should_remove == .yes {
+		reshaped = last_fragment.chromium_shape_without_trailing_whitespace(at_break)
+		if run := reshaped {
+			if precise := last_fragment.precise_inline_length_ {
+				trimmed_advance = precise - f64(run.width())
+			}
+		}
+	} else if width := last_fragment.chromium_width_without_trailing_whitespace(at_break) {
+		// Read-only fit/alignment queries need the same boundary advance,
+		// without constructing a glyph run that only trimming can retain.
 		if precise := last_fragment.precise_inline_length_ {
-			trimmed_advance = precise - f64(run.width())
+			trimmed_advance = precise - f64(width)
 		}
 	}
 	if trimmed_width := last_fragment.chromium_width_without_trailing_advance(trimmed_advance) {

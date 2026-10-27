@@ -7,7 +7,7 @@ import platform
 // retains that kern. Blink's ShapingLineBreaker reshapes the exposed boundary
 // before measuring/alignment. Keep the same supported context-shaping scope,
 // and leave bidi, fallback faces and ambiguous cluster coverage alone.
-fn (fragment &LineBoxFragment) chromium_shape_without_trailing_whitespace(at_break bool) ?&platform.GlyphRun {
+fn (fragment &LineBoxFragment) chromium_visible_line_end(at_break bool) ?string {
 	run := fragment.glyph_run_ or { return none }
 	if run.font().font_rendering_policy != .chromium || run.text_type() != .ltr
 		|| fragment.direction_ != .ltr || fragment.precise_inline_length_ == none
@@ -27,8 +27,19 @@ fn (fragment &LineBoxFragment) chromium_shape_without_trailing_whitespace(at_bre
 	}
 	if covered != fragment.length_in_code_units_ || !has_glyph_indices { return none }
 	text := fragment.text() or { return none }
-	visible := utf16_substring_for_line_box(text, 0, length)
+	return utf16_substring_for_line_box(text, 0, length)
+}
+
+fn (fragment &LineBoxFragment) chromium_shape_without_trailing_whitespace(at_break bool) ?&platform.GlyphRun {
+	visible := fragment.chromium_visible_line_end(at_break) or { return none }
+	run := fragment.glyph_run_ or { return none }
 	return chromium_shape_line_end(fragment.layout_node_, visible, run, fragment.glyph_remainder_)
+}
+
+fn (fragment &LineBoxFragment) chromium_width_without_trailing_whitespace(at_break bool) ?f32 {
+	visible := fragment.chromium_visible_line_end(at_break) or { return none }
+	run := fragment.glyph_run_ or { return none }
+	return chromium_line_end_width(fragment.layout_node_, visible, run)
 }
 
 fn chromium_shape_line_end(node &Node, visible string, run &platform.GlyphRun,
@@ -60,6 +71,22 @@ fn chromium_shape_line_end(node &Node, visible string, run &platform.GlyphRun,
 
 // Fit the candidate with the boundary that painting will use. An unsafe
 // letter-space kern can otherwise accept a word whose reshaped line overflows.
+fn chromium_line_end_width(node &Node, visible string, run &platform.GlyphRun) ?f32 {
+	if run.font().font_rendering_policy != .chromium || run.text_type() != .ltr
+		|| run.face() != .document || !chromium_context_has_single_supported_script(visible) {
+		return none
+	}
+	letter_spacing := f32(resolved_text_spacing_for_node(node, .letter_spacing).to_double())
+	word_spacing := f32(resolved_text_spacing_for_node(node, .word_spacing).to_double())
+	metrics := platform.shaped_text_context_metrics(letter_spacing, word_spacing, visible,
+		run.font(), .ltr) or { return none }
+	if metrics.face != run.face()
+		|| metrics.length_in_code_units != utf16_code_units_for_line_box(visible).len {
+		return none
+	}
+	return metrics.width
+}
+
 fn (projection &ProjectedTextAdvance) chromium_line_end_correction() CSSPixels {
 	if projection.node == unsafe { nil } || projection.run == unsafe { nil }
 		|| projection.segment_length <= 0
@@ -69,10 +96,10 @@ fn (projection &ProjectedTextAdvance) chromium_line_end_correction() CSSPixels {
 	text_node := projection.node.as_text_node() or { return CSSPixels.new(0) }
 	text := utf16_substring_for_line_box(text_node.text_for_rendering(),
 		projection.segment_start, projection.segment_length)
-	run := chromium_shape_line_end(projection.node, text, projection.run, 0) or {
+	advance := chromium_line_end_width(projection.node, text, projection.run) or {
 		return CSSPixels.new(0)
 	}
 	width := inline_advance_to_css_pixels(projection.precise - projection.segment_width +
-		f64(run.width()), run.font())
+		f64(advance), projection.run.font())
 	return width.minus(projection.rounded)
 }
