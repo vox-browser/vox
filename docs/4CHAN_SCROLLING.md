@@ -1468,3 +1468,28 @@ loads and exits are under `shared-baseline-20261027-015031/trials/`;
 `reviewed-results.json` records the independent evidence checks. The enclosing
 memory guard exited 0, with a 12 GiB budget, sampled peak RSS
 870,645,760 bytes and 68.93 seconds elapsed.
+
+### Scratch wrapper validation status (2026-10-26 UTC)
+
+Commit `e3379f47` contains the bounded native prefetch API and both native
+pixel oracles described above. The Cocoa scope wrapper passed its normal and
+ASan/UBSan executions, including context restoration before submission,
+nesting, cancellation and declined admission. Those successful commands and
+their immutable inputs remain in `scratch-scope-focused-v1/`.
+
+The V fixture has not executed successfully. Its first compile failed because
+the fixture omitted declarations for mock C counters. The corrected fixture
+then exceeded its 3 GiB guard while importing the full layout dependency
+graph: `scratch-scope-focused-v2/memory.json` records reason `memory_limit`,
+child exit -9, sampled peak 3,243,016,192 bytes and 26.69 seconds elapsed.
+Neither attempt receives runtime-test credit.
+
+The same-budget retry in `scratch-scope-focused-v3/` retains the exact V
+wrapper body and mocks only the command fields it consumes; production
+compilation must still check the real layout type. The dependent coordinator
+in `scratch-browser-isolated-v4/` waits outside the guard and submits no browser
+build unless that focused retry passes. The preceding coordinator withheld its
+build after the focused guard failure.
+Browser eligibility, pixel comparisons and alternating unprofiled acceptance
+remain pending. The candidate is disabled by default; 60 fps and a live SOCKS
+fix remain unestablished.
