@@ -1213,3 +1213,32 @@ overall guard exit one. The reduced header result does not establish full-page
 parity. A separate native trace shows that the story's header does not qualify
 for shared recording; diagnosing that rejection is the next step. Canvas RGBA
 readback and Retina mask equality also remain open.
+
+## Compositor clip checkpoint (`98b53593`)
+
+Shared compositor pictures now retain finite rectangular and rounded clip
+stacks, including their transforms, and ordinary bitmap backgrounds. Native
+save/restore preserves clip ownership; path clips and masks block replacement
+so the completed leaf output remains available. The focused recording, mask,
+clip and layout checks execute successfully in normal and poisoned arena modes;
+the native local-picture regression also passes. Commands and exit codes are in
+`Build/pikabu-compositor-clips-1793138300278859000/checks-v2/results.json`,
+`focused-v2.json`, `native-v3.log` and `native-v3.json`.
+
+The diagnostic bundle in that directory contains this change; its executable
+SHA-256 is `b52d8f9577e28fdf0131675653e4996c38ef09a8baa35a9f7081d6b2996bb786`.
+The clip fixture differs from Brave in 171 pixels at scale one and 334 at scale
+two, versus 276 and 556 with the available production bundle. Both gates still
+fail, including rotated edges; those results do not establish parity. Baseline
+captures and immutable executable identities are retained in
+`Build/pikabu-clip-baseline-1793140486731238000/`; candidate captures are in
+`clipped-visual-results.json` and the corresponding PNGs in the diagnostic
+bundle directory. The production bundle was not replaced.
+
+The frozen story remains at 7,309 differing pixels (maximum error 42), and the
+independent live comparison has 6,833 (maximum error 26). Capture processes exit
+zero; strict pixel gates fail. Raw captures and audits are in that directory's
+`story/`. A paint-payload probe in
+`Build/pikabu-header-payload-1793140055491465000/` confirms that three SVG
+gradient paths still reject the header's complete shared picture. Gradient
+recording, Canvas RGBA readback and Retina mask equality remain open.
