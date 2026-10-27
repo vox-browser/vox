@@ -86,6 +86,7 @@ fn (mut binding CompactElementQueryBinding) document_query(root &dom.Node, actio
 			'compatMode' { document.compat_mode() }
 			'characterSet' { document.character_set() }
 			'readyState' { document.ready_state() }
+			'referrer' { document.referrer() }
 			else { return error('Invalid Document property') }
 		})
 	}
@@ -166,7 +167,7 @@ function __compactDocumentWrapper(state){
 Object.setPrototypeOf(document,HTMLDocument.prototype);
 __elementApply(__elementRecordSet,__compactDocuments,[document,{bridgeKey:"",nodeType:9}]);
 for(const name of ["documentElement","head","body","doctype"]){Object.defineProperty(Document.prototype,name,{get:function(){return __queryElements(__compactDocumentState(this).bridgeKey,"documentNode",name);},enumerable:true,configurable:true});}
-for(const name of ["title","URL","documentURI","baseURI","contentType","compatMode","characterSet","readyState"]){Object.defineProperty(Document.prototype,name,{get:function(){return __queryElements(__compactDocumentState(this).bridgeKey,"documentValue",name);},set:name==="title"?function(value){const state=__compactDocumentState(this);__queryElements(state.bridgeKey,"setDocumentTitle",__compactDocumentString(value));for(const title of __queryElements(state.bridgeKey,"querySelectorAll","title"))__compactInvalidateContent(__compactNodeState(title));}:undefined,enumerable:true,configurable:true});}
+for(const name of ["title","URL","documentURI","baseURI","contentType","compatMode","characterSet","readyState","referrer"]){Object.defineProperty(Document.prototype,name,{get:function(){return __queryElements(__compactDocumentState(this).bridgeKey,"documentValue",name);},set:name==="title"?function(value){const state=__compactDocumentState(this);__queryElements(state.bridgeKey,"setDocumentTitle",__compactDocumentString(value));for(const title of __queryElements(state.bridgeKey,"querySelectorAll","title"))__compactInvalidateContent(__compactNodeState(title));}:undefined,enumerable:true,configurable:true});}
 Object.defineProperty(Document.prototype,"currentScript",{get:function(){return __queryElements(__compactDocumentState(this).bridgeKey,"documentCurrentScript","");},enumerable:true,configurable:true});
 for(const [name,value] of [["nodeType",9],["nodeName","#document"],["ownerDocument",null],["parentNode",null],["parentElement",null],["nodeValue",null],["textContent",null],["defaultView",null],["location",null]])Object.defineProperty(Document.prototype,name,{get:function(){__compactDocumentState(this);return value;},enumerable:true,configurable:true});
 Object.defineProperty(Document.prototype,"childNodes",{get:function(){return __compactChildNodes(this,__compactDocumentState(this));},enumerable:true,configurable:true});
