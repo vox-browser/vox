@@ -1402,3 +1402,28 @@ regression remains included. These results do not establish a repeatable
 page improvement: instruction credit is zero. Broad verification is deferred
 below the repeatable 5,000,000-instruction gate; the prior broad baseline is
 unchanged. This experiment does not establish production or Brave parity.
+
+## Decoded SVG resource ownership, uncredited
+
+`be9b0d5e` keeps an HTML image's completed decoded SVG when the shell finishes
+a separate favicon or background request for the same URL. The dependency
+check verifies the committed image box owns that exact decoded document.
+Pending images and generated content retain their existing invalidation. Two
+new tests cover intrinsic and explicit image sizes, separate response bytes,
+request identity, load events, retained geometry, nested painting and generated
+content. `svg-owner-focused-2` passes all 17 selected cases in each GC mode
+with unchanged source hashes.
+
+`svg-owner-resume-1` authenticates and reuses the compiled isolated candidate
+from `svg-owner-isolated-1`; its original failed diagnostic remains retained.
+The corrected separate diagnostic records one owned completion, no requested
+HTML rebuild, and one HTML layout/build. All 60 unprofiled captures in 30
+alternating pairs preserve exact pixels and all 101 comments. Control and
+candidate medians are 6,367,767,466 and 6,366,521,917 instructions. Median paired
+saving is 8,511,462.5, with bootstrap 95% interval [-2,455,308.5, 13,123,366.5].
+There are 18 improvements and 12 regressions; the largest regression is
+57,310,882 instructions and remains included. Repeatable page credit is zero.
+Broad verification is deferred below the repeatable 5,000,000-instruction
+gate, leaving the prior broad baseline unchanged. The guard completes with
+exit zero, 306.7954 seconds and 5,192,302,592 bytes sampled peak RSS. This
+functional fix and diagnostic do not establish production or Brave parity.
