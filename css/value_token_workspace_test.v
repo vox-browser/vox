@@ -7,6 +7,25 @@ $if gcboehm ? {
 	fn C.GC_gcollect()
 }
 
+fn test_component_text_ownership_updates_the_original_token_payloads() {
+	scratch := platform.begin_thread_scratch('test decoded component text')
+	mut components := parse_component_values_for_value_logic(r'n\61 me fn(f\61 mily)')
+	scratch.leave()
+	own_value_component_text(mut components)
+	// The vectors are still temporary; only their decoded strings escape.
+	identifier := components[0].token().value
+	function := components[2].function()
+	name := function.name
+	argument := function.value[0].token().value
+	original := function.value[0].token().original_source_text_
+	scratch.finish()
+	$if gcboehm ? { C.GC_gcollect() }
+	assert identifier == 'name'
+	assert name == 'fn'
+	assert argument == 'family'
+	assert original == r'f\61 mily'
+}
+
 fn test_property_values_own_decoded_strings_and_typed_geometry_after_token_retirement() {
 	properties := [PropertyID.content, .font_family, .animation_name, .background_image,
 		.grid_template_columns, .width, .left, .transform, .color, .border_radius]

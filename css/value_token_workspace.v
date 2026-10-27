@@ -45,5 +45,8 @@ fn own_value_component_text(mut components []ComponentValue) {
 			RawComponentValue { payload.text = payload.text.clone() }
 			GuaranteedInvalidValue {}
 		}
+		// Sum-type assignment copies its payload in current V. Publish the
+		// owned strings back to the component used by the second parser pass.
+		component.value = payload
 	}
 }
