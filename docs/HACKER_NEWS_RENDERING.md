@@ -1785,3 +1785,59 @@ This validates the isolated optimization. The combined cache-density candidate
 still needs its own measurements and direct Brave comparison; independent gains
 are not added. The user's requirement of at least 10% fewer instructions than
 Brave remains open.
+
+
+## Combined cache density and safe boundaries, 2026-10-27
+
+`Build/hn-small-text/density-composed-isolated-6` composes the previously checked
+cache-density slice onto the SVG-ownership and safe-boundary candidate. This is
+an isolated frozen generated-C composition, not a fresh canonical production
+build. Removing the four focused writers, two helpers and record additions
+restores the entire parent C byte for byte. The 252 O2 objects, native libraries
+and unrelated generated code remain unchanged. Executable SHA256 is
+`2f98e90bddf5ab3ab45b32290e939bfcafdac801350f902a8618be8b5fedb5bf`.
+
+Thirty alternating unprofiled pairs retain all 101 comments and exact screenshots.
+Control/candidate medians are 7,813,809,141.5 / 7,742,455,117 retired instructions.
+The median paired saving is 71,638,468; the bootstrap 95% interval is
+[58,588,422, 81,100,061.5]. All 30 pairs improve, with a minimum saving of
+1,039,862. The strict worst-candidate/best-control ratio is 1.007853, showing
+variation across the cohort despite each matched pair improving. The 18-CPU
+host ends at load averages 60.1636/53.4424/36.1460; all raw trials and host
+conditions are retained. The separate eligibility diagnostic records 77,855
+queries, 75,242 hits and 43,290 empty cases, with exact pixels; it receives no
+performance credit.
+
+The conservative 58,588,422-instruction credit triggers checkpoint 6. Its 482
+new executions and 210 distinct carried executions produce 686 passes and the
+same six baseline layout failures. All 100 upstream AST fixtures compare exactly.
+The visual batch retains all 34 fresh control/candidate images unchanged: 14 of
+19 reference cases are exact, and five pre-existing reference failures remain
+unchanged. Three HN fixtures, startup and two live identity checks pass. No
+pixel tolerance changes. Pending broad credit resets to zero.
+
+`Build/hn-small-text/profile-20` is a fresh, separately sampled diagnostic of
+this exact executable. Attachment, browser and sampler exits, the PNG endpoint,
+all 101 comments, exact pixels and input identities are verified. It still finds
+intrinsic line fitting and repeated context/safe-range measurements. Inclusive
+counts remove recursive duplicate ancestors; samples are diagnostic only and
+receive no instruction credit.
+
+`Build/hn-small-text/composed-brave-acceptance-1` directly compares this combined
+candidate with Brave in 30 alternating pairs using the unchanged official
+capture workflow. Every capture is valid and exact. Vox's median is
+7,754,983,095.5 instructions; Brave's median lower bound is 1,796,922,868.
+The strict worst-Vox/best-Brave ratio is 4.554655, exceeding the required 0.90.
+The actual benchmark exit is 1; the wrapper's zero exit records a valid completed
+measurement, not target acceptance. The 18-CPU host ends at load averages
+37.6104/34.9565/34.0786, with one-second samples retained outside both browser
+coalitions. The endpoint includes different browser startup and PNG delivery
+work, as documented above; it is not an identical internal first-render measure.
+The user's requirement of at least 10% fewer instructions than Brave remains
+open. Independent candidate gains are not added.
+
+The complete guarded composition/checkpoint/profile/Brave run exits zero after
+2,266.215 seconds, with sampled aggregate peak RSS 9,407,561,728 bytes under the
+12 GiB guard. Commands, actual child exits and inputs are retained under
+`Build/hn-small-text/safe-density-composition-4` and its guard receipt
+`Build/hn-small-text/safe-density-composition-5-guard.json`.
