@@ -730,3 +730,37 @@ comparison. It does not validate the complete uBlock policy or establish live
 page parity. The pending FormData, canvas-filter, and mask corrections still
 need focused and production-browser validation before receiving conformance
 credit.
+
+## Canvas filters and startup validation checkpoint
+
+Commit `c63fad6b` resolves same-document SVG filter URLs for canvas drawing
+through the existing live SVG filter graph. The focused selection contains six
+new cases and eighteen existing canvas cases. All 24 pass in normal and
+poisoned arena modes, with zero compile and runtime exits and unchanged frozen
+inputs: `Build/pikabu-canvas-svg-tests-1793060230273941000/results.json`.
+This is the fifth completed fix since the preceding broad checkpoint. Browser
+acceptance still needs an executable containing the change.
+
+Startup validation attempt 13 exits one after 865.915 seconds, with sampled
+peak RSS 7,405,092,864 bytes under the 12 GiB guard. Its four step exits are
+`[1, 0, 1, 1]`; no production browser is built or launched. The initial FormData
+compile lacks a browserjs header. After repairing the frozen harness's header
+links, compilation succeeds, but its normal runtime times out after 180 seconds
+and is killed. Arena validation has not run. The failure and repair evidence
+remain in `Build/pikabu-form-data-tests-1793054934823159000/`; this is not a
+passing FormData result.
+
+The native rounded-mask experiment is pixel-exact at scale one. Scale two has
+four differing pixels, each with maximum channel error one, including one in
+the unmasked control. The strict zero-difference gate remains failed; native
+execution does not establish browser eligibility. Results and unchanged source
+and library identities are retained in
+`Build/pikabu-rounded-mask-tests-1793060230273941000/results.json`.
+
+The full-filter Brave capture fails before launch because the extension path
+pinned by its prepared profile no longer exists. The newly installed extension
+has a different content hash, so its bytes cannot replace the old validated
+input. A separate immutable extension copy and fresh profile preparation are
+queued. Existing captures and hashes remain intact. Live story parity,
+FormData startup, canvas browser acceptance, and the rounded-mask gate remain
+open.
