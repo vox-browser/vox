@@ -3113,7 +3113,7 @@ fn serialize_grid_template_values(mode SerializationMode, areas StyleValue, rows
 			if area_index < int(areas_value.row_count()) {
 				mut cells := []string{}
 				for column in 0 .. int(areas_value.column_count()) {
-					cells << areas_value.cell_name_at(usize(area_index), usize(column))
+					cells << areas_value.cell_name_at(uint(area_index), uint(column))
 				}
 				parts << serialize_a_string(cells.join(' '))
 			}

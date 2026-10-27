@@ -84,7 +84,7 @@ fn (mut runtime Runtime) resize_observer_make(binding &ResizeObserverBinding, ki
 
 fn (mut runtime Runtime) resize_observer_array(binding &ResizeObserverBinding, values []voidptr, frozen bool) !voidptr {
 	mut exception := unsafe { nil }
-	array := C.JSObjectMakeArray(runtime.context, usize(values.len), values.data, &exception)
+	array := C.JSObjectMakeArray(runtime.context, uint(values.len), values.data, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	if !frozen { return array }
 	return runtime.retain_javascript_value(runtime.call_javascript_function(binding.make,

@@ -1,7 +1,7 @@
 module painting
 
 $if gcboehm ? {
-	fn C.GC_get_total_bytes() usize
+	fn C.GC_get_total_bytes() uint
 }
 
 fn test_common_visual_context_hit_tests_do_not_allocate_backface_maps() {

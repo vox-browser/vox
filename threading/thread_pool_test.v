@@ -52,7 +52,7 @@ fn test_shared_thread_pool_runs_four_workers_and_keeps_pending_work_until_a_work
 }
 
 $if gcboehm ? {
-	fn C.GC_get_gc_no() usize
+	fn C.GC_get_gc_no() uint
 }
 
 fn test_idle_workers_do_not_collect_the_process_heap_and_still_resume_queued_work() {

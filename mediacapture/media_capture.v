@@ -577,9 +577,9 @@ pub:
 	track_ &MediaStreamTrack
 }
 
-pub fn MediaStreamTrackEvent.track_offset() usize {
+pub fn MediaStreamTrackEvent.track_offset() uint {
 	event_storage_size := sizeof(dom.Event)
-	return usize(event_storage_size)
+	return uint(event_storage_size)
 }
 
 pub fn MediaStreamTrackEvent.create(event_name string, event_init MediaStreamTrackEventInit, time_stamp f64) &MediaStreamTrackEvent {

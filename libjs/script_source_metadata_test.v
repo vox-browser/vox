@@ -94,7 +94,7 @@ fn test_non_directive_ascii_starts_do_not_copy_a_large_program_for_metadata() {
 		before := gc_heap_usage().total_bytes
 		assert !script_source_is_strict(source)
 		allocated := gc_heap_usage().total_bytes - before
-		assert allocated < usize(source.len / 10), 'Strictness metadata copied ${allocated} bytes for a non-directive program'
+		assert allocated < uint(source.len / 10), 'Strictness metadata copied ${allocated} bytes for a non-directive program'
 	} $else {
 		assert !script_source_is_strict(source)
 	}
@@ -137,7 +137,7 @@ fn test_comment_prefixed_programs_do_not_copy_the_whole_program_for_metadata() {
 		before := gc_heap_usage().total_bytes
 		assert !script_source_is_strict(source)
 		allocated := gc_heap_usage().total_bytes - before
-		assert allocated < usize(source.len / 10), 'Strictness metadata copied ${allocated} bytes for a comment-prefixed program'
+		assert allocated < uint(source.len / 10), 'Strictness metadata copied ${allocated} bytes for a comment-prefixed program'
 	} $else {
 		assert !script_source_is_strict(source)
 	}

@@ -867,7 +867,7 @@ pub fn (properties &CSSStyleProperties) css_text() string {
 	return css_style_properties_serialized(properties)
 }
 
-pub fn (properties &CSSStyleProperties) item(index usize) string {
+pub fn (properties &CSSStyleProperties) item(index uint) string {
 	properties.ensure_declarations_parsed()
 	// The item(index) method must return the property name of the CSS declaration at position index.
 	// If there is no indexth object in the collection, then the method must return the empty string.
@@ -893,7 +893,7 @@ pub fn (properties &CSSStyleProperties) item(index usize) string {
 	return properties.properties[int(index) - custom_properties_count].name
 }
 
-pub fn (properties &CSSStyleProperties) item_value(index usize) ?string {
+pub fn (properties &CSSStyleProperties) item_value(index uint) ?string {
 	properties.ensure_declarations_parsed()
 	value := properties.item(index)
 	if value.len == 0 {
@@ -1882,9 +1882,9 @@ pub fn (mut properties CSSStyleProperties) set_css_float(value string) ! {
 	properties.set_property('float', value, '')!
 }
 
-pub fn (properties &CSSStyleProperties) custom_property_count() usize {
+pub fn (properties &CSSStyleProperties) custom_property_count() uint {
 	properties.ensure_declarations_parsed()
-	return usize(properties.custom_properties.len)
+	return uint(properties.custom_properties.len)
 }
 
 pub fn (properties &CSSStyleProperties) property_priority(property_name string) string {

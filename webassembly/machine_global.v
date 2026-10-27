@@ -28,7 +28,7 @@ pub fn (mut global BinaryMachineGlobalInstance) set_value(value BinaryMachineVal
 	global.value_ = value
 }
 
-pub fn BinaryMachineGlobalInstance.value_offset() usize {
+pub fn BinaryMachineGlobalInstance.value_offset() uint {
 	return __offsetof(BinaryMachineGlobalInstance, value_)
 }
 

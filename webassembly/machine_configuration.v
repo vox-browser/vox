@@ -29,7 +29,7 @@ mut:
 	frame_stack_                    []BinaryMachineFrame
 	owned_locals_stack_             []BinaryMachineArguments
 	call_argument_freelist_         []BinaryMachineArguments
-	depth_                          usize
+	depth_                          uint
 	ip_                             u64
 	should_limit_instruction_count_ bool
 	locals_base_                    &BinaryMachineValue           = unsafe { nil }
@@ -95,35 +95,35 @@ pub fn (mut configuration BinaryMachineConfiguration) frame() &BinaryMachineFram
 
 pub fn (mut configuration BinaryMachineConfiguration) ip() &u64 { return &configuration.ip_ }
 
-pub fn (mut configuration BinaryMachineConfiguration) depth() &usize {
+pub fn (mut configuration BinaryMachineConfiguration) depth() &uint {
 	return &configuration.depth_
 }
 
-pub fn BinaryMachineConfiguration.locals_base_offset() usize {
+pub fn BinaryMachineConfiguration.locals_base_offset() uint {
 	return __offsetof(BinaryMachineConfiguration, locals_base_)
 }
 
-pub fn BinaryMachineConfiguration.memory_instances_offset() usize {
+pub fn BinaryMachineConfiguration.memory_instances_offset() uint {
 	return __offsetof(BinaryMachineConfiguration, memory_instances_)
 }
 
-pub fn BinaryMachineConfiguration.global_instances_offset() usize {
+pub fn BinaryMachineConfiguration.global_instances_offset() uint {
 	return __offsetof(BinaryMachineConfiguration, global_instances_)
 }
 
-pub fn BinaryMachineConfiguration.compiled_call_result_scratch_offset() usize {
+pub fn BinaryMachineConfiguration.compiled_call_result_scratch_offset() uint {
 	return __offsetof(BinaryMachineConfiguration, compiled_call_result_scratch_)
 }
 
-pub fn BinaryMachineConfiguration.value_stack_base_offset() usize {
+pub fn BinaryMachineConfiguration.value_stack_base_offset() uint {
 	return __offsetof(BinaryMachineConfiguration, value_stack_) + BinaryMachineValueStack.base_offset()
 }
 
-pub fn BinaryMachineConfiguration.value_stack_top_offset() usize {
+pub fn BinaryMachineConfiguration.value_stack_top_offset() uint {
 	return __offsetof(BinaryMachineConfiguration, value_stack_) + BinaryMachineValueStack.top_offset()
 }
 
-pub fn BinaryMachineConfiguration.call_record_base_offset() usize {
+pub fn BinaryMachineConfiguration.call_record_base_offset() uint {
 	return __offsetof(BinaryMachineConfiguration, call_record_base_)
 }
 
@@ -143,7 +143,7 @@ pub fn (configuration &BinaryMachineConfiguration) local(index u32) &BinaryMachi
 	return unsafe { configuration.locals_base_ + index }
 }
 
-pub fn (configuration &BinaryMachineConfiguration) memory_instance(index usize) &BinaryMachineMemoryInstance {
+pub fn (configuration &BinaryMachineConfiguration) memory_instance(index uint) &BinaryMachineMemoryInstance {
 	return unsafe { configuration.memory_instances_[index] }
 }
 
@@ -159,11 +159,11 @@ pub fn (mut configuration BinaryMachineConfiguration) set_call_record_base(base 
 	configuration.call_record_base_ = unsafe { base }
 }
 
-pub fn (configuration &BinaryMachineConfiguration) call_record_entry(index usize) &BinaryMachineValue {
+pub fn (configuration &BinaryMachineConfiguration) call_record_entry(index uint) &BinaryMachineValue {
 	return unsafe { configuration.call_record_base_ + index }
 }
 
-pub fn (mut configuration BinaryMachineConfiguration) setup_call_record(max_call_rec_size usize) {
+pub fn (mut configuration BinaryMachineConfiguration) setup_call_record(max_call_rec_size uint) {
 	configuration.call_record_base_ = configuration.call_record_stack_.allocate(max_call_rec_size)
 }
 

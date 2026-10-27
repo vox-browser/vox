@@ -16,8 +16,8 @@ mut:
 	deferred_native_calls   []voidptr
 	heap_adjustment_allowed bool
 	heap_policy_changed     bool
-	previous_heap_divisor   usize
-	applied_heap_divisor    usize
+	previous_heap_divisor   uint
+	applied_heap_divisor    uint
 }
 
 struct DeferredWorkTimer {
@@ -162,7 +162,7 @@ $if gcboehm ? {
 		mut state := unsafe { &CooperativeWorkState(context) }
 		previous := C.GC_get_free_space_divisor()
 		minimum := browser_activity_heap_minimum_divisor_locked()
-		divisor := if minimum > 8 { minimum } else { usize(8) }
+		divisor := if minimum > 8 { minimum } else { uint(8) }
 		if previous > divisor {
 			state.previous_heap_divisor = previous
 			state.applied_heap_divisor = divisor

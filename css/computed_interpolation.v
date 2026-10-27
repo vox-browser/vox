@@ -10702,8 +10702,8 @@ pub mut:
 	sheet                        ?&CSSStyleSheet
 	default_namespace            ?string
 	selector                     Selector
-	style_sheet_index            usize
-	rule_index                   usize
+	style_sheet_index            uint
+	rule_index                   uint
 	specificity                  u32
 	cascade_origin               CascadeOrigin
 	contains_pseudo_element      bool

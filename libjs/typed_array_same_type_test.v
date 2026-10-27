@@ -54,7 +54,7 @@ fn test_typed_array_create_same_type_propagates_constructor_errors_and_result_va
 	parent := Object.create(vm.realm(), none)
 	for mode in ['throw', 'fake', 'short', 'detached', 'out of bounds'] {
 		mut buffer := ArrayBufferObject.create(mut vm, vm.realm(), 2, parent)!
-		buffer.maximum_byte_length = usize(4)
+		buffer.maximum_byte_length = uint(4)
 		exemplar := TypedArray.create(vm.realm(), .uint8, 2, buffer, parent)
 		result := if mode == 'fake' { parent } else { exemplar.object }
 		if mode == 'detached' { detach_array_buffer(mut vm, mut buffer, none)! }

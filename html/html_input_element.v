@@ -326,7 +326,7 @@ pub fn (model &HTMLInputElementModel) to_html_element() &dom.Element {
 	return input_element(model)
 }
 
-pub fn (model &HTMLInputElementModel) current_frame_index() usize {
+pub fn (model &HTMLInputElementModel) current_frame_index() uint {
 	_ = model
 	return 0
 }

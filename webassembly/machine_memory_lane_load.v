@@ -27,7 +27,7 @@ pub fn (mut interpreter BinaryMachineBytecodeInterpreter) load_and_push_lane_n[T
 	instance_address := base + arg.memory.offset
 	mut bytes := binary_machine_store_bytes[BinaryMachineValue](vector)
 	dst := unsafe { &bytes[0] + int(arg.lane) * int(sizeof(T)) }
-	memory.data().copy_to(usize(instance_address), BinaryMachineBytes{ data: dst, size: usize(sizeof(T)) })
+	memory.data().copy_to(uint(instance_address), BinaryMachineBytes{ data: dst, size: uint(sizeof(T)) })
 	loaded := binary_machine_read_value[BinaryMachineValue](BinaryMachineBytes{ data: unsafe { &bytes[0] }, size: 16 })
 	configuration.push_to_destination(.any, loaded, unsafe { addresses.operands.destination })
 	return false

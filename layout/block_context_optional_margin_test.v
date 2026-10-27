@@ -4,7 +4,7 @@ import css
 import dom
 
 $if gcboehm ? {
-	fn C.GC_get_total_bytes() usize
+	fn C.GC_get_total_bytes() uint
 	fn C.GC_gcollect()
 }
 
@@ -14,7 +14,7 @@ fn optional_margin_fresh_context() BlockFormattingContext {
 }
 
 fn test_empty_block_context_does_not_construct_an_absent_margin_child() {
-	mut before := usize(0)
+	mut before := uint(0)
 	$if gcboehm ? { before = C.GC_get_total_bytes() }
 	mut empty := 0
 	for _ in 0 .. 512 {
@@ -23,7 +23,7 @@ fn test_empty_block_context_does_not_construct_an_absent_margin_child() {
 			empty++
 		}
 	}
-	mut allocated := usize(0)
+	mut allocated := uint(0)
 	$if gcboehm ? { allocated = C.GC_get_total_bytes() - before }
 	assert empty == 512
 	// The real float-band vector still belongs to every context. An absent

@@ -5,7 +5,7 @@ module webassembly
 
 #include <stdlib.h>
 
-pub const binary_arguments_static_size = usize(3)
+pub const binary_arguments_static_size = uint(3)
 
 // Actual inline storage moves with its owner; outline allocations transfer
 // ownership. The native system allocator uses the exact-size branch of
@@ -14,27 +14,27 @@ pub struct BinaryMachineArguments {
 mut:
 	inline_values [3]BinaryMachineValue
 	outline       &BinaryMachineValue = unsafe { nil }
-	size_         usize
-	capacity_     usize = binary_arguments_static_size
+	size_         uint
+	capacity_     uint = binary_arguments_static_size
 }
 
 pub fn BinaryMachineArguments.from_values(values []BinaryMachineValue) BinaryMachineArguments {
 	mut arguments := BinaryMachineArguments{}
-	arguments.ensure_capacity(usize(values.len))
+	arguments.ensure_capacity(uint(values.len))
 	for value in values { arguments.unchecked_append(value) }
 	return arguments
 }
 
-pub fn (arguments &BinaryMachineArguments) size() usize { return arguments.size_ }
+pub fn (arguments &BinaryMachineArguments) size() uint { return arguments.size_ }
 
-pub fn (arguments &BinaryMachineArguments) capacity() usize { return arguments.capacity_ }
+pub fn (arguments &BinaryMachineArguments) capacity() uint { return arguments.capacity_ }
 
 pub fn (mut arguments BinaryMachineArguments) data() &BinaryMachineValue {
 	if arguments.outline != unsafe { nil } { return arguments.outline }
 	return unsafe { &arguments.inline_values[0] }
 }
 
-pub fn (mut arguments BinaryMachineArguments) at(index usize) &BinaryMachineValue {
+pub fn (mut arguments BinaryMachineArguments) at(index uint) &BinaryMachineValue {
 	assert index < arguments.size_
 	return unsafe { arguments.data() + index }
 }
@@ -45,16 +45,16 @@ pub fn (mut arguments BinaryMachineArguments) span() BinaryMachineValueSpan {
 	return BinaryMachineValueSpan{ data: arguments.data(), size: arguments.size_ }
 }
 
-pub fn (mut arguments BinaryMachineArguments) ensure_capacity(needed usize) {
+pub fn (mut arguments BinaryMachineArguments) ensure_capacity(needed uint) {
 	if arguments.capacity_ >= needed { return }
-	if needed > ~usize(0) / usize(sizeof(BinaryMachineValue)) {
+	if needed > ~uint(0) / uint(sizeof(BinaryMachineValue)) {
 		panic('Source MUST: argument allocation size overflow')
 	}
-	allocation := unsafe { C.malloc(needed * usize(sizeof(BinaryMachineValue))) }
+	allocation := unsafe { C.malloc(needed * uint(sizeof(BinaryMachineValue))) }
 	if allocation == unsafe { nil } { panic('Source MUST: argument allocation failed') }
 	mut next := unsafe { &BinaryMachineValue(allocation) }
 	previous := arguments.data()
-	for index in usize(0) .. arguments.size_ {
+	for index in uint(0) .. arguments.size_ {
 		unsafe { next[index] = previous[index] }
 	}
 	if arguments.outline != unsafe { nil } { unsafe { C.free(arguments.outline) } }
@@ -89,7 +89,7 @@ pub fn (mut arguments BinaryMachineArguments) destroy() {
 
 // Configuration.h:178-209. The freelist's outer storage is a V vector header;
 // the source limit of sixteen prevents any growth beyond its initial reserve.
-pub fn (mut configuration BinaryMachineConfiguration) get_arguments_allocation_if_possible(mut arguments BinaryMachineArguments, max_size usize) {
+pub fn (mut configuration BinaryMachineConfiguration) get_arguments_allocation_if_possible(mut arguments BinaryMachineArguments, max_size uint) {
 	if arguments.capacity() != binary_arguments_static_size || max_size <= binary_arguments_static_size {
 		return
 	}

@@ -10,13 +10,13 @@ import webidl
 
 #include "@DIR/source_array_buffer_darwin.h"
 
-fn C.vox_make_source_array_buffer_copy(context voidptr, bytes voidptr, length usize, exception &voidptr) voidptr
+fn C.vox_make_source_array_buffer_copy(context voidptr, bytes voidptr, length uint, exception &voidptr) voidptr
 fn C.JSObjectMakeTypedArrayWithArrayBuffer(context voidptr, type_ int, buffer voidptr, exception &voidptr) voidptr
 
 pub fn (mut runtime Runtime) source_array_buffer(bytes []u8) !webidl.Value {
 	runtime.require_javascript_value_context()!
 	mut exception := unsafe { nil }
-	actual := C.vox_make_source_array_buffer_copy(runtime.context, bytes.data, usize(bytes.len), &exception)
+	actual := C.vox_make_source_array_buffer_copy(runtime.context, bytes.data, uint(bytes.len), &exception)
 	if exception != unsafe { nil } { return webidl.throw_value(runtime.webidl_value(exception)!) }
 	if actual == unsafe { nil } { panic('Source MUST: ArrayBuffer ByteBuffer allocation failed') }
 	return runtime.webidl_value(actual)
@@ -36,7 +36,7 @@ pub fn (mut runtime Runtime) source_array_buffer_bytes(value webidl.Value) ![]u8
 	mut exception := unsafe { nil }
 	length := C.JSObjectGetArrayBufferByteLength(runtime.context, actual, &exception)
 	if exception != unsafe { nil } { return webidl.throw_value(runtime.webidl_value(exception)!) }
-	assert length <= usize(2147483647), 'Source ArrayBuffer span exceeds the V byte-buffer representation'
+	assert length <= uint(2147483647), 'Source ArrayBuffer span exceeds the V byte-buffer representation'
 	mut bytes := []u8{len: int(length)}
 	if length > 0 {
 		pointer := C.JSObjectGetArrayBufferBytesPtr(runtime.context, actual, &exception)

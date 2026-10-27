@@ -48,7 +48,7 @@ pub fn (value &CSSUnparsedValue) length() u32 {
 }
 
 // https://drafts.css-houdini.org/css-typed-om-1/#ref-for-dfn-determine-the-value-of-an-indexed-property
-pub fn (value &CSSUnparsedValue) item_value(index usize) ?CSSUnparsedSegment {
+pub fn (value &CSSUnparsedValue) item_value(index uint) ?CSSUnparsedSegment {
 	// To determine the value of an indexed property of a CSSUnparsedValue this and an index n, let tokens be this's
 	// [[tokens]] internal slot, and return tokens[n].
 	if index >= value.tokens.len {

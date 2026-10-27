@@ -202,7 +202,7 @@ fn (mut runtime Runtime) pointer_event_binding_call(method string, receiver void
 			values << runtime.javascript_event(unsafe { &dom.Event(event) })!
 		}
 		mut exception := unsafe { nil }
-		array := C.JSObjectMakeArray(context, usize(values.len), values.data, &exception)
+		array := C.JSObjectMakeArray(context, uint(values.len), values.data, &exception)
 		if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 		return array
 	}

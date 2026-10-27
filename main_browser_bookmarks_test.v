@@ -106,7 +106,7 @@ $if vox_ui2 ? {
 	fn C.native_test_address_parent(window voidptr) voidptr
 	fn C.native_test_address_close(window voidptr)
 	fn C.native_test_address_shortcut(field voidptr, owner voidptr, callback fn (voidptr, int), key u16, shift int) int
-	fn C.native_test_address_selection(field voidptr) usize
+	fn C.native_test_address_selection(field voidptr) uint
 	fn C.native_test_bookmark_bar_geometry(width int, top int) int
 	fn C.native_test_bookmark_click(index int)
 	fn C.native_test_bookmark_overflow_count() int

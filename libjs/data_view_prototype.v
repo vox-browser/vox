@@ -63,20 +63,20 @@ fn view_buffer(view &DataView) &ArrayBufferObject {
 	return view.viewed_buffer or { panic('DataView requires an installed buffer') }
 }
 
-fn checked_view_index(mut vm VM, view &DataView, index usize, kind BufferElementType) !usize {
+fn checked_view_index(mut vm VM, view &DataView, index uint, kind BufferElementType) !uint {
 	record := make_data_view_with_buffer_witness_record(view, .unordered)
 	if is_view_out_of_bounds(record) {
 		return vm.throw_error_type(.type_error, .buffer_out_of_bounds, 'DataView')
 	}
-	size := usize(get_view_byte_length(record))
+	size := uint(get_view_byte_length(record))
 	// Difference checks retain the source's checked-add overflow behavior before
 	// constructing either the end index or the underlying buffer index.
 	if index > size || kind.size() > size - index {
 		return vm.throw_error_type(.range_error, .data_view_out_of_range_byte_offset, index.str(),
 			size.str())
 	}
-	offset := usize(view.byte_offset())
-	if index > ~usize(0) - offset {
+	offset := uint(view.byte_offset())
+	if index > ~uint(0) - offset {
 		return vm.throw_error_type(.range_error, .data_view_out_of_range_byte_offset, index.str(),
 			size.str())
 	}
@@ -85,7 +85,7 @@ fn checked_view_index(mut vm VM, view &DataView, index usize, kind BufferElement
 
 fn get_view_value(mut vm VM, request_index Value, is_little_endian Value, kind BufferElementType) !Value {
 	view := this_data_view(mut vm)!
-	index := usize(request_index.to_index(mut vm)!)
+	index := uint(request_index.to_index(mut vm)!)
 	little_endian := is_little_endian.to_boolean()
 	buffer_index := checked_view_index(mut vm, view, index, kind)!
 	return view_buffer(view).get_value(mut vm, buffer_index, kind, false, .unordered, little_endian)
@@ -93,7 +93,7 @@ fn get_view_value(mut vm VM, request_index Value, is_little_endian Value, kind B
 
 fn set_view_value(mut vm VM, request_index Value, is_little_endian Value, kind BufferElementType, value Value) !Value {
 	view := this_data_view(mut vm)!
-	index := usize(request_index.to_index(mut vm)!)
+	index := uint(request_index.to_index(mut vm)!)
 	number := if kind.is_bigint() {
 		Value.from_bigint(value.to_bigint(mut vm)!)
 	} else {

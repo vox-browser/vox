@@ -3,7 +3,7 @@ module main
 import dom
 import gg
 
-fn C.native_decode_jpeg_yuv(bytes &u8, length usize, width &int, height &int, size &int, chroma_subsampling &int) &u8
+fn C.native_decode_jpeg_yuv(bytes &u8, length uint, width &int, height &int, size &int, chroma_subsampling &int) &u8
 
 // Decode JPEG pixels with libjpeg-turbo's default islow IDCT and fancy chroma
 // upsampling, as Chromium and upstream LibWeb do. Color-managed, CMYK and
@@ -16,7 +16,7 @@ fn native_jpeg_bitmap(bytes []u8) ?&dom.Bitmap_ {
 		mut width := 0
 		mut height := 0
 		mut pitch := 0
-		decoded := C.native_decode_jpeg_rgba(bytes.data, usize(bytes.len), &width, &height, &pitch)
+		decoded := C.native_decode_jpeg_rgba(bytes.data, uint(bytes.len), &width, &height, &pitch)
 		if decoded == unsafe { nil } {
 			return none
 		}
@@ -51,7 +51,7 @@ fn (mut app BrowserApp) chromium_jpeg_yuv_image(bytes []u8) ?gg.Image {
 		mut height := 0
 		mut size := 0
 		mut chroma_subsampling := 0
-		planes := C.native_decode_jpeg_yuv(bytes.data, usize(bytes.len), &width, &height, &size,
+		planes := C.native_decode_jpeg_yuv(bytes.data, uint(bytes.len), &width, &height, &size,
 			&chroma_subsampling)
 		if planes == unsafe { nil } {
 			return none

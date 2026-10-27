@@ -1284,8 +1284,8 @@ pub struct StyleInvalidationCountersObject {
 	dom.StyleInvalidationCounters
 pub:
 	style_environment_version                        u64
-	associated_animations                            usize
-	compositor_visual_animations                     usize
+	associated_animations                            uint
+	compositor_visual_animations                     uint
 	compositor_visual_animation_local_time_at_anchor ?f64
 	compositor_visual_animations_share_timing_anchor bool = true
 	compositor_visual_animation_targets_are_valid    bool = true
@@ -1319,8 +1319,8 @@ pub fn (api &Internals) style_invalidation_counters_object() StyleInvalidationCo
 	return StyleInvalidationCountersObject{
 		StyleInvalidationCounters: document.style_invalidation_counters()
 		style_environment_version: document.style_environment_version()
-		associated_animations: usize(associated_animations.len)
-		compositor_visual_animations: usize(visual_animations.len)
+		associated_animations: uint(associated_animations.len)
+		compositor_visual_animations: uint(visual_animations.len)
 		compositor_visual_animation_local_time_at_anchor: local_time_at_anchor
 		compositor_visual_animations_share_timing_anchor: share_timing_anchor
 		compositor_visual_animation_targets_are_valid: api.platform.compositor_visual_animation_targets_are_valid
@@ -1705,11 +1705,11 @@ pub:
 
 pub struct AsyncScrollingStateObject {
 pub:
-	scroll_node_count                                 usize
+	scroll_node_count                                 uint
 	scroll_nodes                                      []AsyncScrollNodeObject
 	has_blocking_wheel_event_listeners                bool
-	blocking_wheel_event_region_count                 usize
-	main_thread_wheel_event_region_count              usize
+	blocking_wheel_event_region_count                 uint
+	main_thread_wheel_event_region_count              uint
 	wheel_event_listener_state_generation             u64
 	blocking_wheel_event_regions_are_current          bool
 	has_blocking_wheel_event_region_covering_viewport bool
@@ -1728,11 +1728,11 @@ fn async_scrolling_state_to_object(state compositor.AsyncScrollingState) AsyncSc
 		}
 	}
 	return AsyncScrollingStateObject{
-		scroll_node_count: usize(state.scroll_nodes.len)
+		scroll_node_count: uint(state.scroll_nodes.len)
 		scroll_nodes: scroll_nodes
 		has_blocking_wheel_event_listeners: state.has_blocking_wheel_event_listeners
-		blocking_wheel_event_region_count: usize(state.blocking_wheel_event_regions.len)
-		main_thread_wheel_event_region_count: usize(state.main_thread_wheel_event_regions.len)
+		blocking_wheel_event_region_count: uint(state.blocking_wheel_event_regions.len)
+		main_thread_wheel_event_region_count: uint(state.main_thread_wheel_event_regions.len)
 		wheel_event_listener_state_generation: state.wheel_event_listener_state_generation
 		blocking_wheel_event_regions_are_current: state.has_blocking_wheel_event_listeners
 		has_blocking_wheel_event_region_covering_viewport: state.has_blocking_wheel_event_region_covering_viewport

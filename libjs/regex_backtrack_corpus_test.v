@@ -94,7 +94,7 @@ fn regex_backtrack_fixture_state(vm RegexVm) string {
 fn regex_backtrack_fixture_operation(row []string, matchers []RegexSimpleMatch) string {
 	op := row[0]
 	flags := row[1].u32()
-	pos := usize(row[2].u64())
+	pos := uint(row[2].u64())
 	arg := row[3]
 	matcher := matchers[row[4].int()]
 	input := regex_backtrack_fixture_input(row[5])
@@ -135,7 +135,7 @@ fn regex_backtrack_fixture_operation(row []string, matchers []RegexSimpleMatch) 
 		0 { vm.push_backtrack(55, pos) }
 		1, 2 {
 			vm.backward = choice == 2
-			vm.push_greedy_backtrack(0, if choice == 2 { input.len() } else { usize(0) }, pos, minimum)
+			vm.push_greedy_backtrack(0, if choice == 2 { input.len() } else { uint(0) }, pos, minimum)
 		}
 		3 { vm.push_lazy_backtrack(0, pos, maximum, consumed) }
 		else { panic('unknown native saved choice') }
@@ -146,7 +146,7 @@ fn regex_backtrack_fixture_operation(row []string, matchers []RegexSimpleMatch) 
 	vm.pos = pos
 	vm.steps = 13
 	vm.backward = flags & 32 != 0
-	vm.bt_floor = usize(spec[5].u64())
+	vm.bt_floor = uint(spec[5].u64())
 	mut trace := [regex_backtrack_fixture_state(vm)]
 	for _ in 0 .. spec[6].u32() {
 		result := vm.backtrack()

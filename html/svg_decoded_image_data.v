@@ -29,13 +29,13 @@ pub fn SVGDecodedImageData.create(document &dom.Document, width ?f64, height ?f6
 pub fn (data &SVGDecodedImageData) intrinsic_width() ?f64 { return data.width }
 pub fn (data &SVGDecodedImageData) intrinsic_height() ?f64 { return data.height }
 pub fn (data &SVGDecodedImageData) intrinsic_aspect_ratio() ?f64 { return data.aspect_ratio }
-pub fn (_ &SVGDecodedImageData) frame_count() usize { return 1 }
-pub fn (_ &SVGDecodedImageData) frame(_ usize) ?&dom.DecodedImageFrame_ { return none }
-pub fn (_ &SVGDecodedImageData) frame_rect(_ usize) ?BitmapRect { return none }
-pub fn (_ &SVGDecodedImageData) frame_duration(_ usize) int { return 0 }
-pub fn (_ &SVGDecodedImageData) loop_count() usize { return 0 }
+pub fn (_ &SVGDecodedImageData) frame_count() uint { return 1 }
+pub fn (_ &SVGDecodedImageData) frame(_ uint) ?&dom.DecodedImageFrame_ { return none }
+pub fn (_ &SVGDecodedImageData) frame_rect(_ uint) ?BitmapRect { return none }
+pub fn (_ &SVGDecodedImageData) frame_duration(_ uint) int { return 0 }
+pub fn (_ &SVGDecodedImageData) loop_count() uint { return 0 }
 pub fn (_ &SVGDecodedImageData) is_animated() bool { return false }
-pub fn (_ &SVGDecodedImageData) external_memory_size() usize { return 0 }
+pub fn (_ &SVGDecodedImageData) external_memory_size() uint { return 0 }
 pub fn (data &SVGDecodedImageData) has_clients() bool { return data.clients.len != 0 }
 pub fn (data &SVGDecodedImageData) is_cors_cross_origin() bool { return data.is_cors_cross_origin_ }
 

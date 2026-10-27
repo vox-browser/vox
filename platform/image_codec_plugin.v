@@ -10,7 +10,7 @@ __global platform_image_codec_plugin &ImageCodecPlugin
 pub struct Frame {
 pub:
 	bitmap   []u8
-	duration usize
+	duration uint
 }
 
 pub struct DecodedImage {

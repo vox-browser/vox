@@ -26,7 +26,7 @@ fn parse_base64_last_chunk_handling(mut vm VM, options &Object) !Base64LastChunk
 		'lastChunkHandling')
 }
 
-pub fn from_base64(mut vm VM, text Utf16String, alphabet Base64Alphabet, handling Base64LastChunkHandling, max_length ?usize) Uint8ArrayDecodeResult {
+pub fn from_base64(mut vm VM, text Utf16String, alphabet Base64Alphabet, handling Base64LastChunkHandling, max_length ?uint) Uint8ArrayDecodeResult {
 	units := text.as_slice()
 	capacity := max_length or { base64_decode_capacity(units) }
 	result := decode_base64_codec(units, capacity, alphabet, handling)
@@ -70,7 +70,7 @@ pub fn uint8_array_constructor_from_base64(mut vm VM, prototype_getter Intrinsic
 		realm.array_buffer_prototype_record())
 	array := TypedArray.create(realm, .uint8, u32(result.bytes.len), buffer,
 		prototype_getter(realm))
-	assert array.viewed_buffer.byte_length() == usize(result.bytes.len)
+	assert array.viewed_buffer.byte_length() == uint(result.bytes.len)
 	return Value.from_object(array.object)
 }
 
@@ -92,8 +92,8 @@ pub fn uint8_array_prototype_set_from_base64(mut vm VM, primitives PrimitiveObje
 	}
 	length := typed_array_length(record)
 	result := from_base64(mut vm, string_value.as_string().utf16_string(), alphabet, handling,
-		usize(length))
-	assert usize(result.bytes.len) <= usize(length)
+		uint(length))
+	assert uint(result.bytes.len) <= uint(length)
 	set_uint8_array_bytes(mut vm, mut into, result.bytes)
 	if error := result.error { return error.release_error() }
 	mut object := Object.create(realm, object_prototype)

@@ -1,7 +1,7 @@
 module dom
 
 $if gcboehm ? {
-	fn C.GC_get_total_bytes() usize
+	fn C.GC_get_total_bytes() uint
 }
 
 fn test_style_invalidator_pending_misses_do_not_allocate_error_records() {
@@ -17,10 +17,10 @@ fn test_style_invalidator_pending_misses_do_not_allocate_error_records() {
 	}
 	mut invalidator := StyleInvalidator{}
 	invalidator.invalidate(mut document_node)
-	mut before := usize(0)
+	mut before := uint(0)
 	$if gcboehm ? { before = C.GC_get_total_bytes() }
 	for _ in 0 .. 128 { invalidator.invalidate(mut document_node) }
-	mut allocated := usize(0)
+	mut allocated := uint(0)
 	$if gcboehm ? { allocated = C.GC_get_total_bytes() - before }
 	assert allocated == 0
 	assert invalidator.pending_invalidations.len == 0

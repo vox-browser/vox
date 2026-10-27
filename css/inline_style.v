@@ -62,6 +62,6 @@ pub fn (s InlineStyleDeclaration) length() int {
 	return s.declaration().length()
 }
 
-pub fn (s InlineStyleDeclaration) item(index usize) string {
+pub fn (s InlineStyleDeclaration) item(index uint) string {
 	return s.declaration().item(index)
 }

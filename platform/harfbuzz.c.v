@@ -623,9 +623,9 @@ fn skia_system_face_advances_function() voidptr {
 		if !skia_system_face_advances_lookup.attempted {
 			skia_system_face_advances_lookup.attempted = true
 			// RTLD_DEFAULT searches every image loaded into the process.
-			skia_system_face_advances_lookup.function = C.dlsym(unsafe { voidptr(isize(-2)) },
+			skia_system_face_advances_lookup.function = C.dlsym(unsafe { voidptr(int(-2)) },
 				c'ladybird_v_skia_system_face_advances')
-			skia_system_face_advances_lookup.face_function = C.dlsym(unsafe { voidptr(isize(-2)) },
+			skia_system_face_advances_lookup.face_function = C.dlsym(unsafe { voidptr(int(-2)) },
 				c'ladybird_v_skia_face_advances')
 		}
 		return skia_system_face_advances_lookup.function

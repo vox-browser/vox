@@ -4,7 +4,7 @@ fn source_try_begin_compilation(compiled &Module) bool {
 	return compiled.try_begin_cranelift_compilation()
 }
 
-fn source_wait_for_compilation_metadata(compiled &Module) usize {
+fn source_wait_for_compilation_metadata(compiled &Module) uint {
 	compiled.wait_for_cranelift_compilation()
 	assert compiled.has_attempted_cranelift_compilation()
 	return compiled.function_bodies[0].body.compiled_instructions.max_call_rec_size
@@ -39,7 +39,7 @@ fn test_source_module_compilation_waiters_observe_real_metadata_after_broadcast(
 	defer { compiled.destroy_compilation_control() }
 	started := compiled.try_begin_cranelift_compilation()
 	assert started
-	mut consumers := []thread usize{}
+	mut consumers := []thread uint{}
 	for _ in 0 .. 16 { consumers << spawn source_wait_for_compilation_metadata(compiled) }
 	compiled.function_bodies[0].body.compiled_instructions.max_call_rec_size = 83
 	compiled.finish_cranelift_compilation()

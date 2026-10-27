@@ -14,7 +14,7 @@ fn test_typed_array_integer_indexed_properties_suppress_prototypes_and_keep_ordi
 		parent.define_direct_property(PropertyName.from_str(name), Value.from_i32(99), 7)
 	}
 	mut buffer := ArrayBufferObject.create(mut vm, vm.realm(), 3, parent)!
-	buffer.maximum_byte_length = usize(8)
+	buffer.maximum_byte_length = uint(8)
 	array := TypedArray.create(vm.realm(), .uint8, 3, buffer, parent)
 	mut object := array.object
 	assert object.get(mut vm, PropertyName.from_number(0))!.number == 0
@@ -165,7 +165,7 @@ fn test_typed_array_set_rechecks_bounds_after_observable_value_conversion() {
 	parent := Object.create(vm.realm(), none)
 	for mode in ['shrink', 'detach', 'grow', 'throw'] {
 		mut buffer := ArrayBufferObject.create(mut vm, vm.realm(), 2, parent)!
-		buffer.maximum_byte_length = usize(8)
+		buffer.maximum_byte_length = uint(8)
 		mut array := TypedArray.create(vm.realm(), .uint8, 0, buffer, parent)
 		array.array_length = ByteLength.auto_length()
 		array.byte_length = ByteLength.auto_length()

@@ -1,6 +1,6 @@
 module libjs
 
-fn regex_backreference_test_vm(units []u16, registers []i32, pos usize, backward bool, unicode bool, ignore_case bool, groups []RegexNamedGroupEntry) &RegexVm {
+fn regex_backreference_test_vm(units []u16, registers []i32, pos uint, backward bool, unicode bool, ignore_case bool, groups []RegexNamedGroupEntry) &RegexVm {
 	program := &RegexProgram{
 		register_count: u32(registers.len)
 		unicode:        unicode
@@ -34,7 +34,7 @@ fn test_regex_backreferences_missing_unmatched_and_empty_captures_consume_nothin
 fn test_regex_legacy_backreferences_preserve_position_on_mismatch_and_compare_raw_units() {
 	for backward in [false, true] {
 		for ignore_case in [false, true] {
-			start := if backward { usize(4) } else { usize(2) }
+			start := if backward { uint(4) } else { uint(2) }
 			mut vm := regex_backreference_test_vm([u16(0x61), 0xe9, 0x41, 0xc9], [
 				i32(0),
 				2,
@@ -42,9 +42,9 @@ fn test_regex_legacy_backreferences_preserve_position_on_mismatch_and_compare_ra
 			assert vm.match_backref(0) == ignore_case
 			assert vm.pos == if ignore_case {
 				if backward {
-					usize(2)
+					uint(2)
 				} else {
-					usize(4)
+					uint(4)
 				}
 			} else {
 				start
@@ -74,13 +74,13 @@ fn test_regex_legacy_backreferences_preserve_position_on_mismatch_and_compare_ra
 fn test_regex_unicode_backreferences_compare_pairs_in_both_directions_and_commit_after_success() {
 	units := [u16(0xd801), 0xdc00, 0x212a, 0xd801, 0xdc28, 0x6b]
 	for backward in [false, true] {
-		start := if backward { usize(6) } else { usize(3) }
+		start := if backward { uint(6) } else { uint(3) }
 		mut vm := regex_backreference_test_vm(units, [i32(0), 3], start, backward, true, true, [])
 		assert vm.match_backref(0)
 		assert vm.pos == if backward {
-			usize(3)
+			uint(3)
 		} else {
-			usize(6)
+			uint(6)
 		}
 		mut sensitive := regex_backreference_test_vm(units, [i32(0), 3], start, backward, true,
 			false, [])

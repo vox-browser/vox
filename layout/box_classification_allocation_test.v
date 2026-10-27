@@ -5,7 +5,7 @@ import dom
 import html
 
 $if gcboehm ? {
-	fn C.GC_get_total_bytes() usize
+	fn C.GC_get_total_bytes() uint
 }
 
 @[noinline]
@@ -24,11 +24,11 @@ fn test_repeated_box_classification_does_not_allocate_temporary_enum_collections
 	element := document.get_element_by_id('box')?
 	node := unsafe { &Node(element.as_node().unsafe_layout_node()?.real_layout_handle()) }
 	assert classify_ordinary_box_without_collections(node) == 3
-	mut before := usize(0)
+	mut before := uint(0)
 	$if gcboehm ? { before = C.GC_get_total_bytes() }
 	mut classified := 0
 	for _ in 0 .. 4096 { classified += classify_ordinary_box_without_collections(node) }
-	mut allocated := usize(0)
+	mut allocated := uint(0)
 	$if gcboehm ? { allocated = C.GC_get_total_bytes() - before }
 	assert classified == 4096 * 3
 	assert allocated < 4096, 'classification allocated ${allocated} bytes'

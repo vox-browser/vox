@@ -13,7 +13,7 @@ fn C.JSObjectMake(context voidptr, object_class voidptr, data voidptr) voidptr
 fn C.vox_crypto_integer_view_kind(context voidptr, value voidptr, exception &voidptr) int
 fn C.JSContextGetGlobalObject(context voidptr) voidptr
 fn C.JSValueToBoolean(context voidptr, value voidptr) bool
-fn C.JSObjectGetArrayBufferByteLength(context voidptr, object voidptr, exception &voidptr) usize
+fn C.JSObjectGetArrayBufferByteLength(context voidptr, object voidptr, exception &voidptr) uint
 
 __global crypto_bindings_ = map[voidptr]&CryptoHost{}
 
@@ -185,7 +185,7 @@ fn (mut host CryptoHost) random_values(value voidptr) !voidptr {
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	pointer := C.JSObjectGetArrayBufferBytesPtr(runtime.context, buffer, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
-	unsafe { C.memcpy(&u8(pointer) + offset, random.data, usize(random.len)) }
+	unsafe { C.memcpy(&u8(pointer) + offset, random.data, uint(random.len)) }
 	return value
 }
 

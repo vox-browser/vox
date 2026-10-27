@@ -8,7 +8,7 @@ $if gcboehm ? {
 	fn C.vox_compact_selector_collect(depth u32)
 	fn C.vox_compact_selector_run_worker(work fn ())
 	fn C.vox_compact_selector_array_kind(data voidptr) int
-	fn C.vox_compact_selector_array_size(data voidptr) usize
+	fn C.vox_compact_selector_array_size(data voidptr) uint
 }
 
 fn test_compact_simple_selector_defaults_and_all_single_payload_variants() {
@@ -109,8 +109,8 @@ fn test_compact_simple_selector_record_and_dynamic_array_capacity_are_reduced() 
 	assert values.len == 2 && values.cap == 2
 	$if gcboehm ? {
 		assert C.vox_compact_selector_array_kind(values.data) == 1
-		assert C.vox_compact_selector_array_size(values.data) >= usize(values.len * int(sizeof(SimpleSelector)))
-		assert C.vox_compact_selector_array_size(values.data) < usize(values.cap * int(sizeof(SimpleSelectorInit)))
+		assert C.vox_compact_selector_array_size(values.data) >= uint(values.len * int(sizeof(SimpleSelector)))
+		assert C.vox_compact_selector_array_size(values.data) < uint(values.cap * int(sizeof(SimpleSelectorInit)))
 	}
 }
 

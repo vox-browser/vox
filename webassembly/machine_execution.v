@@ -25,13 +25,13 @@ pub fn (mut configuration BinaryMachineConfiguration) execute(mut interpreter Bi
 	span := stack.span()
 	assert count <= span.size
 	mut results := []BinaryMachineValue{len: int(count)}
-	for index in usize(0) .. count {
+	for index in uint(0) .. count {
 		results[int(index)] = *span.at(span.size - count + index)
 	}
 	stack.shrink(stack.size() - count, true)
 	results.reverse_in_place()
 	label_index := configuration.frame().label_index()
-	if usize(configuration.label_stack_.len) > label_index {
+	if uint(configuration.label_stack_.len) > label_index {
 		configuration.label_stack_.trim(int(label_index))
 	}
 	return BinaryMachineResult.from_values(results)

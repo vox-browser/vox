@@ -649,10 +649,10 @@ struct RuleCacheBuildContext {
 	sheet &CSSStyleSheet
 	cascade_origin CascadeOrigin
 	insights &SelectorInsights
-	style_sheet_index usize
+	style_sheet_index uint
 	fold_id_and_class_name_case bool
 mut:
-	rule_index usize
+	rule_index uint
 }
 
 fn style_scope_cache_style_rule(raw_context voidptr, rule &CSSRule) {
@@ -762,7 +762,7 @@ pub fn (mut scope StyleScope) make_rule_cache_for_cascade_origin(cascade_origin 
 	fold_id_and_class_name_case := if document := scope.document() { document.in_quirks_mode() } else { false }
 	mut mutable_insights := unsafe { &SelectorInsights(insights) }
 
-	mut style_sheet_index := usize(0)
+	mut style_sheet_index := uint(0)
 	for sheet in scope.stylesheets_for_cascade_origin(cascade_origin) {
 		mut rule_caches := scope.rule_caches_for_origin_mut(cascade_origin) or { continue }
 		mut context := RuleCacheBuildContext{

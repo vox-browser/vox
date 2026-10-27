@@ -177,7 +177,7 @@ fn test_cache_identity_conversions_and_constructor_entry_points() {
 	assert to_value_type(.anyfunc) == .anyfunc
 	assert table_kind_to_value_type(.externref) == .externref
 	assert to_js_value(WasmValue{ type_: .i64, i64_value: 5 })!.bigint_value == 5
-	assert memory.buffer_object().bytes().size == usize(page_size)
+	assert memory.buffer_object().bytes().size == uint(page_size)
 	assert memory.create_a_fixed_length_memory_buffer().resizable == false
 	assert memory.create_a_resizable_memory_buffer(u64(2 * page_size))!.resizable
 }

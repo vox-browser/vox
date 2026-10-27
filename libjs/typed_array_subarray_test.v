@@ -79,7 +79,7 @@ fn test_typed_array_subarray_species_receives_two_arguments_only_for_tracking_wi
 	for tracking in [false, true] {
 		for explicit_end in [false, true] {
 			mut buffer := ArrayBufferObject.create(mut vm, vm.realm(), 16, parent)!
-			buffer.maximum_byte_length = usize(32)
+			buffer.maximum_byte_length = uint(32)
 			mut source := TypedArray.create(vm.realm(), .uint16, 0, buffer, parent)
 			initialize_typed_array_from_array_buffer(mut vm, mut source, buffer, Value.from_i32(2), if tracking {
 				js_undefined()
@@ -134,7 +134,7 @@ fn test_typed_array_subarray_out_of_bounds_source_coerces_begin_and_end_before_d
 	parent := Object.create(vm.realm(), none)
 	for mode in ['detached', 'out of bounds', 'custom detached'] {
 		mut buffer := ArrayBufferObject.create(mut vm, vm.realm(), 4, parent)!
-		buffer.maximum_byte_length = usize(8)
+		buffer.maximum_byte_length = uint(8)
 		mut source := TypedArray.create(vm.realm(), .uint8, 0, buffer, parent)
 		initialize_typed_array_from_array_buffer(mut vm, mut source, buffer, Value.from_i32(2),
 			Value.from_i32(2))!

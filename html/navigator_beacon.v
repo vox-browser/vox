@@ -9,7 +9,7 @@ import dom
 import fetch
 import http
 
-pub const keepalive_maximum_size = usize(64 * 1024)
+pub const keepalive_maximum_size = uint(64 * 1024)
 
 pub struct BeaconBody {
 pub:
@@ -25,7 +25,7 @@ pub:
 	base_url dom.URL
 	origin   dom.Origin
 pub mut:
-	queued_keepalive_bytes usize
+	queued_keepalive_bytes uint
 	fetch_hook             ?BeaconFetchHook
 }
 
@@ -47,7 +47,7 @@ pub fn (mut context NavigatorBeaconContext) send_beacon(url string, data ?Beacon
 	mut header_list := http.HeaderList.create()
 	mut request_body := fetch.RequestBody{}
 	if body := data {
-		if context.queued_keepalive_bytes + usize(body.bytes.len) > keepalive_maximum_size {
+		if context.queued_keepalive_bytes + uint(body.bytes.len) > keepalive_maximum_size {
 			return false
 		}
 		request_body = fetch.RequestBody{
@@ -62,7 +62,7 @@ pub fn (mut context NavigatorBeaconContext) send_beacon(url string, data ?Beacon
 			}
 			header_list.append(header)
 		}
-		context.queued_keepalive_bytes += usize(body.bytes.len)
+		context.queued_keepalive_bytes += uint(body.bytes.len)
 	}
 	request := &fetch.Request{
 		method:           'POST'

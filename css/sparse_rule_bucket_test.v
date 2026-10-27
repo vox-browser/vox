@@ -2,7 +2,7 @@ module css
 
 import dom
 
-fn sparse_bucket_rule(index usize, source string, pseudo bool) &MatchingRule {
+fn sparse_bucket_rule(index uint, source string, pseudo bool) &MatchingRule {
 	return &MatchingRule{
 		rule_index: index
 		selector: selector_from_text(source)
@@ -33,7 +33,7 @@ fn test_sparse_candidate_buckets_keep_order_identity_and_scope_for_every_combina
 			} else { dom.AbstractElement.new(root, none) }
 			source := if queried_pseudo { '*::before' } else { '*' }
 			mut rules := []&MatchingRule{}
-			for index in 1 .. 9 { rules << sparse_bucket_rule(usize(index), source, queried_pseudo) }
+			for index in 1 .. 9 { rules << sparse_bucket_rule(uint(index), source, queried_pseudo) }
 			excluded := &MatchingRule{
 				selector: selector_from_text(source)
 				cascade_origin: .author
@@ -43,12 +43,12 @@ fn test_sparse_candidate_buckets_keep_order_identity_and_scope_for_every_combina
 			for mask in 0 .. 64 {
 				mut cache := RuleCache.new()
 				cache.fold_id_and_class_name_case = folded
-				mut expected := [usize(99)]
+				mut expected := [uint(99)]
 				if mask & 1 != 0 {
 					cache.rules_by_class[if folded { 'mixed' } else { 'Mixed' }] = [rules[0]]
 					cache.rules_by_class['card'] = [rules[0]]
 					cache.rules_by_class['absent'] = []&MatchingRule{}
-					expected << [usize(1), 1]
+					expected << [uint(1), 1]
 				}
 				if mask & 2 != 0 {
 					cache.rules_by_id[if folded { 'target' } else { 'TARGET' }] = [rules[1]]
@@ -70,7 +70,7 @@ fn test_sparse_candidate_buckets_keep_order_identity_and_scope_for_every_combina
 					cache.rules_by_attribute_name['title'] = [rules[5], excluded]
 					cache.rules_by_attribute_name['x:é'] = [rules[6]]
 					cache.rules_by_attribute_name['missing'] = []&MatchingRule{}
-					expected << [usize(6), 7]
+					expected << [uint(6), 7]
 				}
 				cache.other_rules = [rules[7]]
 				expected << 8
@@ -87,7 +87,7 @@ fn test_sparse_candidate_buckets_keep_order_identity_and_scope_for_every_combina
 				}
 				assert actual.len == expected.len
 				assert actual.len == oracle.len
-				mut indices := []usize{}
+				mut indices := []uint{}
 				for index, rule in actual {
 					indices << rule.rule.rule_index
 					assert voidptr(rule.rule) == voidptr(oracle[index].rule)
@@ -115,7 +115,7 @@ fn test_sparse_root_buckets_observe_live_attachment_population_and_removal() {
 	element := dom.AbstractElement.new(root, none)
 	mut attempted := PseudoClassBitmap{}
 	for generation in 0 .. 3 {
-		rule := sparse_bucket_rule(usize(40 + generation), ':root', false)
+		rule := sparse_bucket_rule(uint(40 + generation), ':root', false)
 		cache.root_rules = [rule]
 		assert !root.is_document_element()
 		assert style_computer_collect_matching_rules_in_scope(computer, element, .author, mut attempted, none, scope).len == 0
@@ -131,7 +131,7 @@ fn test_sparse_root_buckets_observe_live_attachment_population_and_removal() {
 		assert voidptr(retained[0].rule) == voidptr(rule)
 		cache.root_rules = []&MatchingRule{}
 		gc_collect()
-		assert retained[0].rule.rule_index == usize(40 + generation)
+		assert retained[0].rule.rule_index == uint(40 + generation)
 		assert style_computer_collect_matching_rules_in_scope(computer, element, .author, mut attempted, none, scope).len == 0
 		cache.root_rules = [rule]
 		document_node.remove_child(root.as_node())!

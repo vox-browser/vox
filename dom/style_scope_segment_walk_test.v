@@ -1,7 +1,7 @@
 module dom
 
 $if gcboehm ? {
-	fn C.GC_get_total_bytes() usize
+	fn C.GC_get_total_bytes() uint
 }
 
 // Keep the previous root-based collection as an independent ordering oracle.
@@ -98,7 +98,7 @@ fn test_segment_scope_ordinary_fallback_reads_allocate_nothing_with_unrelated_ro
 	// Warm every lazy scope before the allocation window; no assertions inside it.
 	segment_scope_assert_reference(leaf)
 	gc_collect()
-	mut before := usize(0)
+	mut before := uint(0)
 	$if gcboehm ? { before = C.GC_get_total_bytes() }
 	mut matched := 0
 	for _ in 0 .. 1024 {
@@ -108,7 +108,7 @@ fn test_segment_scope_ordinary_fallback_reads_allocate_nothing_with_unrelated_ro
 			matched++
 		}
 	}
-	mut allocated := usize(0)
+	mut allocated := uint(0)
 	$if gcboehm ? { allocated = C.GC_get_total_bytes() - before }
 	assert matched == 1024
 	assert allocated == 0

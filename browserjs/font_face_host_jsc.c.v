@@ -9,8 +9,8 @@ import highresolutiontime
 
 fn C.JSObjectGetTypedArrayBuffer(context voidptr, object voidptr, exception &voidptr) voidptr
 fn C.JSObjectGetArrayBufferBytesPtr(context voidptr, object voidptr, exception &voidptr) voidptr
-fn C.JSObjectGetTypedArrayByteLength(context voidptr, object voidptr, exception &voidptr) usize
-fn C.JSObjectGetTypedArrayByteOffset(context voidptr, object voidptr, exception &voidptr) usize
+fn C.JSObjectGetTypedArrayByteLength(context voidptr, object voidptr, exception &voidptr) uint
+fn C.JSObjectGetTypedArrayByteOffset(context voidptr, object voidptr, exception &voidptr) uint
 fn C.JSValueMakeBoolean(context voidptr, value bool) voidptr
 
 pub fn (mut host FontFaceHost) install(mut runtime Runtime) ! {
@@ -110,7 +110,7 @@ fn (mut host FontFaceHost) cache_font_event(mut runtime Runtime, wrapper voidptr
 	mut faces := []voidptr{cap: event.fontfaces().len}
 	for face in event.fontfaces() { faces << host.wrap_face(mut runtime, unsafe { &css.FontFaceObject(face) })! }
 	mut exception := unsafe { nil }
-	array := C.JSObjectMakeArray(runtime.context, usize(faces.len), faces.data, &exception)
+	array := C.JSObjectMakeArray(runtime.context, uint(faces.len), faces.data, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	runtime.retain_javascript_value(array)!
 	defer { runtime.release_javascript_value(array) }
@@ -156,7 +156,7 @@ fn (mut host FontFaceHost) convert(mut runtime Runtime, value webidl.Value) !voi
 			values << host.convert(mut runtime, item)!
 		}
 		mut exception := unsafe { nil }
-		array := C.JSObjectMakeArray(runtime.context, usize(values.len), values.data, &exception)
+		array := C.JSObjectMakeArray(runtime.context, uint(values.len), values.data, &exception)
 		if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 		return array
 	}

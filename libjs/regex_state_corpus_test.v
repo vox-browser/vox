@@ -77,7 +77,7 @@ fn regex_state_fixture_program(flags u32, count u32) &RegexProgram {
 	}
 }
 
-fn regex_state_fixture_transcript(flags u32, input RegexInput, count u32, initial int, start usize, sequence string) string {
+fn regex_state_fixture_transcript(flags u32, input RegexInput, count u32, initial int, start uint, sequence string) string {
 	program := regex_state_fixture_program(flags, count)
 	mut scratch := RegexVmScratch.new()
 	scratch.registers = []i32{len: initial, init: 99}
@@ -105,20 +105,20 @@ fn regex_state_fixture_transcript(flags u32, input RegexInput, count u32, initia
 				vm.snapshot_registers()
 			}
 			'o' {
-				vm.restore_registers(usize(n(1)))
+				vm.restore_registers(uint(n(1)))
 			}
 			'n' {
-				vm.push_backtrack(u32(n(1)), usize(n(2)))
+				vm.push_backtrack(u32(n(1)), uint(n(2)))
 			}
 			'm' {
-				vm.push_backtrack_modified(u32(n(1)), usize(n(2)), usize(n(3)),
+				vm.push_backtrack_modified(u32(n(1)), uint(n(2)), uint(n(3)),
 					regex_state_fixture_signed(f[4]))
 			}
 			'g' {
-				vm.push_greedy_backtrack(u32(n(1)), usize(n(2)), usize(n(3)), u32(n(4)))
+				vm.push_greedy_backtrack(u32(n(1)), uint(n(2)), uint(n(3)), u32(n(4)))
 			}
 			'l' {
-				vm.push_lazy_backtrack(u32(n(1)), usize(n(2)), regex_state_fixture_max(f[3]),
+				vm.push_lazy_backtrack(u32(n(1)), uint(n(2)), regex_state_fixture_max(f[3]),
 					u32(n(4)))
 			}
 			'p' {
@@ -131,14 +131,14 @@ fn regex_state_fixture_transcript(flags u32, input RegexInput, count u32, initia
 			'd' {
 				vm.backward = n(1) != 0
 				vm.steps = n(2)
-				vm.bt_floor = usize(n(3))
+				vm.bt_floor = uint(n(3))
 			}
 			'c' {
 				vm.pc = u32(n(1))
-				vm.pos = usize(n(2))
+				vm.pos = uint(n(2))
 			}
 			'z' {
-				vm.reset(usize(n(1)))
+				vm.reset(uint(n(1)))
 			}
 			'r' {
 				vm.handle_repeat_start(u32(n(1)))
@@ -157,11 +157,11 @@ fn regex_state_fixture_transcript(flags u32, input RegexInput, count u32, initia
 	return output.join('~')
 }
 
-fn regex_state_fixture_optional(value ?usize) string {
+fn regex_state_fixture_optional(value ?uint) string {
 	return if position := value { position.str() } else { '-' }
 }
 
-fn regex_state_fixture_walk(input RegexInput, unicode bool, pos usize, count u32) string {
+fn regex_state_fixture_walk(input RegexInput, unicode bool, pos uint, count u32) string {
 	program := &RegexProgram{
 		unicode: unicode
 	}
@@ -179,7 +179,7 @@ fn regex_state_fixture_walk(input RegexInput, unicode bool, pos usize, count u32
 		count))}|${regex_state_fixture_optional(vm.advance_n_chars(pos, count))}'
 }
 
-fn regex_state_fixture_suffix(instructions string, start usize, matcher u32) string {
+fn regex_state_fixture_suffix(instructions string, start uint, matcher u32) string {
 	mut program := &RegexProgram{}
 	if instructions != '-' {
 		for text in instructions.split(';') {
@@ -233,7 +233,7 @@ fn test_regex_vm_state_and_traversal_match_current_upstream_rust_exactly() {
 			'state' {
 				actual = regex_state_fixture_transcript(u32(f[1].parse_uint(10, 32)!), RegexUtf16Input{
 					units: regex_state_fixture_units(f[2])!
-				}, u32(a), int(b), usize(c), f[6])
+				}, u32(a), int(b), uint(c), f[6])
 			}
 			'walk' {
 				units := regex_state_fixture_units(f[2])!
@@ -242,17 +242,17 @@ fn test_regex_vm_state_and_traversal_match_current_upstream_rust_exactly() {
 					}) } else { RegexInput(RegexUtf16Input{
 						units: units
 					}) }
-				actual = regex_state_fixture_walk(input, a != 0, usize(b), u32(c))
+				actual = regex_state_fixture_walk(input, a != 0, uint(b), u32(c))
 			}
 			'steps' {
 				program := &RegexProgram{}
 				mut scratch := RegexVmScratch.new()
 				vm := RegexVm.new(program, RegexUtf16Input{}, 0, mut scratch)
-				actual = regex_state_fixture_optional(vm.retreat_n_chars(usize(b), u32(c))) + '|' +
-					regex_state_fixture_optional(vm.advance_n_chars(usize(b), u32(c)))
+				actual = regex_state_fixture_optional(vm.retreat_n_chars(uint(b), u32(c))) + '|' +
+					regex_state_fixture_optional(vm.advance_n_chars(uint(b), u32(c)))
 			}
 			'suffix' {
-				actual = regex_state_fixture_suffix(f[6], usize(b), u32(c))
+				actual = regex_state_fixture_suffix(f[6], uint(b), u32(c))
 			}
 			else {
 				panic(row)

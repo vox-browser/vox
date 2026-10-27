@@ -9,23 +9,23 @@ import platform
 
 #include "host_function_darwin.h"
 
-fn C.vox_make_js_host_function(context voidptr, record voidptr, callback fn (voidptr, voidptr, voidptr, usize, &voidptr, &voidptr) voidptr) voidptr
+fn C.vox_make_js_host_function(context voidptr, record voidptr, callback fn (voidptr, voidptr, voidptr, uint, &voidptr, &voidptr) voidptr) voidptr
 fn C.JSValueProtect(context voidptr, value voidptr)
 fn C.JSValueUnprotect(context voidptr, value voidptr)
-fn C.JSObjectMakeArray(context voidptr, count usize, arguments &voidptr, exception &voidptr) voidptr
-fn C.JSObjectCallAsFunction(context voidptr, function voidptr, receiver voidptr, count usize, arguments &voidptr, exception &voidptr) voidptr
+fn C.JSObjectMakeArray(context voidptr, count uint, arguments &voidptr, exception &voidptr) voidptr
+fn C.JSObjectCallAsFunction(context voidptr, function voidptr, receiver voidptr, count uint, arguments &voidptr, exception &voidptr) voidptr
 fn C.JSObjectMakeDeferredPromise(context voidptr, resolve &voidptr, reject &voidptr, exception &voidptr) voidptr
-fn C.JSObjectMakeFunctionWithCallback(context voidptr, name voidptr, callback fn (voidptr, voidptr, voidptr, usize, &voidptr, &voidptr) voidptr) voidptr
+fn C.JSObjectMakeFunctionWithCallback(context voidptr, name voidptr, callback fn (voidptr, voidptr, voidptr, uint, &voidptr, &voidptr) voidptr) voidptr
 fn C.JSValueToObject(context voidptr, value voidptr, exception &voidptr) voidptr
 
 __global native_value_host_functions_ = map[voidptr]&ValueHostFunctionRecord{}
 
-fn javascript_core_value_host_function(context voidptr, function voidptr, receiver voidptr, count usize, arguments &voidptr, exception &voidptr) voidptr {
+fn javascript_core_value_host_function(context voidptr, function voidptr, receiver voidptr, count uint, arguments &voidptr, exception &voidptr) voidptr {
 	record := unsafe { &ValueHostFunctionRecord(C.JSObjectGetPrivate(function)) }
 	return invoke_value_host_function_record(record, context, receiver, count, arguments, exception)
 }
 
-fn javascript_core_native_value_host_function(context voidptr, function voidptr, receiver voidptr, count usize, arguments &voidptr, exception &voidptr) voidptr {
+fn javascript_core_native_value_host_function(context voidptr, function voidptr, receiver voidptr, count uint, arguments &voidptr, exception &voidptr) voidptr {
 	record := native_value_host_function_record(function) or {
 		return host_function_error(context, 'Native JavaScript function binding is closed', exception)
 	}
@@ -36,7 +36,7 @@ fn native_value_host_function_record(function voidptr) ?&ValueHostFunctionRecord
 	return native_value_host_functions_[function] or { return none }
 }
 
-fn invoke_value_host_function_record(record &ValueHostFunctionRecord, context voidptr, receiver voidptr, count usize, arguments &voidptr, exception &voidptr) voidptr {
+fn invoke_value_host_function_record(record &ValueHostFunctionRecord, context voidptr, receiver voidptr, count uint, arguments &voidptr, exception &voidptr) voidptr {
 	if record.runtime.closed { return host_function_error(context, 'JavaScript runtime is closed', exception) }
 	// Native callbacks can create streams, promises and wrappers retained by
 	// the realm after this engine entry. Keep those allocations out of the
@@ -186,7 +186,7 @@ fn (runtime &Runtime) actual_javascript_exception(value voidptr) IError {
 
 fn (runtime &Runtime) call_engine_function(function voidptr, arguments []voidptr) !voidptr {
 	mut exception := unsafe { nil }
-	value := C.JSObjectCallAsFunction(runtime.context, function, unsafe { nil }, usize(arguments.len), arguments.data, &exception)
+	value := C.JSObjectCallAsFunction(runtime.context, function, unsafe { nil }, uint(arguments.len), arguments.data, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	return value
 }
@@ -194,7 +194,7 @@ fn (runtime &Runtime) call_engine_function(function voidptr, arguments []voidptr
 pub fn (runtime &Runtime) call_javascript_function(function voidptr, receiver voidptr, arguments []voidptr) !voidptr {
 	runtime.require_javascript_value_context()!
 	mut exception := unsafe { nil }
-	array := C.JSObjectMakeArray(runtime.context, usize(arguments.len), arguments.data, &exception)
+	array := C.JSObjectMakeArray(runtime.context, uint(arguments.len), arguments.data, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	return runtime.call_engine_function(runtime.value_call_intrinsic_, [function, receiver, array])
 }
@@ -207,7 +207,7 @@ pub fn (runtime &Runtime) forward_javascript_function(function voidptr, receiver
 	runtime.require_javascript_value_context()!
 	context := runtime.context
 	mut exception := unsafe { nil }
-	array := C.JSObjectMakeArray(context, usize(arguments.len), arguments.data, &exception)
+	array := C.JSObjectMakeArray(context, uint(arguments.len), arguments.data, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	outcome := runtime.call_engine_function(runtime.value_call_intrinsic_,
 		[function, receiver, array, C.JSValueMakeBoolean(context, true)])!

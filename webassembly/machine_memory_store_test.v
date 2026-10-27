@@ -25,8 +25,8 @@ fn test_machine_store_memory_owns_stable_instances_at_real_vector_index_addresse
 	retained_memory := store.get_memory(0) or { panic('lost actual memory') }
 	assert voidptr(retained_memory) == voidptr(first)
 	assert voidptr(store.unsafe_get_memory(0).data().data()) == voidptr(base)
-	grew := first.grow(usize(page_size), .yes, .no)
-	assert grew && retained_memory.size() == usize(2 * page_size)
+	grew := first.grow(uint(page_size), .yes, .no)
+	assert grew && retained_memory.size() == uint(2 * page_size)
 	assert unsafe { retained_memory.data().data()[0] } == 97
 	assert store.get_memory(66) == none && store.get_memory(u64(-1)) == none
 	for mut memory in store.memories_ { memory.destroy() }

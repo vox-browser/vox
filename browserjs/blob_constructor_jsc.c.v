@@ -109,7 +109,7 @@ fn (host &BlobHost) copy_part_buffer(value voidptr) ![]u8 {
 	mut exception := unsafe { nil }
 	length := C.JSObjectGetTypedArrayByteLength(runtime.context, view, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
-	assert length <= usize(2147483647), 'Source Blob ByteBuffer exceeds the V span'
+	assert length <= uint(2147483647), 'Source Blob ByteBuffer exceeds the V span'
 	mut bytes := []u8{len: int(length)}
 	if length > 0 {
 		pointer := C.JSObjectGetTypedArrayBytesPtr(runtime.context, view, &exception)

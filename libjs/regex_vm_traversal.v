@@ -52,7 +52,7 @@ pub fn (mut vm RegexVm) advance_char() {
 	}
 }
 
-pub fn (vm RegexVm) retreat_one_char(pos usize) usize {
+pub fn (vm RegexVm) retreat_one_char(pos uint) uint {
 	if pos == 0 { return 0 }
 	if vm.program.unicode && pos >= 2 && is_utf16_low_surrogate(vm.input_code_unit(pos - 1))
 		&& is_utf16_high_surrogate(vm.input_code_unit(pos - 2)) {
@@ -61,7 +61,7 @@ pub fn (vm RegexVm) retreat_one_char(pos usize) usize {
 	return pos - 1
 }
 
-pub fn (vm RegexVm) advance_one_char(pos usize) usize {
+pub fn (vm RegexVm) advance_one_char(pos uint) uint {
 	if pos >= vm.input_len() { return pos }
 	mut next := pos + 1
 	if vm.program.unicode && next < vm.input_len()
@@ -72,11 +72,11 @@ pub fn (vm RegexVm) advance_one_char(pos usize) usize {
 	return next
 }
 
-pub fn (vm RegexVm) retreat_n_chars(start usize, count u32) ?usize {
+pub fn (vm RegexVm) retreat_n_chars(start uint, count u32) ?uint {
 	mut pos := start
 	if !vm.program.unicode {
-		if usize(count) > pos { return none }
-		return pos - usize(count)
+		if uint(count) > pos { return none }
+		return pos - uint(count)
 	}
 	for _ in 0 .. count {
 		next := vm.retreat_one_char(pos)
@@ -86,11 +86,11 @@ pub fn (vm RegexVm) retreat_n_chars(start usize, count u32) ?usize {
 	return pos
 }
 
-pub fn (vm RegexVm) advance_n_chars(start usize, count u32) ?usize {
+pub fn (vm RegexVm) advance_n_chars(start uint, count u32) ?uint {
 	mut pos := start
 	if !vm.program.unicode {
-		if usize(count) > ~usize(0) - pos { return none }
-		return pos + usize(count)
+		if uint(count) > ~uint(0) - pos { return none }
+		return pos + uint(count)
 	}
 	for _ in 0 .. count {
 		next := vm.advance_one_char(pos)

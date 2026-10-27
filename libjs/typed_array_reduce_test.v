@@ -178,7 +178,7 @@ fn test_typed_array_reduce_keeps_snapshot_length_and_live_reads_through_mutation
 		for mode in ['mutate', 'shrink', 'grow', 'detach', 'throw'] {
 			mut buffer := ArrayBufferObject.create_from_bytes(vm.realm(), [u8(1), 2, 3], false,
 				parent)
-			buffer.maximum_byte_length = usize(8)
+			buffer.maximum_byte_length = uint(8)
 			mut array := TypedArray.create(vm.realm(), .uint8, 0, buffer, parent)
 			initialize_typed_array_from_array_buffer(mut vm, mut array, buffer, Value.from_i32(0),
 				js_undefined())!

@@ -46,7 +46,7 @@ fn (mut runtime Runtime) install_data_transfer_items_identity() ! {
 		list := runtime.native_data_transfer_item_list(runtime.ui_event_argument(args, 1))!
 		index := u32(webidl.convert_to_int(runtime.webidl_value(runtime.ui_event_argument(args, 2))!,
 			32, false, .no, .no)!)
-		item := list.item(usize(index)) or { return C.JSValueMakeUndefined(runtime.context) }
+		item := list.item(uint(index)) or { return C.JSValueMakeUndefined(runtime.context) }
 		return runtime.javascript_data_transfer_item(item)
 	})!
 	factory := runtime.evaluate_host_value(data_transfer_items_identity_factory())!
@@ -156,7 +156,7 @@ fn (mut runtime Runtime) data_transfer_items_binding_call(operation string, rece
 		'remove' {
 			if args.len < 1 { return runtime.event_binding_type_error('remove() requires one argument') }
 			index := u32(webidl.convert_to_int(runtime.webidl_value(args[0])!, 32, false, .no, .no)!)
-			list.remove(usize(index)) or {
+			list.remove(uint(index)) or {
 				if err.msg().starts_with('InvalidStateError: ') {
 					actual := runtime.javascript_dom_exception(webidl.dom_exception_value(webidl.DOMException.create('InvalidStateError',
 						err.msg().all_after('InvalidStateError: '))))!

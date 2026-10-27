@@ -23,7 +23,7 @@ pub fn (mut interpreter BinaryMachineBytecodeInterpreter) load_and_push_zero_n[T
 	}
 	instance_address := base + arg.offset
 	mut bytes := [16]u8{}
-	memory.data().copy_to(usize(instance_address), BinaryMachineBytes{ data: unsafe { &bytes[0] }, size: usize(sizeof(T)) })
+	memory.data().copy_to(uint(instance_address), BinaryMachineBytes{ data: unsafe { &bytes[0] }, size: uint(sizeof(T)) })
 	vector := binary_machine_read_value[BinaryMachineValue](BinaryMachineBytes{ data: unsafe { &bytes[0] }, size: 16 })
 	configuration.push_to_destination(.any, vector, unsafe { addresses.operands.destination })
 	return false

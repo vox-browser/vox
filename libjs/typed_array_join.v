@@ -13,10 +13,10 @@ pub fn typed_array_prototype_join(mut vm VM, prototypes PrimitiveObjectPrototype
 		separator.to_primitive_string(mut vm)!.utf16
 	}
 	mut builder := []u16{}
-	mut result_length := usize(0)
+	mut result_length := uint(0)
 	for k := u32(0); k < length; k++ {
 		if k > 0 {
-			result_length = checked_js_string_length_sum(mut vm, result_length, usize(sep.len()),
+			result_length = checked_js_string_length_sum(mut vm, result_length, uint(sep.len()),
 				.string_size_must_not_overflow)!
 			// V's flattened string storage has a signed-int array length.
 			if result_length > 0x7fffffff {
@@ -30,7 +30,7 @@ pub fn typed_array_prototype_join(mut vm VM, prototypes PrimitiveObjectPrototype
 		} else {
 			element.to_primitive_string(mut vm)!.utf16
 		}
-		result_length = checked_js_string_length_sum(mut vm, result_length, usize(next.len()),
+		result_length = checked_js_string_length_sum(mut vm, result_length, uint(next.len()),
 			.string_size_must_not_overflow)!
 		if result_length > 0x7fffffff {
 			return vm.throw_error_type(.range_error, .string_size_must_not_overflow)

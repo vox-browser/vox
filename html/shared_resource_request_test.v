@@ -161,7 +161,7 @@ fn test_shared_resource_request_pruning_uses_lru_and_preserves_live_images() {
 	old_serial := old_request.cache_touch_serial()
 	assert SharedResourceRequest.get_or_create(document, old_url) == old_request
 	assert old_request.cache_touch_serial() > old_serial
-	prune_shared_resource_requests_for_document(document, usize(-1), 1)
+	prune_shared_resource_requests_for_document(document, uint(-1), 1)
 	assert shared_resource_request_for_document_and_url(document, old_url) != none
 	assert shared_resource_request_for_document_and_url(document, untouched_url) == none
 	assert shared_resource_request_for_document_and_url(document, protected_url) != none

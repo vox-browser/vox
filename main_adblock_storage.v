@@ -53,7 +53,7 @@ fn install_browser_page_storage(document &dom.Document, runtime &browserjs.Runti
 				}
 				return json2.encode(BrowserStorageResult{value: storage.get_item(operation.key)}, escape_unicode: true)
 			}
-			'key' { return json2.encode(BrowserStorageResult{value: storage.key(usize(operation.index))}, escape_unicode: true) }
+			'key' { return json2.encode(BrowserStorageResult{value: storage.key(uint(operation.index))}, escape_unicode: true) }
 			'keys' { return json2.encode(BrowserStorageResult{keys: storage.supported_property_names()}, escape_unicode: true) }
 			'length' { return json2.encode(BrowserStorageResult{length: int(storage.length())}, escape_unicode: true) }
 			'set' {

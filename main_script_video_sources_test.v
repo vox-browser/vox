@@ -92,7 +92,7 @@ fn test_video_frame_time_uses_last_literal_match_without_joining_scripts() {
 fn test_video_reference_candidates_do_not_copy_non_video_literals_or_borrow_returned_strings() {
 	mut source := 'const a="λ clip.MP4";const b="second.webm";'.clone()
 	references := quoted_video_references([source])
-	unsafe { C.memset(source.str, `x`, usize(source.len)) }
+	unsafe { C.memset(source.str, `x`, uint(source.len)) }
 	assert references == ['λ clip.MP4', 'second.webm']
 	scripts := ['const ignored="ordinary payload without a video extension";'.repeat(50_000)]
 	before := platform.thread_arena_usage().used

@@ -3,7 +3,7 @@ module css
 import dom
 
 $if gcboehm ? {
-	fn C.GC_get_total_bytes() usize
+	fn C.GC_get_total_bytes() uint
 }
 
 fn internal_font_settings_style() &ComputedProperties {
@@ -30,7 +30,7 @@ fn test_internal_normal_font_settings_reads_allocate_nothing_for_typed_and_bridg
 		_ = computer.variation_settings_for_computation(style)
 		_ = computer.feature_data_for_computation(style)
 		gc_collect()
-		mut before := usize(0)
+		mut before := uint(0)
 		$if gcboehm ? { before = C.GC_get_total_bytes() }
 		mut count := 0
 		for _ in 0 .. 1024 {
@@ -38,7 +38,7 @@ fn test_internal_normal_font_settings_reads_allocate_nothing_for_typed_and_bridg
 			features := computer.feature_data_for_computation(style)
 			count += variations.len + features.font_feature_settings.len + 1
 		}
-		mut allocated := usize(0)
+		mut allocated := uint(0)
 		$if gcboehm ? { allocated = C.GC_get_total_bytes() - before }
 		assert allocated == 0
 		assert count == 1024

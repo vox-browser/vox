@@ -1,6 +1,6 @@
 module webassembly
 
-fn source_arguments_frame(mut configuration BinaryMachineConfiguration, minimum usize) {
+fn source_arguments_frame(mut configuration BinaryMachineConfiguration, minimum uint) {
 	module_ := BinaryMachineModuleInstance.create_with_contents(BinaryMachineModuleConstruction{
 		minimum_call_record_size: minimum
 	})
@@ -8,7 +8,7 @@ fn source_arguments_frame(mut configuration BinaryMachineConfiguration, minimum 
 	configuration.frame_stack_ << BinaryMachineFrame.create(module_, unsafe { nil }, expression, 0, false)
 }
 
-fn source_heap_arguments(capacity usize, marker i32) BinaryMachineArguments {
+fn source_heap_arguments(capacity uint, marker i32) BinaryMachineArguments {
 	mut arguments := BinaryMachineArguments{}
 	arguments.ensure_capacity(capacity)
 	arguments.unchecked_append(BinaryMachineValue.from_i32(marker))
@@ -86,7 +86,7 @@ fn test_source_argument_reuse_takes_last_then_grows_and_caps_retained_allocation
 	configuration.release_arguments_allocation(mut arguments)
 	assert arguments.capacity() == 3 && arguments.size() == 0
 	for index in 0 .. 14 {
-		mut next := source_heap_arguments(usize(6 + index), index)
+		mut next := source_heap_arguments(uint(6 + index), index)
 		configuration.release_arguments_allocation(mut next)
 		assert next.capacity() == 3 && next.size() == 0
 	}

@@ -2,18 +2,18 @@ module libjs
 
 // Runtime/Uint8Array.cpp::FromHex. Keep the partial bytes and the throw
 // completion together: setFromHex writes those bytes before propagating error.
-pub fn from_hex(mut vm VM, text Utf16String, max_length ?usize) Uint8ArrayDecodeResult {
-	limit := max_length or { usize(9007199254740991) }
+pub fn from_hex(mut vm VM, text Utf16String, max_length ?uint) Uint8ArrayDecodeResult {
+	limit := max_length or { uint(9007199254740991) }
 	units := text.as_slice()
 	mut bytes := []u8{}
-	mut read := usize(0)
+	mut read := uint(0)
 	if units.len % 2 != 0 {
 		return Uint8ArrayDecodeResult{
 			error: completion_from_error(vm.throw_error(.syntax_error,
 				'Hex string must have an even length'))
 		}
 	}
-	for read < usize(units.len) && usize(bytes.len) < limit {
+	for read < uint(units.len) && uint(bytes.len) < limit {
 		// The source parses exactly two UTF-16 code units as an unsigned byte
 		// with TrimWhitespace::No. Reuse the translated ASCII hex-digit path.
 		first := uri_hex_digit(units[int(read)]) or {
@@ -53,11 +53,11 @@ pub fn uint8_array_constructor_from_hex(mut vm VM, prototype_getter IntrinsicPro
 	if error := result.error {
 		return error.release_error()
 	}
-	buffer := ArrayBufferObject.create(mut vm, realm, usize(result.bytes.len),
+	buffer := ArrayBufferObject.create(mut vm, realm, uint(result.bytes.len),
 		realm.array_buffer_prototype_record())!
 	array := TypedArray.create(realm, .uint8, u32(result.bytes.len), buffer,
 		prototype_getter(realm))
-	assert array.viewed_buffer.byte_length() == usize(result.bytes.len)
+	assert array.viewed_buffer.byte_length() == uint(result.bytes.len)
 	mut storage := array.viewed_buffer
 	storage.overwrite(0, result.bytes)
 	return Value.from_object(array.object)
@@ -74,8 +74,8 @@ pub fn uint8_array_prototype_set_from_hex(mut vm VM, prototypes PrimitiveObjectP
 		return vm.throw_error_type(.type_error, .buffer_out_of_bounds, 'TypedArray')
 	}
 	length := typed_array_length(record)
-	result := from_hex(mut vm, value.as_string().utf16_string(), usize(length))
-	assert usize(result.bytes.len) <= usize(length)
+	result := from_hex(mut vm, value.as_string().utf16_string(), uint(length))
+	assert uint(result.bytes.len) <= uint(length)
 	set_uint8_array_bytes(mut vm, mut into, result.bytes)
 	if error := result.error {
 		return error.release_error()

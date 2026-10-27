@@ -9,10 +9,10 @@ pub:
 	object &Object
 	viewed_buffer ?&ArrayBufferObject
 	byte_length ByteLength
-	offset usize
+	offset uint
 }
 
-pub fn DataView.create(realm &Realm, viewed_buffer ?&ArrayBufferObject, byte_length ByteLength, byte_offset usize, prototype &Object) &DataView {
+pub fn DataView.create(realm &Realm, viewed_buffer ?&ArrayBufferObject, byte_length ByteLength, byte_offset uint, prototype &Object) &DataView {
 	mut object := Object.create(realm, prototype)
 	object.class_name = 'DataView'
 	view := &DataView{object: object, viewed_buffer: viewed_buffer, byte_length: byte_length, offset: byte_offset}

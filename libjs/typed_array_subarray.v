@@ -10,7 +10,7 @@ pub fn typed_array_prototype_subarray(mut vm VM, prototypes PrimitiveObjectProto
 	record := make_typed_array_with_buffer_witness_record(source, .seq_cst)
 	length := if is_typed_array_out_of_bounds(record) { u32(0) } else { typed_array_length(record) }
 	relative_begin := begin.to_integer_or_infinity(mut vm)!
-	begin_index := u32(buffer_slice_index(usize(length), relative_begin))
+	begin_index := u32(buffer_slice_index(uint(length), relative_begin))
 	checked_offset := u64(source.byte_offset) + u64(begin_index) * u64(source.element_size())
 	if checked_offset > u64(0xffffffff) { return Value.from_object(source.object) }
 	byte_offset := u32(checked_offset)
@@ -22,7 +22,7 @@ pub fn typed_array_prototype_subarray(mut vm VM, prototypes PrimitiveObjectProto
 		} else {
 			end.to_integer_or_infinity(mut vm)!
 		}
-		end_index := u32(buffer_slice_index(usize(length), relative_end))
+		end_index := u32(buffer_slice_index(uint(length), relative_end))
 		count := if end_index > begin_index { end_index - begin_index } else { u32(0) }
 		new_length = count
 		arguments << Value.from_f64(f64(count))

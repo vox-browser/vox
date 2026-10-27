@@ -23,7 +23,7 @@ fn C.JSValueMakeNull(context voidptr) voidptr
 fn C.JSValueMakeBoolean(context voidptr, value bool) voidptr
 fn C.JSValueMakeNumber(context voidptr, value f64) voidptr
 fn C.JSValueToNumber(context voidptr, value voidptr, exception &voidptr) f64
-fn C.JSObjectMakeTypedArray(context voidptr, type_ int, length usize, exception &voidptr) voidptr
+fn C.JSObjectMakeTypedArray(context voidptr, type_ int, length uint, exception &voidptr) voidptr
 fn C.JSObjectGetTypedArrayBytesPtr(context voidptr, object voidptr, exception &voidptr) voidptr
 
 pub fn (mut host ReadableStreamHost) install(mut runtime Runtime) ! {
@@ -252,7 +252,7 @@ fn (mut host ReadableStreamHost) value(value webidl.Value) !voidptr {
 			if buffer.kind != .uint8_array { return error('Native readable result requires an unsigned-byte view') }
 			bytes := webidl.get_buffer_source_copy(buffer)
 			mut exception := unsafe { nil }
-			object := C.JSObjectMakeTypedArray(context, C.kJSTypedArrayTypeUint8Array, usize(bytes.len), &exception)
+			object := C.JSObjectMakeTypedArray(context, C.kJSTypedArrayTypeUint8Array, uint(bytes.len), &exception)
 			if exception != unsafe { nil } { return host.runtime.actual_javascript_exception(exception) }
 			data := C.JSObjectGetTypedArrayBytesPtr(context, object, &exception)
 			if exception != unsafe { nil } { return host.runtime.actual_javascript_exception(exception) }

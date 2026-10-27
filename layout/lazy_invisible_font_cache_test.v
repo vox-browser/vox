@@ -5,7 +5,7 @@ import dom
 import platform
 
 $if gcboehm ? {
-	fn C.GC_get_total_bytes() usize
+	fn C.GC_get_total_bytes() uint
 }
 
 fn lazy_invisible_font_test_text() &TextNode {
@@ -28,14 +28,14 @@ fn test_visible_text_and_absent_invisible_cache_reads_keep_storage_absent() {
 	assert iterator.selected_font_storage_ == unsafe { nil }
 	key := 'unseen|font|key'
 	mut misses := 0
-	mut before := usize(0)
+	mut before := uint(0)
 	$if gcboehm ? {
 		before = C.GC_get_total_bytes()
 	}
 	for _ in 0 .. 1024 {
 		if iterator.cached_invisible_font(key) == none { misses++ }
 	}
-	mut allocated := usize(0)
+	mut allocated := uint(0)
 	$if gcboehm ? {
 		allocated = C.GC_get_total_bytes() - before
 	}

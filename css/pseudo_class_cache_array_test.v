@@ -3,7 +3,7 @@ module css
 import dom
 
 $if gcboehm ? {
-	fn C.GC_get_total_bytes() usize
+	fn C.GC_get_total_bytes() uint
 }
 
 fn test_pseudo_class_cache_list_preserves_order_independence_and_no_allocation() {
@@ -13,7 +13,7 @@ fn test_pseudo_class_cache_list_preserves_order_independence_and_no_allocation()
 	edited[0] = .root
 	assert edited[0] == .root
 	assert style_scope_pseudo_classes_with_rule_cache() == expected
-	mut before := usize(0)
+	mut before := uint(0)
 	$if gcboehm ? { before = C.GC_get_total_bytes() }
 	mut visits := 0
 	for _ in 0 .. 1024 {
@@ -21,7 +21,7 @@ fn test_pseudo_class_cache_list_preserves_order_independence_and_no_allocation()
 			if pseudo_class == .hover || pseudo_class == .target { visits++ }
 		}
 	}
-	mut allocated := usize(0)
+	mut allocated := uint(0)
 	$if gcboehm ? { allocated = C.GC_get_total_bytes() - before }
 	assert visits == 2048
 	assert allocated == 0

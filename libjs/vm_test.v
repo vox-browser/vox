@@ -525,12 +525,12 @@ fn test_module_execution_counters_and_default_host_hooks() {
 
 @[heap]
 struct VmTestArrayBuffer {
-	capacity usize
+	capacity uint
 mut:
-	byte_length usize
+	byte_length uint
 }
 
-fn (mut buffer VmTestArrayBuffer) try_resize(new_byte_length usize, zero_fill_new_bytes bool) bool {
+fn (mut buffer VmTestArrayBuffer) try_resize(new_byte_length uint, zero_fill_new_bytes bool) bool {
 	if new_byte_length > buffer.capacity {
 		return false
 	}

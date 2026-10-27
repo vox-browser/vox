@@ -39,14 +39,14 @@ fn (mut runtime Runtime) text_encoder_operation(encoder &encoding.TextEncoder, a
 	mut exception := unsafe { nil }
 	if name == 'encode' {
 		bytes := encoder.encode(source)
-		view := C.JSObjectMakeTypedArray(runtime.context, C.kJSTypedArrayTypeUint8Array, usize(bytes.len), &exception)
+		view := C.JSObjectMakeTypedArray(runtime.context, C.kJSTypedArrayTypeUint8Array, uint(bytes.len), &exception)
 		if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 		runtime.retain_javascript_value(view)!
 		defer { runtime.release_javascript_value(view) }
 		if bytes.len > 0 {
 			pointer := C.JSObjectGetTypedArrayBytesPtr(runtime.context, view, &exception)
 			if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
-			unsafe { C.memcpy(pointer, bytes.data, usize(bytes.len)) }
+			unsafe { C.memcpy(pointer, bytes.data, uint(bytes.len)) }
 		}
 		return view
 	}
@@ -60,7 +60,7 @@ fn (mut runtime Runtime) text_encoder_operation(encoder &encoding.TextEncoder, a
 	// the wrapper rejects resizable and growable backing stores after conversion.
 	length := C.JSObjectGetTypedArrayByteLength(runtime.context, destination, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
-	if length > usize(2147483647) {
+	if length > uint(2147483647) {
 		return error('RangeError: destination exceeds the native byte span')
 	}
 	mut result := encoding.TextEncoderEncodeIntoResult{}
@@ -78,7 +78,7 @@ fn (mut runtime Runtime) text_encoder_operation(encoder &encoding.TextEncoder, a
 	}
 	values := [C.JSValueMakeNumber(runtime.context, f64(result.read)),
 		C.JSValueMakeNumber(runtime.context, f64(result.written))]
-	actual := C.JSObjectMakeArray(runtime.context, usize(values.len), values.data, &exception)
+	actual := C.JSObjectMakeArray(runtime.context, uint(values.len), values.data, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	return actual
 }

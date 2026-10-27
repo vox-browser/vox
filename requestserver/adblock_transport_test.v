@@ -48,7 +48,7 @@ fn test_response_header_gate_rejects_curl_payload_before_receiver_delivery() {
 	}
 	defer { native.stop() }
 	bytes := 'advert payload'.bytes()
-	assert curl_data_received(bytes.data, 1, usize(bytes.len), native) == 0
+	assert curl_data_received(bytes.data, 1, uint(bytes.len), native) == 0
 	response := pending.response()?
 	assert response.is_network_error()
 	assert (response.network_error_message or { '' }).contains('responseheader=llasalbbubrrl')

@@ -13,7 +13,7 @@ fn test_source_lost_client_wait_returns_default_without_touching_other_native_ma
 	C.vox_gl_vertex_attrib_enable(0xffff_ffff, 1)
 	mut after_loss := owner.fence_sync(sync_gpu_commands_complete, 0) or { panic('source owned fence after loss') }
 	assert after_loss.native_pointer() == unsafe { nil }
-	assert usize(after_loss.sync_handle(owner.identity(), owner.context_generation())!) == 2
+	assert uint(after_loss.sync_handle(owner.identity(), owner.context_generation())!) == 2
 	for flags in [GLenum(0), sync_flush_commands_bit, GLenum(2)] {
 		for timeout in [u64(0), u64(1), u64(-1)] {
 			assert owner.client_wait_sync(mut before_loss, flags, timeout) == 0
@@ -37,7 +37,7 @@ fn test_source_live_rejected_native_fence_retains_actual_wait_failed_driver_resu
 	mut rejected := context.fence_sync(0, 0) or { panic('source rejected fence record') }
 	assert context.get_error() == invalid_enum
 	assert rejected.native_pointer() == unsafe { nil }
-	assert usize(rejected.sync_handle(context.identity(), context.context_generation())!) == 1
+	assert uint(rejected.sync_handle(context.identity(), context.context_generation())!) == 1
 	context.native.make_current()
 	expected := C.vox_gl_client_wait_sync(rejected.native_pointer(), 0, 0)
 	expected_error := C.vox_gl_get_error()

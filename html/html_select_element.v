@@ -32,8 +32,8 @@ pub fn (collection &HTMLOptionsCollection) item(index u32) ?&dom.HTMLOptionEleme
 	return html_select_element_item(collection.select_element, index)
 }
 
-pub fn (collection &HTMLOptionsCollection) item_value(index usize) ?&dom.HTMLOptionElement {
-	if index > usize(0xffff_ffff) {
+pub fn (collection &HTMLOptionsCollection) item_value(index uint) ?&dom.HTMLOptionElement {
+	if index > uint(0xffff_ffff) {
 		return none
 	}
 	return collection.item(u32(index))
@@ -111,7 +111,7 @@ pub fn (mut model HTMLSelectElementModel) options() &HTMLOptionsCollection {
 	return collection
 }
 
-pub fn (mut model HTMLSelectElementModel) item_value(index usize) ?&dom.HTMLOptionElement {
+pub fn (mut model HTMLSelectElementModel) item_value(index uint) ?&dom.HTMLOptionElement {
 	return model.options().item_value(index)
 }
 

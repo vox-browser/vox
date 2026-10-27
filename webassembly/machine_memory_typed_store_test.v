@@ -163,7 +163,7 @@ fn test_source_typed_store_consumes_stack_value_then_address_even_when_bounds_tr
 	// An exact end is valid, including after actual MemoryInstance growth.
 	for grow in [false, true] {
 		if grow {
-			assert memory.grow(usize(page_size), .yes, .no)
+			assert memory.grow(uint(page_size), .yes, .no)
 		}
 		configuration.value_stack_.append(BinaryMachineValue.from_u64(u64(memory.size()) - 8))
 		configuration.value_stack_.append(BinaryMachineValue.from_u64(0x0123456789abcdef))
@@ -171,7 +171,7 @@ fn test_source_typed_store_consumes_stack_value_then_address_even_when_bounds_tr
 		assert !interpreter.pop_and_store[i64, i64](mut configuration, &BinaryInstruction{ arguments: BinaryMemoryArgument{} }, addresses)
 		payload := hex.decode('efcdab8967452301')!
 		for index in 0 .. payload.len {
-			assert unsafe { memory.data().data()[memory.size() - 8 + usize(index)] } == payload[index]
+			assert unsafe { memory.data().data()[memory.size() - 8 + uint(index)] } == payload[index]
 		}
 		assert configuration.value_stack_.size() == 1
 		assert interpreter.trap().format() == 'Earlier trap'
@@ -240,7 +240,7 @@ fn test_source_store_value_routes_requested_address_operand_and_copies_borrowed_
 	}
 	mut borrowed := [u8(0x80), 0, 0xff, 0x41]
 	instruction := &BinaryInstruction{ arguments: BinaryMemoryArgument{ offset: 3 } }
-	assert !interpreter.store_value(mut configuration, instruction, BinaryMachineBytes{ data: borrowed.data, size: usize(borrowed.len) }, 2, addresses)
+	assert !interpreter.store_value(mut configuration, instruction, BinaryMachineBytes{ data: borrowed.data, size: uint(borrowed.len) }, 2, addresses)
 	borrowed[0] = 0x11
 	assert unsafe { memory.data().data()[10] } == 0x80
 	assert unsafe { memory.data().data()[11] } == 0

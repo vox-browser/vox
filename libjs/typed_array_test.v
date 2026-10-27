@@ -80,7 +80,7 @@ fn test_typed_array_witnesses_track_whole_elements_and_preserve_snapshot_lengths
 	create_simple_execution_context(mut vm)
 	prototype := Object.create(vm.realm(), none)
 	mut buffer := ArrayBufferObject.create(mut vm, vm.realm(), 9, prototype)!
-	buffer.maximum_byte_length = usize(16)
+	buffer.maximum_byte_length = uint(16)
 	mut fixed := TypedArray.create(vm.realm(), .uint16, 2, buffer, prototype)
 	fixed.byte_offset = 2
 	fixed.byte_length = ByteLength.from_u32(4)
@@ -136,7 +136,7 @@ fn test_typed_array_empty_views_and_fixed_length_rules_distinguish_resizable_and
 		for growable in [false, true] {
 			mut buffer := ArrayBufferObject.create_from_bytes(vm.realm(), [u8(0), 0, 0, 0],
 				is_shared, prototype)
-			if growable { buffer.maximum_byte_length = usize(8) }
+			if growable { buffer.maximum_byte_length = uint(8) }
 			for auto_length in [false, true] {
 				if auto_length && !growable { continue
 				 }

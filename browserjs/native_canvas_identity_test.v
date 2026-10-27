@@ -3,7 +3,7 @@ module browserjs
 import dom
 
 $if gcboehm ? {
-	fn C.GC_get_total_bytes() usize
+	fn C.GC_get_total_bytes() uint
 }
 
 fn test_native_canvas_identity_distinguishes_equal_records_and_keeps_live_aliases() {
@@ -32,12 +32,12 @@ fn test_native_canvas_identity_misses_do_not_copy_element_records_or_maps() {
 	unsafe { *missing = *first }
 	mut elements := map[string]&dom.Element{}
 	for index in 0 .. 128 { elements['key-${index}'] = first }
-	mut before := usize(0)
+	mut before := uint(0)
 	$if gcboehm ? { before = C.GC_get_total_bytes() }
 	for _ in 0 .. 1000 {
 		assert native_canvas_element_identity_keys(elements, missing).len == 0
 	}
-	mut allocated := usize(0)
+	mut allocated := uint(0)
 	$if gcboehm ? { allocated = C.GC_get_total_bytes() - before }
 	assert allocated == 0
 }

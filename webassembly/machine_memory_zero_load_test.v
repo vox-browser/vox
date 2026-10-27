@@ -69,7 +69,7 @@ fn test_source_zero_load_preserves_native_low_bytes_and_clears_every_upper_vecto
 				before_call0 := *configuration.call_record_entry(0)
 				before_call1 := *configuration.call_record_entry(1)
 				buffer.fill(0, u8(0x79), 32)
-				buffer.overwrite(5, incoming.data, usize(incoming.len))
+				buffer.overwrite(5, incoming.data, uint(incoming.len))
 				interpreter.set_trap_message('Earlier trap')
 				assert !execute_source_zero_load(width, mut interpreter, mut configuration, instruction, addresses)
 				if destination == .stack {
@@ -78,7 +78,7 @@ fn test_source_zero_load_preserves_native_low_bytes_and_clears_every_upper_vecto
 				} else if destination == .r7 || destination == .r2 {
 					assert configuration.regs[int(destination)] == expected, line
 				} else {
-					assert *configuration.call_record_entry(usize(int(destination) - int(BinaryRegisterOrStack.call_record))) == expected, line
+					assert *configuration.call_record_entry(uint(int(destination) - int(BinaryRegisterOrStack.call_record))) == expected, line
 				}
 				assert configuration.value_stack_.size() == 1 && configuration.value_stack_.last().to_i64() == 91
 				for index in 0 .. 8 {

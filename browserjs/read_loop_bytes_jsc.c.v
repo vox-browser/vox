@@ -52,7 +52,7 @@ fn (host &ReadableStreamHost) read_loop_bytes(value webidl.Value) !streams.ReadL
 	defer { runtime.release_javascript_value(copy) }
 	length := C.JSObjectGetTypedArrayByteLength(runtime.context, copy, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
-	if length > usize(2147483647) {
+	if length > uint(2147483647) {
 		return error('InternalError: read-loop bytes exceed the source V span')
 	}
 	mut bytes := []u8{len: int(length)}

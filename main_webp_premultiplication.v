@@ -2,14 +2,14 @@ module main
 
 import dom
 
-fn C.native_decode_chromium_webp_rgba(&u8, usize, &int, &int, &int) &u8
+fn C.native_decode_chromium_webp_rgba(&u8, uint, &int, &int, &int) &u8
 
 fn chromium_tagged_webp_paint_bitmap(bytes []u8) ?&dom.Bitmap_ {
 	$if macos {
 		mut width := 0
 		mut height := 0
 		mut pitch := 0
-		pixels := C.native_decode_chromium_webp_rgba(bytes.data, usize(bytes.len), &width, &height,
+		pixels := C.native_decode_chromium_webp_rgba(bytes.data, uint(bytes.len), &width, &height,
 			&pitch)
 		if pixels == unsafe { nil } { return none }
 		defer { C.native_free_webp_pixels(pixels) }

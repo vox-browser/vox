@@ -39,7 +39,7 @@ fn regex_unicode_property_strings(property u32) [][]u32 {
 			units: units
 		})
 		mut points := []u32{}
-		for position := usize(0); position < input.len(); position += regex_code_point_len(true,
+		for position := uint(0); position < input.len(); position += regex_code_point_len(true,
 			input, position) {
 			points << regex_decode_code_point(true, input, position)
 		}

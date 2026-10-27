@@ -470,17 +470,17 @@ pub mut:
 
 pub struct GridArea {
 pub mut:
-	row_start    usize
-	row_end      usize = 1
-	column_start usize
-	column_end   usize = 1
+	row_start    uint
+	row_end      uint = 1
+	column_start uint
+	column_end   uint = 1
 }
 
 pub struct GridTemplateAreas {
 pub mut:
 	areas        map[string]GridArea
-	row_count    usize
-	column_count usize
+	row_count    uint
+	column_count uint
 }
 
 pub fn (areas GridTemplateAreas) is_empty() bool {
@@ -697,12 +697,12 @@ pub fn (repeat GridRepeat) is_fixed() bool {
 	return repeat.type_ == .fixed
 }
 
-pub fn (repeat GridRepeat) repeat_count() usize {
+pub fn (repeat GridRepeat) repeat_count() uint {
 	if !repeat.is_fixed() {
 		panic('VERIFY_NOT_REACHED')
 	}
 	count := repeat.repeat_count_ or { panic('VERIFY_NOT_REACHED') }
-	return usize(int_from_style_value(count))
+	return uint(int_from_style_value(count))
 }
 
 pub fn (repeat GridRepeat) grid_track_size_list() GridTrackSizeList {
@@ -982,11 +982,11 @@ pub fn (style_value GridTrackSizeListStyleValue) properties_equal(other GridTrac
 pub struct GridTemplateAreaStyleValue {
 pub mut:
 	grid_areas_   map[string]GridArea
-	row_count_    usize
-	column_count_ usize
+	row_count_    uint
+	column_count_ uint
 }
 
-pub fn GridTemplateAreaStyleValue.create(grid_areas map[string]GridArea, row_count usize, column_count usize) GridTemplateAreaStyleValue {
+pub fn GridTemplateAreaStyleValue.create(grid_areas map[string]GridArea, row_count uint, column_count uint) GridTemplateAreaStyleValue {
 	return GridTemplateAreaStyleValue{
 		grid_areas_:   grid_areas
 		row_count_:    row_count
@@ -998,15 +998,15 @@ pub fn (style_value GridTemplateAreaStyleValue) grid_areas() map[string]GridArea
 	return style_value.grid_areas_
 }
 
-pub fn (style_value GridTemplateAreaStyleValue) row_count() usize {
+pub fn (style_value GridTemplateAreaStyleValue) row_count() uint {
 	return style_value.row_count_
 }
 
-pub fn (style_value GridTemplateAreaStyleValue) column_count() usize {
+pub fn (style_value GridTemplateAreaStyleValue) column_count() uint {
 	return style_value.column_count_
 }
 
-pub fn (style_value GridTemplateAreaStyleValue) cell_name_at(row usize, column usize) string {
+pub fn (style_value GridTemplateAreaStyleValue) cell_name_at(row uint, column uint) string {
 	for name, area in style_value.grid_areas_ {
 		if row >= area.row_start && row < area.row_end && column >= area.column_start
 			&& column < area.column_end {

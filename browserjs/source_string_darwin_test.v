@@ -24,7 +24,7 @@ fn test_native_source_strings_match_the_existing_decoder_and_empty_string_identi
 		[u8(0xf4), 0x90, 0x80, 0x80].bytestr(), '😀 café '.repeat(10000)]
 	for source in sources {
 		units := libjs.utf16(source)
-		expected := C.JSStringCreateWithCharacters(units.data, usize(units.len))
+		expected := C.JSStringCreateWithCharacters(units.data, uint(units.len))
 		actual := js_source_string(source)
 		assert_source_string_units(actual, units)
 		assert C.JSStringIsEqual(actual, expected)
@@ -32,10 +32,10 @@ fn test_native_source_strings_match_the_existing_decoder_and_empty_string_identi
 		C.JSStringRelease(expected)
 	}
 	for fallback in ['', '\xef\xbb\xbfBOM', [u8(0x80)].bytestr(), [u8(0xed), 0xa0, 0x80].bytestr()] {
-		assert C.vox_browserjs_source_utf8_string(fallback.str, usize(fallback.len)) == unsafe { nil }
+		assert C.vox_browserjs_source_utf8_string(fallback.str, uint(fallback.len)) == unsafe { nil }
 	}
 	for valid in ['ASCII source', '日本語 😀', [u8(`A`), 0, `B`].bytestr()] {
-		text := C.vox_browserjs_source_utf8_string(valid.str, usize(valid.len))
+		text := C.vox_browserjs_source_utf8_string(valid.str, uint(valid.len))
 		assert_source_string_units(text, libjs.utf16(valid))
 		C.JSStringRelease(text)
 	}

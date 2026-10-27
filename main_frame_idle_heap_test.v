@@ -6,12 +6,12 @@ import gg
 import os
 import platform
 
-fn C.GC_get_free_space_divisor() usize
-fn C.GC_set_free_space_divisor(usize)
+fn C.GC_get_free_space_divisor() uint
+fn C.GC_set_free_space_divisor(uint)
 fn C.GC_call_with_alloc_lock(fn (voidptr) voidptr, voidptr) voidptr
 
 $if gcboehm ? {
-	struct FrameIdleHeapObservation { mut: divisor usize }
+	struct FrameIdleHeapObservation { mut: divisor uint }
 	fn frame_idle_heap_read_locked(context voidptr) voidptr {
 		mut value := unsafe { &FrameIdleHeapObservation(context) }
 		value.divisor = C.GC_get_free_space_divisor()
@@ -22,12 +22,12 @@ $if gcboehm ? {
 		C.GC_set_free_space_divisor(value.divisor)
 		return unsafe { nil }
 	}
-	fn frame_idle_heap_divisor() usize {
+	fn frame_idle_heap_divisor() uint {
 		mut value := FrameIdleHeapObservation{}
 		C.GC_call_with_alloc_lock(frame_idle_heap_read_locked, &value)
 		return value.divisor
 	}
-	fn frame_idle_heap_set_divisor(divisor usize) {
+	fn frame_idle_heap_set_divisor(divisor uint) {
 		value := FrameIdleHeapObservation{divisor: divisor}
 		C.GC_call_with_alloc_lock(frame_idle_heap_write_locked, &value)
 	}

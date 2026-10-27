@@ -2,7 +2,7 @@ module platform
 
 $if macos {
 	#include <malloc/malloc.h>
-	fn C.malloc_zone_pressure_relief(zone voidptr, goal usize) usize
+	fn C.malloc_zone_pressure_relief(zone voidptr, goal uint) uint
 }
 
 // Shaping is synchronous. Retained glyph runs contain glyph indices, positions

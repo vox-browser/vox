@@ -246,12 +246,12 @@ pub fn (entry &ResizeObserverEntry) target() &ResizeTarget {
 	return entry.target_
 }
 
-pub fn ResizeObserverEntry.target_offset() usize {
-	return usize(__offsetof(ResizeObserverEntry, target_))
+pub fn ResizeObserverEntry.target_offset() uint {
+	return uint(__offsetof(ResizeObserverEntry, target_))
 }
 
-pub fn ResizeObserverEntry.content_rect_offset() usize {
-	return usize(__offsetof(ResizeObserverEntry, content_rect_))
+pub fn ResizeObserverEntry.content_rect_offset() uint {
+	return uint(__offsetof(ResizeObserverEntry, content_rect_))
 }
 
 pub fn (entry &ResizeObserverEntry) border_box_size() []ResizeObserverSize {

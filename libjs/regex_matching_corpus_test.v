@@ -39,7 +39,7 @@ fn regex_matching_fixture_fold(point u32) string {
 fn regex_matching_fixture_result(fields []string) string {
 	operation := fields[0]
 	a := u32(fields[3].parse_uint(10, 32) or { panic(err) })
-	b := usize(fields[4].parse_uint(10, 64) or { panic(err) })
+	b := uint(fields[4].parse_uint(10, 64) or { panic(err) })
 	c := u32(fields[5].parse_uint(10, 32) or { panic(err) })
 	if operation == 'fold' { return regex_matching_fixture_fold(a) }
 	if operation == 'eq' { return regex_matching_fixture_bit(regex_case_fold_eq(a, u32(b), c != 0)) }

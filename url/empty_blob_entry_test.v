@@ -1,7 +1,7 @@
 module url
 
 $if gcboehm ? {
-	fn C.GC_get_total_bytes() usize
+	fn C.GC_get_total_bytes() uint
 	fn C.GC_gcollect()
 }
 
@@ -19,7 +19,7 @@ fn test_empty_url_does_not_construct_an_absent_blob_entry_payload() {
 	for _ in 0 .. 8 {
 		assert empty_blob_entry_fresh_url().blob_url_entry() == none
 	}
-	mut before := usize(0)
+	mut before := uint(0)
 	$if gcboehm ? {
 		C.GC_gcollect()
 		before = C.GC_get_total_bytes()
@@ -31,9 +31,9 @@ fn test_empty_url_does_not_construct_an_absent_blob_entry_payload() {
 			empty++
 		}
 	}
-	mut allocated := usize(0)
+	mut allocated := uint(0)
 	$if gcboehm ? { allocated = C.GC_get_total_bytes() - before }
-	mut reference_before := usize(0)
+	mut reference_before := uint(0)
 	$if gcboehm ? { reference_before = C.GC_get_total_bytes() }
 	mut reference_empty := 0
 	for _ in 0 .. 512 {
@@ -42,7 +42,7 @@ fn test_empty_url_does_not_construct_an_absent_blob_entry_payload() {
 			reference_empty++
 		}
 	}
-	mut reference_allocated := usize(0)
+	mut reference_allocated := uint(0)
 	$if gcboehm ? { reference_allocated = C.GC_get_total_bytes() - reference_before }
 	assert empty == 512
 	assert reference_empty == 512

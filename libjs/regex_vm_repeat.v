@@ -2,8 +2,8 @@ module libjs
 
 // LibRegex/Rust/src/vm.rs::{handle_repeat_start,handle_repeat_check}.
 pub fn (mut vm RegexVm) handle_repeat_start(counter_reg u32) {
-	reg := usize(counter_reg)
-	if reg < usize(vm.scratch.registers.len) { vm.scratch.registers[int(reg)] = 0 }
+	reg := uint(counter_reg)
+	if reg < uint(vm.scratch.registers.len) { vm.scratch.registers[int(reg)] = 0 }
 	vm.pc++
 }
 
@@ -27,16 +27,16 @@ pub fn (mut vm RegexVm) handle_repeat_check(counter_reg u32, min u32, max ?u32, 
 		vm.pc = body
 	} else {
 		// The optimized Rust source uses wrapping release-mode i32 arithmetic.
-		vm.push_backtrack_modified(body, vm.pos, usize(counter_reg), i32(count + 1))
+		vm.push_backtrack_modified(body, vm.pos, uint(counter_reg), i32(count + 1))
 		vm.pc++
 	}
 }
 
-pub fn (vm RegexVm) same_matcher_loop_suffix_min(start usize, matcher RegexSimpleMatch) ?u32 {
+pub fn (vm RegexVm) same_matcher_loop_suffix_min(start uint, matcher RegexSimpleMatch) ?u32 {
 	mut pc := start
 	mut total := u32(0)
 	mut saw_positive_min := false
-	for pc < usize(vm.program.instructions.len) {
+	for pc < uint(vm.program.instructions.len) {
 		instruction := vm.program.instructions[int(pc)]
 		mut minimum := u32(0)
 		match instruction {

@@ -8,7 +8,7 @@ import os
 
 fn C.vox_note_poisoned_range(start voidptr, end voidptr, label &char)
 fn C.vox_install_poison_fault_handler()
-fn C.vox_retire_unused_arena_pages(start voidptr, bytes usize) int
+fn C.vox_retire_unused_arena_pages(start voidptr, bytes uint) int
 
 // Arenas for -prealloc builds.
 //
@@ -39,7 +39,7 @@ mut:
 	next           &PreallocBlockView = unsafe { nil }
 	scope          voidptr
 	recycle_cache  voidptr
-	min_block_size isize
+	min_block_size int
 	is_scope       bool
 	mmap_allocated bool
 	id             int
@@ -51,8 +51,8 @@ mut:
 	previous       &PreallocBlockView = unsafe { nil }
 	first          &PreallocBlockView = unsafe { nil }
 	saved_next     &PreallocBlockView = unsafe { nil }
-	min_address    usize
-	max_address    usize
+	min_address    uint
+	max_address    uint
 	ranges         voidptr
 	ranges_len     int
 	ranges_cap     int
@@ -66,9 +66,9 @@ mut:
 // metadata stays warm while the payload pages can be returned at idle.
 struct PreallocRecycleCacheView {
 	count  int
-	bytes  isize
+	bytes  int
 	starts [8]voidptr
-	sizes  [8]isize
+	sizes  [8]int
 }
 
 // ArenaUsage describes a chain of arena blocks: bytes handed out by the bump
@@ -423,7 +423,7 @@ pub fn (arena &Arena) trim_empty_pages() bool {
 		mut block := arena.scope.first
 		for block != unsafe { nil } && block.scope == voidptr(arena.scope) {
 			if block.mmap_allocated && C.vox_retire_unused_arena_pages(block.start,
-				usize(block.stop) - usize(block.start)) != 0 {
+				uint(block.stop) - uint(block.start)) != 0 {
 				panic('could not trim empty arena pages')
 			}
 			block = block.next
@@ -444,11 +444,11 @@ pub fn (arena &Arena) trim_unused_pages() bool {
 		verify_prealloc_layout()
 		mut block := arena.scope.first
 		for block != unsafe { nil } && block.scope == voidptr(arena.scope) {
-			if usize(block.current) < usize(block.start) || usize(block.current) > usize(block.stop) {
+			if uint(block.current) < uint(block.start) || uint(block.current) > uint(block.stop) {
 				panic('invalid arena allocation cursor')
 			}
 			if block.mmap_allocated && C.vox_retire_unused_arena_pages(block.current,
-				usize(block.stop) - usize(block.current)) != 0 {
+				uint(block.stop) - uint(block.current)) != 0 {
 				panic('could not trim unused arena pages')
 			}
 			block = block.next
@@ -466,7 +466,7 @@ fn trim_thread_arena_recycle_pages() {
 		cache := unsafe { &PreallocRecycleCacheView(block.recycle_cache) }
 		assert cache.count >= 0 && cache.count <= 8
 		for index in 0 .. cache.count {
-			if C.vox_retire_unused_arena_pages(cache.starts[index], usize(cache.sizes[index])) != 0 {
+			if C.vox_retire_unused_arena_pages(cache.starts[index], uint(cache.sizes[index])) != 0 {
 				panic('could not trim recycled arena pages')
 			}
 		}
@@ -491,7 +491,7 @@ pub fn (mut arena Arena) reset() {
 		usage := arena.usage()
 		scope := voidptr(arena.scope)
 		// Reentering rewinds every kept block; leaving detaches the scope again.
-		if !unsafe { prealloc_scope_reenter(scope, isize(usage.used + usage.used / 4)) } {
+		if !unsafe { prealloc_scope_reenter(scope, int(usage.used + usage.used / 4)) } {
 			panic('arena ${arena.label} could not be reset')
 		}
 		unsafe { prealloc_scope_leave(scope) }
@@ -504,7 +504,7 @@ pub fn (mut arena Arena) reset() {
 			mut block := arena.scope.first
 			for block != unsafe { nil } && block.scope == scope {
 				if block.mmap_allocated && C.vox_retire_unused_arena_pages(block.start,
-					usize(block.stop) - usize(block.start)) != 0 {
+					uint(block.stop) - uint(block.start)) != 0 {
 					panic('could not retire empty arena pages')
 				}
 				block = block.next
@@ -545,10 +545,10 @@ fn poison_prealloc_scope(scope &PreallocScopeView, label string) {
 	$if prealloc {
 		mut block := scope.first
 		for block != unsafe { nil } && block.scope == voidptr(scope) {
-			size := usize(i64(block.stop) - i64(block.start))
+			size := uint(i64(block.stop) - i64(block.start))
 			// Overwrite the old contents too: blocks that were not mapped on
 			// their own cannot be protected, and stale readers then see garbage.
-			unsafe { vmemset(block.start, 0xa5, isize(size)) }
+			unsafe { vmemset(block.start, 0xa5, int(size)) }
 			if block.mmap_allocated {
 				unsafe { C.mprotect(block.start, size, C.PROT_NONE) }
 				C.vox_note_poisoned_range(block.start, block.stop, label.str)

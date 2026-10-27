@@ -30,7 +30,7 @@ fn (recorder &SourceExecutionRecorder) did_trap() bool { return recorder.trapped
 
 fn (mut recorder SourceExecutionRecorder) clear_trap() { recorder.trapped = none }
 
-fn source_execution_install_frame(mut configuration BinaryMachineConfiguration, arity usize) {
+fn source_execution_install_frame(mut configuration BinaryMachineConfiguration, arity uint) {
 	instance := BinaryMachineModuleInstance.create_with_contents(BinaryMachineModuleConstruction{})
 	expression := &BinaryExpression{ instructions: [BinaryInstruction{ opcode: binary_op_synthetic_end_expression }] }
 	mut arguments := BinaryMachineArguments{}
@@ -96,7 +96,7 @@ fn test_source_execute_zero_results_and_return_with_an_already_popped_label() {
 }
 
 fn test_source_compiled_execute_pops_single_result_with_or_without_an_output_pointer_and_only_last_label() {
-	for arity in [usize(0), 1] {
+	for arity in [uint(0), 1] {
 		for output_present in [false, true] {
 			mut store := BinaryMachineStore.create()
 			mut configuration := BinaryMachineConfiguration.create(mut store)

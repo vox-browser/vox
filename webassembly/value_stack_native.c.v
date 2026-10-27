@@ -3,8 +3,8 @@ module webassembly
 
 #include "@DIR/value_stack_host.h"
 
-fn C.vox_wasm_stack_map(usize) voidptr
-fn C.vox_wasm_stack_unmap(voidptr, usize)
+fn C.vox_wasm_stack_map(uint) voidptr
+fn C.vox_wasm_stack_unmap(voidptr, uint)
 fn C.vox_wasm_region_pool_get() voidptr
 fn C.vox_wasm_region_pool_set(voidptr)
 

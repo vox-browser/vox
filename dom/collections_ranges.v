@@ -734,8 +734,8 @@ pub fn (collection &HTMLAllCollection) get_the_all_indexed_or_named_elements(nam
 	return collection.item(name_or_index)
 }
 
-pub fn (collection &HTMLAllCollection) item_value(index usize) ?&Element {
-	if index > usize(0x7fff_ffff) {
+pub fn (collection &HTMLAllCollection) item_value(index uint) ?&Element {
+	if index > uint(0x7fff_ffff) {
 		return none
 	}
 	return collection.get_the_all_indexed_element(u32(index))

@@ -5,9 +5,9 @@ import dom
 import html
 
 $if gcboehm ? {
-	fn C.GC_size(voidptr) usize
+	fn C.GC_size(voidptr) uint
 	fn C.GC_base(voidptr) voidptr
-	fn C.GC_get_total_bytes() usize
+	fn C.GC_get_total_bytes() uint
 }
 
 fn test_layout_grid_data_defaults_and_empty_updates_do_not_allocate_payloads() {

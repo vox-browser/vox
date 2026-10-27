@@ -9,7 +9,7 @@ fn test_source_instruction_storage_chunk_growth_caps_at_512_and_retains_every_bo
 		instruction := BinaryInstruction{ opcode: binary_op_i32_const, arguments: BinaryI32Constant{ value: i32(index) } }
 		actual := storage.append(instruction)
 		references << actual
-		assert storage.size() == usize(index + 1) && !storage.is_empty()
+		assert storage.size() == uint(index + 1) && !storage.is_empty()
 		if index == 0 {
 			assert storage.capacity() == 8
 		}

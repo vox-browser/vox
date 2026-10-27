@@ -8,7 +8,7 @@ import math
 pub const machine_wasm32_max_pages = u64(1) << 16
 // Source compiled memory64 accesses still narrow addresses to i32.
 pub const machine_wasm64_max_pages = machine_wasm32_max_pages
-pub const machine_default_memory_reservation_size = usize(16 * 1024 * 1024)
+pub const machine_default_memory_reservation_size = uint(16 * 1024 * 1024)
 pub const machine_wasm32_guarded_reservation_size = u64(2) * (machine_wasm32_max_pages * u64(page_size)) + u64(page_size)
 
 pub enum BinaryMachineGrowType {
@@ -21,12 +21,12 @@ pub enum BinaryMachineInhibitGrowCallback {
 	yes
 }
 
-fn machine_size_from_page_count(pages u64) !usize {
-	if pages > u64(usize(-1)) / u64(page_size) { return machine_memory_allocation_error() }
-	return usize(pages) * usize(page_size)
+fn machine_size_from_page_count(pages u64) !uint {
+	if pages > u64(uint(-1)) / u64(page_size) { return machine_memory_allocation_error() }
+	return uint(pages) * uint(page_size)
 }
 
-fn machine_maximum_memory_size(type_ WasmLimits) !usize {
+fn machine_maximum_memory_size(type_ WasmLimits) !uint {
 	supported_max_pages := if type_.address_type == .i32 {
 		machine_wasm32_max_pages
 	} else {
@@ -36,7 +36,7 @@ fn machine_maximum_memory_size(type_ WasmLimits) !usize {
 	return machine_size_from_page_count(max_pages)
 }
 
-fn machine_initial_memory_reservation_size(type_ WasmLimits) !usize {
+fn machine_initial_memory_reservation_size(type_ WasmLimits) !uint {
 	maximum_size := machine_maximum_memory_size(type_)!
 	initial_size := machine_size_from_page_count(type_.minimum)!
 	if initial_size > maximum_size { return machine_memory_allocation_error() }
@@ -45,7 +45,7 @@ fn machine_initial_memory_reservation_size(type_ WasmLimits) !usize {
 	return initial_size
 }
 
-fn machine_grown_memory_reservation_size(current_capacity usize, required_size usize, maximum_size usize) usize {
+fn machine_grown_memory_reservation_size(current_capacity uint, required_size uint, maximum_size uint) uint {
 	mut new_capacity := math.max(current_capacity, machine_default_memory_reservation_size)
 	for new_capacity < required_size {
 		if new_capacity > maximum_size / 2 {
@@ -69,9 +69,9 @@ pub mut:
 pub fn BinaryMachineMemoryInstance.create(type_ WasmLimits) !&BinaryMachineMemoryInstance {
 	mut instance := &BinaryMachineMemoryInstance{ type_: type_ }
 	reserved_capacity := machine_initial_memory_reservation_size(type_)!
-	mut guard_size := usize(0)
+	mut guard_size := uint(0)
 	if type_.address_type == .i32 {
-		guard_size = usize(machine_wasm32_guarded_reservation_size) - reserved_capacity
+		guard_size = uint(machine_wasm32_guarded_reservation_size) - reserved_capacity
 	}
 	instance.data_.try_reserve(reserved_capacity, guard_size) or {
 		instance.destroy()
@@ -92,7 +92,7 @@ pub fn (mut instance BinaryMachineMemoryInstance) destroy() { instance.data_.des
 
 pub fn (instance &BinaryMachineMemoryInstance) type_() WasmLimits { return instance.type_ }
 
-pub fn (instance &BinaryMachineMemoryInstance) size() usize { return instance.data_.size() }
+pub fn (instance &BinaryMachineMemoryInstance) size() uint { return instance.data_.size() }
 
 pub fn (instance &BinaryMachineMemoryInstance) data() &BinaryMachineMemoryBuffer {
 	return unsafe { &instance.data_ }
@@ -102,16 +102,16 @@ pub fn (instance &BinaryMachineMemoryInstance) contains_virtual_address(address 
 	return instance.data_.contains_virtual_address(address)
 }
 
-pub fn BinaryMachineMemoryInstance.data_offset() usize {
+pub fn BinaryMachineMemoryInstance.data_offset() uint {
 	return __offsetof(BinaryMachineMemoryInstance, data_)
 }
 
 // The source takes bytes, rather than pages. Its callback precedes the type
 // minimum update, and zero-byte growth never calls the callback.
-pub fn (mut instance BinaryMachineMemoryInstance) grow(size_to_grow usize, grow_type BinaryMachineGrowType, inhibit_callback BinaryMachineInhibitGrowCallback) bool {
+pub fn (mut instance BinaryMachineMemoryInstance) grow(size_to_grow uint, grow_type BinaryMachineGrowType, inhibit_callback BinaryMachineInhibitGrowCallback) bool {
 	if size_to_grow == 0 { return true }
 	maximum_size := machine_maximum_memory_size(instance.type_) or { return false }
-	if size_to_grow > usize(-1) - instance.data_.size() { return false }
+	if size_to_grow > uint(-1) - instance.data_.size() { return false }
 	new_size := instance.data_.size() + size_to_grow
 	if new_size > maximum_size { return false }
 	mut new_capacity := instance.data_.capacity()

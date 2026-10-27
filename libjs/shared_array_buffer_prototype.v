@@ -74,7 +74,7 @@ fn shared_array_buffer_grow(mut vm VM) !Value {
 	mut buffer := this_shared_array_buffer(mut vm)!
 	if buffer.is_fixed_length() { return vm.throw_error_type(.type_error, .fixed_array_buffer) }
 	require_shared_buffer(mut vm, buffer)!
-	new_size := usize(vm.argument(0).to_index(mut vm)!)
+	new_size := uint(vm.argument(0).to_index(mut vm)!)
 	// Host growth precedes even equality and maximum checks in the source.
 	if vm.host_grow_shared_array_buffer(mut buffer, new_size)! == .handled { return js_undefined() }
 	current_size := buffer.byte_length()
@@ -104,7 +104,7 @@ fn shared_array_buffer_slice(mut vm VM) !Value {
 	} else {
 		end.to_integer_or_infinity(mut vm)!
 	})
-	new_length := if final > first { final - first } else { usize(0) }
+	new_length := if final > first { final - first } else { uint(0) }
 	constructor := species_constructor(mut vm, buffer.object,
 		vm.realm().shared_array_buffer_constructor_record())!
 	object := construct(mut vm, Value.from_object(constructor), [

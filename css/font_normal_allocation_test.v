@@ -4,7 +4,7 @@ import dom
 
 $if gcboehm ? {
 	fn C.GC_gcollect()
-	fn C.GC_get_total_bytes() usize
+	fn C.GC_get_total_bytes() uint
 }
 
 fn font_normal_parse(property PropertyID, text string) &dom.StyleValue {
@@ -19,7 +19,7 @@ fn test_font_normal_variation_resolution_keeps_typed_and_bridge_reads_allocation
 	for normal in [typed, bridge] {
 		style.set_property(.font_variation_settings, normal, .no, .no)
 		apply_resolved_font_variation_settings(style, mut values)
-		mut before := usize(0)
+		mut before := uint(0)
 		$if gcboehm ? {
 			C.GC_gcollect()
 			before = C.GC_get_total_bytes()
@@ -27,7 +27,7 @@ fn test_font_normal_variation_resolution_keeps_typed_and_bridge_reads_allocation
 		for _ in 0 .. 1024 {
 			apply_resolved_font_variation_settings(style, mut values)
 		}
-		mut allocated := usize(0)
+		mut allocated := uint(0)
 		$if gcboehm ? {
 			allocated = C.GC_get_total_bytes() - before
 		}

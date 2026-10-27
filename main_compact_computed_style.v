@@ -35,11 +35,11 @@ fn compact_computed_style_query(root &dom.Node, source string) !string {
 			return json2.encode(declaration.get_property_value(query.name), escape_unicode: true)
 		}
 		'priority' { return json2.encode(declaration.get_property_priority(query.name), escape_unicode: true) }
-		'item' { return json2.encode(declaration.item(usize(query.index)), escape_unicode: true) }
+		'item' { return json2.encode(declaration.item(uint(query.index)), escape_unicode: true) }
 		'names' {
 			mut names := []string{}
 			for index in 0 .. css.number_of_longhand_properties {
-				name := declaration.item(usize(index))
+				name := declaration.item(uint(index))
 				if name == '' { break }
 				names << name
 			}

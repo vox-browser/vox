@@ -9,10 +9,10 @@ import math
 pub struct BinaryMachineBytes {
 pub:
 	data &u8 = unsafe { nil }
-	size usize
+	size uint
 }
 
-pub fn (bytes BinaryMachineBytes) at(index usize) &u8 {
+pub fn (bytes BinaryMachineBytes) at(index uint) &u8 {
 	if index >= bytes.size {
 		panic('Source VERIFY: Span::at index < m_size')
 	}
@@ -22,10 +22,10 @@ pub fn (bytes BinaryMachineBytes) at(index usize) &u8 {
 @[heap]
 pub struct BinaryMachineMemoryBuffer {
 mut:
-	size_              usize
-	reserved_capacity_ usize
+	size_              uint
+	reserved_capacity_ uint
 	handle_            libgc.ExternalEntityTableHandle
-	storage_offset_    usize = libgc.primitive_storage_invalid_offset
+	storage_offset_    uint = libgc.primitive_storage_invalid_offset
 }
 
 pub fn BinaryMachineMemoryBuffer.create() &BinaryMachineMemoryBuffer {
@@ -62,7 +62,7 @@ fn (mut buffer BinaryMachineMemoryBuffer) update_storage_offset() {
 	buffer.storage_offset_ = libgc.PrimitiveStorage.the().offset(buffer.handle_)
 }
 
-pub fn (mut buffer BinaryMachineMemoryBuffer) try_reserve(capacity usize, guard_size usize) ! {
+pub fn (mut buffer BinaryMachineMemoryBuffer) try_reserve(capacity uint, guard_size uint) ! {
 	mut storage := libgc.PrimitiveStorage.the()
 	if buffer.handle_.is_valid() {
 		if capacity <= buffer.reserved_capacity_ { return }
@@ -76,7 +76,7 @@ pub fn (mut buffer BinaryMachineMemoryBuffer) try_reserve(capacity usize, guard_
 	buffer.update_storage_offset()
 }
 
-pub fn (mut buffer BinaryMachineMemoryBuffer) try_resize(new_size usize) ! {
+pub fn (mut buffer BinaryMachineMemoryBuffer) try_resize(new_size uint) ! {
 	if new_size < buffer.size_ {
 		panic('Source VERIFY: MemoryBuffer::try_resize new_size >= m_size')
 	}
@@ -96,7 +96,7 @@ pub fn (mut buffer BinaryMachineMemoryBuffer) try_resize(new_size usize) ! {
 	buffer.update_storage_offset()
 }
 
-pub fn (mut buffer BinaryMachineMemoryBuffer) try_resize_with_capacity(new_size usize, reserved_capacity usize) ! {
+pub fn (mut buffer BinaryMachineMemoryBuffer) try_resize_with_capacity(new_size uint, reserved_capacity uint) ! {
 	if new_size < buffer.size_ {
 		panic('Source VERIFY: MemoryBuffer::try_resize(new_size, reserved_capacity) new_size >= m_size')
 	}
@@ -118,15 +118,15 @@ pub fn (mut buffer BinaryMachineMemoryBuffer) try_resize_with_capacity(new_size 
 	buffer.update_storage_offset()
 }
 
-pub fn (buffer &BinaryMachineMemoryBuffer) size() usize { return buffer.size_ }
+pub fn (buffer &BinaryMachineMemoryBuffer) size() uint { return buffer.size_ }
 
-pub fn (buffer &BinaryMachineMemoryBuffer) capacity() usize { return buffer.reserved_capacity_ }
+pub fn (buffer &BinaryMachineMemoryBuffer) capacity() uint { return buffer.reserved_capacity_ }
 
 pub fn (buffer &BinaryMachineMemoryBuffer) data() &u8 {
 	return libgc.PrimitiveStorage.the().data(buffer.handle_)
 }
 
-pub fn (buffer &BinaryMachineMemoryBuffer) storage_offset() usize { return buffer.storage_offset_ }
+pub fn (buffer &BinaryMachineMemoryBuffer) storage_offset() uint { return buffer.storage_offset_ }
 
 pub fn (buffer &BinaryMachineMemoryBuffer) primitive_storage_handle() libgc.ExternalEntityTableHandle {
 	return buffer.handle_
@@ -138,7 +138,7 @@ pub fn (buffer &BinaryMachineMemoryBuffer) bytes() BinaryMachineBytes {
 
 pub fn (buffer &BinaryMachineMemoryBuffer) span() BinaryMachineBytes { return buffer.bytes() }
 
-pub fn (buffer &BinaryMachineMemoryBuffer) offset_pointer(offset usize) &u8 {
+pub fn (buffer &BinaryMachineMemoryBuffer) offset_pointer(offset uint) &u8 {
 	if buffer.storage_offset_ == libgc.primitive_storage_invalid_offset { return unsafe { nil } }
 	cage_base := libgc.PrimitiveStorage.the().cage_base()
 	if cage_base == unsafe { nil } {
@@ -147,11 +147,11 @@ pub fn (buffer &BinaryMachineMemoryBuffer) offset_pointer(offset usize) &u8 {
 	return unsafe { cage_base + libgc.mask_primitive_storage_offset(buffer.storage_offset_ + offset) }
 }
 
-pub fn (buffer &BinaryMachineMemoryBuffer) at(index usize) &u8 {
+pub fn (buffer &BinaryMachineMemoryBuffer) at(index uint) &u8 {
 	return buffer.offset_pointer(index)
 }
 
-pub fn (buffer &BinaryMachineMemoryBuffer) contiguous_bytes_from(offset usize, count usize) usize {
+pub fn (buffer &BinaryMachineMemoryBuffer) contiguous_bytes_from(offset uint, count uint) uint {
 	if count == 0 || buffer.storage_offset_ == libgc.primitive_storage_invalid_offset {
 		return count
 	}
@@ -159,7 +159,7 @@ pub fn (buffer &BinaryMachineMemoryBuffer) contiguous_bytes_from(offset usize, c
 	return math.min(count, libgc.primitive_storage_default_cage_size - caged_offset)
 }
 
-pub fn (buffer &BinaryMachineMemoryBuffer) contiguous_bytes_before(offset usize, count usize) usize {
+pub fn (buffer &BinaryMachineMemoryBuffer) contiguous_bytes_before(offset uint, count uint) uint {
 	if count == 0 || buffer.storage_offset_ == libgc.primitive_storage_invalid_offset {
 		return count
 	}
@@ -170,7 +170,7 @@ pub fn (buffer &BinaryMachineMemoryBuffer) contiguous_bytes_before(offset usize,
 	return math.min(count, caged_offset + 1)
 }
 
-pub fn (buffer &BinaryMachineMemoryBuffer) copy_to(offset usize, destination BinaryMachineBytes) {
+pub fn (buffer &BinaryMachineMemoryBuffer) copy_to(offset uint, destination BinaryMachineBytes) {
 	// Source VERIFY remains active when ordinary V asserts are stripped.
 	if offset > buffer.size() {
 		panic('Source VERIFY: MemoryBuffer::copy_to offset <= size()')
@@ -178,7 +178,7 @@ pub fn (buffer &BinaryMachineMemoryBuffer) copy_to(offset usize, destination Bin
 	if destination.size > buffer.size() - offset {
 		panic('Source VERIFY: MemoryBuffer::copy_to destination.size() <= size() - offset')
 	}
-	mut copied := usize(0)
+	mut copied := uint(0)
 	for copied < destination.size {
 		chunk_size := buffer.contiguous_bytes_from(offset + copied, destination.size - copied)
 		unsafe { C.memcpy(destination.data + copied, buffer.offset_pointer(offset + copied), chunk_size) }
@@ -186,7 +186,7 @@ pub fn (buffer &BinaryMachineMemoryBuffer) copy_to(offset usize, destination Bin
 	}
 }
 
-pub fn (mut buffer BinaryMachineMemoryBuffer) copy_from(source &BinaryMachineMemoryBuffer, source_offset usize, destination_offset usize, count usize) {
+pub fn (mut buffer BinaryMachineMemoryBuffer) copy_from(source &BinaryMachineMemoryBuffer, source_offset uint, destination_offset uint, count uint) {
 	if source_offset > source.size() {
 		panic('Source VERIFY: MemoryBuffer::copy_from source_offset <= source.size()')
 	}
@@ -203,7 +203,7 @@ pub fn (mut buffer BinaryMachineMemoryBuffer) copy_from(source &BinaryMachineMem
 		buffer.move_data(destination_offset, source_offset, count)
 		return
 	}
-	mut copied := usize(0)
+	mut copied := uint(0)
 	for copied < count {
 		chunk_size := math.min(source.contiguous_bytes_from(source_offset + copied, count - copied), buffer.contiguous_bytes_from(destination_offset + copied, count - copied))
 		unsafe { C.memcpy(buffer.offset_pointer(destination_offset + copied), source.offset_pointer(source_offset + copied), chunk_size) }
@@ -211,14 +211,14 @@ pub fn (mut buffer BinaryMachineMemoryBuffer) copy_from(source &BinaryMachineMem
 	}
 }
 
-pub fn (mut buffer BinaryMachineMemoryBuffer) fill(offset usize, value u8, count usize) {
+pub fn (mut buffer BinaryMachineMemoryBuffer) fill(offset uint, value u8, count uint) {
 	if offset > buffer.size() {
 		panic('Source VERIFY: MemoryBuffer::fill offset <= size()')
 	}
 	if count > buffer.size() - offset {
 		panic('Source VERIFY: MemoryBuffer::fill count <= size() - offset')
 	}
-	mut filled := usize(0)
+	mut filled := uint(0)
 	for filled < count {
 		chunk_size := buffer.contiguous_bytes_from(offset + filled, count - filled)
 		unsafe { C.memset(buffer.offset_pointer(offset + filled), value, chunk_size) }
@@ -226,7 +226,7 @@ pub fn (mut buffer BinaryMachineMemoryBuffer) fill(offset usize, value u8, count
 	}
 }
 
-pub fn (mut buffer BinaryMachineMemoryBuffer) overwrite(offset usize, source voidptr, count usize) {
+pub fn (mut buffer BinaryMachineMemoryBuffer) overwrite(offset uint, source voidptr, count uint) {
 	if offset > buffer.size() {
 		panic('Source VERIFY: MemoryBuffer::overwrite offset <= size()')
 	}
@@ -234,7 +234,7 @@ pub fn (mut buffer BinaryMachineMemoryBuffer) overwrite(offset usize, source voi
 		panic('Source VERIFY: MemoryBuffer::overwrite count <= size() - offset')
 	}
 	source_bytes := unsafe { &u8(source) }
-	mut copied := usize(0)
+	mut copied := uint(0)
 	for copied < count {
 		chunk_size := buffer.contiguous_bytes_from(offset + copied, count - copied)
 		unsafe { C.memcpy(buffer.offset_pointer(offset + copied), source_bytes + copied, chunk_size) }
@@ -242,7 +242,7 @@ pub fn (mut buffer BinaryMachineMemoryBuffer) overwrite(offset usize, source voi
 	}
 }
 
-pub fn (mut buffer BinaryMachineMemoryBuffer) move_data(destination_offset usize, source_offset usize, count usize) {
+pub fn (mut buffer BinaryMachineMemoryBuffer) move_data(destination_offset uint, source_offset uint, count uint) {
 	if destination_offset > buffer.size() {
 		panic('Source VERIFY: MemoryBuffer::move_data destination_offset <= size()')
 	}
@@ -265,7 +265,7 @@ pub fn (mut buffer BinaryMachineMemoryBuffer) move_data(destination_offset usize
 		}
 		return
 	}
-	mut copied := usize(0)
+	mut copied := uint(0)
 	for copied < count {
 		chunk_size := math.min(buffer.contiguous_bytes_from(source_offset + copied, count - copied), buffer.contiguous_bytes_from(destination_offset + copied, count - copied))
 		unsafe { C.memmove(buffer.offset_pointer(destination_offset + copied), buffer.offset_pointer(source_offset + copied), chunk_size) }
@@ -278,6 +278,6 @@ pub fn (buffer &BinaryMachineMemoryBuffer) contains_virtual_address(address void
 	return libgc.PrimitiveStorage.the().contains_handle(buffer.handle_, address, 1)
 }
 
-pub fn BinaryMachineMemoryBuffer.storage_offset_offset() usize {
+pub fn BinaryMachineMemoryBuffer.storage_offset_offset() uint {
 	return __offsetof(BinaryMachineMemoryBuffer, storage_offset_)
 }

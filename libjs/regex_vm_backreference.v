@@ -3,27 +3,27 @@ module libjs
 // LibRegex/Rust/src/vm.rs::match_backref. Register lookup uses optional reads;
 // any missing/unmatched capture succeeds without consuming input.
 pub fn (mut vm RegexVm) match_backref(index u32) bool {
-	start_index := usize(index) * 2
+	start_index := uint(index) * 2
 	end_index := start_index + 1
-	start := if start_index < usize(vm.scratch.registers.len) {
+	start := if start_index < uint(vm.scratch.registers.len) {
 		vm.scratch.registers[int(start_index)]
 	} else {
 		i32(-1)
 	}
-	end := if end_index < usize(vm.scratch.registers.len) {
+	end := if end_index < uint(vm.scratch.registers.len) {
 		vm.scratch.registers[int(end_index)]
 	} else {
 		i32(-1)
 	}
 	if start < 0 || end < 0 { return true }
-	cap_start := usize(start)
-	cap_end := usize(end)
+	cap_start := uint(start)
+	cap_end := uint(end)
 	if vm.program.unicode { return vm.match_backref_unicode(cap_start, cap_end) }
 	length := cap_end - cap_start
 	if vm.backward {
 		if vm.pos < length { return false }
 		if vm.modifiers.ignore_case {
-			for offset := usize(0); offset < length; offset++ {
+			for offset := uint(0); offset < length; offset++ {
 				if !regex_case_fold_eq(u32(vm.input_code_unit(cap_start + offset)), u32(vm.input_code_unit(
 					vm.pos - length + offset)), false) {
 					return false
@@ -36,7 +36,7 @@ pub fn (mut vm RegexVm) match_backref(index u32) bool {
 	} else {
 		if vm.pos + length > vm.input_len() { return false }
 		if vm.modifiers.ignore_case {
-			for offset := usize(0); offset < length; offset++ {
+			for offset := uint(0); offset < length; offset++ {
 				if !regex_case_fold_eq(u32(vm.input_code_unit(cap_start + offset)), u32(vm.input_code_unit(
 					vm.pos + offset)), false) {
 					return false
@@ -52,7 +52,7 @@ pub fn (mut vm RegexVm) match_backref(index u32) bool {
 
 // Compare code points. A backwards reference first walks back by the capture's
 // code-point count, then compares forwards using the same decoder on each side.
-pub fn (mut vm RegexVm) match_backref_unicode(cap_start usize, cap_end usize) bool {
+pub fn (mut vm RegexVm) match_backref_unicode(cap_start uint, cap_end uint) bool {
 	mut cap_pos := cap_start
 	mut input_pos := vm.pos
 	if vm.backward {
@@ -110,14 +110,14 @@ pub fn (mut vm RegexVm) match_backref_named(name string) bool {
 	for group in vm.program.named_groups {
 		if group.name == name {
 			any_group_exists = true
-			start_index := usize(group.index) * 2
+			start_index := uint(group.index) * 2
 			end_index := start_index + 1
-			start := if start_index < usize(vm.scratch.registers.len) {
+			start := if start_index < uint(vm.scratch.registers.len) {
 				vm.scratch.registers[int(start_index)]
 			} else {
 				i32(-1)
 			}
-			end := if end_index < usize(vm.scratch.registers.len) {
+			end := if end_index < uint(vm.scratch.registers.len) {
 				vm.scratch.registers[int(end_index)]
 			} else {
 				i32(-1)

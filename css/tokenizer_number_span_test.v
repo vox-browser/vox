@@ -139,7 +139,7 @@ fn test_number_span_preserves_values_sign_flags_and_decimal_exponents() {
 		assert number.value() == values[i]
 		assert number.type_() == flags[i]
 		assert tokenizer.peek_code_point(0) == tokenizer_eof
-		assert tokenizer.position.column == usize(spelling.len)
+		assert tokenizer.position.column == uint(spelling.len)
 		compare_number_span_with_builder(spelling, '')
 	}
 	mut negative_zero := Tokenizer.new('-0')

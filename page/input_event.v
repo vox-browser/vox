@@ -118,5 +118,5 @@ pub struct QueuedInputEvent {
 pub:
 	page_id               u64
 	event                 InputEvent
-	coalesced_event_count usize
+	coalesced_event_count uint
 }

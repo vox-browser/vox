@@ -716,7 +716,7 @@ pub fn (r RequiredInvalidationAfterStyleChange) inherited_style_groups_changed()
 	return r.inherited_style_groups_changed_
 }
 
-pub fn (mut r RequiredInvalidationAfterStyleChange) mark_inherited_style_group_changed(group usize) {
+pub fn (mut r RequiredInvalidationAfterStyleChange) mark_inherited_style_group_changed(group uint) {
 	if group >= 7 {
 		panic('inherited style group index out of range')
 	}
@@ -773,7 +773,7 @@ pub fn decode_style_invalidation(packed u32) RequiredInvalidationAfterStyleChang
 	inherited_groups := u8((packed >> 10) & 0x7f)
 	for group in 0 .. 7 {
 		if inherited_groups & u8(1 << group) != 0 {
-			result.mark_inherited_style_group_changed(usize(group))
+			result.mark_inherited_style_group_changed(uint(group))
 		}
 	}
 	result.changes_containing_block_establishment = packed & (u32(1) << 17) != 0

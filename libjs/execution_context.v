@@ -95,7 +95,7 @@ pub mut:
 	argument_count u32
 
 	// InterpreterStack bookkeeping: the byte offset of this frame on the stack.
-	stack_offset    usize
+	stack_offset    uint
 	stack_allocated bool
 }
 

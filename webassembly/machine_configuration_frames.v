@@ -9,7 +9,7 @@ pub enum BinaryIsTailcall {
 	yes
 }
 
-pub fn (mut configuration BinaryMachineConfiguration) set_frame(is_tailcall BinaryIsTailcall, module_ &BinaryMachineModuleInstance, mut locals BinaryMachineArguments, expression &BinaryExpression, arity usize) {
+pub fn (mut configuration BinaryMachineConfiguration) set_frame(is_tailcall BinaryIsTailcall, module_ &BinaryMachineModuleInstance, mut locals BinaryMachineArguments, expression &BinaryExpression, arity uint) {
 	configuration.owned_locals_stack_ << BinaryMachineArguments.move_construct(mut locals)
 	index := configuration.owned_locals_stack_.len - 1
 	locals_ptr := configuration.owned_locals_stack_[index].data()
@@ -20,12 +20,12 @@ pub fn (mut configuration BinaryMachineConfiguration) set_frame(is_tailcall Bina
 	configuration.memory_instances_ = owner.resolved_memories(configuration.store_)
 	configuration.global_instances_ = owner.resolved_globals(configuration.store_)
 	frame.set_compiled_fn_table(owner.compiled_fn_table(configuration.store_))
-	mut continuation := usize(expression.instructions.len) - 1
+	mut continuation := uint(expression.instructions.len) - 1
 	if expression.compiled_instructions.dispatches.len > 0 {
-		continuation = usize(expression.compiled_instructions.dispatches.len) - 1
+		continuation = uint(expression.compiled_instructions.dispatches.len) - 1
 	}
 	label := BinaryMachineLabel.create(arity, u32(continuation), configuration.value_stack_.size(), unsafe { nil })
-	frame.set_label_index(usize(configuration.label_stack_.len))
+	frame.set_label_index(uint(configuration.label_stack_.len))
 	if hint := expression.stack_usage_hint {
 		configuration.value_stack_.ensure_capacity(hint + configuration.value_stack_.size())
 	}
@@ -45,7 +45,7 @@ pub fn (mut configuration BinaryMachineConfiguration) set_frame(is_tailcall Bina
 	}
 }
 
-pub fn (mut configuration BinaryMachineConfiguration) set_frame_lightweight(module_ &BinaryMachineModuleInstance, locals_ptr &BinaryMachineValue, expression &BinaryExpression, arity usize, max_call_rec_size usize) {
+pub fn (mut configuration BinaryMachineConfiguration) set_frame_lightweight(module_ &BinaryMachineModuleInstance, locals_ptr &BinaryMachineValue, expression &BinaryExpression, arity uint, max_call_rec_size uint) {
 	if module_ == unsafe { nil } { panic('Source VERIFY: lightweight frame needs a module') }
 	same_module := configuration.frame_stack_.len > 0 && voidptr(configuration.frame().module()) == voidptr(module_)
 	mut owner := unsafe { &BinaryMachineModuleInstance(module_) }

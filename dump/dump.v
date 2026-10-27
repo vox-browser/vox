@@ -161,7 +161,7 @@ pub fn descriptors(descriptors_value &css.CSSDescriptors, indent_levels int) str
 	mut builder := strings.new_builder(128)
 	dump_indent(mut builder, indent_levels)
 	builder.write_string('Declarations (${descriptors_value.length()}):\n')
-	for index := usize(0); index < descriptors_value.length(); index++ {
+	for index := uint(0); index < descriptors_value.length(); index++ {
 		name := descriptors_value.item(index)
 		dump_indent(mut builder, indent_levels)
 		builder.write_string("  ${name}: '${descriptors_value.get_property_value(name)}'\n")

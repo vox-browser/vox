@@ -44,7 +44,7 @@ pub mut:
 
 pub type RequestServerAction = fn ()
 
-pub type RequestServerResumeUpTo = fn (usize)
+pub type RequestServerResumeUpTo = fn (uint)
 
 pub type RequestServerSetBodyDeliveryPaused = fn (bool)
 
@@ -288,7 +288,7 @@ pub fn (response &Response) resume_body_delivery() {
 	}
 }
 
-pub fn (response &Response) resume_body_delivery_up_to(byte_count usize) {
+pub fn (response &Response) resume_body_delivery_up_to(byte_count uint) {
 	if internal := response.internal_response {
 		internal.resume_body_delivery_up_to(byte_count)
 		return

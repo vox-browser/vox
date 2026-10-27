@@ -5,7 +5,7 @@ import dom
 import html
 
 $if gcboehm ? {
-	fn C.GC_get_total_bytes() usize
+	fn C.GC_get_total_bytes() uint
 }
 
 fn passthrough_resolve_full(retained RetainedFlowSubtree, mut builder TreeBuilderState) {
@@ -34,10 +34,10 @@ fn test_empty_retained_counter_passthrough_preserves_following_origins_and_avoid
 	assert retained_flow_has_no_counter_operations(retained.elements)
 	mut fast := TreeBuilderState{}
 	mut full := TreeBuilderState{}
-	mut before := usize(0)
+	mut before := uint(0)
 	$if gcboehm ? { before = C.GC_get_total_bytes() }
 	resolve_retained_flow_counters(retained, mut fast)
-	mut fast_bytes := usize(0)
+	mut fast_bytes := uint(0)
 	$if gcboehm ? { fast_bytes = C.GC_get_total_bytes() - before }
 	assert fast.counter_tree_order_index == retained.elements.len
 	assert fast.counter_sets.len == 0
@@ -49,7 +49,7 @@ fn test_empty_retained_counter_passthrough_preserves_following_origins_and_avoid
 	fast_result := css.counters_set_for_abstract_element(&after_abstract)?.dump()
 	$if gcboehm ? { before = C.GC_get_total_bytes() }
 	passthrough_resolve_full(retained, mut full)
-	mut full_bytes := usize(0)
+	mut full_bytes := uint(0)
 	$if gcboehm ? { full_bytes = C.GC_get_total_bytes() - before }
 	resolve_layout_counters(mut full, after_abstract, properties)
 	assert full.counter_tree_order_index == fast.counter_tree_order_index

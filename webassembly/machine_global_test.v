@@ -29,7 +29,7 @@ fn test_machine_store_globals_use_real_index_addresses_and_stable_owned_value_st
 
 fn test_machine_global_value_offset_targets_the_actual_untyped_bits() {
 	mut global := BinaryMachineGlobalInstance.create(BinaryMachineValue.from_reference(BinaryI31Reference{ value: 0x42 }), true, BinaryValueType{ kind: .i31_reference })
-	value_address := unsafe { &BinaryMachineValue(usize(global) + BinaryMachineGlobalInstance.value_offset()) }
+	value_address := unsafe { &BinaryMachineValue(uint(global) + BinaryMachineGlobalInstance.value_offset()) }
 	assert value_address.low == 0x42 && value_address.high == 7
 	global.set_value(BinaryMachineValue.from_reference(BinaryNullReference{ type_: BinaryValueType{ kind: .i31_reference } }))
 	assert value_address.low == 0 && value_address.high == 8

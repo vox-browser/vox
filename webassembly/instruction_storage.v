@@ -12,22 +12,22 @@ mut:
 pub struct BinaryInstructionStorage {
 mut:
 	chunks_                   []&BinaryInstructionStorageChunk
-	size_                     usize
-	capacity_                 usize
-	next_index_in_last_chunk_ usize
+	size_                     uint
+	capacity_                 uint
+	next_index_in_last_chunk_ uint
 }
 
-pub fn (storage &BinaryInstructionStorage) size() usize { return storage.size_ }
+pub fn (storage &BinaryInstructionStorage) size() uint { return storage.size_ }
 
-pub fn (storage &BinaryInstructionStorage) capacity() usize { return storage.capacity_ }
+pub fn (storage &BinaryInstructionStorage) capacity() uint { return storage.capacity_ }
 
 pub fn (storage &BinaryInstructionStorage) is_empty() bool { return storage.size_ == 0 }
 
 fn (mut storage BinaryInstructionStorage) add_chunk() {
 	chunk_capacity := if storage.capacity_ < 8 {
-		usize(8)
+		uint(8)
 	} else if storage.capacity_ > 512 {
-		usize(512)
+		uint(512)
 	} else {
 		storage.capacity_
 	}
@@ -41,7 +41,7 @@ fn (mut storage BinaryInstructionStorage) add_chunk() {
 
 pub fn (mut storage BinaryInstructionStorage) append(instruction BinaryInstruction) &BinaryInstruction {
 	if storage.chunks_.len == 0
-		|| storage.next_index_in_last_chunk_ == usize(storage.chunks_.last().slots.len) {
+		|| storage.next_index_in_last_chunk_ == uint(storage.chunks_.last().slots.len) {
 		storage.add_chunk()
 	}
 	mut chunk := storage.chunks_.last()

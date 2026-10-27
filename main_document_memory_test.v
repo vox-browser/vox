@@ -29,7 +29,7 @@ fn test_medium_document_install_does_not_preallocate_gigabytes() {
 		if os.getenv('GC_INITIAL_HEAP_SIZE') == '' && os.getenv('GC_MAXIMUM_HEAP_SIZE') == '' {
 			assert gc_is_enabled()
 			// Leave ample space for font/filter startup and ordinary heap growth.
-			assert gc_heap_usage().heap_size < before + usize(512) * 1024 * 1024
+			assert gc_heap_usage().heap_size < before + uint(512) * 1024 * 1024
 		}
 	}
 	gc_collect()

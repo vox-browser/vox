@@ -43,7 +43,7 @@ fn test_regex_backtrack_greedy_requeues_only_above_its_minimum_and_reuses_snapsh
 	scratch.registers = [i32(10), 20]
 	vm.push_greedy_backtrack(0, 0, 4, 1)
 	scratch.registers = [i32(30), 40]
-	for expected in [usize(3), 2, 1] {
+	for expected in [uint(3), 2, 1] {
 		assert vm.backtrack() && vm.pos == expected && vm.pc == 1
 		assert scratch.registers == [i32(10), 20]
 		assert scratch.backtrack_stack.len == if expected > 1 {
@@ -108,18 +108,18 @@ fn test_regex_backtrack_supplementary_literal_uses_saved_greedy_direction_withou
 		mut scratch := RegexVmScratch.new()
 		mut vm := RegexVm.new(program, input, 0, mut scratch)
 		vm.backward = backward
-		vm.push_greedy_backtrack(0, if backward { usize(4) } else { usize(0) }, if backward {
-			usize(0)
+		vm.push_greedy_backtrack(0, if backward { uint(4) } else { uint(0) }, if backward {
+			uint(0)
 		} else {
-			usize(4)
+			uint(4)
 		}, 0)
 		vm.backward = !backward
 		assert vm.backtrack() && vm.pos == 2 && vm.pc == 1
 		assert vm.backward == !backward
 		assert vm.backtrack() && vm.pos == if backward {
-			usize(4)
+			uint(4)
 		} else {
-			usize(0)
+			uint(0)
 		}
 		assert vm.backward == !backward && scratch.backtrack_stack.len == 0
 		assert !vm.backtrack()
@@ -142,15 +142,15 @@ fn test_regex_backtrack_greedy_suffix_deficit_gives_back_the_whole_required_run(
 		mut vm := RegexVm.new(program, RegexAsciiInput{ bytes: [u8(65), 66, 67, 68] }, 0, mut
 			scratch)
 		vm.backward = backward
-		vm.push_greedy_backtrack(0, if backward { usize(4) } else { usize(0) }, if backward {
-			usize(0)
+		vm.push_greedy_backtrack(0, if backward { uint(4) } else { uint(0) }, if backward {
+			uint(0)
 		} else {
-			usize(4)
+			uint(4)
 		}, 1)
 		assert vm.backtrack() && vm.pos == if backward {
-			usize(3)
+			uint(3)
 		} else {
-			usize(1)
+			uint(1)
 		}
 		assert vm.pc == 1 && scratch.backtrack_stack.len == 0
 		assert !vm.backtrack()
@@ -206,9 +206,9 @@ fn test_regex_backtrack_lazy_failure_preserves_source_position_update_order() {
 		vm.push_lazy_backtrack(0, 1, maximum, 0)
 		assert !vm.backtrack()
 		assert vm.pc == 9 && vm.pos == if maximum == none {
-			usize(1)
+			uint(1)
 		} else {
-			usize(2)
+			uint(2)
 		}
 		assert scratch.backtrack_stack.len == 0 && scratch.register_pool.len == 0
 	}

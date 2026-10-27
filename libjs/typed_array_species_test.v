@@ -115,7 +115,7 @@ fn test_typed_array_species_custom_constructor_validation_and_content_type_order
 		buffer := ArrayBufferObject.create(mut vm, realm, 0, parent)!
 		exemplar := TypedArray.create(realm, .uint8, 0, buffer, parent)
 		mut destination_buffer := ArrayBufferObject.create(mut vm, realm, 32, parent)!
-		destination_buffer.maximum_byte_length = usize(64)
+		destination_buffer.maximum_byte_length = uint(64)
 		kind := if mode == 'wrong content' {
 			BufferElementType.big_int64
 		} else {

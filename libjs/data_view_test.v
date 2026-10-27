@@ -5,7 +5,7 @@ fn test_data_view_witnesses_preserve_fixed_and_tracking_lengths_across_buffer_re
 	create_simple_execution_context(mut vm)
 	prototype := Object.create(vm.realm(), none)
 	mut buffer := ArrayBufferObject.create(mut vm, vm.realm(), 8, prototype)!
-	buffer.maximum_byte_length = usize(16)
+	buffer.maximum_byte_length = uint(16)
 	fixed := DataView.create(vm.realm(), buffer, ByteLength.from_u32(4), 2, prototype)
 	tracking := DataView.create(vm.realm(), buffer, ByteLength.auto_length(), 2, prototype)
 	assert voidptr(fixed.object.data_view?) == voidptr(fixed)
@@ -43,7 +43,7 @@ fn test_data_view_zero_length_is_in_bounds_at_buffer_end_but_not_past_it() {
 	create_simple_execution_context(mut vm)
 	prototype := Object.create(vm.realm(), none)
 	mut buffer := ArrayBufferObject.create(mut vm, vm.realm(), 4, prototype)!
-	buffer.maximum_byte_length = usize(8)
+	buffer.maximum_byte_length = uint(8)
 	for length in [ByteLength.from_u32(0), ByteLength.auto_length()] {
 		at_end := DataView.create(vm.realm(), buffer, length, 4, prototype)
 		past_end := DataView.create(vm.realm(), buffer, length, 5, prototype)

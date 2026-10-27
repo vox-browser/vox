@@ -39,7 +39,7 @@ pub fn (mut runtime Runtime) install_media_error_binding() ! {
 		})!
 	}
 	mut exception := unsafe { nil }
-	array := C.JSObjectMakeArray(runtime.context, usize(getters.len), getters.data, &exception)
+	array := C.JSObjectMakeArray(runtime.context, uint(getters.len), getters.data, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	runtime.retain_javascript_value(array)!
 	defer { runtime.release_javascript_value(array) }

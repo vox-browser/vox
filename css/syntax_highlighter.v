@@ -24,8 +24,8 @@ pub mut:
 
 pub struct SyntaxTextPosition {
 pub mut:
-	line   usize
-	column usize
+	line   uint
+	column uint
 }
 
 pub struct SyntaxTextRange {
@@ -132,7 +132,7 @@ pub fn (highlighter SyntaxHighlighter) rehighlight_text(text string, palette Pal
 	// V function values capture dynamic-array headers by value. Keep a pointer
 	// to the caller's header so appends remain visible in the returned result.
 	spans_ptr := &spans
-	highlight := fn [spans_ptr] (start_line usize, start_column usize, end_line usize, end_column usize, attributes SyntaxTextAttributes, type_ TokenType) {
+	highlight := fn [spans_ptr] (start_line uint, start_column uint, end_line uint, end_column uint, attributes SyntaxTextAttributes, type_ TokenType) {
 		if start_line > end_line || (start_line == end_line && start_column >= end_column) {
 			return
 		}

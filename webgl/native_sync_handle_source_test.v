@@ -18,10 +18,10 @@ fn test_source_sync_handle_returns_proxy_pointer_with_separate_actual_driver_map
 		mut sync := context.fence_sync(condition, 0) or { panic('source sync record') }
 		actual := sync.native_handle_
 		source := sync.source_handle_
-		assert usize(source) == if condition == sync_gpu_commands_complete {
-			usize(1)
+		assert uint(source) == if condition == sync_gpu_commands_complete {
+			uint(1)
 		} else {
-			usize(2)
+			uint(2)
 		}
 		assert source != actual
 		assert (actual == unsafe { nil }) == (condition == 0)

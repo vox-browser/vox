@@ -1583,8 +1583,8 @@ pub mut:
 	style_sheet_         ?&CSSStyleSheet
 	url_                 URL
 	document_            ?&dom.Document
-	current_frame_index_ usize
-	loops_completed_     usize
+	current_frame_index_ uint
+	loops_completed_     uint
 	image_data_          ?dom.SharedDecodedImageData
 	did_request_resource bool
 mut:

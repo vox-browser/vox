@@ -105,7 +105,7 @@ pub fn (scope &UniversalGlobalScopeMixin) count_queuing_strategy_size() f64 {
 	return 1.0
 }
 
-pub fn (scope &UniversalGlobalScopeMixin) byte_length_queuing_strategy_size(byte_length usize) f64 {
+pub fn (scope &UniversalGlobalScopeMixin) byte_length_queuing_strategy_size(byte_length uint) f64 {
 	return f64(byte_length)
 }
 

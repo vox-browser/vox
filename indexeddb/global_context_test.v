@@ -59,11 +59,11 @@ fn test_internal_database_adapter_dissociates_connections() {
 }
 
 fn test_binding_offsets_address_the_translated_handle_fields() {
-	assert IDBCursor.request_offset() == usize(__offsetof(IDBCursor, request))
-	assert IDBIndex.object_store_handle_offset() == usize(__offsetof(IDBIndex, object_store_handle_))
-	assert IDBRequest.transaction_offset() == usize(__offsetof(IDBRequest, transaction_))
-	assert IDBTransaction.connection_offset() == usize(__offsetof(IDBTransaction, database))
-	assert IDBTransaction.error_offset() == usize(__offsetof(IDBTransaction, error_message))
+	assert IDBCursor.request_offset() == uint(__offsetof(IDBCursor, request))
+	assert IDBIndex.object_store_handle_offset() == uint(__offsetof(IDBIndex, object_store_handle_))
+	assert IDBRequest.transaction_offset() == uint(__offsetof(IDBRequest, transaction_))
+	assert IDBTransaction.connection_offset() == uint(__offsetof(IDBTransaction, database))
+	assert IDBTransaction.error_offset() == uint(__offsetof(IDBTransaction, error_message))
 }
 
 fn test_object_store_without_key_path_exposes_null_binding_value() {

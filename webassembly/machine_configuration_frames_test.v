@@ -6,11 +6,11 @@ fn source_frame_owner(mut store BinaryMachineStore, marker i32) &BinaryMachineMo
 	return BinaryMachineModuleInstance.create_with_contents(BinaryMachineModuleConstruction{ globals: [address] })
 }
 
-fn source_frame_expression(records usize, dispatches int) &BinaryExpression {
+fn source_frame_expression(records uint, dispatches int) &BinaryExpression {
 	mut expression := &BinaryExpression{
 		instructions:          [BinaryInstruction{ opcode: binary_op_nop },
 			BinaryInstruction{ opcode: binary_op_synthetic_end_expression }]
-		stack_usage_hint:      usize(5)
+		stack_usage_hint:      uint(5)
 		compiled_instructions: BinaryCompiledInstructions{ max_call_rec_size: records, max_label_depth: 71 }
 	}
 	for _ in 0 .. dispatches { expression.compiled_instructions.dispatches << BinaryDispatch{} }

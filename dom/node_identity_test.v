@@ -1,7 +1,7 @@
 module dom
 
 $if gcboehm ? {
-	fn C.GC_get_total_bytes() usize
+	fn C.GC_get_total_bytes() uint
 }
 
 fn test_node_identity_distinguishes_equal_contents_and_preserves_record_copies() {

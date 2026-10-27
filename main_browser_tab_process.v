@@ -14,8 +14,8 @@ $if macos {
 	fn C.vox_tab_window_show(voidptr, i32, f64, f64, f64, f64)
 } $else $if linux {
 	#include "native_browser_tab_process_linux.h"
-	fn C.vox_tab_x11_frame(voidptr, usize, &f64)
-	fn C.vox_tab_x11_show(voidptr, usize, i32, f64, f64, f64, f64)
+	fn C.vox_tab_x11_frame(voidptr, uint, &f64)
+	fn C.vox_tab_x11_show(voidptr, uint, i32, f64, f64, f64, f64)
 }
 
 fn (app &BrowserApp) process_tabs() bool {
@@ -37,7 +37,7 @@ fn process_tab_window_frame() browsertabs.Frame {
 	$if macos {
 		C.vox_tab_window_frame(sapp.macos_get_window(), &values[0])
 	} $else $if linux {
-		C.vox_tab_x11_frame(sapp.x11_get_display(), usize(sapp.x11_get_window()), &values[0])
+		C.vox_tab_x11_frame(sapp.x11_get_display(), uint(sapp.x11_get_window()), &values[0])
 	}
 	return browsertabs.Frame{ x: values[0], y: values[1], width: values[2], height: values[3] }
 }
@@ -46,7 +46,7 @@ fn process_tab_window_show(visible bool, frame browsertabs.Frame) {
 	$if macos {
 		C.vox_tab_window_show(sapp.macos_get_window(), i32(visible), frame.x, frame.y, frame.width, frame.height)
 	} $else $if linux {
-		C.vox_tab_x11_show(sapp.x11_get_display(), usize(sapp.x11_get_window()), i32(visible), frame.x, frame.y, frame.width, frame.height)
+		C.vox_tab_x11_show(sapp.x11_get_display(), uint(sapp.x11_get_window()), i32(visible), frame.x, frame.y, frame.width, frame.height)
 	}
 }
 

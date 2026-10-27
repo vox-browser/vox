@@ -97,7 +97,7 @@ fn (mut runtime Runtime) intersection_observer_entries(mut binding IntersectionO
 		values << wrapper
 	}
 	mut exception := unsafe { nil }
-	array := C.JSObjectMakeArray(runtime.context, usize(values.len), values.data, &exception)
+	array := C.JSObjectMakeArray(runtime.context, uint(values.len), values.data, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	return array
 }
@@ -188,7 +188,7 @@ fn (mut runtime Runtime) intersection_observer_operation(mut binding Intersectio
 		binding.observers[receiver] = observer
 		binding.roots[receiver] = runtime.retain_javascript_value(args[3])!
 		values := observer.thresholds().map(C.JSValueMakeNumber(runtime.context, it))
-		array := C.JSObjectMakeArray(runtime.context, usize(values.len), values.data, unsafe { nil })
+		array := C.JSObjectMakeArray(runtime.context, uint(values.len), values.data, unsafe { nil })
 		binding.thresholds[receiver] = runtime.retain_javascript_value(runtime.call_javascript_function(binding.make, undefined, [
 			C.JSValueMakeNumber(runtime.context, 1),
 			array,

@@ -41,11 +41,11 @@ fn test_successive_slow_animation_frames_defer_only_explicit_idle_cleanup() {
 	maintenance.document_changed(1_000_000_000)
 	for finished_ns in [i64(3_000_000_000), 4_000_000_000, 5_000_000_000] {
 		maintenance.frame_finished(finished_ns, true)
-		assert !maintenance.cleanup_due(finished_ns, usize(64) * 1024 * 1024)
+		assert !maintenance.cleanup_due(finished_ns, uint(64) * 1024 * 1024)
 	}
 	maintenance.frame_finished(5_250_000_000, false)
-	assert !maintenance.cleanup_due(5_499_000_000, usize(64) * 1024 * 1024)
-	assert maintenance.cleanup_due(6_000_000_000, usize(64) * 1024 * 1024)
+	assert !maintenance.cleanup_due(5_499_000_000, uint(64) * 1024 * 1024)
+	assert maintenance.cleanup_due(6_000_000_000, uint(64) * 1024 * 1024)
 }
 
 fn test_memory_cleanup_waits_for_idle_and_new_allocations() {
@@ -55,10 +55,10 @@ fn test_memory_cleanup_waits_for_idle_and_new_allocations() {
 	assert !maintenance.cleanup_due(1_700_000_000, 100)
 	assert maintenance.cleanup_due(2_100_000_000, 100)
 	assert !maintenance.cleanup_due(3_100_000_000, 100)
-	assert maintenance.cleanup_due(4_100_000_000, 100 + usize(32) * 1024 * 1024)
+	assert maintenance.cleanup_due(4_100_000_000, 100 + uint(32) * 1024 * 1024)
 	maintenance.document_changed(5_000_000_000)
-	assert !maintenance.cleanup_due(5_100_000_000, 100 + usize(32) * 1024 * 1024)
-	assert maintenance.cleanup_due(6_100_000_000, 100 + usize(32) * 1024 * 1024)
+	assert !maintenance.cleanup_due(5_100_000_000, 100 + uint(32) * 1024 * 1024)
+	assert maintenance.cleanup_due(6_100_000_000, 100 + uint(32) * 1024 * 1024)
 }
 
 fn test_idle_memory_release_preserves_live_dom_javascript_and_later_paint_updates() {
@@ -176,9 +176,9 @@ fn test_changed_document_restarts_idle_timer_but_empty_frames_create_no_activity
 }
 
 fn test_idle_cleanup_handles_earlier_timestamps_and_allocation_counter_resets() {
-	mut maintenance := BrowserMemoryMaintenance{last_document_activity_ns: 5_000_000_000, last_cleanup_allocated: usize(64) * 1024 * 1024}
-	assert !maintenance.cleanup_due(4_000_000_000, usize(1))
-	assert !maintenance.has_pending_cleanup(usize(1))
-	assert !maintenance.cleanup_due(6_000_000_000, usize(1))
-	assert maintenance.cleanup_due(7_000_000_000, usize(96) * 1024 * 1024)
+	mut maintenance := BrowserMemoryMaintenance{last_document_activity_ns: 5_000_000_000, last_cleanup_allocated: uint(64) * 1024 * 1024}
+	assert !maintenance.cleanup_due(4_000_000_000, uint(1))
+	assert !maintenance.has_pending_cleanup(uint(1))
+	assert !maintenance.cleanup_due(6_000_000_000, uint(1))
+	assert maintenance.cleanup_due(7_000_000_000, uint(96) * 1024 * 1024)
 }

@@ -34,8 +34,8 @@ pub fn SpeechRecognition.create() &SpeechRecognition {
 	}
 }
 
-pub fn SpeechRecognition.grammars_offset() usize {
-	return usize(__offsetof(SpeechRecognition, grammars_))
+pub fn SpeechRecognition.grammars_offset() uint {
+	return uint(__offsetof(SpeechRecognition, grammars_))
 }
 
 pub fn (recognition &SpeechRecognition) grammars() &SpeechGrammarList {
@@ -221,8 +221,8 @@ pub fn SpeechRecognitionEvent.create_with_timestamp(event_name string, init Spee
 	return event
 }
 
-pub fn SpeechRecognitionEvent.results_offset() usize {
-	return usize(__offsetof(SpeechRecognitionEvent, results_))
+pub fn SpeechRecognitionEvent.results_offset() uint {
+	return uint(__offsetof(SpeechRecognitionEvent, results_))
 }
 
 pub fn (event &SpeechRecognitionEvent) result_index() u32 {

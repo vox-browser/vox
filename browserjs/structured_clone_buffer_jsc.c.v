@@ -25,7 +25,7 @@ fn (mut projection NativeCloneProjection) project_array_buffer(value voidptr, mu
 	mut exception := unsafe { nil }
 	length := C.JSObjectGetArrayBufferByteLength(owner.context, value, &exception)
 	if exception != unsafe { nil } { return owner.actual_javascript_exception(exception) }
-	if length > usize(2147483647) {
+	if length > uint(2147483647) {
 		return native_clone_unsupported('Native ArrayBuffer exceeds the translated byte-array capacity')
 	}
 	// JSC permanently pins buffers whose backing pointers cross the C API.
@@ -56,7 +56,7 @@ fn (mut projection NativeCloneProjection) reconstruct_array_buffer(object &html.
 		// Fill through captured typed-array operations. Exposing the target's
 		// pointer here would make a received buffer impossible to transfer again.
 		mut exception := unsafe { nil }
-		bytes := C.vox_make_source_array_buffer_copy(owner.context, object.bytes.data, usize(object.bytes.len), &exception)
+		bytes := C.vox_make_source_array_buffer_copy(owner.context, object.bytes.data, uint(object.bytes.len), &exception)
 		if exception != unsafe { nil } { return owner.actual_javascript_exception(exception) }
 		if bytes == unsafe { nil } { return native_clone_unsupported('Native target ArrayBuffer allocation failed') }
 		projection.root(bytes)!

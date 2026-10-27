@@ -26,7 +26,7 @@ fn test_stylesheet_graph_retains_nested_values_after_parser_and_arena_release() 
 		rules := sheet.css_rules()
 		assert rules.length() == 128
 		for i in 0 .. 128 {
-			rule := rules.item(usize(i)) or { panic('missing rule') }
+			rule := rules.item(uint(i)) or { panic('missing rule') }
 			assert rule.selector_text() == '.item-${i}[data-label="name-${i}"]'
 			declarations := rule.style() or { panic('missing declaration') }
 			assert declarations.get_property_value('content') == '"value-${i}"'

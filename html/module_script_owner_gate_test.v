@@ -36,7 +36,7 @@ fn test_source_module_preparsed_compiled_and_cache_paths_retain_existing_source_
 	mut owner, document, realm := module_script_owner_fixture('https://module-owner.example/')!
 	owner.set_is_scripting_enabled(false)
 	source := 'import "./dependency.js";'
-	preparsed := JavaScriptModuleScript.create_from_pre_parsed('parsed.js', source, realm, document.url, fn (actual string, _ string, _ usize) ! {
+	preparsed := JavaScriptModuleScript.create_from_pre_parsed('parsed.js', source, realm, document.url, fn (actual string, _ string, _ uint) ! {
 		if actual != '' { return error('existing parse failure') }
 	})
 	assert preparsed.source == source && preparsed.parse_error? == 'existing parse failure'
@@ -50,7 +50,7 @@ fn test_source_module_preparsed_compiled_and_cache_paths_retain_existing_source_
 	owner.set_is_scripting_enabled(true)
 	assert compiled.run(.no).value.string_data == source
 	owner.set_is_scripting_enabled(false)
-	cached := JavaScriptModuleScript.create_from_bytecode_cache('cache.js', source, realm, document.url, [], fn (_ []u8, _ string, _ string, _ usize, _ ScriptProgramType) !&ScriptExecutable {
+	cached := JavaScriptModuleScript.create_from_bytecode_cache('cache.js', source, realm, document.url, [], fn (_ []u8, _ string, _ string, _ uint, _ ScriptProgramType) !&ScriptExecutable {
 		return error('cache failure')
 	})
 	assert cached.source == source && cached.parse_error? == 'cache failure'

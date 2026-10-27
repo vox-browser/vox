@@ -52,8 +52,8 @@ fn test_typed_array_fill_all_kinds_shared_and_chunked_paths_preserve_offsets_and
 
 				assert element.number == expected
 			}
-			assert buffer.read_bytes(0, usize(size)) == []u8{len: size, init: 0x77}
-			assert buffer.read_bytes(usize(size * 301), usize(size)) == []u8{len: size, init: 0x77}
+			assert buffer.read_bytes(0, uint(size)) == []u8{len: size, init: 0x77}
+			assert buffer.read_bytes(uint(size * 301), uint(size)) == []u8{len: size, init: 0x77}
 		}
 	}
 }
@@ -103,7 +103,7 @@ fn test_typed_array_fill_coercion_order_and_fresh_bounds_even_for_an_empty_range
 		'start throw', 'end throw', 'initially detached'] {
 		mut buffer := ArrayBufferObject.create_from_bytes(vm.realm(), [u8(1), 2, 3, 4], false,
 			parent)
-		buffer.maximum_byte_length = usize(8)
+		buffer.maximum_byte_length = uint(8)
 		mut array := TypedArray.create(vm.realm(), .uint8, 0, buffer, parent)
 		initialize_typed_array_from_array_buffer(mut vm, mut array, buffer, Value.from_i32(0), if mode == 'fixed shrink' {
 			Value.from_i32(4)

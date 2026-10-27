@@ -24,7 +24,7 @@ __global (
 	scripting_fetching_compiled         OffThreadCompiledProgram
 	scripting_fetching_compiled_source  string
 	scripting_fetching_function_asts    []string
-	scripting_fetching_function_lengths []usize
+	scripting_fetching_function_lengths []uint
 	scripting_fetching_stale_shared     &SharedFunctionInstanceData
 	scripting_fetching_stale_executable &ScriptExecutable
 	scripting_fetching_track_cache      bool
@@ -164,7 +164,7 @@ fn modulepreload_fetching_complete(script ?&Script) {
 	scripting_fetching_completion_nonce = scripting_fetching_last_nonce
 }
 
-fn scripting_fetching_parser(source string, filename string, line usize) ! {
+fn scripting_fetching_parser(source string, filename string, line uint) ! {
 	_ = filename
 	_ = line
 	if source == 'invalid' {
@@ -172,7 +172,7 @@ fn scripting_fetching_parser(source string, filename string, line usize) ! {
 	}
 }
 
-fn scripting_fetching_compiler(source string, filename string, line usize, program_type ScriptProgramType) !&ScriptExecutable {
+fn scripting_fetching_compiler(source string, filename string, line uint, program_type ScriptProgramType) !&ScriptExecutable {
 	scripting_fetching_compile_count++
 	scripting_fetching_parser(source, filename, line)!
 	mut shared_function_data := []&SharedFunctionInstanceData{}
@@ -191,7 +191,7 @@ fn scripting_fetching_compiler(source string, filename string, line usize, progr
 	}
 }
 
-fn scripting_fetching_function_compiler(function_ast string, source_length usize) !&ScriptExecutable {
+fn scripting_fetching_function_compiler(function_ast string, source_length uint) !&ScriptExecutable {
 	scripting_fetching_function_asts << function_ast
 	scripting_fetching_function_lengths << source_length
 	if function_ast == 'failed' {
@@ -210,7 +210,7 @@ fn scripting_fetching_bytecode_cache_compiler(cache_parse &ParsedProgramForCache
 	return '${cache_parse.filename}:${cache_parse.line_number_offset}:${cache_parse.source_code}'.bytes()
 }
 
-fn scripting_fetching_bytecode_cache_materializer(bytecode []u8, _ string, _ string, _ usize, program_type ScriptProgramType) !&ScriptExecutable {
+fn scripting_fetching_bytecode_cache_materializer(bytecode []u8, _ string, _ string, _ uint, program_type ScriptProgramType) !&ScriptExecutable {
 	scripting_fetching_materialized << bytecode.clone()
 	scripting_fetching_material_types << program_type
 	if bytecode == [u8(0xff)] {
@@ -346,7 +346,7 @@ fn test_remaining_lazy_functions_compile_and_discard_stale_results() {
 	compile_remaining_functions_off_thread(mut executable, 'A😀B', scripting_fetching_function_compiler)
 
 	assert scripting_fetching_function_asts == ['direct', 'failed', 'stale', 'nested']
-	assert scripting_fetching_function_lengths == [usize(4), 4, 4, 4]
+	assert scripting_fetching_function_lengths == [uint(4), 4, 4, 4]
 	assert direct.executable != none
 	assert direct.rust_function_ast == none
 	assert failed.executable == none
@@ -499,7 +499,7 @@ fn test_classic_and_worker_script_fetching_decode_and_validate_responses() {
 	assert classic.source == 'é'
 	assert classic.compiled_program?.program_type == .script
 	assert scripting_fetching_function_asts == ['classic-function']
-	assert scripting_fetching_function_lengths == [usize(1)]
+	assert scripting_fetching_function_lengths == [uint(1)]
 	assert scripting_fetching_cache_events == ['complete', 'compile-cache', 'store-cache']
 	assert scripting_fetching_cache_types == [.script]
 	assert scripting_fetching_cache_urls == ['https://example.test/app/classic.js']

@@ -57,7 +57,7 @@ fn test_uint8_array_base64_native_bodies_retain_upstream_vectors_and_ignore_stat
 			array := decoded.as_object().typed_array?
 			assert get_uint8_array_bytes(mut vm, array)! == expected.bytes()
 			assert array.viewed_buffer.is_fixed_length()
-				&& array.viewed_buffer.byte_length() == usize(expected.len)
+				&& array.viewed_buffer.byte_length() == uint(expected.len)
 			assert voidptr(array.object.prototype?) == voidptr(parent)
 			assert uint8_base64_test_call(mut vm, 'toBase64', decoded, [
 				Value.from_object(options),
@@ -134,7 +134,7 @@ fn test_uint8_array_base64_set_result_tracks_capacity_offsets_partial_chunks_and
 			assert voidptr(result.prototype?) == voidptr(parent)
 			assert result.own_property_keys() == [PropertyName.from_str('read'),
 				PropertyName.from_str('written')]
-			assert buffer.read_bytes(1, usize(written)) == 'foob'.bytes()[..written]
+			assert buffer.read_bytes(1, uint(written)) == 'foob'.bytes()[..written]
 			assert buffer.read_bytes(0, 1) == [u8(9)] && buffer.read_bytes(6, 1) == [u8(9)]
 		}
 	}
@@ -154,7 +154,7 @@ fn test_uint8_array_base64_options_are_read_before_fresh_bounds_and_do_not_coerc
 		mut log := &Uint8Base64OptionLog{}
 		mut buffer := ArrayBufferObject.create_from_bytes(vm.realm(), [u8(9), 9, 9, 9], false,
 			parent)
-		buffer.maximum_byte_length = usize(8)
+		buffer.maximum_byte_length = uint(8)
 		mut array := TypedArray.create(vm.realm(), .uint8, 0, buffer, parent)
 		initialize_typed_array_from_array_buffer(mut vm, mut array, buffer, Value.from_i32(1), if mode == 'restore' {
 			Value.from_i32(3)
@@ -173,9 +173,9 @@ fn test_uint8_array_base64_options_are_read_before_fresh_bounds_and_do_not_coerc
 					if mode == 'shrink' { assert buffer.try_resize(0, true)
 					 }
 					if mode in ['grow', 'restore'] { assert buffer.try_resize(if mode == 'grow' {
-							usize(8)
+							uint(8)
 						} else {
-							usize(4)
+							uint(4)
 						}, true)
 					 }
 				}
@@ -221,7 +221,7 @@ fn test_uint8_array_to_base64_reads_alphabet_then_padding_before_bytes_and_boole
 	parent := Object.create(vm.realm(), none)
 	mut log := &Uint8Base64OptionLog{}
 	mut buffer := ArrayBufferObject.create_from_bytes(vm.realm(), [u8(9), 255, 255], false, parent)
-	buffer.maximum_byte_length = usize(6)
+	buffer.maximum_byte_length = uint(6)
 	mut array := TypedArray.create(vm.realm(), .uint8, 0, buffer, parent)
 	initialize_typed_array_from_array_buffer(mut vm, mut array, buffer, Value.from_i32(1),
 		js_undefined())!

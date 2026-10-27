@@ -9,7 +9,7 @@ import platform
 $if gcboehm ? {
 	#include "@DIR/platform/boehm_gc.h"
 
-	fn C.GC_get_gc_no() usize
+	fn C.GC_get_gc_no() uint
 }
 
 fn scroll_profile_collections() u64 {

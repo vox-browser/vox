@@ -61,7 +61,7 @@ fn test_typed_array_create_rejects_fake_detached_and_out_of_bounds_results_befor
 	parent := Object.create(realm, none)
 	for mode in ['fake', 'detached', 'out of bounds'] {
 		mut buffer := ArrayBufferObject.create(mut vm, realm, 2, parent)!
-		buffer.maximum_byte_length = usize(4)
+		buffer.maximum_byte_length = uint(4)
 		array := TypedArray.create(realm, .uint8, 2, buffer, parent)
 		mut fake := Object.create(realm, parent)
 		fake.class_name = 'TypedArray'

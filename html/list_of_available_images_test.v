@@ -81,7 +81,7 @@ fn test_list_of_available_images_prunes_lru_entries_but_preserves_live_images() 
 
 	// The live entry is neither counted nor pruned. Of the remaining entries,
 	// get() made old_key newer, so untouched_key is evicted first.
-	images.prune_to_limits(usize(-1), 1)
+	images.prune_to_limits(uint(-1), 1)
 	assert images.get(old_key) != none
 	assert images.get(untouched_key) == none
 	assert images.get(protected_key) != none

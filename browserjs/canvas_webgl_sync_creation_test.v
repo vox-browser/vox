@@ -41,7 +41,7 @@ fn test_public_source_sync_creation_exposes_records_after_actual_driver_rejectio
 		for _, sync in host.syncs {
 			if sync.object.label() != 'null-sync-${index}' { continue }
 			assert sync.native_pointer() == unsafe { nil }
-			assert usize(sync.sync_handle(context.identity(), context.context_generation())!) == usize(index + 1)
+			assert uint(sync.sync_handle(context.identity(), context.context_generation())!) == uint(index + 1)
 		}
 		C.vox_gl_delete_sync(expected_handle)
 		expected_delete_error := C.vox_gl_get_error()
@@ -51,7 +51,7 @@ fn test_public_source_sync_creation_exposes_records_after_actual_driver_rejectio
 	assert runtime.evaluate_host('globalThis.realSync=syncOwner.fenceSync(syncOwner.SYNC_GPU_COMMANDS_COMPLETE,0);realSync.label="mapped-real-sync";syncOwner.getSyncParameter(realSync,syncOwner.SYNC_CONDITION)===syncOwner.SYNC_GPU_COMMANDS_COMPLETE&&syncOwner.getError()===syncOwner.NO_ERROR')! == 'true'
 	for _, sync in host.syncs {
 		if sync.object.label() != 'mapped-real-sync' { continue }
-		assert usize(sync.sync_handle(context.identity(), context.context_generation())!) == 4
+		assert uint(sync.sync_handle(context.identity(), context.context_generation())!) == 4
 		assert sync.native_pointer() != unsafe { nil }
 		assert sync.sync_handle(context.identity(), context.context_generation())! != sync.native_pointer()
 	}

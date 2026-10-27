@@ -208,12 +208,12 @@ pub fn ObjectStoreData.create(name string, auto_increment bool, key_path ?KeyPat
 	}
 }
 
-pub fn (store &ObjectStoreData) mutation_log_position() usize {
+pub fn (store &ObjectStoreData) mutation_log_position() uint {
 	log := store.mutation_log_ or { return 0 }
 	return log.position()
 }
 
-pub fn (mut store ObjectStoreData) revert_mutations_from(position usize) {
+pub fn (mut store ObjectStoreData) revert_mutations_from(position uint) {
 	if mut log := store.mutation_log_ {
 		log.revert_from(mut store, position)
 	}
@@ -691,12 +691,12 @@ pub fn (mut log MutationLog) revert(mut store ObjectStoreData, database &Databas
 	log.revert_entries(mut store, 0, database, connection)
 }
 
-pub fn (mut log MutationLog) revert_from(mut store ObjectStoreData, position usize) {
+pub fn (mut log MutationLog) revert_from(mut store ObjectStoreData, position uint) {
 	log.revert_entries(mut store, position, none, none)
 }
 
-fn (mut log MutationLog) revert_entries(mut store ObjectStoreData, position usize, database ?&DatabaseData, connection ?&IDBDatabase) {
-	if position >= usize(log.entries.len) {
+fn (mut log MutationLog) revert_entries(mut store ObjectStoreData, position uint, database ?&DatabaseData, connection ?&IDBDatabase) {
+	if position >= uint(log.entries.len) {
 		return
 	}
 	for i := log.entries.len - 1; i >= int(position); i-- {
@@ -785,8 +785,8 @@ pub fn (mut log MutationLog) clear() {
 	log.entries.clear()
 }
 
-pub fn (log &MutationLog) position() usize {
-	return usize(log.entries.len)
+pub fn (log &MutationLog) position() uint {
+	return uint(log.entries.len)
 }
 
 pub struct RequestIterator {

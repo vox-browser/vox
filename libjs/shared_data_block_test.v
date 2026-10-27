@@ -5,8 +5,8 @@ import libgc
 fn test_shared_byte_data_block_preserves_zero_length_attachment_and_reserved_capacity() {
 	mut vm := VM.create()
 	create_simple_execution_context(mut vm)
-	for size in [usize(0), 4] {
-		for capacity in [?usize(none), ?usize(12)] {
+	for size in [uint(0), 4] {
+		for capacity in [?uint(none), ?uint(12)] {
 			mut block := create_shared_byte_data_block(mut vm, size, capacity)!
 			assert block.is_shared && !block.is_empty()
 			assert block.size() == size && block.capacity() >= capacity or { size }
@@ -24,8 +24,8 @@ fn test_shared_byte_data_block_preserves_zero_length_attachment_and_reserved_cap
 fn test_shared_byte_data_block_allocation_errors_use_the_requested_capacity() {
 	mut vm := VM.create()
 	base := create_simple_execution_context(mut vm)
-	for capacity in [?usize(none), ?usize(9007199254740992)] {
-		size := if capacity == none { libgc.primitive_storage_default_cage_size + 65536 } else { usize(0) }
+	for capacity in [?uint(none), ?uint(9007199254740992)] {
+		size := if capacity == none { libgc.primitive_storage_default_cage_size + 65536 } else { uint(0) }
 		if _ := create_shared_byte_data_block(mut vm, size, capacity) {
 			assert false
 		} else {

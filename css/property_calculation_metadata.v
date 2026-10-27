@@ -4260,7 +4260,7 @@ fn property_is_positional_value_list_shorthand(property_id PropertyID) bool {
 	}
 }
 
-pub fn property_maximum_value_count(property_id PropertyID) usize {
+pub fn property_maximum_value_count(property_id PropertyID) uint {
 	return match property_id {
 		.background_position, .border_image_outset, .border_image_width, .grid_template_columns, .grid_template_rows {
 			4

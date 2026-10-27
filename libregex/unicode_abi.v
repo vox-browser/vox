@@ -5,33 +5,33 @@ module libregex
 
 import libjs
 
-fn unicode_abi_string(data &u8, length usize) string {
+fn unicode_abi_string(data &u8, length uint) string {
 	if length == 0 { return '' }
 	return unsafe { data.vbytes(int(length)).bytestr() }
 }
 
-fn unicode_abi_optional_string(data &u8, length usize) ?string {
+fn unicode_abi_optional_string(data &u8, length uint) ?string {
 	if isnil(data) { return none }
 	return unicode_abi_string(data, length)
 }
 
 @[export: 'unicode_property_matches']
-fn native_property_matches(point u32, name &u8, name_length usize, value &u8, value_length usize) bool {
+fn native_property_matches(point u32, name &u8, name_length uint, value &u8, value_length uint) bool {
 	return libjs.regex_property_matches(point, unicode_abi_string(name, name_length), unicode_abi_optional_string(value, value_length))
 }
 
 @[export: 'unicode_property_matches_case_insensitive']
-fn native_property_matches_case_insensitive(point u32, name &u8, name_length usize, value &u8, value_length usize) bool {
+fn native_property_matches_case_insensitive(point u32, name &u8, name_length uint, value &u8, value_length uint) bool {
 	return libjs.regex_property_matches_case_insensitive(point, unicode_abi_string(name, name_length), unicode_abi_optional_string(value, value_length))
 }
 
 @[export: 'unicode_property_all_case_equivalents_match']
-fn native_property_all_case_equivalents_match(point u32, name &u8, name_length usize, value &u8, value_length usize) bool {
+fn native_property_all_case_equivalents_match(point u32, name &u8, name_length uint, value &u8, value_length uint) bool {
 	return libjs.regex_property_all_case_equivalents_match(point, unicode_abi_string(name, name_length), unicode_abi_optional_string(value, value_length))
 }
 
 @[export: 'unicode_resolve_property']
-fn native_resolve_property(name &u8, name_length usize, value &u8, value_length usize, kind &u8, id &u32) bool {
+fn native_resolve_property(name &u8, name_length uint, value &u8, value_length uint, kind &u8, id &u32) bool {
 	property := libjs.regex_resolve_property(unicode_abi_string(name, name_length), unicode_abi_optional_string(value, value_length)) or { return false }
 	unsafe {
 		*kind = u8(property.kind)
@@ -62,21 +62,21 @@ fn native_has_identifier_continue(point u32) bool {
 }
 
 @[export: 'unicode_is_string_property']
-fn native_is_string_property(name &u8, name_length usize) bool {
+fn native_is_string_property(name &u8, name_length uint) bool {
 	return libjs.regex_is_string_property(unicode_abi_string(name, name_length))
 }
 
 @[export: 'unicode_is_valid_ecma262_property']
-fn native_is_valid_property(name &u8, name_length usize, value &u8, value_length usize) bool {
+fn native_is_valid_property(name &u8, name_length uint, value &u8, value_length uint) bool {
 	return libjs.regex_is_valid_ecma262_property(unicode_abi_string(name, name_length), unicode_abi_optional_string(value, value_length))
 }
 
 @[export: 'unicode_get_string_property_data']
-fn native_get_string_property_data(name &u8, name_length usize, output &u32, capacity u32) u32 {
+fn native_get_string_property_data(name &u8, name_length uint, output &u32, capacity u32) u32 {
 	mut span := []u32{len: int(capacity)}
 	needed := libjs.regex_get_string_property_data_into(unicode_abi_string(name, name_length), mut span)
 	if needed > 0 && needed <= capacity {
-		unsafe { C.memcpy(output, span.data, usize(needed) * sizeof(u32)) }
+		unsafe { C.memcpy(output, span.data, uint(needed) * sizeof(u32)) }
 	}
 	return needed
 }

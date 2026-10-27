@@ -111,7 +111,7 @@ $if vox_ui2 ? {
 	fn C.native_test_address_submit(field voidptr)
 	fn C.native_test_address_shortcut(field voidptr, owner voidptr, callback fn (voidptr, int), key u16, shift int) int
 	fn C.native_test_address_geometry(field voidptr, width int) int
-	fn C.native_test_address_selection(field voidptr) usize
+	fn C.native_test_address_selection(field voidptr) uint
 	fn C.native_test_address_backspace(field voidptr)
 	fn C.native_test_address_clipboard_begin()
 	fn C.native_test_address_clipboard_matches() int
@@ -152,7 +152,7 @@ $if vox_ui2 ? {
 		}
 		app.focus_address_bar()
 		assert ui2.focused_id() == 'address'
-		assert C.native_test_address_selection(field) == usize(app.address.len)
+		assert C.native_test_address_selection(field) == uint(app.address.len)
 		address_bar_test_insert(field, '  https://ui2-address-bar.invalid/typed  ')
 		assert app.address == '  https://ui2-address-bar.invalid/typed  '
 		C.native_test_address_submit(field)
@@ -188,7 +188,7 @@ $if vox_ui2 ? {
 		}
 		assert app.address == 'https://example.test/unfinished'
 		assert ui2.text('address') == app.address
-		assert C.native_test_address_selection(field) == usize(app.address.len)
+		assert C.native_test_address_selection(field) == uint(app.address.len)
 		assert ui2.focused_id() == 'address'
 		assert app.address_active && app.address_select
 		app.blur_address_bar()

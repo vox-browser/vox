@@ -239,8 +239,8 @@ pub fn (reader &FileReader) error() ?string {
 	return reader.error_
 }
 
-pub fn FileReader.error_offset() usize {
-	return usize(__offsetof(FileReader, error_))
+pub fn FileReader.error_offset() uint {
+	return uint(__offsetof(FileReader, error_))
 }
 
 pub fn (reader &FileReader) event_log() []string {

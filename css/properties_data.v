@@ -256,7 +256,7 @@ fn (mut c CascadedProperties) allocate_entry(entry CascadedPropertiesEntry, prev
 		if index / cascaded_property_entry_chunk_size >= c.entry_chunks_.len {
 			// Allocate scanned storage without eagerly constructing unused slots.
 			// Every slot is initialized before its index enters a property chain.
-			c.entry_chunks_ << unsafe { &CascadedPropertiesEntryChunk(vcalloc(isize(sizeof(CascadedPropertiesEntryChunk)))) }
+			c.entry_chunks_ << unsafe { &CascadedPropertiesEntryChunk(vcalloc(int(sizeof(CascadedPropertiesEntryChunk)))) }
 		}
 	}
 	mut node := c.entry_node(index)

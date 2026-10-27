@@ -26,12 +26,12 @@ $if linux {
 }
 #include "woff2.h"
 
-fn C.vox_woff2_convert_to_ttf(data &u8, size usize, output_size &usize) &u8
+fn C.vox_woff2_convert_to_ttf(data &u8, size uint, output_size &uint) &u8
 fn C.vox_woff2_free(data voidptr)
 
 pub fn convert_woff2_to_sfnt(data []u8) ![]u8 {
-	mut size := usize(0)
-	output := C.vox_woff2_convert_to_ttf(data.data, usize(data.len), &size)
+	mut size := uint(0)
+	output := C.vox_woff2_convert_to_ttf(data.data, uint(data.len), &size)
 	if output == unsafe { nil } { return error('Failed to convert the WOFF2 font to TTF') }
 	defer { C.vox_woff2_free(output) }
 	return unsafe { output.vbytes(int(size)).clone() }

@@ -48,7 +48,7 @@ fn (decoder &SourceUtf8Decoder) extra_from_state() u64 {
 	return if decoder.bytes_needed == 0 { u64(0) } else { u64(decoder.bytes_seen + 1) }
 }
 
-// Source checked usize capacities on the pinned 64-bit native ABI. Allocating
+// Source checked uint capacities on the pinned 64-bit native ABI. Allocating
 // these capacities into narrower V arrays remains a separate owner boundary.
 fn (decoder &SourceUtf8Decoder) max_utf16_buffer_length(byte_length u64) ?u64 {
 	extra := u64(1) + decoder.extra_from_state()

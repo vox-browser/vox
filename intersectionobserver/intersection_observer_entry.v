@@ -56,20 +56,20 @@ pub fn IntersectionObserverEntry.create(time f64, root_bounds ?&geometry.DOMRect
 	}
 }
 
-pub fn IntersectionObserverEntry.root_bounds_offset() usize {
-	return usize(__offsetof(IntersectionObserverEntry, root_bounds_))
+pub fn IntersectionObserverEntry.root_bounds_offset() uint {
+	return uint(__offsetof(IntersectionObserverEntry, root_bounds_))
 }
 
-pub fn IntersectionObserverEntry.bounding_client_rect_offset() usize {
-	return usize(__offsetof(IntersectionObserverEntry, bounding_client_rect_))
+pub fn IntersectionObserverEntry.bounding_client_rect_offset() uint {
+	return uint(__offsetof(IntersectionObserverEntry, bounding_client_rect_))
 }
 
-pub fn IntersectionObserverEntry.intersection_rect_offset() usize {
-	return usize(__offsetof(IntersectionObserverEntry, intersection_rect_))
+pub fn IntersectionObserverEntry.intersection_rect_offset() uint {
+	return uint(__offsetof(IntersectionObserverEntry, intersection_rect_))
 }
 
-pub fn IntersectionObserverEntry.target_offset() usize {
-	return usize(__offsetof(IntersectionObserverEntry, target_))
+pub fn IntersectionObserverEntry.target_offset() uint {
+	return uint(__offsetof(IntersectionObserverEntry, target_))
 }
 
 pub fn (entry &IntersectionObserverEntry) time() f64 {

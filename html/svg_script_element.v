@@ -23,7 +23,7 @@ mut:
 	fetch_hook_                  ?ScriptElementFetchHook
 	execute_hook_                ?ScriptElementExecuteHook
 	document_load_event_delayer_ ?dom.DocumentLoadEventDelayer
-	source_line_number_          usize = 1
+	source_line_number_          uint = 1
 }
 
 fn svg_script_dom_element(element &dom.SVGScriptElement) &dom.Element {
@@ -89,7 +89,7 @@ pub fn (script &SVGScriptElementModel) is_parser_inserted() bool {
 	return script.parser_inserted_
 }
 
-pub fn (mut script SVGScriptElementModel) set_source_line_number(line usize) {
+pub fn (mut script SVGScriptElementModel) set_source_line_number(line uint) {
 	script.source_line_number_ = line
 }
 

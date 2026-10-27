@@ -108,24 +108,24 @@ pub fn (object &ServiceWorkerRegistration) installing() ?&ServiceWorker {
 	return object.installing_
 }
 
-pub fn ServiceWorkerRegistration.installing_offset() usize {
-	return usize(__offsetof(ServiceWorkerRegistration, installing_))
+pub fn ServiceWorkerRegistration.installing_offset() uint {
+	return uint(__offsetof(ServiceWorkerRegistration, installing_))
 }
 
 pub fn (object &ServiceWorkerRegistration) waiting() ?&ServiceWorker {
 	return object.waiting_
 }
 
-pub fn ServiceWorkerRegistration.waiting_offset() usize {
-	return usize(__offsetof(ServiceWorkerRegistration, waiting_))
+pub fn ServiceWorkerRegistration.waiting_offset() uint {
+	return uint(__offsetof(ServiceWorkerRegistration, waiting_))
 }
 
 pub fn (object &ServiceWorkerRegistration) active() ?&ServiceWorker {
 	return object.active_
 }
 
-pub fn ServiceWorkerRegistration.active_offset() usize {
-	return usize(__offsetof(ServiceWorkerRegistration, active_))
+pub fn ServiceWorkerRegistration.active_offset() uint {
+	return uint(__offsetof(ServiceWorkerRegistration, active_))
 }
 
 pub fn (object &ServiceWorkerRegistration) registration() &Registration {

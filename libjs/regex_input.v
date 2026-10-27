@@ -23,10 +23,10 @@ pub enum RegexVmResult {
 	limit_exceeded
 }
 
-pub fn (input RegexInput) len() usize {
+pub fn (input RegexInput) len() uint {
 	return match input {
-		RegexUtf16Input { usize(input.units.len) }
-		RegexAsciiInput { usize(input.bytes.len) }
+		RegexUtf16Input { uint(input.units.len) }
+		RegexAsciiInput { uint(input.bytes.len) }
 	}
 }
 
@@ -34,7 +34,7 @@ pub fn (input RegexInput) is_empty() bool {
 	return input.len() == 0
 }
 
-pub fn (input RegexInput) code_unit(position usize) u16 {
+pub fn (input RegexInput) code_unit(position uint) u16 {
 	if position >= input.len() { panic('Regex input index out of bounds') }
 	return match input {
 		RegexUtf16Input { input.units[int(position)] }
@@ -42,7 +42,7 @@ pub fn (input RegexInput) code_unit(position usize) u16 {
 	}
 }
 
-pub fn (input RegexInput) find_code_unit(start usize, end usize, unit u16) ?usize {
+pub fn (input RegexInput) find_code_unit(start uint, end uint, unit u16) ?uint {
 	if input is RegexAsciiInput && unit > 0x7f { return none }
 	if start > end || end > input.len() { return none }
 	for position := start; position < end; position++ {
@@ -51,25 +51,25 @@ pub fn (input RegexInput) find_code_unit(start usize, end usize, unit u16) ?usiz
 	return none
 }
 
-pub fn (input RegexInput) next_literal_start(start usize, unit u16) ?usize {
+pub fn (input RegexInput) next_literal_start(start uint, unit u16) ?uint {
 	return input.find_code_unit(start, input.len(), unit)
 }
 
-pub fn (input RegexInput) matches_u16_at(position usize, needle []u16) bool {
-	if position > input.len() || usize(needle.len) > input.len() - position { return false }
+pub fn (input RegexInput) matches_u16_at(position uint, needle []u16) bool {
+	if position > input.len() || uint(needle.len) > input.len() - position { return false }
 	for offset, expected in needle {
 		if input is RegexAsciiInput && expected > 0x7f { return false }
-		if input.code_unit(position + usize(offset)) != expected { return false }
+		if input.code_unit(position + uint(offset)) != expected { return false }
 	}
 	return true
 }
 
 pub fn (input RegexInput) ends_with_u16(suffix []u16) bool {
-	if usize(suffix.len) > input.len() { return false }
-	return input.matches_u16_at(input.len() - usize(suffix.len), suffix)
+	if uint(suffix.len) > input.len() { return false }
+	return input.matches_u16_at(input.len() - uint(suffix.len), suffix)
 }
 
-pub fn (input RegexInput) ranges_equal(left_start usize, right_start usize, length usize) bool {
+pub fn (input RegexInput) ranges_equal(left_start uint, right_start uint, length uint) bool {
 	left_valid := left_start <= input.len() && length <= input.len() - left_start
 	right_valid := right_start <= input.len() && length <= input.len() - right_start
 	if !left_valid || !right_valid {
@@ -77,7 +77,7 @@ pub fn (input RegexInput) ranges_equal(left_start usize, right_start usize, leng
 		// u8 implementation inherits the trait's false-on-out-of-bounds path.
 		return input is RegexUtf16Input && !left_valid && !right_valid
 	}
-	for offset := usize(0); offset < length; offset++ {
+	for offset := uint(0); offset < length; offset++ {
 		if input.code_unit(left_start + offset) != input.code_unit(right_start + offset) {
 			return false
 		}
@@ -85,7 +85,7 @@ pub fn (input RegexInput) ranges_equal(left_start usize, right_start usize, leng
 	return true
 }
 
-pub fn regex_decode_code_point(unicode bool, input RegexInput, position usize) u32 {
+pub fn regex_decode_code_point(unicode bool, input RegexInput, position uint) u32 {
 	if unicode && is_utf16_high_surrogate(input.code_unit(position)) && position + 1 < input.len()
 		&& is_utf16_low_surrogate(input.code_unit(position + 1)) {
 		return 0x10000 + ((u32(input.code_unit(position)) - 0xd800) << 10) +
@@ -94,7 +94,7 @@ pub fn regex_decode_code_point(unicode bool, input RegexInput, position usize) u
 	return u32(input.code_unit(position))
 }
 
-pub fn regex_code_point_len(unicode bool, input RegexInput, position usize) usize {
+pub fn regex_code_point_len(unicode bool, input RegexInput, position uint) uint {
 	if unicode && is_utf16_high_surrogate(input.code_unit(position)) && position + 1 < input.len()
 		&& is_utf16_low_surrogate(input.code_unit(position + 1)) {
 		return 2
@@ -103,17 +103,17 @@ pub fn regex_code_point_len(unicode bool, input RegexInput, position usize) usiz
 }
 
 pub fn regex_copy_captures_to_out(registers []i32, capture_count u32, mut output []i32) {
-	slots := (usize(capture_count) + 1) * 2
+	slots := (uint(capture_count) + 1) * 2
 	buffer_len := if registers.len < output.len { registers.len } else { output.len }
-	copy_len := if slots < usize(buffer_len) { int(slots) } else { buffer_len }
+	copy_len := if slots < uint(buffer_len) { int(slots) } else { buffer_len }
 	for index in 0 .. copy_len {
 		output[index] = registers[index]
 	}
 }
 
-pub fn regex_next_search_position(match_start i32, match_end i32) usize {
-	if match_end == match_start { return usize(match_end) + 1 }
-	return usize(match_end)
+pub fn regex_next_search_position(match_start i32, match_end i32) uint {
+	if match_end == match_start { return uint(match_end) + 1 }
+	return uint(match_end)
 }
 
 pub fn regex_is_line_terminator(code_point u32) bool {

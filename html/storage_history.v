@@ -29,27 +29,27 @@ pub struct StorageBottle {
 pub mut:
 	entries map[string]string
 	keys    []string
-	quota   ?usize
+	quota   ?uint
 }
 
-pub fn StorageBottle.create(quota ?usize) &StorageBottle {
+pub fn StorageBottle.create(quota ?uint) &StorageBottle {
 	return &StorageBottle{
 		quota: quota
 	}
 }
 
-fn (bottle &StorageBottle) prospective_size(key string, value string) usize {
-	mut size := usize(0)
+fn (bottle &StorageBottle) prospective_size(key string, value string) uint {
+	mut size := uint(0)
 	for existing_key in bottle.keys {
-		size += usize(existing_key.len)
+		size += uint(existing_key.len)
 		if existing_key == key {
-			size += usize(value.len)
+			size += uint(value.len)
 		} else {
-			size += usize(bottle.entries[existing_key].len)
+			size += uint(bottle.entries[existing_key].len)
 		}
 	}
 	if key !in bottle.entries {
-		size += usize(key.len + value.len)
+		size += uint(key.len + value.len)
 	}
 	return size
 }
@@ -94,12 +94,12 @@ pub fn (storage &Storage) type_() StorageType {
 	return storage.type_
 }
 
-pub fn (storage &Storage) length() usize {
-	return usize(storage.storage_bottle.keys.len)
+pub fn (storage &Storage) length() uint {
+	return uint(storage.storage_bottle.keys.len)
 }
 
-pub fn (storage &Storage) key(index usize) ?string {
-	if index >= usize(storage.storage_bottle.keys.len) {
+pub fn (storage &Storage) key(index uint) ?string {
+	if index >= uint(storage.storage_bottle.keys.len) {
 		return none
 	}
 	return storage.storage_bottle.keys[index]

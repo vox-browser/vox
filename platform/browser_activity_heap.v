@@ -2,24 +2,24 @@ module platform
 
 import os
 
-const browser_activity_heap_divisor = usize(3)
-const browser_compact_activity_heap_divisor = usize(64)
+const browser_activity_heap_divisor = uint(3)
+const browser_compact_activity_heap_divisor = uint(64)
 
 // This count and all collector-policy access are guarded by libgc's allocation
 // lock. Nested generic timer/layout scopes retain a document's compact policy.
-__global browser_compact_activity_heap_scopes_ usize
+__global browser_compact_activity_heap_scopes_ uint
 
 pub struct BrowserActivityHeapScope {
 mut:
-	previous_divisor usize
-	applied_divisor  usize
+	previous_divisor uint
+	applied_divisor  uint
 	active           bool
 	compact          bool
 }
 
 $if gcboehm ? {
-	fn browser_activity_heap_minimum_divisor_locked() usize {
-		return if browser_compact_activity_heap_scopes_ > 0 { browser_compact_activity_heap_divisor } else { usize(0) }
+	fn browser_activity_heap_minimum_divisor_locked() uint {
+		return if browser_compact_activity_heap_scopes_ > 0 { browser_compact_activity_heap_divisor } else { uint(0) }
 	}
 
 	fn begin_browser_activity_heap_locked(context voidptr) voidptr {

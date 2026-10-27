@@ -30,7 +30,7 @@ enum Base64CodecError {
 
 struct Base64CodecResult {
 mut:
-	read          usize
+	read          uint
 	bytes         []u8
 	error         Base64CodecError
 	padding_error bool
@@ -90,19 +90,19 @@ fn (handling Base64LastChunkHandling) is_partial() bool {
 
 // maximal_binary_length_from_base64. Whitespace is intentionally not removed
 // for the allocation bound; only the final two adjacent padding signs count.
-fn base64_decode_capacity(input []u16) usize {
+fn base64_decode_capacity(input []u16) uint {
 	mut padding := 0
 	if input.len > 0 && input[input.len - 1] == u16(`=`) {
 		padding++
 		if input.len > 1 && input[input.len - 2] == u16(`=`) { padding++ }
 	}
-	length := usize(input.len - padding)
+	length := uint(input.len - padding)
 	return if length % 4 <= 1 { length / 4 * 3 } else { length / 4 * 3 + length % 4 - 1 }
 }
 
 // base64_tail_decode_impl<true>. Integer offsets replace source/destination
 // pointers; decoding tables become the equivalent compact alphabet mapping.
-fn base64_tail_decode(input []u16, padding int, capacity usize, alphabet Base64Alphabet, handling Base64LastChunkHandling) Base64CodecResult {
+fn base64_tail_decode(input []u16, padding int, capacity uint, alphabet Base64Alphabet, handling Base64LastChunkHandling) Base64CodecResult {
 	mut result := Base64CodecResult{}
 	mut position := 0
 	for {
@@ -116,8 +116,8 @@ fn base64_tail_decode(input []u16, padding int, capacity usize, alphabet Base64A
 				base64_code(input[position + 3], alphabet)]
 			if codes.any(it > 63) { break
 			 }
-			if capacity - usize(result.bytes.len) < 3 {
-				result.read = usize(position)
+			if capacity - uint(result.bytes.len) < 3 {
+				result.read = uint(position)
 				result.error = .output_buffer_too_small
 				return result
 			}
@@ -132,7 +132,7 @@ fn base64_tail_decode(input []u16, padding int, capacity usize, alphabet Base64A
 			if code <= 63 {
 				codes << code
 			} else if code > 64 {
-				result.read = usize(position)
+				result.read = uint(position)
 				result.error = .invalid_character
 				return result
 			}
@@ -141,7 +141,7 @@ fn base64_tail_decode(input []u16, padding int, capacity usize, alphabet Base64A
 		count := codes.len
 		if count != 4 {
 			assert count < 4
-			result.read = usize(position)
+			result.read = uint(position)
 			if count + padding > 4
 				|| (handling == .loose && count >= 2 && padding > 0 && (count + padding) % 4 != 0) {
 				result.error = .invalid_character
@@ -156,7 +156,7 @@ fn base64_tail_decode(input []u16, padding int, capacity usize, alphabet Base64A
 			if (handling == .stop_before_partial && padding + count < 4 && count != 0 && (count >= 2
 				|| padding == 0))
 				|| (handling == .only_full_chunks && (count >= 2 || padding == 0)) {
-				result.read = usize(start)
+				result.read = uint(start)
 				return result
 			}
 			if count == 2 || count == 3 {
@@ -167,8 +167,8 @@ fn base64_tail_decode(input []u16, padding int, capacity usize, alphabet Base64A
 					result.error = .extra_bits
 					return result
 				}
-				if capacity - usize(result.bytes.len) < usize(count - 1) {
-					result.read = usize(start)
+				if capacity - uint(result.bytes.len) < uint(count - 1) {
+					result.read = uint(start)
 					result.error = .output_buffer_too_small
 					return result
 				}
@@ -182,8 +182,8 @@ fn base64_tail_decode(input []u16, padding int, capacity usize, alphabet Base64A
 			}
 			return result
 		}
-		if capacity - usize(result.bytes.len) < 3 {
-			result.read = usize(start)
+		if capacity - uint(result.bytes.len) < 3 {
+			result.read = uint(start)
 			result.error = .output_buffer_too_small
 			return result
 		}
@@ -195,7 +195,7 @@ fn base64_tail_decode(input []u16, padding int, capacity usize, alphabet Base64A
 
 // find_end, patch_tail_result, and the details/slow safe entry points. The
 // slow entry intentionally differs in its empty-input and padding-error read.
-fn base64_details(input []u16, capacity usize, alphabet Base64Alphabet, handling Base64LastChunkHandling, slow bool) Base64CodecResult {
+fn base64_details(input []u16, capacity uint, alphabet Base64Alphabet, handling Base64LastChunkHandling, slow bool) Base64CodecResult {
 	mut length := input.len
 	for length > 0 && base64_code(input[length - 1], alphabet) == 64 {
 		length--
@@ -218,30 +218,30 @@ fn base64_details(input []u16, capacity usize, alphabet Base64Alphabet, handling
 	if length == 0 {
 		return if padding > 0 {
 			Base64CodecResult{
-				read:  usize(equal_location)
+				read:  uint(equal_location)
 				error: .invalid_character
 			}
 		} else {
 			Base64CodecResult{
-				read: if slow { usize(0) } else { usize(input.len) }
+				read: if slow { uint(0) } else { uint(input.len) }
 			}
 		}
 	}
 	mut result := base64_tail_decode(input[..length], padding, capacity, alphabet, handling)
-	if result.padding_error { result.read = usize(equal_location) }
+	if result.padding_error { result.read = uint(equal_location) }
 	if result.error == .success && (!handling.is_partial() || result.bytes.len % 3 != 0) {
-		result.read = usize(input.len)
+		result.read = uint(input.len)
 	}
 	if !handling.is_partial() && result.error == .success && padding > 0
 		&& (result.bytes.len % 3 == 0 || result.bytes.len % 3 + 1 + padding != 4) {
 		result.error = .invalid_character
-		if !slow { result.read = usize(equal_location) }
+		if !slow { result.read = uint(equal_location) }
 	}
-	if !slow && handling.is_partial() && result.error == .success && result.read < usize(input.len) {
-		for result.read < usize(input.len) && base64_code(input[int(result.read)], alphabet) == 64 {
+	if !slow && handling.is_partial() && result.error == .success && result.read < uint(input.len) {
+		for result.read < uint(input.len) && base64_code(input[int(result.read)], alphabet) == 64 {
 			result.read++
 		}
-		if result.read < usize(input.len) {
+		if result.read < uint(input.len) {
 			for result.read > 0 && base64_code(input[int(result.read) - 1], alphabet) == 64 {
 				result.read--
 			}
@@ -254,7 +254,7 @@ fn base64_details(input []u16, capacity usize, alphabet Base64Alphabet, handling
 // 576-code flush and tail backtracking even though vector loads and decode
 // tables are scalar here. The source can omit trailing whitespace from Read
 // when no scalar tail runs; replacing this with the scalar entry changes Read.
-fn base64_fast_details(input []u16, capacity usize, alphabet Base64Alphabet, handling Base64LastChunkHandling) Base64CodecResult {
+fn base64_fast_details(input []u16, capacity uint, alphabet Base64Alphabet, handling Base64LastChunkHandling) Base64CodecResult {
 	mut length := input.len
 	for length > 0 && base64_code(input[length - 1], alphabet) == 64 {
 		length--
@@ -277,12 +277,12 @@ fn base64_fast_details(input []u16, capacity usize, alphabet Base64Alphabet, han
 	if length == 0 {
 		return if padding > 0 {
 			Base64CodecResult{
-				read:  usize(equal_location)
+				read:  uint(equal_location)
 				error: .invalid_character
 			}
 		} else {
 			Base64CodecResult{
-				read: usize(input.len)
+				read: uint(input.len)
 			}
 		}
 	}
@@ -293,7 +293,7 @@ fn base64_fast_details(input []u16, capacity usize, alphabet Base64Alphabet, han
 		for index in position .. position + 64 {
 			code := base64_code(input[index], alphabet)
 			if code > 64 {
-				result.read = usize(index)
+				result.read = uint(index)
 				result.error = .invalid_character
 				return result
 			}
@@ -314,7 +314,7 @@ fn base64_fast_details(input []u16, capacity usize, alphabet Base64Alphabet, han
 		for buffered.len % 64 != 0 && position < length {
 			code := base64_code(input[position], alphabet)
 			if code > 64 {
-				result.read = usize(position)
+				result.read = uint(position)
 				result.error = .invalid_character
 				return result
 			}
@@ -337,20 +337,20 @@ fn base64_fast_details(input []u16, capacity usize, alphabet Base64Alphabet, han
 	}
 	if position < length + padding {
 		tail := base64_tail_decode(input[position..length], padding,
-			capacity - usize(result.bytes.len), alphabet, handling)
+			capacity - uint(result.bytes.len), alphabet, handling)
 		result.bytes << tail.bytes
 		result.error = tail.error
-		result.read = usize(position) + tail.read
-		if tail.padding_error { result.read = usize(equal_location) }
+		result.read = uint(position) + tail.read
+		if tail.padding_error { result.read = uint(equal_location) }
 		if result.error == .success && (!handling.is_partial() || result.bytes.len % 3 != 0) {
-			result.read = usize(input.len)
+			result.read = uint(input.len)
 		}
-		if handling.is_partial() && result.error == .success && result.read < usize(input.len) {
-			for result.read < usize(input.len)
+		if handling.is_partial() && result.error == .success && result.read < uint(input.len) {
+			for result.read < uint(input.len)
 				&& base64_code(input[int(result.read)], alphabet) == 64 {
 				result.read++
 			}
-			if result.read < usize(input.len) {
+			if result.read < uint(input.len) {
 				for result.read > 0 && base64_code(input[int(result.read) - 1], alphabet) == 64 {
 					result.read--
 				}
@@ -360,16 +360,16 @@ fn base64_fast_details(input []u16, capacity usize, alphabet Base64Alphabet, han
 	}
 	if padding > 0 && (result.bytes.len % 3 == 0 || result.bytes.len % 3 + 1 + padding != 4) {
 		result.error = .invalid_character
-		result.read = usize(equal_location)
+		result.read = uint(equal_location)
 		return result
 	}
-	result.read = usize(length)
+	result.read = uint(length)
 	return result
 }
 
 // base64_to_binary_safe_impl with decode_up_to_bad_char=true, as in AK.
-fn decode_base64_codec(input []u16, capacity usize, alphabet Base64Alphabet, handling Base64LastChunkHandling) Base64CodecResult {
-	safe_input := if usize(input.len) < capacity / 3 * 4 { input.len } else { int(capacity / 3 * 4) }
+fn decode_base64_codec(input []u16, capacity uint, alphabet Base64Alphabet, handling Base64LastChunkHandling) Base64CodecResult {
+	safe_input := if uint(input.len) < capacity / 3 * 4 { input.len } else { int(capacity / 3 * 4) }
 	done := safe_input == input.len
 	mut result := base64_fast_details(input[..safe_input], capacity, alphabet, if done {
 		handling
@@ -384,7 +384,7 @@ fn decode_base64_codec(input []u16, capacity usize, alphabet Base64Alphabet, han
 		}
 	}
 	if done { return result }
-	tail := base64_details(input[int(result.read)..], capacity - usize(result.bytes.len), alphabet,
+	tail := base64_details(input[int(result.read)..], capacity - uint(result.bytes.len), alphabet,
 		handling, false)
 	result.read += tail.read
 	result.bytes << tail.bytes
@@ -396,7 +396,7 @@ fn decode_base64_codec(input []u16, capacity usize, alphabet Base64Alphabet, han
 			result
 		}
 	}
-	if result.read < usize(input.len) {
+	if result.read < uint(input.len) {
 		for result.read > 0 && base64_code(input[int(result.read) - 1], alphabet) == 64 {
 			result.read--
 		}

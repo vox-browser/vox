@@ -80,7 +80,7 @@ fn test_regex_candidate_start_skips_surrogate_interiors_only_for_nonempty_unicod
 			hints := RegexPatternHints{
 				can_match_empty: can_match_empty
 			}
-			expected := if unicode && !can_match_empty { usize(2) } else { usize(1) }
+			expected := if unicode && !can_match_empty { uint(2) } else { uint(1) }
 			assert regex_next_candidate_start(program, input, hints, 1)? == expected
 			assert regex_next_candidate_start(program, input, hints, 2)? == 2
 			assert regex_next_candidate_start(program, input, hints, 3)? == 3

@@ -67,7 +67,7 @@ pub enum ScriptProgramType {
 pub struct ParsedProgram {
 pub:
 	program_type       ScriptProgramType
-	line_number_offset usize
+	line_number_offset uint
 	error              ?string
 }
 
@@ -92,14 +92,14 @@ pub:
 	source_code        string
 	filename           string
 	program_type       ScriptProgramType
-	line_number_offset usize
+	line_number_offset uint
 	executable         &ScriptExecutable
 }
 
 pub struct CompiledProgram {
 pub:
 	program_type       ScriptProgramType
-	line_number_offset usize
+	line_number_offset uint
 	executable         ?&ScriptExecutable
 }
 
@@ -115,20 +115,20 @@ pub type OffThreadCompileComplete = fn (OffThreadCompiledProgram, string)
 // Runtime-neutral boundaries for LibJS top-level and lazy-function bytecode
 // compilation. ScriptExecutable preserves the ownership graph needed to install
 // completed lazy functions on the main event loop.
-pub type ScriptCompileHook = fn (string, string, usize, ScriptProgramType) !&ScriptExecutable
+pub type ScriptCompileHook = fn (string, string, uint, ScriptProgramType) !&ScriptExecutable
 
-pub type ScriptFunctionCompileHook = fn (string, usize) !&ScriptExecutable
+pub type ScriptFunctionCompileHook = fn (string, uint) !&ScriptExecutable
 
 pub type ScriptBytecodeCacheCompileHook = fn (&ParsedProgramForCache) ![]u8
 
-pub type ScriptBytecodeCacheMaterializeHook = fn ([]u8, string, string, usize, ScriptProgramType) !&ScriptExecutable
+pub type ScriptBytecodeCacheMaterializeHook = fn ([]u8, string, string, uint, ScriptProgramType) !&ScriptExecutable
 
 pub type ScriptBytecodeCacheStoreHook = fn (dom.URL, string, &http.HeaderList, u64, []u8) !
 
 // V's runtime-neutral parser is a host hook. Invoke it outside the script
 // execution context, then deliver completion and drain queued microtasks just
 // as Ladybird's event-loop bounce does.
-pub fn parse_off_thread(source_code string, program_type ScriptProgramType, line_number_offset usize, parser ScriptParseHook, on_parsed OffThreadParseComplete) {
+pub fn parse_off_thread(source_code string, program_type ScriptProgramType, line_number_offset uint, parser ScriptParseHook, on_parsed OffThreadParseComplete) {
 	mut parse_error := ?string(none)
 	parser(source_code, '', line_number_offset) or { parse_error = err.msg() }
 	on_parsed(ParsedProgram{
@@ -139,7 +139,7 @@ pub fn parse_off_thread(source_code string, program_type ScriptProgramType, line
 	perform_a_microtask_checkpoint()
 }
 
-fn clone_parsed_program_for_cache(source_code string, filename string, program_type ScriptProgramType, line_number_offset usize, executable &ScriptExecutable) &ParsedProgramForCache {
+fn clone_parsed_program_for_cache(source_code string, filename string, program_type ScriptProgramType, line_number_offset uint, executable &ScriptExecutable) &ParsedProgramForCache {
 	mut function_table := []&SharedFunctionInstanceData{cap: executable.shared_function_data.len}
 	for shared_data in executable.shared_function_data {
 		function_table << &SharedFunctionInstanceData{
@@ -161,7 +161,7 @@ fn clone_parsed_program_for_cache(source_code string, filename string, program_t
 	}
 }
 
-fn compile_source_off_thread(source_code string, filename string, program_type ScriptProgramType, line_number_offset usize, retain_parse_for_cache bool, compiler ScriptCompileHook) OffThreadCompiledProgram {
+fn compile_source_off_thread(source_code string, filename string, program_type ScriptProgramType, line_number_offset uint, retain_parse_for_cache bool, compiler ScriptCompileHook) OffThreadCompiledProgram {
 	executable := compiler(source_code, filename, line_number_offset, program_type) or {
 		return OffThreadCompiledProgram{
 			parsed: ParsedProgram{
@@ -190,7 +190,7 @@ fn compile_source_off_thread(source_code string, filename string, program_type S
 // LibJS owns the real bytecode artifact in Ladybird. The V host compiler
 // validates and compiles outside the script execution context, represented by
 // CompiledProgram, before completion materializes the script on the main loop.
-pub fn compile_off_thread(source_code string, program_type ScriptProgramType, line_number_offset usize, compiler ScriptCompileHook, on_compiled OffThreadCompileComplete) {
+pub fn compile_off_thread(source_code string, program_type ScriptProgramType, line_number_offset uint, compiler ScriptCompileHook, on_compiled OffThreadCompileComplete) {
 	result := compile_source_off_thread(source_code, '', program_type, line_number_offset, false,
 		compiler)
 	on_compiled(result, source_code)
@@ -201,8 +201,8 @@ struct CompiledFunctionResult {
 	executable ?&ScriptExecutable
 }
 
-fn scripting_source_length_in_code_units(source string) usize {
-	return usize(scripting_source_utf16_bytes(source).len / 2)
+fn scripting_source_length_in_code_units(source string) uint {
+	return uint(scripting_source_utf16_bytes(source).len / 2)
 }
 
 fn scripting_source_utf16_bytes(source string) []u8 {

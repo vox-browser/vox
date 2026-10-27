@@ -21,7 +21,7 @@ fn test_regex_assertion_and_failure_state_matches_unchanged_native_rust_exactly(
 
 fn regex_assertion_fixture_operation(row []string, matchers []RegexSimpleMatch) string {
 	flags := row[1].u32()
-	pos := usize(row[2].u64())
+	pos := uint(row[2].u64())
 	spec := row[3].split(':')
 	matcher := matchers[row[4].int()]
 	input := regex_assertion_fixture_input(row[5])
@@ -41,7 +41,7 @@ fn regex_assertion_fixture_operation(row []string, matchers []RegexSimpleMatch) 
 			0 { vm.push_backtrack(55, pos) }
 			1, 2 {
 				vm.backward = choice == 2
-				vm.push_greedy_backtrack(0, if choice == 2 { input.len() } else { usize(0) }, pos, minimum)
+				vm.push_greedy_backtrack(0, if choice == 2 { input.len() } else { uint(0) }, pos, minimum)
 			}
 			3 { vm.push_lazy_backtrack(0, pos, maximum, spec[4].u32()) }
 			else { panic('unknown native saved choice') }
@@ -53,13 +53,13 @@ fn regex_assertion_fixture_operation(row []string, matchers []RegexSimpleMatch) 
 	vm.pos = pos
 	vm.steps = 13
 	vm.backward = flags & 32 != 0
-	vm.bt_floor = usize(spec[5].u64())
+	vm.bt_floor = uint(spec[5].u64())
 	mut trace := [regex_assertion_fixture_state(vm)]
 	for _ in 0 .. spec[6].u32() {
 		result := match row[0] {
 			'fail' { vm.fail_current_path() }
 			'start' { vm.handle_assert_start(flags & 128 != 0) }
-			'end' { vm.handle_assert_end(flags & 128 != 0, usize(spec[7].u64())) }
+			'end' { vm.handle_assert_end(flags & 128 != 0, uint(spec[7].u64())) }
 			'word' { vm.handle_word_boundary_assert(flags & 128 != 0) }
 			else { panic('unknown native assertion') }
 		}

@@ -4,7 +4,7 @@ import dom
 
 $if gcboehm ? {
 	fn C.GC_gcollect()
-	fn C.GC_get_total_bytes() usize
+	fn C.GC_get_total_bytes() uint
 }
 
 fn storage_test_width(text string) &dom.StyleValue {
@@ -28,7 +28,7 @@ fn test_absent_computed_metadata_reads_and_removals_do_not_allocate() {
 	style.remove_animated_property(.width)
 	values.set_font_variation_settings(empty_variations)
 	mut misses := 0
-	mut before := usize(0)
+	mut before := uint(0)
 	$if gcboehm ? {
 		C.GC_gcollect()
 		before = C.GC_get_total_bytes()
@@ -46,7 +46,7 @@ fn test_absent_computed_metadata_reads_and_removals_do_not_allocate() {
 		values.set_font_variation_settings(empty_variations)
 		_ = style.property(.width, .yes)
 	}
-	mut allocated := usize(0)
+	mut allocated := uint(0)
 	$if gcboehm ? {
 		allocated = C.GC_get_total_bytes() - before
 	}

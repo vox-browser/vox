@@ -84,7 +84,7 @@ fn (mut host CryptoHost) crypto_object(value webidl.Value) !voidptr {
 			arguments << runtime.retain_javascript_value(host.crypto_value(item)!)!
 		}
 		mut exception := unsafe { nil }
-		object = C.JSObjectMakeArray(runtime.context, usize(arguments.len), arguments.data, &exception)
+		object = C.JSObjectMakeArray(runtime.context, uint(arguments.len), arguments.data, &exception)
 		if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	} else {
 		object = C.JSObjectMake(runtime.context, unsafe { nil }, unsafe { nil })

@@ -3,7 +3,7 @@ module html
 import platform
 
 $if gcboehm ? {
-	fn C.GC_get_total_bytes() usize
+	fn C.GC_get_total_bytes() uint
 }
 
 fn tokenizer_buffer_allocated_bytes() i64 {

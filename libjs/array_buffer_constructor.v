@@ -46,7 +46,7 @@ fn array_buffer_constructor_construct(mut vm VM, new_target &Object) !&Object {
 		return err
 	}
 	maximum := get_array_buffer_max_byte_length_option(mut vm, vm.argument(1))!
-	buffer := allocate_array_buffer(mut vm, new_target, usize(byte_length), maximum.value)!
+	buffer := allocate_array_buffer(mut vm, new_target, uint(byte_length), maximum.value)!
 	return buffer.object
 }
 

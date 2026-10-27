@@ -14,7 +14,7 @@ mut:
 	handle_ libgc.ExternalEntityTableHandle
 }
 
-pub fn OwnedPrimitiveBackingStore.create_zeroed(size usize) !&OwnedPrimitiveBackingStore {
+pub fn OwnedPrimitiveBackingStore.create_zeroed(size uint) !&OwnedPrimitiveBackingStore {
 	mut buffer := &OwnedPrimitiveBackingStore{}
 	if size > 0 {
 		mut storage := libgc.PrimitiveStorage.the()
@@ -23,7 +23,7 @@ pub fn OwnedPrimitiveBackingStore.create_zeroed(size usize) !&OwnedPrimitiveBack
 	return buffer
 }
 
-pub fn OwnedPrimitiveBackingStore.create_uninitialized(size usize) !&OwnedPrimitiveBackingStore {
+pub fn OwnedPrimitiveBackingStore.create_uninitialized(size uint) !&OwnedPrimitiveBackingStore {
 	mut buffer := &OwnedPrimitiveBackingStore{}
 	if size > 0 {
 		mut storage := libgc.PrimitiveStorage.the()
@@ -32,7 +32,7 @@ pub fn OwnedPrimitiveBackingStore.create_uninitialized(size usize) !&OwnedPrimit
 	return buffer
 }
 
-pub fn OwnedPrimitiveBackingStore.create_zeroed_with_capacity(size usize, capacity usize) !&OwnedPrimitiveBackingStore {
+pub fn OwnedPrimitiveBackingStore.create_zeroed_with_capacity(size uint, capacity uint) !&OwnedPrimitiveBackingStore {
 	mut buffer := &OwnedPrimitiveBackingStore{}
 	if capacity > 0 {
 		mut storage := libgc.PrimitiveStorage.the()
@@ -60,15 +60,15 @@ pub fn (buffer &OwnedPrimitiveBackingStore) data() &u8 {
 	return libgc.PrimitiveStorage.the().data(buffer.handle_)
 }
 
-pub fn (buffer &OwnedPrimitiveBackingStore) size() usize {
+pub fn (buffer &OwnedPrimitiveBackingStore) size() uint {
 	return libgc.PrimitiveStorage.the().size(buffer.handle_)
 }
 
-pub fn (buffer &OwnedPrimitiveBackingStore) capacity() usize {
+pub fn (buffer &OwnedPrimitiveBackingStore) capacity() uint {
 	return libgc.PrimitiveStorage.the().capacity(buffer.handle_)
 }
 
-pub fn (buffer &OwnedPrimitiveBackingStore) offset() usize {
+pub fn (buffer &OwnedPrimitiveBackingStore) offset() uint {
 	return libgc.PrimitiveStorage.the().offset(buffer.handle_)
 }
 
@@ -76,12 +76,12 @@ pub fn (buffer &OwnedPrimitiveBackingStore) handle() libgc.ExternalEntityTableHa
 	return buffer.handle_
 }
 
-pub fn (mut buffer OwnedPrimitiveBackingStore) set_size(new_size usize, zero_fill_new_bytes libgc.ZeroFillNewBytes) {
+pub fn (mut buffer OwnedPrimitiveBackingStore) set_size(new_size uint, zero_fill_new_bytes libgc.ZeroFillNewBytes) {
 	assert new_size <= buffer.capacity()
 	buffer.try_resize(new_size, zero_fill_new_bytes) or { panic(err) }
 }
 
-pub fn (mut buffer OwnedPrimitiveBackingStore) try_resize(new_size usize, zero_fill_new_bytes libgc.ZeroFillNewBytes) ! {
+pub fn (mut buffer OwnedPrimitiveBackingStore) try_resize(new_size uint, zero_fill_new_bytes libgc.ZeroFillNewBytes) ! {
 	mut storage := libgc.PrimitiveStorage.the()
 	if !buffer.handle_.is_valid() {
 		if new_size == 0 { return }
@@ -91,7 +91,7 @@ pub fn (mut buffer OwnedPrimitiveBackingStore) try_resize(new_size usize, zero_f
 	storage.try_resize(buffer.handle_, new_size, zero_fill_new_bytes)!
 }
 
-pub fn (mut buffer OwnedPrimitiveBackingStore) try_ensure_capacity(new_capacity usize) ! {
+pub fn (mut buffer OwnedPrimitiveBackingStore) try_ensure_capacity(new_capacity uint) ! {
 	if new_capacity <= buffer.capacity() { return }
 	mut storage := libgc.PrimitiveStorage.the()
 	if !buffer.handle_.is_valid() {

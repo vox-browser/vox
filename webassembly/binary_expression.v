@@ -5,13 +5,13 @@ module webassembly
 pub struct BinaryExpression {
 pub mut:
 	instructions          []BinaryInstruction
-	stack_usage_hint      ?usize
+	stack_usage_hint      ?uint
 	compiled_instructions BinaryCompiledInstructions
 }
 
 // Types.h::Expression::set_stack_usage_hint. A parsed expression has no known
 // requirement; successful validation can publish an explicitly known zero.
-pub fn (mut expression BinaryExpression) set_stack_usage_hint(value usize) {
+pub fn (mut expression BinaryExpression) set_stack_usage_hint(value uint) {
 	expression.stack_usage_hint = value
 }
 
@@ -22,9 +22,9 @@ fn parse_binary_expression(mut decoder Decoder) !BinaryExpression {
 	return parse_binary_expression_with_hint(mut decoder, none)
 }
 
-fn parse_binary_expression_with_hint(mut decoder Decoder, size_hint ?usize) !BinaryExpression {
+fn parse_binary_expression_with_hint(mut decoder Decoder, size_hint ?uint) !BinaryExpression {
 	mut stack := []int{}
-	capacity := size_hint or { usize(0) }
+	capacity := size_hint or { uint(0) }
 	mut instructions := []BinaryInstruction{cap: int(capacity)}
 	for {
 		instruction := parse_binary_instruction(mut decoder)!

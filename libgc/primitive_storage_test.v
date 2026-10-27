@@ -29,8 +29,8 @@ fn test_primitive_storage_handle_growth_preserves_identity_and_real_owned_bytes(
 	assert unsafe { large_base[31] } == 0 && unsafe { large_base[69999] } == 0
 	assert storage.committed_size(handle) == round_storage_up_to_page(70000)
 	assert storage.contains(large_base, 70000) && storage.contains_handle(handle, large_base, 70000)
-	assert usize(storage.data_at(handle, primitive_storage_default_cage_size + 7)) == usize(large_base) + 7
-	assert primitive_storage_cage_base() == usize(storage.cage_base()) && storage.cage_size() == primitive_storage_default_cage_size
+	assert uint(storage.data_at(handle, primitive_storage_default_cage_size + 7)) == uint(large_base) + 7
+	assert primitive_storage_cage_base() == uint(storage.cage_base()) && storage.cage_size() == primitive_storage_default_cage_size
 }
 
 fn test_primitive_storage_stale_handles_invalid_results_and_source_error_precedence() {

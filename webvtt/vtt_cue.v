@@ -129,8 +129,8 @@ pub fn VTTCue.create(start_time f64, end_time f64, text string) !&VTTCue {
 // The C++ binding uses this offset to trace the region GC edge. V traces the
 // typed optional pointer directly, but exposing the corresponding layout value
 // keeps generated binding adapters independent of the struct definition.
-pub fn VTTCue.region_offset() usize {
-	return usize(__offsetof(VTTCue, region_))
+pub fn VTTCue.region_offset() uint {
+	return uint(__offsetof(VTTCue, region_))
 }
 
 // https://w3c.github.io/webvtt/#dom-vttcue-region

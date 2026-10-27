@@ -49,7 +49,7 @@ mut:
 	import_map_result_            ?&ImportMapParseResult
 	registered_import_map_        ImportMap
 	event_counts_                 map[string]int
-	source_line_number_           usize = 1
+	source_line_number_           uint = 1
 	crossorigin_                  CORSSettingAttribute
 	referrer_policy_              string
 	document_load_event_delaying_ bool
@@ -194,8 +194,8 @@ pub fn (mut script HTMLScriptElementModel) set_parser_document(document ?&dom.Do
 	script.parser_document_ = document
 }
 
-pub fn (mut script HTMLScriptElementModel) set_source_line_number(line usize) {
-	script.source_line_number_ = if line == 0 { usize(1) } else { line }
+pub fn (mut script HTMLScriptElementModel) set_source_line_number(line uint) {
+	script.source_line_number_ = if line == 0 { uint(1) } else { line }
 }
 
 pub fn (script &HTMLScriptElementModel) is_parser_inserted() bool {

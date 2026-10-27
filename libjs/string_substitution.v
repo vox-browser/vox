@@ -2,8 +2,8 @@ module libjs
 
 // Runtime/AbstractOperations.cpp::GetSubstitution. Flat UTF-16 slices replace
 // AK's views and builder; capture reads/conversions remain live and ordered.
-pub fn get_substitution(mut vm VM, matched Utf16String, text Utf16String, position usize, captures []Value, named_captures Value, replacement_template Utf16String) !Utf16String {
-	string_length := usize(text.len())
+pub fn get_substitution(mut vm VM, matched Utf16String, text Utf16String, position uint, captures []Value, named_captures Value, replacement_template Utf16String) !Utf16String {
+	string_length := uint(text.len())
 	assert position <= string_length
 	mut result := []u16{}
 	mut remainder := unsafe { replacement_template.data }
@@ -26,7 +26,7 @@ pub fn get_substitution(mut vm VM, matched Utf16String, text Utf16String, positi
 				}
 				`'` {
 					ref_length = 2
-					tail_position := position + usize(matched.len())
+					tail_position := position + uint(matched.len())
 					tail_start := if tail_position < string_length {
 						tail_position
 					} else {
@@ -39,16 +39,16 @@ pub fn get_substitution(mut vm VM, matched Utf16String, text Utf16String, positi
 					if remainder.len > 2 && remainder[2] >= u16(`0`) && remainder[2] <= u16(`9`) {
 						digit_count = 2
 					}
-					mut index := usize(string_to_number(Utf16String.from_slice(remainder[1..1 +
+					mut index := uint(string_to_number(Utf16String.from_slice(remainder[1..1 +
 						digit_count])))
 					assert index <= 99
-					if index > usize(captures.len) && digit_count == 2 {
+					if index > uint(captures.len) && digit_count == 2 {
 						digit_count = 1
-						index = usize(string_to_number(Utf16String.from_slice(remainder[1..2])))
+						index = uint(string_to_number(Utf16String.from_slice(remainder[1..2])))
 					}
 					ref_length = 1 + digit_count
 					replacement = unsafe { remainder[..ref_length] }
-					if index >= 1 && index <= usize(captures.len) {
+					if index >= 1 && index <= uint(captures.len) {
 						capture := captures[int(index) - 1]
 						replacement = if capture.is_undefined() {
 							[]u16{}

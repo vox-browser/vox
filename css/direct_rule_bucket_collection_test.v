@@ -5,11 +5,11 @@ import dom
 // These fixtures inject synthetic author rules. Give each scope its own cache
 // instead of modifying the immutable UA-only template shared by empty scopes.
 
-fn cached_rule_fixture_rule(index usize, text string) &MatchingRule {
+fn cached_rule_fixture_rule(index uint, text string) &MatchingRule {
  return &MatchingRule{rule_index: index, selector: selector_from_text(text), cascade_origin: .author}
 }
-fn cached_rule_fixture_indices(rules []ScopedMatchingRule) []usize {
- mut indices := []usize{}
+fn cached_rule_fixture_indices(rules []ScopedMatchingRule) []uint {
+ mut indices := []uint{}
  for rule in rules { indices << rule.rule.rule_index }
  return indices
 }
@@ -46,13 +46,13 @@ fn test_direct_cached_rules_keep_bucket_order_empty_entries_and_attempt_metadata
  computer := StyleComputer.new(document)
  mut attempted := PseudoClassBitmap{}
  actual := style_computer_collect_matching_rules_in_scope(computer, dom.AbstractElement.new(target, none), .author, mut attempted, none, scope)
- assert cached_rule_fixture_indices(actual) == [usize(1), 2, 3, 4, 5]
+ assert cached_rule_fixture_indices(actual) == [uint(1), 2, 3, 4, 5]
  assert attempted.get(.hover)
  assert voidptr(actual[0].rule) == voidptr(cache.rules_by_class['card'][0])
- assert cached_rule_fixture_indices(style_computer_collect_matching_rules_in_scope(computer, dom.AbstractElement.new(target, dom.PseudoElement.before), .author, mut attempted, none, scope)) == [usize(6)]
- assert cached_rule_fixture_indices(style_computer_collect_matching_rules_in_scope(computer, dom.AbstractElement.new(root, none), .author, mut attempted, none, scope)) == [usize(7), 5]
+ assert cached_rule_fixture_indices(style_computer_collect_matching_rules_in_scope(computer, dom.AbstractElement.new(target, dom.PseudoElement.before), .author, mut attempted, none, scope)) == [uint(6)]
+ assert cached_rule_fixture_indices(style_computer_collect_matching_rules_in_scope(computer, dom.AbstractElement.new(root, none), .author, mut attempted, none, scope)) == [uint(7), 5]
  gc_collect()
- assert cached_rule_fixture_indices(actual) == [usize(1), 2, 3, 4, 5]
+ assert cached_rule_fixture_indices(actual) == [uint(1), 2, 3, 4, 5]
  assert cache.rules_by_class['empty'].len == 0
  assert 'missing' !in cache.rules_by_class
 }
@@ -72,7 +72,7 @@ fn test_direct_cached_rules_preserve_duplicate_rule_identity_and_quirks_folding(
  computer := StyleComputer.new(document)
  mut attempted := PseudoClassBitmap{}
  actual := style_computer_collect_matching_rules_in_scope(computer, dom.AbstractElement.new(target, none), .author, mut attempted, none, scope)
- assert cached_rule_fixture_indices(actual) == [usize(3), 3]
+ assert cached_rule_fixture_indices(actual) == [uint(3), 3]
  assert voidptr(actual[0].rule) == voidptr(actual[1].rule)
  assert voidptr(actual[0].rule) == voidptr(shared_rule)
 }
@@ -98,7 +98,7 @@ fn test_direct_cached_rules_include_own_shadow_host_scope_with_its_identity() {
  computer := StyleComputer.new(document)
  mut attempted := PseudoClassBitmap{}
  actual := style_computer_collect_matching_rules_in_scope(computer, dom.AbstractElement.new(host, none), .author, mut attempted, none, scope)
- assert cached_rule_fixture_indices(actual) == [usize(10), 11]
+ assert cached_rule_fixture_indices(actual) == [uint(10), 11]
  assert actual[0].shadow_root == none
  actual_shadow := actual[1].shadow_root or { panic('missing own scope identity') }
  assert voidptr(actual_shadow) == voidptr(shadow)

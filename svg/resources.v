@@ -58,15 +58,15 @@ fn render_key_string(key RenderKey) string {
 	return '${math.f64_bits(key.css_size.width)}:${math.f64_bits(key.css_size.height)}:${math.f64_bits(key.raster_scale)}:${key.color_scheme}'
 }
 
-pub fn surface_external_memory_size(width int, height int) usize {
+pub fn surface_external_memory_size(width int, height int) uint {
 	if width <= 0 || height <= 0 {
 		return 0
 	}
-	maximum := usize(-1)
-	if usize(width) > maximum / usize(height) {
+	maximum := uint(-1)
+	if uint(width) > maximum / uint(height) {
 		return maximum
 	}
-	pixel_count := usize(width) * usize(height)
+	pixel_count := uint(width) * uint(height)
 	if pixel_count > maximum / 4 {
 		return maximum
 	}
@@ -328,19 +328,19 @@ pub fn (mut image DecodedImageData) default_frame(width int, height int) ?&dom.D
 	return image.current_frame(width, height)
 }
 
-pub fn (image &DecodedImageData) external_memory_size() usize {
-	mut size := usize(image.surface_bytes.len)
+pub fn (image &DecodedImageData) external_memory_size() uint {
+	mut size := uint(image.surface_bytes.len)
 	for _, frame in image.cached_rendered_frames {
-		frame_size := usize(frame.bitmap().data.len)
-		if usize(-1) - size < frame_size {
-			return usize(-1)
+		frame_size := uint(frame.bitmap().data.len)
+		if uint(-1) - size < frame_size {
+			return uint(-1)
 		}
 		size += frame_size
 	}
 	for _, surface in image.cached_rendered_surfaces_ {
-		surface_size := usize(surface.len)
-		if usize(-1) - size < surface_size {
-			return usize(-1)
+		surface_size := uint(surface.len)
+		if uint(-1) - size < surface_size {
+			return uint(-1)
 		}
 		size += surface_size
 	}

@@ -63,7 +63,7 @@ fn (_ UserDefinedDecoder) decode_to_utf8_raw(input []u8, mut output []u8, last b
 // UserDefinedDecoder max_utf8_buffer_length is checked byte_length * 3.
 // Every input byte is defined, so replacement/fatal yield identical output.
 fn decode_x_user_defined(input []u8) string {
-	// Source uses usize; this flattened V owned array has signed int lengths.
+	// Source uses uint; this flattened V owned array has signed int lengths.
 	if input.len > int(0x7fffffff) / 3 {
 		panic('UserDefined UTF8 output exceeds flattened V int array capacity')
 	}

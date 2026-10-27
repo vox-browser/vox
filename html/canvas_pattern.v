@@ -20,7 +20,7 @@ pub:
 pub struct DecodedImageCanvasSource {
 pub:
 	value       DecodedImageData
-	frame_index usize
+	frame_index uint
 }
 
 pub type CanvasImageSource = DecodedImageCanvasSource | ImageBitmapCanvasSource

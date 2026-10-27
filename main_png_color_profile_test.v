@@ -5,7 +5,7 @@ struct C.VoxPngColorProfile {
 	values [10]f32
 }
 
-fn C.native_png_color_profile(bytes &u8, length usize, profile &C.VoxPngColorProfile) int
+fn C.native_png_color_profile(bytes &u8, length uint, profile &C.VoxPngColorProfile) int
 fn C.native_image_color_profile(pixels voidptr, width int, height int, profile &C.VoxPngColorProfile) int
 
 fn png_color_test_chunk(kind string, values []u32) []u8 {
@@ -40,7 +40,7 @@ const png_color_test_srgb_primaries = [u32(31270), 32900, 64000, 33000, 30000, 6
 fn png_color_test_profile(bytes []u8) ?[]f32 {
 	$if macos {
 		profile := C.VoxPngColorProfile{}
-		if C.native_png_color_profile(bytes.data, usize(bytes.len), &profile) == 0 {
+		if C.native_png_color_profile(bytes.data, uint(bytes.len), &profile) == 0 {
 			return none
 		}
 		return profile.values[..]
@@ -104,17 +104,17 @@ fn test_png_color_profile_is_associated_with_its_decoded_pixels() {
 		pixels := []u8{len: 16}
 		tagged := png_color_test_stream([png_color_test_chunk('gAMA', [u32(100000)])])
 		profile := C.VoxPngColorProfile{}
-		C.native_tag_image_color_profile(pixels.data, 2, 2, tagged.data, usize(tagged.len), 1)
+		C.native_tag_image_color_profile(pixels.data, 2, 2, tagged.data, uint(tagged.len), 1)
 		assert C.native_image_color_profile(pixels.data, 2, 2, &profile) == 1
 		assert profile.values[0] == 1
 		// A reused buffer of another size is not converted.
 		assert C.native_image_color_profile(pixels.data, 4, 1, &profile) == 0
 		// Retagging with the policy disabled, or with an untagged stream, clears it.
-		C.native_tag_image_color_profile(pixels.data, 2, 2, tagged.data, usize(tagged.len), 0)
+		C.native_tag_image_color_profile(pixels.data, 2, 2, tagged.data, uint(tagged.len), 0)
 		assert C.native_image_color_profile(pixels.data, 2, 2, &profile) == 0
-		C.native_tag_image_color_profile(pixels.data, 2, 2, tagged.data, usize(tagged.len), 1)
+		C.native_tag_image_color_profile(pixels.data, 2, 2, tagged.data, uint(tagged.len), 1)
 		untagged := png_color_test_stream([])
-		C.native_tag_image_color_profile(pixels.data, 2, 2, untagged.data, usize(untagged.len), 1)
+		C.native_tag_image_color_profile(pixels.data, 2, 2, untagged.data, uint(untagged.len), 1)
 		assert C.native_image_color_profile(pixels.data, 2, 2, &profile) == 0
 	}
 }

@@ -147,8 +147,8 @@ pub enum HashType {
 
 pub struct TokenPosition {
 pub mut:
-	line   usize
-	column usize
+	line   uint
+	column uint
 }
 
 pub struct Token {
@@ -647,7 +647,7 @@ pub mut:
 	second u32
 }
 
-fn (mut twin U32Twin) set(index usize, value u32) {
+fn (mut twin U32Twin) set(index uint, value u32) {
 	if index == 0 {
 		twin.first = value
 	}
@@ -663,7 +663,7 @@ pub mut:
 	third  u32
 }
 
-fn (mut triplet U32Triplet) set(index usize, value u32) {
+fn (mut triplet U32Triplet) set(index uint, value u32) {
 	if index == 0 {
 		triplet.first = value
 	}
@@ -710,17 +710,17 @@ mut:
 	len          int
 }
 
-fn C.malloc(usize) voidptr
+fn C.malloc(uint) voidptr
 fn C.free(voidptr)
 
 fn TokenizerInputArena.new(input string) TokenizerInputArena {
 	if input.len == 0 { return TokenizerInputArena{} }
-	storage := unsafe { C.malloc(usize(input.len) * (sizeof(u32) + sizeof(int))) }
+	storage := unsafe { C.malloc(uint(input.len) * (sizeof(u32) + sizeof(int))) }
 	if storage == unsafe { nil } { panic('Unable to allocate CSS tokenizer input') }
 	mut arena := TokenizerInputArena{
 		storage: storage
 		code_points: unsafe { &u32(storage) }
-		byte_offsets: unsafe { &int(&u8(storage) + usize(input.len) * sizeof(u32)) }
+		byte_offsets: unsafe { &int(&u8(storage) + uint(input.len) * sizeof(u32)) }
 	}
 	// ASCII code points and byte offsets are identical. Avoid constructing an
 	// optional rune for each byte while filling these privately owned tables.
@@ -1009,7 +1009,7 @@ fn (mut tokenizer Tokenizer) next_code_point() u32 {
 	return code_point
 }
 
-fn (tokenizer Tokenizer) peek_code_point(offset usize) u32 {
+fn (tokenizer Tokenizer) peek_code_point(offset uint) u32 {
 	index := tokenizer.index + int(offset)
 	if index >= tokenizer.input_arena.len {
 		return tokenizer_eof
@@ -1023,7 +1023,7 @@ fn (tokenizer Tokenizer) peek_twin() U32Twin {
 		second: tokenizer_eof
 	}
 	for i := 0; i < 2 && tokenizer.index + i < tokenizer.input_arena.len; i++ {
-		values.set(usize(i), unsafe { tokenizer.input_arena.code_points[tokenizer.index + i] })
+		values.set(uint(i), unsafe { tokenizer.input_arena.code_points[tokenizer.index + i] })
 	}
 	return values
 }
@@ -1035,7 +1035,7 @@ fn (tokenizer Tokenizer) peek_triplet() U32Triplet {
 		third:  tokenizer_eof
 	}
 	for i := 0; i < 3 && tokenizer.index + i < tokenizer.input_arena.len; i++ {
-		values.set(usize(i), unsafe { tokenizer.input_arena.code_points[tokenizer.index + i] })
+		values.set(uint(i), unsafe { tokenizer.input_arena.code_points[tokenizer.index + i] })
 	}
 	return values
 }
@@ -1377,8 +1377,8 @@ fn (mut tokenizer Tokenizer) consume_an_ident_sequence_with_escape_flag() (strin
 		tokenizer.prev_index = prefix_end - 1
 		tokenizer.index = prefix_end
 		tokenizer.prev_position = tokenizer.position
-		tokenizer.prev_position.column += usize(prefix_end - prefix_start - 1)
-		tokenizer.position.column += usize(prefix_end - prefix_start)
+		tokenizer.prev_position.column += uint(prefix_end - prefix_start - 1)
+		tokenizer.position.column += uint(prefix_end - prefix_start)
 	}
 
 	// Repeatedly consume the next input code point from the stream:

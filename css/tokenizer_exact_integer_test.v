@@ -17,7 +17,7 @@ fn check_exact_integer_consumer(spelling string, suffix string, prefix string) {
 	} else { NumberType.integer }
 	assert actual.type_() == expected_type, spelling
 	assert tokenizer.current_byte_offset() == prefix.len + spelling.len
-	assert tokenizer.position.column == usize(spelling.len)
+	assert tokenizer.position.column == uint(spelling.len)
 }
 
 fn test_exact_integer_consumer_preserves_signed_zero_and_binary64_boundary() {

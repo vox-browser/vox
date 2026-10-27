@@ -23,24 +23,24 @@ pub:
 // boundary; consumers obtain the selected decoded frame and destination
 // metadata from this interface.
 pub interface DecodedImageData {
-	external_memory_size() usize
+	external_memory_size() uint
 	has_clients() bool
 	is_cors_cross_origin() bool
 	set_is_cors_cross_origin(value bool)
-	frame(frame_index usize) ?&dom.DecodedImageFrame_
-	frame_duration(frame_index usize) int
-	frame_count() usize
-	loop_count() usize
+	frame(frame_index uint) ?&dom.DecodedImageFrame_
+	frame_duration(frame_index uint) int
+	frame_count() uint
+	loop_count() uint
 	is_animated() bool
 	intrinsic_width() ?f64
 	intrinsic_height() ?f64
 	intrinsic_aspect_ratio() ?f64
-	frame_rect(frame_index usize) ?BitmapRect
+	frame_rect(frame_index uint) ?BitmapRect
 }
 
 // DecodedImageData's default virtual keeps the caller's frame index. Animated
 // implementations override this when advancing their ring buffer.
-pub fn decoded_image_data_notify_frame_advanced(_ DecodedImageData, frame_index usize) usize {
+pub fn decoded_image_data_notify_frame_advanced(_ DecodedImageData, frame_index uint) uint {
 	return frame_index
 }
 
@@ -54,13 +54,13 @@ pub:
 pub struct BitmapDecodedImageData {
 mut:
 	frames_               []BitmapDecodedImageFrame
-	loop_count_           usize
+	loop_count_           uint
 	animated_             bool
 	clients               map[u64]DecodedImageClientUpdateCallback
 	is_cors_cross_origin_ bool
 }
 
-pub fn BitmapDecodedImageData.create(frames []BitmapDecodedImageFrame, loop_count usize, animated bool) &BitmapDecodedImageData {
+pub fn BitmapDecodedImageData.create(frames []BitmapDecodedImageFrame, loop_count uint, animated bool) &BitmapDecodedImageData {
 	return &BitmapDecodedImageData{
 		frames_:     frames.clone()
 		loop_count_: loop_count
@@ -69,13 +69,13 @@ pub fn BitmapDecodedImageData.create(frames []BitmapDecodedImageFrame, loop_coun
 	}
 }
 
-pub fn (data &BitmapDecodedImageData) external_memory_size() usize {
-	mut size := usize(0)
+pub fn (data &BitmapDecodedImageData) external_memory_size() uint {
+	mut size := uint(0)
 	for retained_frame in data.frames_ {
 		frame := retained_frame.frame or { continue }
-		frame_size := usize(frame.bitmap().data.len)
-		if usize(-1) - size < frame_size {
-			return usize(-1)
+		frame_size := uint(frame.bitmap().data.len)
+		if uint(-1) - size < frame_size {
+			return uint(-1)
 		}
 		size += frame_size
 	}
@@ -105,25 +105,25 @@ pub fn (data &BitmapDecodedImageData) unregister_client(client_id u64) {
 	mutable_data.clients.delete(client_id)
 }
 
-pub fn (data &BitmapDecodedImageData) frame(frame_index usize) ?&dom.DecodedImageFrame_ {
-	if frame_index >= usize(data.frames_.len) {
+pub fn (data &BitmapDecodedImageData) frame(frame_index uint) ?&dom.DecodedImageFrame_ {
+	if frame_index >= uint(data.frames_.len) {
 		return none
 	}
 	return data.frames_[frame_index].frame
 }
 
-pub fn (data &BitmapDecodedImageData) frame_duration(frame_index usize) int {
-	if frame_index >= usize(data.frames_.len) {
+pub fn (data &BitmapDecodedImageData) frame_duration(frame_index uint) int {
+	if frame_index >= uint(data.frames_.len) {
 		return 0
 	}
 	return data.frames_[frame_index].duration
 }
 
-pub fn (data &BitmapDecodedImageData) frame_count() usize {
-	return usize(data.frames_.len)
+pub fn (data &BitmapDecodedImageData) frame_count() uint {
+	return uint(data.frames_.len)
 }
 
-pub fn (data &BitmapDecodedImageData) loop_count() usize {
+pub fn (data &BitmapDecodedImageData) loop_count() uint {
 	return data.loop_count_
 }
 
@@ -156,7 +156,7 @@ pub fn (data &BitmapDecodedImageData) intrinsic_aspect_ratio() ?f64 {
 	return f64(frame.width()) / f64(frame.height())
 }
 
-pub fn (data &BitmapDecodedImageData) frame_rect(frame_index usize) ?BitmapRect {
+pub fn (data &BitmapDecodedImageData) frame_rect(frame_index uint) ?BitmapRect {
 	frame := data.frame(frame_index) or { return none }
 	return BitmapRect{
 		width:  frame.width()
@@ -168,7 +168,7 @@ pub fn (data &AnimatedDecodedImageData) session_id() i64 {
 	return data.session_id
 }
 
-pub fn (data &BitmapDecodedImageData) paint(mut recorder painting.DisplayListRecorder, frame_index usize, destination painting.IntRect, clip_rect painting.IntRect, scaling_mode painting.ScalingMode) bool {
+pub fn (data &BitmapDecodedImageData) paint(mut recorder painting.DisplayListRecorder, frame_index uint, destination painting.IntRect, clip_rect painting.IntRect, scaling_mode painting.ScalingMode) bool {
 	frame := data.frame(frame_index) or { return false }
 	return recorder.draw_scaled_decoded_image_frame(painting.DrawScaledDecodedImageFrame{
 		destination: destination
@@ -202,7 +202,7 @@ pub:
 	frame_count     u32
 	loops_completed u32
 	loop_count      u32
-	client_count    usize
+	client_count    uint
 }
 
 @[heap]
@@ -319,17 +319,17 @@ pub fn (data &AnimatedDecodedImageData) debug_state() AnimatedImageDebugState {
 		frame_count:     data.frame_count_
 		loops_completed: data.loops_completed_
 		loop_count:      data.loop_count_
-		client_count:    usize(data.clients.len)
+		client_count:    uint(data.clients.len)
 	}
 }
 
-pub fn (data &AnimatedDecodedImageData) external_memory_size() usize {
-	mut size := usize(data.durations_.len) * usize(sizeof(u32))
+pub fn (data &AnimatedDecodedImageData) external_memory_size() uint {
+	mut size := uint(data.durations_.len) * uint(sizeof(u32))
 	for slot in data.buffer_slots {
 		frame := slot.frame or { continue }
-		frame_size := usize(frame.bitmap().data.len)
-		if usize(-1) - size < frame_size {
-			return usize(-1)
+		frame_size := uint(frame.bitmap().data.len)
+		if uint(-1) - size < frame_size {
+			return uint(-1)
 		}
 		size += frame_size
 	}
@@ -397,9 +397,9 @@ pub fn decoded_image_data_restart_animation(data DecodedImageData) {
 	}
 }
 
-pub fn decoded_image_data_current_frame_index(data DecodedImageData) usize {
+pub fn decoded_image_data_current_frame_index(data DecodedImageData) uint {
 	if data is AnimatedDecodedImageData {
-		return usize(data.current_frame_index)
+		return uint(data.current_frame_index)
 	}
 	return 0
 }
@@ -528,9 +528,9 @@ pub fn (mut data AnimatedDecodedImageData) evict_oldest_slot() &AnimatedBitmapSl
 	return &data.buffer_slots[index]
 }
 
-pub fn (data &AnimatedDecodedImageData) frame(frame_index usize) ?&dom.DecodedImageFrame_ {
+pub fn (data &AnimatedDecodedImageData) frame(frame_index uint) ?&dom.DecodedImageFrame_ {
 	mut mutable_data := unsafe { &AnimatedDecodedImageData(data) }
-	if frame_index >= usize(data.frame_count_) {
+	if frame_index >= uint(data.frame_count_) {
 		return data.last_displayed_frame
 	}
 	if slot_index := data.find_slot_index(u32(frame_index)) {
@@ -541,19 +541,19 @@ pub fn (data &AnimatedDecodedImageData) frame(frame_index usize) ?&dom.DecodedIm
 	return data.last_displayed_frame
 }
 
-pub fn (data &AnimatedDecodedImageData) frame_duration(frame_index usize) int {
-	if frame_index >= usize(data.durations_.len) {
+pub fn (data &AnimatedDecodedImageData) frame_duration(frame_index uint) int {
+	if frame_index >= uint(data.durations_.len) {
 		return 0
 	}
 	return int(data.durations_[frame_index])
 }
 
-pub fn (data &AnimatedDecodedImageData) frame_count() usize {
-	return usize(data.frame_count_)
+pub fn (data &AnimatedDecodedImageData) frame_count() uint {
+	return uint(data.frame_count_)
 }
 
-pub fn (data &AnimatedDecodedImageData) loop_count() usize {
-	return usize(data.loop_count_)
+pub fn (data &AnimatedDecodedImageData) loop_count() uint {
+	return uint(data.loop_count_)
 }
 
 pub fn (_ &AnimatedDecodedImageData) is_animated() bool {
@@ -575,14 +575,14 @@ pub fn (data &AnimatedDecodedImageData) intrinsic_aspect_ratio() ?f64 {
 	return f64(data.width_) / f64(data.height_)
 }
 
-pub fn (data &AnimatedDecodedImageData) frame_rect(_ usize) ?BitmapRect {
+pub fn (data &AnimatedDecodedImageData) frame_rect(_ uint) ?BitmapRect {
 	return BitmapRect{
 		width:  data.width_
 		height: data.height_
 	}
 }
 
-pub fn (data &AnimatedDecodedImageData) paint(mut recorder painting.DisplayListRecorder, frame_index usize, destination painting.IntRect, clip_rect painting.IntRect, scaling_mode painting.ScalingMode) bool {
+pub fn (data &AnimatedDecodedImageData) paint(mut recorder painting.DisplayListRecorder, frame_index uint, destination painting.IntRect, clip_rect painting.IntRect, scaling_mode painting.ScalingMode) bool {
 	frame := data.frame(frame_index) or { return false }
 	return recorder.draw_scaled_decoded_image_frame(painting.DrawScaledDecodedImageFrame{
 		destination: destination
@@ -651,7 +651,7 @@ fn (mut data AnimatedDecodedImageData) maybe_request_more_frames(current_frame_i
 	}
 }
 
-pub fn (mut data AnimatedDecodedImageData) notify_frame_advanced(caller_frame_index usize) usize {
+pub fn (mut data AnimatedDecodedImageData) notify_frame_advanced(caller_frame_index uint) uint {
 	if data.frame_count_ == 0 {
 		return 0
 	}
@@ -660,5 +660,5 @@ pub fn (mut data AnimatedDecodedImageData) notify_frame_advanced(caller_frame_in
 		data.current_frame_index = expected_next
 		data.maybe_request_more_frames(expected_next)
 	}
-	return usize(data.current_frame_index)
+	return uint(data.current_frame_index)
 }

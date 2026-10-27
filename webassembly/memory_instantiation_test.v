@@ -23,7 +23,7 @@ fn test_instantiation_uses_declared_memory_sizes_and_export_indices() {
 	assert b.maximum? == 4
 	assert voidptr(a) == voidptr(alias)
 	assert voidptr(a) != voidptr(b)
-	assert a.buffer().read_bytes(0, usize(page_size)) == []u8{len: page_size}
+	assert a.buffer().read_bytes(0, uint(page_size)) == []u8{len: page_size}
 	assert first.module_instance().memories.len == 2
 	a.grow(1)!
 	assert alias.size_pages() == 2

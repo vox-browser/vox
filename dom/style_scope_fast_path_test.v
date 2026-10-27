@@ -1,7 +1,7 @@
 module dom
 
 $if gcboehm ? {
-	fn C.GC_get_total_bytes() usize
+	fn C.GC_get_total_bytes() uint
 }
 
 struct ObservingScopeMutationCollector {
@@ -25,7 +25,7 @@ fn test_ordinary_deep_tree_scope_reads_reuse_document_scope_without_allocating()
 	assert document.shadow_roots.len == 0
 	expected := document.style_scope()
 	mut matches := 0
-	mut before := usize(0)
+	mut before := uint(0)
 	$if gcboehm ? { before = C.GC_get_total_bytes() }
 	for _ in 0 .. 1024 {
 		scopes := leaf.observing_style_scopes()
@@ -34,7 +34,7 @@ fn test_ordinary_deep_tree_scope_reads_reuse_document_scope_without_allocating()
 			matches++
 		}
 	}
-	mut allocated := usize(0)
+	mut allocated := uint(0)
 	$if gcboehm ? { allocated = C.GC_get_total_bytes() - before }
 	assert matches == 1024
 	assert allocated == 0

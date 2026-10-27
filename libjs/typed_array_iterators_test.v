@@ -82,7 +82,7 @@ fn test_typed_array_iterator_creation_requires_own_brand_and_valid_buffer_before
 	base := create_simple_execution_context(mut vm)
 	parent := Object.create(vm.realm(), none)
 	mut buffer := ArrayBufferObject.create_from_bytes(vm.realm(), [u8(42), 17], false, parent)
-	buffer.maximum_byte_length = usize(8)
+	buffer.maximum_byte_length = uint(8)
 	array := TypedArray.create(vm.realm(), .uint8, 2, buffer, parent)
 	fake := Object.create(vm.realm(), array.object)
 	for name in ['entries', 'keys', 'values'] {
@@ -126,7 +126,7 @@ fn test_typed_array_iterators_see_live_growth_recover_from_bounds_errors_and_rem
 	parent := Object.create(vm.realm(), none)
 	for name in ['entries', 'keys', 'values'] {
 		mut buffer := ArrayBufferObject.create_from_bytes(vm.realm(), [u8(42), 17], false, parent)
-		buffer.maximum_byte_length = usize(8)
+		buffer.maximum_byte_length = uint(8)
 		mut array := TypedArray.create(vm.realm(), .uint8, 0, buffer, parent)
 		initialize_typed_array_from_array_buffer(mut vm, mut array, buffer, Value.from_i32(1),
 			js_undefined())!

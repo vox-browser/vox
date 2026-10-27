@@ -55,10 +55,10 @@ fn test_typed_array_copy_within_moves_raw_encodings_in_both_overlap_directions_f
 					else { [0, 1, 2, 3, 4] }
 				}
 
-				assert buffer.read_bytes(0, usize(size)) == original[..size]
-				assert buffer.read_bytes(usize(size * 6), usize(size)) == original[size * 6..]
+				assert buffer.read_bytes(0, uint(size)) == original[..size]
+				assert buffer.read_bytes(uint(size * 6), uint(size)) == original[size * 6..]
 				for index, source in indices {
-					assert buffer.read_bytes(usize((index + 1) * size), usize(size)) == original[(
+					assert buffer.read_bytes(uint((index + 1) * size), uint(size)) == original[(
 						source + 1) * size..(source + 2) * size]
 				}
 			}
@@ -85,7 +85,7 @@ fn test_typed_array_copy_within_coerces_indices_in_order_and_rechecks_only_a_non
 		'throw', 'initially detached'] {
 		mut buffer := ArrayBufferObject.create_from_bytes(vm.realm(), [u8(1), 2, 3, 4], false,
 			parent)
-		buffer.maximum_byte_length = usize(8)
+		buffer.maximum_byte_length = uint(8)
 		mut array := TypedArray.create(vm.realm(), .uint8, 0, buffer, parent)
 		initialize_typed_array_from_array_buffer(mut vm, mut array, buffer, Value.from_i32(0), if mode == 'fixed shrink' {
 			Value.from_i32(4)

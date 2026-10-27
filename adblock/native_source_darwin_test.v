@@ -3,7 +3,7 @@ module adblock
 import compress.gzip
 
 fn C.JSStringIsEqual(voidptr, voidptr) bool
-fn C.JSStringGetLength(voidptr) usize
+fn C.JSStringGetLength(voidptr) uint
 fn C.JSStringGetCharactersPtr(voidptr) &u16
 
 fn test_native_script_source_preserves_utf16_code_units() {
@@ -19,7 +19,7 @@ fn test_native_script_source_preserves_utf16_code_units() {
   assert text != unsafe { nil }
   expected := source_utf16(source)
   actual_length := int(C.JSStringGetLength(text))
-  original := C.JSStringCreateWithCharacters(expected.data, usize(expected.len))
+  original := C.JSStringCreateWithCharacters(expected.data, uint(expected.len))
   assert C.JSStringIsEqual(text, original)
   C.JSStringRelease(original)
   assert actual_length == expected.len, 'source case ${index}'

@@ -48,7 +48,7 @@ fn source_convert_utf8_to_utf16_up_to_invalid_at(input []u8, input_start int, mu
 			return read - input_start, written - output_start
 		}
 		byte := input[read]
-		// Source's four-byte lookahead uses usize. Widen under V's
+		// Source's four-byte lookahead uses uint. Widen under V's
 		// narrower array lengths before testing that exact bound.
 		if u64(read) + 4 <= u64(input.len) {
 			if utf8_in_inclusive_range8(byte, 0xc2, 0xdf) {

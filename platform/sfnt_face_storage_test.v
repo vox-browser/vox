@@ -4,7 +4,7 @@ import os
 import time
 import x.ttf
 
-$if gcboehm ? { fn C.GC_get_total_bytes() usize }
+$if gcboehm ? { fn C.GC_get_total_bytes() uint }
 
 fn sfnt_storage_test_path() string {
 	return os.join_path(os.temp_dir(), 'vox-sfnt-storage-${os.getpid()}-${time.sys_mono_now()}.ttc')
@@ -203,12 +203,12 @@ fn test_sfnt_streaming_rejects_storage_sum_overflow_without_reading_sparse_table
 fn test_sfnt_streaming_allocates_selected_tables_without_a_whole_collection_temporary() {
 	$if macos {
 		path := '/System/Library/Fonts/AppleSDGothicNeo.ttc'
-		mut before := usize(0)
+		mut before := uint(0)
 		$if gcboehm ? { before = C.GC_get_total_bytes() }
 		compact := read_outline_face_bytes(path, 0) or { panic('missing compact collection face') }
 		$if gcboehm ? {
 			allocated := C.GC_get_total_bytes() - before
-			assert allocated < usize(compact.len) + usize(2) * 1024 * 1024
+			assert allocated < uint(compact.len) + uint(2) * 1024 * 1024
 		}
 		assert compact.len < 4 * 1024 * 1024
 		assert compact.len < int(os.file_size(path) / 10)

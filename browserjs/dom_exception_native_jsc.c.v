@@ -28,7 +28,7 @@ fn (runtime &Runtime) binding_dom_utf16(value voidptr) !libjs.Utf16String {
 	if text == unsafe { nil } { return error('Failed to convert IDL UTF16 string') }
 	defer { C.JSStringRelease(text) }
 	length := C.JSStringGetLength(text)
-	if length > usize(2147483647) { return error('IDL string exceeds the source V code-unit span') }
+	if length > uint(2147483647) { return error('IDL string exceeds the source V code-unit span') }
 	characters := C.JSStringGetCharactersPtr(text)
 	mut units := []u16{len: int(length)}
 	for index in 0 .. units.len { units[index] = unsafe { characters[index] } }
@@ -38,7 +38,7 @@ fn (runtime &Runtime) binding_dom_utf16(value voidptr) !libjs.Utf16String {
 fn (runtime &Runtime) binding_utf16_string(text libjs.Utf16String) !voidptr {
 	runtime.require_javascript_value_context()!
 	units := text.code_units()
-	actual := C.JSStringCreateWithCharacters(units.data, usize(units.len))
+	actual := C.JSStringCreateWithCharacters(units.data, uint(units.len))
 	if actual == unsafe { nil } { return error('Failed to create actual IDL UTF16 string') }
 	defer { C.JSStringRelease(actual) }
 	// Native callback return is rooted by the engine call boundary; unlike a
@@ -55,7 +55,7 @@ fn (runtime &Runtime) binding_dom_string(value voidptr) !string {
 	if text == unsafe { nil } { return error('Failed to convert IDL string') }
 	defer { C.JSStringRelease(text) }
 	mut bytes := []u8{len: int(C.JSStringGetMaximumUTF8CStringSize(text))}
-	length := unsafe { C.JSStringGetUTF8CString(text, &char(bytes.data), usize(bytes.len)) }
+	length := unsafe { C.JSStringGetUTF8CString(text, &char(bytes.data), uint(bytes.len)) }
 	if length == 0 { return error('Failed to convert IDL string') }
 	return bytes[..int(length) - 1].bytestr()
 }

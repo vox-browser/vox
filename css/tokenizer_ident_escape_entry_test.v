@@ -26,7 +26,7 @@ fn test_ident_escape_entry_preserves_escape_and_eof_spelling() {
 		assert tokens[0].is(.ident)
 		assert tokens[0].original_source_text() == source
 		assert tokens[0].start_position() == TokenPosition{line: 0, column: 0}
-		assert tokens[0].end_position() == TokenPosition{line: 0, column: usize(source.runes().len)}
+		assert tokens[0].end_position() == TokenPosition{line: 0, column: uint(source.runes().len)}
 		assert tokens[1].is(.end_of_file)
 		assert tokens[1].start_position() == tokens[0].end_position()
 		assert tokens[1].end_position() == tokens[0].end_position()

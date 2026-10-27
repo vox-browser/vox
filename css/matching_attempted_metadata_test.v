@@ -20,7 +20,7 @@ fn test_matching_rules_keep_attempted_metadata_across_states_and_subjects() {
 	mut rules := []&MatchingRule{}
 	for index, text in ['.card', '.card:hover', '.card:focus', '.card:not(:hover)'] {
 		rules << &MatchingRule{
-			rule_index: usize(index)
+			rule_index: uint(index)
 			selector: selector_from_text(text)
 			cascade_origin: .author
 		}
@@ -48,6 +48,6 @@ fn test_matching_rules_keep_attempted_metadata_across_states_and_subjects() {
 			dom.AbstractElement.new(other, none), .author, mut other_attempted, none, scope).len == 0
 		assert other_attempted.words == [u64(0), 0]!
 		gc_collect()
-		assert actual[1].rule.rule_index == usize(expected_index)
+		assert actual[1].rule.rule_index == uint(expected_index)
 	}
 }

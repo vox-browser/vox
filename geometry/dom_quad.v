@@ -85,20 +85,20 @@ pub fn DOMQuad.dom_quad_from_quad(other DOMQuadInit) &DOMQuad {
 	return DOMQuad.construct(other.p1, other.p2, other.p3, other.p4)
 }
 
-pub fn DOMQuad.p1_offset() usize {
-	return usize(__offsetof(DOMQuad, p1_))
+pub fn DOMQuad.p1_offset() uint {
+	return uint(__offsetof(DOMQuad, p1_))
 }
 
-pub fn DOMQuad.p2_offset() usize {
-	return usize(__offsetof(DOMQuad, p2_))
+pub fn DOMQuad.p2_offset() uint {
+	return uint(__offsetof(DOMQuad, p2_))
 }
 
-pub fn DOMQuad.p3_offset() usize {
-	return usize(__offsetof(DOMQuad, p3_))
+pub fn DOMQuad.p3_offset() uint {
+	return uint(__offsetof(DOMQuad, p3_))
 }
 
-pub fn DOMQuad.p4_offset() usize {
-	return usize(__offsetof(DOMQuad, p4_))
+pub fn DOMQuad.p4_offset() uint {
+	return uint(__offsetof(DOMQuad, p4_))
 }
 
 pub fn (quad &DOMQuad) p1() &DOMPoint {

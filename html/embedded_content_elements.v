@@ -768,7 +768,7 @@ pub fn (object &HTMLObjectElementModel) to_html_element() ?&dom.Element {
 	return none
 }
 
-pub fn (object &HTMLObjectElementModel) current_frame_index() usize {
+pub fn (object &HTMLObjectElementModel) current_frame_index() uint {
 	_ = object
 	return 0
 }

@@ -2,7 +2,7 @@ module platform
 
 #include "@DIR/arena_page_retirement_test.h"
 
-fn C.vox_arena_test_unused_resident_bytes(start voidptr, bytes usize) usize
+fn C.vox_arena_test_unused_resident_bytes(start voidptr, bytes uint) uint
 
 fn test_idle_tail_trim_preserves_live_bytes_and_allocator_cursors_across_refills() {
 	$if !prealloc {
@@ -28,7 +28,7 @@ fn test_idle_tail_trim_preserves_live_bytes_and_allocator_cursors_across_refills
 	if !arenas_poisoned() {
 		assert before.blocks >= 2
 		assert C.vox_arena_test_unused_resident_bytes(cursor,
-			usize(first_block.stop) - usize(cursor)) > 0
+			uint(first_block.stop) - uint(cursor)) > 0
 	}
 	assert arena.trim_unused_pages()
 	assert arena.usage().used == before.used
@@ -41,7 +41,7 @@ fn test_idle_tail_trim_preserves_live_bytes_and_allocator_cursors_across_refills
 	mut block := arena.scope.first
 	for block != unsafe { nil } && block.scope == voidptr(arena.scope) {
 		assert C.vox_arena_test_unused_resident_bytes(block.current,
-			usize(block.stop) - usize(block.current)) == 0
+			uint(block.stop) - uint(block.current)) == 0
 		block = block.next
 	}
 	refill := arena.enter()

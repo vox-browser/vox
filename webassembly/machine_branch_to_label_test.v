@@ -27,7 +27,7 @@ fn test_source_branch_preserves_target_arity_raw_values_and_actual_configuration
 		assert configuration.label_stack_.len == 2
 		assert configuration.label_stack_[1].continuation() == 91
 		expected := if adjust { [values[0], values[3], values[4]] } else { values }
-		assert configuration.value_stack_.size() == usize(expected.len)
+		assert configuration.value_stack_.size() == uint(expected.len)
 		for i, value in expected {
 			assert unsafe { configuration.value_stack_.data()[i] } == value
 		}

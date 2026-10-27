@@ -94,7 +94,7 @@ fn test_reflect_extensibility_retains_typed_array_exotic_refusal_without_throwin
 	ordinary := Object.create(vm.realm(), none)
 	fixed_buffer := ArrayBufferObject.create(mut vm, vm.realm(), 4, parent)!
 	mut buffer := ArrayBufferObject.create(mut vm, vm.realm(), 4, parent)!
-	buffer.maximum_byte_length = usize(8)
+	buffer.maximum_byte_length = uint(8)
 	fixed := TypedArray.create(vm.realm(), .uint8, 4, fixed_buffer, parent)
 	resizable_fixed := TypedArray.create(vm.realm(), .uint8, 4, buffer, parent)
 	mut tracking := TypedArray.create(vm.realm(), .uint8, 4, buffer, parent)

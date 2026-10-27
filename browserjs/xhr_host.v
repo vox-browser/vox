@@ -83,7 +83,7 @@ fn xhr_host_optional_string(value json2.Any) ?string {
 fn (mut host XMLHttpRequestHost) native_callback(runtime &Runtime, key int, upload bool, token int) &dom.CallbackType {
 	return &dom.CallbackType{ handle_event: fn [mut host, runtime, key, upload, token] (event &dom.Event, _ ?&dom.EventTarget) dom.JSValue {
 		if host.closed { return dom.js_undefined() }
-		event_key := '${usize(voidptr(event))}'
+		event_key := '${uint(voidptr(event))}'
 		host.events[event_key] = event
 		mut payload := {
 			'key': json2.Any(event_key)

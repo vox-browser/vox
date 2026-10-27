@@ -21,7 +21,7 @@ pub mut:
 	component_values      []ComponentValue
 	context               ParsingParams
 	value_context         []ValueParsingContext
-	random_function_index usize
+	random_function_index uint
 }
 
 pub fn Parser.from_component_values(component_values []ComponentValue) Parser {
@@ -7015,16 +7015,16 @@ fn (mut parser Parser) parse_grid_template_areas_value(mut tokens ComponentValue
 			}
 
 			grid_areas[name] = GridArea{
-				row_start: usize(y)
-				row_end: usize(y_end)
-				column_start: usize(x)
-				column_end: usize(x_end)
+				row_start: uint(y)
+				row_end: uint(y_end)
+				column_start: uint(x)
+				column_end: uint(x_end)
 			}
 		}
 	}
 
 	tokens = transaction
-	return StyleValue(GridTemplateAreaStyleValue.create(grid_areas, usize(grid_area_rows.len), usize(column_count)))
+	return StyleValue(GridTemplateAreaStyleValue.create(grid_areas, uint(grid_area_rows.len), uint(column_count)))
 }
 
 // Splits one grid-template-areas string into its column cell names (or '.' for a null cell).

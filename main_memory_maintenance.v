@@ -23,7 +23,7 @@ struct BrowserMemoryMaintenance {
 mut:
 	last_document_activity_ns i64
 	next_check_ns            i64
-	last_cleanup_allocated   usize
+	last_cleanup_allocated   uint
 	pending_document_work    bool
 	presentation_pending     bool
 	cleanup_timer           &platform.Timer = unsafe { nil }
@@ -44,7 +44,7 @@ fn (mut maintenance BrowserMemoryMaintenance) frame_finished(now_ns i64, updated
 	}
 }
 
-fn (mut maintenance BrowserMemoryMaintenance) cleanup_due(now_ns i64, allocated usize) bool {
+fn (mut maintenance BrowserMemoryMaintenance) cleanup_due(now_ns i64, allocated uint) bool {
 	if now_ns < maintenance.next_check_ns {
 		return false
 	}
@@ -61,10 +61,10 @@ fn (mut maintenance BrowserMemoryMaintenance) cleanup_due(now_ns i64, allocated 
 	return true
 }
 
-fn (maintenance &BrowserMemoryMaintenance) has_pending_cleanup(allocated usize) bool {
+fn (maintenance &BrowserMemoryMaintenance) has_pending_cleanup(allocated uint) bool {
 	return maintenance.pending_document_work
 		|| (allocated >= maintenance.last_cleanup_allocated
-			&& allocated - maintenance.last_cleanup_allocated >= usize(32) * 1024 * 1024)
+			&& allocated - maintenance.last_cleanup_allocated >= uint(32) * 1024 * 1024)
 }
 
 fn (mut app BrowserApp) finish_frame_memory_activity(now_ns i64, previous_paint u64) {

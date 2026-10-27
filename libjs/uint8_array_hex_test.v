@@ -39,7 +39,7 @@ fn test_from_hex_preserves_upstream_vectors_and_all_byte_values() {
 	for text, expected in vectors {
 		result := from_hex(mut vm, utf16_string(text), none)
 		assert result.error == none && result.bytes == expected
-		assert result.read == usize(text.len)
+		assert result.read == uint(text.len)
 	}
 	mut text := ''
 	mut expected := []u8{}
@@ -54,7 +54,7 @@ fn test_from_hex_preserves_upstream_vectors_and_all_byte_values() {
 fn test_from_hex_checks_global_even_length_before_capacity_and_preserves_partial_records() {
 	mut vm := VM.create()
 	create_simple_execution_context(mut vm)
-	for limit in [usize(0), 1, 2, 99] {
+	for limit in [uint(0), 1, 2, 99] {
 		odd := from_hex(mut vm, utf16_string('61z'), limit)
 		error := odd.error?
 		assert odd.read == 0 && odd.bytes.len == 0
@@ -71,10 +71,10 @@ fn test_from_hex_checks_global_even_length_before_capacity_and_preserves_partial
 		result := from_hex(mut vm, Utf16String.from_slice([u16(`6`), u16(`1`), unit, u16(`0`)]), none)
 		assert result.read == 2 && result.bytes == [u8(97)] && result.error != none
 	}
-	for index, limit in [usize(0), 1, 2] {
+	for index, limit in [uint(0), 1, 2] {
 		result := from_hex(mut vm, utf16_string('6162zz'), limit)
 		assert result.error == none
-		assert result.read == usize(index * 2) && result.bytes == [u8(97), 98][..index]
+		assert result.read == uint(index * 2) && result.bytes == [u8(97), 98][..index]
 	}
 }
 
@@ -201,7 +201,7 @@ fn test_uint8_array_hex_live_fixed_tracking_shared_bounds_and_argument_error_ord
 	for shared_buffer in [false, true] {
 		mut buffer := ArrayBufferObject.create_from_bytes(vm.realm(), [u8(9), 42, 17, 43],
 			shared_buffer, parent)
-		buffer.maximum_byte_length = usize(8)
+		buffer.maximum_byte_length = uint(8)
 		mut fixed := TypedArray.create(vm.realm(), .uint8, 0, buffer, parent)
 		mut tracking := TypedArray.create(vm.realm(), .uint8, 0, buffer, parent)
 		initialize_typed_array_from_array_buffer(mut vm, mut fixed, buffer, Value.from_i32(1),

@@ -2,7 +2,7 @@ module platform
 
 #include "@DIR/arena_page_retirement_test.h"
 
-fn C.vox_arena_test_resident_bytes(start voidptr, bytes usize) usize
+fn C.vox_arena_test_resident_bytes(start voidptr, bytes uint) uint
 
 fn test_large_reset_arenas_keep_capacity_and_reuse_addresses_without_retaining_physical_pages() {
 	mut arena := new_arena('large empty payload')
@@ -13,8 +13,8 @@ fn test_large_reset_arenas_keep_capacity_and_reuse_addresses_without_retaining_p
 	arena.leave(entry)
 	$if prealloc {
 		capacity := arena.usage().capacity
-		before := C.vox_arena_test_resident_bytes(data, usize(bytes.len))
-		assert before >= usize(bytes.len)
+		before := C.vox_arena_test_resident_bytes(data, uint(bytes.len))
+		assert before >= uint(bytes.len)
 		arena.reset()
 		assert arena.usage().used == 0
 		if !arenas_poisoned() {

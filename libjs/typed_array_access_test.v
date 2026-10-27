@@ -28,13 +28,13 @@ fn test_typed_array_accessors_follow_live_fixed_tracking_shared_and_detached_wit
 	parent := Object.create(vm.realm(), none)
 	for shared_buffer in [false, true] {
 		mut buffer := ArrayBufferObject.create_from_bytes(vm.realm(), []u8{len: 9}, shared_buffer, parent)
-		buffer.maximum_byte_length = usize(16)
+		buffer.maximum_byte_length = uint(16)
 		mut fixed := TypedArray.create(vm.realm(), .uint16, 0, buffer, parent)
 		mut tracking := TypedArray.create(vm.realm(), .uint16, 0, buffer, parent)
 		initialize_typed_array_from_array_buffer(mut vm, mut fixed, buffer, Value.from_i32(2), Value.from_i32(3))!
 		initialize_typed_array_from_array_buffer(mut vm, mut tracking, buffer, Value.from_i32(2), js_undefined())!
 		for position, size in [9, 12, 5, 2, 1, 8] {
-			assert buffer.try_resize(usize(size), true)
+			assert buffer.try_resize(uint(size), true)
 			for variant, array in [fixed, tracking] {
 				receiver := Value.from_object(array.object)
 				length := if variant == 0 {
@@ -149,7 +149,7 @@ fn test_typed_array_at_snapshots_length_before_index_coercion_and_reads_current_
 	parent := Object.create(vm.realm(), none)
 	for mode in ['shrink', 'grow', 'detach', 'initially detached', 'throw'] {
 		mut buffer := ArrayBufferObject.create_from_bytes(vm.realm(), [u8(42), 17, 43], false, parent)
-		buffer.maximum_byte_length = usize(8)
+		buffer.maximum_byte_length = uint(8)
 		mut array := TypedArray.create(vm.realm(), .uint8, 0, buffer, parent)
 		initialize_typed_array_from_array_buffer(mut vm, mut array, buffer, Value.from_i32(0), js_undefined())!
 		mut index := Object.create(vm.realm(), none)

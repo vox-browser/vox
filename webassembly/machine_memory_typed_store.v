@@ -67,6 +67,6 @@ pub fn (mut interpreter BinaryMachineBytecodeInterpreter) pop_and_store[P, S](mu
 	// bytes, matching the original temporary's immediate borrow boundary.
 	return interpreter.store_value(mut configuration, instruction, BinaryMachineBytes{
 		data: unsafe { &bytes[0] }
-		size: usize(sizeof(S))
+		size: uint(sizeof(S))
 	}, 1, addresses)
 }

@@ -25,7 +25,7 @@ fn test_data_view_constructor_metadata_and_fixed_tracking_lengths() {
 		assert voidptr(link.value?.as_object()) == voidptr(constructor)
 		assert link.writable? && link.configurable? && !link.enumerable?
 	}
-	for maximum in [?usize(none), ?usize(12)] {
+	for maximum in [?uint(none), ?uint(12)] {
 		buffer :=
 			allocate_array_buffer(mut vm, realm.array_buffer_constructor_record(), 8, maximum)!
 		view := construct(mut vm, Value.from_object(constructor), [
@@ -101,7 +101,7 @@ fn test_data_view_constructor_rechecks_buffer_after_prototype_lookup_and_preserv
 	vm.pop_execution_context()
 	for mode in ['foreign', 'shrink offset', 'shrink length', 'detach', 'throw'] {
 		mut buffer := allocate_array_buffer(mut vm, local.array_buffer_constructor_record(), 8,
-			usize(12))!
+			uint(12))!
 		target := NativeFunction.create_constructor(mut vm, foreign, foreign.function_prototype,
 			data_view_constructor_call, data_view_constructor_construct, 1,
 			PropertyName.from_str('Target'))
@@ -144,7 +144,7 @@ fn test_data_view_constructor_coercions_precede_prototype_lookup_and_detached_ch
 	realm := vm.realm()
 	mut log := &ViewConstructorLog{}
 	mut buffer := allocate_array_buffer(mut vm, realm.array_buffer_constructor_record(), 8,
-		usize(12))!
+		uint(12))!
 	mut arguments := [Value.from_object(buffer.object)]
 	for name in ['offset', 'length'] {
 		mut argument := Object.create(realm, none)

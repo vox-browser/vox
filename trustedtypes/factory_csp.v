@@ -262,8 +262,8 @@ fn (factory &TrustedTypePolicyFactory) current_csp_policies() []TrustedTypesCSPP
 	return factory.csp_policies.clone()
 }
 
-pub fn TrustedTypePolicyFactory.default_policy_offset() usize {
-	return usize(__offsetof(TrustedTypePolicyFactory, default_policy_))
+pub fn TrustedTypePolicyFactory.default_policy_offset() uint {
+	return uint(__offsetof(TrustedTypePolicyFactory, default_policy_))
 }
 
 pub fn (factory &TrustedTypePolicyFactory) default_policy() ?&TrustedTypePolicy {

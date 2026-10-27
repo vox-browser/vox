@@ -2,7 +2,7 @@ module libjs
 
 // Runtime/ArrayBuffer.cpp::AllocateSharedArrayBuffer, including reservation of
 // the maximum capacity while exposing the initial byte length.
-pub fn allocate_shared_array_buffer(mut vm VM, constructor &Object, byte_length usize, maximum ?usize) !&ArrayBufferObject {
+pub fn allocate_shared_array_buffer(mut vm VM, constructor &Object, byte_length uint, maximum ?uint) !&ArrayBufferObject {
 	if limit := maximum {
 		if byte_length > limit {
 			return vm.throw_error_type(.range_error, .byte_length_exceeds_max_byte_length,

@@ -2,7 +2,7 @@ module platform
 
 #include "@DIR/arena_page_retirement_test.h"
 
-fn C.vox_arena_test_resident_bytes(start voidptr, bytes usize) usize
+fn C.vox_arena_test_resident_bytes(start voidptr, bytes uint) uint
 
 fn test_idle_trim_preserves_live_and_entered_arenas_then_discards_reset_pages() {
 	$if !prealloc { return }
@@ -45,7 +45,7 @@ fn test_idle_maintenance_discards_only_the_recycle_cache_payload() {
 	release_unused_browser_memory()
 	assert cache.count == count && cache.bytes == capacity
 	for index in 0 .. count {
-		assert C.vox_arena_test_resident_bytes(cache.starts[index], usize(cache.sizes[index])) == 0
+		assert C.vox_arena_test_resident_bytes(cache.starts[index], uint(cache.sizes[index])) == 0
 	}
 	assert live[0] == 19 && live[1023] == 19
 	refill := begin_thread_scratch('recycled idle refill')

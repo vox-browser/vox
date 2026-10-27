@@ -224,8 +224,8 @@ pub fn CSSRuleList.create_empty() &CSSRuleList {
 	return CSSRuleList.create([]&CSSRule{})
 }
 
-pub fn (rule_list &CSSRuleList) item(index usize) ?&CSSRule {
-	if index >= usize(rule_list.rules.len) {
+pub fn (rule_list &CSSRuleList) item(index uint) ?&CSSRule {
+	if index >= uint(rule_list.rules.len) {
 		return none
 	}
 	return rule_list.rules[index]
@@ -1271,7 +1271,7 @@ fn (rule &CSSRule) serialized_media_rule() string {
 	//    filtering out empty strings, indenting each item with two spaces, all joined with newline.
 	if rules := rule.rules {
 		for i in 0 .. rules.length() {
-			child_rule := rules.item(usize(i)) or { continue }
+			child_rule := rules.item(uint(i)) or { continue }
 			result := child_rule.css_text()
 
 			if result.len == 0 {
@@ -1302,7 +1302,7 @@ fn (rule &CSSRule) serialized_supports_rule() string {
 	builder.write_string(' {\n')
 	if rules := rule.rules {
 		for i in 0 .. rules.length() {
-			child_rule := rules.item(usize(i)) or { continue }
+			child_rule := rules.item(uint(i)) or { continue }
 			if i != 0 {
 				builder.write_u8(`\n`)
 			}
@@ -2701,8 +2701,8 @@ pub fn (mut list StyleSheetList) initialize_a_css_style_sheet(mut sheet CSSStyle
 	list.add_a_css_style_sheet(mut sheet)
 }
 
-pub fn (list &StyleSheetList) item(index usize) ?&CSSStyleSheet {
-	if index >= usize(list.sheets.len) {
+pub fn (list &StyleSheetList) item(index uint) ?&CSSStyleSheet {
+	if index >= uint(list.sheets.len) {
 		return none
 	}
 	return list.sheets[index]

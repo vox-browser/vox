@@ -148,16 +148,16 @@ pub fn (port &SerialPort) readable() ?voidptr {
 	return port.readable_
 }
 
-pub fn SerialPort.readable_offset() usize {
-	return usize(__offsetof(SerialPort, readable_))
+pub fn SerialPort.readable_offset() uint {
+	return uint(__offsetof(SerialPort, readable_))
 }
 
 pub fn (port &SerialPort) writable() ?voidptr {
 	return port.writable_
 }
 
-pub fn SerialPort.writable_offset() usize {
-	return usize(__offsetof(SerialPort, writable_))
+pub fn SerialPort.writable_offset() uint {
+	return uint(__offsetof(SerialPort, writable_))
 }
 
 pub fn (port &SerialPort) set_onconnect(handler ?&dom.CallbackType) {

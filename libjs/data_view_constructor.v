@@ -38,7 +38,7 @@ fn data_view_constructor_construct(mut vm VM, new_target &Object) !&Object {
 	} else {
 		return vm.throw_error_type(.type_error, .is_not_an, invalid_buffer, 'ArrayBuffer')
 	}
-	offset := usize(vm.argument(1).to_index(mut vm)!)
+	offset := uint(vm.argument(1).to_index(mut vm)!)
 	if buffer.is_detached() { return vm.throw_error_type(.type_error, .detached_array_buffer) }
 	initial_size := array_buffer_byte_length(buffer, .seq_cst)
 	if offset > initial_size {
@@ -55,7 +55,7 @@ fn data_view_constructor_construct(mut vm VM, new_target &Object) !&Object {
 	} else {
 		ByteLength.from_u32(u32(requested_length.to_index(mut vm)!))
 	}
-	if !requested_length.is_undefined() && usize(length.length()) > initial_size - offset {
+	if !requested_length.is_undefined() && uint(length.length()) > initial_size - offset {
 		return vm.throw_error_type(.range_error, .invalid_length, 'DataView')
 	}
 	prototype := get_prototype_from_constructor(mut vm, new_target, fn (realm &Realm) &Object {
@@ -68,7 +68,7 @@ fn data_view_constructor_construct(mut vm VM, new_target &Object) !&Object {
 		return vm.throw_error_type(.range_error, .data_view_out_of_range_byte_offset, offset.str(),
 			current_size.str())
 	}
-	if !requested_length.is_undefined() && usize(length.length()) > current_size - offset {
+	if !requested_length.is_undefined() && uint(length.length()) > current_size - offset {
 		return vm.throw_error_type(.range_error, .invalid_length, 'DataView')
 	}
 	return view.object

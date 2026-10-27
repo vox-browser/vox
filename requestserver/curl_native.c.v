@@ -18,7 +18,7 @@ fn C.curl_slist_append(list voidptr, value &char) voidptr
 fn C.curl_slist_free_all(list voidptr)
 fn C.vox_curl_setopt_long(handle voidptr, option int, value i64) int
 fn C.vox_curl_setopt_pointer(handle voidptr, option int, value voidptr) int
-fn C.vox_curl_setopt_write(handle voidptr, option int, callback fn (voidptr, usize, usize, voidptr) usize) int
+fn C.vox_curl_setopt_write(handle voidptr, option int, callback fn (voidptr, uint, uint, voidptr) uint) int
 fn C.vox_curl_multi_setopt_pointer(handle voidptr, option int, value voidptr) int
 fn C.vox_curl_multi_setopt_socket(handle voidptr, callback fn (voidptr, int, int, voidptr, voidptr) int) int
 fn C.vox_curl_multi_setopt_timer(handle voidptr, callback fn (voidptr, i64, voidptr) int) int

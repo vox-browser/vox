@@ -32,8 +32,8 @@ pub fn (list &DOMRectList) item(index u32) ?&DOMRect {
 
 // Bindings::PlatformObject::item_value is a LibJS boundary. Returning the
 // typed object is the equivalent operation for V callers.
-pub fn (list &DOMRectList) item_value(index usize) ?&DOMRect {
-	if index >= usize(list.rects_.len) {
+pub fn (list &DOMRectList) item_value(index uint) ?&DOMRect {
+	if index >= uint(list.rects_.len) {
 		return none
 	}
 	return list.rects_[index]

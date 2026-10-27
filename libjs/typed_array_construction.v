@@ -5,7 +5,7 @@ module libjs
 // member. Callers provide that dependency until TypedArray intrinsics exist.
 pub fn create_typed_array_from_constructor(mut vm VM, kind BufferElementType, length u32, new_target &Object, intrinsic_prototype IntrinsicPrototypeGetter) !&TypedArray {
 	prototype := get_prototype_from_constructor(mut vm, new_target, intrinsic_prototype)!
-	buffer := ArrayBufferObject.create(mut vm, vm.realm(), usize(length) * kind.size(),
+	buffer := ArrayBufferObject.create(mut vm, vm.realm(), uint(length) * kind.size(),
 		vm.realm().array_buffer_prototype_record())!
 	return TypedArray.create(vm.realm(), kind, length, buffer, prototype)
 }
@@ -55,7 +55,7 @@ pub fn construct_typed_array(mut vm VM, kind BufferElementType, new_target &Obje
 		}
 		return err
 	}
-	validate_typed_array_length(mut vm, usize(length), kind.size())!
+	validate_typed_array_length(mut vm, uint(length), kind.size())!
 	return create_typed_array_from_constructor(mut vm, kind, u32(length), new_target,
 		intrinsic_prototype)
 }

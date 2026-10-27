@@ -5,10 +5,10 @@ import os
 $if gcboehm ? {
 	#include "@DIR/boehm_gc.h"
 
-	fn C.GC_get_heap_usage_safe(heap_size &usize, free_bytes &usize, unmapped_bytes &usize,
-		bytes_since_gc &usize, total_bytes &usize)
-	fn C.GC_get_free_space_divisor() usize
-	fn C.GC_set_free_space_divisor(divisor usize)
+	fn C.GC_get_heap_usage_safe(heap_size &uint, free_bytes &uint, unmapped_bytes &uint,
+		bytes_since_gc &uint, total_bytes &uint)
+	fn C.GC_get_free_space_divisor() uint
+	fn C.GC_set_free_space_divisor(divisor uint)
 	fn C.GC_call_with_alloc_lock(callback fn (voidptr) voidptr, context voidptr) voidptr
 
 	struct BrowserHeapPolicyResult {

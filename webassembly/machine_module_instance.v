@@ -51,9 +51,9 @@ pub fn (export_ &BinaryMachineExportInstance) value() BinaryMachineExternValue {
 
 pub struct BinaryMachineCompiledFunctionEntry {
 pub mut:
-	handler_ptr          usize
-	dispatches_ptr       usize
-	src_dst_ptr          usize
+	handler_ptr          uint
+	dispatches_ptr       uint
+	src_dst_ptr          uint
 	first_instruction    &BinaryInstruction           = unsafe { nil }
 	expression           &BinaryExpression            = unsafe { nil }
 	module               &BinaryMachineModuleInstance = unsafe { nil }
@@ -90,13 +90,13 @@ pub:
 	tags                     []u64
 	tag_types                []BinaryTagType
 	exports                  []BinaryMachineExportInstance
-	minimum_call_record_size usize
+	minimum_call_record_size uint
 }
 
 @[heap]
 pub struct BinaryMachineModuleInstance {
 pub mut:
-	cached_minimum_call_record_allocation_size usize
+	cached_minimum_call_record_allocation_size uint
 mut:
 	contents_                BinaryMachineModuleContents
 	resolved_memories_       []&BinaryMachineMemoryInstance

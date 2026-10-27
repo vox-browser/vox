@@ -116,7 +116,7 @@ fn test_typed_array_set_array_like_getters_convert_after_resize_and_stop_on_conv
 	parent := Object.create(vm.realm(), none)
 	for mode in ['shrink', 'detach', 'throw'] {
 		mut buffer := ArrayBufferObject.create(mut vm, vm.realm(), 4, parent)!
-		buffer.maximum_byte_length = usize(8)
+		buffer.maximum_byte_length = uint(8)
 		mut target := TypedArray.create(vm.realm(), .uint8, 0, buffer, parent)
 		initialize_typed_array_from_array_buffer(mut vm, mut target, buffer, Value.from_i32(0),
 			js_undefined())!

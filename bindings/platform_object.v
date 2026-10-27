@@ -203,7 +203,7 @@ pub fn (object &PlatformObject) wrappable_impl() ?&Wrappable {
 	return object.wrappable_impl_
 }
 
-pub fn (_ &PlatformObject) wrapped_implementation_offset() usize {
+pub fn (_ &PlatformObject) wrapped_implementation_offset() uint {
 	// V does not expose stable ABI field offsets. The wrapper bridge accesses the
 	// implementation through wrappable_impl() instead.
 	return 0

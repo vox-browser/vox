@@ -3,11 +3,11 @@ module browserjs
 
 #include "host_function_darwin.h"
 
-fn C.vox_install_js_host_function(context voidptr, name &char, record voidptr, callback fn (voidptr, voidptr, voidptr, usize, &voidptr, &voidptr) voidptr) bool
+fn C.vox_install_js_host_function(context voidptr, name &char, record voidptr, callback fn (voidptr, voidptr, voidptr, uint, &voidptr, &voidptr) voidptr) bool
 fn C.JSObjectGetPrivate(object voidptr) voidptr
 fn C.JSValueMakeString(context voidptr, string_value voidptr) voidptr
 fn C.JSValueMakeUndefined(context voidptr) voidptr
-fn C.JSObjectMakeError(context voidptr, count usize, arguments &voidptr, exception &voidptr) voidptr
+fn C.JSObjectMakeError(context voidptr, count uint, arguments &voidptr, exception &voidptr) voidptr
 
 fn host_function_error(context voidptr, message string, exception &voidptr) voidptr {
 	string_value := js_source_string(message)
@@ -20,7 +20,7 @@ fn host_function_error(context voidptr, message string, exception &voidptr) void
 	return C.JSValueMakeUndefined(context)
 }
 
-fn javascript_core_host_function(context voidptr, function voidptr, _ voidptr, count usize, arguments &voidptr, exception &voidptr) voidptr {
+fn javascript_core_host_function(context voidptr, function voidptr, _ voidptr, count uint, arguments &voidptr, exception &voidptr) voidptr {
 	record := unsafe { &HostFunctionRecord(C.JSObjectGetPrivate(function)) }
 	mut argument := C.JSValueMakeUndefined(context)
 	if count > 0 { argument = unsafe { arguments[0] } }

@@ -19,7 +19,7 @@ pub fn (mut vm RegexVm) handle_assert_start(multiline_flag bool) ?RegexVmResult 
 	return vm.fail_current_path()
 }
 
-pub fn (mut vm RegexVm) handle_assert_end(multiline_flag bool, input_len usize) ?RegexVmResult {
+pub fn (mut vm RegexVm) handle_assert_end(multiline_flag bool, input_len uint) ?RegexVmResult {
 	multiline := multiline_flag || vm.modifiers.multiline
 	at_end := vm.pos >= input_len || (multiline
 		&& regex_is_line_terminator(u32(vm.input_code_unit(vm.pos))))

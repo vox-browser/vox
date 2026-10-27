@@ -79,7 +79,7 @@ fn array_buffer_resize(mut vm VM) !Value {
 	mut buffer := this_array_buffer(mut vm)!
 	if buffer.is_fixed_length() { return vm.throw_error_type(.type_error, .fixed_array_buffer) }
 	require_unshared_buffer(mut vm, buffer)!
-	new_size := usize(vm.argument(0).to_index(mut vm)!)
+	new_size := uint(vm.argument(0).to_index(mut vm)!)
 	if buffer.is_detached() { return vm.throw_error_type(.type_error, .detached_array_buffer) }
 	if new_size > buffer.max_byte_length() {
 		return vm.throw_error_type(.range_error, .byte_length_exceeds_max_byte_length,
@@ -97,9 +97,9 @@ fn array_buffer_resize(mut vm VM) !Value {
 	return js_undefined()
 }
 
-fn buffer_slice_index(length usize, relative f64) usize {
+fn buffer_slice_index(length uint, relative f64) uint {
 	if math.is_inf(relative, -1) { return 0 }
-	return usize(if relative < 0 {
+	return uint(if relative < 0 {
 		math.max(f64(length) + relative, 0)
 	} else {
 		math.min(relative, f64(length))
@@ -118,7 +118,7 @@ fn array_buffer_slice(mut vm VM) !Value {
 	} else {
 		end.to_integer_or_infinity(mut vm)!
 	})
-	new_length := if final > first { final - first } else { usize(0) }
+	new_length := if final > first { final - first } else { uint(0) }
 	constructor := species_constructor(mut vm, buffer.object,
 		vm.realm().array_buffer_constructor_record())!
 	object := construct(mut vm, Value.from_object(constructor), [

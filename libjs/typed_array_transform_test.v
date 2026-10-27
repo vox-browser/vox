@@ -115,7 +115,7 @@ fn test_typed_array_filter_map_fixed_iteration_length_with_live_resizing_and_det
 		for mode in ['shrink', 'grow', 'detach'] {
 			mut buffer := ArrayBufferObject.create_from_bytes(vm.realm(), [u8(1), 2, 3], false,
 				parent)
-			buffer.maximum_byte_length = usize(8)
+			buffer.maximum_byte_length = uint(8)
 			mut source := TypedArray.create(vm.realm(), .uint8, 0, buffer, parent)
 			initialize_typed_array_from_array_buffer(mut vm, mut source, buffer, Value.from_i32(0),
 				js_undefined())!
@@ -124,9 +124,9 @@ fn test_typed_array_filter_map_fixed_iteration_length_with_live_resizing_and_det
 				log.values << vm.argument(0)
 				if vm.argument(1).number == 0 {
 					if mode == 'detach' { detach_array_buffer(mut vm, mut buffer, none)! } else { assert buffer.try_resize(if mode == 'shrink' {
-							usize(1)
+							uint(1)
 						} else {
-							usize(5)
+							uint(5)
 						}, true)
 					 }
 				}

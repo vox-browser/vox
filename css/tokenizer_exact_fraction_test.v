@@ -17,7 +17,7 @@ fn check_exact_fraction_consumer(spelling string, suffix string) f64 {
 	assert math.f64_bits(actual.value()) == math.f64_bits(expected), spelling
 	assert actual.type_() == .number
 	assert tokenizer.current_byte_offset() == prefix.len + spelling.len
-	assert tokenizer.position.column == usize(spelling.len)
+	assert tokenizer.position.column == uint(spelling.len)
 	return actual.value()
 }
 

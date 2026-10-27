@@ -3,8 +3,8 @@ module dom
 #include "element_interactive_data_test.h"
 
 $if gcboehm ? {
-	fn C.GC_size(voidptr) usize
-	fn C.GC_get_total_bytes() usize
+	fn C.GC_size(voidptr) uint
+	fn C.GC_get_total_bytes() uint
 	fn C.vox_dom_rare_watch(index u32, owner voidptr)
 	fn C.vox_dom_rare_collect(depth u32)
 	fn C.vox_dom_rare_worker(work fn ())
@@ -23,7 +23,7 @@ fn test_dom_rare_default_reads_and_default_writes_allocate_no_payloads() {
 		mut element := dom_rare_html(document, name)
 		assert element.html_rare_data_ == unsafe { nil }
 		assert element.interactive_data_ == unsafe { nil }
-		mut before := usize(0)
+		mut before := uint(0)
 		$if gcboehm ? { before = C.GC_get_total_bytes() }
 		for _ in 0 .. 32 {
 			assert element.popover_visibility_state() == .hidden
@@ -70,10 +70,10 @@ fn test_dom_rare_html_fields_preserve_values_and_clears() {
 	element.set_popover_showing_or_hiding(true)
 	element.set_popover_trigger(target)
 	element.set_opened_in_popover_mode('hint')
-	element.set_popover_close_watcher_handle(voidptr(usize(0x1234)))
+	element.set_popover_close_watcher_handle(voidptr(uint(0x1234)))
 	element.set_popover_toggle_task_id(73)
 	element.set_popover_toggle_old_state('closed')
-	element.set_attached_internals_handle(voidptr(usize(0x5678)))
+	element.set_attached_internals_handle(voidptr(uint(0x5678)))
 	element.set_click_in_progress(true)
 	element.set_inert(true)
 	element.set_cryptographic_nonce('secret')
@@ -81,9 +81,9 @@ fn test_dom_rare_html_fields_preserve_values_and_clears() {
 	assert element.popover_visibility_state() == .showing && element.popover_showing_or_hiding()
 	assert voidptr(element.popover_trigger() or { panic('missing trigger') }) == voidptr(target)
 	assert (element.opened_in_popover_mode() or { '' }) == 'hint'
-	assert element.popover_close_watcher_handle() == voidptr(usize(0x1234))
+	assert element.popover_close_watcher_handle() == voidptr(uint(0x1234))
 	assert element.popover_toggle_task_id() == 73 && element.popover_toggle_old_state() == 'closed'
-	assert element.attached_internals_handle() == voidptr(usize(0x5678))
+	assert element.attached_internals_handle() == voidptr(uint(0x5678))
 	assert element.click_in_progress() && element.inert() && element.cryptographic_nonce() == 'secret'
 	assert voidptr(element.labels_list() or { panic('missing labels') }) == voidptr(labels)
 	element.set_popover_visibility_state(.hidden)

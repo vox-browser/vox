@@ -19,7 +19,7 @@ fn test_source_memory_read_aligned_and_unaligned_values_match_verbatim_cpp_bodie
 		high := strconv.parse_uint(fields[4], 16, 64)!
 		mut data := [32]u8{}
 		unsafe { C.memcpy(&data[offset], bytes.data, bytes.len) }
-		view := BinaryMachineBytes{ data: unsafe { &data[offset] }, size: usize(bytes.len) }
+		view := BinaryMachineBytes{ data: unsafe { &data[offset] }, size: uint(bytes.len) }
 		actual := match fields[0] {
 			'i8' { BinaryMachineValue.from_i8(binary_machine_read_value[i8](view)) }
 			'u8' { BinaryMachineValue.from_u8(binary_machine_read_value[u8](view)) }
@@ -84,7 +84,7 @@ fn test_source_typed_load_overwrites_actual_borrowed_operand_for_all_address_mod
 	configuration.ip_ = 73
 	bytes := [u8(0x80), 0xff, 0xff, 0x7f, 0x21, 0x43, 0xf8, 0xff, 0x81, 0, 0, 0, 0, 0, 0, 0x80]!
 	mut buffer := second.data()
-	buffer.overwrite(5, &bytes[0], usize(bytes.len))
+	buffer.overwrite(5, &bytes[0], uint(bytes.len))
 	instruction := &BinaryInstruction{ arguments: BinaryMemoryArgument{ memory_index: 0, offset: 3, align: 31 } }
 	for mix in [BinarySourceAddressMix.all_registers, .all_call_records, .all_stack, .any] {
 		source := match mix {

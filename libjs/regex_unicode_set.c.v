@@ -45,7 +45,7 @@ pub fn regex_expand_range_case_insensitive(start u32, end u32) []RegexCharRange 
 
 // LibUnicode's for_each_case_folded_code_point and unicode_get_case_closure,
 // followed by the Rust get_case_closure wrapper's output-length boundary.
-pub fn regex_get_case_closure(code_point u32, mut output []u32) usize {
+pub fn regex_get_case_closure(code_point u32, mut output []u32) uint {
 	canonical := regex_canonicalize(code_point, true)
 	set := C.uset_open(int(canonical), int(canonical))
 	if unsafe { set == nil } { panic('ICU UnicodeSet allocation failed') }
@@ -59,11 +59,11 @@ pub fn regex_get_case_closure(code_point u32, mut output []u32) usize {
 				output[written] = point
 				written++
 			} else {
-				return usize(written)
+				return uint(written)
 			}
 		}
 	}
-	return usize(written)
+	return uint(written)
 }
 
 pub fn regex_code_point_matches_range_ignoring_case(code_point u32, start u32, end u32, unicode_mode bool) bool {

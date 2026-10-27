@@ -13,7 +13,7 @@ fn (fixture &SerializableFixture) serialization_steps(mut encoder TransferDataEn
 
 fn (_ &SerializableFixture) deserialization_steps(mut decoder TransferDataDecoder, mut memory DeserializationMemory) ! {
 	bytes := decoder.read(2)!
-	memory.objects[u32(bytes[0])] = voidptr(usize(bytes[1]))
+	memory.objects[u32(bytes[0])] = voidptr(uint(bytes[1]))
 }
 
 fn serialize_fixture(value Serializable, for_storage bool) ![]u8 {

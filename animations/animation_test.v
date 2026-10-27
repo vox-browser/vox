@@ -202,7 +202,7 @@ fn test_animation_recovers_relevant_settings_from_its_timeline_document() {
 	assert global_object == settings.global_object()
 	global_impl := animation.relevant_global_impl() or { panic('missing global implementation') }
 	assert global_impl == global_object
-	assert Animation.effect_offset() == usize(__offsetof(Animation, effect_))
+	assert Animation.effect_offset() == uint(__offsetof(Animation, effect_))
 }
 
 fn test_animation_numberish_validation_and_reverse() {

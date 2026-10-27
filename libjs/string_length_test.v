@@ -8,8 +8,8 @@ fn test_checked_js_string_length_arithmetic_retains_unsigned_32_bit_limit_withou
 	assert checked_js_string_length_sum(mut vm, limit, 0, .string_size_must_not_overflow)! == limit
 	assert checked_js_string_length_sum(mut vm, limit - 1, 1, .string_size_must_not_overflow)! == limit
 	assert checked_js_string_length_product(mut vm, limit, 1, .string_size_must_not_overflow)! == limit
-	assert checked_js_string_length_product(mut vm, ~usize(0), 0, .string_size_must_not_overflow)! == 0
-	for pair in [[limit, usize(1)], [~usize(0), usize(1)], [usize(0), ~usize(0)]] {
+	assert checked_js_string_length_product(mut vm, ~uint(0), 0, .string_size_must_not_overflow)! == 0
+	for pair in [[limit, uint(1)], [~uint(0), uint(1)], [uint(0), ~uint(0)]] {
 		if _ := checked_js_string_length_sum(mut vm, pair[0], pair[1],
 			.string_size_must_not_overflow)
 		{
@@ -19,7 +19,7 @@ fn test_checked_js_string_length_arithmetic_retains_unsigned_32_bit_limit_withou
 			assert thrown_value(err).as_object().error_message()?.str() == 'string size must not overflow'
 		}
 	}
-	for pair in [[limit, usize(2)], [~usize(0), usize(2)], [usize(2), ~usize(0)]] {
+	for pair in [[limit, uint(2)], [~uint(0), uint(2)], [uint(2), ~uint(0)]] {
 		if _ := checked_js_string_length_product(mut vm, pair[0], pair[1],
 			.string_repeat_count_must_not_overflow)
 		{

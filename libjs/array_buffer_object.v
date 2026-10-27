@@ -16,11 +16,11 @@ pub:
 mut:
 	block DataBlock
 pub mut:
-	maximum_byte_length ?usize
+	maximum_byte_length ?uint
 	detach_key          Value = js_undefined()
 }
 
-pub fn ArrayBufferObject.create(mut vm VM, realm &Realm, size usize, prototype &Object) !&ArrayBufferObject {
+pub fn ArrayBufferObject.create(mut vm VM, realm &Realm, size uint, prototype &Object) !&ArrayBufferObject {
 	owner := OwnedPrimitiveBackingStore.create_zeroed(size) or {
 		return vm.throw_error_type(.range_error, .not_enough_memory_to_allocate, size.str())
 	}
@@ -44,15 +44,15 @@ pub fn ArrayBufferObject.create_with_data_block(realm &Realm, block DataBlock, p
 	return buffer
 }
 
-pub fn (buffer &ArrayBufferObject) byte_length() usize { return buffer.block.size() }
+pub fn (buffer &ArrayBufferObject) byte_length() uint { return buffer.block.size() }
 
-pub fn (buffer &ArrayBufferObject) external_memory_size() usize { return buffer.block.external_memory_size() }
+pub fn (buffer &ArrayBufferObject) external_memory_size() uint { return buffer.block.external_memory_size() }
 
 pub fn (buffer &ArrayBufferObject) is_detached() bool { return buffer.block.is_empty() }
 
 pub fn (buffer &ArrayBufferObject) is_fixed_length() bool { return buffer.maximum_byte_length == none }
 
-pub fn (buffer &ArrayBufferObject) max_byte_length() usize {
+pub fn (buffer &ArrayBufferObject) max_byte_length() uint {
 	return buffer.maximum_byte_length or { panic('fixed buffer has no maximum byte length slot') }
 }
 
@@ -67,11 +67,11 @@ pub fn (mut buffer ArrayBufferObject) set_data_block(block DataBlock) {
 	buffer.block = block
 }
 
-pub fn (mut buffer ArrayBufferObject) try_resize(size usize, zero_fill_new_bytes bool) bool {
+pub fn (mut buffer ArrayBufferObject) try_resize(size uint, zero_fill_new_bytes bool) bool {
 	return buffer.block.try_resize(size, zero_fill_new_bytes)
 }
 
-pub fn (mut buffer ArrayBufferObject) try_ensure_capacity(capacity usize) bool {
+pub fn (mut buffer ArrayBufferObject) try_ensure_capacity(capacity uint) bool {
 	return buffer.block.try_ensure_capacity(capacity)
 }
 
@@ -79,20 +79,20 @@ pub fn (buffer &ArrayBufferObject) shares_storage_with(other &ArrayBufferObject)
 	return buffer.block.shares_storage_with(other.block)
 }
 
-pub fn (buffer &ArrayBufferObject) read_bytes(offset usize, count usize) []u8 {
+pub fn (buffer &ArrayBufferObject) read_bytes(offset uint, count uint) []u8 {
 	return buffer.block.read_bytes(offset, count)
 }
 
-pub fn (mut buffer ArrayBufferObject) overwrite(offset usize, bytes []u8) {
+pub fn (mut buffer ArrayBufferObject) overwrite(offset uint, bytes []u8) {
 	buffer.block.overwrite(offset, bytes)
 }
 
 // ArrayBuffer.h::move_data forwards to the owned DataBlock operation.
-pub fn (mut buffer ArrayBufferObject) move_data(destination_offset usize, source_offset usize, count usize) {
+pub fn (mut buffer ArrayBufferObject) move_data(destination_offset uint, source_offset uint, count uint) {
 	buffer.block.move_data(destination_offset, source_offset, count)
 }
 
-pub fn (buffer &ArrayBufferObject) copy_data_to(mut destination ArrayBufferObject, source_offset usize, destination_offset usize, count usize) {
+pub fn (buffer &ArrayBufferObject) copy_data_to(mut destination ArrayBufferObject, source_offset uint, destination_offset uint, count uint) {
 	buffer.block.copy_to(mut destination.block, source_offset, destination_offset, count)
 }
 
@@ -120,7 +120,7 @@ pub fn detach_array_buffer(mut vm VM, mut buffer ArrayBufferObject, key ?Value) 
 	buffer.detach_buffer()
 }
 
-pub fn array_buffer_byte_length(buffer &ArrayBufferObject, order BufferOrder) usize {
+pub fn array_buffer_byte_length(buffer &ArrayBufferObject, order BufferOrder) uint {
 	// The pinned source's shared-length event-record branch is a FIXME. Its
 	// active body reads the retained byte length after checking detachment.
 	assert !buffer.is_detached()

@@ -3,10 +3,10 @@ module platform
 import os
 
 pub const document_heap_element_threshold = 1024
-const document_heap_capacity = usize(320) * 1024 * 1024
+const document_heap_capacity = uint(320) * 1024 * 1024
 
 $if gcboehm ? {
-	fn C.GC_expand_hp(bytes usize) int
+	fn C.GC_expand_hp(bytes uint) int
 }
 
 // Large scripted documents create style and paint records in bulk, and retain

@@ -2,7 +2,7 @@ module css
 
 import dom
 
-fn checked_bucket_rule(index usize, text string) &MatchingRule {
+fn checked_bucket_rule(index uint, text string) &MatchingRule {
 	mut rule := &MatchingRule{
 		rule_index: index
 		selector: selector_from_text(text)
@@ -49,7 +49,7 @@ fn test_cached_rule_buckets_observe_empty_replaced_and_removed_entries() {
 		assert style_computer_collect_matching_rules_in_scope(computer, pseudo, .author,
 			mut attempted, none, scope).len == 0
 
-		base := usize(generation * 10)
+		base := uint(generation * 10)
 		class_rule := checked_bucket_rule(base + 1, '.card')
 		id_rule := checked_bucket_rule(base + 2, '#target')
 		tag_rule := checked_bucket_rule(base + 3, 'div')
@@ -67,7 +67,7 @@ fn test_cached_rule_buckets_observe_empty_replaced_and_removed_entries() {
 		assert actual.len == 4
 		for i, rule in [class_rule, id_rule, tag_rule, attribute_rule] {
 			assert voidptr(actual[i].rule) == voidptr(rule)
-			assert actual[i].rule.rule_index == base + usize(i) + 1
+			assert actual[i].rule.rule_index == base + uint(i) + 1
 		}
 		assert actual_pseudo.len == 1
 		assert voidptr(actual_pseudo[0].rule) == voidptr(pseudo_rule)
@@ -81,7 +81,7 @@ fn test_cached_rule_buckets_observe_empty_replaced_and_removed_entries() {
 		gc_collect()
 		assert actual.len == 4
 		for i in 0 .. 4 {
-			assert actual[i].rule.rule_index == base + usize(i) + 1
+			assert actual[i].rule.rule_index == base + uint(i) + 1
 		}
 		assert actual_pseudo[0].rule.rule_index == base + 5
 	}

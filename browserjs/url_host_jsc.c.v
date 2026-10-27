@@ -140,7 +140,7 @@ fn (mut host URLHost) string_value(text string) !voidptr {
 
 fn (mut host URLHost) array(values []voidptr) !voidptr {
 	mut exception := unsafe { nil }
-	actual := C.JSObjectMakeArray(host.runtime.context, usize(values.len), values.data, &exception)
+	actual := C.JSObjectMakeArray(host.runtime.context, uint(values.len), values.data, &exception)
 	if exception != unsafe { nil } { return host.runtime.actual_javascript_exception(exception) }
 	return host.runtime.retain_javascript_value(actual)
 }

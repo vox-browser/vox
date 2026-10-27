@@ -4,7 +4,7 @@ import platform
 
 $if gcboehm ? {
 	fn C.GC_gcollect()
-	fn C.GC_get_total_bytes() usize
+	fn C.GC_get_total_bytes() uint
 }
 
 fn test_native_font_is_shared_by_metrics_and_rendering_without_repeated_allocation() {

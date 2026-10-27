@@ -3,7 +3,7 @@ module libjs
 // LibRegex/Rust/src/vm.rs::{first_char_matches,first_filter_matches,
 // next_candidate_start}. These choose candidate positions; VM execution and
 // consuming scans are separate translation slices.
-pub fn regex_first_char_matches(program RegexProgram, input RegexInput, pos usize, target u32, case_insensitive bool) bool {
+pub fn regex_first_char_matches(program RegexProgram, input RegexInput, pos uint, target u32, case_insensitive bool) bool {
 	if pos >= input.len() { return false }
 	point := if program.unicode && is_utf16_high_surrogate(input.code_unit(pos))
 		&& pos + 1 < input.len() && is_utf16_low_surrogate(input.code_unit(pos + 1)) {
@@ -17,7 +17,7 @@ pub fn regex_first_char_matches(program RegexProgram, input RegexInput, pos usiz
 }
 
 // The source caller checks pos < input.len() before invoking this predicate.
-pub fn regex_first_filter_matches(program RegexProgram, input RegexInput, pos usize, filter RegexSimpleMatch) bool {
+pub fn regex_first_filter_matches(program RegexProgram, input RegexInput, pos uint, filter RegexSimpleMatch) bool {
 	point := regex_decode_code_point(program.unicode, input, pos)
 	return match filter {
 		RegexBuiltinCharacterClass {
@@ -45,7 +45,7 @@ pub fn regex_first_filter_matches(program RegexProgram, input RegexInput, pos us
 	}
 }
 
-pub fn regex_next_candidate_start(program RegexProgram, input RegexInput, hints RegexPatternHints, start usize) ?usize {
+pub fn regex_next_candidate_start(program RegexProgram, input RegexInput, hints RegexPatternHints, start uint) ?uint {
 	mut pos := start
 	for pos <= input.len() {
 		if program.unicode && !hints.can_match_empty && pos > 0 && pos < input.len()

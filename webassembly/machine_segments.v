@@ -19,7 +19,7 @@ pub fn BinaryMachineDataInstance.create(data []u8) BinaryMachineDataInstance {
 	return BinaryMachineDataInstance{ data_: BinaryMachineDataVector{ bytes: data } }
 }
 
-pub fn (instance &BinaryMachineDataInstance) size() usize { return usize(instance.data_.bytes.len) }
+pub fn (instance &BinaryMachineDataInstance) size() uint { return uint(instance.data_.bytes.len) }
 
 pub fn (mut instance BinaryMachineDataInstance) data() &BinaryMachineDataVector {
 	return &instance.data_

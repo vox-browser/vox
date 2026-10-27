@@ -80,7 +80,7 @@ pub:
 pub struct PerformanceEntryTuple {
 pub mut:
 	performance_entry_buffer []PerformanceEntry
-	max_buffer_size          usize
+	max_buffer_size          uint
 }
 
 pub type PerformanceObserverCallback = fn([]PerformanceEntry)
@@ -795,12 +795,12 @@ pub fn (mut scope WindowOrWorkerGlobalScopeMixin) add_resource_timing_entry(entr
 }
 
 pub fn (mut scope WindowOrWorkerGlobalScopeMixin) can_add_resource_timing_entry() bool {
-	return scope.resource_timing_buffer_current_size() < usize(scope.resource_timing_buffer_limit_)
+	return scope.resource_timing_buffer_current_size() < uint(scope.resource_timing_buffer_limit_)
 }
 
-pub fn (mut scope WindowOrWorkerGlobalScopeMixin) resource_timing_buffer_current_size() usize {
+pub fn (mut scope WindowOrWorkerGlobalScopeMixin) resource_timing_buffer_current_size() uint {
 	tuple := scope.relevant_performance_entry_tuple('resource')
-	return usize(tuple.performance_entry_buffer.len)
+	return uint(tuple.performance_entry_buffer.len)
 }
 
 pub fn (mut scope WindowOrWorkerGlobalScopeMixin) fire_resource_timing_buffer_full_event() {

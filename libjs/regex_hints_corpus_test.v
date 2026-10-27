@@ -351,8 +351,8 @@ fn test_regex_hints_and_prefilters_match_current_upstream_rust_exactly() {
 		 }
 		f := row.split('\t')
 		assert f.len == 8, row
-		a := usize(f[3].parse_uint(10, 64)!)
-		b := usize(f[4].parse_uint(10, 64)!)
+		a := uint(f[3].parse_uint(10, 64)!)
+		b := uint(f[4].parse_uint(10, 64)!)
 		mut actual := ''
 		match f[0] {
 			'analyze' {
@@ -377,8 +377,8 @@ fn test_regex_hints_and_prefilters_match_current_upstream_rust_exactly() {
 				actual = regex_hint_fixture_bit(regex_suffix_has_linear_tail(p.instructions, a))
 			}
 			'successors' {
-				mut out := &[]usize{}
-				regex_for_each_successor(regex_hint_fixture_instruction(f[2]), a, b, fn [mut out] (successor usize) {
+				mut out := &[]uint{}
+				regex_for_each_successor(regex_hint_fixture_instruction(f[2]), a, b, fn [mut out] (successor uint) {
 					out << successor
 				})
 				actual = if out.len == 0 { '-' } else { out.map(it.str()).join(',') }

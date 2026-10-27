@@ -93,8 +93,8 @@ pub fn GamepadEvent.create_with_timestamp(event_name string, init GamepadEventIn
 	}
 }
 
-pub fn GamepadEvent.gamepad_offset() usize {
-	return usize(__offsetof(GamepadEvent, gamepad_))
+pub fn GamepadEvent.gamepad_offset() uint {
+	return uint(__offsetof(GamepadEvent, gamepad_))
 }
 
 pub fn (event &GamepadEvent) gamepad() ?&Gamepad {

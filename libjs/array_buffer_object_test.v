@@ -7,7 +7,7 @@ fn test_array_buffer_records_keep_slots_and_empty_storage_distinct_from_detachme
 	mut vm := VM.create()
 	create_simple_execution_context(mut vm)
 	prototype := Object.create(vm.realm(), none)
-	for size in [usize(0), 4] {
+	for size in [uint(0), 4] {
 		mut buffer := ArrayBufferObject.create(mut vm, vm.realm(), size, prototype)!
 		assert voidptr(buffer.object.prototype?) == voidptr(prototype)
 		assert voidptr(buffer.object.array_buffer?) == voidptr(buffer)
@@ -30,7 +30,7 @@ fn test_array_buffer_host_resize_zero_fills_truncated_data_and_retains_maximum_s
 	create_simple_execution_context(mut vm)
 	prototype := Object.create(vm.realm(), none)
 	mut buffer := ArrayBufferObject.create_from_bytes(vm.realm(), [u8(1), 2, 3, 4], false, prototype)
-	buffer.maximum_byte_length = usize(32)
+	buffer.maximum_byte_length = uint(32)
 	assert !buffer.is_fixed_length() && buffer.max_byte_length() == 32
 	assert vm.host_resize_array_buffer(mut buffer, 2)! == .handled
 	assert vm.host_resize_array_buffer(mut buffer, 6)! == .handled

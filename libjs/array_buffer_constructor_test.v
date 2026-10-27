@@ -97,9 +97,9 @@ fn test_array_buffer_constructor_rewrites_only_length_range_errors_and_preserves
 		Value.from_f64(0.9), Value.from_string(vm.create_string_from_str('3'))] {
 		buffer := construct(mut vm, function, [value, Value.from_i32(8)], none)!.array_buffer?
 		assert buffer.byte_length() == if value.is_string() {
-			usize(3)
+			uint(3)
 		} else {
-			usize(0)
+			uint(0)
 		}
 		assert buffer.is_fixed_length() && !buffer.is_detached()
 	}

@@ -242,7 +242,7 @@ fn (mut runtime Runtime) indexed_db_transaction(mut binding IndexedDBBinding, tr
 }
 
 fn (mut runtime Runtime) indexed_db_store(mut binding IndexedDBBinding, input indexeddb.IDBObjectStore) !voidptr {
-	key := '${usize(input.transaction)}:${input.name()}'
+	key := '${uint(input.transaction)}:${input.name()}'
 	if wrapper := binding.stores[key] { return wrapper }
 	store := &indexeddb.IDBObjectStore{ ...input }
 	entry := &IndexedDBBindingEntry{ kind: .object_store, store: store }

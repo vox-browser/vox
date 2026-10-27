@@ -1,7 +1,7 @@
 module css
 
 $if gcboehm ? {
-	fn C.GC_get_total_bytes() usize
+	fn C.GC_get_total_bytes() uint
 }
 
 fn test_default_variation_axes_reads_and_owned_copies_allocate_nothing() {
@@ -9,7 +9,7 @@ fn test_default_variation_axes_reads_and_owned_copies_allocate_nothing() {
 	other := FontVariationSettings{}
 	mut copies := []FontVariationSettings{len: 1024}
 	mut checks := 0
-	mut before := usize(0)
+	mut before := uint(0)
 	$if gcboehm ? { before = C.GC_get_total_bytes() }
 	for index in 0 .. copies.len {
 		if settings.axis_value('missing') == none { checks++ }
@@ -19,7 +19,7 @@ fn test_default_variation_axes_reads_and_owned_copies_allocate_nothing() {
 		settings.remove_axis('missing')
 		copies[index] = settings.owned_clone()
 	}
-	mut allocated := usize(0)
+	mut allocated := uint(0)
 	$if gcboehm ? { allocated = C.GC_get_total_bytes() - before }
 	assert allocated == 0
 	assert checks == 4096

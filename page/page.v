@@ -60,8 +60,8 @@ pub:
 
 pub struct FindInPageResult {
 pub:
-	current_match_index usize
-	total_match_count   ?usize
+	current_match_index uint
+	total_match_count   ?uint
 }
 
 pub struct SearchDocument {
@@ -220,7 +220,7 @@ mut:
 	canvas_elements_                             map[u64]CanvasElementState
 	media_context_element_                       ?u64
 	context_menu_request_                        ?ContextMenuRequest
-	active_screen_wake_lock_count_               usize
+	active_screen_wake_lock_count_               uint
 	mute_state_                                  MuteState
 	user_style_                                  ?string
 	preferred_color_scheme_override_for_testing_ ?string
@@ -232,7 +232,7 @@ mut:
 	compositor_context_                          ?&compositor.CompositorContextHandle
 	last_find_query_                             ?FindInPageQuery
 	last_find_url_                               string
-	find_match_index_                            usize
+	find_match_index_                            uint
 	listen_for_dom_mutations_                    bool
 	viewport_fullscreen_                         bool
 	fullscreen_ipc_sent_                         bool
@@ -1230,7 +1230,7 @@ fn (mut p Page) perform_find(query FindInPageQuery, delta int) FindInPageResult 
 	if matches.len == 0 {
 		p.selected_match = none
 		return FindInPageResult{
-			total_match_count: usize(0)
+			total_match_count: uint(0)
 		}
 	}
 	mut direction := delta
@@ -1253,7 +1253,7 @@ fn (mut p Page) perform_find(query FindInPageQuery, delta int) FindInPageResult 
 	} else if direction < 0 {
 		if p.find_match_index_ == 0 {
 			if query.wrap_around == .no { return FindInPageResult{} }
-			p.find_match_index_ = usize(matches.len - 1)
+			p.find_match_index_ = uint(matches.len - 1)
 		} else {
 			p.find_match_index_--
 		}
@@ -1264,7 +1264,7 @@ fn (mut p Page) perform_find(query FindInPageQuery, delta int) FindInPageResult 
 	p.selected_match = matches[p.find_match_index_]
 	return FindInPageResult{
 		current_match_index: p.find_match_index_
-		total_match_count:   usize(matches.len)
+		total_match_count:   uint(matches.len)
 	}
 }
 

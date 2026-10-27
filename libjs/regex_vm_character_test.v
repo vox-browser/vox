@@ -64,7 +64,7 @@ fn test_regex_vm_word_boundaries_use_adjacent_code_units_and_ignore_direction() 
 					false,
 				] }
 			for pos, boundary in expected {
-				vm.pos = usize(pos)
+				vm.pos = uint(pos)
 				assert vm.at_word_boundary() == boundary
 				vm.backward = true
 				assert vm.at_word_boundary() == boundary
@@ -76,7 +76,7 @@ fn test_regex_vm_word_boundaries_use_adjacent_code_units_and_ignore_direction() 
 	mut vm := RegexVm.new(&RegexProgram{}, RegexAsciiInput{ bytes: [u8(0x5f), 0x80, 0x35] }, 0, mut
 		scratch)
 	for pos in 0 .. 4 {
-		vm.pos = usize(pos)
+		vm.pos = uint(pos)
 		assert vm.at_word_boundary()
 	}
 }

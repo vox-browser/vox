@@ -6,13 +6,13 @@ fn replace_string_html_quotes(text Utf16String) Utf16String {
 	if text.is_empty() || u16(0x0022) !in text.data { return text }
 	needle := Utf16String.from_slice([u16(0x0022)])
 	mut units := []u16{}
-	mut remaining := usize(0)
+	mut remaining := uint(0)
 	for {
 		index := string_index_of(text, needle, remaining) or { break }
 		units << text.data[int(remaining)..int(index)]
 		units << utf16('&quot;')
 		remaining = index + 1
-		if remaining == usize(text.len()) { break
+		if remaining == uint(text.len()) { break
 		 }
 	}
 	units << text.data[int(remaining)..]

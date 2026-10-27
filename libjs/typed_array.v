@@ -71,16 +71,16 @@ pub fn (array &TypedArray) is_unclamped_integer_element_type() bool {
 	return array.kind in [.int8, .int16, .int32, .uint8, .uint16, .uint32]
 }
 
-pub fn (array &TypedArray) get_value_from_buffer(mut vm VM, byte_index usize, order BufferOrder, little_endian bool) Value {
+pub fn (array &TypedArray) get_value_from_buffer(mut vm VM, byte_index uint, order BufferOrder, little_endian bool) Value {
 	return array.viewed_buffer.get_value(mut vm, byte_index, array.kind, true, order, little_endian)
 }
 
-pub fn (mut array TypedArray) set_value_in_buffer(mut vm VM, byte_index usize, value Value, order BufferOrder, little_endian bool) {
+pub fn (mut array TypedArray) set_value_in_buffer(mut vm VM, byte_index uint, value Value, order BufferOrder, little_endian bool) {
 	mut buffer := array.viewed_buffer
 	buffer.set_value(mut vm, byte_index, array.kind, value, true, order, little_endian)
 }
 
-pub fn (mut array TypedArray) get_modify_set_value_in_buffer(mut vm VM, byte_index usize, value Value, operation ReadWriteModifyFunction, little_endian bool) Value {
+pub fn (mut array TypedArray) get_modify_set_value_in_buffer(mut vm VM, byte_index uint, value Value, operation ReadWriteModifyFunction, little_endian bool) Value {
 	mut buffer := array.viewed_buffer
 	return buffer.get_modify_set_value(mut vm, byte_index, array.kind, value, operation,
 		little_endian)
@@ -145,7 +145,7 @@ pub fn is_valid_integer_index(array &TypedArray, index CanonicalIndex) bool {
 	if !array.array_length.is_auto() {
 		length := array_buffer_byte_length(array.viewed_buffer, .unordered)
 		end := array.byte_offset + array.array_length.length() * array.element_size()
-		return usize(array.byte_offset) <= length && usize(end) <= length
+		return uint(array.byte_offset) <= length && uint(end) <= length
 			&& index.as_index() < array.array_length.length()
 	}
 	record := make_typed_array_with_buffer_witness_record(array, .unordered)
@@ -153,14 +153,14 @@ pub fn is_valid_integer_index(array &TypedArray, index CanonicalIndex) bool {
 	return index.as_index() < typed_array_length(record)
 }
 
-// Retain the source's checked usize address arithmetic and overflow result.
-fn (array &TypedArray) element_byte_index(index CanonicalIndex) ?usize {
-	value := usize(index.as_index())
-	maximum := ~usize(0)
-	if value > maximum / usize(array.element_size()) { return none }
-	product := value * usize(array.element_size())
-	if product > maximum - usize(array.byte_offset) { return none }
-	return product + usize(array.byte_offset)
+// Retain the source's checked uint address arithmetic and overflow result.
+fn (array &TypedArray) element_byte_index(index CanonicalIndex) ?uint {
+	value := uint(index.as_index())
+	maximum := ~uint(0)
+	if value > maximum / uint(array.element_size()) { return none }
+	product := value * uint(array.element_size())
+	if product > maximum - uint(array.byte_offset) { return none }
+	return product + uint(array.byte_offset)
 }
 
 pub fn typed_array_get_element(array &TypedArray, index CanonicalIndex) Value {

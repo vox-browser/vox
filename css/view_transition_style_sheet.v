@@ -6,7 +6,7 @@ import dom
 fn insert_view_transition_rule(target voidptr, text string) voidptr {
 	mut sheet := unsafe { &CSSStyleSheet(target) }
 	index := sheet.insert_rule(text, u32(sheet.rules.length())) or { panic(err) }
-	rule := sheet.rules.item(usize(index)) or { panic('Inserted view-transition rule is missing') }
+	rule := sheet.rules.item(uint(index)) or { panic('Inserted view-transition rule is missing') }
 	return voidptr(rule)
 }
 

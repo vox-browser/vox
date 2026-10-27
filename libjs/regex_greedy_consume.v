@@ -2,9 +2,9 @@ module libjs
 
 // LibRegex/Rust/src/vm.rs::Vm::greedy_consume_fast, for forward legacy mode.
 // The updated reference position is returned beside the consumed count because
-// V does not accept a mutable usize function argument. The source caller keeps
+// V does not accept a mutable uint function argument. The source caller keeps
 // start <= input.len(), including for the dot-all subtraction shortcut.
-pub fn regex_greedy_consume_fast(input RegexInput, start usize, matcher RegexSimpleMatch, modifiers RegexActiveModifiers, maximum ?u32) (u32, usize) {
+pub fn regex_greedy_consume_fast(input RegexInput, start uint, matcher RegexSimpleMatch, modifiers RegexActiveModifiers, maximum ?u32) (u32, uint) {
 	mut pos := start
 	mut count := u32(0)
 	limit := maximum or { u32(0xffffffff) }
@@ -13,7 +13,7 @@ pub fn regex_greedy_consume_fast(input RegexInput, start usize, matcher RegexSim
 		RegexAnyChar {
 			if matcher.dot_all || modifiers.dot_all {
 				remaining := length - pos
-				advance := if remaining < usize(limit) { remaining } else { usize(limit) }
+				advance := if remaining < uint(limit) { remaining } else { uint(limit) }
 				pos += advance
 				count = u32(advance)
 			} else {

@@ -2112,7 +2112,7 @@ fn (mut parser RuleSelectorParser) convert_to_font_feature_values_rule(rule AtRu
 		// @ornaments = @ornaments { <declaration-list> }
 		// @annotation = @annotation { <declaration-list> }
 		mut feature_values_map := ?&CSSFontFeatureValuesMap(none)
-		mut max_value_count := usize(1)
+		mut max_value_count := uint(1)
 
 		if equals_ignoring_ascii_case(at_rule.name, 'stylistic') {
 			feature_values_map = font_feature_values_rule.stylistic()
@@ -2163,7 +2163,7 @@ fn (mut parser RuleSelectorParser) convert_to_font_feature_values_rule(rule AtRu
 				return
 			}
 
-			if usize(values.len) > max_value_count {
+			if uint(values.len) > max_value_count {
 				parser_report_error(ParsingError(InvalidRuleError{
 					rule_name: '@${at_rule.name}'
 					prelude: parser_component_values_to_string(declaration.value)

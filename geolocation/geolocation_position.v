@@ -85,8 +85,8 @@ pub fn GeolocationPosition.create(coords &GeolocationCoordinates, timestamp Epoc
 	}
 }
 
-pub fn GeolocationPosition.coords_offset() usize {
-	return usize(__offsetof(GeolocationPosition, coords_))
+pub fn GeolocationPosition.coords_offset() uint {
+	return uint(__offsetof(GeolocationPosition, coords_))
 }
 
 pub fn (position &GeolocationPosition) coords() &GeolocationCoordinates {

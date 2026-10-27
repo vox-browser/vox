@@ -115,7 +115,7 @@ fn test_data_view_getters_and_numeric_methods_recompute_fixed_and_tracking_bound
 	create_simple_execution_context(mut vm)
 	realm := vm.realm()
 	mut buffer := allocate_array_buffer(mut vm, realm.array_buffer_constructor_record(), 8,
-		usize(12))!
+		uint(12))!
 	fixed := DataView.create(realm, buffer, ByteLength.from_u32(4), 2,
 		realm.data_view_prototype_record())
 	tracking := DataView.create(realm, buffer, ByteLength.auto_length(), 2,
@@ -169,7 +169,7 @@ fn test_data_view_setters_convert_index_and_value_before_bounds_and_never_coerce
 		'out of range'] {
 		mut log := &ViewOperationLog{}
 		mut buffer := allocate_array_buffer(mut vm, realm.array_buffer_constructor_record(), 8,
-			usize(12))!
+			uint(12))!
 		view := DataView.create(realm, buffer, ByteLength.from_u32(4), 2,
 			realm.data_view_prototype_record())
 		mut arguments := []Value{}

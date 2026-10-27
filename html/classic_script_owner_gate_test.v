@@ -11,7 +11,7 @@ fn classic_script_owner_fixture(value string) !(&page.Page, &dom.Document, &Scri
 	return owner, document, settings.realm()
 }
 
-fn classic_owner_parse(source string, _ string, _ usize) ! {
+fn classic_owner_parse(source string, _ string, _ uint) ! {
 	if source == 'invalid' { return error('original parse failure') }
 }
 
@@ -62,7 +62,7 @@ fn test_source_classic_preparsed_and_compiled_constructors_retain_original_sourc
 	owner.set_is_scripting_enabled(true)
 	assert compiled.run(.yes)!.string_data == 'original compiled source'
 	owner.set_is_scripting_enabled(false)
-	cached := ClassicScript.create_from_bytecode_cache('cache.js', 'original cache source', realm, dom.url_about_blank(), [], fn (_ []u8, _ string, _ string, _ usize, _ ScriptProgramType) !&ScriptExecutable {
+	cached := ClassicScript.create_from_bytecode_cache('cache.js', 'original cache source', realm, dom.url_about_blank(), [], fn (_ []u8, _ string, _ string, _ uint, _ ScriptProgramType) !&ScriptExecutable {
 		return error('cache failure')
 	}, .no)
 	assert cached.source == 'original cache source' && cached.error_to_rethrow? == 'cache failure'

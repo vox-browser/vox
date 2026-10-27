@@ -54,8 +54,8 @@ fn observe_source_interception(navigation &Navigation, state &InterceptState) {
 			observed.error_information << ErrorInformation{
 				message:  event.message()
 				filename: event.filename()
-				lineno:   usize(event.lineno())
-				colno:    usize(event.colno())
+				lineno:   uint(event.lineno())
+				colno:    uint(event.colno())
 				error:    event.error()
 			}
 			return dom.js_undefined()

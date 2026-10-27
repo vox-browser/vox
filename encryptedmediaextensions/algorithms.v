@@ -203,7 +203,7 @@ pub fn get_supported_configuration_and_consent(implementation KeySystem, candida
 pub fn get_supported_configuration(implementation KeySystem, candidate_configuration MediaKeySystemConfiguration, origin dom.Origin) ?ConsentConfiguration {
 	mut supported_configuration := ?ConsentConfiguration(ConsentConfiguration{})
 	mut restrictions := MediaKeyRestrictions{}
-	mut loop_count := usize(0)
+	mut loop_count := uint(0)
 	for supported_configuration != none
 		&& supported_configuration or { break }.status == .consent_denied {
 		supported_configuration = get_supported_configuration_and_consent(implementation,

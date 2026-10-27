@@ -52,7 +52,7 @@ pub fn string_prototype_split(mut vm VM, array_prototype &Object) !Value {
 		return Value.from_object(object)
 	}
 	mut search_start := 0
-	mut match_index := string_index_of(text.utf16, separator, usize(search_start))
+	mut match_index := string_index_of(text.utf16, separator, uint(search_start))
 	for {
 		index := match_index or { break }
 		substring :=
@@ -63,7 +63,7 @@ pub fn string_prototype_split(mut vm VM, array_prototype &Object) !Value {
 		array_length++
 		if array_length == limit { return Value.from_object(object) }
 		search_start = int(index) + separator_length
-		match_index = string_index_of(text.utf16, separator, usize(search_start))
+		match_index = string_index_of(text.utf16, separator, uint(search_start))
 	}
 	substring := vm.create_string(Utf16String.from_slice(text.utf16.data[search_start..]))
 	defined := object.create_data_property_or_throw(mut vm, PropertyName.from_number(array_length),

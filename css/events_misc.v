@@ -405,7 +405,7 @@ pub mut:
 	type_                 StyleSheetIdentifierType
 	dom_element_unique_id ?u64
 	url                   ?string
-	rule_count            usize
+	rule_count            uint
 }
 
 pub fn (s StyleSheetIdentifier) equals(other StyleSheetIdentifier) bool {

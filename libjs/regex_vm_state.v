@@ -15,33 +15,33 @@ pub type RegexSavedState = RegexSavedNormal | RegexSavedGreedy | RegexSavedLazy
 pub struct RegexSavedNormal {
 pub mut:
 	pc                  u32
-	pos                 usize
-	reg_snapshot_offset usize
+	pos                 uint
+	reg_snapshot_offset uint
 	modifiers           RegexActiveModifiers
-	modifier_stack_len  usize
+	modifier_stack_len  uint
 }
 
 pub struct RegexSavedGreedy {
 pub mut:
 	pc                  u32
-	start_pos           usize
-	current_pos         usize
-	reg_snapshot_offset usize
+	start_pos           uint
+	current_pos         uint
+	reg_snapshot_offset uint
 	min                 u32
 	backward            bool
 	modifiers           RegexActiveModifiers
-	modifier_stack_len  usize
+	modifier_stack_len  uint
 }
 
 pub struct RegexSavedLazy {
 pub mut:
 	pc                  u32
-	pos                 usize
-	reg_snapshot_offset usize
+	pos                 uint
+	reg_snapshot_offset uint
 	max                 ?u32
 	consumed            u32
 	modifiers           RegexActiveModifiers
-	modifier_stack_len  usize
+	modifier_stack_len  uint
 }
 
 @[heap]
@@ -63,18 +63,18 @@ pub:
 	input   RegexInput
 pub mut:
 	pc        u32
-	pos       usize
+	pos       uint
 	scratch   &RegexVmScratch @[required]
 	steps     u64
 	modifiers RegexActiveModifiers
 	backward  bool
-	bt_floor  usize
+	bt_floor  uint
 }
 
 // The VM borrows the stable program/input and this scratch owner. Callers must
 // retain all three and use one active VM per scratch, matching Rust's exclusive
 // borrow of the four vectors. One owner reference replaces four vector borrows.
-pub fn RegexVm.new(program &RegexProgram, input RegexInput, start_pos usize, mut scratch RegexVmScratch) &RegexVm {
+pub fn RegexVm.new(program &RegexProgram, input RegexInput, start_pos uint, mut scratch RegexVmScratch) &RegexVm {
 	if program.register_count > u32(max_int) {
 		panic('Regex register count exceeds V array capacity')
 	}
@@ -102,15 +102,15 @@ pub fn RegexVm.new(program &RegexProgram, input RegexInput, start_pos usize, mut
 	}
 }
 
-pub fn (vm RegexVm) input_len() usize {
+pub fn (vm RegexVm) input_len() uint {
 	return vm.input.len()
 }
 
-pub fn (vm RegexVm) input_code_unit(pos usize) u16 {
+pub fn (vm RegexVm) input_code_unit(pos uint) u16 {
 	return vm.input.code_unit(pos)
 }
 
-pub fn (mut vm RegexVm) reset(pos usize) {
+pub fn (mut vm RegexVm) reset(pos uint) {
 	vm.pc = 0
 	vm.pos = pos
 	for index in 0 .. vm.scratch.registers.len {
@@ -129,17 +129,17 @@ pub fn (mut vm RegexVm) reset(pos usize) {
 	vm.bt_floor = 0
 }
 
-pub fn (mut vm RegexVm) snapshot_registers() usize {
-	offset := usize(vm.scratch.register_pool.len)
+pub fn (mut vm RegexVm) snapshot_registers() uint {
+	offset := uint(vm.scratch.register_pool.len)
 	vm.scratch.register_pool << vm.scratch.registers
 	return offset
 }
 
-pub fn (mut vm RegexVm) restore_registers(reg_snapshot_offset usize) {
+pub fn (mut vm RegexVm) restore_registers(reg_snapshot_offset uint) {
 	reg_count := vm.scratch.registers.len
 	// Rust validates the whole slice before copying, including an empty slice.
-	if reg_snapshot_offset > usize(vm.scratch.register_pool.len)
-		|| usize(reg_count) > usize(vm.scratch.register_pool.len) - reg_snapshot_offset {
+	if reg_snapshot_offset > uint(vm.scratch.register_pool.len)
+		|| uint(reg_count) > uint(vm.scratch.register_pool.len) - reg_snapshot_offset {
 		panic('Regex register snapshot index out of bounds')
 	}
 	start := int(reg_snapshot_offset)
@@ -149,20 +149,20 @@ pub fn (mut vm RegexVm) restore_registers(reg_snapshot_offset usize) {
 	}
 }
 
-pub fn (mut vm RegexVm) push_backtrack(pc u32, pos usize) {
+pub fn (mut vm RegexVm) push_backtrack(pc u32, pos uint) {
 	offset := vm.snapshot_registers()
 	vm.scratch.backtrack_stack << RegexSavedNormal{
 		pc:                  pc
 		pos:                 pos
 		reg_snapshot_offset: offset
 		modifiers:           vm.modifiers
-		modifier_stack_len:  usize(vm.scratch.modifier_stack.len)
+		modifier_stack_len:  uint(vm.scratch.modifier_stack.len)
 	}
 }
 
-pub fn (mut vm RegexVm) push_backtrack_modified(pc u32, pos usize, mod_index usize, mod_value i32) {
+pub fn (mut vm RegexVm) push_backtrack_modified(pc u32, pos uint, mod_index uint, mod_value i32) {
 	offset := vm.snapshot_registers()
-	if mod_index >= usize(vm.scratch.registers.len) {
+	if mod_index >= uint(vm.scratch.registers.len) {
 		panic('Regex register snapshot index out of bounds')
 	}
 	vm.scratch.register_pool[int(offset + mod_index)] = mod_value
@@ -171,11 +171,11 @@ pub fn (mut vm RegexVm) push_backtrack_modified(pc u32, pos usize, mod_index usi
 		pos:                 pos
 		reg_snapshot_offset: offset
 		modifiers:           vm.modifiers
-		modifier_stack_len:  usize(vm.scratch.modifier_stack.len)
+		modifier_stack_len:  uint(vm.scratch.modifier_stack.len)
 	}
 }
 
-pub fn (mut vm RegexVm) push_greedy_backtrack(pc u32, start_pos usize, current_pos usize, min u32) {
+pub fn (mut vm RegexVm) push_greedy_backtrack(pc u32, start_pos uint, current_pos uint, min u32) {
 	offset := vm.snapshot_registers()
 	vm.scratch.backtrack_stack << RegexSavedGreedy{
 		pc:                  pc
@@ -185,11 +185,11 @@ pub fn (mut vm RegexVm) push_greedy_backtrack(pc u32, start_pos usize, current_p
 		min:                 min
 		backward:            vm.backward
 		modifiers:           vm.modifiers
-		modifier_stack_len:  usize(vm.scratch.modifier_stack.len)
+		modifier_stack_len:  uint(vm.scratch.modifier_stack.len)
 	}
 }
 
-pub fn (mut vm RegexVm) push_lazy_backtrack(pc u32, pos usize, max ?u32, consumed u32) {
+pub fn (mut vm RegexVm) push_lazy_backtrack(pc u32, pos uint, max ?u32, consumed u32) {
 	offset := vm.snapshot_registers()
 	vm.scratch.backtrack_stack << RegexSavedLazy{
 		pc:                  pc
@@ -198,7 +198,7 @@ pub fn (mut vm RegexVm) push_lazy_backtrack(pc u32, pos usize, max ?u32, consume
 		max:                 max
 		consumed:            consumed
 		modifiers:           vm.modifiers
-		modifier_stack_len:  usize(vm.scratch.modifier_stack.len)
+		modifier_stack_len:  uint(vm.scratch.modifier_stack.len)
 	}
 }
 

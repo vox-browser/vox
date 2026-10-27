@@ -59,7 +59,7 @@ pub fn (mut interpreter BinaryMachineBytecodeInterpreter) trap_if_not(value bool
 	return false
 }
 
-pub fn (mut interpreter BinaryMachineBytecodeInterpreter) trap_if_insufficient_native_stack_space(minimum usize) bool {
+pub fn (mut interpreter BinaryMachineBytecodeInterpreter) trap_if_insufficient_native_stack_space(minimum uint) bool {
 	return interpreter.trap_if_not(interpreter.stack_info_.size_free() >= minimum, 'STACK-EXHAUSTION')
 }
 

@@ -153,7 +153,7 @@ pub fn invoke_intersection_observer_callback(observer &IntersectionObserver, que
 struct ObservationTarget {
 mut:
 	target                   &dom.Element
-	previous_threshold_index ?usize
+	previous_threshold_index ?uint
 	previous_is_intersecting bool
 }
 
@@ -187,9 +187,9 @@ fn dom_observer_observation_targets(target voidptr) []dom.IntersectionObserverOb
 	return targets
 }
 
-fn dom_observer_update_target_state(target voidptr, observed_target_index usize, threshold_index usize, is_intersecting bool) {
+fn dom_observer_update_target_state(target voidptr, observed_target_index uint, threshold_index uint, is_intersecting bool) {
 	mut observer := unsafe { &IntersectionObserver(target) }
-	if observed_target_index >= usize(observer.observation_targets_.len) {
+	if observed_target_index >= uint(observer.observation_targets_.len) {
 		return
 	}
 	observer.observation_targets_[observed_target_index].previous_threshold_index = threshold_index

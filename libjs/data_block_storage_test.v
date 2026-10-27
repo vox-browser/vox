@@ -5,7 +5,7 @@ import libgc
 fn test_data_block_native_storage_retains_large_reservations_without_narrowing() {
 	mut vm := VM.create()
 	create_simple_execution_context(mut vm)
-	capacity := usize(u64(1) << 31) + 65536
+	capacity := uint(u64(1) << 31) + 65536
 	mut block := create_byte_data_block(mut vm, 0, capacity)!
 	defer { block.destroy() }
 	assert block.size() == 0 && block.capacity() == capacity && !block.is_empty()
@@ -26,7 +26,7 @@ fn test_data_block_external_handles_alias_current_storage_and_keep_fixed_lengths
 	defer { owner.destroy() }
 	handle := owner.handle()
 	mut dynamic := DataBlock.from_external_primitive_storage(voidptr(owner), handle, none, true)
-	mut fixed := DataBlock.from_external_primitive_storage(voidptr(owner), handle, usize(4), true)
+	mut fixed := DataBlock.from_external_primitive_storage(voidptr(owner), handle, uint(4), true)
 	assert dynamic.is_external() && dynamic.is_caged() && dynamic.is_shared
 	assert dynamic.external.owner == voidptr(owner) && dynamic.external_memory_size() == 0
 	assert dynamic.shares_storage_with(fixed) && dynamic.size() == 4
@@ -49,12 +49,12 @@ fn test_data_block_cage_wrap_chunks_and_readonly_callbacks_use_actual_pointers()
 	assert block.contiguous_bytes_from(cage - block.offset() - 2, 8) == 2
 	assert block.contiguous_bytes_before(cage - block.offset() + 2, 8) == 2
 	assert block.data_at(cage + 1) == unsafe { block.data_at(0) + 1 }
-	observed := block.with_readonly_bytes[usize](1, 2, fn (bytes DataBlockBytes) usize {
+	observed := block.with_readonly_bytes[uint](1, 2, fn (bytes DataBlockBytes) uint {
 		assert bytes.size == 2
 		assert unsafe { bytes.data[0] } == 8 && unsafe { bytes.data[1] } == 15
-		return usize(bytes.data)
+		return uint(bytes.data)
 	})
-	assert observed == usize(block.data_at(1))
+	assert observed == uint(block.data_at(1))
 	empty := block.with_readonly_bytes[bool](4, 0, fn (bytes DataBlockBytes) bool {
 		return bytes.size == 0 && bytes.data == unsafe { nil }
 	})
@@ -62,7 +62,7 @@ fn test_data_block_cage_wrap_chunks_and_readonly_callbacks_use_actual_pointers()
 	zero_owner := OwnedPrimitiveBackingStore.create_zeroed(0)!
 	mut zero := DataBlock.from_owned_store(zero_owner, false)
 	assert zero.is_caged() && !zero.is_empty() && zero.data_at(0) == unsafe { nil }
-	assert zero.contiguous_bytes_from(usize(-1), 8) == 8
+	assert zero.contiguous_bytes_from(uint(-1), 8) == 8
 	zero.destroy()
 }
 

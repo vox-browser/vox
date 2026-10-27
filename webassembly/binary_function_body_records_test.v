@@ -7,7 +7,7 @@ fn test_source_function_constructor_caches_local_count_with_native_size_width() 
 		BinaryLocals{ count: 2, type_: BinaryValueType{ kind: .i64 } },
 	], BinaryExpression{})
 	assert function.declared_size == 19
-	assert function.total_local_count() == usize(~u32(0)) + 2
+	assert function.total_local_count() == uint(~u32(0)) + 2
 	assert function.locals.len == 3
 	assert BinaryFunctionBody.create(0, [], BinaryExpression{}).total_local_count() == 0
 }

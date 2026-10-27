@@ -155,7 +155,7 @@ fn test_candidate_scratch_bounds_retained_depth_and_capacity_without_limiting_qu
 		rules := [
 			ScopedMatchingRule{
 				rule: &MatchingRule{
-					rule_index: usize(index)
+					rule_index: uint(index)
 				}
 			},
 		]
@@ -188,7 +188,7 @@ fn test_candidate_scratch_clears_grown_prefix_and_retains_cloned_rule_and_shadow
 	mut candidates := unsafe { buffer.rules }
 	for index in 0 .. 257 {
 		candidates << ScopedMatchingRule{
-			rule: &MatchingRule{rule_index: usize(index)}
+			rule: &MatchingRule{rule_index: uint(index)}
 			shadow_root: if index % 3 == 0 { ?&dom.ShadowRoot(first_shadow) } else if index % 3 == 1 { ?&dom.ShadowRoot(second_shadow) } else { none }
 		}
 	}
@@ -205,7 +205,7 @@ fn test_candidate_scratch_clears_grown_prefix_and_retains_cloned_rule_and_shadow
 	for _ in 0 .. 3 {
 		gc_collect()
 		for index, candidate in retained {
-			assert candidate.rule.rule_index == usize(index)
+			assert candidate.rule.rule_index == uint(index)
 			if index > 0 { assert voidptr(candidate.rule) != voidptr(retained[index - 1].rule) }
 			if index % 3 == 0 {
 				assert voidptr(candidate.shadow_root or { panic('lost first shadow') }) == voidptr(first_shadow)

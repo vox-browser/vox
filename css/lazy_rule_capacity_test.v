@@ -27,7 +27,7 @@ fn test_matching_result_growth_keeps_rule_order_identity_metadata_and_owners() {
 			mut expected := []&MatchingRule{}
 			for index in 0 .. count {
 				expected << &MatchingRule{
-					rule_index: usize(index)
+					rule_index: uint(index)
 					selector: selector_from_text(text)
 					cascade_origin: .author
 					contains_pseudo_element: is_pseudo
@@ -64,7 +64,7 @@ fn test_matching_result_growth_keeps_rule_order_identity_metadata_and_owners() {
 			gc_collect()
 			for index, rule in expected {
 				assert voidptr(public_rules[index].rule) == voidptr(rule)
-				assert public_rules[index].rule.rule_index == usize(index)
+				assert public_rules[index].rule.rule_index == uint(index)
 			}
 		}
 	}
@@ -77,7 +77,7 @@ fn test_unmatched_candidate_lists_keep_empty_results_unallocated_and_observe_lat
 	mut expected := []&MatchingRule{}
 	for index in 0 .. 33 {
 		expected << &MatchingRule{
-			rule_index: usize(index)
+			rule_index: uint(index)
 			selector: selector_from_text('.target:hover')
 			cascade_origin: .author
 		}

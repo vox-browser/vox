@@ -70,7 +70,7 @@ fn (mut runtime Runtime) data_transfer_types_array(transfer &html.DataTransfer) 
 		values << runtime.retain_javascript_value(runtime.binding_utf16_string(text)!)!
 	}
 	mut exception := unsafe { nil }
-	array := C.JSObjectMakeArray(runtime.context, usize(values.len), values.data, &exception)
+	array := C.JSObjectMakeArray(runtime.context, uint(values.len), values.data, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	runtime.retain_javascript_value(array)!
 	runtime.call_javascript_function(binding.data_transfer_freeze_array,

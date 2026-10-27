@@ -77,13 +77,13 @@ fn test_reflect_own_keys_uses_array_string_and_live_typed_array_exotic_keys() {
 		assert string_keys.object.get(mut vm, PropertyName.from_number(u32(index)))!.as_string().str() == expected
 	}
 	mut buffer := ArrayBufferObject.create(mut vm, vm.realm(), 2, prototype)!
-	buffer.maximum_byte_length = usize(4)
+	buffer.maximum_byte_length = uint(4)
 	mut view := TypedArray.create(vm.realm(), .uint8, 2, buffer, prototype)
 	view.array_length = ByteLength.auto_length()
 	view.byte_length = ByteLength.auto_length()
 	mut view_object := view.object
 	view_object.define_direct_property(PropertyName.from_str('label'), Value.from_i32(42), 7)
-	for size in [usize(2), usize(4), usize(1)] {
+	for size in [uint(2), uint(4), uint(1)] {
 		assert buffer.try_resize(size, true)
 		keys := reflect_keys_call(mut vm, Value.from_object(view_object), prototype)!
 		assert keys.length == u32(size + 1)

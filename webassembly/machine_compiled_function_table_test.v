@@ -14,13 +14,13 @@ fn source_compiled_table_owner(mut store BinaryMachineStore, owner &Module, resu
 	return instance
 }
 
-fn source_compiled_table_publish(mut owner Module, marker usize, inlined u32) {
+fn source_compiled_table_publish(mut owner Module, marker uint, inlined u32) {
 	mut compiled := &owner.function_bodies[0].body.compiled_instructions
 	instruction := &BinaryInstruction{ opcode: binary_op_nop }
 	compiled.dispatches << BinaryDispatch{ instruction: instruction }
 	compiled.src_dst_mappings << BinarySourcesAndDestination{}
 	compiled.cranelift_inlined_locals = inlined
-	compiled.max_call_rec_size = (usize(1) << 32) + 17
+	compiled.max_call_rec_size = (uint(1) << 32) + 17
 	// A metadata marker proves publication without inventing executable code.
 	binary_publish_cranelift_entry(mut compiled, marker)
 }
@@ -52,8 +52,8 @@ fn test_source_compiled_table_rebuilds_until_actual_modules_finish_and_retains_m
 	entry := table.entries[0]
 	compiled := &source.function_bodies[0].body.compiled_instructions
 	assert entry.handler_ptr == 0x1234
-	assert entry.dispatches_ptr == usize(compiled.dispatches.data)
-	assert entry.src_dst_ptr == usize(compiled.src_dst_mappings.data)
+	assert entry.dispatches_ptr == uint(compiled.dispatches.data)
+	assert entry.src_dst_ptr == uint(compiled.src_dst_mappings.data)
 	assert voidptr(entry.first_instruction) == voidptr(compiled.dispatches[0].instruction)
 	assert voidptr(entry.expression) == voidptr(&source.function_bodies[0].body)
 	assert voidptr(entry.module) == voidptr(instance)

@@ -4,13 +4,13 @@
 module webassembly
 
 pub struct BinaryMachineLabel {
-	arity_                 usize
-	stack_height_          usize
+	arity_                 uint
+	stack_height_          uint
 	continuation_          u32
 	try_table_instruction_ &BinaryInstruction = unsafe { nil }
 }
 
-pub fn BinaryMachineLabel.create(arity usize, continuation u32, stack_height usize, try_table_instruction &BinaryInstruction) BinaryMachineLabel {
+pub fn BinaryMachineLabel.create(arity uint, continuation u32, stack_height uint, try_table_instruction &BinaryInstruction) BinaryMachineLabel {
 	return BinaryMachineLabel{
 		arity_:                 arity
 		stack_height_:          stack_height
@@ -21,9 +21,9 @@ pub fn BinaryMachineLabel.create(arity usize, continuation u32, stack_height usi
 
 pub fn (label &BinaryMachineLabel) continuation() u32 { return label.continuation_ }
 
-pub fn (label &BinaryMachineLabel) arity() usize { return label.arity_ }
+pub fn (label &BinaryMachineLabel) arity() uint { return label.arity_ }
 
-pub fn (label &BinaryMachineLabel) stack_height() usize { return label.stack_height_ }
+pub fn (label &BinaryMachineLabel) stack_height() uint { return label.stack_height_ }
 
 pub fn (label &BinaryMachineLabel) try_table_instruction() &BinaryInstruction {
 	return label.try_table_instruction_
@@ -41,14 +41,14 @@ pub struct BinaryMachineFrame {
 	module_      &BinaryMachineModuleInstance
 	locals_ptr_  &BinaryMachineValue = unsafe { nil }
 	expression_  &BinaryExpression
-	arity_       usize
+	arity_       uint
 	owns_locals_ bool
 mut:
-	label_index_       usize
+	label_index_       uint
 	compiled_fn_table_ &BinaryMachineCompiledFunctionTable = unsafe { nil }
 }
 
-pub fn BinaryMachineFrame.create(module_ &BinaryMachineModuleInstance, locals_ptr &BinaryMachineValue, expression &BinaryExpression, arity usize, owns_locals bool) BinaryMachineFrame {
+pub fn BinaryMachineFrame.create(module_ &BinaryMachineModuleInstance, locals_ptr &BinaryMachineValue, expression &BinaryExpression, arity uint, owns_locals bool) BinaryMachineFrame {
 	return BinaryMachineFrame{
 		module_:      module_
 		locals_ptr_:  unsafe { locals_ptr }
@@ -80,11 +80,11 @@ pub fn (frame &BinaryMachineFrame) owns_locals() bool { return frame.owns_locals
 
 pub fn (frame &BinaryMachineFrame) expression() &BinaryExpression { return frame.expression_ }
 
-pub fn (frame &BinaryMachineFrame) arity() usize { return frame.arity_ }
+pub fn (frame &BinaryMachineFrame) arity() uint { return frame.arity_ }
 
-pub fn (frame &BinaryMachineFrame) label_index() usize { return frame.label_index_ }
+pub fn (frame &BinaryMachineFrame) label_index() uint { return frame.label_index_ }
 
-pub fn (mut frame BinaryMachineFrame) set_label_index(index usize) { frame.label_index_ = index }
+pub fn (mut frame BinaryMachineFrame) set_label_index(index uint) { frame.label_index_ = index }
 
 pub fn (frame &BinaryMachineFrame) compiled_fn_table() &BinaryMachineCompiledFunctionTable {
 	return frame.compiled_fn_table_

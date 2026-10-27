@@ -2,16 +2,16 @@ module libjs
 
 #include "@DIR/stack_info_host.h"
 
-fn C.vox_ak_current_frame_address() usize
+fn C.vox_ak_current_frame_address() uint
 
 // Translated from AK/StackInfo.{h,cpp}: the native thread stack bounds used by
 // VM.did_reach_stack_space_limit().
 
 pub struct StackInfo {
 pub:
-	base usize
-	top  usize
-	size usize
+	base uint
+	top  uint
+	size uint
 }
 
 pub fn StackInfo.new() StackInfo {
@@ -24,7 +24,7 @@ pub fn StackInfo.new() StackInfo {
 }
 
 // AK/StackInfo.h reads the current frame address and subtracts the owned base.
-pub fn (info StackInfo) size_free() usize {
+pub fn (info StackInfo) size_free() uint {
 	pointer := C.vox_ak_current_frame_address()
 	return pointer - info.base
 }

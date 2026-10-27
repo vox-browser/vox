@@ -3,7 +3,7 @@ module platform
 import math
 
 $if gcboehm ? {
-	fn C.GC_get_total_bytes() usize
+	fn C.GC_get_total_bytes() uint
 	fn C.GC_gcollect()
 }
 
@@ -41,7 +41,7 @@ fn test_ascii_cache_lane_matches_legacy_unicode_and_spacing_decisions_without_al
 		}
 	}
 	params := ShapeParams.new(.common, 0, 0)
-	mut before := usize(0)
+	mut before := uint(0)
 	$if gcboehm ? { before = C.GC_get_total_bytes() }
 	mut total := 0
 	for _ in 0 .. 1000 {
@@ -168,11 +168,11 @@ fn test_cached_width_hits_allocate_less_than_materializing_mutable_glyph_runs() 
 	text := 'width-only cached text'
 	expected := shape_text_with_spacing(0, 0, 0, text, font, .ltr).glyph_run.width()
 	_ = shaped_text_width(0, 0, text, font, .ltr)
-	mut before := usize(0)
+	mut before := uint(0)
 	$if gcboehm ? { before = C.GC_get_total_bytes() }
 	mut width_sum := f32(0)
 	for _ in 0 .. 1000 { width_sum += shaped_text_width(0, 0, text, font, .ltr) }
-	mut width_allocated := usize(0)
+	mut width_allocated := uint(0)
 	$if gcboehm ? { width_allocated = C.GC_get_total_bytes() - before }
 	$if gcboehm ? { before = C.GC_get_total_bytes() }
 	mut run_sum := f32(0)

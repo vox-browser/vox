@@ -21,7 +21,7 @@ fn test_shared_array_buffer_prototype_metadata_and_brand_checks_match_upstream()
 	prototype := realm.shared_array_buffer_prototype_record()
 	assert prototype.own_property_keys().map(it.str()) == ['byteLength', 'grow', 'growable',
 		'maxByteLength', 'slice', 'constructor', 'Symbol(Symbol.toStringTag)']
-	for maximum in [?usize(none), ?usize(8)] {
+	for maximum in [?uint(none), ?uint(8)] {
 		buffer := allocate_shared_array_buffer(mut vm,
 			realm.shared_array_buffer_constructor_record(), 2, maximum)!
 		ordinary := allocate_array_buffer(mut vm, realm.array_buffer_constructor_record(), 2,
@@ -41,7 +41,7 @@ fn test_shared_array_buffer_prototype_metadata_and_brand_checks_match_upstream()
 				assert value.number == if name == 'byteLength' {
 					2.0
 				} else {
-					f64(maximum or { usize(2) })
+					f64(maximum or { uint(2) })
 				}
 			}
 			for receiver in [js_null(), Value.from_object(prototype),
@@ -99,7 +99,7 @@ fn test_shared_array_buffer_growth_keeps_bytes_zeroes_extensions_and_updates_dat
 	create_simple_execution_context(mut vm)
 	realm := vm.realm()
 	mut buffer := allocate_shared_array_buffer(mut vm,
-		realm.shared_array_buffer_constructor_record(), 5, usize(10))!
+		realm.shared_array_buffer_constructor_record(), 5, uint(10))!
 	buffer.overwrite(0, [u8(1), 2, 3, 4, 5])
 	fixed := DataView.create(realm, buffer, ByteLength.from_u32(2), 1,
 		realm.data_view_prototype_record())
@@ -109,9 +109,9 @@ fn test_shared_array_buffer_growth_keeps_bytes_zeroes_extensions_and_updates_dat
 		assert shared_buffer_method(mut vm, buffer, 'grow', [
 			Value.from_i32(size),
 		])!.is_undefined()
-		assert buffer.is_shared_array_buffer() && buffer.byte_length() == usize(size)
+		assert buffer.is_shared_array_buffer() && buffer.byte_length() == uint(size)
 		assert buffer.read_bytes(0, 5) == [u8(1), 2, 3, 4, 5]
-		assert buffer.read_bytes(5, usize(size - 5)) == []u8{len: size - 5}
+		assert buffer.read_bytes(5, uint(size - 5)) == []u8{len: size - 5}
 		assert fixed.object.get(mut vm, PropertyName.from_str('byteLength'))!.number == 2
 		assert tracking.object.get(mut vm, PropertyName.from_str('byteLength'))!.number == size - 1
 	}
@@ -131,7 +131,7 @@ fn test_shared_array_buffer_growth_calls_host_before_equality_and_limits_and_res
 	for mode in ['handled', 'unhandled', 'throw'] {
 		for size in [-1, 1, 2, 3, 5] {
 			mut log := &SharedPrototypeLog{}
-			vm.host_grow_shared_array_buffer = fn [mut log, mode] (mut buffer ArrayBuffer, new_size usize) !HandledByHost {
+			vm.host_grow_shared_array_buffer = fn [mut log, mode] (mut buffer ArrayBuffer, new_size uint) !HandledByHost {
 				log.events << 'host ${new_size}'
 				if mode == 'throw' { return throw_completion(Value.from_i32(42)) }
 				return if mode == 'handled' {
@@ -141,7 +141,7 @@ fn test_shared_array_buffer_growth_calls_host_before_equality_and_limits_and_res
 				}
 			}
 			buffer := allocate_shared_array_buffer(mut vm,
-				realm.shared_array_buffer_constructor_record(), 2, usize(4))!
+				realm.shared_array_buffer_constructor_record(), 2, uint(4))!
 			if _ := shared_buffer_method(mut vm, buffer, 'grow', [
 				Value.from_i32(size),
 			])
@@ -160,9 +160,9 @@ fn test_shared_array_buffer_growth_calls_host_before_equality_and_limits_and_res
 				['host ${size}']
 			}
 			assert buffer.byte_length() == if mode == 'unhandled' && size == 3 {
-				usize(3)
+				uint(3)
 			} else {
-				usize(2)
+				uint(2)
 			}
 			assert vm.running_execution_context() == base && vm.interpreter_stack().depth() == 0
 		}
@@ -174,12 +174,12 @@ fn test_shared_array_buffer_growth_checks_slots_before_coercion_and_uses_length_
 	base := create_simple_execution_context(mut vm)
 	realm := vm.realm()
 	mut log := &SharedPrototypeLog{}
-	vm.host_grow_shared_array_buffer = fn [mut log] (mut buffer ArrayBuffer, size usize) !HandledByHost {
+	vm.host_grow_shared_array_buffer = fn [mut log] (mut buffer ArrayBuffer, size uint) !HandledByHost {
 		log.events << 'host ${size}'
 		return .unhandled
 	}
 	mut buffer := allocate_shared_array_buffer(mut vm,
-		realm.shared_array_buffer_constructor_record(), 2, usize(10))!
+		realm.shared_array_buffer_constructor_record(), 2, uint(10))!
 	mut argument := Object.create(realm, none)
 	convert := NativeFunction.create(mut vm, realm, realm.function_prototype, fn [mut log, buffer] (mut vm VM) !Value {
 		log.events << 'coerce'
@@ -191,7 +191,7 @@ fn test_shared_array_buffer_growth_checks_slots_before_coercion_and_uses_length_
 	fixed := allocate_shared_array_buffer(mut vm, realm.shared_array_buffer_constructor_record(),
 		2, none)!
 	ordinary :=
-		allocate_array_buffer(mut vm, realm.array_buffer_constructor_record(), 2, usize(10))!
+		allocate_array_buffer(mut vm, realm.array_buffer_constructor_record(), 2, uint(10))!
 	for receiver in [fixed, ordinary] {
 		if _ := shared_buffer_method(mut vm, receiver, 'grow', [
 			Value.from_object(argument),
@@ -217,7 +217,7 @@ fn test_shared_array_buffer_slice_uses_relative_indices_and_independent_fixed_sh
 	create_simple_execution_context(mut vm)
 	realm := vm.realm()
 	mut source := allocate_shared_array_buffer(mut vm,
-		realm.shared_array_buffer_constructor_record(), 5, usize(10))!
+		realm.shared_array_buffer_constructor_record(), 5, uint(10))!
 	source.overwrite(0, [u8(1), 2, 3, 4, 5])
 	starts := [math.inf(-1), -3.0, 2.9, math.nan(), math.inf(1)]
 	expected := [[u8(1), 2, 3, 4, 5], [u8(3), 4, 5], [u8(3), 4, 5],
@@ -239,13 +239,13 @@ fn test_shared_array_buffer_slice_uses_relative_indices_and_independent_fixed_sh
 			Value.from_f64(end),
 		])!.as_object().array_buffer?
 		assert target.byte_length() == if math.is_inf(end, -1) {
-			usize(0)
+			uint(0)
 		} else if end == -1 {
-			usize(3)
+			uint(3)
 		} else if math.is_inf(end, 1) {
-			usize(4)
+			uint(4)
 		} else {
-			usize(2)
+			uint(2)
 		}
 	}
 }
@@ -257,13 +257,13 @@ fn test_shared_array_buffer_slice_species_validation_coercion_order_and_source_g
 	for mode in ['normal', 'grow source', 'wrong type', 'unshared', 'same source', 'short', 'throw'] {
 		mut log := &SharedPrototypeLog{}
 		mut source := allocate_shared_array_buffer(mut vm,
-			realm.shared_array_buffer_constructor_record(), 5, usize(10))!
+			realm.shared_array_buffer_constructor_record(), 5, uint(10))!
 		source.overwrite(0, [u8(1), 2, 3, 4, 5])
 		target := allocate_shared_array_buffer(mut vm,
 			realm.shared_array_buffer_constructor_record(), if mode == 'short' {
-			usize(1)
+			uint(1)
 		} else {
-			usize(4)
+			uint(4)
 		}, none)!
 		result := if mode == 'wrong type' {
 			Object.create(realm, none)
@@ -333,7 +333,7 @@ fn test_shared_array_buffer_slice_saves_length_before_start_end_and_species_coer
 	realm := vm.realm()
 	mut log := &SharedPrototypeLog{}
 	mut source := allocate_shared_array_buffer(mut vm,
-		realm.shared_array_buffer_constructor_record(), 5, usize(10))!
+		realm.shared_array_buffer_constructor_record(), 5, uint(10))!
 	source.overwrite(0, [u8(1), 2, 3, 4, 5])
 	mut arguments := []Value{}
 	for name in ['start', 'end'] {

@@ -33,7 +33,7 @@ fn test_typed_array_iterator_resize_errors_preserve_target_index_and_allow_recov
 	parent := Object.create(vm.realm(), none)
 	for tracking in [false, true] {
 		mut buffer := ArrayBufferObject.create(mut vm, vm.realm(), 4, parent)!
-		buffer.maximum_byte_length = usize(8)
+		buffer.maximum_byte_length = uint(8)
 		mut array := TypedArray.create(vm.realm(), .uint16, 0, buffer, parent)
 		initialize_typed_array_from_array_buffer(mut vm, mut array, buffer, Value.from_i32(2), if tracking {
 			js_undefined()
@@ -67,7 +67,7 @@ fn test_typed_array_iterator_shared_growth_uses_fresh_witness_and_detachment_thr
 	create_simple_execution_context(mut vm)
 	parent := Object.create(vm.realm(), none)
 	mut buffer := ArrayBufferObject.create_from_bytes(vm.realm(), [u8(17)], true, parent)
-	buffer.maximum_byte_length = usize(4)
+	buffer.maximum_byte_length = uint(4)
 	mut array := TypedArray.create(vm.realm(), .uint8, 0, buffer, parent)
 	initialize_typed_array_from_array_buffer(mut vm, mut array, buffer, js_undefined(),
 		js_undefined())!

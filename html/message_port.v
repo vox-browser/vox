@@ -242,12 +242,12 @@ pub fn (port &MessagePort) entangled_port() ?&MessagePort {
 	return port.remote_port_
 }
 
-pub fn (port &MessagePort) pending_outgoing_message_count() usize {
-	return usize(port.pending_outgoing_messages_.len)
+pub fn (port &MessagePort) pending_outgoing_message_count() uint {
+	return uint(port.pending_outgoing_messages_.len)
 }
 
-pub fn (port &MessagePort) pending_incoming_message_count() usize {
-	return usize(port.pending_messages_.len)
+pub fn (port &MessagePort) pending_incoming_message_count() uint {
+	return uint(port.pending_messages_.len)
 }
 
 pub fn (mut port MessagePort) fail_next_transfer_for_testing() {

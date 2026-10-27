@@ -47,7 +47,7 @@ fn source_utf8_valid_up_to(input []u8) int {
 			return input.len
 		}
 		byte := input[read]
-		// Source uses usize positions. Widen this lookahead sum to retain
+		// Source uses uint positions. Widen this lookahead sum to retain
 		// its non-overflowing bound under V's narrower int array lengths.
 		if u64(read) + 4 <= u64(input.len) {
 			if utf8_in_inclusive_range8(byte, 0xc2, 0xdf) {

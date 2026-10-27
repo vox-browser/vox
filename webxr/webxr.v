@@ -282,8 +282,8 @@ pub fn (event &XRSessionEvent) session() &XRSession {
 	return event.session_
 }
 
-pub fn XRSessionEvent.session_offset() usize {
-	return usize(__offsetof(XRSessionEvent, session_))
+pub fn XRSessionEvent.session_offset() uint {
+	return uint(__offsetof(XRSessionEvent, session_))
 }
 
 @[heap]

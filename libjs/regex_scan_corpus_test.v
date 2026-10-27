@@ -164,7 +164,7 @@ fn regex_scan_fixture_input(text string) RegexInput {
 	}
 }
 
-fn regex_scan_fixture_text(program RegexProgram, input RegexInput, start usize, scan RegexSimpleScan) string {
+fn regex_scan_fixture_text(program RegexProgram, input RegexInput, start uint, scan RegexSimpleScan) string {
 	mut output := [i32(91), 92, 93, 94, 95]
 	matched := regex_execute_simple_scan_into(program, input, start, scan, mut output)
 	if scan is RegexGreedyLoop {
@@ -201,7 +201,7 @@ fn test_regex_simple_and_greedy_scan_execution_matches_exact_native_corpus() {
 				dot_all:      flags & 8 != 0
 			}
 			input := regex_scan_fixture_input(fields[4])
-			actual := regex_scan_fixture_text(program, input, usize(fields[2].u64()),
+			actual := regex_scan_fixture_text(program, input, uint(fields[2].u64()),
 				scans[fields[3].int()])
 			assert actual == fields[5], '${line}: actual=${actual}'
 			count++

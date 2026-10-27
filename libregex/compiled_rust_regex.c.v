@@ -29,22 +29,22 @@ struct C.RustRegexFlags {
 @[typedef]
 struct C.RustRegexNamedGroup {
 	name     &u8
-	name_len usize
+	name_len uint
 	index    u32
 }
 
-fn C.rust_regex_compile(&u16, usize, C.RustRegexFlags, &&u8, &usize) &C.RustRegex
-fn C.rust_regex_compile_ascii(&u8, usize, C.RustRegexFlags, &&u8, &usize) &C.RustRegex
-fn C.rust_regex_free_error(&u8, usize)
+fn C.rust_regex_compile(&u16, uint, C.RustRegexFlags, &&u8, &uint) &C.RustRegex
+fn C.rust_regex_compile_ascii(&u8, uint, C.RustRegexFlags, &&u8, &uint) &C.RustRegex
+fn C.rust_regex_free_error(&u8, uint)
 fn C.rust_regex_free(&C.RustRegex)
-fn C.rust_regex_exec_into(&C.RustRegex, &u16, usize, usize, &int, u32) int
-fn C.rust_regex_exec_into_ascii(&C.RustRegex, &u8, usize, usize, &int, u32) int
-fn C.rust_regex_test(&C.RustRegex, &u16, usize, usize) int
-fn C.rust_regex_test_ascii(&C.RustRegex, &u8, usize, usize) int
+fn C.rust_regex_exec_into(&C.RustRegex, &u16, uint, uint, &int, u32) int
+fn C.rust_regex_exec_into_ascii(&C.RustRegex, &u8, uint, uint, &int, u32) int
+fn C.rust_regex_test(&C.RustRegex, &u16, uint, uint) int
+fn C.rust_regex_test_ascii(&C.RustRegex, &u8, uint, uint) int
 fn C.rust_regex_capture_count(&C.RustRegex) u32
 fn C.rust_regex_is_single_non_bmp_literal(&C.RustRegex) bool
-fn C.rust_regex_find_all(&C.RustRegex, &u16, usize, usize, &int, u32) int
-fn C.rust_regex_find_all_ascii(&C.RustRegex, &u8, usize, usize, &int, u32) int
+fn C.rust_regex_find_all(&C.RustRegex, &u16, uint, uint, &int, u32) int
+fn C.rust_regex_find_all_ascii(&C.RustRegex, &u8, uint, uint, &int, u32) int
 fn C.rust_regex_get_named_groups(&C.RustRegex, &u32) &C.RustRegexNamedGroup
 fn C.rust_regex_free_named_groups(&C.RustRegexNamedGroup, u32)
 
@@ -75,7 +75,7 @@ fn regex_ascii_bytes(units []u16) []u8 {
 
 pub fn CompiledRustRegex.compile(pattern libjs.Utf16String, flags ECMAScriptCompileFlags) !&CompiledRustRegex {
 	mut error_data := &u8(unsafe { nil })
-	mut error_length := usize(0)
+	mut error_length := uint(0)
 	mut handle := &C.RustRegex(unsafe { nil })
 	units := pattern.code_units()
 	actual_flags := C.RustRegexFlags{
@@ -90,11 +90,11 @@ pub fn CompiledRustRegex.compile(pattern libjs.Utf16String, flags ECMAScriptComp
 	}
 	if pattern.has_ascii_storage() {
 		bytes := regex_ascii_bytes(units)
-		handle = C.rust_regex_compile_ascii(bytes.data, usize(units.len), actual_flags, &error_data, &error_length)
+		handle = C.rust_regex_compile_ascii(bytes.data, uint(units.len), actual_flags, &error_data, &error_length)
 	} else {
 		mut storage := units.clone()
 		if storage.len == 0 { storage = [u16(0)] }
-		handle = C.rust_regex_compile(storage.data, usize(units.len), actual_flags, &error_data, &error_length)
+		handle = C.rust_regex_compile(storage.data, uint(units.len), actual_flags, &error_data, &error_length)
 	}
 	if isnil(handle) {
 		mut message := 'Invalid pattern'
@@ -141,7 +141,7 @@ pub fn (mut regex CompiledRustRegex) move_from(mut other CompiledRustRegex) {
 	other.capture_count_cached_ = false
 }
 
-pub fn (regex &CompiledRustRegex) exec_internal(input libjs.Utf16String, start_pos usize) int {
+pub fn (regex &CompiledRustRegex) exec_internal(input libjs.Utf16String, start_pos uint) int {
 	mut actual := unsafe { regex }
 	if !actual.capture_count_cached_ {
 		actual.capture_count_ = C.rust_regex_capture_count(actual.regex_) + 1
@@ -156,22 +156,22 @@ pub fn (regex &CompiledRustRegex) exec_internal(input libjs.Utf16String, start_p
 	units := input.code_units()
 	if input.has_ascii_storage() {
 		bytes := regex_ascii_bytes(units)
-		return C.rust_regex_exec_into_ascii(actual.regex_, bytes.data, usize(units.len), start_pos, actual.capture_buffer_.data, slots)
+		return C.rust_regex_exec_into_ascii(actual.regex_, bytes.data, uint(units.len), start_pos, actual.capture_buffer_.data, slots)
 	}
-	return C.rust_regex_exec_into(actual.regex_, units.data, usize(units.len), start_pos, actual.capture_buffer_.data, slots)
+	return C.rust_regex_exec_into(actual.regex_, units.data, uint(units.len), start_pos, actual.capture_buffer_.data, slots)
 }
 
 pub fn (regex &CompiledRustRegex) capture_slot(slot u32) int {
 	return regex.capture_buffer_[int(slot)]
 }
 
-pub fn (regex &CompiledRustRegex) test(input libjs.Utf16String, start_pos usize) int {
+pub fn (regex &CompiledRustRegex) test(input libjs.Utf16String, start_pos uint) int {
 	units := input.code_units()
 	if input.has_ascii_storage() {
 		bytes := regex_ascii_bytes(units)
-		return C.rust_regex_test_ascii(regex.regex_, bytes.data, usize(units.len), start_pos)
+		return C.rust_regex_test_ascii(regex.regex_, bytes.data, uint(units.len), start_pos)
 	}
-	return C.rust_regex_test(regex.regex_, units.data, usize(units.len), start_pos)
+	return C.rust_regex_test(regex.regex_, units.data, uint(units.len), start_pos)
 }
 
 pub fn (regex &CompiledRustRegex) capture_count() u32 {
@@ -195,7 +195,7 @@ pub fn (regex &CompiledRustRegex) named_groups() []RustNamedCaptureGroup {
 	return regex.named_groups_
 }
 
-pub fn (regex &CompiledRustRegex) find_all(input libjs.Utf16String, start_pos usize) int {
+pub fn (regex &CompiledRustRegex) find_all(input libjs.Utf16String, start_pos uint) int {
 	mut actual := unsafe { regex }
 	if actual.find_all_buffer_.len < 256 { actual.find_all_buffer_ = []int{len: 256} }
 	units := input.code_units()
@@ -203,9 +203,9 @@ pub fn (regex &CompiledRustRegex) find_all(input libjs.Utf16String, start_pos us
 	for result == -1 {
 		if input.has_ascii_storage() {
 			bytes := regex_ascii_bytes(units)
-			result = C.rust_regex_find_all_ascii(actual.regex_, bytes.data, usize(units.len), start_pos, actual.find_all_buffer_.data, u32(actual.find_all_buffer_.len))
+			result = C.rust_regex_find_all_ascii(actual.regex_, bytes.data, uint(units.len), start_pos, actual.find_all_buffer_.data, u32(actual.find_all_buffer_.len))
 		} else {
-			result = C.rust_regex_find_all(actual.regex_, units.data, usize(units.len), start_pos, actual.find_all_buffer_.data, u32(actual.find_all_buffer_.len))
+			result = C.rust_regex_find_all(actual.regex_, units.data, uint(units.len), start_pos, actual.find_all_buffer_.data, u32(actual.find_all_buffer_.len))
 		}
 		if result == -1 {
 			actual.find_all_buffer_ << []int{len: actual.find_all_buffer_.len}

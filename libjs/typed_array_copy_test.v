@@ -17,7 +17,7 @@ fn test_typed_array_same_type_copy_preserves_bytes_offsets_and_independent_fixed
 		mut buffer := ArrayBufferObject.create_from_bytes(vm.realm(), [u8(1), 2, 3, 4, 5, 6, 7,
 			8, 0xef, 0xbe, 0xad, 0xde, 0, 0, 0xf8, 0x7f, 0, 0, 0, 0, 0, 0, 0, 0x80, 9],
 			shared_buffer, parent)
-		buffer.maximum_byte_length = usize(32)
+		buffer.maximum_byte_length = uint(32)
 		mut source := TypedArray.create(vm.realm(), .float64, 0, buffer, parent)
 		initialize_typed_array_from_array_buffer(mut vm, mut source, buffer, Value.from_i32(8),
 			js_undefined())!
@@ -73,7 +73,7 @@ fn test_typed_array_copy_checks_source_bounds_before_allocation_and_content_type
 	parent := Object.create(realm, none)
 	for mode in ['mismatch', 'prototype throws', 'out of bounds', 'detached'] {
 		mut source_buffer := ArrayBufferObject.create(mut vm, realm, 4, parent)!
-		source_buffer.maximum_byte_length = usize(8)
+		source_buffer.maximum_byte_length = uint(8)
 		source := TypedArray.create(realm, .int32, 1, source_buffer, parent)
 		empty := ArrayBufferObject.create(mut vm, realm, 0, parent)!
 		mut target := TypedArray.create(realm, .big_int64, 0, empty, parent)

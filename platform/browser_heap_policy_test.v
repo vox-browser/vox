@@ -7,7 +7,7 @@ $if gcboehm ? {
 
 	struct BrowserHeapTestDivisor {
 	mut:
-		value usize
+		value uint
 	}
 
 	fn browser_heap_test_read_divisor(context voidptr) voidptr {
@@ -22,19 +22,19 @@ $if gcboehm ? {
 		return unsafe { nil }
 	}
 
-	fn browser_heap_test_divisor() usize {
+	fn browser_heap_test_divisor() uint {
 		mut divisor := BrowserHeapTestDivisor{}
 		C.GC_call_with_alloc_lock(browser_heap_test_read_divisor, &divisor)
 		return divisor.value
 	}
 
-	fn browser_heap_test_set_divisor(value usize) {
+	fn browser_heap_test_set_divisor(value uint) {
 		divisor := BrowserHeapTestDivisor{value: value}
 		C.GC_call_with_alloc_lock(browser_heap_test_write_divisor, &divisor)
 	}
 
-	fn browser_heap_test_heap_size() usize {
-		mut heap := usize(0)
+	fn browser_heap_test_heap_size() uint {
+		mut heap := uint(0)
 		C.GC_get_heap_usage_safe(&heap, unsafe { nil }, unsafe { nil }, unsafe { nil }, unsafe { nil })
 		return heap
 	}

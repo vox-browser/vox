@@ -168,7 +168,7 @@ fn (mut host ElementWheelHost) compile_raw_wheel_handler(target &dom.EventTarget
 	C.JSValueProtect(runtime.context, factory)
 	defer { C.JSValueUnprotect(runtime.context, factory) }
 	exception = unsafe { nil }
-	carrier := C.JSObjectMakeArray(runtime.context, usize(scopes.len), scopes.data, &exception)
+	carrier := C.JSObjectMakeArray(runtime.context, uint(scopes.len), scopes.data, &exception)
 	if exception != unsafe { nil } || carrier == unsafe { nil } { return none }
 	exception = unsafe { nil }
 	function := C.JSObjectCallAsFunction(runtime.context, factory, carrier, 0, unsafe { nil }, &exception)

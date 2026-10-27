@@ -5,7 +5,7 @@ import dom
 import html as html_parser
 
 $if gcboehm ? {
-	fn C.GC_get_total_bytes() usize
+	fn C.GC_get_total_bytes() uint
 }
 
 fn lazy_layout_index_test_node(index u32) &NodeWithStyle {
@@ -23,7 +23,7 @@ fn test_lazy_layout_indexes_read_misses_do_not_allocate_or_materialize_storage()
 	assert state.height_dependency_storage_ == unsafe { nil }
 	assert probe.subgrid_storage_ == unsafe { nil }
 	assert probe.height_dependency_storage_ == unsafe { nil }
-	mut before := usize(0)
+	mut before := uint(0)
 	$if gcboehm ? { before = C.GC_get_total_bytes() }
 	mut misses := 0
 	for _ in 0 .. 1024 {
@@ -33,7 +33,7 @@ fn test_lazy_layout_indexes_read_misses_do_not_allocate_or_materialize_storage()
 		if probe.subgrid_axis_data(node, true) == none { misses++ }
 		if probe.cached_definite_height_dependency(node.layout_index()) == none { misses++ }
 	}
-	mut allocated := usize(0)
+	mut allocated := uint(0)
 	$if gcboehm ? { allocated = C.GC_get_total_bytes() - before }
 	assert misses == 5120
 	assert allocated == 0
@@ -153,13 +153,13 @@ fn test_lazy_layout_height_cache_tracks_percentage_topology_and_reuses_false() {
 	assert state.cached_definite_height_dependency(dependent_style.layout_index()) or { false }
 	assert state.cached_definite_height_dependency(percentage_style.layout_index()) or { false }
 	gc_collect()
-	mut before := usize(0)
+	mut before := uint(0)
 	$if gcboehm ? { before = C.GC_get_total_bytes() }
 	mut false_hits := 0
 	for _ in 0 .. 1024 {
 		if !flex_subtree_depends_on_definite_height(mut state, plain) { false_hits++ }
 	}
-	mut allocated := usize(0)
+	mut allocated := uint(0)
 	$if gcboehm ? { allocated = C.GC_get_total_bytes() - before }
 	assert false_hits == 1024
 	assert allocated == 0

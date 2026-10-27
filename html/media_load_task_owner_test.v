@@ -9,8 +9,8 @@ mut:
 	events          []string
 	old_task        bool
 	other_task      bool
-	schedule_depths []usize
-	reaction_depths []usize
+	schedule_depths []uint
+	reaction_depths []uint
 	reaction_names  []string
 }
 
@@ -121,10 +121,10 @@ fn test_load_rejects_the_current_pending_batch_synchronously_with_one_actual_abo
 	media.set_paused(false)
 	media.load()!
 	assert media.paused() && media.pending_play_promises_.len == 0
-	assert state.schedule_depths == [usize(1), 1]
+	assert state.schedule_depths == [uint(1), 1]
 	// With no outer author script, closing the temporary context performs the
 	// microtask checkpoint. Reset event tasks still wait for the task queue.
-	assert state.reaction_depths == [usize(1), 1, 1, 1]
+	assert state.reaction_depths == [uint(1), 1, 1, 1]
 	for promise in promises {
 		assert promise.state() == .rejected
 		exception := promise.result().as_webidl_value()!.dom_exception_?
@@ -135,7 +135,7 @@ fn test_load_rejects_the_current_pending_batch_synchronously_with_one_actual_abo
 	assert settings.realm().script_execution_depth == 0 && settings.realm().callback_execution_depth == 0
 	mut loop := main_thread_event_loop()
 	loop.perform_a_microtask_checkpoint()
-	assert state.reaction_depths == [usize(1), 1, 1, 1]
+	assert state.reaction_depths == [uint(1), 1, 1, 1]
 	assert state.reaction_names == ['AbortError', 'AbortError']
 	assert media.event_count('abort') == 0 && media.event_count('emptied') == 0
 	load_task_drain(media)

@@ -16,7 +16,7 @@ fn (mut app BrowserApp) create_ico_resource_image(bytes []u8) !gg.Image {
 	$if macos {
 		if app.ctx.native_rendering {
 			C.native_tag_image_color_profile(bitmap.data.data, bitmap.width, bitmap.height,
-				bytes.data, usize(bytes.len), 0)
+				bytes.data, uint(bytes.len), 0)
 		}
 	}
 	mut image := gg.Image{

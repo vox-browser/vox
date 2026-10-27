@@ -85,7 +85,7 @@ pub fn Table.create_machine(cache &WebAssemblyCache, element_type BinaryValueTyp
 	}) or { return error('RangeError: Wasm Table allocation failed') }
 	mut instance := store.get_table(address) or { panic('allocated table missing from Store') }
 	for index in 0 .. instance.elements().values.len {
-		instance.set_element(usize(index), reference, unsafe { nil })
+		instance.set_element(uint(index), reference, unsafe { nil })
 	}
 	return Table.create_for_store_address(cache, address)
 }
@@ -153,7 +153,7 @@ pub fn (table &Table) set_reference(index u64, reference BinaryMachineReference)
 	if u64(instance.elements().values.len) <= index {
 		return error('RangeError: Table element index out of range')
 	}
-	instance.set_element(usize(index), reference, unsafe { nil })
+	instance.set_element(uint(index), reference, unsafe { nil })
 }
 
 pub fn (table &Table) grow(delta u64, initial ?webidl.Value) !u64 {

@@ -5,7 +5,7 @@ import os
 $if gcboehm ? {
 	struct ActivityHeapTestPolicy {
 	mut:
-		value usize
+		value uint
 	}
 
 	fn activity_heap_test_read(context voidptr) voidptr {
@@ -20,13 +20,13 @@ $if gcboehm ? {
 		return unsafe { nil }
 	}
 
-	fn activity_heap_test_divisor() usize {
+	fn activity_heap_test_divisor() uint {
 		mut policy := ActivityHeapTestPolicy{}
 		C.GC_call_with_alloc_lock(activity_heap_test_read, &policy)
 		return policy.value
 	}
 
-	fn activity_heap_test_set_divisor(value usize) {
+	fn activity_heap_test_set_divisor(value uint) {
 		policy := ActivityHeapTestPolicy{ value: value }
 		C.GC_call_with_alloc_lock(activity_heap_test_write, &policy)
 	}

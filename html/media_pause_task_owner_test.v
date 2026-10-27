@@ -10,8 +10,8 @@ mut:
 	events          []string
 	pending         []bool
 	resumed         ?&dom.Promise
-	schedule_depths []usize
-	reaction_depths []usize
+	schedule_depths []uint
+	reaction_depths []uint
 	reason          ?webidl.Value
 }
 
@@ -220,11 +220,11 @@ fn test_pause_rejection_enters_the_actual_document_context_and_schedules_native_
 	media.pause()
 	assert native.state == .pending && state.schedule_depths == []
 	pause_task_take(media).execute()
-	assert native.state == .rejected && state.schedule_depths == [usize(1)]
+	assert native.state == .rejected && state.schedule_depths == [uint(1)]
 	assert settings.realm().script_execution_depth == 0 && settings.realm().callback_execution_depth == 0
 	mut loop := main_thread_event_loop()
 	loop.perform_a_microtask_checkpoint()
-	assert state.reaction_depths == [usize(1), 1]
+	assert state.reaction_depths == [uint(1), 1]
 	value := state.reason or { panic('missing native reaction reason') }
 	assert voidptr(value.dom_exception_?) == voidptr(native.result.dom_exception_?)
 	assert native.result.dom_exception_?.name() == 'AbortError'

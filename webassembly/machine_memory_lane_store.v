@@ -21,6 +21,6 @@ pub fn (mut interpreter BinaryMachineBytecodeInterpreter) pop_and_store_lane_n[T
 	base := configuration.take_source(.any, 1, sources)
 	return interpreter.store_to_memory(mut configuration, arg.memory, BinaryMachineBytes{
 		data: src
-		size: usize(sizeof(T))
+		size: uint(sizeof(T))
 	}, base)
 }

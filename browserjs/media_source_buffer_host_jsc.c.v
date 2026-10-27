@@ -72,7 +72,7 @@ fn (mut host MediaSourceHost) install_buffer_bindings() ! {
 		return host.buffer_list_index(args) or { return host.exception(err) }
 	})!
 	mut exception := unsafe { nil }
-	array := C.JSObjectMakeArray(runtime.context, usize(functions.len), functions.data, &exception)
+	array := C.JSObjectMakeArray(runtime.context, uint(functions.len), functions.data, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	runtime.retain_javascript_value(array)!
 	defer { runtime.release_javascript_value(array) }

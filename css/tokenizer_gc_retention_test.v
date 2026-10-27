@@ -29,7 +29,7 @@ fn test_large_token_stream_retains_strings_across_collections() {
 			if token.is(.ident) && token.ident().starts_with('item-') {
 				assert token.ident() == 'item-${identifiers}'
 				assert token.original_source_text() == 'item-${identifiers}'
-				assert token.start_position().line == usize(identifiers)
+				assert token.start_position().line == uint(identifiers)
 				identifiers++
 			} else if token.is(.string) {
 				assert token.string_value() == 'value-${values}'

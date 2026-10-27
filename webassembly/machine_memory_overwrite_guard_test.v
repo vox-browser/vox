@@ -51,7 +51,7 @@ fn test_source_memory_overwrite_empty_exact_end_and_partial_writes_use_actual_ca
 	buffer.try_resize(16)!
 	buffer.fill(0, u8(0x79), 16)
 	input := [u8(0), 0xff, 0x23, 0x81]
-	buffer.overwrite(12, input.data, usize(input.len))
+	buffer.overwrite(12, input.data, uint(input.len))
 	buffer.overwrite(16, unsafe { nil }, 0)
 	for index in 0 .. 16 {
 		assert unsafe { buffer.data()[index] } == if index < 12 {
@@ -60,7 +60,7 @@ fn test_source_memory_overwrite_empty_exact_end_and_partial_writes_use_actual_ca
 			input[index - 12]
 		}
 	}
-	buffer.overwrite(0, input.data, usize(input.len))
+	buffer.overwrite(0, input.data, uint(input.len))
 	for index in 0 .. 12 {
 		assert unsafe { buffer.data()[index] } == if index < 4 { input[index] } else { u8(0x79) }
 	}

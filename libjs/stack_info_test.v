@@ -1,6 +1,6 @@
 module libjs
 
-fn stack_info_measure_thread_snapshot(original StackInfo) (usize, usize, usize) {
+fn stack_info_measure_thread_snapshot(original StackInfo) (uint, uint, uint) {
 	actual := StackInfo.new()
 	return original.size_free(), actual.size_free(), actual.size
 }

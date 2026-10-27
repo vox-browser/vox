@@ -6,19 +6,19 @@ struct StyleValueTestDecodedImageData {
 	bitmap_ &dom.Bitmap_
 }
 
-fn (data &StyleValueTestDecodedImageData) frame(_ usize) ?&dom.DecodedImageFrame_ {
+fn (data &StyleValueTestDecodedImageData) frame(_ uint) ?&dom.DecodedImageFrame_ {
 	return dom.DecodedImageFrame_.create(data.bitmap_)
 }
 
-fn (_ &StyleValueTestDecodedImageData) frame_duration(_ usize) int {
+fn (_ &StyleValueTestDecodedImageData) frame_duration(_ uint) int {
 	return 0
 }
 
-fn (_ &StyleValueTestDecodedImageData) frame_count() usize {
+fn (_ &StyleValueTestDecodedImageData) frame_count() uint {
 	return 1
 }
 
-fn (_ &StyleValueTestDecodedImageData) loop_count() usize {
+fn (_ &StyleValueTestDecodedImageData) loop_count() uint {
 	return 0
 }
 

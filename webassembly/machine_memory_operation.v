@@ -22,7 +22,7 @@ pub fn (mut interpreter BinaryMachineBytecodeInterpreter) store_to_memory_instan
 		return true
 	}
 	mut buffer := memory.data()
-	buffer.overwrite(usize(address), data.data, data.size)
+	buffer.overwrite(uint(address), data.data, data.size)
 	return false
 }
 

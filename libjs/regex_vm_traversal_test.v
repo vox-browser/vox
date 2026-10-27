@@ -10,7 +10,7 @@ fn test_regex_vm_current_code_point_rejects_positions_inside_unicode_pairs_in_bo
 	mut scratch := RegexVmScratch.new()
 	mut vm := RegexVm.new(program, input, 0, mut scratch)
 	for pos, expected in [u32(0x61), 0x1f600, 0xffffffff, 0xd800, 0x62, 0xdc00, 0xffffffff] {
-		vm.pos = usize(pos)
+		vm.pos = uint(pos)
 		if expected == 0xffffffff {
 			assert vm.current_code_point() == none
 		} else {
@@ -19,7 +19,7 @@ fn test_regex_vm_current_code_point_rejects_positions_inside_unicode_pairs_in_bo
 	}
 	vm.backward = true
 	for pos, expected in [u32(0xffffffff), 0x61, 0xffffffff, 0x1f600, 0xd800, 0x62, 0xdc00] {
-		vm.pos = usize(pos)
+		vm.pos = uint(pos)
 		if expected == 0xffffffff {
 			assert vm.current_code_point() == none
 		} else {
@@ -71,9 +71,9 @@ fn test_regex_vm_non_unicode_n_character_steps_use_checked_arithmetic_without_in
 	vm.advance_char()
 	assert vm.pos == 0
 	assert vm.advance_n_chars(0, 9)? == 9
-	assert vm.advance_n_chars(0, 0xffffffff)? == usize(0xffffffff)
-	assert vm.advance_n_chars(~usize(0), 1) == none
-	assert vm.advance_n_chars(~usize(0), 0)? == ~usize(0)
+	assert vm.advance_n_chars(0, 0xffffffff)? == uint(0xffffffff)
+	assert vm.advance_n_chars(~uint(0), 1) == none
+	assert vm.advance_n_chars(~uint(0), 0)? == ~uint(0)
 	assert vm.retreat_n_chars(9, 9)? == 0 && vm.retreat_n_chars(8, 9) == none
 	assert vm.advance_one_char(9) == 9 && vm.retreat_one_char(9) == 8
 }

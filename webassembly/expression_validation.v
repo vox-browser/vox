@@ -28,7 +28,7 @@ pub fn (mut validator BinaryInstructionValidator) validate_expression(mut expres
 	binary_take_reverse(result_types, mut stack)!
 	for type_ in result_types { stack.append_type(type_) }
 	validator.frames.pop()
-	expression.set_stack_usage_hint(usize(stack.maximum_known_size()))
+	expression.set_stack_usage_hint(uint(stack.maximum_known_size()))
 	assert validator.frames.len == 0
 	return BinaryExpressionTypeResult{ result_types: stack.release_vector(), is_constant: is_constant_expression }
 }

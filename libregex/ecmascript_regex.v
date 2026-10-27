@@ -68,7 +68,7 @@ fn match_result(result int) MatchResult {
 	return .no_match
 }
 
-pub fn (regex &ECMAScriptRegex) exec(input libjs.Utf16String, start_pos usize) MatchResult {
+pub fn (regex &ECMAScriptRegex) exec(input libjs.Utf16String, start_pos uint) MatchResult {
 	return match_result(regex.rust_regex_.exec_internal(input, start_pos))
 }
 
@@ -76,7 +76,7 @@ pub fn (regex &ECMAScriptRegex) capture_slot(slot u32) int {
 	return regex.rust_regex_.capture_slot(slot)
 }
 
-pub fn (regex &ECMAScriptRegex) test(input libjs.Utf16String, start_pos usize) MatchResult {
+pub fn (regex &ECMAScriptRegex) test(input libjs.Utf16String, start_pos uint) MatchResult {
 	return match_result(regex.rust_regex_.test(input, start_pos))
 }
 
@@ -92,7 +92,7 @@ pub fn (regex &ECMAScriptRegex) named_groups() []ECMAScriptNamedCaptureGroup {
 	return regex.named_groups_
 }
 
-pub fn (regex &ECMAScriptRegex) find_all(input libjs.Utf16String, start_pos usize) int {
+pub fn (regex &ECMAScriptRegex) find_all(input libjs.Utf16String, start_pos uint) int {
 	return regex.rust_regex_.find_all(input, start_pos)
 }
 

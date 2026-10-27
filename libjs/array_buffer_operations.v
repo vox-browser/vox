@@ -8,7 +8,7 @@ pub enum PreserveResizability {
 
 pub struct ArrayBufferMaxByteLengthOption {
 pub:
-	value ?usize
+	value ?uint
 }
 
 pub fn get_array_buffer_max_byte_length_option(mut vm VM, options Value) !ArrayBufferMaxByteLengthOption {
@@ -16,11 +16,11 @@ pub fn get_array_buffer_max_byte_length_option(mut vm VM, options Value) !ArrayB
 	maximum := options.as_object().get(mut vm, PropertyName.from_str('maxByteLength'))!
 	if maximum.is_undefined() { return ArrayBufferMaxByteLengthOption{} }
 	return ArrayBufferMaxByteLengthOption{
-		value: usize(maximum.to_index(mut vm)!)
+		value: uint(maximum.to_index(mut vm)!)
 	}
 }
 
-pub fn allocate_array_buffer(mut vm VM, constructor &Object, byte_length usize, maximum ?usize) !&ArrayBufferObject {
+pub fn allocate_array_buffer(mut vm VM, constructor &Object, byte_length uint, maximum ?uint) !&ArrayBufferObject {
 	if limit := maximum {
 		if byte_length > limit {
 			return vm.throw_error_type(.range_error, .byte_length_exceeds_max_byte_length,
@@ -36,7 +36,7 @@ pub fn allocate_array_buffer(mut vm VM, constructor &Object, byte_length usize, 
 	return buffer
 }
 
-pub fn clone_array_buffer(mut vm VM, source &ArrayBufferObject, source_offset usize, length usize) !&ArrayBufferObject {
+pub fn clone_array_buffer(mut vm VM, source &ArrayBufferObject, source_offset uint, length uint) !&ArrayBufferObject {
 	assert !source.is_detached()
 	mut target := allocate_array_buffer(mut vm, vm.realm().array_buffer_constructor_record(),
 		length, none)!
@@ -51,13 +51,13 @@ pub fn array_buffer_copy_and_detach(mut vm VM, mut source ArrayBufferObject, new
 	new_size := if new_length.is_undefined() {
 		source.byte_length()
 	} else {
-		usize(new_length.to_index(mut vm)!)
+		uint(new_length.to_index(mut vm)!)
 	}
 	if source.is_detached() { return vm.throw_error_type(.type_error, .detached_array_buffer) }
 	maximum := if preserve == .preserve_resizability && !source.is_fixed_length() {
-		?usize(source.max_byte_length())
+		?uint(source.max_byte_length())
 	} else {
-		?usize(none)
+		?uint(none)
 	}
 	if !source.detach_key.is_undefined() {
 		return vm.throw_error_type(.type_error, .detach_key_mismatch, source.detach_key.str(),

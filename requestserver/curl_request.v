@@ -154,7 +154,7 @@ fn (request &CurlRequest) request_handle() fetch.RequestServerRequest {
 	}
 }
 
-fn curl_header_received(buffer voidptr, size usize, count usize, owner voidptr) usize {
+fn curl_header_received(buffer voidptr, size uint, count uint, owner voidptr) uint {
 	entry := platform.enter_persistent()
 	defer { platform.leave_persistent(entry) }
 	mut request := unsafe { &CurlRequest(owner) }
@@ -188,7 +188,7 @@ fn curl_header_received(buffer voidptr, size usize, count usize, owner voidptr) 
 	return length
 }
 
-fn curl_data_received(buffer voidptr, size usize, count usize, owner voidptr) usize {
+fn curl_data_received(buffer voidptr, size uint, count uint, owner voidptr) uint {
 	entry := platform.enter_persistent()
 	defer { platform.leave_persistent(entry) }
 	mut request := unsafe { &CurlRequest(owner) }

@@ -1979,7 +1979,7 @@ pub type HTMLParserFeedCallback = fn (voidptr, string)
 
 pub type HTMLParserRunCallback = fn (voidptr, bool)
 
-pub type HTMLParserNestingLevelCallback = fn (voidptr) usize
+pub type HTMLParserNestingLevelCallback = fn (voidptr) uint
 
 pub type HTMLParserBoolCallback = fn (voidptr) bool
 
@@ -2271,10 +2271,10 @@ pub:
 // decoder. HTML's decoded image implementations satisfy this interface
 // structurally, matching the C++ forward-declared DecodedImageData boundary.
 pub interface SharedDecodedImageData {
-	frame(frame_index usize) ?&DecodedImageFrame_
-	frame_duration(frame_index usize) int
-	frame_count() usize
-	loop_count() usize
+	frame(frame_index uint) ?&DecodedImageFrame_
+	frame_duration(frame_index uint) int
+	frame_count() uint
+	loop_count() uint
 	is_animated() bool
 	intrinsic_width() ?f64
 	intrinsic_height() ?f64
@@ -2540,7 +2540,7 @@ pub enum TextAffinity {
 pub struct IntersectionObserverObservationTarget {
 pub:
 	target                   &Element
-	previous_threshold_index ?usize
+	previous_threshold_index ?uint
 	previous_is_intersecting bool
 }
 
@@ -2568,7 +2568,7 @@ pub:
 
 pub type IntersectionObserverMarginsCallback = fn (voidptr) []IntersectionObserverMarginValue
 
-pub type IntersectionObserverUpdateTargetStateCallback = fn (voidptr, usize, usize, bool)
+pub type IntersectionObserverUpdateTargetStateCallback = fn (voidptr, uint, uint, bool)
 
 @[heap]
 pub struct IntersectionObserver {
@@ -3991,7 +3991,7 @@ pub fn (p &HTMLParser) run_until_insertion_point() {
 	}
 }
 
-pub fn (p &HTMLParser) script_nesting_level() usize {
+pub fn (p &HTMLParser) script_nesting_level() uint {
 	if p.script_nesting_level_callback == unsafe { nil } {
 		return 0
 	}
@@ -10474,7 +10474,7 @@ pub fn (mut d Document) run_the_update_intersection_observations_steps(time f64)
 		// 2. Process targets in the order observe() appended them.
 		for target_index, observed_target in observer.observation_targets() {
 			target := observed_target.target
-			mut threshold_index := usize(0)
+			mut threshold_index := uint(0)
 			mut is_intersecting := false
 			mut target_rect := Rect{}
 			mut intersection := Rect{}
@@ -10510,7 +10510,7 @@ pub fn (mut d Document) run_the_update_intersection_observations_steps(time f64)
 							lower = middle + 1
 						}
 					}
-					threshold_index = usize(lower)
+					threshold_index = uint(lower)
 				}
 				// Match the current interop behavior: geometry which intersects but
 				// does not reach the first threshold is reported as non-intersecting.
@@ -10528,7 +10528,7 @@ pub fn (mut d Document) run_the_update_intersection_observations_steps(time f64)
 			if threshold_changed || observed_target.previous_is_intersecting != is_intersecting {
 				d.queue_an_intersection_observer_entry(observer, time, root_bounds, target_rect, intersection, is_intersecting, intersection_ratio, target)
 			}
-			observer.update_target_state(observer.target, usize(target_index), threshold_index,
+			observer.update_target_state(observer.target, uint(target_index), threshold_index,
 				is_intersecting)
 		}
 	}

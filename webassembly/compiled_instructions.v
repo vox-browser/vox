@@ -24,7 +24,7 @@ pub const binary_count_registers = BinaryRegisterOrStack.stack
 pub union BinaryDispatchPayload {
 pub mut:
 	instruction_opcode u32
-	handler_ptr        usize
+	handler_ptr        uint
 }
 
 pub struct BinaryDispatch {
@@ -58,13 +58,13 @@ pub mut:
 	src_dst_mappings          []BinarySourcesAndDestination
 	extra_instruction_storage BinaryInstructionStorage
 	cranelift_local_types     []u8
-	cranelift_entry           usize
+	cranelift_entry           uint
 	cranelift_code_handle     voidptr = unsafe { nil }
-	cranelift_code_size       usize
+	cranelift_code_size       uint
 	cranelift_traps           &BinaryCraneliftTrap = unsafe { nil }
-	cranelift_trap_count      usize
-	max_call_arg_count        usize
-	max_call_rec_size         usize
+	cranelift_trap_count      uint
+	max_call_arg_count        uint
+	max_call_rec_size         uint
 	cranelift_result_arity    u32
 	cranelift_local_count     u32
 	cranelift_param_count     u32

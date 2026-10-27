@@ -4,7 +4,7 @@ import css
 import html
 
 $if gcboehm ? {
-	fn C.GC_get_total_bytes() usize
+	fn C.GC_get_total_bytes() uint
 }
 
 @[noinline]
@@ -23,11 +23,11 @@ fn test_paint_uses_resolved_background_lists_without_reallocating_them() {
 	actual := resolved_background_layers_for_paint(properties)
 	assert actual.len == 2
 	assert actual == properties.background_layers()
-	mut before := usize(0)
+	mut before := uint(0)
 	$if gcboehm ? { before = C.GC_get_total_bytes() }
 	mut layers := 0
 	for _ in 0 .. 512 { layers += resolved_paint_background_layer_count(properties) }
-	mut allocated := usize(0)
+	mut allocated := uint(0)
 	$if gcboehm ? { allocated = C.GC_get_total_bytes() - before }
 	assert layers == 1024
 	assert allocated < 4096, 'resolved layer reads allocated ${allocated} bytes'

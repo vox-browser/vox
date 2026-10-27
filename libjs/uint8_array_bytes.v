@@ -4,7 +4,7 @@ module libjs
 // explicit inputs, as in the shared TypedArray native bodies.
 pub struct Uint8ArrayDecodeResult {
 pub:
-	read  usize
+	read  uint
 	bytes []u8
 	error ?Completion
 }
@@ -26,13 +26,13 @@ pub fn get_uint8_array_bytes(mut vm VM, array &TypedArray) ![]u8 {
 	if is_typed_array_out_of_bounds(record) {
 		return vm.throw_error_type(.type_error, .buffer_out_of_bounds, 'TypedArray')
 	}
-	return array.viewed_buffer.read_bytes(usize(array.byte_offset),
-		usize(typed_array_length(record)))
+	return array.viewed_buffer.read_bytes(uint(array.byte_offset),
+		uint(typed_array_length(record)))
 }
 
 pub fn set_uint8_array_bytes(mut vm VM, mut array TypedArray, bytes []u8) {
 	for index, byte in bytes {
-		array.set_value_in_buffer(mut vm, usize(array.byte_offset) + usize(index),
+		array.set_value_in_buffer(mut vm, uint(array.byte_offset) + uint(index),
 			Value.from_i32(byte), .unordered, true)
 	}
 }

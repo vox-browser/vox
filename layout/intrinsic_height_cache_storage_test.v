@@ -5,7 +5,7 @@ import dom
 import html as html_parser
 
 $if gcboehm ? {
-	fn C.GC_get_total_bytes() usize
+	fn C.GC_get_total_bytes() uint
 }
 
 fn intrinsic_height_test_box() &Box {
@@ -20,7 +20,7 @@ fn test_intrinsic_width_cache_keeps_both_height_axes_absent_without_allocating_r
 	cache.max_content_width = CSSPixels.new(128)
 	assert cache.min_content_height_ == unsafe { nil }
 	assert cache.max_content_height_ == unsafe { nil }
-	mut before := usize(0)
+	mut before := uint(0)
 	$if gcboehm ? { before = C.GC_get_total_bytes() }
 	mut misses := 0
 	for _ in 0 .. 1024 {
@@ -29,7 +29,7 @@ fn test_intrinsic_width_cache_keeps_both_height_axes_absent_without_allocating_r
 		if !cache.has_cached_content_height(false, -7) { misses++ }
 		if cache.cached_content_height(false, -7) == none { misses++ }
 	}
-	mut allocated := usize(0)
+	mut allocated := uint(0)
 	$if gcboehm ? { allocated = C.GC_get_total_bytes() - before }
 	assert misses == 4096
 	assert allocated == 0
@@ -60,10 +60,10 @@ fn test_intrinsic_first_height_slot_preserves_none_zero_and_independent_axes() {
 	assert cache.max_content_height_.overflow == unsafe { nil }
 	assert (cache.cached_content_height(true, 0) or { panic('zero was lost') }).raw_value() == 0
 	assert (cache.cached_content_height(false, -31) or { panic('max height missing') }).to_double() == 19
-	mut before := usize(0)
+	mut before := uint(0)
 	$if gcboehm ? { before = C.GC_get_total_bytes() }
 	for _ in 0 .. 1024 { cache.cache_content_height(true, 0, CSSPixels.new(0)) }
-	mut allocated := usize(0)
+	mut allocated := uint(0)
 	$if gcboehm ? { allocated = C.GC_get_total_bytes() - before }
 	assert allocated == 0
 	assert voidptr(cache.min_content_height_) == first

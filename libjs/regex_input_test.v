@@ -13,8 +13,8 @@ fn test_regex_input_search_and_literal_bounds_match_both_upstream_storage_paths(
 		assert input.code_unit(1) == 0
 		assert input.find_code_unit(0, 5, 0x61)? == 0
 		assert input.next_literal_start(1, 0x61)? == 4
-		for bounds in [[usize(0), 0], [usize(5), 5], [usize(6), 6],
-			[usize(4), 3], [usize(0), 6]] {
+		for bounds in [[uint(0), 0], [uint(5), 5], [uint(6), 6],
+			[uint(4), 3], [uint(0), 6]] {
 			assert input.find_code_unit(bounds[0], bounds[1], 0x61) == none
 		}
 		assert input.matches_u16_at(1, [u16(0), 0x7f, 0x62])
@@ -59,18 +59,18 @@ fn test_regex_input_decodes_only_complete_forward_pairs_in_unicode_mode() {
 		units: [u16(0xd800), 0x61, 0xdc00, 0xd83d, 0xde00, 0xdbff]
 	})
 	for position, expected in [u32(0xd800), 0x61, 0xdc00, 0x1f600, 0xde00, 0xdbff] {
-		assert regex_decode_code_point(true, input, usize(position)) == expected
-		width := if position == 3 { usize(2) } else { usize(1) }
-		assert regex_code_point_len(true, input, usize(position)) == width
-		assert regex_decode_code_point(false, input, usize(position)) == u32(input.code_unit(usize(position)))
-		assert regex_code_point_len(false, input, usize(position)) == 1
+		assert regex_decode_code_point(true, input, uint(position)) == expected
+		width := if position == 3 { uint(2) } else { uint(1) }
+		assert regex_code_point_len(true, input, uint(position)) == width
+		assert regex_decode_code_point(false, input, uint(position)) == u32(input.code_unit(uint(position)))
+		assert regex_code_point_len(false, input, uint(position)) == 1
 	}
 	byte_input := RegexInput(RegexAsciiInput{
 		bytes: [u8(0), 0x7f, 0x80, 0xff]
 	})
 	for position in 0 .. 4 {
-		assert regex_decode_code_point(true, byte_input, usize(position)) == u32(byte_input.code_unit(usize(position)))
-		assert regex_code_point_len(true, byte_input, usize(position)) == 1
+		assert regex_decode_code_point(true, byte_input, uint(position)) == u32(byte_input.code_unit(uint(position)))
+		assert regex_code_point_len(true, byte_input, uint(position)) == 1
 	}
 }
 
@@ -81,7 +81,7 @@ fn test_regex_capture_copy_clips_both_buffers_and_search_advances_empty_matches_
 			mut output := []i32{len: length, init: 99}
 			regex_copy_captures_to_out(registers, count, mut output)
 			for index, value in output {
-				if index < registers.len && usize(index) < (usize(count) + 1) * 2 {
+				if index < registers.len && uint(index) < (uint(count) + 1) * 2 {
 					assert value == registers[index]
 				} else {
 					assert value == 99
@@ -92,7 +92,7 @@ fn test_regex_capture_copy_clips_both_buffers_and_search_advances_empty_matches_
 	assert regex_next_search_position(0, 0) == 1
 	assert regex_next_search_position(3, 3) == 4
 	assert regex_next_search_position(3, 7) == 7
-	assert regex_next_search_position(0x7fffffff, 0x7fffffff) == usize(0x80000000)
+	assert regex_next_search_position(0x7fffffff, 0x7fffffff) == uint(0x80000000)
 	assert regex_match_limit == 10_000_000
 }
 

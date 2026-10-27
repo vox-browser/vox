@@ -43,6 +43,6 @@ pub fn (event &ClipboardEvent) clipboard_data() ?&html.DataTransfer {
 	return event.clipboard_data_
 }
 
-pub fn ClipboardEvent.clipboard_data_offset() usize {
-	return usize(__offsetof(ClipboardEvent, clipboard_data_))
+pub fn ClipboardEvent.clipboard_data_offset() uint {
+	return uint(__offsetof(ClipboardEvent, clipboard_data_))
 }

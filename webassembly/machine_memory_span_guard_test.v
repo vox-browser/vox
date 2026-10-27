@@ -52,11 +52,11 @@ fn test_source_memory_span_at_borrows_actual_cage_bytes_and_retains_in_range_poi
 	span := buffer.span()
 	assert bytes.size == 16 && span.size == 16
 	for index in 0 .. 16 {
-		assert voidptr(bytes.at(usize(index))) == voidptr(buffer.offset_pointer(usize(index)))
-		assert voidptr(span.at(usize(index))) == voidptr(bytes.at(usize(index)))
-		cell := span.at(usize(index))
+		assert voidptr(bytes.at(uint(index))) == voidptr(buffer.offset_pointer(uint(index)))
+		assert voidptr(span.at(uint(index))) == voidptr(bytes.at(uint(index)))
+		cell := span.at(uint(index))
 		unsafe { *cell = u8(index + 1) }
-		assert unsafe { *bytes.at(usize(index)) } == u8(index + 1)
+		assert unsafe { *bytes.at(uint(index)) } == u8(index + 1)
 		assert unsafe { buffer.data()[index] } == u8(index + 1)
 	}
 }

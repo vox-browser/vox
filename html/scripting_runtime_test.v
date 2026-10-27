@@ -14,7 +14,7 @@ fn scripting_test_evaluate(source string, realm &ScriptingRealm) !dom.JSValue {
 	return dom.js_string(source)
 }
 
-fn scripting_test_parse(source string, filename string, line usize) ! {
+fn scripting_test_parse(source string, filename string, line uint) ! {
 	_ = filename
 	_ = line
 	if source == 'invalid' {

@@ -9,13 +9,13 @@ pub fn typed_array_prototype_slice(mut vm VM, prototypes PrimitiveObjectPrototyp
 	record := validate_typed_array(mut vm, source.object, .seq_cst)!
 	length := typed_array_length(record)
 	relative_start := start.to_integer_or_infinity(mut vm)!
-	mut k := u32(buffer_slice_index(usize(length), relative_start))
+	mut k := u32(buffer_slice_index(uint(length), relative_start))
 	relative_end := if end.is_undefined() {
 		f64(length)
 	} else {
 		end.to_integer_or_infinity(mut vm)!
 	}
-	mut final := u32(buffer_slice_index(usize(length), relative_end))
+	mut final := u32(buffer_slice_index(uint(length), relative_end))
 	mut count := if final > k { final - k } else { u32(0) }
 	realm := vm.realm()
 	factory := fn [source, realm, count, prototype_getter] (mut vm VM) !&TypedArray {
@@ -41,11 +41,11 @@ pub fn typed_array_prototype_slice(mut vm VM, prototypes PrimitiveObjectPrototyp
 			size := u64(source.element_size())
 			checked_source := u64(k) * size + u64(source.byte_offset)
 			if checked_source > u64(0xffffffff) { return Value.from_object(array.object) }
-			mut source_index := usize(checked_source)
-			mut target_index := usize(array.byte_offset)
+			mut source_index := uint(checked_source)
+			mut target_index := uint(array.byte_offset)
 			checked_limit := u64(count) * size + u64(target_index)
 			if checked_limit > u64(0xffffffff) { return Value.from_object(array.object) }
-			limit := usize(checked_limit)
+			limit := uint(checked_limit)
 			if !target_buffer.is_detached() && !target_buffer.is_shared_array_buffer()
 				&& !source_buffer.is_detached() && !source_buffer.is_shared_array_buffer()
 				&& !target_buffer.shares_storage_with(source_buffer) {

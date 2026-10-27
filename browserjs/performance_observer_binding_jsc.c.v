@@ -84,7 +84,7 @@ fn (mut runtime Runtime) performance_observer_entries(mut binding PerformanceObs
 		values << value
 	}
 	mut exception := unsafe { nil }
-	array := C.JSObjectMakeArray(runtime.context, usize(values.len), values.data, &exception)
+	array := C.JSObjectMakeArray(runtime.context, uint(values.len), values.data, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	return array
 }
@@ -100,7 +100,7 @@ fn (mut runtime Runtime) performance_observer_operation(mut binding PerformanceO
 	}
 	if method == 'supported' {
 		values := performancetimeline.supported_entry_types.map(runtime.binding_string(it))
-		return C.JSObjectMakeArray(runtime.context, usize(values.len), values.data, unsafe { nil })
+		return C.JSObjectMakeArray(runtime.context, uint(values.len), values.data, unsafe { nil })
 	}
 	if method == 'construct' {
 		callback := runtime.retain_javascript_value(args[2])!

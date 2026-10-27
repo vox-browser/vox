@@ -40,7 +40,7 @@ fn test_string_search_helpers_and_native_bodies_find_code_unit_offsets_and_empty
 		}
 		assert string_search_call(mut vm, last, pair, [pair])!.number == 0
 	}
-	assert string_index_of(utf16_string('aa'), utf16_string('a'), ~usize(0)) == none
+	assert string_index_of(utf16_string('aa'), utf16_string('a'), ~uint(0)) == none
 	assert string_index_of(utf16_string('aa'), utf16_string(''), 3) == none
 	assert string_index_of(utf16_string('aa'), utf16_string(''), 2)? == 2
 	assert string_last_index_of(utf16_string('aaa'), utf16_string('aa'), 1)? == 1

@@ -22,7 +22,7 @@ fn test_typed_array_allocation_replaces_storage_resets_offsets_and_enforces_elem
 			&& !array.viewed_buffer.shares_storage_with(old)
 		assert array.viewed_buffer.read_bytes(0, 2 * kind.size()) == []u8{len: int(2 * kind.size())}
 		installed := array.viewed_buffer
-		if _ := allocate_typed_array_buffer(mut vm, mut array, usize(0x7fffffff) / kind.size() + 1) {
+		if _ := allocate_typed_array_buffer(mut vm, mut array, uint(0x7fffffff) / kind.size() + 1) {
 			assert false
 		} else {
 			assert thrown_value(err).as_object().error_message()?.str() == 'Invalid typed array length'

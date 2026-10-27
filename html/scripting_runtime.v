@@ -45,7 +45,7 @@ pub:
 
 pub type ScriptEvaluationHook = fn(string, &ScriptingRealm) !dom.JSValue
 
-pub type ScriptParseHook = fn(string, string, usize) !
+pub type ScriptParseHook = fn(string, string, uint) !
 
 @[heap]
 pub struct ScriptingRealm {
@@ -53,15 +53,15 @@ pub mut:
 	scripting_enabled                       bool = true
 	can_run                                 bool = true
 	settings_handle                         voidptr
-	script_execution_depth                  usize
-	callback_execution_depth                usize
-	microtask_checkpoint_count              usize
+	script_execution_depth                  uint
+	callback_execution_depth                uint
+	microtask_checkpoint_count              uint
 	reported_exceptions                     []ReportedScriptException
 	principal_realm_                        ?&ScriptingRealm
 	host_defined_handle                     voidptr
 	global_object_handle                    voidptr
 	module_map_                             ?&ModuleMap
-	skip_when_determining_incumbent_counter usize
+	skip_when_determining_incumbent_counter uint
 	active_classic_script_                  ?&ClassicScript
 	error_extraction_context_               ?fn (dom.JSValue) ErrorExtractionContext
 mut:
@@ -246,21 +246,21 @@ pub struct ClassicScript {
 	Script
 pub:
 	source             string
-	source_line_number usize
+	source_line_number uint
 	compiled_program   ?CompiledProgram
 pub mut:
 	muted_errors MutedErrors
 	evaluator    ?ScriptEvaluationHook
 }
 
-pub fn ClassicScript.create(filename string, source string, realm &ScriptingRealm, base_url dom.URL, source_line_number usize, muted_errors MutedErrors) &ClassicScript {
+pub fn ClassicScript.create(filename string, source string, realm &ScriptingRealm, base_url dom.URL, source_line_number uint, muted_errors MutedErrors) &ClassicScript {
 	actual_source := if is_scripting_enabled(realm) { source } else { '' }
 	return create_classic_script_record(filename, actual_source, realm, base_url, source_line_number, muted_errors)
 }
 
 // Source's pre-parsed and compiled constructors retain their existing source;
 // disabled-source substitution belongs only to ClassicScript::create.
-fn create_classic_script_record(filename string, source string, realm &ScriptingRealm, base_url dom.URL, source_line_number usize, muted_errors MutedErrors) &ClassicScript {
+fn create_classic_script_record(filename string, source string, realm &ScriptingRealm, base_url dom.URL, source_line_number uint, muted_errors MutedErrors) &ClassicScript {
 	actual_url := if muted_errors == .yes { dom.url_about_blank() } else { base_url }
 	return &ClassicScript{
 		Script: Script{
@@ -274,7 +274,7 @@ fn create_classic_script_record(filename string, source string, realm &Scripting
 	}
 }
 
-pub fn ClassicScript.create_with_parser(filename string, source string, realm &ScriptingRealm, base_url dom.URL, source_line_number usize, muted_errors MutedErrors, parser ScriptParseHook) &ClassicScript {
+pub fn ClassicScript.create_with_parser(filename string, source string, realm &ScriptingRealm, base_url dom.URL, source_line_number uint, muted_errors MutedErrors, parser ScriptParseHook) &ClassicScript {
 	mut script := ClassicScript.create(filename, source, realm, base_url, source_line_number, muted_errors)
 	parser(script.source, filename, source_line_number) or {
 		script.parse_error = err.msg()

@@ -66,14 +66,14 @@ fn native_document_capture_audit(owner voidptr) {
 fn C.native_decode_video_frame(path &char, seconds f64, output_width &int, output_height &int, output_pitch &int) &u8
 
 fn C.native_free_video_frame(pixels &u8)
-fn C.native_decode_webp_rgba(bytes &u8, length usize, width &int, height &int, pitch &int) &u8
+fn C.native_decode_webp_rgba(bytes &u8, length uint, width &int, height &int, pitch &int) &u8
 fn C.native_free_webp_pixels(pixels &u8)
-fn C.native_decode_webp_yuv(bytes &u8, length usize, width &int, height &int, size &int) &u8
+fn C.native_decode_webp_yuv(bytes &u8, length uint, width &int, height &int, size &int) &u8
 fn C.native_webp_yuv_paint_supported() int
 fn C.native_webp_yuv_decoder_available() int
-fn C.native_decode_jpeg_rgba(bytes &u8, length usize, width &int, height &int, pitch &int) &u8
-fn C.native_tag_image_color_profile(pixels voidptr, width int, height int, bytes &u8, length usize, enabled int)
-fn C.native_png_has_color_profile(bytes &u8, length usize) int
+fn C.native_decode_jpeg_rgba(bytes &u8, length uint, width &int, height &int, pitch &int) &u8
+fn C.native_tag_image_color_profile(pixels voidptr, width int, height int, bytes &u8, length uint, enabled int)
+fn C.native_png_has_color_profile(bytes &u8, length uint) int
 fn C.native_free_jpeg_pixels(pixels &u8)
 
 fn C.native_pointer_screen_position(x f64, y f64, screen_x &f64, screen_y &f64)
@@ -1555,7 +1555,7 @@ fn browser_decode_raster_image_bytes(bytes []u8) !&dom.Bitmap_ {
 			mut width := 0
 			mut height := 0
 			mut pitch := 0
-			decoded := C.native_decode_webp_rgba(bytes.data, usize(bytes.len), &width, &height, &pitch)
+			decoded := C.native_decode_webp_rgba(bytes.data, uint(bytes.len), &width, &height, &pitch)
 			if decoded == unsafe { nil } { return error('Invalid or unsupported WebP image') }
 			defer { C.native_free_webp_pixels(decoded) }
 			mut pixels := []u8{len: pitch * height}
@@ -1584,7 +1584,7 @@ fn browser_raster_can_share_native_pixels(bytes []u8) bool {
 		// JPEG and WebP have separate native paint decoders. PNG profiles are
 		// policy dependent, so leave those images on the existing URL path too.
 		return bytes.len >= 8 && bytes[..8] == [u8(0x89), `P`, `N`, `G`, `\r`, `\n`, 0x1a, `\n`]
-			&& C.native_png_has_color_profile(bytes.data, usize(bytes.len)) == 0
+			&& C.native_png_has_color_profile(bytes.data, uint(bytes.len)) == 0
 	}
 	return false
 }
@@ -1599,7 +1599,7 @@ fn browser_decoded_image_data(resource_url dom.URL, bytes []u8) !html.DecodedIma
 		if bitmap.native_resource_replay_compatible {
 			// An arena can reuse an address that previously held tagged pixels.
 			C.native_tag_image_color_profile(bitmap.data.data, bitmap.width, bitmap.height,
-				bytes.data, usize(bytes.len), 0)
+				bytes.data, uint(bytes.len), 0)
 		}
 	}
 	decoded := html.BitmapDecodedImageData.create([html.BitmapDecodedImageFrame{frame: dom.DecodedImageFrame_.create(bitmap)}], 0, false)
@@ -4729,7 +4729,7 @@ fn (mut app BrowserApp) create_image_from_resource_bytes(image_url string, bytes
 					mut width := 0
 					mut height := 0
 					mut size := 0
-					planes := C.native_decode_webp_yuv(bytes.data, usize(bytes.len), &width, &height, &size)
+					planes := C.native_decode_webp_yuv(bytes.data, uint(bytes.len), &width, &height, &size)
 					if planes != unsafe { nil } {
 						mut data := []u8{len: size}
 						unsafe { vmemcpy(data.data, planes, size) }
@@ -4781,7 +4781,7 @@ fn (mut app BrowserApp) create_image_from_resource_bytes(image_url string, bytes
 				data: bitmap.data.data}
 			chromium := app.document != unsafe { nil } && app.document.font_rendering_policy() == .chromium
 			C.native_tag_image_color_profile(image.data, image.width, image.height, bytes.data,
-				usize(bytes.len), int(chromium))
+				uint(bytes.len), int(chromium))
 			image.id = app.ctx.cache_image(image)
 			return image
 		}

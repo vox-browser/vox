@@ -146,7 +146,7 @@ fn test_source_lane_store_consumes_vector_and_address_before_memory64_checked_fa
 	assert !interpreter.pop_and_store_lane_n[u64](mut configuration, instruction, addresses)
 	expected := hex.decode('1032547698badcfe')!
 	for index in 0 .. 8 {
-		assert unsafe { buffer.data()[memory.size() - 8 + usize(index)] } == expected[index]
+		assert unsafe { buffer.data()[memory.size() - 8 + uint(index)] } == expected[index]
 	}
 	assert configuration.value_stack_.size() == 1
 }

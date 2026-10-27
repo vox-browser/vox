@@ -15,7 +15,7 @@ fn test_document_made_large_by_its_scripts_gets_the_heap_hint_before_layout() {
 			return
 		}
 		// The capacity that platform.prepare_document_heap reserves.
-		hinted_capacity := usize(160) * 1024 * 1024
+		hinted_capacity := uint(160) * 1024 * 1024
 		initial := gc_heap_usage()
 		assert initial.heap_size + initial.unmapped_bytes < hinted_capacity
 		mut owner := page.Page.create(1)!

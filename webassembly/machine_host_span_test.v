@@ -4,7 +4,7 @@ module webassembly
 struct SourceHostSpanObservation {
 mut:
 	pointer voidptr
-	length  usize
+	length  uint
 	calls   int
 }
 
@@ -26,7 +26,7 @@ fn test_source_host_callable_borrows_actual_inline_and_outline_argument_slots_an
 	address := store.allocate_host_function(BinaryMachineHostFunction.create(callable, BinaryMachineFunctionType{}, 'span'))?
 	for count in [2, 9] {
 		mut arguments := BinaryMachineArguments{}
-		arguments.ensure_capacity(usize(count))
+		arguments.ensure_capacity(uint(count))
 		for index in 0 .. count {
 			arguments.unchecked_append(BinaryMachineValue.from_i32(i32(index + 41)))
 		}
@@ -35,7 +35,7 @@ fn test_source_host_callable_borrows_actual_inline_and_outline_argument_slots_an
 		span := arguments.span()
 		mut result := host.invoke(mut configuration, span)
 		assert observation.pointer == voidptr(arguments.data())
-		assert observation.length == usize(count) && arguments.size() == usize(count)
+		assert observation.length == uint(count) && arguments.size() == uint(count)
 		assert configuration.regs[0].to_i32() == 41
 		assert arguments.at(0).to_i32() == 211
 		assert result.values().values[0].to_i32() == count + 40

@@ -69,7 +69,7 @@ fn test_typed_array_to_locale_string_live_reads_follow_locale_result_coercion_mu
 	for mode in ['shrink', 'detach', 'grow'] {
 		mut parent := Object.create(vm.realm(), none)
 		mut buffer := ArrayBufferObject.create_from_bytes(vm.realm(), [u8(1), 2, 3], false, parent)
-		buffer.maximum_byte_length = usize(8)
+		buffer.maximum_byte_length = uint(8)
 		mut source := TypedArray.create(vm.realm(), .uint8, 0, buffer, parent)
 		initialize_typed_array_from_array_buffer(mut vm, mut source, buffer, Value.from_i32(0),
 			js_undefined())!
@@ -78,9 +78,9 @@ fn test_typed_array_to_locale_string_live_reads_follow_locale_result_coercion_mu
 		to_string := NativeFunction.create(mut vm, vm.realm(), vm.realm().function_prototype, fn [mode, mut buffer, mut log] (mut vm VM) !Value {
 			log.events << 'string'
 			if mode == 'detach' { detach_array_buffer(mut vm, mut buffer, none)! } else { assert buffer.try_resize(if mode == 'shrink' {
-					usize(1)
+					uint(1)
 				} else {
-					usize(5)
+					uint(5)
 				}, true)
 			 }
 			return Value.from_string(vm.create_string_from_str('first'))

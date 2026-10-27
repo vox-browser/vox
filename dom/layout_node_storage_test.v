@@ -4,7 +4,7 @@ import platform
 
 $if gcboehm ? {
 	fn C.GC_gcollect()
-	fn C.GC_get_total_bytes() usize
+	fn C.GC_get_total_bytes() uint
 }
 
 fn test_layout_bridge_default_storage_reads_and_resets_do_not_allocate() {
@@ -14,7 +14,7 @@ fn test_layout_bridge_default_storage_reads_and_resets_do_not_allocate() {
 	assert sizeof(LayoutNode) <= 512
 	// Warm the allocator counters before comparing repeated default reads.
 	before_arena := platform.thread_arena_usage().used
-	mut before_gc := usize(0)
+	mut before_gc := uint(0)
 	$if gcboehm ? {
 		before_gc = C.GC_get_total_bytes()
 	}

@@ -94,8 +94,8 @@ pub fn (cursor &IDBCursor) value() !Value {
 	return entry.value.clone()
 }
 
-pub fn IDBCursor.request_offset() usize {
-	return usize(__offsetof(IDBCursor, request))
+pub fn IDBCursor.request_offset() uint {
+	return uint(__offsetof(IDBCursor, request))
 }
 
 pub fn (cursor &IDBCursor) current_key() ?Key {

@@ -153,7 +153,7 @@ fn test_stopping_or_restarting_a_deferred_timer_discards_its_old_delivery() {
 $if gcboehm ? {
 	struct CooperativeHeapTestPolicy {
 	mut:
-		value usize
+		value uint
 	}
 	fn cooperative_heap_test_read(context voidptr) voidptr {
 		mut value := unsafe { &CooperativeHeapTestPolicy(context) }
@@ -165,12 +165,12 @@ $if gcboehm ? {
 		C.GC_set_free_space_divisor(value.value)
 		return unsafe { nil }
 	}
-	fn cooperative_heap_test_divisor() usize {
+	fn cooperative_heap_test_divisor() uint {
 		mut value := CooperativeHeapTestPolicy{}
 		C.GC_call_with_alloc_lock(cooperative_heap_test_read, &value)
 		return value.value
 	}
-	fn cooperative_heap_test_set_divisor(value usize) {
+	fn cooperative_heap_test_set_divisor(value uint) {
 		policy := CooperativeHeapTestPolicy{ value: value }
 		C.GC_call_with_alloc_lock(cooperative_heap_test_write, &policy)
 	}

@@ -1,7 +1,7 @@
 module dom
 
 $if gcboehm ? {
-	fn C.GC_get_total_bytes() usize
+	fn C.GC_get_total_bytes() uint
 }
 
 fn test_hover_invalidation_matches_identity_ancestors_and_shadow_hosts_without_node_copies() {

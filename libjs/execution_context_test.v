@@ -159,12 +159,12 @@ fn test_interpreter_stack_allocates_frames_until_its_budget_is_exhausted() {
 }
 
 @[noinline]
-fn consume_stack_and_measure(info StackInfo, depth int) usize {
+fn consume_stack_and_measure(info StackInfo, depth int) uint {
 	buffer := [128]u64{}
 	if depth == 0 {
-		return info.size_free() + usize(buffer[0])
+		return info.size_free() + uint(buffer[0])
 	}
-	return consume_stack_and_measure(info, depth - 1) + usize(buffer[depth % 128])
+	return consume_stack_and_measure(info, depth - 1) + uint(buffer[depth % 128])
 }
 
 fn test_stack_info_reports_shrinking_free_space_during_recursion() {

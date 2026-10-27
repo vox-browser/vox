@@ -109,7 +109,7 @@ fn (host &FetchHost) byte_value(value string) !voidptr {
 
 fn (host &FetchHost) array(items []voidptr) !voidptr {
 	mut exception := unsafe { nil }
-	result := C.JSObjectMakeArray(host.runtime.context, usize(items.len), items.data, &exception)
+	result := C.JSObjectMakeArray(host.runtime.context, uint(items.len), items.data, &exception)
 	if exception != unsafe { nil } { return host.runtime.actual_javascript_exception(exception) }
 	return result
 }

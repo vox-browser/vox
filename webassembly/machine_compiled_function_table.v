@@ -28,8 +28,8 @@ pub fn (mut instance BinaryMachineModuleInstance) compiled_fn_table(store &Binar
 			if native == 0 { continue }
 			table.entries[index] = BinaryMachineCompiledFunctionEntry{
 				handler_ptr:          native
-				dispatches_ptr:       usize(compiled.dispatches.data)
-				src_dst_ptr:          usize(compiled.src_dst_mappings.data)
+				dispatches_ptr:       uint(compiled.dispatches.data)
+				src_dst_ptr:          uint(compiled.src_dst_mappings.data)
 				first_instruction:    compiled.dispatches[0].instruction
 				expression:           &function.code().body
 				module:               function.module()

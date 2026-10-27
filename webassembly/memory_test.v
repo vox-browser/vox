@@ -4,7 +4,7 @@ fn test_memory_descriptor_growth_and_buffer_modes() {
 	mut memory := Memory.construct(MemoryDescriptor{ initial: 1, maximum: 3 })!
 	assert memory.size_pages() == 1
 	fixed := memory.buffer()
-	assert fixed.byte_length() == usize(page_size)
+	assert fixed.byte_length() == uint(page_size)
 	assert !fixed.resizable
 	assert memory.grow(1)! == 1
 	assert memory.size_pages() == 2
@@ -65,13 +65,13 @@ fn test_memory_buffers_are_cached_per_realm_and_refreshed_after_growth() {
 	assert !memory_has_buffer_object(memory, realm_b_buffer)
 	refreshed_a_buffer := buffer_object_for_realm('memory-buffer-realm-a', memory)
 	assert voidptr(refreshed_a_buffer) != voidptr(realm_a_buffer)
-	assert refreshed_a_buffer.byte_length() == usize(2 * page_size)
+	assert refreshed_a_buffer.byte_length() == uint(2 * page_size)
 
 	resizable_b_buffer := memory.to_resizable_buffer_for_realm('memory-buffer-realm-b')!
 	assert resizable_b_buffer.resizable
 	assert memory.grow(1)! == 2
 	assert !resizable_b_buffer.detached
-	assert resizable_b_buffer.byte_length() == usize(3 * page_size)
+	assert resizable_b_buffer.byte_length() == uint(3 * page_size)
 	assert resizable_b_buffer.detached_generation == 2
 	assert voidptr(buffer_object_for_realm('memory-buffer-realm-b', memory)) == voidptr(resizable_b_buffer)
 }
@@ -79,13 +79,13 @@ fn test_memory_buffers_are_cached_per_realm_and_refreshed_after_growth() {
 fn test_memory_external_storage_describes_current_backing_data() {
 	mut memory := Memory.create(MemoryDescriptor{ initial: 1, maximum: 2 })!
 	initial := external_memory_storage(memory, true)
-	assert initial.byte_length() == usize(page_size)
+	assert initial.byte_length() == uint(page_size)
 	assert initial.generation == 0
 	assert initial.fixed_length
 
 	memory.grow(1)!
 	grown := external_memory_storage(memory, false)
-	assert grown.byte_length() == usize(2 * page_size)
+	assert grown.byte_length() == uint(2 * page_size)
 	assert grown.generation == 1
 	assert !grown.fixed_length
 }

@@ -38,7 +38,7 @@ fn test_typed_array_buffer_initialization_preserves_offsets_and_fixed_or_trackin
 		}
 	}
 	mut odd := ArrayBufferObject.create(mut vm, vm.realm(), 5, prototype)!
-	odd.maximum_byte_length = usize(9)
+	odd.maximum_byte_length = uint(9)
 	mut array := TypedArray.create(vm.realm(), .uint16, 0, odd, prototype)
 	initialize_typed_array_from_array_buffer(mut vm, mut array, odd, Value.from_i32(2),
 		js_undefined())!
@@ -75,7 +75,7 @@ fn test_typed_array_buffer_initialization_rejects_alignment_before_lengths_and_c
 		}
 	}
 	mut resizable := ArrayBufferObject.create(mut vm, vm.realm(), 5, prototype)!
-	resizable.maximum_byte_length = usize(8)
+	resizable.maximum_byte_length = uint(8)
 	if _ := initialize_typed_array_from_array_buffer(mut vm, mut array, resizable,
 		Value.from_i32(6), js_undefined())
 	{
@@ -83,9 +83,9 @@ fn test_typed_array_buffer_initialization_rejects_alignment_before_lengths_and_c
 	} else {
 		assert thrown_value(err).as_object().error_message()?.str() == 'Typed array byte offset 6 is out of range for buffer with length 5'
 	}
-	for size in [usize(1), 2, 4, 8] {
-		validate_typed_array_length(mut vm, usize(0x7fffffff) / size, size)!
-		if _ := validate_typed_array_length(mut vm, usize(0x7fffffff) / size + 1, size) {
+	for size in [uint(1), 2, 4, 8] {
+		validate_typed_array_length(mut vm, uint(0x7fffffff) / size, size)!
+		if _ := validate_typed_array_length(mut vm, uint(0x7fffffff) / size + 1, size) {
 			assert false
 		} else {
 			assert thrown_value(err).as_object().error_message()?.str() == 'Invalid typed array length'
@@ -99,7 +99,7 @@ fn test_typed_array_buffer_initialization_orders_offset_length_coercions_before_
 	prototype := Object.create(vm.realm(), none)
 	for mode in ['detach', 'shrink', 'throw', 'misalign'] {
 		mut buffer := ArrayBufferObject.create(mut vm, vm.realm(), 8, prototype)!
-		buffer.maximum_byte_length = usize(16)
+		buffer.maximum_byte_length = uint(16)
 		mut array := TypedArray.create(vm.realm(), .uint16, 0, buffer, prototype)
 		mut log := &TypedArrayInitializationLog{}
 		mut offset := Object.create(vm.realm(), none)

@@ -125,8 +125,8 @@ pub fn SpeechSynthesisUtterance.create(text string) &SpeechSynthesisUtterance {
 	}
 }
 
-pub fn SpeechSynthesisUtterance.voice_offset() usize {
-	return usize(__offsetof(SpeechSynthesisUtterance, voice_))
+pub fn SpeechSynthesisUtterance.voice_offset() uint {
+	return uint(__offsetof(SpeechSynthesisUtterance, voice_))
 }
 
 pub fn (u &SpeechSynthesisUtterance) text() string {

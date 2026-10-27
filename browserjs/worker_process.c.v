@@ -8,9 +8,9 @@ import platform
 
 fn C.vox_js_worker_spawn(&char) voidptr
 fn C.vox_js_worker_begin_child() voidptr
-fn C.vox_js_worker_queue(voidptr, u32, &u8, usize) int
+fn C.vox_js_worker_queue(voidptr, u32, &u8, uint) int
 fn C.vox_js_worker_flush(voidptr) int
-fn C.vox_js_worker_receive(voidptr, &u32, &&u8, &usize) int
+fn C.vox_js_worker_receive(voidptr, &u32, &&u8, &uint) int
 fn C.vox_js_worker_wait(voidptr, i32) int
 fn C.vox_js_worker_destroy(voidptr)
 
@@ -55,7 +55,7 @@ pub fn WorkerProcess.begin_child() !&WorkerProcess {
 
 pub fn (process &WorkerProcess) queue(kind u32, bytes []u8) ! {
 	if process.channel == unsafe { nil } { return error('Script worker process is closed') }
-	if C.vox_js_worker_queue(process.channel, kind, bytes.data, usize(bytes.len)) != 0 {
+	if C.vox_js_worker_queue(process.channel, kind, bytes.data, uint(bytes.len)) != 0 {
 		return error('Cannot queue script worker frame')
 	}
 }
@@ -73,7 +73,7 @@ pub fn (process &WorkerProcess) receive() !WorkerProcessRead {
 	defer { platform.leave_persistent(persistent) }
 	mut kind := u32(0)
 	mut bytes := unsafe { &u8(nil) }
-	mut length := usize(0)
+	mut length := uint(0)
 	status := C.vox_js_worker_receive(process.channel, &kind, &bytes, &length)
 	if status < 0 { return error('Invalid or interrupted script worker frame') }
 	if status == 2 { return WorkerProcessRead{ ended: true } }

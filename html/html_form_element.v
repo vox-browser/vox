@@ -491,7 +491,7 @@ pub fn (mut form HTMLFormElementModel) plan_to_navigate_to(submission FormSubmis
 	navigable.navigate(submission.url, document, submission.referrer_policy, involvement)!
 }
 
-pub fn (mut form HTMLFormElementModel) item_value(index usize) ?&dom.Element {
+pub fn (mut form HTMLFormElementModel) item_value(index uint) ?&dom.Element {
 	return form.elements().item(int(index))
 }
 
@@ -642,7 +642,7 @@ pub fn (form &HTMLFormElementModel) default_button() ?&FormAssociatedElement {
 	return none
 }
 
-pub fn (form &HTMLFormElementModel) number_of_fields_blocking_implicit_submission() usize {
+pub fn (form &HTMLFormElementModel) number_of_fields_blocking_implicit_submission() uint {
 	mut count := 0
 	for control in form.get_submittable_elements() {
 		if control.element.local_name() != 'input' {
@@ -657,5 +657,5 @@ pub fn (form &HTMLFormElementModel) number_of_fields_blocking_implicit_submissio
 			count++
 		}
 	}
-	return usize(count)
+	return uint(count)
 }

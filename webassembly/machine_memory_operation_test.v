@@ -15,11 +15,11 @@ fn test_source_memory_store_writes_live_storage_at_edges_and_preserves_existing_
 	assert !interpreter.store_to_memory_instance(mut memory, end, bytes)
 	for i in 0 .. 4 {
 		assert unsafe { memory.data().data()[i] } == payload[i]
-		assert unsafe { memory.data().data()[usize(end) + usize(i)] } == payload[i]
+		assert unsafe { memory.data().data()[uint(end) + uint(i)] } == payload[i]
 	}
 	assert interpreter.trap().format() == 'Earlier trap'
 	assert !interpreter.store_to_memory_instance(mut memory, u64(memory.size()), BinaryMachineBytes{})
-	assert memory.grow(usize(page_size), .yes, .no)
+	assert memory.grow(uint(page_size), .yes, .no)
 	assert !interpreter.store_to_memory_instance(mut memory, u64(memory.size()) - 4, bytes)
 	assert unsafe { memory.data().data()[memory.size() - 4] } == 0x80
 	assert interpreter.trap().format() == 'Earlier trap'

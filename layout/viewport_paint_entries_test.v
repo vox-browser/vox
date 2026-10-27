@@ -6,7 +6,7 @@ import painting
 import platform
 
 $if gcboehm ? {
-	fn C.GC_get_total_bytes() usize
+	fn C.GC_get_total_bytes() uint
 }
 
 fn viewport_test_commands(mut document dom.Document) []PaintCommand {
@@ -83,14 +83,14 @@ fn test_viewport_ink_probes_reuse_storage_for_rectangles_and_glyph_bounds() {
 	}
 	mut ink_probe := PaintCommand{}
 	identity := [f64(1), 0, 0, 1, 0, 0]!
-	mut before := usize(0)
+	mut before := uint(0)
 	$if gcboehm ? { before = C.GC_get_total_bytes() }
 	mut outside := 0
 	for _ in 0 .. 4096 {
 		if viewport_rect_is_outside(LayoutRect{10, 1000, 20, 20}, identity, 320, 100, mut ink_probe) { outside++ }
 		if viewport_fragment_ink_is_outside(&fragment, identity, 320, 100, mut ink_probe) { outside++ }
 	}
-	mut allocated := usize(0)
+	mut allocated := uint(0)
 	$if gcboehm ? { allocated = C.GC_get_total_bytes() - before }
 	assert outside == 8192
 	assert allocated < 8192, 'viewport ink probes allocated ${allocated} bytes'

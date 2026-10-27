@@ -39,7 +39,7 @@ fn test_page_find_uses_current_selection_and_clears_only_when_requested() {
 	document, _, pointer := window_find_fixture('<p id="p">one one one</p>')
 	mut owner := unsafe { &page.Page(pointer) }
 	result := owner.find_in_page(page.FindInPageQuery{ string_: 'one' })
-	assert result.total_match_count or { usize(0) } == 3
+	assert result.total_match_count or { uint(0) } == 3
 	assert owner.find_in_page_next_match().current_match_index == 1
 	assert owner.find_in_page_next_match().current_match_index == 2
 	assert owner.find_in_page_next_match().current_match_index == 0

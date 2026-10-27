@@ -1243,8 +1243,8 @@ pub fn (e &InputEvent) data_transfer() voidptr {
 	return e.data_transfer_
 }
 
-pub fn InputEvent.data_transfer_offset() usize {
-	return usize(__offsetof(InputEvent, data_transfer_))
+pub fn InputEvent.data_transfer_offset() uint {
+	return uint(__offsetof(InputEvent, data_transfer_))
 }
 
 pub fn (e &InputEvent) get_target_ranges() []&StaticRange {

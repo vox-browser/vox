@@ -46,7 +46,7 @@ fn (host &NavigatorHost) operate(args []voidptr) !voidptr {
 		'languages' {
 			values := navigator.languages().map(host.runtime.binding_string(it))
 			mut exception := unsafe { nil }
-			array := C.JSObjectMakeArray(host.runtime.context, usize(values.len), values.data,
+			array := C.JSObjectMakeArray(host.runtime.context, uint(values.len), values.data,
 				&exception)
 			if exception != unsafe { nil } {
 				return host.runtime.actual_javascript_exception(exception)

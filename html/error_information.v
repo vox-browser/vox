@@ -13,8 +13,8 @@ pub:
 	message  string
 	filename string
 	error    dom.JSValue
-	lineno   usize
-	colno    usize
+	lineno   uint
+	colno    uint
 }
 
 // The translated DOM currently represents JavaScript values without a VM or
@@ -24,8 +24,8 @@ pub:
 pub struct ErrorSourceLocation {
 pub:
 	filename string
-	line     usize
-	column   usize
+	line     uint
+	column   uint
 }
 
 pub struct ErrorExtractionContext {
@@ -53,8 +53,8 @@ fn first_nonempty_error_location(locations []ErrorSourceLocation) ?ErrorSourceLo
 pub fn extract_error_information(exception dom.JSValue, context ErrorExtractionContext) ErrorInformation {
 	message := context.own_message or { 'Uncaught exception: ${exception.to_string_value()}' }
 	mut filename := ''
-	mut lineno := usize(0)
-	mut colno := usize(0)
+	mut lineno := uint(0)
+	mut colno := uint(0)
 
 	if context.exception_is_error {
 		if location := first_nonempty_error_location(context.traceback) {

@@ -32,26 +32,26 @@ pub fn (mut instance BinaryMachineTableInstance) elements() &BinaryMachineRefere
 
 pub fn (instance &BinaryMachineTableInstance) type_() BinaryTableType { return instance.type_ }
 
-pub fn (mut instance BinaryMachineTableInstance) set_element(index usize, reference BinaryMachineReference, module_anchor &BinaryMachineModuleInstance) {
+pub fn (mut instance BinaryMachineTableInstance) set_element(index uint, reference BinaryMachineReference, module_anchor &BinaryMachineModuleInstance) {
 	instance.elements_.values[int(index)] = reference
 	instance.module_anchors_[int(index)] = module_anchor
 }
 
-pub fn (instance &BinaryMachineTableInstance) module_anchor_at(index usize) &BinaryMachineModuleInstance {
+pub fn (instance &BinaryMachineTableInstance) module_anchor_at(index uint) &BinaryMachineModuleInstance {
 	return instance.module_anchors_[int(index)]
 }
 
 pub fn (mut instance BinaryMachineTableInstance) grow(size_to_grow u32, fill_value BinaryMachineReference, fill_module_anchor &BinaryMachineModuleInstance) bool {
 	if size_to_grow == 0 { return true }
-	new_size := usize(instance.elements_.values.len) + usize(size_to_grow)
+	new_size := uint(instance.elements_.values.len) + uint(size_to_grow)
 	if maximum := instance.type_.limits.maximum {
 		if maximum < u64(new_size) { return false }
 	}
-	if new_size >= usize(u32(-1)) { return false }
+	if new_size >= uint(u32(-1)) { return false }
 	previous_size := instance.elements_.values.len
 	// V vectors have signed-int lengths: an unrepresentable try_resize request
 	// cannot allocate this vector. Other V allocation failures currently panic.
-	if new_size > usize(0x7fffffff) { return false }
+	if new_size > uint(0x7fffffff) { return false }
 	unsafe { instance.elements_.values.grow_len(int(new_size) - previous_size) }
 	unsafe { instance.module_anchors_.grow_len(int(new_size) - instance.module_anchors_.len) }
 	for index in previous_size .. instance.elements_.values.len {

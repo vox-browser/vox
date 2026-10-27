@@ -692,7 +692,7 @@ fn form_associated_text_control_set_selection_anchor(target voidptr, node &dom.N
 		return
 	}
 	mut text := unsafe { &FormAssociatedTextControlElement(target) }
-	text.set_selection_anchor(node, usize(offset), affinity)
+	text.set_selection_anchor(node, uint(offset), affinity)
 }
 
 fn form_associated_text_control_set_selection_focus(target voidptr, node &dom.Node, offset int, affinity dom.TextAffinity) {
@@ -700,7 +700,7 @@ fn form_associated_text_control_set_selection_focus(target voidptr, node &dom.No
 		return
 	}
 	mut text := unsafe { &FormAssociatedTextControlElement(target) }
-	text.set_selection_focus(node, usize(offset), affinity)
+	text.set_selection_focus(node, uint(offset), affinity)
 }
 
 fn form_associated_text_control_handle_delete(target voidptr, input_type string) {
@@ -1140,11 +1140,11 @@ fn (mut text FormAssociatedTextControlElement) did_edit_text_node(input_type str
 	callback(text.did_edit_target_, input_type, data)
 }
 
-pub fn (mut text FormAssociatedTextControlElement) collapse_selection_to_offset(position usize) {
+pub fn (mut text FormAssociatedTextControlElement) collapse_selection_to_offset(position uint) {
 	text.move_selection_end_to(position, .downstream, .yes)
 }
 
-fn (mut text FormAssociatedTextControlElement) move_selection_end_to(offset usize,
+fn (mut text FormAssociatedTextControlElement) move_selection_end_to(offset uint,
 	affinity dom.TextAffinity, collapse dom.CollapseSelection) {
 	if collapse == .yes {
 		text.selection_start_ = u32(offset)
@@ -1199,7 +1199,7 @@ pub fn (mut text FormAssociatedTextControlElement) selection_was_changed(source 
 }
 
 pub fn (mut text FormAssociatedTextControlElement) set_selection_anchor(anchor_node &dom.Node,
-	anchor_offset usize, affinity dom.TextAffinity) {
+	anchor_offset uint, affinity dom.TextAffinity) {
 	mut manager := text.control.element.document().editing_host_manager()
 	manager.set_selection_anchor_with_affinity(anchor_node, int(anchor_offset), affinity)
 	text_node := text.text_node_ or { return }
@@ -1211,7 +1211,7 @@ pub fn (mut text FormAssociatedTextControlElement) set_selection_anchor(anchor_n
 }
 
 pub fn (mut text FormAssociatedTextControlElement) set_selection_focus(focus_node &dom.Node,
-	focus_offset usize, affinity dom.TextAffinity) {
+	focus_offset uint, affinity dom.TextAffinity) {
 	mut manager := text.control.element.document().editing_host_manager()
 	manager.set_selection_focus_with_affinity(focus_node, int(focus_offset), affinity)
 	text_node := text.text_node_ or { return }
@@ -1232,7 +1232,7 @@ pub fn (mut text FormAssociatedTextControlElement) move_cursor_to_start(collapse
 
 pub fn (mut text FormAssociatedTextControlElement) move_cursor_to_end(collapse dom.CollapseSelection) {
 	text_node := text.text_node_ or { return }
-	end := usize(text_node.length())
+	end := uint(text_node.length())
 	text.move_selection_end_to(end, .downstream, collapse)
 	text.selection_was_changed(.ui)
 }
@@ -1241,7 +1241,7 @@ pub fn (mut text FormAssociatedTextControlElement) move_cursor_to_start_of_curre
 	text_node := text.text_node_ or { return }
 	new_offset := dom.find_visual_line_start(text_node, int(text.selection_end_),
 		text.selection_end_affinity_)
-	text.move_selection_end_to(usize(new_offset), .downstream, collapse)
+	text.move_selection_end_to(uint(new_offset), .downstream, collapse)
 	text.selection_was_changed(.ui)
 }
 
@@ -1249,7 +1249,7 @@ pub fn (mut text FormAssociatedTextControlElement) move_cursor_to_end_of_current
 	text_node := text.text_node_ or { return }
 	new_position := dom.find_visual_line_end(text_node, int(text.selection_end_),
 		text.selection_end_affinity_)
-	text.move_selection_end_to(usize(new_position.offset), new_position.affinity, collapse)
+	text.move_selection_end_to(uint(new_position.offset), new_position.affinity, collapse)
 	text.selection_was_changed(.ui)
 }
 
@@ -1261,10 +1261,10 @@ pub fn (mut text FormAssociatedTextControlElement) increment_cursor_position_off
 		} else {
 			text.selection_end_
 		}
-		text.collapse_selection_to_offset(usize(end))
+		text.collapse_selection_to_offset(uint(end))
 	} else if position := dom.compute_cursor_position_on_next_character(text_node,
 		int(text.selection_end_), text.selection_end_affinity_) {
-		text.move_selection_end_to(usize(position.offset), position.affinity, collapse)
+		text.move_selection_end_to(uint(position.offset), position.affinity, collapse)
 	}
 	text.selection_was_changed(.ui)
 }
@@ -1277,10 +1277,10 @@ pub fn (mut text FormAssociatedTextControlElement) decrement_cursor_position_off
 		} else {
 			text.selection_end_
 		}
-		text.collapse_selection_to_offset(usize(start))
+		text.collapse_selection_to_offset(uint(start))
 	} else if position := dom.compute_cursor_position_on_previous_character(text_node,
 		int(text.selection_end_), text.selection_end_affinity_) {
-		text.move_selection_end_to(usize(position.offset), position.affinity, collapse)
+		text.move_selection_end_to(uint(position.offset), position.affinity, collapse)
 	}
 	text.selection_was_changed(.ui)
 }
@@ -1291,7 +1291,7 @@ pub fn (mut text FormAssociatedTextControlElement) increment_cursor_position_to_
 		offset := text_node.word_segmenter().next_boundary(int(text.selection_end_)) or { break }
 		units := form_string_to_utf16(text_node.data())
 		word := form_utf16_to_string(units[int(text.selection_end_)..offset])
-		text.move_selection_end_to(usize(offset), .downstream, collapse)
+		text.move_selection_end_to(uint(offset), .downstream, collapse)
 		if !dom.segmenter_should_continue_beyond_word(word) {
 			break
 		}
@@ -1305,7 +1305,7 @@ pub fn (mut text FormAssociatedTextControlElement) decrement_cursor_position_to_
 		offset := text_node.word_segmenter().previous_boundary(int(text.selection_end_)) or { break }
 		units := form_string_to_utf16(text_node.data())
 		word := form_utf16_to_string(units[offset..int(text.selection_end_)])
-		text.move_selection_end_to(usize(offset), .downstream, collapse)
+		text.move_selection_end_to(uint(offset), .downstream, collapse)
 		if !dom.segmenter_should_continue_beyond_word(word) {
 			break
 		}
@@ -1319,7 +1319,7 @@ pub fn (mut text FormAssociatedTextControlElement) increment_cursor_position_to_
 		text.selection_end_affinity_) or {
 		return
 	}
-	text.move_selection_end_to(usize(position.offset), position.affinity, collapse)
+	text.move_selection_end_to(uint(position.offset), position.affinity, collapse)
 	text.selection_was_changed(.ui)
 }
 
@@ -1329,7 +1329,7 @@ pub fn (mut text FormAssociatedTextControlElement) decrement_cursor_position_to_
 		text.selection_end_affinity_) or {
 		return
 	}
-	text.move_selection_end_to(usize(position.offset), position.affinity, collapse)
+	text.move_selection_end_to(uint(position.offset), position.affinity, collapse)
 	text.selection_was_changed(.ui)
 }
 

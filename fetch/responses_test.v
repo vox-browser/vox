@@ -7,7 +7,7 @@ struct RequestServerActionLog {
 mut:
 	releases      int
 	resumes       int
-	resumed_up_to []usize
+	resumed_up_to []uint
 	stops         int
 }
 
@@ -131,7 +131,7 @@ fn test_response_transfer_lease_actions_delegate_through_filtered_responses() {
 		resume_body_delivery: fn [mut log] () {
 			log.resumes++
 		}
-		resume_body_delivery_up_to: fn [mut log] (byte_count usize) {
+		resume_body_delivery_up_to: fn [mut log] (byte_count uint) {
 			log.resumed_up_to << byte_count
 		}
 		stop: fn [mut log] () {
@@ -146,7 +146,7 @@ fn test_response_transfer_lease_actions_delegate_through_filtered_responses() {
 	filtered.stop_request_server_request()
 	assert log.releases == 2
 	assert log.resumes == 1
-	assert log.resumed_up_to == [usize(128)]
+	assert log.resumed_up_to == [uint(128)]
 	assert log.stops == 1
 	assert response.clone().request_server_request()?.request_id == 99
 }

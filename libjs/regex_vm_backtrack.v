@@ -3,7 +3,7 @@ module libjs
 // LibRegex/Rust/src/vm.rs::Vm::backtrack. This restores and resumes saved
 // choices; the fast/general instruction loops remain separate slices.
 pub fn (mut vm RegexVm) backtrack() bool {
-	if usize(vm.scratch.backtrack_stack.len) <= vm.bt_floor { return false }
+	if uint(vm.scratch.backtrack_stack.len) <= vm.bt_floor { return false }
 	state := vm.scratch.backtrack_stack.pop()
 	match state {
 		RegexSavedNormal {
@@ -12,7 +12,7 @@ pub fn (mut vm RegexVm) backtrack() bool {
 			vm.restore_registers(state.reg_snapshot_offset)
 			vm.scratch.register_pool.trim(int(state.reg_snapshot_offset))
 			vm.modifiers = state.modifiers
-			if state.modifier_stack_len < usize(vm.scratch.modifier_stack.len) {
+			if state.modifier_stack_len < uint(vm.scratch.modifier_stack.len) {
 				vm.scratch.modifier_stack.trim(int(state.modifier_stack_len))
 			}
 		}
@@ -20,10 +20,10 @@ pub fn (mut vm RegexVm) backtrack() bool {
 			vm.restore_registers(state.reg_snapshot_offset)
 			vm.scratch.register_pool.trim(int(state.reg_snapshot_offset))
 			vm.modifiers = state.modifiers
-			if state.modifier_stack_len < usize(vm.scratch.modifier_stack.len) {
+			if state.modifier_stack_len < uint(vm.scratch.modifier_stack.len) {
 				vm.scratch.modifier_stack.trim(int(state.modifier_stack_len))
 			}
-			deficit := vm.same_matcher_loop_suffix_deficit(usize(state.pc), state.current_pos,
+			deficit := vm.same_matcher_loop_suffix_deficit(uint(state.pc), state.current_pos,
 				state.backward)
 			if state.backward {
 				mut max_pos := state.start_pos
@@ -32,17 +32,17 @@ pub fn (mut vm RegexVm) backtrack() bool {
 						max_pos = vm.retreat_one_char(max_pos)
 					}
 				} else {
-					max_pos -= usize(state.min)
+					max_pos -= uint(state.min)
 				}
 				mut target := ?u32(none)
-				next_pc := usize(state.pc) + 1
-				if next_pc < usize(vm.program.instructions.len) {
+				next_pc := uint(state.pc) + 1
+				if next_pc < uint(vm.program.instructions.len) {
 					next := vm.program.instructions[int(next_pc)]
 					if next is RegexLiteral && !vm.modifiers.ignore_case {
 						target = next.code_point
 					}
 				}
-				mut new_pos := usize(0)
+				mut new_pos := uint(0)
 				if missing := deficit {
 					advanced := vm.advance_n_chars(state.current_pos, missing) or {
 						return vm.backtrack()
@@ -106,17 +106,17 @@ pub fn (mut vm RegexVm) backtrack() bool {
 						min_pos = vm.advance_one_char(min_pos)
 					}
 				} else {
-					min_pos += usize(state.min)
+					min_pos += uint(state.min)
 				}
 				mut target := ?u32(none)
-				next_pc := usize(state.pc) + 1
-				if next_pc < usize(vm.program.instructions.len) {
+				next_pc := uint(state.pc) + 1
+				if next_pc < uint(vm.program.instructions.len) {
 					next := vm.program.instructions[int(next_pc)]
 					if next is RegexLiteral && !vm.modifiers.ignore_case {
 						target = next.code_point
 					}
 				}
-				mut new_pos := usize(0)
+				mut new_pos := uint(0)
 				if missing := deficit {
 					retreated := vm.retreat_n_chars(state.current_pos, missing) or {
 						return vm.backtrack()
@@ -129,7 +129,7 @@ pub fn (mut vm RegexVm) backtrack() bool {
 						mut scan_pos := if state.current_pos > 0 {
 							state.current_pos - 1
 						} else {
-							usize(0)
+							uint(0)
 						}
 						for {
 							if scan_pos < min_pos { return vm.backtrack() }
@@ -146,7 +146,7 @@ pub fn (mut vm RegexVm) backtrack() bool {
 						mut scan_pos := if state.current_pos > 1 {
 							state.current_pos - 2
 						} else {
-							usize(0)
+							uint(0)
 						}
 						for {
 							if scan_pos < min_pos { return vm.backtrack() }
@@ -185,7 +185,7 @@ pub fn (mut vm RegexVm) backtrack() bool {
 			vm.restore_registers(state.reg_snapshot_offset)
 			vm.scratch.register_pool.trim(int(state.reg_snapshot_offset))
 			vm.modifiers = state.modifiers
-			if state.modifier_stack_len < usize(vm.scratch.modifier_stack.len) {
+			if state.modifier_stack_len < uint(vm.scratch.modifier_stack.len) {
 				vm.scratch.modifier_stack.trim(int(state.modifier_stack_len))
 			}
 			if maximum := state.max {

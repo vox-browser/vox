@@ -46,26 +46,26 @@ struct RegexLiteralCodeUnit {
 
 type RegexLeadingAlternativeStart = RegexInputStart | RegexLiteralCodeUnit
 
-fn regex_instruction_at(instructions []RegexInstruction, pc usize) ?RegexInstruction {
-	if pc >= usize(instructions.len) { return none }
+fn regex_instruction_at(instructions []RegexInstruction, pc uint) ?RegexInstruction {
+	if pc >= uint(instructions.len) { return none }
 	return instructions[int(pc)]
 }
 
-fn regex_for_each_successor(instruction RegexInstruction, pc usize, instruction_count usize, callback fn (usize)) {
+fn regex_for_each_successor(instruction RegexInstruction, pc uint, instruction_count uint, callback fn (uint)) {
 	match instruction {
 		RegexJump {
-			callback(usize(instruction.target))
+			callback(uint(instruction.target))
 		}
 		RegexSplit {
-			callback(usize(instruction.prefer))
-			callback(usize(instruction.other))
+			callback(uint(instruction.prefer))
+			callback(uint(instruction.other))
 		}
 		RegexRepeatCheck {
-			callback(usize(instruction.body))
+			callback(uint(instruction.body))
 			if pc + 1 < instruction_count { callback(pc + 1) }
 		}
 		RegexLookStart {
-			callback(usize(instruction.end))
+			callback(uint(instruction.end))
 			if pc + 1 < instruction_count { callback(pc + 1) }
 		}
 		RegexMatch, RegexFail, RegexLookEnd {}
@@ -75,17 +75,17 @@ fn regex_for_each_successor(instruction RegexInstruction, pc usize, instruction_
 	}
 }
 
-fn regex_suffix_has_linear_tail(instructions []RegexInstruction, suffix_start usize) bool {
-	if suffix_start + 1 >= usize(instructions.len) { return false }
-	mut predecessor_count := []usize{len: instructions.len}
-	mut predecessor := []usize{len: instructions.len, init: ~usize(0)}
+fn regex_suffix_has_linear_tail(instructions []RegexInstruction, suffix_start uint) bool {
+	if suffix_start + 1 >= uint(instructions.len) { return false }
+	mut predecessor_count := []uint{len: instructions.len}
+	mut predecessor := []uint{len: instructions.len, init: ~uint(0)}
 	for pc, instruction in instructions {
-		regex_for_each_successor(instruction, usize(pc), usize(instructions.len), fn [mut predecessor_count, mut predecessor, pc] (successor usize) {
+		regex_for_each_successor(instruction, uint(pc), uint(instructions.len), fn [mut predecessor_count, mut predecessor, pc] (successor uint) {
 			predecessor_count[int(successor)]++
-			if predecessor[int(successor)] == ~usize(0) { predecessor[int(successor)] = usize(pc) }
+			if predecessor[int(successor)] == ~uint(0) { predecessor[int(successor)] = uint(pc) }
 		})
 	}
-	for target := suffix_start + 1; target < usize(instructions.len); target++ {
+	for target := suffix_start + 1; target < uint(instructions.len); target++ {
 		if predecessor_count[int(target)] != 1 || predecessor[int(target)] != target - 1 {
 			return false
 		}
@@ -93,7 +93,7 @@ fn regex_suffix_has_linear_tail(instructions []RegexInstruction, suffix_start us
 	return true
 }
 
-fn regex_extract_trailing_literal(instructions []RegexInstruction, assert_end_pc usize) ?[]u16 {
+fn regex_extract_trailing_literal(instructions []RegexInstruction, assert_end_pc uint) ?[]u16 {
 	mut trailing_code_points := []u32{}
 	mut suffix_start := assert_end_pc
 	mut pc := assert_end_pc
@@ -126,7 +126,7 @@ fn regex_extract_trailing_literal(instructions []RegexInstruction, assert_end_pc
 	return suffix
 }
 
-fn regex_leading_start_anchor_at(instructions []RegexInstruction, pc usize) ?bool {
+fn regex_leading_start_anchor_at(instructions []RegexInstruction, pc uint) ?bool {
 	instruction := regex_instruction_at(instructions, pc)?
 	return match instruction {
 		RegexAssertStart {
@@ -148,7 +148,7 @@ fn regex_leading_start_anchor_at(instructions []RegexInstruction, pc usize) ?boo
 	}
 }
 
-fn regex_first_char_at(instructions []RegexInstruction, pc usize) ?RegexFirstChar {
+fn regex_first_char_at(instructions []RegexInstruction, pc uint) ?RegexFirstChar {
 	instruction := regex_instruction_at(instructions, pc)?
 	return match instruction {
 		RegexLiteral {
@@ -173,18 +173,18 @@ fn regex_first_char_at(instructions []RegexInstruction, pc usize) ?RegexFirstCha
 
 fn regex_find_common_first_char(instructions []RegexInstruction, start u32) ?RegexFirstChar {
 	mut common := ?RegexFirstChar(none)
-	mut pc := usize(start)
+	mut pc := uint(start)
 	for {
 		instruction := regex_instruction_at(instructions, pc)?
 		match instruction {
 			RegexSplit {
-				prefer_char := regex_first_char_at(instructions, usize(instruction.prefer))?
+				prefer_char := regex_first_char_at(instructions, uint(instruction.prefer))?
 				if current := common {
 					if current.code_point != prefer_char.code_point { return none }
 				} else {
 					common = prefer_char
 				}
-				pc = usize(instruction.other)
+				pc = uint(instruction.other)
 			}
 			else {
 				last_char := regex_first_char_at(instructions, pc)?
@@ -199,7 +199,7 @@ fn regex_find_common_first_char(instructions []RegexInstruction, start u32) ?Reg
 	return none
 }
 
-fn regex_leading_alternative_start_at(instructions []RegexInstruction, pc usize) ?RegexLeadingAlternativeStart {
+fn regex_leading_alternative_start_at(instructions []RegexInstruction, pc uint) ?RegexLeadingAlternativeStart {
 	instruction := regex_instruction_at(instructions, pc)?
 	return match instruction {
 		RegexAssertStart {
@@ -227,14 +227,14 @@ fn regex_leading_alternative_start_at(instructions []RegexInstruction, pc usize)
 	}
 }
 
-fn regex_analyze_start_position_hint(instructions []RegexInstruction, start usize) ?RegexStartPositionHint {
+fn regex_analyze_start_position_hint(instructions []RegexInstruction, start uint) ?RegexStartPositionHint {
 	first := regex_instruction_at(instructions, start)?
 	if first !is RegexSplit { return none }
 	mut hint := RegexStartPositionHint{}
 	mut pc := start
 	for {
 		instruction := regex_instruction_at(instructions, pc)?
-		branch := if instruction is RegexSplit { usize(instruction.prefer) } else { pc }
+		branch := if instruction is RegexSplit { uint(instruction.prefer) } else { pc }
 		leading := regex_leading_alternative_start_at(instructions, branch)?
 		match leading {
 			RegexInputStart {
@@ -248,7 +248,7 @@ fn regex_analyze_start_position_hint(instructions []RegexInstruction, start usiz
 		}
 
 		if instruction is RegexSplit {
-			pc = usize(instruction.other)
+			pc = uint(instruction.other)
 		} else {
 			break
 		}
@@ -276,9 +276,9 @@ pub fn regex_analyze_pattern(program RegexProgram, can_match_empty bool, ast_req
 	skip := if instructions.len > 0 && instructions[0] == RegexInstruction(RegexSave{
 		reg: 0
 	}) {
-		usize(1)
+		uint(1)
 	} else {
-		usize(0)
+		uint(0)
 	}
 	first_inst := regex_instruction_at(instructions, skip)
 	mut filter_offset := skip
@@ -349,13 +349,13 @@ pub fn regex_analyze_pattern(program RegexProgram, can_match_empty bool, ast_req
 		anchor := instructions[count - 3]
 		if anchor is RegexAssertEnd && !(program.ignore_case || anchor.multiline
 			|| program.multiline) {
-			trailing_literal = regex_extract_trailing_literal(instructions, usize(count - 3))
+			trailing_literal = regex_extract_trailing_literal(instructions, uint(count - 3))
 		}
 	}
 	if ends_with_match && !program.ignore_case {
 		// Preserve source match-arm order: the broad Save(1),Match arm wins
 		// even when AssertEnd precedes it, so an end anchor blocks this hint.
-		if literal := regex_extract_trailing_literal(instructions, usize(count - 2)) { bytecode_required_literal = RegexRequiredLiteralHint{
+		if literal := regex_extract_trailing_literal(instructions, uint(count - 2)) { bytecode_required_literal = RegexRequiredLiteralHint{
 				literal: literal
 			} }
 	}

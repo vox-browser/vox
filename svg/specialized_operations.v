@@ -470,8 +470,8 @@ mut:
 	device_pixels_per_css_pixel_     f64 = 1
 	registered_svg_image_data_       []&DecodedImageData
 	current_svg_image_data_          ?&DecodedImageData
-	frame_request_suppression_count_ usize
-	display_list_recording_count_    usize
+	frame_request_suppression_count_ uint
+	display_list_recording_count_    uint
 	has_pending_resource_prune_      bool
 	completed_resource_prune_count_  u64
 	retained_display_list_resources_ map[string]bool

@@ -11,14 +11,14 @@ pub fn typed_array_prototype_copy_within(mut vm VM, prototypes PrimitiveObjectPr
 	array := typed_array_from_this(mut vm, prototypes)!
 	mut record := validate_typed_array(mut vm, array.object, .seq_cst)!
 	mut length := typed_array_length(record)
-	target_index := f64(buffer_slice_index(usize(length), target.to_integer_or_infinity(mut vm)!))
-	start_index := f64(buffer_slice_index(usize(length), start.to_integer_or_infinity(mut vm)!))
+	target_index := f64(buffer_slice_index(uint(length), target.to_integer_or_infinity(mut vm)!))
+	start_index := f64(buffer_slice_index(uint(length), start.to_integer_or_infinity(mut vm)!))
 	relative_end := if end.is_undefined() {
 		f64(length)
 	} else {
 		end.to_integer_or_infinity(mut vm)!
 	}
-	end_index := f64(buffer_slice_index(usize(length), relative_end))
+	end_index := f64(buffer_slice_index(uint(length), relative_end))
 	mut count := math.min(end_index - start_index, f64(length) - target_index)
 	if count > 0 {
 		mut buffer := array.viewed_buffer
@@ -29,16 +29,16 @@ pub fn typed_array_prototype_copy_within(mut vm VM, prototypes PrimitiveObjectPr
 		length = typed_array_length(record)
 		count = math.min(count, math.min(f64(length) - start_index, f64(length) - target_index))
 		if count <= 0 { return Value.from_object(array.object) }
-		size := usize(array.element_size())
-		offset := usize(array.byte_offset)
-		maximum := ~usize(0)
+		size := uint(array.element_size())
+		offset := uint(array.byte_offset)
+		maximum := ~uint(0)
 		// Checked<size_t> failures in the pinned source return the receiver.
-		if usize(target_index) > (maximum - offset) / size { return Value.from_object(array.object) }
-		mut to_byte_index := usize(target_index) * size + offset
-		if usize(start_index) > (maximum - offset) / size { return Value.from_object(array.object) }
-		mut from_byte_index := usize(start_index) * size + offset
-		if usize(count) > maximum / size { return Value.from_object(array.object) }
-		mut count_bytes := usize(count) * size
+		if uint(target_index) > (maximum - offset) / size { return Value.from_object(array.object) }
+		mut to_byte_index := uint(target_index) * size + offset
+		if uint(start_index) > (maximum - offset) / size { return Value.from_object(array.object) }
+		mut from_byte_index := uint(start_index) * size + offset
+		if uint(count) > maximum / size { return Value.from_object(array.object) }
+		mut count_bytes := uint(count) * size
 		if count_bytes > maximum - from_byte_index { return Value.from_object(array.object) }
 		from_plus_count := from_byte_index + count_bytes
 		if !buffer.is_shared_array_buffer() {

@@ -237,7 +237,7 @@ mut:
 	types_                         []string
 	representations_               []ClipboardItemRepresentation
 	presentation_style_            PresentationStyle
-	clipboard_change_count_at_read ?usize
+	clipboard_change_count_at_read ?uint
 	originating_system_item_       ?SystemClipboardItem
 	unsanitized_mime_types_        []string
 	representations_with_resolvers map[string]&ClipboardBlobPromise
@@ -307,7 +307,7 @@ pub fn (item &ClipboardItem) presentation_style() PresentationStyle {
 	return item.presentation_style_
 }
 
-pub fn (mut item ClipboardItem) set_clipboard_change_count_at_read(count usize) {
+pub fn (mut item ClipboardItem) set_clipboard_change_count_at_read(count uint) {
 	item.clipboard_change_count_at_read = count
 }
 

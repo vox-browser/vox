@@ -1,12 +1,12 @@
 module css
 
 $if gcboehm ? {
-	fn C.GC_get_total_bytes() usize
+	fn C.GC_get_total_bytes() uint
 	fn C.GC_gcollect()
 }
 
 fn test_empty_and_string_list_markers_do_not_allocate_counter_algorithms() {
-	mut before := usize(0)
+	mut before := uint(0)
 	$if gcboehm ? { before = C.GC_get_total_bytes() }
 	mut matches := 0
 	for _ in 0 .. 512 {
@@ -16,14 +16,14 @@ fn test_empty_and_string_list_markers_do_not_allocate_counter_algorithms() {
 			&& text.kind == .string && text.name == 'literal marker'
 			&& text.counter_style == none { matches++ }
 	}
-	mut allocated := usize(0)
+	mut allocated := uint(0)
 	$if gcboehm ? { allocated = C.GC_get_total_bytes() - before }
 	assert matches == 512
 	assert allocated == 0
 }
 
-fn absent_paint_constructor_bytes(explicit_none bool) (usize, int) {
-	mut before := usize(0)
+fn absent_paint_constructor_bytes(explicit_none bool) (uint, int) {
+	mut before := uint(0)
 	$if gcboehm ? { before = C.GC_get_total_bytes() }
 	mut matches := 0
 	for _ in 0 .. 32 {
@@ -37,7 +37,7 @@ fn absent_paint_constructor_bytes(explicit_none bool) (usize, int) {
 			&& rare.computed_values_mask_image_ == none
 			&& rare.computed_values_clip_path_ == none { matches++ }
 	}
-	mut allocated := usize(0)
+	mut allocated := uint(0)
 	$if gcboehm ? { allocated = C.GC_get_total_bytes() - before }
 	return allocated, matches
 }

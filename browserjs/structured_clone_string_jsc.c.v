@@ -8,7 +8,7 @@ module browserjs
 import libjs
 
 
-fn C.JSStringGetLength(string_value voidptr) usize
+fn C.JSStringGetLength(string_value voidptr) uint
 fn C.JSStringGetCharactersPtr(string_value voidptr) &u16
 
 pub fn (runtime &Runtime) native_utf16_string(value voidptr) !libjs.Utf16String {
@@ -22,7 +22,7 @@ pub fn (runtime &Runtime) native_utf16_string(value voidptr) !libjs.Utf16String 
 	if text == unsafe { nil } { return error('JavaScriptCore string projection failed') }
 	defer { C.JSStringRelease(text) }
 	length := C.JSStringGetLength(text)
-	if length > usize(2147483647) { return error('JavaScriptCore string does not fit the source V code-unit span') }
+	if length > uint(2147483647) { return error('JavaScriptCore string does not fit the source V code-unit span') }
 	characters := C.JSStringGetCharactersPtr(text)
 	mut units := []u16{len: int(length)}
 	for index in 0 .. units.len { units[index] = unsafe { characters[index] } }
@@ -34,7 +34,7 @@ pub fn (runtime &Runtime) native_utf16_string(value voidptr) !libjs.Utf16String 
 pub fn (mut runtime Runtime) javascript_utf16_string(text libjs.Utf16String) !voidptr {
 	runtime.require_javascript_value_context()!
 	units := text.code_units()
-	actual_text := C.JSStringCreateWithCharacters(units.data, usize(units.len))
+	actual_text := C.JSStringCreateWithCharacters(units.data, uint(units.len))
 	if actual_text == unsafe { nil } { return error('JavaScriptCore string creation failed') }
 	defer { C.JSStringRelease(actual_text) }
 	actual_value := C.JSValueMakeString(runtime.context, actual_text)

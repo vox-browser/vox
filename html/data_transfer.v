@@ -30,7 +30,7 @@ pub fn DataTransfer.create(store &DragDataStore) &DataTransfer {
 		associated_store: store
 	}
 	for index in 0 .. store.item_list.len {
-		transfer.item_list << DataTransferItem.create(transfer, usize(index))
+		transfer.item_list << DataTransferItem.create(transfer, uint(index))
 	}
 	transfer.update_data_transfer_types_list()
 	return transfer
@@ -146,7 +146,7 @@ pub fn (mut transfer DataTransfer) set_data_utf16(format_argument libjs.Utf16Str
 	format := normalize_data_transfer_format_utf16(format_argument)
 	for index, item in store.item_list {
 		if item.kind == .text && item.type_utf16().code_units() == format.code_units() {
-			transfer.remove_item(usize(index))
+			transfer.remove_item(uint(index))
 			break
 		}
 	}
@@ -195,19 +195,19 @@ pub fn (mut transfer DataTransfer) add_item(item DragDataStoreItem) &DataTransfe
 	return data_transfer_item
 }
 
-pub fn (mut transfer DataTransfer) remove_item(index usize) {
+pub fn (mut transfer DataTransfer) remove_item(index uint) {
 	mut store := transfer.associated_store or {
 		panic('DataTransfer has no associated drag data store')
 	}
 
-	assert index < usize(transfer.item_list.len)
+	assert index < uint(transfer.item_list.len)
 	store.remove_item_at(index)
 	mut removed_item := transfer.item_list[int(index)]
 	removed_item.item_index = none
 	transfer.item_list.delete(int(index))
 	for current_index := int(index); current_index < transfer.item_list.len; current_index++ {
 		mut item := transfer.item_list[current_index]
-		item.item_index = usize(current_index)
+		item.item_index = uint(current_index)
 	}
 	transfer.update_data_transfer_types_list()
 }
@@ -226,21 +226,21 @@ pub fn (transfer &DataTransfer) contains_item_with_type(kind DragDataStoreItemKi
 	return false
 }
 
-pub fn (transfer &DataTransfer) item(index usize) &DataTransferItem {
-	assert index < usize(transfer.item_list.len)
+pub fn (transfer &DataTransfer) item(index uint) &DataTransferItem {
+	assert index < uint(transfer.item_list.len)
 	return transfer.item_list[int(index)]
 }
 
-pub fn (transfer &DataTransfer) drag_data(index usize) DragDataStoreItem {
+pub fn (transfer &DataTransfer) drag_data(index uint) DragDataStoreItem {
 	store := transfer.associated_store or {
 		panic('DataTransfer has no associated drag data store')
 	}
 
-	assert index < usize(store.item_list.len)
+	assert index < uint(store.item_list.len)
 	return store.item_list[int(index)]
 }
 
-pub fn (transfer &DataTransfer) length() usize {
+pub fn (transfer &DataTransfer) length() uint {
 	store := transfer.associated_store or { return 0 }
 	return store.size()
 }
@@ -274,7 +274,7 @@ pub fn (mut transfer DataTransfer) clear_data_utf16(maybe_format ?libjs.Utf16Str
 			true
 		}
 		if item.kind == .text && matches {
-			transfer.remove_item(usize(index))
+			transfer.remove_item(uint(index))
 		}
 		index--
 	}
@@ -309,17 +309,17 @@ pub type DataTransferStringCallback = fn (string)
 pub struct DataTransferItem {
 mut:
 	data_transfer &DataTransfer @[required]
-	item_index    ?usize
+	item_index    ?uint
 }
 
-pub fn DataTransferItem.create(data_transfer &DataTransfer, item_index usize) &DataTransferItem {
+pub fn DataTransferItem.create(data_transfer &DataTransfer, item_index uint) &DataTransferItem {
 	return &DataTransferItem{
 		data_transfer: data_transfer
 		item_index:    item_index
 	}
 }
 
-pub fn (mut item DataTransferItem) set_item_index(item_index ?usize) {
+pub fn (mut item DataTransferItem) set_item_index(item_index ?uint) {
 	item.item_index = item_index
 }
 
@@ -432,7 +432,7 @@ pub fn DataTransferItemList.create(data_transfer &DataTransfer) &DataTransferIte
 	}
 }
 
-pub fn (list &DataTransferItemList) length() usize {
+pub fn (list &DataTransferItemList) length() uint {
 	return list.data_transfer.length()
 }
 
@@ -506,7 +506,7 @@ pub fn (mut list DataTransferItemList) add_file(file FormDataFile) ?&DataTransfe
 	})
 }
 
-pub fn (mut list DataTransferItemList) remove(index usize) ! {
+pub fn (mut list DataTransferItemList) remove(index uint) ! {
 	mode := list.data_transfer.mode() or {
 		return error('InvalidStateError: DataTransferItemList is not in read/write mode')
 	}
@@ -530,13 +530,13 @@ pub fn (mut list DataTransferItemList) clear() {
 	}
 }
 
-pub fn (list &DataTransferItemList) item(index usize) ?&DataTransferItem {
+pub fn (list &DataTransferItemList) item(index uint) ?&DataTransferItem {
 	if index >= list.data_transfer.length() {
 		return none
 	}
 	return list.data_transfer.item(index)
 }
 
-pub fn (list &DataTransferItemList) item_value(index usize) ?&DataTransferItem {
+pub fn (list &DataTransferItemList) item_value(index uint) ?&DataTransferItem {
 	return list.item(index)
 }

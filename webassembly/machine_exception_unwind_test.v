@@ -30,7 +30,7 @@ fn test_source_throw_unwind_preserves_tag_mapping_catch_order_parameter_bits_and
 			mut configuration := BinaryMachineConfiguration.create(mut store)
 			defer { configuration.destroy() }
 			configuration.value_stack_.append(BinaryMachineValue.from_i32(303))
-			arity := usize(if tagged { fields.len } else { 0 }) + usize(if capture { 1 } else { 0 })
+			arity := uint(if tagged { fields.len } else { 0 }) + uint(if capture { 1 } else { 0 })
 			expression := &BinaryExpression{
 				instructions: [
 					BinaryInstruction{ opcode: binary_op_nop },

@@ -35,14 +35,14 @@ pub fn (mut configuration BinaryMachineConfiguration) prepare_wasm_call(function
 	if is_tailcall { configuration.unwind_impl() }
 	code := function.code()
 	inlined := code.body.compiled_instructions.cranelift_inlined_locals
-	arguments.ensure_capacity(arguments.size() + code.total_local_count() + usize(inlined))
+	arguments.ensure_capacity(arguments.size() + code.total_local_count() + uint(inlined))
 	for local in code.locals {
-		for _ in usize(0) .. usize(local.count) {
+		for _ in uint(0) .. uint(local.count) {
 			arguments.unchecked_append(BinaryMachineValue.from_type(local.type_))
 		}
 	}
 	for _ in u32(0) .. inlined {
 		arguments.unchecked_append(BinaryMachineValue.from_type(BinaryValueType{ kind: .i32 }))
 	}
-	configuration.set_frame(if is_tailcall { BinaryIsTailcall.yes } else { BinaryIsTailcall.no }, function.module(), mut arguments, &code.body, usize(function.type_().results.len))
+	configuration.set_frame(if is_tailcall { BinaryIsTailcall.yes } else { BinaryIsTailcall.no }, function.module(), mut arguments, &code.body, uint(function.type_().results.len))
 }

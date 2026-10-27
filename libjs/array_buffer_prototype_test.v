@@ -22,7 +22,7 @@ fn test_array_buffer_prototype_metadata_getters_and_shared_brand_rejection() {
 		'resizable', 'resize', 'slice', 'transfer', 'transferToFixedLength', 'constructor',
 		'Symbol(Symbol.toStringTag)']
 	mut buffer := allocate_array_buffer(mut vm, realm.array_buffer_constructor_record(), 2,
-		usize(8))!
+		uint(8))!
 	assert buffer.object.get(mut vm, PropertyName.from_str('byteLength'))!.number == 2
 	assert buffer.object.get(mut vm, PropertyName.from_str('maxByteLength'))!.number == 8
 	assert buffer.object.get(mut vm, PropertyName.from_str('resizable'))!.as_bool()
@@ -84,12 +84,12 @@ fn test_array_buffer_resize_uses_default_and_unhandled_host_paths_and_zeroes_reg
 	realm := vm.realm()
 	for unhandled in [false, true] {
 		if unhandled {
-			vm.host_resize_array_buffer = fn (mut buffer ArrayBuffer, new_length usize) !HandledByHost {
+			vm.host_resize_array_buffer = fn (mut buffer ArrayBuffer, new_length uint) !HandledByHost {
 				return .unhandled
 			}
 		}
 		mut buffer := allocate_array_buffer(mut vm, realm.array_buffer_constructor_record(), 4,
-			usize(8))!
+			uint(8))!
 		buffer.overwrite(0, [u8(1), 2, 3, 4])
 		assert buffer_method(mut vm, buffer, 'resize', [Value.from_i32(2)])!.is_undefined()
 		assert buffer_method(mut vm, buffer, 'resize', [Value.from_i32(6)])!.is_undefined()
@@ -105,7 +105,7 @@ fn test_array_buffer_resize_checks_slots_coercion_detachment_and_maximum_before_
 	base := create_simple_execution_context(mut vm)
 	realm := vm.realm()
 	mut log := &BufferPrototypeLog{}
-	vm.host_resize_array_buffer = fn [mut log] (mut buffer ArrayBuffer, new_length usize) !HandledByHost {
+	vm.host_resize_array_buffer = fn [mut log] (mut buffer ArrayBuffer, new_length uint) !HandledByHost {
 		log.events << 'host'
 		return throw_completion(Value.from_i32(17))
 	}
@@ -124,7 +124,7 @@ fn test_array_buffer_resize_checks_slots_coercion_detachment_and_maximum_before_
 	}
 	assert log.events.len == 0
 	mut buffer := allocate_array_buffer(mut vm, realm.array_buffer_constructor_record(), 2,
-		usize(4))!
+		uint(4))!
 	buffer.detach_buffer()
 	if _ := buffer_method(mut vm, buffer, 'resize', [Value.from_object(argument)]) {
 		assert false
@@ -139,7 +139,7 @@ fn test_array_buffer_resize_checks_slots_coercion_detachment_and_maximum_before_
 		assert thrown_value(err).as_object().error_message()?.str() == 'ArrayBuffer is detached'
 	}
 	mut attached := allocate_array_buffer(mut vm, realm.array_buffer_constructor_record(), 2,
-		usize(4))!
+		uint(4))!
 	if _ := buffer_method(mut vm, attached, 'resize', [Value.from_i32(5)]) {
 		assert false
 	} else {
@@ -160,7 +160,7 @@ fn test_array_buffer_slice_clamps_relative_indices_and_returns_independent_fixed
 	create_simple_execution_context(mut vm)
 	realm := vm.realm()
 	mut source := allocate_array_buffer(mut vm, realm.array_buffer_constructor_record(), 5,
-		usize(8))!
+		uint(8))!
 	source.overwrite(0, [u8(1), 2, 3, 4, 5])
 	starts := [math.inf(-1), -3.0, 2.9, math.nan(), math.inf(1)]
 	ends := [3.0, -1.0, 4.9, math.inf(1), 8.0]
@@ -187,12 +187,12 @@ fn test_array_buffer_slice_species_validation_precedes_source_detachment_and_cop
 	for mode in ['normal', 'shrink', 'wrong type', 'shared', 'detached target', 'same source',
 		'short', 'detach source', 'detach source wrong type'] {
 		mut source := allocate_array_buffer(mut vm, realm.array_buffer_constructor_record(), 6,
-			usize(8))!
+			uint(8))!
 		source.overwrite(0, [u8(1), 2, 3, 4, 5, 6])
 		mut target := allocate_array_buffer(mut vm, realm.array_buffer_constructor_record(), if mode == 'short' {
-			usize(2)
+			uint(2)
 		} else {
-			usize(3)
+			uint(3)
 		}, none)!
 		if mode == 'detached target' { target.detach_buffer() }
 		result := if mode in ['wrong type', 'detach source wrong type'] {
@@ -285,7 +285,7 @@ fn test_array_buffer_transfer_methods_ignore_species_and_observe_coercion_before
 	realm := vm.realm()
 	for name in ['transfer', 'transferToFixedLength'] {
 		mut source := allocate_array_buffer(mut vm, realm.array_buffer_constructor_record(), 2,
-			usize(4))!
+			uint(4))!
 		source.overwrite(0, [u8(1), 2])
 		mut object := source.object
 		object.define_native_accessor(mut vm, realm, PropertyName.from_str('constructor'), fn (mut vm VM) !Value {

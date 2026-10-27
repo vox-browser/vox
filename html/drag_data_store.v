@@ -118,12 +118,12 @@ pub fn (mut store DragDataStore) add_item(item DragDataStoreItem) {
 	store.item_list << item
 }
 
-pub fn (mut store DragDataStore) remove_item_at(index usize) {
+pub fn (mut store DragDataStore) remove_item_at(index uint) {
 	store.item_list.delete(int(index))
 }
 
-pub fn (store &DragDataStore) size() usize {
-	return usize(store.item_list.len)
+pub fn (store &DragDataStore) size() uint {
+	return uint(store.item_list.len)
 }
 
 pub fn (store &DragDataStore) has_text_item() bool {

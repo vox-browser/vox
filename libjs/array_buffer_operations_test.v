@@ -13,7 +13,7 @@ fn test_array_buffer_maximum_option_reads_and_converts_once_and_clone_is_indepen
 	options.define_direct_property(PropertyName.from_str('maxByteLength'), Value.from_f64(8.9), 7)
 	assert get_array_buffer_max_byte_length_option(mut vm, Value.from_object(options))!.value? == 8
 	mut source := allocate_array_buffer(mut vm, realm.array_buffer_constructor_record(), 4,
-		usize(8))!
+		uint(8))!
 	source.overwrite(0, [u8(1), 2, 3, 4])
 	mut clone := clone_array_buffer(mut vm, source, 1, 2)!
 	assert clone.is_fixed_length() && clone.read_bytes(0, 2) == [u8(2), 3]
@@ -29,7 +29,7 @@ fn test_array_buffer_transfer_preserves_or_discards_maximum_and_keeps_failed_sou
 	realm := vm.realm()
 	for preserve in [PreserveResizability.preserve_resizability, .fixed_length] {
 		mut source := allocate_array_buffer(mut vm, realm.array_buffer_constructor_record(), 4,
-			usize(8))!
+			uint(8))!
 		source.overwrite(0, [u8(1), 2, 3, 4])
 		target := array_buffer_copy_and_detach(mut vm, mut source, Value.from_i32(6), preserve)!
 		assert source.is_detached() && !target.is_detached()
@@ -39,7 +39,7 @@ fn test_array_buffer_transfer_preserves_or_discards_maximum_and_keeps_failed_sou
 		 }
 	}
 	mut source := allocate_array_buffer(mut vm, realm.array_buffer_constructor_record(), 4,
-		usize(8))!
+		uint(8))!
 	if _ := array_buffer_copy_and_detach(mut vm, mut source, Value.from_i32(9),
 		.preserve_resizability)
 	{

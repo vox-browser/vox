@@ -8,13 +8,13 @@ fn test_source_dispatch_union_register_mapping_and_trap_layout() {
 	assert sizeof(BinarySourcesAndDestinationFields) == 4
 	assert sizeof(BinarySourcesAndDestination) == 4
 	assert sizeof(BinaryCraneliftTrap) == 8
-	assert sizeof(BinaryDispatchPayload) == sizeof(usize)
-	assert sizeof(BinaryDispatch) == 2 * sizeof(usize)
+	assert sizeof(BinaryDispatchPayload) == sizeof(uint)
+	assert sizeof(BinaryDispatch) == 2 * sizeof(uint)
 	mut instruction := BinaryInstruction{ opcode: binary_op_i32_const, arguments: BinaryI32Constant{ value: 7 } }
 	mut dispatch := BinaryDispatch{ payload: BinaryDispatchPayload{ instruction_opcode: binary_op_i32_const }, instruction: &instruction }
 	unsafe {
 		assert dispatch.payload.instruction_opcode == binary_op_i32_const
-		dispatch.payload.handler_ptr = usize(0x12345678)
+		dispatch.payload.handler_ptr = uint(0x12345678)
 		assert dispatch.payload.instruction_opcode == 0x12345678
 	}
 	assert voidptr(dispatch.instruction) == voidptr(&instruction)
@@ -55,11 +55,11 @@ fn test_source_expression_owns_actual_dispatch_and_extra_instruction_records() {
 	assert arguments.value == 9
 }
 
-fn source_compiled_record_consumer(compiled &BinaryCompiledInstructions) usize {
+fn source_compiled_record_consumer(compiled &BinaryCompiledInstructions) uint {
 	for binary_cranelift_entry_acquire(compiled) == 0 {
 	}
 	// These ordinary reads follow the source acquire publication boundary.
-	return compiled.max_call_arg_count + compiled.max_call_rec_size + usize(compiled.cranelift_local_count)
+	return compiled.max_call_arg_count + compiled.max_call_rec_size + uint(compiled.cranelift_local_count)
 }
 
 fn test_source_native_entry_publication_exposes_preceding_metadata_to_reader() {
@@ -68,8 +68,8 @@ fn test_source_native_entry_publication_exposes_preceding_metadata_to_reader() {
 	compiled.max_call_arg_count = 17
 	compiled.max_call_rec_size = 31
 	compiled.cranelift_local_count = 7
-	binary_publish_cranelift_entry(mut compiled, usize(0x1234))
+	binary_publish_cranelift_entry(mut compiled, uint(0x1234))
 	observed := consumer.wait()
 	assert observed == 55
-	assert binary_cranelift_entry_acquire(compiled) == usize(0x1234)
+	assert binary_cranelift_entry_acquire(compiled) == uint(0x1234)
 }

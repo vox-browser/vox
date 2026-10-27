@@ -1,6 +1,6 @@
 module dom
 
-$if gcboehm ? { fn C.GC_get_total_bytes() usize }
+$if gcboehm ? { fn C.GC_get_total_bytes() uint }
 
 fn root_walk_element(document &Document) &Element {
 	return document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic(err) }
@@ -99,13 +99,13 @@ fn test_root_walk_handles_a_deep_parent_chain_without_allocating_on_reads() {
 		leaf.children << child
 		leaf = child
 	}
-	mut before := usize(0)
+	mut before := uint(0)
 	$if gcboehm ? { before = C.GC_get_total_bytes() }
 	mut matches := 0
 	for _ in 0 .. 32 {
 		if voidptr(leaf.root()) == voidptr(root) { matches++ }
 	}
-	mut allocated := usize(0)
+	mut allocated := uint(0)
 	$if gcboehm ? { allocated = C.GC_get_total_bytes() - before }
 	assert matches == 32
 	assert allocated == 0

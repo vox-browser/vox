@@ -25,7 +25,7 @@ pub struct HostFunction {
 pub:
 	realm          string
 	type_          FunctionType
-	function_index usize
+	function_index uint
 	callable       HostCallable @[required]
 }
 
@@ -60,7 +60,7 @@ pub fn (function HostFunction) invoke(arguments []WasmValue) ![]WasmValue {
 	return values
 }
 
-pub fn create_host_function(realm string, callable HostCallable, type_ FunctionType, function_index usize) HostFunction {
+pub fn create_host_function(realm string, callable HostCallable, type_ FunctionType, function_index uint) HostFunction {
 	return HostFunction{
 		realm: realm
 		type_: type_

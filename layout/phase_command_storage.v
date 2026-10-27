@@ -20,7 +20,7 @@ fn clear_phase_command_storage(mut storage [][]PaintCommand) {
 		// Every record is overwritten before publication. Zero only the live
 		// prefix to release old payload roots without constructing defaults.
 		if bucket.len > 0 {
-			unsafe { vmemset(bucket.data, 0, isize(bucket.len) * isize(sizeof(PaintCommand))) }
+			unsafe { vmemset(bucket.data, 0, int(bucket.len) * int(sizeof(PaintCommand))) }
 		}
 		bucket.clear()
 	}

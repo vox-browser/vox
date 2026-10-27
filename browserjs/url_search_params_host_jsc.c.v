@@ -133,7 +133,7 @@ fn (mut host URLSearchParamsHost) string_value(text string) !voidptr {
 
 fn (mut host URLSearchParamsHost) array(values []voidptr) !voidptr {
 	mut exception := unsafe { nil }
-	actual := C.JSObjectMakeArray(host.runtime.context, usize(values.len), values.data, &exception)
+	actual := C.JSObjectMakeArray(host.runtime.context, uint(values.len), values.data, &exception)
 	if exception != unsafe { nil } {
 		return host.exception(host.runtime.actual_javascript_exception(exception))
 	}

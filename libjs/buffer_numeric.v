@@ -21,12 +21,12 @@ pub enum BufferElementType {
 	uint8_clamped
 }
 
-pub fn (kind BufferElementType) size() usize {
+pub fn (kind BufferElementType) size() uint {
 	return match kind {
-		.big_int64, .big_uint64, .float64 { usize(8) }
-		.float32, .int32, .uint32 { usize(4) }
-		.float16, .int16, .uint16 { usize(2) }
-		else { usize(1) }
+		.big_int64, .big_uint64, .float64 { uint(8) }
+		.float32, .int32, .uint32 { uint(4) }
+		.float16, .int16, .uint16 { uint(2) }
+		else { uint(1) }
 	}
 }
 
@@ -41,7 +41,7 @@ pub fn raw_bytes_to_numeric(mut vm VM, kind BufferElementType, bytes []u8, littl
 // Object's descriptor API has no VM argument. This conversion needs no VM
 // state and creates standalone BigInt cells, like the other flattened cells.
 fn buffer_raw_bytes_to_numeric(kind BufferElementType, bytes []u8, little_endian bool) Value {
-	assert usize(bytes.len) == kind.size()
+	assert uint(bytes.len) == kind.size()
 	mut raw := bytes.clone()
 	if !little_endian {
 		assert raw.len % 2 == 0
@@ -103,11 +103,11 @@ pub fn numeric_to_raw_bytes(mut vm VM, kind BufferElementType, value Value, litt
 	return raw
 }
 
-pub fn (buffer &ArrayBufferObject) get_value(mut vm VM, index usize, kind BufferElementType, is_typed_array bool, order BufferOrder, little_endian bool) Value {
+pub fn (buffer &ArrayBufferObject) get_value(mut vm VM, index uint, kind BufferElementType, is_typed_array bool, order BufferOrder, little_endian bool) Value {
 	return buffer.read_numeric_value(index, kind, is_typed_array, order, little_endian)
 }
 
-fn (buffer &ArrayBufferObject) read_numeric_value(index usize, kind BufferElementType, is_typed_array bool, order BufferOrder, little_endian bool) Value {
+fn (buffer &ArrayBufferObject) read_numeric_value(index uint, kind BufferElementType, is_typed_array bool, order BufferOrder, little_endian bool) Value {
 	_ = is_typed_array
 	_ = order
 	assert !buffer.is_detached()
@@ -117,7 +117,7 @@ fn (buffer &ArrayBufferObject) read_numeric_value(index usize, kind BufferElemen
 	return buffer_raw_bytes_to_numeric(kind, buffer.read_bytes(index, kind.size()), little_endian)
 }
 
-pub fn (mut buffer ArrayBufferObject) set_value(mut vm VM, index usize, kind BufferElementType, value Value, is_typed_array bool, order BufferOrder, little_endian bool) {
+pub fn (mut buffer ArrayBufferObject) set_value(mut vm VM, index uint, kind BufferElementType, value Value, is_typed_array bool, order BufferOrder, little_endian bool) {
 	assert !buffer.is_detached()
 	assert index <= buffer.byte_length() && kind.size() <= buffer.byte_length() - index
 	assert if kind.is_bigint() {
@@ -130,7 +130,7 @@ pub fn (mut buffer ArrayBufferObject) set_value(mut vm VM, index usize, kind Buf
 
 pub type ReadWriteModifyFunction = fn (read []u8, argument []u8) []u8
 
-pub fn (mut buffer ArrayBufferObject) get_modify_set_value(mut vm VM, index usize, kind BufferElementType, value Value, operation ReadWriteModifyFunction, little_endian bool) Value {
+pub fn (mut buffer ArrayBufferObject) get_modify_set_value(mut vm VM, index uint, kind BufferElementType, value Value, operation ReadWriteModifyFunction, little_endian bool) Value {
 	raw := numeric_to_raw_bytes(mut vm, kind, value, little_endian)
 	read := buffer.read_bytes(index, kind.size())
 	modified := operation(read, raw)

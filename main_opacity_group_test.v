@@ -1,12 +1,12 @@
 module main
 
-fn C.native_composite_opacity_pixels(layer &u8, backdrop &u8, result &u8, count usize, opacity f32)
-fn C.native_opacity_layer_ink_bounds(pixels &u8, pitch usize, left int, top int, right int, bottom int, ink_left &int, ink_top &int, ink_right &int, ink_bottom &int) int
+fn C.native_composite_opacity_pixels(layer &u8, backdrop &u8, result &u8, count uint, opacity f32)
+fn C.native_opacity_layer_ink_bounds(pixels &u8, pitch uint, left int, top int, right int, bottom int, ink_left &int, ink_top &int, ink_right &int, ink_bottom &int) int
 
 fn opacity_group_test_composite(layer []u8, backdrop []u8, opacity f32) []u8 {
 	mut result := []u8{len: layer.len}
 	$if macos {
-		C.native_composite_opacity_pixels(layer.data, backdrop.data, result.data, usize(layer.len / 4),
+		C.native_composite_opacity_pixels(layer.data, backdrop.data, result.data, uint(layer.len / 4),
 			opacity)
 	}
 	return result
@@ -44,17 +44,17 @@ fn test_opacity_layer_ink_bounds_cover_painted_pixels_only() {
 		mut top := 0
 		mut right := 0
 		mut bottom := 0
-		assert C.native_opacity_layer_ink_bounds(pixels.data, usize(width * 4), 0, 0, width, 6,
+		assert C.native_opacity_layer_ink_bounds(pixels.data, uint(width * 4), 0, 0, width, 6,
 			&left, &top, &right, &bottom) == 0
 		// Any channel marks a painted pixel, including alpha alone.
 		pixels[(2 * width + 3) * 4 + 3] = 1
 		pixels[(4 * width + 5) * 4] = 9
 		pixels[(5 * width + 7) * 4 + 3] = 255
-		assert C.native_opacity_layer_ink_bounds(pixels.data, usize(width * 4), 0, 0, width, 6,
+		assert C.native_opacity_layer_ink_bounds(pixels.data, uint(width * 4), 0, 0, width, 6,
 			&left, &top, &right, &bottom) == 1
 		assert [left, top, right, bottom] == [3, 2, 8, 6]
 		// Only the searched region contributes.
-		assert C.native_opacity_layer_ink_bounds(pixels.data, usize(width * 4), 0, 0, 6, 5,
+		assert C.native_opacity_layer_ink_bounds(pixels.data, uint(width * 4), 0, 0, 6, 5,
 			&left, &top, &right, &bottom) == 1
 		assert [left, top, right, bottom] == [3, 2, 6, 5]
 	}

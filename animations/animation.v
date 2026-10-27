@@ -93,8 +93,8 @@ pub fn Animation.construct_impl(effect ?&AnimationEffect, timeline ?&AnimationTi
 	return Animation.create(effect, timeline)
 }
 
-pub fn Animation.effect_offset() usize {
-	return usize(__offsetof(Animation, effect_))
+pub fn Animation.effect_offset() uint {
+	return uint(__offsetof(Animation, effect_))
 }
 
 fn optional_element_identity_equal(left ?&dom.Element, right ?&dom.Element) bool {

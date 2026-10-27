@@ -4,7 +4,7 @@ import platform
 
 $if gcboehm ? {
 	fn C.GC_gcollect()
-	fn C.GC_get_total_bytes() usize
+	fn C.GC_get_total_bytes() uint
 }
 
 fn projected_font_cache_source() &FontCascadeList {

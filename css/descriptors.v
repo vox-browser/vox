@@ -122,13 +122,13 @@ pub fn (mut descriptors CSSDescriptors) set_parent_rule(rule ?&CSSRule) {
 }
 
 // https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-length
-pub fn (descriptors &CSSDescriptors) length() usize {
+pub fn (descriptors &CSSDescriptors) length() uint {
 	// The length attribute must return the number of CSS declarations in the declarations.
-	return usize(descriptors.descriptors.len)
+	return uint(descriptors.descriptors.len)
 }
 
 // https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-item
-pub fn (descriptors &CSSDescriptors) item(index usize) string {
+pub fn (descriptors &CSSDescriptors) item(index uint) string {
 	// The item(index) method must return the property name of the CSS declaration at position index.
 	// If there is no indexth object in the collection, then the method must return the empty string.
 	if index >= descriptors.length() {

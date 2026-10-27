@@ -72,7 +72,7 @@ fn test_source_bytecode_native_stack_guard_retains_its_actual_stack_info_owner_a
 	assert voidptr(interpreter.stack_info_) == voidptr(info)
 	zero := interpreter.trap_if_insufficient_native_stack_space(0)
 	assert !zero && !interpreter.did_trap()
-	exhausted := interpreter.trap_if_insufficient_native_stack_space(~usize(0))
+	exhausted := interpreter.trap_if_insufficient_native_stack_space(~uint(0))
 	assert exhausted && interpreter.trap().format() == 'STACK-EXHAUSTION'
 	passed := interpreter.trap_if_insufficient_native_stack_space(0)
 	assert !passed && interpreter.trap().format() == 'STACK-EXHAUSTION'

@@ -1,16 +1,16 @@
 module css
 
 $if gcboehm ? {
- fn C.GC_get_total_bytes() usize
+ fn C.GC_get_total_bytes() uint
  fn C.GC_gcollect()
 }
 
 fn test_default_sizes_retain_no_unused_length_percentage_allocation() {
  mut sizes := []Size{cap: 512}
- mut before := usize(0)
+ mut before := uint(0)
  $if gcboehm ? { before = C.GC_get_total_bytes() }
  for _ in 0 .. 512 { sizes << Size{} }
- mut allocated := usize(0)
+ mut allocated := uint(0)
  $if gcboehm ? { allocated = C.GC_get_total_bytes() - before }
  assert allocated == 0
  assert sizes.len == 512

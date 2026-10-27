@@ -36,7 +36,7 @@ pub struct ExternalMemoryStorage {
 pub:
 	owner        &Memory = unsafe { nil }
 	handle       libgc.ExternalEntityTableHandle
-	fixed_size   ?usize
+	fixed_size   ?uint
 	generation   u64
 	fixed_length bool
 }
@@ -47,15 +47,15 @@ pub fn (storage ExternalMemoryStorage) data() &u8 {
 	return libgc.PrimitiveStorage.the().data(storage.handle)
 }
 
-pub fn (storage ExternalMemoryStorage) byte_length() usize {
+pub fn (storage ExternalMemoryStorage) byte_length() uint {
 	return storage.fixed_size or { libgc.PrimitiveStorage.the().size(storage.handle) }
 }
 
-pub fn (storage ExternalMemoryStorage) capacity() usize {
+pub fn (storage ExternalMemoryStorage) capacity() uint {
 	return libgc.PrimitiveStorage.the().capacity(storage.handle)
 }
 
-pub fn (storage ExternalMemoryStorage) offset() usize {
+pub fn (storage ExternalMemoryStorage) offset() uint {
 	return libgc.PrimitiveStorage.the().offset(storage.handle)
 }
 
@@ -68,13 +68,13 @@ pub fn (buffer &MemoryBuffer) bytes() BinaryMachineBytes {
 	return buffer.storage.bytes()
 }
 
-pub fn (buffer &MemoryBuffer) byte_length() usize { return buffer.bytes().size }
+pub fn (buffer &MemoryBuffer) byte_length() uint { return buffer.bytes().size }
 
-pub fn (buffer &MemoryBuffer) read_bytes(offset usize, count usize) []u8 {
+pub fn (buffer &MemoryBuffer) read_bytes(offset uint, count uint) []u8 {
 	bytes := buffer.bytes()
 	assert offset <= bytes.size && count <= bytes.size - offset
 	// A V byte-vector result uses int lengths; the memory span itself uses size_t.
-	assert count <= usize(max_int)
+	assert count <= uint(max_int)
 	mut result := []u8{len: int(count)}
 	if count > 0 { unsafe { C.memcpy(result.data, bytes.data + offset, count) } }
 	return result
@@ -185,7 +185,7 @@ pub fn (memory &Memory) machine_instance() &BinaryMachineMemoryInstance {
 }
 
 pub fn (memory &Memory) size_pages() u32 {
-	return u32(memory.machine_instance().size() / usize(page_size))
+	return u32(memory.machine_instance().size() / uint(page_size))
 }
 
 pub fn (memory &Memory) wasm_type() WasmLimits {
@@ -203,7 +203,7 @@ pub fn (memory &Memory) cache() &WebAssemblyCache {
 pub fn (mut memory Memory) grow(delta u32) !u32 {
 	previous := memory.size_pages()
 	mut instance := memory.machine_instance()
-	if !instance.grow(usize(delta) * usize(page_size), .no, .yes) {
+	if !instance.grow(uint(delta) * uint(page_size), .no, .yes) {
 		return error('RangeError: Memory.grow() grows past the stated limit of the memory instance')
 	}
 	memory.refresh_the_memory_buffer()
@@ -318,7 +318,7 @@ pub fn external_memory_storage(memory &Memory, fixed_length bool) ExternalMemory
 	return ExternalMemoryStorage{
 		owner:        memory
 		handle:       memory.machine_instance().data().primitive_storage_handle()
-		fixed_size:   if fixed_length { ?usize(memory.machine_instance().size()) } else { none }
+		fixed_size:   if fixed_length { ?uint(memory.machine_instance().size()) } else { none }
 		generation:   memory.generation
 		fixed_length: fixed_length
 	}

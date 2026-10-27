@@ -3,7 +3,7 @@ module platform
 import os
 
 $if gcboehm ? {
-	struct NoJSHeapPolicyValue { mut: value usize }
+	struct NoJSHeapPolicyValue { mut: value uint }
 	fn nojs_heap_policy_read_locked(context voidptr) voidptr {
 		mut state := unsafe { &NoJSHeapPolicyValue(context) }
 		state.value = C.GC_get_free_space_divisor()
@@ -14,12 +14,12 @@ $if gcboehm ? {
 		C.GC_set_free_space_divisor(state.value)
 		return unsafe { nil }
 	}
-	fn nojs_heap_policy_divisor() usize {
+	fn nojs_heap_policy_divisor() uint {
 		mut state := NoJSHeapPolicyValue{}
 		C.GC_call_with_alloc_lock(nojs_heap_policy_read_locked, &state)
 		return state.value
 	}
-	fn nojs_heap_policy_set_divisor(value usize) {
+	fn nojs_heap_policy_set_divisor(value uint) {
 		state := NoJSHeapPolicyValue{value: value}
 		C.GC_call_with_alloc_lock(nojs_heap_policy_write_locked, &state)
 	}

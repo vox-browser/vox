@@ -41,7 +41,7 @@ fn dom_html_parser_run_callback(target voidptr, stop_at_insertion_point bool) {
 	}
 }
 
-fn dom_html_parser_script_nesting_level_callback(target voidptr) usize {
+fn dom_html_parser_script_nesting_level_callback(target voidptr) uint {
 	parser := unsafe { &HTMLParser(target) }
 	return parser.current_script_nesting_level()
 }

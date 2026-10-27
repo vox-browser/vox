@@ -6,8 +6,8 @@ import webidl
 @[heap]
 struct MediaPlayPromiseObservation {
 mut:
-	schedule_depths []usize
-	reaction_depths []usize
+	schedule_depths []uint
+	reaction_depths []uint
 	reasons         []webidl.Value
 	events          []string
 }
@@ -84,8 +84,8 @@ fn media_play_promise_assert_rejected_batch(promises []&dom.Promise, name string
 }
 
 fn media_play_promise_assert_owner_jobs(media &HTMLMediaElement, state &MediaPlayPromiseObservation, promises []&dom.Promise) {
-	assert state.schedule_depths == [usize(1), 1]
-	assert state.reaction_depths == [usize(1), 1, 1, 1]
+	assert state.schedule_depths == [uint(1), 1]
+	assert state.reaction_depths == [uint(1), 1, 1, 1]
 	assert state.reasons.len == 2
 	for index, reason in state.reasons {
 		assert voidptr(reason.dom_exception_ or { panic('missing reaction exception') }) == voidptr(promises[index].result().as_webidl_value() or {

@@ -236,7 +236,7 @@ fn test_typed_array_with_coerces_value_before_bounds_rejection_and_checks_live_i
 	parent := Object.create(vm.realm(), none)
 	for mode in ['negative', 'shrink', 'grow', 'detach', 'invalid', 'value throw'] {
 		mut buffer := ArrayBufferObject.create_from_bytes(vm.realm(), [u8(1), 2, 3], false, parent)
-		buffer.maximum_byte_length = usize(8)
+		buffer.maximum_byte_length = uint(8)
 		mut source := TypedArray.create(vm.realm(), .uint8, 0, buffer, parent)
 		initialize_typed_array_from_array_buffer(mut vm, mut source, buffer, Value.from_i32(0),
 			js_undefined())!

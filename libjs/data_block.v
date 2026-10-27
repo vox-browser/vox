@@ -25,36 +25,36 @@ pub struct ExternalPrimitiveBackingStore {
 pub:
 	owner      voidptr
 	handle     libgc.ExternalEntityTableHandle
-	fixed_size ?usize
+	fixed_size ?uint
 }
 
 pub fn (storage ExternalPrimitiveBackingStore) data() &u8 {
 	return libgc.PrimitiveStorage.the().data(storage.handle)
 }
 
-pub fn (storage ExternalPrimitiveBackingStore) byte_length() usize {
+pub fn (storage ExternalPrimitiveBackingStore) byte_length() uint {
 	return storage.fixed_size or { libgc.PrimitiveStorage.the().size(storage.handle) }
 }
 
-pub fn (storage ExternalPrimitiveBackingStore) capacity() usize {
+pub fn (storage ExternalPrimitiveBackingStore) capacity() uint {
 	return libgc.PrimitiveStorage.the().capacity(storage.handle)
 }
 
-pub fn (storage ExternalPrimitiveBackingStore) offset() usize {
+pub fn (storage ExternalPrimitiveBackingStore) offset() uint {
 	return libgc.PrimitiveStorage.the().offset(storage.handle)
 }
 
 pub struct DataBlockBytes {
 pub:
 	data &u8 = unsafe { nil }
-	size usize
+	size uint
 }
 
 pub struct DataBlock {
 	kind         DataBlockKind
 	owned        ?&OwnedPrimitiveBackingStore
 	storage      ?&ByteBufferStorage
-	fixed_length usize
+	fixed_length uint
 	external     ExternalPrimitiveBackingStore
 pub:
 	is_shared bool
@@ -65,17 +65,17 @@ pub fn DataBlock.from_owned_store(storage &OwnedPrimitiveBackingStore, is_shared
 }
 
 pub fn DataBlock.from_bytes(bytes []u8, is_shared bool) DataBlock {
-	owner := OwnedPrimitiveBackingStore.create_uninitialized(usize(bytes.len)) or { panic(err) }
+	owner := OwnedPrimitiveBackingStore.create_uninitialized(uint(bytes.len)) or { panic(err) }
 	mut block := DataBlock.from_owned_store(owner, is_shared)
 	block.overwrite(0, bytes)
 	return block
 }
 
 pub fn DataBlock.from_host_buffer(storage &ByteBufferStorage, is_shared bool) DataBlock {
-	return DataBlock{ kind: .unowned_fixed, storage: storage, fixed_length: usize(storage.bytes.len), is_shared: is_shared }
+	return DataBlock{ kind: .unowned_fixed, storage: storage, fixed_length: uint(storage.bytes.len), is_shared: is_shared }
 }
 
-pub fn DataBlock.from_external_primitive_storage(owner voidptr, handle libgc.ExternalEntityTableHandle, fixed_size ?usize, is_shared bool) DataBlock {
+pub fn DataBlock.from_external_primitive_storage(owner voidptr, handle libgc.ExternalEntityTableHandle, fixed_size ?uint, is_shared bool) DataBlock {
 	assert owner != unsafe { nil }
 	return DataBlock{
 		kind:      .external_primitive
@@ -92,7 +92,7 @@ pub fn (block DataBlock) is_empty() bool { return block.kind == .empty }
 
 pub fn (block DataBlock) is_external() bool { return block.kind == .external_primitive }
 
-pub fn (block DataBlock) size() usize {
+pub fn (block DataBlock) size() uint {
 	return match block.kind {
 		.empty { 0 }
 		.owned { (block.owned or { panic('data block without owner') }).size() }
@@ -101,7 +101,7 @@ pub fn (block DataBlock) size() usize {
 	}
 }
 
-pub fn (block DataBlock) capacity() usize {
+pub fn (block DataBlock) capacity() uint {
 	return match block.kind {
 		.empty { 0 }
 		.owned { (block.owned or { panic('data block without owner') }).capacity() }
@@ -110,7 +110,7 @@ pub fn (block DataBlock) capacity() usize {
 	}
 }
 
-pub fn (block DataBlock) offset() usize {
+pub fn (block DataBlock) offset() uint {
 	return match block.kind {
 		.empty, .unowned_fixed { libgc.primitive_storage_invalid_offset }
 		.owned { (block.owned or { panic('data block without owner') }).offset() }
@@ -129,7 +129,7 @@ pub fn (block DataBlock) is_caged() bool {
 	}
 }
 
-pub fn (block DataBlock) external_memory_size() usize {
+pub fn (block DataBlock) external_memory_size() uint {
 	return if block.kind == .owned { block.capacity() } else { 0 }
 }
 
@@ -144,7 +144,7 @@ fn (block DataBlock) data() &u8 {
 	}
 }
 
-pub fn (block DataBlock) data_at(byte_offset usize) &u8 {
+pub fn (block DataBlock) data_at(byte_offset uint) &u8 {
 	match block.kind {
 		.empty { panic('empty data block has no data') }
 		.owned {
@@ -162,7 +162,7 @@ pub fn (block DataBlock) data_at(byte_offset usize) &u8 {
 	}
 }
 
-pub fn (block DataBlock) contiguous_bytes_from(byte_offset usize, count usize) usize {
+pub fn (block DataBlock) contiguous_bytes_from(byte_offset uint, count uint) uint {
 	if !block.is_caged() || count == 0 { return count }
 	data_offset := block.offset()
 	if data_offset == libgc.primitive_storage_invalid_offset { return count }
@@ -170,7 +170,7 @@ pub fn (block DataBlock) contiguous_bytes_from(byte_offset usize, count usize) u
 	return math.min(count, libgc.primitive_storage_default_cage_size - caged_offset)
 }
 
-pub fn (block DataBlock) contiguous_bytes_before(byte_offset usize, count usize) usize {
+pub fn (block DataBlock) contiguous_bytes_before(byte_offset uint, count uint) uint {
 	if !block.is_caged() || count == 0 { return count }
 	assert byte_offset > 0
 	data_offset := block.offset()
@@ -179,13 +179,13 @@ pub fn (block DataBlock) contiguous_bytes_before(byte_offset usize, count usize)
 	return math.min(count, caged_offset + 1)
 }
 
-fn (block DataBlock) check_range(offset usize, count usize) {
+fn (block DataBlock) check_range(offset uint, count uint) {
 	assert offset <= block.size() && count <= block.size() - offset
 }
 
-pub fn (block DataBlock) copy_to_bytes(offset usize, destination DataBlockBytes) {
+pub fn (block DataBlock) copy_to_bytes(offset uint, destination DataBlockBytes) {
 	block.check_range(offset, destination.size)
-	mut copied := usize(0)
+	mut copied := uint(0)
 	for copied < destination.size {
 		chunk_size := block.contiguous_bytes_from(offset + copied, destination.size - copied)
 		unsafe { C.memcpy(destination.data + copied, block.data_at(offset + copied), chunk_size) }
@@ -195,15 +195,15 @@ pub fn (block DataBlock) copy_to_bytes(offset usize, destination DataBlockBytes)
 
 // The V vector result has signed-int length; the native DataBlock itself does
 // not narrow its size/capacity or byte offsets to the vector representation.
-pub fn (block DataBlock) read_bytes(offset usize, count usize) []u8 {
+pub fn (block DataBlock) read_bytes(offset uint, count uint) []u8 {
 	block.check_range(offset, count)
-	assert count <= usize(0x7fffffff)
+	assert count <= uint(0x7fffffff)
 	mut result := []u8{len: int(count)}
 	block.copy_to_bytes(offset, DataBlockBytes{ data: unsafe { &u8(result.data) }, size: count })
 	return result
 }
 
-pub fn (block DataBlock) with_readonly_bytes[T](offset usize, count usize, callback fn (DataBlockBytes) T) T {
+pub fn (block DataBlock) with_readonly_bytes[T](offset uint, count uint, callback fn (DataBlockBytes) T) T {
 	block.check_range(offset, count)
 	if count == 0 { return callback(DataBlockBytes{}) }
 	if block.contiguous_bytes_from(offset, count) == count {
@@ -213,9 +213,9 @@ pub fn (block DataBlock) with_readonly_bytes[T](offset usize, count usize, callb
 	return callback(DataBlockBytes{ data: unsafe { &u8(storage.data) }, size: count })
 }
 
-pub fn (mut block DataBlock) overwrite_from(offset usize, source &u8, count usize) {
+pub fn (mut block DataBlock) overwrite_from(offset uint, source &u8, count uint) {
 	block.check_range(offset, count)
-	mut copied := usize(0)
+	mut copied := uint(0)
 	for copied < count {
 		chunk_size := block.contiguous_bytes_from(offset + copied, count - copied)
 		unsafe { C.memcpy(block.data_at(offset + copied), source + copied, chunk_size) }
@@ -223,8 +223,8 @@ pub fn (mut block DataBlock) overwrite_from(offset usize, source &u8, count usiz
 	}
 }
 
-pub fn (mut block DataBlock) overwrite(offset usize, bytes []u8) {
-	block.overwrite_from(offset, unsafe { &u8(bytes.data) }, usize(bytes.len))
+pub fn (mut block DataBlock) overwrite(offset uint, bytes []u8) {
+	block.overwrite_from(offset, unsafe { &u8(bytes.data) }, uint(bytes.len))
 }
 
 pub fn (block DataBlock) shares_storage_with(other DataBlock) bool {
@@ -232,10 +232,10 @@ pub fn (block DataBlock) shares_storage_with(other DataBlock) bool {
 	return block.data() == other.data()
 }
 
-pub fn (block DataBlock) copy_to(mut destination DataBlock, source_offset usize, destination_offset usize, count usize) {
+pub fn (block DataBlock) copy_to(mut destination DataBlock, source_offset uint, destination_offset uint, count uint) {
 	block.check_range(source_offset, count)
 	destination.check_range(destination_offset, count)
-	mut copied := usize(0)
+	mut copied := uint(0)
 	for copied < count {
 		source_chunk := block.contiguous_bytes_from(source_offset + copied, count - copied)
 		destination_chunk := destination.contiguous_bytes_from(destination_offset + copied, count - copied)
@@ -245,7 +245,7 @@ pub fn (block DataBlock) copy_to(mut destination DataBlock, source_offset usize,
 	}
 }
 
-pub fn (mut block DataBlock) move_data(destination_offset usize, source_offset usize, count usize) {
+pub fn (mut block DataBlock) move_data(destination_offset uint, source_offset uint, count uint) {
 	block.check_range(destination_offset, count)
 	block.check_range(source_offset, count)
 	if count == 0 || destination_offset == source_offset { return }
@@ -264,7 +264,7 @@ pub fn (mut block DataBlock) move_data(destination_offset usize, source_offset u
 		}
 		return
 	}
-	mut copied := usize(0)
+	mut copied := uint(0)
 	for copied < count {
 		source_chunk := block.contiguous_bytes_from(source_offset + copied, count - copied)
 		destination_chunk := block.contiguous_bytes_from(destination_offset + copied, count - copied)
@@ -274,7 +274,7 @@ pub fn (mut block DataBlock) move_data(destination_offset usize, source_offset u
 	}
 }
 
-pub fn (mut block DataBlock) set_size(new_size usize, zero_fill_new_bytes bool) {
+pub fn (mut block DataBlock) set_size(new_size uint, zero_fill_new_bytes bool) {
 	match block.kind {
 		.empty, .external_primitive { panic('this data block cannot resize') }
 		.owned {
@@ -283,7 +283,7 @@ pub fn (mut block DataBlock) set_size(new_size usize, zero_fill_new_bytes bool) 
 		}
 		.unowned_fixed {
 			storage := block.storage or { panic('data block without host storage') }
-			assert new_size <= usize(storage.bytes.cap)
+			assert new_size <= uint(storage.bytes.cap)
 			if !block.try_resize(new_size, zero_fill_new_bytes) {
 				panic('host buffer resize failed')
 			}
@@ -291,7 +291,7 @@ pub fn (mut block DataBlock) set_size(new_size usize, zero_fill_new_bytes bool) 
 	}
 }
 
-pub fn (mut block DataBlock) try_resize(size usize, zero_fill_new_bytes bool) bool {
+pub fn (mut block DataBlock) try_resize(size uint, zero_fill_new_bytes bool) bool {
 	match block.kind {
 		.empty, .external_primitive { panic('this data block cannot resize') }
 		.owned {
@@ -316,14 +316,14 @@ pub fn (mut block DataBlock) try_resize(size usize, zero_fill_new_bytes bool) bo
 	}
 }
 
-pub fn copy_data_block_bytes(mut destination DataBlock, destination_offset usize, source DataBlock, source_offset usize, count usize) {
+pub fn copy_data_block_bytes(mut destination DataBlock, destination_offset uint, source DataBlock, source_offset uint, count uint) {
 	if count > 0 {
 		assert !destination.shares_storage_with(source)
 	}
 	source.copy_to(mut destination, source_offset, destination_offset, count)
 }
 
-pub fn (mut block DataBlock) try_ensure_capacity(capacity usize) bool {
+pub fn (mut block DataBlock) try_ensure_capacity(capacity uint) bool {
 	match block.kind {
 		.empty, .external_primitive { panic('this data block cannot reserve capacity') }
 		.owned {
@@ -350,8 +350,8 @@ pub fn (mut block DataBlock) destroy() {
 	block = DataBlock{ is_shared: block.is_shared }
 }
 
-pub fn create_byte_data_block(mut vm VM, size usize, capacity ?usize) !DataBlock {
-	if size > 9007199254740991 || (capacity or { usize(0) }) > 9007199254740991 {
+pub fn create_byte_data_block(mut vm VM, size uint, capacity ?uint) !DataBlock {
+	if size > 9007199254740991 || (capacity or { uint(0) }) > 9007199254740991 {
 		return vm.throw_error_type(.range_error, .invalid_length, 'array buffer')
 	}
 	mut owner := &OwnedPrimitiveBackingStore{}
@@ -367,7 +367,7 @@ pub fn create_byte_data_block(mut vm VM, size usize, capacity ?usize) !DataBlock
 	return DataBlock.from_owned_store(owner, false)
 }
 
-fn create_zeroed_owned_data_block(mut vm VM, size usize, requested_capacity usize) !DataBlock {
+fn create_zeroed_owned_data_block(mut vm VM, size uint, requested_capacity uint) !DataBlock {
 	owner := OwnedPrimitiveBackingStore.create_zeroed_with_capacity(size, requested_capacity) or {
 		return vm.throw_error_type(.range_error, .not_enough_memory_to_allocate, requested_capacity.str())
 	}

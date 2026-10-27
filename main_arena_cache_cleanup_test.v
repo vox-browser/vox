@@ -6,7 +6,7 @@ import platform
 import time
 
 #include "@DIR/platform/arena_page_retirement_test.h"
-fn C.vox_arena_test_resident_bytes(start voidptr, bytes usize) usize
+fn C.vox_arena_test_resident_bytes(start voidptr, bytes uint) uint
 
 fn test_arena_idle_callback_discards_reset_native_replay_pages() {
 	$if !prealloc { return }

@@ -43,7 +43,7 @@ fn test_machine_value_stack_memmove_and_reset_preserve_source_conservative_scan_
 	stack.allocate(binary_value_stack_max_values)
 	assert stack.size() == binary_value_stack_max_values
 	assert stack.conservative_scan_size() == binary_value_stack_max_values
-	assert usize(stack.end()) - usize(stack.begin()) == binary_value_stack_reservation_size
+	assert uint(stack.end()) - uint(stack.begin()) == binary_value_stack_reservation_size
 	stack.reset_and_clear()
 	stack.destroy()
 }
@@ -71,10 +71,10 @@ fn test_machine_value_stack_recycles_only_four_regions_in_lifo_order_without_imp
 	assert BinaryMachineValueStack.top_offset() == sizeof(&BinaryMachineValue)
 }
 
-fn machine_stack_thread_pool_probe() usize {
+fn machine_stack_thread_pool_probe() uint {
 	mut stack := BinaryMachineValueStack.create()
 	assert binary_stack_region_pool().count == 0
-	pool_address := usize(binary_stack_region_pool())
+	pool_address := uint(binary_stack_region_pool())
 	stack.append(BinaryMachineValue.from_i32(87))
 	assert stack.take_last().to_i32() == 87
 	stack.destroy()
@@ -83,7 +83,7 @@ fn machine_stack_thread_pool_probe() usize {
 }
 
 fn test_machine_value_stack_region_pool_is_owned_by_each_native_thread() {
-	root_pool := usize(binary_stack_region_pool())
+	root_pool := uint(binary_stack_region_pool())
 	first := spawn machine_stack_thread_pool_probe()
 	second := spawn machine_stack_thread_pool_probe()
 	first_pool := first.wait()

@@ -976,7 +976,7 @@ fn (mut pool MeasurementUsedValuesChunkPool) take() &MeasurementUsedValuesChunk 
 	if !pool.closed && pool.chunks.len > 0 {
 		return pool.chunks.pop()
 	}
-	return unsafe { &MeasurementUsedValuesChunk(vcalloc(isize(sizeof(MeasurementUsedValuesChunk)))) }
+	return unsafe { &MeasurementUsedValuesChunk(vcalloc(int(sizeof(MeasurementUsedValuesChunk)))) }
 }
 
 fn (mut pool MeasurementUsedValuesChunkPool) put(chunk &MeasurementUsedValuesChunk) {
@@ -987,7 +987,7 @@ fn (mut pool MeasurementUsedValuesChunkPool) put(chunk &MeasurementUsedValuesChu
 	// This is the same zeroed, scanned storage as vcalloc on first allocation.
 	// Clear every stale GC edge before keeping the inactive chunk in the pool;
 	// allocate() constructs each UsedValues record again before exposing it.
-	unsafe { C.memset(chunk, 0, usize(sizeof(MeasurementUsedValuesChunk))) }
+	unsafe { C.memset(chunk, 0, uint(sizeof(MeasurementUsedValuesChunk))) }
 	pool.chunks << chunk
 }
 
@@ -1069,7 +1069,7 @@ fn (mut arena MeasurementUsedValuesArena) allocate_slot() &UsedValues {
 			arena.begin_pool_lease()
 			arena.chunk_pool_.take()
 		} else {
-			unsafe { &MeasurementUsedValuesChunk(vcalloc(isize(sizeof(MeasurementUsedValuesChunk)))) }
+			unsafe { &MeasurementUsedValuesChunk(vcalloc(int(sizeof(MeasurementUsedValuesChunk)))) }
 		}
 		arena.chunks << new_chunk
 		new_chunk
@@ -1084,7 +1084,7 @@ fn (mut arena MeasurementUsedValuesArena) allocate_slot() &UsedValues {
 fn (mut arena MeasurementUsedValuesArena) allocate_inline_end_snapshot(position StaticPositionRect) &StaticPositionRect {
 	mut chunk := if arena.inline_end_snapshots.len == 0
 		|| arena.inline_end_snapshots.last().used == inline_end_snapshot_chunk_size {
-		new_chunk := unsafe { &InlineEndSnapshotChunk(vcalloc(isize(sizeof(InlineEndSnapshotChunk)))) }
+		new_chunk := unsafe { &InlineEndSnapshotChunk(vcalloc(int(sizeof(InlineEndSnapshotChunk)))) }
 		arena.inline_end_snapshots << new_chunk
 		new_chunk
 	} else {

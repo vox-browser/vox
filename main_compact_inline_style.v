@@ -33,11 +33,11 @@ fn compact_inline_style_query(root &dom.Node, source string, runtime &browserjs.
 		}
 		'value' { result = declaration.get_property_value(query.name) }
 		'priority' { result = declaration.get_property_priority(query.name) }
-		'item' { result = declaration.item(usize(query.index)) }
+		'item' { result = declaration.item(uint(query.index)) }
 		'text' { result = declaration.css_text() }
 		'names' {
 			mut names := []json2.Any{}
-			mut index := usize(0)
+			mut index := uint(0)
 			for {
 				name := declaration.item(index)
 				if name == '' { break }

@@ -1,7 +1,7 @@
 module css
 
 $if gcboehm ? {
-	fn C.GC_get_total_bytes() usize
+	fn C.GC_get_total_bytes() uint
 }
 
 fn test_default_and_single_invalidation_properties_need_no_map_allocation() {
@@ -10,7 +10,7 @@ fn test_default_and_single_invalidation_properties_need_no_map_allocation() {
 	key := property.key()
 	mut retained := []InvalidationSet{len: 1024}
 	mut matches := 0
-	mut before := usize(0)
+	mut before := uint(0)
 	$if gcboehm ? { before = C.GC_get_total_bytes() }
 	for index in 0 .. retained.len {
 		mut set := InvalidationSet{}
@@ -28,7 +28,7 @@ fn test_default_and_single_invalidation_properties_need_no_map_allocation() {
 		}
 		retained[index] = set
 	}
-	mut allocated := usize(0)
+	mut allocated := uint(0)
 	$if gcboehm ? { allocated = C.GC_get_total_bytes() - before }
 	assert matches == 2048
 	assert allocated == 0

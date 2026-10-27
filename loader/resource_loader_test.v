@@ -47,7 +47,7 @@ fn test_resource_loader_initialization_and_configuration() {
 	assert resource_loader.platform() == 'Test Platform'
 	assert resource_loader.navigator_compatibility_mode() == .gecko
 	assert resource_loader.enable_global_privacy_control()
-	client := voidptr(usize(42))
+	client := voidptr(uint(42))
 	resource_loader.set_client(client)
 	assert resource_loader.request_client() == client
 	assert ResourceLoader.is_initialized()

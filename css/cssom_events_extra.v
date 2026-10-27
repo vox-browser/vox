@@ -31,7 +31,7 @@ pub mut:
 	type_                 StyleSheetIdentifierType
 	dom_element_unique_id ?u64
 	url                   ?string
-	rule_count            usize
+	rule_count            uint
 }
 
 pub fn (identifier StyleSheetIdentifier) encode_for_ipc() StyleSheetIdentifierWire {
@@ -194,7 +194,7 @@ pub fn (mut sheet CSSStyleSheet) visit_edges(mut visitor dom.CellVisitor) {
 	}
 }
 
-pub fn (list &CSSRuleList) item_value(index usize) ?&CSSRule {
+pub fn (list &CSSRuleList) item_value(index uint) ?&CSSRule {
 	return list.item(index)
 }
 
@@ -210,7 +210,7 @@ pub fn (mut list CSSRuleList) visit_edges(mut visitor dom.CellVisitor) {
 	}
 }
 
-pub fn (list &StyleSheetList) item_value(index usize) ?&CSSStyleSheet {
+pub fn (list &StyleSheetList) item_value(index uint) ?&CSSStyleSheet {
 	return list.item(index)
 }
 
@@ -324,7 +324,7 @@ fn (rule &CSSRule) serialized_layer_block_rule() string {
 			return builder.str()
 		}
 		for i in 0 .. rules.length() {
-			child_rule := rules.item(usize(i)) or { continue }
+			child_rule := rules.item(uint(i)) or { continue }
 			if i != 0 {
 				builder.write_u8(`\n`)
 			}
@@ -615,7 +615,7 @@ fn (rule &CSSRule) serialized_page_rule() string {
 	}
 	if rules := rule.rules {
 		for i in 0 .. rules.length() {
-			child_rule := rules.item(usize(i)) or { continue }
+			child_rule := rules.item(uint(i)) or { continue }
 			result := child_rule.css_text()
 			if result.len == 0 {
 				continue

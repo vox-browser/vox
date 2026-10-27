@@ -214,7 +214,7 @@ pub fn (mut context WebGLRenderingContext) fence_sync(condition GLenum, flags GL
 	sync := &WebGLSync{
 		object: new_object(context.identity(), context.context_generation_, handle, 0)
 		native_handle_: native_handle
-		source_handle_: unsafe { voidptr(usize(source_handle)) }
+		source_handle_: unsafe { voidptr(uint(source_handle)) }
 	}
 	unsafe {
 		context.syncs[handle] = sync

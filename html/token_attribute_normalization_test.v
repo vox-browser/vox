@@ -1,7 +1,7 @@
 module html
 
 $if gcboehm ? {
-	fn C.GC_get_total_bytes() usize
+	fn C.GC_get_total_bytes() uint
 }
 
 fn normalization_test_attribute(name string, value string, index int) Attribute {
@@ -23,13 +23,13 @@ fn test_normalization_empty_and_single_attribute_preserve_sticky_flag_without_al
 	mut single := HTMLToken.make_start_tag('span')
 	attribute := normalization_test_attribute('id', 'first', 2)
 	single.add_attribute(attribute)
-	mut before := usize(0)
+	mut before := uint(0)
 	$if gcboehm ? { before = C.GC_get_total_bytes() }
 	for _ in 0 .. 1024 {
 		empty.normalize_attributes()
 		single.normalize_attributes()
 	}
-	mut allocated := usize(0)
+	mut allocated := uint(0)
 	$if gcboehm ? { allocated = C.GC_get_total_bytes() - before }
 	assert allocated == 0
 	assert empty.attributes.len == 0
@@ -47,10 +47,10 @@ fn test_normalization_sixteen_unique_attributes_keep_complete_values_without_all
 		token.add_attribute(normalization_test_attribute('key-${index}', 'value-${index}', index))
 	}
 	original := token.attributes.clone()
-	mut before := usize(0)
+	mut before := uint(0)
 	$if gcboehm ? { before = C.GC_get_total_bytes() }
 	for _ in 0 .. 128 { token.normalize_attributes() }
-	mut allocated := usize(0)
+	mut allocated := uint(0)
 	$if gcboehm ? { allocated = C.GC_get_total_bytes() - before }
 	assert allocated == 0
 	assert token.attributes == original

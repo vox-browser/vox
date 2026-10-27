@@ -11,8 +11,8 @@ struct FileReaderStreamContextObservation {
 mut:
 	bytes          []u8
 	settled        bool
-	script_depth   usize
-	callback_depth usize
+	script_depth   uint
+	callback_depth uint
 }
 
 fn file_reader_stream_context_owner() (&WindowModel, &EnvironmentSettingsObject, &EventLoop) {

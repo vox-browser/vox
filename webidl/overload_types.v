@@ -226,8 +226,8 @@ pub fn (type_ &UnionType) flattened_member_types() []&Type {
 	return types
 }
 
-pub fn (type_ &UnionType) number_of_nullable_member_types() usize {
-	mut count := usize(0)
+pub fn (type_ &UnionType) number_of_nullable_member_types() uint {
+	mut count := uint(0)
 	for member in type_.member_types_ {
 		if member.is_nullable() {
 			count++
@@ -255,11 +255,11 @@ pub:
 pub struct EffectiveOverloadSet {
 mut:
 	items_                         []EffectiveOverloadSetItem
-	distinguishing_argument_index_ usize
+	distinguishing_argument_index_ uint
 	last_matching_item_index_      ?int
 }
 
-pub fn EffectiveOverloadSet.new(items []EffectiveOverloadSetItem, distinguishing_argument_index usize) EffectiveOverloadSet {
+pub fn EffectiveOverloadSet.new(items []EffectiveOverloadSetItem, distinguishing_argument_index uint) EffectiveOverloadSet {
 	return EffectiveOverloadSet{
 		items_: items.clone()
 		distinguishing_argument_index_: distinguishing_argument_index
@@ -279,17 +279,17 @@ pub fn (set &EffectiveOverloadSet) is_empty() bool {
 	return set.items_.len == 0
 }
 
-pub fn (set &EffectiveOverloadSet) size() usize {
-	return usize(set.items_.len)
+pub fn (set &EffectiveOverloadSet) size() uint {
+	return uint(set.items_.len)
 }
 
-pub fn (set &EffectiveOverloadSet) distinguishing_argument_index() usize {
+pub fn (set &EffectiveOverloadSet) distinguishing_argument_index() uint {
 	return set.distinguishing_argument_index_
 }
 
-pub fn (mut set EffectiveOverloadSet) has_overload_with_matching_argument_at_index(index usize, matches fn (&Type, Optionality) bool) bool {
+pub fn (mut set EffectiveOverloadSet) has_overload_with_matching_argument_at_index(index uint, matches fn (&Type, Optionality) bool) bool {
 	for item_index, item in set.items_ {
-		if index >= usize(item.types.len) || index >= usize(item.optionality_values.len) {
+		if index >= uint(item.types.len) || index >= uint(item.optionality_values.len) {
 			continue
 		}
 		if matches(item.types[index], item.optionality_values[index]) {

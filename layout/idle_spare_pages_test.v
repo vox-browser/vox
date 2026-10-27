@@ -5,8 +5,8 @@ import html
 import platform
 
 #include "@DIR/../platform/arena_page_retirement_test.h"
-fn C.vox_arena_test_resident_bytes(start voidptr, bytes usize) usize
-fn C.vox_arena_test_unused_resident_bytes(start voidptr, bytes usize) usize
+fn C.vox_arena_test_resident_bytes(start voidptr, bytes uint) uint
+fn C.vox_arena_test_unused_resident_bytes(start voidptr, bytes uint) uint
 
 fn test_idle_paint_page_trim_keeps_live_scenes_and_trees_and_refills_spares() {
 	$if !prealloc { return }
@@ -52,8 +52,8 @@ fn test_idle_paint_page_trim_keeps_live_scenes_and_trees_and_refills_spares() {
 	assert live_scene.arena.usage().capacity == scene_usage.capacity
 	assert live_tree.arena.usage().used == tree_usage.used
 	assert live_tree.arena.usage().capacity == tree_usage.capacity
-	assert C.vox_arena_test_unused_resident_bytes(voidptr(usize(live_bytes.data) + usize(live_bytes.len)), 64 * 1024) == 0
-	assert C.vox_arena_test_unused_resident_bytes(voidptr(usize(live_tree_bytes.data) + usize(live_tree_bytes.len)), 64 * 1024) == 0
+	assert C.vox_arena_test_unused_resident_bytes(voidptr(uint(live_bytes.data) + uint(live_bytes.len)), 64 * 1024) == 0
+	assert C.vox_arena_test_unused_resident_bytes(voidptr(uint(live_tree_bytes.data) + uint(live_tree_bytes.len)), 64 * 1024) == 0
 	assert live_bytes[0] == 23 && live_bytes[live_bytes.len - 1] == 23
 	assert live_tree_bytes[0] == 43 && live_tree_bytes[live_tree_bytes.len - 1] == 43
 	if !platform.arenas_poisoned() {

@@ -10,7 +10,7 @@ pub fn (mut interpreter BinaryMachineBytecodeInterpreter) unwind_to_throw_handle
 		panic('Source exception address must name a stored exception')
 	}
 	frame_label_index := configuration.frame().label_index()
-	mut label_index := usize(configuration.label_stack_.len)
+	mut label_index := uint(configuration.label_stack_.len)
 	for label_index > frame_label_index + 1 {
 		label_index--
 		label := configuration.label_stack_[int(label_index)]
@@ -27,7 +27,7 @@ pub fn (mut interpreter BinaryMachineBytecodeInterpreter) unwind_to_throw_handle
 			}
 			configuration.value_stack_.shrink(label.stack_height(), true)
 			if catch_.tag_index != none {
-				configuration.value_stack_.ensure_capacity(configuration.value_stack_.size() + usize(exception.params().len))
+				configuration.value_stack_.ensure_capacity(configuration.value_stack_.size() + uint(exception.params().len))
 				for field in exception.params() {
 					configuration.value_stack_.unchecked_append(field)
 				}

@@ -5,13 +5,13 @@ module libjs
 // mmap'd region; here each frame is a heap record and the stack accounts for
 // the bytes upstream would have consumed, so exhaustion behaves the same.
 
-pub const interpreter_stack_size = usize(8 * 1024 * 1024)
+pub const interpreter_stack_size = uint(8 * 1024 * 1024)
 
 pub struct InterpreterStack {
 mut:
 	contexts      []&ExecutionContext
-	top_          usize
-	limit         usize = interpreter_stack_size
+	top_          uint
+	limit         uint = interpreter_stack_size
 	next_frame_id u64   = 1
 }
 
@@ -20,7 +20,7 @@ pub fn InterpreterStack.new() InterpreterStack {
 }
 
 // top returns the current allocation mark.
-pub fn (stack &InterpreterStack) top() usize {
+pub fn (stack &InterpreterStack) top() uint {
 	return stack.top_
 }
 
@@ -28,9 +28,9 @@ pub fn (stack &InterpreterStack) depth() int {
 	return stack.contexts.len
 }
 
-fn frame_size_in_bytes(tail_count u64) usize {
-	alignment := usize(8)
-	mut size := usize(sizeof(ExecutionContext)) + usize(tail_count) * usize(sizeof(Value))
+fn frame_size_in_bytes(tail_count u64) uint {
+	alignment := uint(8)
+	mut size := uint(sizeof(ExecutionContext)) + uint(tail_count) * uint(sizeof(Value))
 	// Align up to alignof(ExecutionContext).
 	size = (size + alignment - 1) & ~(alignment - 1)
 	return size
@@ -54,7 +54,7 @@ pub fn (mut stack InterpreterStack) allocate(registers_and_locals_count u32, con
 }
 
 // deallocate releases every frame allocated at or above the mark.
-pub fn (mut stack InterpreterStack) deallocate(mark usize) {
+pub fn (mut stack InterpreterStack) deallocate(mark uint) {
 	if mark > stack.top_ {
 		panic('InterpreterStack.deallocate: mark ${mark} is above the top ${stack.top_}')
 	}
@@ -76,6 +76,6 @@ pub fn (stack &InterpreterStack) is_exhausted() bool {
 	return stack.top_ >= stack.limit
 }
 
-pub fn (stack &InterpreterStack) size_remaining() usize {
+pub fn (stack &InterpreterStack) size_remaining() uint {
 	return stack.limit - stack.top_
 }

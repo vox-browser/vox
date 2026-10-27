@@ -46,7 +46,7 @@ fn test_native_jpeg_yuv_decoding_packs_padded_planes_of_baseline_and_progressive
 		mut height := 0
 		mut size := 0
 		mut chroma_subsampling := -1
-		planes := C.native_decode_jpeg_yuv(baseline.data, usize(baseline.len), &width, &height,
+		planes := C.native_decode_jpeg_yuv(baseline.data, uint(baseline.len), &width, &height,
 			&size, &chroma_subsampling)
 		assert planes != unsafe { nil }
 		assert width == 7 && height == 5 && size == 35 + 2 * 12 && chroma_subsampling == 2
@@ -59,7 +59,7 @@ fn test_native_jpeg_yuv_decoding_packs_padded_planes_of_baseline_and_progressive
 			100, 178, 89, 79, 121, 190, 94]
 		// Progressive encoding of the same coefficients decodes to the same planes.
 		progressive := base64.decode(native_jpeg_test_odd_progressive)
-		progressive_planes := C.native_decode_jpeg_yuv(progressive.data, usize(progressive.len),
+		progressive_planes := C.native_decode_jpeg_yuv(progressive.data, uint(progressive.len),
 			&width, &height, &size, &chroma_subsampling)
 		assert progressive_planes != unsafe { nil }
 		mut progressive_decoded := []u8{len: size}
@@ -68,7 +68,7 @@ fn test_native_jpeg_yuv_decoding_packs_padded_planes_of_baseline_and_progressive
 		assert progressive_decoded == decoded
 		// A 4:4:4 stream keeps full-resolution chroma planes.
 		full := base64.decode(native_jpeg_test_444)
-		full_planes := C.native_decode_jpeg_yuv(full.data, usize(full.len), &width, &height, &size,
+		full_planes := C.native_decode_jpeg_yuv(full.data, uint(full.len), &width, &height, &size,
 			&chroma_subsampling)
 		assert full_planes != unsafe { nil }
 		assert width == 6 && height == 4 && size == 3 * 24 && chroma_subsampling == 0

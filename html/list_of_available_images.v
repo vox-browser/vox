@@ -114,16 +114,16 @@ pub fn (mut images ListOfAvailableImages) get(key Key) ?&AvailableImageEntry {
 	return none
 }
 
-fn (images &ListOfAvailableImages) prunable_size_and_count() (usize, usize) {
-	mut size := usize(0)
-	mut count := usize(0)
+fn (images &ListOfAvailableImages) prunable_size_and_count() (uint, uint) {
+	mut size := uint(0)
+	mut count := uint(0)
 	for stored in images.images {
 		if stored.entry.image_data.has_clients() {
 			continue
 		}
 		image_size := stored.entry.image_data.external_memory_size()
-		if usize(-1) - size < image_size {
-			size = usize(-1)
+		if uint(-1) - size < image_size {
+			size = uint(-1)
 		} else {
 			size += image_size
 		}
@@ -132,7 +132,7 @@ fn (images &ListOfAvailableImages) prunable_size_and_count() (usize, usize) {
 	return size, count
 }
 
-pub fn (mut images ListOfAvailableImages) prune_to_limits(external_memory_limit usize, count_limit usize) {
+pub fn (mut images ListOfAvailableImages) prune_to_limits(external_memory_limit uint, count_limit uint) {
 	mut size, mut count := images.prunable_size_and_count()
 	for size > external_memory_limit || count > count_limit {
 		mut least_recently_used_index := -1

@@ -27,7 +27,7 @@ fn test_rule_bucket_iterator_borrows_ordered_vectors_and_keeps_empty_buckets() {
 	for expected in 1 .. 8 {
 		bucket := iterator.next()?
 		assert bucket.len == 1
-		assert bucket[0].rule_index == usize(expected)
+		assert bucket[0].rule_index == uint(expected)
 		if expected == 7 {
 			assert bucket.data == cache.other_rules.data
 		}

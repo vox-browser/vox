@@ -114,7 +114,7 @@ fn test_source_shader_proxy_id_and_sync_base_zero_remain_distinct_from_native_ha
 	mut sync := context.fence_sync(sync_gpu_commands_complete, 0) or { panic('source sync') }
 	assert sync.native_handle_ != unsafe { nil }
 	assert sync.object.bookkeeping_id() > 0
-	assert usize(sync.sync_handle(context.identity(), context.context_generation())!) == 1
+	assert uint(sync.sync_handle(context.identity(), context.context_generation())!) == 1
 	assert context.next_object_id == 2
 	assert sync.object.handle(context.identity(), context.context_generation())! == 0
 	base_query := sync.object.handle_for_query(context.identity(), context.context_generation())!
@@ -168,7 +168,7 @@ fn test_source_raw_query_factory_values_do_not_consume_generated_ids() {
 	assert fresh.object.native_name() == buffer.object.native_name()
 	assert context.next_object_id == 2
 	mut sync := context.fence_sync(sync_gpu_commands_complete, 0) or { panic('source shared allocator sync') }
-	assert usize(sync.sync_handle(context.identity(), context.context_generation())!) == 2
+	assert uint(sync.sync_handle(context.identity(), context.context_generation())!) == 2
 	assert sync.object.handle(context.identity(), context.context_generation())! == 0
 	shader := context.create_shader(vertex_shader) or { panic('source creation after getter and sync') }
 	assert shader.object.handle(context.identity(), context.context_generation())! == 3

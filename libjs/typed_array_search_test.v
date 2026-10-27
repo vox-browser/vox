@@ -77,11 +77,11 @@ fn test_typed_array_search_empty_and_invalid_views_precede_from_index_coercion()
 	from.define_direct_property(PropertyName.from_str('valueOf'), Value.from_object(convert.object), 7)
 	for mode in ['empty', 'detached', 'out of bounds', 'valid'] {
 		mut buffer := ArrayBufferObject.create(mut vm, vm.realm(), if mode == 'empty' {
-			usize(0)
+			uint(0)
 		} else {
-			usize(2)
+			uint(2)
 		}, parent)!
-		buffer.maximum_byte_length = usize(4)
+		buffer.maximum_byte_length = uint(4)
 		array := TypedArray.create(vm.realm(), .uint8, if mode == 'empty' { u32(0) } else { u32(2) }, buffer, parent)
 		if mode == 'detached' { detach_array_buffer(mut vm, mut buffer, none)! }
 		if mode == 'out of bounds' {
@@ -116,7 +116,7 @@ fn test_typed_array_search_keeps_snapshot_length_but_observes_current_validity_a
 	for mode in ['detach', 'shrink', 'grow'] {
 		for name in ['includes', 'indexOf', 'lastIndexOf'] {
 			mut buffer := ArrayBufferObject.create_from_bytes(vm.realm(), [u8(42), 17, 43], false, parent)
-			buffer.maximum_byte_length = usize(8)
+			buffer.maximum_byte_length = uint(8)
 			mut array := TypedArray.create(vm.realm(), .uint8, 0, buffer, parent)
 			initialize_typed_array_from_array_buffer(mut vm, mut array, buffer, Value.from_i32(0), js_undefined())!
 			mut from := Object.create(vm.realm(), none)

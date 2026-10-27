@@ -27,7 +27,7 @@ fn test_machine_memory_buffer_reserves_real_cage_storage_and_zeroes_grown_tail()
 	buffer.try_reserve(200000, 0)!
 	assert buffer.size() == 65536 && buffer.capacity() == 200000 && buffer.primitive_storage_handle() == handle
 	assert unsafe { buffer.data()[15] } == 83
-	offset_address := unsafe { &usize(usize(buffer) + BinaryMachineMemoryBuffer.storage_offset_offset()) }
+	offset_address := unsafe { &uint(uint(buffer) + BinaryMachineMemoryBuffer.storage_offset_offset()) }
 	assert unsafe { *offset_address } == buffer.storage_offset()
 }
 
@@ -74,7 +74,7 @@ fn test_machine_memory_buffer_bulk_copy_fill_overwrite_and_overlap_use_owned_byt
 	input := [u8(71), 73]
 	destination.overwrite(6, input.data, 2)
 	mut result := []u8{len: 10}
-	destination.copy_to(0, BinaryMachineBytes{ data: result.data, size: usize(result.len) })
+	destination.copy_to(0, BinaryMachineBytes{ data: result.data, size: uint(result.len) })
 	assert result == [u8(2), 3, 9, 9, 9, 7, 71, 73, 10, 11]
 	source.copy_from(source, 0, 2, 8)
 	source.copy_to(0, BinaryMachineBytes{ data: result.data, size: 10 })

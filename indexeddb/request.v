@@ -63,8 +63,8 @@ pub fn IDBRequest.create_for_global_scope(global_scope &IndexedDBGlobalScope, so
 	}
 }
 
-pub fn IDBRequest.transaction_offset() usize {
-	return usize(__offsetof(IDBRequest, transaction_))
+pub fn IDBRequest.transaction_offset() uint {
+	return uint(__offsetof(IDBRequest, transaction_))
 }
 
 pub fn (request &IDBRequest) result() !RequestResultKind {

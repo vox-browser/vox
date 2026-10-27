@@ -204,14 +204,14 @@ pub fn (view &ArrayBufferView) is_data_view() bool {
 pub struct ValidatedBufferSource {
 pub:
 	buffer          BufferSource
-	byte_offset     usize
-	byte_length     usize
-	element_size    usize = 1
+	byte_offset     uint
+	byte_length     uint
+	element_size    uint = 1
 	is_data_view    bool
 	is_array_buffer bool
 }
 
-fn validate_buffer_source_bounds(source BufferSource, byte_offset usize, byte_length usize, element_size usize, is_data_view bool, is_array_buffer bool) !ValidatedBufferSource {
+fn validate_buffer_source_bounds(source BufferSource, byte_offset uint, byte_length uint, element_size uint, is_data_view bool, is_array_buffer bool) !ValidatedBufferSource {
 	if source.detached_ {
 		return error('InvalidStateError: buffer source is detached')
 	}
@@ -233,7 +233,7 @@ pub fn validate_buffer_source(source BufferSource) !ValidatedBufferSource {
 	if source.is_out_of_bounds() {
 		return error('RangeError: buffer source is out of bounds')
 	}
-	return validate_buffer_source_bounds(source, usize(source.byte_offset()), usize(source.byte_length()), usize(source.element_size()), source.is_data_view(), source.is_array_buffer())
+	return validate_buffer_source_bounds(source, uint(source.byte_offset()), uint(source.byte_length()), uint(source.element_size()), source.is_data_view(), source.is_array_buffer())
 }
 
 pub fn validate_array_buffer_view(view ArrayBufferView) !ValidatedBufferSource {

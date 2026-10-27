@@ -11,8 +11,8 @@ mut:
 	events          []string
 	positions       []f64
 	new_promise     ?&dom.Promise
-	schedule_depths []usize
-	reaction_depths []usize
+	schedule_depths []uint
+	reaction_depths []uint
 }
 
 fn play_task_drain_owner(media &HTMLMediaElement) {
@@ -312,9 +312,9 @@ fn test_play_resolution_enters_the_actual_document_context_for_native_capability
 	assert media.queued_media_task_ids_.len == 1
 	play_task_take_owner(media).execute()
 	assert native.state == .fulfilled && native.result.kind == .undefined
-	assert state.schedule_depths == [usize(1)]
+	assert state.schedule_depths == [uint(1)]
 	mut loop := main_thread_event_loop()
 	loop.perform_a_microtask_checkpoint()
-	assert state.reaction_depths == [usize(1), 1]
+	assert state.reaction_depths == [uint(1), 1]
 	assert settings.realm().script_execution_depth == 0 && settings.realm().callback_execution_depth == 0
 }

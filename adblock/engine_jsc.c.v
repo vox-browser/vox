@@ -15,17 +15,17 @@ $if linux {
 #include <JavaScriptCore/JavaScript.h>
 #include "@DIR/runtime.h"
 
-fn C.vox_adblock_utf8_string(&u8, usize) voidptr
-fn C.vox_adblock_gunzip(&u8, usize, &u8, usize) int
+fn C.vox_adblock_utf8_string(&u8, uint) voidptr
+fn C.vox_adblock_gunzip(&u8, uint, &u8, uint) int
 
 fn C.JSGlobalContextCreate(voidptr) voidptr
 fn C.JSGlobalContextRelease(voidptr)
-fn C.JSStringCreateWithCharacters(&u16, usize) voidptr
+fn C.JSStringCreateWithCharacters(&u16, uint) voidptr
 fn C.JSStringRelease(voidptr)
 fn C.JSEvaluateScript(voidptr, voidptr, voidptr, voidptr, int, &voidptr) voidptr
 fn C.JSValueToStringCopy(voidptr, voidptr, &voidptr) voidptr
-fn C.JSStringGetMaximumUTF8CStringSize(voidptr) usize
-fn C.JSStringGetUTF8CString(voidptr, &char, usize) usize
+fn C.JSStringGetMaximumUTF8CStringSize(voidptr) uint
+fn C.JSStringGetUTF8CString(voidptr, &char, uint) uint
 fn C.vox_adblock_lock()
 fn C.vox_adblock_try_lock() int
 fn C.vox_adblock_unlock()
@@ -241,10 +241,10 @@ fn source_utf16(source string) []u16 {
 // CoreFoundation accepts an explicit byte length, preserving embedded NULs. Invalid
 // UTF-8 retains the existing V rune decoder behavior instead of being discarded.
 fn script_string(source string) voidptr {
- script := C.vox_adblock_utf8_string(source.str, usize(source.len))
+ script := C.vox_adblock_utf8_string(source.str, uint(source.len))
  if script != unsafe { nil } { return script }
  characters := source_utf16(source)
- return C.JSStringCreateWithCharacters(characters.data, usize(characters.len))
+ return C.JSStringCreateWithCharacters(characters.data, uint(characters.len))
 }
 
 // The bundled asset is one gzip member produced by tools/build_adblock.mjs.
@@ -255,7 +255,7 @@ fn decompress_engine_source(data []u8) !string {
  size := u32(data[n-4]) | (u32(data[n-3]) << 8) | (u32(data[n-2]) << 16) | (u32(data[n-1]) << 24)
  if size > u32(max_int) { return error('Bundled source exceeds string capacity') }
  mut output := []u8{len: int(size)}
- status := C.vox_adblock_gunzip(data.data, usize(data.len), output.data, usize(output.len))
+ status := C.vox_adblock_gunzip(data.data, uint(data.len), output.data, uint(output.len))
  if status != 0 { return error('Invalid gzip source (${status})') }
  return output.bytestr()
 }

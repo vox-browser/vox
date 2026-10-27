@@ -111,9 +111,9 @@ fn test_shared_array_buffer_constructor_rewrites_only_initial_length_range_error
 		Value.from_f64(0.9), Value.from_string(vm.create_string_from_str('3'))] {
 		buffer := construct(mut vm, function, [value, Value.from_i32(8)], none)!.array_buffer?
 		assert buffer.byte_length() == if value.is_string() {
-			usize(3)
+			uint(3)
 		} else {
-			usize(0)
+			uint(0)
 		}
 		assert buffer.is_shared_array_buffer() && buffer.is_fixed_length() && !buffer.is_detached()
 	}
@@ -172,21 +172,21 @@ fn test_shared_array_buffer_allocation_reserves_maximum_and_uses_new_target_real
 		log.events << 'prototype'
 		return js_null()
 	}, unsafe { nil }, 0, foreign.function_prototype)
-	for maximum in [?usize(none), ?usize(0), ?usize(12)] {
+	for maximum in [?uint(none), ?uint(0), ?uint(12)] {
 		buffer := allocate_shared_array_buffer(mut vm, object, 0, maximum)!
 		assert buffer.is_shared_array_buffer() && !buffer.is_detached() && buffer.byte_length() == 0
 		assert buffer.is_fixed_length() == (maximum == none)
-		assert buffer.data_block().capacity() >= maximum or { usize(0) }
+		assert buffer.data_block().capacity() >= maximum or { uint(0) }
 		assert voidptr(buffer.object.internal_get_prototype_of()?) == voidptr(foreign.shared_array_buffer_prototype_record())
 	}
 	log.events.clear()
-	if _ := allocate_shared_array_buffer(mut vm, object, 4, usize(3)) {
+	if _ := allocate_shared_array_buffer(mut vm, object, 4, uint(3)) {
 		assert false
 	} else {
 		assert thrown_value(err).as_object().error_kind()? == .range_error
 	}
 	assert log.events.len == 0
-	if _ := allocate_shared_array_buffer(mut vm, object, 0, usize(9007199254740992)) {
+	if _ := allocate_shared_array_buffer(mut vm, object, 0, uint(9007199254740992)) {
 		assert false
 	} else {
 		assert thrown_value(err).as_object().error_message()?.str() == 'Not enough memory to allocate 9007199254740992 bytes'

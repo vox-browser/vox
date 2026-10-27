@@ -69,8 +69,8 @@ fn test_primitive_storage_large_commit_growth_preserves_bytes_and_guard_extent()
 	assert allocator.contains_allocation(allocation, unsafe { base + page * 6 }, 1)
 	assert allocator.contains_allocation(allocation, unsafe { base + page * 7 }, 0)
 	assert !allocator.contains_allocation(allocation, unsafe { base + page * 7 }, 1)
-	assert usize(allocator.data(allocation, primitive_storage_default_cage_size + 19)) == usize(base) + 19
-	assert primitive_storage_cage_base() == usize(allocator.cage_base)
+	assert uint(allocator.data(allocation, primitive_storage_default_cage_size + 19)) == uint(base) + 19
+	assert primitive_storage_cage_base() == uint(allocator.cage_base)
 	assert allocator.contains_address(unsafe { allocator.cage_base + allocator.cage_size }, 0)
 	assert !allocator.contains_address(unsafe { allocator.cage_base + allocator.cage_size }, 1)
 	assert !allocator.contains_address(unsafe { nil }, 0)

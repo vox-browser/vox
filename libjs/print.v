@@ -197,7 +197,7 @@ fn (mut context PrintContext) print_typed_array(array &TypedArray) ! {
 	for index in u32(0) .. length {
 		if index > 0 { context.out(', ') }
 		byte_index := array.byte_offset + index * array.element_size()
-		context.print_value(array.get_value_from_buffer(mut context.vm, usize(byte_index), .unordered, true))!
+		context.print_value(array.get_value_from_buffer(mut context.vm, uint(byte_index), .unordered, true))!
 		printed_count++
 		if printed_count > 100 && index < length {
 			context.out(', ...')

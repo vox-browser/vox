@@ -34,9 +34,9 @@ fn test_regex_core_helpers_match_current_upstream_rust_corpus_exactly() {
 		 }
 		fields := row.split('\t')
 		assert fields.len == 8, row
-		a := usize(fields[3].parse_uint(10, 64)!)
-		b := usize(fields[4].parse_uint(10, 64)!)
-		c := usize(fields[5].parse_uint(10, 64)!)
+		a := uint(fields[3].parse_uint(10, 64)!)
+		b := uint(fields[4].parse_uint(10, 64)!)
+		c := uint(fields[5].parse_uint(10, 64)!)
 		mut actual := ''
 		match fields[0] {
 			'negate' {

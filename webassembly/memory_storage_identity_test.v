@@ -33,12 +33,12 @@ fn test_native_memory_growth_refreshes_real_wrappers_without_copying_the_backing
 	assert voidptr(buffer_object_for_realm('native-growth-realm', memory)) == voidptr(buffer)
 	assert buffer.storage.handle == handle && buffer.byte_length() == instance.size()
 	assert voidptr(buffer.bytes().data) == voidptr(instance.data().data())
-	assert buffer.read_bytes(0, 1) == [u8(131)] && buffer.read_bytes(usize(page_size), 1) == [u8(0)]
+	assert buffer.read_bytes(0, 1) == [u8(131)] && buffer.read_bytes(uint(page_size), 1) == [u8(0)]
 	// The JS API uses GrowType::No and inhibits the native hook, then refreshes
 	// exactly once. Its type minimum remains the source machine minimum.
 	previous := memory.grow(1)!
 	assert previous == 257 && memory.size_pages() == 258 && memory.wasm_type().minimum == 257
-	assert buffer.byte_length() == usize(258 * page_size)
+	assert buffer.byte_length() == uint(258 * page_size)
 	fixed := memory.to_fixed_length_buffer_for_realm('fixed-growth-realm')
 	previous_zero := memory.grow(0)!
 	assert previous_zero == 258 && fixed.detached && fixed.byte_length() == 0
@@ -50,16 +50,16 @@ fn test_shared_memory_fixed_lengths_and_current_source_conversion_keep_canonical
 	fixed := memory.buffer()
 	assert fixed.shared && fixed.frozen && fixed.detach_key == ''
 	previous := memory.grow(1)!
-	assert previous == 1 && !fixed.detached && fixed.byte_length() == usize(page_size)
-	assert memory.buffer().byte_length() == usize(2 * page_size)
+	assert previous == 1 && !fixed.detached && fixed.byte_length() == uint(page_size)
+	assert memory.buffer().byte_length() == uint(2 * page_size)
 	resizable := memory.to_resizable_buffer()!
 	assert resizable.resizable && resizable.frozen && resizable.detach_key == 'WebAssembly.Memory'
 	assert resizable.max_byte_length == u64(3 * page_size)
 	// The pinned shared branch returns the canonical object's existing buffer.
 	assert voidptr(memory.to_fixed_length_buffer()) == voidptr(resizable)
 	previous_again := memory.grow(1)!
-	assert previous_again == 2 && resizable.byte_length() == usize(3 * page_size)
-	assert !resizable.detached && fixed.byte_length() == usize(page_size)
+	assert previous_again == 2 && resizable.byte_length() == uint(3 * page_size)
+	assert !resizable.detached && fixed.byte_length() == uint(page_size)
 }
 
 fn test_memory_constructor_source_validation_order_and_declared_maximum_are_preserved() {
@@ -82,7 +82,7 @@ fn test_memory_constructor_source_validation_order_and_declared_maximum_are_pres
 		assert rejected
 	}
 	mut memory := memory_create_with_cache(WebAssemblyCache.create(), MemoryDescriptor{ maximum: 65537 })!
-	assert memory.wasm_type().maximum? == 65537 && memory.machine_instance().data().capacity() == usize(65536) * usize(page_size)
+	assert memory.wasm_type().maximum? == 65537 && memory.machine_instance().data().capacity() == uint(65536) * uint(page_size)
 	mut rejected := false
 	_ = memory.to_resizable_buffer() or {
 		rejected = true

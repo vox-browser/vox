@@ -47,10 +47,10 @@ fn (mut p Page) perform_rendered_find(query FindInPageQuery, direction int) Find
 						}
 					}
 				}
-				p.find_match_index_ = usize((found_index or { 0 }) + matches.len)
+				p.find_match_index_ = uint((found_index or { 0 }) + matches.len)
 				update_index = true
 			} else {
-				p.find_match_index_ = usize(matches.len)
+				p.find_match_index_ = uint(matches.len)
 			}
 		}
 		matches << current_matches
@@ -63,7 +63,7 @@ fn (mut p Page) perform_rendered_find(query FindInPageQuery, direction int) Find
 	}
 	if direction != 0 && update_index && matches.len > 0 {
 		if direction > 0 {
-			if p.find_match_index_ >= usize(matches.len - 1) {
+			if p.find_match_index_ >= uint(matches.len - 1) {
 				if query.wrap_around == .no { return FindInPageResult{} }
 				p.find_match_index_ = 0
 			} else {
@@ -72,14 +72,14 @@ fn (mut p Page) perform_rendered_find(query FindInPageQuery, direction int) Find
 		} else {
 			if p.find_match_index_ == 0 {
 				if query.wrap_around == .no { return FindInPageResult{} }
-				p.find_match_index_ = usize(matches.len - 1)
+				p.find_match_index_ = uint(matches.len - 1)
 			} else {
 				p.find_match_index_--
 			}
 		}
 	}
 	p.update_find_in_page_selection(matches, query.clear_selection_on_no_match)
-	return FindInPageResult{ current_match_index: p.find_match_index_, total_match_count: usize(matches.len) }
+	return FindInPageResult{ current_match_index: p.find_match_index_, total_match_count: uint(matches.len) }
 }
 
 fn (mut p Page) select_rendered_find_match(matches []&dom.Range, clear_on_no_match ClearSelectionOnNoMatch) {

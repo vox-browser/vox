@@ -86,7 +86,7 @@ fn test_shaping_font_key_reuse_preserves_public_shapes_and_baselines() {
 }
 
 $if gcboehm ? {
-	fn C.GC_get_total_bytes() usize
+	fn C.GC_get_total_bytes() uint
 }
 
 fn reset_shaping_font_key_memo_for_test() {
@@ -124,7 +124,7 @@ fn test_shaping_font_key_memo_reuses_interleaved_equivalent_handles_without_allo
 	}
 	assert recent_shaping_font_key_count == max_shaping_font_keys
 	gc_collect()
-	mut before := usize(0)
+	mut before := uint(0)
 	$if gcboehm ? { before = C.GC_get_total_bytes() }
 	for pass in 0 .. 20 {
 		for index in 0 .. fonts.len {

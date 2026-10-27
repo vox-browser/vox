@@ -6,8 +6,8 @@ module loader
 
 pub const maximum_filename_byte_length = 255
 
-pub fn truncate_filename_to_byte_length(filename string, maximum_byte_length usize) string {
-	if usize(filename.len) <= maximum_byte_length {
+pub fn truncate_filename_to_byte_length(filename string, maximum_byte_length uint) string {
+	if uint(filename.len) <= maximum_byte_length {
 		return filename
 	}
 	mut length := maximum_byte_length
@@ -40,7 +40,7 @@ pub fn sanitize_suggested_download_filename(filename string) string {
 		if extension.len + 1 < maximum_filename_byte_length {
 			title := sanitized[..last_dot]
 			maximum_title_length := maximum_filename_byte_length - extension.len - 1
-			return '${truncate_filename_to_byte_length(title, usize(maximum_title_length))}.${extension}'
+			return '${truncate_filename_to_byte_length(title, uint(maximum_title_length))}.${extension}'
 		}
 	}
 	return truncate_filename_to_byte_length(sanitized, maximum_filename_byte_length)

@@ -44,7 +44,7 @@ fn (decoder &SourceUtf16Decoder) additional_from_state() u64 {
 	return 1 + has_byte + if decoder.lead_surrogate == 0 { u64(0) } else { u64(2) }
 }
 
-// Source checked usize capacities on the pinned 64-bit native ABI. V array
+// Source checked uint capacities on the pinned 64-bit native ABI. V array
 // allocation limits remain a separate owner boundary.
 fn (decoder &SourceUtf16Decoder) max_utf16_buffer_length(byte_length u64) ?u64 {
 	extra := decoder.additional_from_state()

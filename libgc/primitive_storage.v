@@ -8,7 +8,7 @@ const primitive_storage_tag = ExternalEntityTableTag{ value: 0x00ff }
 
 struct PrimitiveStorageEntry {
 mut:
-	size       usize
+	size       uint
 	allocation PrimitiveStorageAllocation
 }
 
@@ -29,20 +29,20 @@ pub fn (mut storage PrimitiveStorage) ensure_cage() ! { storage.allocator.ensure
 
 pub fn (storage &PrimitiveStorage) cage_base() &u8 { return storage.allocator.cage_base }
 
-pub fn (storage &PrimitiveStorage) cage_size() usize { return storage.allocator.cage_size }
+pub fn (storage &PrimitiveStorage) cage_size() uint { return storage.allocator.cage_size }
 
-pub fn (mut storage PrimitiveStorage) try_allocate(size usize, zero_fill ZeroFillNewBytes) !ExternalEntityTableHandle {
+pub fn (mut storage PrimitiveStorage) try_allocate(size uint, zero_fill ZeroFillNewBytes) !ExternalEntityTableHandle {
 	allocation := storage.allocator.allocate(size, size, zero_fill, 0, false)!
 	return storage.install_allocation(allocation, size)
 }
 
-pub fn (mut storage PrimitiveStorage) try_reserve(size usize, capacity usize, zero_fill ZeroFillNewBytes, guard_size usize) !ExternalEntityTableHandle {
+pub fn (mut storage PrimitiveStorage) try_reserve(size uint, capacity uint, zero_fill ZeroFillNewBytes, guard_size uint) !ExternalEntityTableHandle {
 	if size > capacity { return storage_errno_error(C.ENOMEM) }
 	allocation := storage.allocator.allocate(size, capacity, zero_fill, guard_size, true)!
 	return storage.install_allocation(allocation, size)
 }
 
-fn (mut storage PrimitiveStorage) install_allocation(allocation PrimitiveStorageAllocation, size usize) ExternalEntityTableHandle {
+fn (mut storage PrimitiveStorage) install_allocation(allocation PrimitiveStorageAllocation, size uint) ExternalEntityTableHandle {
 	handle := storage.table.allocate_entry(primitive_storage_tag)
 	if int(handle.index) == storage.entries.len { storage.entries << PrimitiveStorageEntry{} }
 	storage.entries[int(handle.index)].size = size
@@ -54,34 +54,34 @@ pub fn (storage &PrimitiveStorage) is_valid(handle ExternalEntityTableHandle) bo
 	return storage.table.is_valid(handle, primitive_storage_tag)
 }
 
-pub fn (storage &PrimitiveStorage) contains(address voidptr, size usize) bool {
+pub fn (storage &PrimitiveStorage) contains(address voidptr, size uint) bool {
 	return storage.allocator.contains_address(address, size)
 }
 
-pub fn (storage &PrimitiveStorage) contains_handle(handle ExternalEntityTableHandle, address voidptr, size usize) bool {
+pub fn (storage &PrimitiveStorage) contains_handle(handle ExternalEntityTableHandle, address voidptr, size uint) bool {
 	entry := storage.entry_for(handle)
 	return entry != unsafe { nil } && storage.allocator.contains_allocation(entry.allocation, address, size)
 }
 
-pub fn (storage &PrimitiveStorage) offset(handle ExternalEntityTableHandle) usize {
+pub fn (storage &PrimitiveStorage) offset(handle ExternalEntityTableHandle) uint {
 	entry := storage.entry_for(handle)
 	if entry == unsafe { nil } { return primitive_storage_invalid_offset }
 	return entry.allocation.offset
 }
 
-pub fn (storage &PrimitiveStorage) size(handle ExternalEntityTableHandle) usize {
+pub fn (storage &PrimitiveStorage) size(handle ExternalEntityTableHandle) uint {
 	entry := storage.entry_for(handle)
 	if entry == unsafe { nil } { return 0 }
 	return entry.size
 }
 
-pub fn (storage &PrimitiveStorage) capacity(handle ExternalEntityTableHandle) usize {
+pub fn (storage &PrimitiveStorage) capacity(handle ExternalEntityTableHandle) uint {
 	entry := storage.entry_for(handle)
 	if entry == unsafe { nil } { return 0 }
 	return entry.allocation.capacity
 }
 
-pub fn (storage &PrimitiveStorage) committed_size(handle ExternalEntityTableHandle) usize {
+pub fn (storage &PrimitiveStorage) committed_size(handle ExternalEntityTableHandle) uint {
 	entry := storage.entry_for(handle)
 	if entry == unsafe { nil } { return 0 }
 	return entry.allocation.committed_size
@@ -93,13 +93,13 @@ pub fn (storage &PrimitiveStorage) data(handle ExternalEntityTableHandle) &u8 {
 	return storage.data_unchecked(entry)
 }
 
-pub fn (storage &PrimitiveStorage) data_at(handle ExternalEntityTableHandle, byte_offset usize) &u8 {
+pub fn (storage &PrimitiveStorage) data_at(handle ExternalEntityTableHandle, byte_offset uint) &u8 {
 	entry := storage.entry_for(handle)
 	if entry == unsafe { nil } { return unsafe { nil } }
 	return storage.allocator.data(entry.allocation, byte_offset)
 }
 
-pub fn (mut storage PrimitiveStorage) try_resize(handle ExternalEntityTableHandle, new_size usize, zero_fill ZeroFillNewBytes) ! {
+pub fn (mut storage PrimitiveStorage) try_resize(handle ExternalEntityTableHandle, new_size uint, zero_fill ZeroFillNewBytes) ! {
 	mut entry := storage.entry_for(handle)
 	if entry == unsafe { nil } { return storage_errno_error(C.EINVAL) }
 	if new_size <= entry.allocation.capacity {
@@ -110,14 +110,14 @@ pub fn (mut storage PrimitiveStorage) try_resize(handle ExternalEntityTableHandl
 	storage.reallocate_entry(mut entry, new_size, new_size, zero_fill, false)!
 }
 
-pub fn (mut storage PrimitiveStorage) try_reserve_handle(handle ExternalEntityTableHandle, new_capacity usize) ! {
+pub fn (mut storage PrimitiveStorage) try_reserve_handle(handle ExternalEntityTableHandle, new_capacity uint) ! {
 	mut entry := storage.entry_for(handle)
 	if entry == unsafe { nil } { return storage_errno_error(C.EINVAL) }
 	if new_capacity <= entry.allocation.capacity { return }
 	storage.reallocate_entry(mut entry, entry.size, new_capacity, .no, true)!
 }
 
-pub fn (mut storage PrimitiveStorage) try_resize_and_reserve(handle ExternalEntityTableHandle, new_size usize, new_capacity usize, zero_fill ZeroFillNewBytes) ! {
+pub fn (mut storage PrimitiveStorage) try_resize_and_reserve(handle ExternalEntityTableHandle, new_size uint, new_capacity uint, zero_fill ZeroFillNewBytes) ! {
 	if new_size > new_capacity { return storage_errno_error(C.ENOMEM) }
 	mut entry := storage.entry_for(handle)
 	if entry == unsafe { nil } { return storage_errno_error(C.EINVAL) }
@@ -129,7 +129,7 @@ pub fn (mut storage PrimitiveStorage) try_resize_and_reserve(handle ExternalEnti
 	storage.reallocate_entry(mut entry, new_size, new_capacity, zero_fill, true)!
 }
 
-fn (mut storage PrimitiveStorage) reallocate_entry(mut entry PrimitiveStorageEntry, new_size usize, new_capacity usize, zero_fill ZeroFillNewBytes, force_large bool) ! {
+fn (mut storage PrimitiveStorage) reallocate_entry(mut entry PrimitiveStorageEntry, new_size uint, new_capacity uint, zero_fill ZeroFillNewBytes, force_large bool) ! {
 	assert new_size <= new_capacity
 	allocation := storage.allocator.reallocate(entry.allocation, entry.size, new_size, new_capacity, zero_fill, force_large)!
 	storage.allocator.deallocate(mut entry.allocation)

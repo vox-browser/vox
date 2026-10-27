@@ -6,16 +6,16 @@ import time
 #flag @DIR/worker_transport_native.o
 #include "@DIR/worker_transport_api.h"
 
-fn C.vox_adblock_self_executable_path(&&u8, &usize) int
-fn C.vox_adblock_worker_configure(&u8, usize, int) int
+fn C.vox_adblock_self_executable_path(&&u8, &uint) int
+fn C.vox_adblock_worker_configure(&u8, uint, int) int
 fn C.vox_adblock_worker_is_configured() int
 fn C.vox_adblock_worker_get_pid() int
 fn C.vox_adblock_worker_memory_bytes(&u64) int
-fn C.vox_adblock_worker_evaluate(&u8, usize, &&u8, &usize) int
+fn C.vox_adblock_worker_evaluate(&u8, uint, &&u8, &uint) int
 fn C.vox_adblock_worker_release() int
 fn C.vox_adblock_worker_begin_lifetime_watch() int
-fn C.vox_adblock_worker_send_frame(int, int, u64, &u8, usize, int) int
-fn C.vox_adblock_worker_read_frame(int, &int, &u64, &&u8, &usize, int) int
+fn C.vox_adblock_worker_send_frame(int, int, u64, &u8, uint, int) int
+fn C.vox_adblock_worker_read_frame(int, &int, &u64, &&u8, &uint, int) int
 
 // Experimental explicit opt-in. Ordinary module users and custom Engines stay
 // in process. The helper must implement the private worker role before any GUI
@@ -32,7 +32,7 @@ pub fn configure_default_worker_with_deadline(helper string, timeout_ms int) ! {
 	if C.vox_adblock_get_context() != unsafe { nil } || C.vox_adblock_worker_get_pid() != 0 {
 		return error('Release the default adblock engine before changing its backend')
 	}
-	code := C.vox_adblock_worker_configure(helper.str, usize(helper.len), timeout_ms)
+	code := C.vox_adblock_worker_configure(helper.str, uint(helper.len), timeout_ms)
 	if code != 0 { return error('Cannot configure adblock worker (${code})') }
 }
 
@@ -64,7 +64,7 @@ pub fn prepare_default_worker() !bool {
 	return true
 }
 
-fn owned_worker_payload(bytes &u8, size usize) string {
+fn owned_worker_payload(bytes &u8, size uint) string {
 	if bytes == unsafe { nil } { return '' }
 	defer { unsafe { C.free(bytes) } }
 	return unsafe { bytes.vstring_with_len(int(size)).clone() }
@@ -75,8 +75,8 @@ fn owned_worker_payload(bytes &u8, size usize) string {
 // failure; initialization errors retain the direct backend's sticky state.
 fn evaluate_default_worker(source string) !string {
 	mut bytes := unsafe { &u8(nil) }
-	mut size := usize(0)
-	kind := C.vox_adblock_worker_evaluate(source.str, usize(source.len), &bytes, &size)
+	mut size := uint(0)
+	kind := C.vox_adblock_worker_evaluate(source.str, uint(source.len), &bytes, &size)
 	message := owned_worker_payload(bytes, size)
 	if kind == 4 { return message }
 	if kind == 6 { C.vox_adblock_set_error(message.str) }
@@ -90,7 +90,7 @@ pub fn run_default_worker_role(arguments []string) ?int {
 	if arguments.len != 2 || C.vox_adblock_worker_begin_lifetime_watch() != 0 { return 64 }
 	mut context := create_context(none) or {
 		message := err.msg()
-		_ = C.vox_adblock_worker_send_frame(4, 6, 0, message.str, usize(message.len), 0)
+		_ = C.vox_adblock_worker_send_frame(4, 6, 0, message.str, uint(message.len), 0)
 		return 70
 	}
 	defer { if context != unsafe { nil } { C.JSGlobalContextRelease(context) } }
@@ -100,7 +100,7 @@ pub fn run_default_worker_role(arguments []string) ?int {
 		mut kind := 0
 		mut id := u64(0)
 		mut bytes := unsafe { &u8(nil) }
-		mut size := usize(0)
+		mut size := uint(0)
 		status := C.vox_adblock_worker_read_frame(3, &kind, &id, &bytes, &size, 0)
 		if status == 0 { return 0 }
 		if status != 1 { return 65 }
@@ -120,7 +120,7 @@ pub fn run_default_worker_role(arguments []string) ?int {
 			response_kind = 5
 			err.msg()
 		}
-		if C.vox_adblock_worker_send_frame(4, response_kind, id, message.str, usize(message.len), 0) != 0 { return 74 }
+		if C.vox_adblock_worker_send_frame(4, response_kind, id, message.str, uint(message.len), 0) != 0 { return 74 }
 	}
 	return 0
 }
@@ -139,7 +139,7 @@ pub fn default_worker_memory_bytes() !u64 {
 // This avoids os.executable()'s dyld-image-order assumption under injection.
 pub fn current_executable_path() !string {
 	mut bytes := unsafe { &u8(nil) }
-	mut size := usize(0)
+	mut size := uint(0)
 	status := C.vox_adblock_self_executable_path(&bytes, &size)
 	if status != 0 { return error('Cannot determine the adblock helper executable (${status})') }
 	return owned_worker_payload(bytes, size)

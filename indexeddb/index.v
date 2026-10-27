@@ -66,8 +66,8 @@ pub fn (index &IDBIndex) key_path_value() !Value {
 	return convert_a_key_path_to_a_value(index.key_path()!)
 }
 
-pub fn IDBIndex.object_store_handle_offset() usize {
-	return usize(__offsetof(IDBIndex, object_store_handle_))
+pub fn IDBIndex.object_store_handle_offset() uint {
+	return uint(__offsetof(IDBIndex, object_store_handle_))
 }
 
 pub fn (mut index IDBIndex) rename(name string) ! {

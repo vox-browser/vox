@@ -606,15 +606,15 @@ pub fn html_element_queue_a_popover_toggle_event_task(element &dom.HTMLElement, 
 	mutable_element.set_popover_toggle_old_state(old_state)
 }
 
-pub fn html_element_popover_stack_position(element &dom.HTMLElement) usize {
+pub fn html_element_popover_stack_position(element &dom.HTMLElement) uint {
 	document := popover_element(element).document()
 	hints := document.showing_hint_popover_list()
 	autos := document.showing_auto_popover_list()
 	if index := popover_list_index(hints, element) {
-		return usize(index + autos.len + 1)
+		return uint(index + autos.len + 1)
 	}
 	if index := popover_list_index(autos, element) {
-		return usize(index + 1)
+		return uint(index + 1)
 	}
 	return 0
 }

@@ -9,7 +9,7 @@ import mediasourceextensions
 import webidl
 
 
-fn C.JSObjectMakeDate(context voidptr, count usize, arguments &voidptr, exception &voidptr) voidptr
+fn C.JSObjectMakeDate(context voidptr, count uint, arguments &voidptr, exception &voidptr) voidptr
 
 pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 	runtime.require_javascript_value_context()!
@@ -30,7 +30,7 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 		})!
 	}
 	mut exception := unsafe { nil }
-	array := C.JSObjectMakeArray(runtime.context, usize(getters.len), getters.data, &exception)
+	array := C.JSObjectMakeArray(runtime.context, uint(getters.len), getters.data, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	runtime.retain_javascript_value(array)!
 	defer { runtime.release_javascript_value(array) }
@@ -45,7 +45,7 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 			}
 		})!
 	}
-	setter_array := C.JSObjectMakeArray(runtime.context, usize(setters.len), setters.data, &exception)
+	setter_array := C.JSObjectMakeArray(runtime.context, uint(setters.len), setters.data, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	runtime.retain_javascript_value(setter_array)!
 	defer { runtime.release_javascript_value(setter_array) }
@@ -67,11 +67,11 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 			}
 		})!
 	}
-	handler_getter_array := C.JSObjectMakeArray(runtime.context, usize(handler_getters.len), handler_getters.data, &exception)
+	handler_getter_array := C.JSObjectMakeArray(runtime.context, uint(handler_getters.len), handler_getters.data, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	runtime.retain_javascript_value(handler_getter_array)!
 	defer { runtime.release_javascript_value(handler_getter_array) }
-	handler_setter_array := C.JSObjectMakeArray(runtime.context, usize(handler_setters.len), handler_setters.data, &exception)
+	handler_setter_array := C.JSObjectMakeArray(runtime.context, uint(handler_setters.len), handler_setters.data, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	runtime.retain_javascript_value(handler_setter_array)!
 	defer { runtime.release_javascript_value(handler_setter_array) }
@@ -195,7 +195,7 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 			}
 		})!
 	}
-	dimension_array := C.JSObjectMakeArray(runtime.context, usize(dimension_getters.len), dimension_getters.data, &exception)
+	dimension_array := C.JSObjectMakeArray(runtime.context, uint(dimension_getters.len), dimension_getters.data, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	runtime.retain_javascript_value(dimension_array)!
 	defer { runtime.release_javascript_value(dimension_array) }
@@ -216,7 +216,7 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 			}
 		})!
 	}
-	size_array := C.JSObjectMakeArray(runtime.context, usize(size_accessors.len), size_accessors.data, &exception)
+	size_array := C.JSObjectMakeArray(runtime.context, uint(size_accessors.len), size_accessors.data, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	runtime.retain_javascript_value(size_array)!
 	defer { runtime.release_javascript_value(size_array) }
@@ -1043,7 +1043,7 @@ fn (mut host MediaElementHost) install_media_tracks() ! {
 		}
 	})!
 	mut exception := unsafe { nil }
-	array := C.JSObjectMakeArray(runtime.context, usize(functions.len), functions.data, &exception)
+	array := C.JSObjectMakeArray(runtime.context, uint(functions.len), functions.data, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	runtime.retain_javascript_value(array)!
 	defer { runtime.release_javascript_value(array) }
@@ -1218,7 +1218,7 @@ fn (mut host MediaElementHost) install_video_tracks() ! {
 		}
 	})!
 	mut exception := unsafe { nil }
-	array := C.JSObjectMakeArray(runtime.context, usize(functions.len), functions.data, &exception)
+	array := C.JSObjectMakeArray(runtime.context, uint(functions.len), functions.data, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	runtime.retain_javascript_value(array)!
 	defer { runtime.release_javascript_value(array) }
@@ -1334,7 +1334,7 @@ fn (mut host MediaElementHost) install_text_tracks() ! {
 		}
 	})!
 	mut exception := unsafe { nil }
-	array := C.JSObjectMakeArray(runtime.context, usize(functions.len), functions.data, &exception)
+	array := C.JSObjectMakeArray(runtime.context, uint(functions.len), functions.data, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	runtime.retain_javascript_value(array)!
 	defer { runtime.release_javascript_value(array) }

@@ -132,7 +132,7 @@ fn test_typed_array_sort_snapshots_elements_before_callback_mutations_and_writes
 	parent := Object.create(vm.realm(), none)
 	for mode in ['mutate', 'shrink', 'detach', 'nan', 'bigint result', 'conversion throws'] {
 		mut buffer := ArrayBufferObject.create_from_bytes(vm.realm(), [u8(3), 1, 2], false, parent)
-		buffer.maximum_byte_length = usize(8)
+		buffer.maximum_byte_length = uint(8)
 		mut array := TypedArray.create(vm.realm(), .uint8, 0, buffer, parent)
 		initialize_typed_array_from_array_buffer(mut vm, mut array, buffer, Value.from_i32(0), js_undefined())!
 		mut log := &TypedOrderLog{}

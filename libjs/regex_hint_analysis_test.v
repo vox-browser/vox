@@ -12,27 +12,27 @@ fn test_regex_hint_successors_retain_branch_order_and_terminal_boundaries() {
 	}), RegexSplit{ prefer: 3, other: 3 },
 		RegexRepeatCheck{ body: 6 }, RegexLookStart{ end: 7 },
 		RegexMatch{}, RegexFail{}, RegexLookEnd{}, RegexLiteral{ code_point: 0x61 }] {
-		mut observed := &[]usize{}
-		regex_for_each_successor(item, 1, 8, fn [mut observed] (successor usize) {
+		mut observed := &[]uint{}
+		regex_for_each_successor(item, 1, 8, fn [mut observed] (successor uint) {
 			observed << successor
 		})
-		mut expected := []usize{}
+		mut expected := []uint{}
 		match item {
-			RegexJump { expected = [usize(4)] }
-			RegexSplit { expected = [usize(3), 3] }
-			RegexRepeatCheck { expected = [usize(6), 2] }
-			RegexLookStart { expected = [usize(7), 2] }
+			RegexJump { expected = [uint(4)] }
+			RegexSplit { expected = [uint(3), 3] }
+			RegexRepeatCheck { expected = [uint(6), 2] }
+			RegexLookStart { expected = [uint(7), 2] }
 			RegexMatch, RegexFail, RegexLookEnd {}
-			else { expected = [usize(2)] }
+			else { expected = [uint(2)] }
 		}
 
 		assert *observed == expected
 	}
-	mut last := &[]usize{}
-	regex_for_each_successor(RegexRepeatCheck{ body: 0 }, 3, 4, fn [mut last] (successor usize) {
+	mut last := &[]uint{}
+	regex_for_each_successor(RegexRepeatCheck{ body: 0 }, 3, 4, fn [mut last] (successor uint) {
 		last << successor
 	})
-	assert *last == [usize(0)]
+	assert *last == [uint(0)]
 	assert !regex_suffix_has_linear_tail([], 0)
 }
 

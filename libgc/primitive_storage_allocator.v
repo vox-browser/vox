@@ -5,30 +5,30 @@ module libgc
 
 import math
 
-pub const primitive_storage_default_cage_size = usize(u64(4) * 1024 * 1024 * 1024 * 1024)
-pub const primitive_storage_invalid_offset = usize(-1)
-const primitive_small_slab_size = usize(64 * 1024)
-const primitive_minimum_small_slot_size = usize(16)
-const primitive_maximum_small_slot_size = usize(64 * 1024)
+pub const primitive_storage_default_cage_size = uint(u64(4) * 1024 * 1024 * 1024 * 1024)
+pub const primitive_storage_invalid_offset = uint(-1)
+const primitive_small_slab_size = uint(64 * 1024)
+const primitive_minimum_small_slot_size = uint(16)
+const primitive_maximum_small_slot_size = uint(64 * 1024)
 
 pub enum ZeroFillNewBytes {
 	no
 	yes
 }
 
-pub fn mask_primitive_storage_offset(offset usize) usize {
+pub fn mask_primitive_storage_offset(offset uint) uint {
 	return offset & (primitive_storage_default_cage_size - 1)
 }
 
-fn align_storage_up(value usize, alignment usize) usize {
+fn align_storage_up(value uint, alignment uint) uint {
 	return (value + alignment - 1) & ~(alignment - 1)
 }
 
-fn round_storage_up_to_page(value usize) usize {
+fn round_storage_up_to_page(value uint) uint {
 	return align_storage_up(value, storage_page_size())
 }
 
-fn primitive_small_size_class_index(size usize) ?u16 {
+fn primitive_small_size_class_index(size uint) ?u16 {
 	slot_size := math.max(size, primitive_minimum_small_slot_size)
 	if slot_size > primitive_maximum_small_slot_size { return none }
 	mut class_size := primitive_minimum_small_slot_size
@@ -40,7 +40,7 @@ fn primitive_small_size_class_index(size usize) ?u16 {
 	return index
 }
 
-fn primitive_small_slot_size_for_class(index u16) usize {
+fn primitive_small_slot_size_for_class(index u16) uint {
 	return primitive_minimum_small_slot_size << index
 }
 
@@ -52,23 +52,23 @@ struct PrimitiveStorageSmallAllocation {
 
 struct PrimitiveStorageAllocation {
 mut:
-	offset           usize = primitive_storage_invalid_offset
-	capacity         usize
-	reservation_size usize
-	committed_size   usize
+	offset           uint = primitive_storage_invalid_offset
+	capacity         uint
+	reservation_size uint
+	committed_size   uint
 	small_allocation ?PrimitiveStorageSmallAllocation
 }
 
 struct PrimitiveStorageFreeRange {
 mut:
-	offset usize
-	size   usize
+	offset uint
+	size   uint
 }
 
 struct PrimitiveStorageSlab {
 mut:
-	offset          usize
-	slot_size       usize
+	offset          uint
+	slot_size       uint
 	slot_count      u32
 	used_slot_count u32
 	free_slots      []u32
@@ -77,8 +77,8 @@ mut:
 struct PrimitiveStorageAllocator {
 mut:
 	cage_base   &u8 = unsafe { nil }
-	cage_size   usize
-	next_offset usize
+	cage_size   uint
+	next_offset uint
 	free_ranges []PrimitiveStorageFreeRange
 	small_slabs [13][]PrimitiveStorageSlab
 }
@@ -87,14 +87,14 @@ fn (mut allocator PrimitiveStorageAllocator) ensure_cage() ! {
 	if allocator.cage_base != unsafe { nil } { return }
 	if sizeof(voidptr) < sizeof(u64) { return storage_errno_error(C.ENOMEM) }
 	allocator.cage_size = primitive_storage_default_cage_size
-	if allocator.cage_size > usize(-1) - storage_page_size() {
+	if allocator.cage_size > uint(-1) - storage_page_size() {
 		return storage_errno_error(C.ENOMEM)
 	}
 	allocator.cage_base = reserve_storage_address_space(allocator.cage_size + storage_page_size())!
 	C.vox_gc_set_primitive_storage_cage_base(allocator.cage_base)
 }
 
-fn (mut allocator PrimitiveStorageAllocator) allocate(size usize, capacity usize, zero_fill ZeroFillNewBytes, guard_size usize, force_large bool) !PrimitiveStorageAllocation {
+fn (mut allocator PrimitiveStorageAllocator) allocate(size uint, capacity uint, zero_fill ZeroFillNewBytes, guard_size uint, force_large bool) !PrimitiveStorageAllocation {
 	assert size <= capacity
 	if !force_large && guard_size == 0 && size == capacity {
 		if _ := primitive_small_size_class_index(size) {
@@ -104,7 +104,7 @@ fn (mut allocator PrimitiveStorageAllocator) allocate(size usize, capacity usize
 	return allocator.allocate_large_storage(size, capacity, zero_fill, guard_size)
 }
 
-fn (mut allocator PrimitiveStorageAllocator) allocate_small_storage(size usize, zero_fill ZeroFillNewBytes) !PrimitiveStorageAllocation {
+fn (mut allocator PrimitiveStorageAllocator) allocate_small_storage(size uint, zero_fill ZeroFillNewBytes) !PrimitiveStorageAllocation {
 	class_index := primitive_small_size_class_index(size) or { panic('Invalid source small size class') }
 	allocator.ensure_cage()!
 	slot_size := primitive_small_slot_size_for_class(class_index)
@@ -113,14 +113,14 @@ fn (mut allocator PrimitiveStorageAllocator) allocate_small_storage(size usize, 
 		if slab.free_slots.len == 0 { continue }
 		slot_index := slab.free_slots.pop()
 		slab.used_slot_count++
-		offset := slab.offset + usize(slot_index) * slot_size
+		offset := slab.offset + uint(slot_index) * slot_size
 		if zero_fill == .yes { unsafe { C.memset(allocator.cage_base + offset, 0, size) } }
 		return PrimitiveStorageAllocation{ offset: offset, capacity: slot_size, reservation_size: slot_size, committed_size: slot_size, small_allocation: PrimitiveStorageSmallAllocation{ size_class_index: class_index, slab_index: u16(slab_index), slot_index: slot_index } }
 	}
 	return allocator.allocate_from_new_slab(class_index, slot_size, zero_fill, size)
 }
 
-fn (mut allocator PrimitiveStorageAllocator) allocate_from_new_slab(class_index u16, slot_size usize, zero_fill ZeroFillNewBytes, requested_size usize) !PrimitiveStorageAllocation {
+fn (mut allocator PrimitiveStorageAllocator) allocate_from_new_slab(class_index u16, slot_size uint, zero_fill ZeroFillNewBytes, requested_size uint) !PrimitiveStorageAllocation {
 	if allocator.small_slabs[class_index].len >= 0xffff { return storage_errno_error(C.ENOMEM) }
 	slab_offset := allocator.allocate_cage_range(primitive_small_slab_size)!
 	commit_storage_memory(unsafe { allocator.cage_base + slab_offset }, primitive_small_slab_size) or {
@@ -137,11 +137,11 @@ fn (mut allocator PrimitiveStorageAllocator) allocate_from_new_slab(class_index 
 	return PrimitiveStorageAllocation{ offset: slab_offset, capacity: slot_size, reservation_size: slot_size, committed_size: slot_size, small_allocation: PrimitiveStorageSmallAllocation{ size_class_index: class_index, slab_index: slab_index, slot_index: 0 } }
 }
 
-fn (mut allocator PrimitiveStorageAllocator) allocate_large_storage(size usize, capacity usize, zero_fill ZeroFillNewBytes, guard_size usize) !PrimitiveStorageAllocation {
+fn (mut allocator PrimitiveStorageAllocator) allocate_large_storage(size uint, capacity uint, zero_fill ZeroFillNewBytes, guard_size uint) !PrimitiveStorageAllocation {
 	allocator.ensure_cage()!
 	rounded_capacity := round_storage_up_to_page(capacity)
 	rounded_guard_size := round_storage_up_to_page(guard_size)
-	if rounded_capacity > usize(-1) - rounded_guard_size { return storage_errno_error(C.ENOMEM) }
+	if rounded_capacity > uint(-1) - rounded_guard_size { return storage_errno_error(C.ENOMEM) }
 	reservation_size := rounded_capacity + rounded_guard_size
 	offset := allocator.allocate_cage_range(reservation_size)!
 	committed_size := round_storage_up_to_page(size)
@@ -155,7 +155,7 @@ fn (mut allocator PrimitiveStorageAllocator) allocate_large_storage(size usize, 
 	return PrimitiveStorageAllocation{ offset: offset, capacity: capacity, reservation_size: reservation_size, committed_size: committed_size }
 }
 
-fn (mut allocator PrimitiveStorageAllocator) allocate_cage_range(requested_size usize) !usize {
+fn (mut allocator PrimitiveStorageAllocator) allocate_cage_range(requested_size uint) !uint {
 	assert allocator.cage_base != unsafe { nil }
 	reservation_size := round_storage_up_to_page(requested_size)
 	if reservation_size == 0 { return allocator.next_offset }
@@ -169,14 +169,14 @@ fn (mut allocator PrimitiveStorageAllocator) allocate_cage_range(requested_size 
 		return offset
 	}
 	next_offset := align_storage_up(allocator.next_offset, storage_page_size())
-	if next_offset > usize(-1) - reservation_size { return storage_errno_error(C.ENOMEM) }
+	if next_offset > uint(-1) - reservation_size { return storage_errno_error(C.ENOMEM) }
 	new_next_offset := next_offset + reservation_size
 	if new_next_offset > allocator.cage_size { return storage_errno_error(C.ENOMEM) }
 	allocator.next_offset = new_next_offset
 	return next_offset
 }
 
-fn (mut allocator PrimitiveStorageAllocator) resize(mut allocation PrimitiveStorageAllocation, old_size usize, new_size usize, zero_fill ZeroFillNewBytes) ! {
+fn (mut allocator PrimitiveStorageAllocator) resize(mut allocation PrimitiveStorageAllocation, old_size uint, new_size uint, zero_fill ZeroFillNewBytes) ! {
 	assert new_size <= allocation.capacity
 	if allocation.small_allocation == none {
 		allocator.commit_large_storage(mut allocation, new_size)!
@@ -186,7 +186,7 @@ fn (mut allocator PrimitiveStorageAllocator) resize(mut allocation PrimitiveStor
 	}
 }
 
-fn (mut allocator PrimitiveStorageAllocator) commit_large_storage(mut allocation PrimitiveStorageAllocation, new_size usize) ! {
+fn (mut allocator PrimitiveStorageAllocator) commit_large_storage(mut allocation PrimitiveStorageAllocation, new_size uint) ! {
 	assert allocation.small_allocation == none && new_size <= allocation.capacity
 	new_committed_size := round_storage_up_to_page(new_size)
 	if new_committed_size > allocation.committed_size {
@@ -201,7 +201,7 @@ fn (allocator &PrimitiveStorageAllocator) decommit_large_storage(allocation Prim
 	decommit_storage_memory(unsafe { allocator.cage_base + allocation.offset }, allocation.committed_size) or { panic(err) }
 }
 
-fn (mut allocator PrimitiveStorageAllocator) reallocate(old_allocation PrimitiveStorageAllocation, old_size usize, new_size usize, new_capacity usize, zero_fill ZeroFillNewBytes, force_large bool) !PrimitiveStorageAllocation {
+fn (mut allocator PrimitiveStorageAllocator) reallocate(old_allocation PrimitiveStorageAllocation, old_size uint, new_size uint, new_capacity uint, zero_fill ZeroFillNewBytes, force_large bool) !PrimitiveStorageAllocation {
 	assert new_size <= new_capacity
 	allocation := allocator.allocate(new_size, new_capacity, .no, 0, force_large)!
 	bytes_to_copy := math.min(old_size, new_size)
@@ -232,7 +232,7 @@ fn (mut allocator PrimitiveStorageAllocator) deallocate(mut allocation Primitive
 	allocation = PrimitiveStorageAllocation{}
 }
 
-fn (mut allocator PrimitiveStorageAllocator) release_cage_range(offset usize, requested_size usize) {
+fn (mut allocator PrimitiveStorageAllocator) release_cage_range(offset uint, requested_size uint) {
 	size := round_storage_up_to_page(requested_size)
 	if size == 0 { return }
 	if offset <= allocator.next_offset && size == allocator.next_offset - offset {
@@ -243,7 +243,7 @@ fn (mut allocator PrimitiveStorageAllocator) release_cage_range(offset usize, re
 	allocator.free_cage_range(offset, size)
 }
 
-fn (mut allocator PrimitiveStorageAllocator) free_cage_range(offset usize, requested_size usize) {
+fn (mut allocator PrimitiveStorageAllocator) free_cage_range(offset uint, requested_size uint) {
 	size := round_storage_up_to_page(requested_size)
 	if size == 0 { return }
 	mut insert_before := 0
@@ -278,27 +278,27 @@ fn (mut allocator PrimitiveStorageAllocator) reclaim_free_ranges_at_top() {
 	}
 }
 
-fn (allocator &PrimitiveStorageAllocator) contains_address(address voidptr, size usize) bool {
+fn (allocator &PrimitiveStorageAllocator) contains_address(address voidptr, size uint) bool {
 	if allocator.cage_base == unsafe { nil } || address == unsafe { nil } { return false }
-	base := usize(allocator.cage_base)
-	if usize(address) < base { return false }
-	offset := usize(address) - base
+	base := uint(allocator.cage_base)
+	if uint(address) < base { return false }
+	offset := uint(address) - base
 	return offset <= allocator.cage_size && size <= allocator.cage_size - offset
 }
 
-fn (allocator &PrimitiveStorageAllocator) contains_allocation(allocation PrimitiveStorageAllocation, address voidptr, size usize) bool {
+fn (allocator &PrimitiveStorageAllocator) contains_allocation(allocation PrimitiveStorageAllocation, address voidptr, size uint) bool {
 	if address == unsafe { nil } || allocation.offset == primitive_storage_invalid_offset {
 		return false
 	}
-	base := usize(allocator.cage_base)
-	if allocator.cage_base == unsafe { nil } || usize(address) < base { return false }
-	offset := usize(address) - base
+	base := uint(allocator.cage_base)
+	if allocator.cage_base == unsafe { nil } || uint(address) < base { return false }
+	offset := uint(address) - base
 	if offset < allocation.offset { return false }
 	allocation_offset := offset - allocation.offset
 	return allocation_offset <= allocation.reservation_size && size <= allocation.reservation_size - allocation_offset
 }
 
-fn (allocator &PrimitiveStorageAllocator) data(allocation PrimitiveStorageAllocation, byte_offset usize) &u8 {
+fn (allocator &PrimitiveStorageAllocator) data(allocation PrimitiveStorageAllocation, byte_offset uint) &u8 {
 	assert allocator.cage_base != unsafe { nil } && allocation.offset != primitive_storage_invalid_offset
 	return unsafe { allocator.cage_base + mask_primitive_storage_offset(allocation.offset + byte_offset) }
 }

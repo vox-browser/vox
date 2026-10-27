@@ -14,8 +14,8 @@ pub fn string_prototype_repeat(mut vm VM) !Value {
 	if n > 9007199254740991.0 {
 		return vm.throw_error_type(.range_error, .string_repeat_count_must_not_overflow)
 	}
-	count := usize(n)
-	length := checked_js_string_length_product(mut vm, usize(text.utf16.len()), count,
+	count := uint(n)
+	length := checked_js_string_length_product(mut vm, uint(text.utf16.len()), count,
 		.string_repeat_count_must_not_overflow)!
 	// The existing flattened V storage uses a signed-int array length.
 	if length > 0x7fffffff {

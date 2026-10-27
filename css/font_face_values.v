@@ -615,11 +615,11 @@ pub struct CSSFontFeatureValuesMap {
 pub mut:
 	entries         map[string][]u32
 	order           []string
-	max_value_count usize
+	max_value_count uint
 	parent_rule     ?&CSSFontFeatureValuesRule
 }
 
-pub fn CSSFontFeatureValuesMap.create(max_value_count usize, parent_rule ?&CSSFontFeatureValuesRule) &CSSFontFeatureValuesMap {
+pub fn CSSFontFeatureValuesMap.create(max_value_count uint, parent_rule ?&CSSFontFeatureValuesRule) &CSSFontFeatureValuesMap {
 	return &CSSFontFeatureValuesMap{
 		entries: map[string][]u32{}
 		max_value_count: max_value_count
@@ -642,7 +642,7 @@ pub fn (mut m CSSFontFeatureValuesMap) set(feature_value_name string, values []u
 	// InvalidAccessError exception when the input sequence to set contains more than the limited number of values. See
 	// the description of multi-valued feature value definitions for details on the maximum number of values allowed for
 	// a given type of feature value block.
-	if usize(values.len) > m.max_value_count {
+	if uint(values.len) > m.max_value_count {
 		return error('InvalidAccessError: CSSFontFeatureValuesMap.set only allows a maximum of ${m.max_value_count} values for the associated feature')
 	}
 
@@ -5788,8 +5788,8 @@ fn font_feature_values_rule_array_without(values []&CSSFontFeatureValuesRule, ne
 	return kept
 }
 
-fn max_u32_as_usize() usize {
-	return usize(0xffffffff)
+fn max_u32_as_usize() uint {
+	return uint(0xffffffff)
 }
 
 fn sort_matching_font_candidates_by_weight(mut candidates []MatchingFontCandidate) {

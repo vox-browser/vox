@@ -138,12 +138,12 @@ fn test_source_configuration_reference_accessors_and_machine_offsets_reach_actua
 		BinaryMachineConfiguration.value_stack_base_offset(),
 		BinaryMachineConfiguration.value_stack_top_offset(),
 		BinaryMachineConfiguration.call_record_base_offset()]
-	expected := [usize(configuration.locals_base()), usize(configuration.memory_instances_),
-		usize(configuration.global_instances_), usize(configuration.value_stack_.data()),
-		usize(configuration.value_stack_.end()), usize(configuration.call_record_base())]
+	expected := [uint(configuration.locals_base()), uint(configuration.memory_instances_),
+		uint(configuration.global_instances_), uint(configuration.value_stack_.data()),
+		uint(configuration.value_stack_.end()), uint(configuration.call_record_base())]
 	for index, offset in offsets {
-		mut actual := usize(0)
-		unsafe { C.memcpy(&actual, base + offset, sizeof(usize)) }
+		mut actual := uint(0)
+		unsafe { C.memcpy(&actual, base + offset, sizeof(uint)) }
 		assert actual == expected[index]
 	}
 	mut actual_scratch := BinaryMachineValue{}

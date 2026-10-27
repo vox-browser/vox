@@ -26,7 +26,7 @@ fn test_rule_bucket_collection_preserves_class_id_tag_attribute_and_fallback_ord
 	assert buckets.len == 6
 	for index, bucket in buckets {
 		assert bucket.len == 1
-		assert bucket[0].rule_index == usize(index + 1)
+		assert bucket[0].rule_index == uint(index + 1)
 	}
 	// No attributes means no synthesized attribute map and only the fallback.
 	bare := document.create_element('span')!

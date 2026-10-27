@@ -16,8 +16,8 @@ $if gcboehm ? {
 	fn C.vox_probe_set_seed(seed voidptr)
 	fn C.vox_probe_histogram(path &char)
 	fn C.GC_gcollect_and_unmap()
-	fn C.GC_get_heap_size() usize
-	fn C.GC_get_free_bytes() usize
+	fn C.GC_get_heap_size() uint
+	fn C.GC_get_free_bytes() uint
 }
 
 struct DocumentReleaseProbe {

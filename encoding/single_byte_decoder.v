@@ -154,7 +154,7 @@ fn (decoder SourceSingleByteDecoder) decode_to_utf8(input []u8, mut output []u8,
 // Rust bridge checks fatal after replacement decoding and withholds callback
 // output on malformed input. Keep the produced length explicit, including NUL.
 fn decode_source_single_byte_to_utf8(input []u8, table []u16, fatal bool) !string {
-	// Source uses usize capacity; flattened V owners have narrower int lengths.
+	// Source uses uint capacity; flattened V owners have narrower int lengths.
 	if input.len > int(0x7fffffff) / 3 {
 		panic('SingleByte UTF8 output exceeds flattened V int array capacity')
 	}

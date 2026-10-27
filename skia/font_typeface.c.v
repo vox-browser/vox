@@ -8,8 +8,8 @@ $if linux {
 }
 #include "font_typeface.h"
 
-fn C.vox_skia_font_typeface_is_valid(data &u8, size usize, index int) int
+fn C.vox_skia_font_typeface_is_valid(data &u8, size uint, index int) int
 
 pub fn font_typeface_is_valid(data []u8, index int) bool {
-	return C.vox_skia_font_typeface_is_valid(data.data, usize(data.len), index) != 0
+	return C.vox_skia_font_typeface_is_valid(data.data, uint(data.len), index) != 0
 }

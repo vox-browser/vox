@@ -10,7 +10,7 @@ import math
 // byte view also accepts unaligned pointers, replacing Source's aligned local
 // memcpy branch without changing the bytes or floating-point bit casts.
 fn binary_machine_read_value[T](data BinaryMachineBytes) T {
-	if data.size < usize(sizeof(T)) {
+	if data.size < uint(sizeof(T)) {
 		panic('Source VERIFY: read_value requires sizeof(T) <= data.size()')
 	}
 	bytes := unsafe { data.data.vbytes(int(sizeof(T))) }
@@ -63,8 +63,8 @@ pub fn (mut interpreter BinaryMachineBytecodeInterpreter) load_and_push[R, P](mu
 	}
 	instance_address := base + arg.offset
 	value := binary_machine_read_value[R](BinaryMachineBytes{
-		data: memory.data().offset_pointer(usize(instance_address))
-		size: usize(sizeof(R))
+		data: memory.data().offset_pointer(uint(instance_address))
+		size: uint(sizeof(R))
 	})
 	// Source overwrites the borrowed address operand itself. Its destination
 	// mapping is intentionally not read, and a stack operand is not popped.

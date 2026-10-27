@@ -118,7 +118,7 @@ fn test_typed_array_slice_allocates_original_count_then_copies_only_live_prefix_
 	for begin in [0, 2, 3] {
 		mut buffer := ArrayBufferObject.create_from_bytes(vm.realm(), [u8(1), 2, 3, 4], false,
 			parent)
-		buffer.maximum_byte_length = usize(8)
+		buffer.maximum_byte_length = uint(8)
 		mut source := TypedArray.create(vm.realm(), .uint8, 0, buffer, parent)
 		initialize_typed_array_from_array_buffer(mut vm, mut source, buffer, Value.from_i32(0),
 			js_undefined())!
@@ -129,7 +129,7 @@ fn test_typed_array_slice_allocates_original_count_then_copies_only_live_prefix_
 		}, unsafe { nil }, attribute_configurable, vm.realm().function_prototype)
 		result := typed_slice_call(mut vm, source, [Value.from_i32(begin)], parent)!
 		assert result.array_length.length() == 4 - begin
-		assert result.viewed_buffer.read_bytes(0, usize(4 - begin)) == if begin == 0 {
+		assert result.viewed_buffer.read_bytes(0, uint(4 - begin)) == if begin == 0 {
 			[u8(1), 2, 0, 0]
 		} else {
 			[]u8{len: 4 - begin}

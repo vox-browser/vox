@@ -201,7 +201,7 @@ pub struct SystemClipboardBackend {
 mut:
 	items_               []SystemClipboardItem
 	presentation_styles_ []string
-	change_count_        usize
+	change_count_        uint
 }
 
 pub fn SystemClipboardBackend.create() &SystemClipboardBackend {
@@ -216,7 +216,7 @@ pub fn (backend &SystemClipboardBackend) presentation_styles() []string {
 	return backend.presentation_styles_.clone()
 }
 
-pub fn (backend &SystemClipboardBackend) change_count() usize {
+pub fn (backend &SystemClipboardBackend) change_count() uint {
 	return backend.change_count_
 }
 

@@ -622,7 +622,7 @@ def generate(properties: dict[str, object], enums: dict[str, list[str]]) -> str:
 
     output.extend(
         (
-            "pub fn property_maximum_value_count(property_id PropertyID) usize {",
+            "pub fn property_maximum_value_count(property_id PropertyID) uint {",
             "\treturn match property_id {",
         )
     )

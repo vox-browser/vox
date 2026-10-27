@@ -182,17 +182,17 @@ pub fn shared_resource_effective_image_mime_type(url dom.URL, mime_type string) 
 	return mime_type
 }
 
-fn shared_resource_request_prunable_size_and_count(document &dom.Document) (usize, usize) {
-	mut size := usize(0)
-	mut count := usize(0)
+fn shared_resource_request_prunable_size_and_count(document &dom.Document) (uint, uint) {
+	mut size := uint(0)
+	mut count := uint(0)
 	for _, request in html_shared_resource_requests {
 		if request.document != document || !request.can_be_pruned_from_memory_cache() {
 			continue
 		}
 		image_data := request.image_data_ or { continue }
 		image_size := image_data.data.external_memory_size()
-		if usize(-1) - size < image_size {
-			size = usize(-1)
+		if uint(-1) - size < image_size {
+			size = uint(-1)
 		} else {
 			size += image_size
 		}
@@ -201,7 +201,7 @@ fn shared_resource_request_prunable_size_and_count(document &dom.Document) (usiz
 	return size, count
 }
 
-pub fn prune_shared_resource_requests_for_document(document &dom.Document, external_memory_limit usize, count_limit usize) {
+pub fn prune_shared_resource_requests_for_document(document &dom.Document, external_memory_limit uint, count_limit uint) {
 	mut size, mut count := shared_resource_request_prunable_size_and_count(document)
 	for size > external_memory_limit || count > count_limit {
 		mut least_recently_used_key := ''

@@ -24,8 +24,8 @@ fn check_typed_array_set_range(mut vm VM, offset f64, source_length u64, target_
 		return vm.throw_error_type(.range_error, .typed_array_overflow_or_out_of_bounds,
 			'target offset')
 	}
-	if source_length > u64(~usize(0)) || usize(offset) > (~usize(0)) - usize(source_length)
-		|| usize(source_length) + usize(offset) > usize(target_length) {
+	if source_length > u64(~uint(0)) || uint(offset) > (~uint(0)) - uint(source_length)
+		|| uint(source_length) + uint(offset) > uint(target_length) {
 		return vm.throw_error_type(.range_error, .typed_array_overflow_or_out_of_bounds,
 			'target length')
 	}
@@ -46,8 +46,8 @@ fn set_typed_array_from_typed_array(mut vm VM, mut target TypedArray, target_off
 		return vm.throw_error_type(.type_error, .buffer_out_of_bounds, 'TypedArray')
 	}
 	source_length := typed_array_length(source_record)
-	target_size := usize(target.element_size())
-	source_size := usize(source.element_size())
+	target_size := uint(target.element_size())
+	source_size := uint(source.element_size())
 	check_typed_array_set_range(mut vm, target_offset, u64(source_length), target_length)!
 	if target.content_type() != source.content_type() {
 		return vm.throw_error_type(.type_error, .typed_array_invalid_copy,
@@ -56,23 +56,23 @@ fn set_typed_array_from_typed_array(mut vm VM, mut target TypedArray, target_off
 	same_shared_buffer := source_buffer.is_shared_array_buffer()
 		&& target_buffer.is_shared_array_buffer()
 		&& source_buffer.shares_storage_with(target_buffer)
-	mut source_index := usize(source.byte_offset)
+	mut source_index := uint(source.byte_offset)
 	if same_shared_buffer || voidptr(source_buffer) == voidptr(target_buffer) {
-		source_buffer = clone_array_buffer(mut vm, source_buffer, usize(source.byte_offset),
-			usize(typed_array_byte_length(source_record)))!
+		source_buffer = clone_array_buffer(mut vm, source_buffer, uint(source.byte_offset),
+			uint(typed_array_byte_length(source_record)))!
 		source_index = 0
 	}
-	maximum := ~usize(0)
-	if usize(target_offset) > maximum / target_size
-		|| usize(target_offset) * target_size > maximum - usize(target.byte_offset) {
+	maximum := ~uint(0)
+	if uint(target_offset) > maximum / target_size
+		|| uint(target_offset) * target_size > maximum - uint(target.byte_offset) {
 		return vm.throw_error_type(.range_error, .typed_array_overflow, 'target byte index')
 	}
-	mut target_index := usize(target_offset) * target_size + usize(target.byte_offset)
-	if usize(source_length) > maximum / target_size
-		|| usize(source_length) * target_size > maximum - target_index {
+	mut target_index := uint(target_offset) * target_size + uint(target.byte_offset)
+	if uint(source_length) > maximum / target_size
+		|| uint(source_length) * target_size > maximum - target_index {
 		return vm.throw_error_type(.range_error, .typed_array_overflow, 'target limit')
 	}
-	limit := target_index + usize(source_length) * target_size
+	limit := target_index + uint(source_length) * target_size
 	if typed_array_element_types_have_same_bit_encoding(source, target) {
 		source_buffer.copy_data_to(mut target_buffer, source_index, target_index,
 			limit - target_index)

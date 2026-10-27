@@ -304,9 +304,9 @@ fn test_regex_simple_predicates_and_candidate_filters_match_exact_native_corpus(
 					input := regex_predicate_fixture_input(fields[4])
 					if fields[0] == 'first' {
 						actual = regex_predicate_fixture_bit(regex_first_char_matches(program,
-							input, usize(a), b, point & 16 != 0)).str()
+							input, uint(a), b, point & 16 != 0)).str()
 					} else if pos := regex_next_candidate_start(program, input, regex_predicate_fixture_hints(b,
-						matchers), usize(a))
+						matchers), uint(a))
 					{
 						actual = pos.str()
 					} else {

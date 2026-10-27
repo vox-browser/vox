@@ -176,7 +176,7 @@ pub fn agent_can_suspend(vm &VM) bool {
 // The resizable-buffer surface the default HostResizeArrayBuffer hook needs.
 pub interface ArrayBuffer {
 mut:
-	try_resize(new_byte_length usize, zero_fill_new_bytes bool) bool
+	try_resize(new_byte_length uint, zero_fill_new_bytes bool) bool
 }
 
 // LibJS/Debugger.h: the interpreter selects a debugging dispatch table when the
@@ -315,8 +315,8 @@ pub mut:
 	host_get_code_for_eval                         fn (object &Object) ?&PrimitiveString = unsafe { nil }
 	host_ensure_can_compile_strings                fn (realm &Realm, parameter_strings []Utf16String, body_string Utf16String, code_string Utf16String, compilation_type CompilationType, parameter_args []Value, body_arg Value) ! = unsafe { nil }
 	host_ensure_can_add_private_element            fn (mut object Object) ! = unsafe { nil }
-	host_resize_array_buffer                       fn (mut buffer ArrayBuffer, new_byte_length usize) !HandledByHost = unsafe { nil }
-	host_grow_shared_array_buffer                  fn (mut buffer ArrayBuffer, new_byte_length usize) !HandledByHost = unsafe { nil }
+	host_resize_array_buffer                       fn (mut buffer ArrayBuffer, new_byte_length uint) !HandledByHost = unsafe { nil }
+	host_grow_shared_array_buffer                  fn (mut buffer ArrayBuffer, new_byte_length uint) !HandledByHost = unsafe { nil }
 	host_unrecognized_date_string                  fn (date_string Utf16String) = unsafe { nil }
 	host_system_utc_epoch_nanoseconds              fn (global &Object) big.Integer = unsafe { nil }
 	host_promise_job_queue_is_empty                fn () bool = unsafe { nil }
@@ -409,14 +409,14 @@ pub fn VM.create() &VM {
 		// The default implementation of HostEnsureCanAddPrivateElement is to return NormalCompletion(unused).
 	}
 	// 25.1.3.8 HostResizeArrayBuffer ( buffer, newByteLength ), https://tc39.es/ecma262/#sec-hostresizearraybuffer
-	vm.host_resize_array_buffer = fn [mut vm] (mut buffer ArrayBuffer, new_byte_length usize) !HandledByHost {
+	vm.host_resize_array_buffer = fn [mut vm] (mut buffer ArrayBuffer, new_byte_length uint) !HandledByHost {
 		if !buffer.try_resize(new_byte_length, true) {
 			return vm.throw_error_type(.range_error, .not_enough_memory_to_allocate, new_byte_length.str())
 		}
 		return HandledByHost.handled
 	}
 	// 25.2.2.4 HostGrowSharedArrayBuffer ( buffer, newByteLength ), https://tc39.es/ecma262/#sec-hostgrowsharedarraybuffer
-	vm.host_grow_shared_array_buffer = fn (mut buffer ArrayBuffer, new_byte_length usize) !HandledByHost {
+	vm.host_grow_shared_array_buffer = fn (mut buffer ArrayBuffer, new_byte_length uint) !HandledByHost {
 		// The default implementation of HostGrowSharedArrayBuffer is to return NormalCompletion(unhandled).
 		return HandledByHost.unhandled
 	}

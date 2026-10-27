@@ -18,9 +18,9 @@ fn test_translated_base64_codec_matches_pinned_simdutf_output_status_and_utf16_r
 		}
 		alphabet := if fields[1] == '0' { Base64Alphabet.base64 } else { Base64Alphabet.base64url }
 		handling := [Base64LastChunkHandling.loose, .strict, .stop_before_partial][fields[2].int()]
-		result := decode_base64_codec(units, usize(fields[3].u64()), alphabet, handling)
+		result := decode_base64_codec(units, uint(fields[3].u64()), alphabet, handling)
 		assert result.error.str() == fields[4], 'status: ${line}, got ${result.error}'
-		assert result.read == usize(fields[5].u64()), 'read: ${line}, got ${result.read}'
+		assert result.read == uint(fields[5].u64()), 'read: ${line}, got ${result.read}'
 		assert result.bytes == hex.decode(fields[6])!, 'bytes: ${line}'
 		count++
 	}
@@ -62,7 +62,7 @@ fn test_translated_base64_encoder_retains_alphabets_padding_and_byte_boundaries(
 	for alphabet in [Base64Alphabet.base64, .base64url] {
 		for omit_padding in [false, true] {
 			encoded := encode_base64_codec(bytes, alphabet, omit_padding)
-			result := decode_base64_codec(encoded.as_slice(), usize(bytes.len), alphabet, .loose)
+			result := decode_base64_codec(encoded.as_slice(), uint(bytes.len), alphabet, .loose)
 			assert result.error == .success && result.bytes == bytes
 		}
 	}

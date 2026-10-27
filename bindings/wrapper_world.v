@@ -117,7 +117,7 @@ pub fn (wrappable &Wrappable) relevant_global_impl() ?&Wrappable {
 	return wrappable.relevant_global_impl_
 }
 
-pub fn (_ &Wrappable) main_world_wrapper_offset() usize {
+pub fn (_ &Wrappable) main_world_wrapper_offset() uint {
 	// The V representation does not expose ABI field offsets.
 	return 0
 }

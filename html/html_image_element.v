@@ -179,8 +179,8 @@ mut:
 	model_async_fetch_hook_    ?HTMLImageModelAsyncFetchHook
 	embedder_response_url_     string
 	embedder_response_bytes_   []u8
-	current_frame_index_       usize
-	loops_completed_           usize
+	current_frame_index_       uint
+	loops_completed_           uint
 	animation_stopped_         bool
 	visible_in_viewport_       bool = true
 	update_count_              u64
@@ -865,10 +865,10 @@ pub fn (mut image HTMLImageElementModel) animate() {
 	}
 }
 
-pub fn (image &HTMLImageElementModel) current_frame_index() usize {
+pub fn (image &HTMLImageElementModel) current_frame_index() uint {
 	if data := image.decoded_data_ {
 		if state := decoded_image_animation_state(data.data) {
-			return usize(state.frame_index)
+			return uint(state.frame_index)
 		}
 	}
 	return image.current_frame_index_

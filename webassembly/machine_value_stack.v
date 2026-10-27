@@ -5,9 +5,9 @@ module webassembly
 
 import math
 
-pub const binary_value_stack_reservation_size = usize(64 * 1024 * 1024)
-pub const binary_value_stack_max_values = binary_value_stack_reservation_size / usize(sizeof(BinaryMachineValue))
-const binary_value_stack_scan_slack = usize(8)
+pub const binary_value_stack_reservation_size = uint(64 * 1024 * 1024)
+pub const binary_value_stack_max_values = binary_value_stack_reservation_size / uint(sizeof(BinaryMachineValue))
+const binary_value_stack_scan_slack = uint(8)
 const binary_value_stack_max_pooled_regions = 4
 
 struct BinaryStackRegionPool {
@@ -19,10 +19,10 @@ mut:
 pub struct BinaryMachineValueSpan {
 pub:
 	data &BinaryMachineValue
-	size usize
+	size uint
 }
 
-pub fn (span BinaryMachineValueSpan) at(index usize) &BinaryMachineValue {
+pub fn (span BinaryMachineValueSpan) at(index uint) &BinaryMachineValue {
 	assert index < span.size
 	return unsafe { span.data + index }
 }
@@ -59,8 +59,8 @@ pub fn (stack &BinaryMachineValueStack) destroy() {
 	}
 }
 
-pub fn (stack &BinaryMachineValueStack) size() usize {
-	return (usize(stack.top) - usize(stack.base)) / usize(sizeof(BinaryMachineValue))
+pub fn (stack &BinaryMachineValueStack) size() uint {
+	return (uint(stack.top) - uint(stack.base)) / uint(sizeof(BinaryMachineValue))
 }
 
 pub fn (stack &BinaryMachineValueStack) is_empty() bool {
@@ -107,37 +107,37 @@ pub fn (stack &BinaryMachineValueStack) span() BinaryMachineValueSpan {
 	return BinaryMachineValueSpan{ data: stack.base, size: stack.size() }
 }
 
-pub fn (mut stack BinaryMachineValueStack) shrink(new_size usize, _ bool) {
+pub fn (mut stack BinaryMachineValueStack) shrink(new_size uint, _ bool) {
 	assert new_size <= stack.size()
 	stack.top = unsafe { stack.base + new_size }
 }
 
-pub fn (mut stack BinaryMachineValueStack) restore_size(size usize) {
+pub fn (mut stack BinaryMachineValueStack) restore_size(size uint) {
 	assert size <= binary_value_stack_max_values
 	stack.top = unsafe { stack.base + size }
 }
 
 pub fn (mut stack BinaryMachineValueStack) reset_and_clear() {
 	stack.top = stack.base
-	for i in usize(0) .. binary_value_stack_scan_slack {
+	for i in uint(0) .. binary_value_stack_scan_slack {
 		unsafe { stack.base[i] = BinaryMachineValue.from_i32(0) }
 	}
 }
 
-pub fn (mut stack BinaryMachineValueStack) remove(index usize, count usize) {
+pub fn (mut stack BinaryMachineValueStack) remove(index uint, count uint) {
 	assert index + count <= stack.size()
 	unsafe {
-		C.memmove(stack.base + index, stack.base + index + count, (stack.size() - index - count) * usize(sizeof(BinaryMachineValue)))
+		C.memmove(stack.base + index, stack.base + index + count, (stack.size() - index - count) * uint(sizeof(BinaryMachineValue)))
 		stack.top = stack.top - count
 	}
 }
 
-pub fn (stack &BinaryMachineValueStack) ensure_capacity(total usize) {
+pub fn (stack &BinaryMachineValueStack) ensure_capacity(total uint) {
 	assert total <= binary_value_stack_max_values
 }
 
-pub fn (mut stack BinaryMachineValueStack) allocate(count usize) &BinaryMachineValue {
-	assert (usize(stack.limit) - usize(stack.top)) / usize(sizeof(BinaryMachineValue)) >= count
+pub fn (mut stack BinaryMachineValueStack) allocate(count uint) &BinaryMachineValue {
+	assert (uint(stack.limit) - uint(stack.top)) / uint(sizeof(BinaryMachineValue)) >= count
 	result := stack.top
 	stack.top = unsafe { stack.top + count }
 	return result
@@ -146,19 +146,19 @@ pub fn (mut stack BinaryMachineValueStack) allocate(count usize) &BinaryMachineV
 pub fn (stack &BinaryMachineValueStack) mark() &BinaryMachineValue { return stack.top }
 
 pub fn (mut stack BinaryMachineValueStack) release_to(mark &BinaryMachineValue) {
-	assert usize(mark) >= usize(stack.base) && usize(mark) <= usize(stack.top)
+	assert uint(mark) >= uint(stack.base) && uint(mark) <= uint(stack.top)
 	stack.top = unsafe { mark }
 }
 
-pub fn (stack &BinaryMachineValueStack) conservative_scan_size() usize {
+pub fn (stack &BinaryMachineValueStack) conservative_scan_size() uint {
 	return math.min(stack.size() + binary_value_stack_scan_slack, binary_value_stack_max_values)
 }
 
 // The source compiler reads these pointer members by ABI offset.
-pub fn BinaryMachineValueStack.base_offset() usize {
+pub fn BinaryMachineValueStack.base_offset() uint {
 	return __offsetof(BinaryMachineValueStack, base)
 }
 
-pub fn BinaryMachineValueStack.top_offset() usize {
+pub fn BinaryMachineValueStack.top_offset() uint {
 	return __offsetof(BinaryMachineValueStack, top)
 }

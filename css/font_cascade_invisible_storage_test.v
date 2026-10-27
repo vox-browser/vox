@@ -1,7 +1,7 @@
 module css
 
 $if gcboehm ? {
-	fn C.GC_get_total_bytes() usize
+	fn C.GC_get_total_bytes() uint
 }
 
 fn contingency_cascade_font(size f32) PlatformFont {
@@ -21,13 +21,13 @@ fn test_cascade_visible_selection_and_absent_cache_lookup_allocate_nothing() {
 	key := 'missing'
 	mut misses := 0
 	mut visible_matches := 0
-	mut before := usize(0)
+	mut before := uint(0)
 	$if gcboehm ? { before = C.GC_get_total_bytes() }
 	for _ in 0 .. 1024 {
 		if list.cached_invisible_font(key) == none { misses++ }
 		if voidptr(list.font_with_visibility(&font, false)) == voidptr(&font) { visible_matches++ }
 	}
-	mut allocated := usize(0)
+	mut allocated := uint(0)
 	$if gcboehm ? { allocated = C.GC_get_total_bytes() - before }
 	assert allocated == 0
 	assert misses == 1024

@@ -74,7 +74,7 @@ fn (mut runtime Runtime) text_decoder_operation(mut binding TextDecoderBinding, 
 		mut exception := unsafe { nil }
 		length := C.JSObjectGetTypedArrayByteLength(runtime.context, view, &exception)
 		if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
-		if length > usize(2147483647) {
+		if length > uint(2147483647) {
 			return error('RangeError: input exceeds the native byte span')
 		}
 		bytes = []u8{len: int(length)}
