@@ -2808,6 +2808,19 @@ fn run_document_script_sources_with_resource_loaders(document &dom.Document, cur
 		messages << 'JavaScript File constructor: ${err.msg()}'
 		return none
 	}
+	mut form_data_host := browserjs.FormDataHost.create(document) or {
+		messages << 'JavaScript FormData bindings: ${err.msg()}'
+		return none
+	}
+	form_data_host.set_before_construct(fn [document] (callback_runtime &browserjs.Runtime) ! {
+		state := callback_runtime.evaluate_host('__ladybirdFinalize()')!
+		mut replay_messages := []string{}
+		apply_javascript_runtime_state(document, state, callback_runtime, mut replay_messages)
+	})
+	form_data_host.install(mut mutable_runtime) or {
+		messages << 'JavaScript FormData bindings: ${err.msg()}'
+		return none
+	}
 	mut file_list_host := browserjs.FileListHost.create(document) or {
 		messages << 'JavaScript FileList bindings: ${err.msg()}'
 		return none

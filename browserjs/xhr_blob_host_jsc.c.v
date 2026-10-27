@@ -3,6 +3,7 @@
 // XMLHttpRequest.cpp::response()/send(): wrap and unwrap the actual Blob record.
 module browserjs
 
+import fileapi
 
 fn (mut host XMLHttpRequestHost) install_native_blob_transport(mut runtime Runtime) ! {
 	handle := voidptr(&host)
@@ -24,6 +25,12 @@ fn (mut host XMLHttpRequestHost) install_native_blob_transport(mut runtime Runti
 			return runtime.javascript_blob(blob)
 		}
 		if action == 'send' && args.len == 3 {
+			if data := runtime.native_form_data(args[2]) {
+				serialized := serialize_native_form_data(data)
+				request.send_blob(fileapi.Blob.create(serialized.serialized_data,
+					'multipart/form-data; boundary=${serialized.boundary}'))!
+				return C.JSValueMakeBoolean(runtime.context, true)
+			}
 			blob := runtime.native_blob(args[2]) or { return C.JSValueMakeBoolean(runtime.context, false) }
 			request.send_blob(blob)!
 			return C.JSValueMakeBoolean(runtime.context, true)

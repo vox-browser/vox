@@ -1,0 +1,21 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>FormData startup pending</title>
+<style>html,body{margin:0;background:#fff}#result{width:320px;height:120px;background:red}</style>
+<form id="form" hidden><input name="field" value="live"><button name="send" value="yes">Send</button></form>
+<div id="result"></div>
+<script>
+(async()=>{
+  const data=new FormData(form,form.querySelector('button'));
+  data.append('file',new File([new Uint8Array([0,128,255])],'a.bin',{type:'application/custom'}));
+  const prepared=options=>options instanceof FormData?options:{...options};
+  if(prepared({ok:true}).ok!==true||prepared(data)!==data||data.get('field')!=='live'||data.get('send')!=='yes')throw Error('entry setup');
+  const created=document.createElement('form'),input=document.createElement('input');
+  input.name='created';input.value='current';created.appendChild(input);document.body.appendChild(created);
+  if(new FormData(created).get('created')!=='current')throw Error('created form entries');
+  created.remove();
+  const request=new Request(location.href,{method:'POST',body:data}),bytes=new Uint8Array(await request.arrayBuffer());
+  if(!request.headers.get('content-type').startsWith('multipart/form-data; boundary=')||!bytes.some((value,index)=>value===0&&bytes[index+1]===128&&bytes[index+2]===255))throw Error('multipart body');
+  result.style.background='#008000';document.title='FormData startup PASS';
+})().catch(error=>{document.title='FormData startup FAIL '+error});
+</script>

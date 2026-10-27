@@ -169,6 +169,10 @@ fn (mut host FetchHost) body_init(value voidptr) !FetchOptionalBody {
 	if C.JSValueIsNull(host.runtime.context, value) || C.JSValueIsUndefined(host.runtime.context, value) {
 		return FetchOptionalBody{}
 	}
+	if data := host.runtime.native_form_data(value) {
+		serialized := serialize_native_form_data(data)
+		return FetchOptionalBody{ value: fetch.BodyInit{ kind: .form_data, bytes: serialized.serialized_data, type_: 'multipart/form-data; boundary=${serialized.boundary}' } }
+	}
 	if blob := host.runtime.native_blob(value) {
 		return FetchOptionalBody{ value: fetch.BodyInit{ kind: .blob, bytes: blob.raw_bytes(), type_: blob.type_() } }
 	}
