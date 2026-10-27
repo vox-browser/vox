@@ -38,7 +38,9 @@ pixels (`settled_navigation_ms`). The quiet delay is excluded from that latency;
 `--quiet-seconds` controls the observation window. The second endpoint includes
 late images observed during the window, but neither endpoint establishes network
 idle or physical display scanout. A later update outside the window remains
-possible. Chrome-only updates do not extend the settled latency.
+possible. Chrome-only updates do not extend the settled latency. Republishing
+the old document with the destination title also does not count as a destination
+frame; the first document pixels must actually change.
 
 The tool captures the source, first destination, last changed destination and
 end-of-observation frames, records executable/native-library/probe hashes, cache and
@@ -87,6 +89,10 @@ a loopback replay server, creates a private certificate for that browser process
 and retains the original HTTPS URLs. This keeps relative assets and the
 `old.reddit.com` fast-switch rule applicable. It does not add localhost or file
 URLs to the website registry. The server never forwards missing requests.
+The replay server advertises SOCKS5 so the saved proxy preference and the
+process route agree. A disabled saved proxy overrides `VOX_PROXY`; an HTTP
+environment override alone cannot route this benchmark. The timing driver
+therefore accepts SOCKS5 routes and rejects HTTP proxy arguments.
 Replay request logs, manifest/certificate hashes and the selected proxy are saved
 with each trial; the browser still gets a fresh private profile and cache.
 
@@ -96,7 +102,8 @@ and repeat with `--mode on`, then another off/on pair; run a separate on trial
 with `--diagnostic` before accepting measurements.
 
 ```sh
-python3 tools/run_memory_bounded.py --report Build/switch-off.guard.json -- \
+python3 tools/run_memory_bounded.py --limit-gib 3 \
+  --lock Build/switch-off.lock --report Build/switch-off.guard.json -- \
   python3 tools/measure_page_switch.py \
   --binary Build/v/Vox.app/Contents/MacOS/Vox \
   --output Build/switch-off --mode off \
@@ -112,7 +119,9 @@ For a comparison, pin one completed production bundle for all trials and verify
 its executable and native-library hashes. No production rebuild is needed just
 to use the local archive. The archive transport checks pass for original HTTPS
 hot/new pages and CSS, missing resources and unarchived hosts, and server cleanup;
-proxy validation also covers the existing SOCKS route and the HTTP replay route.
+proxy validation checks that the advertised route enables the saved SOCKS
+preference. Both SOCKS and HTTP CONNECT transport tests check response bytes,
+missing resources and denied hosts; the browser trials use SOCKS.
 The saved archive's hot/new bodies and a downloaded stylesheet also passed a
 byte-for-byte local HTTPS load check; its receipt is
 `Build/old-reddit-local-20261027/local-load-check.json`.
@@ -128,14 +137,15 @@ speedup claim. Keep the failed batch and guard exit 1 in
 `Build/page-switch-benchmark-12.json`.
 
 The follow-up uses the quiet-window endpoint and the clock-frozen benchmark
-archive. Its native probe test explicitly publishes a late document change and
-then a chrome-only change, checking that only the former advances the measured
-latency. Both native sources pass strict compiler syntax checks, but the new
-native test and browser trials have **not executed**: the bounded launch attempt
-returned exit 125 with `reason=busy` after a 600-second wait. Its receipt is
-`Build/old-reddit-local-20261027/benchmark-1.guard.json`; the prepared batch is
-`benchmark-1.py` beside it. No production build was queued. The transport checks
-and busy-guard receipts provide no new browser timing evidence.
+archive. Its native probe test publishes the old document with the destination
+title, then a real destination change, a late document change and a chrome-only
+change. It passes at runtime: the first and last document latencies include only
+the two actual destination changes, exclude the quiet delay, and the loaded and
+settled pixels match. Both native sources compile with `-Wall -Wextra -Werror`.
+The runtime receipt is
+`Build/old-reddit-local-20261027/benchmark-8/probe-test/result.json`.
+The earlier busy-guard exit 125 remains in `benchmark-1.guard.json`;
+independent 3 GiB capped jobs now avoid that shared queue.
 
 Document pixels occupy CSS coordinates `(0, 60, width, height)` in the captured
 native view; multiply by the recorded backing scale when cropping the PNGs.
@@ -144,9 +154,65 @@ and focus can legitimately differ. The destination must differ from the source,
 and the last changed and settled destination captures must match the control in
 every measured trial. Retain early-frame differences as diagnostic evidence.
 
+### Local benchmark, 2026-10-27
+
+Four alternating off/on pairs completed against the disk-only benchmark archive.
+**This fixture shows no speedup.** Mean first-publication latency increased from
+276.32 ms to 282.37 ms (+2.2%); mean settled-document latency increased from
+1,228.09 ms to 1,236.29 ms (+0.7%). These are native publication latencies from
+address submission, with the quiet observation delay excluded.
+
+| Pair | First off (ms) | First on (ms) | Settled off (ms) | Settled on (ms) |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 282.55 | 286.89 | 1233.95 | 1240.48 |
+| 2 | 275.80 | 283.36 | 1225.03 | 1234.29 |
+| 3 | 274.94 | 273.95 | 1226.49 | 1230.23 |
+| 4 | 272.00 | 285.29 | 1226.91 | 1240.17 |
+| Mean | 276.32 | 282.37 | 1228.09 | 1236.29 |
+| Median | 275.37 | 284.33 | 1226.70 | 1237.23 |
+
+All four settled pairs regressed, by 0.31%–1.08%. A separate diagnostic confirmed
+the path executed: `reused=true`, 47 dirty tiles of 48, and 770,048 of 786,432
+CSS pixels repainted. Only one tile was retained. Unsupported image/effect inputs
+keep most of this page on the conservative repaint path; fetching, parsing and
+layout still run. The measured result does not establish a useful loading gain.
+
+Every timed trial used a fresh process, empty initial cache, private profile,
+1024×768 document viewport at 2× backing scale, 100% zoom, scroll position zero,
+four-second source settle and two-second destination quiet window. All eight
+source captures matched the control, all loaded destination captures matched the
+control and their settled captures, and each destination differed from its
+source by 486,394 backing pixels. The first destination frame differed from the
+loaded frame by 4,166 backing pixels in every trial, confirming why first paint
+alone is insufficient here. Document crops exclude all browser chrome.
+
+All trials served the same 65 response records (39 HTTP 200 and 26 empty 404),
+with identical URL/status/body-hash/length signatures and the expected hot/new
+body hashes. Two replay connection resets were logged within 70 ms of browser
+exit, in trials 4 and 6; the response sets and final pixels still match. These
+logs are retained. The private per-trial certificate supplies process-local TLS
+trust; nothing is forwarded to the internet.
+
+Timed trials ran from 14:35:52 to 14:37:15 UTC on an 18-CPU host. Recorded
+one-minute load averages ranged from 4.06 to 4.87, five-minute from 4.62 to 4.83,
+and fifteen-minute from 3.65 to 3.70. Other sessions could run concurrently; this
+small sample cannot isolate an 8 ms difference from host and scheduling
+variation. Both modes used the same frozen feature bundle described below.
+The diagnostic was separate from all eight unprofiled timing trials.
+
+Raw browser logs, commands, timestamps, replay requests, hashes, PNGs and per-run
+exit codes are in `Build/old-reddit-local-20261027/benchmark-8/`; `results.json`,
+`summary.json` and `audit.json` retain the complete comparison and checks. The
+batch script is `benchmark-8.py` beside that directory. Its independent 3 GiB
+guard completed with child exit 0 and sampled peak process-tree RSS of
+1,015,562,240 bytes; receipt: `benchmark-8.guard.json`. Smoke, probe test,
+diagnostic and all eight browser processes exited 0. Failed earlier batches
+remain available and are excluded from these timing averages. This measures a
+locally derived listing switch, not Reddit's live `/new/` load time.
+
 ### Production bundle and fixture identity
 
-The comparison uses a frozen copy of the rebuilt canonical production bundle,
+The accepted comparison uses an earlier frozen production bundle,
 `Build/page-switch-20261026/reused-prod-11.app`. Its executable SHA-256 is
 `a1167c7abc73b8b0ac45f1d3eb0f5ace4f1b44375df75dff3108af46f0de2123`.
 At the time of freezing, all 22 recorded page-switch validation inputs matched
@@ -159,6 +225,18 @@ The original production script exited 1 during signing because a compiler
 scratch directory remained inside the bundle; removing that directory from the
 bundle and repeating signing and strict verification both succeeded. This is
 not recorded as a zero exit from the original build script.
+
+The latest completed canonical bundle was checked first and frozen in
+`Build/old-reddit-local-20261027/benchmark-3.app`, executable SHA-256
+`50e51b22af450c761c6b82db2cc67e76a04422af7b619f15f1d620c0c9e70163`.
+Its smoke check passes, but repeated fresh windowed launches fail with an
+invalid allocation before loading the source page. `benchmark-3`, `benchmark-5`
+and `benchmark-7` retain those failed diagnostics and guard exit 1. Build
+provenance is in `benchmark-3-provenance.json`. The earlier bundle contains the
+feature and can exercise it, so the comparison uses that bundle for both modes;
+the timings do not validate current unrelated browser changes. No rebuild was
+queued. `benchmark-6` also retains the navigation-error timeout caused by the
+HTTP replay routing issue fixed before the accepted trials.
 
 Local provenance is retained in
 `Build/page-switch-20261026/reused-prod-11-provenance.json`, with the original
@@ -190,10 +268,11 @@ Fixture construction and replay receipts are retained in
 - The native raster oracle passed at 1× and 2× backing scales, including
   navigation owner/revision checks, multiple or empty damage regions, invalid
   geometry and full-replay fallback.
-- The measurement probe compiled with `-Wall -Wextra -Werror` and the Python
-  driver passed `py_compile`. The later quiet-window probe and its native
-  fixture pass those warning flags with `-fsyntax-only`; runtime verification
-  of that extension remains pending as described above.
+- The measurement probe and quiet-window native fixture compile with
+  `-Wall -Wextra -Werror` and pass the runtime checks described above. The
+  Python driver passed `py_compile`. The two archive/proxy tests pass under an
+  independent 3 GiB guard; receipt:
+  `Build/old-reddit-local-20261027/socks-test-final.guard.json`.
 
 Local receipts are retained in `Build/page-switch-20261026/`: the
 `routes-check.log` and `settings-check.log`, `validation-3/native-final.log`,
