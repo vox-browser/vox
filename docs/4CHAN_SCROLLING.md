@@ -1487,9 +1487,14 @@ Neither attempt receives runtime-test credit.
 The same-budget retry in `scratch-scope-focused-v3/` retains the exact V
 wrapper body and mocks only the command fields it consumes; production
 compilation must still check the real layout type. The dependent coordinator
-in `scratch-browser-isolated-v4/` waits outside the guard and submits no browser
-build unless that focused retry passes. The preceding coordinator withheld its
-build after the focused guard failure.
+in `scratch-browser-isolated-v5/` waits outside the guard. It prefers the
+already-running catalog production build, whose frozen scratch implementation,
+Cocoa bridge and main replay integration match this experiment exactly. Reuse
+requires the signed, startup-checked shared bundle and its matching source
+receipt. An isolated build is permitted only if no available completed bundle
+can exercise the change. The earlier dedicated-build coordinator was cancelled
+before submitting a build; the prior one withheld its build after the focused
+guard failure.
 Browser eligibility, pixel comparisons and alternating unprofiled acceptance
 remain pending. The candidate is disabled by default; 60 fps and a live SOCKS
 fix remain unestablished.
