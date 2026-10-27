@@ -141,7 +141,7 @@ const __compactDocuments=new WeakMap(),__compactImplementations=new WeakMap(),__
 function Document(){throw new TypeError("Illegal Document constructor");}
 function HTMLDocument(){throw new TypeError("Illegal HTMLDocument constructor");}
 function DOMImplementation(){throw new TypeError("Illegal DOMImplementation constructor");}
-for(const [constructor,parent,name] of [[Document,EventTarget,"Document"],[HTMLDocument,Document,"HTMLDocument"],[DOMImplementation,Object,"DOMImplementation"]]){
+for(const [constructor,parent,name] of [[Document,Node,"Document"],[HTMLDocument,Document,"HTMLDocument"],[DOMImplementation,Object,"DOMImplementation"]]){
  Object.setPrototypeOf(constructor,parent);Object.setPrototypeOf(constructor.prototype,parent.prototype);
  Object.defineProperty(constructor,"prototype",{writable:false});
  Object.defineProperty(constructor.prototype,Symbol.toStringTag,{value:name,configurable:true});
