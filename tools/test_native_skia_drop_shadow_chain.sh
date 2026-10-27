@@ -9,11 +9,17 @@ case "$(uname -m)" in
 esac
 skia_root="$upstream_dir/Build/release/vcpkg_installed/${LADYBIRD_VCPKG_TRIPLET:-$default_triplet}"
 output_dir=${NATIVE_SKIA_TEST_OUTPUT_DIR:-"$repo_dir/Build/native-skia-drop-shadow-chain-test"}
+graphite_dir=${NATIVE_GRAPHITE_DAWN_DIR:-"$repo_dir/Build/v/Vox.app/Contents/MacOS"}
 mkdir -p "$output_dir"
 clang++ -std=c++20 -O2 -x objective-c++ \
     -I"$skia_root/include/skia" -I"$skia_root/include" \
     "$repo_dir/tools/native_skia_drop_shadow_chain_test.cpp" \
     -L"$skia_root/lib" -lskia \
     -framework CoreFoundation -framework CoreGraphics -framework CoreText -framework Foundation -framework Metal \
-    -Wl,-rpath,"$skia_root/lib" -o "$output_dir/native_skia_drop_shadow_chain_test"
-"$output_dir/native_skia_drop_shadow_chain_test"
+    -Wl,-rpath,"$skia_root/lib" -Wl,-rpath,"$graphite_dir" \
+    -o "$output_dir/native_skia_drop_shadow_chain_test"
+if [ "${NATIVE_SKIA_REQUIRE_GPU:-0}" = 1 ]; then
+    "$output_dir/native_skia_drop_shadow_chain_test" --require-gpu
+else
+    "$output_dir/native_skia_drop_shadow_chain_test"
+fi

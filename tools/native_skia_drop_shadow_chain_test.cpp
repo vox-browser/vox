@@ -2,10 +2,76 @@
 #include <cassert>
 #include <iostream>
 
-int main()
+static void check_blur_padding(int scale, float alpha)
+{
+    s_chromium_painting = true;
+    auto color_space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+    auto render = [&](int chrome_top, int chrome_bottom) {
+        int width = 1024 * scale, height = (768 + chrome_top + chrome_bottom) * scale;
+        std::vector<uint8_t> source_pixels(static_cast<size_t>(width) * height * 4);
+        auto source_context = CGBitmapContextCreate(source_pixels.data(), width, height,
+            8, width * 4, color_space, kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+        assert(source_context);
+        CGContextScaleCTM(source_context, scale, scale);
+        CGContextSetRGBFillColor(source_context, 252 / 255., 253 / 255., 1, alpha);
+        auto path = CGPathCreateWithRoundedRect(CGRectMake(648, chrome_bottom + 24, 352, 120),
+            16, 16, nullptr);
+        CGContextAddPath(source_context, path);
+        CGContextFillPath(source_context);
+        CGPathRelease(path);
+        auto source = CGBitmapContextCreateImage(source_context);
+        assert(source);
+        std::vector<uint8_t> result(source_pixels.size());
+        auto destination = CGBitmapContextCreate(result.data(), width, height, 8, width * 4,
+            color_space, kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+        assert(destination);
+        CGContextScaleCTM(destination, scale, scale);
+        CGContextSetRGBFillColor(destination, 247 / 255., 248 / 255., 252 / 255., alpha);
+        CGContextFillRect(destination, CGRectMake(0, 0, 1024, 768 + chrome_top + chrome_bottom));
+        const float shadows[] {0, 0, 1, 41 / 255.f, 42 / 255.f, 46 / 255.f, .12f,
+            0, 4, 16, 41 / 255.f, 42 / 255.f, 46 / 255.f, .08f};
+        assert(ladybird_v_skia_draw_drop_shadow_chain(destination, source, 1024,
+            768 + chrome_top + chrome_bottom, scale, shadows, 2));
+        CGContextFlush(destination);
+        std::vector<uint8_t> document(result.begin() + static_cast<size_t>(chrome_top * scale) * width * 4,
+            result.begin() + static_cast<size_t>((chrome_top + 768) * scale) * width * 4);
+        CGContextRelease(destination);
+        CGImageRelease(source);
+        CGContextRelease(source_context);
+        return document;
+    };
+    auto document = render(0, 0);
+    auto chrome = render(60, 24);
+    size_t different = 0;
+    for (size_t i = 0; i < document.size(); ++i)
+        different += document[i] != chrome[i];
+    if (different)
+        std::cerr << "Blur changed with transparent padding: scale=" << scale
+                  << " alpha=" << alpha << " channels=" << different << '\n';
+    assert(different == 0);
+    CGColorSpaceRelease(color_space);
+}
+
+int main(int argc, char** argv)
 {
     int cases = 0;
-    for (int scale : { 1, 2 }) {
+    if (argc > 1) {
+        assert(argc == 2 && std::string(argv[1]) == "--require-gpu");
+        assert(shared_picture_draw());
+        SkPictureRecorder recorder;
+        recorder.beginRecording(SkRect::MakeWH(1, 1))->clear(SK_ColorRED);
+        auto bytes = recorder.finishRecordingAsPicture()->serialize();
+        uint8_t pixel[4] {};
+        float identity[] {1, 0, 0, 0, 1, 0, 0, 0, 1};
+        assert(shared_picture_draw()(pixel, 1, 1, 4, bytes->data(), bytes->size(), identity));
+        assert(pixel[0] == 0 && pixel[1] == 0 && pixel[2] == 255 && pixel[3] == 255);
+        for (int scale : {1, 2}) for (float alpha : {1.f, .5f}) {
+            check_blur_padding(scale, alpha);
+            ++cases;
+        }
+    }
+    for (bool chromium : { false, true }) for (int scale : { 1, 2 }) {
+        s_chromium_painting = chromium;
         const int size = 96 * scale;
         auto color_space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
         std::vector<uint32_t> source_pixels(size * size);
@@ -39,7 +105,7 @@ int main()
                 auto offset = (y * scale * size + x * scale) * 4;
                 if (pixels[offset] != r || pixels[offset + 1] != g
                     || pixels[offset + 2] != b || pixels[offset + 3] != 255) {
-                    std::cerr << "scale=" << scale << " reverse=" << reverse
+                    std::cerr << "chromium=" << chromium << " scale=" << scale << " reverse=" << reverse
                               << " at " << x << ',' << y << " actual="
                               << int(pixels[offset]) << ',' << int(pixels[offset + 1])
                               << ',' << int(pixels[offset + 2]) << ',' << int(pixels[offset + 3])

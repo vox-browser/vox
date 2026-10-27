@@ -87,6 +87,8 @@ void shared_recording_block(SkRect);
 void shared_recording_svg(CGContextRef, SkRect, float);
 void shared_recording_image(CGContextRef, SkMatrix const&, VoxGraphiteImage const&);
 void finish_shared_recording();
+decltype(&vox_graphite_draw_picture_pixels) shared_picture_draw();
+sk_sp<SkData> serialize_shared_picture_image(SkImage*, void*);
 
 enum FontSlot {
     RegularFont = 0,
@@ -1968,7 +1970,7 @@ extern "C" int ladybird_v_skia_draw_drop_shadow_chain(CGContextRef destination,
     CGContextSetBlendMode(decode, kCGBlendModeCopy);
     CGContextDrawImage(decode, CGRectMake(0, 0, width, height), source);
     CGContextRelease(decode);
-    for (size_t offset = 0; offset < source_pixels.size(); offset += 4) {
+    for (size_t offset = 0; !s_chromium_painting && offset < source_pixels.size(); offset += 4) {
         auto source_alpha = source_pixels[offset + 3];
         if (source_alpha != 0 && source_alpha != 255) {
             source_pixels[offset] = static_cast<uint8_t>(std::min(255,
@@ -1981,7 +1983,8 @@ extern "C" int ladybird_v_skia_draw_drop_shadow_chain(CGContextRef destination,
     }
 
     auto source_info = SkImageInfo::Make(width, height, kRGBA_8888_SkColorType,
-        kUnpremul_SkAlphaType, SkColorSpace::MakeSRGB());
+        s_chromium_painting ? kPremul_SkAlphaType : kUnpremul_SkAlphaType,
+        SkColorSpace::MakeSRGB());
     auto source_image = SkImages::RasterFromPixmapCopy(
         SkPixmap(source_info, source_pixels.data(), source_pitch));
     if (!source_image)
@@ -1991,13 +1994,6 @@ extern "C" int ladybird_v_skia_draw_drop_shadow_chain(CGContextRef destination,
         * static_cast<size_t>(height));
     auto output_info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
         kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
-    auto surface = SkSurfaces::WrapPixels(output_info, output_pixels.data(),
-        static_cast<size_t>(width) * sizeof(uint32_t));
-    if (!surface)
-        return 0;
-
-    auto* canvas = surface->getCanvas();
-    canvas->clear(SK_ColorTRANSPARENT);
     SkPaint paint;
     paint.setAntiAlias(true);
     sk_sp<SkImageFilter> filter;
@@ -2012,6 +2008,63 @@ extern "C" int ladybird_v_skia_draw_drop_shadow_chain(CGContextRef destination,
                 channel(shadow[4]), channel(shadow[5])), std::move(filter));
     }
     paint.setImageFilter(std::move(filter));
+
+    if (s_chromium_painting && width <= 16384 && height <= 16384
+        && static_cast<size_t>(width) * height <= 8 * 1024 * 1024 && shared_picture_draw()) {
+        // The Cocoa layer includes transparent browser chrome and viewport
+        // padding. Keep that padding out of the filter input: Skia uses the
+        // input bounds when choosing the downsampled blur grid.
+        int left = width, top = height, right = 0, bottom = 0;
+        for (int y = 0; y < height; ++y) {
+            for (int x = 0; x < width; ++x) {
+                if (source_pixels[static_cast<size_t>(y) * source_pitch + x * 4 + 3]) {
+                    left = std::min(left, x);
+                    top = std::min(top, y);
+                    right = std::max(right, x + 1);
+                    bottom = std::max(bottom, y + 1);
+                }
+            }
+        }
+        if (right <= left || bottom <= top)
+            return 1;
+        auto cropped_image = SkImages::RasterFromPixmapCopy(SkPixmap(
+            source_info.makeWH(right - left, bottom - top),
+            source_pixels.data() + static_cast<size_t>(top) * source_pitch + left * 4,
+            source_pitch));
+        if (!cropped_image)
+            return 0;
+        SkPictureRecorder recorder;
+        auto* canvas = recorder.beginRecording(SkRect::MakeWH(width, height));
+        // Preserve the original premultiplied backdrop through GPU source-over
+        // blending instead of unpremultiplying the filter's translucent input.
+        RasterRegion region {0, 0, static_cast<int>(std::ceil(canvas_width)),
+            static_cast<int>(std::ceil(canvas_height))};
+        bool has_background = copy_backdrop(destination, region, scale, width, height, output_pixels);
+        if (has_background) {
+            auto background = SkImages::RasterFromPixmapCopy(SkPixmap(output_info,
+                output_pixels.data(), static_cast<size_t>(width) * sizeof(uint32_t)));
+            if (!background) return 0;
+            canvas->drawImage(background, 0, 0);
+        }
+        canvas->drawImage(cropped_image, left, top, SkSamplingOptions(), &paint);
+        auto picture = recorder.finishRecordingAsPicture();
+        SkSerialProcs procs;
+        procs.fImageProc = serialize_shared_picture_image;
+        auto bytes = picture->serialize(&procs);
+        float identity[] {1, 0, 0, 0, 1, 0, 0, 0, 1};
+        if (bytes && shared_picture_draw()(reinterpret_cast<uint8_t*>(output_pixels.data()),
+                width, height, width * 4, bytes->data(), bytes->size(), identity)) {
+            return composite_pixels(destination, std::move(output_pixels), width, height,
+                0, 0, canvas_width, canvas_height, has_background);
+        }
+    }
+
+    auto surface = SkSurfaces::WrapPixels(output_info, output_pixels.data(),
+        static_cast<size_t>(width) * sizeof(uint32_t));
+    if (!surface)
+        return 0;
+    auto* canvas = surface->getCanvas();
+    canvas->clear(SK_ColorTRANSPARENT);
     canvas->drawImage(source_image.get(), 0, 0, SkSamplingOptions(), &paint);
     surface.reset();
     return composite_pixels(destination, std::move(output_pixels), width, height, 0, 0,

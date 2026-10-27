@@ -17,7 +17,7 @@ std::unique_ptr<SharedRootRecording> s_shared_root_recording;
 bool s_shared_root_enabled = false;
 int s_shared_viewport_width = 0, s_shared_viewport_height = 0;
 
-auto shared_picture_draw()
+decltype(&vox_graphite_draw_picture_pixels) shared_picture_draw()
 {
     static auto draw = [] {
         void* library = dlopen("@rpath/libVoxGraphiteDawn.dylib", RTLD_LAZY | RTLD_LOCAL);
