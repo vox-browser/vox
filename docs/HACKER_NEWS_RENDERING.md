@@ -1629,3 +1629,27 @@ font-cascade baseline, not a rebuilt canonical production browser. These results
 validate the isolated change but do not establish a gain in the latest production
 build. Its strict Vox/Brave ratio remains 6.457878 against the required 0.90.
 The user's Brave performance target remains open.
+
+
+## Reused Canvas production baseline, 2026-10-27
+
+`Build/hn-small-text/production-reuse-4/check-1` checks the newer completed
+bundle from `Build/pikabu-dom-canvas-production-1793083416732516000` without
+requesting a production rebuild. Its executable SHA256 is
+`e10853851e59334a646337d36dce1d4f4fc9e21ae0fc4ffd150bc858ee8a5160`.
+The source snapshot lacks the newer Chromium line-end shaping and scalar
+context metrics. Other workloads retain open pixel gates in its production
+receipt; this check covers only the recorded HN fixtures and live identities.
+
+All three frozen HN screenshots remain pixel-exact, both live identity checks
+pass, and signature and startup checks exit zero. Three fresh alternating
+Vox/Brave pairs retain exact pixels and all 101 comments. Vox's median is
+7,312,044,715 retired instructions; Brave's median lower accounting bound is
+1,884,329,466. The strict worst-Vox/best-Brave ratio is **4.013862**, exceeding
+the required **0.90**. The acceptance cohort exits 1. All pinned inputs remain
+unchanged.
+
+This is baseline evidence, with zero isolated optimization credit. Its different
+source content prevents attributing the lower count to any one change. The
+line-end optimization continues against the sealed production-3 control that
+contains that shaping behavior. The user's performance target remains open.
