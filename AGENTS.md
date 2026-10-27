@@ -61,17 +61,18 @@
   cannot establish that new code works. Preserve the memory guard below and pin
   build identity for comparisons.
 
-- Serialize expensive builds, test binaries and benchmarks through
-  `python3 tools/run_memory_bounded.py --report Build/UNIQUE-job.json -- COMMAND...`.
+- Run expensive builds, test binaries and benchmarks through
+  `python3 tools/run_memory_bounded.py --lock Build/UNIQUE-job.lock --report Build/UNIQUE-job.json -- COMMAND...`.
   Keep its default 12 GiB aggregate process-tree RSS budget; use `--limit-gib 3`
-  for focused runtime tests. The shared lock refuses overlapping guarded jobs.
+  for focused runtime tests. Use a separate lock per independent job; a busy
+  shared lock must not queue unrelated work. Independent capped jobs may run
+  concurrently; record host contention when assessing benchmark results.
   Supply `-memory-limit 10G` to V compiler invocations and never use
   `-no-memory-limit`. This sampled guard can overshoot between observations;
   it is not a kernel allocation limit. Do not run broad suites concurrently or
   format complete DOM/layout/paint owner graphs in test assertions.
-  Release the shared lock when the submitted checks finish. Do not keep it
-  through idle polling for follow-up commands or user input; submit the next
-  bounded job after preparing its commands and inputs.
+  Release each job's lock when its submitted checks finish; prepare the next
+  job's commands and inputs before acquiring its lock.
 
 - Build the native macOS bundle from this repository with:
 
