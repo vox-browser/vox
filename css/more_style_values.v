@@ -337,16 +337,17 @@ pub fn (style_value AnchorStyleValue) properties_equal(other AnchorStyleValue) b
 // --- AnchorSizeStyleValue ---
 pub struct AnchorSizeStyleValue {
 pub mut:
-	anchor_name_    ?string
-	anchor_size_    ?AnchorSize
-	fallback_value_ ?StyleValue
+	anchor_name_ ?string
+	anchor_size_ ?AnchorSize
+	// StyleValue includes AnchorSizeStyleValue, so the optional child must be boxed.
+	fallback_value_ ?&StyleValue
 }
 
 pub fn AnchorSizeStyleValue.create(anchor_name ?string, anchor_size ?AnchorSize, fallback_value ?StyleValue) AnchorSizeStyleValue {
 	return AnchorSizeStyleValue{
-		anchor_name_: anchor_name
-		anchor_size_: anchor_size
-		fallback_value_: fallback_value
+		anchor_name_:    anchor_name
+		anchor_size_:    anchor_size
+		fallback_value_: if value := fallback_value { &StyleValue(value) } else { none }
 	}
 }
 
@@ -359,7 +360,10 @@ pub fn (style_value AnchorSizeStyleValue) anchor_size() ?AnchorSize {
 }
 
 pub fn (style_value AnchorSizeStyleValue) fallback_value() ?StyleValue {
-	return style_value.fallback_value_
+	if value := style_value.fallback_value_ {
+		return *value
+	}
+	return none
 }
 
 pub fn (style_value AnchorSizeStyleValue) serialize(mode SerializationMode) string {
