@@ -915,8 +915,10 @@ inputs and results are in
 
 The broad screenshot checkpoint passes 18 of 21 cases, including all ten SVG
 mutation and mask guards. `inline-node`, `ordered-list`, and `text-decorations`
-fail against their upstream expectations; a baseline comparison is pending to
-establish whether these are inherited. Results remain in
+fail against their upstream expectations. A comparison with the earlier
+shared bundle confirms the same failures: 5,766, 4,421, and 31,985 pixels,
+respectively. Baseline results are retained in
+`Build/pikabu-baseline-three-1793088284787546000/`. Results remain in
 `Build/pikabu-story-broad-visual-1793085045442418000/`.
 
 An archived-startup diagnostic with temporary fragment-accessor shims clears
@@ -947,3 +949,53 @@ and runtime exit codes are retained in
 These focused results do not validate Pikabu startup in the browser. A fresh
 bundle containing these interfaces is pending. Whole-page, Canvas readback,
 and Retina rounded-mask pixel equality remain unresolved.
+
+
+## Native insertion and cookie notice checkpoint
+
+Commit `ca390cb2` fixes compact `insertBefore()` before text and comment anchors.
+The queued insertion previously captured the operations array before a reference
+getter flushed and replaced it, losing the operation. Insertions now use native
+pre-insertion, preserving mixed-node ordering, moves, fragment contents, and
+validation. All 46 focused DOM, Canvas, and audit cases pass in normal and
+poisoned arena modes with unchanged frozen sources. The guard exits zero after
+215.48 seconds, with sampled peak RSS 8,631,042,048 bytes. Receipts are in
+`Build/pikabu-anchored-insertion-retry-1793097480194628000/` and
+`Build/pikabu-anchored-insertion-headers-4434.json`.
+
+A fresh diagnostic bundle contains this fix, passes strict signature verification
+and headless startup, and retains executable SHA-256
+`c9d0e500c77a047182bdd891ef1a922f8f866e2c6816069a1d99b191e1edb955`.
+The bundle and source/library identities are retained in
+`Build/pikabu-anchored-insertion-browser-1793097548710087000/`.
+The native Vue fixture now produces the expected mixed-node order and complete
+cookie popup. Its fresh browser comparison is retained in
+`Build/pikabu-anchored-insertion-vue-1793097629911540000/`.
+
+Fresh 1024 by 768, scale-one page captures confirm that Pikabu now displays its
+cookie notice. The live notice has the expected text and a 352 by 120 CSS-pixel
+rectangle at (648, 624). Pixel equality still fails: the frozen page has 17,858
+differing pixels (maximum channel error 42), and independent live loads have
+71,874 differing pixels (maximum channel error 92). Both browsers exit zero;
+executable, library, fixture, and filter identities remain unchanged. Raw
+captures and audits are retained in
+`Build/pikabu-insertion-page-comparison-1793098256222705000/story/`.
+The aggregate validation job exits one because the strict pixel gates fail.
+Live counters and independently timed startup can also affect this comparison.
+
+The first archived startup replay in
+`Build/pikabu-anchored-cookie-trace-1793097629911540000/` is invalid: two proxy
+mappings referenced nonexistent application scripts. A corrected replay serves
+those scripts from a pinned completed cache snapshot and uses a fresh browser
+profile and cache. It confirms the native cookie notice without DOM shims.
+Its logging also shows the photo backdrop drawing before the SVG filter is
+installed: draw at 1793099176930 ms, sprite XHR load at 1793099178759 ms.
+This is diagnostic timing evidence, not a complete explanation of the task
+ordering difference. Corrected inputs, proxy requests, and the successful guard
+are retained in
+`Build/pikabu-anchored-cookie-trace-corrected-1793099148644848000/` and
+`Build/pikabu-anchored-cookie-corrected-4434.json`.
+
+The backdrop remains sharp where Brave blurs it. CSS shadow and rounded-edge
+pixels, direct Canvas RGBA readback, and Retina masks remain open. These checks
+do not establish whole-page pixel parity.
