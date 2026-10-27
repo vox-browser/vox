@@ -764,3 +764,50 @@ input. A separate immutable extension copy and fresh profile preparation are
 queued. Existing captures and hashes remain intact. Live story parity,
 FormData startup, canvas browser acceptance, and the rounded-mask gate remain
 open.
+
+
+## FormData completion and image negotiation checkpoint
+
+Commit `875ade4e` implements native FormData bindings and binary multipart
+request bodies for Fetch and XMLHttpRequest. The startup fixture exercises the
+page's constructor and form initialization path. The focused selection passes
+all 15 cases in both normal and poisoned arena modes, with unchanged frozen
+sources and binary identities. The final direct-network guard exits zero after
+98.118 seconds. Results are retained in
+`Build/pikabu-form-data-tests-1793054934823159000/results.json` and
+`direct-guard.json`. The earlier timeout remains separately recorded: an ambient
+proxy sent a loopback XMLHttpRequest through a route that stalled its worker
+join. The successful retry removes ambient proxy variables and uses an empty
+private profile. This is the sixth completed fix since the broad checkpoint;
+production-browser acceptance remains pending.
+
+A fresh full-filter Brave capture now succeeds after preparing a separate
+profile with an immutable copy of the installed extension. Its inputs and
+successful capture remain in
+`Build/pikabu-matched-filter-brave-1793064011487232000/`. Comparing this capture
+with an older Vox capture is diagnostic only because the live responses were
+captured at different times. The article text region has zero differing pixels;
+the photo region still differs substantially. Neither region result establishes
+matched whole-page parity.
+
+The photo format difference originates in the navigation response, before image
+decoding. Two direct requests with identical user agents but different Accept
+headers demonstrate that Pikabu emits JPEG image URLs for the existing generic
+document header and WebP URLs when `image/webp,image/apng` is included. Both
+responses are HTTP 200; their raw bodies and hashes are preserved in
+`Build/pikabu-image-negotiation-1793067015516962000/`. A macOS navigation-header
+change and a local-server regression covering redirects and child frames await
+focused validation in
+`Build/pikabu-navigation-negotiation-tests-1793067155909619000/`. This header is a
+compatibility deviation from the upstream generic document header.
+
+The latest completed shared bundle checked at this checkpoint has executable
+SHA-256 `d0b28fb544c7ac9befb56b43402ed9c090f05651a2a2c1936df64f8793498d93`.
+It contains the FormData changes, but lacks the new navigation header and
+rounded-mask implementation. Fresh applicable checks will reuse a preserved
+copy before any replacement build. A native rounded-mask preflight with this
+bundle's newer libraries is queued separately; the earlier scale-two
+four-pixel failure remains unresolved. The production diagnostic waits outside
+the memory lock for the navigation tests and retains strict zero-difference
+gates. Canvas browser acceptance, rounded masks, page startup, and matched live
+whole-page parity remain open.
