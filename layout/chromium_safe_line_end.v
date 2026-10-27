@@ -10,7 +10,8 @@ fn chromium_cached_safe_line_end(node &Node, start int, length int,
 	}
 	text_node := node.as_text_node() or { return none }
 	text := text_node.text_for_rendering()
-	if !text.is_ascii() { return none }
+	// text_for_rendering() refreshes this fact together with the rendered text.
+	if !text_node.rendered_text_is_ascii_ { return none }
 	// A collapsed source map makes this query ineligible. Check that
 	// condition before allocating the map and its collapsed text.
 	if text_node.Node.computed_values().white_space_collapse() in [.collapse, .preserve_breaks]
