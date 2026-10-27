@@ -1092,3 +1092,46 @@ compositor-layer raster-policy problem: a transformed surface without an SVG
 inherits sampling triggered by SVG content in other surfaces. Plain fractional
 rounded rectangles without those surfaces match exactly. Whole-page equality,
 Canvas RGBA readback and Retina mask equality remain open.
+
+
+## Local compositor picture checkpoint (`c1c176a1`)
+
+Supported CSS compositor surfaces now retain their full transformed border-box
+bounds and replay their complete SVG picture in local layer coordinates.
+Rectangular SVG viewport batches can participate; unsupported clips, effects,
+images and failed backends retain the existing leaf result. Selecting the root
+layer repeatedly preserves its already recorded page background.
+
+The reduced `compositor-shared-recording` fixture matches fresh Brave captures
+with zero differing pixels at both backing scales one and two (1024 by 768).
+All ten SVG mutation and viewport regressions also match exactly, including
+`svg-image-source-switch-same-size`. The native check covers 144 local-picture
+combinations, root background preservation at both scales, and blocked fallback.
+The focused V checks execute 19 raster-layer and seven recording cases in each
+of normal and poisoned arena modes: 52 successful cases total.
+
+Receipts, commands and immutable inputs are retained in:
+
+- `Build/pikabu-clipped-shared-1793125609481490000/retry3/results.json`
+  (focused V checks; its guard exits zero).
+- `Build/pikabu-root-background-1793126845979058000/native-results.json`,
+  `visual-results.json` and `svg/results.json` (native and capture guards all
+  exit zero; source, executable, libraries and inputs remain unchanged).
+
+The signed diagnostic executable SHA-256 is
+`53274560795e8e1a2105c50d9700e7b324552697b067d05f2ce80c2fa769b5f4`;
+the native bridge SHA-256 is
+`6ef5578f8eca3990b176a7f083ba374d8256c886c0bf61e925e156d9ce22b41c`.
+This diagnostic contains the new code; the shared production bundle was reused
+as its base and was not replaced.
+
+Fresh full-page captures still fail strict equality: the frozen page has
+12,381 differing pixels (maximum channel error 42), and the independent live
+loads have 9,015 (maximum error 61). All four browser captures exit zero and
+load the intended document; both pixel checks and the overall guard exit one.
+These are current results, not evidence of improvement over differently timed
+live loads. Raw captures, audits, identities and failed gates are in
+`Build/pikabu-root-background-1793126845979058000/story/` and
+`story-guard.json`. Whole-page equality, Canvas RGBA readback and Retina mask
+equality remain open. The next diagnostic checks whether the full page's
+controls qualify for the corrected compositor path.
