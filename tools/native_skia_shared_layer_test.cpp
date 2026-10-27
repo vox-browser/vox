@@ -141,12 +141,100 @@ static void shadow_overflow(int scale, bool switch_layer)
     CGContextRelease(destination); CGContextRelease(control);
 }
 
+static void clipped_layer(int scale, bool blocked)
+{
+    constexpr int width = 512, height = 512;
+    constexpr float page_y = 60, scroll_y = 13.25f;
+    int pitch = width * scale * 4;
+    std::vector<uint8_t> actual(size_t(pitch) * height * scale), expected(actual);
+    auto space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+    auto make = [&](auto& pixels) {
+        auto context = CGBitmapContextCreate(pixels.data(), width * scale, height * scale,
+            8, pitch, space, CGBitmapInfo(kCGImageAlphaPremultipliedLast) | kCGBitmapByteOrder32Big);
+        assert(context); CGContextScaleCTM(context, scale, scale); return context;
+    };
+    auto destination = make(actual), control = make(expected);
+    CGColorSpaceRelease(space);
+    ladybird_v_skia_set_shared_recording(0, width, height);
+    ladybird_v_skia_set_raster_layer(0, 0, 0);
+    ladybird_v_skia_set_raster_layer_size(width, height);
+    int cell = 0;
+    ladybird_v_skia_set_msaa_grid(&cell, 1, 258 * scale, 258 * scale, 1);
+    ladybird_v_skia_set_layer_shared_recording(1);
+    // Clip state exists before the first draw and is independent of other contexts.
+    float outer[] {20, 30, 280, 240, 0, 0, 0, 0, 0, 0, 0, 0};
+    float rounded[] {50, 50, 180, 120, 20, 12, 9, 9, 18, 24, 0, 0};
+    float transform[] {.819152f, .573576f, -.573576f, .819152f, 100, page_y - scroll_y};
+    float identity[] {1, 0, 0, 1, 0, page_y - scroll_y};
+    ladybird_v_skia_save_shared_clip(destination);
+    ladybird_v_skia_add_shared_rounded_clip(destination, outer, identity);
+    ladybird_v_skia_save_shared_clip(destination);
+    ladybird_v_skia_add_shared_rounded_clip(destination, rounded, transform);
+    assert(!s_shared_clips[destination].unsupported);
+    if (blocked) ladybird_v_skia_block_shared_clip(destination);
+    assert(ladybird_v_skia_draw_rounded_rect(destination, 0, 0, 400, 400,
+        8, 8, 8, 8, 8, 8, 8, 8, 1, 0, 0, 1, 0, 0, 0, page_y, scroll_y,
+        width, height, 137, 173, 80, 255, 1, 0, 1, 0));
+    shared_recording_content(destination, SkRect::MakeWH(400, 400), page_y, scroll_y);
+    assert(s_shared_root_recording->destination == destination);
+    ladybird_v_skia_save_shared_clip(control);
+    ladybird_v_skia_block_shared_clip(control);
+    ladybird_v_skia_restore_shared_clip(destination);
+    assert(!s_shared_clips[destination].unsupported);
+    ladybird_v_skia_record_rect(destination, 260, height - 90 - page_y + scroll_y, 80, 20, 80, 40, 170, 255);
+    ladybird_v_skia_restore_shared_clip(destination);
+    ladybird_v_skia_restore_shared_clip(control);
+    assert(s_shared_clips.empty());
+    if (blocked) {
+        CGContextFlush(destination); expected = actual;
+    } else {
+        SkPictureRecorder recorder;
+        auto* canvas = recorder.beginRecording(SkRect::MakeWH(width, height));
+        canvas->translate(0, page_y - scroll_y);
+        canvas->clipRect(SkRect::MakeXYWH(20, 30, 280, 240), true);
+        canvas->save();
+        canvas->setMatrix(SkMatrix::MakeAll(transform[0], transform[2], transform[4],
+            transform[1], transform[3], transform[5], 0, 0, 1));
+        SkVector radii[] {{20, 12}, {9, 9}, {18, 24}, {0, 0}};
+        SkRRect clip; clip.setRectRadii(SkRect::MakeXYWH(50, 50, 180, 120), radii);
+        canvas->clipRRect(clip, true);
+        canvas->setMatrix(SkMatrix::Translate(0, page_y - scroll_y));
+        SkPaint paint; paint.setAntiAlias(true); paint.setColor(SkColorSetRGB(137, 173, 80));
+        canvas->drawRRect(SkRRect::MakeRectXY(SkRect::MakeWH(400, 400), 8, 8), paint);
+        canvas->restore();
+        paint.setColor(SkColorSetRGB(80, 40, 170));
+        canvas->drawRect(SkRect::MakeXYWH(260, 70, 80, 20), paint);
+        auto bytes = recorder.finishRecordingAsPicture()->serialize();
+        std::vector<uint32_t> pixels(size_t(width) * height * scale * scale);
+        float matrix[] {float(scale), 0, 0, 0, float(scale), 0, 0, 0, 1};
+        assert(shared_picture_draw()(reinterpret_cast<uint8_t*>(pixels.data()), width * scale,
+            height * scale, pitch, bytes->data(), bytes->size(), matrix));
+        composite_pixels(control, std::move(pixels), width * scale, height * scale,
+            0, 0, width, height, true);
+    }
+    ladybird_v_skia_finish_shared_recording();
+    CGContextFlush(destination); CGContextFlush(control);
+    if (actual != expected) {
+        size_t differences = 0;
+        for (size_t i = 0; i < actual.size(); ++i) if (actual[i] != expected[i]) {
+            if (differences++ < 8) std::cerr << " clip byte=" << i << " expected="
+                << int(expected[i]) << " actual=" << int(actual[i]) << '\n';
+        }
+        std::cerr << "Clipped layer scale=" << scale << " blocked=" << blocked
+            << " differences=" << differences << '\n';
+    }
+    assert(actual == expected);
+    CGContextRelease(destination); CGContextRelease(control);
+}
+
 int main()
 {
     assert(shared_picture_draw() && graphite_shape_draw());
     ladybird_v_skia_set_chromium_painting(1);
     for (int scale : {1, 2}) {
         root_background(scale);
+        clipped_layer(scale, false);
+        clipped_layer(scale, true);
         for (bool switch_layer : {false, true}) shadow_overflow(scale, switch_layer);
     }
     int comparisons = 0;

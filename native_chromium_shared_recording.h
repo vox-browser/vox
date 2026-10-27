@@ -21,6 +21,19 @@ bool s_shared_root_enabled = false;
 bool s_shared_layer_enabled = false;
 int s_shared_viewport_width = 0, s_shared_viewport_height = 0;
 
+struct SharedClip {
+    SkRRect rect;
+    SkMatrix matrix;
+};
+struct SharedClipState {
+    std::vector<SharedClip> clips;
+    bool unsupported = false;
+    std::vector<std::pair<size_t, bool>> saves;
+};
+// Clips can precede the first recorded draw. Keep their state per destination,
+// including while an offscreen mask or compositor layer is being painted.
+std::unordered_map<CGContextRef, SharedClipState> s_shared_clips;
+
 decltype(&vox_graphite_draw_picture_pixels) shared_picture_draw()
 {
     static auto draw = [] {
@@ -66,6 +79,23 @@ void shared_recording_block(SkRect bounds)
         s_shared_root_recording->blocked_bounds.push_back(bounds.makeOutset(2, 2));
 }
 
+void shared_recording_clip(CGContextRef destination, SkCanvas* canvas)
+{
+    canvas->resetMatrix();
+    auto found = s_shared_clips.find(destination);
+    if (found == s_shared_clips.end()) return;
+    if (found->second.unsupported) {
+        shared_recording_block(SkRect::MakeWH(s_shared_root_recording->canvas_width,
+            s_shared_root_recording->canvas_height));
+        return;
+    }
+    for (auto const& clip : found->second.clips) {
+        canvas->setMatrix(clip.matrix);
+        canvas->clipRRect(clip.rect, true);
+    }
+    canvas->resetMatrix();
+}
+
 void shared_recording_content(CGContextRef destination, SkRect bounds, float page_y, float scroll_y)
 {
     if (!shared_recording_canvas(destination) || s_msaa_grid_columns <= 0) return;
@@ -108,7 +138,7 @@ void shared_recording_image(CGContextRef destination, SkMatrix const& matrix,
         border.outset(image.border_width / 2, image.border_width / 2);
         target.join(border);
     }
-    if ((image.flags & 4) || image.has_color_profile || image.has_background_color
+    if ((image.flags & (4 | 64 | 128)) || image.has_color_profile || image.has_background_color
         || image.border_width > 0
         || size_t(image.width) * image.height > 8 * 1024 * 1024
         || std::any_of(image.clip + 4, image.clip + 12, [](float radius) { return radius != 0; })) {
@@ -167,6 +197,7 @@ void shared_recording_image(CGContextRef destination, SkMatrix const& matrix,
     paint.setAntiAlias(true);
     paint.setAlphaf(image.opacity);
     canvas->save();
+    shared_recording_clip(destination, canvas);
     canvas->setMatrix(matrix);
     if (clip != target) canvas->clipRect(clip, true);
     canvas->drawImageRect(bitmap, source_rect, target,
@@ -282,10 +313,65 @@ void finish_shared_recording()
 extern "C" void ladybird_v_skia_set_shared_recording(int enabled, int width, int height)
 {
     s_shared_root_recording.reset();
+    s_shared_clips.clear();
     s_shared_layer_enabled = false;
     s_shared_root_enabled = enabled && width > 0 && height > 0;
     s_shared_viewport_width = width;
     s_shared_viewport_height = height;
+}
+
+extern "C" void ladybird_v_skia_save_shared_clip(CGContextRef destination)
+{
+    if (!destination) return;
+    auto& state = s_shared_clips[destination];
+    state.saves.emplace_back(state.clips.size(), state.unsupported);
+}
+
+extern "C" void ladybird_v_skia_restore_shared_clip(CGContextRef destination)
+{
+    auto found = s_shared_clips.find(destination);
+    if (found == s_shared_clips.end() || found->second.saves.empty()) return;
+    auto& state = found->second;
+    auto saved = state.saves.back();
+    state.saves.pop_back();
+    state.clips.resize(saved.first);
+    state.unsupported = saved.second;
+    if (state.saves.empty() && state.clips.empty() && !state.unsupported)
+        s_shared_clips.erase(found);
+}
+
+extern "C" void ladybird_v_skia_block_shared_recording(CGContextRef destination)
+{
+    if (shared_recording_canvas(destination))
+        shared_recording_block(SkRect::MakeWH(s_shared_root_recording->canvas_width,
+            s_shared_root_recording->canvas_height));
+}
+
+extern "C" void ladybird_v_skia_block_shared_clip(CGContextRef destination)
+{
+    if (!destination) return;
+    s_shared_clips[destination].unsupported = true;
+    ladybird_v_skia_block_shared_recording(destination);
+}
+
+extern "C" void ladybird_v_skia_add_shared_rounded_clip(CGContextRef destination,
+    float const* rect, float const* transform)
+{
+    if (!destination) return;
+    if (!rect || !transform
+        || !std::all_of(rect, rect + 12, [](float v) { return std::isfinite(v); })
+        || !std::all_of(transform, transform + 6, [](float v) { return std::isfinite(v); })) {
+        ladybird_v_skia_block_shared_clip(destination);
+        return;
+    }
+    SharedClip clip;
+    clip.matrix = SkMatrix::MakeAll(transform[0], transform[2], transform[4],
+        transform[1], transform[3], transform[5], 0, 0, 1);
+    SkVector radii[] {{rect[4], rect[5]}, {rect[6], rect[7]},
+        {rect[8], rect[9]}, {rect[10], rect[11]}};
+    clip.rect.setRectRadii(SkRect::MakeXYWH(rect[0], rect[1],
+        std::max(rect[2], 0.f), std::max(rect[3], 0.f)), radii);
+    s_shared_clips[destination].clips.push_back(clip);
 }
 
 extern "C" void ladybird_v_skia_set_layer_shared_recording(int enabled)
@@ -307,7 +393,7 @@ extern "C" void ladybird_v_skia_record_rect(CGContextRef destination, float x,
     paint.setAntiAlias(true);
     paint.setColor(SkColorSetARGB(alpha, red, green, blue));
     canvas->save();
-    canvas->resetMatrix();
+    shared_recording_clip(destination, canvas);
     canvas->drawRect(SkRect::MakeXYWH(x,
         s_shared_root_recording->canvas_height - y - height, width, height), paint);
     canvas->restore();

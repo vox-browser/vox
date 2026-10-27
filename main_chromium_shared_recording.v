@@ -1,6 +1,7 @@
 module main
 
 import layout
+import math
 import painting
 
 fn C.native_set_chromium_shared_recording(i32, i32, i32)
@@ -28,8 +29,7 @@ fn chromium_shared_recording_supported(commands []layout.PaintCommand,
 		}
 		if left_root { return false }
 		if index < svg_end { continue }
-		// The batch renderer records its rectangular viewport intersection in
-		// the picture. Individual clipped leaves do not carry that clip there.
+		// Keep complete SVG batches together, including their own viewport clip.
 		svg_end = chromium_svg_rectangular_mask_end(commands, plan.command_layers, index)
 		if svg_end == index {
 			svg_end = chromium_svg_solid_run_end(commands, plan.command_layers, index)
@@ -45,6 +45,34 @@ fn chromium_shared_recording_supported(commands []layout.PaintCommand,
 	return has_vectors
 }
 
+fn chromium_shared_recording_clips_supported(command &layout.PaintCommand) bool {
+	if !command.has_clip { return command.clip_list == unsafe { nil } }
+	for value in [command.clip_x, command.clip_y, command.clip_width, command.clip_height] {
+		if math.is_nan(value) || math.is_inf(value, 0) { return false }
+	}
+	if command.clip_list == unsafe { nil } { return true }
+	for clip in command.clip_list.items {
+		if clip.is_path || clip.is_svg_mask || clip.is_svg_content_mask
+			|| clip.path_components.len > 0 {
+			return false
+		}
+		for value in [clip.rect.x, clip.rect.y, clip.rect.width, clip.rect.height] {
+			if math.is_nan(value) || math.is_inf(value, 0) { return false }
+		}
+		for value in clip.transform {
+			if math.is_nan(value) || math.is_inf(value, 0) { return false }
+		}
+		for radius in [clip.corner_radii.top_left, clip.corner_radii.top_right,
+			clip.corner_radii.bottom_right, clip.corner_radii.bottom_left] {
+			if radius.x < 0 || radius.y < 0 || math.is_nan(radius.x) || math.is_nan(radius.y)
+				|| math.is_inf(radius.x, 0) || math.is_inf(radius.y, 0) {
+				return false
+			}
+		}
+	}
+	return true
+}
+
 fn chromium_shared_recording_leaf_supported(command &layout.PaintCommand) (bool, bool) {
 	mut has_vectors := false
 	// Native replay discards ordinary leaves with an empty clip before
@@ -54,11 +82,22 @@ fn chromium_shared_recording_leaf_supported(command &layout.PaintCommand) (bool,
 		&& !command.kind.starts_with('begin_') && !command.kind.starts_with('end_') {
 		return true, false
 	}
-	if command.has_clip || command.clip_list != unsafe { nil }
+	if !chromium_shared_recording_clips_supported(command)
 		|| command.clip_outs.len > 0 || command.blur != 0 || command.outer_shadow {
 		return false, false
 	}
 	match command.kind {
+		'draw_background_image' {
+			data := command.image_data
+			if data == unsafe { nil } || data.background_blend_mode != .normal
+				|| data.background_svg_document != none || data.background_static_svg_resource != none {
+				return false, false
+			}
+			url := data.image_url.to_lower()
+			if url.starts_with('data:image/svg+xml') || url.all_before('?').all_before('#').ends_with('.svg') {
+				return false, false
+			}
+		}
 		'fill_rect', 'fill_rounded_rect', 'paint_uniform_border', 'stroke_rounded_rect',
 		'fill_ellipse', 'stroke_ellipse', 'draw_text', 'draw_replaced_image', 'draw_svg_image' {
 		}

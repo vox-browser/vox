@@ -1,6 +1,7 @@
 module main
 
 import layout
+import math
 import painting
 import html
 import os
@@ -42,8 +43,19 @@ fn test_shared_recording_keeps_clips_effects_and_unrepresented_draws_on_the_leaf
 	for unsupported in [
 		layout.PaintCommand{ kind: 'begin_css_effect_layer' },
 		layout.PaintCommand{ kind: 'draw_text', blur: 1 },
-		layout.PaintCommand{ kind: 'fill_rect', has_clip: true, clip_width: 1, clip_height: 1 },
-		layout.PaintCommand{ kind: 'fill_rect', clip_outs: [f64(0), 0, 10, 10] },
+		layout.PaintCommand{
+			kind:        'fill_rect'
+			has_clip:    true
+			clip_width:  1
+			clip_height: 1
+			clip_list:   &layout.PaintClipList{ items: [layout.PaintClip{ is_path: true }] }
+		},
+		layout.PaintCommand{ kind: 'fill_rect', clip_outs: [
+			f64(0),
+			0,
+			10,
+			10,
+		] },
 	] {
 		assert !chromium_shared_recording_supported([unsupported, base[1]], plan)
 	}
@@ -130,12 +142,12 @@ fn shared_recording_layer_plan(count int) layout.ChromiumRasterLayerPlan {
 fn test_shared_recording_accepts_complete_rectangular_svg_clip_scopes() {
 	mask := svg_rectangular_mask_test_commands()
 	root := layout.ChromiumRasterLayerPlan{
-		layers: [layout.ChromiumRasterLayer{}]
+		layers:         [layout.ChromiumRasterLayer{}]
 		command_layers: [0, 0, 0]
 	}
 	assert chromium_shared_recording_supported(mask, root)
 	assert !chromium_shared_recording_supported(mask[..2], layout.ChromiumRasterLayerPlan{
-		layers: root.layers
+		layers:         root.layers
 		command_layers: [0, 0]
 	})
 	base := shared_recording_layer_commands(.5)
@@ -143,10 +155,10 @@ fn test_shared_recording_accepts_complete_rectangular_svg_clip_scopes() {
 	plan := shared_recording_layer_plan(commands.len)
 	assert chromium_shared_recording_layer_supported(commands, plan, 1)
 	mut interrupted := commands.clone()
-	interrupted[3] = layout.PaintCommand{kind: 'begin_css_filter_layer'}
+	interrupted[3] = layout.PaintCommand{ kind: 'begin_css_filter_layer' }
 	assert !chromium_shared_recording_layer_supported(interrupted, plan, 1)
 	assert !chromium_shared_recording_layer_supported(commands, layout.ChromiumRasterLayerPlan{
-		layers: plan.layers
+		layers:         plan.layers
 		command_layers: [1, 1, 1, 2, 1, 1]
 	}, 1)
 }
@@ -169,7 +181,13 @@ fn test_shared_recording_layer_requires_balanced_supported_commands_and_contiguo
 	for unsupported in [
 		layout.PaintCommand{ kind: 'begin_css_effect_layer', visual_layer_data: base[0].visual_layer_data },
 		layout.PaintCommand{ kind: 'draw_text', blur: 2 },
-		layout.PaintCommand{ kind: 'fill_rect', has_clip: true, clip_width: 4, clip_height: 4 },
+		layout.PaintCommand{
+			kind:        'fill_rect'
+			has_clip:    true
+			clip_width:  4
+			clip_height: 4
+			clip_list:   &layout.PaintClipList{ items: [layout.PaintClip{ is_svg_mask: true }] }
+		},
 		layout.PaintCommand{ kind: 'draw_background_image' },
 	] {
 		mut commands := base.clone()
@@ -219,32 +237,34 @@ fn test_shared_recording_accepts_painted_compositor_layers_with_svg_viewport_cli
 		for layer_index in 2 .. 6 {
 			assert chromium_shared_recording_layer_supported(commands, plan, layer_index)
 		}
-		// One clipped path cannot use the batch renderer and must keep the
-		// fallback. Rounded viewport clips likewise need their existing path.
+		// Both a standalone path and rounded viewport clips retain their clip
+		// when replayed into the complete compositor picture.
 		indices := plan.layers[2].command_indices
 		mut single := commands.clone()
 		single[indices[4]] = layout.PaintCommand{ kind: 'fill_rect' }
-		assert !chromium_shared_recording_layer_supported(single, plan, 2)
+		assert chromium_shared_recording_layer_supported(single, plan, 2)
 		mut rounded := commands.clone()
 		path_index := indices[3]
 		path := commands[path_index]
 		clip := path.clip_list.items[0]
 		rounded[path_index] = layout.PaintCommand{
 			...path
-			clip_list: &layout.PaintClipList{ items: [layout.PaintClip{
-				...clip
-				corner_radii: layout.BoxRadii{ top_left: layout.CornerRadius{ x: 1, y: 1 } }
-			}] }
+			clip_list: &layout.PaintClipList{
+				items: [layout.PaintClip{
+					...clip
+					corner_radii: layout.BoxRadii{ top_left: layout.CornerRadius{ x: 1, y: 1 } }
+				}]
+			}
 		}
-		assert !chromium_shared_recording_layer_supported(rounded, plan, 2)
+		assert chromium_shared_recording_layer_supported(rounded, plan, 2)
 	}
 }
 
 fn test_shared_recording_accepts_outer_shadows_only_in_complete_isolated_layers() {
 	base := shared_recording_layer_commands(.5)
 	shadow := layout.PaintCommand{
-		kind: 'paint_outer_box_shadow'
-		blur: 20
+		kind:            'paint_outer_box_shadow'
+		blur:            20
 		box_shadow_data: &layout.PaintBoxShadowData{
 			content_rect: layout.LayoutRect{0, 0, 100, 50}
 		}
@@ -253,16 +273,16 @@ fn test_shared_recording_accepts_outer_shadows_only_in_complete_isolated_layers(
 	plan := shared_recording_layer_plan(commands.len)
 	assert chromium_shared_recording_layer_supported(commands, plan, 1)
 	assert !chromium_shared_recording_supported([shadow, base[2]], layout.ChromiumRasterLayerPlan{
-		layers: [layout.ChromiumRasterLayer{}]
+		layers:         [layout.ChromiumRasterLayer{}]
 		command_layers: [0, 0]
 	})
 	for unsupported in [
-		layout.PaintCommand{...shadow, box_shadow_data: unsafe { nil }},
-		layout.PaintCommand{...shadow, kind: 'paint_inner_box_shadow'},
-		layout.PaintCommand{...shadow, has_clip: true, clip_width: 1, clip_height: 1},
-		layout.PaintCommand{...shadow, clip_list: &layout.PaintClipList{}},
-		layout.PaintCommand{...shadow, clip_outs: [f64(0), 0, 1, 1]},
-		layout.PaintCommand{kind: 'fill_rect', outer_shadow: true},
+		layout.PaintCommand{ ...shadow, box_shadow_data: unsafe { nil } },
+		layout.PaintCommand{ ...shadow, kind: 'paint_inner_box_shadow' },
+		layout.PaintCommand{ ...shadow, has_clip: true, clip_width: 1, clip_height: 1 },
+		layout.PaintCommand{ ...shadow, clip_list: &layout.PaintClipList{} },
+		layout.PaintCommand{ ...shadow, clip_outs: [f64(0), 0, 1, 1] },
+		layout.PaintCommand{ kind: 'fill_rect', outer_shadow: true },
 	] {
 		assert !chromium_shared_recording_layer_supported([base[0], unsupported, base[1], base[3]], plan, 1)
 	}
@@ -275,6 +295,60 @@ fn test_shared_recording_accepts_painted_compositor_box_shadows_at_both_scales()
 	_ = layout.layout_document_typed_in_viewport(document, 1024, 768)
 	commands := layout.display_list_commands(document.record_display_list() or { panic('missing paint') })
 	assert commands.filter(it.kind == 'paint_outer_box_shadow').len == 3
+	for scale in [1.0, 2.0] {
+		plan := layout.chromium_raster_layer_plan(document, commands, scale)
+		assert plan.layers.len == 2
+		assert chromium_shared_recording_layer_supported(commands, plan, 1)
+	}
+}
+
+fn test_shared_recording_preserves_supported_clip_stacks_and_bitmap_backgrounds() {
+	base := shared_recording_layer_commands(1)
+	clip := layout.PaintClip{
+		rect:         layout.LayoutRect{4, 8, 40, 24}
+		transform:    [f64(.8), .6, -.6, .8, 20, 30]!
+		corner_radii: layout.BoxRadii{
+			top_left: layout.CornerRadius{ x: 4, y: 6 }
+		}
+	}
+	clipped := layout.PaintCommand{
+		kind:        'draw_background_image'
+		has_clip:    true
+		clip_width:  40
+		clip_height: 24
+		clip_list:   &layout.PaintClipList{ items: [
+			layout.PaintClip{ rect: layout.LayoutRect{0, 0, 100, 100} },
+			clip,
+		] }
+		image_data:  &layout.PaintImageData{ image_url: 'data:image/png;base64,AA==' }
+	}
+	plan := shared_recording_layer_plan(4)
+	assert chromium_shared_recording_layer_supported([base[0], clipped, base[2], base[3]], plan, 1)
+	for invalid in [
+		layout.PaintClip{ ...clip, is_path: true },
+		layout.PaintClip{ ...clip, is_svg_mask: true },
+		layout.PaintClip{ ...clip, is_svg_content_mask: true },
+		layout.PaintClip{ ...clip, rect: layout.LayoutRect{math.nan(), 0, 40, 24} },
+		layout.PaintClip{ ...clip, transform: [f64(1), 0, 0, 1, math.inf(1), 0]! },
+		layout.PaintClip{ ...clip, corner_radii: layout.BoxRadii{ top_left: layout.CornerRadius{ x: -1 } } },
+	] {
+		command := layout.PaintCommand{ ...clipped, clip_list: &layout.PaintClipList{ items: [invalid] } }
+		assert !chromium_shared_recording_layer_supported([base[0], command, base[2], base[3]], plan, 1)
+	}
+	for url in ['image.svg?x=1', 'image.svg#icon', 'data:image/svg+xml;base64,AA=='] {
+		command := layout.PaintCommand{ ...clipped, image_data: &layout.PaintImageData{ image_url: url } }
+		assert !chromium_shared_recording_layer_supported([base[0], command, base[2], base[3]], plan, 1)
+	}
+}
+
+fn test_shared_recording_accepts_clipped_header_picture_at_both_scales() {
+	mut document := html.parse_document(os.read_file('${@VMODROOT}/Tests/Browser/Brave/input/compositor-clipped-content.html') or { panic(err) })
+	defer { document.finalize() }
+	document.set_font_rendering_policy(.chromium)
+	_ = layout.layout_document_typed_in_viewport(document, 1024, 768)
+	commands := layout.display_list_commands(document.record_display_list() or { panic('missing paint') })
+	assert commands.filter(it.kind == 'draw_background_image').len > 0
+	assert commands.filter(it.kind == 'draw_svg_path' && it.has_clip).len > 0
 	for scale in [1.0, 2.0] {
 		plan := layout.chromium_raster_layer_plan(document, commands, scale)
 		assert plan.layers.len == 2

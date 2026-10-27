@@ -55,6 +55,11 @@ extern void ladybird_v_skia_set_image_border(float const* rect, float width, uin
 extern void ladybird_v_skia_set_shared_recording(int, int, int);
 extern void ladybird_v_skia_set_layer_shared_recording(int);
 extern void ladybird_v_skia_finish_shared_recording(void);
+extern void ladybird_v_skia_save_shared_clip(CGContextRef);
+extern void ladybird_v_skia_restore_shared_clip(CGContextRef);
+extern void ladybird_v_skia_block_shared_recording(CGContextRef);
+extern void ladybird_v_skia_block_shared_clip(CGContextRef);
+extern void ladybird_v_skia_add_shared_rounded_clip(CGContextRef, float const*, float const*);
 extern void ladybird_v_skia_record_rect(CGContextRef, float, float, float, float,
     uint8_t, uint8_t, uint8_t, uint8_t);
 extern int ladybird_v_skia_register_system_face(const char *key, const char *path,
@@ -752,12 +757,18 @@ void native_begin_clip(void) {
 		return;
 	}
 	CGContextSaveGState(context);
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	ladybird_v_skia_save_shared_clip(context);
+#endif
 }
 
 void native_end_clip(void) {
 	CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
 	if (context != NULL) {
 		CGContextRestoreGState(context);
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+		ladybird_v_skia_restore_shared_clip(context);
+#endif
 	}
 }
 
@@ -1549,6 +1560,9 @@ void native_add_path_clip(const float *data, int segment_count, int even_odd,
 	if (context == NULL) {
 		return;
 	}
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	ladybird_v_skia_block_shared_clip(context);
+#endif
 	if (data == NULL || segment_count <= 0) {
 		CGContextClipToRect(context, CGRectZero);
 		return;
@@ -3931,6 +3945,9 @@ static int native_background_text_clip_active;
 
 void native_begin_background_text_clip(float canvas_width, float canvas_height,
 	float clip_x, float clip_y, float clip_width, float clip_height) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	ladybird_v_skia_block_shared_clip([[NSGraphicsContext currentContext] CGContext]);
+#endif
 	if (native_background_text_content_context != NULL) {
 		CGContextRelease(native_background_text_content_context);
 		native_background_text_content_context = NULL;
@@ -4114,6 +4131,9 @@ void native_begin_svg_clip_mask(unsigned long long input_key, float canvas_width
 	float area_height, float transform_a, float transform_b, float transform_c,
 	float transform_d, float transform_e, float transform_f, float page_x,
 	float page_y, float scroll_y) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	ladybird_v_skia_block_shared_clip([[NSGraphicsContext currentContext] CGContext]);
+#endif
 	native_svg_clip_build_is_color = 0;
 	native_svg_clip_build_is_luminance = 0;
 	if (!native_prepare_svg_mask(input_key, 0, canvas_width, canvas_height, page_x,
@@ -4143,6 +4163,9 @@ void native_begin_svg_content_mask(unsigned long long input_key, int luminance,
 	float area_width, float area_height, float transform_a, float transform_b,
 	float transform_c, float transform_d, float transform_e, float transform_f,
 	float page_x, float page_y, float scroll_y) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	ladybird_v_skia_block_shared_clip([[NSGraphicsContext currentContext] CGContext]);
+#endif
 	native_svg_clip_build_is_color = 1;
 	native_svg_clip_build_is_luminance = luminance;
 	if (!native_prepare_svg_mask(input_key, 1, canvas_width, canvas_height, page_x,
@@ -4514,6 +4537,14 @@ void native_add_corner_rounded_clip(float x, float y, float width, float height,
 	if (context == NULL) {
 		return;
 	}
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	float rect[] = {x, y, width, height, top_left_x, top_left_y,
+		top_right_x, top_right_y, bottom_right_x, bottom_right_y,
+		bottom_left_x, bottom_left_y};
+	float transform[] = {transform_a, transform_b, transform_c, transform_d,
+		page_x + transform_e, page_y - scroll_y + transform_f};
+	ladybird_v_skia_add_shared_rounded_clip(context, rect, transform);
+#endif
 	if (width <= 0.0 || height <= 0.0) {
 		CGContextClipToRect(context, CGRectZero);
 		return;
@@ -5162,6 +5193,7 @@ static void native_draw_image_part_in_context(CGContextRef context, gg__Image *i
 		CGImageRelease(image_copy);
 		return;
 	}
+	ladybird_v_skia_block_shared_recording(context);
 #endif
 	CGFloat pixel_scale_x = (CGFloat)CGImageGetWidth(image_copy) / image->width;
 	CGFloat pixel_scale_y = (CGFloat)CGImageGetHeight(image_copy) / image->height;
@@ -5346,6 +5378,9 @@ void native_draw_repeated_image_transformed(gg__Image *image,
 		return;
 	}
 	CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	ladybird_v_skia_block_shared_recording(context);
+#endif
 	CGAffineTransform to_canvas = CGAffineTransformMake(transform_a, -transform_b,
 		transform_c, -transform_d, page_x + transform_e,
 		canvas_height - page_y + scroll_y - transform_f);

@@ -83,6 +83,7 @@ namespace {
 VoxRasterBufferPool s_sparse_raster_pool;
 
 SkCanvas* shared_recording_canvas(CGContextRef);
+void shared_recording_clip(CGContextRef, SkCanvas*);
 void shared_recording_block(SkRect);
 void shared_recording_content(CGContextRef, SkRect, float, float);
 void shared_recording_image(CGContextRef, SkMatrix const&, VoxGraphiteImage const&);
@@ -1147,6 +1148,7 @@ static int draw_retained_glyph_run(CGContextRef destination,
 
     if (auto* canvas = shared_recording_canvas(destination)) {
         canvas->save();
+        shared_recording_clip(destination, canvas);
         canvas->setMatrix(matrix);
         canvas->drawTextBlob(blob, baseline_x, baseline_y, paint);
         canvas->restore();
@@ -1688,6 +1690,8 @@ extern "C" int ladybird_v_skia_draw_rgba_image_tiles(CGContextRef destination,
             return draw(reinterpret_cast<uint8_t*>(target.data()), raster_width, raster_height,
                 raster_width * 4, has_background, descriptors.data(), static_cast<int>(descriptors.size())) != 0;
         })) return 0;
+    for (auto const& descriptor : descriptors)
+        shared_recording_image(destination, matrix, descriptor);
     return composite_pixels(destination, std::move(pixels), raster_width, raster_height,
         static_cast<float>(region.left), canvas_height - static_cast<float>(region.bottom),
         static_cast<float>(region.width()), static_cast<float>(region.height()), has_background);
@@ -2781,6 +2785,7 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
     }
     if (auto* canvas = shared_recording_canvas(destination)) {
         canvas->save();
+        shared_recording_clip(destination, canvas);
         canvas->setMatrix(matrix);
         clip_out_rects(canvas);
         auto local_rect = rounded_rect;
@@ -3201,6 +3206,7 @@ extern "C" int ladybird_v_skia_draw_outer_box_shadow(CGContextRef destination,
             paint.setMaskFilter(SkMaskFilter::MakeBlur(kNormal_SkBlurStyle,
                 std::max(blur, 0.0f) / 2.0f));
             recording->save();
+            shared_recording_clip(destination, recording);
             recording->setMatrix(matrix);
             recording->clipRRect(content, SkClipOp::kDifference, true);
             recording->drawRRect(shadow, paint);
@@ -3368,8 +3374,11 @@ extern "C" int ladybird_v_skia_draw_svg_path_batch(CGContextRef destination,
         if (!recordable) shared_recording_block(bounds);
         else {
             shared_recording_content(destination, bounds, page_y, scroll_y);
+            canvas->save();
+            shared_recording_clip(destination, canvas);
             record_chromium_svg_path_batch(canvas, paths, count, matrix,
                 SkRect::MakeXYWH(x, y, width, height), rounded_clip);
+            canvas->restore();
         }
     }
     RasterRegion region;
@@ -3576,6 +3585,7 @@ extern "C" int ladybird_v_skia_draw_svg_path(CGContextRef destination,
     if (auto* canvas = shared_recording_canvas(destination)) {
         shared_recording_content(destination, matrix.mapRect(local_bounds), page_y, scroll_y);
         canvas->save();
+        shared_recording_clip(destination, canvas);
         draw_path(canvas, RasterRegion{}, 1, 1);
         canvas->restore();
     }
