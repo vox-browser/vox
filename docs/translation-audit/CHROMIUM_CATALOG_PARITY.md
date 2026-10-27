@@ -54,14 +54,33 @@ are one blue-channel unit. This is diagnostic evidence, not a confirmed
 compositing fix. The new bundle also needs to exercise the one-CSS-pixel
 opaque-shadow cutout at device layout scale.
 
-An option-label mutation regression, fractional shadow-color transport,
-device-scaled shadow cutouts, and scrolling canvas backgrounds still require
-their queued focused execution. The previous focused retry timed out during
-compilation and supplies no executed-test credit. Four native cache tests
-passed, but do not substitute for the pending layout and browser checks.
+The option-label mutation regression, fractional shadow-color transport,
+device-scaled shadow cutouts, and scrolling canvas backgrounds passed 31
+focused runtime tests in `Build/4chan-catalog-20261027-background-1/`.
+`focused-slice-manifest.json` pins the source and selected functions;
+`device-select-focused-memory.json` records exit 0 under the 3 GiB runtime
+guard. Four native cache tests also passed (`native-cache.log`). These checks
+do not substitute for the pending browser captures.
 
-`Build/4chan-catalog-20261027-background-1/` contains the next frozen-source
-pipeline: focused tests, native cache tests, one necessary production build,
-startup smoke, fresh native captures, full scroll coverage and strict pixel
-acceptance. The available production bundle lacks the option mutation hook,
-device-scaled cutout and canvas scroll change, so it cannot validate them.
+The production attempt in that directory exceeded the 12 GiB process-tree
+budget while V and its native compiler overlapped. The guard terminated it
+with child exit -9 after 572.49 seconds; it produced no validated bundle.
+`guard-retry-icu78.json` retains the failure rather than counting it as a pass.
+
+A separate shadow probe identified legacy comma-separated `rgba()` opacity
+rounding as a candidate cause of the catalog's one-channel shadow errors.
+Chromium rounds that syntax's alpha to eight bits while retaining fractional
+alpha for modern space-separated `rgb()`. The pending paint-color test covers
+both forms and percentage alpha. Probe results are diagnostic evidence, not a
+catalog pixel verdict.
+
+`Build/4chan-catalog-20261027-alpha-1/` contains its queued focused check.
+`Build/4chan-catalog-20261027-final-1/` contains the frozen-source production
+retry. It preserves the exact generated C and native compiler command, exits
+V, and then runs native compilation under the same 12 GiB guard. Its planned
+checks include startup smoke, fresh native captures, all 19 scroll offsets,
+strict zero-difference acceptance, and unmodified live Brave geometry. Live
+geometry is recorded separately because independent live responses contain
+changing threads, banners, and animation. The available completed production
+bundle lacks the option mutation hook, device-scaled cutout, canvas scrolling,
+and alpha rounding change, so it cannot validate those changes.
