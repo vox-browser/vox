@@ -1588,3 +1588,44 @@ and memory guard all exit 1 because acceptance fails. The guard records
 92.1896 seconds and 3,227,566,080 bytes sampled peak RSS. Diagnostics are
 pending to locate the added work; pixel correctness does not establish
 Brave performance parity.
+
+
+## Density projection page cache
+
+`7e462985` caches a conservative density-projection candidate mask on each
+shared computed-property page. Typed dimensionless and invariant values skip
+repeated inspection. Untyped values, nested lengths, width keywords, animated
+properties and transition precedence retain their existing paths. Copy-on-write,
+initial-value replacement and page recycling invalidate the mask; shared reads
+and publication use atomics. The page grows from 128 to 136 bytes.
+
+`Build/hn-small-text/projection-pages-focused-4` passes 42 focused cases in each
+of Boehm and prealloc/no-GC modes. The separate diagnostic in
+`projection-pages-isolated-5` observes 77,855 calls, 75,242 cached masks and
+43,290 empty pages while preserving all 3,145,728 pixel cells and 101 comments.
+Thirty alternating unprofiled pairs preserve the same pixels and identity.
+Control and candidate medians are 6,413,400,456 and 6,333,504,531.5 retired
+instructions. Median paired saving is 83,577,074; the bootstrap 95% interval
+is [73,386,154.5, 98,701,578]. All 30 pairs improve, including the smallest
+saving of 7,314,410. The strict worst-candidate/best-control ratio is 1.005053;
+this is a repeatable paired gain, not a bound on every independent run.
+The 18-CPU host ends at load averages 15.7456/14.3262/13.9390. The isolated
+guard exits zero after 524.5164 seconds, with 5,661,966,336 bytes sampled peak RSS.
+
+The 73,386,154.5-instruction conservative credit triggers the broad checkpoint.
+`projection-pages-checkpoint-5/result.json` records 482 new and 106 authenticated
+focused executions: 582 pass and six retain the baseline's three layout failures
+in both GC modes. All 100 upstream AST fixtures match exactly. All 34 retained
+control/candidate images are unchanged; 13 of 19 canonical cases match their
+references exactly, while the six existing reference failures remain unchanged.
+HN is exact, and startup and live checks exit zero. No tolerance changes.
+The interrupted job is resumed through `projection-pages-resume-1.py` without
+rerunning completed checks. Its guard exits zero after 269.0976 seconds, with
+9,089,662,976 bytes sampled peak RSS. The checkpoint resets this workload's
+pending broad credit to zero; independent optimization savings are not added.
+
+The executable is a pinned, reversible generated-C candidate on the earlier
+font-cascade baseline, not a rebuilt canonical production browser. These results
+validate the isolated change but do not establish a gain in the latest production
+build. Its strict Vox/Brave ratio remains 6.457878 against the required 0.90.
+The user's Brave performance target remains open.
