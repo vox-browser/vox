@@ -84,7 +84,7 @@ VoxRasterBufferPool s_sparse_raster_pool;
 
 SkCanvas* shared_recording_canvas(CGContextRef);
 void shared_recording_block(SkRect);
-void shared_recording_svg(CGContextRef, SkRect, float);
+void shared_recording_svg(CGContextRef, SkRect, float, float);
 void shared_recording_image(CGContextRef, SkMatrix const&, VoxGraphiteImage const&);
 void finish_shared_recording();
 decltype(&vox_graphite_draw_picture_pixels) shared_picture_draw();
@@ -2162,7 +2162,12 @@ static bool s_raster_layer_is_root = true;
 
 extern "C" void ladybird_v_skia_set_raster_layer(double x, double y, int root)
 {
-    if (!root) finish_shared_recording();
+    // Frame setup and the first paint command both select the root. Keep its
+    // recorded background until the SVG tiles are replayed over the leaf frame.
+    if (!(root && s_raster_layer_is_root
+            && x == s_raster_origin_x && y == s_raster_origin_y))
+        finish_shared_recording();
+    s_shared_layer_enabled = false;
     s_raster_origin_x = x;
     s_raster_origin_y = y;
     s_raster_layer_is_root = root != 0;
@@ -2778,12 +2783,23 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
         canvas->save();
         canvas->setMatrix(matrix);
         clip_out_rects(canvas);
-        if (has_underlay && fill < 2) canvas->drawRRect(underlay_rect, underlay_paint);
+        auto local_rect = rounded_rect;
+        auto local_underlay = underlay_rect;
+        if (!s_raster_layer_is_root) {
+            // Blink records compositor contents in layer coordinates. Keeping
+            // large page offsets in the rrect changes GPU edge rounding.
+            auto local_matrix = matrix;
+            local_matrix.preTranslate(s_raster_origin_x, s_raster_origin_y);
+            canvas->setMatrix(local_matrix);
+            local_rect.offset(-s_raster_origin_x, -s_raster_origin_y);
+            if (has_underlay) local_underlay.offset(-s_raster_origin_x, -s_raster_origin_y);
+        }
+        if (has_underlay && fill < 2) canvas->drawRRect(local_underlay, underlay_paint);
         if (fill >= 2)
-            vox_draw_rounded_single_border(canvas, rounded_rect, paint, fill, border_widths,
+            vox_draw_rounded_single_border(canvas, local_rect, paint, fill, border_widths,
                 has_underlay ? &underlay_paint : nullptr);
         else
-            canvas->drawRRect(rounded_rect, paint);
+            canvas->drawRRect(local_rect, paint);
         canvas->restore();
     }
     if (s_raster_command_group
@@ -3327,7 +3343,7 @@ extern "C" int ladybird_v_skia_draw_svg_path_batch(CGContextRef destination,
         auto bounds = matrix.mapRect(SkRect::MakeXYWH(x, y, width, height));
         if (!recordable) shared_recording_block(bounds);
         else {
-            shared_recording_svg(destination, bounds, page_y);
+            shared_recording_svg(destination, bounds, page_y, scroll_y);
             record_chromium_svg_path_batch(canvas, paths, count, matrix,
                 SkRect::MakeXYWH(x, y, width, height), rounded_clip);
         }
@@ -3534,7 +3550,7 @@ extern "C" int ladybird_v_skia_draw_svg_path(CGContextRef destination,
 		}
 	};
     if (auto* canvas = shared_recording_canvas(destination)) {
-        shared_recording_svg(destination, matrix.mapRect(local_bounds), page_y);
+        shared_recording_svg(destination, matrix.mapRect(local_bounds), page_y, scroll_y);
         canvas->save();
         draw_path(canvas, RasterRegion{}, 1, 1);
         canvas->restore();

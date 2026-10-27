@@ -1,7 +1,8 @@
 #pragma once
 
 // Included after the native raster-layer state. The existing leaf renderer
-// supplies the fallback frame; only complete, supported SVG tiles replace it.
+// supplies the fallback frame; complete supported pictures replace root SVG
+// tiles or one isolated CSS compositor surface before it is composited.
 namespace {
 struct SharedRootRecording {
     std::unique_ptr<SkPictureRecorder> recorder;
@@ -10,11 +11,14 @@ struct SharedRootRecording {
     int viewport_width, viewport_height;
     int tile_width = 0, tile_height = 0, columns = 0, rows = 0;
     double scroll_y = 0;
+    bool root = true;
+    float origin_x = 0, origin_y = 0, layer_width = 0, layer_height = 0;
     std::vector<SkRect> svg_bounds;
     std::vector<SkRect> blocked_bounds;
 };
 std::unique_ptr<SharedRootRecording> s_shared_root_recording;
 bool s_shared_root_enabled = false;
+bool s_shared_layer_enabled = false;
 int s_shared_viewport_width = 0, s_shared_viewport_height = 0;
 
 decltype(&vox_graphite_draw_picture_pixels) shared_picture_draw()
@@ -29,8 +33,8 @@ decltype(&vox_graphite_draw_picture_pixels) shared_picture_draw()
 
 SkCanvas* shared_recording_canvas(CGContextRef destination)
 {
-    if (!s_shared_root_enabled || !s_chromium_painting || !s_raster_layer_is_root
-        || !destination || !shared_picture_draw()) return nullptr;
+    if (!(s_raster_layer_is_root ? s_shared_root_enabled : s_shared_layer_enabled)
+        || !s_chromium_painting || !destination || !shared_picture_draw()) return nullptr;
     if (!s_shared_root_recording) {
         auto scale = raster_scale_for_context(destination);
         float width = CGBitmapContextGetWidth(destination) / scale;
@@ -41,6 +45,11 @@ SkCanvas* shared_recording_canvas(CGContextRef destination)
         group->canvas_width = width;
         group->canvas_height = height;
         group->scale = scale;
+        group->root = s_raster_layer_is_root;
+        group->origin_x = s_raster_origin_x;
+        group->origin_y = s_raster_origin_y;
+        group->layer_width = s_raster_layer_width;
+        group->layer_height = s_raster_layer_height;
         group->viewport_width = s_shared_viewport_width;
         group->viewport_height = s_shared_viewport_height;
         group->recorder = std::make_unique<SkPictureRecorder>();
@@ -57,13 +66,13 @@ void shared_recording_block(SkRect bounds)
         s_shared_root_recording->blocked_bounds.push_back(bounds.makeOutset(2, 2));
 }
 
-void shared_recording_svg(CGContextRef destination, SkRect bounds, float page_y)
+void shared_recording_svg(CGContextRef destination, SkRect bounds, float page_y, float scroll_y)
 {
     if (!shared_recording_canvas(destination) || s_msaa_grid_columns <= 0) return;
     auto& group = *s_shared_root_recording;
     group.svg_bounds.push_back(bounds);
     group.page_y = page_y;
-    group.scroll_y = s_root_raster_scroll_y;
+    group.scroll_y = group.root ? s_root_raster_scroll_y : scroll_y;
     group.tile_width = s_msaa_grid_width;
     group.tile_height = s_msaa_grid_height;
     group.columns = s_msaa_grid_columns;
@@ -177,6 +186,29 @@ void finish_shared_recording()
     procs.fImageProc = serialize_shared_picture_image;
     auto bytes = picture->serialize(&procs);
     if (!bytes || bytes->size() > 64 * 1024 * 1024) return;
+    if (!group->root) {
+        // A layer is atomic: an unsupported image, allocation failure or backend
+        // failure leaves all of its ordinary leaf draws intact.
+        if (!group->blocked_bounds.empty() || !(group->layer_width > 0)
+            || !(group->layer_height > 0) || !std::isfinite(group->layer_width)
+            || !std::isfinite(group->layer_height)
+            || group->layer_width * group->scale > 16384
+            || group->layer_height * group->scale > 16384) return;
+        int width = std::ceil(group->layer_width * group->scale);
+        int height = std::ceil(group->layer_height * group->scale);
+        if (size_t(width) * height > 8 * 1024 * 1024) return;
+        float left = group->origin_x;
+        float top = group->origin_y + group->page_y - group->scroll_y;
+        float matrix[] {group->scale, 0, -left * group->scale,
+            0, group->scale, -top * group->scale, 0, 0, 1};
+        std::vector<uint32_t> pixels(size_t(width) * height);
+        if (!shared_picture_draw()(reinterpret_cast<uint8_t*>(pixels.data()), width,
+                height, width * 4, bytes->data(), bytes->size(), matrix)) return;
+        composite_pixels(group->destination, std::move(pixels), width, height, left,
+            group->canvas_height - top - height / group->scale,
+            width / group->scale, height / group->scale, true);
+        return;
+    }
     int width = group->tile_width, height = group->tile_height;
     if (width <= 2 || height <= 2 || size_t(width) * height > 8 * 1024 * 1024) return;
     std::set<int> candidates;
@@ -235,9 +267,20 @@ void finish_shared_recording()
 extern "C" void ladybird_v_skia_set_shared_recording(int enabled, int width, int height)
 {
     s_shared_root_recording.reset();
+    s_shared_layer_enabled = false;
     s_shared_root_enabled = enabled && width > 0 && height > 0;
     s_shared_viewport_width = width;
     s_shared_viewport_height = height;
+}
+
+extern "C" void ladybird_v_skia_set_layer_shared_recording(int enabled)
+{
+    s_shared_layer_enabled = enabled != 0;
+}
+
+extern "C" void ladybird_v_skia_finish_shared_recording()
+{
+    finish_shared_recording();
 }
 
 extern "C" void ladybird_v_skia_record_rect(CGContextRef destination, float x,

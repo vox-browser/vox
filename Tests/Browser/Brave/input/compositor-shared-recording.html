@@ -1,0 +1,41 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Compositor pictures use local rounded geometry</title>
+<style>
+html, body { margin: 0; background: #fcfdff; }
+.layer {
+    position: absolute;
+    width: 268.1875px;
+    height: 220px;
+    transform: translateZ(0);
+    background: #fcfdff;
+}
+.button {
+    position: absolute;
+    left: 25px;
+    top: 120px;
+    width: 218.1875px;
+    height: 40px;
+    background: black;
+    border-radius: 8px;
+}
+svg { position: absolute; left: 27px; top: 20px; width: 32px; height: 32px; }
+circle { fill: #89ad50; }
+</style>
+<div class="layer" style="left:45.8125px;top:32px"><div class="button"></div></div>
+<div class="layer" style="left:345.8125px;top:32px">
+    <div class="button"></div>
+    <svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="16"/><path fill="white" d="M8 11L20 21L21 11Z"/></svg>
+</div>
+<div class="layer" style="left:745.8125px;top:32px">
+    <div class="button"></div>
+    <svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="16"/><path fill="white" d="M8 11L20 21L21 11Z"/></svg>
+</div>
+<div class="layer" style="left:45.8125px;top:312px">
+    <div class="button"></div>
+    <svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="16"/><path fill="white" d="M8 11L20 21L21 11Z"/></svg>
+</div>
+<div class="layer" style="left:745.8125px;top:492px">
+    <div class="button"></div>
+    <svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="16"/><path fill="white" d="M8 11L20 21L21 11Z"/></svg>
+</div>

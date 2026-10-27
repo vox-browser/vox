@@ -413,6 +413,7 @@ fn (mut app BrowserApp) select_chromium_raster_layer(index int) {
 		}
 		C.native_set_chromium_raster_layer(x, y, int(index == 0 || layer.legacy_raster))
 		C.native_set_chromium_raster_layer_size(layer.bounds.width, layer.bounds.height)
+		C.native_set_chromium_layer_shared_recording(i32(app.page_zoom == 1 && chromium_shared_recording_layer_supported(app.paint_commands, app.chromium_raster_plan, index)))
 		tiles := app.chromium_raster_tiles[index]
 		pointer := if tiles.len > 0 { &tiles[0] } else { unsafe { &i32(nil) } }
 		rows := chromium_gpu_raster_tile_rows(int(math.ceil(f64(app.viewport_height) * scale)))

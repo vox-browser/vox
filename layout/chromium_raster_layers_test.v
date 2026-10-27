@@ -147,14 +147,51 @@ fn test_raster_layers_effect_groups_remain_atomic_without_disabling_other_scroll
 			depth++
 			if depth == 1 { effect_layer = plan.command_layers[index] }
 		}
-		if depth > 0 { assert plan.command_layers[index] == effect_layer
-		 }
+		if depth > 0 {
+			assert plan.command_layers[index] == effect_layer
+		}
 		if command.visual_layer_data != none && command.kind.starts_with('end_') { depth-- }
 	}
 	assert scroll_layer > 0 && effect_layer > 0 && scroll_layer != effect_layer
 	assert plan.layers[effect_layer].legacy_raster
 	assert !plan.layers[scroll_layer].legacy_raster
 	assert depth == 0
+}
+
+fn test_raster_layers_compositor_surfaces_own_their_raster_extent_and_commands() {
+	for hint in ['transform:translateZ(0)', 'will-change:transform'] {
+		for background in ['', 'background:rgb(10 20 30)'] {
+			mut document := html.parse_document('<!doctype html><style>html,body{margin:0}section{position:absolute;top:32px;width:268.1875px;height:220px;${hint};${background}}#first{left:45.8125px}#second{left:345.8125px;opacity:.5}.button{position:absolute;left:25px;top:120px;width:218.1875px;height:40px;border-radius:8px;background:black}</style><section id="first"><div class="button"></div></section><section id="second"><div class="button"></div><svg width="32" height="32"><circle cx="16" cy="16" r="16" fill="green"/></svg></section>')
+			defer { document.finalize() }
+			document.set_font_rendering_policy(.chromium)
+			_ = layout_document_typed_in_viewport(document, 1024, 768)
+			commands := display_list_commands(document.record_display_list() or { panic('missing paint') })
+			plan := chromium_raster_layer_plan(document, commands, 1)
+			mut groups := 0
+			mut active := -1
+			mut depth := 0
+			for index, command in commands {
+				if command.kind == 'begin_css_effect_layer' {
+					depth++
+					active = plan.command_layers[index]
+					assert active > 0
+					assert !plan.layers[active].legacy_raster
+					assert plan.layers[active].bounds == LayoutRect{
+						x:      46 + groups * 300
+						y:      32
+						width:  268
+						height: 220
+					}
+					groups++
+				}
+				if depth > 0 {
+					assert plan.command_layers[index] == active
+				}
+				if command.kind == 'end_css_effect_layer' { depth-- }
+			}
+			assert groups == 2 && depth == 0
+		}
+	}
 }
 
 fn test_raster_layers_reject_sparse_merge_before_overlapping_scroll_content() {

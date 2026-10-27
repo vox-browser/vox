@@ -12,7 +12,7 @@ pub struct ChromiumRasterLayer {
 pub mut:
 	bounds          LayoutRect
 	command_indices []int
-	// Effect groups retain the existing atomic native raster policy.
+	// Non-composited effect groups retain the atomic native raster policy.
 	legacy_raster bool
 }
 
@@ -30,6 +30,7 @@ mut:
 	scroll_frame         int
 	sticky_frame         int
 	effect_scope         u64
+	legacy_effect        bool
 	fixed_to_viewport    bool
 	requires_root_raster bool
 }
@@ -51,6 +52,7 @@ mut:
 	layer_states       []ChromiumRasterPropertyState
 	composited_scrolls map[int]bool
 	fixed_bounds       map[u64]LayoutRect
+	compositor_bounds  map[u64]LayoutRect
 }
 
 __global chromium_raster_plan_scratch_ = ChromiumRasterPlanScratch{}
@@ -147,7 +149,7 @@ fn chromium_layerize_chunks_into(chunks []ChromiumRasterChunk, count int, device
 		}
 		if merged < 0 {
 			merged = plan.layers.len
-			plan.append_layer(chunk.state.effect_scope != 0)
+			plan.append_layer(chunk.state.legacy_effect)
 			states << chunk.state
 		}
 		plan.layers[merged].bounds = chromium_layer_bounds_union(plan.layers[merged].bounds, chunk.bounds)
@@ -247,10 +249,18 @@ pub fn update_chromium_raster_layer_plan(document &dom.Document, commands []Pain
 	mut scratch := unsafe { &chromium_raster_plan_scratch_ }
 	scratch.composited_scrolls.clear()
 	scratch.fixed_bounds.clear()
+	scratch.compositor_bounds.clear()
 	for entry in result.paint_order {
 		// Use the box pointer itself: reading its transform through the loop's
 		// entry copy makes current V move every copy to the heap.
 		box := entry.box
+		if box.chromium_compositor_surface && box.own_effects_visual_context_idx > 0 {
+			// The compositor owns the complete container, including empty space.
+			// Tightening its raster extent to a painted descendant changes tile
+			// origins and GPU edge coverage.
+			scratch.compositor_bounds[u64(box.own_effects_visual_context_idx)] =
+				compatibility_affine_map_rect(box.paint_transform, box.border_box())
+		}
 		if chromium_user_scrollable_box(box) {
 			scratch.composited_scrolls[box.own_scroll_frame_index] = true
 		}
@@ -288,12 +298,21 @@ pub fn update_chromium_raster_layer_plan(document &dom.Document, commands []Pain
 		first := index
 		mut end := index + 1
 		mut effect_scope := u64(0)
+		mut legacy_effect := false
+		mut compositor_bounds := LayoutRect{}
 		if layer := commands[index].visual_layer_data {
 			if !commands[index].kind.starts_with('begin_') {
 				chromium_root_raster_plan_into(commands.len, mut plan)
 				return
 			}
 			effect_scope = layer.scope_id
+			legacy_effect = true
+			if layer.kind == .css_effect {
+				if rect := scratch.compositor_bounds[effect_scope] {
+					legacy_effect = false
+					compositor_bounds = rect
+				}
+			}
 			if effect_scope == 0 {
 				chromium_root_raster_plan_into(commands.len, mut plan)
 				return
@@ -314,7 +333,7 @@ pub fn update_chromium_raster_layer_plan(document &dom.Document, commands []Pain
 				return
 			}
 		}
-		mut bounds := LayoutRect{}
+		mut bounds := compositor_bounds
 		mut state := ChromiumRasterPropertyState{}
 		mut has_state := false
 		for position in first .. end {
@@ -349,6 +368,7 @@ pub fn update_chromium_raster_layer_plan(document &dom.Document, commands []Pain
 			if !has_state {
 				state = scratch.properties[context]
 				state.effect_scope = effect_scope
+				state.legacy_effect = legacy_effect
 				state.fixed_to_viewport = command.fixed_to_viewport
 				has_state = true
 			}
@@ -379,4 +399,11 @@ pub fn update_chromium_raster_layer_plan(document &dom.Document, commands []Pain
 		index = end
 	}
 	chromium_layerize_chunks_into(scratch.chunks, commands.len, device_scale, mut plan, mut scratch.layer_states)
+	for layer_index, state in scratch.layer_states {
+		if state.effect_scope != 0 && !state.legacy_effect {
+			// Snap after unioning painted bounds; fractional descendant edges must
+			// not undo the compositor container's whole-CSS-pixel raster extent.
+			plan.layers[layer_index].bounds = pixel_snapped_layout_rect(plan.layers[layer_index].bounds)
+		}
+	}
 }

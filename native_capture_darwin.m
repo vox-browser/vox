@@ -53,6 +53,8 @@ extern void ladybird_v_skia_set_rounded_rect_underlay(const float *rect, uint8_t
 extern void ladybird_v_skia_set_image_background(uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha);
 extern void ladybird_v_skia_set_image_border(float const* rect, float width, uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha);
 extern void ladybird_v_skia_set_shared_recording(int, int, int);
+extern void ladybird_v_skia_set_layer_shared_recording(int);
+extern void ladybird_v_skia_finish_shared_recording(void);
 extern void ladybird_v_skia_record_rect(CGContextRef, float, float, float, float,
     uint8_t, uint8_t, uint8_t, uint8_t);
 extern int ladybird_v_skia_register_system_face(const char *key, const char *path,
@@ -973,12 +975,20 @@ void native_begin_css_effect_layer(float opacity, int blend_mode) {
 	} else {
 		native_opacity_group_overflow_depth++;
 	}
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	// Copy replay requires the isolated bitmap, never the parent transparency layer.
+	ladybird_v_skia_set_layer_shared_recording(0);
+#endif
 	CGContextSetAlpha(context, opacity);
 	CGContextSetBlendMode(context, native_compositing_operator(blend_mode));
 	native_begin_tracked_transparency_layer(context, NULL);
 }
 
 void native_end_css_effect_layer(void) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	// Replay while the isolated canvas is still alive, before group opacity.
+	ladybird_v_skia_finish_shared_recording();
+#endif
 	if (native_opacity_group_overflow_depth > 0) {
 		native_opacity_group_overflow_depth--;
 	} else if (native_opacity_group_depth > 0) {
@@ -2561,6 +2571,12 @@ void native_set_rect_clip_outs(const double *rects, int count) {
 void native_set_chromium_shared_recording(int enabled, int width, int height) {
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
     ladybird_v_skia_set_shared_recording(enabled, width, height);
+#endif
+}
+
+void native_set_chromium_layer_shared_recording(int enabled) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+    ladybird_v_skia_set_layer_shared_recording(enabled);
 #endif
 }
 

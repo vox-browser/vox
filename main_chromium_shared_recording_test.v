@@ -2,6 +2,8 @@ module main
 
 import layout
 import painting
+import html
+import os
 
 fn shared_recording_test_commands() []layout.PaintCommand {
 	return [layout.PaintCommand{ kind: 'fill_rect' }, layout.PaintCommand{
@@ -57,8 +59,9 @@ fn test_shared_recording_accepts_vector_image_display_lists_but_rejects_nested_d
 		}
 		nested_viewport_commands:  [layout.PaintCommand{
 			kind:     'draw_svg_path'
-			svg_data: &layout.PaintSVGPathData{ path_data: [f32(0), 0, 0, 0, 0, 0, 0, 0, 0, 0,
-				0, 0] }
+			svg_data: &layout.PaintSVGPathData{
+				path_data: [f32(0), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+			}
 		}]
 	}
 	plan := layout.ChromiumRasterLayerPlan{
@@ -85,7 +88,7 @@ fn test_shared_recording_ignores_empty_clipped_leaves_but_keeps_effect_boundarie
 				has_clip:    true
 				clip_width:  size[0]
 				clip_height: size[1]
-				clip_list:   &layout.PaintClipList{items: [layout.PaintClip{}]}
+				clip_list:   &layout.PaintClipList{ items: [layout.PaintClip{}] }
 			}
 			assert chromium_shared_recording_supported([base[0], hidden, base[1]], plan)
 		}
@@ -103,4 +106,112 @@ fn test_shared_recording_ignores_empty_clipped_leaves_but_keeps_effect_boundarie
 		layers:         plan.layers
 		command_layers: [0]
 	})
+}
+
+fn shared_recording_layer_commands(opacity f64) []layout.PaintCommand {
+	data := &layout.PaintVisualLayer{ kind: .css_effect, scope_id: 7, opacity: opacity }
+	return [
+		layout.PaintCommand{ kind: 'begin_css_effect_layer', visual_layer_data: data },
+		layout.PaintCommand{ kind: 'fill_rounded_rect' },
+		layout.PaintCommand{ kind: 'draw_svg_path' },
+		layout.PaintCommand{ kind: 'end_css_effect_layer', visual_layer_data: data },
+	]
+}
+
+fn shared_recording_layer_plan(count int) layout.ChromiumRasterLayerPlan {
+	return layout.ChromiumRasterLayerPlan{
+		layers:         [layout.ChromiumRasterLayer{}, layout.ChromiumRasterLayer{
+			command_indices: []int{len: count, init: index}
+		}]
+		command_layers: []int{len: count, init: 1}
+	}
+}
+
+fn test_shared_recording_accepts_complete_isolated_css_scopes() {
+	for opacity in [0.0, 0.5, 1.0] {
+		commands := shared_recording_layer_commands(opacity)
+		plan := shared_recording_layer_plan(commands.len)
+		assert chromium_shared_recording_layer_supported(commands, plan, 1)
+		assert !chromium_shared_recording_layer_supported(commands, plan, 0)
+		assert !chromium_shared_recording_layer_supported(commands, plan, -1)
+		assert !chromium_shared_recording_layer_supported(commands, plan, 2)
+		assert !chromium_shared_recording_supported(commands, plan)
+	}
+}
+
+fn test_shared_recording_layer_requires_balanced_supported_commands_and_contiguous_ownership() {
+	base := shared_recording_layer_commands(1)
+	plan := shared_recording_layer_plan(base.len)
+	for unsupported in [
+		layout.PaintCommand{ kind: 'begin_css_effect_layer', visual_layer_data: base[0].visual_layer_data },
+		layout.PaintCommand{ kind: 'draw_text', blur: 2 },
+		layout.PaintCommand{ kind: 'fill_rect', has_clip: true, clip_width: 4, clip_height: 4 },
+		layout.PaintCommand{ kind: 'draw_background_image' },
+	] {
+		mut commands := base.clone()
+		commands[1] = unsupported
+		assert !chromium_shared_recording_layer_supported(commands, plan, 1)
+	}
+	for kind in ['begin_css_filter_layer', 'end_css_effect_layer'] {
+		mut commands := base.clone()
+		commands[0] = layout.PaintCommand{ kind: kind, visual_layer_data: base[0].visual_layer_data }
+		assert !chromium_shared_recording_layer_supported(commands, plan, 1)
+	}
+	for data in [
+		&layout.PaintVisualLayer{ kind: .css_effect, scope_id: 8 },
+		&layout.PaintVisualLayer{ kind: .css_effect, scope_id: 7, blend_mode: .multiply },
+		&layout.PaintVisualLayer{ kind: .svg_mask, scope_id: 7 },
+	] {
+		mut commands := base.clone()
+		commands[3] = layout.PaintCommand{ kind: 'end_css_effect_layer', visual_layer_data: data }
+		assert !chromium_shared_recording_layer_supported(commands, plan, 1)
+	}
+	mut no_vectors := base.clone()
+	no_vectors[2] = layout.PaintCommand{ kind: 'fill_rect' }
+	assert !chromium_shared_recording_layer_supported(no_vectors, plan, 1)
+	for indices in [[0, 2, 3], [0, 1, 2], [-1, 1, 3], [0, 1, 4]] {
+		assert !chromium_shared_recording_layer_supported(base, layout.ChromiumRasterLayerPlan{
+			layers:         [plan.layers[0], layout.ChromiumRasterLayer{ command_indices: indices }]
+			command_layers: plan.command_layers
+		}, 1)
+	}
+	assert !chromium_shared_recording_layer_supported(base, layout.ChromiumRasterLayerPlan{
+		layers:         [plan.layers[0],
+			layout.ChromiumRasterLayer{ legacy_raster: true, command_indices: [0, 1, 2, 3] }]
+		command_layers: plan.command_layers
+	}, 1)
+}
+
+fn test_shared_recording_accepts_painted_compositor_layers_with_svg_viewport_clips() {
+	mut document := html.parse_document(os.read_file('${@VMODROOT}/Tests/Browser/Brave/input/compositor-shared-recording.html') or { panic(err) })
+	defer { document.finalize() }
+	document.set_font_rendering_policy(.chromium)
+	_ = layout.layout_document_typed_in_viewport(document, 1024, 768)
+	commands := layout.display_list_commands(document.record_display_list() or { panic('missing paint') })
+	for scale in [1.0, 2.0] {
+		plan := layout.chromium_raster_layer_plan(document, commands, scale)
+		assert plan.layers.len == 6
+		assert !chromium_shared_recording_layer_supported(commands, plan, 1)
+		for layer_index in 2 .. 6 {
+			assert chromium_shared_recording_layer_supported(commands, plan, layer_index)
+		}
+		// One clipped path cannot use the batch renderer and must keep the
+		// fallback. Rounded viewport clips likewise need their existing path.
+		indices := plan.layers[2].command_indices
+		mut single := commands.clone()
+		single[indices[4]] = layout.PaintCommand{ kind: 'fill_rect' }
+		assert !chromium_shared_recording_layer_supported(single, plan, 2)
+		mut rounded := commands.clone()
+		path_index := indices[3]
+		path := commands[path_index]
+		clip := path.clip_list.items[0]
+		rounded[path_index] = layout.PaintCommand{
+			...path
+			clip_list: &layout.PaintClipList{ items: [layout.PaintClip{
+				...clip
+				corner_radii: layout.BoxRadii{ top_left: layout.CornerRadius{ x: 1, y: 1 } }
+			}] }
+		}
+		assert !chromium_shared_recording_layer_supported(rounded, plan, 2)
+	}
 }
