@@ -1542,3 +1542,25 @@ source files are archived with verified SHA256 identities under
 restored and the two new files removed. Broad verification is deferred below
 the repeatable 5,000,000-instruction gate. The latest combined Brave ratio
 remains 3.439494; this rejected candidate does not establish parity.
+
+## Chromium context-slice cache rejected
+
+`Build/hn-small-text/context-slice-isolated-4` tests retaining sliced context
+glyph runs across intrinsic measurements. The focused checks pass 34 cases
+per GC mode; a separate diagnostic observes 25,044 hits in 37,566 calls,
+with exact pixels and all 101 comments. The 30 alternating unprofiled pairs
+also retain exact pixels and comment identity. Control and candidate medians
+are 5,792,975,191 and 5,785,306,704.5 retired instructions. Median paired
+saving is 3,103,204.5, with bootstrap 95% interval
+[-15,865,810, 17,443,580]. Only 16 of 30 pairs improve; the largest regression
+is 130,813,935 instructions and remains included. The 18-CPU host finishes
+at load averages 5.7539/4.2046/4.0366. The isolated guard exits zero after
+211.7329 seconds, with 124,305,408 bytes sampled peak RSS.
+
+The experiment receives zero repeatable instruction credit. Its five source
+files and patch are archived under `Build/hn-small-text/context-slice-rejected-1`;
+only the candidate edits are removed, preserving the newer whitespace-shaping
+fix. A redundant integration check is cancelled while still queued, before
+it starts or snapshots source. Broad verification remains deferred below the
+repeatable 5,000,000-instruction gate. The combined Brave ratio remains
+3.439494; the performance target is open.
