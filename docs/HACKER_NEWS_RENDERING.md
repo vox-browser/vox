@@ -1296,3 +1296,30 @@ page credit is the interval lower bound, 43,393,314.5 instructions. This is
 independent candidate evidence, not additive credit or a production Brave
 comparison. The installed production bundle still predates this candidate;
 the latest production acceptance ratio remains 5.294119, above 0.90.
+
+## Accepted integer-length serialization
+
+`77392faa` builds common computed integer lengths in a small stack buffer and
+copies only their final owned text. Keywords keep their static spelling;
+fractional, large and nonfinite lengths retain general CSS serialization.
+Three focused tests cover every length unit, numeric boundaries, retained
+storage after scratch reuse, and bounded preallocated storage.
+
+`integer-length-isolated-2` changes only the authenticated serializer and its
+helper in the generated browser C. The separate eligibility check records
+46,050 integer fast-path hits from 49,321 serializer calls. All 60 captures in
+30 alternating pairs preserve the complete 101-comment page pixel for pixel.
+The control median is 6,303,150,817 instructions and the candidate median is
+6,077,116,012. The median paired saving is 224,318,402, with bootstrap 95%
+interval [210,790,143.5, 231,453,930]; every pair improves. All pairs remain
+in the result, including the smallest saving of 158,194,630 instructions.
+
+`integer-length-checkpoint-2` passes with unchanged authenticated inputs.
+Its distinct test union has 570 executions: 564 passes and the same six
+known layout failures. All 100 upstream AST fixtures compare exactly. The
+19 visual cases retain all 34 control images, including the six existing
+reference mismatches; all three HN fixtures are exact. Startup and both live
+identity checks exit zero. Repeatable page credit is the measured interval's
+lower bound, 210,790,143.5 instructions. This independent result is not added
+to other candidate savings. The installed production bundle predates this
+change; its latest Brave acceptance ratio remains 5.294119 against 0.90.
