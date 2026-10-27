@@ -181,5 +181,5 @@ function __compactDocumentElementBindings(object,state){
  object.appendChild=function appendChild(child){return __compactInsertNode(this,child,null,false);};
  object.insertBefore=function insertBefore(child,reference){return __compactInsertNode(this,child,reference,true);};
 }
-'
+' + compact_tree_walker_bootstrap()
 }
