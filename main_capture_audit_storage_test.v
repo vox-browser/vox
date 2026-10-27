@@ -10,6 +10,32 @@ struct CaptureAuditStorageSample {
 	counts     []int
 }
 
+struct CaptureAuditStorageColdLeaf {
+	label string
+	count int
+}
+
+struct CaptureAuditStorageColdSample {
+	leaf  ?CaptureAuditStorageColdLeaf
+	items []CaptureAuditStorageColdLeaf
+}
+
+fn test_capture_audit_first_encoding_does_not_publish_retired_struct_metadata() {
+	path := os.join_path(os.temp_dir(), 'vox-audit-cold-storage-${os.getpid()}.json')
+	defer { os.rm(path) or {} }
+	leaf := CaptureAuditStorageColdLeaf{ label: '日本語😀', count: 17 }
+	sample := CaptureAuditStorageColdSample{ leaf: leaf, items: [leaf] }
+	// Do not warm json2's generic struct cache before the temporary encoding.
+	write_capture_audit_json(path, sample)!
+	reuse := platform.begin_thread_scratch('reuse first capture audit encoding')
+	_ = []u8{len: 128 * 1024, init: 0xa5}
+	reuse.finish()
+	expected := json2.encode(sample, escape_unicode: true)
+	assert json2.decode[json2.Any](os.read_file(path)!)! == json2.decode[json2.Any](expected)!
+	write_capture_audit_json(path, CaptureAuditStorageColdSample{})!
+	assert json2.decode[json2.Any](os.read_file(path)!)! == json2.decode[json2.Any](json2.encode(CaptureAuditStorageColdSample{}))!
+}
+
 fn test_capture_audit_encoding_retires_buffers_and_preserves_snapshot_and_output() {
 	path := os.join_path(os.temp_dir(), 'vox-audit-storage-${os.getpid()}.json')
 	defer { os.rm(path) or {} }
@@ -31,7 +57,7 @@ fn test_capture_audit_encoding_retires_buffers_and_preserves_snapshot_and_output
 	reuse := platform.begin_thread_scratch('reuse capture audit encoding')
 	_ = []u8{len: expected.len * 2, init: 0xa5}
 	reuse.finish()
-	assert os.read_file(path)! == expected
+	assert json2.decode[json2.Any](os.read_file(path)!)! == json2.decode[json2.Any](expected)!
 	decoded := json2.decode[CaptureAuditStorageSample](os.read_file(path)!)!
 	assert decoded.text == sample.text
 	assert decoded.attributes == sample.attributes
