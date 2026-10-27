@@ -11,9 +11,12 @@ fn (mut binding CompactElementQueryBinding) node_tree_query(root &dom.Node, acti
 	if action == 'createFragment' {
 		return json2.encode(binding.node_state(root.document().create_document_fragment().as_node()))
 	}
-	if action == 'childNodes' {
+	if action in ['childNodes', 'childElements'] {
 		mut nodes := []json2.Any{cap: root.children.len}
-		for child in root.children { nodes << binding.node_state(child) }
+		for child in root.children {
+			if action == 'childElements' && !child.is_element() { continue }
+			nodes << binding.node_state(child)
+		}
 		return json2.encode(nodes)
 	}
 	if action == 'nodeText' { return json2.encode(root.text_content() or { '' }) }
@@ -101,5 +104,5 @@ Object.defineProperty(Element.prototype,"childNodes",{get:function(){return __co
 Object.defineProperty(document,"childNodes",{get:function(){if(this!==document)throw new TypeError("Illegal Document receiver");return __compactChildNodes(this,{bridgeKey:""});},enumerable:true,configurable:true});
 document.createDocumentFragment=function createDocumentFragment(){return __queryElements("","createFragment","");};
 document.createTextNode=function createTextNode(data){if(arguments.length===0)throw new TypeError("createTextNode requires data");if(typeof data==="symbol")throw new TypeError("Cannot convert a Symbol to a string");return __queryElements("","createText",String(data));};
-' + compact_child_node_bootstrap() + compact_create_comment_bootstrap()
+' + compact_child_node_bootstrap() + compact_fragment_elements_bootstrap() + compact_create_comment_bootstrap()
 }
