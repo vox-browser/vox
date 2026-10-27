@@ -1969,3 +1969,52 @@ Raw results and identities are under `safe-prefix-isolated-1`, and the guard
 receipt is `safe-prefix-submission-1/attempt-011.json`, all below
 `Build/hn-small-text/`. This is a frozen generated-C experiment, not a fresh
 canonical production build or a Brave acceptance result.
+
+## Reject collapsed safe-line queries before allocation, 2026-10-27
+
+`6b3ac9a5` checks the existing source-map rejection condition before allocating
+collapsed text and its map. Only ASCII text with consecutive spaces under
+`collapse` or `preserve-breaks` is rejected early; every eligible query still
+uses its original text and exact width calculation. The new independent oracle
+test covers six white-space modes, ASCII/non-ASCII and control characters,
+preserved spaces, valid/invalid ranges and exact floating-point results. All
+44 focused executions pass in Boehm and preallocation modes, including glyph
+ABI assertions.
+
+`Build/hn-small-text/safe-line-reject-isolated-2` is a frozen generated-C
+composition, not a fresh canonical production build. Reversing its single
+writer restores the complete parent C byte for byte; 12 shared records, 11
+shared helpers, all 252 O2 objects and native libraries remain unchanged.
+Executable SHA256 is
+`9a6218f7cc2dff16c25072bb8e102f7a214030d8df701c8d14073ecba8f3aac6`.
+The separate eligibility run records 67,427 queries and 5,576 source-map
+rejections, exact pixels and all 101 comments. It receives no performance credit.
+
+Thirty alternating unprofiled pairs retain exact pixels and all comments.
+Control/candidate medians are 6,922,290,756.5 / 6,755,044,684.5 instructions.
+Median paired saving is 162,015,137.5; bootstrap 95% interval is
+[149,025,641.5, 178,692,608.5]. All 30 pairs improve, with a minimum saving of
+67,495,454. The strict worst-candidate/best-control ratio is 1.0003004. The
+18-CPU host ends at load averages 2.9375/3.8745/7.7241. Raw trials, identities,
+commands and actual exits remain retained.
+
+The conservative 149,025,641.5-instruction credit triggers the broad checkpoint.
+Its 482 new and 290 distinct carried executions give 766 passes and the six
+unchanged baseline layout failures. All 100 upstream AST fixtures match exactly.
+All 34 fresh control/candidate images remain unchanged: 14 of 19 canonical cases
+are exact, with five existing reference failures unchanged. Three HN fixtures,
+startup and both fresh live identity checks pass. No tolerance changes. Pending
+broad credit resets to zero.
+
+The initial pipeline stops at disk exhaustion before the broad checkpoint.
+Recovery attempts 3 through 5 also stop before that checkpoint; attempt 4's
+compression preflight rejects an invalid signed/unsigned identity assumption
+before changing a file. All failed receipts remain retained. Verified transparent
+compression preserves artifact bytes, and pipeline 6 revalidates the pinned
+focused, isolation and measurement evidence before completing checkpoint 2.
+The successful guard exits zero after 380.833 seconds with sampled aggregate
+peak RSS 9,409,347,584 bytes under the 12 GiB guard. Evidence is in
+`safe-line-reject-pipeline-6`, `safe-line-reject-checkpoint-2` and
+`safe-line-reject-submission-6/attempt-000.json`, below `Build/hn-small-text/`.
+This validates savings against the parent candidate. The requested 10% fewer
+instructions than Brave remains open; independent gains are not added.
