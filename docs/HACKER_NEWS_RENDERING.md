@@ -1944,3 +1944,28 @@ with peak 1,275,871,232 bytes under the 12 GiB guard. Receipts are retained in
 is `intrinsic-fit-checkpoint-2` and pipeline is `intrinsic-fit-pipeline-3`.
 This validates savings against the parent candidate. The requested 10% fewer
 instructions than Brave remains open; independent gains are not added.
+
+## Rejected fixed-point advance prefix experiment, 2026-10-27
+
+`Build/hn-small-text/safe-prefix-source-1` tried an immutable fixed-point
+prefix index for safe-range advances, with the original local sum retained for
+ineligible values. All 82 focused executions pass in Boehm and preallocation
+modes. The separate eligibility run sees 47,442 queries and 45,208 indexed
+hits, with exact HN pixels and all 101 comments. That diagnostic receives no
+performance credit.
+
+All 30 alternating unprofiled pairs are valid and pixel-exact. Control and
+candidate medians are 6,903,331,382 / 6,910,107,768.5. The median paired saving
+is 5,283,348.5 instructions, but its bootstrap 95% interval crosses zero:
+[-8,546,261.5, 27,783,629]. Only 15 pairs improve; the worst pair regresses by
+66,332,379 instructions. The strict ratio is 1.013301. The experiment earns
+zero repeatable credit and is not applied to canonical sources. The broad
+verification counter remains zero.
+
+The pipeline stops at its free-space check before additional visual checks;
+that failure is retained, without whole-pipeline pass credit. The guard exits
+1 after 484.784 seconds, with sampled aggregate peak RSS 9,350,709,248 bytes.
+Raw results and identities are under `safe-prefix-isolated-1`, and the guard
+receipt is `safe-prefix-submission-1/attempt-011.json`, all below
+`Build/hn-small-text/`. This is a frozen generated-C experiment, not a fresh
+canonical production build or a Brave acceptance result.
