@@ -93,6 +93,7 @@ function __compactNodeWrapper(state){
  });
  __elementApply(__elementRecordSet,__compactNodeRecords,[node,state]);
  Object.defineProperty(state,"__object",{value:node});
+ if([3,4,7,8,10].includes(state.nodeType))__compactBindChildNode(node);
  if(state.nodeType===11)for(const name of ["querySelector","querySelectorAll"]){
   Object.defineProperty(node,name,{value:function(selectors){const own=record(this);if(arguments.length===0)throw new TypeError(name+" requires a selector");if(typeof selectors==="symbol")throw new TypeError("Cannot convert a Symbol to a string");return __queryElements(own.bridgeKey,name,String(selectors));}});
  }
