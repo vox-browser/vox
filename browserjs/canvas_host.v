@@ -10,6 +10,8 @@ import html
 import math
 import x.json2
 
+pub type CanvasBeforeDrawHook = fn (&Runtime) !
+
 @[heap]
 struct CanvasHostContext {
 	context         &html.OffscreenCanvasRenderingContext2D
@@ -25,6 +27,7 @@ mut:
 	gradients   map[string]html.CanvasGradient
 	patterns    map[string]&html.CanvasPattern
 	next_handle int
+	before_draw ?CanvasBeforeDrawHook
 }
 
 pub fn CanvasHost.create(document &dom.Document) &CanvasHost {
@@ -38,10 +41,18 @@ pub fn CanvasHost.create(document &dom.Document) &CanvasHost {
 
 pub fn (mut host CanvasHost) install(mut runtime Runtime) ! {
 	runtime.define_host_function('__ladybirdCanvas', fn [mut host, mut runtime] (input string) !string {
+		request := canvas_host_object(json2.decode[json2.Any](input)!)!
+		method := canvas_host_string(request['method'] or { json2.Any('') })
+		// Canvas filters and text styles consume the live document synchronously,
+		// including compact mutations made after the context state was saved.
+		if method in ['fill', 'stroke', 'fillRect', 'strokeRect', 'drawImage',
+			'fillText', 'strokeText', 'measureText', 'createPattern'] {
+			if hook := host.before_draw { hook(runtime)! }
+		}
 		for key, element in runtime.canvas_elements_for_binding() {
 			host.elements[key] = element
 		}
-		return host.call(input)
+		return host.call_request(request)
 	})!
 	runtime.add_canvas_element_provider_with_identity_lookup(fn [mut host] () map[string]&dom.Element {
 		return host.elements_for_binding()
@@ -51,6 +62,10 @@ pub fn (mut host CanvasHost) install(mut runtime Runtime) ! {
 	}, fn [host] (element &dom.Element) []string {
 		return native_canvas_element_identity_keys(host.elements, element)
 	})
+}
+
+pub fn (mut host CanvasHost) set_before_draw(hook ?CanvasBeforeDrawHook) {
+	host.before_draw = hook
 }
 
 pub fn (host &CanvasHost) elements_for_binding() map[string]&dom.Element {
@@ -359,6 +374,10 @@ fn (host &CanvasHost) get_property(record &CanvasHostContext, name string) !json
 
 pub fn (mut host CanvasHost) call(input string) !string {
 	request := canvas_host_object(json2.decode[json2.Any](input)!)!
+	return host.call_request(request)
+}
+
+fn (mut host CanvasHost) call_request(request map[string]json2.Any) !string {
 	method := canvas_host_string(request['method'] or { json2.Any('') })
 	key := canvas_host_string(request['key'] or { json2.Any('') })
 	width := u32(canvas_host_number(request['width'] or { json2.Any(300) }))

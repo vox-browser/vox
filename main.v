@@ -2734,6 +2734,11 @@ fn run_document_script_sources_with_resource_loaders(document &dom.Document, cur
 		return none
 	}
 	mut canvas_host := browserjs.CanvasHost.create(document)
+	canvas_host.set_before_draw(fn [document] (callback_runtime &browserjs.Runtime) ! {
+		state := callback_runtime.evaluate_host('__ladybirdFinalize()')!
+		mut replay_messages := []string{}
+		apply_javascript_runtime_state(document, state, callback_runtime, mut replay_messages)
+	})
 	mut mutable_runtime := unsafe { &browserjs.Runtime(runtime) }
 	mut navigator_host := browserjs.NavigatorHost.create(document) or {
 		messages << 'JavaScript Navigator bindings: ${err.msg()}'
