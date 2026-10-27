@@ -8,6 +8,15 @@ struct ChromiumTextContextRun {
 	run   &platform.GlyphRun
 }
 
+// Context runs are immutable while the iterator emits a text node's chunks.
+// Keep the last UTF-16 boundary so successive words visit each glyph once.
+struct ChromiumContextSliceCursor {
+mut:
+	run    &platform.GlyphRun = unsafe { nil }
+	index  int
+	offset int
+}
+
 // Blink shapes across soft word boundaries, including hyphens. Shaping
 // "N. America" or "Что-то" as independent chunks loses their boundary kerning.
 fn (iterator &InlineLevelIterator) chromium_single_script_context_run(text_node &TextNode,
@@ -111,12 +120,18 @@ fn (iterator &InlineLevelIterator) chromium_context_segment(text_node &TextNode,
 
 fn chromium_segmented_context_slice(runs []ChromiumTextContextRun,
 	chunk TextNodeChunk) ?platform.ShapedText {
+	mut cursor := ChromiumContextSliceCursor{}
+	return chromium_segmented_context_slice_with_cursor(runs, chunk, mut cursor)
+}
+
+fn chromium_segmented_context_slice_with_cursor(runs []ChromiumTextContextRun,
+	chunk TextNodeChunk, mut cursor ChromiumContextSliceCursor) ?platform.ShapedText {
 	for segment in runs {
 		if chunk.start >= segment.start && chunk.start + chunk.length <= segment.end {
-			return chromium_context_slice(segment.run, TextNodeChunk{
+			return chromium_context_slice_with_cursor(segment.run, TextNodeChunk{
 				...chunk
 				start: chunk.start - segment.start
-			})
+			}, mut cursor)
 		}
 	}
 	return none
@@ -143,10 +158,20 @@ fn chromium_context_has_single_supported_script(text string) bool {
 }
 
 fn chromium_context_slice(run &platform.GlyphRun, chunk TextNodeChunk) ?platform.ShapedText {
-	mut offset := 0
+	mut cursor := ChromiumContextSliceCursor{}
+	return chromium_context_slice_with_cursor(run, chunk, mut cursor)
+}
+
+fn chromium_context_slice_with_cursor(run &platform.GlyphRun, chunk TextNodeChunk,
+	mut cursor ChromiumContextSliceCursor) ?platform.ShapedText {
+	if voidptr(cursor.run) != voidptr(run) || chunk.start < cursor.offset {
+		cursor = ChromiumContextSliceCursor{run: run}
+	}
+	mut offset := cursor.offset
 	mut first := -1
 	mut end := -1
-	for index, glyph in run.glyphs_ {
+	for index := cursor.index; index < run.glyphs_.len; index++ {
+		glyph := run.glyphs_[index]
 		if offset == chunk.start { first = index }
 		if offset == chunk.start + chunk.length {
 			end = index
@@ -157,6 +182,8 @@ fn chromium_context_slice(run &platform.GlyphRun, chunk TextNodeChunk) ?platform
 	if offset == chunk.start + chunk.length && end < 0 { end = run.glyphs_.len }
 	// Never cut a ligature or a cluster at a line-break chunk boundary.
 	if first < 0 || end <= first { return none }
+	cursor.index = end
+	cursor.offset = offset
 	// Blink sums the 16.16 advances of a line's part of an item exactly from
 	// its first glyph, then converts each sum to float. Subtracting the float
 	// pens of a paragraph-long run instead moves glyphs hundreds of pixels in

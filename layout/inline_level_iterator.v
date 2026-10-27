@@ -275,6 +275,7 @@ struct InlineTextNodeContext {
 mut:
 	chromium_context_run       ?&platform.GlyphRun
 	chromium_segment_runs      []ChromiumTextContextRun
+	chromium_slice_cursor      ChromiumContextSliceCursor
 	chunks                     []TextNodeChunk
 	next_chunk_index           int
 	should_collapse_whitespace bool
@@ -704,11 +705,12 @@ fn (mut iterator InlineLevelIterator) generate_next_item() ?InlineLevelItem {
 			x = stop_distance
 		}
 		shaped := if run := context.chromium_context_run {
-			chromium_context_slice(run, chunk) or {
+			chromium_context_slice_with_cursor(run, chunk, mut context.chromium_slice_cursor) or {
 				iterator.shape_text_for_layout(text_node, f32(x), f32(letter_spacing), f32(word_spacing), shaped_text, chunk.font, text_type)
 			}
 		} else {
-			chromium_segmented_context_slice(context.chromium_segment_runs, chunk) or {
+			chromium_segmented_context_slice_with_cursor(context.chromium_segment_runs, chunk,
+				mut context.chromium_slice_cursor) or {
 				iterator.shape_text_for_layout(text_node, f32(x), f32(letter_spacing), f32(word_spacing), shaped_text, chunk.font, text_type)
 			}
 		}
