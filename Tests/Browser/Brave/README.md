@@ -150,6 +150,9 @@ shadow cutouts overlap the background by one pixel. Block backgrounds inset
 under opaque solid rounded borders; inline backgrounds retain Chromium's
 separate treatment. Uniform circular rounded borders use an analytic stroke.
 
+`compositor-box-shadows` checks overlapping outer shadows inside a transformed
+header, including blur ink that extends beyond its compositor border box.
+
 `transformed-partial-border` checks opaque two-sided borders rotated and skewed
 at fractional box origins. Their paint offset snaps before the box transform;
 matching solid sides retain overlapping antialiased rectangles. Retained

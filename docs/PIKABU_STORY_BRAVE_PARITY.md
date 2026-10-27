@@ -1173,3 +1173,43 @@ The raw captures, audits and failed gates are in `story/`, with the memory
 receipt in `story-v4-guard.json`. These results do not establish whole-page
 parity or a controlled improvement in independently timed live content. Header
 shadows, Canvas RGBA readback and Retina mask equality remain open.
+
+
+## Compositor box-shadow checkpoint (`c4b492de`)
+
+Supported CSS compositor pictures now include typed outer box shadows and keep
+all shadow ink when allocating their local raster surface. Clipped, unsupported
+and failed recordings retain their existing leaf result. Fractional origins
+remain unchanged unless shadow overflow requires extending that surface.
+
+The reduced `compositor-box-shadows` header fixture matches fresh Brave captures
+with zero differing pixels at backing scales one and two. The native regression
+also checks shadow overflow, page and scroll offsets, explicit completion and
+layer switching at both scales, alongside 144 existing local-picture cases and
+root-background/fallback checks. Focused recording, mask, clip and layout checks
+compile and execute successfully in normal and poisoned arena modes. All ten SVG
+mutation and viewport comparisons remain pixel-exact.
+
+Raw commands, immutable inputs and individual exit codes are retained in:
+
+- `Build/pikabu-compositor-shadows-1793133537010774000/retry3/results.json`
+  and `tests-v3-guard.json` (focused V checks; guard exits zero).
+- `Build/pikabu-native-shadow-overflow-1793136062126012000/` (native checks;
+  guard exits zero).
+- `Build/pikabu-compositor-overflow-1793136081944870000/` (`results.json`,
+  header capture logs and PNGs, `svg/results.json`, and `story/results.json`).
+
+The signed diagnostic executable SHA-256 is
+`d091be71524e40db5fdb90b5dc6093a345c1274cbbeb5595a5e01e2991b86f65`;
+the native bridge SHA-256 is
+`0d8dab6715791a65764ac2ebf74333851d3e6fadf9b09d49e25a3f0b149e6ce8`.
+The shared production bundle was not replaced.
+
+The frozen 1024-by-768 story still differs in 7,309 pixels (maximum channel
+error 42). Independently loaded live captures differ in 6,834 pixels; changing
+content prevents using that count as controlled improvement evidence. All four
+captures exit zero and load the intended document; the strict story gate and
+overall guard exit one. The reduced header result does not establish full-page
+parity. A separate native trace shows that the story's header does not qualify
+for shared recording; diagnosing that rejection is the next step. Canvas RGBA
+readback and Retina mask equality also remain open.
