@@ -1047,3 +1047,48 @@ JavaScript receives its XHR headers and load afterward. Native receive timing
 is still being investigated; proxy send completion alone does not establish
 when the browser processes the bytes. Whole-page equality, late filter
 availability, Canvas RGBA readback and Retina mask equality remain open.
+
+
+## Native fetch continuation and blurred backdrop checkpoint
+
+Pending fetch continuations now enter the platform's deferred queue before the
+HTML networking handover, matching upstream's `PendingResponse` scheduling.
+The responsible document's persistent owner survives these continuations;
+networking callbacks retain their existing task source and cancellation rules.
+The unique task-source registry also grows in persistent storage. Fourteen
+focused fetch, parallel-queue, font-loading and task-source cases pass in normal
+and poisoned arena modes. Logs and compiler/source identities are retained in
+`Build/pikabu-native-fetch-continuation-1793113160688826000/`; final validation
+receipt `Build/pikabu-native-fetch-continuation-validation-4434.json` exits zero.
+These implementations were incorporated into shared commit `ac3c7b67`; the
+additional task-source arena regression is committed as `fe8d27bc`.
+
+A fresh diagnostic browser contains these fixes and passes strict signature
+verification and headless startup. Its executable SHA-256 is
+`f62ba7f1f4de1ab0d16fe47d2eaaff77535f212f96137b4bab4feb4dc3334b60`.
+Frozen source, build commands and native-library identities are retained in
+`Build/pikabu-native-fetch-browser-1793113218368866000/`; the successful guard is
+`Build/pikabu-native-fetch-browser-complete-4434.json`.
+
+The instrumented archived startup replay now receives the sprite XHR load at
+1793114338516 ms, before the backdrop canvas draw at 1793114345778 ms. At the
+draw, the SVG filter is installed and the filter value is `url("#pkb-blur")
+opacity(.9)`. Logging instruments the application's existing calls without DOM
+shims. Inputs, proxy responses, timing and fresh-process identities are in
+`Build/pikabu-native-fetch-startup-1793113569139143000/`; its guard exits zero.
+
+Fresh scale-one 1024 by 768 captures show the blurred backdrop on the live page.
+Independent live loads now differ in 3,902 pixels (0.4962%, maximum channel
+error 61); the frozen page remains at 10,204 pixels (maximum error 42).
+Both browsers exit zero and load the requested document. Executable, libraries,
+fixtures and filter identities remain unchanged. Captures, audits and commands
+are in `Build/pikabu-native-fetch-page-1793114499067433000/story/`; guard
+`Build/pikabu-native-fetch-page-4434.json` exits one for failed strict pixel
+gates. Live counters and independent timing remain possible contributors.
+
+The remaining visible differences include SVG icon and rounded-button edges,
+header shadows and a few cookie-popup edges. A reduced fixture isolates a
+compositor-layer raster-policy problem: a transformed surface without an SVG
+inherits sampling triggered by SVG content in other surfaces. Plain fractional
+rounded rectangles without those surfaces match exactly. Whole-page equality,
+Canvas RGBA readback and Retina mask equality remain open.
