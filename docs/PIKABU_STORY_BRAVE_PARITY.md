@@ -999,3 +999,51 @@ are retained in
 The backdrop remains sharp where Brave blurs it. CSS shadow and rounded-edge
 pixels, direct Canvas RGBA readback, and Retina masks remain open. These checks
 do not establish whole-page pixel parity.
+
+
+## GPU CSS shadow and transparent-padding checkpoint
+
+Commit `07ad08c2` replays Chromium CSS drop-shadow chains on the shared GPU
+backend, preserving premultiplied source and backdrop pixels. The filter input
+is cropped to its nontransparent bounds before replay: transparent Cocoa chrome
+otherwise changes Skia's blur downsampling grid. CPU fallback remains available.
+
+All 12 focused native checks pass, including actual GPU backend availability,
+shadow order, scale one and two, and padding invariance for opaque and translucent
+inputs. Eight CPU fallback checks also pass with the GPU library unavailable.
+Guards exit zero; receipts are `Build/pikabu-shadow-crop-native-final-4434.json`
+and `Build/pikabu-shadow-cpu-fallback-4434.json`, with corresponding logs. The
+new padding regression fails against the previous uncropped implementation
+(3,402 differing channels at scale one), as retained in
+`Build/pikabu-shadow-crop-regression-4434/` and its nonzero guard receipt.
+
+A fresh diagnostic bundle clones the completed browser and replaces only the
+native Skia library. Strict signing verification and headless startup pass.
+After signing, executable SHA-256 is
+`ccbcd0ddd7e3280e5d0b94255399e34b7b8744b74b6d1c0e6b4931f60868a652`;
+native Skia SHA-256 is
+`ae293ddfb55ddbc1df4a03a2aa24320348877d6c31585db68941026b09b80242`.
+The static cookie-shadow fixture improves from 7,860 differing pixels with
+maximum channel error two to eight pixels with maximum error one. Those eight
+pixels still fail strict equality. Captures, frozen source, identities, native
+checks and build commands are retained in
+`Build/pikabu-cropped-drop-shadow-1793112129505739000/`. Its aggregate guard
+exits one because the pixel gate fails.
+
+Fresh 1024 by 768, scale-one whole-page captures reduce the frozen-page
+difference from 17,858 to 10,204 pixels (maximum channel error remains 42).
+Independent live loads differ in 66,473 pixels (maximum channel error 92).
+Both browser runs exit zero, the requested document loads, and executable,
+libraries, fixtures and filter identities remain unchanged. Receipts and raw
+captures are in
+`Build/pikabu-cropped-shadow-page-1793112183551907000/story/`; the aggregate
+guard `Build/pikabu-cropped-shadow-page-4434.json` exits one for failed strict
+pixel gates. Live counter changes can contribute to the live difference.
+
+The corrected XHR progress replay at
+`Build/pikabu-xhr-progress-corrected-1793111406098582000/` confirms that the
+archive proxy finishes sending the sprite body before the canvas draw, while
+JavaScript receives its XHR headers and load afterward. Native receive timing
+is still being investigated; proxy send completion alone does not establish
+when the browser processes the bytes. Whole-page equality, late filter
+availability, Canvas RGBA readback and Retina mask equality remain open.
