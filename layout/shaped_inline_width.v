@@ -20,11 +20,14 @@ fn shaped_inline_width(run &platform.GlyphRun, additional f64) CSSPixels {
 
 struct ProjectedTextAdvance {
 mut:
-	node    &Node              = unsafe { nil }
-	run     &platform.GlyphRun = unsafe { nil }
-	end     int
-	precise f64
-	rounded CSSPixels
+	node           &Node              = unsafe { nil }
+	run            &platform.GlyphRun = unsafe { nil }
+	end            int
+	precise        f64
+	rounded        CSSPixels
+	segment_start  int
+	segment_length int
+	segment_width  f64
 }
 
 fn (mut projection ProjectedTextAdvance) append(item &InlineLevelItem) CSSPixels {
@@ -50,6 +53,27 @@ fn (mut projection ProjectedTextAdvance) append(item &InlineLevelItem) CSSPixels
 	if !continues_item && run.glyphs_[0].position.x != 0 {
 		projection.node = unsafe { nil }
 		return item.border_box_width()
+	}
+	continues_segment := continues_item && projection.run != unsafe { nil }
+		&& voidptr(projection.run.font()) == voidptr(run.font())
+		&& projection.run.face() == run.face()
+		&& item.border_box_width() == item.width && item.margin_start.raw_value() == 0
+	if continues_segment {
+		projection.segment_length += item.length_in_node
+		projection.segment_width += f64(run.width())
+	} else {
+		projection.segment_start = item.offset_in_node
+		projection.segment_length = item.length_in_node
+		projection.segment_width = f64(run.width())
+	}
+	mut covered := 0
+	mut has_glyph_indices := false
+	for glyph in run.glyphs_ {
+		covered += glyph.length_in_code_units
+		has_glyph_indices = has_glyph_indices || glyph.glyph_index != 0
+	}
+	if covered != item.length_in_node || !has_glyph_indices {
+		projection.segment_length = 0
 	}
 	if continues_item && item.border_box_width() == item.width && item.margin_start.raw_value() == 0 {
 		projection.precise += f64(run.width())
@@ -78,11 +102,14 @@ fn (mut builder LineBuilder) projected_text_sequence_width(item &InlineLevelItem
 		if last.chains_item_ && last.inline_offset_.plus(last.inline_length_) == line.inline_length_ {
 			if run := last.glyph_run_ {
 				projection = ProjectedTextAdvance{
-					node:    last.layout_node_
-					run:     unsafe { run }
-					end:     last.start_ + last.length_in_code_units_
-					precise: last.item_prefix_ + last.item_width_
-					rounded: last.item_offset_.plus(last.inline_length_)
+					node:           last.layout_node_
+					run:            unsafe { run }
+					end:            last.start_ + last.length_in_code_units_
+					precise:        last.item_prefix_ + last.item_width_
+					rounded:        last.item_offset_.plus(last.inline_length_)
+					segment_start:  last.start_
+					segment_length: last.length_in_code_units_
+					segment_width:  last.item_width_
 				}
 			}
 		}
@@ -91,5 +118,5 @@ fn (mut builder LineBuilder) projected_text_sequence_width(item &InlineLevelItem
 	for next in following {
 		width = width.plus(projection.append(next))
 	}
-	return width
+	return width.plus(projection.chromium_line_end_correction())
 }

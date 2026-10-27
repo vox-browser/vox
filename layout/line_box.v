@@ -26,10 +26,10 @@ pub struct LineBoxFragment {
 pub:
 	layout_node_         &Node = unsafe { nil }
 	style_source_        &Node = unsafe { nil }
-	glyph_run_           ?&platform.GlyphRun
 	block_ellipsis_text_ ?string
 	is_block_ellipsis_   bool
 pub mut:
+	glyph_run_                       ?&platform.GlyphRun
 	start_                           int
 	length_in_code_units_            int
 	inline_offset_                   CSSPixels
@@ -679,13 +679,23 @@ fn (mut line LineBox) calculate_or_trim_trailing_whitespace(should_remove Remove
 	// word-spacing and any shaping-specific adjustment.
 	fragment_trailing_whitespace := last_fragment.trailing_whitespace_
 	mut trailing_size := fragment_trailing_whitespace.inline_size
-	trimmed_advance := last_fragment.trailing_whitespace_advance(fragment_trailing_whitespace)
+	reshaped := last_fragment.chromium_shape_without_trailing_whitespace(line.has_break_
+		|| trailing_whitespace_width.raw_value() > 0 || last_fragment.has_trailing_whitespace_)
+	mut trimmed_advance := last_fragment.trailing_whitespace_advance(fragment_trailing_whitespace)
+	if run := reshaped {
+		if precise := last_fragment.precise_inline_length_ {
+			trimmed_advance = precise - f64(run.width())
+		}
+	}
 	if trimmed_width := last_fragment.chromium_width_without_trailing_advance(trimmed_advance) {
 		trailing_size = last_fragment.inline_length_.minus(trimmed_width)
 	}
 	whitespace_width = whitespace_width.plus(trailing_size)
 	trailing_whitespace_width = trailing_whitespace_width.plus(trailing_size)
 	if should_remove == .yes {
+		if run := reshaped {
+			last_fragment.glyph_run_ = run
+		}
 		last_fragment.length_in_code_units_ -= fragment_trailing_whitespace.length_in_code_units
 		last_fragment.inline_length_ = last_fragment.inline_length_.minus(trailing_size)
 		if advance := trimmed_advance {
