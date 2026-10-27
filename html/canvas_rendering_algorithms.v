@@ -751,8 +751,12 @@ fn (mut context OffscreenCanvasRenderingContext2D) set_filter_internal(value str
 				}
 			}
 			css.URL {
-				// Canvas2DContextBase.cpp explicitly leaves SVG URL filters unresolved.
-				continue
+				// Keep the reference live: SVG resource mutations affect subsequent draws.
+				if canvas_element := element {
+					if reference := canvas_element.document().encoding_parse_and_serialize_url(item.url()) {
+						CanvasFilterFunction{ kind: .svg_reference, reference: reference }
+					} else { continue }
+				} else { continue }
 			}
 		}
 	}

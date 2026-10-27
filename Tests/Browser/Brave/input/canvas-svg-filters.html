@@ -1,0 +1,57 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Canvas SVG filters</title>
+<style>
+html,body{margin:0;background:#fcfdff}
+canvas{position:absolute;width:192px;height:144px;top:24px}
+#plain{left:24px}#url{left:240px}#css{left:456px}
+svg{position:absolute;width:0;height:0}
+</style>
+<svg xmlns="http://www.w3.org/2000/svg"><defs>
+<filter id="backdrop" x="0" y="0" width="1" height="1">
+ <feGaussianBlur stdDeviation="6" result="blur"/>
+ <feMorphology operator="dilate" radius="0"/>
+ <feMerge><feMergeNode/><feMergeNode in="blur"/></feMerge>
+</filter>
+<filter id="shift" x="0" y="0" width="1" height="1"><feOffset dx="24" dy="8"/></filter>
+<filter id="crop" x="50%" y="0" width="50%" height="100%"><feOffset/></filter>
+<filter id="relative" primitiveUnits="objectBoundingBox"><feOffset dx=".25"/></filter>
+<filter id="merge" x="0" y="0" width="1" height="1" color-interpolation-filters="sRGB"><feOffset dx="48" result="moved"/><feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="moved"/><feMergeNode in="moved"/></feMerge></filter>
+<filter id="alpha" color-interpolation-filters="sRGB"><feColorMatrix in="SourceAlpha" values="0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 1 0"/></filter>
+<filter id="live" color-interpolation-filters="sRGB"><feOffset id="offset" dx="8"/></filter>
+<filter id="user" filterUnits="userSpaceOnUse" x="24" y="8" width="144" height="128"><feMorphology operator="erode" radius="3"/></filter>
+<filter id="srgb" x="0" y="0" width="1" height="1" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="6"/></filter>
+</defs></svg>
+<canvas id="plain" width="192" height="144"></canvas>
+<canvas id="url" width="192" height="144"></canvas>
+<canvas id="css" width="192" height="144"></canvas>
+<script>
+try {
+ const source=document.createElement('canvas');source.width=64;source.height=48;
+ const paint=source.getContext('2d');
+ paint.fillStyle='#e95f35';paint.fillRect(0,0,24,48);
+ paint.fillStyle='#2878bc';paint.fillRect(24,0,16,48);
+ paint.fillStyle='#f1cb3c';paint.fillRect(40,0,24,48);
+ paint.fillStyle='#161c2a';paint.fillRect(16,16,32,16);
+ for(const pair of [['plain','none'],['url','url("#backdrop") opacity(0.9)'],['css','blur(6px) opacity(0.9)']]) {
+  const context=document.getElementById(pair[0]).getContext('2d');
+  context.filter=pair[1];context.drawImage(source,0,0,192,144);
+ }
+ // Coordinates belong to the bitmap even when SourceGraphic is transformed.
+ const cases=[['shift',2],['crop',1],['relative',1],['merge',1],['alpha',1],['live',1],['user',1],['srgb',1]];
+ for(let i=0;i<cases.length;i++) {
+  const canvas=document.createElement('canvas');canvas.width=192;canvas.height=144;
+  canvas.style.left=(24+(i%4)*216)+'px';canvas.style.top=(208+Math.floor(i/4)*184)+'px';
+  document.body.appendChild(canvas);
+  const context=canvas.getContext('2d');context.filter='url("#'+cases[i][0]+'")';
+  if(cases[i][0]==='live') {
+   context.save();context.filter='none';context.restore();
+   document.getElementById('offset').setAttribute('dx','40');
+  }
+  context.scale(cases[i][1],cases[i][1]);
+  if(cases[i][0]==='merge') {context.fillStyle='rgba(233,95,53,.5)';context.fillRect(16,24,32,72);}
+  else context.drawImage(source,0,0,64,48,8,8,144/cases[i][1],108/cases[i][1]);
+ }
+ document.title='Canvas SVG filters PASS';
+} catch(error) {document.title='Canvas SVG filters FAIL '+error.message;}
+</script>

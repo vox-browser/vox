@@ -144,18 +144,102 @@ static bool apply_style(SkPaint& paint, VoxCanvasStyle const& style)
     return true;
 }
 
-static sk_sp<SkImageFilter> make_filter(VoxCanvasCommand const& command)
+static sk_sp<SkImageFilter> transparent_filter()
+{
+    float matrix[20] = {};
+    return SkImageFilters::ColorFilter(SkColorFilters::Matrix(matrix), nullptr);
+}
+
+static sk_sp<SkImageFilter> make_svg_filter(VoxCanvasFilter const& filter, sk_sp<SkImageFilter> source, SkRect bounds)
+{
+    std::vector<sk_sp<SkImageFilter>> outputs;
+    float scale_x = filter.graph_primitive_bounds ? bounds.width() : 1;
+    float scale_y = filter.graph_primitive_bounds ? bounds.height() : 1;
+    for (int i = 0; i < filter.graph_count; ++i) {
+        auto const& node = filter.graph_nodes[i];
+        std::vector<sk_sp<SkImageFilter>> inputs;
+        for (int j = 0; j < node.input_count; ++j) {
+            int id = node.inputs[j];
+            if (id < -1 || id >= i)
+                return source;
+            inputs.push_back(id == -1 ? source : outputs[id]);
+        }
+        auto input = inputs.empty() ? source : inputs[0];
+        sk_sp<SkImageFilter> result;
+        switch (node.kind) {
+        case 0:
+            // Negative standard deviations disable the primitive.
+            if (node.x < 0 || node.y < 0)
+                result = input;
+            else
+                result = SkImageFilters::Blur(node.x * scale_x, node.y * scale_y, SkTileMode::kDecal, input);
+            break;
+        case 1:
+        case 2:
+            if (node.x < 0 || node.y < 0)
+                result = input;
+            else if (node.kind == 1)
+                result = SkImageFilters::Erode(node.x * scale_x, node.y * scale_y, input);
+            else
+                result = SkImageFilters::Dilate(node.x * scale_x, node.y * scale_y, input);
+            break;
+        case 3:
+            result = inputs.empty() ? transparent_filter() : SkImageFilters::Merge(inputs.data(), int(inputs.size()));
+            break;
+        case 4:
+            result = SkImageFilters::Offset(node.x * scale_x, node.y * scale_y, input);
+            break;
+        case 5:
+            result = SkImageFilters::ColorFilter(SkColorFilters::SRGBToLinearGamma(), input);
+            break;
+        case 6:
+            result = SkImageFilters::ColorFilter(SkColorFilters::LinearToSRGBGamma(), input);
+            break;
+        case 7:
+            result = SkImageFilters::ColorFilter(SkColorFilters::Matrix(node.matrix), input);
+            break;
+        default:
+            return source;
+        }
+        outputs.push_back(std::move(result));
+    }
+    if (filter.graph_root < -1 || filter.graph_root >= filter.graph_count)
+        return source;
+    auto result = filter.graph_root == -1 ? source : outputs[filter.graph_root];
+    auto const* region = filter.graph_region;
+    auto crop = filter.graph_object_bounds
+        ? SkRect::MakeXYWH(bounds.x() + region[0] * bounds.width(), bounds.y() + region[1] * bounds.height(),
+              region[2] * bounds.width(), region[3] * bounds.height())
+        : SkRect::MakeXYWH(region[0], region[1], region[2], region[3]);
+    if (crop.isEmpty())
+        return transparent_filter();
+    return SkImageFilters::Crop(crop, SkTileMode::kDecal, std::move(result));
+}
+
+static sk_sp<SkImageFilter> make_filter(VoxCanvasCommand const& command, SkRect bounds)
 {
     sk_sp<SkImageFilter> input;
+    bool has_svg_reference = false;
     for (int i = 0; i < command.filter_count; ++i) {
         auto const& filter = command.filters[i];
         if (filter.kind == 0)
             input = SkImageFilters::Blur(filter.radius, filter.radius, input);
         else if (filter.kind == 1)
             input = SkImageFilters::DropShadow(filter.offset_x, filter.offset_y, filter.radius, filter.radius, filter.color, input);
+        else if (filter.kind == 3) {
+            has_svg_reference = true;
+            input = make_svg_filter(filter, input, bounds);
+        }
         else
             input = SkImageFilters::ColorFilter(
                 SkColorFilters::Matrix(filter.matrix, filter.clamp ? SkColorFilters::Clamp::kYes : SkColorFilters::Clamp::kNo), input);
+    }
+    // Canvas SVG filter coordinates use the output bitmap, independently of
+    // the drawing transform. SourceGraphic still receives that transform.
+    if (input && has_svg_reference) {
+        SkMatrix inverse;
+        if (make_matrix(command.transform).invert(&inverse))
+            input = input->makeWithLocalMatrix(inverse);
     }
     return input;
 }
@@ -196,7 +280,7 @@ extern "C" bool vox_skia_canvas_path(uint8_t* pixels, int width, int height, int
         auto image = bitmap.asImage();
         if (!image)
             return false;
-        paint.setImageFilter(make_filter(*command));
+        paint.setImageFilter(make_filter(*command, SkRect::MakeWH(width, height)));
         paint.setAlpha(static_cast<uint8_t>(command->global_alpha * 255));
         paint.setBlender(make_blender(command->composite));
         auto source_rect = SkRect::MakeXYWH(command->source[0], command->source[1], command->source[2], command->source[3]);
@@ -212,7 +296,7 @@ extern "C" bool vox_skia_canvas_path(uint8_t* pixels, int width, int height, int
         paint.setMaskFilter(SkMaskFilter::MakeBlur(kNormal_SkBlurStyle, command->blur / 2));
     else {
         paint.setAlphaf(paint.getAlphaf() * command->global_alpha);
-        paint.setImageFilter(make_filter(*command));
+        paint.setImageFilter(make_filter(*command, SkRect::MakeWH(width, height)));
     }
     paint.setBlender(make_blender(command->composite));
     if (command->stroke) {
@@ -280,7 +364,7 @@ extern "C" bool vox_skia_canvas_glyphs(uint8_t* pixels, int width, int height, i
     SkPaint paint;
     if (!apply_style(paint, command->style))
         return false;
-    paint.setImageFilter(make_filter(*command));
+    paint.setImageFilter(make_filter(*command, SkRect::MakeWH(width, height)));
     paint.setAlphaf(paint.getAlphaf() * command->global_alpha);
     paint.setBlender(make_blender(command->composite));
     canvas.drawTextBlob(blob.get(), glyphs->translation[0], glyphs->translation[1], paint);

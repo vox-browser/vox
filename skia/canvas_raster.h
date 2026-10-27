@@ -19,12 +19,23 @@ struct VoxCanvasStyle {
     int pattern_width, pattern_height, pattern_pitch, pattern_alpha, pattern_color_space, repetition;
     float pattern_transform[6];
 };
+struct VoxCanvasSvgFilterNode {
+    int kind;
+    int32_t const* inputs;
+    int input_count;
+    float x, y;
+    float matrix[20];
+};
 struct VoxCanvasFilter {
     int kind;
     float radius, offset_x, offset_y;
     uint32_t color;
     float matrix[20];
     int clamp;
+    struct VoxCanvasSvgFilterNode const* graph_nodes;
+    int graph_count, graph_root;
+    float graph_region[4];
+    int graph_object_bounds, graph_primitive_bounds;
 };
 struct VoxCanvasCommand {
     int operation;

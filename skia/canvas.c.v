@@ -64,6 +64,7 @@ pub:
 	color    u32
 	matrix   [20]f32
 	clamp    bool
+	graph    SvgFilterGraph
 }
 
 pub struct Command {
@@ -117,14 +118,29 @@ struct C.VoxCanvasStyle {
 	pattern_transform   [6]f32
 }
 
+struct C.VoxCanvasSvgFilterNode {
+	kind        int
+	inputs      &i32
+	input_count int
+	x           f32
+	y           f32
+	matrix      [20]f32
+}
+
 struct C.VoxCanvasFilter {
-	kind     int
-	radius   f32
-	offset_x f32
-	offset_y f32
-	color    u32
-	matrix   [20]f32
-	clamp    int
+	kind                   int
+	radius                 f32
+	offset_x               f32
+	offset_y               f32
+	color                  u32
+	matrix                 [20]f32
+	clamp                  int
+	graph_nodes            &C.VoxCanvasSvgFilterNode
+	graph_count            int
+	graph_root             int
+	graph_region           [4]f32
+	graph_object_bounds    int
+	graph_primitive_bounds int
 }
 
 struct C.VoxCanvasCommand {
@@ -194,8 +210,39 @@ fn draw_canvas_command(mut pixels []u8, width int, height int, pitch int, alpha_
 		clips << native_path(clip)
 	}
 	mut filters := []C.VoxCanvasFilter{cap: command.filters.len}
+	// Keep every graph and its input arrays alive until native drawing returns.
+	mut graph_storage := [][]C.VoxCanvasSvgFilterNode{}
+	mut input_storage := [][]i32{}
 	for filter in command.filters {
-		filters << C.VoxCanvasFilter{filter.kind, filter.radius, filter.offset_x, filter.offset_y, filter.color, filter.matrix, int(filter.clamp)}
+		mut nodes := []C.VoxCanvasSvgFilterNode{}
+		for node in filter.graph.nodes {
+			inputs := node.inputs.map(i32(it))
+			input_storage << inputs
+			nodes << C.VoxCanvasSvgFilterNode{
+				kind:        int(node.kind)
+				inputs:      inputs.data
+				input_count: inputs.len
+				x:           node.x
+				y:           node.y
+				matrix:      node.matrix
+			}
+		}
+		graph_storage << nodes
+		filters << C.VoxCanvasFilter{
+			kind:                   filter.kind
+			radius:                 filter.radius
+			offset_x:               filter.offset_x
+			offset_y:               filter.offset_y
+			color:                  filter.color
+			matrix:                 filter.matrix
+			clamp:                  int(filter.clamp)
+			graph_nodes:            nodes.data
+			graph_count:            nodes.len
+			graph_root:             filter.graph.root
+			graph_region:           filter.graph.region
+			graph_object_bounds:    int(filter.graph.object_bounds)
+			graph_primitive_bounds: int(filter.graph.primitive_bounds)
+		}
 	}
 	style := command.style
 	native_style := C.VoxCanvasStyle{

@@ -96,7 +96,7 @@ fn (mut context OffscreenCanvasRenderingContext2D) paint_canvas_path(path Canvas
 		blur:         f32(blur)
 		dashes:       state.dash_list.map(f32(it))
 		dash_offset:  f32(state.line_dash_offset)
-		filters:      state.filter_functions.map(canvas_skia_filter(it))
+		filters:      context.canvas_skia_filters()
 	}
 	painted := skia.draw_path(mut mutable_bitmap.data, bitmap.width, bitmap.height, bitmap.pitch,
 		int(bitmap.alpha_type), command)
@@ -123,7 +123,7 @@ fn (mut context OffscreenCanvasRenderingContext2D) paint_canvas_glyph_run(run &p
 		clips: clips
 		composite: int(state.current_compositing_and_blending_operator)
 		global_alpha: f32(state.global_alpha)
-		filters: state.filter_functions.map(canvas_skia_filter(it))
+		filters: context.canvas_skia_filters()
 	}
 	glyphs := skia.GlyphRun{
 		font_path: font_path
@@ -303,7 +303,7 @@ fn (mut context OffscreenCanvasRenderingContext2D) paint_canvas_bitmap_command(o
 		clips:        clips
 		composite:    int(state.current_compositing_and_blending_operator)
 		global_alpha: f32(state.global_alpha)
-		filters:      state.filter_functions.map(canvas_skia_filter(it))
+		filters:      context.canvas_skia_filters()
 	}
 	painted := skia.draw_path(mut mutable_bitmap.data, bitmap.width, bitmap.height, bitmap.pitch, int(bitmap.alpha_type), command)
 	assert painted

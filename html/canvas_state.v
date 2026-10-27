@@ -227,6 +227,7 @@ pub enum CanvasFilterKind {
 	color
 	hue_rotate
 	drop_shadow
+	svg_reference
 }
 
 // Layout::RustFFI::FfiFilterFunction, resolved by Canvas2DContextBase::set_filter.
@@ -238,6 +239,7 @@ pub:
 	offset_x        f32
 	offset_y        f32
 	color           dom.Color
+	reference       string
 }
 
 pub struct DrawingState {
