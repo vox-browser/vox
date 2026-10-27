@@ -51,7 +51,7 @@ fn begin_initial_layout_snapshot(style &ComputedProperties, document &dom.Docume
 		if temporary == unsafe { nil } { panic('could not allocate initial layout snapshot') }
 		// Preserve the previous non-inherited fields and copy rare data before
 		// its first mutation. Existing snapshots can still have retained readers.
-		unsafe { vmemcpy(temporary, previous, sizeof(ComputedLayoutCache)) }
+		unsafe { vmemcpy(temporary, previous, int(sizeof(ComputedLayoutCache))) }
 		temporary.rare_data_writable_ = false
 		temporary.writable_owner_identity = u64(voidptr(style))
 		temporary.owner_identity = u64(voidptr(style))

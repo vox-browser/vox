@@ -26,6 +26,10 @@ fn initial_snapshot_resolve_ordinary(mut style ComputedProperties, document &dom
 fn test_initial_native_snapshots_share_equal_values_but_keep_each_raw_graph_proof() {
 	mut document := initial_snapshot_document()
 	mut scope := document.enter_native_storage()
+	defer {
+		scope.finish()
+		document.release_native_storage()
+	}
 	first := computed_properties_with_initial_values()
 	second := computed_properties_with_initial_values()
 	_ = resolve_computed_values_for_document(first, document)
@@ -45,13 +49,15 @@ fn test_initial_native_snapshots_share_equal_values_but_keep_each_raw_graph_proo
 	for _ in 0 .. 3 { _ = resolve_computed_values_for_document(first, document) }
 	assert voidptr(first.computed_layout_cache()) == voidptr(cache)
 	assert voidptr(first.geometry_provenance()) == voidptr(proof)
-	scope.finish()
-	document.release_native_storage()
 }
 
 fn test_shared_initial_snapshots_detach_on_direct_writes_and_raw_style_changes() {
 	mut document := initial_snapshot_document()
 	mut scope := document.enter_native_storage()
+	defer {
+		scope.finish()
+		document.release_native_storage()
+	}
 	mut first := computed_properties_with_initial_values()
 	second := computed_properties_with_initial_values()
 	_ = resolve_computed_values_for_document(first, document)
@@ -68,13 +74,15 @@ fn test_shared_initial_snapshots_detach_on_direct_writes_and_raw_style_changes()
 	assert snapshot.computed_values_width_ != first.computed_layout_cache().computed_values_width_
 	assert first.geometry_provenance().matches(first)
 	assert second.geometry_provenance().matches(second)
-	scope.finish()
-	document.release_native_storage()
 }
 
 fn test_initial_snapshot_values_match_the_existing_resolver_for_rare_and_ordinary_styles() {
 	mut document := initial_snapshot_document()
 	mut scope := document.enter_native_storage()
+	defer {
+		scope.finish()
+		document.release_native_storage()
+	}
 	for declarations in [map[PropertyID]string{}, {.width:'35px', .margin_left:'2px', .color:'red'},
 		{.transform:'translateX(7px)', .clip_path:'inset(2px)', .background_image:'url(image.svg)'},
 		{.direction:'rtl', .writing_mode:'vertical-rl', .font_size:'19px', .stroke_width:'3px'}] {
@@ -94,8 +102,6 @@ fn test_initial_snapshot_values_match_the_existing_resolver_for_rare_and_ordinar
 			assert voidptr(actual.computed_layout_cache()) != voidptr(expected.computed_layout_cache())
 		}
 	}
-	scope.finish()
-	document.release_native_storage()
 }
 
 fn test_shared_initial_snapshots_preserve_anonymous_inheritance_and_document_isolation() {
@@ -123,6 +129,10 @@ fn test_initial_geometry_interning_avoids_duplicate_permanent_records() {
 	$if !prealloc { return }
 	mut document := initial_snapshot_document()
 	mut scope := document.enter_native_storage()
+	defer {
+		scope.finish()
+		document.release_native_storage()
+	}
 	// Prime shared defaults and fonts before comparing retained allocations.
 	warm := computed_properties_with_initial_values()
 	_ = resolve_computed_values_for_document(warm, document)
@@ -139,13 +149,15 @@ fn test_initial_geometry_interning_avoids_duplicate_permanent_records() {
 	}
 	reference := document.native_storage().arena.usage().used - before - actual
 	assert actual * 4 < reference * 3, '${actual} retained versus ${reference}'
-	scope.finish()
-	document.release_native_storage()
 }
 
 fn test_existing_native_snapshots_reuse_equal_resolutions_and_preserve_previous_values() {
 	mut document := initial_snapshot_document()
 	mut scope := document.enter_native_storage()
+	defer {
+		scope.finish()
+		document.release_native_storage()
+	}
 	mut style := computed_properties_with_initial_values()
 	initial_snapshot_set(mut style, .width, '37px')
 	_ = resolve_computed_values_for_document(style, document)
@@ -171,13 +183,15 @@ fn test_existing_native_snapshots_reuse_equal_resolutions_and_preserve_previous_
 	assert voidptr(style.computed_layout_cache().rare_data_) != voidptr(rare.rare_data_)
 	assert rare.rare_data().computed_values_transformations_ == old_transformations
 	assert unsafe { &ComputedValues(style) }.transformations() != old_transformations
-	scope.finish()
-	document.release_native_storage()
 }
 
 fn test_anonymous_native_snapshots_share_and_inherit_without_changing_old_readers() {
 	mut document := initial_snapshot_document()
 	mut scope := document.enter_native_storage()
+	defer {
+		scope.finish()
+		document.release_native_storage()
+	}
 	mut parent := computed_properties_with_initial_values()
 	initial_snapshot_set(mut parent, .color, 'red')
 	initial_snapshot_set(mut parent, .width, '311px')
@@ -204,25 +218,30 @@ fn test_anonymous_native_snapshots_share_and_inherit_without_changing_old_reader
 	assert old.computed_values_color_ == Color{255, 0, 0, 255}
 	assert second.color() == Color{255, 0, 0, 255}
 	assert second.font_size() != first.font_size()
-	scope.finish()
-	document.release_native_storage()
 }
 
 fn test_repeated_native_reresolution_does_not_retain_duplicate_cache_records() {
 	$if !prealloc { return }
 	mut document := initial_snapshot_document()
 	mut scope := document.enter_native_storage()
+	defer {
+		scope.finish()
+		document.release_native_storage()
+	}
 	mut style := computed_properties_with_initial_values()
 	widths := [parse_css_value(ParsingParams{}, '37px', .width) or { panic('width') },
 		parse_css_value(ParsingParams{}, '53px', .width) or { panic('width') }]
+	mut snapshots := []voidptr{cap: widths.len}
 	for width in widths {
 		style.set_property(.width, width, .no, .no)
 		_ = resolve_computed_values_for_document(style, document)
+		snapshots << voidptr(style.computed_layout_cache())
 	}
 	before := document.native_storage().arena.usage().used
 	for index in 0 .. 64 {
 		style.set_property(.width, widths[index % 2], .no, .no)
 		_ = resolve_computed_values_for_document(style, document)
+		assert voidptr(style.computed_layout_cache()) == snapshots[index % 2]
 	}
 	actual := document.native_storage().arena.usage().used - before
 	for index in 0 .. 64 {
@@ -230,14 +249,19 @@ fn test_repeated_native_reresolution_does_not_retain_duplicate_cache_records() {
 		initial_snapshot_resolve_ordinary(mut style, document)
 	}
 	reference := document.native_storage().arena.usage().used - before - actual
-	assert actual * 4 < reference, '${actual} retained versus ${reference}'
-	scope.finish()
-	document.release_native_storage()
+	// Each ordinary resolution retains a full record. Interning must save
+	// at least those records, independently of the compiler's record layout
+	// or the size of the per-resolution provenance retained by both paths.
+	assert reference - actual >= 64 * i64(sizeof(ComputedLayoutCache)), '${actual} retained versus ${reference}'
 }
 
 fn test_scripted_initial_snapshot_aliases_survive_animation_and_raw_style_mutations() {
 	mut document := initial_snapshot_document()
 	mut scope := document.enter_native_storage()
+	defer {
+		scope.finish()
+		document.release_native_storage()
+	}
 	assert document.as_node().is_scripting_enabled()
 	mut first := computed_properties_with_initial_values()
 	second := computed_properties_with_initial_values()
@@ -262,13 +286,15 @@ fn test_scripted_initial_snapshot_aliases_survive_animation_and_raw_style_mutati
 	assert second.geometry_provenance().matches(second)
 	assert voidptr(second.computed_layout_cache()) == voidptr(original)
 	assert original.computed_values_width_ != Size.make_length(Length.make_px(37))
-	scope.finish()
-	document.release_native_storage()
 }
 
 fn test_scripted_typed_styles_share_but_animated_and_untyped_styles_keep_the_ordinary_path() {
 	mut document := initial_snapshot_document()
 	mut scope := document.enter_native_storage()
+	defer {
+		scope.finish()
+		document.release_native_storage()
+	}
 	document.set_scripting_enabled_by_embedder(true)
 	assert document.as_node().is_scripting_enabled()
 	scripted := computed_properties_with_initial_values()
@@ -286,6 +312,4 @@ fn test_scripted_typed_styles_share_but_animated_and_untyped_styles_keep_the_ord
 	_ = resolve_computed_values_for_document(animated, document)
 	assert animated.shared_geometry_cache_ == unsafe { nil }
 	assert animated.computed_layout_cache().computed_values_width_ == Size.make_length(Length.make_px(67))
-	scope.finish()
-	document.release_native_storage()
 }
