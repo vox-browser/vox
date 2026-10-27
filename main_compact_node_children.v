@@ -101,5 +101,5 @@ Object.defineProperty(Element.prototype,"childNodes",{get:function(){return __co
 Object.defineProperty(document,"childNodes",{get:function(){if(this!==document)throw new TypeError("Illegal Document receiver");return __compactChildNodes(this,{bridgeKey:""});},enumerable:true,configurable:true});
 document.createDocumentFragment=function createDocumentFragment(){return __queryElements("","createFragment","");};
 document.createTextNode=function createTextNode(data){if(arguments.length===0)throw new TypeError("createTextNode requires data");if(typeof data==="symbol")throw new TypeError("Cannot convert a Symbol to a string");return __queryElements("","createText",String(data));};
-' + compact_child_node_bootstrap()
+' + compact_child_node_bootstrap() + compact_create_comment_bootstrap()
 }
