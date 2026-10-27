@@ -714,3 +714,19 @@ audits, pixel metrics, and actual exits are in the preserved bundle directory's
 The mask effect-scope correction and native gradient-raster changes remain
 uncommitted pending their visual checks. Whole-page pixel parity and the
 previously recorded broad screenshot failures remain open.
+
+## Header filtering diagnostic
+
+`Build/pikabu-header-policy-1793059785375573000/results.json` isolates the
+advertising reservation in the same frozen Brave document at 1024 by 768,
+scale one. Applying the repository's three cosmetic rules for
+`.ads-placeholder`, `.external_branding`, and `div[id^="adfox_"]` changes the
+header's measured height from 264px to 64px. The browser, document, and filter
+list hashes stay unchanged; the diagnostic exits zero. Before and after
+screenshots and the exact rules are retained beside the result.
+
+This demonstrates a 200px shift caused by filtering policy in the earlier
+comparison. It does not validate the complete uBlock policy or establish live
+page parity. The pending FormData, canvas-filter, and mask corrections still
+need focused and production-browser validation before receiving conformance
+credit.
