@@ -41,7 +41,7 @@ replay results cannot establish parity with an unmodified live Brave page.
 The propagated body's `background-attachment:scroll` image remains at the top
 of Vox's viewport after scrolling. At the top-left pixel, both browsers
 initially paint RGB `(254,214,175)`; after scrolling Brave paints the canvas
-color `(255,255,238)` while Vox retains the fade. A pending fix gives scrolling
+color `(255,255,238)` while Vox retains the fade. The committed fix gives scrolling
 canvas image layers the root scroll context while preserving the stationary
 canvas color and fixed layers. Its focused test covers root/body propagation,
 horizontal and vertical scrolling, local/fixed attachments, and retained
@@ -70,15 +70,40 @@ with child exit -9 after 572.49 seconds; it produced no validated bundle.
 A separate shadow probe identified legacy comma-separated `rgba()` opacity
 rounding as a candidate cause of the catalog's one-channel shadow errors.
 Chromium rounds that syntax's alpha to eight bits while retaining fractional
-alpha for modern space-separated `rgb()`. The pending paint-color test covers
-both forms and percentage alpha. Probe results are diagnostic evidence, not a
-catalog pixel verdict.
+alpha for modern space-separated `rgb()`. Commit `89571ff2` implements that
+rounding and includes a parser-to-paint regression test for both forms and
+percentage alpha. Its focused executable compiled and ran successfully;
+`4chan-catalog-20261027-alpha-1/focused-memory.json` records child exit 0
+under the 3 GiB runtime guard. This is not yet a catalog pixel verdict.
 
-`Build/4chan-catalog-20261027-alpha-1/` contains its queued focused check.
+The alpha stage's first attempt failed to compile because its isolated CSS
+package lacked source-local headers. That failure is preserved in
+`attempt-1-missing-header/`; the retry included those headers and passed the
+actual focused runtime check. A native probe found identical sampled output
+from direct paint color and Chromium's color-filter formulation, so it supplied
+no evidence for changing the native shadow painter again.
+
+The same stage's Brave component probe failed to reproduce the ad-hidden
+reference: copying seven signed public filter components into an empty profile
+left the 90-pixel slot visible, with 882,138 differing native pixels. No browsing
+profile state was copied. Its input archive differs from the controlled oracle
+only by removal of the explicit cosmetic style; both retain the same frozen
+image frames. This failure remains in `brave-components/oracle-comparison.json`.
+Brave's installed-version source also shows that disabled component updating
+can skip filter registration. A second probe enables default component
+registration before testing the same public assets; its result is pending.
+
 `Build/4chan-catalog-20261027-final-1/` contains the frozen-source production
 retry. It preserves the exact generated C and native compiler command, exits
-V, and then runs native compilation under the same 12 GiB guard. Its planned
-checks include startup smoke, fresh native captures, all 19 scroll offsets,
+V, and then runs native compilation under the same 12 GiB guard. Its first
+attempt was blocked by the failed alpha prerequisite. Its second attempt
+stopped during UI2 preparation because the compiler wrapper lacked the adjacent
+`vlib` link; no browser compilation ran. Both failures are retained in
+`attempt-1-alpha-blocked/` and `attempt-2-missing-vlib/`. The corrected retry is
+queued and has not supplied a browser pixel verdict.
+
+The planned checks include startup smoke, fresh native captures, 800×600,
+1024×768 and 1280×768 viewports at native scale 2, all 19 scroll offsets,
 strict zero-difference acceptance, and unmodified live Brave geometry. Live
 geometry is recorded separately because independent live responses contain
 changing threads, banners, and animation. The available completed production
