@@ -32,10 +32,54 @@ int main(int argc, char** argv)
     command.style.pattern_height = 48; command.style.pattern_pitch = 256;
     command.style.pattern_alpha = 2;
     std::vector<uint8_t> pixels(192 * 144 * 4);
+    auto save_readback = [&](char const* name) {
+        std::vector<uint8_t> rgba(pixels.size());
+        assert(vox_skia_canvas_read_pixels(pixels.data(), 192, 144, 768, 2, rgba.data(), 192, 144, 768, 0, 0));
+        auto* output = std::fopen((directory + "/" + name + ".rgba").c_str(), "wb");
+        assert(output && std::fwrite(rgba.data(), 1, rgba.size(), output) == rgba.size());
+        std::fclose(output);
+    };
     assert(vox_skia_canvas_path_chromium(pixels.data(), 192, 144, 768, 2, &command));
     auto* file = std::fopen((directory + "/plain.raw").c_str(), "wb");
     assert(file && std::fwrite(pixels.data(), 1, pixels.size(), file) == pixels.size());
     std::fclose(file);
+    save_readback("plain");
+
+    // The same source and filter graph as canvas-svg-filters.html. Compare
+    // these complete bitmaps with Brave, including translucent edge pixels.
+    int32_t input0[] {-1}, input1[] {0}, input2[] {1}, merge[] {2, 1}, input4[] {3};
+    VoxCanvasSvgFilterNode graph[5] {};
+    graph[0].kind = 5; graph[0].inputs = input0; graph[0].input_count = 1;
+    graph[1].kind = 0; graph[1].inputs = input1; graph[1].input_count = 1; graph[1].x = graph[1].y = 6;
+    graph[2].kind = 2; graph[2].inputs = input2; graph[2].input_count = 1;
+    graph[3].kind = 3; graph[3].inputs = merge; graph[3].input_count = 2;
+    graph[4].kind = 6; graph[4].inputs = input4; graph[4].input_count = 1;
+    VoxCanvasFilter filters[2] {};
+    filters[0].radius = 6; filters[0].graph_nodes = graph;
+    filters[0].graph_count = 5; filters[0].graph_root = 4;
+    filters[0].graph_region[2] = filters[0].graph_region[3] = 1;
+    filters[0].graph_object_bounds = 1;
+    filters[1].kind = 4; filters[1].clamp = 1;
+    filters[1].matrix[0] = filters[1].matrix[6] = filters[1].matrix[12] = 1;
+    filters[1].matrix[18] = .9f;
+    command.filters = filters; command.filter_count = 2;
+    for (int kind : {3, 0}) {
+        filters[0].kind = kind;
+        std::fill(pixels.begin(), pixels.end(), 0);
+        assert(vox_skia_canvas_path_chromium(pixels.data(), 192, 144, 768, 2, &command));
+        auto* output = std::fopen((directory + (kind == 3 ? "/backdrop.raw" : "/blur.raw")).c_str(), "wb");
+        assert(output && std::fwrite(pixels.data(), 1, pixels.size(), output) == pixels.size());
+        std::fclose(output);
+        save_readback(kind == 3 ? "backdrop" : "blur");
+        // The extra filter kind must leave LibWeb's CPU matrix behavior intact.
+        std::vector<uint8_t> cpu(pixels.size()), matrix(pixels.size());
+        assert(vox_skia_canvas_path(cpu.data(), 192, 144, 768, 2, &command));
+        filters[1].kind = 2;
+        assert(vox_skia_canvas_path(matrix.data(), 192, 144, 768, 2, &command));
+        assert(cpu == matrix);
+        filters[1].kind = 4;
+    }
+    command.filters = nullptr; command.filter_count = 0;
 
     // Backend failure and ineligible requests must leave the destination intact.
     auto before = pixels;
@@ -72,7 +116,10 @@ int main(int argc, char** argv)
     clip_segments[48] = 5;
     VoxCanvasPath clip {clip_segments, 5, 0};
     command.clips = &clip; command.clip_count = 1;
-    for (int alpha : {1, 2}) for (int composite : {0, 6, 9, 10}) {
+    filters[1].matrix[18] = 1;
+    for (bool filtered : {false, true}) for (int alpha : {1, 2}) for (int composite : {0, 6, 9, 10}) {
+        command.filters = filtered ? filters + 1 : nullptr;
+        command.filter_count = filtered ? 1 : 0;
         command.composite = composite; command.global_alpha = .5;
         std::vector<uint8_t> cpu(80 * 16, 0xad);
         for (int y = 0; y < 16; ++y) for (int x = 0; x < 16; ++x) {
@@ -85,5 +132,5 @@ int main(int argc, char** argv)
         assert(cpu == gpu);
         for (int y = 0; y < 16; ++y) for (int i = 64; i < 80; ++i) assert(gpu[y * 80 + i] == 0xad);
     }
-    std::puts("Chromium Canvas GPU: sampling, transforms, clips, alpha, compositing, stride and transactional fallback passed");
+    std::puts("Chromium Canvas GPU: sampling, filters, transforms, clips, alpha, compositing, stride and transactional fallback passed");
 }

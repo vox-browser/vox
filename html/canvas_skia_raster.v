@@ -264,7 +264,7 @@ fn canvas_skia_filter(function CanvasFilterFunction) skia.Filter {
 		}
 	}
 	return skia.Filter{
-		kind:   2
+		kind:   if function.color_operation == .opacity { 4 } else { 2 }
 		matrix: matrix
 		clamp:  function.color_operation in [
 			css.ColorFilterType.grayscale,
@@ -291,8 +291,14 @@ fn (mut context OffscreenCanvasRenderingContext2D) paint_canvas_bitmap_command(o
 		image := frame.bitmap()
 		style = skia.Style{ kind: 4, pattern: image.data.clone(), pattern_width: image.width, pattern_height: image.height, pattern_pitch: image.pitch, pattern_alpha: int(image.alpha_type), pattern_color_space: int(frame.color_space()) }
 	}
+	chromium := if document := context.font_resolution_document() {
+		document.font_rendering_policy() == .chromium
+	} else {
+		false
+	}
 	command := skia.Command{
 		operation:    operation
+		chromium:     chromium
 		destination:  [f32(destination_rect.x), f32(destination_rect.y), f32(destination_rect.width),
 			f32(destination_rect.height)]!
 		source:       [f32(math.round(source_rect.x)), f32(math.round(source_rect.y)),

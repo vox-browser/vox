@@ -216,7 +216,7 @@ static sk_sp<SkImageFilter> make_svg_filter(VoxCanvasFilter const& filter, sk_sp
     return SkImageFilters::Crop(crop, SkTileMode::kDecal, std::move(result));
 }
 
-static sk_sp<SkImageFilter> make_filter(VoxCanvasCommand const& command, SkRect bounds)
+static sk_sp<SkImageFilter> make_filter(VoxCanvasCommand const& command, SkRect bounds, bool chromium = false)
 {
     sk_sp<SkImageFilter> input;
     bool has_svg_reference = false;
@@ -230,13 +230,20 @@ static sk_sp<SkImageFilter> make_filter(VoxCanvasCommand const& command, SkRect 
             has_svg_reference = true;
             input = make_svg_filter(filter, input, bounds);
         }
-        else
+        else if (filter.kind == 4 && chromium) {
+            // Blink's FEComponentTransfer builds an 8-bit alpha table from
+            // double-precision interpolation of its float opacity endpoint.
+            uint8_t alpha[256];
+            for (int j = 0; j < 256; ++j)
+                alpha[j] = static_cast<uint8_t>(std::fmin(255.0, std::fmax(0.0, double(j) * double(filter.matrix[18]))));
+            input = SkImageFilters::ColorFilter(SkColorFilters::TableARGB(alpha, nullptr, nullptr, nullptr), input);
+        } else
             input = SkImageFilters::ColorFilter(
                 SkColorFilters::Matrix(filter.matrix, filter.clamp ? SkColorFilters::Clamp::kYes : SkColorFilters::Clamp::kNo), input);
     }
     // Canvas SVG filter coordinates use the output bitmap, independently of
     // the drawing transform. SourceGraphic still receives that transform.
-    if (input && has_svg_reference) {
+    if (input && has_svg_reference && !chromium) {
         SkMatrix inverse;
         if (make_matrix(command.transform).invert(&inverse))
             input = input->makeWithLocalMatrix(inverse);
@@ -244,7 +251,7 @@ static sk_sp<SkImageFilter> make_filter(VoxCanvasCommand const& command, SkRect 
     return input;
 }
 
-static bool draw_canvas_command(SkCanvas* canvas, int width, int height, VoxCanvasCommand const* command)
+static bool draw_canvas_command(SkCanvas* canvas, int width, int height, VoxCanvasCommand const* command, bool chromium = false)
 {
     // Clips were captured in device space by Canvas2DContextBase::clip.
     for (int i = 0; i < command->clip_count; ++i)
@@ -273,12 +280,30 @@ static bool draw_canvas_command(SkCanvas* canvas, int width, int height, VoxCanv
         auto image = bitmap.asImage();
         if (!image)
             return false;
-        paint.setImageFilter(make_filter(*command, SkRect::MakeWH(width, height)));
+        auto filter = make_filter(*command, SkRect::MakeWH(width, height), chromium);
+        bool const filtered_layer = chromium && bool(filter);
+        if (filtered_layer) {
+            // Canvas2DRecorder::CompositedDraw filters a layer in bitmap
+            // coordinates, after applying the drawing transform to its source.
+            canvas->save();
+            canvas->resetMatrix();
+            SkPaint layer;
+            layer.setImageFilter(std::move(filter));
+            layer.setBlender(make_blender(command->composite));
+            canvas->saveLayer(nullptr, &layer);
+            canvas->setMatrix(make_matrix(command->transform));
+        } else {
+            paint.setImageFilter(std::move(filter));
+            paint.setBlender(make_blender(command->composite));
+        }
         paint.setAlpha(static_cast<uint8_t>(command->global_alpha * 255));
-        paint.setBlender(make_blender(command->composite));
         auto source_rect = SkRect::MakeXYWH(command->source[0], command->source[1], command->source[2], command->source[3]);
         auto sampling = command->smoothing ? SkSamplingOptions(SkFilterMode::kLinear, SkMipmapMode::kLinear) : SkSamplingOptions(SkFilterMode::kNearest);
         canvas->drawImageRect(image.get(), source_rect, destination_rect, sampling, &paint, SkCanvas::kStrict_SrcRectConstraint);
+        if (filtered_layer) {
+            canvas->restore();
+            canvas->restore();
+        }
         return true;
     }
     if (!apply_style(paint, command->style))

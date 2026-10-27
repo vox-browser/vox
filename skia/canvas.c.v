@@ -70,6 +70,7 @@ pub:
 pub struct Command {
 pub:
 	operation    int
+	chromium     bool
 	destination  [4]f32
 	source       [4]f32
 	smoothing    bool
@@ -169,6 +170,7 @@ struct C.VoxCanvasCommand {
 }
 
 fn C.vox_skia_canvas_path(pixels &u8, width int, height int, pitch int, alpha_type int, command &C.VoxCanvasCommand) bool
+fn C.vox_skia_canvas_path_chromium(pixels &u8, width int, height int, pitch int, alpha_type int, command &C.VoxCanvasCommand) bool
 
 pub struct GlyphRun {
 pub:
@@ -293,6 +295,9 @@ fn draw_canvas_command(mut pixels []u8, width int, height int, pitch int, alpha_
 	if run := glyphs {
 		native := C.VoxCanvasGlyphRun{ run.font_path.str, run.face_index, run.glyphs.len, run.font_size, run.translation, run.glyphs.data, run.positions.data }
 		return C.vox_skia_canvas_glyphs(pixels.data, width, height, pitch, alpha_type, &native_command, &native)
+	}
+	if command.chromium && C.vox_skia_canvas_path_chromium(pixels.data, width, height, pitch, alpha_type, &native_command) {
+		return true
 	}
 	return C.vox_skia_canvas_path(pixels.data, width, height, pitch, alpha_type, &native_command)
 }

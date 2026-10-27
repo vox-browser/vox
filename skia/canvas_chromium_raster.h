@@ -52,7 +52,7 @@ static bool replay_canvas_image(uint8_t* pixels, int width, int height, int pitc
     SkPaint paint;
     paint.setBlendMode(SkBlendMode::kSrc);
     canvas->drawImage(image, 0, 0, SkSamplingOptions(), &paint);
-    if (!draw_canvas_command(canvas, width, height, command)) return false;
+    if (!draw_canvas_command(canvas, width, height, command, true)) return false;
     auto picture = recorder.finishRecordingAsPicture();
     SkSerialProcs procs;
     procs.fImageProc = serialize_canvas_image;
