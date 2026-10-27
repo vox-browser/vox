@@ -568,7 +568,13 @@ fn precompute_compatibility_sticky_constraints(mut box BlockBox, sticky_frame_in
 fn assign_compatibility_scroll_frames(mut box BlockBox, boxes_by_layout map[u64]&BlockBox, mut boxes_by_scroll_frame map[int]&BlockBox, mut state painting.ScrollState) {
 	box.own_scroll_frame_index = 0
 	box.sticky_scroll_frame_index = 0
-	parent_index := paintable_box_nearest_scroll_frame_index(box, boxes_by_layout)
+	// Only frame owners use the parent index. Ordinary boxes still recurse so
+	// nested scrollers and sticky descendants find their containing-block frame.
+	parent_index := if box.sticky_position || box.has_scrollable_overflow || box.is_viewport_scroller {
+		paintable_box_nearest_scroll_frame_index(box, boxes_by_layout)
+	} else {
+		0
+	}
 	if box.sticky_position {
 		sticky_frame_index := state.create_sticky_frame_for(box.node_id.str(), parent_index)
 		box.sticky_scroll_frame_index = sticky_frame_index
