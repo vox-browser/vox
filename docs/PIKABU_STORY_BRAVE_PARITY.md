@@ -926,3 +926,24 @@ Remaining analytics errors include `PerformanceResourceTiming` and a blocked
 advertising initializer. The startup diagnostic is retained in
 `Build/pikabu-fragment-startup-diagnostic-1793085248796138000/`.
 Whole-page, Canvas readback, and Retina rounded-mask parity remain unresolved.
+
+## Compact startup interface checkpoint
+
+Further startup diagnostics exposed missing interfaces used by Pikabu's UI
+libraries. Commits `dce69c2e`, `6c25ffee`, `21fdb617`, `efcaca0e`, and `6d30510d`
+add live fragment element collections, `Document.createComment()`, SVG element
+classification, TreeWalker/NodeFilter, and the common Node prototype hierarchy.
+The Node tests cover parsed and created nodes, fragment ownership, interface
+constants and descriptors, illegal construction, and the `instanceof` checks
+used by Floating UI. These changes do not implement the full Web IDL surface.
+
+All 45 focused DOM, Canvas, and audit cases pass in normal and poisoned arena
+modes with unchanged frozen sources. The guard exits zero after 207 seconds,
+with sampled peak RSS 8,624,439,296 bytes. Commands, source identities, compiler
+and runtime exit codes are retained in
+`Build/pikabu-node-interface-retry-1793094009125392000/results.json` and
+`Build/pikabu-node-interface-retry-4434.json`.
+
+These focused results do not validate Pikabu startup in the browser. A fresh
+bundle containing these interfaces is pending. Whole-page, Canvas readback,
+and Retina rounded-mask pixel equality remain unresolved.
