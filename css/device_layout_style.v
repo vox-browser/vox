@@ -278,52 +278,64 @@ pub fn computed_style_in_layout_coordinates(source &ComputedProperties,
 	if element := source.subject_element_ {
 		context.abstract_element = dom.AbstractElement.new(element, none)
 	}
-	for property_id in computed_interpolation_longhand_property_ids() {
-		if property_id == .font_size { continue }
-		value := source.property(property_id, .yes) or { continue }
-		// Inspect retained typed values before conversion and dispatch.
-		// Dimensionless values and zero pixels already belong to the cloned
-		// store. Untyped values still take the parser path.
-		if value.css_value_handle != unsafe { nil } {
-			box := unsafe { &TypedStyleValueBox(value.css_value_handle) }
-			if !device_layout_value_needs_projection(property_id, &box.value) { continue }
-		}
-		typed := style_value_logic_from_dom(property_id, value) or { continue }
-		mut scaled := typed
-		if device_layout_value_contains_lengths(typed) {
-			// Apply the same check to values received through the parser path.
-			if device_layout_value_is_projection_invariant(&typed) {
+	property_ids := computed_interpolation_longhand_property_ids()
+	use_page_candidates := !source.has_animated_properties() && source.property_store_ != unsafe { nil }
+	for page_index in 0 .. computed_property_page_count {
+		mask := if use_page_candidates {
+			source.property_store_.pages[page_index].device_layout_candidates()
+		} else { u16(0xffff) }
+		if mask == 0 { continue }
+		for slot in 0 .. computed_property_page_size {
+			if mask & (u16(1) << slot) == 0 { continue }
+			index := page_index * computed_property_page_size + slot
+			if index >= property_ids.len { break }
+			property_id := property_ids[index]
+			if property_id == .font_size { continue }
+			value := source.property(property_id, .yes) or { continue }
+			// Inspect retained typed values before conversion and dispatch.
+			// Dimensionless values and zero pixels already belong to the cloned
+			// store. Untyped values still take the parser path.
+			if value.css_value_handle != unsafe { nil } {
+				box := unsafe { &TypedStyleValueBox(value.css_value_handle) }
+				if !device_layout_value_needs_projection(property_id, &box.value) { continue }
+			}
+			typed := style_value_logic_from_dom(property_id, value) or { continue }
+			mut scaled := typed
+			if device_layout_value_contains_lengths(typed) {
+				// Apply the same check to values received through the parser path.
+				if device_layout_value_is_projection_invariant(&typed) {
+					continue
+				}
+				// Bare absolute lengths consume only the coordinate scale. Relative
+				// and nested values still resolve against the complete physical context.
+				needs_length_context := match typed {
+					LengthStyleValue { !typed.length_.is_absolute() }
+					else { true }
+				}
+				if needs_length_context && !has_length_context {
+					context.length_resolution_context = target.length_resolution_context()
+					context.length_resolution_context.absolute_length_scale = factor
+					has_length_context = true
+				}
+				scaled = typed.absolutized(context)
+			} else if property_id in [.border_top_width, .border_right_width, .border_bottom_width,
+				.border_left_width, .outline_width, .column_rule_width] {
+				width := match typed.to_keyword() {
+					.thin { 1.0 }
+					.medium { 3.0 }
+					.thick { 5.0 }
+					else { 0.0 }
+				}
+				if width == 0 { continue }
+				scaled = StyleValue(LengthStyleValue.create(Length.make_px(width * factor)))
+			} else {
+				// Colors, keywords, numbers and other dimensionless values are already
+				// shared by the clone. Avoid comparing their unchanged value graphs.
 				continue
 			}
-			// Bare absolute lengths consume only the coordinate scale. Relative
-			// and nested values still resolve against the complete physical context.
-			needs_length_context := match typed {
-				LengthStyleValue { !typed.length_.is_absolute() }
-				else { true }
+			if !scaled.equals(typed) {
+				target.set_property_without_modifying_flags(property_id, dom_style_value_from_value_logic(scaled))
 			}
-			if needs_length_context && !has_length_context {
-				context.length_resolution_context = target.length_resolution_context()
-				context.length_resolution_context.absolute_length_scale = factor
-				has_length_context = true
-			}
-			scaled = typed.absolutized(context)
-		} else if property_id in [.border_top_width, .border_right_width, .border_bottom_width,
-			.border_left_width, .outline_width, .column_rule_width] {
-			width := match typed.to_keyword() {
-				.thin { 1.0 }
-				.medium { 3.0 }
-				.thick { 5.0 }
-				else { 0.0 }
-			}
-			if width == 0 { continue }
-			scaled = StyleValue(LengthStyleValue.create(Length.make_px(width * factor)))
-		} else {
-			// Colors, keywords, numbers and other dimensionless values are already
-			// shared by the clone. Avoid comparing their unchanged value graphs.
-			continue
-		}
-		if !scaled.equals(typed) {
-			target.set_property_without_modifying_flags(property_id, dom_style_value_from_value_logic(scaled))
 		}
 	}
 	target.ensure_computed_layout_cache().layout_coordinate_scale_ = scale

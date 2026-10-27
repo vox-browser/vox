@@ -11,6 +11,9 @@ const computed_property_page_pool_limit = 4096
 struct ComputedPropertyPage {
 mut:
 	values [computed_property_page_size]&dom.StyleValue
+	// Published pages share immutable values. A replacement invalidates this
+	// conservative density-projection mask before the page can be read again.
+	device_layout_candidates_ u64
 }
 
 // Record copies share this owner, preserving the raw array's existing aliases.
@@ -80,6 +83,7 @@ fn (mut store ComputedPropertyStore) copy_writable_page(source &ComputedProperty
 		return copy_computed_property_page(source)
 	}
 	for index in 0 .. computed_property_page_size { page.values[index] = source.values[index] }
+	page.invalidate_device_layout_candidates()
 	return page
 }
 
@@ -153,6 +157,7 @@ fn (mut c ComputedProperties) set_raw_property_at_index(index int, value &dom.St
 		store.writable |= bit
 	}
 	store.pages[page_index].values[slot] = unsafe { value }
+	store.pages[page_index].invalidate_device_layout_candidates()
 }
 
 fn (c &ComputedProperties) clone_raw_property_store() &ComputedPropertyStore {
@@ -220,6 +225,7 @@ fn (computer &StyleComputer) publish_computed_property_pages(style &ComputedProp
 			&& writable & (u32(1) << index) != 0 && voidptr(page) != voidptr(canonical)
 			&& recycling.owner.arena.contains(voidptr(page)) && recycling.pages.len < 64 {
 			for slot in 0 .. computed_property_page_size { page.values[slot] = unsafe { nil } }
+			page.invalidate_device_layout_candidates()
 			recycling.pages << page
 		}
 	}
