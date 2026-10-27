@@ -269,20 +269,20 @@ fn color_style_value_from_style_value(style_value StyleValue, color_resolution_c
 
 pub struct RGBColorStyleValue {
 pub mut:
-	r_            StyleValue
-	g_            StyleValue
-	b_            StyleValue
-	alpha_        StyleValue
+	r_            []StyleValue = [StyleValue(KeywordStyleValue{})]
+	g_            []StyleValue = [StyleValue(KeywordStyleValue{})]
+	b_            []StyleValue = [StyleValue(KeywordStyleValue{})]
+	alpha_        []StyleValue = [StyleValue(KeywordStyleValue{})]
 	color_syntax_ ColorSyntax
 	name_         ?string
 }
 
 pub fn RGBColorStyleValue.create(r StyleValue, g StyleValue, b StyleValue, alpha ?StyleValue, color_syntax ColorSyntax, name ?string) RGBColorStyleValue {
 	return RGBColorStyleValue{
-		r_: r
-		g_: g
-		b_: b
-		alpha_: alpha or { StyleValue(NumberStyleValue.create(1)) }
+		r_: [r]
+		g_: [g]
+		b_: [b]
+		alpha_: [alpha or { StyleValue(NumberStyleValue.create(1)) }]
 		color_syntax_: color_syntax
 		name_: name
 	}
@@ -297,19 +297,19 @@ pub fn (style_value RGBColorStyleValue) color_syntax() ColorSyntax {
 }
 
 pub fn (style_value RGBColorStyleValue) r() StyleValue {
-	return style_value.r_
+	return style_value.r_[0]
 }
 
 pub fn (style_value RGBColorStyleValue) g() StyleValue {
-	return style_value.g_
+	return style_value.g_[0]
 }
 
 pub fn (style_value RGBColorStyleValue) b() StyleValue {
-	return style_value.b_
+	return style_value.b_[0]
 }
 
 pub fn (style_value RGBColorStyleValue) alpha() StyleValue {
-	return style_value.alpha_
+	return style_value.alpha_[0]
 }
 
 pub fn (style_value RGBColorStyleValue) to_color(color_resolution_context ColorResolutionContext) ?Color {
@@ -357,16 +357,16 @@ pub fn (style_value RGBColorStyleValue) to_color(color_resolution_context ColorR
 	}
 
 	_ = color_resolution_context
-	r_val := resolve_rgb_to_u8(style_value.r_) or { return none }
-	g_val := resolve_rgb_to_u8(style_value.g_) or { return none }
-	b_val := resolve_rgb_to_u8(style_value.b_) or { return none }
-	alpha_val := resolve_alpha_to_u8(style_value.alpha_) or { return none }
+	r_val := resolve_rgb_to_u8(style_value.r_[0]) or { return none }
+	g_val := resolve_rgb_to_u8(style_value.g_[0]) or { return none }
+	b_val := resolve_rgb_to_u8(style_value.b_[0]) or { return none }
+	alpha_val := resolve_alpha_to_u8(style_value.alpha_[0]) or { return none }
 
 	return Color.rgba(r_val, g_val, b_val, alpha_val)
 }
 
 pub fn (style_value RGBColorStyleValue) absolutized(context ComputationContext) RGBColorStyleValue {
-	return RGBColorStyleValue.create(style_value.r_.absolutized(context), style_value.g_.absolutized(context), style_value.b_.absolutized(context), style_value.alpha_.absolutized(context), style_value.color_syntax(), none)
+	return RGBColorStyleValue.create(style_value.r_[0].absolutized(context), style_value.g_[0].absolutized(context), style_value.b_[0].absolutized(context), style_value.alpha_[0].absolutized(context), style_value.color_syntax(), none)
 }
 
 // https://www.w3.org/TR/css-color-4/#serializing-sRGB-values
@@ -382,14 +382,14 @@ pub fn (style_value RGBColorStyleValue) serialize(mode SerializationMode) string
 	}
 
 	mut result := 'rgb('
-	result += serialize_color_component(style_value.r_, mode, 255, 0, 255)
+	result += serialize_color_component(style_value.r_[0], mode, 255, 0, 255)
 	result += ' '
-	result += serialize_color_component(style_value.g_, mode, 255, 0, 255)
+	result += serialize_color_component(style_value.g_[0], mode, 255, 0, 255)
 	result += ' '
-	result += serialize_color_component(style_value.b_, mode, 255, 0, 255)
-	if alpha_needs_serialization(style_value.alpha_) {
+	result += serialize_color_component(style_value.b_[0], mode, 255, 0, 255)
+	if alpha_needs_serialization(style_value.alpha_[0]) {
 		result += ' / '
-		result += serialize_alpha_component(style_value.alpha_, mode)
+		result += serialize_alpha_component(style_value.alpha_[0], mode)
 	}
 	result += ')'
 	return result
@@ -399,19 +399,19 @@ pub fn (style_value RGBColorStyleValue) serialize(mode SerializationMode) string
 
 pub struct HSLColorStyleValue {
 pub mut:
-	h_            StyleValue
-	s_            StyleValue
-	l_            StyleValue
-	alpha_        StyleValue
+	h_            []StyleValue = [StyleValue(KeywordStyleValue{})]
+	s_            []StyleValue = [StyleValue(KeywordStyleValue{})]
+	l_            []StyleValue = [StyleValue(KeywordStyleValue{})]
+	alpha_        []StyleValue = [StyleValue(KeywordStyleValue{})]
 	color_syntax_ ColorSyntax
 }
 
 pub fn HSLColorStyleValue.create(h StyleValue, s StyleValue, l StyleValue, alpha ?StyleValue, color_syntax ColorSyntax) HSLColorStyleValue {
 	return HSLColorStyleValue{
-		h_: h
-		s_: s
-		l_: l
-		alpha_: alpha or { StyleValue(NumberStyleValue.create(1)) }
+		h_: [h]
+		s_: [s]
+		l_: [l]
+		alpha_: [alpha or { StyleValue(NumberStyleValue.create(1)) }]
 		color_syntax_: color_syntax
 	}
 }
@@ -422,14 +422,14 @@ pub fn (style_value HSLColorStyleValue) color_type() ConcreteColorType {
 
 pub fn (style_value HSLColorStyleValue) to_color(color_resolution_context ColorResolutionContext) ?Color {
 	_ = color_resolution_context
-	h_val := resolve_hue(style_value.h_, CalculationResolutionContext{}) or { return none }
-	s_val := resolve_with_reference_value(style_value.s_, 100.0, CalculationResolutionContext{}) or {
+	h_val := resolve_hue(style_value.h_[0], CalculationResolutionContext{}) or { return none }
+	s_val := resolve_with_reference_value(style_value.s_[0], 100.0, CalculationResolutionContext{}) or {
 		return none
 	}
-	l_val := resolve_with_reference_value(style_value.l_, 100.0, CalculationResolutionContext{}) or {
+	l_val := resolve_with_reference_value(style_value.l_[0], 100.0, CalculationResolutionContext{}) or {
 		return none
 	}
-	alpha_val := resolve_alpha(style_value.alpha_, CalculationResolutionContext{}) or {
+	alpha_val := resolve_alpha(style_value.alpha_[0], CalculationResolutionContext{}) or {
 		return none
 	}
 
@@ -437,10 +437,10 @@ pub fn (style_value HSLColorStyleValue) to_color(color_resolution_context ColorR
 }
 
 pub fn (style_value HSLColorStyleValue) absolutized(context ComputationContext) RGBColorStyleValue {
-	absolutized_h := style_value.h_.absolutized(context)
-	absolutized_s := style_value.s_.absolutized(context)
-	absolutized_l := style_value.l_.absolutized(context)
-	absolutized_alpha := style_value.alpha_.absolutized(context)
+	absolutized_h := style_value.h_[0].absolutized(context)
+	absolutized_s := style_value.s_[0].absolutized(context)
+	absolutized_l := style_value.l_[0].absolutized(context)
+	absolutized_alpha := style_value.alpha_[0].absolutized(context)
 
 	// hsl() computes to rgb()
 	// https://drafts.csswg.org/css-color-4/#resolving-sRGB-values
@@ -474,14 +474,14 @@ pub fn (style_value HSLColorStyleValue) serialize(mode SerializationMode) string
 	}
 
 	mut result := 'hsl('
-	result += serialize_hue_component(style_value.h_, mode)
+	result += serialize_hue_component(style_value.h_[0], mode)
 	result += ' '
-	result += serialize_color_component(style_value.s_, mode, 100, 0, none)
+	result += serialize_color_component(style_value.s_[0], mode, 100, 0, none)
 	result += ' '
-	result += serialize_color_component(style_value.l_, mode, 100, 0, none)
-	if alpha_needs_serialization(style_value.alpha_) {
+	result += serialize_color_component(style_value.l_[0], mode, 100, 0, none)
+	if alpha_needs_serialization(style_value.alpha_[0]) {
 		result += ' / '
-		result += serialize_alpha_component(style_value.alpha_, mode)
+		result += serialize_alpha_component(style_value.alpha_[0], mode)
 	}
 	result += ')'
 	return result
@@ -491,19 +491,19 @@ pub fn (style_value HSLColorStyleValue) serialize(mode SerializationMode) string
 
 pub struct HWBColorStyleValue {
 pub mut:
-	h_            StyleValue
-	w_            StyleValue
-	b_            StyleValue
-	alpha_        StyleValue
+	h_            []StyleValue = [StyleValue(KeywordStyleValue{})]
+	w_            []StyleValue = [StyleValue(KeywordStyleValue{})]
+	b_            []StyleValue = [StyleValue(KeywordStyleValue{})]
+	alpha_        []StyleValue = [StyleValue(KeywordStyleValue{})]
 	color_syntax_ ColorSyntax
 }
 
 pub fn HWBColorStyleValue.create(h StyleValue, w StyleValue, b StyleValue, alpha ?StyleValue, color_syntax ColorSyntax) HWBColorStyleValue {
 	return HWBColorStyleValue{
-		h_: h
-		w_: w
-		b_: b
-		alpha_: alpha or { StyleValue(NumberStyleValue.create(1)) }
+		h_: [h]
+		w_: [w]
+		b_: [b]
+		alpha_: [alpha or { StyleValue(NumberStyleValue.create(1)) }]
 		color_syntax_: color_syntax
 	}
 }
@@ -514,14 +514,14 @@ pub fn (style_value HWBColorStyleValue) color_type() ConcreteColorType {
 
 pub fn (style_value HWBColorStyleValue) to_color(color_resolution_context ColorResolutionContext) ?Color {
 	_ = color_resolution_context
-	h_val := resolve_hue(style_value.h_, CalculationResolutionContext{}) or { return none }
-	raw_w_value := resolve_with_reference_value(style_value.w_, 100.0, CalculationResolutionContext{}) or {
+	h_val := resolve_hue(style_value.h_[0], CalculationResolutionContext{}) or { return none }
+	raw_w_value := resolve_with_reference_value(style_value.w_[0], 100.0, CalculationResolutionContext{}) or {
 		return none
 	}
-	raw_b_value := resolve_with_reference_value(style_value.b_, 100.0, CalculationResolutionContext{}) or {
+	raw_b_value := resolve_with_reference_value(style_value.b_[0], 100.0, CalculationResolutionContext{}) or {
 		return none
 	}
-	alpha_val := resolve_alpha(style_value.alpha_, CalculationResolutionContext{}) or {
+	alpha_val := resolve_alpha(style_value.alpha_[0], CalculationResolutionContext{}) or {
 		return none
 	}
 
@@ -539,10 +539,10 @@ pub fn (style_value HWBColorStyleValue) to_color(color_resolution_context ColorR
 }
 
 pub fn (style_value HWBColorStyleValue) absolutized(context ComputationContext) RGBColorStyleValue {
-	absolutized_h := style_value.h_.absolutized(context)
-	absolutized_w := style_value.w_.absolutized(context)
-	absolutized_b := style_value.b_.absolutized(context)
-	absolutized_alpha := style_value.alpha_.absolutized(context)
+	absolutized_h := style_value.h_[0].absolutized(context)
+	absolutized_w := style_value.w_[0].absolutized(context)
+	absolutized_b := style_value.b_[0].absolutized(context)
+	absolutized_alpha := style_value.alpha_[0].absolutized(context)
 
 	resolved_h := resolve_hue(absolutized_h, CalculationResolutionContext{}) or { 0.0 }
 	resolved_w := resolve_with_reference_value(absolutized_w, 100.0, CalculationResolutionContext{}) or {
@@ -592,14 +592,14 @@ pub fn (style_value HWBColorStyleValue) serialize(mode SerializationMode) string
 	}
 
 	mut result := 'hwb('
-	result += serialize_hue_component(style_value.h_, mode)
+	result += serialize_hue_component(style_value.h_[0], mode)
 	result += ' '
-	result += serialize_color_component(style_value.w_, mode, 100, 0, none)
+	result += serialize_color_component(style_value.w_[0], mode, 100, 0, none)
 	result += ' '
-	result += serialize_color_component(style_value.b_, mode, 100, 0, none)
-	if alpha_needs_serialization(style_value.alpha_) {
+	result += serialize_color_component(style_value.b_[0], mode, 100, 0, none)
+	if alpha_needs_serialization(style_value.alpha_[0]) {
 		result += ' / '
-		result += serialize_alpha_component(style_value.alpha_, mode)
+		result += serialize_alpha_component(style_value.alpha_[0], mode)
 	}
 	result += ')'
 	return result
@@ -609,58 +609,58 @@ pub fn (style_value HWBColorStyleValue) serialize(mode SerializationMode) string
 
 pub struct LabColorStyleValue {
 pub mut:
-	l_     StyleValue
-	a_     StyleValue
-	b_     StyleValue
-	alpha_ StyleValue
+	l_     []StyleValue = [StyleValue(KeywordStyleValue{})]
+	a_     []StyleValue = [StyleValue(KeywordStyleValue{})]
+	b_     []StyleValue = [StyleValue(KeywordStyleValue{})]
+	alpha_ []StyleValue = [StyleValue(KeywordStyleValue{})]
 }
 
 pub struct OKLabColorStyleValue {
 pub mut:
-	l_     StyleValue
-	a_     StyleValue
-	b_     StyleValue
-	alpha_ StyleValue
+	l_     []StyleValue = [StyleValue(KeywordStyleValue{})]
+	a_     []StyleValue = [StyleValue(KeywordStyleValue{})]
+	b_     []StyleValue = [StyleValue(KeywordStyleValue{})]
+	alpha_ []StyleValue = [StyleValue(KeywordStyleValue{})]
 }
 
 pub fn LabColorStyleValue.create(l StyleValue, a StyleValue, b StyleValue, alpha ?StyleValue) LabColorStyleValue {
 	return LabColorStyleValue{
-		l_: l
-		a_: a
-		b_: b
-		alpha_: alpha or { StyleValue(NumberStyleValue.create(1)) }
+		l_: [l]
+		a_: [a]
+		b_: [b]
+		alpha_: [alpha or { StyleValue(NumberStyleValue.create(1)) }]
 	}
 }
 
 pub fn OKLabColorStyleValue.create(l StyleValue, a StyleValue, b StyleValue, alpha ?StyleValue) OKLabColorStyleValue {
 	return OKLabColorStyleValue{
-		l_: l
-		a_: a
-		b_: b
-		alpha_: alpha or { StyleValue(NumberStyleValue.create(1)) }
+		l_: [l]
+		a_: [a]
+		b_: [b]
+		alpha_: [alpha or { StyleValue(NumberStyleValue.create(1)) }]
 	}
 }
 
 pub fn (style_value OKLabColorStyleValue) absolutized(context ComputationContext) OKLabColorStyleValue {
-	return OKLabColorStyleValue.create(style_value.l_.absolutized(context), style_value.a_.absolutized(context), style_value.b_.absolutized(context), style_value.alpha_.absolutized(context))
+	return OKLabColorStyleValue.create(style_value.l_[0].absolutized(context), style_value.a_[0].absolutized(context), style_value.b_[0].absolutized(context), style_value.alpha_[0].absolutized(context))
 }
 
 pub fn (style_value LabColorStyleValue) absolutized(context ComputationContext) LabColorStyleValue {
-	return LabColorStyleValue.create(style_value.l_.absolutized(context), style_value.a_.absolutized(context), style_value.b_.absolutized(context), style_value.alpha_.absolutized(context))
+	return LabColorStyleValue.create(style_value.l_[0].absolutized(context), style_value.a_[0].absolutized(context), style_value.b_[0].absolutized(context), style_value.alpha_[0].absolutized(context))
 }
 
 pub fn (style_value OKLabColorStyleValue) to_color(color_resolution_context ColorResolutionContext) ?Color {
 	_ = color_resolution_context
-	l_val := resolve_with_reference_value(style_value.l_, 1.0, CalculationResolutionContext{}) or {
+	l_val := resolve_with_reference_value(style_value.l_[0], 1.0, CalculationResolutionContext{}) or {
 		return none
 	}
-	a_val := resolve_with_reference_value(style_value.a_, 0.4, CalculationResolutionContext{}) or {
+	a_val := resolve_with_reference_value(style_value.a_[0], 0.4, CalculationResolutionContext{}) or {
 		return none
 	}
-	b_val := resolve_with_reference_value(style_value.b_, 0.4, CalculationResolutionContext{}) or {
+	b_val := resolve_with_reference_value(style_value.b_[0], 0.4, CalculationResolutionContext{}) or {
 		return none
 	}
-	alpha_val := resolve_alpha(style_value.alpha_, CalculationResolutionContext{}) or {
+	alpha_val := resolve_alpha(style_value.alpha_[0], CalculationResolutionContext{}) or {
 		return none
 	}
 
@@ -670,14 +670,14 @@ pub fn (style_value OKLabColorStyleValue) to_color(color_resolution_context Colo
 // https://www.w3.org/TR/css-color-4/#serializing-oklab-oklch
 pub fn (style_value OKLabColorStyleValue) serialize(mode SerializationMode) string {
 	mut result := 'oklab('
-	result += serialize_color_component(style_value.l_, mode, 1.0, 0, 1)
+	result += serialize_color_component(style_value.l_[0], mode, 1.0, 0, 1)
 	result += ' '
-	result += serialize_color_component(style_value.a_, mode, 0.4, none, none)
+	result += serialize_color_component(style_value.a_[0], mode, 0.4, none, none)
 	result += ' '
-	result += serialize_color_component(style_value.b_, mode, 0.4, none, none)
-	if alpha_needs_serialization(style_value.alpha_) {
+	result += serialize_color_component(style_value.b_[0], mode, 0.4, none, none)
+	if alpha_needs_serialization(style_value.alpha_[0]) {
 		result += ' / '
-		result += serialize_alpha_component(style_value.alpha_, mode)
+		result += serialize_alpha_component(style_value.alpha_[0], mode)
 	}
 	result += ')'
 	return result
@@ -685,16 +685,16 @@ pub fn (style_value OKLabColorStyleValue) serialize(mode SerializationMode) stri
 
 pub fn (style_value LabColorStyleValue) to_color(color_resolution_context ColorResolutionContext) ?Color {
 	_ = color_resolution_context
-	l_val := resolve_with_reference_value(style_value.l_, 100, CalculationResolutionContext{}) or {
+	l_val := resolve_with_reference_value(style_value.l_[0], 100, CalculationResolutionContext{}) or {
 		return none
 	}
-	a_val := resolve_with_reference_value(style_value.a_, 125, CalculationResolutionContext{}) or {
+	a_val := resolve_with_reference_value(style_value.a_[0], 125, CalculationResolutionContext{}) or {
 		return none
 	}
-	b_val := resolve_with_reference_value(style_value.b_, 125, CalculationResolutionContext{}) or {
+	b_val := resolve_with_reference_value(style_value.b_[0], 125, CalculationResolutionContext{}) or {
 		return none
 	}
-	alpha_val := resolve_alpha(style_value.alpha_, CalculationResolutionContext{}) or {
+	alpha_val := resolve_alpha(style_value.alpha_[0], CalculationResolutionContext{}) or {
 		return none
 	}
 
@@ -704,14 +704,14 @@ pub fn (style_value LabColorStyleValue) to_color(color_resolution_context ColorR
 // https://www.w3.org/TR/css-color-4/#serializing-lab-lch
 pub fn (style_value LabColorStyleValue) serialize(mode SerializationMode) string {
 	mut result := 'lab('
-	result += serialize_color_component(style_value.l_, mode, 100, 0, 100)
+	result += serialize_color_component(style_value.l_[0], mode, 100, 0, 100)
 	result += ' '
-	result += serialize_color_component(style_value.a_, mode, 125, none, none)
+	result += serialize_color_component(style_value.a_[0], mode, 125, none, none)
 	result += ' '
-	result += serialize_color_component(style_value.b_, mode, 125, none, none)
-	if alpha_needs_serialization(style_value.alpha_) {
+	result += serialize_color_component(style_value.b_[0], mode, 125, none, none)
+	if alpha_needs_serialization(style_value.alpha_[0]) {
 		result += ' / '
-		result += serialize_alpha_component(style_value.alpha_, mode)
+		result += serialize_alpha_component(style_value.alpha_[0], mode)
 	}
 	result += ')'
 	return result
@@ -721,56 +721,56 @@ pub fn (style_value LabColorStyleValue) serialize(mode SerializationMode) string
 
 pub struct LCHColorStyleValue {
 pub mut:
-	l_     StyleValue
-	c_     StyleValue
-	h_     StyleValue
-	alpha_ StyleValue
+	l_     []StyleValue = [StyleValue(KeywordStyleValue{})]
+	c_     []StyleValue = [StyleValue(KeywordStyleValue{})]
+	h_     []StyleValue = [StyleValue(KeywordStyleValue{})]
+	alpha_ []StyleValue = [StyleValue(KeywordStyleValue{})]
 }
 
 pub struct OKLCHColorStyleValue {
 pub mut:
-	l_     StyleValue
-	c_     StyleValue
-	h_     StyleValue
-	alpha_ StyleValue
+	l_     []StyleValue = [StyleValue(KeywordStyleValue{})]
+	c_     []StyleValue = [StyleValue(KeywordStyleValue{})]
+	h_     []StyleValue = [StyleValue(KeywordStyleValue{})]
+	alpha_ []StyleValue = [StyleValue(KeywordStyleValue{})]
 }
 
 pub fn LCHColorStyleValue.create(l StyleValue, c StyleValue, h StyleValue, alpha ?StyleValue) LCHColorStyleValue {
 	return LCHColorStyleValue{
-		l_: l
-		c_: c
-		h_: h
-		alpha_: alpha or { StyleValue(NumberStyleValue.create(1)) }
+		l_: [l]
+		c_: [c]
+		h_: [h]
+		alpha_: [alpha or { StyleValue(NumberStyleValue.create(1)) }]
 	}
 }
 
 pub fn OKLCHColorStyleValue.create(l StyleValue, c StyleValue, h StyleValue, alpha ?StyleValue) OKLCHColorStyleValue {
 	return OKLCHColorStyleValue{
-		l_: l
-		c_: c
-		h_: h
-		alpha_: alpha or { StyleValue(NumberStyleValue.create(1)) }
+		l_: [l]
+		c_: [c]
+		h_: [h]
+		alpha_: [alpha or { StyleValue(NumberStyleValue.create(1)) }]
 	}
 }
 
 pub fn (style_value LCHColorStyleValue) absolutized(context ComputationContext) LCHColorStyleValue {
-	return LCHColorStyleValue.create(style_value.l_.absolutized(context), style_value.c_.absolutized(context), style_value.h_.absolutized(context), style_value.alpha_.absolutized(context))
+	return LCHColorStyleValue.create(style_value.l_[0].absolutized(context), style_value.c_[0].absolutized(context), style_value.h_[0].absolutized(context), style_value.alpha_[0].absolutized(context))
 }
 
 pub fn (style_value OKLCHColorStyleValue) absolutized(context ComputationContext) OKLCHColorStyleValue {
-	return OKLCHColorStyleValue.create(style_value.l_.absolutized(context), style_value.c_.absolutized(context), style_value.h_.absolutized(context), style_value.alpha_.absolutized(context))
+	return OKLCHColorStyleValue.create(style_value.l_[0].absolutized(context), style_value.c_[0].absolutized(context), style_value.h_[0].absolutized(context), style_value.alpha_[0].absolutized(context))
 }
 
 pub fn (style_value LCHColorStyleValue) to_color(color_resolution_context ColorResolutionContext) ?Color {
 	_ = color_resolution_context
-	raw_l_val := resolve_with_reference_value(style_value.l_, 100, CalculationResolutionContext{}) or {
+	raw_l_val := resolve_with_reference_value(style_value.l_[0], 100, CalculationResolutionContext{}) or {
 		return none
 	}
-	c_val := resolve_with_reference_value(style_value.c_, 150, CalculationResolutionContext{}) or {
+	c_val := resolve_with_reference_value(style_value.c_[0], 150, CalculationResolutionContext{}) or {
 		return none
 	}
-	raw_h_val := resolve_hue(style_value.h_, CalculationResolutionContext{}) or { return none }
-	alpha_val := resolve_alpha(style_value.alpha_, CalculationResolutionContext{}) or {
+	raw_h_val := resolve_hue(style_value.h_[0], CalculationResolutionContext{}) or { return none }
+	alpha_val := resolve_alpha(style_value.alpha_[0], CalculationResolutionContext{}) or {
 		return none
 	}
 
@@ -783,14 +783,14 @@ pub fn (style_value LCHColorStyleValue) to_color(color_resolution_context ColorR
 // https://www.w3.org/TR/css-color-4/#serializing-lab-lch
 pub fn (style_value LCHColorStyleValue) serialize(mode SerializationMode) string {
 	mut result := 'lch('
-	result += serialize_color_component(style_value.l_, mode, 100, 0, 100)
+	result += serialize_color_component(style_value.l_[0], mode, 100, 0, 100)
 	result += ' '
-	result += serialize_color_component(style_value.c_, mode, 150, 0, none)
+	result += serialize_color_component(style_value.c_[0], mode, 150, 0, none)
 	result += ' '
-	result += serialize_hue_component(style_value.h_, mode)
-	if alpha_needs_serialization(style_value.alpha_) {
+	result += serialize_hue_component(style_value.h_[0], mode)
+	if alpha_needs_serialization(style_value.alpha_[0]) {
 		result += ' / '
-		result += serialize_alpha_component(style_value.alpha_, mode)
+		result += serialize_alpha_component(style_value.alpha_[0], mode)
 	}
 	result += ')'
 	return result
@@ -798,14 +798,14 @@ pub fn (style_value LCHColorStyleValue) serialize(mode SerializationMode) string
 
 pub fn (style_value OKLCHColorStyleValue) to_color(color_resolution_context ColorResolutionContext) ?Color {
 	_ = color_resolution_context
-	raw_l_val := resolve_with_reference_value(style_value.l_, 1.0, CalculationResolutionContext{}) or {
+	raw_l_val := resolve_with_reference_value(style_value.l_[0], 1.0, CalculationResolutionContext{}) or {
 		return none
 	}
-	raw_c_val := resolve_with_reference_value(style_value.c_, 0.4, CalculationResolutionContext{}) or {
+	raw_c_val := resolve_with_reference_value(style_value.c_[0], 0.4, CalculationResolutionContext{}) or {
 		return none
 	}
-	raw_h_val := resolve_hue(style_value.h_, CalculationResolutionContext{}) or { return none }
-	alpha_val := resolve_alpha(style_value.alpha_, CalculationResolutionContext{}) or {
+	raw_h_val := resolve_hue(style_value.h_[0], CalculationResolutionContext{}) or { return none }
+	alpha_val := resolve_alpha(style_value.alpha_[0], CalculationResolutionContext{}) or {
 		return none
 	}
 
@@ -819,14 +819,14 @@ pub fn (style_value OKLCHColorStyleValue) to_color(color_resolution_context Colo
 // https://www.w3.org/TR/css-color-4/#serializing-oklab-oklch
 pub fn (style_value OKLCHColorStyleValue) serialize(mode SerializationMode) string {
 	mut result := 'oklch('
-	result += serialize_color_component(style_value.l_, mode, 1.0, 0, 1)
+	result += serialize_color_component(style_value.l_[0], mode, 1.0, 0, 1)
 	result += ' '
-	result += serialize_color_component(style_value.c_, mode, 0.4, 0, none)
+	result += serialize_color_component(style_value.c_[0], mode, 0.4, 0, none)
 	result += ' '
-	result += serialize_hue_component(style_value.h_, mode)
-	if alpha_needs_serialization(style_value.alpha_) {
+	result += serialize_hue_component(style_value.h_[0], mode)
+	if alpha_needs_serialization(style_value.alpha_[0]) {
 		result += ' / '
-		result += serialize_alpha_component(style_value.alpha_, mode)
+		result += serialize_alpha_component(style_value.alpha_[0], mode)
 	}
 	result += ')'
 	return result
@@ -844,7 +844,7 @@ pub struct ColorFunctionStyleValue {
 pub mut:
 	color_type_ ConcreteColorType
 	channels_   []StyleValue
-	alpha_      StyleValue
+	alpha_      []StyleValue = [StyleValue(KeywordStyleValue{})]
 }
 
 fn color_type_from_color_space(color_space string) ConcreteColorType {
@@ -881,7 +881,7 @@ pub fn ColorFunctionStyleValue.create(color_space string, c1 StyleValue, c2 Styl
 	return ColorFunctionStyleValue{
 		color_type_: color_type_from_color_space(color_space)
 		channels_: [c1, c2, c3]
-		alpha_: alpha or { StyleValue(NumberStyleValue.create(1)) }
+		alpha_: [alpha or { StyleValue(NumberStyleValue.create(1)) }]
 	}
 }
 
@@ -899,7 +899,7 @@ pub fn (style_value ColorFunctionStyleValue) resolve_properties(resolution_conte
 	c3 := resolve_with_reference_value(style_value.channels_[2], 1, resolution_context) or {
 		return none
 	}
-	alpha := resolve_alpha(style_value.alpha_, resolution_context) or { return none }
+	alpha := resolve_alpha(style_value.alpha_[0], resolution_context) or { return none }
 
 	return ColorFunctionStyleValueResolved{
 		channels: [c1, c2, c3]!
@@ -937,14 +937,14 @@ pub fn (style_value ColorFunctionStyleValue) absolutized(context ComputationCont
 	channel0 := style_value.channels_[0].absolutized(context)
 	channel1 := style_value.channels_[1].absolutized(context)
 	channel2 := style_value.channels_[2].absolutized(context)
-	alpha := style_value.alpha_.absolutized(context)
+	alpha := style_value.alpha_[0].absolutized(context)
 
 	return StyleValue(ColorFunctionStyleValue.create(color_space_from_color_type(style_value.color_type_), channel0, channel1, channel2, alpha))
 }
 
 // https://www.w3.org/TR/css-color-4/#serializing-color-function-values
 pub fn (style_value ColorFunctionStyleValue) serialize(mode SerializationMode) string {
-	mut alpha := color_function_convert_percentage(style_value.alpha_, mode)
+	mut alpha := color_function_convert_percentage(style_value.alpha_[0], mode)
 	is_alpha_required := if alpha.is_number() {
 		alpha.as_number().number() < 1
 	} else {
@@ -1155,15 +1155,15 @@ struct ColorMixNormalizedPercentagePair {
 pub struct ColorMixStyleValue {
 pub mut:
 	color_interpolation_method ?ColorInterpolationMethodStyleValue
-	first_component            ColorMixComponent
-	second_component           ColorMixComponent
+	first_component            []ColorMixComponent = [ColorMixComponent{}]
+	second_component           []ColorMixComponent = [ColorMixComponent{}]
 }
 
 pub fn ColorMixStyleValue.create(color_interpolation_method ?ColorInterpolationMethodStyleValue, first_component ColorMixComponent, second_component ColorMixComponent) ColorMixStyleValue {
 	return ColorMixStyleValue{
 		color_interpolation_method: color_interpolation_method
-		first_component: first_component
-		second_component: second_component
+		first_component: [first_component]
+		second_component: [second_component]
 	}
 }
 
@@ -1178,11 +1178,11 @@ pub fn (style_value ColorMixStyleValue) serialize(mode SerializationMode) string
 		}
 	}
 
-	result += style_value.first_component.color.serialize(mode)
-	result += serialize_first_color_mix_percentage(style_value.first_component.percentage, style_value.second_component.percentage, mode)
+	result += style_value.first_component[0].color.serialize(mode)
+	result += serialize_first_color_mix_percentage(style_value.first_component[0].percentage, style_value.second_component[0].percentage, mode)
 	result += ', '
-	result += style_value.second_component.color.serialize(mode)
-	result += serialize_second_color_mix_percentage(style_value.first_component.percentage, style_value.second_component.percentage, mode)
+	result += style_value.second_component[0].color.serialize(mode)
+	result += serialize_second_color_mix_percentage(style_value.first_component[0].percentage, style_value.second_component[0].percentage, mode)
 	result += ')'
 	return result
 }
@@ -1316,7 +1316,7 @@ pub fn (style_value ColorMixStyleValue) normalize_percentages(context Computatio
 		percentage := percentage_style_value or { return none }
 		return Percentage.from_style_value_logic(percentage.absolutized(context))
 	}
-	normalized := normalize_color_mix_percentage_pair(resolve_percentage(style_value.first_component.percentage), resolve_percentage(style_value.second_component.percentage))
+	normalized := normalize_color_mix_percentage_pair(resolve_percentage(style_value.first_component[0].percentage), resolve_percentage(style_value.second_component[0].percentage))
 	return ColorMixPercentageNormalizationResult{
 		p1: StyleValue(PercentageStyleValue.create(normalized.p1))
 		p2: StyleValue(PercentageStyleValue.create(normalized.p2))
@@ -1326,12 +1326,12 @@ pub fn (style_value ColorMixStyleValue) normalize_percentages(context Computatio
 
 // https://drafts.csswg.org/css-color-5/#color-mix-result
 pub fn (style_value ColorMixStyleValue) to_color(color_resolution_context ColorResolutionContext) ?Color {
-	first_percentage := if percentage := style_value.first_component.percentage {
+	first_percentage := if percentage := style_value.first_component[0].percentage {
 		?Percentage(Percentage.from_style_value_logic(percentage))
 	} else {
 		?Percentage(none)
 	}
-	second_percentage := if percentage := style_value.second_component.percentage {
+	second_percentage := if percentage := style_value.second_component[0].percentage {
 		?Percentage(Percentage.from_style_value_logic(percentage))
 	} else {
 		?Percentage(none)
@@ -1342,8 +1342,8 @@ pub fn (style_value ColorMixStyleValue) to_color(color_resolution_context ColorR
 	} else {
 		?ColorInterpolationMethod(RectangularColorSpace.oklab)
 	}
-	mut interpolated := perform_color_interpolation(style_value.first_component.color,
-		style_value.second_component.color, normalized.p2.as_fraction(),
+	mut interpolated := perform_color_interpolation(style_value.first_component[0].color,
+		style_value.second_component[0].color, normalized.p2.as_fraction(),
 		color_interpolation_method, color_resolution_context) or { return none }
 	if normalized.alpha_multiplier < 1 {
 		interpolated.components.set_alpha(interpolated.components.alpha() *
@@ -1376,8 +1376,8 @@ pub fn (style_value ColorMixStyleValue) absolutized(context ComputationContext) 
 	} else {
 		?ColorInterpolationMethod(RectangularColorSpace.oklab)
 	}
-	if initial_interpolation := perform_color_interpolation(style_value.first_component.color,
-		style_value.second_component.color, delta, color_interpolation_method,
+	if initial_interpolation := perform_color_interpolation(style_value.first_component[0].color,
+		style_value.second_component[0].color, delta, color_interpolation_method,
 		color_resolution_context) {
 		mut interpolated := initial_interpolation
 		if normalized_percentages.alpha_multiplier < 1 {
@@ -1387,8 +1387,8 @@ pub fn (style_value ColorMixStyleValue) absolutized(context ComputationContext) 
 		return style_value_for_interpolated_color(interpolated)
 	}
 
-	absolutized_first_color := style_value.first_component.color.absolutized(context)
-	absolutized_second_color := style_value.second_component.color.absolutized(context)
+	absolutized_first_color := style_value.first_component[0].color.absolutized(context)
+	absolutized_second_color := style_value.second_component[0].color.absolutized(context)
 	return StyleValue(ColorMixStyleValue.create(absolutized_color_interpolation_method, ColorMixComponent{
 		color: absolutized_first_color
 		percentage: normalized_percentages.p1
@@ -1402,33 +1402,33 @@ pub fn (style_value ColorMixStyleValue) absolutized(context ComputationContext) 
 
 pub struct LightDarkStyleValue {
 pub mut:
-	light StyleValue
-	dark  StyleValue
+	light []StyleValue = [StyleValue(KeywordStyleValue{})]
+	dark  []StyleValue = [StyleValue(KeywordStyleValue{})]
 }
 
 pub fn LightDarkStyleValue.create(light StyleValue, dark StyleValue) LightDarkStyleValue {
 	return LightDarkStyleValue{
-		light: light
-		dark: dark
+		light: [light]
+		dark: [dark]
 	}
 }
 
 pub fn (style_value LightDarkStyleValue) to_color(color_resolution_context ColorResolutionContext) ?Color {
 	if scheme := color_resolution_context.color_scheme {
 		if scheme == .dark {
-			return style_value.dark.to_color(color_resolution_context)
+			return style_value.dark[0].to_color(color_resolution_context)
 		}
 	}
 
-	return style_value.light.to_color(color_resolution_context)
+	return style_value.light[0].to_color(color_resolution_context)
 }
 
 pub fn (style_value LightDarkStyleValue) absolutized(context ComputationContext) StyleValue {
 	if scheme := context.color_scheme {
 		if scheme == .dark {
-			return style_value.dark.absolutized(context)
+			return style_value.dark[0].absolutized(context)
 		}
-		return style_value.light.absolutized(context)
+		return style_value.light[0].absolutized(context)
 	}
 
 	return StyleValue(style_value)
@@ -1436,7 +1436,7 @@ pub fn (style_value LightDarkStyleValue) absolutized(context ComputationContext)
 
 pub fn (style_value LightDarkStyleValue) serialize(mode SerializationMode) string {
 	// FIXME: We don't have enough information to determine the computed value here.
-	return 'light-dark(${style_value.light.serialize(mode)}, ${style_value.dark.serialize(mode)})'
+	return 'light-dark(${style_value.light[0].serialize(mode)}, ${style_value.dark[0].serialize(mode)})'
 }
 
 // --- ColorSchemeStyleValue ---
@@ -2111,7 +2111,7 @@ pub enum LinearGradientType {
 
 pub struct LinearGradientStyleValue {
 pub mut:
-	direction_                  LinearGradientDirection
+	direction_                  []LinearGradientDirection = [LinearGradientDirection(LinearGradientSideOrCorner.top)]
 	color_stop_list_            []ColorStopListElement
 	gradient_type_              LinearGradientType
 	repeating_                  GradientRepeating
@@ -2140,7 +2140,7 @@ fn gradient_color_stop_list_syntax(color_stop_list []ColorStopListElement) Color
 
 pub fn LinearGradientStyleValue.create(direction LinearGradientDirection, color_stop_list []ColorStopListElement, type_ LinearGradientType, repeating GradientRepeating, color_interpolation_method ?ColorInterpolationMethodStyleValue) LinearGradientStyleValue {
 	return LinearGradientStyleValue{
-		direction_: direction
+		direction_: [direction]
 		color_stop_list_: color_stop_list
 		gradient_type_: type_
 		repeating_: repeating
@@ -2184,7 +2184,7 @@ pub fn (style_value LinearGradientStyleValue) serialize(mode SerializationMode) 
 	} else {
 		LinearGradientDirection(LinearGradientSideOrCorner.bottom)
 	}
-	has_direction := style_value.direction_ != default_direction
+	has_direction := style_value.direction_[0] != default_direction
 	has_color_space := if color_interpolation_method := style_value.color_interpolation_method_ {
 		color_interpolation_method.color_interpolation_method() != ColorInterpolationMethodStyleValue.default_color_interpolation_method(style_value.color_syntax_)
 	} else {
@@ -2200,15 +2200,15 @@ pub fn (style_value LinearGradientStyleValue) serialize(mode SerializationMode) 
 	}
 	result += 'linear-gradient('
 	if has_direction {
-		match style_value.direction_ {
+		match style_value.direction_[0] {
 			LinearGradientSideOrCorner {
 				if style_value.gradient_type_ == .standard {
 					result += 'to '
 				}
-				result += side_or_corner_to_string(style_value.direction_)
+				result += side_or_corner_to_string(style_value.direction_[0])
 			}
 			StyleValue {
-				result += style_value.direction_.serialize(mode)
+				result += style_value.direction_[0].serialize(mode)
 			}
 		}
 
@@ -2243,16 +2243,16 @@ pub fn (style_value LinearGradientStyleValue) absolutized(context ComputationCon
 		?ColorInterpolationMethodStyleValue(none)
 	}
 
-	return LinearGradientStyleValue.create(style_value.direction_, absolutized_color_stops, style_value.gradient_type_, style_value.repeating_, absolutized_color_interpolation_method)
+	return LinearGradientStyleValue.create(style_value.direction_[0], absolutized_color_stops, style_value.gradient_type_, style_value.repeating_, absolutized_color_interpolation_method)
 }
 
 pub fn (style_value LinearGradientStyleValue) angle_degrees(gradient_size CSSPixelSize) f64 {
 	corner_angle_degrees := fn [gradient_size] () f64 {
 		return math.atan2(gradient_size.height().to_double(), gradient_size.width().to_double()) * 180.0 / math.pi
 	}
-	return match style_value.direction_ {
+	return match style_value.direction_[0] {
 		LinearGradientSideOrCorner {
-			mut angle := match style_value.direction_ {
+			mut angle := match style_value.direction_[0] {
 				.top { 0.0 }
 				.bottom { 180.0 }
 				.left { 270.0 }
@@ -2270,7 +2270,7 @@ pub fn (style_value LinearGradientStyleValue) angle_degrees(gradient_size CSSPix
 			angle
 		}
 		StyleValue {
-			angle_from_style_value(style_value.direction_).to_degrees()
+			angle_from_style_value(style_value.direction_[0]).to_degrees()
 		}
 	}
 }
@@ -2297,7 +2297,7 @@ pub enum RadialGradientEndingShape {
 pub struct RadialGradientStyleValue {
 pub mut:
 	ending_shape_               RadialGradientEndingShape
-	size_                       StyleValue
+	size_                       []StyleValue = [StyleValue(KeywordStyleValue{})]
 	position_                   PositionStyleValue
 	color_stop_list_            []ColorStopListElement
 	repeating_                  GradientRepeating
@@ -2311,7 +2311,7 @@ pub mut:
 pub fn RadialGradientStyleValue.create(ending_shape RadialGradientEndingShape, size StyleValue, position PositionStyleValue, color_stop_list []ColorStopListElement, repeating GradientRepeating, color_interpolation_method ?ColorInterpolationMethodStyleValue) RadialGradientStyleValue {
 	return RadialGradientStyleValue{
 		ending_shape_: ending_shape
-		size_: size
+		size_: [size]
 		position_: position
 		color_stop_list_: color_stop_list
 		repeating_: repeating
@@ -2343,9 +2343,9 @@ pub fn (style_value RadialGradientStyleValue) serialize(mode SerializationMode) 
 		if style_value.webkit_shape_specified_ || style_value.webkit_extent_keyword_ != '' {
 			result += ', ' + if style_value.ending_shape_ == .circle { 'circle' } else { 'ellipse' }
 			result += ' ' + if style_value.webkit_extent_keyword_ != '' { style_value.webkit_extent_keyword_ } else { 'cover' }
-		} else if size := style_value.size_.as_radial_size() {
+		} else if size := style_value.size_[0].as_radial_size() {
 			if size.components().len == 2 {
-				result += ', ' + style_value.size_.serialize(mode)
+				result += ', ' + style_value.size_[0].serialize(mode)
 			}
 		}
 		return result + ', ' + serialize_color_stop_list(style_value.color_stop_list_, mode) + ')'
@@ -2358,7 +2358,7 @@ pub fn (style_value RadialGradientStyleValue) serialize(mode SerializationMode) 
 
 	// Upstream checks the serialized radial-size to determine whether it should
 	// be included. EndingShape affects resolution, but is not emitted separately.
-	serialized_size := style_value.size_.serialize(mode)
+	serialized_size := style_value.size_[0].serialize(mode)
 	has_size := serialized_size != 'farthest-corner'
 	has_position := !style_value.position_.is_center(mode)
 	has_color_space := if color_interpolation_method := style_value.color_interpolation_method_ {
@@ -2410,7 +2410,7 @@ pub fn (style_value RadialGradientStyleValue) absolutized(context ComputationCon
 		?ColorInterpolationMethodStyleValue(none)
 	}
 
-	mut result := RadialGradientStyleValue.create(style_value.ending_shape_, style_value.size_.absolutized(context), (style_value.position_.absolutized(context) as PositionStyleValue), absolutized_color_stops, style_value.repeating_, absolutized_color_interpolation_method)
+	mut result := RadialGradientStyleValue.create(style_value.ending_shape_, style_value.size_[0].absolutized(context), (style_value.position_.absolutized(context) as PositionStyleValue), absolutized_color_stops, style_value.repeating_, absolutized_color_interpolation_method)
 	result.webkit_ = style_value.webkit_
 	result.webkit_shape_specified_ = style_value.webkit_shape_specified_
 	result.webkit_extent_keyword_ = style_value.webkit_extent_keyword_
@@ -2421,7 +2421,7 @@ pub fn (style_value RadialGradientStyleValue) absolutized(context ComputationCon
 
 pub struct ConicGradientStyleValue {
 pub mut:
-	from_angle_                 ?StyleValue
+	from_angle_                 ?[]StyleValue
 	position_                   PositionStyleValue
 	color_stop_list_            []ColorStopListElement
 	repeating_                  GradientRepeating
@@ -2431,7 +2431,7 @@ pub mut:
 
 pub fn ConicGradientStyleValue.create(from_angle ?StyleValue, position PositionStyleValue, color_stop_list []ColorStopListElement, repeating GradientRepeating, color_interpolation_method ?ColorInterpolationMethodStyleValue) ConicGradientStyleValue {
 	return ConicGradientStyleValue{
-		from_angle_: from_angle
+		from_angle_: optional_style_value_storage(from_angle)
 		position_: position
 		color_stop_list_: color_stop_list
 		repeating_: repeating
@@ -2463,7 +2463,7 @@ pub fn (style_value ConicGradientStyleValue) serialize(mode SerializationMode) s
 	}
 	result += 'conic-gradient('
 
-	has_from_angle := style_value.from_angle_ != none
+	has_from_angle := style_value_from_optional_storage(style_value.from_angle_) != none
 	has_at_position := !style_value.position_.is_center(mode)
 	has_color_space := if color_interpolation_method := style_value.color_interpolation_method_ {
 		color_interpolation_method.color_interpolation_method() != ColorInterpolationMethodStyleValue.default_color_interpolation_method(style_value.color_syntax_)
@@ -2471,7 +2471,7 @@ pub fn (style_value ConicGradientStyleValue) serialize(mode SerializationMode) s
 		false
 	}
 
-	if from_angle := style_value.from_angle_ {
+	if from_angle := style_value_from_optional_storage(style_value.from_angle_) {
 		result += 'from '
 		result += from_angle.serialize(mode)
 	}
@@ -2503,7 +2503,7 @@ pub fn (style_value ConicGradientStyleValue) absolutized(context ComputationCont
 	for color_stop in style_value.color_stop_list_ {
 		absolutized_color_stops << color_stop.absolutized(context)
 	}
-	absolutized_from_angle := if from_angle := style_value.from_angle_ {
+	absolutized_from_angle := if from_angle := style_value_from_optional_storage(style_value.from_angle_) {
 		?StyleValue(from_angle.absolutized(context))
 	} else {
 		?StyleValue(none)
@@ -2518,7 +2518,7 @@ pub fn (style_value ConicGradientStyleValue) absolutized(context ComputationCont
 }
 
 pub fn (style_value ConicGradientStyleValue) angle_degrees() f64 {
-	if from_angle := style_value.from_angle_ {
+	if from_angle := style_value_from_optional_storage(style_value.from_angle_) {
 		return angle_from_style_value(from_angle).to_degrees()
 	}
 	return 0

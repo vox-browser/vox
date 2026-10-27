@@ -282,15 +282,15 @@ pub fn font_tech_to_string(value FontTech) string {
 pub struct AnchorStyleValue {
 pub mut:
 	anchor_name_    ?string
-	anchor_side_    StyleValue
-	fallback_value_ ?StyleValue
+	anchor_side_    []StyleValue = [StyleValue(KeywordStyleValue{})]
+	fallback_value_ ?[]StyleValue
 }
 
 pub fn AnchorStyleValue.create(anchor_name ?string, anchor_side StyleValue, fallback_value ?StyleValue) AnchorStyleValue {
 	return AnchorStyleValue{
 		anchor_name_: anchor_name
-		anchor_side_: anchor_side
-		fallback_value_: fallback_value
+		anchor_side_: [anchor_side]
+		fallback_value_: optional_style_value_storage(fallback_value)
 	}
 }
 
@@ -299,11 +299,11 @@ pub fn (style_value AnchorStyleValue) anchor_name() ?string {
 }
 
 pub fn (style_value AnchorStyleValue) anchor_side() StyleValue {
-	return style_value.anchor_side_
+	return style_value.anchor_side_[0]
 }
 
 pub fn (style_value AnchorStyleValue) fallback_value() ?StyleValue {
-	return style_value.fallback_value_
+	return style_value_from_optional_storage(style_value.fallback_value_)
 }
 
 pub fn (style_value AnchorStyleValue) serialize(mode SerializationMode) string {
@@ -316,9 +316,9 @@ pub fn (style_value AnchorStyleValue) serialize(mode SerializationMode) string {
 	if style_value.anchor_name_ != none {
 		serialized += ' '
 	}
-	serialized += style_value.anchor_side_.serialize(mode)
+	serialized += style_value.anchor_side_[0].serialize(mode)
 
-	if fallback_value := style_value.fallback_value_ {
+	if fallback_value := style_value_from_optional_storage(style_value.fallback_value_) {
 		serialized += ', ${fallback_value.serialize(mode)}'
 	}
 
@@ -340,14 +340,14 @@ pub mut:
 	anchor_name_ ?string
 	anchor_size_ ?AnchorSize
 	// StyleValue includes AnchorSizeStyleValue, so the optional child must be boxed.
-	fallback_value_ ?&StyleValue
+	fallback_value_ ?[]StyleValue
 }
 
 pub fn AnchorSizeStyleValue.create(anchor_name ?string, anchor_size ?AnchorSize, fallback_value ?StyleValue) AnchorSizeStyleValue {
 	return AnchorSizeStyleValue{
 		anchor_name_:    anchor_name
 		anchor_size_:    anchor_size
-		fallback_value_: if value := fallback_value { &StyleValue(value) } else { none }
+		fallback_value_: optional_style_value_storage(fallback_value)
 	}
 }
 
@@ -360,10 +360,7 @@ pub fn (style_value AnchorSizeStyleValue) anchor_size() ?AnchorSize {
 }
 
 pub fn (style_value AnchorSizeStyleValue) fallback_value() ?StyleValue {
-	if value := style_value.fallback_value_ {
-		return *value
-	}
-	return none
+	return style_value_from_optional_storage(style_value.fallback_value_)
 }
 
 pub fn (style_value AnchorSizeStyleValue) serialize(mode SerializationMode) string {
@@ -381,7 +378,7 @@ pub fn (style_value AnchorSizeStyleValue) serialize(mode SerializationMode) stri
 		serialized += anchor_size_to_string(anchor_size)
 	}
 
-	if fallback_value := style_value.fallback_value_ {
+	if fallback_value := style_value_from_optional_storage(style_value.fallback_value_) {
 		if style_value.anchor_name_ != none || style_value.anchor_size_ != none {
 			serialized += ', '
 		}
@@ -404,13 +401,13 @@ pub fn (style_value AnchorSizeStyleValue) properties_equal(other AnchorSizeStyle
 pub struct FunctionStyleValue {
 pub mut:
 	name_  string
-	value_ StyleValue
+	value_ []StyleValue = [StyleValue(KeywordStyleValue{})]
 }
 
 pub fn FunctionStyleValue.create(name string, value StyleValue) FunctionStyleValue {
 	return FunctionStyleValue{
 		name_: name
-		value_: value
+		value_: [value]
 	}
 }
 
@@ -419,19 +416,19 @@ pub fn (style_value FunctionStyleValue) name() string {
 }
 
 pub fn (style_value FunctionStyleValue) value() StyleValue {
-	return style_value.value_
+	return style_value.value_[0]
 }
 
 pub fn (style_value FunctionStyleValue) absolutized(context ComputationContext) StyleValue {
-	absolutized_value := style_value.value_.absolutized(context)
-	if absolutized_value.equals(style_value.value_) {
+	absolutized_value := style_value.value_[0].absolutized(context)
+	if absolutized_value.equals(style_value.value_[0]) {
 		return StyleValue(style_value)
 	}
 	return StyleValue(FunctionStyleValue.create(style_value.name_, absolutized_value))
 }
 
 pub fn (style_value FunctionStyleValue) serialize(mode SerializationMode) string {
-	return '${style_value.name_}(${style_value.value_.serialize(mode)})'
+	return '${style_value.name_}(${style_value.value_[0].serialize(mode)})'
 }
 
 pub fn (style_value FunctionStyleValue) to_string() string {
@@ -439,42 +436,42 @@ pub fn (style_value FunctionStyleValue) to_string() string {
 }
 
 pub fn (style_value FunctionStyleValue) properties_equal(other FunctionStyleValue) bool {
-	return style_value.name_ == other.name_ && style_value.value_.equals(other.value_)
+	return style_value.name_ == other.name_ && style_value.value_[0].equals(other.value_[0])
 }
 
 // --- BackgroundSizeStyleValue ---
 pub struct BackgroundSizeStyleValue {
 pub mut:
-	size_x_ StyleValue
-	size_y_ StyleValue
+	size_x_ []StyleValue = [StyleValue(KeywordStyleValue{})]
+	size_y_ []StyleValue = [StyleValue(KeywordStyleValue{})]
 }
 
 pub fn BackgroundSizeStyleValue.create(size_x StyleValue, size_y StyleValue) BackgroundSizeStyleValue {
 	return BackgroundSizeStyleValue{
-		size_x_: size_x
-		size_y_: size_y
+		size_x_: [size_x]
+		size_y_: [size_y]
 	}
 }
 
 pub fn (style_value BackgroundSizeStyleValue) size_x() StyleValue {
-	return style_value.size_x_
+	return style_value.size_x_[0]
 }
 
 pub fn (style_value BackgroundSizeStyleValue) size_y() StyleValue {
-	return style_value.size_y_
+	return style_value.size_y_[0]
 }
 
 pub fn (style_value BackgroundSizeStyleValue) serialize(mode SerializationMode) string {
-	if style_value.size_x_.has_auto() && style_value.size_y_.has_auto() {
+	if style_value.size_x_[0].has_auto() && style_value.size_y_[0].has_auto() {
 		return 'auto'
 	}
-	return '${style_value.size_x_.serialize(mode)} ${style_value.size_y_.serialize(mode)}'
+	return '${style_value.size_x_[0].serialize(mode)} ${style_value.size_y_[0].serialize(mode)}'
 }
 
 pub fn (style_value BackgroundSizeStyleValue) absolutized(context ComputationContext) StyleValue {
-	absolutized_size_x := style_value.size_x_.absolutized(context)
-	absolutized_size_y := style_value.size_y_.absolutized(context)
-	if absolutized_size_x == style_value.size_x_ && absolutized_size_y == style_value.size_y_ {
+	absolutized_size_x := style_value.size_x_[0].absolutized(context)
+	absolutized_size_y := style_value.size_y_[0].absolutized(context)
+	if absolutized_size_x == style_value.size_x_[0] && absolutized_size_y == style_value.size_y_[0] {
 		return StyleValue(style_value)
 	}
 	return StyleValue(BackgroundSizeStyleValue.create(absolutized_size_x, absolutized_size_y))
@@ -491,37 +488,37 @@ pub fn (style_value BackgroundSizeStyleValue) properties_equal(other BackgroundS
 // --- BorderImageSliceStyleValue ---
 pub struct BorderImageSliceStyleValue {
 pub mut:
-	top_    StyleValue
-	right_  StyleValue
-	bottom_ StyleValue
-	left_   StyleValue
+	top_    []StyleValue = [StyleValue(KeywordStyleValue{})]
+	right_  []StyleValue = [StyleValue(KeywordStyleValue{})]
+	bottom_ []StyleValue = [StyleValue(KeywordStyleValue{})]
+	left_   []StyleValue = [StyleValue(KeywordStyleValue{})]
 	fill_   bool
 }
 
 pub fn BorderImageSliceStyleValue.create(top StyleValue, right StyleValue, bottom StyleValue, left StyleValue, fill bool) BorderImageSliceStyleValue {
 	return BorderImageSliceStyleValue{
-		top_: top
-		right_: right
-		bottom_: bottom
-		left_: left
+		top_: [top]
+		right_: [right]
+		bottom_: [bottom]
+		left_: [left]
 		fill_: fill
 	}
 }
 
 pub fn (style_value BorderImageSliceStyleValue) top() StyleValue {
-	return style_value.top_
+	return style_value.top_[0]
 }
 
 pub fn (style_value BorderImageSliceStyleValue) right() StyleValue {
-	return style_value.right_
+	return style_value.right_[0]
 }
 
 pub fn (style_value BorderImageSliceStyleValue) bottom() StyleValue {
-	return style_value.bottom_
+	return style_value.bottom_[0]
 }
 
 pub fn (style_value BorderImageSliceStyleValue) left() StyleValue {
-	return style_value.left_
+	return style_value.left_[0]
 }
 
 pub fn (style_value BorderImageSliceStyleValue) fill() bool {
@@ -529,13 +526,13 @@ pub fn (style_value BorderImageSliceStyleValue) fill() bool {
 }
 
 pub fn (style_value BorderImageSliceStyleValue) serialize(mode SerializationMode) string {
-	mut serialized := style_value.top_.serialize(mode)
-	if !(style_value.top_ == style_value.right_ && style_value.top_ == style_value.bottom_ && style_value.top_ == style_value.left_) {
-		serialized += ' ${style_value.right_.serialize(mode)}'
-		if style_value.top_ != style_value.bottom_ || style_value.right_ != style_value.left_ {
-			serialized += ' ${style_value.bottom_.serialize(mode)}'
-			if style_value.left_ != style_value.right_ {
-				serialized += ' ${style_value.left_.serialize(mode)}'
+	mut serialized := style_value.top_[0].serialize(mode)
+	if !(style_value.top_[0] == style_value.right_[0] && style_value.top_[0] == style_value.bottom_[0] && style_value.top_[0] == style_value.left_[0]) {
+		serialized += ' ${style_value.right_[0].serialize(mode)}'
+		if style_value.top_[0] != style_value.bottom_[0] || style_value.right_[0] != style_value.left_[0] {
+			serialized += ' ${style_value.bottom_[0].serialize(mode)}'
+			if style_value.left_[0] != style_value.right_[0] {
+				serialized += ' ${style_value.left_[0].serialize(mode)}'
 			}
 		}
 	}
@@ -558,8 +555,8 @@ pub fn (style_value BorderImageSliceStyleValue) properties_equal(other BorderIma
 pub struct BorderRadiusStyleValue {
 pub mut:
 	is_elliptical_    bool
-	horizontal_radius StyleValue
-	vertical_radius   StyleValue
+	horizontal_radius []StyleValue = [StyleValue(KeywordStyleValue{})]
+	vertical_radius   []StyleValue = [StyleValue(KeywordStyleValue{})]
 }
 
 pub fn BorderRadiusStyleValue.create_zero() BorderRadiusStyleValue {
@@ -569,17 +566,17 @@ pub fn BorderRadiusStyleValue.create_zero() BorderRadiusStyleValue {
 pub fn BorderRadiusStyleValue.create(horizontal_radius StyleValue, vertical_radius StyleValue) BorderRadiusStyleValue {
 	return BorderRadiusStyleValue{
 		is_elliptical_: horizontal_radius != vertical_radius
-		horizontal_radius: horizontal_radius
-		vertical_radius: vertical_radius
+		horizontal_radius: [horizontal_radius]
+		vertical_radius: [vertical_radius]
 	}
 }
 
 pub fn (style_value BorderRadiusStyleValue) horizontal_radius_() StyleValue {
-	return style_value.horizontal_radius
+	return style_value.horizontal_radius[0]
 }
 
 pub fn (style_value BorderRadiusStyleValue) vertical_radius_() StyleValue {
-	return style_value.vertical_radius
+	return style_value.vertical_radius[0]
 }
 
 pub fn (style_value BorderRadiusStyleValue) is_elliptical() bool {
@@ -587,17 +584,17 @@ pub fn (style_value BorderRadiusStyleValue) is_elliptical() bool {
 }
 
 pub fn (style_value BorderRadiusStyleValue) serialize(mode SerializationMode) string {
-	if style_value.horizontal_radius == style_value.vertical_radius {
-		return style_value.horizontal_radius.serialize(mode)
+	if style_value.horizontal_radius[0] == style_value.vertical_radius[0] {
+		return style_value.horizontal_radius[0].serialize(mode)
 	}
-	return '${style_value.horizontal_radius.serialize(mode)} ${style_value.vertical_radius.serialize(mode)}'
+	return '${style_value.horizontal_radius[0].serialize(mode)} ${style_value.vertical_radius[0].serialize(mode)}'
 }
 
 pub fn (style_value BorderRadiusStyleValue) absolutized(context ComputationContext) StyleValue {
-	absolutized_horizontal_radius := style_value.horizontal_radius.absolutized(context)
-	absolutized_vertical_radius := style_value.vertical_radius.absolutized(context)
+	absolutized_horizontal_radius := style_value.horizontal_radius[0].absolutized(context)
+	absolutized_vertical_radius := style_value.vertical_radius[0].absolutized(context)
 
-	if absolutized_vertical_radius == style_value.vertical_radius && absolutized_horizontal_radius == style_value.horizontal_radius {
+	if absolutized_vertical_radius == style_value.vertical_radius[0] && absolutized_horizontal_radius == style_value.horizontal_radius[0] {
 		return StyleValue(style_value)
 	}
 
@@ -615,10 +612,10 @@ pub fn (style_value BorderRadiusStyleValue) properties_equal(other BorderRadiusS
 // --- BorderRadiusRectStyleValue ---
 pub struct BorderRadiusRectStyleValue {
 pub mut:
-	top_left_     StyleValue
-	top_right_    StyleValue
-	bottom_right_ StyleValue
-	bottom_left_  StyleValue
+	top_left_     []StyleValue = [StyleValue(KeywordStyleValue{})]
+	top_right_    []StyleValue = [StyleValue(KeywordStyleValue{})]
+	bottom_right_ []StyleValue = [StyleValue(KeywordStyleValue{})]
+	bottom_left_  []StyleValue = [StyleValue(KeywordStyleValue{})]
 }
 
 pub fn BorderRadiusRectStyleValue.create_zero() BorderRadiusRectStyleValue {
@@ -627,27 +624,27 @@ pub fn BorderRadiusRectStyleValue.create_zero() BorderRadiusRectStyleValue {
 
 pub fn BorderRadiusRectStyleValue.create(top_left StyleValue, top_right StyleValue, bottom_right StyleValue, bottom_left StyleValue) BorderRadiusRectStyleValue {
 	return BorderRadiusRectStyleValue{
-		top_left_: top_left
-		top_right_: top_right
-		bottom_right_: bottom_right
-		bottom_left_: bottom_left
+		top_left_: [top_left]
+		top_right_: [top_right]
+		bottom_right_: [bottom_right]
+		bottom_left_: [bottom_left]
 	}
 }
 
 pub fn (style_value BorderRadiusRectStyleValue) top_left() StyleValue {
-	return style_value.top_left_
+	return style_value.top_left_[0]
 }
 
 pub fn (style_value BorderRadiusRectStyleValue) top_right() StyleValue {
-	return style_value.top_right_
+	return style_value.top_right_[0]
 }
 
 pub fn (style_value BorderRadiusRectStyleValue) bottom_right() StyleValue {
-	return style_value.bottom_right_
+	return style_value.bottom_right_[0]
 }
 
 pub fn (style_value BorderRadiusRectStyleValue) bottom_left() StyleValue {
-	return style_value.bottom_left_
+	return style_value.bottom_left_[0]
 }
 
 fn border_radius_from_style_value(value StyleValue) BorderRadiusStyleValue {
@@ -658,23 +655,23 @@ fn border_radius_from_style_value(value StyleValue) BorderRadiusStyleValue {
 }
 
 pub fn (style_value BorderRadiusRectStyleValue) serialize(mode SerializationMode) string {
-	top_left := border_radius_from_style_value(style_value.top_left_)
-	top_right := border_radius_from_style_value(style_value.top_right_)
-	bottom_right := border_radius_from_style_value(style_value.bottom_right_)
-	bottom_left := border_radius_from_style_value(style_value.bottom_left_)
+	top_left := border_radius_from_style_value(style_value.top_left_[0])
+	top_right := border_radius_from_style_value(style_value.top_right_[0])
+	bottom_right := border_radius_from_style_value(style_value.bottom_right_[0])
+	bottom_left := border_radius_from_style_value(style_value.bottom_left_[0])
 
 	horizontal_radii_serialized := serialize_a_positional_value_list([
-		top_left.horizontal_radius,
-		top_right.horizontal_radius,
-		bottom_right.horizontal_radius,
-		bottom_left.horizontal_radius,
+		top_left.horizontal_radius[0],
+		top_right.horizontal_radius[0],
+		bottom_right.horizontal_radius[0],
+		bottom_left.horizontal_radius[0],
 	], mode)
 
 	vertical_radii_serialized := serialize_a_positional_value_list([
-		top_left.vertical_radius,
-		top_right.vertical_radius,
-		bottom_right.vertical_radius,
-		bottom_left.vertical_radius,
+		top_left.vertical_radius[0],
+		top_right.vertical_radius[0],
+		bottom_right.vertical_radius[0],
+		bottom_left.vertical_radius[0],
 	], mode)
 
 	if horizontal_radii_serialized == vertical_radii_serialized {
@@ -685,7 +682,7 @@ pub fn (style_value BorderRadiusRectStyleValue) serialize(mode SerializationMode
 }
 
 pub fn (style_value BorderRadiusRectStyleValue) absolutized(context ComputationContext) StyleValue {
-	return StyleValue(BorderRadiusRectStyleValue.create(style_value.top_left_.absolutized(context), style_value.top_right_.absolutized(context), style_value.bottom_right_.absolutized(context), style_value.bottom_left_.absolutized(context)))
+	return StyleValue(BorderRadiusRectStyleValue.create(style_value.top_left_[0].absolutized(context), style_value.top_right_[0].absolutized(context), style_value.bottom_right_[0].absolutized(context), style_value.bottom_left_[0].absolutized(context)))
 }
 
 pub fn (style_value BorderRadiusRectStyleValue) to_string() string {
@@ -764,17 +761,17 @@ pub type BasicShape = BasicShapeCircle
 
 pub struct BasicShapeStyleValue {
 pub mut:
-	basic_shape_ BasicShape
+	basic_shape_ []BasicShape = [BasicShape(BasicShapeCircle{})]
 }
 
 pub fn BasicShapeStyleValue.create(basic_shape BasicShape) BasicShapeStyleValue {
 	return BasicShapeStyleValue{
-		basic_shape_: basic_shape
+		basic_shape_: [basic_shape]
 	}
 }
 
 pub fn (style_value BasicShapeStyleValue) basic_shape() BasicShape {
-	return style_value.basic_shape_
+	return style_value.basic_shape_[0]
 }
 
 pub fn (shape BasicShapeInset) serialize(mode SerializationMode) string {
@@ -901,7 +898,7 @@ pub fn (shape BasicShapePath) serialize(mode SerializationMode) string {
 }
 
 pub fn (style_value BasicShapeStyleValue) serialize(mode SerializationMode) string {
-	shape := style_value.basic_shape_
+	shape := style_value.basic_shape_[0]
 	return match shape {
 		BasicShapeInset { shape.serialize(mode) }
 		BasicShapeXywh { shape.serialize(mode) }
@@ -971,7 +968,7 @@ pub fn (style_value BasicShapeStyleValue) absolutized(context ComputationContext
 	// FIXME: A <'border-radius'> value in a <basic-shape-rect> function is computed as an expanded list of all eight
 	//        <length-percentage> values.
 	// - All <basic-shape-rect> functions compute to the equivalent inset() function.
-	shape := style_value.basic_shape_
+	shape := style_value.basic_shape_[0]
 	absolutized_shape := match shape {
 		BasicShapeInset {
 			BasicShape(BasicShapeInset{
@@ -1037,7 +1034,7 @@ pub fn (style_value BasicShapeStyleValue) absolutized(context ComputationContext
 		}
 	}
 
-	if absolutized_shape == style_value.basic_shape_ {
+	if absolutized_shape == style_value.basic_shape_[0] {
 		return StyleValue(style_value)
 	}
 	return StyleValue(BasicShapeStyleValue.create(absolutized_shape))
@@ -1048,7 +1045,7 @@ pub fn (style_value BasicShapeStyleValue) to_string() string {
 }
 
 pub fn (style_value BasicShapeStyleValue) properties_equal(other BasicShapeStyleValue) bool {
-	return style_value.basic_shape_ == other.basic_shape_
+	return style_value.basic_shape_[0] == other.basic_shape_[0]
 }
 
 // --- ContentStyleValue ---
@@ -1101,9 +1098,9 @@ pub fn (style_value ContentStyleValue) properties_equal(other ContentStyleValue)
 // --- CursorStyleValue ---
 pub struct CursorStyleValue {
 pub mut:
-	image_ CursorImageValue
-	x_     ?StyleValue
-	y_     ?StyleValue
+	image_ []CursorImageValue = [CursorImageValue{}]
+	x_     ?[]StyleValue
+	y_     ?[]StyleValue
 }
 
 pub fn CursorStyleValue.create(image CursorImageValue, x ?StyleValue, y ?StyleValue) CursorStyleValue {
@@ -1112,23 +1109,23 @@ pub fn CursorStyleValue.create(image CursorImageValue, x ?StyleValue, y ?StyleVa
 		panic('VERIFY_NOT_REACHED')
 	}
 	return CursorStyleValue{
-		image_: image
-		x_: x
-		y_: y
+		image_: [image]
+		x_: optional_style_value_storage(x)
+		y_: optional_style_value_storage(y)
 	}
 }
 
 pub fn (style_value CursorStyleValue) serialize(mode SerializationMode) string {
-	mut serialized := style_value.image_.serialize(mode)
-	if x := style_value.x_ {
-		y := style_value.y_ or { panic('VERIFY_NOT_REACHED') }
+	mut serialized := style_value.image_[0].serialize(mode)
+	if x := style_value_from_optional_storage(style_value.x_) {
+		y := style_value_from_optional_storage(style_value.y_) or { panic('VERIFY_NOT_REACHED') }
 		serialized += ' ${x.serialize(mode)} ${y.serialize(mode)}'
 	}
 	return serialized
 }
 
 pub fn (style_value CursorStyleValue) absolutized(context ComputationContext) StyleValue {
-	return StyleValue(CursorStyleValue.create(style_value.image_.absolutized(context), absolutized_style_value_option(style_value.x_, context), absolutized_style_value_option(style_value.y_, context)))
+	return StyleValue(CursorStyleValue.create(style_value.image_[0].absolutized(context), absolutized_style_value_option(style_value_from_optional_storage(style_value.x_), context), absolutized_style_value_option(style_value_from_optional_storage(style_value.y_), context)))
 }
 
 pub fn (style_value CursorStyleValue) to_string() string {
@@ -1205,17 +1202,17 @@ pub type EasingStyleValueFunction = EasingCubicBezier | EasingLinear | EasingSte
 
 pub struct EasingStyleValue {
 pub mut:
-	function_ EasingStyleValueFunction
+	function_ []EasingStyleValueFunction = [EasingStyleValueFunction(EasingCubicBezier{})]
 }
 
 pub fn EasingStyleValue.create(function EasingStyleValueFunction) EasingStyleValue {
 	return EasingStyleValue{
-		function_: function
+		function_: [function]
 	}
 }
 
 pub fn (style_value EasingStyleValue) function() EasingStyleValueFunction {
-	return style_value.function_
+	return style_value.function_[0]
 }
 
 pub fn (linear EasingLinear) serialize(mode SerializationMode) string {
@@ -1288,11 +1285,11 @@ pub fn (function EasingStyleValueFunction) serialize(mode SerializationMode) str
 }
 
 pub fn (style_value EasingStyleValue) serialize(mode SerializationMode) string {
-	return style_value.function_.serialize(mode)
+	return style_value.function_[0].serialize(mode)
 }
 
 pub fn (style_value EasingStyleValue) absolutized(context ComputationContext) StyleValue {
-	function := style_value.function_
+	function := style_value.function_[0]
 	absolutized_function := match function {
 		EasingLinear {
 			mut absolutized_stops := []EasingLinearStop{cap: function.stops.len}
@@ -1330,20 +1327,20 @@ pub fn (style_value EasingStyleValue) to_string() string {
 }
 
 pub fn (style_value EasingStyleValue) properties_equal(other EasingStyleValue) bool {
-	return style_value.function_ == other.function_
+	return style_value.function_[0] == other.function_[0]
 }
 
 // --- EdgeStyleValue ---
 pub struct EdgeStyleValue {
 pub mut:
 	edge_   ?PositionEdge
-	offset_ ?StyleValue
+	offset_ ?[]StyleValue
 }
 
 pub fn EdgeStyleValue.create(edge ?PositionEdge, offset ?StyleValue) EdgeStyleValue {
 	return EdgeStyleValue{
 		edge_: edge
-		offset_: offset
+		offset_: optional_style_value_storage(offset)
 	}
 }
 
@@ -1352,7 +1349,7 @@ pub fn (style_value EdgeStyleValue) edge() ?PositionEdge {
 }
 
 pub fn (style_value EdgeStyleValue) offset() StyleValue {
-	return style_value.offset_ or { panic('VERIFY_NOT_REACHED') }
+	return style_value_from_optional_storage(style_value.offset_) or { panic('VERIFY_NOT_REACHED') }
 }
 
 pub fn (style_value EdgeStyleValue) is_center(mode SerializationMode) bool {
@@ -1362,7 +1359,7 @@ pub fn (style_value EdgeStyleValue) is_center(mode SerializationMode) bool {
 		}
 	}
 
-	if offset := style_value.offset_ {
+	if offset := style_value_from_optional_storage(style_value.offset_) {
 		if offset.serialize(mode) == '50%' {
 			return true
 		}
@@ -1377,11 +1374,11 @@ pub fn (style_value EdgeStyleValue) serialize(mode SerializationMode) string {
 		serialized += position_edge_to_string(edge)
 	}
 
-	if style_value.edge_ != none && style_value.offset_ != none {
+	if style_value.edge_ != none && style_value_from_optional_storage(style_value.offset_) != none {
 		serialized += ' '
 	}
 
-	if offset := style_value.offset_ {
+	if offset := style_value_from_optional_storage(style_value.offset_) {
 		serialized += offset.serialize(mode)
 	}
 	return serialized
@@ -1396,14 +1393,14 @@ pub fn (style_value EdgeStyleValue) with_resolved_keywords() EdgeStyleValue {
 
 	if edge := style_value.edge_ {
 		if edge == .right || edge == .bottom {
-			if offset := style_value.offset_ {
+			if offset := style_value_from_optional_storage(style_value.offset_) {
 				return EdgeStyleValue.create(none, calculated_style_value_from_text('calc(100% - ${offset.serialize(.normal)})'))
 			}
 			return EdgeStyleValue.create(none, StyleValue(PercentageStyleValue.create(Percentage.new(100))))
 		}
 	}
 
-	if offset := style_value.offset_ {
+	if offset := style_value_from_optional_storage(style_value.offset_) {
 		return EdgeStyleValue.create(none, offset)
 	}
 	return EdgeStyleValue.create(none, StyleValue(PercentageStyleValue.create(Percentage.new(0))))
@@ -1413,7 +1410,7 @@ pub fn (style_value EdgeStyleValue) absolutized(context ComputationContext) Styl
 	resolved := style_value.with_resolved_keywords()
 	absolutized_offset := resolved.offset().absolutized(context)
 	if style_value.edge_ == none {
-		if offset := style_value.offset_ {
+		if offset := style_value_from_optional_storage(style_value.offset_) {
 			if offset == absolutized_offset {
 				return StyleValue(style_value)
 			}
@@ -1605,21 +1602,21 @@ pub type FontSourceStyleValueSource = FontSourceLocal | URL
 
 pub struct FontSourceStyleValue {
 pub mut:
-	source_ FontSourceStyleValueSource
+	source_ []FontSourceStyleValueSource = [FontSourceStyleValueSource(FontSourceLocal{})]
 	format_ ?string
 	tech_   []FontTech
 }
 
 pub fn FontSourceStyleValue.create(source FontSourceStyleValueSource, format ?string, tech []FontTech) FontSourceStyleValue {
 	return FontSourceStyleValue{
-		source_: source
+		source_: [source]
 		format_: format
 		tech_: tech
 	}
 }
 
 pub fn (style_value FontSourceStyleValue) source() FontSourceStyleValueSource {
-	return style_value.source_
+	return style_value.source_[0]
 }
 
 pub fn (style_value FontSourceStyleValue) format() ?string {
@@ -1632,7 +1629,7 @@ pub fn (style_value FontSourceStyleValue) tech() []FontTech {
 
 pub fn (style_value FontSourceStyleValue) serialize(mode SerializationMode) string {
 	_ = mode
-	source := style_value.source_
+	source := style_value.source_[0]
 	return match source {
 		FontSourceLocal {
 			// https://www.w3.org/TR/cssom-1/#serialize-a-local
@@ -1663,20 +1660,20 @@ pub fn (style_value FontSourceStyleValue) to_string() string {
 
 pub fn (style_value FontSourceStyleValue) properties_equal(other FontSourceStyleValue) bool {
 	// Faithful to upstream: tech is intentionally not part of equality there.
-	return style_value.source_ == other.source_ && style_value.format_ == other.format_
+	return style_value.source_[0] == other.source_[0] && style_value.format_ == other.format_
 }
 
 // --- FontStyleStyleValue ---
 pub struct FontStyleStyleValue {
 pub mut:
 	font_style_  FontStyleKeyword
-	angle_value_ ?StyleValue
+	angle_value_ ?[]StyleValue
 }
 
 pub fn FontStyleStyleValue.create(font_style FontStyleKeyword, angle_value ?StyleValue) FontStyleStyleValue {
 	return FontStyleStyleValue{
 		font_style_: font_style
-		angle_value_: angle_value
+		angle_value_: optional_style_value_storage(angle_value)
 	}
 }
 
@@ -1685,7 +1682,7 @@ pub fn (style_value FontStyleStyleValue) font_style() FontStyleKeyword {
 }
 
 pub fn (style_value FontStyleStyleValue) angle() ?StyleValue {
-	return style_value.angle_value_
+	return style_value_from_optional_storage(style_value.angle_value_)
 }
 
 pub fn (style_value FontStyleStyleValue) to_font_slope() int {
@@ -1699,7 +1696,7 @@ pub fn (style_value FontStyleStyleValue) to_font_slope() int {
 
 pub fn (style_value FontStyleStyleValue) serialize(mode SerializationMode) string {
 	mut angle_string := ?string(none)
-	if angle_value := style_value.angle_value_ {
+	if angle_value := style_value_from_optional_storage(style_value.angle_value_) {
 		serialized_angle := angle_value.serialize(mode)
 		angle_string = serialized_angle
 		if style_value.font_style_ == .oblique && serialized_angle == '0deg' {
@@ -1719,8 +1716,8 @@ pub fn (style_value FontStyleStyleValue) serialize(mode SerializationMode) strin
 }
 
 pub fn (style_value FontStyleStyleValue) absolutized(context ComputationContext) StyleValue {
-	absolutized_angle := absolutized_style_value_option(style_value.angle_value_, context)
-	if absolutized_angle == style_value.angle_value_ {
+	absolutized_angle := absolutized_style_value_option(style_value_from_optional_storage(style_value.angle_value_), context)
+	if absolutized_angle == style_value_from_optional_storage(style_value.angle_value_) {
 		return StyleValue(style_value)
 	}
 	return StyleValue(FontStyleStyleValue.create(style_value.font_style_, absolutized_angle))
@@ -1744,14 +1741,14 @@ pub struct OpenTypeTaggedStyleValue {
 pub mut:
 	mode_  OpenTypeTaggedStyleValueMode
 	tag_   string
-	value_ StyleValue
+	value_ []StyleValue = [StyleValue(KeywordStyleValue{})]
 }
 
 pub fn OpenTypeTaggedStyleValue.create(mode OpenTypeTaggedStyleValueMode, tag string, value StyleValue) OpenTypeTaggedStyleValue {
 	return OpenTypeTaggedStyleValue{
 		mode_: mode
 		tag_: tag
-		value_: value
+		value_: [value]
 	}
 }
 
@@ -1760,12 +1757,12 @@ pub fn (style_value OpenTypeTaggedStyleValue) tag() string {
 }
 
 pub fn (style_value OpenTypeTaggedStyleValue) value() StyleValue {
-	return style_value.value_
+	return style_value.value_[0]
 }
 
 pub fn (style_value OpenTypeTaggedStyleValue) absolutized(context ComputationContext) StyleValue {
-	absolutized_value := style_value.value_.absolutized(context)
-	if absolutized_value == style_value.value_ {
+	absolutized_value := style_value.value_[0].absolutized(context)
+	if absolutized_value == style_value.value_[0] {
 		return StyleValue(style_value)
 	}
 	return StyleValue(OpenTypeTaggedStyleValue.create(style_value.mode_, style_value.tag_, absolutized_value))
@@ -1776,13 +1773,13 @@ pub fn (style_value OpenTypeTaggedStyleValue) serialize(mode SerializationMode) 
 	match style_value.mode_ {
 		.font_feature_settings {
 			// For font-feature-settings, a 1 value is implicit, so we shouldn't output it.
-			value_string := style_value.value_.serialize(mode)
+			value_string := style_value.value_[0].serialize(mode)
 			if value_string != '1' {
 				serialized += ' ${value_string}'
 			}
 		}
 		.font_variation_settings {
-			serialized += ' ${style_value.value_.serialize(mode)}'
+			serialized += ' ${style_value.value_[0].serialize(mode)}'
 		}
 	}
 
@@ -1942,7 +1939,7 @@ pub fn (key RandomCachingKey) cache_key_string() string {
 
 pub struct RandomValueSharingStyleValue {
 pub mut:
-	fixed_value_    ?StyleValue
+	fixed_value_    ?[]StyleValue
 	is_auto_        bool
 	name_           ?string
 	element_shared_ bool
@@ -1950,7 +1947,7 @@ pub mut:
 
 pub fn RandomValueSharingStyleValue.create_fixed(fixed_value StyleValue) RandomValueSharingStyleValue {
 	return RandomValueSharingStyleValue{
-		fixed_value_: fixed_value
+		fixed_value_: optional_style_value_storage(fixed_value)
 	}
 }
 
@@ -1974,7 +1971,7 @@ pub fn (style_value RandomValueSharingStyleValue) absolutized(context Computatio
 	// https://drafts.csswg.org/css-values-5/#random-caching
 	// Each instance of a random function in styles has an associated random base value.
 	// If the random function's <random-value-sharing> is fixed <number>, the random base value is that number.
-	if fixed_value := style_value.fixed_value_ {
+	if fixed_value := style_value_from_optional_storage(style_value.fixed_value_) {
 		absolutized_fixed_value := fixed_value.absolutized(context)
 		if fixed_value == absolutized_fixed_value {
 			return StyleValue(style_value)
@@ -2020,12 +2017,12 @@ pub fn (style_value RandomValueSharingStyleValue) absolutized(context Computatio
 }
 
 pub fn (style_value RandomValueSharingStyleValue) random_base_value() f64 {
-	fixed_value := style_value.fixed_value_ or { return 0.0 }
+	fixed_value := style_value_from_optional_storage(style_value.fixed_value_) or { return 0.0 }
 	return number_from_style_value(fixed_value, none)
 }
 
 pub fn (style_value RandomValueSharingStyleValue) serialize(mode SerializationMode) string {
-	if fixed_value := style_value.fixed_value_ {
+	if fixed_value := style_value_from_optional_storage(style_value.fixed_value_) {
 		return 'fixed ${fixed_value.serialize(mode)}'
 	}
 
@@ -2058,52 +2055,52 @@ pub fn (style_value RandomValueSharingStyleValue) properties_equal(other RandomV
 // --- RectStyleValue ---
 pub struct RectStyleValue {
 pub mut:
-	top_    StyleValue
-	right_  StyleValue
-	bottom_ StyleValue
-	left_   StyleValue
+	top_    []StyleValue = [StyleValue(KeywordStyleValue{})]
+	right_  []StyleValue = [StyleValue(KeywordStyleValue{})]
+	bottom_ []StyleValue = [StyleValue(KeywordStyleValue{})]
+	left_   []StyleValue = [StyleValue(KeywordStyleValue{})]
 }
 
 pub fn RectStyleValue.create(top StyleValue, right StyleValue, bottom StyleValue, left StyleValue) RectStyleValue {
 	return RectStyleValue{
-		top_: top
-		right_: right
-		bottom_: bottom
-		left_: left
+		top_: [top]
+		right_: [right]
+		bottom_: [bottom]
+		left_: [left]
 	}
 }
 
 pub fn (style_value RectStyleValue) top() StyleValue {
-	return style_value.top_
+	return style_value.top_[0]
 }
 
 pub fn (style_value RectStyleValue) right() StyleValue {
-	return style_value.right_
+	return style_value.right_[0]
 }
 
 pub fn (style_value RectStyleValue) bottom() StyleValue {
-	return style_value.bottom_
+	return style_value.bottom_[0]
 }
 
 pub fn (style_value RectStyleValue) left() StyleValue {
-	return style_value.left_
+	return style_value.left_[0]
 }
 
 pub fn (style_value RectStyleValue) rect() EdgeRect {
 	return EdgeRect{
-		top_edge: LengthOrAuto.from_style_value_logic(style_value.top_, none)
-		right_edge: LengthOrAuto.from_style_value_logic(style_value.right_, none)
-		bottom_edge: LengthOrAuto.from_style_value_logic(style_value.bottom_, none)
-		left_edge: LengthOrAuto.from_style_value_logic(style_value.left_, none)
+		top_edge: LengthOrAuto.from_style_value_logic(style_value.top_[0], none)
+		right_edge: LengthOrAuto.from_style_value_logic(style_value.right_[0], none)
+		bottom_edge: LengthOrAuto.from_style_value_logic(style_value.bottom_[0], none)
+		left_edge: LengthOrAuto.from_style_value_logic(style_value.left_[0], none)
 	}
 }
 
 pub fn (style_value RectStyleValue) serialize(mode SerializationMode) string {
-	return 'rect(${style_value.top_.serialize(mode)}, ${style_value.right_.serialize(mode)}, ${style_value.bottom_.serialize(mode)}, ${style_value.left_.serialize(mode)})'
+	return 'rect(${style_value.top_[0].serialize(mode)}, ${style_value.right_[0].serialize(mode)}, ${style_value.bottom_[0].serialize(mode)}, ${style_value.left_[0].serialize(mode)})'
 }
 
 pub fn (style_value RectStyleValue) absolutized(context ComputationContext) StyleValue {
-	return StyleValue(RectStyleValue.create(style_value.top_.absolutized(context), style_value.right_.absolutized(context), style_value.bottom_.absolutized(context), style_value.left_.absolutized(context)))
+	return StyleValue(RectStyleValue.create(style_value.top_[0].absolutized(context), style_value.right_[0].absolutized(context), style_value.bottom_[0].absolutized(context), style_value.left_[0].absolutized(context)))
 }
 
 pub fn (style_value RectStyleValue) to_string() string {
@@ -2111,8 +2108,8 @@ pub fn (style_value RectStyleValue) to_string() string {
 }
 
 pub fn (style_value RectStyleValue) properties_equal(other RectStyleValue) bool {
-	return style_value.top_ == other.top_ && style_value.right_ == other.right_
-		&& style_value.bottom_ == other.bottom_ && style_value.left_ == other.left_
+	return style_value.top_[0] == other.top_[0] && style_value.right_[0] == other.right_[0]
+		&& style_value.bottom_[0] == other.bottom_[0] && style_value.left_[0] == other.left_[0]
 }
 
 // --- RepeatStyleStyleValue ---
@@ -2164,31 +2161,31 @@ pub fn (style_value RepeatStyleStyleValue) properties_equal(other RepeatStyleSty
 // --- ScrollbarColorStyleValue ---
 pub struct ScrollbarColorStyleValue {
 pub mut:
-	thumb_color_ StyleValue
-	track_color_ StyleValue
+	thumb_color_ []StyleValue = [StyleValue(KeywordStyleValue{})]
+	track_color_ []StyleValue = [StyleValue(KeywordStyleValue{})]
 }
 
 pub fn ScrollbarColorStyleValue.create(thumb_color StyleValue, track_color StyleValue) ScrollbarColorStyleValue {
 	return ScrollbarColorStyleValue{
-		thumb_color_: thumb_color
-		track_color_: track_color
+		thumb_color_: [thumb_color]
+		track_color_: [track_color]
 	}
 }
 
 pub fn (style_value ScrollbarColorStyleValue) thumb_color() StyleValue {
-	return style_value.thumb_color_
+	return style_value.thumb_color_[0]
 }
 
 pub fn (style_value ScrollbarColorStyleValue) track_color() StyleValue {
-	return style_value.track_color_
+	return style_value.track_color_[0]
 }
 
 pub fn (style_value ScrollbarColorStyleValue) absolutized(context ComputationContext) StyleValue {
-	return StyleValue(ScrollbarColorStyleValue.create(style_value.thumb_color_.absolutized(context), style_value.track_color_.absolutized(context)))
+	return StyleValue(ScrollbarColorStyleValue.create(style_value.thumb_color_[0].absolutized(context), style_value.track_color_[0].absolutized(context)))
 }
 
 pub fn (style_value ScrollbarColorStyleValue) serialize(mode SerializationMode) string {
-	return '${style_value.thumb_color_.serialize(mode)} ${style_value.track_color_.serialize(mode)}'
+	return '${style_value.thumb_color_[0].serialize(mode)} ${style_value.track_color_[0].serialize(mode)}'
 }
 
 pub fn (style_value ScrollbarColorStyleValue) to_string() string {
@@ -2246,22 +2243,22 @@ pub enum ShadowType {
 pub struct ShadowStyleValue {
 pub mut:
 	shadow_type_     ShadowType
-	color_           ?StyleValue
-	offset_x_        StyleValue
-	offset_y_        StyleValue
-	blur_radius_     ?StyleValue
-	spread_distance_ ?StyleValue
+	color_           ?[]StyleValue
+	offset_x_        []StyleValue = [StyleValue(KeywordStyleValue{})]
+	offset_y_        []StyleValue = [StyleValue(KeywordStyleValue{})]
+	blur_radius_     ?[]StyleValue
+	spread_distance_ ?[]StyleValue
 	placement_       ShadowPlacement
 }
 
 pub fn ShadowStyleValue.create(shadow_type ShadowType, color ?StyleValue, offset_x StyleValue, offset_y StyleValue, blur_radius ?StyleValue, spread_distance ?StyleValue, placement ShadowPlacement) ShadowStyleValue {
 	return ShadowStyleValue{
 		shadow_type_: shadow_type
-		color_: color
-		offset_x_: offset_x
-		offset_y_: offset_y
-		blur_radius_: blur_radius
-		spread_distance_: spread_distance
+		color_: optional_style_value_storage(color)
+		offset_x_: [offset_x]
+		offset_y_: [offset_y]
+		blur_radius_: optional_style_value_storage(blur_radius)
+		spread_distance_: optional_style_value_storage(spread_distance)
 		placement_: placement
 	}
 }
@@ -2271,23 +2268,23 @@ pub fn (style_value ShadowStyleValue) shadow_type() ShadowType {
 }
 
 pub fn (style_value ShadowStyleValue) color() StyleValue {
-	return style_value.color_ or { currentcolor_style_value() }
+	return style_value_from_optional_storage(style_value.color_) or { currentcolor_style_value() }
 }
 
 pub fn (style_value ShadowStyleValue) offset_x() StyleValue {
-	return style_value.offset_x_
+	return style_value.offset_x_[0]
 }
 
 pub fn (style_value ShadowStyleValue) offset_y() StyleValue {
-	return style_value.offset_y_
+	return style_value.offset_y_[0]
 }
 
 pub fn (style_value ShadowStyleValue) blur_radius() StyleValue {
-	return style_value.blur_radius_ or { zero_length_style_value() }
+	return style_value_from_optional_storage(style_value.blur_radius_) or { zero_length_style_value() }
 }
 
 pub fn (style_value ShadowStyleValue) spread_distance() StyleValue {
-	return style_value.spread_distance_ or { zero_length_style_value() }
+	return style_value_from_optional_storage(style_value.spread_distance_) or { zero_length_style_value() }
 }
 
 pub fn (style_value ShadowStyleValue) placement() ShadowPlacement {
@@ -2296,17 +2293,17 @@ pub fn (style_value ShadowStyleValue) placement() ShadowPlacement {
 
 pub fn (style_value ShadowStyleValue) serialize(mode SerializationMode) string {
 	mut serialized := ''
-	if color := style_value.color_ {
+	if color := style_value_from_optional_storage(style_value.color_) {
 		serialized += '${color.serialize(mode)} '
 	}
 
-	serialized += '${style_value.offset_x_.serialize(mode)} ${style_value.offset_y_.serialize(mode)}'
+	serialized += '${style_value.offset_x_[0].serialize(mode)} ${style_value.offset_y_[0].serialize(mode)}'
 
-	if blur_radius := style_value.blur_radius_ {
+	if blur_radius := style_value_from_optional_storage(style_value.blur_radius_) {
 		serialized += ' ${blur_radius.serialize(mode)}'
 	}
 
-	if spread_distance := style_value.spread_distance_ {
+	if spread_distance := style_value_from_optional_storage(style_value.spread_distance_) {
 		if style_value.shadow_type_ == .normal {
 			serialized += ' ${spread_distance.serialize(mode)}'
 		}
@@ -2319,7 +2316,7 @@ pub fn (style_value ShadowStyleValue) serialize(mode SerializationMode) string {
 }
 
 pub fn (style_value ShadowStyleValue) absolutized(context ComputationContext) StyleValue {
-	return StyleValue(ShadowStyleValue.create(style_value.shadow_type_, style_value.color().absolutized(context), style_value.offset_x_.absolutized(context), style_value.offset_y_.absolutized(context), style_value.blur_radius().absolutized(context), style_value.spread_distance().absolutized(context), style_value.placement_))
+	return StyleValue(ShadowStyleValue.create(style_value.shadow_type_, style_value.color().absolutized(context), style_value.offset_x_[0].absolutized(context), style_value.offset_y_[0].absolutized(context), style_value.blur_radius().absolutized(context), style_value.spread_distance().absolutized(context), style_value.placement_))
 }
 
 pub fn (style_value ShadowStyleValue) to_string() string {
@@ -3576,22 +3573,22 @@ pub fn (style_value StyleValueList) properties_equal(other StyleValueList) bool 
 // --- SuperellipseStyleValue ---
 pub struct SuperellipseStyleValue {
 pub mut:
-	parameter_ StyleValue
+	parameter_ []StyleValue = [StyleValue(KeywordStyleValue{})]
 }
 
 pub fn SuperellipseStyleValue.create(parameter StyleValue) SuperellipseStyleValue {
 	return SuperellipseStyleValue{
-		parameter_: parameter
+		parameter_: [parameter]
 	}
 }
 
 pub fn (style_value SuperellipseStyleValue) parameter() f64 {
-	return number_from_style_value(style_value.parameter_, none)
+	return number_from_style_value(style_value.parameter_[0], none)
 }
 
 pub fn (style_value SuperellipseStyleValue) serialize(mode SerializationMode) string {
-	if mode == .resolved_value && style_value.parameter_.is_number() {
-		number := style_value.parameter_.as_number().number()
+	if mode == .resolved_value && style_value.parameter_[0].is_number() {
+		number := style_value.parameter_[0].as_number().number()
 
 		if number == 1 {
 			return 'round'
@@ -3619,16 +3616,16 @@ pub fn (style_value SuperellipseStyleValue) serialize(mode SerializationMode) st
 	}
 
 	mut serialized := 'superellipse('
-	if !style_value.parameter_.is_number() {
-		serialized += style_value.parameter_.serialize(mode)
+	if !style_value.parameter_[0].is_number() {
+		serialized += style_value.parameter_[0].serialize(mode)
 	} else {
-		number := style_value.parameter_.as_number().number()
+		number := style_value.parameter_[0].as_number().number()
 		if math.is_inf(number, 1) {
 			serialized += 'infinity'
 		} else if math.is_inf(number, -1) {
 			serialized += '-infinity'
 		} else {
-			serialized += style_value.parameter_.serialize(mode)
+			serialized += style_value.parameter_[0].serialize(mode)
 		}
 	}
 	serialized += ')'
@@ -3636,8 +3633,8 @@ pub fn (style_value SuperellipseStyleValue) serialize(mode SerializationMode) st
 }
 
 pub fn (style_value SuperellipseStyleValue) absolutized(context ComputationContext) StyleValue {
-	absolutized_parameter := style_value.parameter_.absolutized(context)
-	if absolutized_parameter == style_value.parameter_ {
+	absolutized_parameter := style_value.parameter_[0].absolutized(context)
+	if absolutized_parameter == style_value.parameter_[0] {
 		return StyleValue(style_value)
 	}
 	return StyleValue(SuperellipseStyleValue.create(absolutized_parameter))
@@ -3648,7 +3645,7 @@ pub fn (style_value SuperellipseStyleValue) to_string() string {
 }
 
 pub fn (style_value SuperellipseStyleValue) properties_equal(other SuperellipseStyleValue) bool {
-	return style_value.parameter_ == other.parameter_
+	return style_value.parameter_[0] == other.parameter_[0]
 }
 
 // --- TextIndentStyleValue ---
@@ -3664,21 +3661,21 @@ pub enum TextIndentEachLine {
 
 pub struct TextIndentStyleValue {
 pub mut:
-	length_percentage_ StyleValue
+	length_percentage_ []StyleValue = [StyleValue(KeywordStyleValue{})]
 	hanging_           bool
 	each_line_         bool
 }
 
 pub fn TextIndentStyleValue.create(length_percentage StyleValue, hanging TextIndentHanging, each_line TextIndentEachLine) TextIndentStyleValue {
 	return TextIndentStyleValue{
-		length_percentage_: length_percentage
+		length_percentage_: [length_percentage]
 		hanging_: hanging == .yes
 		each_line_: each_line == .yes
 	}
 }
 
 pub fn (style_value TextIndentStyleValue) length_percentage() StyleValue {
-	return style_value.length_percentage_
+	return style_value.length_percentage_[0]
 }
 
 pub fn (style_value TextIndentStyleValue) hanging() bool {
@@ -3690,7 +3687,7 @@ pub fn (style_value TextIndentStyleValue) each_line() bool {
 }
 
 pub fn (style_value TextIndentStyleValue) serialize(mode SerializationMode) string {
-	mut serialized := style_value.length_percentage_.serialize(mode)
+	mut serialized := style_value.length_percentage_[0].serialize(mode)
 	if style_value.each_line_ {
 		serialized += ' each-line'
 	}
@@ -3701,8 +3698,8 @@ pub fn (style_value TextIndentStyleValue) serialize(mode SerializationMode) stri
 }
 
 pub fn (style_value TextIndentStyleValue) absolutized(context ComputationContext) StyleValue {
-	new_length_percentage := style_value.length_percentage_.absolutized(context)
-	if new_length_percentage == style_value.length_percentage_ {
+	new_length_percentage := style_value.length_percentage_[0].absolutized(context)
+	if new_length_percentage == style_value.length_percentage_[0] {
 		return StyleValue(style_value)
 	}
 	return StyleValue(TextIndentStyleValue.create(new_length_percentage, if style_value.hanging_ {

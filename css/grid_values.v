@@ -899,21 +899,21 @@ pub fn (style_value GridAutoFlowStyleValue) properties_equal(other GridAutoFlowS
 
 pub struct GridTrackPlacementStyleValue {
 pub mut:
-	grid_track_placement_ GridTrackPlacement
+	grid_track_placement_ []GridTrackPlacement = [GridTrackPlacement{}]
 }
 
 pub fn GridTrackPlacementStyleValue.create(grid_track_placement GridTrackPlacement) GridTrackPlacementStyleValue {
 	return GridTrackPlacementStyleValue{
-		grid_track_placement_: grid_track_placement
+		grid_track_placement_: [grid_track_placement]
 	}
 }
 
 pub fn (style_value GridTrackPlacementStyleValue) grid_track_placement() GridTrackPlacement {
-	return style_value.grid_track_placement_
+	return style_value.grid_track_placement_[0]
 }
 
 pub fn (style_value GridTrackPlacementStyleValue) serialize(mode SerializationMode) string {
-	return style_value.grid_track_placement_.serialize(mode)
+	return style_value.grid_track_placement_[0].serialize(mode)
 }
 
 pub fn (style_value GridTrackPlacementStyleValue) to_string() string {
@@ -921,15 +921,15 @@ pub fn (style_value GridTrackPlacementStyleValue) to_string() string {
 }
 
 pub fn (style_value GridTrackPlacementStyleValue) absolutized(context ComputationContext) GridTrackPlacementStyleValue {
-	absolutized_placement := style_value.grid_track_placement_.absolutized(context)
-	if absolutized_placement == style_value.grid_track_placement_ {
+	absolutized_placement := style_value.grid_track_placement_[0].absolutized(context)
+	if absolutized_placement == style_value.grid_track_placement_[0] {
 		return style_value
 	}
 	return GridTrackPlacementStyleValue.create(absolutized_placement)
 }
 
 pub fn (style_value GridTrackPlacementStyleValue) properties_equal(other GridTrackPlacementStyleValue) bool {
-	return style_value.grid_track_placement_ == other.grid_track_placement_
+	return style_value.grid_track_placement_[0] == other.grid_track_placement_[0]
 }
 
 // --- GridTrackSizeListStyleValue ---

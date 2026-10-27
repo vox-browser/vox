@@ -88,7 +88,9 @@ fn test_typed_paint_adapter_retains_composite_values_without_css_text_reparse() 
 	assert math.abs(radius.x - 20.0) < 0.001
 	assert math.abs(radius.y - 20.0) < 0.001
 
-	shadows := computed_box_shadows(values)
+	element := computed.subject_element_ or { panic('missing style subject') }
+	node := Node.new(element.document(), none)
+	shadows := computed_box_shadows(node, values)
 	assert shadows.len == 1
 	assert math.abs(shadows[0].offset_x - 2.0) < 0.001
 	assert math.abs(shadows[0].offset_y - 3.0) < 0.001

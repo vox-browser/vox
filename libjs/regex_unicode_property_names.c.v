@@ -2,12 +2,15 @@ module libjs
 
 #flag -I @DIR
 #flag darwin -licucore
+// The property bridge binds ICU 78 explicitly. Homebrew's current ICU can have
+// a different ABI, so use the same pinned library as the production browser.
 $if arm64 {
-	#flag darwin -L/opt/homebrew/opt/icu4c/lib
+	#flag darwin @DIR/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicuuc.dylib
+	#flag darwin -Wl,-rpath,@DIR/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib
 } $else {
-	#flag darwin -L/usr/local/opt/icu4c/lib
+	#flag darwin @DIR/../../3rd/ladybird/Build/release/vcpkg_installed/x64-osx-dynamic/lib/libicuuc.dylib
+	#flag darwin -Wl,-rpath,@DIR/../../3rd/ladybird/Build/release/vcpkg_installed/x64-osx-dynamic/lib
 }
-#flag darwin -licuuc
 #flag linux -licuuc
 #include "regex_unicode_property.h"
 

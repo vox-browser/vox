@@ -35,13 +35,13 @@ fn test_webkit_radial_gradient_positions_extents_and_radii_survive_round_trip() 
 		second := webkit_radial_test_value(first.serialize(.normal), .background_image)?
 		assert first.serialize(.normal) == second.serialize(.normal)
 		assert first.ending_shape_ == second.ending_shape_
-		assert first.size_.serialize(.normal) == second.size_.serialize(.normal)
+		assert first.size_[0].serialize(.normal) == second.size_[0].serialize(.normal)
 		assert first.is_repeating() == text.contains('repeating')
 	}
 	contain := webkit_radial_test_value('-webkit-radial-gradient(contain, red, blue)', .background_image)?
-	assert contain.size_.serialize(.normal) == 'closest-side'
+	assert contain.size_[0].serialize(.normal) == 'closest-side'
 	cover := webkit_radial_test_value('-webkit-radial-gradient(cover, red, blue)', .background_image)?
-	assert cover.size_.serialize(.normal) == 'farthest-corner'
+	assert cover.size_[0].serialize(.normal) == 'farthest-corner'
 	uppercase := webkit_radial_test_value('-WEBKIT-REPEATING-RADIAL-GRADIENT(circle, red, blue)', .background_image)?
 	assert uppercase.webkit_
 	assert uppercase.is_repeating()

@@ -10,14 +10,14 @@ fn parsed_color_mix(value string) ColorMixStyleValue {
 
 fn test_color_mix_retains_percentage_style_values() {
 	literal := parsed_color_mix('color-mix(in oklab, red 25%, blue)')
-	literal_percentage := literal.first_component.percentage or {
+	literal_percentage := literal.first_component[0].percentage or {
 		panic('literal percentage was discarded')
 	}
 	assert literal_percentage is PercentageStyleValue
 	assert literal_percentage.serialize(.normal) == '25%'
 
 	calculated := parsed_color_mix('color-mix(in oklab, red calc(50% / 2), blue)')
-	calculated_percentage := calculated.first_component.percentage or {
+	calculated_percentage := calculated.first_component[0].percentage or {
 		panic('calculated percentage was discarded')
 	}
 	assert calculated_percentage is CalculatedStyleValue

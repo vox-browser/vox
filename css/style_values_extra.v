@@ -290,8 +290,8 @@ mut:
 fn style_values_extra_resolve_border_radius(value StyleValue, context LengthResolutionContext, reference_box CSSPixelRect) StyleValuesExtraResolvedBorderRadius {
 	radius := value.as_border_radius() or { panic('VERIFY_NOT_REACHED') }
 	return StyleValuesExtraResolvedBorderRadius{
-		horizontal: style_values_extra_length_percentage_to_px(radius.horizontal_radius, context, reference_box.width)
-		vertical: style_values_extra_length_percentage_to_px(radius.vertical_radius, context, reference_box.height)
+		horizontal: style_values_extra_length_percentage_to_px(radius.horizontal_radius[0], context, reference_box.width)
+		vertical: style_values_extra_length_percentage_to_px(radius.vertical_radius[0], context, reference_box.height)
 	}
 }
 
@@ -565,15 +565,15 @@ fn style_values_extra_percentage_value(style_value StyleValue) ?f64 {
 // --- CursorStyleValue extra helpers ---
 
 pub fn (style_value CursorStyleValue) image() CursorImageValue {
-	return style_value.image_
+	return style_value.image_[0]
 }
 
 pub fn (style_value CursorStyleValue) x() ?StyleValue {
-	return style_value.x_
+	return style_value_from_optional_storage(style_value.x_)
 }
 
 pub fn (style_value CursorStyleValue) y() ?StyleValue {
-	return style_value.y_
+	return style_value_from_optional_storage(style_value.y_)
 }
 
 fn style_values_extra_image_natural_size(image CSSImageSourceStyleValue) SizeWithAspectRatio {
@@ -606,18 +606,18 @@ fn style_values_extra_image_is_paintable(image CSSImageSourceStyleValue) bool {
 }
 
 pub fn (mut style_value CursorStyleValue) make_image_cursor(node &dom.LayoutNode) ?StyleValueImageCursor {
-	mut image := style_value.image_.value
+	mut image := style_value.image_[0].value
 	if !style_values_extra_image_is_paintable(image) {
 		match mut image {
 			ImageStyleValue {
 				mut document := document_from_layout_node(node) or { return none }
 				image.load_any_resources(mut document)
-				style_value.image_.value = CSSImageSourceStyleValue(image)
+				style_value.image_ = [CursorImageValue.create(CSSImageSourceStyleValue(image))]
 			}
 			ImageSetStyleValue {
 				mut document := document_from_layout_node(node) or { return none }
 				image.load_any_resources(mut document, document.device_pixels_per_css_pixel())
-				style_value.image_.value = CSSImageSourceStyleValue(image)
+				style_value.image_ = [CursorImageValue.create(CSSImageSourceStyleValue(image))]
 			}
 			else {}
 		}
@@ -631,8 +631,8 @@ pub fn (mut style_value CursorStyleValue) make_image_cursor(node &dom.LayoutNode
 
 	mut hotspot_x := 0
 	mut hotspot_y := 0
-	if x := style_value.x_ {
-		y := style_value.y_ or { panic('VERIFY_NOT_REACHED') }
+	if x := style_value.x() {
+		y := style_value.y() or { panic('VERIFY_NOT_REACHED') }
 		hotspot_x = int(number_from_style_value(x, none))
 		hotspot_y = int(number_from_style_value(y, none))
 	}
@@ -648,7 +648,7 @@ pub fn (mut style_value CursorStyleValue) make_image_cursor(node &dom.LayoutNode
 // --- BasicShapeStyleValue extra helpers ---
 
 pub fn (style_value BasicShapeStyleValue) to_path(reference_box CSSPixelRect, node &dom.LayoutNode) StyleValuePath {
-	shape := style_value.basic_shape_
+	shape := style_value.basic_shape_[0]
 	return match shape {
 		BasicShapeInset {
 			style_values_extra_inset_to_path(shape, reference_box, node)

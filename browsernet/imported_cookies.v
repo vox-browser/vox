@@ -108,7 +108,7 @@ fn imported_cookie_header(contents string, resource_url string, source_url strin
 }
 
 fn imported_cookie_headers(resource_url string, source_url string) http.Header {
-	mut headers := http.Header{}
+	mut headers := http.new_header()
 	path := imported_cookie_file()
 	if path == '' || os.file_size(path) > 1024 * 1024 { return headers }
 	contents := os.read_file(path) or { return headers }

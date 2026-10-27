@@ -76,7 +76,7 @@ fn append_dom_value_resource_urls(value &dom.StyleValue, fallback_base string,
 			return
 		}
 		if typed is PendingSubstitutionStyleValue {
-			original := typed.original_shorthand_value
+			original := typed.original_shorthand_value[0]
 			if original is UnresolvedStyleValue {
 				append_component_resource_urls(original.tokens, base_url, mut candidates)
 				return

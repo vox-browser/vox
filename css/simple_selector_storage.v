@@ -39,7 +39,7 @@ mut:
 fn (mut selector SimpleSelector) clear_payload(kind SimpleSelectorPayloadKind) {
 	// Clear the full storage before changing arms: inactive bytes must not keep
 	// managed objects from a previous larger payload alive conservatively.
-	unsafe { vmemset(&selector.payload_, 0, sizeof(SimpleSelectorPayload)) }
+	unsafe { vmemset(&selector.payload_, 0, int(sizeof(SimpleSelectorPayload))) }
 	selector.payload_kind_ = kind
 }
 

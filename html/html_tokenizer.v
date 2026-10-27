@@ -419,7 +419,7 @@ fn (mut t HTMLTokenizer) enqueue(token HTMLToken) {
 	index := t.queued_tokens.len
 	unsafe {
 		t.queued_tokens.grow_len(1)
-		vmemcpy(&t.queued_tokens[index], &token, sizeof(HTMLToken))
+		vmemcpy(&t.queued_tokens[index], &token, int(sizeof(HTMLToken)))
 	}
 }
 

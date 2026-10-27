@@ -62,8 +62,8 @@ fn property_value_can_export(value StyleValue) bool {
 			true
 		}
 		RatioStyleValue {
-			property_value_can_export(value.numerator_)
-				&& property_value_can_export(value.denominator_)
+			property_value_can_export(value.numerator_[0])
+				&& property_value_can_export(value.denominator_[0])
 		}
 		StyleValueList {
 			property_values_can_export(value.values_)
@@ -72,9 +72,9 @@ fn property_value_can_export(value StyleValue) bool {
 			property_values_can_export(value.values_)
 		}
 		RGBColorStyleValue {
-			property_value_can_export(value.r_) && property_value_can_export(value.g_)
-				&& property_value_can_export(value.b_)
-				&& property_value_can_export(value.alpha_)
+			property_value_can_export(value.r_[0]) && property_value_can_export(value.g_[0])
+				&& property_value_can_export(value.b_[0])
+				&& property_value_can_export(value.alpha_[0])
 		}
 		else { false }
 	}
@@ -125,8 +125,8 @@ fn export_property_value(value StyleValue) StyleValue {
 			StyleValue(GridAutoFlowStyleValue{ row_: value.row_, dense_: value.dense_ })
 		}
 		RatioStyleValue {
-			StyleValue(RatioStyleValue.create_from_style_values(export_property_value(value.numerator_),
-				export_property_value(value.denominator_)))
+			StyleValue(RatioStyleValue.create_from_style_values(export_property_value(value.numerator_[0]),
+				export_property_value(value.denominator_[0])))
 		}
 		StyleValueList {
 			StyleValue(StyleValueList.create(export_property_values(value.values_), value.separator_,
@@ -139,9 +139,9 @@ fn export_property_value(value StyleValue) StyleValue {
 		}
 		RGBColorStyleValue {
 			name := if original_name := value.name_ { ?string(original_name.clone()) } else { none }
-			StyleValue(RGBColorStyleValue.create(export_property_value(value.r_),
-				export_property_value(value.g_), export_property_value(value.b_),
-				export_property_value(value.alpha_), value.color_syntax_, name))
+			StyleValue(RGBColorStyleValue.create(export_property_value(value.r_[0]),
+				export_property_value(value.g_[0]), export_property_value(value.b_[0]),
+				export_property_value(value.alpha_[0]), value.color_syntax_, name))
 		}
 		else { panic('unsupported property value export') }
 	}

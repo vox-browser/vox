@@ -40,13 +40,13 @@ pub mut:
 pub struct CSSMathNegate {
 pub mut:
 	type_  NumericType
-	value_ CSSNumericValue
+	value_ []CSSNumericValue = [CSSNumericValue(CSSUnitValue{})]
 }
 
 pub struct CSSMathInvert {
 pub mut:
 	type_  NumericType
-	value_ CSSNumericValue
+	value_ []CSSNumericValue = [CSSNumericValue(CSSUnitValue{})]
 }
 
 pub struct CSSMathMin {
@@ -64,9 +64,9 @@ pub mut:
 pub struct CSSMathClamp {
 pub mut:
 	type_  NumericType
-	lower_ CSSNumericValue
-	value_ CSSNumericValue
-	upper_ CSSNumericValue
+	lower_ []CSSNumericValue = [CSSNumericValue(CSSUnitValue{})]
+	value_ []CSSNumericValue = [CSSNumericValue(CSSUnitValue{})]
+	upper_ []CSSNumericValue = [CSSNumericValue(CSSUnitValue{})]
 }
 
 pub type CSSMathValue = CSSMathClamp
@@ -602,7 +602,7 @@ pub fn (product CSSMathProduct) create_calculation_node(context CalculationConte
 pub fn CSSMathNegate.create(type_ NumericType, value CSSNumericValue) CSSMathNegate {
 	return CSSMathNegate{
 		type_:  type_
-		value_: value
+		value_: [value]
 	}
 }
 
@@ -638,7 +638,7 @@ pub fn (negate CSSMathNegate) serialize_math_value(nested CSSMathValueNested, pa
 		s += '-'
 
 		// 3. Serialize this's value internal slot with nested set to true, and append the result to s.
-		s += negate.value_.serialize(CSSNumericSerializationParams{
+		s += negate.value_[0].serialize(CSSNumericSerializationParams{
 			nested: true
 		})
 
@@ -654,7 +654,7 @@ pub fn (negate CSSMathNegate) serialize_math_value(nested CSSMathValueNested, pa
 
 // https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathnegate-value
 pub fn (negate CSSMathNegate) value() CSSNumericValue {
-	return negate.value_
+	return negate.value_[0]
 }
 
 // https://drafts.css-houdini.org/css-typed-om-1/#equal-numeric-value
@@ -668,13 +668,13 @@ pub fn (negate CSSMathNegate) is_equal_numeric_value(other CSSNumericValue) bool
 
 	// 4. Assert: value1 and value2 are both CSSMathNegates or CSSMathInverts.
 	// 5. Return whether value1's value and value2's value are equal numeric values.
-	return negate.value_.is_equal_numeric_value(other_negate.value_)
+	return negate.value_[0].is_equal_numeric_value(other_negate.value_[0])
 }
 
 // https://drafts.css-houdini.org/css-typed-om-1/#create-a-sum-value
 pub fn (negate CSSMathNegate) create_a_sum_value() ?SumValue {
 	// 1. Let values be the result of creating a sum value from this's value internal slot.
-	mut values := negate.value_.create_a_sum_value() or { return none }
+	mut values := negate.value_[0].create_a_sum_value() or { return none }
 
 	// 2. If values is failure, return failure.
 
@@ -688,7 +688,7 @@ pub fn (negate CSSMathNegate) create_a_sum_value() ?SumValue {
 }
 
 pub fn (negate CSSMathNegate) create_calculation_node(context CalculationContext) !CalculationNode {
-	child := negate.value_.create_calculation_node(context)!
+	child := negate.value_[0].create_calculation_node(context)!
 	return calculation_node_from_calc(CalcNode(CalcNegate{
 		children: [child.typed_node()!]
 	}))
@@ -697,7 +697,7 @@ pub fn (negate CSSMathNegate) create_calculation_node(context CalculationContext
 pub fn CSSMathInvert.create(type_ NumericType, value CSSNumericValue) CSSMathInvert {
 	return CSSMathInvert{
 		type_:  type_
-		value_: value
+		value_: [value]
 	}
 }
 
@@ -736,7 +736,7 @@ pub fn (invert CSSMathInvert) serialize_math_value(nested CSSMathValueNested, pa
 		s += '1 / '
 
 		// 3. Serialize this's value internal slot with nested set to true, and append the result to s.
-		s += invert.value_.serialize(CSSNumericSerializationParams{
+		s += invert.value_[0].serialize(CSSNumericSerializationParams{
 			nested: true
 		})
 
@@ -752,7 +752,7 @@ pub fn (invert CSSMathInvert) serialize_math_value(nested CSSMathValueNested, pa
 
 // https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathinvert-value
 pub fn (invert CSSMathInvert) value() CSSNumericValue {
-	return invert.value_
+	return invert.value_[0]
 }
 
 // https://drafts.css-houdini.org/css-typed-om-1/#equal-numeric-value
@@ -766,13 +766,13 @@ pub fn (invert CSSMathInvert) is_equal_numeric_value(other CSSNumericValue) bool
 
 	// 4. Assert: value1 and value2 are both CSSMathNegates or CSSMathInverts.
 	// 5. Return whether value1's value and value2's value are equal numeric values.
-	return invert.value_.is_equal_numeric_value(other_invert.value_)
+	return invert.value_[0].is_equal_numeric_value(other_invert.value_[0])
 }
 
 // https://drafts.css-houdini.org/css-typed-om-1/#create-a-sum-value
 pub fn (invert CSSMathInvert) create_a_sum_value() ?SumValue {
 	// 1. Let values be the result of creating a sum value from this's value internal slot.
-	mut values := invert.value_.create_a_sum_value() or { return none }
+	mut values := invert.value_[0].create_a_sum_value() or { return none }
 
 	// 2. If values is failure, return failure.
 
@@ -794,7 +794,7 @@ pub fn (invert CSSMathInvert) create_a_sum_value() ?SumValue {
 }
 
 pub fn (invert CSSMathInvert) create_calculation_node(context CalculationContext) !CalculationNode {
-	child := invert.value_.create_calculation_node(context)!
+	child := invert.value_[0].create_calculation_node(context)!
 	return calculation_node_from_calc(CalcNode(CalcInvert{
 		children: [child.typed_node()!]
 	}))
@@ -1037,9 +1037,9 @@ pub fn (max CSSMathMax) create_calculation_node(context CalculationContext) !Cal
 pub fn CSSMathClamp.create(type_ NumericType, lower CSSNumericValue, value CSSNumericValue, upper CSSNumericValue) CSSMathClamp {
 	return CSSMathClamp{
 		type_:  type_
-		lower_: lower
-		value_: value
-		upper_: upper
+		lower_: [lower]
+		value_: [value]
+		upper_: [upper]
 	}
 }
 
@@ -1069,17 +1069,17 @@ pub fn (clamp_value CSSMathClamp) serialize_math_value(nested CSSMathValueNested
 	_ = parens
 	// AD-HOC: The spec is missing serialization rules for CSSMathClamp: https://github.com/w3c/css-houdini-drafts/issues/1152
 	mut s := 'clamp('
-	s += clamp_value.lower_.serialize(CSSNumericSerializationParams{
+	s += clamp_value.lower_[0].serialize(CSSNumericSerializationParams{
 		nested:    true
 		parenless: true
 	})
 	s += ', '
-	s += clamp_value.value_.serialize(CSSNumericSerializationParams{
+	s += clamp_value.value_[0].serialize(CSSNumericSerializationParams{
 		nested:    true
 		parenless: true
 	})
 	s += ', '
-	s += clamp_value.upper_.serialize(CSSNumericSerializationParams{
+	s += clamp_value.upper_[0].serialize(CSSNumericSerializationParams{
 		nested:    true
 		parenless: true
 	})
@@ -1090,19 +1090,19 @@ pub fn (clamp_value CSSMathClamp) serialize_math_value(nested CSSMathValueNested
 // https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathclamp-lower
 pub fn (clamp_value CSSMathClamp) lower() CSSNumericValue {
 	// AD-HOC: No spec definition.
-	return clamp_value.lower_
+	return clamp_value.lower_[0]
 }
 
 // https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathclamp-value
 pub fn (clamp_value CSSMathClamp) value() CSSNumericValue {
 	// AD-HOC: No spec definition.
-	return clamp_value.value_
+	return clamp_value.value_[0]
 }
 
 // https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathclamp-upper
 pub fn (clamp_value CSSMathClamp) upper() CSSNumericValue {
 	// AD-HOC: No spec definition.
-	return clamp_value.upper_
+	return clamp_value.upper_[0]
 }
 
 // https://drafts.css-houdini.org/css-typed-om-1/#equal-numeric-value
@@ -1114,9 +1114,9 @@ pub fn (clamp_value CSSMathClamp) is_equal_numeric_value(other CSSNumericValue) 
 	}
 	other_clamp := other as CSSMathClamp
 
-	return clamp_value.lower_.is_equal_numeric_value(other_clamp.lower_)
-		&& clamp_value.value_.is_equal_numeric_value(other_clamp.value_)
-		&& clamp_value.upper_.is_equal_numeric_value(other_clamp.upper_)
+	return clamp_value.lower_[0].is_equal_numeric_value(other_clamp.lower_[0])
+		&& clamp_value.value_[0].is_equal_numeric_value(other_clamp.value_[0])
+		&& clamp_value.upper_[0].is_equal_numeric_value(other_clamp.upper_[0])
 }
 
 // https://drafts.css-houdini.org/css-typed-om-1/#create-a-sum-value
@@ -1125,9 +1125,9 @@ pub fn (clamp_value CSSMathClamp) create_a_sum_value() ?SumValue {
 	//         So, basing it on the spec for CSSMathMin.
 
 	// Create sum values from lower, value, and upper.
-	lower := clamp_value.lower_.create_a_sum_value()
-	value := clamp_value.value_.create_a_sum_value()
-	upper := clamp_value.upper_.create_a_sum_value()
+	lower := clamp_value.lower_[0].create_a_sum_value()
+	value := clamp_value.value_[0].create_a_sum_value()
+	upper := clamp_value.upper_[0].create_a_sum_value()
 
 	// If any of those are failure, or has a length greater than one, return failure.
 	actual_lower := lower or { return none }
@@ -1154,9 +1154,9 @@ pub fn (clamp_value CSSMathClamp) create_a_sum_value() ?SumValue {
 }
 
 pub fn (clamp_value CSSMathClamp) create_calculation_node(context CalculationContext) !CalculationNode {
-	lower := clamp_value.lower_.create_calculation_node(context)!
-	value := clamp_value.value_.create_calculation_node(context)!
-	upper := clamp_value.upper_.create_calculation_node(context)!
+	lower := clamp_value.lower_[0].create_calculation_node(context)!
+	value := clamp_value.value_[0].create_calculation_node(context)!
+	upper := clamp_value.upper_[0].create_calculation_node(context)!
 	return calculation_node_from_calc(CalcNode(CalcFunction{
 		name: 'clamp'
 		children: [lower.typed_node()!, value.typed_node()!, upper.typed_node()!]

@@ -140,7 +140,7 @@ fn device_layout_value_contains_lengths(value &StyleValue) bool {
 fn device_layout_edge_is_projection_invariant(value &EdgeStyleValue) bool {
 	// Even a dimensionless edge keyword must first become its computed offset.
 	if value.edge_ != none { return false }
-	if offset := value.offset_ {
+	if offset := style_value_from_optional_storage(value.offset_) {
 		return device_layout_value_is_projection_invariant(&offset)
 	}
 	return false
@@ -167,18 +167,18 @@ fn device_layout_value_is_projection_invariant(value &StyleValue) bool {
 			invariant
 		}
 		BackgroundSizeStyleValue {
-			device_layout_value_is_projection_invariant(&value.size_x_)
-				&& device_layout_value_is_projection_invariant(&value.size_y_)
+			device_layout_value_is_projection_invariant(&value.size_x_[0])
+				&& device_layout_value_is_projection_invariant(&value.size_y_[0])
 		}
 		BorderRadiusStyleValue {
-			device_layout_value_is_projection_invariant(&value.horizontal_radius)
-				&& device_layout_value_is_projection_invariant(&value.vertical_radius)
+			device_layout_value_is_projection_invariant(&value.horizontal_radius[0])
+				&& device_layout_value_is_projection_invariant(&value.vertical_radius[0])
 		}
 		BorderRadiusRectStyleValue {
-			device_layout_value_is_projection_invariant(&value.top_left_)
-				&& device_layout_value_is_projection_invariant(&value.top_right_)
-				&& device_layout_value_is_projection_invariant(&value.bottom_right_)
-				&& device_layout_value_is_projection_invariant(&value.bottom_left_)
+			device_layout_value_is_projection_invariant(&value.top_left_[0])
+				&& device_layout_value_is_projection_invariant(&value.top_right_[0])
+				&& device_layout_value_is_projection_invariant(&value.bottom_right_[0])
+				&& device_layout_value_is_projection_invariant(&value.bottom_left_[0])
 		}
 		EdgeStyleValue { device_layout_edge_is_projection_invariant(value) }
 		PositionStyleValue {
@@ -186,7 +186,7 @@ fn device_layout_value_is_projection_invariant(value &StyleValue) bool {
 				&& device_layout_edge_is_projection_invariant(&value.edge_y_)
 		}
 		TextIndentStyleValue {
-			device_layout_value_is_projection_invariant(&value.length_percentage_)
+			device_layout_value_is_projection_invariant(&value.length_percentage_[0])
 		}
 		// Calculations, colors, transforms (including dimensionless matrix
 		// translations), and unknown containers retain ordinary absolutization.

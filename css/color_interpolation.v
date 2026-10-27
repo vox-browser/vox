@@ -481,50 +481,50 @@ fn extract_missing_components(style_value StyleValue) MissingColorComponents {
 	match style_value {
 		HSLColorStyleValue {
 			return MissingColorComponents{
-				components: [style_value_is_none_keyword(style_value.h_), style_value_is_none_keyword(style_value.s_), style_value_is_none_keyword(style_value.l_)]!
-				alpha: style_value_is_none_keyword(style_value.alpha_)
+				components: [style_value_is_none_keyword(style_value.h_[0]), style_value_is_none_keyword(style_value.s_[0]), style_value_is_none_keyword(style_value.l_[0])]!
+				alpha: style_value_is_none_keyword(style_value.alpha_[0])
 			}
 		}
 		HWBColorStyleValue {
 			return MissingColorComponents{
-				components: [style_value_is_none_keyword(style_value.h_), style_value_is_none_keyword(style_value.w_), style_value_is_none_keyword(style_value.b_)]!
-				alpha: style_value_is_none_keyword(style_value.alpha_)
+				components: [style_value_is_none_keyword(style_value.h_[0]), style_value_is_none_keyword(style_value.w_[0]), style_value_is_none_keyword(style_value.b_[0])]!
+				alpha: style_value_is_none_keyword(style_value.alpha_[0])
 			}
 		}
 		LabColorStyleValue {
 			return MissingColorComponents{
-				components: [style_value_is_none_keyword(style_value.l_), style_value_is_none_keyword(style_value.a_), style_value_is_none_keyword(style_value.b_)]!
-				alpha: style_value_is_none_keyword(style_value.alpha_)
+				components: [style_value_is_none_keyword(style_value.l_[0]), style_value_is_none_keyword(style_value.a_[0]), style_value_is_none_keyword(style_value.b_[0])]!
+				alpha: style_value_is_none_keyword(style_value.alpha_[0])
 			}
 		}
 		OKLabColorStyleValue {
 			return MissingColorComponents{
-				components: [style_value_is_none_keyword(style_value.l_), style_value_is_none_keyword(style_value.a_), style_value_is_none_keyword(style_value.b_)]!
-				alpha: style_value_is_none_keyword(style_value.alpha_)
+				components: [style_value_is_none_keyword(style_value.l_[0]), style_value_is_none_keyword(style_value.a_[0]), style_value_is_none_keyword(style_value.b_[0])]!
+				alpha: style_value_is_none_keyword(style_value.alpha_[0])
 			}
 		}
 		LCHColorStyleValue {
 			return MissingColorComponents{
-				components: [style_value_is_none_keyword(style_value.l_), style_value_is_none_keyword(style_value.c_), style_value_is_none_keyword(style_value.h_)]!
-				alpha: style_value_is_none_keyword(style_value.alpha_)
+				components: [style_value_is_none_keyword(style_value.l_[0]), style_value_is_none_keyword(style_value.c_[0]), style_value_is_none_keyword(style_value.h_[0])]!
+				alpha: style_value_is_none_keyword(style_value.alpha_[0])
 			}
 		}
 		OKLCHColorStyleValue {
 			return MissingColorComponents{
-				components: [style_value_is_none_keyword(style_value.l_), style_value_is_none_keyword(style_value.c_), style_value_is_none_keyword(style_value.h_)]!
-				alpha: style_value_is_none_keyword(style_value.alpha_)
+				components: [style_value_is_none_keyword(style_value.l_[0]), style_value_is_none_keyword(style_value.c_[0]), style_value_is_none_keyword(style_value.h_[0])]!
+				alpha: style_value_is_none_keyword(style_value.alpha_[0])
 			}
 		}
 		RGBColorStyleValue {
 			return MissingColorComponents{
-				components: [style_value_is_none_keyword(style_value.r_), style_value_is_none_keyword(style_value.g_), style_value_is_none_keyword(style_value.b_)]!
-				alpha: style_value_is_none_keyword(style_value.alpha_)
+				components: [style_value_is_none_keyword(style_value.r_[0]), style_value_is_none_keyword(style_value.g_[0]), style_value_is_none_keyword(style_value.b_[0])]!
+				alpha: style_value_is_none_keyword(style_value.alpha_[0])
 			}
 		}
 		ColorFunctionStyleValue {
 			return MissingColorComponents{
 				components: [style_value_is_none_keyword(style_value.channels_[0]), style_value_is_none_keyword(style_value.channels_[1]), style_value_is_none_keyword(style_value.channels_[2])]!
-				alpha: style_value_is_none_keyword(style_value.alpha_)
+				alpha: style_value_is_none_keyword(style_value.alpha_[0])
 			}
 		}
 		else {}
@@ -657,14 +657,14 @@ fn style_value_from_polar_color_space(components InterpolationColorComponents, s
 fn style_value_to_color_components(style_value StyleValue, context CalculationResolutionContext) ?InterpolationColorComponents {
 	return match style_value {
 		ColorStyleValue { interpolation_color_components(f64(style_value.color_.r) / 255, f64(style_value.color_.g) / 255, f64(style_value.color_.b) / 255, f64(style_value.color_.a) / 255) }
-		HSLColorStyleValue { interpolation_color_components(resolve_hue(style_value.h_, context)?, resolve_with_reference_value(style_value.s_, 100, context)? / 100, resolve_with_reference_value(style_value.l_, 100, context)? / 100, resolve_alpha(style_value.alpha_, context)?) }
-		HWBColorStyleValue { interpolation_color_components(resolve_hue(style_value.h_, context)?, resolve_with_reference_value(style_value.w_, 100, context)? / 100, resolve_with_reference_value(style_value.b_, 100, context)? / 100, resolve_alpha(style_value.alpha_, context)?) }
-		LabColorStyleValue { interpolation_color_components(resolve_with_reference_value(style_value.l_, 100, context)?, resolve_with_reference_value(style_value.a_, 125, context)?, resolve_with_reference_value(style_value.b_, 125, context)?, resolve_alpha(style_value.alpha_, context)?) }
-		OKLabColorStyleValue { interpolation_color_components(resolve_with_reference_value(style_value.l_, 1, context)?, resolve_with_reference_value(style_value.a_, 0.4, context)?, resolve_with_reference_value(style_value.b_, 0.4, context)?, resolve_alpha(style_value.alpha_, context)?) }
-		LCHColorStyleValue { interpolation_color_components(resolve_with_reference_value(style_value.l_, 100, context)?, resolve_with_reference_value(style_value.c_, 150, context)?, resolve_hue(style_value.h_, context)?, resolve_alpha(style_value.alpha_, context)?) }
-		OKLCHColorStyleValue { interpolation_color_components(resolve_with_reference_value(style_value.l_, 1, context)?, resolve_with_reference_value(style_value.c_, 0.4, context)?, resolve_hue(style_value.h_, context)?, resolve_alpha(style_value.alpha_, context)?) }
-		RGBColorStyleValue { interpolation_color_components(image_color_clamp(resolve_with_reference_value(style_value.r_, 255, context)?, 0, 255) / 255, image_color_clamp(resolve_with_reference_value(style_value.g_, 255, context)?, 0, 255) / 255, image_color_clamp(resolve_with_reference_value(style_value.b_, 255, context)?, 0, 255) / 255, resolve_alpha(style_value.alpha_, context)?) }
-		ColorFunctionStyleValue { interpolation_color_components(resolve_with_reference_value(style_value.channels_[0], 1, context)?, resolve_with_reference_value(style_value.channels_[1], 1, context)?, resolve_with_reference_value(style_value.channels_[2], 1, context)?, resolve_alpha(style_value.alpha_, context)?) }
+		HSLColorStyleValue { interpolation_color_components(resolve_hue(style_value.h_[0], context)?, resolve_with_reference_value(style_value.s_[0], 100, context)? / 100, resolve_with_reference_value(style_value.l_[0], 100, context)? / 100, resolve_alpha(style_value.alpha_[0], context)?) }
+		HWBColorStyleValue { interpolation_color_components(resolve_hue(style_value.h_[0], context)?, resolve_with_reference_value(style_value.w_[0], 100, context)? / 100, resolve_with_reference_value(style_value.b_[0], 100, context)? / 100, resolve_alpha(style_value.alpha_[0], context)?) }
+		LabColorStyleValue { interpolation_color_components(resolve_with_reference_value(style_value.l_[0], 100, context)?, resolve_with_reference_value(style_value.a_[0], 125, context)?, resolve_with_reference_value(style_value.b_[0], 125, context)?, resolve_alpha(style_value.alpha_[0], context)?) }
+		OKLabColorStyleValue { interpolation_color_components(resolve_with_reference_value(style_value.l_[0], 1, context)?, resolve_with_reference_value(style_value.a_[0], 0.4, context)?, resolve_with_reference_value(style_value.b_[0], 0.4, context)?, resolve_alpha(style_value.alpha_[0], context)?) }
+		LCHColorStyleValue { interpolation_color_components(resolve_with_reference_value(style_value.l_[0], 100, context)?, resolve_with_reference_value(style_value.c_[0], 150, context)?, resolve_hue(style_value.h_[0], context)?, resolve_alpha(style_value.alpha_[0], context)?) }
+		OKLCHColorStyleValue { interpolation_color_components(resolve_with_reference_value(style_value.l_[0], 1, context)?, resolve_with_reference_value(style_value.c_[0], 0.4, context)?, resolve_hue(style_value.h_[0], context)?, resolve_alpha(style_value.alpha_[0], context)?) }
+		RGBColorStyleValue { interpolation_color_components(image_color_clamp(resolve_with_reference_value(style_value.r_[0], 255, context)?, 0, 255) / 255, image_color_clamp(resolve_with_reference_value(style_value.g_[0], 255, context)?, 0, 255) / 255, image_color_clamp(resolve_with_reference_value(style_value.b_[0], 255, context)?, 0, 255) / 255, resolve_alpha(style_value.alpha_[0], context)?) }
+		ColorFunctionStyleValue { interpolation_color_components(resolve_with_reference_value(style_value.channels_[0], 1, context)?, resolve_with_reference_value(style_value.channels_[1], 1, context)?, resolve_with_reference_value(style_value.channels_[2], 1, context)?, resolve_alpha(style_value.alpha_[0], context)?) }
 		else { none }
 	}
 }

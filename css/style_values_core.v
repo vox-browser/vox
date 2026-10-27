@@ -9520,8 +9520,8 @@ pub fn (style_value NumberStyleValue) reify(associated_property string) CSSStyle
 // --- RatioStyleValue ---
 pub struct RatioStyleValue {
 pub mut:
-	numerator_   StyleValue
-	denominator_ StyleValue
+	numerator_   []StyleValue = [StyleValue(KeywordStyleValue{})]
+	denominator_ []StyleValue = [StyleValue(KeywordStyleValue{})]
 }
 
 pub fn RatioStyleValue.create(ratio Ratio) RatioStyleValue {
@@ -9530,17 +9530,17 @@ pub fn RatioStyleValue.create(ratio Ratio) RatioStyleValue {
 
 pub fn RatioStyleValue.create_from_style_values(numerator StyleValue, denominator StyleValue) RatioStyleValue {
 	return RatioStyleValue{
-		numerator_: numerator
-		denominator_: denominator
+		numerator_: [numerator]
+		denominator_: [denominator]
 	}
 }
 
 pub fn (style_value RatioStyleValue) numerator() StyleValue {
-	return style_value.numerator_
+	return style_value.numerator_[0]
 }
 
 pub fn (style_value RatioStyleValue) denominator() StyleValue {
-	return style_value.denominator_
+	return style_value.denominator_[0]
 }
 
 fn resolved_ratio_component(value StyleValue, context CalculationResolutionContext) ?f64 {
@@ -9552,8 +9552,8 @@ fn resolved_ratio_component(value StyleValue, context CalculationResolutionConte
 }
 
 pub fn (style_value RatioStyleValue) resolved_with_context(context CalculationResolutionContext) ?Ratio {
-	numerator := resolved_ratio_component(style_value.numerator_, context) or { return none }
-	denominator := resolved_ratio_component(style_value.denominator_, context) or { return none }
+	numerator := resolved_ratio_component(style_value.numerator_[0], context) or { return none }
+	denominator := resolved_ratio_component(style_value.denominator_[0], context) or { return none }
 	return Ratio.new(numerator, denominator)
 }
 
@@ -9579,33 +9579,33 @@ fn absolutized_ratio_component(value StyleValue, context ComputationContext) Sty
 }
 
 pub fn (style_value RatioStyleValue) absolutized(context ComputationContext) StyleValue {
-	absolutized_numerator := absolutized_ratio_component(style_value.numerator_, context)
-	absolutized_denominator := absolutized_ratio_component(style_value.denominator_, context)
-	if absolutized_numerator.equals(style_value.numerator_)
-		&& absolutized_denominator.equals(style_value.denominator_) {
+	absolutized_numerator := absolutized_ratio_component(style_value.numerator_[0], context)
+	absolutized_denominator := absolutized_ratio_component(style_value.denominator_[0], context)
+	if absolutized_numerator.equals(style_value.numerator_[0])
+		&& absolutized_denominator.equals(style_value.denominator_[0]) {
 		return StyleValue(style_value)
 	}
 	return StyleValue(RatioStyleValue.create_from_style_values(absolutized_numerator, absolutized_denominator))
 }
 
 pub fn (style_value RatioStyleValue) serialize(mode SerializationMode) string {
-	return '${style_value.numerator_.serialize(mode)} / ${style_value.denominator_.serialize(mode)}'
+	return '${style_value.numerator_[0].serialize(mode)} / ${style_value.denominator_[0].serialize(mode)}'
 }
 
 pub fn (style_value RatioStyleValue) tokenize() []ComponentValue {
-	mut component_values := style_value.numerator_.tokenize()
+	mut component_values := style_value.numerator_[0].tokenize()
 	component_values << [
 		ComponentValue.from_token(Token.create_whitespace(' ')),
 		ComponentValue.from_token(Token.create_delim(u32(`/`), '/')),
 		ComponentValue.from_token(Token.create_whitespace(' ')),
 	]
-	component_values << style_value.denominator_.tokenize()
+	component_values << style_value.denominator_[0].tokenize()
 	return component_values
 }
 
 pub fn (style_value RatioStyleValue) properties_equal(other RatioStyleValue) bool {
-	return style_value.numerator_.equals(other.numerator_)
-		&& style_value.denominator_.equals(other.denominator_)
+	return style_value.numerator_[0].equals(other.numerator_[0])
+		&& style_value.denominator_[0].equals(other.denominator_[0])
 }
 
 // --- IntegerStyleValue ---
@@ -10006,12 +10006,12 @@ pub fn (style_value URLStyleValue) serialize(mode SerializationMode) string {
 // https://drafts.csswg.org/css-values-5/#pending-substitution-value
 pub struct PendingSubstitutionStyleValue {
 pub mut:
-	original_shorthand_value StyleValue
+	original_shorthand_value []StyleValue = [StyleValue(KeywordStyleValue{})]
 }
 
 pub fn PendingSubstitutionStyleValue.create(original_shorthand_value StyleValue) PendingSubstitutionStyleValue {
 	return PendingSubstitutionStyleValue{
-		original_shorthand_value: original_shorthand_value
+		original_shorthand_value: [original_shorthand_value]
 	}
 }
 
@@ -10028,7 +10028,7 @@ pub fn (style_value PendingSubstitutionStyleValue) tokenize() []ComponentValue {
 }
 
 pub fn (style_value PendingSubstitutionStyleValue) original_shorthand_value_ref() StyleValue {
-	return style_value.original_shorthand_value
+	return style_value.original_shorthand_value[0]
 }
 
 pub fn (c CalculatedStyleValue) resolves_to_number() bool {
