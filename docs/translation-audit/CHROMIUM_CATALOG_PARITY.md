@@ -232,3 +232,69 @@ credits a fix or accepts the nonzero pixel result. These older executables
 supply shadow baseline evidence only. The color-filter, multisampling and
 backend changes do not solve this discrepancy; no raster-library update is
 justified by this source comparison.
+
+
+## Collapsed whitespace and root shadow tiles
+
+The complete deterministic baseline in
+`Build/4chan-catalog-20261027-complete-jpeg-full-1/` covers all 14,457 CSS
+pixels of document height with 19 overlapping 1024×768 viewports at scale 2.
+Every comparison includes all 3,145,728 native RGBA pixels, without tolerance.
+The nonzero counts at offsets 0, 768, 1536, 2304, 3072, 3840, 4608, 5376,
+6144, 6912, 7680, 8448, 9216, 9984, 10752, 11520, 12288, 13056 and 13689
+are respectively 7, 8, 6, 3, 4, 4, 2, 5, 1, 1047, 3, 3, 4, 3, 2, 4,
+1558, 2 and 4. The large differences include 1,042 text pixels in the
+“Altman. The core” line and 1,554 in “France, They completely”.
+
+Commit `37a307eb` collapses consecutive spaces before Chromium context
+shaping. Previously the iterator collapsed them after shaping, losing the
+kerning between the remaining space and the following `T`. A UTF-16 source
+map restores discarded source spans as invisible, zero-advance glyphs,
+retaining DOM offsets and the following glyph's boundary kerning. Preserved
+whitespace bypasses this mapping. Unsupported clusters still fall back to
+the existing shaping path.
+
+`Build/4chan-catalog-20261027-collapsed-context-1/retry-guard.json` records
+31 focused cases passing in both default GC and `-gc none`, with actual
+compile and runtime exit codes zero. Its sampled aggregate peak is
+8,437,645,312 bytes under the default 12 GiB budget. The initial disk-full
+attempt remains recorded and supplies no passing credit.
+
+The separate `shadow-tiles-1/retry-guard.json` diagnostic isolates ten
+catalog shadow descriptors. Rendering each in a complete 2048×416 root
+raster tile, then extracting its affected pixels, eliminates every sampled
+shadow difference. The preceding tightly cropped surfaces retain seven
+initial one-level blue errors. This diagnostic excludes content pixels and
+therefore does not establish whole-image acceptance. The candidate native
+bridge uses the existing root raster grid to preserve the complete render
+target extent and tile-relative transform; independent layers retain their
+existing path.
+
+`catalog-production-3/` successfully builds, signs and starts the frozen
+candidate containing both changes. Its guard and startup smoke exit zero,
+with a sampled 9,415,901,184-byte aggregate peak. Executable SHA256 is
+`18ed315192d7be1bbc3a6c0f16a4a710cc664dc3f126c897e0413fff96ceddf9`;
+`libVoxSkiaText.dylib` SHA256 is
+`d90dc54a7b744d885210d60cac91b40612585f2d8612b4f50df94e18bec37b2b`.
+The source identity check passes. Full native comparisons, the new shadow
+fixture at scales 1 and 2, the text-line oracle, default smoke and ten SVG
+checks are submitted in `catalog-pixels-3/`. Submission is not passing
+validation; strict acceptance remains open until their actual results exist.
+
+The broad batch remains at 10/10. `broad-2/` exceeds the aggregate memory
+limit during its third layout compilation (13,028,900,864 sampled bytes),
+after the earlier runtime and syntax failures described above. `broad-3/`
+retains the same 1,037 test files in smaller batches and separates V code
+generation from native compilation under the unchanged guard. Both GC modes
+and the complete upstream AST corpus are still required. No broad passing
+claim or cadence reset is made.
+
+Brave's documented Standard Shields policy applies cosmetic filtering to
+third-party elements, while Aggressive mode also permits first-party
+cosmetics. This supplies a policy explanation for the live advertisement
+slot difference; it is not evidence of a layout defect. See the official
+[web compatibility policy](https://brave.com/privacy-updates/9-web-compat-blocking/)
+and [cosmetic filtering explanation](https://brave.com/privacy-updates/2-third-party-cosmetic-filtering/).
+No per-site rendering override or default filter-policy change is part of
+these fixes. The controlled replay uses the same explicit cosmetic policy
+in both browsers. Uncontrolled live pixel parity remains unestablished.
