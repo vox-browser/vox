@@ -55,6 +55,8 @@ struct VoxCanvasCommand {
     int filter_count;
 };
 bool vox_skia_canvas_path(uint8_t* pixels, int width, int height, int pitch, int alpha_type, struct VoxCanvasCommand const* command);
+// Returns false without changing pixels when GPU replay is unavailable or unsupported.
+bool vox_skia_canvas_path_chromium(uint8_t* pixels, int width, int height, int pitch, int alpha_type, struct VoxCanvasCommand const* command);
 struct VoxCanvasGlyphRun {
     char const* font_path;
     int face_index, count;
