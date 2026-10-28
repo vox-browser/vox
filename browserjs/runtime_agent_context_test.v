@@ -41,3 +41,16 @@ fn test_agent_vm_groups_do_not_cross_threads() {
 	worker.wait()
 	assert runtime.evaluate_host('40 + 2')! == '42'
 }
+
+fn test_worker_global_prototype_is_private_to_its_realm() {
+	mut page := Runtime.create()
+	defer { page.close() }
+	mut worker := Runtime.create_for_worker()
+	defer { worker.close() }
+	mut second_worker := Runtime.create_for_worker()
+	defer { second_worker.close() }
+	assert C.JSContextGetGroup(worker.context) == C.JSContextGetGroup(page.context)
+	assert worker.evaluate_host('(function(){const prototype=Object.getPrototypeOf(globalThis); const scope={workerMarker:42}; Object.setPrototypeOf(prototype,scope); return prototype!==Object.prototype && globalThis.workerMarker===42 && ({}).workerMarker===undefined;})()')! == 'true'
+	assert page.evaluate_host('typeof workerMarker + ":" + typeof ({}).workerMarker')! == 'undefined:undefined'
+	assert second_worker.evaluate_host('typeof workerMarker + ":" + typeof ({}).workerMarker')! == 'undefined:undefined'
+}

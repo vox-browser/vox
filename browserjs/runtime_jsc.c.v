@@ -26,7 +26,7 @@ fn C.JSObjectGetProperty(context voidptr, object voidptr, property_name voidptr,
 fn C.JSStringGetMaximumUTF8CStringSize(value voidptr) uint
 fn C.JSStringGetUTF8CString(value voidptr, buffer &char, buffer_size uint) uint
 fn C.vox_browserjs_source_utf8_string(bytes &u8, length uint) voidptr
-fn C.vox_browserjs_create_agent_context() voidptr
+fn C.vox_browserjs_create_agent_context(worker_global i32) voidptr
 
 fn js_string_to_v(context voidptr, value voidptr) !string {
 	mut exception := unsafe { nil }
@@ -69,8 +69,8 @@ fn js_exception_message(context voidptr, exception voidptr) string {
 	return if trace == '' { message } else { message + '\n' + trace }
 }
 
-fn create_javascript_core_context() voidptr {
-	return C.vox_browserjs_create_agent_context()
+fn create_javascript_core_context(worker_global bool) voidptr {
+	return C.vox_browserjs_create_agent_context(i32(worker_global))
 }
 
 fn release_javascript_core_context(context voidptr) {

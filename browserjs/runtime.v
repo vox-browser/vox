@@ -96,12 +96,21 @@ pub fn Runtime.create() &Runtime {
 	return Runtime.create_with_engine(.javascriptcore)
 }
 
+// Worker globals need their host prototype allocated when JSC creates the realm.
+pub fn Runtime.create_for_worker() &Runtime {
+	return Runtime.create_with_global(.javascriptcore, true)
+}
+
 pub fn Runtime.create_with_engine(engine Engine) &Runtime {
+	return Runtime.create_with_global(engine, false)
+}
+
+fn Runtime.create_with_global(engine Engine, worker_global bool) &Runtime {
 	mut agent_vm := libjs.VM.create()
 	realm_context := libjs.create_simple_execution_context(mut agent_vm)
 	mut context := unsafe { nil }
 	$if darwin || linux {
-		if engine == .javascriptcore { context = create_javascript_core_context() }
+		if engine == .javascriptcore { context = create_javascript_core_context(worker_global) }
 	}
 	mut runtime := &Runtime{
 		engine:   engine

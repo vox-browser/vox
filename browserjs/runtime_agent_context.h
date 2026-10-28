@@ -24,22 +24,40 @@ static void vox_browserjs_make_agent_key(void)
             vox_browserjs_release_agent_group) == 0;
 }
 
-static JSGlobalContextRef vox_browserjs_create_agent_context(void)
+static JSGlobalContextRef vox_browserjs_create_agent_context(int worker_global)
 {
+    // JSC makes a global object's direct prototype immutable. A host class
+    // supplies a per-realm prototype which Worker bindings can initialize
+    // without replacing that immutable link or modifying Object.prototype.
+    JSClassRef global_class = NULL;
+    if (worker_global) {
+        JSClassDefinition definition = kJSClassDefinitionEmpty;
+        definition.className = "DedicatedWorkerGlobalScope";
+        global_class = JSClassCreate(&definition);
+    }
     pthread_once(&vox_browserjs_agent_key_once, vox_browserjs_make_agent_key);
-    if (!vox_browserjs_agent_key_ready)
-        return JSGlobalContextCreate(NULL);
+    if (!vox_browserjs_agent_key_ready) {
+        JSGlobalContextRef context = JSGlobalContextCreate(global_class);
+        if (global_class) JSClassRelease(global_class);
+        return context;
+    }
     JSContextGroupRef group = pthread_getspecific(vox_browserjs_agent_key);
     if (!group) {
         group = JSContextGroupCreate();
-        if (!group)
+        if (!group) {
+            if (global_class) JSClassRelease(global_class);
             return NULL;
+        }
         if (pthread_setspecific(vox_browserjs_agent_key, group) != 0) {
             JSContextGroupRelease(group);
-            return JSGlobalContextCreate(NULL);
+            JSGlobalContextRef context = JSGlobalContextCreate(global_class);
+            if (global_class) JSClassRelease(global_class);
+            return context;
         }
     }
-    return JSGlobalContextCreateInGroup(group, NULL);
+    JSGlobalContextRef context = JSGlobalContextCreateInGroup(group, global_class);
+    if (global_class) JSClassRelease(global_class);
+    return context;
 }
 
 #endif
