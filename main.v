@@ -385,6 +385,7 @@ mut:
 	ctx                                 &gg.Context = unsafe { nil }
 	page_model                          &page.Page = unsafe { nil }
 	js_runtime                          &browserjs.Runtime = unsafe { nil }
+	media_players                       []&BrowserMediaPlayback
 	js_engine                           browserjs.Engine = .javascriptcore
 	script_policy                       BrowserScriptPolicy
 	document                            &dom.Document = unsafe { nil }
@@ -2708,6 +2709,11 @@ fn run_document_script_sources_with_image_fetch_hooks(document &dom.Document, cu
 }
 
 fn run_document_script_sources_with_resource_loaders(document &dom.Document, current_url string, sources []browserjs.ScriptSource, runtime &browserjs.Runtime, image_fetch browserjs.ImageRequestFetchHook, image_async_fetch ?browserjs.ImageAsyncRequestFetchHook, script_loader ?&BrowserScriptRequestLoader, mut messages []string) ?string {
+	return run_document_script_sources_with_media_loader(document, current_url, sources, runtime,
+		image_fetch, image_async_fetch, script_loader, none, mut messages)
+}
+
+fn run_document_script_sources_with_media_loader(document &dom.Document, current_url string, sources []browserjs.ScriptSource, runtime &browserjs.Runtime, image_fetch browserjs.ImageRequestFetchHook, image_async_fetch ?browserjs.ImageAsyncRequestFetchHook, script_loader ?&BrowserScriptRequestLoader, media_loader ?browserjs.MediaElementCreatedHook, mut messages []string) ?string {
 	phase_mark := platform.arena_phase_begin()
 	defer {
 		platform.arena_phase_end('scripts', phase_mark)
@@ -2793,13 +2799,18 @@ fn run_document_script_sources_with_resource_loaders(document &dom.Document, cur
 		messages << 'JavaScript URL bindings: ${err.msg()}'
 		return none
 	}
-	mut media_source_host := browserjs.MediaSourceHost.create(document) or {
-		messages << 'JavaScript MediaSource bindings: ${err.msg()}'
-		return none
-	}
-	media_source_host.install(mut mutable_runtime) or {
-		messages << 'JavaScript MediaSource bindings: ${err.msg()}'
-		return none
+	// Expose MediaSource only once a SourceBuffer decoder is connected. Its
+	// translated state machine alone makes sites choose an unplayable DASH path
+	// instead of the native HLS source (notably old Reddit).
+	if media_loader == none {
+		mut media_source_host := browserjs.MediaSourceHost.create(document) or {
+			messages << 'JavaScript MediaSource bindings: ${err.msg()}'
+			return none
+		}
+		media_source_host.install(mut mutable_runtime) or {
+			messages << 'JavaScript MediaSource bindings: ${err.msg()}'
+			return none
+		}
 	}
 	mut file_host := browserjs.FileHost.create(document) or {
 		messages << 'JavaScript File bindings: ${err.msg()}'
@@ -2916,7 +2927,7 @@ fn run_document_script_sources_with_resource_loaders(document &dom.Document, cur
 		state := callback_runtime.evaluate_host('__ladybirdFinalize()')!
 		mut replay_messages := []string{}
 		apply_javascript_runtime_state(document, state, callback_runtime, mut replay_messages)
-	}, install_video_poster_fetch_hook) or {
+	}, media_loader or { install_video_poster_fetch_hook }) or {
 		messages << 'JavaScript media element bindings: ${err.msg()}'
 		return none
 	}
@@ -3647,6 +3658,7 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 		app.js_runtime = unsafe { nil }
 	}
 	if previous := previous_document {
+		app.close_media_playback()
 		app.retire_native_document_rendering(previous)
 		if previous.native_storage() != unsafe { nil } {
 			mut outgoing := unsafe { &dom.Document(previous) }
@@ -3682,6 +3694,7 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 	resource_base_url := app.document.base_url().serialize()
 	install_object_image_fetch_hooks(app.document)
 	install_video_poster_fetch_hooks(app.document)
+	app.install_document_media_playback()
 	preloaded_resources := app.preload_initial_document_resources(resource_base_url)
 	checkpoint = debug_timing_checkpoint('preload_resources', checkpoint)
 	for resource_url, resource in preloaded_resources {
@@ -3702,8 +3715,11 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 		&& (sources.len > 0 || document_has_window_event_handlers(app.document)
 		|| browser_adblock_requires_runtime(app.document)) {
 		app.js_runtime = create_browser_script_runtime(app.js_engine)
-		run_document_script_sources_with_resource_loaders(app.document, loaded.url, sources, app.js_runtime,
-			browser_fetch_image_request, image_loader.callback(), script_loader, mut app.js_messages)
+		run_document_script_sources_with_media_loader(app.document, loaded.url, sources, app.js_runtime,
+			browser_fetch_image_request, image_loader.callback(), script_loader, fn [app] (element &dom.Element) {
+				mut owner := unsafe { &BrowserApp(app) }
+				owner.install_media_playback(element)
+			}, mut app.js_messages)
 	} else {
 		none
 	}
@@ -7101,6 +7117,7 @@ fn (mut app BrowserApp) draw() {
 	app.poll_javascript_tasks()
 	app.scroll_profile_mark('tasks')
 	app.poll_navigation_and_background_resources()
+	app.poll_media_playback()
 	report_first_paint := debug_timing_enabled() && app.document != unsafe { nil }
 		&& !app.document_presented
 	mut paint_checkpoint := time.sys_mono_now()

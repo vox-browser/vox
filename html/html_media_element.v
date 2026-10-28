@@ -80,6 +80,8 @@ pub type MediaPlaybackSeekHook = fn(f64, MediaPlaybackSeekMode)
 
 pub type MediaPlaybackCurrentTimeHook = fn() f64
 
+pub type MediaCanPlayTypeHook = fn(string) CanPlayTypeResult
+
 pub type MediaPlaybackCurrentFrameHook = fn () ?&painting.MediaVideoFrame
 
 pub type MediaPlaybackStartTimeRealtimeHook = fn () ?i64
@@ -97,6 +99,8 @@ pub type MediaPlaybackBufferedRangesHook = fn () []MediaBufferedRange
 // without importing a platform decoder into the html module.
 pub struct MediaPlaybackManagerHooks {
 pub:
+	reset               ?MediaPlaybackNoArgHook
+	can_play_type       ?MediaCanPlayTypeHook
 	start               ?MediaPlaybackNoArgHook
 	play                ?MediaPlaybackNoArgHook
 	pause               ?MediaPlaybackNoArgHook
@@ -113,6 +117,8 @@ pub:
 
 pub struct MediaResourceResponse {
 pub:
+	// Native streaming decoders discover tracks and duration asynchronously.
+	metadata_pending    bool
 	status              u16 = 200
 	mime_type           string
 	duration            f64 = math.nan()
@@ -716,6 +722,7 @@ fn (mut element HTMLMediaElement) release_screen_wake_lock() {
 // Selected Source finalize responsibilities. Physical GC and the remaining
 // manager/timer finalization are separate integration boundaries.
 pub fn (mut element HTMLMediaElement) finalize() {
+	if reset := element.playback_hooks_.reset { reset() }
 	element.release_screen_wake_lock()
 	// Source clears controls eagerly: native timer closures must not survive
 	// the media owner's finalization and touch its shadow nodes later.
@@ -1008,7 +1015,7 @@ fn mime_essence(type_ string) string {
 }
 
 pub fn (element &HTMLMediaElement) can_play_type(type_ string) CanPlayTypeResult {
-	_ = element
+	if hook := element.playback_hooks_.can_play_type { return hook(type_) }
 	essence := mime_essence(type_)
 	parts := essence.split('/')
 	if parts.len != 2 {
@@ -1404,6 +1411,7 @@ pub fn (element &HTMLMediaElement) last_fetch_offset() u64 {
 
 fn (mut element HTMLMediaElement) process_media_response(response MediaResourceResponse) {
 	element.set_up_playback_manager()
+	if response.metadata_pending { return }
 	element.playback_start_time_realtime_microseconds_ = response.start_time_realtime_microseconds
 	for metadata in response.audio_tracks {
 		element.on_audio_track_added(metadata)
@@ -1423,6 +1431,13 @@ fn (mut element HTMLMediaElement) process_media_response(response MediaResourceR
 		element.update_ready_state()
 	}
 	element.process_media_data(.complete)
+}
+
+// The host must cancel its outstanding completion when reset() runs. Keeping
+// completion on the media task thread preserves metadata/data event ordering.
+pub fn (mut element HTMLMediaElement) complete_pending_media_resource(response MediaResourceResponse) {
+	if element.network_state_ != .loading || element.ready_state_ != .have_nothing { return }
+	element.process_media_response(response)
 }
 
 pub fn (mut element HTMLMediaElement) set_ready_state(state MediaReadyState) {
@@ -2457,6 +2472,7 @@ pub fn (mut element HTMLMediaElement) handle_media_source_failure(promises []&do
 }
 
 pub fn (mut element HTMLMediaElement) forget_media_resource_specific_tracks() {
+	if reset := element.playback_hooks_.reset { reset() }
 	element.audio_tracks_.remove_all_tracks()
 	element.video_tracks_.remove_all_tracks()
 	element.update_audio_play_state()

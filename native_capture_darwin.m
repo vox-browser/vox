@@ -28,6 +28,7 @@ static void native_capture_instruction_checkpoint(const char *label) {
 #include "native_svg_mask_pixels.h"
 
 #include "native_ffmpeg_darwin.h"
+#include "native_media_darwin.h"
 #include "native_webp_darwin.h"
 #include "native_jpeg_darwin.h"
 #include "native_png_color_darwin.h"

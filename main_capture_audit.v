@@ -65,7 +65,50 @@ struct CaptureAuditElement {
 	rect            dom.Rect
 	attributes      map[string]string
 	image           ?CaptureAuditImage
+	media           ?CaptureAuditMedia
 	layout          []CaptureAuditLayout
+}
+
+struct CaptureAuditMedia {
+	current_src string
+	current_time f64
+	duration f64
+	paused bool
+	ready_state string
+	network_state string
+	error_message string
+	frame_width u32
+	frame_height u32
+	frame_sha256 string
+}
+
+fn (app &BrowserApp) capture_audit_media(element &dom.Element) ?CaptureAuditMedia {
+	for player in app.media_players {
+		if voidptr(player.element) == voidptr(element) {
+			mut width := u32(0)
+			mut height := u32(0)
+			mut frame_hash := ''
+			if frame := player.frame {
+				width = frame.width
+				height = frame.height
+				if bitmap := frame.rgba_bitmap { frame_hash = sha256.sum(bitmap.data).hex() }
+			}
+			media := player.media
+			return CaptureAuditMedia{
+				current_src: media.current_src()
+				current_time: media.current_time()
+				duration: media.duration()
+				paused: media.paused()
+				ready_state: media.ready_state().str()
+				network_state: media.network_state().str()
+				error_message: if error_ := media.error() { error_.message() } else { '' }
+				frame_width: width
+				frame_height: height
+				frame_sha256: frame_hash
+			}
+		}
+	}
+	return none
 }
 
 struct CaptureAuditSelection {
@@ -167,6 +210,7 @@ fn (app &BrowserApp) collect_capture_audit(config CaptureAuditConfig) !CaptureAu
 				rect: element.bounding_client_rect_assuming_layout_clean()
 				attributes: attributes
 				image: app.capture_audit_image(element)
+				media: app.capture_audit_media(element)
 				layout: app.capture_audit_layout(element, query.layout_depth)
 			}
 		}
