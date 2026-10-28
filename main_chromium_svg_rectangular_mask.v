@@ -1,7 +1,10 @@
 module main
 
 import layout
-import math
+
+$if macos {
+	import math
+}
 
 // A rectangular SVG clip can share the paths' multisample coverage. Applying
 // a separately rasterized alpha mask multiplies coincident edge coverage.

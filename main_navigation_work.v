@@ -2,7 +2,10 @@ module main
 
 import platform
 import gg
-import os
+
+$if macos {
+	import os
+}
 
 $if macos {
 	#include "native_navigation_work_darwin.h"

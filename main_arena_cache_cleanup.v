@@ -1,8 +1,10 @@
 module main
 
-import platform
-import time
-import layout
+$if prealloc {
+	import platform
+	import time
+	import layout
+}
 
 fn (mut app BrowserApp) arm_arena_cache_cleanup() {
 	$if prealloc {

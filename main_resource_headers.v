@@ -2,7 +2,10 @@ module main
 
 import adblock
 import json2
-import platform
+
+$if prealloc {
+	import platform
+}
 
 fn decode_browser_cached_response_headers(encoded string) ![]adblock.ResponseHeader {
 	$if prealloc {

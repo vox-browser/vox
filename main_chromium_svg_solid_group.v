@@ -1,8 +1,11 @@
 module main
 
 import layout
-import math
 import painting
+
+$if macos {
+	import math
+}
 
 // Keep coverage between adjacent solid SVG paths, including translucent
 // strokes such as the native textarea grip, until their shared MSAA resolve.

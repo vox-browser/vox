@@ -2,7 +2,10 @@ module main
 
 import dom
 import html
-import os
+
+$if macos {
+	import os
+}
 
 fn browser_document_supports_device_layout(document &dom.Document) bool {
 	root := document.as_node()

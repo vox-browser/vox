@@ -1,6 +1,8 @@
 module main
 
-import platform
+$if macos {
+	import platform
+}
 
 // Keep the menu's URL independent of hover state and the address field. The
 // native menu owns a copy while AppKit runs its nested menu event loop.

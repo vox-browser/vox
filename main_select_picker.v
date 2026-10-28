@@ -2,8 +2,11 @@ module main
 
 import dom
 import html
-import platform
 import x.json2
+
+$if macos {
+	import platform
+}
 
 fn browser_select_picker_model(node &dom.Node) ?&html.HTMLSelectElementModel {
 	mut current := node
