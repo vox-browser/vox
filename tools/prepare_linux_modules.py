@@ -4,6 +4,7 @@
 import hashlib
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 
@@ -19,6 +20,11 @@ def main():
     modules = repo / "Build/linux/modules"
     for package, directory, name in [("stbi", "stb_image", "stbi"), ("json", "cJSON", "cJSON")]:
         thirdparty = vlib.parent / "thirdparty" / directory
+        if not (vlib / package).is_dir() or not (thirdparty / (name + ".c")).is_file():
+            # Current V removed the cJSON-based `json` module (json2 replaces
+            # it); Vox does not import it, so skip packages the compiler lacks.
+            shutil.rmtree(modules / package, ignore_errors=True)
+            continue
         digest = hashlib.sha256(subprocess.check_output([compiler, "--version"]))
         digest.update(Path(__file__).read_bytes())
         for source in sorted(thirdparty.glob("*.h")) + [thirdparty / (name + ".c")]:
