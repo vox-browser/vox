@@ -1242,3 +1242,45 @@ zero; strict pixel gates fail. Raw captures and audits are in that directory's
 `Build/pikabu-header-payload-1793140055491465000/` confirms that three SVG
 gradient paths still reject the header's complete shared picture. Gradient
 recording, Canvas RGBA readback and Retina mask equality remain open.
+
+## Split compositor checkpoint (`d3c61611`)
+
+Full-opacity CSS compositor scopes now preserve child picture boundaries,
+including empty transparent surfaces, and partial shared pictures retain the
+original backdrop for final blending. Outer shadow bounds include all ink.
+Unsupported or unbalanced scopes retain the completed fallback raster.
+
+The frozen 1024-by-768 story now differs in 3,124 pixels (0.3972%, maximum
+channel error 42), versus 9,366 with the preceding gradient candidate. Of those,
+3,091 differ by at most one channel value. Independent live loads differ in
+8,870 pixels (maximum error 26); changing counters and server content prevent
+using that count as a controlled improvement. All four capture processes exit
+zero and load the intended document. Both exact pixel gates still fail.
+
+Focused recording, mask and layout tests compile and execute successfully in
+normal and poisoned arena modes. The native regression passes its existing
+144 picture cases and eight new backdrop cases. All ten SVG mutation and
+viewport comparisons remain exact. The separate gradient fixture still differs
+in 14,176 pixels at scale one and 52,966 at scale two (maximum error one);
+the clip fixture still differs in 171 and 334 pixels respectively. These remain
+failed gates. Canvas RGBA readback and Retina mask equality also remain open.
+
+Commands, captures, audits, hashes and actual exit codes are retained under
+`Build/pikabu-compositor-split-1793181656555688000/`:
+
+- `checks-v10/results.json` and `focused-attempt-11.json` (normal and arena
+  checks, exit zero), `native-attempt-3-guard.json` (native, exit zero),
+  and `svg/results.json` with `svg-v3-guard.json` (all ten exact, exit zero).
+- `story/results.json`, `story/bundled-pixels.json`, `story/live-pixels.json`
+  and `story-v3-guard.json` (captures succeed; pixel gates and guard exit one).
+- `gradient-visual-results.json` and `clipped-visual-results.json` retain
+  the reduced fixture failures at both scales.
+
+The diagnostic executable SHA-256 is
+`cef737cd057adebce88a58320527dd97ddaa5d7ad2abb499bb523482b507f065`.
+The original build runner exits one because UI2 generation rewrites its absolute
+compiler-header path. `build-v3-generated-source-validation.json` separately
+verifies that exact generated output, unchanged implementation inputs, signing
+and startup success; the original failed receipt is preserved. This diagnostic
+build did not replace the shared production bundle. Whole-page parity remains
+unachieved.
