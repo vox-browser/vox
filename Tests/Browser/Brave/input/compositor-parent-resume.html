@@ -1,0 +1,39 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Parent compositor picture resumes after child effects</title>
+<style>
+html, body { margin: 0; background: #fcfdff; }
+.parent {
+    position: absolute; left: 745.8125px; top: 32px;
+    width: 268.1875px; height: 680px; transform: translateZ(0);
+    background: #fcfdff;
+}
+.section { position: relative; height: 160px; border-bottom: 1px solid #dce1e5; border-radius: 8px; }
+svg { position: absolute; left: 27px; top: 20px; width: 32px; height: 32px; }
+.button { position: absolute; left: 25px; top: 90px; width: 218.1875px; height: 40px; border-radius: 8px; background: #000; }
+.child { position: absolute; left: 90px; top: 12px; width: 112px; height: 55px; transform: translateZ(0); }
+.clipped { overflow: hidden; border-radius: 13px; }
+.tile { position: absolute; left: -9px; top: -7px; width: 130px; height: 70px; background: #89ad50; }
+.translucent { opacity: .8; }
+</style>
+<div class="parent">
+  <div class="section">
+    <svg viewBox="0 0 32 32"><circle fill="#89ad50" cx="16" cy="16" r="16"/><path fill="white" d="M8 11L20 21L21 11Z"/></svg>
+    <div class="child clipped"><div class="tile translucent"></div></div>
+    <div class="button"></div>
+  </div>
+  <div class="section">
+    <svg viewBox="0 0 32 32"><circle fill="#89ad50" cx="16" cy="16" r="16"/><path fill="white" d="M8 11L20 21L21 11Z"/></svg>
+    <div class="child translucent"><div class="tile"></div></div>
+    <div class="button"></div>
+  </div>
+  <div class="section">
+    <svg viewBox="0 0 32 32"><circle fill="#89ad50" cx="16" cy="16" r="16"/><path fill="white" d="M8 11L20 21L21 11Z"/></svg>
+    <div class="child clipped"><div class="tile"></div></div>
+    <div class="button"></div>
+  </div>
+  <div class="section">
+    <svg viewBox="0 0 32 32"><circle fill="#89ad50" cx="16" cy="16" r="16"/><path fill="white" d="M8 11L20 21L21 11Z"/></svg>
+    <div class="button"></div>
+  </div>
+</div>

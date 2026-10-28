@@ -102,6 +102,15 @@ fn chromium_shared_recording_leaf_supported(command &layout.PaintCommand) (bool,
 		'fill_rect', 'fill_rounded_rect', 'paint_uniform_border', 'stroke_rounded_rect',
 		'fill_ellipse', 'stroke_ellipse', 'draw_text', 'draw_replaced_image', 'draw_svg_image' {
 		}
+		'paint_rounded_border_top', 'paint_rounded_border_right', 'paint_rounded_border_bottom',
+		'paint_rounded_border_left' {
+			// The rounded-rectangle bridge records these four side widths in
+			// the same picture as the background and any SVG contents.
+			if command.points.len != 4 { return false, false }
+			for width in command.points {
+				if width < 0 || math.is_nan(width) || math.is_inf(width, 0) { return false, false }
+			}
+		}
 		'draw_svg_path' {
 			has_vectors = true
 			// Read the payload directly: an accessor call on the loop's copy of
@@ -162,6 +171,41 @@ fn chromium_shared_recording_css_boundary(commands []layout.PaintCommand, index 
 	return false
 }
 
+// A full-opacity parent picture can resume after another layer's complete CSS
+// effect. Native replay flushes before entering the child and restores the
+// parent's destination/backdrop policy when that effect ends. No other scope
+// may straddle the gap, and omitted parent commands must never be skipped.
+fn chromium_shared_recording_child_gap_supported(commands []layout.PaintCommand,
+	plan layout.ChromiumRasterLayerPlan, parent int, start int, end int) bool {
+	mut scopes := []int{}
+	for command_index in start .. end {
+		owner := plan.command_layers[command_index]
+		if owner <= 0 || owner >= plan.layers.len || owner == parent { return false }
+		command := commands[command_index]
+		if command.kind == 'begin_css_effect_layer' {
+			data := command.visual_layer_data or { return false }
+			if data.kind != .css_effect || data.scope_id == 0 { return false }
+			for opening in scopes {
+				other := commands[opening].visual_layer_data or { return false }
+				if other.scope_id == data.scope_id { return false }
+			}
+			scopes << command_index
+		} else if command.kind == 'end_css_effect_layer' {
+			if scopes.len == 0 { return false }
+			opening := commands[scopes.pop()].visual_layer_data or { return false }
+			closing := command.visual_layer_data or { return false }
+			if closing.kind != .css_effect || closing.scope_id != opening.scope_id
+				|| closing.opacity != opening.opacity || closing.blend_mode != opening.blend_mode {
+				return false
+			}
+		} else if scopes.len == 0 || command.kind.starts_with('begin_')
+			|| command.kind.starts_with('end_') {
+			return false
+		}
+	}
+	return scopes.len == 0
+}
+
 fn chromium_shared_recording_layer_supported(commands []layout.PaintCommand,
 	plan layout.ChromiumRasterLayerPlan, index int) bool {
 	if index <= 0 || index >= plan.layers.len || plan.command_layers.len != commands.len {
@@ -172,7 +216,8 @@ fn chromium_shared_recording_layer_supported(commands []layout.PaintCommand,
 	if layer.legacy_raster || indices.len == 0 { return false }
 	first := indices.first()
 	last := indices.last()
-	if first < 0 || last >= commands.len || (first > 0 && plan.command_layers[first - 1] == index)
+	if first < 0 || first >= commands.len || last < first || last >= commands.len
+		|| (first > 0 && plan.command_layers[first - 1] == index)
 		|| (last + 1 < commands.len && plan.command_layers[last + 1] == index) { return false }
 	// Only CSS scopes install the native destination/backdrop policy used by
 	// these pictures. A scroll or sparsity layer alone must keep leaf replay.
@@ -193,11 +238,17 @@ fn chromium_shared_recording_layer_supported(commands []layout.PaintCommand,
 	if closed_scopes != 0 { return false }
 	mut has_shared_content := false
 	mut svg_end := 0
+	mut isolated_scope := false
 	for position, command_index in indices {
 		if command_index < 0 || command_index >= commands.len
 			|| plan.command_layers[command_index] != index
-			|| (position > 0 && command_index != indices[position - 1] + 1) {
+			|| (position > 0 && command_index <= indices[position - 1]) {
 			return false
+		}
+		if position > 0 && command_index != indices[position - 1] + 1 {
+			if scope_depth == 0 || isolated_scope
+				|| !chromium_shared_recording_child_gap_supported(commands, plan, index,
+					indices[position - 1] + 1, command_index) { return false }
 		}
 		command := unsafe { &commands[command_index] }
 		if scope_depth == 0
@@ -223,6 +274,7 @@ fn chromium_shared_recording_layer_supported(commands []layout.PaintCommand,
 			}
 			data := command.visual_layer_data or { return false }
 			if data.opacity != 1 {
+				isolated_scope = command.kind == 'begin_css_effect_layer'
 				if position == 0 && command.kind == 'begin_css_effect_layer' {
 					end_data := commands[last].visual_layer_data or { return false }
 					if commands[last].kind != 'end_css_effect_layer' || end_data.scope_id != data.scope_id { return false }
