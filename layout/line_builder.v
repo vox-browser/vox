@@ -53,6 +53,7 @@ mut:
 	current_line_committed_pending_margin bool
 	pending_margin_follows_block_level_box bool
 	intrinsic_width_only bool
+	intrinsic_completed_width CSSPixels
 }
 
 pub fn LineBuilder.new(mut layout_state LayoutState, containing_block &BlockContainer, containing_block_used_values &UsedValues, available_width AvailableSize, direction css.Direction, writing_mode css.WritingMode) &LineBuilder {
@@ -105,7 +106,7 @@ pub fn (mut builder LineBuilder) break_line(forced_break ForcedLineBreak, next_i
 	builder.update_last_line()
 	mut break_count := 0
 	for {
-		builder.containing_block_used_values.line_boxes << LineBox.new(builder.direction, builder.writing_mode)
+		builder.append_new_line_box()
 		builder.begin_new_line(true, break_count == 0, forced_break)
 		break_count++
 		current_line_height := css_pixels_max(builder.max_height_on_current_line,
@@ -124,6 +125,32 @@ pub fn (mut builder LineBuilder) break_line(forced_break ForcedLineBreak, next_i
 			}
 		}
 		break
+	}
+}
+
+// A disposable width probe needs only the current line and its predecessor:
+// the caller can still mark the predecessor's trailing whitespace after a
+// break. Retire older lines through the same trimming path as finalization,
+// and reuse their fragment storage instead of retaining every word's line.
+fn (mut builder LineBuilder) append_new_line_box() {
+	mut used := builder.containing_block_used_values
+	if !builder.intrinsic_width_only || used.line_boxes.len < 2 {
+		used.line_boxes << LineBox.new(builder.direction, builder.writing_mode)
+		return
+	}
+	assert used.line_boxes.len == 2
+	used.line_boxes[0].trim_trailing_whitespace()
+	builder.intrinsic_completed_width = css_pixels_max(builder.intrinsic_completed_width,
+		used.line_boxes[0].width())
+	// Transfer this buffer to the replacement line; neither retained line may
+	// keep an alias after the two assignments below.
+	mut fragments := unsafe { used.line_boxes[0].fragments_ }
+	fragments.clear()
+	used.line_boxes[0] = used.line_boxes[1]
+	used.line_boxes[1] = LineBox{
+		direction_: builder.direction
+		writing_mode_: builder.writing_mode
+		fragments_: fragments
 	}
 }
 

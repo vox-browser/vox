@@ -366,7 +366,7 @@ fn run_inline_formatting_context_for_width(mut state LayoutState, containing_blo
 	}
 	if width_only {
 		line_builder.remove_last_line_if_empty()
-		mut content_width := CSSPixels.new(0)
+		mut content_width := line_builder.intrinsic_completed_width
 		for line_box in containing_block_used_values.line_boxes {
 			content_width = css_pixels_max(content_width, line_box.width())
 		}
