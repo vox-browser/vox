@@ -62,13 +62,34 @@ mut:
 	finalized      i32
 }
 
-// V keeps detached, dead scope blocks in a per-thread recycle cache. Its
-// metadata stays warm while the payload pages can be returned at idle.
+// V keeps two parallel arrays after this header. Derive their length from
+// the compiler's cache type rather than fixing it to a particular V version.
 struct PreallocRecycleCacheView {
-	count  int
-	bytes  int
-	starts [8]voidptr
-	sizes  [8]int
+	count int
+	bytes int
+}
+
+fn prealloc_recycle_cache_slots() int {
+	$if prealloc {
+		payload_bytes := int(sizeof(VPreallocBlockCache)) - int(sizeof(PreallocRecycleCacheView))
+		slot_bytes := int(sizeof(voidptr) + sizeof(int))
+		assert payload_bytes > 0 && payload_bytes % slot_bytes == 0
+		return payload_bytes / slot_bytes
+	}
+	return 0
+}
+
+fn (cache &PreallocRecycleCacheView) start(index int) voidptr {
+	assert index >= 0 && index < cache.count && cache.count <= prealloc_recycle_cache_slots()
+	return unsafe { (&voidptr(&u8(cache) + sizeof(PreallocRecycleCacheView)))[index] }
+}
+
+fn (cache &PreallocRecycleCacheView) size(index int) int {
+	assert index >= 0 && index < cache.count && cache.count <= prealloc_recycle_cache_slots()
+	return unsafe {
+		(&int(&u8(cache) + sizeof(PreallocRecycleCacheView)
+			+ prealloc_recycle_cache_slots() * int(sizeof(voidptr))))[index]
+	}
 }
 
 // ArenaUsage describes a chain of arena blocks: bytes handed out by the bump
@@ -139,8 +160,7 @@ fn arena_state() &ArenaThreadState {
 fn verify_prealloc_layout() {
 	$if prealloc {
 		if sizeof(PreallocBlockView) != sizeof(VMemoryBlock)
-			|| sizeof(PreallocScopeView) != sizeof(VPreallocScope)
-			|| sizeof(PreallocRecycleCacheView) != sizeof(VPreallocBlockCache) {
+			|| sizeof(PreallocScopeView) != sizeof(VPreallocScope) {
 			panic('platform arena mirrors do not match V prealloc blocks')
 		}
 	}
@@ -463,10 +483,11 @@ fn trim_thread_arena_recycle_pages() {
 		verify_prealloc_layout()
 		block := unsafe { &PreallocBlockView(current_block()) }
 		if block == unsafe { nil } || block.recycle_cache == unsafe { nil } { return }
+		// The metadata stays warm while only the detached payload pages retire.
 		cache := unsafe { &PreallocRecycleCacheView(block.recycle_cache) }
-		assert cache.count >= 0 && cache.count <= 8
+		assert cache.count >= 0 && cache.count <= prealloc_recycle_cache_slots()
 		for index in 0 .. cache.count {
-			if C.vox_retire_unused_arena_pages(cache.starts[index], uint(cache.sizes[index])) != 0 {
+			if C.vox_retire_unused_arena_pages(cache.start(index), uint(cache.size(index))) != 0 {
 				panic('could not trim recycled arena pages')
 			}
 		}
