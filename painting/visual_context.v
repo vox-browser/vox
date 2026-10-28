@@ -316,10 +316,9 @@ pub fn (mut tree AccumulatedVisualContextTree) set_compositor_transform(index in
 	if index <= 0 || index >= tree.nodes.len {
 		return false
 	}
-	data := tree.nodes[index].data
-	if data is TransformVisualData {
+	if tree.nodes[index].data is TransformVisualData {
 		unsafe {
-			mut target := &TransformVisualData(&data)
+			mut target := &(tree.nodes[index].data as TransformVisualData)
 			*target = TransformVisualData{
 				...*target
 				matrix:          matrix
@@ -336,10 +335,9 @@ pub fn (mut tree AccumulatedVisualContextTree) set_compositor_opacity(index int,
 	if index <= 0 || index >= tree.nodes.len {
 		return false
 	}
-	data := tree.nodes[index].data
-	if data is EffectsVisualData {
+	if tree.nodes[index].data is EffectsVisualData {
 		unsafe {
-			mut target := &EffectsVisualData(&data)
+			mut target := &(tree.nodes[index].data as EffectsVisualData)
 			*target = EffectsVisualData{
 				...*target
 				opacity: opacity

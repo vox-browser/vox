@@ -2,6 +2,7 @@ module layout
 
 import dom
 import html
+import painting
 
 fn frame_cost_paint_box_for_handle(box &BlockBox, handle voidptr) ?&BlockBox {
 	if box.layout_handle == handle { return unsafe { box } }
@@ -34,7 +35,14 @@ fn test_transform_samples_keep_paint_and_hit_test_plans() {
 	assert sampled.dump() == initial_dump
 	moved := display_list_commands(sampled).filter(it.color == 'rgb(71 72 73)')
 	assert moved.len == 1
-	assert normalized_affine(moved[0].transform)[4] == 50
+	// Compositor samples update the retained visual context; cached commands
+	// keep their original local transform while paint and hit-test plans survive.
+	layout_node := target.as_node().layout_node() or { panic('missing target layout') }
+	box := result.retained_box_for_layout(layout_node.layout_handle) or { panic('missing target box') }
+	assert box.own_transform_visual_context_idx > 0
+	transform := result.visual_context_tree.node_at(box.own_transform_visual_context_idx).data as painting.TransformVisualData
+	assert transform.uses_matrix_4x4
+	assert transform.matrix_4x4.m14 == 50
 	assert (document.element_from_point(60, 10) or { panic('missing moved hit') }) == target
 	assert (document.element_from_point(10, 10) or { panic('missing vacated hit') }) != target
 	sampled_dump := sampled.dump()
