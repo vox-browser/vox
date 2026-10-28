@@ -8,15 +8,35 @@ import math
 // keeps a fresh style object, mutation token, subject and mutable property
 // store. Published pages remain immutable through the existing COW protocol.
 // The outer synchronous style batch bounds both the environment and lifetime.
+// Snapshot only the supported payload, never the 288-byte StyleValue union.
+// The tag preserves typed equality, including values with equal serialization.
+enum ComputedLonghandReuseValueKind as u8 {
+	unsupported
+	keyword
+	length
+	color
+	number
+	integer
+	percentage
+	display
+	string_
+	custom_ident
+	list
+}
+
 struct ComputedLonghandReuseValue {
-	value       StyleValue
+	kind        ComputedLonghandReuseValueKind
+	number      f64
+	integer     i64
+	keyword     Keyword
+	length_unit LengthUnit
+	color       Color
+	display     Display
 	text        string
 	value_type  string
-	simple      bool
 	children    []ComputedLonghandReuseValue
 	separator   StyleValueListSeparator
 	collapsible StyleValueListCollapsible
-	list        bool
 }
 
 struct ComputedLonghandReuseInput {
@@ -63,28 +83,33 @@ fn computed_longhand_reuse_snapshot(value &dom.StyleValue) ComputedLonghandReuse
 }
 
 fn computed_longhand_reuse_typed_snapshot(value &StyleValue) ComputedLonghandReuseValue {
-	copy := match value {
-		KeywordStyleValue { StyleValue(KeywordStyleValue.create(value.keyword_)) }
-		LengthStyleValue { StyleValue(LengthStyleValue.create(value.length_)) }
-		ColorStyleValue { StyleValue(ColorStyleValue.create(value.color_)) }
-		NumberStyleValue { StyleValue(NumberStyleValue.create(value.value_)) }
-		IntegerStyleValue { StyleValue(IntegerStyleValue.create(value.value_)) }
-		PercentageStyleValue { StyleValue(PercentageStyleValue.create(value.percentage_)) }
-		DisplayStyleValue { StyleValue(DisplayStyleValue.create(value.display_)) }
-		StringStyleValue { StyleValue(StringStyleValue.create(value.string_value_)) }
-		CustomIdentStyleValue { StyleValue(CustomIdentStyleValue.create(value.custom_ident_)) }
+	return match value {
+		KeywordStyleValue { ComputedLonghandReuseValue{ kind: .keyword, keyword: value.keyword_ } }
+		LengthStyleValue {
+			ComputedLonghandReuseValue{ kind: .length, number: value.length_.value_, length_unit: value.length_.unit_ }
+		}
+		ColorStyleValue { ComputedLonghandReuseValue{ kind: .color, color: value.color_ } }
+		NumberStyleValue { ComputedLonghandReuseValue{ kind: .number, number: value.value_ } }
+		IntegerStyleValue { ComputedLonghandReuseValue{ kind: .integer, integer: value.value_ } }
+		PercentageStyleValue {
+			ComputedLonghandReuseValue{ kind: .percentage, number: value.percentage_.value_ }
+		}
+		DisplayStyleValue { ComputedLonghandReuseValue{ kind: .display, display: value.display_ } }
+		StringStyleValue { ComputedLonghandReuseValue{ kind: .string_, text: value.string_value_ } }
+		CustomIdentStyleValue {
+			ComputedLonghandReuseValue{ kind: .custom_ident, text: value.custom_ident_ }
+		}
 		StyleValueList {
 			mut children := []ComputedLonghandReuseValue{cap: value.values_.len}
 			for index in 0 .. value.values_.len {
 				children << computed_longhand_reuse_typed_snapshot(&value.values_[index])
 			}
-			return ComputedLonghandReuseValue{ children: children, separator: value.separator_, collapsible: value.collapsible_, list: true }
+			ComputedLonghandReuseValue{ kind: .list, children: children, separator: value.separator_, collapsible: value.collapsible_ }
 		}
 		else {
-			return ComputedLonghandReuseValue{ text: value.serialize(.normal), value_type: value.type_name() }
+			ComputedLonghandReuseValue{ text: value.serialize(.normal), value_type: value.type_name() }
 		}
 	}
-	return ComputedLonghandReuseValue{ value: copy, simple: true }
 }
 
 fn computed_longhand_reuse_snapshot_matches(snapshot &ComputedLonghandReuseValue, value &dom.StyleValue) bool {
@@ -94,44 +119,24 @@ fn computed_longhand_reuse_snapshot_matches(snapshot &ComputedLonghandReuseValue
 }
 
 fn computed_longhand_reuse_typed_snapshot_matches(snapshot &ComputedLonghandReuseValue, value &StyleValue) bool {
-	if snapshot.simple {
-		// These are the same payloads copied by the snapshot constructor. Compare
-		// through borrowed boxes: copying the large StyleValue union at every
-		// inherited input makes a cache hit unnecessarily allocate and collect.
-		return match value {
-			KeywordStyleValue {
-				snapshot.value is KeywordStyleValue && snapshot.value.keyword_ == value.keyword_
-			}
-			LengthStyleValue {
-				snapshot.value is LengthStyleValue && snapshot.value.length_ == value.length_
-			}
-			ColorStyleValue {
-				snapshot.value is ColorStyleValue && snapshot.value.color_ == value.color_
-			}
-			NumberStyleValue {
-				snapshot.value is NumberStyleValue && snapshot.value.value_ == value.value_
-			}
-			IntegerStyleValue {
-				snapshot.value is IntegerStyleValue && snapshot.value.value_ == value.value_
-			}
-			PercentageStyleValue {
-				snapshot.value is PercentageStyleValue && snapshot.value.percentage_ == value.percentage_
-			}
-			DisplayStyleValue {
-				snapshot.value is DisplayStyleValue && snapshot.value.display_ == value.display_
-			}
-			StringStyleValue {
-				snapshot.value is StringStyleValue && snapshot.value.string_value_ == value.string_value_
-			}
-			CustomIdentStyleValue {
-				snapshot.value is CustomIdentStyleValue && snapshot.value.custom_ident_ == value.custom_ident_
-			}
-			else { false }
+	return match value {
+		KeywordStyleValue { snapshot.kind == .keyword && snapshot.keyword == value.keyword_ }
+		LengthStyleValue {
+			snapshot.kind == .length && snapshot.number == value.length_.value_ && snapshot.length_unit == value.length_.unit_
 		}
-	}
-	if snapshot.list {
-		if value is StyleValueList {
-			if snapshot.separator != value.separator_ || snapshot.collapsible != value.collapsible_
+		ColorStyleValue { snapshot.kind == .color && snapshot.color == value.color_ }
+		NumberStyleValue { snapshot.kind == .number && snapshot.number == value.value_ }
+		IntegerStyleValue { snapshot.kind == .integer && snapshot.integer == value.value_ }
+		PercentageStyleValue {
+			snapshot.kind == .percentage && snapshot.number == value.percentage_.value_
+		}
+		DisplayStyleValue { snapshot.kind == .display && snapshot.display == value.display_ }
+		StringStyleValue { snapshot.kind == .string_ && snapshot.text == value.string_value_ }
+		CustomIdentStyleValue {
+			snapshot.kind == .custom_ident && snapshot.text == value.custom_ident_
+		}
+		StyleValueList {
+			if snapshot.kind != .list || snapshot.separator != value.separator_ || snapshot.collapsible != value.collapsible_
 				|| snapshot.children.len != value.values_.len {
 				return false
 			}
@@ -140,11 +145,12 @@ fn computed_longhand_reuse_typed_snapshot_matches(snapshot &ComputedLonghandReus
 					return false
 				}
 			}
-			return true
+			true
 		}
-		return false
+		else {
+			snapshot.kind == .unsupported && snapshot.value_type == value.type_name() && snapshot.text == value.serialize(.normal)
+		}
 	}
-	return snapshot.value_type == value.type_name() && snapshot.text == value.serialize(.normal)
 }
 
 // Deliberately exclude functions, substitutions, attr(), URLs, font-relative

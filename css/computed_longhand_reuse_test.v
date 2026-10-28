@@ -1,6 +1,7 @@
 module css
 
 import dom
+import math
 
 fn longhand_reuse_fixture() (&StyleComputer, &dom.Element, &dom.Element, &ComputedProperties) {
 	document := dom.Document.create(dom.url_about_blank())
@@ -281,4 +282,48 @@ fn test_longhand_reuse_semantic_lists_keep_nested_payload_and_type_guards() {
 	}
 	assert !computed_longhand_reuse_typed_snapshot_matches(&snapshot, mutable)
 	assert computed_longhand_reuse_number_hash(0.0) == computed_longhand_reuse_number_hash(-0.0)
+}
+
+fn test_longhand_reuse_scalar_snapshots_freeze_every_supported_payload() {
+	// The saved record must remain much smaller than the full style-value union.
+	assert sizeof(ComputedLonghandReuseValue) < sizeof(StyleValue)
+	values := [StyleValue(KeywordStyleValue.create(.auto)),
+		StyleValue(LengthStyleValue.create(Length.new(3, .cm))),
+		StyleValue(ColorStyleValue.create(Color.rgba(1, 2, 3, 4))),
+		StyleValue(NumberStyleValue.create(3.25)), StyleValue(IntegerStyleValue.create(-7)),
+		StyleValue(PercentageStyleValue.create(Percentage.new(12.5))),
+		StyleValue(DisplayStyleValue.create(Display.from_outside_inside(.inline_, .flex))),
+		StyleValue(StringStyleValue.create('text')),
+		StyleValue(CustomIdentStyleValue.create('custom'))]
+	for original in values {
+		wrapper := dom_style_value_from_value_logic(original)
+		mut box := unsafe { &TypedStyleValueBox(wrapper.css_value_handle) }
+		snapshot := computed_longhand_reuse_typed_snapshot(&box.value)
+		assert computed_longhand_reuse_typed_snapshot_matches(&snapshot, &box.value)
+		match mut box.value {
+			KeywordStyleValue { box.value.keyword_ = .none_ }
+			LengthStyleValue { box.value.length_.unit_ = .px }
+			ColorStyleValue { box.value.color_.a = 255 }
+			NumberStyleValue { box.value.value_ += 1 }
+			IntegerStyleValue { box.value.value_ += 1 }
+			PercentageStyleValue { box.value.percentage_.value_ += 1 }
+			DisplayStyleValue { box.value.display_.list_item = .yes }
+			StringStyleValue { box.value.string_value_ = 'changed' }
+			CustomIdentStyleValue { box.value.custom_ident_ = 'changed' }
+			else { panic('unsupported scalar fixture') }
+		}
+		assert !computed_longhand_reuse_typed_snapshot_matches(&snapshot, &box.value)
+	}
+	for value in [StyleValue(NumberStyleValue.create(math.nan())),
+		StyleValue(LengthStyleValue.create(Length.make_px(math.nan()))),
+		StyleValue(PercentageStyleValue.create(Percentage.new(math.nan())))] {
+		snapshot := computed_longhand_reuse_typed_snapshot(&value)
+		assert !computed_longhand_reuse_typed_snapshot_matches(&snapshot, &value)
+	}
+	positive := StyleValue(NumberStyleValue.create(0.0))
+	negative := StyleValue(NumberStyleValue.create(-0.0))
+	snapshot := computed_longhand_reuse_typed_snapshot(&positive)
+	assert computed_longhand_reuse_typed_snapshot_matches(&snapshot, &negative)
+	assert !computed_longhand_reuse_typed_snapshot_matches(&snapshot,
+		StyleValue(IntegerStyleValue.create(0)))
 }
