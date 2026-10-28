@@ -2249,3 +2249,50 @@ peak RSS 9,409,347,584 bytes under the 12 GiB guard. Evidence is in
 `safe-line-reject-submission-6/attempt-000.json`, below `Build/hn-small-text/`.
 This validates savings against the parent candidate. The requested 10% fewer
 instructions than Brave remains open; independent gains are not added.
+
+
+## Rejected cached CSS scope shortcut, 2026-10-28
+
+Build 19 tried returning the existing document style scope before traversing
+ancestors. The separate debugger diagnostic observed 33 warm returns, validated
+against the production executable UUID and instruction addresses. All 101
+comment identities and all 3,145,728 screenshot pixels matched. This diagnostic
+supplies no instruction credit.
+
+Two independent, unprofiled ABBAABBA blocks retained every control, candidate
+and Brave trial. Control/candidate medians were 6,410,266,723.5 /
+6,444,467,804.5 instructions in the first block and 6,410,112,160.5 /
+6,455,895,724.5 in confirmation, ratios 1.0053354 and 1.0071424. Both blocks
+regressed; their ranges overlap. Candidate-paired Brave median lower bounds
+were 1,831,321,892 and 1,837,805,895. Worst Vox / best Brave ratios were
+3.5935730 and 3.5804304, failing the requested 0.90. The source change and its
+authored, unrun test were rejected and preserved under
+`Build/hn-master-20261028-19/rejected-scope-change` before reverting the code.
+
+Every browser process exited zero, every image had zero differing pixels,
+all comment IDs matched, and all pinned inputs remained unchanged. The frozen
+complete page, JavaScript, fresh private profiles, 1024×768 viewport at scale 2,
+two-second settle and navigation-to-encoded-capture endpoint were unchanged.
+The first block's 18-CPU host load moved from 7.4673/7.0918/7.6206 to
+7.4873/7.2197/7.6294; confirmation retains its own per-trial load and timestamps.
+The benchmark guards exited 1 solely because the Brave acceptance gate failed:
+69.501756 seconds / 148,406,272 bytes sampled peak RSS and 69.183217 seconds /
+145,997,824 bytes, both under 12 GiB. Raw evidence is in build 19's
+`instructions` and `instructions-confirmation` directories.
+
+The production build guard exited zero after 159.431792 seconds with sampled
+peak RSS 8,098,578,432 bytes. Executable SHA256 is
+`d52a0c49a862c105a6fd333d86b60e4b0e14582173e8f6bfa392ac1728ce4849`;
+the generated-C audit restricts the delta against build 18 to the intended
+two scope functions. Fresh live discussion and reported-comment identity
+checks passed with this executable; they do not establish live Brave pixel or
+performance parity. A separately gated startup sample has the correct UUID,
+exact frozen pixels and all comments; it is diagnostic only. It identifies
+table intrinsic sizing, paint projection allocation and collection work.
+
+After shared Build cleanup, the verified `recreated-2` preservation archive
+restored the required receipts, measurements, libraries, canonical completed
+bundle and control bundle (344,457,088 bytes). The recovery receipt is
+`Build/hn19-recovery-after-cleanup-2.json`; no source tree was copied. No
+regression suite was executed, following the user's speed prerequisite.
+The Brave speed and 10% instruction advantage remain open.
