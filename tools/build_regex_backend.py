@@ -5,6 +5,7 @@ import fcntl
 import hashlib
 import json
 import os
+import platform
 from pathlib import Path
 import shutil
 import subprocess
@@ -41,7 +42,10 @@ def main():
     # x86-64/ARM archives in a shared checkout. Include rustc's host triple.
     digest.update(compiler_identity.encode())
     fingerprint = digest.hexdigest()
-    output = repo / 'Build/libregex'
+    # A Linux VM can share this checkout with its macOS host. Keep their
+    # archives separate for the entire compile/link lifetime, not just while
+    # rebuilding the archive under the lock.
+    output = repo / 'Build/libregex' / platform.system().lower()
     output.mkdir(parents=True, exist_ok=True)
     lock = (output / 'build.lock').open('w')
     fcntl.flock(lock, fcntl.LOCK_EX)

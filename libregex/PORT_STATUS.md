@@ -21,8 +21,9 @@ its partial V regex VM remain unfinished.
 Build the offline dependency with `python3 tools/build_regex_backend.py` before
 running V tests in a fresh checkout. `build_ladybird.sh` performs this step
 automatically. It requires Rust edition 2024 support; `RUSTC` selects the
-compiler. The archive is built under `Build/libregex/`, without reading or
-linking the Ladybird checkout. Source verification is available separately as
+compiler. Archives are built under `Build/libregex/{darwin,linux,windows}/` so
+concurrent hosts keep separate link inputs, without reading or linking the
+Ladybird checkout. Source verification is available separately as
 `python3 tools/build_regex_backend.py --verify-only`.
 
 The focused wrapper tests cover UnicodeSets intersections, named captures and

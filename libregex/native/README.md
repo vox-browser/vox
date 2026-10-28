@@ -8,7 +8,8 @@ the existing translated V Unicode helpers and ICU.
 
 The browser build script builds this dependency before invoking V. Before
 running V tests in a fresh checkout, run `python3 tools/build_regex_backend.py`.
-Concurrent builders share a locked, atomic output under `Build/libregex/`.
+Concurrent builders share a locked, atomic output under
+`Build/libregex/{darwin,linux,windows}/`, keeping host formats separate.
 Use `--verify-only` to check the copied sources without building. The build
 requires a Rust compiler supporting edition 2024 and does not read or link the
 upstream checkout. `RUSTC` selects the compiler.

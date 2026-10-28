@@ -5,7 +5,9 @@ module libregex
 
 import libjs
 
-#flag @DIR/../Build/libregex/libregex_native.a
+#flag darwin @DIR/../Build/libregex/darwin/libregex_native.a
+#flag linux @DIR/../Build/libregex/linux/libregex_native.a
+#flag windows @DIR/../Build/libregex/windows/libregex_native.a
 #flag darwin -Wl,-dead_strip
 #flag linux -Wl,--gc-sections
 #flag linux -ldl -lpthread -lm
