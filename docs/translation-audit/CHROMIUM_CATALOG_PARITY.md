@@ -1,9 +1,167 @@
 # 4chan catalog comparison
 
-Pixel-perfect parity for `https://boards.4chan.org/pol/catalog` remains open.
-The latest completed production run is
-`Build/4chan-catalog-20261027-line-end-production-2/`. It compares fresh processes at native
-scale 2 against Brave 156.1.98.60 (Chromium 156.0.8078.48).
+The controlled catalog replay now matches Brave exactly: **zero differing
+pixels across 21 native viewport comparisons, totaling 65,620,992 pixels**.
+This covers the full 14,457 CSS-pixel document in 19 successive 1024×768
+viewports, plus 800×600 and 1280×768 captures, all at native scale 2.
+Every comparison includes the complete viewport and exact RGBA equality.
+Unmodified live Brave parity remains unestablished because its advertisement
+filter policy differs from Vox's; the controlled replay applies the same
+explicit cosmetic rule in both browsers.
+
+## Completed candidate and comparisons
+
+`Build/4chan-catalog-20261028-catalog-production-4/device.app` is the signed,
+validated browser. Its executable SHA256 is
+`e630a5941e905ab8f8609d5daf56ce60b39964d92e29c26e19fad5dd913bf49c`.
+The pinned native library hashes are:
+
+| Library | SHA256 |
+| --- | --- |
+| libLadybirdVSkiaText.dylib | `d90dc54a7b744d885210d60cac91b40612585f2d8612b4f50df94e18bec37b2b` |
+| libVoxGraphite.dylib | `9d884d01248c1760d0b3dffb17a761ae199ac992d23ae540d277d56e68b6421b` |
+| libVoxGraphiteDawn.dylib | `cb98233f4dd44223964522e972655d739d701da23ddf0a3a4fc794c8722b9b52` |
+
+Compilation, linking, signing, signature verification, startup smoke and the
+frozen-source identity check pass. `skia-guard.json` records child exit 0,
+a 6,005,538,816-byte sampled aggregate peak under the unchanged 12 GiB budget,
+and 168.655 seconds for the corrected native compile/package/smoke sequence.
+The generated V C source is retained unchanged with SHA256
+`5615e2699af7998e0e5c46f7bb0a8ed34dac86d00ba678105c0af6ac3d6040bd`.
+This build contains the compact select clipping fix, collapsed-space shaping
+and complete root shadow tile changes described below. Its frozen source
+receipt defines the validated candidate; later changes in shared `master`
+are outside this build's validation.
+
+`catalog-pixels-6/candidate-scroll-pixels.json` records zero differences at
+CSS offsets 0, 768, 1536, 2304, 3072, 3840, 4608, 5376, 6144, 6912,
+7680, 8448, 9216, 9984, 10752, 11520, 12288, 13056 and 13689.
+`candidate-scroll-coverage.json` verifies complete coverage, including the
+footer. Every row compares 3,145,728 native pixels. `viewport-results.json`
+adds exact 800×600 and 1280×768 comparisons. Each capture uses a fresh process,
+an empty private profile and the display away from the pointer; receipts pin
+executable/library identities, successful exit, complete document readiness,
+201 threads and matched viewport/scroll geometry.
+
+The independent Brave reference is 156.1.98.60 (Chromium 156.0.8078.48).
+Its executable SHA256 is
+`9d53e182ab59b7c430abea0233088cb452694b96843d62ccccbc6c0902b98fe5`;
+framework SHA256 is
+`f3c180e20cb50e055e3e4279e4663d79b457ede64f4d2f38e5b58cd92dbf6971`.
+`catalog-pixels-4/fresh-reference/results.json` records unchanged identities
+through all 19 reference captures and exact fresh repeats of the first and
+last viewports. The candidate never supplies reference pixels. The archive
+preserves the 200 original JPEG bodies byte for byte in data URLs and freezes
+animated GIF frames, as explained below; network delivery and changing live
+threads are outside this oracle.
+
+`Build/4chan-catalog-20261028-catalog-acceptance-1/acceptance.json` aggregates
+41 exact comparisons, verifies retained image hashes and fresh-process
+identities, and records `strict_controlled_catalog_pixels_pass: true`.
+Its separate 3 GiB guard exits 0 with a 129,302,528-byte sampled peak. The
+original `catalog-pixels-6/` pipeline exits 1 against older select/text
+references and a historical canvas capture; its failures remain intact.
+The final acceptance receipt uses independently repeated fresh references
+and a fresh matched canvas baseline rather than accepting those nonzero
+comparisons or introducing a tolerance.
+
+## Installed browser and live navigation
+
+The validated production-4 bundle is installed at `Build/v/Vox.app` with the
+executable and library identities above. The installation verified final
+acceptance first and atomically exchanged bundles with `renameatx_np`;
+`catalog-live-4/installation.json` retains both identities and the preserved
+previous production-2 bundle. No additional production build was scheduled.
+
+Two fresh installed-browser processes, PIDs 70572 and 80606, retain unchanged
+production-4 identities but reach a navigation error on the direct live URL:
+`h2: request timed out waiting for a response after 10.000s`.
+The capture processes exit 0, while both live validation jobs correctly exit
+1 after rejecting the error title. Their screenshots and guard receipts
+remain in `Build/4chan-catalog-20261028-catalog-live-{4,5}/`.
+These runs do not establish successful live loading or live rendering parity.
+
+A direct HTTP HEAD returns 200 promptly, but this does not establish body
+delivery. HTTP/1.1 and HTTP/2 compressed GETs in `catalog-live-4/` time out
+with incomplete bodies. The longer direct HTTP/2 retry in
+`catalog-live-5/direct-get.json` receives HTTP 200 and 21,877 compressed bytes,
+then exits curl 56 after 31.449 seconds with a receive timeout. None of those
+partial bodies is used as a valid replay or screenshot reference. The browser
+has an explicit ten-second read timeout in `browsernet/http.v`; these results
+do not identify the cause of the slow live transfer or justify a rendering
+change. Earlier successful live navigation and the advertisement-slot policy
+difference remain historical evidence below, not validation of this build.
+
+An independent fresh Brave process on the same direct route also fails with
+`net::ERR_TIMED_OUT`; `catalog-live-5/brave-direct/` preserves its command,
+unchanged executable identity, log and guard exit 1. Its sampled process-tree
+peak is 894,369,792 bytes under a 3 GiB budget. This provides no live screenshot
+or parity credit and leaves the live check pending a successful transfer.
+
+## Select clipping and reference checks
+
+Commit `beb097d4` restores the compact select label's missing `overflow: clip`,
+matching the persistent UA shadow label and upstream
+`Libraries/LibWeb/HTML/HTMLSelectElement.cpp`. Retained display-list tests
+compare label clips before and after shadow-tree creation. Seven focused
+select cases compile and pass in default GC and `-gc none` under the memory
+guard in `Build/4chan-catalog-20261028-select-clip-1/`.
+
+The focused `select-label-ink-clip` fixture covers half-pixel origins,
+glyph overhang, narrow labels, RTL and a borderless `appearance: none` control.
+Two independent Brave captures agree exactly; the corrected browser matches
+all 1,920,000 native pixels. The pre-fix production-3 browser differs at 1,179
+pixels. The original broader probe used a 20.3828125px vertical origin and
+an unstyled `appearance: none` border. Its 876 residual pixels expose separate
+fractional text-phase and default-border/auto-height differences; that probe
+and both failures remain in `catalog-pixels-6/` and `catalog-acceptance-1/`.
+Narrowing the committed fixture isolates clipping and does not credit a fix
+for those other cases.
+
+The existing `chromium-select` fixture also matches two fresh independent
+Brave captures exactly. Its older reference differs at 253 pixels and is
+preserved in the run; the committed reference is refreshed from Brave.
+Both collapsed-space text lines match two fresh Brave captures exactly;
+the old text oracle differs at 4,101 pixels. Fresh captures repeat without
+changing Brave executable/framework identity. The reason those older
+references differ is unresolved; no source change or tolerance is inferred
+from that difference.
+
+All ten SVG image/mutation checks pass pixel-exactly. Ten of eleven default
+smoke outputs equal the retained historical baseline exactly. The remaining
+canvas output differs from the historical capture at 221 pixels, but a fresh
+production-2 baseline and candidate are pixel-identical; a second candidate
+capture also agrees exactly. Canvas passes the smoke suite's existing
+allowance. The smoke suite still exits 1 for `inline-node`, `ordered-list`
+and `text-decorations`; those three actual images remain identical to the
+retained baseline. No all-tests-passing claim is made. The scale-2 shadow
+fixture matches Brave exactly; the scale-1 diagnostic preserves the same
+1,424 differences in baseline and candidate. Broad package failures and
+incomplete batches remain recorded below; the AST corpus passes 100/100.
+
+## Build recovery evidence
+
+The first production-4 link exposed ICU 78/79 header and runtime mismatches;
+the retained generated C and case-mapping helper now use explicit ICU 78
+linkage. A packaging attempt copied stale cached native libraries, and the
+next attempt revealed that the frozen stage lacked its upstream `3rd`
+symlink. This omitted the `LADYBIRD_V_HAS_SKIA_TEXT` and
+`LADYBIRD_V_HAS_FFMPEG` native defines and the Skia text link. The resulting
+fallback-renderer screenshots in `catalog-pixels-4/` and `catalog-pixels-5/`
+are failed build evidence and supply no code validation credit. Actual
+interruption/guard exits and invalid bundles remain preserved.
+
+The corrected guarded native compile reuses the unchanged retained generated C,
+restores the production defines and validated native-library identities, and
+saves its main object separately. This avoids another V generation pass or
+compiling over a live bundle. Earlier completed comparisons below remain
+historical evidence and do not override the current strict result.
+
+## Historical line-end production comparison
+
+The following identity and initial result tables describe
+`Build/4chan-catalog-20261027-line-end-production-2/`. Later production-3
+results and broad-suite limitations appear at the end of this report.
 
 ## Completed browser and identity
 
@@ -274,20 +432,38 @@ existing path.
 candidate containing both changes. Its guard and startup smoke exit zero,
 with a sampled 9,415,901,184-byte aggregate peak. Executable SHA256 is
 `18ed315192d7be1bbc3a6c0f16a4a710cc664dc3f126c897e0413fff96ceddf9`;
-`libVoxSkiaText.dylib` SHA256 is
+`libLadybirdVSkiaText.dylib` SHA256 is
 `d90dc54a7b744d885210d60cac91b40612585f2d8612b4f50df94e18bec37b2b`.
-The source identity check passes. Full native comparisons, the new shadow
-fixture at scales 1 and 2, the text-line oracle, default smoke and ten SVG
-checks are submitted in `catalog-pixels-3/`. Submission is not passing
-validation; strict acceptance remains open until their actual results exist.
+The source identity check passes. `catalog-pixels-3/` completes all 19 native
+catalog comparisons: 18 are exact, while offset 13689 retains one differing
+pixel (PNG x=1890, y=1293, white in Brave and one gray level in Vox).
+Two fresh matched captures in `catalog-bottom-repeat-1/` reproduce that pixel.
+The text-line oracle, scale-2 shadow fixture, and ten SVG checks are exact.
+All 11 default smoke outputs equal the retained baseline, including its three
+known reference failures. The scale-1 shadow diagnostic still differs from
+Brave at 1,424 pixels in both builds. These are preserved failures, not parity
+credit. The strict catalog run correctly exits 1.
 
 The broad batch remains at 10/10. `broad-2/` exceeds the aggregate memory
 limit during its third layout compilation (13,028,900,864 sampled bytes),
 after the earlier runtime and syntax failures described above. `broad-3/`
 retains the same 1,037 test files in smaller batches and separates V code
-generation from native compilation under the unchanged guard. Both GC modes
-and the complete upstream AST corpus are still required. No broad passing
-claim or cadence reset is made.
+generation from native compilation under the unchanged guard. Executing the
+first three retained layout binaries in both GC modes reproduces six failing
+assertions: two active-state invalidation cases, a nested flex baseline,
+a text-control baseline, retained compositor geometry, and device-scaled
+control width. `repaired-runtime-results.json` records the actual binary
+identities and runtime exits; earlier missing-output and directory-collision
+failures remain in their original receipts.
+
+The next batch fails compilation on geometry-helper type mismatches and a
+scratch-scope nil comparison. A later compilation exceeds the unchanged
+12 GiB budget at 12,908,019,712 sampled bytes and stops the scheduler. The
+remaining package batches are not claimed as executed. The separate full
+upstream AST comparison subsequently passes all 100 cases with no overrides;
+`ast-results.json` and `ast-resume-guard.json` record compile/runtime exits 0
+and a 682,475,520-byte sampled peak. The broad suite remains incomplete and
+failing; no cadence reset is made.
 
 Brave's documented Standard Shields policy applies cosmetic filtering to
 third-party elements, while Aggressive mode also permits first-party
