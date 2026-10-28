@@ -9,6 +9,74 @@ Unmodified live Brave parity remains unestablished because its advertisement
 filter policy differs from Vox's; the controlled replay applies the same
 explicit cosmetic rule in both browsers.
 
+## Offline local catalog
+
+The self-contained snapshot is
+`Build/4chan-catalog-local-20261028-3/catalog.html` (2,147,044 bytes), with
+SHA256 `884cf5d54ba1d0f67debb3e7f9b1aae49f45a4ab838beeae8b85114ef06976d5`.
+Open that same file in Vox and Brave; it needs no proxy, server, certificate,
+or network connection. The adjacent `catalog.json` records its provenance.
+
+`tools/save_catalog_local.py` exports the complete sealed catalog captured on
+2026-10-26 at 12:37:44 UTC. It preserves all 201 threads, the 200 original
+JPEG byte streams and the existing broken-thumbnail state. Styles, sprites,
+banner, flags and icons are embedded. Scripts and event handlers are removed,
+frames stay blank, images load eagerly, local anchors remain local, and a CSP
+blocks automatic network access. Ordinary links to other pages keep their
+original destinations. This is a static rendering snapshot; interactive
+catalog scripts are outside the comparison.
+
+Fresh native comparisons of this exact file pass with **0 / 65,620,992 differing
+pixels across 21 viewports**: all 19 successive 1024×768 scroll positions and
+800×600 / 1280×768 top captures, at scale 2. The full 14,457 CSS-pixel page and
+footer are covered. `Build/4chan-catalog-local-20261028-3/pixels/results.json`
+records `passed: true`, unchanged browser/driver/file identities, no remote
+Brave page requests, and exit 0 for every fresh Vox and Brave process.
+The installed Vox executable SHA256 is
+`d16723fbd067dcff9cb7c5132f92db5f9166b80d1baef214cdd1d0bf0f938b44`;
+the receipt pins its native libraries and the independent Brave framework.
+`pixels-guard.json` records exit 0, 189.689 seconds and a 1,324,040,192-byte
+sampled process-tree peak under the 3 GiB budget. All 13 catalog tooling tests
+pass (`unit-guard.json`, exit 0), and `reproducibility.json` verifies that the
+exporter regenerates identical HTML bytes.
+
+Earlier local runs remain recorded: `local-1` rejected incomplete lazy images
+before comparing pixels, prompting eager decoding in the exporter. `local-2`
+found zero pixel differences in all 21 views, but correctly failed acceptance
+because another session replaced the shared production executable during the
+run. The successful `local-3` run uses the newly completed installed bundle
+and the final file with local fragment links preserved.
+
+The archive's explicit `.danbo-slot` cosmetic rule and frozen GIF first frames
+remain part of this input. Saving it locally does not establish unmodified
+live-site or incremental network JPEG parity.
+
+To export another identical local file and check it without a replay proxy:
+
+```sh
+python3 tools/save_catalog_local.py \
+  --archive Build/4chan-catalog-20261027-complete-jpeg-2/policy-archive \
+  --output Build/catalog-offline/catalog.html
+PIKABU_NETWORK_TEST_OUTPUT_DIR=Build/catalog-offline/network \
+  python3 tools/run_memory_bounded.py --limit-gib 3 \
+  --lock Build/catalog-offline/network.lock --report Build/catalog-offline/network-guard.json \
+  -- sh tools/test_pikabu_network_deny.sh
+python3 tools/run_memory_bounded.py --limit-gib 3 \
+  --lock Build/catalog-offline/pixels.lock --report Build/catalog-offline/pixels-guard.json \
+  -- python3 tools/check_catalog_local.py --page Build/catalog-offline/catalog.html \
+  --output Build/catalog-offline/pixels \
+  --network-deny Build/catalog-offline/network/network-deny.dylib --full
+```
+
+The exporter verifies every archived body hash and fails on missing assets or
+unsupported resource syntax before writing the HTML. The checker launches fresh
+processes and empty profiles on the display away from the pointer. It records
+executable/library identities, driver hashes, actual process exits, native
+geometry, image readiness and exact RGBA differences. Vox receives the tested
+process-local DNS/socket guard. Brave uses an offline target, blocks HTTP(S),
+and fails the check if the page attempts a remote request. No source tree is
+copied and no production browser is rebuilt.
+
 ## Completed candidate and comparisons
 
 The 12 catalog source copies under `Build/` were removed on 2026-10-28 after
