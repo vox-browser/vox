@@ -1945,6 +1945,56 @@ is `intrinsic-fit-checkpoint-2` and pipeline is `intrinsic-fit-pipeline-3`.
 This validates savings against the parent candidate. The requested 10% fewer
 instructions than Brave remains open; independent gains are not added.
 
+## Checked native indexes on canonical master, 2026-10-28
+
+`7e0dc8d7` gives the four V3 fixed-array index helpers an `always_inline`
+declaration in the native browser translation unit. Their bounds checks and
+panic implementations remain unchanged. Production disassembly confirms that
+the sixteen checked accesses in computed-property page hashing become direct
+loads; the publisher no longer calls either the index helper or the hash helper.
+The authored native regression fixture checks valid accesses and signed/unsigned
+out-of-bounds panics. It has not been executed: the user's instruction defers
+regression suites until Vox reaches Brave's speed.
+
+The canonical build in `Build/hn-master-20261028-17/` completes without a source
+copy. Executable SHA256 is
+`3659fad051a3cbe13e650f62370148724e89c2cc16b027570e454f08c9cfb460`.
+Its guard exits zero after 271.868 seconds, with sampled peak aggregate RSS
+8,000,094,208 bytes. Source identities at generation and build completion match.
+The full generated-C comparison also contains concurrent Worker, compositor
+eligibility and retained visual-context changes. Consequently the complete
+bundle comparison cannot attribute every instruction difference to inlining.
+
+Two independent ABBA blocks each compare four control and four candidate runs,
+with a fresh Brave comparison for every run. All 32 browser processes exit zero,
+retain all 101 comments and match all 3,145,728 reference pixels. The unchanged
+endpoint is navigation start through document PNG encoding, including owned
+helper/service work, with private caches/profiles, JavaScript enabled, a
+1024-by-768 document, backing scale 2 and two-second settle. Across both blocks,
+control/candidate medians are 6,797,572,131.5 / 6,479,455,051.5 instructions
+(4.68% lower). Means are 6,797,428,025.125 / 7,149,682,770.75 (5.18% higher).
+The candidate's 11,854,695,302-instruction outlier remains included. It starts
+more coalition tasks; its cause is unresolved. A Brave outlier in the confirmation
+block also remains included. Host load and every raw result are retained in
+`measurement-summary.json` and the two `instructions*` directories.
+
+Brave's median lower bound is 1,878,532,301.5 instructions. Vox remains about
+3.45 times higher, so neither parity nor the requested 10% improvement passes.
+No regression suites ran and no independent savings are summed.
+
+Separate diagnostics validate the executable image and publisher entry/return,
+exact pixels and comment identities. A startup-through-capture sample points
+to layout/style conversion, allocation and collection; it earns no unprofiled
+credit. Earlier build-16 phase breakpoints similarly diagnose the installed
+build-14 bundle, rather than a new implementation. Fresh build-17 processes
+61519 and 61649 successfully load the live discussion and highlighted comment
+respectively, with complete readiness and expected document identities. The
+highlighted comment starts with “This statement stood out to me.” These live
+captures are identity checks, not a live Brave pixel or performance comparison.
+Their commands, bundle/native-library hashes, environments and actual exits
+are in `live/`; its guard exits zero after 17.978 seconds at peak RSS
+1,520,353,280 bytes.
+
 ## Retain geometry when SVG backgrounds finish, 2026-10-28
 
 `6f91ec6e` preserves the existing repaint state until the background-resource
