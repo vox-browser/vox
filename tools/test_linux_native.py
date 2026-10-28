@@ -37,15 +37,22 @@ def main():
     bypass = "127.0.0.1,localhost,::1," + environment.get("NO_PROXY", environment.get("no_proxy", ""))
     environment.update(NO_PROXY=bypass, no_proxy=bypass)
     environment["PKG_CONFIG_PATH"] = str(repo / "Build/deps/lib/pkgconfig") + ":" + environment.get("PKG_CONFIG_PATH", "")
-    # The repository root anchors package names; see build-linux-browser.sh.
-    paths = f"{repo}|{repo}/Build/linux/modules|{repo}/Build/v/modules|@vmodules|@vlib"
+    # Stage against this compiler; another host's symlinks may not be accessible.
+    http_modules = subprocess.check_output(
+        [sys.executable, str(repo / "tools/prepare_http_compat.py"), compiler],
+        cwd=repo, env=environment, text=True).strip()
+    linux_modules = subprocess.check_output(
+        [sys.executable, str(repo / "tools/prepare_linux_modules.py"), compiler],
+        cwd=repo, env=environment, text=True).strip()
+    paths = f"{repo}|{linux_modules}|{http_modules}|@vmodules|@vlib"
     output = repo / "Build/linux/tests" / args.gc
     output.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="vox-native-") as temporary:
         for case in args.cases:
             command = [compiler, "-memory-limit", "10G", "-enable-globals",
                        "-cc", os.environ.get("CC", "clang"),
-                       "-gc", args.gc, "-d", "use_openssl", "-path", paths]
+                       "-gc", args.gc, "-d", "use_openssl",
+                       "-exclude", "@vlib/time/zoneinfo.native.v", "-path", paths]
             if args.gc != "none":
                 command += ["-d", "dynamic_boehm"]
             # Run each file directly to preserve lookup-path argument boundaries.

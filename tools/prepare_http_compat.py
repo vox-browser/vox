@@ -136,6 +136,8 @@ def write_if_changed(path, content):
 
 def patch_request(source):
     """Preserve an explicit Cookie header when the optional cookie map is empty."""
+    # Pointer identity must retain its full width with both compiler generations.
+    source = re.sub(r'u64\(usize\(([^()]*)\)\)', r'u64(voidptr(\1))', source)
     signature = 'fn (req &Request) build_request_cookies_header_with_header(header Header) string'
     if 'cookie_header_value_with_header(header)' in source:
         # Current V already serializes an explicit Cookie header itself.

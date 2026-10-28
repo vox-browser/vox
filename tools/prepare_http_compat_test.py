@@ -2,10 +2,16 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from prepare_http_compat import remove_obsolete_entries, staged_modules
+from prepare_http_compat import patch_request, remove_obsolete_entries, staged_modules
 
 
 class HTTPCompatibilityStagingTest(unittest.TestCase):
+    def test_current_cookie_api_still_updates_deprecated_pointer_casts(self):
+        source = 'cookie_header_value_with_header(header)\nu64(usize(data.str))'
+        patched = patch_request(source)
+        self.assertIn('u64(voidptr(data.str))', patched)
+        self.assertEqual(patched, patch_request(patched))
+
     def test_different_compiler_libraries_have_independent_modules(self):
         with tempfile.TemporaryDirectory() as directory:
             work = Path(directory)
