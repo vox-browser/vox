@@ -16,11 +16,15 @@ verifying that the completed fixes and tests are on `master`. Historical
 build receipts, comparison results, generated test inputs, and the installed
 browser remain; the old source paths in those receipts are no longer available.
 The cleanup audit is in `Build/4chan-catalog-source-cleanup-20261028/`.
-The installed executable still loads 13 data files through an old absolute
-path, so that location retains only symlinks to the canonical data files.
-No source files or build outputs remain in those copies. The executable and
-native libraries retain their hashes, and a fresh headless smoke check passes
-under the 3 GiB guard (`smoke-guard-2.json`, exit 0).
+The initial startup check preserved 13 runtime data links. A subsequent
+windowed replay exposed two more lazy dependencies: the scale-1 and scale-2
+broken-image icons. Their old absolute paths now link to the canonical PNGs
+as well. No regular files remain in the removed source copies; only these
+15 individual data links remain. Their targets and hashes are recorded in
+`Build/4chan-catalog-20261028-master-live-6/runtime-data-links.json`.
+The executable and native libraries retain their hashes, and a fresh headless
+smoke check passes under the 3 GiB guard (`smoke-guard-2.json`, exit 0).
+The windowed verification below covers the repaired icon dependencies.
 
 `Build/4chan-catalog-20261028-catalog-production-4/device.app` is the signed,
 validated browser. Its executable SHA256 is
@@ -76,6 +80,44 @@ The final acceptance receipt uses independently repeated fresh references
 and a fresh matched canvas baseline rather than accepting those nonzero
 comparisons or introducing a tolerance.
 
+## Replay from the canonical checkout
+
+`tools/check_catalog_replay.py` replaces the capture harnesses that imported
+tools from the deleted source copies. It reuses the installed browser, launches
+a fresh process and private profile per case, replays the sealed archive without
+network forwarding, and verifies the pinned Brave image hashes. Navigation
+errors, incomplete catalogs, undecoded thumbnails, incorrect viewport or scroll
+geometry, unsuccessful process exits, and changed executable/library identities
+reject the run. Image comparison requires exact RGBA equality throughout the
+document viewport. Five focused Python tests exercise these acceptance gates.
+
+After restoring the two icon links, five fresh captures pass with **zero
+differing pixels across 15,289,344 pixels**: 1024×768 at scroll offsets 0, 6912
+and 13689, plus 800×600 and 1280×768 at the top, all at native scale 2. The
+captures, audits, process identities and results are in
+`Build/4chan-catalog-20261028-master-replay-11/`. The 3 GiB guard exits 0
+with a 659,718,144-byte sampled process-tree RSS peak in 58.599 seconds
+(`master-live-6/replay-11-guard.json`). This verifies the installed production-4
+browser after source cleanup; it does not validate newer implementation changes
+on shared `master`. Earlier failed harness checks remain in replay runs 7–10.
+
+To repeat these five checks, choose fresh output and guard paths:
+
+```sh
+python3 tools/run_memory_bounded.py --limit-gib 3 \
+  --lock Build/catalog-replay-next.lock \
+  --report Build/catalog-replay-next-guard.json \
+  -- python3 tools/check_catalog_replay.py \
+  --archive Build/4chan-catalog-20261028-catalog-pixels-6/policy-archive \
+  --reference-result Build/4chan-catalog-20261028-catalog-acceptance-1/acceptance.json \
+  --output Build/catalog-replay-next \
+  --case catalog-scroll-0 --case catalog-scroll-6912 --case catalog-scroll-13689 \
+  --case viewport-800x600 --case viewport-1280x768
+```
+
+Omitting the `--case` arguments selects all 21 retained catalog comparisons.
+The tool neither builds a browser nor duplicates the source tree.
+
 ## Installed browser and live navigation
 
 The validated production-4 bundle is installed at `Build/v/Vox.app` with the
@@ -108,6 +150,14 @@ An independent fresh Brave process on the same direct route also fails with
 unchanged executable identity, log and guard exit 1. Its sampled process-tree
 peak is 894,369,792 bytes under a 3 GiB budget. This provides no live screenshot
 or parity credit and leaves the live check pending a successful transfer.
+
+A further direct retry from canonical `master` is retained in
+`Build/4chan-catalog-20261028-master-live-6/`. Curl receives HTTP 200 but only
+20,508 of 55,251 compressed bytes before timing out after 25.006 seconds (exit
+28). Vox again reaches `Navigation error` with zero threads, and Brave fails
+with `net::ERR_TIMED_OUT`. The live validation guard exits 1, with unchanged
+browser identities and an 881,934,336-byte sampled RSS peak. The partial body
+is not used as a reference. Live pixel parity remains unverified.
 
 ## Select clipping and reference checks
 
