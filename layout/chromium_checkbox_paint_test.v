@@ -122,3 +122,32 @@ fn test_chromium_checked_theme_preserves_author_accent_colors() {
 		document.finalize()
 	}
 }
+
+fn test_chromium_checked_checkbox_keeps_theme_coordinates_at_large_origins() {
+	for scale in [1.0, 2.0] {
+		rect := painting.IntRect{2846, 506, int(13 * scale), int(13 * scale)}
+		mut commands := []PaintCommand{}
+		append_chromium_checked_checkbox(mut commands, rect, scale, 1)
+		for index in 0 .. 2 {
+			retained := commands[index]
+			mut native := retained
+			native.resolve_chromium_checkbox_geometry()
+			assert native.radius == 2
+			assert native.transform == [scale, 0, 0, scale, 2846 * (1 - scale),
+				506 * (1 - scale)]!
+			inset := if index == 0 { f32(0.2) } else { f32(0) }
+			assert native.x == f64(f32(2846) + inset)
+			assert native.y == f64(f32(506) + inset)
+			assert native.x + native.width == f64(f32(2859) - inset)
+			assert native.y + native.height == f64(f32(519) - inset)
+			assert commands[index].x == retained.x
+			assert commands[index].radius == 2 * scale
+			assert native.checkbox_theme_data == unsafe { nil }
+			before := [native.x, native.y, native.width, native.height, native.radius]
+			transform := native.transform
+			native.resolve_chromium_checkbox_geometry()
+			assert [native.x, native.y, native.width, native.height, native.radius] == before
+			assert native.transform == transform
+		}
+	}
+}

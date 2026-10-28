@@ -4408,7 +4408,7 @@ fn chromium_snapped_control_rect(x f64, y f64, width f64, height f64) painting.I
 // one pass, as Brave's GPU rasterization draws them into one raster tile: a
 // multisampled tile resolves their shared edge pixels together.
 fn append_chromium_unchecked_checkbox(mut commands []PaintCommand, rect painting.IntRect, scale f64, opacity f64) {
-	theme := &PaintCheckboxThemeData{rect, scale}
+	theme := &PaintCheckboxThemeData{rect: rect, scale: scale}
 	commands << PaintCommand{
 		kind:                'fill_rect'
 		x:                   f64(rect.x) + 0.2 * scale

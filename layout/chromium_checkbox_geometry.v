@@ -3,8 +3,9 @@ module layout
 import painting
 
 pub struct PaintCheckboxThemeData {
-	rect  painting.IntRect
-	scale f64
+	rect       painting.IntRect
+	scale      f64
+	fill_inset f32 = 0.2
 }
 
 // NativeTheme's canvas scales about the snapped device-pixel origin, while
@@ -18,7 +19,7 @@ pub fn (mut command PaintCommand) resolve_chromium_checkbox_geometry() {
 	origin_y := f32(theme.rect.y)
 	right := origin_x + f32(f64(theme.rect.width) / theme.scale)
 	bottom := origin_y + f32(f64(theme.rect.height) / theme.scale)
-	inset := if command.kind == 'fill_rect' { f32(0.2) } else { f32(0.5) }
+	inset := if command.kind == 'fill_rect' { theme.fill_inset } else { f32(0.5) }
 	left := origin_x + inset
 	top := origin_y + inset
 	command.x = f64(left)

@@ -34,6 +34,7 @@ fn append_chromium_checked_checkbox(mut commands []PaintCommand, rect painting.I
 		opacity:             opacity
 		force_dark_role:     .background
 		underlays_next:      true
+		checkbox_theme_data: &PaintCheckboxThemeData{rect: rect, scale: scale}
 		force_dark_role_set: true
 	}
 	commands << PaintCommand{
@@ -44,6 +45,7 @@ fn append_chromium_checked_checkbox(mut commands []PaintCommand, rect painting.I
 		height:              rect.height
 		radius:              2 * scale
 		color:               'rgb(0 117 255)'
+		checkbox_theme_data: &PaintCheckboxThemeData{rect: rect, scale: scale, fill_inset: 0}
 		opacity:             opacity
 		force_dark_role:     .background
 		force_dark_role_set: true
