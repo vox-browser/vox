@@ -2296,3 +2296,40 @@ bundle and control bundle (344,457,088 bytes). The recovery receipt is
 `Build/hn19-recovery-after-cleanup-2.json`; no source tree was copied. No
 regression suite was executed, following the user's speed prerequisite.
 The Brave speed and 10% instruction advantage remain open.
+
+## Deferred overflow-prefix playback, 2026-10-28
+
+`61741a0b` gives overflow prefixes a private glyph slice whose playback vectors
+and ink bounds are built at retained publication. It preserves original glyph
+coordinates, including signed zero, and leaves the eager public slice unchanged.
+The authored test compares every slice, including empty ranges, against the
+independent eager constructor across directions, faces, negative advances and
+rounding-sensitive values; it also checks storage independence and collection.
+The test remains unrun under the user's prerequisite to reach Brave speed first.
+
+Build 20 compiled canonical master with the unchanged production native helpers
+and Boehm/O2 flags. Its actual generated-C audit reconstructs build 18 exactly
+after removing the new helper and restoring its single call site. Executable
+SHA256 is `e5c5c80901241fc07a94c8bf2a35bca9d7b58b7978f0a5b88cb795376cc50318`.
+The build guard exited zero in 170.377489 seconds with sampled peak RSS
+8,211,103,744 bytes under 12 GiB. The separate debugger diagnostic validated
+the executable image and observed 24 prefix slices in table intrinsic sizing;
+its exact capture and 101 comment identities passed. It supplies no timing credit.
+
+Two unprofiled ABBAABBA blocks retained 32 successful browser launches, exact
+3,145,728-pixel captures and all comment identities. Control/candidate medians
+were 6,458,824,540 / 6,421,776,801 and 6,459,189,503 / 6,433,491,129 instructions:
+ratios 0.9942640 and 0.9960214. The ranges overlap; no established instruction
+saving is credited. Candidate-paired Brave median lower bounds were
+1,852,731,008 and 1,855,920,973. Strict worst-Vox/best-Brave ratios were
+3.5695293 and 3.6279352, failing the requested 0.90. Both guards exited 1 solely
+for that acceptance failure, in 67.607216 / 70.812498 seconds with sampled peak
+RSS 147,226,624 / 148,193,280 bytes. Host loads and timestamps remain in every
+raw trial; concurrent host activity and the overlapping ranges limit attribution.
+
+Evidence remains in `Build/hn-master-20261028-20/`, including `build.json`,
+`source-audit.json`, `slice-eligibility`, `instructions`,
+`instructions-confirmation` and `evidence-review.json`. The full frozen page,
+JavaScript, private profiles, viewport, scale, settle period and encoded-capture
+endpoint remain unchanged. No source tree was copied and no regression suite
+was run. Brave speed and the 10% instruction advantage remain open.
