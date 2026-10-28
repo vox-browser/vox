@@ -304,30 +304,30 @@ fn (cache &RuleCache) has_candidate_rule_for_pseudo_element(abstract_element dom
 	element := abstract_element.element()
 	for original_class_name in element.classes {
 		class_name := cache.selector_name_bucket_key(original_class_name)
-		if class_name in cache.rules_by_class {
-			if rule_cache_bucket_has_pseudo_element(unsafe { cache.rules_by_class[class_name] }, pseudo_element) {
+		if bucket := cache.rules_by_class[class_name] {
+			if rule_cache_bucket_has_pseudo_element(bucket, pseudo_element) {
 				return true
 			}
 		}
 	}
 	if original_id := element.id() {
 		id := cache.selector_name_bucket_key(original_id)
-		if id in cache.rules_by_id {
-			if rule_cache_bucket_has_pseudo_element(unsafe { cache.rules_by_id[id] }, pseudo_element) {
+		if bucket := cache.rules_by_id[id] {
+			if rule_cache_bucket_has_pseudo_element(bucket, pseudo_element) {
 				return true
 			}
 		}
 	}
 	tag_name := element.lowercased_local_name()
-	if tag_name in cache.rules_by_tag_name {
-		if rule_cache_bucket_has_pseudo_element(unsafe { cache.rules_by_tag_name[tag_name] }, pseudo_element) {
+	if bucket := cache.rules_by_tag_name[tag_name] {
+		if rule_cache_bucket_has_pseudo_element(bucket, pseudo_element) {
 			return true
 		}
 	}
 	if pseudo := style_scope_pseudo_element_from_abstract_element(abstract_element) {
 		if is_known_pseudo_element_type(pseudo) {
-			if pseudo in cache.rules_by_pseudo_element {
-				if rule_cache_bucket_has_pseudo_element(unsafe { cache.rules_by_pseudo_element[pseudo] }, pseudo_element) {
+			if bucket := cache.rules_by_pseudo_element[pseudo] {
+				if rule_cache_bucket_has_pseudo_element(bucket, pseudo_element) {
 					return true
 				}
 			}
@@ -343,12 +343,14 @@ fn (cache &RuleCache) has_candidate_rule_for_pseudo_element(abstract_element dom
 		}
 	}
 
-	if attrs := element.attributes_ {
-		for attribute in attrs.attrs {
-			name := rule_cache_attribute_bucket_name(attribute.name())
-			if name in cache.rules_by_attribute_name {
-				if rule_cache_bucket_has_pseudo_element(unsafe { cache.rules_by_attribute_name[name] }, pseudo_element) {
-					return true
+	if cache.rules_by_attribute_name.len != 0 {
+		if attrs := element.attributes_ {
+			for attribute in attrs.attrs {
+				name := rule_cache_attribute_bucket_name(attribute.name())
+				if bucket := cache.rules_by_attribute_name[name] {
+					if rule_cache_bucket_has_pseudo_element(bucket, pseudo_element) {
+						return true
+					}
 				}
 			}
 		}

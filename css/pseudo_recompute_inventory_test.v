@@ -50,3 +50,35 @@ fn test_pseudo_recomputation_refreshes_previous_markers_and_enters_top_layer_bac
 	assert pseudo_recompute_has_style(element, .before)
 	assert pseudo_recompute_has_style(element, .after)
 }
+
+fn test_pseudo_admission_keeps_origin_ancestry_and_clears_removed_styles() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	defer { document.finalize() }
+	document.set_browsing_context(&dom.BrowsingContext{})
+	mut root := document.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or { panic(err) }
+	mut element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic(err) }
+	mut document_node := document.as_node()
+	document_node.append_child(root.as_node()) or { panic(err) }
+	mut root_node := root.as_node()
+	root_node.append_child(element.as_node()) or { panic(err) }
+	add_document_author_style_sheet(document, 'html .red::before{content:"before";color:red} html .blue::before{content:"before";color:blue} html .blue::after{content:"after";color:blue}')
+	mut computer := css_style_computer_for(document)
+	computer.push_ancestor(root)
+	defer { computer.pop_ancestor(root) }
+	ancestors := computer.ancestor_filter_.buckets.clone()
+	mut target := dom.AbstractElement.new(element, none)
+	mut changed := false
+	for class_name in ['red', 'missing', 'blue', 'missing'] {
+		element.set_attribute_value('class', class_name)
+		_, _ = computer.recompute_style_with_invalidation(mut target, &changed)
+		assert computer.ancestor_filter_.buckets == ancestors
+		assert pseudo_recompute_has_style(element, .before) == (class_name != 'missing')
+		assert pseudo_recompute_has_style(element, .after) == (class_name == 'blue')
+		if class_name == 'red' {
+			assert pseudo_recompute_color(element, .before) == 'rgb(255, 0, 0)'
+		} else if class_name == 'blue' {
+			assert pseudo_recompute_color(element, .before) == 'rgb(0, 0, 255)'
+			assert pseudo_recompute_color(element, .after) == 'rgb(0, 0, 255)'
+		}
+	}
+}

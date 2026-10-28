@@ -1055,19 +1055,21 @@ fn (s &StyleComputer) recompute_style_with_invalidation(mut abstract_element dom
 	for pseudo_element in pseudo_elements {
 		if (pseudo_element == .backdrop && !process_backdrop)
 			|| (pseudo_element == .marker && !process_marker) { continue }
-		mutable_computer.push_ancestor(abstract_element.element())
 		pseudo_abstract := dom.AbstractElement.new(abstract_element.element(), pseudo_element)
 		mut old_pseudo_style := ?&ComputedProperties(none)
 		if old_dom_pseudo_style := pseudo_abstract.computed_properties() {
 			old_pseudo_style = computed_properties_from_dom(old_dom_pseudo_style)
 		}
 		css_pseudo_element := style_scope_pseudo_element_from_abstract_element(pseudo_abstract) or {
-			mutable_computer.pop_ancestor(abstract_element.element())
 			continue
 		}
 		scope := css_style_scope_for(pseudo_abstract)
 		mut new_pseudo_style := ?&ComputedProperties(none)
-		if scope.has_candidate_rule_for_pseudo_element(pseudo_abstract, css_pseudo_element) {
+		has_candidate := scope.has_candidate_rule_for_pseudo_element(pseudo_abstract, css_pseudo_element)
+		if has_candidate {
+			// Bucket admission does not match selectors. Only a cascade needs
+			// the originating element in the ancestor filter for its pseudo.
+			mutable_computer.push_ancestor(abstract_element.element())
 			new_pseudo_style = s.compute_pseudo_element_style_if_needed_tracking_custom_property_changes(pseudo_abstract, did_change_custom_properties)
 		}
 		if pseudo_style := new_pseudo_style {
@@ -1083,7 +1085,9 @@ fn (s &StyleComputer) recompute_style_with_invalidation(mut abstract_element dom
 			}
 			pseudo_abstract.set_computed_properties(none)
 		}
-		mutable_computer.pop_ancestor(abstract_element.element())
+		if has_candidate {
+			mutable_computer.pop_ancestor(abstract_element.element())
+		}
 	}
 
 	if old_style != none && (element_style_changed || element_custom_properties_changed) {
