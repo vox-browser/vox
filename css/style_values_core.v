@@ -8540,7 +8540,9 @@ pub fn (mut style_value StyleValue) set_style_sheet(style_sheet ?&CSSStyleSheet)
 	}
 }
 
-pub fn (style_value StyleValue) type_() StyleValueType {
+// Read-only dispatch borrows the tagged value rather than copying its largest
+// variant into a temporary at each classification or color-conversion call.
+pub fn (style_value &StyleValue) type_() StyleValueType {
 	return match style_value {
 		AnchorSizeStyleValue { .anchor_size }
 		AnchorStyleValue { .anchor }
@@ -8622,39 +8624,39 @@ pub fn (style_value StyleValue) type_() StyleValueType {
 	}
 }
 
-pub fn (style_value StyleValue) is_keyword() bool {
+pub fn (style_value &StyleValue) is_keyword() bool {
 	return style_value.type_() == .keyword
 }
 
-pub fn (style_value StyleValue) is_integer() bool {
+pub fn (style_value &StyleValue) is_integer() bool {
 	return style_value.type_() == .integer
 }
 
-pub fn (style_value StyleValue) is_number() bool {
+pub fn (style_value &StyleValue) is_number() bool {
 	return style_value.type_() == .number
 }
 
-pub fn (style_value StyleValue) is_percentage() bool {
+pub fn (style_value &StyleValue) is_percentage() bool {
 	return style_value.type_() == .percentage
 }
 
-pub fn (style_value StyleValue) is_ratio() bool {
+pub fn (style_value &StyleValue) is_ratio() bool {
 	return style_value.type_() == .ratio
 }
 
-pub fn (style_value StyleValue) is_calculated() bool {
+pub fn (style_value &StyleValue) is_calculated() bool {
 	return style_value.type_() == .calculated
 }
 
-pub fn (style_value StyleValue) is_string() bool {
+pub fn (style_value &StyleValue) is_string() bool {
 	return style_value.type_() == .string
 }
 
-pub fn (style_value StyleValue) is_custom_ident() bool {
+pub fn (style_value &StyleValue) is_custom_ident() bool {
 	return style_value.type_() == .custom_ident
 }
 
-pub fn (style_value StyleValue) is_dimension() bool {
+pub fn (style_value &StyleValue) is_dimension() bool {
 	return match style_value {
 		AngleStyleValue, FlexStyleValue, FrequencyStyleValue, LengthStyleValue, PercentageStyleValue, ResolutionStyleValue, TimeStyleValue {
 			true
@@ -8744,7 +8746,7 @@ pub fn (style_value StyleValue) as_dimension() DimensionStyleValue {
 
 // https://www.w3.org/TR/css-values-4/#common-keywords
 // https://drafts.csswg.org/css-cascade-4/#valdef-all-revert
-pub fn (style_value StyleValue) is_css_wide_keyword() bool {
+pub fn (style_value &StyleValue) is_css_wide_keyword() bool {
 	return style_value.is_inherit() || style_value.is_initial() || style_value.is_revert() || style_value.is_unset() || style_value.is_revert_layer()
 }
 
@@ -8792,31 +8794,31 @@ pub fn (style_value StyleValue) is_computationally_independent() bool {
 	return true
 }
 
-pub fn (style_value StyleValue) is_inherit() bool {
+pub fn (style_value &StyleValue) is_inherit() bool {
 	return style_value.to_keyword() == .inherit
 }
 
-pub fn (style_value StyleValue) is_initial() bool {
+pub fn (style_value &StyleValue) is_initial() bool {
 	return style_value.to_keyword() == .initial
 }
 
-pub fn (style_value StyleValue) is_revert() bool {
+pub fn (style_value &StyleValue) is_revert() bool {
 	return style_value.to_keyword() == .revert
 }
 
-pub fn (style_value StyleValue) is_revert_layer() bool {
+pub fn (style_value &StyleValue) is_revert_layer() bool {
 	return style_value.to_keyword() == .revert_layer
 }
 
-pub fn (style_value StyleValue) is_unset() bool {
+pub fn (style_value &StyleValue) is_unset() bool {
 	return style_value.to_keyword() == .unset
 }
 
-pub fn (style_value StyleValue) has_auto() bool {
+pub fn (style_value &StyleValue) has_auto() bool {
 	return style_value.is_keyword() && style_value.as_keyword().keyword() == .auto
 }
 
-pub fn (style_value StyleValue) has_color() bool {
+pub fn (style_value &StyleValue) has_color() bool {
 	return match style_value {
 		KeywordStyleValue {
 			style_value.has_color()
@@ -8830,7 +8832,7 @@ pub fn (style_value StyleValue) has_color() bool {
 	}
 }
 
-pub fn (style_value StyleValue) is_abstract_image() bool {
+pub fn (style_value &StyleValue) is_abstract_image() bool {
 	return match style_value {
 		ImageStyleValue, ImageSetStyleValue, LinearGradientStyleValue, ConicGradientStyleValue, RadialGradientStyleValue {
 			true
@@ -8841,7 +8843,7 @@ pub fn (style_value StyleValue) is_abstract_image() bool {
 	}
 }
 
-pub fn (style_value StyleValue) is_color_function() bool {
+pub fn (style_value &StyleValue) is_color_function() bool {
 	return style_value is ColorFunctionStyleValue
 }
 
@@ -8896,7 +8898,7 @@ pub fn (style_value StyleValue) absolutized(context ComputationContext) StyleVal
 	}
 }
 
-pub fn (style_value StyleValue) to_color(color_resolution_context ColorResolutionContext) ?Color {
+pub fn (style_value &StyleValue) to_color(color_resolution_context ColorResolutionContext) ?Color {
 	return match style_value {
 		ColorFunctionStyleValue { style_value.to_color(color_resolution_context) }
 		ColorMixStyleValue { style_value.to_color(color_resolution_context) }
@@ -8914,7 +8916,7 @@ pub fn (style_value StyleValue) to_color(color_resolution_context ColorResolutio
 	}
 }
 
-pub fn (style_value StyleValue) to_keyword() Keyword {
+pub fn (style_value &StyleValue) to_keyword() Keyword {
 	if style_value is KeywordStyleValue {
 		return style_value.keyword()
 	}

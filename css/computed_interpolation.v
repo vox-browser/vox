@@ -2259,7 +2259,17 @@ pub fn (c &ComputedProperties) length_box(left_id PropertyID, top_id PropertyID,
 
 pub fn (c &ComputedProperties) color_or_fallback(property_id PropertyID, color_resolution_context ColorResolutionContext, fallback ComputedColor) ComputedColor {
 	value := c.property(property_id, .yes) or { return fallback }
+	// The DOM value owns this typed box throughout the synchronous conversion.
+	// Avoid copying the entire StyleValue union through an optional on this path.
+	if value.css_value_handle != unsafe { nil } {
+		typed := unsafe { &TypedStyleValueBox(value.css_value_handle) }
+		return computed_color_or_fallback(&typed.value, color_resolution_context, fallback)
+	}
 	parsed_value := style_value_logic_from_dom(property_id, value) or { return fallback }
+	return computed_color_or_fallback(&parsed_value, color_resolution_context, fallback)
+}
+
+fn computed_color_or_fallback(parsed_value &StyleValue, color_resolution_context ColorResolutionContext, fallback ComputedColor) ComputedColor {
 	if !parsed_value.has_color() {
 		return fallback
 	}

@@ -66,7 +66,7 @@ fn image_color_modulo(value f64, divisor f64) f64 {
 	return result
 }
 
-fn style_value_is_none_keyword(style_value StyleValue) bool {
+fn style_value_is_none_keyword(style_value &StyleValue) bool {
 	if style_value is CustomIdentStyleValue {
 		return to_ascii_lowercase(style_value.custom_ident()) == 'none'
 	}
@@ -146,7 +146,7 @@ fn resolve_with_reference_value(style_value StyleValue, one_hundred_percent_valu
 	return 0
 }
 
-fn resolve_alpha(style_value StyleValue, resolution_context CalculationResolutionContext) ?f64 {
+fn resolve_alpha(style_value &StyleValue, resolution_context CalculationResolutionContext) ?f64 {
 	// <number> | <percentage> | none
 	normalized := fn (number_ f64) f64 {
 		mut number := number_
@@ -309,7 +309,7 @@ pub fn (style_value RGBColorStyleValue) alpha() StyleValue {
 }
 
 pub fn (style_value RGBColorStyleValue) to_color(color_resolution_context ColorResolutionContext) ?Color {
-	resolve_rgb_to_u8 := fn (component StyleValue) ?u8 {
+	resolve_rgb_to_u8 := fn (component &StyleValue) ?u8 {
 		// <number> | <percentage> | none
 		normalized := fn (number_ f64) u8 {
 			mut number := number_
@@ -347,7 +347,7 @@ pub fn (style_value RGBColorStyleValue) to_color(color_resolution_context ColorR
 		return 0
 	}
 
-	resolve_alpha_to_u8 := fn (component StyleValue) ?u8 {
+	resolve_alpha_to_u8 := fn (component &StyleValue) ?u8 {
 		alpha_0_1 := resolve_alpha(component, CalculationResolutionContext{}) or { return none }
 		return image_color_round_to_u8(image_color_clamp(alpha_0_1 * 255.0, 0.0, 255.0))
 	}
