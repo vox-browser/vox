@@ -355,3 +355,46 @@ fn test_shared_recording_accepts_clipped_header_picture_at_both_scales() {
 		assert chromium_shared_recording_layer_supported(commands, plan, 1)
 	}
 }
+
+fn test_shared_recording_accepts_gradient_fills_and_strokes_with_safe_fallbacks() {
+	base := shared_recording_layer_commands(1)
+	for gradients in [
+		&layout.PaintSVGGradientData{ fill_linear_gradient: painting.SVGLinearGradientPaintStyle{} },
+		&layout.PaintSVGGradientData{ stroke_linear_gradient: painting.SVGLinearGradientPaintStyle{} },
+		&layout.PaintSVGGradientData{ fill_radial_gradient: painting.SVGRadialGradientPaintStyle{} },
+		&layout.PaintSVGGradientData{ stroke_radial_gradient: painting.SVGRadialGradientPaintStyle{} },
+	] {
+		data := &layout.PaintSVGPathData{ svg_gradient_data: gradients }
+		command := layout.PaintCommand{ kind: 'draw_svg_path', svg_data: data }
+		assert chromium_shared_recording_layer_supported([base[0], base[1], command, base[3]], shared_recording_layer_plan(4), 1)
+		assert chromium_shared_recording_supported([command], layout.ChromiumRasterLayerPlan{
+			layers: [layout.ChromiumRasterLayer{}]
+			command_layers: [0]
+		})
+		for unsupported in [
+			&layout.PaintSVGPathData{ ...data, non_scaling_stroke: true },
+			&layout.PaintSVGPathData{ ...data, stroke_dasharray: [f64(2), 3] },
+			&layout.PaintSVGPathData{ ...data, fill_pattern: &painting.SVGPatternPaintStyle{} },
+			&layout.PaintSVGPathData{ ...data, stroke_pattern: &painting.SVGPatternPaintStyle{} },
+		] {
+			assert !chromium_shared_recording_layer_supported([base[0], base[1], layout.PaintCommand{
+				...command
+				svg_data: unsupported
+			}, base[3]], shared_recording_layer_plan(4), 1)
+		}
+	}
+}
+
+fn test_shared_recording_accepts_painted_gradient_header_at_both_scales() {
+	mut document := html.parse_document(os.read_file('${@VMODROOT}/Tests/Browser/Brave/input/compositor-svg-gradients.html') or { panic(err) })
+	defer { document.finalize() }
+	document.set_font_rendering_policy(.chromium)
+	_ = layout.layout_document_typed_in_viewport(document, 1024, 768)
+	commands := layout.display_list_commands(document.record_display_list() or { panic('missing paint') })
+	assert commands.filter(it.kind == 'draw_svg_path' && it.svg_data != unsafe { nil } && it.svg_data.svg_gradient_data != none).len >= 4
+	for scale in [1.0, 2.0] {
+		plan := layout.chromium_raster_layer_plan(document, commands, scale)
+		assert plan.layers.len == 2
+		assert chromium_shared_recording_layer_supported(commands, plan, 1)
+	}
+}

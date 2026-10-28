@@ -107,7 +107,8 @@ fn chromium_shared_recording_leaf_supported(command &layout.PaintCommand) (bool,
 			// the command makes current V move that copy to the heap.
 			if command.svg_data != unsafe { nil } {
 				data := command.svg_data
-				if data.svg_gradient_data != none || data.fill_pattern != none
+				// The individual gradient bridge does not implement vector-effect.
+				if (data.svg_gradient_data != none && data.non_scaling_stroke) || data.fill_pattern != none
 					|| data.stroke_pattern != none || data.stroke_dasharray.len > 0 {
 					return false, false
 				}

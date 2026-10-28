@@ -1,0 +1,22 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Compositor SVG gradients</title>
+<style>
+html,body{margin:0;background:#f1f2f4}
+header{transform:translate3d(0,0,0);height:264px;background:#fff;box-shadow:0 2px 12px #292a2e24}
+svg{display:block;width:640px;height:240px;margin-left:24px}
+</style>
+<header><svg viewBox="0 0 640 240" xmlns="http://www.w3.org/2000/svg">
+<defs>
+ <linearGradient id="linear"><stop stop-color="#8aad50"/><stop offset=".45" stop-color="#dff5b8"/><stop offset="1" stop-color="#6bad43"/></linearGradient>
+ <radialGradient id="radial" cx=".4" cy=".35" r=".7"><stop stop-color="#fff"/><stop offset="1" stop-color="#5c963a"/></radialGradient>
+ <linearGradient id="alpha" gradientTransform="rotate(20 .5 .5)"><stop stop-color="#f58d36" stop-opacity=".4"/><stop offset="1" stop-color="#5280e8" stop-opacity=".8"/></linearGradient>
+</defs>
+<path d="M10 18H146V106H10Z" fill="url(#linear)"/>
+<path d="M174 18H310V106H174Z" fill="url(#radial)"/>
+<path d="M338 24H466V100H338Z" fill="none" stroke="url(#linear)" stroke-width="12" stroke-linejoin="round"/>
+<path d="M502 24H630V100H502Z" fill="none" stroke="url(#radial)" stroke-width="12"/>
+<g transform="translate(0 120)"><path d="M10 18H146V106H10Z" fill="url(#alpha)"/><path d="M174 18H310V106H174Z" fill="url(#linear)" fill-opacity=".5"/>
+<path d="M338 18H474V106H338Z" fill="url(#linear)" color-interpolation="linearRGB"/>
+<path d="M502 18H630V106H502Z" fill="url(#radial)" fill-opacity=".6"/></g>
+</svg></header>
