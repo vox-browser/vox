@@ -865,9 +865,9 @@ fn (mut host MediaElementHost) start_date(receiver voidptr) !voidptr {
 	if !math.is_nan(value) && math.abs(value) > 8_640_000_000_000_000.0 {
 		return error('Source media Date value cannot be installed exactly by JavaScriptCore')
 	}
-	arguments := [C.JSValueMakeNumber(host.runtime.context, value)]
+	call_arguments := [C.JSValueMakeNumber(host.runtime.context, value)]
 	mut exception := unsafe { nil }
-	date := C.JSObjectMakeDate(host.runtime.context, 1, arguments.data, &exception)
+	date := C.JSObjectMakeDate(host.runtime.context, 1, call_arguments.data, &exception)
 	if exception != unsafe { nil } { return host.runtime.actual_javascript_exception(exception) }
 	return date
 }

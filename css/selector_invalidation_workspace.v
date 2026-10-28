@@ -19,7 +19,7 @@ fn build_owned_selector_invalidation(mut destination StyleInvalidationData, sele
 		make_invalidate_self_invalidation()
 	}
 	_ = build_invalidation_sets_for_selector_impl(mut temporary, selector, .no, root)
-	mut copy := InvalidationGraphCopy{}
+	mut working_copy := InvalidationGraphCopy{}
 	mut publications := []InvalidationPublication{}
 	for key, plan in temporary.invalidation_plans {
 		if existing := destination.invalidation_plans[key] {
@@ -33,7 +33,7 @@ fn build_owned_selector_invalidation(mut destination StyleInvalidationData, sele
 		} else {
 			publications << InvalidationPublication{key, plan}
 		}
-		copy.prepare(plan)
+		working_copy.prepare(plan)
 	}
 	// V clones string map keys during iteration. Enumerate while the
 	// workspace is entered, including keys which need no publication.
@@ -49,11 +49,11 @@ fn build_owned_selector_invalidation(mut destination StyleInvalidationData, sele
 			if existing.invalidate_whole_subtree || plan.invalidate_whole_subtree {
 				existing.include_all_from(plan)
 			} else {
-				existing.include_all_from(copy.plan(plan))
+				existing.include_all_from(working_copy.plan(plan))
 			}
 		} else {
 			owned_key := key.clone()
-			destination.invalidation_plans[owned_key] = copy.plan(plan)
+			destination.invalidation_plans[owned_key] = working_copy.plan(plan)
 			destination.invalidation_plan_properties[owned_key] = own_invalidation_property(temporary.invalidation_plan_properties[key])
 		}
 	}

@@ -40,7 +40,7 @@ fn symbol_constructor_call(mut vm VM) !Value {
 	return Value.from_symbol(Symbol.create(text.utf16, .unique))
 }
 
-fn symbol_constructor_construct(mut vm VM, new_target &Object) !&Object {
+fn symbol_constructor_construct(mut vm VM, _ &Object) !&Object {
 	return vm.throw_error_type(.type_error, .not_a_constructor, 'Symbol')
 }
 

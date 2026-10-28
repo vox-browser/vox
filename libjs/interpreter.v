@@ -47,21 +47,21 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 			result = left
 		}
 		.call, .construct {
-			mut arguments := []Value{cap: instruction.arguments.len}
+			mut call_arguments := []Value{cap: instruction.arguments.len}
 			for operand in instruction.arguments {
 				argument := frame.values[operand.slot(executable, frame.argument_count, false)!]
 				if argument.is_special_empty_value() {
 					return vm.throw_error(.internal_error,
 						'Bytecode read an uninitialized argument')
 				}
-				arguments << argument
+				call_arguments << argument
 			}
 			if instruction.op == .construct {
 				// Interpreter/SlowPaths.cpp::execute_asm_call, Construct branch.
-				object := construct(mut vm, left, arguments, none)!
+				object := construct(mut vm, left, call_arguments, none)!
 				result = Value.from_object(object)
 			} else {
-				result = call(mut vm, left, right, arguments)!
+				result = call(mut vm, left, right, call_arguments)!
 			}
 		}
 		.get_property {

@@ -3318,7 +3318,7 @@ pub struct LengthPercentageOrAuto {
 pub mut:
 	// An implicit absent option still constructs the default sum-type payload
 	// in the compatibility compiler. Auto needs no allocated Length value.
-	length_percentage_ ?LengthPercentage = none
+	length_percentage_ ?LengthPercentage = ?LengthPercentage(none)
 }
 
 pub fn LengthPercentageOrAuto.from_length_percentage(length_percentage LengthPercentage) LengthPercentageOrAuto {
@@ -3753,7 +3753,7 @@ pub struct Size {
 pub mut:
 	type_              SizeType
 	// Keyword sizes retain no unused length/percentage owner.
-	length_percentage_ ?LengthPercentage = none
+	length_percentage_ ?LengthPercentage = ?LengthPercentage(none)
 }
 
 pub fn Size.new(type_ SizeType, length_percentage ?LengthPercentage) Size {

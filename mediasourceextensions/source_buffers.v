@@ -386,7 +386,7 @@ fn (mut buffer SourceBuffer) run_append_error_algorithm() {
 	media_source := buffer.media_source_ or { return }
 	buffer.queue_buffer_event(media_source, 'error')
 	buffer.queue_buffer_event(media_source, 'updateend')
-	mut mutable_media_source := media_source
+	mut mutable_media_source := unsafe { media_source }
 	mutable_media_source.run_end_of_stream_algorithm(.decode)
 }
 

@@ -17,6 +17,7 @@ fn C.JSValueToNumber(context voidptr, value voidptr, exception &voidptr) f64
 pub struct EventWrapperProvider {
 pub:
 	owner  voidptr
+	@[required]
 	create fn (&dom.Event) !voidptr
 }
 
@@ -25,6 +26,7 @@ pub:
 pub struct EventTargetWrapperProvider {
 pub:
 	owner  voidptr
+	@[required]
 	create fn (&dom.EventTarget) !voidptr
 }
 
@@ -423,7 +425,7 @@ fn (mut runtime Runtime) event_callback_with_settings(value voidptr, handler boo
 }
 
 fn (mut runtime Runtime) invoke_event_callback(value voidptr, handler bool, event &dom.Event, current_target ?&dom.EventTarget) !dom.JSValue {
-	mut function := value
+	mut function := unsafe { value }
 	mut receiver := C.JSValueMakeUndefined(runtime.context)
 	if C.JSObjectIsFunction(runtime.context, value) {
 		if target := current_target { receiver = runtime.javascript_event_target(target, none)! }
@@ -435,10 +437,10 @@ fn (mut runtime Runtime) invoke_event_callback(value voidptr, handler bool, even
 		}
 		receiver = value
 	}
-	mut arguments := []voidptr{}
+	mut call_arguments := []voidptr{}
 	if handler && dom.event_uses_special_error_event_handling(event) {
 		error_event := unsafe { &dom.ErrorEvent(event) }
-		arguments = [
+		call_arguments = [
 			runtime.binding_string(error_event.message()),
 			runtime.binding_string(error_event.filename()),
 			C.JSValueMakeNumber(runtime.context, error_event.lineno()),
@@ -446,9 +448,9 @@ fn (mut runtime Runtime) invoke_event_callback(value voidptr, handler bool, even
 			runtime.event_callback_argument(error_event.error())!,
 		]
 	} else {
-		arguments = [runtime.javascript_event(event)!]
+		call_arguments = [runtime.javascript_event(event)!]
 	}
-	result := runtime.call_javascript_function(function, receiver, arguments)!
+	result := runtime.call_javascript_function(function, receiver, call_arguments)!
 	return runtime.event_callback_result(result)
 }
 

@@ -272,7 +272,7 @@ fn (s &StyleComputer) computed_longhand_reuse_key(element dom.AbstractElement,
 		mut value_hash := u64(0)
 		if value != unsafe { nil } {
 			if value.css_value_handle == unsafe { nil } { return none }
-			value_hash = computed_longhand_reuse_value_hash(value) or { u64(usize(value.css_value_handle)) }
+			value_hash = computed_longhand_reuse_value_hash(value) or { u64(voidptr(value.css_value_handle)) }
 		}
 		hash = (hash ^ value_hash) * u64(0x100000001b3)
 	}
@@ -287,7 +287,7 @@ fn (s &StyleComputer) computed_longhand_reuse_key(element dom.AbstractElement,
 		hash ^= ((value_hash ^ (u64(id) * u64(0x9e3779b97f4a7c15))) * u64(0x100000001b3))
 	}
 	for page in computed_initial_property_store.pages {
-		hash = (hash ^ u64(usize(page))) * u64(0x100000001b3)
+		hash = (hash ^ u64(voidptr(page))) * u64(0x100000001b3)
 	}
 	return ComputedLonghandReuseKey{
 		parent:               parent

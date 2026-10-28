@@ -1,6 +1,6 @@
 module browserjs
 
-import dom
+import dom as _
 
 $if !darwin && !linux {
 	pub fn (mut runtime Runtime) install_script_element_event_binding() ! {

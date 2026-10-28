@@ -13,7 +13,7 @@ import html
 fn scroll_into_view_snapport(node &dom.Node, scrollport dom.Rect) dom.Rect {
 	layout_node := node.layout_node() or { return scrollport }
 	if !layout_node.has_geometry_ { return scrollport }
-	mut source := layout_node
+	mut source := unsafe { layout_node }
 	if node.is_document() {
 		element := node.document().document_element() or { return scrollport }
 		source = element.as_node().layout_node() or { return scrollport }

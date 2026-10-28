@@ -38,9 +38,9 @@ fn (mut runtime Runtime) install_file_system_entry_binding() ! {
 	mut binding := runtime.event_binding()!.file_system_entry_binding
 	if binding.constructor != unsafe { nil } { return }
 	owner := voidptr(&runtime)
-	mut arguments := [C.JSContextGetGlobalObject(runtime.context)]
+	mut call_arguments := [C.JSContextGetGlobalObject(runtime.context)]
 	for property in ['isFile', 'isDirectory', 'name'] {
-		arguments << runtime.make_native_value_host_function('get ' + property, 0,
+		call_arguments << runtime.make_native_value_host_function('get ' + property, 0,
 			fn [owner, property] (receiver voidptr, _ []voidptr) !voidptr {
 				mut runtime := unsafe { &Runtime(owner) }
 				entry := runtime.native_file_system_entry(receiver)!
@@ -52,7 +52,7 @@ fn (mut runtime Runtime) install_file_system_entry_binding() ! {
 			})!
 	}
 	binding.constructor = runtime.retain_javascript_value(runtime.call_javascript_function(
-		binding.install, C.JSValueMakeUndefined(runtime.context), arguments)!)!
+		binding.install, C.JSValueMakeUndefined(runtime.context), call_arguments)!)!
 }
 
 pub fn (mut runtime Runtime) javascript_file_system_entry(entry &entriesapi.FileSystemEntry) !voidptr {

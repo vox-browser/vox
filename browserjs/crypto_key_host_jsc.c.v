@@ -77,14 +77,14 @@ fn (mut host CryptoHost) crypto_object(value webidl.Value) !voidptr {
 	mut runtime := unsafe { &Runtime(host.runtime) }
 	mut object := unsafe { nil }
 	if value.kind == .sequence {
-		mut arguments := []voidptr{cap: value.sequence_value.len}
-		defer { for argument in arguments { runtime.release_javascript_value(argument) }
+		mut call_arguments := []voidptr{cap: value.sequence_value.len}
+		defer { for argument in call_arguments { runtime.release_javascript_value(argument) }
 		 }
 		for item in value.sequence_value {
-			arguments << runtime.retain_javascript_value(host.crypto_value(item)!)!
+			call_arguments << runtime.retain_javascript_value(host.crypto_value(item)!)!
 		}
 		mut exception := unsafe { nil }
-		object = C.JSObjectMakeArray(runtime.context, uint(arguments.len), arguments.data, &exception)
+		object = C.JSObjectMakeArray(runtime.context, uint(call_arguments.len), call_arguments.data, &exception)
 		if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	} else {
 		object = C.JSObjectMake(runtime.context, unsafe { nil }, unsafe { nil })

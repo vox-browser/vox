@@ -349,7 +349,7 @@ pub fn (image &DecodedImageData) record_display_list() []string {
 
 pub fn (mut image DecodedImageData) prune_cached_display_list_resources() {
 	if client := image.page_client_ {
-		mut mutable_client := client
+		mut mutable_client := unsafe { client }
 		mutable_client.prune_cached_display_list_resources()
 	}
 }
@@ -391,7 +391,7 @@ pub fn (mut image DecodedImageData) record_display_list_at_scale(css_size Viewpo
 		image.cached_rendered_surfaces_.clear()
 	}
 	if client := image.page_client_ {
-		mut mutable_client := client
+		mut mutable_client := unsafe { client }
 		mutable_client.begin_recording_display_list()
 	}
 	image.begin_recording_display_list()
@@ -402,7 +402,7 @@ pub fn (mut image DecodedImageData) record_display_list_at_scale(css_size Viewpo
 	}
 	image.end_recording_display_list()
 	if client := image.page_client_ {
-		mut mutable_client := client
+		mut mutable_client := unsafe { client }
 		mutable_client.end_recording_display_list()
 	}
 	image.prune_cached_display_list_resources()
@@ -608,12 +608,12 @@ pub fn (mut client SVGPageClient) request_frame() {
 		return
 	}
 	if current := client.current_svg_image_data_ {
-		mut image := current
+		mut image := unsafe { current }
 		image.did_request_frame()
 		return
 	}
 	for registered in client.registered_svg_image_data_ {
-		mut image := registered
+		mut image := unsafe { registered }
 		image.did_request_frame()
 	}
 }

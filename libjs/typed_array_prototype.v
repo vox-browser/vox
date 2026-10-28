@@ -6,7 +6,9 @@ module libjs
 pub struct TypedArrayPrototypeDependencies {
 pub:
 	primitives         PrimitiveObjectPrototypes
+	@[required]
 	constructor_getter TypedArrayIntrinsicConstructorGetter
+	@[required]
 	prototype_getter   TypedArrayIntrinsicPrototypeGetter
 	iterator_prototype &Object
 	array_prototype    &Object

@@ -4746,11 +4746,11 @@ fn substitute_arbitrary_substitution_functions_step_2(element ?dom.AbstractEleme
 					continue
 				}
 
-				arguments := parse_according_to_argument_grammar(maybe_function_id, early_result) or {
+				call_arguments := parse_according_to_argument_grammar(maybe_function_id, early_result) or {
 					dest << ComponentValue.from_guaranteed_invalid(GuaranteedInvalidValue{})
 					continue
 				}
-				result := replace_an_arbitrary_substitution_function(element, mut guarded_contexts, maybe_function_id, arguments)
+				result := replace_an_arbitrary_substitution_function(element, mut guarded_contexts, maybe_function_id, call_arguments)
 
 				if contains_guaranteed_invalid_value(result) {
 					dest << ComponentValue.from_guaranteed_invalid(GuaranteedInvalidValue{})

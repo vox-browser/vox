@@ -143,7 +143,7 @@ pub fn (mut vm RegexVm) restore_registers(reg_snapshot_offset uint) {
 		panic('Regex register snapshot index out of bounds')
 	}
 	start := int(reg_snapshot_offset)
-	snapshot := vm.scratch.register_pool[start..start + reg_count]
+	snapshot := vm.scratch.register_pool[start..start + reg_count].clone()
 	for index, value in snapshot {
 		vm.scratch.registers[index] = value
 	}

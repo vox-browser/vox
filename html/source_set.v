@@ -240,37 +240,37 @@ pub fn parse_a_srcset_attribute(input string) SourceSet {
 			}
 		}
 
-		mut error := false
+		mut operation_error := false
 		mut width := ?i32(none)
 		mut density := ?f64(none)
 		mut future_compat_h := ?i32(none)
 		for descriptor in descriptors {
 			valid, parsed_width, parsed_density, parsed_h := parse_srcset_descriptor(descriptor)
 			if !valid {
-				error = true
+				operation_error = true
 				continue
 			}
 			if value := parsed_width {
 				if width != none || density != none {
-					error = true
+					operation_error = true
 				}
 				width = value
 			} else if value := parsed_density {
 				if width != none || density != none || future_compat_h != none {
-					error = true
+					operation_error = true
 				}
 				density = value
 			} else if value := parsed_h {
 				if future_compat_h != none || density != none {
-					error = true
+					operation_error = true
 				}
 				future_compat_h = value
 			}
 		}
 		if future_compat_h != none && width == none {
-			error = true
+			operation_error = true
 		}
-		if !error {
+		if !operation_error {
 			mut source := ImageSource{
 				url: url
 			}

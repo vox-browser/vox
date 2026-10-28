@@ -31,8 +31,8 @@ fn (mut projection NativeCloneProjection) project_array_buffer(value voidptr, mu
 	// JSC permanently pins buffers whose backing pointers cross the C API.
 	// Borrow only an internal copy so serialization leaves the author's buffer
 	// detachable, including when it is transferred later in this same send.
-	copy := projection.root(bridge.engine('copy_buffer', [value])!)!
-	pointer := C.JSObjectGetTypedArrayBytesPtr(owner.context, copy, &exception)
+	working_copy := projection.root(bridge.engine('copy_buffer', [value])!)!
+	pointer := C.JSObjectGetTypedArrayBytesPtr(owner.context, working_copy, &exception)
 	if exception != unsafe { nil } { return owner.actual_javascript_exception(exception) }
 	if length != 0 && pointer == unsafe { nil } { return native_clone_unsupported('Native ArrayBuffer has no backing data') }
 	object.bytes = if length == 0 { []u8{} } else { unsafe { (&u8(pointer)).vbytes(int(length)).clone() } }

@@ -229,10 +229,10 @@ fn (mut parser Parser) parse_calc_function_node(function Function, allow_tree_co
 	if !calc_function_is_supported(name) {
 		return none
 	}
-	arguments := parser.parse_calc_arguments(function.value, allow_tree_counting_functions) or {
+	call_arguments := parser.parse_calc_arguments(function.value, allow_tree_counting_functions) or {
 		return none
 	}
-	return build_calc_function(name, arguments, '')
+	return build_calc_function(name, call_arguments, '')
 }
 
 fn calc_rounding_strategy_from_string(ident string) ?string {
@@ -269,14 +269,14 @@ fn (mut parser Parser) parse_round_function(values []ComponentValue, allow_tree_
 	if numeric_lists.len != 2 {
 		return none
 	}
-	mut arguments := []CalcNode{}
+	mut call_arguments := []CalcNode{}
 	for argument in numeric_lists {
 		mut stream := ComponentValueStream.new(argument)
-		arguments << (parser.parse_a_calculation(mut stream, allow_tree_counting_functions) or {
+		call_arguments << (parser.parse_a_calculation(mut stream, allow_tree_counting_functions) or {
 			return none
 		})
 	}
-	return build_calc_function('round', arguments, strategy)
+	return build_calc_function('round', call_arguments, strategy)
 }
 
 // https://drafts.csswg.org/css-values-5/#typedef-random-value-sharing

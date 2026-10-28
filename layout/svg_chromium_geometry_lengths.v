@@ -1,7 +1,6 @@
 module layout
 
 import css
-import dom
 
 // Blink resolves SVG geometry in floating user units. CSS box dimensions
 // still use layout precision, but rounding a small ellipse radius to 1/64px

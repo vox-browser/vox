@@ -39,7 +39,7 @@ pub fn TypedArrayConstructor.create(mut vm VM, realm &Realm, typed_array_prototy
 	object.set_function_length(0)
 	// Intrinsics.cpp::initialize_constructor follows the subclass initializer.
 	object.set_function_name(mut vm, PropertyName.from_str('TypedArray'), none)
-	mut prototype := typed_array_prototype
+	mut prototype := unsafe { typed_array_prototype }
 	prototype.define_direct_property(PropertyName.from_str('constructor'),
 		Value.from_object(object), attributes)
 	return &TypedArrayConstructor{
@@ -58,7 +58,7 @@ fn typed_array_constructor_call(mut vm VM) !Value {
 	}
 }
 
-fn typed_array_constructor_construct(mut vm VM, new_target &Object) !&Object {
+fn typed_array_constructor_construct(mut vm VM, _ &Object) !&Object {
 	return vm.throw_error_type(.type_error, .class_is_abstract, 'TypedArray')
 }
 

@@ -720,7 +720,7 @@ pub fn html_label_element_set_being_activated(label &dom.HTMLLabelElement, activ
 	mut label_element := unsafe { &dom.Element(label) }
 	label_element.set_being_activated(activated)
 	if control := html_label_element_control(label) {
-		mut mutable_control := control
+		mut mutable_control := unsafe { control }
 		mutable_control.set_being_activated(activated)
 	}
 }

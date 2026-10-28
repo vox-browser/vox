@@ -1276,7 +1276,7 @@ fn place_grid_items(container &Node, column_lines [][]css.GridLineName, row_line
 	}
 }
 
-fn collect_grid_track_sizing_placements(mut state LayoutState, container &Node, placements []GridItemPlacement, column_lines [][]css.GridLineName, row_lines [][]css.GridLineName, columns bool, parent_gap CSSPixels, axis_offset int, mut result []GridItemPlacement) {
+fn collect_grid_track_sizing_placements(mut state LayoutState, _ &Node, placements []GridItemPlacement, column_lines [][]css.GridLineName, row_lines [][]css.GridLineName, columns bool, parent_gap CSSPixels, axis_offset int, mut result []GridItemPlacement) {
 	for placement in placements {
 		item := placement.item
 		template := if columns {

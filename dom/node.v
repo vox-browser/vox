@@ -1003,7 +1003,7 @@ pub fn (n &Node) next_sibling() ?&Node {
 
 pub fn (n &Node) root() &Node {
 	// Follow the live parent links without recursive frames or temporary options.
-	mut current := n
+	mut current := unsafe { n }
 	for current.parent_ != unsafe { nil } {
 		current = current.parent_
 	}
@@ -1835,7 +1835,7 @@ fn (node &Node) observing_style_scopes() ObservingStyleScopes {
 	// Resolve it again only when leaving a shadow root for its host. Adoption
 	// hooks retain the per-node lookup while document ownership is in transition.
 	mut reuse_ancestor_scope := document != unsafe { nil } && document.style_scope_adoption_depth_ == 0
-	mut previous := node
+	mut previous := unsafe { node }
 	for ancestor := node.parent_or_shadow_host(); ancestor != none;  {
 		current := ancestor or { break }
 		if voidptr(current.document()) != voidptr(document) {
@@ -2749,21 +2749,21 @@ pub fn (n &Node) clone_node_with_registry(document ?&Document, subtree bool, par
 	// To clone a node given a node node and an optional document document (default node's node document),
 	// boolean subtree (default false), and node-or-null parent (default null):
 	doc := document or { n.document() }
-	copy := n.clone_single_node_with_registry(doc, fallback_registry)!
-	n.cloned(copy, subtree)!
+	working_copy := n.clone_single_node_with_registry(doc, fallback_registry)!
+	n.cloned(working_copy, subtree)!
 	if parent_node := parent {
 		mut mutable_parent := unsafe { &Node(parent_node) }
-		mutable_parent.append_child(copy)!
+		mutable_parent.append_child(working_copy)!
 	}
 	if subtree {
 		for child in n.children {
-			child.clone_node_with_registry(doc, subtree, copy, fallback_registry)!
+			child.clone_node_with_registry(doc, subtree, working_copy, fallback_registry)!
 		}
 	}
 	if element := n.as_element() {
 		if shadow_root := element.shadow_root() {
 			if shadow_root.clonable() {
-				mut copy_element := copy.as_element() or {
+				mut copy_element := working_copy.as_element() or {
 					return error('InvalidStateError: Element clone did not produce an element')
 				}
 				mut shadow_root_registry := shadow_root.custom_element_registry()
@@ -2783,7 +2783,7 @@ pub fn (n &Node) clone_node_with_registry(document ?&Document, subtree bool, par
 			}
 		}
 	}
-	return copy
+	return working_copy
 }
 
 // https://dom.spec.whatwg.org/#move
@@ -2912,7 +2912,7 @@ pub fn (n &Node) clone_single_node(document &Document) !&Node {
 
 pub fn (n &Node) clone_single_node_with_registry(document &Document, fallback_registry voidptr) !&Node {
 	// To clone a single node given a node node and document document:
-	mut copy := unsafe { &Node(nil) }
+	mut working_copy := unsafe { &Node(nil) }
 	if element := n.as_element() {
 		mut registry := element.custom_element_registry()
 		if registry == unsafe { nil } {
@@ -2934,7 +2934,7 @@ pub fn (n &Node) clone_single_node_with_registry(document &Document, fallback_re
 				})
 			}
 		}
-		copy = element_copy.as_node()
+		working_copy = element_copy.as_node()
 	} else if n.is_document() {
 		source_document := unsafe { &Document(n) }
 		mut document_copy := Document.create(source_document.url)
@@ -2948,43 +2948,43 @@ pub fn (n &Node) clone_single_node_with_registry(document &Document, fallback_re
 		if custom_element_registry_is_scoped(source_document.custom_element_registry()) {
 			document_copy.set_custom_element_registry(source_document.custom_element_registry())
 		}
-		copy = unsafe { &Node(document_copy) }
+		working_copy = unsafe { &Node(document_copy) }
 	} else if document_type := n.as_document_type() {
 		mut document_type_copy := DocumentType.new(document)
 		document_type_copy.set_name(document_type.name())
 		document_type_copy.set_public_id(document_type.public_id())
 		document_type_copy.set_system_id(document_type.system_id())
-		copy = document_type_copy.as_node()
+		working_copy = document_type_copy.as_node()
 	} else if attr := n.as_attr() {
-		copy = attr.clone(document).as_node()
+		working_copy = attr.clone(document).as_node()
 	} else if n.is_text() {
 		data := n.character_data() or {
 			return error('InvalidStateError: Text node missing character data')
 		}
 		if n.is_cdata_section() {
-			copy = CDATASection.new(document, data.data_).as_node()
+			working_copy = CDATASection.new(document, data.data_).as_node()
 		} else {
-			copy = Text.new(document, data.data_).as_node()
+			working_copy = Text.new(document, data.data_).as_node()
 		}
 	} else if n.is_comment() {
 		data := n.character_data() or {
 			return error('InvalidStateError: Comment node missing character data')
 		}
-		copy = Comment.new(document, data.data_).as_node()
+		working_copy = Comment.new(document, data.data_).as_node()
 	} else if processing_instruction := n.as_processing_instruction() {
-		copy = ProcessingInstruction.new(document, processing_instruction.data(), processing_instruction.target()).as_node()
+		working_copy = ProcessingInstruction.new(document, processing_instruction.data(), processing_instruction.target()).as_node()
 	} else if n.is_document_fragment() {
-		copy = DocumentFragment.new(document).as_node()
+		working_copy = DocumentFragment.new(document).as_node()
 	} else {
 		return error('NotSupportedError: Missing code for cloning this node type')
 	}
 	mut document_to_use := unsafe { &Document(document) }
 	if n.is_document() {
-		document_to_use = unsafe { &Document(copy) }
+		document_to_use = unsafe { &Document(working_copy) }
 	}
-	mut mutable_copy := unsafe { &Node(copy) }
+	mut mutable_copy := unsafe { &Node(working_copy) }
 	mutable_copy.set_document(document_to_use)
-	return copy
+	return working_copy
 }
 
 // https://dom.spec.whatwg.org/#dom-node-clonenode

@@ -1274,7 +1274,7 @@ fn collect_pending_has_invalidation_properties_into(mut features PendingHasInval
 fn (mut scope StyleScope) record_pending_has_invalidation_features(node &dom.Node, features &PendingHasInvalidationMutationFeatures) {
 	node_id := node.unique_id().value()
 	if existing := scope.pending_has_invalidation_features[node_id] {
-		mut stored := existing
+		mut stored := unsafe { existing }
 		merge_pending_has_invalidation_mutation_features(mut stored, features)
 		scope.pending_has_invalidation_features[node_id] = stored
 		return

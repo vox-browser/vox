@@ -29,7 +29,7 @@ pub fn BigIntConstructor.create(mut vm VM, realm &Realm, bigint_prototype &Objec
 	object.set_function_length(1)
 	// Runtime/Intrinsics.cpp::initialize_constructor follows the class initializer.
 	object.set_function_name(mut vm, PropertyName.from_str('BigInt'), none)
-	mut prototype := bigint_prototype
+	mut prototype := unsafe { bigint_prototype }
 	prototype.define_direct_property(PropertyName.from_str('constructor'),
 		Value.from_object(object), attribute_writable | attribute_configurable)
 	return &BigIntConstructor{
@@ -47,6 +47,6 @@ pub fn bigint_constructor_call(mut vm VM) !Value {
 	return Value.from_bigint(primitive.to_bigint(mut vm)!)
 }
 
-fn bigint_constructor_construct(mut vm VM, new_target &Object) !&Object {
+fn bigint_constructor_construct(mut vm VM, _ &Object) !&Object {
 	return vm.throw_error_type(.type_error, .not_a_constructor, 'BigInt')
 }

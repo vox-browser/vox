@@ -520,7 +520,7 @@ pub fn (model &NavigableModel) is_traversable() bool {
 }
 
 pub fn (model &NavigableModel) traversable_navigable() &NavigableModel {
-	mut current := model
+	mut current := unsafe { model }
 	for {
 		current = current.parent_ or { return current }
 	}
@@ -1812,7 +1812,7 @@ pub fn (model &NavigableModel) to_top_level_rect(input css.CSSPixelRect) css.CSS
 pub fn (model &NavigableModel) to_top_level_position(input css.CSSPixelPoint) css.CSSPixelPoint {
 	mut x := input.x().to_double()
 	mut y := input.y().to_double()
-	mut current := model
+	mut current := unsafe { model }
 	for !current.is_top_level_traversable() {
 		container := current.container() or { return css.CSSPixelPoint.from_values(0, 0) }
 		rect := container.get_bounding_client_rect()
@@ -2152,7 +2152,7 @@ pub fn (mut model NavigableModel) reset_zoom() {
 }
 
 pub fn (model &NavigableModel) has_inclusive_ancestor_with_visibility_hidden() bool {
-	mut current := model
+	mut current := unsafe { model }
 	for {
 		if container := current.container() {
 			if computed := container.el_computed_properties() {

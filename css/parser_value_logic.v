@@ -451,19 +451,19 @@ fn (mut stream ComponentValueStream) consume_a_comma() bool {
 }
 
 fn (stream ComponentValueStream) has_more_tokens() bool {
-	mut copy := stream
-	copy.consume_whitespace()
-	return !copy.is_empty()
+	mut working_copy := stream
+	working_copy.consume_whitespace()
+	return !working_copy.is_empty()
 }
 
 fn (stream ComponentValueStream) has_one_token() bool {
-	mut copy := stream
-	copy.consume_whitespace()
-	if copy.consume() == none {
+	mut working_copy := stream
+	working_copy.consume_whitespace()
+	if working_copy.consume() == none {
 		return false
 	}
-	copy.consume_whitespace()
-	return copy.is_empty()
+	working_copy.consume_whitespace()
+	return working_copy.is_empty()
 }
 
 fn parse_component_values_for_value_logic(text string) []ComponentValue {
@@ -876,7 +876,7 @@ fn (mut parser Parser) parse_css_value_tokens(property_id PropertyID, mut tokens
 	// Properties containing syntactically valid var()/attr()/env()/if()/inherit()
 	// are resolved after the custom-property cascade. Invalid argument grammars
 	// are rejected now rather than becoming guaranteed-invalid at computed time.
-	remaining := tokens.values[tokens.index..]
+	remaining := tokens.values[tokens.index..].clone()
 	mut substitution_presence := SubstitutionFunctionsPresence{}
 	for token in remaining {
 		if token.is(.semicolon) {
@@ -3106,28 +3106,28 @@ fn (mut parser Parser) parse_counter_value(mut tokens ComponentValueStream) ?Sty
 		return none
 	}
 	function_name := to_ascii_lowercase(component_value.function().name)
-	arguments := parse_a_comma_separated_list_of_component_values_for_value_logic(component_value.function().value)
+	call_arguments := parse_a_comma_separated_list_of_component_values_for_value_logic(component_value.function().value)
 	default_counter_style := CounterStyleStyleValue.create_named('decimal')
 
 	if function_name == 'counter' {
-		if arguments.len < 1 || arguments.len > 2 {
+		if call_arguments.len < 1 || call_arguments.len > 2 {
 			return none
 		}
-		counter_name := parser.parse_counter_name_argument(arguments[0]) or { return none }
+		counter_name := parser.parse_counter_name_argument(call_arguments[0]) or { return none }
 		mut counter_style := default_counter_style
-		if arguments.len == 2 {
-			counter_style = parser.parse_counter_style_argument(arguments[1]) or { return none }
+		if call_arguments.len == 2 {
+			counter_style = parser.parse_counter_style_argument(call_arguments[1]) or { return none }
 		}
 		tokens = transaction
 		return StyleValue(CounterStyleValue.create_counter(counter_name, counter_style))
 	}
 
 	if function_name == 'counters' {
-		if arguments.len < 2 || arguments.len > 3 {
+		if call_arguments.len < 2 || call_arguments.len > 3 {
 			return none
 		}
-		counter_name := parser.parse_counter_name_argument(arguments[0]) or { return none }
-		mut join_stream := ComponentValueStream.new(arguments[1])
+		counter_name := parser.parse_counter_name_argument(call_arguments[0]) or { return none }
+		mut join_stream := ComponentValueStream.new(call_arguments[1])
 		join_stream.consume_whitespace()
 		join_value := parser.parse_string_value(mut join_stream) or { return none }
 		join_stream.consume_whitespace()
@@ -3135,8 +3135,8 @@ fn (mut parser Parser) parse_counter_value(mut tokens ComponentValueStream) ?Sty
 			return none
 		}
 		mut counter_style := default_counter_style
-		if arguments.len == 3 {
-			counter_style = parser.parse_counter_style_argument(arguments[2]) or { return none }
+		if call_arguments.len == 3 {
+			counter_style = parser.parse_counter_style_argument(call_arguments[2]) or { return none }
 		}
 		tokens = transaction
 		return StyleValue(CounterStyleValue.create_counters(counter_name, join_value.string_value(), counter_style))
@@ -3185,26 +3185,26 @@ fn (mut parser Parser) parse_counter_style_value(mut tokens ComponentValueStream
 	if !component_value.is_function_named('symbols') {
 		return none
 	}
-	mut arguments := ComponentValueStream.new(component_value.function().value)
+	mut call_arguments := ComponentValueStream.new(component_value.function().value)
 
 	// <symbols-type>? (defaults to symbolic). A leading ident must be a valid symbols-type.
 	mut symbols_type := SymbolsType.symbolic
-	arguments.consume_whitespace()
-	if peek := arguments.peek() {
+	call_arguments.consume_whitespace()
+	if peek := call_arguments.peek() {
 		if peek.is(.ident) {
 			symbols_type = symbols_type_from_string(peek.token().ident()) or { return none }
-			arguments.consume() or { return none }
+			call_arguments.consume() or { return none }
 		}
 	}
 
 	// [ <string> ]+
 	mut symbols := []string{}
 	for {
-		arguments.consume_whitespace()
-		if !arguments.has_more_tokens() {
+		call_arguments.consume_whitespace()
+		if !call_arguments.has_more_tokens() {
 			break
 		}
-		string_value := parser.parse_string_value(mut arguments) or { return none }
+		string_value := parser.parse_string_value(mut call_arguments) or { return none }
 		symbols << string_value.string_value()
 	}
 
@@ -3487,15 +3487,15 @@ fn (mut parser Parser) parse_basic_shape_value(mut tokens ComponentValueStream) 
 
 	if function_name == 'polygon' {
 		// polygon( <'fill-rule'>? , [ <length-percentage> <length-percentage> ]# )
-		arguments := parse_a_comma_separated_list_of_component_values_for_value_logic(function_values)
-		if arguments.len < 1 {
+		call_arguments := parse_a_comma_separated_list_of_component_values_for_value_logic(function_values)
+		if call_arguments.len < 1 {
 			return none
 		}
 		mut fill_rule := FillRule.nonzero
-		mut point_arguments := arguments.clone()
-		if parsed_fill_rule := basic_shape_fill_rule_from_components(arguments[0]) {
+		mut point_arguments := call_arguments.clone()
+		if parsed_fill_rule := basic_shape_fill_rule_from_components(call_arguments[0]) {
 			fill_rule = parsed_fill_rule
-			point_arguments = arguments[1..].clone()
+			point_arguments = call_arguments[1..].clone()
 		}
 		if point_arguments.len < 1 {
 			return none
@@ -3525,15 +3525,15 @@ fn (mut parser Parser) parse_basic_shape_value(mut tokens ComponentValueStream) 
 
 	if function_name == 'path' {
 		// path( <'fill-rule'>?, <string> )
-		arguments := parse_a_comma_separated_list_of_component_values_for_value_logic(function_values)
-		if arguments.len < 1 || arguments.len > 2 {
+		call_arguments := parse_a_comma_separated_list_of_component_values_for_value_logic(function_values)
+		if call_arguments.len < 1 || call_arguments.len > 2 {
 			return none
 		}
 		mut fill_rule := FillRule.nonzero
-		if arguments.len == 2 {
-			fill_rule = basic_shape_fill_rule_from_components(arguments[0]) or { return none }
+		if call_arguments.len == 2 {
+			fill_rule = basic_shape_fill_rule_from_components(call_arguments[0]) or { return none }
 		}
-		mut string_tokens := ComponentValueStream.new(arguments[arguments.len - 1])
+		mut string_tokens := ComponentValueStream.new(call_arguments[call_arguments.len - 1])
 		string_tokens.consume_whitespace()
 		string_token := string_tokens.consume() or { return none }
 		string_tokens.consume_whitespace()
@@ -6369,14 +6369,14 @@ fn (mut parser Parser) parse_font_variant_alternates_value(mut tokens ComponentV
 		}
 		function := peek.function()
 		function_name := to_ascii_lowercase(function.name)
-		arguments := parse_a_comma_separated_list_of_component_values_for_value_logic(function.value)
-		if arguments.len == 0 {
+		call_arguments := parse_a_comma_separated_list_of_component_values_for_value_logic(function.value)
+		if call_arguments.len == 0 {
 			break
 		}
 
 		// <feature-value-name># = <ident>#
 		mut feature_value_names := []StyleValue{}
-		for argument in arguments {
+		for argument in call_arguments {
 			mut argument_tokens := ComponentValueStream.new(argument)
 			ident := parser.parse_custom_ident_value(mut argument_tokens, []) or { return none }
 			argument_tokens.consume_whitespace()
@@ -11338,7 +11338,7 @@ fn (mut parser Parser) parse_scroll_function_value(component_value ComponentValu
 		return none
 	}
 	mut argument_tokens := ComponentValueStream.new(component_value.function().value)
-	mut arguments := [?StyleValue(none), ?StyleValue(none)]
+	mut call_arguments := [?StyleValue(none), ?StyleValue(none)]
 	mut has_scroller := false
 	mut has_axis := false
 	for argument_tokens.has_more_tokens() {
@@ -11354,7 +11354,7 @@ fn (mut parser Parser) parse_scroll_function_value(component_value ComponentValu
 			}
 			if maybe_scroller != .nearest {
 				keyword := keyword_from_string(to_ascii_lowercase(ident)) or { return none }
-				arguments[tuple_scroll_function_scroller_index] = StyleValue(KeywordStyleValue.create(keyword))
+				call_arguments[tuple_scroll_function_scroller_index] = StyleValue(KeywordStyleValue.create(keyword))
 			}
 			has_scroller = true
 			continue
@@ -11365,7 +11365,7 @@ fn (mut parser Parser) parse_scroll_function_value(component_value ComponentValu
 			}
 			if maybe_axis != .block {
 				keyword := keyword_from_string(to_ascii_lowercase(ident)) or { return none }
-				arguments[tuple_scroll_function_axis_index] = StyleValue(KeywordStyleValue.create(keyword))
+				call_arguments[tuple_scroll_function_axis_index] = StyleValue(KeywordStyleValue.create(keyword))
 			}
 			has_axis = true
 			continue
@@ -11373,7 +11373,7 @@ fn (mut parser Parser) parse_scroll_function_value(component_value ComponentValu
 		return none
 	}
 
-	return FunctionStyleValue.create('scroll', StyleValue(TupleStyleValue.create(arguments)))
+	return FunctionStyleValue.create('scroll', StyleValue(TupleStyleValue.create(call_arguments)))
 }
 
 fn (mut parser Parser) parse_view_timeline_inset_value(mut tokens ComponentValueStream) ?StyleValue {
@@ -11417,7 +11417,7 @@ fn (mut parser Parser) parse_view_function_value(component_value ComponentValue)
 		parser.pop_temporary_value_parsing_context()
 	}
 	mut argument_tokens := ComponentValueStream.new(component_value.function().value)
-	mut arguments := [?StyleValue(none), ?StyleValue(none)]
+	mut call_arguments := [?StyleValue(none), ?StyleValue(none)]
 	mut has_axis := false
 	mut has_inset := false
 	for argument_tokens.has_more_tokens() {
@@ -11427,7 +11427,7 @@ fn (mut parser Parser) parse_view_function_value(component_value ComponentValue)
 			}
 			inset_values := (inset_value as StyleValueList).values()
 			if inset_values[0].to_keyword() != .auto || inset_values[1].to_keyword() != .auto {
-				arguments[tuple_view_function_inset_index] = inset_value
+				call_arguments[tuple_view_function_inset_index] = inset_value
 			}
 			has_inset = true
 			continue
@@ -11444,12 +11444,12 @@ fn (mut parser Parser) parse_view_function_value(component_value ComponentValue)
 		}
 		if maybe_axis != .block {
 			keyword := keyword_from_string(to_ascii_lowercase(token.token().ident())) or { return none }
-			arguments[tuple_view_function_axis_index] = StyleValue(KeywordStyleValue.create(keyword))
+			call_arguments[tuple_view_function_axis_index] = StyleValue(KeywordStyleValue.create(keyword))
 		}
 		has_axis = true
 	}
 
-	return FunctionStyleValue.create('view', StyleValue(TupleStyleValue.create(arguments)))
+	return FunctionStyleValue.create('view', StyleValue(TupleStyleValue.create(call_arguments)))
 }
 
 fn (mut parser Parser) parse_keyword_value(mut tokens ComponentValueStream) ?StyleValue {
@@ -11632,14 +11632,14 @@ fn (mut parser Parser) parse_percentage(mut tokens ComponentValueStream) ?Percen
 }
 
 fn (mut parser Parser) parse_number_percentage_value(mut tokens ComponentValueStream) ?StyleValue {
-	mut copy := tokens.clone()
-	if value := parser.parse_number_value(mut copy) {
-		tokens = copy
+	mut working_copy := tokens.clone()
+	if value := parser.parse_number_value(mut working_copy) {
+		tokens = working_copy
 		return value
 	}
-	copy = tokens.clone()
-	if value := parser.parse_percentage_value(mut copy) {
-		tokens = copy
+	working_copy = tokens.clone()
+	if value := parser.parse_percentage_value(mut working_copy) {
+		tokens = working_copy
 		return value
 	}
 	return none
@@ -13231,22 +13231,22 @@ fn (mut parser Parser) parse_color_interpolation_method_value(mut tokens Compone
 
 fn (mut parser Parser) parse_color_mix_component(mut tokens ComponentValueStream) ?ColorMixComponent {
 	tokens.consume_whitespace()
-	mut percentage_style_value := ?StyleValue(none)
+	mut parsed_percentage_value := ?StyleValue(none)
 	if percentage := parser.parse_percentage_value(mut tokens) {
-		percentage_style_value = percentage
+		parsed_percentage_value = percentage
 	}
 	tokens.consume_whitespace()
 
 	color_style_value := parser.parse_color_value(mut tokens) or { return none }
 	tokens.consume_whitespace()
-	if percentage_style_value == none {
+	if parsed_percentage_value == none {
 		if percentage := parser.parse_percentage_value(mut tokens) {
-			percentage_style_value = percentage
+			parsed_percentage_value = percentage
 			tokens.consume_whitespace()
 		}
 	}
 
-	if percentage_value := percentage_style_value {
+	if percentage_value := parsed_percentage_value {
 		if !percentage_value.is_calculated() {
 			percentage := percentage_value.as_percentage().percentage().value()
 			if percentage < 0 || percentage > 100 {
@@ -13257,7 +13257,7 @@ fn (mut parser Parser) parse_color_mix_component(mut tokens ComponentValueStream
 
 	return ColorMixComponent{
 		color: color_style_value
-		percentage: percentage_style_value
+		percentage: parsed_percentage_value
 	}
 }
 
@@ -13844,16 +13844,16 @@ fn is_page_size_orientation(value string) bool {
 }
 
 fn (mut parser Parser) parse_page_margin_component_value(mut tokens ComponentValueStream) ?StyleValue {
-	mut copy := tokens.clone()
-	if value := parser.parse_length_percentage_value(mut copy) {
-		tokens = copy
+	mut working_copy := tokens.clone()
+	if value := parser.parse_length_percentage_value(mut working_copy) {
+		tokens = working_copy
 		return value
 	}
 
-	copy = tokens.clone()
-	if value := consume_descriptor_ident(mut copy) {
+	working_copy = tokens.clone()
+	if value := consume_descriptor_ident(mut working_copy) {
 		if value == 'auto' {
-			tokens = copy
+			tokens = working_copy
 			return StyleValue(KeywordStyleValue.create(.auto))
 		}
 	}
@@ -13867,10 +13867,10 @@ fn (mut parser Parser) parse_page_margin_longhand_descriptor_value(mut tokens Co
 fn (mut parser Parser) parse_page_margin_shorthand_descriptor_value(mut tokens ComponentValueStream) ?StyleValue {
 	mut values := []StyleValue{}
 	for values.len < 4 {
-		mut copy := tokens.clone()
-		value := parser.parse_page_margin_component_value(mut copy) or { break }
+		mut working_copy := tokens.clone()
+		value := parser.parse_page_margin_component_value(mut working_copy) or { break }
 		values << value
-		tokens = copy
+		tokens = working_copy
 		if !tokens.has_more_tokens() {
 			break
 		}
@@ -13885,10 +13885,10 @@ fn (mut parser Parser) parse_page_margin_shorthand_descriptor_value(mut tokens C
 }
 
 fn (mut parser Parser) parse_page_bleed_descriptor_value(mut tokens ComponentValueStream) ?StyleValue {
-	mut copy := tokens.clone()
-	if value := consume_descriptor_ident(mut copy) {
+	mut working_copy := tokens.clone()
+	if value := consume_descriptor_ident(mut working_copy) {
 		if value == 'auto' {
-			tokens = copy
+			tokens = working_copy
 			return StyleValue(KeywordStyleValue.create(.auto))
 		}
 	}
@@ -13929,22 +13929,22 @@ fn (mut parser Parser) parse_page_orientation_descriptor_value(mut tokens Compon
 }
 
 fn (mut parser Parser) parse_page_size_descriptor_value(mut tokens ComponentValueStream) ?StyleValue {
-	mut copy := tokens.clone()
-	if first_length := parser.parse_length_value(mut copy) {
+	mut working_copy := tokens.clone()
+	if first_length := parser.parse_length_value(mut working_copy) {
 		if first_length.is_length() && first_length.as_length().raw_value() < 0 {
 			return none
 		}
 
-		copy.consume_whitespace()
-		if second_length := parser.parse_length_value(mut copy) {
+		working_copy.consume_whitespace()
+		if second_length := parser.parse_length_value(mut working_copy) {
 			if second_length.is_length() && second_length.as_length().raw_value() < 0 {
 				return none
 			}
-			tokens = copy
+			tokens = working_copy
 			return StyleValue(StyleValueList.create([first_length, second_length], .space, .yes))
 		}
 
-		tokens = copy
+		tokens = working_copy
 		return first_length
 	}
 
@@ -14282,9 +14282,9 @@ fn (mut parser Parser) parse_known_media_feature_value(media_feature string, mut
 }
 
 fn media_feature_stream_has_value_token(stream ComponentValueStream) bool {
-	mut copy := stream
-	copy.consume_whitespace()
-	next := copy.peek() or { return false }
+	mut working_copy := stream
+	working_copy.consume_whitespace()
+	next := working_copy.peek() or { return false }
 	return is_media_feature_value_token(next)
 }
 
@@ -14600,19 +14600,19 @@ fn (mut parser Parser) parse_transform_function_value(mut tokens ComponentValueS
 	}
 
 	function_metadata := transform_function_metadata(function)
-	mut arguments := parse_a_comma_separated_list_of_component_values_for_value_logic(part.function().value)
+	mut call_arguments := parse_a_comma_separated_list_of_component_values_for_value_logic(part.function().value)
 
-	if arguments.len > function_metadata.parameters.len {
+	if call_arguments.len > function_metadata.parameters.len {
 		return none
 	}
 
-	if arguments.len < function_metadata.parameters.len && function_metadata.parameters[arguments.len].required {
+	if call_arguments.len < function_metadata.parameters.len && function_metadata.parameters[call_arguments.len].required {
 		return none
 	}
 
 	mut values := StyleValueVector{}
-	for argument_index in 0 .. arguments.len {
-		mut argument_tokens := ComponentValueStream.new(arguments[argument_index])
+	for argument_index in 0 .. call_arguments.len {
+		mut argument_tokens := ComponentValueStream.new(call_arguments[argument_index])
 		argument_tokens.consume_whitespace()
 		value := parser.parse_transform_parameter_value(function_metadata.parameters[argument_index], mut argument_tokens) or { return none }
 		values << value
@@ -15114,12 +15114,12 @@ fn (mut parser Parser) parse_linear_gradient_side_or_corner(mut tokens Component
 	}
 	first_ident := first.token().ident().to_lower()
 	mut second_ident := ''
-	mut copy := tokens
-	copy.consume_whitespace()
-	if second := copy.consume() {
+	mut working_copy := tokens
+	working_copy.consume_whitespace()
+	if second := working_copy.consume() {
 		if second.is(.ident) {
 			second_ident = second.token().ident().to_lower()
-			tokens = copy
+			tokens = working_copy
 		}
 	}
 	if second_ident.len == 0 {
@@ -15263,30 +15263,30 @@ fn (mut parser Parser) parse_color_stop_list(mut tokens ComponentValueStream, an
 }
 
 fn (mut parser Parser) parse_color_stop_position(mut tokens ComponentValueStream, angular bool) ?StyleValue {
-	mut copy := tokens.clone()
+	mut working_copy := tokens.clone()
 	if angular {
-		copy.consume_whitespace()
-		if zero := copy.peek() {
+		working_copy.consume_whitespace()
+		if zero := working_copy.peek() {
 			if zero.is(.number) && zero.token().number_value() == 0 {
-				copy.consume()
-				tokens = copy
+				working_copy.consume()
+				tokens = working_copy
 				return StyleValue(AngleStyleValue.create(Angle.make_degrees(0)))
 			}
 		}
-		copy = tokens.clone()
-		if value := parser.parse_angle_value(mut copy) {
-			tokens = copy
+		working_copy = tokens.clone()
+		if value := parser.parse_angle_value(mut working_copy) {
+			tokens = working_copy
 			return value
 		}
 	} else {
-		if value := parser.parse_length_percentage_value(mut copy) {
-			tokens = copy
+		if value := parser.parse_length_percentage_value(mut working_copy) {
+			tokens = working_copy
 			return value
 		}
 	}
-	copy = tokens.clone()
-	if value := parser.parse_percentage_value(mut copy) {
-		tokens = copy
+	working_copy = tokens.clone()
+	if value := parser.parse_percentage_value(mut working_copy) {
+		tokens = working_copy
 		return value
 	}
 	return none

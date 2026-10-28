@@ -101,8 +101,8 @@ pub fn DOMMatrix.construct_impl(init ?DOMMatrixConstructorInit, is_window bool) 
 pub fn DOMMatrix.create_from_constructor(init ?DOMMatrixConstructorInit, string_context DOMMatrixStringContext) !&DOMMatrix {
 	value := init or { return DOMMatrix.create() }
 	return match value {
-		[]f64 { DOMMatrix.construct(value) }
-		string { DOMMatrix.construct_from_string(value, string_context == .window) }
+		[]f64 { DOMMatrix.construct(value)! }
+		string { DOMMatrix.construct_from_string(value, string_context == .window)! }
 	}
 }
 

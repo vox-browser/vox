@@ -15,10 +15,10 @@ fn C.vox_rsa_generate(uint, &u8, uint, &C.VoxRsaPart) int
 fn native_rsa_generate(bits u32, exponent []u8) !RsaPrivateKeyHandle {
 	size := int((u64(bits) + 7) / 8)
 	mut bytes := [][]u8{len: 7}
-	mut parts := []C.VoxRsaPart{len: 7}
+	mut parts := []C.VoxRsaPart{cap: 7}
 	for i in 0 .. 7 {
 		bytes[i] = []u8{len: size}
-		parts[i] = C.VoxRsaPart{ bytes: bytes[i].data, length: uint(size) }
+		parts << C.VoxRsaPart{ bytes: bytes[i].data, length: uint(size) }
 	}
 	if C.vox_rsa_generate(uint(bits), exponent.data, uint(exponent.len), parts.data) != 1 {
 		return error('RSA key generation failed')

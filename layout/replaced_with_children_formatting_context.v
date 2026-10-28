@@ -8,7 +8,7 @@ module layout
 // controls and other replaced elements with a shadow child delegate the
 // anonymous wrapper to a block formatting context while retaining the
 // dimensions resolved by their parent context.
-fn run_replaced_with_children_formatting_context(mut state LayoutState, context_box &Node, mut root_state UsedValues, available_space AvailableSpace) FormattingContextResult {
+fn run_replaced_with_children_formatting_context(mut state LayoutState, context_box &Node, mut root_state UsedValues, _ AvailableSpace) FormattingContextResult {
 	content_width := root_state.content_width()
 	// The parent formatting context has already resolved the replaced box from
 	// its natural, explicit, or default object size. Both axes are therefore

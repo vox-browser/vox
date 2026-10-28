@@ -11,7 +11,7 @@ struct PaintCoordinateValue {
 
 struct PaintCoordinateEntry {
 mut:
-	owner  voidptr
+	owner  voidptr = unsafe { nil }
 	value  PaintCoordinateValue
 	status u8
 }

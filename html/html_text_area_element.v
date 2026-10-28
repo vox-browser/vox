@@ -65,7 +65,7 @@ pub fn (mut model HTMLTextAreaElementModel) set_relevant_value(value string) ! {
 
 fn (mut model HTMLTextAreaElementModel) sync_text_node_to_raw_value() {
 	if text_node := model.text_node_ {
-		mut mutable_text_node := text_node
+		mut mutable_text_node := unsafe { text_node }
 		mutable_text_node.set_data(model.text.relevant_value())
 	}
 }
@@ -104,7 +104,7 @@ pub fn (mut model HTMLTextAreaElementModel) did_receive_focus() {
 		node.set_needs_repaint(.paint_commands)
 	}
 	if selection := textarea_element(&model).document().get_selection() {
-		mut mutable_selection := selection
+		mut mutable_selection := unsafe { selection }
 		mutable_selection.remove_all_ranges()
 	}
 }
@@ -249,7 +249,7 @@ pub fn (mut model HTMLTextAreaElementModel) form_associated_element_attribute_ch
 	model.control.form_node_attribute_changed(name)
 	if name == 'placeholder' {
 		if placeholder_text_node := model.placeholder_text_node_ {
-			mut mutable_placeholder_text_node := placeholder_text_node
+			mut mutable_placeholder_text_node := unsafe { placeholder_text_node }
 			mutable_placeholder_text_node.set_data(value or { '' })
 		}
 		model.update_placeholder_visibility()

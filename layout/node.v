@@ -405,7 +405,7 @@ pub fn (n &Node) display_before_box_type_transformation() css.Display {
 pub fn (n &Node) computed_values() &css.ComputedValues {
 	// Keep the nearest styled ancestor lookup local. An explicit walk lets
 	// callers inline the common styled-node read without a recursive call.
-	mut current := n
+	mut current := unsafe { n }
 	for !current.has_style_ {
 		current = current.parent() or { panic('VERIFY(has_style_or_parent_with_style())') }
 	}
@@ -922,7 +922,7 @@ fn nearest_ancestor_capable_of_forming_a_containing_block(node &Node) ?&Box {
 }
 
 fn (n &Node) root_viewport() ?&Viewport {
-	mut current := n
+	mut current := unsafe { n }
 	for {
 		if viewport := current.as_viewport() {
 			return viewport

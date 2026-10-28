@@ -14,6 +14,7 @@ fn C.vox_deferred_thread_identity() u64
 
 @[heap]
 struct NativeDeferredCall {
+	@[required]
 	callback fn ()
 	storage &RetainedArena = unsafe { nil }
 	thread_scope voidptr

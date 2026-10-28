@@ -33,7 +33,7 @@ mut:
 }
 
 pub fn XMLHttpRequestHost.create(document &dom.Document, fetch_host &fetch.FetchHost) !&XMLHttpRequestHost {
-	mut settings_pointer := document.relevant_settings_object()
+	mut settings_pointer := unsafe { document.relevant_settings_object() }
 	if settings_pointer == unsafe { nil } {
 		_ := html.WindowModel.create_top_level(document, none, '')!
 		settings_pointer = document.relevant_settings_object()

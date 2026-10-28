@@ -153,7 +153,7 @@ fn (mut parser IncrementalDocumentParser) feed_parser() {
 			current_encoding := parser.document_.get_encoding() or { 'UTF-8' }
 			standardized := encoding.get_an_encoding(current_encoding) or { current_encoding }
 			if standardized.to_lower() !in ['utf-16be', 'utf-16le'] {
-				undecoded := parser.input_bytes_[parser.decoded_byte_count_..]
+				undecoded := parser.input_bytes_[parser.decoded_byte_count_..].clone()
 				prefix_length := encoding_independent_prefix_length(undecoded)
 				if prefix_length == 0 && !parser.tokenizer_will_consume_input_immediately() {
 					if !parser.document_.document_ready_to_run_scripts() {

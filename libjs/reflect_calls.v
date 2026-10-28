@@ -9,8 +9,8 @@ pub fn reflect_apply(mut vm VM) !Value {
 	if !target.is_function() {
 		return vm.throw_error_type(.type_error, .not_a_function, target.str())
 	}
-	arguments := create_list_from_array_like(mut vm, arguments_list, unsafe { nil })!
-	return call(mut vm, target, this_argument, arguments)
+	call_arguments := create_list_from_array_like(mut vm, arguments_list, unsafe { nil })!
+	return call(mut vm, target, this_argument, call_arguments)
 }
 
 // Runtime/ReflectObject.cpp::construct. An absent newTarget defaults to target;
@@ -27,6 +27,6 @@ pub fn reflect_construct(mut vm VM) !Value {
 	} else if !new_target.is_constructor() {
 		return vm.throw_error_type(.type_error, .not_a_constructor, new_target.str())
 	}
-	arguments := create_list_from_array_like(mut vm, arguments_list, unsafe { nil })!
-	return Value.from_object(construct(mut vm, target, arguments, new_target.as_object())!)
+	call_arguments := create_list_from_array_like(mut vm, arguments_list, unsafe { nil })!
+	return Value.from_object(construct(mut vm, target, call_arguments, new_target.as_object())!)
 }

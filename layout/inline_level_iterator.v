@@ -537,7 +537,7 @@ fn (mut iterator InlineLevelIterator) next_inline_node_in_pre_order(current &Nod
 			return child
 		}
 	}
-	mut node := current
+	mut node := unsafe { current }
 	for {
 		if next := node.next_sibling() {
 			if iterator.stack_ends_with_node(node) {

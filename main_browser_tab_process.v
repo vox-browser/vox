@@ -84,12 +84,12 @@ fn (mut app BrowserApp) start_process_tabs() {
 }
 
 fn (mut app BrowserApp) open_process_tab(address string, background bool) {
-	mut arguments := ['--window-width=${app.viewport_width}',
+	mut call_arguments := ['--window-width=${app.viewport_width}',
 		'--window-height=${app.viewport_height + app.chrome_height()}', '--js-engine=${app.js_engine}']
-	if app.script_policy == .enabled { arguments << '--enable-javascript' }
-	if app.script_policy == .disabled { arguments << '--disable-javascript' }
-	arguments << address
-	app.tabs.session.open(os.executable(), arguments, background, process_tab_window_frame()) or {
+	if app.script_policy == .enabled { call_arguments << '--enable-javascript' }
+	if app.script_policy == .disabled { call_arguments << '--disable-javascript' }
+	call_arguments << address
+	app.tabs.session.open(os.executable(), call_arguments, background, process_tab_window_frame()) or {
 		eprintln('Vox: ${err}')
 		return
 	}

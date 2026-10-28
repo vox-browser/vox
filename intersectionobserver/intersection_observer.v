@@ -486,7 +486,7 @@ pub fn (mut observer IntersectionObserver) observe(target &dom.Element) {
 			return
 		}
 	}
-	mut mutable_target := target
+	mut mutable_target := unsafe { target }
 	mutable_target.register_intersection_observer(voidptr(observer))
 	observer.observation_targets_ << ObservationTarget{
 		target: target
@@ -499,7 +499,7 @@ pub fn (mut observer IntersectionObserver) observe(target &dom.Element) {
 pub fn (mut observer IntersectionObserver) unobserve(target &dom.Element) {
 	for index, candidate in observer.observation_targets_ {
 		if voidptr(candidate.target) == voidptr(target) {
-			mut mutable_target := target
+			mut mutable_target := unsafe { target }
 			mutable_target.unregister_intersection_observer(voidptr(observer))
 			observer.observation_targets_.delete(index)
 			return

@@ -7199,8 +7199,10 @@ fn (mut app BrowserApp) draw() {
 					}
 				}
 			}
-			if command_index >= rect_prefetch_end && command.kind == 'fill_rect' {
-				rect_prefetch_end = app.prefetch_chromium_rects(command_index, page_y)
+			$if macos {
+				if command_index >= rect_prefetch_end && command.kind == 'fill_rect' {
+					rect_prefetch_end = app.prefetch_chromium_rects(command_index, page_y)
+				}
 			}
 			if command.kind == 'begin_svg_mask_layer' {
 				shared_svg_end = app.draw_chromium_svg_rectangular_mask(app.paint_commands,

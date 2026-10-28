@@ -131,7 +131,7 @@ fn (mut host CryptoHost) digest_operation(args []voidptr) !&webidl.Promise {
 	if args.len < 3 { return error('TypeError: digest() needs 2 arguments') }
 	algorithm := args[1]
 	is_object := C.JSValueIsObject(host.runtime.context, algorithm)
-	mut converted := algorithm
+	mut converted := unsafe { algorithm }
 	// AlgorithmIdentifier's primitive DOMString conversion precedes the data
 	// argument conversion. Object.name is read in the operation body instead.
 	if !is_object { converted = host.runtime.binding_string(host.algorithm_string(algorithm)!) }

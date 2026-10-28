@@ -444,7 +444,7 @@ pub fn wrap(input_node_list []&dom.Node, sibling_criteria SiblingCriteria, new_p
 // https://w3c.github.io/editing/docs/execCommand/#remove-extraneous-line-breaks-at-the-end-of
 pub fn remove_extraneous_line_breaks_at_the_end_of_node(node &dom.Node) {
 	// 1. Let ref be node.
-	mut ref := node
+	mut ref := unsafe { node }
 
 	// 2. While ref has children, set ref to its lastChild.
 	for {
@@ -532,7 +532,7 @@ fn editing_is_allowed_child_of_some_ancestor_in_same_editing_host(node &dom.Node
 
 // https://w3c.github.io/editing/docs/execCommand/#fix-disallowed-ancestors
 pub fn fix_disallowed_ancestors_of_node(input_node &dom.Node) {
-	mut node := input_node
+	mut node := unsafe { input_node }
 
 	// 1. If node is not editable, abort these steps.
 	if !node.is_editable() {

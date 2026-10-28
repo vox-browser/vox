@@ -399,9 +399,9 @@ fn normalized_encrypt(algorithm NormalizedCryptoAlgorithm, key &CryptoKey, data 
 	params := algorithm.params
 	if params is RsaOaepParams {
 		return if decrypt {
-			RSAOAEP.create().decrypt(params, key, data)
+			RSAOAEP.create().decrypt(params, key, data)!
 		} else {
-			RSAOAEP.create().encrypt(params, key, data)
+			RSAOAEP.create().encrypt(params, key, data)!
 		}
 	}
 	return match params {
@@ -535,9 +535,9 @@ fn normalized_import(algorithm NormalizedCryptoAlgorithm, format KeyFormat, byte
 	}
 	if params is EcKeyImportParams {
 		return if algorithm.name == 'ECDH' {
-			ECDH.create().import_key(params, format, bytes, extractable, usages)
+			ECDH.create().import_key(params, format, bytes, extractable, usages)!
 		} else {
-			ECDSA.create().import_key(params, format, bytes, extractable, usages)
+			ECDSA.create().import_key(params, format, bytes, extractable, usages)!
 		}
 	}
 	basic := AlgorithmParams{ name: algorithm.name }

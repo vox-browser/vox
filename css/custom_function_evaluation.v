@@ -229,16 +229,16 @@ fn split_custom_function_arguments(values []ComponentValue) [][]ComponentValue {
 	if trim_component_value_whitespace(values).len == 0 {
 		return [][]ComponentValue{}
 	}
-	mut arguments := [][]ComponentValue{}
+	mut call_arguments := [][]ComponentValue{}
 	mut start := 0
 	for index, value in values {
 		if value.is(.comma) {
-			arguments << values[start..index].clone()
+			call_arguments << values[start..index].clone()
 			start = index + 1
 		}
 	}
-	arguments << values[start..].clone()
-	return arguments
+	call_arguments << values[start..].clone()
+	return call_arguments
 }
 
 fn custom_function_argument_contents(values []ComponentValue) []ComponentValue {
@@ -407,12 +407,12 @@ fn replace_a_dashed_function(element ?dom.AbstractElement, mut guarded_contexts 
 		return arbitrary_substitution_guaranteed_invalid_value()
 	}
 	argument_slices := split_custom_function_arguments(raw_arguments)
-	mut arguments := [][]ComponentValue{cap: argument_slices.len}
+	mut call_arguments := [][]ComponentValue{cap: argument_slices.len}
 	// Argument substitution deliberately precedes arity checks. Recursive calls
 	// in missing/excess arguments must still mark the enclosing function cycle.
 	for argument in argument_slices {
 		contents := custom_function_argument_contents(argument)
-		arguments << substitute_arbitrary_substitution_functions_with_optional_element(element, mut guarded_contexts, contents, none)
+		call_arguments << substitute_arbitrary_substitution_functions_with_optional_element(element, mut guarded_contexts, contents, none)
 	}
-	return evaluate_a_custom_function(element, mut guarded_contexts, definition, arguments)
+	return evaluate_a_custom_function(element, mut guarded_contexts, definition, call_arguments)
 }

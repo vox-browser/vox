@@ -184,7 +184,7 @@ fn parser_element_popped_callback(context voidptr, element &dom.Element) {
 
 fn HTMLParser.create_with_tokenizer(document &dom.Document, tokenizer HTMLTokenizer,
 	scripting_mode dom.ParserScriptingMode) &HTMLParser {
-	mut doc := document
+	mut doc := unsafe { document }
 	doc.set_document_type(.html)
 	realm := &ScriptingRealm{
 		scripting_enabled: scripting_mode != .disabled
@@ -1493,8 +1493,8 @@ fn (mut p HTMLParser) run_the_adoption_agency_algorithm(token &HTMLToken) Adopti
 		mut bookmark := p.list_of_active_formatting_elements.find_index(formatting_element) or { 0 }
 
 		// 11. node and lastNode = furthestBlock.
-		mut node := furthest_block
-		mut last_node := furthest_block
+		mut node := unsafe { furthest_block }
+		mut last_node := unsafe { furthest_block }
 		mut node_above_node := p.stack_of_open_elements.element_immediately_above(node)
 
 		mut inner_loop_counter := 0

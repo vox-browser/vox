@@ -3906,7 +3906,7 @@ pub fn (n &Navigable) parent() ?&Navigable {
 }
 
 pub fn (n &Navigable) traversable_navigable() ?&Navigable {
-	mut current := n
+	mut current := unsafe { n }
 	for !current.is_traversable() {
 		current = current.parent() or { return none }
 	}
@@ -3914,7 +3914,7 @@ pub fn (n &Navigable) traversable_navigable() ?&Navigable {
 }
 
 pub fn (n &Navigable) top_level_traversable() &Navigable {
-	mut current := n
+	mut current := unsafe { n }
 	for {
 		current = current.parent() or { return current }
 	}

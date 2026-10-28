@@ -618,7 +618,7 @@ pub fn animated_decoded_image_deliver_frames_for_session(session_id i64, bitmaps
 
 pub fn AnimatedDecodedImageData.deliver_frames_for_session(session_id i64, bitmaps []&dom.Bitmap_) {
 	if data := html_animated_image_sessions[session_id] {
-		mut mutable_data := data
+		mut mutable_data := unsafe { data }
 		mutable_data.receive_frames(bitmaps, data.last_requested_start_frame)
 	}
 }

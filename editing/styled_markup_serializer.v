@@ -218,7 +218,7 @@ fn annotate_interchange_newlines(selection &StyledMarkupSelection, fragment &dom
 			}
 
 			if found_marker_parent := marker_parent {
-				mut descend := found_marker_parent
+				mut descend := unsafe { found_marker_parent }
 				for {
 					first_child := descend.first_child() or { break }
 					if !is_inline_node(first_child) || !first_child.is_element()

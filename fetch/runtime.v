@@ -507,7 +507,7 @@ pub fn FetchedDataReceiver.create(params &FetchParams, stream &streams.ReadableS
 		cache_enabled_: fetch_http_memory_cache_enabled && params.request.cache_mode != .no_store
 			&& determine_the_http_cache_partition(params.request) != none
 	}
-	mut mutable_stream := stream
+	mut mutable_stream := unsafe { stream }
 	mut controller := mutable_stream.byte_controller() or {
 		panic('FetchedDataReceiver requires a readable byte stream')
 	}
@@ -1613,7 +1613,7 @@ pub fn install_parallel_queue_factory(factory FetchParallelQueueFactory) {
 
 pub fn fetch_with_parallel_queue(request &Request, algorithms &FetchAlgorithms, host &FetchHost, use_parallel_queue UseParallelQueue, create_response_body_transfer_lease CreateResponseBodyTransferLease) &FetchController {
 	assert request.mode == .navigate || algorithms.input.process_early_hints_response == none
-	mut mutable_request := request
+	mut mutable_request := unsafe { request }
 	populate_request_from_client(mut mutable_request)
 	cross_origin_isolated := if client := mutable_request.client {
 		client.fetch_request_client_cross_origin_isolated_capability()

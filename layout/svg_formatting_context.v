@@ -582,7 +582,7 @@ fn measure_svg_text_chunk_subtree(node &Node, chunk_start &Node,
 }
 
 fn measure_svg_text_chunk(chunk_start &Node) SVGTextChunkMeasurement {
-	mut subtree_root := chunk_start
+	mut subtree_root := unsafe { chunk_start }
 	mut ancestor := chunk_start.parent()
 	for {
 		candidate := ancestor or { break }

@@ -855,7 +855,7 @@ pub fn (mut model HTMLInputElementModel) create_button_input_shadow_tree() {
 
 pub fn (mut model HTMLInputElementModel) update_button_input_shadow_tree() {
 	if text := model.text_node_ {
-		mut mutable_text := text
+		mut mutable_text := unsafe { text }
 		mutable_text.set_data(model.button_label())
 	}
 	model.update_placeholder_visibility()
@@ -906,7 +906,7 @@ pub fn (mut model HTMLInputElementModel) update_image_button_alt_text_shadow_tre
 		if text.data() == alt_text {
 			return
 		}
-		mut mutable_text := text
+		mut mutable_text := unsafe { text }
 		mutable_text.set_data(alt_text)
 		mut node := input_element(&model).as_node()
 		node.set_needs_layout_tree_update(true, .html_input_element_src_attribute)
@@ -986,7 +986,7 @@ pub fn (mut model HTMLInputElementModel) create_color_input_shadow_tree() {
 
 pub fn (mut model HTMLInputElementModel) update_color_well_element() {
 	if well := model.color_well_element_ {
-		mut mutable_well := well
+		mut mutable_well := unsafe { well }
 		mutable_well.set_attribute_value('style', 'width:32px;height:16px;border:1px solid ButtonBorder;box-sizing:border-box;background-color:${model.value_};')
 	}
 }
@@ -1203,18 +1203,18 @@ pub fn (mut model HTMLInputElementModel) update_slider_shadow_tree_elements() {
 		(value - minimum) / (maximum - minimum) * 100.0
 	}
 	if progress := model.slider_progress_element_ {
-		mut mutable_progress := progress
+		mut mutable_progress := unsafe { progress }
 		mutable_progress.set_attribute_value('style', 'width:${position}%;')
 	}
 	if thumb := model.slider_thumb_ {
-		mut mutable_thumb := thumb
+		mut mutable_thumb := unsafe { thumb }
 		mutable_thumb.set_attribute_value('style', 'margin-left:${position}%;')
 	}
 }
 
 pub fn (mut model HTMLInputElementModel) update_text_input_shadow_tree() {
 	if text := model.text_node_ {
-		mut mutable_text := text
+		mut mutable_text := unsafe { text }
 		mutable_text.set_data(model.value_)
 	}
 	model.update_placeholder_visibility()
@@ -1240,15 +1240,15 @@ pub fn (mut model HTMLInputElementModel) user_interaction_did_change_input_value
 	model.user_validity_ = true
 	model.event_counts_['input']++
 	document := input_element(&model).document()
-	init := dom.InputEventInit{
+	event_init := dom.InputEventInit{
 		data:         data
 		input_type:   input_type
 		is_composing: document.is_input_method_composing()
 	}
-	model_event := dom.InputEvent.create_from_platform_event('input', init, [],
+	model_event := dom.InputEvent.create_from_platform_event('input', event_init, [],
 		dom.current_event_timestamp())
 	model.event_target_.dispatch_event(unsafe { &dom.Event(model_event) })
-	element_event := dom.InputEvent.create_from_platform_event('input', init, [],
+	element_event := dom.InputEvent.create_from_platform_event('input', event_init, [],
 		dom.current_event_timestamp())
 	element_event_target := unsafe { &dom.EventTarget(input_element(&model).as_node()) }
 	element_base_event := unsafe { &dom.Event(element_event) }
@@ -1392,7 +1392,7 @@ pub fn (mut model HTMLInputElementModel) legacy_cancelled_activation_behavior() 
 		mut did_reselect := false
 		if previous := model.previously_checked_radio_ {
 			if same_radio_group(&model, previous) {
-				mut mutable_previous := previous
+				mut mutable_previous := unsafe { previous }
 				mutable_previous.set_checked_within_group()
 				did_reselect = true
 			}
@@ -2520,7 +2520,7 @@ pub fn (mut model HTMLInputElementModel) form_associated_element_attribute_chang
 		}
 		'placeholder' {
 			if text := model.placeholder_text_node_ {
-				mut mutable_text := text
+				mut mutable_text := unsafe { text }
 				mutable_text.set_data(model.placeholder())
 				model.update_placeholder_visibility()
 			}

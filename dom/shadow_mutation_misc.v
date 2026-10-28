@@ -4463,10 +4463,9 @@ pub fn (mut abstract_element AbstractElement) set_css_defined_animation(name str
 	mut element := unsafe { &Element(abstract_element.element_) }
 	mut data := element.ensure_rare_style_data()
 	key := if pseudo := abstract_element.pseudo_element_ { int(pseudo) } else { -1 }
-	if key !in data.css_defined_animations {
-		data.css_defined_animations[key] = map[string]&CSSAnimation_{}
-	}
-	data.css_defined_animations[key][name] = animation
+	mut animations := (data.css_defined_animations[key] or { map[string]&CSSAnimation_{} }).clone()
+	animations[name] = animation
+	data.css_defined_animations[key] = animations
 	element.has_css_defined_animations_flag = true
 }
 

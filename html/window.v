@@ -489,7 +489,7 @@ pub fn (mut window WindowModel) start_an_idle_period() {
 	}
 	window_pointer := unsafe { &window }
 	queue_a_task(.idle_task, main_thread_event_loop(), window.associated_document(), fn [window_pointer] () {
-		mut callback_window := window_pointer
+		mut callback_window := unsafe { window_pointer }
 		callback_window.invoke_idle_callbacks()
 	})
 }
@@ -519,7 +519,7 @@ pub fn (mut window WindowModel) invoke_idle_callbacks() {
 	if window.runnable_idle_callbacks_.len > 0 {
 		window_pointer := unsafe { &window }
 		queue_a_task(.idle_task, main_thread_event_loop(), window.associated_document(), fn [window_pointer] () {
-			mut callback_window := window_pointer
+			mut callback_window := unsafe { window_pointer }
 			callback_window.invoke_idle_callbacks()
 		})
 	}
@@ -873,7 +873,7 @@ pub fn (mut window WindowModel) request_idle_callback(handler WindowIdleCallback
 				int(timeout)
 			}, fn [window_pointer, handle] () {
 				queue_a_task(.idle_task, main_thread_event_loop(), window_pointer.associated_document(), fn [window_pointer, handle] () {
-					mut callback_window := window_pointer
+					mut callback_window := unsafe { window_pointer }
 					callback_window.invoke_idle_callback_timeout(handle)
 				})
 			})

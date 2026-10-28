@@ -69,16 +69,16 @@ pub fn binary_key(value []u8) Key {
 }
 
 pub fn array_key(value []Key) Key {
-	mut copy := []Key{cap: value.len}
+	mut working_copy := []Key{cap: value.len}
 	for key in value {
 		if !key.is_valid() {
 			return invalid_key()
 		}
-		copy << key.clone()
+		working_copy << key.clone()
 	}
 	return Key{
 		kind: .array
-		items: copy
+		items: working_copy
 	}
 }
 

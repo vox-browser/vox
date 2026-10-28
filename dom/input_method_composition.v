@@ -262,7 +262,7 @@ fn (mut n Navigable) apply_input_method_commit_replacement(text string, replacem
 		return false
 	}
 	caret_node := caret.node() or { return false }
-	mut preedit_start_node := caret_node
+	mut preedit_start_node := unsafe { caret_node }
 	mut preedit_start_offset := caret.offset()
 	if composition_node := n.input_method_composition_node_ {
 		preedit_start_node = composition_node

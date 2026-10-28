@@ -270,9 +270,9 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	if action == 'cloneNode' {
 		// Node.cloneNode() on the live element: the detached copy keeps a bridge
 		// key, so later attribute writes, queries and insertion reach it.
-		copy := root.clone_node_binding(selector == 'deep')!
-		copy_compact_script_started_state(root, copy)
-		return json2.encode(binding.node_state(copy))
+		working_copy := root.clone_node_binding(selector == 'deep')!
+		copy_compact_script_started_state(root, working_copy)
+		return json2.encode(binding.node_state(working_copy))
 	}
 	if action == 'getElementById' {
 		return if element := binding.document.get_element_by_id(selector) {

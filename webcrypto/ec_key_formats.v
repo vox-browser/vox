@@ -64,14 +64,14 @@ fn parse_ec_public(bytes []u8) !EcPublicKeyHandle {
 }
 
 fn (reader &OkpDerReader) ec_peek_kind() !u32 {
-    mut copy := OkpDerReader{ bytes: reader.bytes, position: reader.position }
-    mut byte := copy.byte()!
+    mut working_copy := OkpDerReader{ bytes: reader.bytes, position: reader.position }
+    mut byte := working_copy.byte()!
     mut kind := byte & 0x1f
     if kind == 0x1f {
         kind = 0
         // Preserve DER.cpp's initial-byte condition and u8 truncation.
         for byte & 0x80 != 0 {
-            byte = copy.byte()!
+            byte = working_copy.byte()!
             kind = (kind << 7) | (byte & 0x7f)
         }
     }

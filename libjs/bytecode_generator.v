@@ -279,10 +279,10 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 			// codegen.rs::generate_call_expression: evaluate arguments left to
 			// right after retaining the callee and receiver. This generator's
 			// temporaries are never reused, so later arguments cannot overwrite them.
-			mut arguments := []Operand{cap: data.arguments.len}
+			mut call_arguments := []Operand{cap: data.arguments.len}
 			for argument in data.arguments {
 				if argument.is_spread { return generator.unsupported('spread call arguments') }
-				arguments << generator.expression(mut vm, &argument.value)!
+				call_arguments << generator.expression(mut vm, &argument.value)!
 			}
 			dst := generator.temporary()
 			generator.emit(Instruction{
@@ -290,7 +290,7 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 				dst:       dst
 				lhs:       callee
 				rhs:       this_value
-				arguments: arguments
+				arguments: call_arguments
 			})
 			return dst
 		}

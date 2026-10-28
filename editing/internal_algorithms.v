@@ -484,7 +484,7 @@ pub fn is_collapsed_whitespace_node(node &dom.Node) bool {
 	}
 
 	// 7. Let reference be node.
-	mut reference := node
+	mut reference := unsafe { node }
 
 	// 8. While reference is a descendant of ancestor:
 	for reference.is_descendant_of(ancestor) {
@@ -1215,7 +1215,7 @@ pub fn is_allowed_child_of_node(child_operand AllowedChildOperand, parent_operan
 // https://w3c.github.io/editing/docs/execCommand/#follows-a-line-break
 pub fn follows_a_line_break(input_node &dom.Node) bool {
 	// 1. Let offset be zero.
-	mut node := input_node
+	mut node := unsafe { input_node }
 	mut offset := 0
 
 	// 2. While (node, offset) is not a block boundary point:
@@ -1249,7 +1249,7 @@ pub fn follows_a_line_break(input_node &dom.Node) bool {
 // https://w3c.github.io/editing/docs/execCommand/#precedes-a-line-break
 pub fn precedes_a_line_break(input_node &dom.Node) bool {
 	// 1. Let offset be node's length.
-	mut node := input_node
+	mut node := unsafe { input_node }
 	mut offset := node.length()
 
 	// 2. While (node, offset) is not a block boundary point:

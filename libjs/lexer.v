@@ -1031,7 +1031,7 @@ fn (mut l Lexer) next() Token {
 				}
 				identifier_value = decoded
 			} else {
-				source_slice := l.source[value_start - 1..l.position - 1]
+				source_slice := l.source[value_start - 1..l.position - 1].clone()
 				if kw := keyword_from_str(source_slice) {
 					token_type = kw
 				} else {

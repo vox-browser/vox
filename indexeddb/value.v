@@ -132,19 +132,19 @@ pub fn (value Value) clone() Value {
 }
 
 fn clone_values(values []Value) []Value {
-	mut copy := []Value{cap: values.len}
+	mut working_copy := []Value{cap: values.len}
 	for value in values {
-		copy << value.clone()
+		working_copy << value.clone()
 	}
-	return copy
+	return working_copy
 }
 
 fn clone_fields(fields map[string]Value) map[string]Value {
-	mut copy := map[string]Value{}
+	mut working_copy := map[string]Value{}
 	for name, value in fields {
-		copy[name] = value.clone()
+		working_copy[name] = value.clone()
 	}
-	return copy
+	return working_copy
 }
 
 pub fn value_to_key(value Value) Key {

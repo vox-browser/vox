@@ -42,7 +42,7 @@ mut:
 	emitted bool
 }
 
-fn (mut decoder ReplacementDecoder) decode_to_utf8_raw(src []u8, dst []u8, last bool) (ReplacementDecoderResult, int, int) {
+fn (mut decoder ReplacementDecoder) decode_to_utf8_raw(src []u8, dst []u8, _ bool) (ReplacementDecoderResult, int, int) {
 	if decoder.emitted || src.len == 0 {
 		return ReplacementDecoderResult{ status: .input_empty }, src.len, 0
 	} else if dst.len < 3 {

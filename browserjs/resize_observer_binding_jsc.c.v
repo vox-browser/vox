@@ -164,14 +164,15 @@ fn (mut runtime Runtime) resize_observer_operation(mut binding ResizeObserverBin
 	}
 	if method.starts_with('entry ') {
 		entry := binding.entries[receiver] or { return runtime.event_binding_type_error('Illegal ResizeObserverEntry receiver') }
+		entry_arrays := binding.entry_arrays[receiver] or { return error('Missing ResizeObserverEntry size arrays') }
 		return match method {
 			'entry target' {
 				runtime.javascript_event_target(unsafe { &dom.EventTarget(entry.target().element) }, none)!
 			}
 			'entry contentRect' { runtime.javascript_read_only_rect(entry.content_rect())! }
-			'entry borderBoxSize' { binding.entry_arrays[receiver][0] }
-			'entry contentBoxSize' { binding.entry_arrays[receiver][1] }
-			'entry devicePixelContentBoxSize' { binding.entry_arrays[receiver][2] }
+			'entry borderBoxSize' { entry_arrays[0] }
+			'entry contentBoxSize' { entry_arrays[1] }
+			'entry devicePixelContentBoxSize' { entry_arrays[2] }
 			else { error('Unknown ResizeObserverEntry operation') }
 		}
 	}

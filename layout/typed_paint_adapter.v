@@ -67,9 +67,9 @@ fn paint_cumulative_offset(node &Node, state &LayoutState, used &UsedValues) css
 		if value := cached_paint_coordinate(node, state, used, session, 0) { return value.position }
 	}
 	mut offset := css.CSSPixelPoint{}
-	mut current_node := node
-	mut current_used := used
-	mut checkpoint := used
+	mut current_node := unsafe { node }
+	mut current_used := unsafe { used }
+	mut checkpoint := unsafe { used }
 	mut distance := u64(0)
 	mut window := u64(1)
 	for {
@@ -95,8 +95,8 @@ fn paint_cumulative_offset(node &Node, state &LayoutState, used &UsedValues) css
 
 fn paint_cumulative_offset_with_cycle_guard(node &Node, state &LayoutState, used &UsedValues) css.CSSPixelPoint {
 	mut offset := css.CSSPixelPoint{}
-	mut current_node := node
-	mut current_used := used
+	mut current_node := unsafe { node }
+	mut current_used := unsafe { used }
 	mut visited := map[u64]bool{}
 	for {
 		key := u64(voidptr(current_used))
@@ -1830,7 +1830,7 @@ fn linked_svg_gradient(element &dom.Element, mut seen map[i64]bool) ?&dom.Elemen
 
 fn register_svg_gradient_paint_resource_chain(element &dom.Element,
 	referencing_element &dom.Element) {
-	mut current := element
+	mut current := unsafe { element }
 	mut seen := map[i64]bool{}
 	for {
 		identity := current.as_node().unique_id().value()
@@ -2309,7 +2309,7 @@ fn svg_pattern_units(element &dom.Element, name string, fallback svg.Units,
 
 fn register_svg_pattern_paint_resource_chain(element &dom.Element,
 	referencing_element &dom.Element) {
-	mut current := element
+	mut current := unsafe { element }
 	mut seen := map[i64]bool{}
 	for {
 		identity := current.as_node().unique_id().value()
@@ -4667,7 +4667,7 @@ fn painted_owner_element(node &Node) ?&dom.Element {
 }
 
 fn painted_owner_computed_values(node &Node, owner &dom.Element) &css.ComputedProperties {
-	mut current := node
+	mut current := unsafe { node }
 	for {
 		if dom_node := current.dom_node() {
 			if element := dom_node.as_element() {

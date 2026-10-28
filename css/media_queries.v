@@ -284,10 +284,10 @@ fn (mut parser Parser) parse_supports_feature(mut tokens SupportsTokenStream) ?&
 	// `<supports-selector-fn> = selector( <complex-selector> )`
 	if first_token.is_function_named('selector') {
 		selector := supports_component_values_to_string(first_token.function().value)
-		matches := parse_selector_with_parser(selector, parser.context.declared_namespaces) != none
+		is_match := parse_selector_with_parser(selector, parser.context.declared_namespaces) != none
 			&& !supports_selector_contains_unknown_webkit_pseudo_element(selector)
 		tokens = transaction
-		return BooleanExpression.create_supports_selector(selector, matches)
+		return BooleanExpression.create_supports_selector(selector, is_match)
 	}
 
 	// `<supports-font-tech-fn> = font-tech( <font-tech> )`
@@ -382,8 +382,8 @@ fn (mut parser Parser) parse_supports_declaration(mut tokens ParserTokenStream) 
 		return BooleanExpression.create_supports_declaration(original, false)
 	}
 	mut value_tokens := ComponentValueStream.new(declaration.value)
-	matches := parser.parse_css_value_tokens(property_id, mut value_tokens) != none
-	return BooleanExpression.create_supports_declaration(original, matches)
+	is_match := parser.parse_css_value_tokens(property_id, mut value_tokens) != none
+	return BooleanExpression.create_supports_declaration(original, is_match)
 }
 
 fn parse_supports_declaration_from_parser_tokens(mut tokens ParserTokenStream) ?&BooleanExpression {
@@ -691,9 +691,9 @@ pub fn (media_query_list &MediaQueryList) evaluate() bool {
 	mut mutable_media_query_list := unsafe { &MediaQueryList(media_query_list) }
 	for i in 0 .. mutable_media_query_list.media_queries.len {
 		mut media_query := unsafe { &MediaQuery(mutable_media_query_list.media_queries[i]) }
-		matches := media_query.evaluate(media_query_list.document_)
-		media_query.matches = matches
-		now_matches = now_matches || matches
+		is_match := media_query.evaluate(media_query_list.document_)
+		media_query.matches = is_match
+		now_matches = now_matches || is_match
 	}
 
 	return now_matches
@@ -738,12 +738,12 @@ pub fn (mut media_query_list MediaQueryList) set_has_changed_state(has_changed_s
 }
 
 pub fn (media_query_list &MediaQueryList) dispatch_change_event(matches bool) {
-	mut init := MediaQueryListEventInit{
+	mut event_init := MediaQueryListEventInit{
 		media: media_query_list.media()
 		matches: matches
 	}
-	init.EventInit = dom.EventInit{}
-	event := MediaQueryListEvent.create('change', init)
+	event_init.EventInit = dom.EventInit{}
+	event := MediaQueryListEvent.create('change', event_init)
 	dom.event_target_dispatch_event(media_query_list.event_target(), event.base_event())
 }
 

@@ -655,7 +655,7 @@ pub fn (mut u UsedValues) set_content_y(y CSSPixels) {
 // Offset from the viewport's top-left to this box's content area (sum of offsets up the containing-block chain).
 pub fn (u &UsedValues) cumulative_offset() css.CSSPixelPoint {
 	if u.containing_block_used_values_ == none { return u.offset }
-	mut cursor := u
+	mut cursor := unsafe { u }
 	mut x, mut y := i64(0), i64(0)
 	mut extent_x, mut extent_y := i64(0), i64(0)
 	for {

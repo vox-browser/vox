@@ -4070,9 +4070,9 @@ pub fn (mut e Element) request_fullscreen(requester FullscreenRequester) &Promis
 		promise.reject(js_string('TypeError: Document not fully active.'))
 		return promise
 	}
-	error := e.is_element_allowed_to_enter_fullscreen(requester)
-	if error != .false_ {
-		promise.reject(js_string('TypeError: Element is not allowed to enter fullscreen (${error}).'))
+	operation_error := e.is_element_allowed_to_enter_fullscreen(requester)
+	if operation_error != .false_ {
+		promise.reject(js_string('TypeError: Element is not allowed to enter fullscreen (${operation_error}).'))
 		return promise
 	}
 

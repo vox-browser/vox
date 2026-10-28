@@ -94,7 +94,7 @@ fn (mut accumulator StyledMarkupAccumulator) append_selected_node(source &dom.No
 	if source.is_html_br_element() && source.previous_sibling() != none {
 		if parent := source.parent() {
 			if editing_same_node(parent.last_child(), source) {
-				mut selected_branch := source
+				mut selected_branch := unsafe { source }
 				for {
 					branch_parent := selected_branch.parent() or { break }
 					if branch_parent == range_.end_container() {

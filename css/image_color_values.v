@@ -1561,6 +1561,7 @@ pub type ImageStyleValueClientCallback = fn (voidptr)
 pub struct ImageStyleValueClient {
 pub:
 	target     voidptr
+	@[required]
 	did_update ImageStyleValueClientCallback
 }
 

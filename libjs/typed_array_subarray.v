@@ -14,7 +14,7 @@ pub fn typed_array_prototype_subarray(mut vm VM, prototypes PrimitiveObjectProto
 	checked_offset := u64(source.byte_offset) + u64(begin_index) * u64(source.element_size())
 	if checked_offset > u64(0xffffffff) { return Value.from_object(source.object) }
 	byte_offset := u32(checked_offset)
-	mut arguments := [Value.from_object(buffer.object), Value.from_f64(f64(byte_offset))]
+	mut call_arguments := [Value.from_object(buffer.object), Value.from_f64(f64(byte_offset))]
 	mut new_length := ?u32(none)
 	if !source.array_length.is_auto() || !end.is_undefined() {
 		relative_end := if end.is_undefined() {
@@ -25,7 +25,7 @@ pub fn typed_array_prototype_subarray(mut vm VM, prototypes PrimitiveObjectProto
 		end_index := u32(buffer_slice_index(uint(length), relative_end))
 		count := if end_index > begin_index { end_index - begin_index } else { u32(0) }
 		new_length = count
-		arguments << Value.from_f64(f64(count))
+		call_arguments << Value.from_f64(f64(count))
 	}
 	realm := vm.realm()
 	factory := fn [source, realm, buffer, byte_offset, new_length, prototype_getter] (mut vm VM) !&TypedArray {
@@ -35,6 +35,6 @@ pub fn typed_array_prototype_subarray(mut vm VM, prototypes PrimitiveObjectProto
 			Value.from_f64(f64(byte_offset)), length_value)!
 		return view
 	}
-	array := typed_array_species_create(mut vm, source, factory, arguments, constructor_getter)!
+	array := typed_array_species_create(mut vm, source, factory, call_arguments, constructor_getter)!
 	return Value.from_object(array.object)
 }

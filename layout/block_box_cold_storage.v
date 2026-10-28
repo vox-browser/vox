@@ -12,16 +12,16 @@ pub:
 	replaced_image_size        string
 	replaced_image_position_x  string
 	replaced_image_position_y  string
-	replaced_image_paintable   ?&painting.ImagePaintable = none
+	replaced_image_paintable   ?&painting.ImagePaintable = ?&painting.ImagePaintable(none)
 	replaced_image_bitmap      ?&dom.Bitmap_
 	canvas_bitmap              ?&dom.Bitmap_
-	canvas_paintable           ?&painting.CanvasPaintable = none
+	canvas_paintable           ?&painting.CanvasPaintable = ?&painting.CanvasPaintable(none)
 	video_bitmap               ?&dom.Bitmap_
 	video_frame_source         ?&painting.VideoFrameSource
 	video_representation       painting.VideoRepresentation
-	video_paintable            ?&painting.VideoPaintable = none
+	video_paintable            ?&painting.VideoPaintable = ?&painting.VideoPaintable(none)
 	nested_viewport_document   ?&dom.Document
-	nested_viewport_paintable  ?&painting.NavigableContainerViewportPaintable = none
+	nested_viewport_paintable  ?&painting.NavigableContainerViewportPaintable = ?&painting.NavigableContainerViewportPaintable(none)
 	is_svg_image               bool
 	form_control_kind          string
 	form_control_checked       bool

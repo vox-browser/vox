@@ -498,7 +498,7 @@ fn (builder &LineBuilder) line_relative_aligned_subtree_root(style_source &Node)
 		return none
 	}
 	containing_block := unsafe { &Node(builder.containing_block) }
-	mut node := style_source
+	mut node := unsafe { style_source }
 	for !layout_nodes_same(node, containing_block) {
 		if alignment := line_relative_alignment(node) {
 			return LineRelativeAlignedSubtreeRoot{

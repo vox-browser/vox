@@ -25,7 +25,7 @@ pub struct Value {
 pub:
 	tag    ValueTag = .undefined
 	number f64
-	cell   voidptr
+	cell   voidptr = unsafe { nil }
 }
 
 pub fn js_undefined() Value {

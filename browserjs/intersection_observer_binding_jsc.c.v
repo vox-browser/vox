@@ -240,10 +240,10 @@ fn (mut runtime Runtime) intersection_observer_operation(mut binding Intersectio
 		'takeRecords' {
 			return runtime.intersection_observer_entries(mut binding, observer.take_records())
 		}
-		'root' { return binding.roots[receiver] }
+		'root' { return binding.roots[receiver] or { return error('Missing IntersectionObserver roots') } }
 		'rootMargin' { return runtime.binding_string(observer.root_margin()) }
 		'scrollMargin' { return runtime.binding_string(observer.scroll_margin()) }
-		'thresholds' { return binding.thresholds[receiver] }
+		'thresholds' { return binding.thresholds[receiver] or { return error('Missing IntersectionObserver thresholds') } }
 		'delay' { return C.JSValueMakeNumber(runtime.context, f64(observer.delay())) }
 		'trackVisibility' {
 			return C.JSValueMakeBoolean(runtime.context, observer.track_visibility())

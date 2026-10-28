@@ -65,7 +65,7 @@ fn canonicalize_whitespace_impl(boundary dom.BoundaryPoint, fix_collapsed_space 
 	}
 
 	// 2. Let start node equal node and let start offset equal offset.
-	mut start_node := node
+	mut start_node := unsafe { node }
 	mut start_offset := offset
 
 	// 3. Repeat the following steps:
@@ -345,7 +345,7 @@ fn editing_collapse_by_direction(mut selection dom.Selection, direction Selectio
 }
 
 fn editing_block_for_deletion(input_block &dom.Node) ?&dom.Node {
-	mut block := input_block
+	mut block := unsafe { input_block }
 
 	// While block's parent is in the same editing host and block is an inline node, set block to its parent.
 	for {
@@ -543,8 +543,8 @@ pub fn delete_the_selection(mut selection dom.Selection, block_merging bool, str
 		// 4. Abort these steps.
 		return
 	}
-	mut start_block_ref := start_block_node
-	mut end_block_ref := end_block_node
+	mut start_block_ref := unsafe { start_block_node }
+	mut end_block_ref := unsafe { end_block_node }
 
 	// 31. If start block has one child, which is a collapsed block prop, remove its child from it.
 	if start_block_ref.child_count() == 1 {

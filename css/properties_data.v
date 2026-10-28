@@ -441,6 +441,7 @@ pub fn (mut c CascadedProperties) set_property(property_id PropertyID, value &do
 }
 
 struct TypedLonghandExpansionCallback {
+	@[required]
 	callback fn (PropertyID, StyleValue)
 }
 

@@ -132,7 +132,7 @@ pub fn run_unfocusing_steps(mut manager FocusManager, old_focus_target &dom.Node
 		}
 		run_focus_update_steps(mut manager, old_chain, [unsafe { &dom.Node(document) }],
 			unsafe { &dom.Node(document) }, .other)
-		mut mutable_document := document
+		mut mutable_document := unsafe { document }
 		mutable_document.set_focused_area(none)
 		manager.currently_focused_area = unsafe { &dom.Node(document) }
 	} else {

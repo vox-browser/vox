@@ -90,9 +90,9 @@ pub fn parse_legacy_color_value(input_value string) ?Color {
 	}
 	// 11. Split into three equal components.
 	mut length := chars.len / 3
-	mut first := chars[0..length]
-	mut second := chars[length..length * 2]
-	mut third := chars[length * 2..length * 3]
+	mut first := chars[0..length].clone()
+	mut second := chars[length..length * 2].clone()
+	mut third := chars[length * 2..length * 3].clone()
 	// 12. Keep only the last eight characters of each component when longer.
 	if length > 8 {
 		first = first[length - 8..]

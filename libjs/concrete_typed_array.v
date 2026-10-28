@@ -48,7 +48,7 @@ pub fn ConcreteTypedArrayConstructor.create(mut vm VM, realm &Realm, kind Buffer
 	}
 	// Intrinsics.cpp::initialize_constructor runs after the class initializer.
 	object.set_function_name(mut vm, PropertyName.from_str(kind.typed_array_name()), none)
-	mut prototype := concrete_prototype
+	mut prototype := unsafe { concrete_prototype }
 	prototype.define_direct_property(PropertyName.from_str('constructor'),
 		Value.from_object(object), attribute_writable | attribute_configurable)
 	return &ConcreteTypedArrayConstructor{

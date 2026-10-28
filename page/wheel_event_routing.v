@@ -113,7 +113,7 @@ pub fn (mut handler EventHandler) dispatch_wheel_event(target InputTarget, visua
 		if voidptr(hit_layout) != voidptr(current_layout) {
 			return .dropped
 		}
-		mut node := hit_node
+		mut node := unsafe { hit_node }
 		for !node.is_element() {
 			node = node.parent() or { return .dropped }
 		}

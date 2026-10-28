@@ -234,7 +234,7 @@ pub fn (mut container ServiceWorkerContainer) start_ready_promise_steps(ready_pr
 		return
 	}
 	object := container.registration_object_for(registration)
-	mut promise := ready_promise
+	mut promise := unsafe { ready_promise }
 	resolve_service_worker_registration_promise(mut promise, registration, object)
 }
 

@@ -32,7 +32,7 @@ mut:
 }
 
 pub fn WritableStreamHost.create(document &dom.Document) !&WritableStreamHost {
-	mut settings := document.relevant_settings_object()
+	mut settings := unsafe { document.relevant_settings_object() }
 	if settings == unsafe { nil } {
 		_ := html.WindowModel.create_top_level(document, none, '')!
 		settings = document.relevant_settings_object()

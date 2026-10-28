@@ -1026,7 +1026,7 @@ mut:
 	margin_state                         BlockMarginState
 	// Explicit none avoids constructing the absent record's child/style in the
 	// compatibility compiler. A real trailing margin still owns its child.
-	trailing_collapsed_margin            ?TrailingCollapsedMargin = none
+	trailing_collapsed_margin            ?TrailingCollapsedMargin = ?TrailingCollapsedMargin(none)
 	y_offset_of_current_block_container  f64
 	floating_boxes                       []FloatingBoxRecord
 	float_bands                          []BFCFloatBand = [BFCFloatBand{}]

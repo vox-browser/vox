@@ -3574,8 +3574,8 @@ fn owned_platform_font(font &PlatformFont) PlatformFont {
 }
 
 fn owned_platform_font_ref(font &PlatformFont) &PlatformFont {
-	copy := owned_platform_font(font)
-	return &copy
+	working_copy := owned_platform_font(font)
+	return &working_copy
 }
 
 pub enum PendingFontState {

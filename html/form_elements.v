@@ -29,7 +29,7 @@ fn form_control_selected_text_callback(element &dom.Element) ?string {
 }
 
 fn form_control_input_events_target_callback(node &dom.Node) ?&dom.InputEventsTarget {
-	mut candidate := node
+	mut candidate := unsafe { node }
 	if shadow_root := node.root().as_shadow_root() {
 		if host := shadow_root.host() {
 			candidate = host.as_node()

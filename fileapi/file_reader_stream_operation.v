@@ -31,7 +31,7 @@ fn (mut reader FileReader) read_owned_operation(context FileReaderGlobalContext,
 	reader.is_aborted_ = false
 	reader.set_result(FileReaderResult{})
 	reader.error_ = none
-	mut stream := context.get_blob_stream(blob)
+	mut stream := unsafe { context.get_blob_stream(blob) }
 	mut stream_reader := stream.get_default_reader()!
 	chunk_promise := stream_reader.read().as_webidl_promise()
 	mut state := &ReadOperationState{ reader: stream_reader }

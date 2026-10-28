@@ -155,9 +155,9 @@ pub fn (value CSSMathValue) create_an_internal_representation(property PropertyN
 		}
 		return StyleValue(CalculatedStyleValue.create(node, type_, context))
 	}
-	matches := css_numeric_type_matches_property(type_, property_id, none)
+	is_match := css_numeric_type_matches_property(type_, property_id, none)
 
-	if perform_type_check == .yes && !matches {
+	if perform_type_check == .yes && !is_match {
 		return error('Property does not accept values of this type.')
 	}
 

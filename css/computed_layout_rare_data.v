@@ -11,8 +11,8 @@ mut:
 	computed_values_grid_template_areas_           GridTemplateAreas
 	computed_values_mask_                          ?MaskReference
 	// An absent resource owns no image client state or basic-shape payload.
-	computed_values_mask_image_                    ?ImageStyleValue = none
-	computed_values_clip_path_                     ?ClipPathReference = none
+	computed_values_mask_image_                    ?ImageStyleValue = ?ImageStyleValue(none)
+	computed_values_clip_path_                     ?ClipPathReference = ?ClipPathReference(none)
 	computed_values_backdrop_filter_               Filter
 	computed_values_filter_                        Filter
 	computed_values_rotate_                        ?TransformationData

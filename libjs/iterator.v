@@ -55,8 +55,8 @@ pub fn get_iterator_sync(mut vm VM, object &Object) !&IteratorRecord {
 }
 
 pub fn iterator_next(mut vm VM, mut record IteratorRecord, value ?Value) !&Object {
-	arguments := if supplied := value { [supplied] } else { []Value{} }
-	result := call(mut vm, record.next_method, Value.from_object(record.iterator), arguments) or {
+	call_arguments := if supplied := value { [supplied] } else { []Value{} }
+	result := call(mut vm, record.next_method, Value.from_object(record.iterator), call_arguments) or {
 		record.done = true
 		return err
 	}

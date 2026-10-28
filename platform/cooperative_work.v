@@ -7,7 +7,7 @@ pub type CooperativeWorkCallback = fn (voidptr)
 
 struct CooperativeWorkState {
 mut:
-	callback CooperativeWorkCallback
+	callback CooperativeWorkCallback = unsafe { nil }
 	target   voidptr
 	next_yield_ns           i64
 	started_ns              i64

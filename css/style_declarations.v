@@ -675,7 +675,7 @@ fn inline_style_for_abstract_element(abstract_element dom.AbstractElement) ?&CSS
 	properties := parse_css_property_declaration_block_for_style_properties(ParsingParams{
 		document: element.document()
 	}, text)
-	mut mutable_properties := properties
+	mut mutable_properties := unsafe { properties }
 	mutable_properties.set_owner_node(abstract_element)
 	bridge.css_handle = voidptr(properties)
 	bridge.set_declarations_callback = set_dom_inline_style_declarations

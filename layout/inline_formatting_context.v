@@ -534,7 +534,7 @@ fn line_clamp_subtree_contains_line(node &Node) bool {
 
 fn (bfc &BlockFormattingContext) line_clamp_has_future_content(anchor &Node) bool {
 	root := bfc.root or { return false }
-	mut node := anchor
+	mut node := unsafe { anchor }
 	for !layout_nodes_same(node, root) {
 		mut sibling := node.next_sibling()
 		for sibling != none {

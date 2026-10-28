@@ -2146,6 +2146,7 @@ pub fn (sheet &CSSStyleSheet) for_each_effective_rule_with_context(order Travers
 }
 
 struct EffectiveRuleCallbackContext {
+	@[required]
 	callback fn (&CSSRule)
 	type_ CSSRuleType
 	include_nested_declarations bool

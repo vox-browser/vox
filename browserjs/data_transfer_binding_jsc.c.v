@@ -47,10 +47,10 @@ fn (mut runtime Runtime) install_data_transfer_binding() ! {
 	binding.data_transfer_freeze_array = runtime.evaluate_host_value('Object.freeze')!
 	factory := runtime.evaluate_host_value(data_transfer_bootstrap())!
 	defer { runtime.release_javascript_value(factory) }
-	mut arguments := [binding.data_transfer_prototype, C.JSContextGetGlobalObject(runtime.context)]
-	arguments << functions
+	mut call_arguments := [binding.data_transfer_prototype, C.JSContextGetGlobalObject(runtime.context)]
+	call_arguments << functions
 	binding.data_transfer_constructor = runtime.retain_javascript_value(runtime.call_javascript_function(factory,
-		C.JSValueMakeUndefined(runtime.context), arguments)!)!
+		C.JSValueMakeUndefined(runtime.context), call_arguments)!)!
 }
 
 fn (mut runtime Runtime) data_transfer_types_array(transfer &html.DataTransfer) !voidptr {

@@ -328,10 +328,10 @@ fn (mut sc ScopeCollector) close_scope() {
 	parent_index := sc.records[index].parent
 	if parent_index >= 0 {
 		if !sc.records[index].has_function_parameters {
-			arguments := sc.records[index].contains_access_to_arguments_object_in_non_strict_mode
+			call_arguments := sc.records[index].contains_access_to_arguments_object_in_non_strict_mode
 			eval := sc.records[index].contains_direct_call_to_eval
 			contains_await := sc.records[index].contains_await_expression
-			if arguments {
+			if call_arguments {
 				sc.records[parent_index].contains_access_to_arguments_object_in_non_strict_mode = true
 			}
 			if eval {

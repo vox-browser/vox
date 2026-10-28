@@ -18,20 +18,20 @@ pub fn ReflectObject.create(mut vm VM, realm &Realm, object_prototype &Object, a
 	for index, name in names {
 		function := NativeFunction.create(mut vm, realm, realm.function_prototype, fn [name, object_prototype, array_prototype] (mut vm VM) !Value {
 			return match name {
-				'apply' { reflect_apply(mut vm) }
-				'construct' { reflect_construct(mut vm) }
-				'defineProperty' { reflect_define_property(mut vm) }
-				'deleteProperty' { reflect_delete_property(mut vm) }
-				'get' { reflect_get(mut vm) }
+				'apply' { reflect_apply(mut vm)! }
+				'construct' { reflect_construct(mut vm)! }
+				'defineProperty' { reflect_define_property(mut vm)! }
+				'deleteProperty' { reflect_delete_property(mut vm)! }
+				'get' { reflect_get(mut vm)! }
 				'getOwnPropertyDescriptor' { reflect_get_own_property_descriptor(mut vm,
-						object_prototype) }
-				'getPrototypeOf' { reflect_get_prototype_of(mut vm) }
-				'has' { reflect_has(mut vm) }
-				'isExtensible' { reflect_is_extensible(mut vm) }
-				'ownKeys' { reflect_own_keys(mut vm, array_prototype) }
-				'preventExtensions' { reflect_prevent_extensions(mut vm) }
-				'set' { reflect_set(mut vm) }
-				'setPrototypeOf' { reflect_set_prototype_of(mut vm) }
+						object_prototype)! }
+				'getPrototypeOf' { reflect_get_prototype_of(mut vm)! }
+				'has' { reflect_has(mut vm)! }
+				'isExtensible' { reflect_is_extensible(mut vm)! }
+				'ownKeys' { reflect_own_keys(mut vm, array_prototype)! }
+				'preventExtensions' { reflect_prevent_extensions(mut vm)! }
+				'set' { reflect_set(mut vm)! }
+				'setPrototypeOf' { reflect_set_prototype_of(mut vm)! }
 				else { panic('unknown Reflect native function') }
 			}
 		}, lengths[index], PropertyName.from_str(name), none)

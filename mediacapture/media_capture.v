@@ -244,7 +244,7 @@ pub type AudioFramesCallback = fn ([]f32, int, u8, u32)
 @[heap]
 pub struct AudioFrameSink {
 pub mut:
-	on_frames     AudioFramesCallback
+	on_frames     AudioFramesCallback = unsafe { nil }
 	has_on_frames bool
 	frames        []AudioFrame
 	active        bool = true
@@ -264,15 +264,15 @@ pub fn (mut sink AudioFrameSink) deliver(samples []f32, frames int, channels u8,
 	if !sink.active {
 		return
 	}
-	copy := samples.clone()
+	working_copy := samples.clone()
 	sink.frames << AudioFrame{
-		samples: copy
+		samples: working_copy
 		frame_count: frames
 		channel_count: channels
 		sample_rate: rate
 	}
 	if sink.has_on_frames {
-		sink.on_frames(copy, frames, channels, rate)
+		sink.on_frames(working_copy, frames, channels, rate)
 	}
 }
 

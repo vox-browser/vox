@@ -119,6 +119,7 @@ fn (mut state BackingStoreState) swap() {
 @[heap]
 pub struct RenderingThread {
 mut:
+	@[required]
 	presentation_callback_      RenderingPresentationCallback
 	execute_hook_               ?RenderingExecuteHook
 	command_queue_              []RenderingCommand

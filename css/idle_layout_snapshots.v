@@ -67,7 +67,8 @@ pub fn share_idle_layout_snapshots(styles []&ComputedProperties) int {
 		key := math.f64_bits(cache.computed_values_font_size_.to_double()) ^
 			(u64(color.r) << 24 | u64(color.g) << 16 | u64(color.b) << 8 | u64(color.a))
 		mut found := false
-		for previous in buckets[key] {
+		mut bucket := buckets[key] or { []&ComputedLayoutCache{} }
+		for previous in bucket {
 			if voidptr(previous) == voidptr(cache) {
 				found = true
 				break
@@ -88,7 +89,10 @@ pub fn share_idle_layout_snapshots(styles []&ComputedProperties) int {
 			break
 		}
 		// Bound work on documents with many unique values in one coarse bucket.
-		if !found && buckets[key].len < 256 { buckets[key] << cache }
+		if !found && bucket.len < 256 {
+			bucket << cache
+			buckets[key] = bucket
+		}
 	}
 	return merged_count
 }

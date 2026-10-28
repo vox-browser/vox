@@ -80,9 +80,9 @@ fn (mut runtime Runtime) install_data_transfer_items_binding() ! {
 			return runtime.data_transfer_items_binding_call(operation, receiver, args)
 		})!
 	}
-	mut arguments := [C.JSContextGetGlobalObject(runtime.context)]
-	arguments << functions
-	constructors := runtime.call_javascript_function(binding.install_function, C.JSValueMakeUndefined(runtime.context), arguments)!
+	mut call_arguments := [C.JSContextGetGlobalObject(runtime.context)]
+	call_arguments << functions
+	constructors := runtime.call_javascript_function(binding.install_function, C.JSValueMakeUndefined(runtime.context), call_arguments)!
 	runtime.retain_javascript_value(constructors)!
 	defer { runtime.release_javascript_value(constructors) }
 	binding.item_constructor = runtime.retain_javascript_value(runtime.binding_property(constructors, 'DataTransferItem')!)!

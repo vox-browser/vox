@@ -1,6 +1,6 @@
 module browserjs
 
-import html
+import html as _
 
 $if !darwin && !linux {
 	pub fn (mut runtime Runtime) install_time_ranges_binding() ! {

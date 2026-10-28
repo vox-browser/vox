@@ -115,7 +115,7 @@ fn (mut host FormDataHost) array(values []voidptr) !voidptr {
 fn (mut host FormDataHost) value(value xhr.FormDataEntryValue) !voidptr {
 	return match value {
 		string { host.runtime.binding_string(value) }
-		xhr.FormDataFile { host.runtime.javascript_file(value.file) }
+		xhr.FormDataFile { host.runtime.javascript_file(value.file)! }
 	}
 }
 

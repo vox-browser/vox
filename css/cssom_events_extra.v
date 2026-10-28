@@ -656,8 +656,8 @@ fn parse_a_page_selector_list_translated(mut tokens ParserTokenStream) ?PageSele
 			if !tokens.next_token().is(.ident) {
 				return none
 			}
-			pseudo_class_name := tokens.consume_a_token().token().ident()
-			if pseudo_class := page_pseudo_class_from_string(pseudo_class_name) {
+			parsed_pseudo_class_name := tokens.consume_a_token().token().ident()
+			if pseudo_class := page_pseudo_class_from_string(parsed_pseudo_class_name) {
 				pseudo_classes << pseudo_class
 			} else {
 				return none

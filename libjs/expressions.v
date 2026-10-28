@@ -233,11 +233,11 @@ fn (mut p Parser) parse_primary_expression(min_precedence int, forbidden Forbidd
 				if !p.flags.allow_super_constructor_call {
 					p.syntax_error("'super' keyword unexpected here")
 				}
-				arguments := p.parse_arguments()
+				call_arguments := p.parse_arguments()
 				return p.expression(after_super, ExpressionKind{
 					tag:             .super_call
 					super_call_data: &SuperCallData{
-						arguments:    arguments
+						arguments:    call_arguments
 						is_synthetic: false
 					}
 				}), true
@@ -827,12 +827,12 @@ fn (mut p Parser) parse_new_expression() Expression {
 	}
 
 	if p.match_token(.paren_open) {
-		arguments := p.parse_arguments()
+		call_arguments := p.parse_arguments()
 		return p.expression(start, ExpressionKind{
 			tag:       .new_expr
 			call_data: &CallExpressionData{
 				callee:    callee
-				arguments: arguments
+				arguments: call_arguments
 			}
 		})
 	} else {
@@ -848,7 +848,7 @@ fn (mut p Parser) parse_new_expression() Expression {
 // Parse a call expression `callee(arguments...)`.
 fn (mut p Parser) parse_call_expression(callee Expression) Expression {
 	start := p.position()
-	arguments := p.parse_arguments()
+	call_arguments := p.parse_arguments()
 	// Check for direct call to eval.
 	if callee.kind.tag == .identifier_expr {
 		if id := callee.kind.identifier {
@@ -862,19 +862,19 @@ fn (mut p Parser) parse_call_expression(callee Expression) Expression {
 		tag:       .call
 		call_data: &CallExpressionData{
 			callee:    callee
-			arguments: arguments
+			arguments: call_arguments
 		}
 	})
 }
 
 fn (mut p Parser) parse_arguments() []CallArgument {
 	p.consume_token(.paren_open)
-	mut arguments := []CallArgument{}
+	mut call_arguments := []CallArgument{}
 
 	for !p.match_token(.paren_close) && !p.done() {
 		is_spread := p.eat(.triple_dot)
 		value := p.parse_assignment_expression()
-		arguments << CallArgument{
+		call_arguments << CallArgument{
 			value:     value
 			is_spread: is_spread
 		}
@@ -885,7 +885,7 @@ fn (mut p Parser) parse_arguments() []CallArgument {
 	}
 
 	p.consume_token(.paren_close)
-	return arguments
+	return call_arguments
 }
 
 // Parse an optional chaining expression (`a?.b`, `a?.[x]`, `a?.()`).
@@ -897,9 +897,9 @@ fn (mut p Parser) parse_optional_chain(start Position, base Expression) Expressi
 			p.consume()
 			match p.current_token_type() {
 				.paren_open {
-					arguments := p.parse_arguments()
+					call_arguments := p.parse_arguments()
 					references << OptionalChainCall{
-						arguments: arguments
+						arguments: call_arguments
 						mode:      .optional
 					}
 				}
@@ -941,9 +941,9 @@ fn (mut p Parser) parse_optional_chain(start Position, base Expression) Expressi
 				}
 			}
 		} else if p.match_token(.paren_open) {
-			arguments := p.parse_arguments()
+			call_arguments := p.parse_arguments()
 			references << OptionalChainCall{
-				arguments: arguments
+				arguments: call_arguments
 				mode:      .not_optional
 			}
 		} else if p.match_token(.period) {

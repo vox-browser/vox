@@ -10,6 +10,7 @@ pub type CanvasElementLookup = fn (string) ?&dom.Element
 pub type CanvasElementIdentityLookup = fn (&dom.Element) []string
 
 struct CanvasElementBindingProvider {
+	@[required]
 	snapshot CanvasElementProvider
 	lookup   CanvasElementLookup = unsafe { nil }
 	identity CanvasElementIdentityLookup = unsafe { nil }

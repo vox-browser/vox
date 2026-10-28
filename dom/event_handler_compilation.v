@@ -7,9 +7,11 @@ pub type InlineEventHandlerSupport = fn (&EventTarget, string) bool
 pub struct InlineEventHandlerCompiler {
 pub:
 	supports_handler ?InlineEventHandlerSupport
+	@[required]
 	can_compile fn (&EventTarget) bool
 	// Optional owner availability for this exact raw slot, after environment checks.
 	can_compile_handler ?InlineEventHandlerSupport
+	@[required]
 	compile     fn (&EventTarget, string, string, string) ?&CallbackType
 }
 

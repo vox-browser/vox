@@ -827,40 +827,40 @@ pub fn (component CSSTransformComponent) is_2d() bool {
 
 pub fn (component CSSTransformComponent) to_matrix() !DOMMatrix {
 	return match component {
-		CSSMatrixComponent { component.to_matrix() }
-		CSSPerspective { component.to_matrix() }
-		CSSRotate { component.to_matrix() }
-		CSSScale { component.to_matrix() }
-		CSSSkew { component.to_matrix() }
-		CSSSkewX { component.to_matrix() }
-		CSSSkewY { component.to_matrix() }
-		CSSTranslate { component.to_matrix() }
+		CSSMatrixComponent { component.to_matrix()! }
+		CSSPerspective { component.to_matrix()! }
+		CSSRotate { component.to_matrix()! }
+		CSSScale { component.to_matrix()! }
+		CSSSkew { component.to_matrix()! }
+		CSSSkewX { component.to_matrix()! }
+		CSSSkewY { component.to_matrix()! }
+		CSSTranslate { component.to_matrix()! }
 	}
 }
 
 pub fn (component CSSTransformComponent) to_string() !string {
 	return match component {
-		CSSMatrixComponent { component.to_string() }
-		CSSPerspective { component.to_string() }
-		CSSRotate { component.to_string() }
-		CSSScale { component.to_string() }
-		CSSSkew { component.to_string() }
-		CSSSkewX { component.to_string() }
-		CSSSkewY { component.to_string() }
-		CSSTranslate { component.to_string() }
+		CSSMatrixComponent { component.to_string()! }
+		CSSPerspective { component.to_string()! }
+		CSSRotate { component.to_string()! }
+		CSSScale { component.to_string()! }
+		CSSSkew { component.to_string()! }
+		CSSSkewX { component.to_string()! }
+		CSSSkewY { component.to_string()! }
+		CSSTranslate { component.to_string()! }
 	}
 }
 
 pub fn (component CSSTransformComponent) create_style_value(property PropertyNameAndID) !TransformationStyleValue {
 	return match component {
-		CSSMatrixComponent { component.create_style_value(property) }
-		CSSPerspective { component.create_style_value(property) }
-		CSSRotate { component.create_style_value(property) }
-		CSSScale { component.create_style_value(property) }
-		CSSSkew { component.create_style_value(property) }
-		CSSSkewX { component.create_style_value(property) }
-		CSSSkewY { component.create_style_value(property) }
-		CSSTranslate { component.create_style_value(property) }
+		CSSMatrixComponent { component.create_style_value(property)! }
+		CSSPerspective { component.create_style_value(property)! }
+		CSSRotate { component.create_style_value(property)! }
+		CSSScale { component.create_style_value(property)! }
+		CSSSkew { component.create_style_value(property)! }
+		CSSSkewX { component.create_style_value(property)! }
+		CSSSkewY { component.create_style_value(property)! }
+		CSSTranslate { component.create_style_value(property)! }
 	}
 }
 

@@ -9,7 +9,7 @@ $if macos {
 }
 
 fn browser_select_picker_model(node &dom.Node) ?&html.HTMLSelectElementModel {
-	mut current := node
+	mut current := unsafe { node }
 	for {
 		if element := current.as_element() {
 			if element.is_html_element() && element.local_name() == 'select' {

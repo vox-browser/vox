@@ -53,7 +53,7 @@ fn (decoder SourceSingleByteDecoder) decode_to_utf8_raw(input []u8, mut output [
 // Source's source/destination slices use the original buffer with these base
 // offsets. Mutable V slice arguments can copy storage, so retain that actual
 // owning destination and lower the slice positions directly into its indices.
-fn (decoder SourceSingleByteDecoder) decode_to_utf8_raw_at(input []u8, input_start int, mut output []u8, output_start int, last bool) (SingleByteDecoderResult, int, int) {
+fn (decoder SourceSingleByteDecoder) decode_to_utf8_raw_at(input []u8, input_start int, mut output []u8, output_start int, _ bool) (SingleByteDecoderResult, int, int) {
 	mut read := input_start
 	mut written := output_start
 	mut copy_ascii := true

@@ -130,7 +130,7 @@ fn (mut host CryptoHost) generate_key_operation(args []voidptr) !&webidl.Promise
 	if args.len < 4 { return error('TypeError: generateKey() needs 3 arguments') }
 	algorithm := args[1]
 	is_object := C.JSValueIsObject(host.runtime.context, algorithm)
-	mut converted := algorithm
+	mut converted := unsafe { algorithm }
 	if !is_object { converted = host.runtime.binding_string(host.algorithm_string(algorithm)!) }
 	host.runtime.retain_javascript_value(converted)!
 	defer { host.runtime.release_javascript_value(converted) }

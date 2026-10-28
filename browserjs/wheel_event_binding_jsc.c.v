@@ -27,10 +27,10 @@ fn (mut runtime Runtime) install_wheel_event_binding() ! {
 	}
 	factory := runtime.evaluate_host_value(wheel_event_bootstrap())!
 	defer { runtime.release_javascript_value(factory) }
-	mut arguments := [binding.mouse_event_constructor, C.JSContextGetGlobalObject(runtime.context)]
-	arguments << functions
+	mut call_arguments := [binding.mouse_event_constructor, C.JSContextGetGlobalObject(runtime.context)]
+	call_arguments << functions
 	binding.wheel_event_prototype = runtime.retain_javascript_value(runtime.call_javascript_function(factory,
-		C.JSValueMakeUndefined(runtime.context), arguments)!)!
+		C.JSValueMakeUndefined(runtime.context), call_arguments)!)!
 }
 
 fn (mut runtime Runtime) wheel_event_double_member(dictionary voidptr, name string) !f64 {

@@ -13,6 +13,7 @@ import threading
 
 @[heap]
 struct VectorFontPreparationCallback {
+	@[required]
 	on_complete fn (PreparedVectorFontData)
 }
 

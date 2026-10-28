@@ -629,7 +629,7 @@ pub fn (mut p Page) invalidate_compositor_wheel_event_listener_state() {
 		return
 	}
 	if context := p.compositor_context_ {
-		mut mutable_context := context
+		mut mutable_context := unsafe { context }
 		mutable_context.invalidate_wheel_event_listener_state(p.wheel_event_listener_state_generation_)
 	}
 }

@@ -995,7 +995,7 @@ pub fn (mut image HTMLImageElementModel) update_alt_text_shadow_tree() {
 		if text.data() == alt_text {
 			return
 		}
-		mut mutable_text := text
+		mut mutable_text := unsafe { text }
 		mutable_text.set_data(alt_text)
 		if element := image.element_ {
 			mut node := image_dom_element(element).as_node()
@@ -1174,7 +1174,7 @@ pub fn (mut image HTMLImageElementModel) react_to_changes_in_the_environment() {
 
 pub fn (mut image HTMLImageElementModel) adopted_from(old_document &dom.Document) {
 	old_document_mut := unsafe { &dom.Document(old_document) }
-	mut mutable_old_document := old_document_mut
+	mut mutable_old_document := unsafe { old_document_mut }
 	mutable_old_document.unregister_viewport_client(image_viewport_client(&image))
 	if element := image.element_ {
 		image.document_ = image_dom_element(element).document()

@@ -1519,7 +1519,7 @@ fn matches_selector_at(selector Selector, component_list_index int, initial_elem
 	if context.rule_shadow_root != none && compound_selector_contains_host_for_part_matching(compound_selector) {
 		context.for_host_part_matching = true
 	}
-	mut element_for_compound_matching := initial_element
+	mut element_for_compound_matching := unsafe { initial_element }
 	for i := compound_selector.simple_selectors.len - 1; i >= 0; i-- {
 		// The immutable selector owns this array throughout the bounded reverse loop.
 		simple_selector := unsafe { &SimpleSelector(compound_selector.simple_selectors.data) + i }
@@ -1574,13 +1574,13 @@ fn matches_selector_at(selector Selector, component_list_index int, initial_elem
 				return false
 			}
 			parent := traverse_up(element.as_node(), shadow_host) or { return false }
-			parent_element := parent.as_element() or { return false }
+			ancestor_element := parent.as_element() or { return false }
 			if context.inside_has_argument_match
 				&& context.collect_per_element_selector_involvement_metadata {
-				mut mutable_parent := unsafe { &dom.Element(parent_element) }
+				mut mutable_parent := unsafe { &dom.Element(ancestor_element) }
 				mutable_parent.set_in_has_scope(true)
 			}
-			return matches_selector_at(selector, component_list_index - 1, parent_element, shadow_host, mut context, scope, selector_kind, anchor)
+			return matches_selector_at(selector, component_list_index - 1, ancestor_element, shadow_host, mut context, scope, selector_kind, anchor)
 		}
 		.next_sibling {
 			if context.collect_per_element_selector_involvement_metadata {
@@ -2160,7 +2160,7 @@ fn fast_matches(selector Selector, element_to_match &dom.Element, shadow_host ?&
 	if compound_selectors.len == 0 {
 		return false
 	}
-	mut current := element_to_match
+	mut current := unsafe { element_to_match }
 	mut compound_selector_index := compound_selectors.len - 1
 
 	if !fast_matches_compound_selector(compound_selectors[compound_selectors.len - 1], current, shadow_host, mut context) {
@@ -3645,12 +3645,12 @@ fn matches_attribute_in_namespace(attribute_selector SelectorAttribute,
 			if attrs := element.attributes_ {
 				for i := 0; i < attrs.length(); i++ {
 					attr := attrs.item(i) or { continue }
-					matches := if case_insensitive {
+					is_match := if case_insensitive {
 						equals_ignoring_ascii_case(attr.local_name_, attribute_name)
 					} else {
 						attr.local_name_ == attribute_name
 					}
-					if matches && matches_single_attribute(attribute_selector, attr, case_sensitivity) {
+					if is_match && matches_single_attribute(attribute_selector, attr, case_sensitivity) {
 						return true
 					}
 				}

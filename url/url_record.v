@@ -22,7 +22,7 @@ pub mut:
 	has_an_opaque_path bool
 mut:
 	// An absent entry owns no Blob or environment-origin payload.
-	blob_url_entry_ ?BlobURLEntry = none
+	blob_url_entry_ ?BlobURLEntry = ?BlobURLEntry(none)
 }
 
 // https://url.spec.whatwg.org/#special-scheme — the schemes with special parsing rules.

@@ -392,7 +392,7 @@ pub fn (settings &EnvironmentSettingsObject) fetch_request_client_csp_global() &
 			queue_a_task(.unspecified, loop, none, fn [global_object, is_window, event] () {
 				// Violation.cpp:301–305 selects the actual global at execution,
 				// then reads a Window's current associated Document.
-				mut target := global_object
+				mut target := unsafe { global_object }
 				if is_window {
 					target = unsafe { nil }
 					if global_object != unsafe { nil } {

@@ -74,8 +74,8 @@ fn function_prototype_apply(mut vm VM) !Value {
 	this_argument := vm.argument(0)
 	argument_array := vm.argument(1)
 	if argument_array.is_nullish() { return call(mut vm, function, this_argument, []Value{}) }
-	arguments := create_list_from_array_like(mut vm, argument_array, unsafe { nil })!
-	return call(mut vm, function, this_argument, arguments)
+	call_arguments := create_list_from_array_like(mut vm, argument_array, unsafe { nil })!
+	return call(mut vm, function, this_argument, call_arguments)
 }
 
 fn function_prototype_call(mut vm VM) !Value {
@@ -84,11 +84,11 @@ fn function_prototype_call(mut vm VM) !Value {
 		return vm.throw_error_type(.type_error, .not_a_function, function.str())
 	}
 	this_argument := vm.argument(0)
-	mut arguments := []Value{}
+	mut call_arguments := []Value{}
 	for index in 1 .. int(vm.argument_count()) {
-		arguments << vm.argument(u32(index))
+		call_arguments << vm.argument(u32(index))
 	}
-	return call(mut vm, function, this_argument, arguments)
+	return call(mut vm, function, this_argument, call_arguments)
 }
 
 fn function_prototype_bind(mut vm VM) !Value {
@@ -96,11 +96,11 @@ fn function_prototype_bind(mut vm VM) !Value {
 	if !target.is_function() {
 		return vm.throw_error_type(.type_error, .not_a_function, target.str())
 	}
-	mut arguments := []Value{}
+	mut call_arguments := []Value{}
 	for index in 1 .. int(vm.argument_count()) {
-		arguments << vm.argument(u32(index))
+		call_arguments << vm.argument(u32(index))
 	}
-	function := BoundFunction.create(vm.realm(), target.as_object(), vm.argument(0), arguments)
+	function := BoundFunction.create(vm.realm(), target.as_object(), vm.argument(0), call_arguments)
 	mut object := function.object
 	mut length := 0.0
 	if target.as_object().has_own_property(PropertyName.from_str('length')) {
@@ -109,7 +109,7 @@ fn function_prototype_bind(mut vm VM) !Value {
 			if math.is_inf(target_length.number, 1) {
 				length = target_length.number
 			} else if !math.is_inf(target_length.number, -1) {
-				length = math.max(target_length.to_integer_or_infinity(mut vm)! - arguments.len, 0)
+				length = math.max(target_length.to_integer_or_infinity(mut vm)! - call_arguments.len, 0)
 			}
 		}
 	}

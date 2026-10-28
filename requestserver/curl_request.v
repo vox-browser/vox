@@ -52,12 +52,12 @@ pub fn (mut connection CurlConnection) start_fetch(params &fetch.FetchParams, in
 	mut request := unsafe { &fetch.Request(input) }
 	pending := fetch.PendingResponse.create(mut request, none)
 	if filtered_response := request.apply_adblock() {
-		mut output := pending
+		mut output := unsafe { pending }
 		output.resolve(filtered_response)
 		return pending
 	}
 	if connection.closed_ {
-		mut output := pending
+		mut output := unsafe { pending }
 		output.resolve(fetch.Response.network_error('RequestServer is currently unavailable'))
 		return pending
 	}
@@ -74,7 +74,7 @@ pub fn (mut connection CurlConnection) start_fetch(params &fetch.FetchParams, in
 	}
 	connection.next_id_++
 	if native.easy_ == unsafe { nil } {
-		mut output := pending
+		mut output := unsafe { pending }
 		output.resolve(fetch.Response.network_error('Failed to initialize curl easy handle'))
 		return pending
 	}

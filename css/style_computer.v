@@ -1629,13 +1629,13 @@ fn style_computer_update_animated_style_callback(target voidptr) {
 		// Web Animations effects create their CSS view lazily and keep it.
 		web_effects := web_animation_effects_for_style(target_element)
 		for existing in animations {
-			mut animation := existing
+			mut animation := unsafe { existing }
 			if animation.sample_at(style_computer.animation_time_ms_) != none {
 				animation.effect_.update_computed_properties_for_style(mut style_computer, target_element, mut computed)
 			}
 		}
 		for existing in transitions {
-			mut transition := existing
+			mut transition := unsafe { existing }
 			if transition.sample_at(style_computer.animation_time_ms_) != none {
 				transition.keyframe_effect_.update_computed_properties_for_style(mut style_computer, target_element, mut computed)
 			}
@@ -2077,15 +2077,15 @@ pub fn computed_styles_with_and_without_inline(element &dom.Element) ?ComputedSt
 	} else {
 		style_computer.compute_style_with_seeded_ancestors(abstract_element)
 	}
-	inline_style := inline_style_for_abstract_element(abstract_element) or { return none }
-	saved_properties := inline_style.properties.clone()
-	saved_custom_properties := inline_style.custom_properties.clone()
-	saved_typed_properties_cache := inline_style.typed_properties_cache_
-	saved_typed_importance_mask := inline_style.typed_importance_mask_
-	saved_typed_logical_aliases := inline_style.typed_may_have_logical_aliases_
+	element_inline_style := inline_style_for_abstract_element(abstract_element) or { return none }
+	saved_properties := element_inline_style.properties.clone()
+	saved_custom_properties := element_inline_style.custom_properties.clone()
+	saved_typed_properties_cache := element_inline_style.typed_properties_cache_
+	saved_typed_importance_mask := element_inline_style.typed_importance_mask_
+	saved_typed_logical_aliases := element_inline_style.typed_may_have_logical_aliases_
 	saved_custom_property_data := abstract_element.custom_property_data()
 
-	mut mutable_inline_style := unsafe { &CSSStyleProperties(inline_style) }
+	mut mutable_inline_style := unsafe { &CSSStyleProperties(element_inline_style) }
 	mutable_inline_style.properties = []CSSStyleProperty{}
 	mutable_inline_style.custom_properties = map[string]StyleProperty{}
 	mutable_inline_style.typed_properties_cache_ = none

@@ -8,6 +8,7 @@ pub type HostFunction = fn (input string) !string
 
 @[heap]
 struct HostFunctionRecord {
+	@[required]
 	callback HostFunction
 }
 

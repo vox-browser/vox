@@ -319,11 +319,11 @@ pub fn (mut location LocationModel) set_protocol(value string) ! {
 		return
 	}
 	location.require_same_origin()!
-	copy := location.url().with_protocol(value)
-	if copy.scheme() !in ['http', 'https'] {
+	working_copy := location.url().with_protocol(value)
+	if working_copy.scheme() !in ['http', 'https'] {
 		return
 	}
-	location.navigate(copy, .push)!
+	location.navigate(working_copy, .push)!
 }
 
 pub fn (location &LocationModel) host() !string {
@@ -442,14 +442,14 @@ pub fn (mut location LocationModel) set_hash(value string) ! {
 		return
 	}
 	location.require_same_origin()!
-	mut copy := location.url()
-	old_fragment := copy.fragment() or { '' }
+	mut working_copy := location.url()
+	old_fragment := working_copy.fragment() or { '' }
 	input := if value.starts_with('#') { value[1..] } else { value }
-	copy.set_fragment(input)
+	working_copy.set_fragment(input)
 	if input == old_fragment {
 		return
 	}
-	location.navigate(copy, .push)!
+	location.navigate(working_copy, .push)!
 }
 
 pub fn (mut location LocationModel) reload() {
@@ -850,7 +850,7 @@ pub fn (context &BrowsingContextModel) top_level_browsing_context() ?&BrowsingCo
 	if !context.fully_active_override_ || context.discarded_ {
 		return none
 	}
-	mut current := context
+	mut current := unsafe { context }
 	for {
 		parent := current.parent_ or { return current }
 		current = parent
@@ -880,7 +880,7 @@ pub fn (mut context BrowsingContextModel) set_container(container ?&dom.Element)
 }
 
 pub fn (context &BrowsingContextModel) top_level_traversable() ?&TraversableNavigable {
-	mut current := context
+	mut current := unsafe { context }
 	for {
 		if traversable := current.top_level_traversable_ {
 			return traversable

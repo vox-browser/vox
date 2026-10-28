@@ -170,7 +170,7 @@ fn enqueue_upgrade_candidates(node &dom.Node, registry &CustomElementRegistry, r
 	if element := node.as_element() {
 		if element.custom_element_registry() == voidptr(registry)
 			&& candidate_matches_custom_definition(element, registration) {
-			mut candidate := element
+			mut candidate := unsafe { element }
 			candidate.enqueue_a_custom_element_upgrade_reaction(registration.definition)
 		}
 		if shadow_root := element.shadow_root() {
@@ -270,7 +270,7 @@ pub fn (mut registry CustomElementRegistry) define(name string, constructor Cust
 		enqueue_upgrade_candidates(unsafe { &dom.Node(registry.document_) }, registry, registration)
 	}
 	if promise := registry.when_defined_promise_map_[name] {
-		mut pending := promise
+		mut pending := unsafe { promise }
 		pending.resolve(dom.js_number(f64(constructor.id)))
 		registry.when_defined_promise_map_.delete(name)
 	}
@@ -307,7 +307,7 @@ fn registry_upgrade_node(node &dom.Node, registry &CustomElementRegistry) {
 		if element.custom_element_registry() == voidptr(registry) {
 			for registration in registry.definitions_ {
 				if candidate_matches_custom_definition(element, registration) {
-					mut candidate := element
+					mut candidate := unsafe { element }
 					candidate.enqueue_a_custom_element_upgrade_reaction(registration.definition)
 					break
 				}

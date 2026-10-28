@@ -24,6 +24,7 @@ mut:
 @[heap]
 pub struct ViewTransitionHost {
 	document &dom.Document
+	@[required]
 	replay   ViewTransitionReplayHook
 mut:
 	records  map[int]&ViewTransitionHostRecord

@@ -721,7 +721,7 @@ pub:
 	// Clip active at the effect node, before any descendant clips. Its viewport
 	// bounds conservatively limit the native transparency surface.
 	clip_rect  ?LayoutRect
-	filter     ?painting.GfxFilter = none
+	filter     ?painting.GfxFilter = ?painting.GfxFilter(none)
 	mask_clip  PaintClip
 }
 
@@ -828,8 +828,8 @@ pub:
 pub struct PaintImageData {
 pub:
 	image_url                   string
-	background_svg_document     ?&dom.Document = none
-	background_static_svg_resource ?&StaticSVGBackgroundResource = none
+	background_svg_document     ?&dom.Document = ?&dom.Document(none)
+	background_static_svg_resource ?&StaticSVGBackgroundResource = ?&StaticSVGBackgroundResource(none)
 	background_svg_color_scheme css.PreferredColorScheme = .auto_
 	image_intrinsic_width       f64
 	image_intrinsic_height      f64
@@ -846,9 +846,9 @@ pub:
 	image_clip_radii            BoxRadii
 	// Opaque block borders can obscure part of an image without moving its
 	// positioning area or the rounded clip shared with the background color.
-	background_image_destination ?LayoutRect = none
+	background_image_destination ?LayoutRect = ?LayoutRect(none)
 	image_attachment            string
-	background_layer_data       ?&PaintBackgroundLayerData = none
+	background_layer_data       ?&PaintBackgroundLayerData = ?&PaintBackgroundLayerData(none)
 	background_blend_mode       painting.BlendMode
 }
 
@@ -861,10 +861,10 @@ pub:
 	path_data []f32
 	path_transform         [6]f64
 	path_polygons          [][]f64
-	svg_gradient_data      ?&PaintSVGGradientData = none
+	svg_gradient_data      ?&PaintSVGGradientData = ?&PaintSVGGradientData(none)
 	svg_solid_color_data   &PaintSVGSolidColorData = unsafe { nil }
-	fill_pattern           ?&painting.SVGPatternPaintStyle = none
-	stroke_pattern         ?&painting.SVGPatternPaintStyle = none
+	fill_pattern           ?&painting.SVGPatternPaintStyle = ?&painting.SVGPatternPaintStyle(none)
+	stroke_pattern         ?&painting.SVGPatternPaintStyle = ?&painting.SVGPatternPaintStyle(none)
 	stroke_dasharray       []f64
 	stroke_dashoffset      f64
 	non_scaling_stroke     bool
@@ -888,7 +888,7 @@ pub mut:
 	srgb_color_data &PaintSRGBColor = unsafe { nil }
 	force_dark_role           painting.ForceDarkRole
 	force_dark_role_set       bool
-	force_dark_backdrop       ?painting.Color = none
+	force_dark_backdrop       ?painting.Color = ?painting.Color(none)
 	apply_force_dark_to_image bool
 	line_box_debug            bool
 	// Keep the shape flags in this existing boolean/padding group: adding a
@@ -909,7 +909,7 @@ pub mut:
 	// DisplayListRecorder::DrawGlyphRun retains shaped glyph indices and
 	// positions. Raw text remains only as the portable/backend compatibility
 	// fallback; the native player must not shape it again during every repaint.
-	glyph_run           ?&platform.GlyphRun = none
+	glyph_run           ?&platform.GlyphRun = ?&platform.GlyphRun(none)
 	glyph_translation_x f64
 	glyph_translation_y f64
 	glyph_orientation   painting.Orientation
@@ -943,7 +943,7 @@ pub mut:
 	// Only gradient commands retain a resolved background image. Share its
 	// immutable snapshot across cached phases instead of embedding it in every
 	// text, border and image command.
-	gradient                  ?&LinearGradient = none
+	gradient                  ?&LinearGradient = ?&LinearGradient(none)
 	gradient_background_layer bool
 	// Immutable path parameters remain in source space across live replay.
 	svg_data &PaintSVGPathData = unsafe { nil }
@@ -960,25 +960,25 @@ pub mut:
 	image_scroll_offset_y       f64
 	// BackgroundPainting temporarily switches only fixed layers to the visual
 	// context which compensates every ancestor scroll frame.
-	visual_context_index ?int = none
+	visual_context_index ?int = ?int(none)
 	// Allocate immutable replaced-content snapshots only for commands which
 	// use them. Most commands are text or borders and need no media payload.
 	// Background images continue through BackgroundPainting.
-	image_paintable       ?&painting.ImagePaintable = none
-	replaced_image_bitmap ?&dom.Bitmap_ = none
+	image_paintable       ?&painting.ImagePaintable = ?&painting.ImagePaintable(none)
+	replaced_image_bitmap ?&dom.Bitmap_ = ?&dom.Bitmap_(none)
 	// CanvasPaintable publishes its current RGBA surface as external content.
-	canvas_bitmap    ?&dom.Bitmap_ = none
-	canvas_paintable ?&painting.CanvasPaintable = none
+	canvas_bitmap    ?&dom.Bitmap_ = ?&dom.Bitmap_(none)
+	canvas_paintable ?&painting.CanvasPaintable = ?&painting.CanvasPaintable(none)
 	// VideoPaintable retains the representation switch separately from the
 	// optional poster/current-frame bitmap.
-	video_bitmap         ?&dom.Bitmap_ = none
-	video_frame_source   ?&painting.VideoFrameSource = none
+	video_bitmap         ?&dom.Bitmap_ = ?&dom.Bitmap_(none)
+	video_frame_source   ?&painting.VideoFrameSource = ?&painting.VideoFrameSource(none)
 	video_representation painting.VideoRepresentation
-	video_paintable      ?&painting.VideoPaintable = none
+	video_paintable      ?&painting.VideoPaintable = ?&painting.VideoPaintable(none)
 	// NavigableContainerViewportPaintable retains the hosted document's
 	// display list as a nested command stream rather than rasterizing it.
 	nested_viewport_commands  []PaintCommand
-	nested_viewport_paintable ?&painting.NavigableContainerViewportPaintable = none
+	nested_viewport_paintable ?&painting.NavigableContainerViewportPaintable = ?&painting.NavigableContainerViewportPaintable(none)
 	// Synthetic balanced controls around the complete background color/layer
 	// group. The begin command owns the inclusive-subtree glyph runs.
 	text_clip_runs []PaintTextClipRun
@@ -995,19 +995,19 @@ pub mut:
 	// A DisplayListRecorder clip local to this command's paint phase. Unlike an
 	// accumulated visual-context clip, it does not apply to other phases or
 	// descendants (FieldSetPaintable uses this for its background and top edge).
-	recording_clip ?LayoutRect = none
+	recording_clip ?LayoutRect = ?LayoutRect(none)
 	// Effects and SVG masks are group operations. Retain their ancestor order so
 	// replay can emit balanced layer boundaries around the complete subtree.
 	visual_layer_list &PaintVisualLayerList = unsafe { nil }
-	visual_layer_data ?&PaintVisualLayer = none
+	visual_layer_data ?&PaintVisualLayer = ?&PaintVisualLayer(none)
 	// ApplyBackdropFilter samples the already-painted destination. If this box
 	// also has `filter`, that sample comes from outside its newly-opened filter
 	// layer while the filtered backdrop is painted into the layer with the box.
-	backdrop_filter_data           ?&painting.GfxFilter = none
+	backdrop_filter_data           ?&painting.GfxFilter = ?&painting.GfxFilter(none)
 	backdrop_source_outside_filter bool
 	// Nested viewport replay can override the mask geometry while sharing the
 	// immutable layer snapshot retained by the original recording.
-	mask_clip_data ?&PaintClip = none
+	mask_clip_data ?&PaintClip = ?&PaintClip(none)
 	// Fixed commands inherit the root visual context rather than the viewport
 	// scroll frame. Retain that classification for native/debug consumers.
 	fixed_to_viewport bool
@@ -2850,8 +2850,10 @@ fn (b &BlockBox) compatibility_paint_plan() ([]PaintOrderEntry, []CompatibilityP
 		step.entry_index = entry_indexes[u64(voidptr(step.box))] or { -1 }
 	}
 	scratch.leave()
-	retained_entries := []PaintOrderEntry{len: entries.len, init: entries[index]}
-	retained_steps := []CompatibilityPaintStep{len: steps.len, init: steps[index]}
+	mut retained_entries := []PaintOrderEntry{cap: entries.len}
+	for entry in entries { retained_entries << entry }
+	mut retained_steps := []CompatibilityPaintStep{cap: steps.len}
+	for step in steps { retained_steps << step }
 	scratch.finish()
 	return retained_entries, retained_steps
 }
@@ -2866,7 +2868,8 @@ fn (b &BlockBox) compatibility_hit_test_steps(entry_count int) []CompatibilityPa
 	mut steps := []CompatibilityPaintStep{cap: entry_count * compatibility_paint_phase_count}
 	b.collect_compatibility_stacking_context_paint_steps(mut steps, true)
 	scratch.leave()
-	retained := []CompatibilityPaintStep{len: steps.len, init: steps[index]}
+	mut retained := []CompatibilityPaintStep{cap: steps.len}
+	for step in steps { retained << step }
 	scratch.finish()
 	return retained
 }
@@ -3777,7 +3780,7 @@ fn paint_cursor(box &BlockBox, opacity f64) ?PaintCommand {
 
 fn paint_empty_cursor(box &BlockBox, layout_node &Node, dom_node &dom.Node,
 	position_node &dom.Node, opacity f64) ?PaintCommand {
-	mut caret_layout_node := layout_node
+	mut caret_layout_node := unsafe { layout_node }
 	mut caret_x := box.x - box.padding.left
 	mut caret_y := box.y - box.padding.top
 	if voidptr(position_node) != voidptr(dom_node) {

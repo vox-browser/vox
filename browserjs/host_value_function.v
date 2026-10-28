@@ -10,6 +10,7 @@ pub type ValueHostFunction = fn (receiver voidptr, arguments []voidptr) !voidptr
 @[heap]
 struct ValueHostFunctionRecord {
 	runtime &Runtime
+	@[required]
 	callback ValueHostFunction
 }
 

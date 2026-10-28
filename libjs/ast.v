@@ -1455,7 +1455,7 @@ fn StatementKind.empty() StatementKind {
 // Labelled items contribute their function declaration to the surrounding
 // declaration lists without removing the label from the executable tree.
 fn (statement &Statement) function_declaration_for_labelled_item() ?&Statement {
-	mut item := statement
+	mut item := unsafe { statement }
 	for item.kind.tag == .labelled {
 		item = item.kind.labelled_item or { return none }
 	}

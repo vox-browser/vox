@@ -54,7 +54,7 @@ fn (mut host CryptoHost) wrapping_operation(args []voidptr) !&webidl.Promise {
 	key := unsafe { &webcrypto.CryptoKey(record.native) }
 	algorithm := args[5]
 	is_object := C.JSValueIsObject(host.runtime.context, algorithm)
-	mut converted := algorithm
+	mut converted := unsafe { algorithm }
 	if !is_object { converted = host.runtime.binding_string(host.algorithm_string(algorithm)!) }
 	host.runtime.retain_javascript_value(converted)!
 	defer { host.runtime.release_javascript_value(converted) }
@@ -64,7 +64,7 @@ fn (mut host CryptoHost) wrapping_operation(args []voidptr) !&webidl.Promise {
 	}
 	destination := args[6]
 	destination_object := C.JSValueIsObject(host.runtime.context, destination)
-	mut converted_destination := destination
+	mut converted_destination := unsafe { destination }
 	if !destination_object {
 		converted_destination = host.runtime.binding_string(host.algorithm_string(destination)!)
 	}

@@ -24,23 +24,23 @@ pub fn (prototype &ObjectPrototype) initialize(mut vm VM, realm &Realm, primitiv
 		function := NativeFunction.create(mut vm, realm, realm.function_prototype,
 			fn [name, primitives] (mut vm VM) !Value {
 				return match name {
-					'hasOwnProperty' { object_prototype_has_own_property(mut vm, primitives) }
-					'toString' { object_prototype_to_string(mut vm, primitives) }
-					'toLocaleString' { object_prototype_to_locale_string(mut vm, primitives) }
-					'valueOf' { object_prototype_value_of(mut vm, primitives) }
-					'propertyIsEnumerable' { object_prototype_property_is_enumerable(mut vm, primitives) }
-					'isPrototypeOf' { object_prototype_is_prototype_of(mut vm, primitives) }
-					'__defineGetter__' { object_prototype_define_getter(mut vm, primitives) }
-					'__defineSetter__' { object_prototype_define_setter(mut vm, primitives) }
-					'__lookupGetter__' { object_prototype_lookup_getter(mut vm, primitives) }
-					else { object_prototype_lookup_setter(mut vm, primitives) }
+					'hasOwnProperty' { object_prototype_has_own_property(mut vm, primitives)! }
+					'toString' { object_prototype_to_string(mut vm, primitives)! }
+					'toLocaleString' { object_prototype_to_locale_string(mut vm, primitives)! }
+					'valueOf' { object_prototype_value_of(mut vm, primitives)! }
+					'propertyIsEnumerable' { object_prototype_property_is_enumerable(mut vm, primitives)! }
+					'isPrototypeOf' { object_prototype_is_prototype_of(mut vm, primitives)! }
+					'__defineGetter__' { object_prototype_define_getter(mut vm, primitives)! }
+					'__defineSetter__' { object_prototype_define_setter(mut vm, primitives)! }
+					'__lookupGetter__' { object_prototype_lookup_getter(mut vm, primitives)! }
+					else { object_prototype_lookup_setter(mut vm, primitives)! }
 				}
 			}, lengths[index], PropertyName.from_str(name), none)
 		object.define_direct_property(PropertyName.from_str(name), Value.from_object(function.object),
 			attribute_writable | attribute_configurable)
 	}
 	object.define_native_accessor(mut vm, realm, PropertyName.from_str('__proto__'),
-		fn [primitives] (mut vm VM) !Value { return object_prototype_proto_getter(mut vm, primitives) },
+		fn [primitives] (mut vm VM) !Value { return object_prototype_proto_getter(mut vm, primitives)! },
 		object_prototype_proto_setter, attribute_configurable, realm.function_prototype)
 }
 

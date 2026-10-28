@@ -4,7 +4,8 @@ import dom
 import math
 
 fn longhand_reuse_fixture() (&StyleComputer, &dom.Element, &dom.Element, &ComputedProperties) {
-	document := dom.Document.create(dom.url_about_blank())
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.set_document_type(.html)
 	mut parent := document.create_element('div') or { panic(err) }
 	child := document.create_element('span') or { panic(err) }
 	mut parent_node := parent.as_node()
@@ -64,8 +65,8 @@ fn test_longhand_reuse_matches_full_computation_and_keeps_sibling_ownership() {
 	second := computer.compute_properties(dom.AbstractElement.new(second_element, none), mut cascaded)
 	longhand_reuse_assert_oracle(first, computer, first_element, mut cascaded)
 	longhand_reuse_assert_oracle(second, computer, second_element, mut cascaded)
-	assert voidptr(first.subject_element_) == voidptr(first_element)
-	assert voidptr(second.subject_element_) == voidptr(second_element)
+	assert voidptr(first.subject_element_ or { panic('missing first subject') }) == voidptr(first_element)
+	assert voidptr(second.subject_element_ or { panic('missing second subject') }) == voidptr(second_element)
 	assert voidptr(first.property_store_) != voidptr(second.property_store_)
 	assert voidptr(first.computed_property_graph_token_) != voidptr(second.computed_property_graph_token_)
 	first.set_property(.width, parse_css_value(ParsingParams{}, '93px', .width) or {
@@ -213,6 +214,11 @@ fn test_longhand_reuse_guards_absent_inherited_inputs_even_with_a_hash_collision
 
 fn test_longhand_reuse_accepts_equal_payloads_in_distinct_parent_and_cascade_boxes() {
 	computer, parent, element, parent_style := longhand_reuse_fixture()
+	// Use the resolved scalar color: parsed rgb() retains a composite payload,
+	// whose identity guard deliberately excludes independent boxes from reuse.
+	mut scalar_parent := unsafe { parent_style }
+	scalar_parent.set_property(.color, dom_style_value_from_value_logic(
+		StyleValue(ColorStyleValue.create(Color.rgba(255, 0, 0, 255)))), .no, .no)
 	mut other_parent := parent.document().create_element('div') or { panic(err) }
 	other_element := parent.document().create_element('span') or { panic(err) }
 	mut other_node := other_parent.as_node()
@@ -224,10 +230,17 @@ fn test_longhand_reuse_accepts_equal_payloads_in_distinct_parent_and_cascade_box
 	}
 	for id, text in {
 		PropertyID.font_size: '20px'
-		PropertyID.color:     'red'
+		PropertyID.color:     'rgb(255, 0, 0)'
 	} {
-		replacement := parse_css_value(ParsingParams{}, text, id) or { panic(text) }
+		replacement := if id == .color {
+			dom_style_value_from_value_logic(StyleValue(ColorStyleValue.create(Color.rgba(255, 0, 0, 255))))
+		} else {
+			parse_css_value(ParsingParams{}, text, id) or { panic(text) }
+		}
 		original := parent_style.property(id, .no) or { panic(text) }
+		original_typed := typed_style_value_logic_from_dom(original) or { panic('original') }
+		replacement_typed := typed_style_value_logic_from_dom(replacement) or { panic('replacement') }
+		assert original_typed.equals(replacement_typed)
 		assert voidptr(original) != voidptr(replacement)
 		assert original.css_value_handle != replacement.css_value_handle
 		other_style.set_property(id, replacement, .no, .no)

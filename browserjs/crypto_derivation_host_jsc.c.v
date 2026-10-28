@@ -95,7 +95,7 @@ fn (mut host CryptoHost) derivation_operation(args []voidptr) !&webidl.Promise {
 	if args.len < count + 2 { return error('TypeError: ${operation}() needs ${count} arguments') }
 	algorithm := args[2]
 	is_object := C.JSValueIsObject(host.runtime.context, algorithm)
-	mut converted := algorithm
+	mut converted := unsafe { algorithm }
 	if !is_object { converted = host.runtime.binding_string(host.algorithm_string(algorithm)!) }
 	host.runtime.retain_javascript_value(converted)!
 	defer { host.runtime.release_javascript_value(converted) }
@@ -112,7 +112,7 @@ fn (mut host CryptoHost) derivation_operation(args []voidptr) !&webidl.Promise {
 	}
 	destination := args[4]
 	destination_object := C.JSValueIsObject(host.runtime.context, destination)
-	mut converted_destination := destination
+	mut converted_destination := unsafe { destination }
 	if !destination_object {
 		converted_destination = host.runtime.binding_string(host.algorithm_string(destination)!)
 	}

@@ -47,7 +47,7 @@ pub fn (mut d Document) release_native_storage() {
 		// The translated range registry is process-wide (weak upstream).
 		// Native runtime closure has removed every script owner at this point.
 		for key in dom_live_ranges.keys() {
-			range := dom_live_ranges[key]
+			range := dom_live_ranges[key] or { continue }
 			if voidptr(range.start_container().document()) == voidptr(&d) {
 				dom_live_ranges.delete(key)
 			}

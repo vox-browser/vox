@@ -396,7 +396,7 @@ fn propagate_root_styles_to_viewport(root &Node, mut viewport Node) {
 	root_computed := css.computed_properties_for_element(root_element) or { return }
 	mut viewport_styled := viewport.as_node_with_style() or { return }
 	mut body_styled := ?&NodeWithStyle(none)
-	mut body_computed := root_computed
+	mut body_computed := unsafe { root_computed }
 	mut has_styled_body := false
 	if body_element := viewport_first_body_element(root) {
 		if properties := css.computed_properties_for_element(body_element) {
@@ -1002,7 +1002,7 @@ fn build_layout_box_for_element_with_svg_resource_kind(document &dom.Document, e
 	}
 
 	mut box_node := if source := content_replacement_source {
-		mut replacement_style := computed
+		mut replacement_style := unsafe { computed }
 		if adjusted_display := adjusted_display_for_replaced_element(computed.display()) {
 			replacement_style = computed.clone_for_anonymous_with_display(adjusted_display)
 		}
@@ -1467,7 +1467,7 @@ fn svg_pattern_has_element_children(element &dom.Element) bool {
 fn svg_pattern_content_element(element &dom.Element) ?&dom.Element {
 	mut seen := map[i64]bool{}
 	seen[element.as_node().unique_id().value()] = true
-	mut current := element
+	mut current := unsafe { element }
 	for {
 		if svg_pattern_has_element_children(current) {
 			return current
@@ -2389,7 +2389,7 @@ fn build_generated_pseudo_element(document &dom.Document, element &dom.Element, 
 	if computed.display().is_list_item() || computed.display().is_contents() {
 		content_replacement_source = none
 	}
-	mut generated_style := computed
+	mut generated_style := unsafe { computed }
 	if content_replacement_source != none {
 		if adjusted_display := adjusted_display_for_replaced_element(computed.display()) {
 			generated_style = computed.clone_for_anonymous_with_display(adjusted_display)

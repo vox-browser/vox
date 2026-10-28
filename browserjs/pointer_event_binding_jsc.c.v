@@ -45,11 +45,11 @@ fn (mut runtime Runtime) install_pointer_event_binding() ! {
 	}
 	factory := runtime.evaluate_host_value(pointer_event_bootstrap())!
 	defer { runtime.release_javascript_value(factory) }
-	mut arguments := [binding.mouse_event_constructor, C.JSContextGetGlobalObject(runtime.context),
+	mut call_arguments := [binding.mouse_event_constructor, C.JSContextGetGlobalObject(runtime.context),
 		C.JSValueMakeBoolean(runtime.context, settings.is_secure_context())]
-	arguments << functions
+	call_arguments << functions
 	values := runtime.retain_javascript_value(runtime.call_javascript_function(factory,
-		C.JSValueMakeUndefined(runtime.context), arguments)!)!
+		C.JSValueMakeUndefined(runtime.context), call_arguments)!)!
 	defer { runtime.release_javascript_value(values) }
 	binding.pointer_event_prototype =
 		runtime.retain_javascript_value(runtime.binding_property(values, '0')!)!

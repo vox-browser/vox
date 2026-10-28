@@ -449,13 +449,13 @@ fn (mut storage AnimationSampleStorage) adopt(value &dom.StyleValue) &dom.StyleV
 	}
 	storage.enter()
 	defer { storage.leave() }
-	mut copy := &dom.StyleValue{
+	mut working_copy := &dom.StyleValue{
 		css_text: value.css_text.clone()
 	}
 	if url := value.base_url {
-		copy.base_url = url.clone()
+		working_copy.base_url = url.clone()
 	}
-	return copy
+	return working_copy
 }
 
 fn document_animation_samples(document &dom.Document) &AnimationSampleStorage {
@@ -524,13 +524,13 @@ fn (s &StyleComputer) copy_sampled_style_value(property_id PropertyID, value &do
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
 	text := value.css_text.clone()
-	mut copy := parse_css_value(ParsingParams{}, text, property_id) or {
+	mut working_copy := parse_css_value(ParsingParams{}, text, property_id) or {
 		&dom.StyleValue{
 			css_text: text
 		}
 	}
 	if url := value.base_url {
-		copy.base_url = url.clone()
+		working_copy.base_url = url.clone()
 	}
-	return copy
+	return working_copy
 }

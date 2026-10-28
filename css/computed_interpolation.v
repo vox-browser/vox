@@ -586,7 +586,7 @@ pub mut:
 	kind          ListStyleTypeKind
 	name          string
 	// An absent counter owns no algorithm or symbol storage.
-	counter_style ?CounterStyle = none
+	counter_style ?CounterStyle = ?CounterStyle(none)
 }
 
 pub enum ListStylePosition as u8 {
@@ -5084,23 +5084,23 @@ fn computed_interpolation_animation_timeline_from_style_value(value &dom.StyleVa
 		// Use the scroll progress timeline indicated by the given scroll() function. See Scroll-driven Animations
 		// § 2.2.1 The scroll() notation.
 		arguments_value := typed_value.value()
-		arguments := match arguments_value {
+		call_arguments := match arguments_value {
 			TupleStyleValue { arguments_value.tuple() }
 			else {
 				return none
 			}
 		}
-		if arguments.len != 2 {
+		if call_arguments.len != 2 {
 			return none
 		}
 		mut scroller := Scroller.nearest
 		mut axis := Axis.block
-		if scroller_value := arguments[tuple_scroll_function_scroller_index] {
+		if scroller_value := call_arguments[tuple_scroll_function_scroller_index] {
 			scroller = scroller_from_identifier_for_value_logic(scroller_value.serialize(.normal)) or {
 				return none
 			}
 		}
-		if axis_value := arguments[tuple_scroll_function_axis_index] {
+		if axis_value := call_arguments[tuple_scroll_function_axis_index] {
 			axis = axis_from_identifier_for_value_logic(axis_value.serialize(.normal)) or {
 				return none
 			}
@@ -10904,6 +10904,7 @@ pub fn (computer &StyleComputer) font_computer() &FontComputer {
 }
 
 struct DOMLonghandExpansionCallback {
+	@[required]
 	callback fn (PropertyID, &dom.StyleValue)
 }
 
@@ -10914,6 +10915,7 @@ fn invoke_legacy_dom_longhand(context voidptr, property_id PropertyID, value &do
 
 struct TypedDOMLonghandExpansionContext {
 	context voidptr
+	@[required]
 	callback fn (voidptr, PropertyID, &dom.StyleValue)
 }
 
@@ -11726,11 +11728,11 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 				&& computed_interpolation_default_work_cache[property_index] == 0 {
 				continue
 			}
-			is_inherited_property := computed_interpolation_is_inherited_property(property_id)
+			property_is_inherited := computed_interpolation_is_inherited_property(property_id)
 			// A non-inherited property's default is computed from the same generated
 			// initial value on every element. Cache that typed result after the first
 			// element; inherited defaults remain element-dependent through their parent.
-			can_reuse_default_computed_value := !has_cascaded_property && !is_inherited_property
+			can_reuse_default_computed_value := !has_cascaded_property && !property_is_inherited
 				&& property_requires_computation_with_initial_value(property_id)
 			if can_reuse_default_computed_value {
 				cached_default := computed_interpolation_default_computed_value_cache[property_index]
@@ -11762,14 +11764,14 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 				continue
 			}
 
-			mut should_inherit := value == none && is_inherited_property
+			mut should_inherit := value == none && property_is_inherited
 
 			// Classify the cascaded value once for inherit/unset and color's
 			// currentcolor inheritance rule. All three checks read the same value.
 			if style_value := value {
 				keyword := computed_interpolation_style_value_keyword(style_value) or { Keyword.invalid }
 				should_inherit = should_inherit || keyword == .inherit
-					|| (keyword == .unset && is_inherited_property)
+					|| (keyword == .unset && property_is_inherited)
 					|| (property_id == .color && keyword == .currentcolor)
 			}
 
@@ -11816,7 +11818,7 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 			if depends_on_inherited_info {
 				properties.add_inheritance_dependent_specified_value(property_id, style_value)
 			}
-			mut computed_value := style_value
+			mut computed_value := unsafe { style_value }
 			if requires_computation {
 				mut computation_context := s.get_computation_context_for_property(property_id, properties, abstract_element)
 				computation_context.reset_viewport_metric_dependency_tracking()
@@ -11878,7 +11880,7 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 	s.process_animation_definitions(properties, cascaded_properties, abstract_element)
 	if s.css_animation_storage_ != unsafe { nil } {
 		for existing in s.css_animation_storage_.animations_for(abstract_element) {
-			mut animation := existing
+			mut animation := unsafe { existing }
 			if animation.sample_at(s.animation_time_ms_) != none {
 				s.collect_animation_into(abstract_element, voidptr(animation.effect_), mut properties)
 				publish_animated_custom_properties(properties, abstract_element)
@@ -11887,7 +11889,7 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 	}
 	if s.css_transition_storage_ != unsafe { nil } {
 		for existing in s.css_transition_storage_.transitions_for(abstract_element) {
-			mut transition := existing
+			mut transition := unsafe { existing }
 			if transition.sample_at(s.animation_time_ms_) != none {
 				s.collect_animation_into(abstract_element, voidptr(transition.keyframe_effect_), mut properties)
 				publish_animated_custom_properties(properties, abstract_element)
@@ -12284,7 +12286,7 @@ pub fn (s &StyleComputer) process_animation_definitions(computed_properties &Com
 	for animation_properties in animation_definitions {
 		defined_names[animation_properties.name] = true
 		if existing := storage.animation(abstract_element, animation_properties.name) {
-			mut animation := existing
+			mut animation := unsafe { existing }
 			mut effect := unsafe { &KeyframeEffect(animation.effect_) }
 			effect.set_key_frame_set(s.resolve_animation_keyframes(animation_properties.name, cascaded_properties, abstract_element))
 			animation.apply_css_properties(animation_properties)
@@ -14922,7 +14924,7 @@ fn collect_html_presentational_hints(mut cascaded_properties []StyleProperty, el
 	}
 
 	if tag_name in ['img', 'iframe', 'video'] || input_accepts_dimensions {
-		mut dimension_source := element
+		mut dimension_source := unsafe { element }
 		if tag_name == 'img' && element.as_node().is_html_image_element() {
 			image := unsafe { &dom.HTMLImageElement(element) }
 			if source := image.dimension_attribute_source_ {

@@ -1478,7 +1478,7 @@ pub fn style_scope_for_abstract_element(abstract_element dom.AbstractElement) &S
 }
 
 fn css_style_scope_for_document(document &dom.Document) &StyleScope {
-	mut dom_scope := document.style_scope()
+	mut dom_scope := unsafe { document.style_scope() }
 	return css_style_scope_from_dom(mut dom_scope, unsafe { &dom.Node(document) })
 }
 
@@ -1486,7 +1486,7 @@ fn css_style_scope_for_shadow_root(shadow_root &dom.ShadowRoot) &StyleScope {
 	if shadow_root.uses_document_style_sheets() {
 		return css_style_scope_for_document(shadow_root.document())
 	}
-	mut dom_scope := shadow_root.style_scope()
+	mut dom_scope := unsafe { shadow_root.style_scope() }
 	return css_style_scope_from_dom(mut dom_scope, unsafe { &dom.Node(shadow_root) })
 }
 

@@ -43,10 +43,10 @@ fn (mut runtime Runtime) install_mouse_event_binding() ! {
 	}
 	factory := runtime.evaluate_host_value(mouse_event_bootstrap())!
 	defer { runtime.release_javascript_value(factory) }
-	mut arguments := [binding.ui_event_constructor, C.JSContextGetGlobalObject(runtime.context)]
-	arguments << functions
+	mut call_arguments := [binding.ui_event_constructor, C.JSContextGetGlobalObject(runtime.context)]
+	call_arguments << functions
 	binding.mouse_event_prototype = runtime.retain_javascript_value(runtime.call_javascript_function(factory,
-		C.JSValueMakeUndefined(runtime.context), arguments)!)!
+		C.JSValueMakeUndefined(runtime.context), call_arguments)!)!
 	binding.mouse_event_constructor = runtime.retain_javascript_value(runtime.binding_property(binding.mouse_event_prototype,
 		'constructor')!)!
 }

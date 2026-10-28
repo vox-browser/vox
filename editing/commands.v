@@ -837,7 +837,7 @@ pub fn command_format_block_action(mut document dom.Document, value string) bool
 }
 
 fn editing_lift_to_formattable_block(input_node &dom.Node) &dom.Node {
-	mut node := input_node
+	mut node := unsafe { input_node }
 	for {
 		parent := node.parent() or { break }
 		if !parent.is_editable() || !is_in_same_editing_host(node, parent) {

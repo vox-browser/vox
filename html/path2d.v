@@ -178,11 +178,11 @@ pub fn (mut a Path2D) add_path(path &Path2D, transform CanvasAffineTransform) {
 		return
 	}
 	// 4-5. Copy path's subpaths and transform them by matrix.
-	copy := path.path().copy_transformed(transform)
+	working_copy := path.path().copy_transformed(transform)
 	// 6. Let (x, y) be the last point of the copy.
-	xy := copy.last_point()
+	xy := working_copy.last_point()
 	// 7. Add all the subpaths in the copy to a.
-	a.CanvasPath.path_.append_path(copy)
+	a.CanvasPath.path_.append_path(working_copy)
 	// 8. Create a new subpath in a with (x, y) as the only point.
 	a.move_to(xy.x, xy.y)
 }

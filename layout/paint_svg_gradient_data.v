@@ -7,10 +7,10 @@ import painting
 // gradient styles in every text, border, image and solid-path command.
 pub struct PaintSVGGradientData {
 pub:
-	fill_linear_gradient   ?painting.SVGLinearGradientPaintStyle = none
-	stroke_linear_gradient ?painting.SVGLinearGradientPaintStyle = none
-	fill_radial_gradient   ?painting.SVGRadialGradientPaintStyle = none
-	stroke_radial_gradient ?painting.SVGRadialGradientPaintStyle = none
+	fill_linear_gradient   ?painting.SVGLinearGradientPaintStyle = ?painting.SVGLinearGradientPaintStyle(none)
+	stroke_linear_gradient ?painting.SVGLinearGradientPaintStyle = ?painting.SVGLinearGradientPaintStyle(none)
+	fill_radial_gradient   ?painting.SVGRadialGradientPaintStyle = ?painting.SVGRadialGradientPaintStyle(none)
+	stroke_radial_gradient ?painting.SVGRadialGradientPaintStyle = ?painting.SVGRadialGradientPaintStyle(none)
 }
 
 fn retained_svg_gradient_data(fill_linear ?painting.SVGLinearGradientPaintStyle,

@@ -175,11 +175,11 @@ fn parse_as_list_of_component_values_for_unparsed_value(value string) []Componen
 
 // https://drafts.css-houdini.org/css-typed-om-1/#cssvariablereferencevalue
 fn reify_a_var_reference(function Function) ?CSSVariableReferenceValue {
-	arguments := parse_according_to_argument_grammar(.var_, function.value) or { return none }
-	if arguments !is DeclarationValueList {
+	call_arguments := parse_according_to_argument_grammar(.var_, function.value) or { return none }
+	if call_arguments !is DeclarationValueList {
 		return none
 	}
-	declaration_values := arguments as DeclarationValueList
+	declaration_values := call_arguments as DeclarationValueList
 
 	mut name_tokens := ParserTokenStream.from_values(declaration_values.first())
 	name_tokens.discard_whitespace()

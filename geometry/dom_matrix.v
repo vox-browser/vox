@@ -171,8 +171,8 @@ pub fn DOMMatrixReadOnly.construct_impl(init ?DOMMatrixConstructorInit, is_windo
 pub fn DOMMatrixReadOnly.create_from_constructor(init ?DOMMatrixConstructorInit, string_context DOMMatrixStringContext) !&DOMMatrixReadOnly {
 	value := init or { return DOMMatrixReadOnly.create() }
 	return match value {
-		[]f64 { DOMMatrixReadOnly.construct(value) }
-		string { DOMMatrixReadOnly.construct_from_string(value, string_context == .window) }
+		[]f64 { DOMMatrixReadOnly.construct(value)! }
+		string { DOMMatrixReadOnly.construct_from_string(value, string_context == .window)! }
 	}
 }
 

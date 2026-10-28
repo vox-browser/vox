@@ -31,7 +31,7 @@ struct UserDefinedDecoder {}
 // x_user_defined.rs uses decoder_function! with empty preamble/loop/EOF.
 // macros.rs checks input availability before destination.check_space_bmp,
 // then commits exactly one byte before its actual UserDefined body executes.
-fn (_ UserDefinedDecoder) decode_to_utf8_raw(input []u8, mut output []u8, last bool) (SingleByteDecoderResult, int, int) {
+fn (_ UserDefinedDecoder) decode_to_utf8_raw(input []u8, mut output []u8, _ bool) (SingleByteDecoderResult, int, int) {
 	mut read := 0
 	mut written := 0
 	for {

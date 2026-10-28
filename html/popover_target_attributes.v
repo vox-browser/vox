@@ -69,11 +69,11 @@ pub fn PopoverTargetAttributes.get_the_popover_target_element(node &dom.Node) ?&
 	} else if target_id := element.get_attribute('popovertarget') {
 		popover = find_html_element_by_id(node.root(), target_id)
 	}
-	popover_element := popover or { return none }
-	if html_element_popover(popover_element) == none {
+	target_element := popover or { return none }
+	if html_element_popover(target_element) == none {
 		return none
 	}
-	return popover_element
+	return target_element
 }
 
 pub fn PopoverTargetAttributes.popover_target_activation_behaviour(node &dom.Node, event_target &dom.Node) {

@@ -630,7 +630,7 @@ pub fn force_the_value(node &dom.Node, command string, new_value ?string) {
 		// 4. While ancestor is not null:
 		for {
 			current := ancestor or { break }
-			mut next := current
+			mut next := unsafe { current }
 
 			// 1. If ancestor is an a, set the tag name of ancestor to "span", and let ancestor be the result.
 			if current.is_html_anchor_element() {
@@ -866,7 +866,7 @@ pub fn push_down_values(command string, node &dom.Node, new_value ?string) {
 // https://w3c.github.io/editing/docs/execCommand/#reorder-modifiable-descendants
 pub fn reorder_modifiable_descendants(node &dom.Node, command string, new_value ?string) {
 	// 1. Let candidate equal node.
-	mut candidate := node
+	mut candidate := unsafe { node }
 
 	// 2. While candidate is a modifiable element, and candidate has exactly one child, and that child is also a
 	//    modifiable element, and candidate is not a simple modifiable element or candidate's specified command value
@@ -1047,7 +1047,7 @@ pub fn restore_states_and_values(mut document dom.Document, overrides []Recorded
 	// 1. Let node be the first formattable node effectively contained in the active range, or null if there is none.
 	// 2. If node is not null,
 	if first_node := first_formattable_node_effectively_contained(active_range(document)) {
-		mut current_node := first_node
+		mut current_node := unsafe { first_node }
 
 		// then for each (command, override) pair in overrides, in order:
 		for override_ in overrides {
