@@ -109,15 +109,19 @@ fn chromium_msaa_tiles_for_triggers_into(triggers []ChromiumMSAATrigger, origin_
 	}
 }
 
-fn chromium_msaa_tiles(commands []layout.PaintCommand, device_scale f64, tile_rows int) []int {
-	return chromium_msaa_tiles_for_triggers(chromium_msaa_triggers(commands), 0, device_scale,
-		tile_rows)
+$if test {
+	fn chromium_msaa_tiles(commands []layout.PaintCommand, device_scale f64, tile_rows int) []int {
+		return chromium_msaa_tiles_for_triggers(chromium_msaa_triggers(commands), 0, device_scale,
+			tile_rows)
+	}
 }
 
 // The document rows covered by a draw that makes Chromium's tile multisampled.
-fn chromium_msaa_trigger_bounds(command layout.PaintCommand) ?[]f64 {
-	rect := chromium_msaa_trigger_rect(command) or { return none }
-	return [rect.y, rect.y + rect.height]
+$if test {
+	fn chromium_msaa_trigger_bounds(command layout.PaintCommand) ?[]f64 {
+		rect := chromium_msaa_trigger_rect(command) or { return none }
+		return [rect.y, rect.y + rect.height]
+	}
 }
 
 fn chromium_msaa_trigger_rect(command layout.PaintCommand) ?layout.LayoutRect {
@@ -230,11 +234,6 @@ fn chromium_border_has_diagonal_path(command layout.PaintCommand) bool {
 	return false
 }
 
-fn transformed_row_bounds(transform [6]f64, x f64, y f64, width f64, height f64) []f64 {
-	rect := transformed_raster_bounds(transform, x, y, width, height)
-	return [rect.y, rect.y + rect.height]
-}
-
 fn transformed_raster_bounds(transform [6]f64, x f64, y f64, width f64, height f64) layout.LayoutRect {
 	matrix := normalized_paint_transform(transform)
 	mut left := math.inf(1)
@@ -291,26 +290,30 @@ fn clipped_out_rect_segments(command layout.PaintCommand) [][]f64 {
 
 // Classify paths in their owning layer. A path in the document's root tile
 // does not force an overlapping scroll button's independent tile to use MSAA.
-fn chromium_msaa_layer_tiles(commands []layout.PaintCommand, layer layout.ChromiumRasterLayer,
-	device_scale f64, tile_rows int, root bool) []int {
-	triggers := chromium_msaa_triggers(commands).filter(it.command_index in layer.command_indices)
-	origin_y := if root { 0.0 } else { math.floor(layer.bounds.y * device_scale) / device_scale }
-	return chromium_msaa_tiles_for_triggers(triggers, origin_y, device_scale, tile_rows)
+$if test {
+	fn chromium_msaa_layer_tiles(commands []layout.PaintCommand, layer layout.ChromiumRasterLayer,
+		device_scale f64, tile_rows int, root bool) []int {
+		triggers := chromium_msaa_triggers(commands).filter(it.command_index in layer.command_indices)
+		origin_y := if root { 0.0 } else { math.floor(layer.bounds.y * device_scale) / device_scale }
+		return chromium_msaa_tiles_for_triggers(triggers, origin_y, device_scale, tile_rows)
+	}
 }
 
 // The triggers of each raster layer, in paint order. One pass: filtering
 // them for every layer reserved room for all of them each time.
-fn chromium_msaa_triggers_by_layer(triggers []ChromiumMSAATrigger, plan layout.ChromiumRasterLayerPlan) [][]ChromiumMSAATrigger {
-	mut by_layer := [][]ChromiumMSAATrigger{len: plan.layers.len}
-	for trigger in triggers {
-		if trigger.command_index < plan.command_layers.len {
-			layer := plan.command_layers[trigger.command_index]
-			if layer >= 0 && layer < by_layer.len {
-				by_layer[layer] << trigger
+$if test {
+	fn chromium_msaa_triggers_by_layer(triggers []ChromiumMSAATrigger, plan layout.ChromiumRasterLayerPlan) [][]ChromiumMSAATrigger {
+		mut by_layer := [][]ChromiumMSAATrigger{len: plan.layers.len}
+		for trigger in triggers {
+			if trigger.command_index < plan.command_layers.len {
+				layer := plan.command_layers[trigger.command_index]
+				if layer >= 0 && layer < by_layer.len {
+					by_layer[layer] << trigger
+				}
 			}
 		}
+		return by_layer
 	}
-	return by_layer
 }
 
 // Each layer keeps its own vectors, including while temporarily inactive.

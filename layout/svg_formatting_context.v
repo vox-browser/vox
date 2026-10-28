@@ -982,10 +982,12 @@ fn (measure SVGFirstContourMeasure) position_and_tangent(distance f64) ?SVGPathP
 // Gfx::Path::place_glyph_runs_along(): place each shaped glyph at its retained
 // run position, rotate it to the tangent, and stop when its midpoint passes the
 // end of the first contour.
-fn svg_place_text_along_path(shape_path svg.Path, text string, font &platform.Font,
-	start_offset f64) svg.Path {
-	run := platform.shape_text(0, 0, text, font, .common)
-	return svg_place_glyph_runs_along_path(shape_path, [run], start_offset)
+$if test {
+	fn svg_place_text_along_path(shape_path svg.Path, text string, font &platform.Font,
+		start_offset f64) svg.Path {
+		run := platform.shape_text(0, 0, text, font, .common)
+		return svg_place_glyph_runs_along_path(shape_path, [run], start_offset)
+	}
 }
 
 fn svg_place_glyph_runs_along_path(shape_path svg.Path, runs []&platform.GlyphRun,
@@ -1193,11 +1195,6 @@ fn is_svg_container_element(element &dom.Element) bool {
 	return element.local_name() in ['a', 'use', 'symbol', 'g', 'mask', 'switch']
 }
 
-fn resolve_svg_attribute_length(element &dom.Element, name string, reference CSSPixels, fallback CSSPixels) CSSPixels {
-	value := svg.parse_number_percentage(element.get_attribute_value(name)) or { return fallback }
-	return CSSPixels.nearest_value_for(value.resolve_relative_to(reference.to_double()))
-}
-
 fn resolve_computed_svg_length(computed &css.ComputedProperties, property_id css.PropertyID, reference CSSPixels, fallback CSSPixels) CSSPixels {
 	value := computed.length_percentage_to_px(property_id, reference.to_double()) or {
 		return fallback
@@ -1212,14 +1209,6 @@ fn resolve_computed_svg_viewport_dimension(computed &css.ComputedProperties, pro
 		}
 	}
 	return resolve_computed_svg_length(computed, property_id, reference, reference)
-}
-
-fn resolve_svg_viewport_dimension(element &dom.Element, name string, reference CSSPixels) CSSPixels {
-	text := element.get_attribute_value(name).trim_space()
-	if text.len == 0 || text == 'auto' {
-		return reference
-	}
-	return resolve_svg_attribute_length(element, name, reference, reference)
 }
 
 fn visible_svg_stroke_width(graphics_box &Node, viewport_size CSSPixelSize) f64 {

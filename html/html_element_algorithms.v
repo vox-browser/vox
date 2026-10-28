@@ -195,8 +195,10 @@ fn merge_html_element_text_with_next(node &dom.Node) {
 	mutable_next.remove(false)
 }
 
-fn merge_with_the_next_text_node(node &dom.Text) {
-	merge_html_element_text_with_next(unsafe { &dom.Node(node) })
+$if test {
+	fn merge_with_the_next_text_node(node &dom.Text) {
+		merge_html_element_text_with_next(unsafe { &dom.Node(node) })
+	}
 }
 
 pub fn html_element_set_outer_text(element &dom.HTMLElement, value string) ! {
@@ -277,8 +279,10 @@ fn html_element_rendered_text_collection_steps(node &dom.Node) []RenderedTextIte
 	return items
 }
 
-fn rendered_text_collection_steps(node &dom.Node) []RenderedTextItem {
-	return html_element_rendered_text_collection_steps(node)
+$if test {
+	fn rendered_text_collection_steps(node &dom.Node) []RenderedTextItem {
+		return html_element_rendered_text_collection_steps(node)
+	}
 }
 
 pub fn html_element_get_the_text_steps(element &dom.HTMLElement) string {
@@ -494,10 +498,6 @@ fn paintable_box_rect_of_kind(node &dom.LayoutNode, border_box dom.Rect, kind Pa
 
 fn paintable_box_absolute_united_border_box_rect(start &dom.LayoutNode) ?dom.Rect {
 	return united_rect_for_continuation_chain(start, .border)
-}
-
-fn paintable_box_absolute_united_content_rect(start &dom.LayoutNode) ?dom.Rect {
-	return united_rect_for_continuation_chain(start, .content)
 }
 
 fn paintable_box_absolute_united_padding_box_rect(start &dom.LayoutNode) ?dom.Rect {

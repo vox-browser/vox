@@ -48,8 +48,10 @@ struct PreparedDOMLayoutAttachment {
 	root &dom.LayoutNode
 }
 
-fn attach_layout_nodes_before_layout(root_box &Node) &dom.LayoutNode {
-	return prepare_dom_layout_attachment(root_box).root
+$if test {
+	fn attach_layout_nodes_before_layout(root_box &Node) &dom.LayoutNode {
+		return prepare_dom_layout_attachment(root_box).root
+	}
 }
 
 fn prepare_dom_layout_attachment(root_box &Node) PreparedDOMLayoutAttachment {

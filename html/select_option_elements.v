@@ -18,10 +18,6 @@ fn option_dom_element(option &dom.HTMLOptionElement) &dom.Element {
 	return unsafe { &dom.Element(option) }
 }
 
-fn option_html_element(option &dom.HTMLOptionElement) &dom.HTMLElement {
-	return unsafe { &dom.HTMLElement(option) }
-}
-
 fn select_node(select_element &dom.HTMLSelectElement) &dom.Node {
 	return select_dom_element(select_element).as_node()
 }

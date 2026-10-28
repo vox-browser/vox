@@ -219,16 +219,22 @@ fn canvas_glyph_run_path(run &platform.GlyphRun, baseline_y f64) CanvasGfxPath {
 }
 
 // The compact bitmap renderer uses the binding enums as its native cap and join values.
-fn to_gfx_cap(cap_style CanvasLineCap) CanvasLineCap {
-	return cap_style
+$if test {
+	fn to_gfx_cap(cap_style CanvasLineCap) CanvasLineCap {
+		return cap_style
+	}
 }
 
-fn to_gfx_join(join_style CanvasLineJoin) CanvasLineJoin {
-	return join_style
+$if test {
+	fn to_gfx_join(join_style CanvasLineJoin) CanvasLineJoin {
+		return join_style
+	}
 }
 
-fn parse_fill_rule(fill_rule string) string {
-	return if fill_rule == 'evenodd' { 'evenodd' } else { 'nonzero' }
+$if test {
+	fn parse_fill_rule(fill_rule string) string {
+		return if fill_rule == 'evenodd' { 'evenodd' } else { 'nonzero' }
+	}
 }
 
 fn canvas_vector_angle(ux f64, uy f64, vx f64, vy f64) f64 {
@@ -520,15 +526,6 @@ fn is_point_in_path_internal(path CanvasGfxPath, transform CanvasAffineTransform
 		winding_number += canvas_winding_number(polygon, point)
 	}
 	return winding_number != 0
-}
-
-fn canvas_point_is_inside_clip(state DrawingState, point FloatPoint) bool {
-	for clip_path in state.clip_paths {
-		if !is_point_in_path_internal(clip_path.path, CanvasAffineTransform{}, point.x, point.y, clip_path.fill_rule) {
-			return false
-		}
-	}
-	return true
 }
 
 fn canvas_composite_operation_to_string(operation CompositingAndBlendingOperator) string {

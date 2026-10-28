@@ -25,8 +25,10 @@ pub:
 	quality ?f64
 }
 
-fn options_convert_or_default(options ?ImageEncodeOptions) ImageEncodeOptions {
-	return options or { ImageEncodeOptions{} }
+$if test {
+	fn options_convert_or_default(options ?ImageEncodeOptions) ImageEncodeOptions {
+		return options or { ImageEncodeOptions{} }
+	}
 }
 
 @[heap]

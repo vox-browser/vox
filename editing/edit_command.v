@@ -375,13 +375,6 @@ pub fn remove_node(node &dom.Node) {
 	remove_node_with_coalescence_behavior(node, true)
 }
 
-// The typed DOM bridge currently realizes a model edit by replacing the host's
-// serialized children. Those removals are transport, not semantic removals
-// near the caret, so they must not terminate a typing unit.
-fn remove_node_for_host_replacement(node &dom.Node) {
-	remove_node_with_coalescence_behavior(node, false)
-}
-
 pub fn replace_data(node &dom.CharacterData, offset int, count int, data string) ! {
 	length := node.length_in_utf16_code_units()
 	if offset < 0 || offset > length || count < 0 {

@@ -188,22 +188,6 @@ fn boundary_visual_lines_share_inline_context(before &Text, after &Text) bool {
 	return before_lines.last().owner_paintable == after_lines[0].owner_paintable
 }
 
-fn canonical_location_at_outer_edge_of_inline_content(text &Text, block &Node, direction CaretNavigationDirection) CaretLocation {
-	mut node := text.as_node()
-	for {
-		parent := node.parent() or { break }
-		offset := if direction == .forward { node.index() } else { node.index() + 1 }
-		if selection_same_node(parent, block) {
-			return CaretLocation{ node: parent, offset: offset }
-		}
-		node = parent
-	}
-	return CaretLocation{
-		node: text.as_node()
-		offset: if direction == .forward { 0 } else { text.length() }
-	}
-}
-
 pub struct CaretNavigator {
 pub:
 	document &Document

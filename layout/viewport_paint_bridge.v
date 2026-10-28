@@ -697,9 +697,11 @@ fn patch_compositor_visual_contexts(mut tree painting.AccumulatedVisualContextTr
 	return true
 }
 
-fn assign_compatibility_visual_contexts(mut box BlockBox, visual_parent ?&BlockBox,
-	boxes_by_layout map[u64]&BlockBox, mut tree painting.AccumulatedVisualContextTree) {
-	assign_compatibility_visual_contexts_with_coordinate_root(mut box, visual_parent, boxes_by_layout, 0, mut tree)
+$if test {
+	fn assign_compatibility_visual_contexts(mut box BlockBox, visual_parent ?&BlockBox,
+		boxes_by_layout map[u64]&BlockBox, mut tree painting.AccumulatedVisualContextTree) {
+		assign_compatibility_visual_contexts_with_coordinate_root(mut box, visual_parent, boxes_by_layout, 0, mut tree)
+	}
 }
 
 fn assign_compatibility_visual_contexts_with_coordinate_root(mut box BlockBox, visual_parent ?&BlockBox, boxes_by_layout map[u64]&BlockBox, coordinate_root int, mut tree painting.AccumulatedVisualContextTree) {
@@ -965,13 +967,6 @@ fn paintable_box_transform_rect_to_viewport(box &BlockBox, rect LayoutRect,
 	snapshot painting.ScrollStateSnapshot) LayoutRect {
 	return transform_rect_to_viewport_in_layout_coordinates(box.accumulated_visual_context_index,
 		rect, device_pixels_per_css_pixel, box_layout_coordinate_scale(box), tree, snapshot)
-}
-
-fn transform_rect_to_viewport_with_visual_context(context_index int, rect LayoutRect,
-	device_pixels_per_css_pixel f64, tree painting.AccumulatedVisualContextTree,
-	snapshot painting.ScrollStateSnapshot) LayoutRect {
-	return transform_rect_to_viewport_in_layout_coordinates(context_index, rect,
-		device_pixels_per_css_pixel, 1, tree, snapshot)
 }
 
 fn transform_rect_to_viewport_in_layout_coordinates(context_index int, rect LayoutRect,
@@ -2270,18 +2265,20 @@ struct CompatibilityVisualReplayStep {
 	fixed_to_viewport bool
 }
 
-fn lower_visual_layers(commands []PaintCommand) []PaintCommand {
-	mut steps := []CompatibilityVisualReplayStep{cap: commands.len}
-	for index in 0 .. commands.len {
-		command := unsafe { &commands[index] }
-		steps << CompatibilityVisualReplayStep{
-			command_index: index
-			layer_list: command.visual_layer_list
-			transform: command.transform
-			fixed_to_viewport: command.fixed_to_viewport
+$if test {
+	fn lower_visual_layers(commands []PaintCommand) []PaintCommand {
+		mut steps := []CompatibilityVisualReplayStep{cap: commands.len}
+		for index in 0 .. commands.len {
+			command := unsafe { &commands[index] }
+			steps << CompatibilityVisualReplayStep{
+				command_index: index
+				layer_list: command.visual_layer_list
+				transform: command.transform
+				fixed_to_viewport: command.fixed_to_viewport
+			}
 		}
+		return lower_visual_replay_steps(commands, steps)
 	}
-	return lower_visual_replay_steps(commands, steps)
 }
 
 fn visual_replay_layer_command_count(steps []CompatibilityVisualReplayStep) int {
@@ -2378,125 +2375,127 @@ fn lower_visual_replay_steps(commands []PaintCommand, steps []CompatibilityVisua
 	return result
 }
 
-fn replay_cached_paint_commands_with_visual_context(steps []CompatibilityPaintStep,
-	phase_commands [][]PaintCommand, command_count int, tree painting.AccumulatedVisualContextTree,
-	snapshot painting.ScrollStateSnapshot, show_line_box_borders bool) ([]PaintCommand, []CompatibilityVisualReplayStep) {
-	// A box contributes several paint phases, and many descendants inherit the
-	// same accumulated context. Resolve each retained context once per replay,
-	// matching DisplayListPlayer's state switching instead of walking its full
-	// ancestor chain for every phase bucket.
-	mut flattened_contexts := map[int]CompatibilityFlattenedVisualContext{}
-	mut count := 0
-	for step in steps {
-		if step.entry_index < 0 { continue }
-		default_context_index := if step.phase == .foreground && step.box.paintable_with_lines {
-			step.box.accumulated_visual_context_for_descendants_idx
-		} else {
-			step.box.accumulated_visual_context_index
-		}
-		bucket := step.entry_index * compatibility_paint_phase_count + int(step.phase)
-		for index in 0 .. phase_commands[bucket].len {
-			command := unsafe { &phase_commands[bucket][index] }
-			if command.line_box_debug && !show_line_box_borders { continue }
-			context_index := command.visual_context_index or { default_context_index }
-			context := if cached_context := flattened_contexts[context_index] {
-				cached_context
+$if test {
+	fn replay_cached_paint_commands_with_visual_context(steps []CompatibilityPaintStep,
+		phase_commands [][]PaintCommand, command_count int, tree painting.AccumulatedVisualContextTree,
+		snapshot painting.ScrollStateSnapshot, show_line_box_borders bool) ([]PaintCommand, []CompatibilityVisualReplayStep) {
+		// A box contributes several paint phases, and many descendants inherit the
+		// same accumulated context. Resolve each retained context once per replay,
+		// matching DisplayListPlayer's state switching instead of walking its full
+		// ancestor chain for every phase bucket.
+		mut flattened_contexts := map[int]CompatibilityFlattenedVisualContext{}
+		mut count := 0
+		for step in steps {
+			if step.entry_index < 0 { continue }
+			default_context_index := if step.phase == .foreground && step.box.paintable_with_lines {
+				step.box.accumulated_visual_context_for_descendants_idx
 			} else {
-				flattened := flatten_compatibility_visual_context(tree, context_index, snapshot)
-				flattened_contexts[context_index] = flattened
-				flattened
+				step.box.accumulated_visual_context_index
 			}
-			if !context.backface_culled { count++ }
+			bucket := step.entry_index * compatibility_paint_phase_count + int(step.phase)
+			for index in 0 .. phase_commands[bucket].len {
+				command := unsafe { &phase_commands[bucket][index] }
+				if command.line_box_debug && !show_line_box_borders { continue }
+				context_index := command.visual_context_index or { default_context_index }
+				context := if cached_context := flattened_contexts[context_index] {
+					cached_context
+				} else {
+					flattened := flatten_compatibility_visual_context(tree, context_index, snapshot)
+					flattened_contexts[context_index] = flattened
+					flattened
+				}
+				if !context.backface_culled { count++ }
+			}
 		}
-	}
-	mut commands := []PaintCommand{cap: count}
-	mut layer_steps := []CompatibilityVisualReplayStep{cap: command_count + steps.len}
-	for step in steps {
-		if step.entry_index < 0 {
-			continue
-		}
-		default_context_index := if step.phase == .foreground && step.box.paintable_with_lines {
-			step.box.accumulated_visual_context_for_descendants_idx
-		} else {
-			step.box.accumulated_visual_context_index
-		}
-		bucket := step.entry_index * compatibility_paint_phase_count + int(step.phase)
-		// A transparent compositor surface still separates overlapping sibling
-		// pictures. Retain its property transition even when it has no paint.
-		if step.phase == .background && step.box.chromium_compositor_surface
-			&& phase_commands[bucket].len == 0 {
-			context := flatten_compatibility_visual_context(tree, default_context_index, snapshot)
-			if !context.backface_culled {
+		mut commands := []PaintCommand{cap: count}
+		mut layer_steps := []CompatibilityVisualReplayStep{cap: command_count + steps.len}
+		for step in steps {
+			if step.entry_index < 0 {
+				continue
+			}
+			default_context_index := if step.phase == .foreground && step.box.paintable_with_lines {
+				step.box.accumulated_visual_context_for_descendants_idx
+			} else {
+				step.box.accumulated_visual_context_index
+			}
+			bucket := step.entry_index * compatibility_paint_phase_count + int(step.phase)
+			// A transparent compositor surface still separates overlapping sibling
+			// pictures. Retain its property transition even when it has no paint.
+			if step.phase == .background && step.box.chromium_compositor_surface
+				&& phase_commands[bucket].len == 0 {
+				context := flatten_compatibility_visual_context(tree, default_context_index, snapshot)
+				if !context.backface_culled {
+					layer_steps << CompatibilityVisualReplayStep{
+						layer_list: context.layer_list
+						transform: context.transform
+						fixed_to_viewport: step.box.fixed_to_viewport
+					}
+				}
+			}
+			for index in 0 .. phase_commands[bucket].len {
+				cached_command := unsafe { &phase_commands[bucket][index] }
+				context_index := cached_command.visual_context_index or { default_context_index }
+				context := if cached_context := flattened_contexts[context_index] {
+					cached_context
+				} else {
+					flattened := flatten_compatibility_visual_context(tree, context_index, snapshot)
+					flattened_contexts[context_index] = flattened
+					flattened
+				}
+				if context.backface_culled {
+					continue
+				}
+				hidden_guide := cached_command.line_box_debug && !show_line_box_borders
 				layer_steps << CompatibilityVisualReplayStep{
+					command_index: if hidden_guide { -1 } else { commands.len }
 					layer_list: context.layer_list
 					transform: context.transform
 					fixed_to_viewport: step.box.fixed_to_viewport
 				}
-			}
-		}
-		for index in 0 .. phase_commands[bucket].len {
-			cached_command := unsafe { &phase_commands[bucket][index] }
-			context_index := cached_command.visual_context_index or { default_context_index }
-			context := if cached_context := flattened_contexts[context_index] {
-				cached_context
-			} else {
-				flattened := flatten_compatibility_visual_context(tree, context_index, snapshot)
-				flattened_contexts[context_index] = flattened
-				flattened
-			}
-			if context.backface_culled {
-				continue
-			}
-			hidden_guide := cached_command.line_box_debug && !show_line_box_borders
-			layer_steps << CompatibilityVisualReplayStep{
-				command_index: if hidden_guide { -1 } else { commands.len }
-				layer_list: context.layer_list
-				transform: context.transform
-				fixed_to_viewport: step.box.fixed_to_viewport
-			}
-			if hidden_guide { continue }
-			mut command := *cached_command
-			command.transform = chromium_border_replay_transform(cached_command, context.transform, &tree)
-			command.fixed_to_viewport = step.box.fixed_to_viewport
-			if recording_clip := command.recording_clip {
-				mapped_recording_clip := compatibility_affine_map_rect(context.transform, recording_clip)
-				mut clips := []PaintClip{}
-				if context.clip_list != unsafe { nil } {
-					clips << context.clip_list.items
-				}
-				clips << PaintClip{
-					rect: recording_clip
-					transform: context.transform
-				}
-				command.has_clip = true
-				command.clip_list = &PaintClipList{ items: clips }
-				combined_clip := if context.has_clip {
-					compatibility_intersect_rects(context.clip, mapped_recording_clip)
+				if hidden_guide { continue }
+				mut command := *cached_command
+				command.transform = chromium_border_replay_transform(cached_command, context.transform, &tree)
+				command.fixed_to_viewport = step.box.fixed_to_viewport
+				if recording_clip := command.recording_clip {
+					mapped_recording_clip := compatibility_affine_map_rect(context.transform, recording_clip)
+					mut clips := []PaintClip{}
+					if context.clip_list != unsafe { nil } {
+						clips << context.clip_list.items
+					}
+					clips << PaintClip{
+						rect: recording_clip
+						transform: context.transform
+					}
+					command.has_clip = true
+					command.clip_list = &PaintClipList{ items: clips }
+					combined_clip := if context.has_clip {
+						compatibility_intersect_rects(context.clip, mapped_recording_clip)
+					} else {
+						mapped_recording_clip
+					}
+					command.clip_x = combined_clip.x
+					command.clip_y = combined_clip.y
+					command.clip_width = combined_clip.width
+					command.clip_height = combined_clip.height
 				} else {
-					mapped_recording_clip
+					command.has_clip = context.has_clip
+					command.clip_list = context.clip_list
+					if context.has_clip {
+						command.clip_x = context.clip.x
+						command.clip_y = context.clip.y
+						command.clip_width = context.clip.width
+						command.clip_height = context.clip.height
+					}
 				}
-				command.clip_x = combined_clip.x
-				command.clip_y = combined_clip.y
-				command.clip_width = combined_clip.width
-				command.clip_height = combined_clip.height
-			} else {
-				command.has_clip = context.has_clip
-				command.clip_list = context.clip_list
-				if context.has_clip {
-					command.clip_x = context.clip.x
-					command.clip_y = context.clip.y
-					command.clip_width = context.clip.width
-					command.clip_height = context.clip.height
-				}
+				command.visual_layer_list = context.layer_list
+				command.group_opacity = context.group_opacity
+				apply_live_scrollbar_offset(mut command, step.box)
+				apply_live_background_offsets(mut command, step.box)
+				commands << command
 			}
-			command.visual_layer_list = context.layer_list
-			command.group_opacity = context.group_opacity
-			apply_live_scrollbar_offset(mut command, step.box)
-			apply_live_background_offsets(mut command, step.box)
-			commands << command
 		}
+		return commands, layer_steps
 	}
-	return commands, layer_steps
 }
 
 // Source commands stay in their retained phase buckets until the final display
@@ -2561,12 +2560,14 @@ fn (mut scratch CompatibilityRecordScratch) reserve(context_count int, command_c
 	}
 }
 
-fn record_cached_paint_commands_with_visual_context(steps []CompatibilityPaintStep,
-	phase_commands [][]PaintCommand, command_count int, tree painting.AccumulatedVisualContextTree,
-	snapshot painting.ScrollStateSnapshot, show_line_box_borders bool) []PaintCommand {
-	mut scratch := CompatibilityRecordScratch{}
-	return record_cached_paint_commands_with_visual_context_into(steps, phase_commands,
-		command_count, &tree, snapshot, show_line_box_borders, mut scratch)
+$if test {
+	fn record_cached_paint_commands_with_visual_context(steps []CompatibilityPaintStep,
+		phase_commands [][]PaintCommand, command_count int, tree painting.AccumulatedVisualContextTree,
+		snapshot painting.ScrollStateSnapshot, show_line_box_borders bool) []PaintCommand {
+		mut scratch := CompatibilityRecordScratch{}
+		return record_cached_paint_commands_with_visual_context_into(steps, phase_commands,
+			command_count, &tree, snapshot, show_line_box_borders, mut scratch)
+	}
 }
 
 fn record_cached_paint_commands_with_visual_context_into(steps []CompatibilityPaintStep,

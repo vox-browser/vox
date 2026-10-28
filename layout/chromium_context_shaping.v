@@ -127,10 +127,12 @@ fn (iterator &InlineLevelIterator) chromium_context_segment(text_node &TextNode,
 	return ChromiumTextContextRun{start, end, run}
 }
 
-fn chromium_segmented_context_slice(runs []ChromiumTextContextRun,
-	chunk TextNodeChunk) ?platform.ShapedText {
-	mut cursor := ChromiumContextSliceCursor{}
-	return chromium_segmented_context_slice_with_cursor(runs, chunk, mut cursor)
+$if test {
+	fn chromium_segmented_context_slice(runs []ChromiumTextContextRun,
+		chunk TextNodeChunk) ?platform.ShapedText {
+		mut cursor := ChromiumContextSliceCursor{}
+		return chromium_segmented_context_slice_with_cursor(runs, chunk, mut cursor)
+	}
 }
 
 fn chromium_segmented_context_slice_with_cursor(runs []ChromiumTextContextRun,

@@ -18,15 +18,6 @@ mut:
 	resources map[string]PreloadedResource
 }
 
-fn run_document_script_sources_with_preloaded_images(document &dom.Document, current_url string, sources []browserjs.ScriptSource, runtime &browserjs.Runtime, resources map[string]PreloadedResource, mut messages []string) ?string {
-	mut preload := new_browser_preloaded_image_fetch(document, resources)
-	// Later author retries must use the normal fetch path. Release the initial
-	// response snapshot as well as its failures once installation has finished.
-	defer { preload.resources = map[string]PreloadedResource{} }
-	return run_document_script_sources_with_image_fetch(document, current_url, sources, runtime,
-		preload.callback(), mut messages)
-}
-
 fn new_browser_preloaded_image_fetch(document &dom.Document, resources map[string]PreloadedResource) &BrowserPreloadedImageFetch {
 	return &BrowserPreloadedImageFetch{
 		document: document
@@ -35,8 +26,10 @@ fn new_browser_preloaded_image_fetch(document &dom.Document, resources map[strin
 	}
 }
 
-fn browser_preloaded_image_fetch(document &dom.Document, resources map[string]PreloadedResource) browserjs.ImageRequestFetchHook {
-	return new_browser_preloaded_image_fetch(document, resources).callback()
+$if test {
+	fn browser_preloaded_image_fetch(document &dom.Document, resources map[string]PreloadedResource) browserjs.ImageRequestFetchHook {
+		return new_browser_preloaded_image_fetch(document, resources).callback()
+	}
 }
 
 fn (preload &BrowserPreloadedImageFetch) callback() browserjs.ImageRequestFetchHook {

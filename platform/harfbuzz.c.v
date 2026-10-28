@@ -398,8 +398,10 @@ fn resolve_font_path_for_family(family string, weight int) ?string {
 	return regular_path
 }
 
-fn scaled_harfbuzz_font(face voidptr, point_size f32, resolution f32, variations []FontVariationAxis) ?voidptr {
-	return scaled_harfbuzz_font_with_policy(face, point_size, resolution, variations, false)
+$if test {
+	fn scaled_harfbuzz_font(face voidptr, point_size f32, resolution f32, variations []FontVariationAxis) ?voidptr {
+		return scaled_harfbuzz_font_with_policy(face, point_size, resolution, variations, false)
+	}
 }
 
 fn scaled_harfbuzz_font_with_policy(face voidptr, point_size f32, resolution f32, variations []FontVariationAxis, coretext_hyphens bool) ?voidptr {

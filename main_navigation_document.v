@@ -9,9 +9,11 @@ import mimesniff
 
 // BrowsingContext.cpp::determine_the_origin and navigation document creation.
 // Compact top-level navigation has no inherited creation sandbox flags.
-fn parse_browser_navigation_document(markup string, document_url dom.URL, initiator_origin ?dom.Origin) &dom.Document {
-	return parse_browser_navigation_document_with_previous(markup, document_url, initiator_origin,
-		none)
+$if test {
+	fn parse_browser_navigation_document(markup string, document_url dom.URL, initiator_origin ?dom.Origin) &dom.Document {
+		return parse_browser_navigation_document_with_previous(markup, document_url, initiator_origin,
+			none)
+	}
 }
 
 // The source navigation reuse decision requires the actual prior Document,
@@ -29,14 +31,18 @@ fn parse_browser_navigation_document_with_previous(markup string, document_url d
 
 // Document.cpp: responses made outside Fetch use their real monotonic creation
 // time. The compact loader has no Fetch timing object; do not fabricate one.
-fn parse_browser_navigation_document_with_response_time(markup string, document_url dom.URL, initiator_origin ?dom.Origin, previous ?&dom.Document, response_time_ns i64) &dom.Document {
-	return parse_browser_navigation_document_with_optional_page_and_response_time(markup,
-		document_url, initiator_origin, previous, none, response_time_ns)
+$if test {
+	fn parse_browser_navigation_document_with_response_time(markup string, document_url dom.URL, initiator_origin ?dom.Origin, previous ?&dom.Document, response_time_ns i64) &dom.Document {
+		return parse_browser_navigation_document_with_optional_page_and_response_time(markup,
+			document_url, initiator_origin, previous, none, response_time_ns)
+	}
 }
 
-fn parse_browser_navigation_document_for_page_with_response_time(markup string, document_url dom.URL, initiator_origin ?dom.Origin, previous ?&dom.Document, page &dom.Page, response_time_ns i64) &dom.Document {
-	return parse_browser_navigation_document_with_optional_page_and_response_time(markup,
-		document_url, initiator_origin, previous, page, response_time_ns)
+$if test {
+	fn parse_browser_navigation_document_for_page_with_response_time(markup string, document_url dom.URL, initiator_origin ?dom.Origin, previous ?&dom.Document, page &dom.Page, response_time_ns i64) &dom.Document {
+		return parse_browser_navigation_document_with_optional_page_and_response_time(markup,
+			document_url, initiator_origin, previous, page, response_time_ns)
+	}
 }
 
 fn create_browser_navigation_document(document_url dom.URL, origin dom.Origin, previous ?&dom.Document, page ?&dom.Page) !&dom.Document {

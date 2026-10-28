@@ -1293,9 +1293,11 @@ fn selector_pseudo_class_from_dom(pseudo_class dom.PseudoClass) ?PseudoClass {
 	}
 }
 
-fn selector_matches_pseudo_class_invalidation_candidate(selector Selector, element &dom.Element) bool {
-	mut context := MatchContext{}
-	return selector_matches_pseudo_class_invalidation_candidate_with_context(selector, element, mut context)
+$if test {
+	fn selector_matches_pseudo_class_invalidation_candidate(selector Selector, element &dom.Element) bool {
+		mut context := MatchContext{}
+		return selector_matches_pseudo_class_invalidation_candidate_with_context(selector, element, mut context)
+	}
 }
 
 fn selector_matches_pseudo_class_invalidation_candidate_with_context(selector Selector, element &dom.Element, mut context MatchContext) bool {

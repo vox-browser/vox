@@ -8,17 +8,19 @@ import css
 
 // FormattingContext.cpp's file-local margin_box_rect(). Negative margins do
 // not extend this local rectangle beyond the content box.
-fn margin_box_rect(used_values &UsedValues) css.CSSPixelRect {
-	zero := CSSPixels.new(0)
-	left := css_pixels_max(used_values.margin_box_left(), zero)
-	top := css_pixels_max(used_values.margin_box_top(), zero)
-	right := css_pixels_max(used_values.margin_box_right(), zero)
-	bottom := css_pixels_max(used_values.margin_box_bottom(), zero)
-	return css.CSSPixelRect{
-		x: left.negated()
-		y: top.negated()
-		width: left.plus(used_values.content_width()).plus(right)
-		height: top.plus(used_values.content_height()).plus(bottom)
+$if test {
+	fn margin_box_rect(used_values &UsedValues) css.CSSPixelRect {
+		zero := CSSPixels.new(0)
+		left := css_pixels_max(used_values.margin_box_left(), zero)
+		top := css_pixels_max(used_values.margin_box_top(), zero)
+		right := css_pixels_max(used_values.margin_box_right(), zero)
+		bottom := css_pixels_max(used_values.margin_box_bottom(), zero)
+		return css.CSSPixelRect{
+			x: left.negated()
+			y: top.negated()
+			width: left.plus(used_values.content_width()).plus(right)
+			height: top.plus(used_values.content_height()).plus(bottom)
+		}
 	}
 }
 

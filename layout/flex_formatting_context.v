@@ -1200,10 +1200,6 @@ fn set_flex_abspos_static_positions(mut state LayoutState, container &Node, cont
 	}
 }
 
-fn run_flex_formatting_context(mut state LayoutState, container &Node, mut container_state UsedValues, available_space AvailableSpace) FormattingContextResult {
-	return run_flex_formatting_context_with_mode(mut state, container, mut container_state, .normal, available_space)
-}
-
 fn clear_intrinsic_flex_item_line_boxes(mut state LayoutState, node &Node) {
 	if styled := node.as_node_with_style() {
 		if mut values := state.try_get_mutable(styled) {

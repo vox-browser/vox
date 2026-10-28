@@ -49,13 +49,15 @@ fn chromium_raster_tile_size(viewport_width int, viewport_height int,
 	return math.max(4, (tile_width + 3) / 4 * 4), math.max(4, (tile_height + 3) / 4 * 4)
 }
 
-fn chromium_raster_grid(triggers []ChromiumMSAATrigger, viewport_width int,
-	viewport_height int, content_width f64, content_height f64, origin_x f64,
-	origin_y f64, scale f64) ChromiumRasterGrid {
-	mut grid := ChromiumRasterGrid{}
-	update_chromium_raster_grid(triggers, viewport_width, viewport_height, content_width,
-		content_height, origin_x, origin_y, scale, mut grid)
-	return grid
+$if test {
+	fn chromium_raster_grid(triggers []ChromiumMSAATrigger, viewport_width int,
+		viewport_height int, content_width f64, content_height f64, origin_x f64,
+		origin_y f64, scale f64) ChromiumRasterGrid {
+		mut grid := ChromiumRasterGrid{}
+		update_chromium_raster_grid(triggers, viewport_width, viewport_height, content_width,
+			content_height, origin_x, origin_y, scale, mut grid)
+		return grid
+	}
 }
 
 fn update_chromium_raster_grid(triggers []ChromiumMSAATrigger, viewport_width int,

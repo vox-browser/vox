@@ -36,8 +36,10 @@ pub:
 	integrity string
 }
 
-fn value_is_ordered_map(value json2.Any) bool {
-	return value is map[string]json2.Any
+$if test {
+	fn value_is_ordered_map(value json2.Any) bool {
+		return value is map[string]json2.Any
+	}
 }
 
 @[heap]

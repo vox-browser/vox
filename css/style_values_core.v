@@ -11078,14 +11078,6 @@ fn apply_math_operation_on_css_unit_values(values []CSSNumericValue, operation f
 	return CSSUnitValue.create(result, unit)
 }
 
-fn numeric_values_join(values []CSSNumericValue, separator string) string {
-	mut parts := []string{}
-	for value in values {
-		parts << value.to_string()
-	}
-	return parts.join(separator)
-}
-
 // --- CSSUnitValue ---
 pub type NumericPrimitiveValue = Angle
 	| Flex

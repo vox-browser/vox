@@ -629,40 +629,12 @@ fn text_grapheme_boundaries(text string) []int {
 	return general_text_grapheme_boundaries(code_points)
 }
 
-fn text_line_boundaries(text string) []bool {
-	if ascii_segmenter := dom.Segmenter.try_create_for_ascii_line(text) {
-		return text_line_boundaries_from_segmenter(ascii_segmenter, text.len)
-	}
-	units := utf16_code_units_for_line_box(text)
-	return text_line_boundaries_from_code_units(units)
-}
-
 fn text_line_boundaries_from_segmenter(segmenter &dom.Segmenter, length int) []bool {
 	mut boundaries := []bool{len: length + 1}
 	for boundary in segmenter.boundaries() {
 		if boundary >= 0 && boundary <= length {
 			boundaries[boundary] = true
 		}
-	}
-	return boundaries
-}
-
-fn text_line_boundaries_from_code_units(units []u16) []bool {
-	mut boundaries := []bool{len: units.len + 1}
-	mut index := 0
-	for index < units.len {
-		code_point := code_point_at_utf16(units, index)
-		step := utf16_code_point_length(code_point)
-		next := index + step
-		if is_ascii_space_code_point(code_point) || code_point == u32(`-`) || code_point == 0x200b
-			|| code_point == u32(`\n`) {
-			boundaries[next] = true
-		}
-		if next < units.len && is_cjk_code_point(code_point)
-			&& is_cjk_code_point(code_point_at_utf16(units, next)) {
-			boundaries[next] = true
-		}
-		index = next
 	}
 	return boundaries
 }

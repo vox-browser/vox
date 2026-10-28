@@ -1104,8 +1104,10 @@ fn resolved_css_filter_for_element(computed &css.ComputedValues,
 	return resolve_css_filter(computed.filter(), computed, color_context, element, bounds)
 }
 
-fn resolved_css_filter(computed &css.ComputedValues, color_context css.ColorResolutionContext) painting.ResolvedCSSFilter {
-	return resolved_css_filter_for_element(computed, color_context, none, none)
+$if test {
+	fn resolved_css_filter(computed &css.ComputedValues, color_context css.ColorResolutionContext) painting.ResolvedCSSFilter {
+		return resolved_css_filter_for_element(computed, color_context, none, none)
+	}
 }
 
 struct TypedGradientStop {
@@ -2728,8 +2730,10 @@ fn renderer_box_from_document_layout_result(result &DocumentLayoutResult, viewpo
 	return root_box
 }
 
-fn block_box_from_typed_layout(node &Node, state &LayoutState) BlockBox {
-	return block_box_from_typed_layout_with_ancestor(node, state, [6]f64{})
+$if test {
+	fn block_box_from_typed_layout(node &Node, state &LayoutState) BlockBox {
+		return block_box_from_typed_layout_with_ancestor(node, state, [6]f64{})
+	}
 }
 
 // Build into one exact-sized backing store so ordinary small child groups do
@@ -3089,13 +3093,6 @@ fn svg_clip_child_transform_to_page(node &Node, clip_box &Node, target_to_page s
 		e: target_to_page.a * local.e + target_to_page.c * local.f + target_to_page.e
 		f: target_to_page.b * local.e + target_to_page.d * local.f + target_to_page.f
 	}
-}
-
-fn collect_svg_clip_path_components(node &Node, state &LayoutState,
-	resource_transform svg.AffineTransform, object_bounding_box_units bool,
-	mut collection SVGClipPathCollection) {
-	collect_svg_clip_path_components_in(node, unsafe { nil }, state, resource_transform,
-		object_bounding_box_units, none, mut collection)
 }
 
 fn collect_svg_clip_path_components_in(node &Node, clip_box &Node, state &LayoutState,
@@ -4664,21 +4661,6 @@ fn painted_owner_element(node &Node) ?&dom.Element {
 		next_ancestor = ancestor.parent()
 	}
 	return none
-}
-
-fn painted_owner_computed_values(node &Node, owner &dom.Element) &css.ComputedProperties {
-	mut current := unsafe { node }
-	for {
-		if dom_node := current.dom_node() {
-			if element := dom_node.as_element() {
-				if voidptr(element) == voidptr(owner) {
-					return current.computed_values()
-				}
-			}
-		}
-		current = current.parent() or { break }
-	}
-	return node.computed_values()
 }
 
 fn text_run_identity(node &Node) i64 {

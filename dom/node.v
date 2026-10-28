@@ -5159,24 +5159,6 @@ fn utf16_code_unit_length(value string) int {
 	return length
 }
 
-fn byte_index_for_utf16_code_unit_offset(value string, offset int) int {
-	if offset <= 0 {
-		return 0
-	}
-	mut code_units := 0
-	for byte_index, r in value {
-		rune_units := if u32(r) > 0xffff { 2 } else { 1 }
-		if code_units >= offset {
-			return byte_index
-		}
-		code_units += rune_units
-		if code_units > offset {
-			return byte_index + utf8_char_len(r)
-		}
-	}
-	return value.len
-}
-
 fn utf8_char_len(r rune) int {
 	code_point := u32(r)
 	if code_point < 0x80 {

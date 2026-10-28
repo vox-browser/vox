@@ -811,26 +811,6 @@ fn parse_url_function(mut tokens ComponentValueStream) ?URL {
 	return URL.new(url_string.token().string_value(), function_type, sort_request_url_modifiers_for_serialization(request_url_modifiers))
 }
 
-fn parse_image_value_for_syntax(mut tokens ComponentValueStream) ?StyleValue {
-	mut parser := Parser.from_component_values([])
-	mut url_probe := tokens.clone()
-	if url := parse_url_function(mut url_probe) {
-		// If the value is a 'url(..)' parse as image, but if it is just a reference 'url(#xx)', leave it alone,
-		// so we can parse as URL further on. These URLs are used as references inside SVG documents for masks.
-		// FIXME: Remove this special case once mask-image accepts `<image>`.
-		if !url.url().starts_with('#') {
-			tokens = url_probe
-			return StyleValue(ImageStyleValue.create(url))
-		}
-		return none
-	}
-
-	if image := parser.parse_image_value(mut tokens) {
-		return style_value_from_css_image_source_for_value_logic(image)
-	}
-	return none
-}
-
 fn parse_url_value_for_syntax(mut tokens ComponentValueStream) ?StyleValue {
 	url := parse_url_function(mut tokens) or { return none }
 	return StyleValue(URLStyleValue.create(url))

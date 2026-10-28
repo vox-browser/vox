@@ -27,23 +27,6 @@ pub enum ContentBlockerResourceType {
 	xml_http_request
 }
 
-fn resource_type_to_adblock_request_type(resource_type ContentBlockerResourceType) string {
-	return match resource_type {
-		.document { 'document' }
-		.font { 'font' }
-		.image { 'image' }
-		.media { 'media' }
-		.object { 'object' }
-		.other { 'other' }
-		.ping { 'ping' }
-		.script { 'script' }
-		.stylesheet { 'stylesheet' }
-		.subdocument { 'subdocument' }
-		.websocket { 'websocket' }
-		.xml_http_request { 'xmlhttprequest' }
-	}
-}
-
 fn serialized_url(url dom.URL) string {
 	return url.serialize()
 }

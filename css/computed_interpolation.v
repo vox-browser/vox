@@ -1556,12 +1556,16 @@ fn computed_interpolation_style_value_is_unset(value &dom.StyleValue) bool {
 	return computed_interpolation_style_value_keyword(value) or { Keyword.invalid } == .unset
 }
 
-fn computed_interpolation_style_value_is_revert(value &dom.StyleValue) bool {
-	return computed_interpolation_style_value_keyword(value) or { Keyword.invalid } == .revert
+$if test {
+	fn computed_interpolation_style_value_is_revert(value &dom.StyleValue) bool {
+		return computed_interpolation_style_value_keyword(value) or { Keyword.invalid } == .revert
+	}
 }
 
-fn computed_interpolation_style_value_is_revert_layer(value &dom.StyleValue) bool {
-	return computed_interpolation_style_value_keyword(value) or { Keyword.invalid } == .revert_layer
+$if test {
+	fn computed_interpolation_style_value_is_revert_layer(value &dom.StyleValue) bool {
+		return computed_interpolation_style_value_keyword(value) or { Keyword.invalid } == .revert_layer
+	}
 }
 
 fn keyword_to_content_visibility_for_computed_interpolation(keyword Keyword) ?ContentVisibility {
@@ -1578,8 +1582,10 @@ fn content_visibility_from_style_value(value &dom.StyleValue) ?ContentVisibility
 	return keyword_to_content_visibility_for_computed_interpolation(keyword)
 }
 
-fn computed_interpolation_style_value_is_currentcolor(value &dom.StyleValue) bool {
-	return computed_interpolation_style_value_keyword(value) or { Keyword.invalid } == .currentcolor
+$if test {
+	fn computed_interpolation_style_value_is_currentcolor(value &dom.StyleValue) bool {
+		return computed_interpolation_style_value_keyword(value) or { Keyword.invalid } == .currentcolor
+	}
 }
 
 fn property_affects_computed_font_list(id PropertyID) bool {
@@ -1601,10 +1607,6 @@ fn font_size_value_depends_on_inherited_font_size(value StyleValue) bool {
 		|| value.to_keyword() in [.larger, .smaller, .math]
 }
 
-fn line_height_value_depends_on_computed_font_size(value StyleValue) bool {
-	return value is PercentageStyleValue
-		|| (value is CalculatedStyleValue && value.contains_percentage())
-}
 
 // --- ComputedProperties ---
 pub enum ComputedPropertyInheritance as u8 {
@@ -13782,8 +13784,10 @@ fn custom_property_own_values_differ(left ?&dom.CSSCustomPropertyData_, right ?&
 	return false
 }
 
-fn custom_property_own_values_equal(left ?&dom.CSSCustomPropertyData_, right ?&dom.CSSCustomPropertyData_) bool {
-	return !custom_property_own_values_differ(left, right)
+$if test {
+	fn custom_property_own_values_equal(left ?&dom.CSSCustomPropertyData_, right ?&dom.CSSCustomPropertyData_) bool {
+		return !custom_property_own_values_differ(left, right)
+	}
 }
 
 fn optional_custom_property_data_identity_equal(left ?&dom.CSSCustomPropertyData_, right ?&dom.CSSCustomPropertyData_) bool {
@@ -15543,9 +15547,6 @@ pub fn (s &StyleComputer) calculate_root_element_font_metrics(computed_propertie
 	return computed_interpolation_font_metrics_for_style(computed_properties, s.font_computer_)
 }
 
-fn style_computer_css_wide_keyword_from_declaration_text(value string) ?Keyword {
-	return keyword_from_string(value.trim_space()) or { none }
-}
 
 pub fn (s &StyleComputer) cascade_declarations(mut cascaded_properties CascadedProperties, abstract_element dom.AbstractElement, rules []ScopedMatchingRule, origin CascadeOrigin, important Important, layer_name ?string, logical_alias_mapping_context ?LogicalAliasMappingContext, properties_to_cascade ComputedInterpolationPropertyIDs) {
 	_ = s

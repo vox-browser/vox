@@ -109,8 +109,10 @@ pub fn ResourceLoader.create() &ResourceLoader {
 	}
 }
 
-fn resource_loader() &ResourceLoader {
-	return loader_global_resource_loader
+$if test {
+	fn resource_loader() &ResourceLoader {
+		return loader_global_resource_loader
+	}
 }
 
 pub fn initialize() &ResourceLoader {

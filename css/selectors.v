@@ -3101,10 +3101,6 @@ fn split_an_plus_b_of_selector(argument string) (string, string) {
 	return argument[..idx].trim_space(), argument[idx + 2..].trim_space()
 }
 
-fn serialize_compound_selectors(compound_selectors []CompoundSelector) string {
-	return selector_from_compound_selectors(compound_selectors).serialize()
-}
-
 fn serialize_compound_selectors_raw(compound_selectors []CompoundSelector) string {
 	mut builder := strings.new_builder(32)
 	for i, compound_selector in compound_selectors {
@@ -4280,11 +4276,6 @@ fn selector_text_matches_at(text string, needle string, index int, fold_ascii bo
 		}
 	}
 	return true
-}
-
-fn starts_with_combinator(text string) bool {
-	trimmed := text.trim_space()
-	return trimmed.starts_with('>') || trimmed.starts_with('+') || trimmed.starts_with('~') || trimmed.starts_with('||')
 }
 
 fn is_combinator_start(text string, index int) bool {

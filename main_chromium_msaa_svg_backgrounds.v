@@ -7,8 +7,10 @@ import painting
 // SVG backgrounds replay as vector pictures into their owning raster layer.
 // Inspect their actual recorded paths, using the same tile and viewport
 // geometry as native playback; they are not opaque bitmap-only operations.
-fn chromium_svg_background_msaa_ranges(command layout.PaintCommand) [][]f64 {
-	return chromium_svg_background_msaa_rects(command).map([it.y, it.y + it.height])
+$if test {
+	fn chromium_svg_background_msaa_ranges(command layout.PaintCommand) [][]f64 {
+		return chromium_svg_background_msaa_rects(command).map([it.y, it.y + it.height])
+	}
 }
 
 fn chromium_svg_background_msaa_rects(command layout.PaintCommand) []layout.LayoutRect {

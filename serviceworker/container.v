@@ -50,8 +50,10 @@ mut:
 
 __global service_worker_container_ready_promise_cache_entries = []&ServiceWorkerContainerReadyPromiseCacheEntry{}
 
-fn service_worker_container_ready_promise_caches() []&ServiceWorkerContainerReadyPromiseCacheEntry {
-	return service_worker_container_ready_promise_cache_entries.clone()
+$if test {
+	fn service_worker_container_ready_promise_caches() []&ServiceWorkerContainerReadyPromiseCacheEntry {
+		return service_worker_container_ready_promise_cache_entries.clone()
+	}
 }
 
 fn prune_service_worker_container_ready_promise_caches() {

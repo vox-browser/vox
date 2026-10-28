@@ -446,13 +446,6 @@ pub fn (mut window WindowModel) session_storage() !&Storage {
 	return storage
 }
 
-fn obtain_storage_for_window(mut window WindowModel, type_ StorageType) ?&Storage {
-	return match type_ {
-		.local { window.local_storage() or { return none } }
-		.session { window.session_storage() or { return none } }
-	}
-}
-
 fn (window &WindowModel) storage_traversable_id() string {
 	top := window.browsing_context().top_level_browsing_context() or { window.browsing_context() }
 	return '${voidptr(top)}'

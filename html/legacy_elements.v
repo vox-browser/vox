@@ -81,10 +81,12 @@ pub fn parse_legacy_dimension_value(input string) ?LegacyDimension {
 	}
 }
 
-fn parse_current_dimension_value(value f64, remaining_input string) LegacyDimension {
-	return LegacyDimension{
-		value: value
-		percentage: remaining_input.starts_with('%')
+$if test {
+	fn parse_current_dimension_value(value f64, remaining_input string) LegacyDimension {
+		return LegacyDimension{
+			value: value
+			percentage: remaining_input.starts_with('%')
+		}
 	}
 }
 
@@ -101,9 +103,11 @@ pub fn parse_legacy_color_value(input string) ?dom.Color {
 	return legacy_element_color(input)
 }
 
-fn parse_border(value string) u32 {
-	parsed := strconv.parse_uint(value, 10, 32) or { return 0 }
-	return u32(parsed)
+$if test {
+	fn parse_border(value string) u32 {
+		parsed := strconv.parse_uint(value, 10, 32) or { return 0 }
+		return u32(parsed)
+	}
 }
 
 // https://html.spec.whatwg.org/multipage/rendering.html#rules-for-parsing-a-legacy-font-size

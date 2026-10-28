@@ -5539,32 +5539,6 @@ fn unquote_css_string(value string) string {
 	return trimmed
 }
 
-fn is_quoted_css_string(value string) bool {
-	trimmed := value.trim_space()
-	return trimmed.len >= 2 && ((trimmed[0] == `"` && trimmed[trimmed.len - 1] == `"`)
-		|| (trimmed[0] == `'` && trimmed[trimmed.len - 1] == `'`))
-}
-
-fn is_valid_css_integer(value string) bool {
-	trimmed := value.trim_space()
-	if trimmed.len == 0 {
-		return false
-	}
-	mut start := 0
-	if trimmed[0] == `+` || trimmed[0] == `-` {
-		start = 1
-	}
-	if start == trimmed.len {
-		return false
-	}
-	for ch in trimmed[start..] {
-		if ch < `0` || ch > `9` {
-			return false
-		}
-	}
-	return true
-}
-
 fn is_valid_css_number(value string) bool {
 	trimmed := value.trim_space()
 	if trimmed.len == 0 || trimmed.to_lower().contains('inf') || trimmed.to_lower().contains('nan') {

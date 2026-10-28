@@ -21,12 +21,6 @@ mut:
 	next_key int
 }
 
-// Retain native node identity across insertions instead of serializing each
-// ancestor's complete subtree into the compact script bridge's initial state.
-fn install_compact_element_content_binding(document &dom.Document, mut runtime browserjs.Runtime) ! {
-	install_compact_element_content_binding_with_policy(document, mut runtime, .all_elements)!
-}
-
 fn install_compact_element_content_binding_with_policy(document &dom.Document, mut runtime browserjs.Runtime, policy CompactInitialElementPolicy) ! {
 	elements := css.query_selector_all(unsafe { &dom.Node(document) }, '*')
 	mut binding := &CompactElementQueryBinding{

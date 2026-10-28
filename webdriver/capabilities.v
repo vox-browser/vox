@@ -27,52 +27,6 @@ pub:
 	http_session    bool
 }
 
-fn validate_capability(name string, value json2.Any) !json2.Any {
-	if value is json2.Null {
-		return json2.null
-	}
-	match name {
-		'acceptInsecureCerts', 'strictFileInteractability', 'webSocketUrl', 'ladybird:headless' {
-			if value !is bool {
-				return error(WebDriverError.from_code(.invalid_argument, 'Capability ${name} must be a boolean').msg())
-			}
-			return value as bool
-		}
-		'browserName', 'browserVersion', 'platformName' {
-			if value !is string {
-				return error(WebDriverError.from_code(.invalid_argument, 'Capability ${name} must be a string').msg())
-			}
-			return value as string
-		}
-		'pageLoadStrategy' {
-			if value !is string || value as string !in ['none', 'eager', 'normal'] {
-				return error(WebDriverError.from_code(.invalid_argument, 'Invalid pageLoadStrategy').msg())
-			}
-			return value as string
-		}
-		'proxy' {
-			return deserialize_proxy(value)!
-		}
-		'timeouts' {
-			return deserialize_timeouts(value)!.to_object()
-		}
-		'unhandledPromptBehavior' {
-			handler := deserialize_unhandled_prompt_behavior(value)!
-			return prompt_handler_map_to_internal_object(handler)
-		}
-		else {
-			if !name.contains(':') {
-				return error(WebDriverError.from_code(.invalid_argument, 'Unrecognized capability: ${name}').msg())
-			}
-			// Unknown extension capabilities are intentionally elided by Ladybird.
-			if !name.starts_with('ladybird:') {
-				return json2.null
-			}
-		}
-	}
-	return json2.null
-}
-
 fn validate_capabilities(value json2.Any) !map[string]json2.Any {
 	if value !is map[string]json2.Any {
 		return error(WebDriverError.from_code(.invalid_argument, 'Capability is not an Object').msg())

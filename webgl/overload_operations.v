@@ -125,10 +125,6 @@ pub fn (mut context WebGLRenderingContext) read_pixels_null() {
 	context.set_error(invalid_value)
 }
 
-fn ints_to_floats(values []int) []f32 {
-	return values.map(f32(it))
-}
-
 pub fn (mut context WebGLRenderingContext) uniform1fv(location ?&WebGLUniformLocation, values []f32) {
  context.uniform_floats(location, values, 1)
 }
@@ -474,10 +470,6 @@ pub fn (mut context WebGLRenderingContext) uniform_block_binding(program &WebGLP
 	if !context.require_webgl2() { return }
 	context.webgl2_command('uniform_block_binding', program.object.handle_, block_index, binding)
 	C.vox_gl_uniform_block_binding(program.object.native_handle_,block_index,binding)
-}
-
-fn uints_to_floats(values []u32) []f32 {
-	return values.map(f32(it))
 }
 
 pub fn (mut context WebGLRenderingContext) uniform1ui(location ?&WebGLUniformLocation, x u32) {

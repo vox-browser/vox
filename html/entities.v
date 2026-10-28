@@ -22,9 +22,11 @@ fn named_char_ref_lower_bound(name string) int {
 	return first
 }
 
-fn named_char_ref_has_prefix(prefix string) bool {
-	index := named_char_ref_lower_bound(prefix)
-	return index < named_char_ref_data.len && named_char_ref_data[index].name.starts_with(prefix)
+$if test {
+	fn named_char_ref_has_prefix(prefix string) bool {
+		index := named_char_ref_lower_bound(prefix)
+		return index < named_char_ref_data.len && named_char_ref_data[index].name.starts_with(prefix)
+	}
 }
 
 struct NamedCharacterReferenceMatcher {

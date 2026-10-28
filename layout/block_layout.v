@@ -258,22 +258,6 @@ fn resolve_auto_margins(computed &css.ComputedValues, mut used_values UsedValues
 	}
 }
 
-// Clamp `value` to [min, max] resolved from `min_property`/`max_property` (CSS 2.1 §10.4/§10.7). A `none`
-// max (or a keyword/auto min/max) does not constrain; min defaults to 0.
-fn clamp_to_min_max(computed &css.ComputedValues, min_property css.PropertyID, max_property css.PropertyID, value f64, percentage_basis f64) f64 {
-	mut result := value
-	if max := computed.length_percentage_to_px(max_property, percentage_basis) {
-		if result > max {
-			result = max
-		}
-	}
-	min := computed.length_percentage_to_px(min_property, percentage_basis) or { 0.0 }
-	if result < min {
-		result = min
-	}
-	return result
-}
-
 // Lay out `box` as a block formatting context root (BlockFormattingContext::run for a normal block
 // container), writing geometry into `state`: resolve the box's width, lay out its block-level descendants in
 // normal flow (its BFC), then compute the box's height. `containing_block_width` is the content width of the

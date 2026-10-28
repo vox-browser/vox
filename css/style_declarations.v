@@ -751,17 +751,19 @@ pub fn CSSStyleProperties.create_element_inline_style(element_reference dom.Abst
 	return declaration
 }
 
-fn css_style_properties_to_cssom_properties(properties []StyleProperty) []CSSStyleProperty {
-	mut result := []CSSStyleProperty{}
-	for property in properties {
-		result << CSSStyleProperty{
-			name: string_from_property_id(property.property_id)
-			value: dom_style_value_to_css_text(property.value)
-			important: property.important == .yes
-			style_value: unsafe { property.value }
+$if test {
+	fn css_style_properties_to_cssom_properties(properties []StyleProperty) []CSSStyleProperty {
+		mut result := []CSSStyleProperty{}
+		for property in properties {
+			result << CSSStyleProperty{
+				name: string_from_property_id(property.property_id)
+				value: dom_style_value_to_css_text(property.value)
+				important: property.important == .yes
+				style_value: unsafe { property.value }
+			}
 		}
+		return result
 	}
-	return result
 }
 
 // https://drafts.csswg.org/cssom/#concept-declarations-specified-order

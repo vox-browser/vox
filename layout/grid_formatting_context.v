@@ -450,11 +450,6 @@ fn append_grid_track_list_in_template(node &Node, list css.GridTrackSizeList, te
 	}
 }
 
-fn expanded_explicit_grid_track_count(node &Node, list css.GridTrackSizeList, basis CSSPixels, gap CSSPixels, available_is_definite bool) int {
-	return expanded_explicit_grid_track_count_in_template(node, list, list, basis, gap,
-		available_is_definite)
-}
-
 fn expanded_explicit_grid_track_count_in_template(node &Node, list css.GridTrackSizeList, template css.GridTrackSizeList, basis CSSPixels, gap CSSPixels, available_is_definite bool) int {
 	mut count := 0
 	for track in list.track_list() {

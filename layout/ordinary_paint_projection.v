@@ -57,11 +57,13 @@ fn ordinary_paint_projection_eligible(node &Node, used &UsedValues) bool {
 	return true
 }
 
-fn ordinary_paint_box_from_typed_layout(node &Node, state &LayoutState,
-	ancestor_transform [6]f64) BlockBox {
-	mut box := BlockBox{}
-	fill_ordinary_paint_box(node, state, ancestor_transform, mut box)
-	return box
+$if test {
+	fn ordinary_paint_box_from_typed_layout(node &Node, state &LayoutState,
+		ancestor_transform [6]f64) BlockBox {
+		mut box := BlockBox{}
+		fill_ordinary_paint_box(node, state, ancestor_transform, mut box)
+		return box
+	}
 }
 
 fn fill_ordinary_paint_box(node &Node, state &LayoutState,

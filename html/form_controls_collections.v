@@ -23,9 +23,11 @@ fn radio_node_list_radio_element(node &dom.Node) ?&dom.Element {
 	return element
 }
 
-fn radio_button(node &dom.Node) ?&dom.HTMLInputElement {
-	element := radio_node_list_radio_element(node) or { return none }
-	return unsafe { &dom.HTMLInputElement(element) }
+$if test {
+	fn radio_button(node &dom.Node) ?&dom.HTMLInputElement {
+		element := radio_node_list_radio_element(node) or { return none }
+		return unsafe { &dom.HTMLInputElement(element) }
+	}
 }
 
 pub fn html_input_element_checked(element &dom.HTMLInputElement) bool {

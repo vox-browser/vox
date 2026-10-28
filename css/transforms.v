@@ -2357,16 +2357,6 @@ pub fn (list TransformationStyleValueList) to_string() string {
 	return list.serialize(.normal)
 }
 
-fn multiply_affine_2d(left [6]f64, right [6]f64) [6]f64 {
-	a := left[0] * right[0] + left[2] * right[1]
-	b := left[1] * right[0] + left[3] * right[1]
-	c := left[0] * right[2] + left[2] * right[3]
-	d := left[1] * right[2] + left[3] * right[3]
-	e := left[0] * right[4] + left[2] * right[5] + left[4]
-	f := left[1] * right[4] + left[3] * right[5] + left[5]
-	return [f64(a), b, c, d, e, f]!
-}
-
 // Paintable::compute_transform() consumes the already-computed typed value and
 // the layout node's length context. This avoids re-running the compatibility
 // cascade and re-parsing transform text from the typed layout adapter.

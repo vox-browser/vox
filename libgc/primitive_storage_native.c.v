@@ -45,6 +45,8 @@ fn decommit_storage_memory(address &u8, size uint) ! {
 	assert pointer == voidptr(address)
 }
 
-fn release_storage_address_space(address &u8, size uint) ! {
-	if C.vox_gc_release_address_space(address, size) < 0 { return storage_syscall_error('munmap') }
+$if test {
+	fn release_storage_address_space(address &u8, size uint) ! {
+		if C.vox_gc_release_address_space(address, size) < 0 { return storage_syscall_error('munmap') }
+	}
 }

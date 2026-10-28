@@ -4720,9 +4720,7 @@ const tag_html_ = 'html'
 const tag_head_ = 'head'
 const tag_body_ = 'body'
 const tag_div_ = 'div'
-const tag_title_ = 'title'
 
-const event_load_ = 'load'
 const event_unload_ = 'unload'
 const event_pagehide_ = 'pagehide'
 const event_readystatechange_ = 'readystatechange'
@@ -4782,16 +4780,6 @@ fn as_navigable_container(node &Node) ?&NavigableContainer {
 		}
 	}
 	return none
-}
-
-// css module functions
-fn css_invalidate_style(doc &Document, reason CssStyleInvalidationReason) {
-	mapped_reason := match reason {
-		.base_url_changed { StyleInvalidationReason.base_url_changed }
-		.hover_changed, .style_sheet_changed, .dom_mutation { StyleInvalidationReason.style_change }
-	}
-	mut document_node := unsafe { &Node(doc) }
-	document_node.invalidate_style(mapped_reason)
 }
 
 fn html_entry_global_associated_document(document &Document) &Document {

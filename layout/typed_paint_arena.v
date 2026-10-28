@@ -28,8 +28,10 @@ fn typed_paint_child_has_transport_box(node &Node, state &LayoutState) bool {
 	return element.local_name() != ''
 }
 
-fn typed_paint_arena_plan(root &Node, state &LayoutState) []TypedPaintArenaEntry {
-	return typed_paint_arena_plan_with_interest(root, state, none)
+$if test {
+	fn typed_paint_arena_plan(root &Node, state &LayoutState) []TypedPaintArenaEntry {
+		return typed_paint_arena_plan_with_interest(root, state, none)
+	}
 }
 
 fn typed_paint_arena_plan_with_interest(root &Node, state &LayoutState, interest ?LayoutRect) []TypedPaintArenaEntry {

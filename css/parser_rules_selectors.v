@@ -3194,11 +3194,6 @@ fn parser_selector_prelude_to_string(values []ComponentValue) string {
 	return builder.str()
 }
 
-fn parser_selector_prelude_component_to_string(value ComponentValue) string {
-	mut builder := strings.new_builder(32)
-	parser_append_selector_prelude_component(mut builder, value)
-	return builder.str()
-}
 
 fn parser_append_selector_prelude_component(mut builder strings.Builder, value ComponentValue) {
 	match value.value {

@@ -25,8 +25,10 @@
 // DEALINGS IN THE SOFTWARE.
 module encoding
 
-fn source_convert_utf8_to_utf16_up_to_invalid(input []u8, mut output []u16) (int, int) {
-	return source_convert_utf8_to_utf16_up_to_invalid_at(input, 0, mut output, 0)
+$if test {
+	fn source_convert_utf8_to_utf16_up_to_invalid(input []u8, mut output []u16) (int, int) {
+		return source_convert_utf8_to_utf16_up_to_invalid_at(input, 0, mut output, 0)
+	}
 }
 
 // utf_8.rs::convert_utf8_to_utf16_up_to_invalid. The manually inlined

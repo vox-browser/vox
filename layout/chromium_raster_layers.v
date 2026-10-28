@@ -121,11 +121,13 @@ fn (mut plan ChromiumRasterLayerPlan) append_layer(legacy bool) {
 	plan.layers = unsafe { plan.layer_storage[..index + 1] }
 }
 
-fn chromium_layerize_chunks(chunks []ChromiumRasterChunk, count int, device_scale f64) ChromiumRasterLayerPlan {
-	mut plan := ChromiumRasterLayerPlan{}
-	mut states := []ChromiumRasterPropertyState{}
-	chromium_layerize_chunks_into(chunks, count, device_scale, mut plan, mut states)
-	return plan
+$if test {
+	fn chromium_layerize_chunks(chunks []ChromiumRasterChunk, count int, device_scale f64) ChromiumRasterLayerPlan {
+		mut plan := ChromiumRasterLayerPlan{}
+		mut states := []ChromiumRasterPropertyState{}
+		chromium_layerize_chunks_into(chunks, count, device_scale, mut plan, mut states)
+		return plan
+	}
 }
 
 fn chromium_layerize_chunks_into(chunks []ChromiumRasterChunk, count int, device_scale f64,
@@ -171,10 +173,12 @@ fn chromium_layerize_chunks_into(chunks []ChromiumRasterChunk, count int, device
 	}
 }
 
-fn chromium_root_raster_plan(count int) ChromiumRasterLayerPlan {
-	mut plan := ChromiumRasterLayerPlan{}
-	chromium_root_raster_plan_into(count, mut plan)
-	return plan
+$if test {
+	fn chromium_root_raster_plan(count int) ChromiumRasterLayerPlan {
+		mut plan := ChromiumRasterLayerPlan{}
+		chromium_root_raster_plan_into(count, mut plan)
+		return plan
+	}
 }
 
 fn chromium_root_raster_plan_into(count int, mut plan ChromiumRasterLayerPlan) {

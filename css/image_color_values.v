@@ -261,10 +261,6 @@ fn alpha_needs_serialization(alpha StyleValue) bool {
 		&& (!alpha.is_percentage() || alpha.as_percentage().percentage().as_fraction() < 1)
 }
 
-fn color_style_value_from_style_value(style_value StyleValue, color_resolution_context ColorResolutionContext) ?Color {
-	return style_value.to_color(color_resolution_context)
-}
-
 // --- RGBColorStyleValue ---
 
 pub struct RGBColorStyleValue {

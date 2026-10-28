@@ -975,19 +975,21 @@ fn try_write_browser_cache_entry(path string, contents string) bool {
 	return true
 }
 
-fn read_cached_page(resource_url string) ?LoadedPage {
-	if !resource_url.starts_with('http://') && !resource_url.starts_with('https://') {
-		return none
-	}
-	filtered := browsernet.filter(adblock.Request{url: resource_url, source_url: resource_url, request_type: 'main_frame'}) or { return none }
-	if filtered.url != resource_url || filtered.replacement != none { return none }
-	path := browser_cache_entry_path(browser_cache_root(), 'pages', resource_url)
-	markup := read_browser_cache_entry(path) or { return none }
-	return LoadedPage{
-		url: resource_url
-		markup: markup
-		status: 'Cached · refreshing'
-		content_type: read_browser_cache_entry(path + '.content-type') or { 'text/html' }
+$if test {
+	fn read_cached_page(resource_url string) ?LoadedPage {
+		if !resource_url.starts_with('http://') && !resource_url.starts_with('https://') {
+			return none
+		}
+		filtered := browsernet.filter(adblock.Request{url: resource_url, source_url: resource_url, request_type: 'main_frame'}) or { return none }
+		if filtered.url != resource_url || filtered.replacement != none { return none }
+		path := browser_cache_entry_path(browser_cache_root(), 'pages', resource_url)
+		markup := read_browser_cache_entry(path) or { return none }
+		return LoadedPage{
+			url: resource_url
+			markup: markup
+			status: 'Cached · refreshing'
+			content_type: read_browser_cache_entry(path + '.content-type') or { 'text/html' }
+		}
 	}
 }
 
@@ -1005,8 +1007,10 @@ fn read_cached_resource(resource_url string) ?string {
 	return read_browser_cache_entry(path)
 }
 
-fn cache_resource(resource_url string, body string) {
-	cache_resource_response(resource_url, resource_url, body)
+$if test {
+	fn cache_resource(resource_url string, body string) {
+		cache_resource_response(resource_url, resource_url, body)
+	}
 }
 
 fn cache_resource_response(resource_url string, final_url string, body string) {
@@ -1087,9 +1091,6 @@ fn fetch_page(address string, base string) !LoadedPage {
 	return loaded
 }
 
-fn fetch_text_resource(reference string, base string) !string {
-	return fetch_text_resource_for_request(reference, base, base, 'other')
-}
 
 fn fetch_text_resource_for_request(reference string, base string, source_url string, request_type string) !string {
 	return fetch_browser_resource(reference, base, source_url, request_type)!.body
@@ -1362,9 +1363,11 @@ fn document_preload_resource_urls(document &dom.Document, base_url string) []str
 	return urls
 }
 
-fn preload_document_resources(document &dom.Document, base_url string, cached map[string]PreloadedResource) map[string]PreloadedResource {
-	urls := document_preload_resource_urls(document, base_url)
-	return preload_document_resource_urls(document, base_url, urls, cached)
+$if test {
+	fn preload_document_resources(document &dom.Document, base_url string, cached map[string]PreloadedResource) map[string]PreloadedResource {
+		urls := document_preload_resource_urls(document, base_url)
+		return preload_document_resource_urls(document, base_url, urls, cached)
+	}
 }
 
 fn preload_document_resource_urls(document &dom.Document, base_url string, urls []string, cached map[string]PreloadedResource) map[string]PreloadedResource {
@@ -1511,8 +1514,10 @@ fn native_bitmap_channel_marker(bitmap &dom.Bitmap_, premultiplied bool) int {
 	return if premultiplied { 5 } else { 4 }
 }
 
-fn browser_image_resource_bytes(resource_url dom.URL) ![]u8 {
-	return browser_image_resource_bytes_for_document(resource_url, '')
+$if test {
+	fn browser_image_resource_bytes(resource_url dom.URL) ![]u8 {
+		return browser_image_resource_bytes_for_document(resource_url, '')
+	}
 }
 
 fn browser_image_resource_bytes_for_document(resource_url dom.URL, source_url string) ![]u8 {
@@ -1570,10 +1575,6 @@ fn browser_decode_raster_image_bytes(bytes []u8) !&dom.Bitmap_ {
 	return browser_decode_stb_raster_bytes(bytes)
 }
 
-// The existing compact raster decoder supplies the actual HTML request.
-fn browser_fetch_image_resource(resource_url dom.URL) !html.DecodedImageData {
-	return browser_fetch_image_resource_for_document(resource_url, '')
-}
 
 fn browser_fetch_image_resource_for_document(resource_url dom.URL, source_url string) !html.DecodedImageData {
 	return browser_decoded_image_data(resource_url, browser_image_resource_bytes_for_document(resource_url, source_url)!)
@@ -1628,9 +1629,6 @@ fn browser_image_request_allows_cached_bytes(element &dom.HTMLImageElement, mode
 	return resource_url.origin().is_same_origin(origin)
 }
 
-fn browser_fetch_object_resource(resource_url dom.URL) !html.ObjectResourceResponse {
-	return browser_fetch_object_resource_for_document(resource_url, '')
-}
 
 fn browser_fetch_object_resource_for_document(resource_url dom.URL, source_url string) !html.ObjectResourceResponse {
 	bytes := browser_resource_bytes_for_document(resource_url, source_url, 'object')!
@@ -1663,9 +1661,6 @@ fn install_object_image_fetch_hooks(document &dom.Document) {
 	}
 }
 
-fn browser_fetch_video_poster(resource_url dom.URL) !&dom.Bitmap_ {
-	return browser_decode_raster_image_bytes(browser_image_resource_bytes(resource_url)!)
-}
 
 fn browser_decode_video_poster(bytes []u8) !html.DecodedImageData {
 	bitmap := browser_decode_raster_image_bytes(bytes)!
@@ -2349,9 +2344,11 @@ fn apply_javascript_canvas_state(document &dom.Document, mut element dom.Element
 	context.did_draw(html.CanvasFloatRect{0, 0, f64(width), f64(height)})
 }
 
-fn apply_javascript_state(document &dom.Document, encoded string, canvas_elements map[string]&dom.Element, mut messages []string) ?string {
-	state := javascript_replay_state(encoded, mut messages) or { return none }
-	return apply_decoded_javascript_state(document, state, canvas_elements, mut messages)
+$if test {
+	fn apply_javascript_state(document &dom.Document, encoded string, canvas_elements map[string]&dom.Element, mut messages []string) ?string {
+		state := javascript_replay_state(encoded, mut messages) or { return none }
+		return apply_decoded_javascript_state(document, state, canvas_elements, mut messages)
+	}
 }
 
 fn apply_decoded_javascript_state(document &dom.Document, state map[string]json2.Any,
@@ -2688,11 +2685,13 @@ fn apply_decoded_javascript_state(document &dom.Document, state map[string]json2
 	return json_string_property(state, 'navigate')
 }
 
-fn run_document_javascript(document &dom.Document, current_url string, sources []string, runtime &browserjs.Runtime, mut messages []string) ?string {
-	return run_document_script_sources(document, current_url, sources.map(browserjs.ScriptSource{
-		code: it
-		url: current_url
-	}), runtime, mut messages)
+$if test {
+	fn run_document_javascript(document &dom.Document, current_url string, sources []string, runtime &browserjs.Runtime, mut messages []string) ?string {
+		return run_document_script_sources(document, current_url, sources.map(browserjs.ScriptSource{
+			code: it
+			url: current_url
+		}), runtime, mut messages)
+	}
 }
 
 fn run_document_script_sources(document &dom.Document, current_url string, sources []browserjs.ScriptSource, runtime &browserjs.Runtime, mut messages []string) ?string {
@@ -4511,10 +4510,12 @@ mut:
 	samples []layout.GradientStop
 }
 
-fn native_gradient_clip_path(command layout.PaintCommand, tile painting.Rect) []f32 {
-	mut data := []f32{}
-	native_gradient_clip_path_into(command, tile, mut data)
-	return data
+$if test {
+	fn native_gradient_clip_path(command layout.PaintCommand, tile painting.Rect) []f32 {
+		mut data := []f32{}
+		native_gradient_clip_path_into(command, tile, mut data)
+		return data
+	}
 }
 
 fn native_gradient_clip_path_into(command layout.PaintCommand, tile painting.Rect, mut data []f32) {
@@ -4535,11 +4536,13 @@ fn native_gradient_clip_path_into(command layout.PaintCommand, tile painting.Rec
 	append_native_gradient_path_point(mut data, 5, 0, 0)
 }
 
-fn native_gradient_stop_data(gradient layout.LinearGradient, opacity f64) []f32 {
-	mut data := []f32{}
-	mut samples := []layout.GradientStop{}
-	native_gradient_stop_data_into(gradient, opacity, mut data, mut samples)
-	return data
+$if test {
+	fn native_gradient_stop_data(gradient layout.LinearGradient, opacity f64) []f32 {
+		mut data := []f32{}
+		mut samples := []layout.GradientStop{}
+		native_gradient_stop_data_into(gradient, opacity, mut data, mut samples)
+		return data
+	}
 }
 
 fn native_gradient_stop_data_into(gradient layout.LinearGradient, opacity f64,

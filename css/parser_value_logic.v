@@ -3983,11 +3983,6 @@ fn (mut parser Parser) longhand_initial_first_value(property_id PropertyID) ?Sty
 	return initial
 }
 
-fn single_keyword_style_value(mut tokens ComponentValueStream, allowed []string) ?StyleValue {
-	keyword := parse_single_keyword_from_set_for_value_logic(mut tokens, allowed) or { return none }
-	return StyleValue(KeywordStyleValue.create(keyword))
-}
-
 // PropertyParsing.cpp: Parser::parse_coordinating_value_list_shorthand.
 // Each comma-separated item is a `||` of longhand components. Selection is
 // delegated to the same generated property metadata as standalone values.
@@ -6523,16 +6518,6 @@ fn (mut parser Parser) parse_font_variant_east_asian_value(mut tokens ComponentV
 	}
 	return parser.parse_font_variant_tuple(mut tokens, 3, font_variant_east_asian_slot)
 }
-
-const font_variant_ligatures_keywords = ['normal', 'none', 'common-ligatures', 'no-common-ligatures',
-	'discretionary-ligatures', 'no-discretionary-ligatures', 'historical-ligatures',
-	'no-historical-ligatures', 'contextual', 'no-contextual']
-
-const font_variant_numeric_keywords = ['normal', 'lining-nums', 'oldstyle-nums', 'proportional-nums',
-	'tabular-nums', 'diagonal-fractions', 'stacked-fractions', 'ordinal', 'slashed-zero']
-
-const font_variant_east_asian_keywords = ['normal', 'jis78', 'jis83', 'jis90', 'jis04', 'simplified',
-	'traditional', 'full-width', 'proportional-width', 'ruby']
 
 // https://svgwg.org/svg2-draft/painting.html#SpecifyingFillPaint
 // <paint> = none | <color> | <url> [none | <color>]? | context-fill | context-stroke
@@ -15608,10 +15593,6 @@ pub fn parse_css_media_feature_value_logic(media_feature string, text string) ?S
 		return none
 	}
 	return value
-}
-
-fn value_logic_round_to_u8(value f64) u8 {
-	return u8(int(math.max(0.0, math.min(255.0, math.round(value)))))
 }
 
 @[heap]

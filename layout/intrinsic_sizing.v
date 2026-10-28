@@ -371,16 +371,6 @@ fn calculate_max_content_width(mut state LayoutState, box &Box) CSSPixels {
 	return result
 }
 
-fn min_content_width_for_node(mut state LayoutState, node &Node) CSSPixels {
-	box := node.as_box() or { return CSSPixels.new(0) }
-	return calculate_min_content_width(mut state, box)
-}
-
-fn max_content_width_for_node(mut state LayoutState, node &Node) CSSPixels {
-	box := node.as_box() or { return CSSPixels.new(0) }
-	return calculate_max_content_width(mut state, box)
-}
-
 // FormattingContext::should_treat_max_width_as_none(). In particular, a
 // percentage max-width that is cyclic during intrinsic sizing must not be
 // resolved against the zero placeholder width of the throwaway state.

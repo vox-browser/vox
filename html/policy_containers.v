@@ -56,27 +56,29 @@ pub fn create_a_policy_container_from_serialized_policy_container(serialized Ser
 	}
 }
 
-fn parse_response_csp_policy(value string, disposition CSPPolicyDisposition, origin dom.Origin) SerializedCSPPolicy {
-	// Compatibility String-input adapter. Genuine Response headers use the
-	// Source response/ByteString parser at the factory caller separately.
-	parsed := contentsecuritypolicy.parse_a_serialized_csp(value, .header, if disposition == .enforce {
-		.enforce
-	} else {
-		.report
-	})
-	mut directives := []SerializedCSPDirective{}
-	for directive in parsed.directives() {
-		directives << SerializedCSPDirective{
-			name: directive.name()
-			value: directive.value()
+$if test {
+	fn parse_response_csp_policy(value string, disposition CSPPolicyDisposition, origin dom.Origin) SerializedCSPPolicy {
+		// Compatibility String-input adapter. Genuine Response headers use the
+		// Source response/ByteString parser at the factory caller separately.
+		parsed := contentsecuritypolicy.parse_a_serialized_csp(value, .header, if disposition == .enforce {
+			.enforce
+		} else {
+			.report
+		})
+		mut directives := []SerializedCSPDirective{}
+		for directive in parsed.directives() {
+			directives << SerializedCSPDirective{
+				name: directive.name()
+				value: directive.value()
+			}
 		}
-	}
-	return SerializedCSPPolicy{
-		directives: directives
-		disposition: disposition
-		source: .header
-		self_origin: origin
-		pre_parsed_policy_string: parsed.pre_parsed_policy_string()
+		return SerializedCSPPolicy{
+			directives: directives
+			disposition: disposition
+			source: .header
+			self_origin: origin
+			pre_parsed_policy_string: parsed.pre_parsed_policy_string()
+		}
 	}
 }
 

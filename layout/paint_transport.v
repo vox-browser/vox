@@ -2903,8 +2903,10 @@ mut:
 	command_count   int
 }
 
-fn new_paint_phase_command_recorder(entry_count int) PaintPhaseCommandRecorder {
-	return new_reusing_paint_phase_command_recorder(entry_count, [][]PaintCommand{})
+$if test {
+	fn new_paint_phase_command_recorder(entry_count int) PaintPhaseCommandRecorder {
+		return new_reusing_paint_phase_command_recorder(entry_count, [][]PaintCommand{})
+	}
 }
 
 fn (mut recorder PaintPhaseCommandRecorder) publish_commands(mut commands []PaintCommand) {
@@ -3141,21 +3143,23 @@ fn append_line_box_debug_commands(mut commands []PaintCommand, fragment TextFrag
 
 // Only compact a newly replayed command buffer, never a retained phase bucket.
 // Cached guides remain available when the inspector toggles their visibility.
-fn filter_line_box_debug_commands(mut commands []PaintCommand, visible bool) {
-	if visible {
-		return
-	}
-	mut write_index := 0
-	for read_index in 0 .. commands.len {
-		if commands[read_index].line_box_debug {
-			continue
+$if test {
+	fn filter_line_box_debug_commands(mut commands []PaintCommand, visible bool) {
+		if visible {
+			return
 		}
-		if write_index != read_index {
-			commands[write_index] = commands[read_index]
+		mut write_index := 0
+		for read_index in 0 .. commands.len {
+			if commands[read_index].line_box_debug {
+				continue
+			}
+			if write_index != read_index {
+				commands[write_index] = commands[read_index]
+			}
+			write_index++
 		}
-		write_index++
+		commands.trim(write_index)
 	}
-	commands.trim(write_index)
 }
 
 // Compatibility layout can still supply word fragments for one naturally-spaced DOM text node;
@@ -3620,9 +3624,11 @@ fn append_selected_text_fragment_commands(mut commands []PaintCommand,
 	}
 }
 
-fn append_text_fragment_commands(mut commands []PaintCommand, fragments []TextFragment,
-	opacity f64) {
-	append_text_fragment_commands_with_debug(mut commands, fragments, opacity, true)
+$if test {
+	fn append_text_fragment_commands(mut commands []PaintCommand, fragments []TextFragment,
+		opacity f64) {
+		append_text_fragment_commands_with_debug(mut commands, fragments, opacity, true)
+	}
 }
 
 fn append_text_fragment_commands_with_debug(mut commands []PaintCommand, fragments []TextFragment,
@@ -4880,18 +4886,6 @@ struct LegacyGridAxisRect {
 	size  f64
 }
 
-// The cross-axis (vertical, for a row) offset that aligns an item whose margin box is `item_cross` px
-// tall within a `cross_size` px line, per its resolved alignment. `stretch` (already resized to the
-// line), `flex-start`, and `baseline` top-align (0).
-fn cross_axis_offset(align string, cross_size f64, item_cross f64) f64 {
-	return match align {
-		'flex-end', 'end', 'right' { cross_size - item_cross }
-		'center' { (cross_size - item_cross) / 2.0 }
-		else { 0.0 }
-	}
-	// flex-start / start / stretch / baseline
-}
-
 // A float's vertical band and the inner edge past which in-flow inline content sits: for a left
 // float `inner_edge` is its right margin edge (content starts to the right); for a right float it is
 // its left margin edge (content ends to the left). Coordinates are in the local (content-top = 0)
@@ -5207,13 +5201,15 @@ struct PositionedContainingBlock {
 	height f64
 }
 
-fn initial_containing_block(element &dom.Element, fallback_width f64, fallback_height f64) PositionedContainingBlock {
-	viewport := element.document().layout_viewport_rect()
-	return PositionedContainingBlock{
-		x: viewport.x
-		y: viewport.y
-		width: if viewport.width > 0 { viewport.width } else { fallback_width }
-		height: if viewport.height > 0 { viewport.height } else { fallback_height }
+$if test {
+	fn initial_containing_block(element &dom.Element, fallback_width f64, fallback_height f64) PositionedContainingBlock {
+		viewport := element.document().layout_viewport_rect()
+		return PositionedContainingBlock{
+			x: viewport.x
+			y: viewport.y
+			width: if viewport.width > 0 { viewport.width } else { fallback_width }
+			height: if viewport.height > 0 { viewport.height } else { fallback_height }
+		}
 	}
 }
 

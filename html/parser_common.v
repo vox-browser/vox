@@ -2,17 +2,23 @@ module html
 
 import dom
 
-fn ascii_alphabetic_to_index(character u8) u8 {
-	assert character.is_letter()
-	return if character <= `Z` { character - `A` } else { character - `a` + 26 }
+$if test {
+	fn ascii_alphabetic_to_index(character u8) u8 {
+		assert character.is_letter()
+		return if character <= `Z` { character - `A` } else { character - `a` + 26 }
+	}
 }
 
-fn is_whitespace_or_slash(character u8) bool {
-	return is_number_ascii_whitespace(character) || character == `/`
+$if test {
+	fn is_whitespace_or_slash(character u8) bool {
+		return is_number_ascii_whitespace(character) || character == `/`
+	}
 }
 
-fn is_whitespace_or_end_chevron(character u8) bool {
-	return is_number_ascii_whitespace(character) || character == `>`
+$if test {
+	fn is_whitespace_or_end_chevron(character u8) bool {
+		return is_number_ascii_whitespace(character) || character == `>`
+	}
 }
 
 // Shared helpers for the HTML tree-construction machinery (stack of open elements, list of active

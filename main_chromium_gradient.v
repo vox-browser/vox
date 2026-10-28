@@ -59,10 +59,12 @@ fn chromium_linear_gradient_points(gradient layout.LinearGradient, tile painting
 // premultiplied result when alpha is constant or all visible RGB components
 // are constant (invisible RGB is normalized below). Preserve original stops for these sRGB linear gradients rather
 // than quantizing an intermediate set of samples to eight bits.
-fn chromium_linear_gradient_stop_data(gradient layout.LinearGradient, opacity f64) ?[]f32 {
-	mut data := []f32{}
-	if !chromium_linear_gradient_stop_data_into(gradient, opacity, mut data) { return none }
-	return data
+$if test {
+	fn chromium_linear_gradient_stop_data(gradient layout.LinearGradient, opacity f64) ?[]f32 {
+		mut data := []f32{}
+		if !chromium_linear_gradient_stop_data_into(gradient, opacity, mut data) { return none }
+		return data
+	}
 }
 
 fn chromium_linear_gradient_stop_data_into(gradient layout.LinearGradient, opacity f64,

@@ -124,10 +124,12 @@ fn retain_filter_decision(source string, result string) {
 	filter_decision_memo_[source.clone()] = result.clone()
 }
 
-fn retained_filter_decision_count() int {
-	filter_decision_memo_mutex_.@lock()
-	defer { filter_decision_memo_mutex_.unlock() }
-	return filter_decision_memo_.len
+$if test {
+	fn retained_filter_decision_count() int {
+		filter_decision_memo_mutex_.@lock()
+		defer { filter_decision_memo_mutex_.unlock() }
+		return filter_decision_memo_.len
+	}
 }
 
 fn evaluate_filter_decision(source string) !string {

@@ -1,16 +1,20 @@
 module main
 
 import dom
-import browserjs
+$if test {
+	import browserjs
+}
 import x.json2
 
-fn install_compact_dom_tree_version_binding(document &dom.Document, mut runtime browserjs.Runtime) ! {
-	runtime.define_number_host_function('__ladybirdDOMTreeVersion', fn [document] () f64 {
-		version := document.dom_tree_version()
-		// Above Number's exact integer range, use the exact JSON/string query
-		// path on every read instead of accepting a rounded version as current.
-		return if version <= u64(9007199254740991) { f64(version) } else { -1.0 }
-	})!
+$if test {
+	fn install_compact_dom_tree_version_binding(document &dom.Document, mut runtime browserjs.Runtime) ! {
+		runtime.define_number_host_function('__ladybirdDOMTreeVersion', fn [document] () f64 {
+			version := document.dom_tree_version()
+			// Above Number's exact integer range, use the exact JSON/string query
+			// path on every read instead of accepting a rounded version as current.
+			return if version <= u64(9007199254740991) { f64(version) } else { -1.0 }
+		})!
+	}
 }
 
 fn (mut binding CompactElementQueryBinding) tag_collection_query(root &dom.Node, input string) !string {

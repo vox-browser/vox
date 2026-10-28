@@ -9,14 +9,6 @@ pub interface AvailableSize {
 	is_definite() bool
 }
 
-fn grid_absolutize_calculated(calculated CalculatedStyleValue, context ComputationContext) CalculatedStyleValue {
-	absolutized := calculated.absolutized(context)
-	if absolutized is CalculatedStyleValue {
-		return absolutized
-	}
-	return calculated
-}
-
 // --- GridTrackPlacement ---
 
 pub struct GridTrackPlacementAuto {}

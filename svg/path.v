@@ -97,17 +97,6 @@ fn (path Path) serialize_in_workspace() string {
 	return builder.str()
 }
 
-fn path_arity(kind PathInstructionType) int {
-	return match kind {
-		.move, .line, .smooth_quadratic_bezier_curve { 2 }
-		.horizontal_line, .vertical_line { 1 }
-		.curve { 6 }
-		.smooth_curve, .quadratic_bezier_curve { 4 }
-		.elliptical_arc { 7 }
-		.close_path { 0 }
-	}
-}
-
 pub fn parse_path_data(input string) Path {
 	mut parser := AttributeParser.from_string(input)
 	return parser.parse_path_data()

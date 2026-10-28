@@ -338,16 +338,6 @@ fn dump_labeled_statement(label string, statement &Statement, is_last bool, stat
 // Entry points
 // ============================================================================
 
-fn dump_program(program &Statement, use_color bool, function_table &FunctionTable) {
-	state := DumpState{
-		is_root:        true
-		use_color:      use_color
-		function_table: unsafe { function_table }
-	}
-	dump_statement(program, state)
-	println('')
-}
-
 fn dump_program_to_string(program &Statement, function_table &FunctionTable) string {
 	mut oc := &OutputCollector{}
 	state := DumpState{

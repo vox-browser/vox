@@ -11,23 +11,27 @@ import dom
 
 // WebIDL callback conversion at the compact JS-value boundary. Object values
 // used here carry a CallbackType pointer in object_data.
-fn convert_value_to_callback_function(value dom.JSValue) !&dom.CallbackType {
-	if !value.is_object() || value.object_data == unsafe { nil } {
-		return error('TypeError: value is not a function')
+$if test {
+	fn convert_value_to_callback_function(value dom.JSValue) !&dom.CallbackType {
+		if !value.is_object() || value.object_data == unsafe { nil } {
+			return error('TypeError: value is not a function')
+		}
+		return unsafe { &dom.CallbackType(value.object_data) }
 	}
-	return unsafe { &dom.CallbackType(value.object_data) }
 }
 
 // The standalone port represents an already-iterated JS sequence as a V array.
-fn convert_value_to_sequence_of_strings(values []dom.JSValue) ![]string {
-	mut result := []string{cap: values.len}
-	for value in values {
-		if value.is_object() {
-			return error('TypeError: object string conversion requires a JavaScript host')
+$if test {
+	fn convert_value_to_sequence_of_strings(values []dom.JSValue) ![]string {
+		mut result := []string{cap: values.len}
+		for value in values {
+			if value.is_object() {
+				return error('TypeError: object string conversion requires a JavaScript host')
+			}
+			result << value.to_string_value()
 		}
-		result << value.to_string_value()
+		return result
 	}
-	return result
 }
 
 pub struct ElementDefinitionOptions {

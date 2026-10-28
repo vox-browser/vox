@@ -73,10 +73,12 @@ fn file_reader_utf16_result(value libjs.Utf16String) FileReaderResult {
 	}
 }
 
-fn file_reader_string_result(value string) FileReaderResult {
-	return FileReaderResult{
-		kind: .string_
-		text: value
+$if test {
+	fn file_reader_string_result(value string) FileReaderResult {
+		return FileReaderResult{
+			kind: .string_
+			text: value
+		}
 	}
 }
 

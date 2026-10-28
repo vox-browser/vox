@@ -181,11 +181,6 @@ pub fn MediaProviderObject.from_media_source(handle voidptr, attach fileapi.Blob
 
 fn media_element_noop_change_task() {}
 
-fn media_element_noop_audio_enabled(track &AudioTrack, enabled bool) {
-	_ = track
-	_ = enabled
-}
-
 @[heap]
 pub struct HTMLMediaElement {
 	dom.EventTarget

@@ -21,8 +21,10 @@ fn compact_initial_element_state_needed(element &dom.Element) bool {
 // The standalone snapshot adapter retains its complete metadata. A native
 // query-backed realm seeds only roots and named globals; other owners are
 // serialized on their first query, with their original stable bridge keys.
-fn javascript_initial_state(document &dom.Document, current_url string, scripts []string) map[string]json2.Any {
-	return javascript_initial_state_with_policy(document, current_url, scripts, .all_elements)
+$if test {
+	fn javascript_initial_state(document &dom.Document, current_url string, scripts []string) map[string]json2.Any {
+		return javascript_initial_state_with_policy(document, current_url, scripts, .all_elements)
+	}
 }
 
 fn javascript_initial_element_state(element &dom.Element, bridge_key string, element_index int,

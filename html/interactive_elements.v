@@ -535,19 +535,6 @@ pub fn html_details_element_queue_a_details_toggle_event_task(details &dom.HTMLD
 	mutable_details.details_toggle_old_state_ = old_state
 }
 
-fn for_each_element_in_details_name_group(details &dom.HTMLDetailsElement, name string, callback fn(&dom.HTMLDetailsElement) dom.TraversalDecision) {
-	element := details_dom_element(details)
-	mut group := []&dom.Element{}
-	collect_details_elements(element.as_node().root(), mut group)
-	for candidate in group {
-		if candidate != element && candidate.get_attribute_value('name') == name {
-			if callback(unsafe { &dom.HTMLDetailsElement(candidate) }) == .@break {
-				return
-			}
-		}
-	}
-}
-
 pub fn html_details_element_ensure_details_exclusivity_by_closing_other_elements_if_needed(details &dom.HTMLDetailsElement) {
 	element := details_dom_element(details)
 	if !element.has_attribute('open') {

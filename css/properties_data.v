@@ -450,9 +450,11 @@ fn invoke_legacy_typed_longhand(context voidptr, property_id PropertyID, value S
 	state.callback(property_id, value)
 }
 
-fn for_each_typed_property_expanding_shorthands(property_id PropertyID, value StyleValue, set_longhand_property fn (PropertyID, StyleValue)) {
-	state := TypedLonghandExpansionCallback{callback: set_longhand_property}
-	for_each_typed_property_expanding_shorthands_with_context(property_id, value, voidptr(&state), invoke_legacy_typed_longhand)
+$if test {
+	fn for_each_typed_property_expanding_shorthands(property_id PropertyID, value StyleValue, set_longhand_property fn (PropertyID, StyleValue)) {
+		state := TypedLonghandExpansionCallback{callback: set_longhand_property}
+		for_each_typed_property_expanding_shorthands_with_context(property_id, value, voidptr(&state), invoke_legacy_typed_longhand)
+	}
 }
 
 fn for_each_typed_property_expanding_shorthands_with_context(property_id PropertyID, value StyleValue, context voidptr, set_longhand_property fn (voidptr, PropertyID, StyleValue)) {

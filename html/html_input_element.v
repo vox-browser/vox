@@ -141,22 +141,26 @@ pub mut:
 	form_action_hook_                ?InputFormActionHook
 }
 
-fn is_integral_multiple(value f64, step f64) bool {
-	assert step > 0
-	if math.abs(value) / math.ldexp(1.0, 53) > step {
-		return true
+$if test {
+	fn is_integral_multiple(value f64, step f64) bool {
+		assert step > 0
+		if math.abs(value) / math.ldexp(1.0, 53) > step {
+			return true
+		}
+		remainder := math.abs(value - math.round(value / step) * step)
+		acceptable_error := if math.round(step) == step { 0.0 } else { step / f64(1 << 24) }
+		return remainder <= acceptable_error || remainder >= step - acceptable_error
 	}
-	remainder := math.abs(value - math.round(value / step) * step)
-	acceptable_error := if math.round(step) == step { 0.0 } else { step / f64(1 << 24) }
-	return remainder <= acceptable_error || remainder >= step - acceptable_error
 }
 
 fn stepper_button_style_when_visible() string {
 	return 'padding:0;cursor:default;'
 }
 
-fn stepper_button_style_when_hidden() string {
-	return 'display:none;'
+$if test {
+	fn stepper_button_style_when_hidden() string {
+		return 'display:none;'
+	}
 }
 
 fn placeholder_style_when_visible() string {
@@ -167,12 +171,16 @@ fn placeholder_style_when_hidden() string {
 	return 'display:none;'
 }
 
-fn is_applicable_for_maxlength_attribute(state HTMLInputTypeState) bool {
-	return state in [.text, .search, .telephone, .url, .email, .password]
+$if test {
+	fn is_applicable_for_maxlength_attribute(state HTMLInputTypeState) bool {
+		return state in [.text, .search, .telephone, .url, .email, .password]
+	}
 }
 
-fn is_allowed_to_have_placeholder(state HTMLInputTypeState) bool {
-	return state in [.text, .search, .url, .telephone, .email, .password, .number]
+$if test {
+	fn is_allowed_to_have_placeholder(state HTMLInputTypeState) bool {
+		return state in [.text, .search, .url, .telephone, .email, .password, .number]
+	}
 }
 
 fn input_element(model &HTMLInputElementModel) &dom.Element {

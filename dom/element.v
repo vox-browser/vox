@@ -933,15 +933,6 @@ pub fn (r RequiredInvalidationAfterStyleChange) is_none() bool {
 		&& !r.recompute_descendant_styles && !r.invalidates_hit_test_display_list
 }
 
-fn required_invalidation_full() RequiredInvalidationAfterStyleChange {
-	return RequiredInvalidationAfterStyleChange{
-		relayout: true
-		rebuild_layout_tree: true
-		repaint: true
-		rebuild_stacking_context_tree: true
-		invalidates_hit_test_display_list: true
-	}
-}
 
 @[heap]
 pub struct PseudoElement_ {
