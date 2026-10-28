@@ -4162,9 +4162,6 @@ void native_begin_svg_clip_mask(unsigned long long input_key, float canvas_width
 	float area_height, float transform_a, float transform_b, float transform_c,
 	float transform_d, float transform_e, float transform_f, float page_x,
 	float page_y, float scroll_y) {
-#ifdef LADYBIRD_V_HAS_SKIA_TEXT
-	ladybird_v_skia_block_shared_clip([[NSGraphicsContext currentContext] CGContext]);
-#endif
 	native_svg_clip_build_is_color = 0;
 	native_svg_clip_build_is_luminance = 0;
 	if (!native_prepare_svg_mask(input_key, 0, canvas_width, canvas_height, page_x,
@@ -4194,9 +4191,6 @@ void native_begin_svg_content_mask(unsigned long long input_key, int luminance,
 	float area_width, float area_height, float transform_a, float transform_b,
 	float transform_c, float transform_d, float transform_e, float transform_f,
 	float page_x, float page_y, float scroll_y) {
-#ifdef LADYBIRD_V_HAS_SKIA_TEXT
-	ladybird_v_skia_block_shared_clip([[NSGraphicsContext currentContext] CGContext]);
-#endif
 	native_svg_clip_build_is_color = 1;
 	native_svg_clip_build_is_luminance = luminance;
 	if (!native_prepare_svg_mask(input_key, 1, canvas_width, canvas_height, page_x,
@@ -4497,6 +4491,9 @@ void native_finish_svg_clip_mask(void) {
 	CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
 	native_finalize_svg_mask_cache();
 	if (context != NULL && native_svg_clip_image != NULL) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+		ladybird_v_skia_block_shared_clip(context);
+#endif
 		CGContextClipToRect(context, native_svg_clip_rect);
 		CGContextClipToMask(context, native_svg_clip_rect, native_svg_clip_image);
 	}
@@ -4508,6 +4505,12 @@ void native_begin_svg_mask_layer(void) {
 	if (context == NULL) {
 		return;
 	}
+	// Cache preparation does not change the destination clip. Keep unsupported
+	// mask compositing scoped to this layer, including any nested masks.
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	ladybird_v_skia_save_shared_clip(context);
+	ladybird_v_skia_block_shared_clip(context);
+#endif
 	native_begin_svg_mask_layer_in_context(context, native_svg_clip_rect);
 	if (context == native_font_compositing_context) {
 		native_font_compositing_transparency_depth++;
@@ -4556,6 +4559,9 @@ void native_end_svg_mask_layer(unsigned long long input_key, int content_mask,
 	CGContextRestoreGState(context);
 	native_end_tracked_transparency_layer(context);
 	CGContextRestoreGState(context);
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	ladybird_v_skia_restore_shared_clip(context);
+#endif
 }
 
 void native_add_corner_rounded_clip(float x, float y, float width, float height,
