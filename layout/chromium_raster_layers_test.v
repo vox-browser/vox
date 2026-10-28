@@ -1,6 +1,7 @@
 module layout
 
 import html
+import platform
 
 fn test_raster_layers_preserve_overlap_and_merge_disjoint_chunks() {
 	root := ChromiumRasterPropertyState{}
@@ -309,4 +310,80 @@ fn test_raster_layers_separate_viewport_fixed_chunks_from_scrolling_root() {
 		clip_width:  1024
 		clip_height: 0
 	}) == LayoutRect{}
+}
+
+fn test_raster_layers_promote_content_over_an_empty_opacity_hint_surface() {
+	mut document := html.parse_document('<!doctype html><style>body{margin:0;background:rgb(247 248 252)}header{transform:translateZ(0);height:264px;box-shadow:0 4px 20px #0002}.empty{will-change:opacity;height:200px}.main{position:relative;height:64px;background:rgb(1 2 3);box-shadow:0 4px 16px #292a2e22}</style><header><div class="empty"></div><div class="main"></div></header>')
+	defer { document.finalize() }
+	document.set_font_rendering_policy(.chromium)
+	_ = layout_document_typed_in_viewport(document, 1024, 852)
+	commands := display_list_commands(document.record_display_list() or { panic('missing paint') })
+	assert commands.filter(it.kind == 'begin_css_effect_layer').len == 2
+	for scale in [1.0, 2.0] {
+		plan := chromium_raster_layer_plan(document, commands, scale)
+		mut scopes := []int{}
+		mut content_layer := -1
+		for index, command in commands {
+			layer := plan.command_layers[index]
+			if command.kind == 'begin_css_effect_layer' { scopes << layer }
+			if command.color == 'rgb(1 2 3)' { content_layer = layer }
+			if command.visual_layer_data != none {
+				assert layer > 0 && !plan.layers[layer].legacy_raster
+			}
+		}
+		assert scopes.len == 2 && scopes[0] > 0 && scopes[1] > scopes[0]
+		assert content_layer > scopes[1]
+		// The main shadow extends into the empty child's area and therefore
+		// cannot merge backwards through it into the header's first picture.
+		assert plan.layers[content_layer].bounds.y < 200
+		assert plan.layers[scopes[0]].bounds.y < 0
+		assert plan.layers[scopes[0]].bounds.height > 264
+	}
+}
+
+fn test_raster_layer_shadow_overlap_includes_transformed_blur_ink() {
+	box := BlockBox{ x: 10, y: 20, width: 100, height: 40 }
+	bounds := chromium_raster_chunk_bounds(&box, &PaintCommand{
+		kind: 'paint_outer_box_shadow'
+		x: 10
+		y: 24
+		width: 100
+		height: 40
+		blur: 20
+	})
+	assert bounds == LayoutRect{ x: -20, y: -6, width: 160, height: 100 }
+}
+
+fn test_raster_compositor_scope_scratch_outlives_recording_arenas() {
+	mut scratch := ChromiumRasterPlanScratch{}
+	mut frame := platform.new_arena('compositor scope scratch')
+	defer { frame.release() }
+	for count in [4, 4, 12, 12] {
+		entry := frame.enter()
+		scratch.prepare(count, count)
+		assert scratch.compositor_scopes.len == 0
+		assert scratch.compositor_scopes.cap >= count
+		for scope in 0 .. count { scratch.compositor_scopes << u64(scope + 1) }
+		frame.leave(entry)
+		frame.reset()
+		assert scratch.compositor_scopes.len == count
+		for scope in 0 .. count { assert scratch.compositor_scopes[scope] == u64(scope + 1) }
+	}
+}
+
+fn test_raster_chunk_bounds_intersect_page_space_clip_after_transform() {
+	box := BlockBox{
+		x: 10, y: 20, width: 220, height: 40
+		paint_transform: [f64(0), 1, -1, 0, 100, 50]!
+	}
+	command := PaintCommand{
+		kind: 'draw_svg_path'
+		has_clip: true
+		clip_x: 50, clip_y: 70, clip_width: 20, clip_height: 48
+	}
+	assert chromium_raster_chunk_bounds(&box, &command) == LayoutRect{
+		x: 50, y: 70, width: 20, height: 48
+	}
+	outside := PaintCommand{ ...command, clip_x: 200 }
+	assert chromium_raster_chunk_bounds(&box, &outside).width == 0
 }

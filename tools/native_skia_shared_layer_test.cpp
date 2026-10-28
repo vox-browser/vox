@@ -141,6 +141,83 @@ static void shadow_overflow(int scale, bool switch_layer)
     CGContextRelease(destination); CGContextRelease(control);
 }
 
+// Split compositor pictures must sample the parent before fallback painting,
+// then round each picture's SrcOver independently, including translucent parents.
+static void backdrop_layers(int scale, int alpha, bool switch_layer)
+{
+    constexpr int width = 96, height = 80;
+    const int pixel_width = width * scale, pixel_height = height * scale;
+    std::vector<uint8_t> actual(size_t(pixel_width) * pixel_height * 4), expected;
+    for (size_t i = 0; i < actual.size(); i += 4) {
+        actual[i] = 97 * alpha / 255;
+        actual[i + 1] = 151 * alpha / 255;
+        actual[i + 2] = 223 * alpha / 255;
+        actual[i + 3] = alpha;
+    }
+    expected = actual;
+    auto space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+    auto destination = CGBitmapContextCreate(actual.data(), pixel_width, pixel_height,
+        8, pixel_width * 4, space, CGBitmapInfo(kCGImageAlphaPremultipliedLast) | kCGBitmapByteOrder32Big);
+    CGColorSpaceRelease(space);
+    assert(destination);
+    CGContextScaleCTM(destination, scale, scale);
+    ladybird_v_skia_set_shared_recording(0, width, height);
+    ladybird_v_skia_set_shared_layer_backdrop(1);
+    for (int layer = 0; layer < 2; ++layer) {
+        ladybird_v_skia_set_raster_layer(8 + layer * 4, 8 + layer * 4, 0);
+        ladybird_v_skia_set_raster_layer_size(72, 56);
+        int cell = 0;
+        ladybird_v_skia_set_msaa_grid(&cell, 1, 74 * scale, 58 * scale, 1);
+        ladybird_v_skia_set_layer_shared_recording(1);
+        SkPictureRecorder recorder;
+        auto* canvas = recorder.beginRecording(SkRect::MakeWH(width, height));
+        for (int leaf = 0; leaf < 2; ++leaf) {
+            float x = 8 + layer * 4 + leaf * 7, y = 8 + layer * 4 + leaf * 5;
+            int r = 41 + leaf * 70, g = 42 + layer * 80, b = 46 + leaf * 60, a = 20 + leaf * 85;
+            assert(ladybird_v_skia_draw_rounded_rect(destination, x, y, 60, 44,
+                8, 8, 8, 8, 8, 8, 8, 8, 1, 0, 0, 1, 0, 0, 0, 0, 0,
+                width, height, r, g, b, a, 1, 0, 1, 0));
+            SkPaint paint; paint.setAntiAlias(true); paint.setColor(SkColorSetARGB(a, r, g, b));
+            canvas->drawRRect(SkRRect::MakeRectXY(SkRect::MakeXYWH(x, y, 60, 44), 8, 8), paint);
+        }
+        shared_recording_content(destination,
+            SkRect::MakeXYWH(8 + layer * 4, 8 + layer * 4, 72, 56), 0, 0);
+        if (switch_layer) ladybird_v_skia_set_raster_layer(0, 0, 1);
+        else ladybird_v_skia_finish_shared_recording();
+        auto bytes = recorder.finishRecordingAsPicture()->serialize();
+        std::vector<uint32_t> pixels(size_t(pixel_width) * pixel_height);
+        float matrix[] {float(scale), 0, 0, 0, float(scale), 0, 0, 0, 1};
+        assert(shared_picture_draw()(reinterpret_cast<uint8_t*>(pixels.data()), pixel_width,
+            pixel_height, pixel_width * 4, bytes->data(), bytes->size(), matrix));
+        auto* source = reinterpret_cast<uint8_t const*>(pixels.data());
+        for (size_t i = 0; i < expected.size(); i += 4) {
+            float remaining = 1.f - float(source[i + 3]) / 255.f;
+            for (int channel = 0; channel < 4; ++channel) {
+                int bgra = channel == 0 ? 2 : channel == 2 ? 0 : channel;
+                float value = std::fma(float(expected[i + channel]) / 255.f, remaining,
+                    float(source[i + bgra]) / 255.f);
+                expected[i + channel] = uint8_t(std::nearbyint(double(value) * 255.));
+            }
+        }
+    }
+    ladybird_v_skia_set_shared_layer_backdrop(0);
+    CGContextFlush(destination);
+    if (actual != expected) {
+        std::cerr << "Backdrop layers differ: scale=" << scale
+            << " alpha=" << alpha << " switch=" << switch_layer << '\n';
+        size_t count = 0;
+        for (size_t i = 0; i < actual.size(); ++i) {
+            if (actual[i] == expected[i]) continue;
+            if (count++ < 12) std::cerr << "  " << i / 4 % pixel_width << ','
+                << i / 4 / pixel_width << " channel=" << i % 4
+                << " actual=" << int(actual[i]) << " expected=" << int(expected[i]) << '\n';
+        }
+        std::cerr << "  differing channels=" << count << '\n';
+    }
+    assert(actual == expected);
+    CGContextRelease(destination);
+}
+
 static void clipped_layer(int scale, bool blocked)
 {
     constexpr int width = 512, height = 512;
@@ -321,6 +398,8 @@ int main()
     for (bool batch : {false, true}) for (bool linear : {false, true})
         gradient_layer(scale, kind, stroke, batch, linear);
     for (int scale : {1, 2}) {
+        for (int alpha : {128, 255}) for (bool switch_layer : {false, true})
+            backdrop_layers(scale, alpha, switch_layer);
         root_background(scale);
         clipped_layer(scale, false);
         clipped_layer(scale, true);

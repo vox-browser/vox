@@ -54,6 +54,8 @@ extern void ladybird_v_skia_set_image_background(uint8_t red, uint8_t green, uin
 extern void ladybird_v_skia_set_image_border(float const* rect, float width, uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha);
 extern void ladybird_v_skia_set_shared_recording(int, int, int);
 extern void ladybird_v_skia_set_layer_shared_recording(int);
+extern int ladybird_v_skia_layer_shared_recording_enabled(void);
+extern void ladybird_v_skia_set_shared_layer_backdrop(int);
 extern void ladybird_v_skia_finish_shared_recording(void);
 extern void ladybird_v_skia_save_shared_clip(CGContextRef);
 extern void ladybird_v_skia_restore_shared_clip(CGContextRef);
@@ -859,6 +861,7 @@ static CGBlendMode native_compositing_operator(int mode) {
 // over the backdrop with Chromium's floating-point layer composite.
 typedef struct {
 	int offscreen;
+	int passthrough;
 	CGContextRef parent;
 	CGContextRef context;
 	uint8_t *pixels;
@@ -872,6 +875,7 @@ static int native_opacity_group_depth;
 static int native_opacity_group_overflow_depth;
 
 static int native_compositing_canvas_is_readable(CGContextRef context) {
+	if (context == NULL) return 0;
 	CGAffineTransform ctm = CGContextGetCTM(context);
 	return context != NULL && context == native_font_compositing_context
 		&& native_font_compositing_transparency_depth == 0
@@ -975,10 +979,23 @@ void native_begin_css_effect_layer(float opacity, int blend_mode) {
 	if (context == NULL) {
 		return;
 	}
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	ladybird_v_skia_finish_shared_recording();
+#endif
 	CGContextSaveGState(context);
 	if (native_opacity_group_depth < NATIVE_OPACITY_GROUP_MAX_DEPTH) {
 		NativeOpacityGroup *group = &native_opacity_groups[native_opacity_group_depth++];
 		*group = (NativeOpacityGroup){ .parent = context };
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+		if (opacity == 1 && blend_mode == 0
+			&& ladybird_v_skia_layer_shared_recording_enabled()
+			&& native_compositing_canvas_is_readable(context)) {
+			group->passthrough = 1;
+			ladybird_v_skia_set_shared_layer_backdrop(1);
+			return;
+		}
+		ladybird_v_skia_set_shared_layer_backdrop(0);
+#endif
 		if (blend_mode == 0 && native_begin_offscreen_opacity_group(group, context, opacity)) {
 			return;
 		}
@@ -989,6 +1006,7 @@ void native_begin_css_effect_layer(float opacity, int blend_mode) {
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
 	// Copy replay requires the isolated bitmap, never the parent transparency layer.
 	ladybird_v_skia_set_layer_shared_recording(0);
+	ladybird_v_skia_set_shared_layer_backdrop(0);
 #endif
 	CGContextSetAlpha(context, opacity);
 	CGContextSetBlendMode(context, native_compositing_operator(blend_mode));
@@ -1002,8 +1020,21 @@ void native_end_css_effect_layer(void) {
 #endif
 	if (native_opacity_group_overflow_depth > 0) {
 		native_opacity_group_overflow_depth--;
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+		ladybird_v_skia_set_shared_layer_backdrop(native_opacity_group_overflow_depth == 0
+			&& native_opacity_group_depth > 0
+			&& native_opacity_groups[native_opacity_group_depth - 1].passthrough);
+#endif
 	} else if (native_opacity_group_depth > 0) {
 		NativeOpacityGroup group = native_opacity_groups[--native_opacity_group_depth];
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+		ladybird_v_skia_set_shared_layer_backdrop(native_opacity_group_depth > 0
+			&& native_opacity_groups[native_opacity_group_depth - 1].passthrough);
+#endif
+		if (group.passthrough) {
+			CGContextRestoreGState(group.parent);
+			return;
+		}
 		if (group.offscreen) {
 			native_end_offscreen_opacity_group(&group);
 			CGContextRestoreGState(group.parent);

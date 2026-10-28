@@ -7,7 +7,8 @@ import painting
 fn C.native_set_chromium_shared_recording(i32, i32, i32)
 fn C.native_set_chromium_layer_shared_recording(i32)
 
-// Only complete supported scopes can replace their existing leaf rendering.
+// Root recording requires a supported prefix; independent compositor layers
+// may split full-opacity scopes while retaining isolated translucent scopes.
 fn chromium_shared_recording_supported(commands []layout.PaintCommand,
 	plan layout.ChromiumRasterLayerPlan) bool {
 	if plan.layers.len == 0 || plan.layers[0].legacy_raster
@@ -133,6 +134,34 @@ fn chromium_shared_recording_leaf_supported(command &layout.PaintCommand) (bool,
 	return true, has_vectors
 }
 
+// Full-opacity compositor boundaries may span raster layers. Genuine effects
+// still require one complete isolated run.
+fn chromium_shared_recording_css_boundary(commands []layout.PaintCommand, index int) bool {
+	command := commands[index]
+	data := command.visual_layer_data or { return false }
+	if command.kind !in ['begin_css_effect_layer', 'end_css_effect_layer']
+		|| data.kind != .css_effect || data.blend_mode != .normal || data.scope_id == 0
+		|| command.has_clip || command.clip_list != unsafe { nil } || command.clip_outs.len > 0 {
+		return false
+	}
+	step := if command.kind == 'begin_css_effect_layer' { 1 } else { -1 }
+	expected := if step == 1 { 'end_css_effect_layer' } else { 'begin_css_effect_layer' }
+	mut other := index + step
+	for other >= 0 && other < commands.len {
+		partner := commands[other]
+		if partner_data := partner.visual_layer_data {
+			if partner_data.scope_id == data.scope_id {
+				return partner.kind == expected
+					&& partner_data.kind == .css_effect && partner_data.blend_mode == .normal
+					&& partner_data.opacity == data.opacity && !partner.has_clip
+					&& partner.clip_list == unsafe { nil } && partner.clip_outs.len == 0
+			}
+		}
+		other += step
+	}
+	return false
+}
+
 fn chromium_shared_recording_layer_supported(commands []layout.PaintCommand,
 	plan layout.ChromiumRasterLayerPlan, index int) bool {
 	if index <= 0 || index >= plan.layers.len || plan.command_layers.len != commands.len {
@@ -140,8 +169,28 @@ fn chromium_shared_recording_layer_supported(commands []layout.PaintCommand,
 	}
 	layer := plan.layers[index]
 	indices := layer.command_indices
-	if layer.legacy_raster || indices.len < 3 { return false }
-	mut scope := u64(0)
+	if layer.legacy_raster || indices.len == 0 { return false }
+	first := indices.first()
+	last := indices.last()
+	if first < 0 || last >= commands.len || (first > 0 && plan.command_layers[first - 1] == index)
+		|| (last + 1 < commands.len && plan.command_layers[last + 1] == index) { return false }
+	// Only CSS scopes install the native destination/backdrop policy used by
+	// these pictures. A scroll or sparsity layer alone must keep leaf replay.
+	mut closed_scopes := 0
+	mut scope_depth := 0
+	for prior := first - 1; prior >= 0; prior-- {
+		command := commands[prior]
+		if command.kind == 'end_css_effect_layer' { closed_scopes++ }
+		if command.kind != 'begin_css_effect_layer' { continue }
+		if closed_scopes > 0 {
+			closed_scopes--
+			continue
+		}
+		data := command.visual_layer_data or { return false }
+		if data.opacity != 1 || !chromium_shared_recording_css_boundary(commands, prior) { return false }
+		scope_depth++
+	}
+	if closed_scopes != 0 { return false }
 	mut has_shared_content := false
 	mut svg_end := 0
 	for position, command_index in indices {
@@ -151,24 +200,9 @@ fn chromium_shared_recording_layer_supported(commands []layout.PaintCommand,
 			return false
 		}
 		command := unsafe { &commands[command_index] }
-		if position == 0 || position == indices.len - 1 {
-			expected := if position == 0 {
-				'begin_css_effect_layer'
-			} else {
-				'end_css_effect_layer'
-			}
-			data := command.visual_layer_data or { return false }
-			if command.kind != expected || data.kind != .css_effect || data.blend_mode != .normal
-				|| data.scope_id == 0 || command.has_clip || command.clip_list != unsafe { nil }
-				|| command.clip_outs.len > 0 {
-				return false
-			}
-			if position == 0 {
-				scope = data.scope_id
-			} else if data.scope_id != scope {
-				return false
-			}
-			continue
+		if scope_depth == 0
+			&& command.kind !in ['begin_css_effect_layer', 'end_css_effect_layer'] {
+			return false
 		}
 		if command_index < svg_end { continue }
 		svg_end = chromium_svg_rectangular_mask_end(commands, plan.command_layers, command_index)
@@ -179,6 +213,27 @@ fn chromium_shared_recording_layer_supported(commands []layout.PaintCommand,
 			has_shared_content = true
 			continue
 		}
+		if command.kind in ['begin_css_effect_layer', 'end_css_effect_layer'] {
+			if !chromium_shared_recording_css_boundary(commands, command_index) { return false }
+			if command.kind == 'begin_css_effect_layer' {
+				scope_depth++
+			} else {
+				if scope_depth == 0 { return false }
+				scope_depth--
+			}
+			data := command.visual_layer_data or { return false }
+			if data.opacity != 1 {
+				if position == 0 && command.kind == 'begin_css_effect_layer' {
+					end_data := commands[last].visual_layer_data or { return false }
+					if commands[last].kind != 'end_css_effect_layer' || end_data.scope_id != data.scope_id { return false }
+				} else if position == indices.len - 1 && command.kind == 'end_css_effect_layer' {
+					begin_data := commands[first].visual_layer_data or { return false }
+					if commands[first].kind != 'begin_css_effect_layer' || begin_data.scope_id != data.scope_id { return false }
+				} else { return false }
+			}
+			continue
+		}
+		if scope_depth == 0 { return false }
 		// Shadows must draw directly into the same isolated surface as their
 		// contents. A separately rounded shadow bitmap changes overlapping blur
 		// pixels. External clips and legacy shadow commands keep their fallback.

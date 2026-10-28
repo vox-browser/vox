@@ -53,6 +53,7 @@ mut:
 	composited_scrolls map[int]bool
 	fixed_bounds       map[u64]LayoutRect
 	compositor_bounds  map[u64]LayoutRect
+	compositor_scopes  []u64
 }
 
 __global chromium_raster_plan_scratch_ = ChromiumRasterPlanScratch{}
@@ -60,13 +61,17 @@ __global chromium_raster_plan_scratch_ = ChromiumRasterPlanScratch{}
 // Leave `property_count` default states and no chunks, with room for
 // `chunk_count` chunks.
 fn (mut scratch ChromiumRasterPlanScratch) prepare(property_count int, chunk_count int) {
-	if scratch.properties.cap < property_count || scratch.chunks.cap < chunk_count {
+	if scratch.properties.cap < property_count || scratch.chunks.cap < chunk_count
+		|| scratch.compositor_scopes.cap < property_count {
 		persistent := platform.enter_persistent()
 		if scratch.properties.cap < property_count {
 			scratch.properties = []ChromiumRasterPropertyState{cap: property_count}
 		}
 		if scratch.chunks.cap < chunk_count {
 			scratch.chunks = []ChromiumRasterChunk{cap: chunk_count}
+		}
+		if scratch.compositor_scopes.cap < property_count {
+			scratch.compositor_scopes = []u64{cap: property_count}
 		}
 		platform.leave_persistent(persistent)
 	}
@@ -75,6 +80,7 @@ fn (mut scratch ChromiumRasterPlanScratch) prepare(property_count int, chunk_cou
 		scratch.properties << ChromiumRasterPropertyState{}
 	}
 	scratch.chunks.clear()
+	scratch.compositor_scopes.clear()
 }
 
 fn chromium_layer_bounds_union(a LayoutRect, b LayoutRect) LayoutRect {
@@ -225,7 +231,34 @@ fn chromium_raster_chunk_bounds(box &BlockBox, command &PaintCommand) LayoutRect
 			height: rect.height + 2 * outset
 		}
 	}
-	return compatibility_affine_map_rect(box.paint_transform, rect)
+	if command.kind == 'paint_outer_box_shadow' {
+		// Overlap promotion uses painted ink, including the blur outside the
+		// border box. Adjacent boxes can overlap through their shadows.
+		outset := math.ceil(math.max(0.0, command.blur) * 1.5)
+		rect = chromium_layer_bounds_union(rect, LayoutRect{
+			x: command.x - outset
+			y: command.y - outset
+			width: command.width + 2 * outset
+			height: command.height + 2 * outset
+		})
+	}
+	mut mapped := compatibility_affine_map_rect(box.paint_transform, rect)
+	if command.has_clip {
+		// Clips are recorded in page coordinates. Offscreen SVG geometry must
+		// not inflate a chunk's visible extent and split its enclosing picture
+		// at the sparsity threshold, especially under a rotated overflow clip.
+		x := math.max(mapped.x, command.clip_x)
+		y := math.max(mapped.y, command.clip_y)
+		mapped = LayoutRect{
+			x: x
+			y: y
+			width: math.max(0.0, math.min(mapped.x + mapped.width,
+				command.clip_x + command.clip_width) - x)
+			height: math.max(0.0, math.min(mapped.y + mapped.height,
+				command.clip_y + command.clip_height) - y)
+		}
+	}
+	return mapped
 }
 
 // This query runs after display-list recording. It reads the retained property
@@ -297,10 +330,26 @@ pub fn update_chromium_raster_layer_plan(document &dom.Document, commands []Pain
 	for index < commands.len {
 		first := index
 		mut end := index + 1
-		mut effect_scope := u64(0)
+		mut effect_scope := if scratch.compositor_scopes.len > 0 { scratch.compositor_scopes.last() } else { u64(0) }
 		mut legacy_effect := false
 		mut compositor_bounds := LayoutRect{}
 		if layer := commands[index].visual_layer_data {
+			if commands[index].kind == 'end_css_effect_layer' && scratch.compositor_scopes.len > 0 {
+				if layer.scope_id != scratch.compositor_scopes.last() || scratch.chunks.len == 0 {
+					chromium_root_raster_plan_into(commands.len, mut plan)
+					return
+				}
+				scratch.compositor_scopes.delete_last()
+				// An end marker has no ink. Replay it after the last enclosed
+				// chunk, even when that chunk was promoted above an earlier layer.
+				last := scratch.chunks.last()
+				scratch.chunks[scratch.chunks.len - 1] = ChromiumRasterChunk{
+					...last
+					command_end: end
+				}
+				index = end
+				continue
+			}
 			if !commands[index].kind.starts_with('begin_') {
 				chromium_root_raster_plan_into(commands.len, mut plan)
 				return
@@ -317,6 +366,28 @@ pub fn update_chromium_raster_layer_plan(document &dom.Document, commands []Pain
 				chromium_root_raster_plan_into(commands.len, mut plan)
 				return
 			}
+			if !legacy_effect && layer.opacity == 1 && layer.blend_mode == .normal {
+				context := int(effect_scope)
+				if context >= scratch.properties.len || scratch.properties[context].requires_root_raster
+					|| effect_scope in scratch.compositor_scopes {
+					chromium_root_raster_plan_into(commands.len, mut plan)
+					return
+				}
+				mut state := scratch.properties[context]
+				state.effect_scope = effect_scope
+				state.fixed_to_viewport = commands[index].fixed_to_viewport
+				scratch.compositor_scopes << effect_scope
+				// Even an empty will-change layer is an overlap barrier. Keep
+				// its container extent on this marker, not on every later chunk.
+				scratch.chunks << ChromiumRasterChunk{
+					state: state
+					bounds: compositor_bounds
+					command_index: first
+					command_end: end
+				}
+				index = end
+				continue
+			}
 			mut depth := 1
 			for end < commands.len && depth > 0 {
 				if commands[end].visual_layer_data != none {
@@ -331,6 +402,13 @@ pub fn update_chromium_raster_layer_plan(document &dom.Document, commands []Pain
 			if depth != 0 {
 				chromium_root_raster_plan_into(commands.len, mut plan)
 				return
+			}
+			// SVG clips and masks are paint operations inside the enclosing
+			// compositor picture, rather than independent CSS surfaces. Keep
+			// their balanced run atomic without introducing a new layer state.
+			if layer.kind != .css_effect && scratch.compositor_scopes.len > 0 {
+				effect_scope = scratch.compositor_scopes.last()
+				legacy_effect = false
 			}
 		}
 		mut bounds := compositor_bounds
@@ -397,6 +475,10 @@ pub fn update_chromium_raster_layer_plan(document &dom.Document, commands []Pain
 			}
 		}
 		index = end
+	}
+	if scratch.compositor_scopes.len > 0 {
+		chromium_root_raster_plan_into(commands.len, mut plan)
+		return
 	}
 	chromium_layerize_chunks_into(scratch.chunks, commands.len, device_scale, mut plan, mut scratch.layer_states)
 	for layer_index, state in scratch.layer_states {

@@ -64,7 +64,7 @@ fn test_chromium_3d_surface_coalesces_with_existing_opacity() {
 fn test_chromium_transform_hints_retain_surface_without_a_transform() {
 	for chromium in [false, true] {
 		for hint in ['transform', 'translate', 'rotate', 'scale', 'perspective', 'transform-style',
-			'auto', 'contents', 'scroll-position', 'width', 'z-index'] {
+			'opacity', 'auto', 'contents', 'scroll-position', 'width', 'z-index'] {
 			mut document := html.parse_document('<!doctype html><div style="will-change:${hint};width:40px;height:40px;background:rgb(1 2 3)"><div style="width:20px;height:20px;background:rgb(4 5 6)"></div></div>')
 			defer { document.finalize() }
 			if chromium { document.set_font_rendering_policy(.chromium) }
@@ -72,7 +72,7 @@ fn test_chromium_transform_hints_retain_surface_without_a_transform() {
 			commands := display_list_commands(document.record_display_list() or { panic('missing paint') })
 			groups := commands.filter(it.kind == 'begin_css_effect_layer')
 			expected := chromium && hint in ['transform', 'translate', 'rotate', 'scale', 'perspective',
-				'transform-style']
+				'transform-style', 'opacity']
 			assert groups.len == if expected { 1 } else { 0 }, hint
 			if !expected { continue }
 			assert groups[0].visual_layer().opacity == 1

@@ -2,18 +2,19 @@ module layout
 
 import css
 
-// Blink retains a composited surface for transform will-change hints and for
+// Blink retains a composited surface for opacity/transform will-change hints and for
 // non-perspective 3D operations even when their matrix is affine. Painting the
-// descendants directly onto the page changes their premultiplied rounding.
+// descendants in a single ancestor picture changes their premultiplied rounding.
 // See CompositingReasonFinder's will-change and 3D transform reasons.
 fn chromium_transform_needs_surface(node &Node) bool {
-	if node.document().font_rendering_policy() != .chromium || !node.is_transformable() {
+	if node.document().font_rendering_policy() != .chromium {
 		return false
 	}
 	computed := node.computed_values()
 	if chromium_will_change_transform_needs_surface(node) {
 		return true
 	}
+	if !node.is_transformable() { return false }
 	value := computed.typed_property_value(.transform) or { return false }
 	if value is css.StyleValueList {
 		for operation in value.values() {
@@ -30,9 +31,10 @@ fn chromium_transform_needs_surface(node &Node) bool {
 
 fn chromium_will_change_transform_needs_surface(node &Node) bool {
 	will_change := node.computed_values().will_change()
-	if !(will_change.has_property(.transform) || will_change.has_property(.translate)
+	transform_hint := node.is_transformable() && (will_change.has_property(.transform) || will_change.has_property(.translate)
 		|| will_change.has_property(.rotate) || will_change.has_property(.scale)
-		|| will_change.has_property(.perspective) || will_change.has_property(.transform_style)) {
+		|| will_change.has_property(.perspective) || will_change.has_property(.transform_style))
+	if !will_change.has_property(.opacity) && !transform_hint {
 		return false
 	}
 	// Blink suppresses these hints under will-change: contents. Check DOM

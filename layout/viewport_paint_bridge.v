@@ -2410,7 +2410,7 @@ fn replay_cached_paint_commands_with_visual_context(steps []CompatibilityPaintSt
 		}
 	}
 	mut commands := []PaintCommand{cap: count}
-	mut layer_steps := []CompatibilityVisualReplayStep{cap: command_count}
+	mut layer_steps := []CompatibilityVisualReplayStep{cap: command_count + steps.len}
 	for step in steps {
 		if step.entry_index < 0 {
 			continue
@@ -2421,6 +2421,19 @@ fn replay_cached_paint_commands_with_visual_context(steps []CompatibilityPaintSt
 			step.box.accumulated_visual_context_index
 		}
 		bucket := step.entry_index * compatibility_paint_phase_count + int(step.phase)
+		// A transparent compositor surface still separates overlapping sibling
+		// pictures. Retain its property transition even when it has no paint.
+		if step.phase == .background && step.box.chromium_compositor_surface
+			&& phase_commands[bucket].len == 0 {
+			context := flatten_compatibility_visual_context(tree, default_context_index, snapshot)
+			if !context.backface_culled {
+				layer_steps << CompatibilityVisualReplayStep{
+					layer_list: context.layer_list
+					transform: context.transform
+					fixed_to_viewport: step.box.fixed_to_viewport
+				}
+			}
+		}
 		for index in 0 .. phase_commands[bucket].len {
 			cached_command := unsafe { &phase_commands[bucket][index] }
 			context_index := cached_command.visual_context_index or { default_context_index }
@@ -2563,10 +2576,11 @@ fn record_cached_paint_commands_with_visual_context_into(steps []CompatibilityPa
 		scratch)
 	mut plan := unsafe { scratch.plan }
 	scratch.plan = []CompatibilityCachedVisualReplayStep{}
-	if plan.cap >= command_count {
+	plan_capacity := command_count + steps.len
+	if plan.cap >= plan_capacity {
 		plan.clear()
 	} else {
-		plan = []CompatibilityCachedVisualReplayStep{cap: command_count}
+		plan = []CompatibilityCachedVisualReplayStep{cap: plan_capacity}
 	}
 	for step in steps {
 		if step.entry_index < 0 { continue }
@@ -2576,6 +2590,18 @@ fn record_cached_paint_commands_with_visual_context_into(steps []CompatibilityPa
 			step.box.accumulated_visual_context_index
 		}
 		bucket := step.entry_index * compatibility_paint_phase_count + int(step.phase)
+		if step.phase == .background && step.box.chromium_compositor_surface
+			&& phase_commands[bucket].len == 0 {
+			context_slot := contexts.resolve(default_context_index)
+			context := unsafe { &contexts.contexts[context_slot] }
+			if !context.backface_culled {
+				plan << CompatibilityCachedVisualReplayStep{
+					box: step.box
+					context_slot: context_slot
+					layer_list: context.layer_list
+				}
+			}
+		}
 		opacity_scale := if step.entry_index < scratch.entry_opacity_scales.len {
 			scratch.entry_opacity_scales[step.entry_index]
 		} else {
@@ -2824,7 +2850,8 @@ fn viewport_record_display_list(target voidptr) &dom.DisplayList {
 	}
 	// Retained recording buffers grow in ordinary storage; everything the
 	// commands themselves need is allocated in the new scene.
-	result.record_scratch.reserve(result.visual_context_tree.nodes.len, result.paint_phase_command_count)
+	result.record_scratch.reserve(result.visual_context_tree.nodes.len,
+		result.paint_phase_command_count + result.paint_steps.len)
 	mut pool := result.scene_pool_()
 	mut scene := if pool.borrowed { unsafe { &DisplayListScene(nil) } } else { pool.acquire() }
 	mut scene_entry := platform.ArenaEntry{}

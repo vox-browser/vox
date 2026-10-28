@@ -213,3 +213,30 @@ fn test_fused_visual_replay_preserves_guide_only_layers_and_empty_output() {
 	assert record_cached_paint_commands_with_visual_context([]CompatibilityPaintStep{},
 		[][]PaintCommand{}, 0, tree, painting.ScrollStateSnapshot{}, false).len == 0
 }
+
+fn test_fused_visual_replay_keeps_empty_compositor_surface_transitions() {
+	mut tree := painting.new_accumulated_visual_context_tree()
+	outer := tree.append(painting.EffectsVisualData{isolated: true}, 0)
+	inner := tree.append(painting.EffectsVisualData{isolated: true}, outer)
+	empty := BlockBox{
+		chromium_compositor_surface: true
+		accumulated_visual_context_index: inner
+	}
+	sibling := BlockBox{accumulated_visual_context_index: outer}
+	steps := [
+		CompatibilityPaintStep{box: &empty, phase: .background, entry_index: 0},
+		CompatibilityPaintStep{box: &sibling, phase: .background, entry_index: 1},
+	]
+	mut buckets := [][]PaintCommand{len: 2 * compatibility_paint_phase_count}
+	buckets[compatibility_paint_phase_count] = [PaintCommand{kind: 'fill_rect'}]
+	replayed, layer_steps := replay_cached_paint_commands_with_visual_context(steps, buckets,
+		1, tree, painting.ScrollStateSnapshot{}, false)
+	expected := lower_visual_replay_steps(replayed, layer_steps)
+	actual := record_cached_paint_commands_with_visual_context(steps, buckets, 1, tree,
+		painting.ScrollStateSnapshot{}, false)
+	fused_replay_assert_matches_reference(actual, expected)
+	assert actual.map(it.kind) == ['begin_css_effect_layer', 'begin_css_effect_layer',
+		'end_css_effect_layer', 'fill_rect', 'end_css_effect_layer']
+	assert actual[1].visual_layer().scope_id == u64(inner)
+	assert actual[2].visual_layer().scope_id == u64(inner)
+}

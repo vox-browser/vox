@@ -146,6 +146,7 @@ fn test_shared_recording_accepts_complete_rectangular_svg_clip_scopes() {
 		command_layers: [0, 0, 0]
 	}
 	assert chromium_shared_recording_supported(mask, root)
+	assert !chromium_shared_recording_layer_supported(mask, shared_recording_layer_plan(mask.len), 1)
 	assert !chromium_shared_recording_supported(mask[..2], layout.ChromiumRasterLayerPlan{
 		layers:         root.layers
 		command_layers: [0, 0]
@@ -397,4 +398,38 @@ fn test_shared_recording_accepts_painted_gradient_header_at_both_scales() {
 		assert plan.layers.len == 2
 		assert chromium_shared_recording_layer_supported(commands, plan, 1)
 	}
+}
+
+fn test_shared_recording_full_opacity_scope_can_cross_an_empty_child_layer() {
+	for opacity in [1.0, .5] {
+		base := shared_recording_layer_commands(opacity)
+		child := &layout.PaintVisualLayer{ kind: .css_effect, scope_id: 8, opacity: 1 }
+		commands := [base[0], base[2],
+			layout.PaintCommand{ kind: 'begin_css_effect_layer', visual_layer_data: child },
+			layout.PaintCommand{ kind: 'end_css_effect_layer', visual_layer_data: child },
+			base[2], base[3]]
+		plan := layout.ChromiumRasterLayerPlan{
+			layers: [layout.ChromiumRasterLayer{},
+				layout.ChromiumRasterLayer{ command_indices: [0, 1] },
+				layout.ChromiumRasterLayer{ command_indices: [2, 3] },
+				layout.ChromiumRasterLayer{ command_indices: [4, 5] }]
+			command_layers: [1, 1, 2, 2, 3, 3]
+		}
+		assert chromium_shared_recording_layer_supported(commands, plan, 1) == (opacity == 1)
+		assert !chromium_shared_recording_layer_supported(commands, plan, 2)
+		assert chromium_shared_recording_layer_supported(commands, plan, 3) == (opacity == 1)
+		mut broken := commands.clone()
+		broken[5] = layout.PaintCommand{ kind: 'end_css_effect_layer', visual_layer_data: child }
+		assert !chromium_shared_recording_layer_supported(broken, plan, 1)
+		assert !chromium_shared_recording_layer_supported(broken, plan, 3)
+	}
+}
+
+fn test_shared_recording_rejects_unscoped_vectors_and_content_after_scope_end() {
+	base := shared_recording_layer_commands(1)
+	assert !chromium_shared_recording_layer_supported([base[2]], layout.ChromiumRasterLayerPlan{
+		layers: [layout.ChromiumRasterLayer{}, layout.ChromiumRasterLayer{ command_indices: [0] }]
+		command_layers: [1]
+	}, 1)
+	assert !chromium_shared_recording_layer_supported([base[0], base[2], base[3], base[2]], shared_recording_layer_plan(4), 1)
 }

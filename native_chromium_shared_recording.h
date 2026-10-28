@@ -1,4 +1,5 @@
 #pragma once
+#include "native_opacity_group_darwin.h"
 
 // Included after the native raster-layer state. The existing leaf renderer
 // supplies the fallback frame; complete supported pictures replace root SVG
@@ -15,10 +16,13 @@ struct SharedRootRecording {
     float origin_x = 0, origin_y = 0, layer_width = 0, layer_height = 0;
     std::vector<SkRect> replay_bounds;
     std::vector<SkRect> blocked_bounds;
+    std::vector<uint32_t> backdrop;
+    int backdrop_width = 0;
 };
 std::unique_ptr<SharedRootRecording> s_shared_root_recording;
 bool s_shared_root_enabled = false;
 bool s_shared_layer_enabled = false;
+bool s_shared_layer_backdrop = false;
 int s_shared_viewport_width = 0, s_shared_viewport_height = 0;
 
 struct SharedClip {
@@ -65,6 +69,15 @@ SkCanvas* shared_recording_canvas(CGContextRef destination)
         group->layer_height = s_raster_layer_height;
         group->viewport_width = s_shared_viewport_width;
         group->viewport_height = s_shared_viewport_height;
+        if (!group->root && s_shared_layer_backdrop) {
+            int pixel_width = CGBitmapContextGetWidth(destination);
+            int pixel_height = CGBitmapContextGetHeight(destination);
+            if (size_t(pixel_width) * pixel_height > 8 * 1024 * 1024) return nullptr;
+            group->backdrop.resize(size_t(pixel_width) * pixel_height);
+            if (!copy_backdrop(destination, {}, scale, pixel_width, pixel_height, group->backdrop))
+                return nullptr;
+            group->backdrop_width = pixel_width;
+        }
         group->recorder = std::make_unique<SkPictureRecorder>();
         group->recorder->beginRecording(SkRect::MakeWH(width, height));
         s_shared_root_recording = std::move(group);
@@ -237,9 +250,9 @@ void finish_shared_recording()
         if (!bounds.intersect(SkRect::MakeWH(group->canvas_width, group->canvas_height))) return;
         // Retain the local raster phase when no leading overflow needs extra
         // pixels; rounding every origin also shifts existing fractional SVGs.
-        if (bounds.left() != left)
+        if (bounds.left() != left || !group->backdrop.empty())
             left = std::floor(bounds.left() * group->scale) / group->scale;
-        if (bounds.top() != top)
+        if (bounds.top() != top || !group->backdrop.empty())
             top = std::floor(bounds.top() * group->scale) / group->scale;
         int width = std::ceil((bounds.right() - left) * group->scale);
         int height = std::ceil((bounds.bottom() - top) * group->scale);
@@ -250,6 +263,20 @@ void finish_shared_recording()
         std::vector<uint32_t> pixels(size_t(width) * height);
         if (!shared_picture_draw()(reinterpret_cast<uint8_t*>(pixels.data()), width,
                 height, width * 4, bytes->data(), bytes->size(), matrix)) return;
+        if (!group->backdrop.empty()) {
+            // Each compositor picture blends over the pixels present before
+            // its fallback leaves ran. Combining pictures on transparency first
+            // loses Chromium's rounding at overlapping shadow edges.
+            int x = std::lround(left * group->scale), y = std::lround(top * group->scale);
+            if (x < 0 || y < 0 || x + width > group->backdrop_width
+                || size_t(y + height) * group->backdrop_width > group->backdrop.size()) return;
+            for (int row = 0; row < height; ++row) {
+                auto* output = reinterpret_cast<uint8_t*>(pixels.data() + size_t(row) * width);
+                auto* backdrop = reinterpret_cast<uint8_t const*>(group->backdrop.data()
+                    + size_t(y + row) * group->backdrop_width + x);
+                native_composite_opacity_pixels(output, backdrop, output, width, 1);
+            }
+        }
         composite_pixels(group->destination, std::move(pixels), width, height, left,
             group->canvas_height - top - height / group->scale,
             width / group->scale, height / group->scale, true);
@@ -315,6 +342,7 @@ extern "C" void ladybird_v_skia_set_shared_recording(int enabled, int width, int
     s_shared_root_recording.reset();
     s_shared_clips.clear();
     s_shared_layer_enabled = false;
+    s_shared_layer_backdrop = false;
     s_shared_root_enabled = enabled && width > 0 && height > 0;
     s_shared_viewport_width = width;
     s_shared_viewport_height = height;
@@ -377,6 +405,16 @@ extern "C" void ladybird_v_skia_add_shared_rounded_clip(CGContextRef destination
 extern "C" void ladybird_v_skia_set_layer_shared_recording(int enabled)
 {
     s_shared_layer_enabled = enabled != 0;
+}
+
+extern "C" int ladybird_v_skia_layer_shared_recording_enabled()
+{
+    return s_shared_layer_enabled && !s_raster_layer_is_root;
+}
+
+extern "C" void ladybird_v_skia_set_shared_layer_backdrop(int enabled)
+{
+    s_shared_layer_backdrop = enabled != 0;
 }
 
 extern "C" void ladybird_v_skia_finish_shared_recording()
