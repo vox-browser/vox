@@ -209,3 +209,76 @@ fn test_longhand_reuse_guards_absent_inherited_inputs_even_with_a_hash_collision
 	collision_key := ComputedLonghandReuseKey{ ...changed_key, hash: key.hash }
 	assert !computer.restore_computed_longhands(collision_key, cascaded, mut probe)
 }
+
+fn test_longhand_reuse_accepts_equal_payloads_in_distinct_parent_and_cascade_boxes() {
+	computer, parent, element, parent_style := longhand_reuse_fixture()
+	mut other_parent := parent.document().create_element('div') or { panic(err) }
+	other_element := parent.document().create_element('span') or { panic(err) }
+	mut other_node := other_parent.as_node()
+	other_node.append_child(other_element.as_node()) or { panic(err) }
+	mut other_style := &ComputedProperties{
+		...parent_style
+		property_store_:                parent_style.clone_raw_property_store()
+		computed_property_graph_token_: unsafe { nil }
+	}
+	for id, text in {
+		PropertyID.font_size: '20px'
+		PropertyID.color:     'red'
+	} {
+		replacement := parse_css_value(ParsingParams{}, text, id) or { panic(text) }
+		original := parent_style.property(id, .no) or { panic(text) }
+		assert voidptr(original) != voidptr(replacement)
+		assert original.css_value_handle != replacement.css_value_handle
+		other_style.set_property(id, replacement, .no, .no)
+	}
+	mut other_abstract := dom.AbstractElement.new(other_parent, none)
+	other_abstract.set_computed_properties(computed_properties_to_dom(other_style))
+	mut first_cascade := longhand_reuse_cascade(parse_css_value(ParsingParams{}, '70px', .width) or {
+		panic('first width')
+	})
+	mut second_cascade := longhand_reuse_cascade(parse_css_value(ParsingParams{}, '70px', .width) or {
+		panic('second width')
+	})
+	computer.begin_computed_property_page_batch()
+	defer { computer.end_computed_property_page_batch() }
+	_ = computer.compute_properties(dom.AbstractElement.new(element, none), mut first_cascade)
+	first_key := computer.computed_longhand_reuse_key(dom.AbstractElement.new(element, none),
+		first_cascade, parent_style, false) or { panic('first key') }
+	key := computer.computed_longhand_reuse_key(dom.AbstractElement.new(other_element, none),
+		second_cascade, other_style, false) or { panic('equal independently boxed inputs') }
+	assert key.hash == first_key.hash
+	mut probe := computed_properties_with_initial_values()
+	assert computer.restore_computed_longhands(key, second_cascade, mut probe)
+	actual := computer.compute_properties(dom.AbstractElement.new(other_element, none), mut second_cascade)
+	longhand_reuse_assert_oracle(actual, computer, other_element, mut second_cascade)
+	// The saved scalar is a copy, even when the matching box is a different one.
+	color := other_style.property(.color, .no) or { panic('color') }
+	mut box := unsafe { &TypedStyleValueBox(color.css_value_handle) }
+	box.value = StyleValue(ColorStyleValue.create(Color.rgba(0, 0, 255, 255)))
+	assert !computer.restore_computed_longhands(key, second_cascade, mut probe)
+}
+
+fn test_longhand_reuse_semantic_lists_keep_nested_payload_and_type_guards() {
+	child := StyleValue(NumberStyleValue.create(1))
+	first := StyleValue(StyleValueList.create_collapsible([child], .comma))
+	second := StyleValue(StyleValueList.create_collapsible([StyleValue(NumberStyleValue.create(1))], .comma))
+	snapshot := computed_longhand_reuse_typed_snapshot(first)
+	first_hash := computed_longhand_reuse_typed_hash(&first) or { panic('first list hash') }
+	second_hash := computed_longhand_reuse_typed_hash(&second) or { panic('second list hash') }
+	assert first_hash == second_hash
+	assert computed_longhand_reuse_typed_snapshot_matches(&snapshot, second)
+	// Identical serialization cannot stand in for typed payload equality.
+	different_type := StyleValue(StyleValueList.create_collapsible([StyleValue(IntegerStyleValue.create(1))], .comma))
+	assert first.serialize(.normal) == different_type.serialize(.normal)
+	assert !computed_longhand_reuse_typed_snapshot_matches(&snapshot, different_type)
+	different_separator := StyleValue(StyleValueList.create_collapsible([child], .space))
+	assert !computed_longhand_reuse_typed_snapshot_matches(&snapshot, different_separator)
+	different_collapsibility := StyleValue(StyleValueList.create([child], .comma, .no))
+	assert !computed_longhand_reuse_typed_snapshot_matches(&snapshot, different_collapsibility)
+	mut mutable := second
+	if mut mutable is StyleValueList {
+		mutable.values_[0] = StyleValue(NumberStyleValue.create(2))
+	}
+	assert !computed_longhand_reuse_typed_snapshot_matches(&snapshot, mutable)
+	assert computed_longhand_reuse_number_hash(0.0) == computed_longhand_reuse_number_hash(-0.0)
+}
