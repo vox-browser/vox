@@ -21,13 +21,20 @@ fn test_chromium_select_shadow_creation_preserves_label_geometry() {
 	defer { document.finalize() }
 	document.set_font_rendering_policy(.chromium)
 	document.set_layout_coordinate_scale(2)
-	initial := layout_document_typed_in_viewport(document, 800, 600)
-	initial_commands := initial.paint_commands()
+	_ = layout_document_typed_in_viewport(document, 800, 600)
+	initial_list := document.record_display_list() or { panic('missing initial paint') }
+	initial_lease := retain_display_list_scene(initial_list)
+	defer { release_display_list_scene(initial_lease) }
+	initial_commands := display_list_commands(initial_list)
 	mut positions := map[string][]f64{}
+	mut clips := map[string][]f64{}
 	for label in ['Small', 'Last reply', 'On', 'Plain label'] {
 		commands := initial_commands.filter(it.kind == 'draw_text' && it.text == label)
 		assert commands.len == 1, label
 		positions[label] = [commands[0].x, commands[0].y]
+		assert commands[0].has_clip, label
+		clips[label] = [commands[0].clip_x, commands[0].clip_y, commands[0].clip_width,
+			commands[0].clip_height]
 	}
 	mut rectangles := map[string][]f64{}
 	for id in ['small', 'tall', 'rtl', 'plain'] {
@@ -37,13 +44,19 @@ fn test_chromium_select_shadow_creation_preserves_label_geometry() {
 		mut model := html.HTMLSelectElementModel.create(unsafe { &dom.HTMLSelectElement(element) })
 		model.create_shadow_tree_if_needed()
 	}
-	updated := layout_document_typed_in_viewport(document, 800, 600)
-	updated_commands := updated.paint_commands()
+	_ = layout_document_typed_in_viewport(document, 800, 600)
+	updated_list := document.record_display_list() or { panic('missing updated paint') }
+	updated_commands := display_list_commands(updated_list)
 	for label, expected in positions {
 		commands := updated_commands.filter(it.kind == 'draw_text' && it.text == label)
 		assert commands.len == 1, label
 		assert commands[0].x == expected[0], '${label}: x ${commands[0].x}, expected ${expected[0]}'
 		assert commands[0].y == expected[1], '${label}: y ${commands[0].y}, expected ${expected[1]}'
+		assert commands[0].has_clip, label
+		assert commands[0].clip_x == clips[label][0], label
+		assert commands[0].clip_y == clips[label][1], label
+		assert commands[0].clip_width == clips[label][2], label
+		assert commands[0].clip_height == clips[label][3], label
 	}
 	for id, expected in rectangles {
 		element := document.get_element_by_id(id) or { panic(id) }

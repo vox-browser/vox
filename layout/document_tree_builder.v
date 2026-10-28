@@ -2136,6 +2136,8 @@ fn build_select_internal_layout_children(document &dom.Document, element &dom.El
 		css.PropertyID.flex_shrink: '1'
 		css.PropertyID.flex_basis:  '0%'
 		css.PropertyID.min_width:   '0'
+		css.PropertyID.overflow_x:  'clip'
+		css.PropertyID.overflow_y:  'clip'
 	}
 	text_overrides[inline_end_margin_property(host_computed)] = if host_computed.appearance() == .none_ {
 		'0'
