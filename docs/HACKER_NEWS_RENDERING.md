@@ -1945,6 +1945,44 @@ is `intrinsic-fit-checkpoint-2` and pipeline is `intrinsic-fit-pipeline-3`.
 This validates savings against the parent candidate. The requested 10% fewer
 instructions than Brave remains open; independent gains are not added.
 
+## Retain geometry when SVG backgrounds finish, 2026-10-28
+
+`6f91ec6e` preserves the existing repaint state until the background-resource
+refresh decides whether it can retain layout and the paint projection. It also
+allows an independently decoded, eligible static SVG image to keep its own
+document when the same URL completes in the shell resource cache. Pending
+repaints, unsupported nested SVG content, and resources that can change intrinsic
+geometry retain the fallback. Focused tests accompany the implementation, but
+their execution is deferred by the user's instruction to wait for Brave speed.
+
+The canonical production build in `Build/hn-master-20261028-14/` completed with
+guard/browser-build exits zero in 481.896 seconds, with sampled aggregate peak
+RSS 8,082,669,568 bytes. Its executable SHA256 is
+`df3277fb186ba4ff5a0da46cb518ec5b75837634b58cffd8c9b2f2482a9ac387`.
+The source audit passes. Against the preceding control, native library hashes
+are identical and the generated C differs only in the resource-refresh guard.
+The separately instrumented `background-eligibility-3` run proves that the
+triangle SVG completion takes the retained-geometry path. It preserves all 101
+comment IDs and has zero differing pixels against the sealed Brave capture.
+Instrumentation changes execution timing and receives no performance credit.
+The preceding two diagnostic attempts are retained: one did not reach a
+successful refresh, and one failed while reading diagnostic map data.
+
+Four unprofiled matched pairs use the same navigation-to-encoded-capture
+endpoint, private profiles, fixture, viewport and seal, with control/candidate
+order ABBA. Control Vox instruction counts are 6,877,571,320 and 6,807,141,184;
+candidate counts are 6,796,968,486 and 6,838,935,870. The candidate median is
+6,817,952,178 against the control median 6,842,356,252 (0.36% lower). Their
+ranges overlap, and host load reaches roughly 96 on the 18-CPU machine. This
+does not establish an optimization gain. Raw trials, hashes, commands, content
+audits and pixel comparisons are retained in `instructions/` beside the build.
+
+The paired Brave lower-bound median is 1,904,225,070 instructions; the worst
+candidate/best-Brave ratio is 3.6125. The acceptance driver and guard return 1
+because the requested ratio of at most 0.90 is not met. Every browser exits
+zero. No regression test suite was executed for this change; formatting and
+diff checks pass. The Brave speed target remains open.
+
 ## Reuse rendered-text ASCII eligibility, 2026-10-27
 
 `4b8b075b` reads the ASCII fact refreshed with `text_for_rendering()` instead
