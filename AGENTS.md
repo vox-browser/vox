@@ -6,6 +6,9 @@
   canonical checkout at `/Users/alex/code/vox2`.
 - Do not create or use feature branches, detached checkouts, or Git worktrees
   for development. Serialize edits and commits in the canonical checkout.
+- Build and test from the canonical checkout; do not copy or clone the source
+  tree into `Build/` for individual sessions. Keep build identities, receipts,
+  logs, and generated outputs there without duplicating the source tree.
 - Keep new history linear with focused commits; do not rewrite existing shared
   history. Remove an existing worktree only after its committed and uncommitted
   logic has been incorporated into `master` and verified.

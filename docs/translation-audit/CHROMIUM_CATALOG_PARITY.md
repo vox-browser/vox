@@ -11,6 +11,17 @@ explicit cosmetic rule in both browsers.
 
 ## Completed candidate and comparisons
 
+The 12 catalog source copies under `Build/` were removed on 2026-10-28 after
+verifying that the completed fixes and tests are on `master`. Historical
+build receipts, comparison results, generated test inputs, and the installed
+browser remain; the old source paths in those receipts are no longer available.
+The cleanup audit is in `Build/4chan-catalog-source-cleanup-20261028/`.
+The installed executable still loads 13 data files through an old absolute
+path, so that location retains only symlinks to the canonical data files.
+No source files or build outputs remain in those copies. The executable and
+native libraries retain their hashes, and a fresh headless smoke check passes
+under the 3 GiB guard (`smoke-guard-2.json`, exit 0).
+
 `Build/4chan-catalog-20261028-catalog-production-4/device.app` is the signed,
 validated browser. Its executable SHA256 is
 `e630a5941e905ab8f8609d5daf56ce60b39964d92e29c26e19fad5dd913bf49c`.
