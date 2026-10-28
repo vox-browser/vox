@@ -1,5 +1,6 @@
 module main
 
+import adblock
 import browsertabs
 import encoding.base64
 import os
@@ -89,7 +90,13 @@ fn (mut app BrowserApp) open_process_tab(address string, background bool) {
 	if app.script_policy == .enabled { call_arguments << '--enable-javascript' }
 	if app.script_policy == .disabled { call_arguments << '--disable-javascript' }
 	call_arguments << address
-	app.tabs.session.open(os.executable(), call_arguments, background, process_tab_window_frame()) or {
+	// On macOS os.executable() can name an injected dylib (dyld image zero).
+	// Use the kernel-backed path shared with the isolated worker launcher.
+	executable := adblock.current_executable_path() or {
+		eprintln('Vox: cannot locate the new-tab executable: ${err}')
+		return
+	}
+	app.tabs.session.open(executable, call_arguments, background, process_tab_window_frame()) or {
 		eprintln('Vox: ${err}')
 		return
 	}

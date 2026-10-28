@@ -1,6 +1,8 @@
 #import <Cocoa/Cocoa.h>
 #import <QuartzCore/QuartzCore.h>
 #include <unistd.h>
+#include <libproc.h>
+#include <mach-o/dyld.h>
 
 // Injected into every tab, including children. Drive the actual native tab
 // controls and address editor; the test host never edits session state.
@@ -43,8 +45,12 @@ static void poll(void) {
         }
         NSRect frame=window.frame;
         BOOL painted=page.layer.contents != nil;
+        char executable[PROC_PIDPATHINFO_MAXSIZE] = {0};
+        proc_pidpath(getpid(), executable, sizeof executable);
+        const char *firstImage = _dyld_get_image_name(0);
         NSDictionary *report=@{@"pid":@(getpid()), @"visible":@(window.visible && window.alphaValue>0),
             @"title":window.title ?: @"", @"address":address.stringValue ?: @"", @"painted":@(painted),
+            @"executable":@(executable), @"first_image":firstImage ? @(firstImage) : @"",
             @"frame":@[@(frame.origin.x),@(frame.origin.y),@(frame.size.width),@(frame.size.height)]};
         NSData *data=[NSJSONSerialization dataWithJSONObject:report options:0 error:nil];
         [data writeToFile:[prefix stringByAppendingString:@".json"] atomically:YES];

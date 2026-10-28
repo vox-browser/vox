@@ -23,6 +23,11 @@ def main():
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=False)
     binary = args.binary.resolve()
+    identity_paths = [binary, *sorted(binary.parent.glob('*.dylib'))]
+    worker = binary.parent / 'VoxAdblockWorker'
+    if worker.is_file():
+        identity_paths.append(worker)
+    identities = {str(path): hashlib.sha256(path.read_bytes()).hexdigest() for path in identity_paths}
     library = output / 'probe.dylib'
     subprocess.run(['clang', '-dynamiclib', '-fobjc-arc', '-fblocks', '-framework', 'Cocoa',
                     '-framework', 'QuartzCore', str(repo / 'tools/native_browser_tab_process_test.m'),
@@ -48,10 +53,13 @@ def main():
     def state():
         nonlocal folder
         if folder is None:
-            for candidate in Path(os.environ.get('TMPDIR', '/tmp')).glob('vox-tabs-*'):
+            # Current V uses /tmp; older compilers honor the launcher's TMPDIR.
+            roots = {Path('/tmp'), Path(os.environ.get('TMPDIR', '/tmp'))}
+            for candidate in (path for root in roots for path in root.glob('vox-tabs-*')):
                 try:
                     data = json.loads((candidate / 'state.json').read_text())
-                    if any(tab['pid'] == root.pid for tab in data['tabs']):
+                    if any(tab['pid'] == root.pid and tab['url'] == page.as_uri()
+                           for tab in data['tabs']):
                         folder = candidate
                         break
                 except (OSError, ValueError, KeyError):
@@ -76,6 +84,10 @@ def main():
         while time.monotonic() < deadline:
             data = state()
             if data and predicate(data):
+                for tab in data['tabs']:
+                    window = report(tab['pid'])
+                    if window.get('painted'):
+                        assert Path(window['executable']).resolve() == binary, window
                 snapshots.append({'check': description, 'state': data,
                                   'windows': {pid: report(pid) for pid in sorted(known)}})
                 return data
@@ -93,6 +105,7 @@ def main():
     try:
         wait('initial page rendered', lambda s: report(root.pid).get('painted') and
              report(root.pid).get('title', '').startswith('Process First'))
+        assert Path(report(root.pid)['first_image']).resolve() == library, 'probe did not become dyld image zero'
         first_frame = report(root.pid)['frame']
         first_title = report(root.pid)['title']
         command(root.pid, 'new')
@@ -102,6 +115,11 @@ def main():
         second = selected(data)
         assert second != root.pid
         assert report(second)['frame'] == first_frame
+        # AppKit schedules its last-window termination check after orderOut:.
+        # Keep the original hidden long enough to catch a group-wide shutdown.
+        time.sleep(3)
+        assert root.poll() is None, 'hiding the original tab terminated its process'
+        os.kill(second, 0)
         command(second, 'navigate', url=second_page.as_uri())
         wait('second process navigated', lambda s: report(second).get('title','').startswith('Process Second'))
         command(second, 'select', index=0)
@@ -133,7 +151,14 @@ def main():
         command(third, 'close', index=0)
         data = wait('closing last tab starts replacement process', lambda s: len(s['tabs']) == 1 and
                     s['tabs'][0]['pid'] != third and report(s['tabs'][0]['pid']).get('visible'))
-        print('PASS native tab processes: unique PIDs, selection, navigation, crashes, parent exit, last-tab replacement')
+        replacement = data['tabs'][0]['pid']
+        command(replacement, 'window-close')
+        deadline = time.monotonic() + 15
+        while folder.exists() and time.monotonic() < deadline:
+            time.sleep(.05)
+        assert not folder.exists(), 'closing the visible window did not end the group'
+        snapshots.append({'check': 'closing the window ends the group', 'pid': replacement})
+        print('PASS native tab processes: unique PIDs, selection, navigation, crashes, parent exit, last-tab replacement, window close')
     finally:
         state()
         for pid in known:
@@ -148,10 +173,13 @@ def main():
             root.wait()
         log.close()
         (output / 'results.json').write_text(json.dumps(dict(binary=str(binary),
-             sha256=hashlib.sha256(binary.read_bytes()).hexdigest(), pids=sorted(known), checks=snapshots), indent=2))
+             sha256=identities[str(binary)], identities=identities,
+             pids=sorted(known), checks=snapshots), indent=2))
         if folder and folder.exists():
             import shutil
             shutil.rmtree(folder)
+        assert all(hashlib.sha256(Path(path).read_bytes()).hexdigest() == digest
+                   for path, digest in identities.items()), 'browser build changed during the run'
 
 
 if __name__ == '__main__':
