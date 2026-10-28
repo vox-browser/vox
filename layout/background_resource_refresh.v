@@ -43,11 +43,21 @@ pub fn refresh_document_background_resources(document &dom.Document, changed map
 }
 
 fn background_resource_refresh_supported(box &BlockBox) bool {
-	// Keep resource-bearing masks/filters and nested documents on the general
-	// refresh path; this slice updates CSS background layers only.
+	// Keep resource-bearing masks/filters on the general refresh path; this
+	// slice updates CSS background layers only.
 	if box.clips().svg_mask != none || box.clips().svg_clip != none || box.filters().filter.has_svg_filters()
-		|| box.filters().backdrop_filter.has_svg_filters() || box.media().nested_viewport_document != none {
+		|| box.filters().backdrop_filter.has_svg_filters() {
 		return false
+	}
+	if nested := box.media().nested_viewport_document {
+		// A self-contained decoded SVG image retains its own document and
+		// display list, even if the shell fetches its URL again as a favicon or
+		// CSS background. The caller excludes image-request changes that need
+		// layout; these source checks exclude external resources and live SVGs.
+		if !nested.is_svg_image_document() || box.media().replaced_image_url == ''
+			|| !static_svg_document_is_eligible(nested) {
+			return false
+		}
 	}
 	// Borrow each child: passing a loop copy's address would heap-allocate it.
 	for i in 0 .. box.children.len {

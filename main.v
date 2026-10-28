@@ -4851,11 +4851,6 @@ fn (mut app BrowserApp) poll_background_resources() {
 			}
 		}
 	}
-	if resource_pixels_changed && app.document != unsafe { nil } {
-		// Raster backgrounds can finish without changing layout or the retained
-		// commands. Their new pixels still invalidate any cached viewport.
-		app.document.set_needs_repaint_with_invalidation(.no)
-	}
 	script_images_updated := completed_script_images.len > 0 && app.document != unsafe { nil }
 		&& app.complete_script_inserted_images(url_set(completed_script_images))
 	if installed_stylesheets && app.document != unsafe { nil } {
@@ -4873,6 +4868,14 @@ fn (mut app BrowserApp) poll_background_resources() {
 		app.document.tear_down_layout_tree()
 		app.relayout(app.viewport_width, app.viewport_height + app.chrome_height())
 		return
+	}
+	if resource_pixels_changed && app.document != unsafe { nil }
+		&& (changed_svg_resources.len == 0 || script_images_updated) {
+		// Raster-only completion retains commands but invalidates cached pixels.
+		// An SVG batch below invalidates both itself, so leave existing repaint
+		// state intact for the background-refresh eligibility check. Script image
+		// completion can return early and still needs this pixel notification.
+		app.document.set_needs_repaint_with_invalidation(.no)
 	}
 	if script_images_updated {
 		// Each completed image marks only what its new contents change. A
