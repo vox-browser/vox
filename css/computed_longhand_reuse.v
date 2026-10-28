@@ -28,8 +28,6 @@ struct ComputedLonghandReuseInput {
 
 struct ComputedLonghandReuseKey {
 	parent &ComputedProperties
-	parent_pages [computed_property_page_count]&ComputedPropertyPage
-	parent_typed_handles [number_of_longhand_properties]voidptr
 	initial_pages [computed_property_page_count]&ComputedPropertyPage
 	parent_font_viewport bool
 	viewport CSSPixelRect
@@ -143,17 +141,19 @@ fn (s &StyleComputer) computed_longhand_reuse_key(element dom.AbstractElement,
 		return none
 	}
 	mut hash := u64(0x9e3779b97f4a7c15)
-	for page in parent.property_store_.pages {
-		hash = (hash ^ u64(usize(page))) * u64(0x100000001b3)
-	}
-	mut parent_typed_handles := [number_of_longhand_properties]voidptr{}
+	// Eligible cascades cannot explicitly inherit a non-inherited property or
+	// contain context-dependent substitutions. Only inherited parent inputs
+	// participate in this loop; element adjustments still run after every hit.
+	ensure_computed_interpolation_inherited_cache()
 	for index in 0 .. number_of_longhand_properties {
+		if computed_interpolation_inherited_cache[index] == 0 { continue }
 		value := parent.raw_property_at_index(index)
+		mut handle := voidptr(unsafe { nil })
 		if value != unsafe { nil } {
 			if value.css_value_handle == unsafe { nil } { return none }
-			parent_typed_handles[index] = value.css_value_handle
-			hash = (hash ^ u64(usize(value.css_value_handle))) * u64(0x100000001b3)
+			handle = value.css_value_handle
 		}
+		hash = (hash ^ u64(usize(handle))) * u64(0x100000001b3)
 	}
 	mut count := 0
 	for id, _ in cascaded.entry_heads_ {
@@ -164,16 +164,11 @@ fn (s &StyleComputer) computed_longhand_reuse_key(element dom.AbstractElement,
 		// Commutative contribution: entry-head maps need not have equal order.
 		hash ^= ((u64(usize(property.value)) ^ u64(usize(property.value.css_value_handle)) ^ (u64(id) * u64(0x9e3779b97f4a7c15))) * u64(0x100000001b3))
 	}
-	// A key may retain these pages across later mutations of the parent.
-	mut parent_store := unsafe { &ComputedPropertyStore(parent.property_store_) }
-	parent_store.writable = 0
 	for page in computed_initial_property_store.pages {
 		hash = (hash ^ u64(usize(page))) * u64(0x100000001b3)
 	}
 	return ComputedLonghandReuseKey{
 		parent: parent
-		parent_pages: parent.property_store_.pages
-		parent_typed_handles: parent_typed_handles
 		initial_pages: computed_initial_property_store.pages
 		parent_font_viewport: parent.font_metrics_depend_on_viewport_metrics()
 		viewport: s.viewport_rect_
@@ -192,11 +187,7 @@ fn computed_longhand_reuse_keys_equal(first &ComputedLonghandReuseKey,
 		|| first.root_line_height != second.root_line_height
 		|| first.root_font_viewport != second.root_font_viewport { return false }
 	for index in 0 .. computed_property_page_count {
-		if voidptr(first.parent_pages[index]) != voidptr(second.parent_pages[index])
-			|| voidptr(first.initial_pages[index]) != voidptr(second.initial_pages[index]) { return false }
-	}
-	for index in 0 .. number_of_longhand_properties {
-		if first.parent_typed_handles[index] != second.parent_typed_handles[index] { return false }
+		if voidptr(first.initial_pages[index]) != voidptr(second.initial_pages[index]) { return false }
 	}
 	return true
 }
@@ -209,6 +200,10 @@ fn (s &StyleComputer) restore_computed_longhands(key ComputedLonghandReuseKey,
 	for input in entry.parent_inputs {
 		index := int(input.id) - int(first_longhand_property_id())
 		value := key.parent.raw_property_at_index(index)
+		if input.value == unsafe { nil } {
+			if value != unsafe { nil } { return false }
+			continue
+		}
 		if value == unsafe { nil } || voidptr(value) != voidptr(input.value)
 			|| value.css_value_handle != input.typed_handle
 			|| !computed_longhand_reuse_snapshot_matches(&input.snapshot, value) { return false }
@@ -252,12 +247,19 @@ fn (s &StyleComputer) remember_computed_longhands(key ComputedLonghandReuseKey,
 		property := cascaded.style_property(id) or { continue }
 		inputs << ComputedLonghandReuseInput{id: id, value: property.value, typed_handle: property.value.css_value_handle, snapshot: computed_longhand_reuse_snapshot(property.value), important: property.important}
 	}
-	mut parent_inputs := []ComputedLonghandReuseInput{cap: number_of_longhand_properties}
+	mut parent_inputs := []ComputedLonghandReuseInput{cap: 64}
 	for index in 0 .. number_of_longhand_properties {
+		if computed_interpolation_inherited_cache[index] == 0 { continue }
 		value := key.parent.raw_property_at_index(index)
-		if value == unsafe { nil } { continue }
+		id := unsafe { PropertyID(index + int(first_longhand_property_id())) }
+		// Include absent slots as well: hash collisions must not hide a later
+		// transition from an absent inherited input to a present one.
+		if value == unsafe { nil } {
+			parent_inputs << ComputedLonghandReuseInput{id: id, value: unsafe { nil }}
+			continue
+		}
 		parent_inputs << ComputedLonghandReuseInput{
-			id: unsafe { PropertyID(index + int(first_longhand_property_id())) }
+			id: id
 			value: value
 			typed_handle: value.css_value_handle
 			snapshot: computed_longhand_reuse_snapshot(value)

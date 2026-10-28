@@ -1,0 +1,211 @@
+module css
+
+import dom
+
+fn longhand_reuse_fixture() (&StyleComputer, &dom.Element, &dom.Element, &ComputedProperties) {
+	document := dom.Document.create(dom.url_about_blank())
+	mut parent := document.create_element('div') or { panic(err) }
+	child := document.create_element('span') or { panic(err) }
+	mut parent_node := parent.as_node()
+	parent_node.append_child(child.as_node()) or { panic(err) }
+	parent.set_attribute_value('style', 'font-size:20px;color:red')
+	computer := StyleComputer.new(document)
+	mut parent_abstract := dom.AbstractElement.new(parent, none)
+	style := computer.compute_style(parent_abstract)
+	parent_abstract.set_computed_properties(computed_properties_to_dom(style))
+	return computer, parent, child, style
+}
+
+fn longhand_reuse_cascade(value &dom.StyleValue) &CascadedProperties {
+	mut cascaded := CascadedProperties.new()
+	cascaded.set_property(.width, value, .yes, .author, none, unsafe { nil }, none)
+	return cascaded
+}
+
+// Compare the complete computed result with the ordinary, uncached path.
+// Assert individual values so a failure never formats a DOM owner graph.
+fn longhand_reuse_assert_oracle(actual &ComputedProperties, computer &StyleComputer,
+	element &dom.Element, mut cascaded CascadedProperties) {
+	oracle_computer := StyleComputer.new(computer.document_)
+	oracle := oracle_computer.compute_properties(dom.AbstractElement.new(element, none), mut cascaded)
+	for index in 0 .. number_of_longhand_properties {
+		id := unsafe { PropertyID(index + int(first_longhand_property_id())) }
+		left := actual.raw_property_at_index(index)
+		right := oracle.raw_property_at_index(index)
+		assert (left == unsafe { nil }) == (right == unsafe { nil }), string_from_property_id(id)
+		if left == unsafe { nil } { continue }
+		left_value := typed_style_value_logic_from_dom(left) or { panic('missing actual typed value') }
+		right_value := typed_style_value_logic_from_dom(right) or { panic('missing oracle typed value') }
+		assert left_value.equals(right_value), string_from_property_id(id)
+		assert actual.is_property_inherited(id) == oracle.is_property_inherited(id), string_from_property_id(id)
+		assert actual.is_property_important(id) == oracle.is_property_important(id), string_from_property_id(id)
+	}
+	assert actual.depends_on_viewport_metrics_ == oracle.depends_on_viewport_metrics_
+	assert actual.font_metrics_depend_on_viewport_metrics_ == oracle.font_metrics_depend_on_viewport_metrics_
+}
+
+fn test_longhand_reuse_matches_full_computation_and_keeps_sibling_ownership() {
+	computer, parent, first_element, _ := longhand_reuse_fixture()
+	second_element := parent.document().create_element('span') or { panic(err) }
+	mut parent_node := parent.as_node()
+	parent_node.append_child(second_element.as_node()) or { panic(err) }
+	width := parse_css_value(ParsingParams{}, '70px', .width) or { panic('width') }
+	mut cascaded := longhand_reuse_cascade(width)
+	computer.begin_computed_property_page_batch()
+	defer { computer.end_computed_property_page_batch() }
+	mut first := computer.compute_properties(dom.AbstractElement.new(first_element, none), mut cascaded)
+	key := computer.computed_longhand_reuse_key(dom.AbstractElement.new(second_element, none),
+		cascaded, parent_computed_properties(dom.AbstractElement.new(second_element, none)), false) or {
+		panic('simple siblings must be eligible')
+	}
+	mut probe := computed_properties_with_initial_values()
+	assert computer.restore_computed_longhands(key, cascaded, mut probe)
+	second := computer.compute_properties(dom.AbstractElement.new(second_element, none), mut cascaded)
+	longhand_reuse_assert_oracle(first, computer, first_element, mut cascaded)
+	longhand_reuse_assert_oracle(second, computer, second_element, mut cascaded)
+	assert voidptr(first.subject_element_) == voidptr(first_element)
+	assert voidptr(second.subject_element_) == voidptr(second_element)
+	assert voidptr(first.property_store_) != voidptr(second.property_store_)
+	assert voidptr(first.computed_property_graph_token_) != voidptr(second.computed_property_graph_token_)
+	first.set_property(.width, parse_css_value(ParsingParams{}, '93px', .width) or {
+		panic('replacement width')
+	}, .no, .no)
+	longhand_reuse_assert_oracle(second, computer, second_element, mut cascaded)
+}
+
+fn test_longhand_reuse_rejects_in_place_parent_and_cascaded_value_mutations() {
+	computer, _, element, parent_style := longhand_reuse_fixture()
+	width := parse_css_value(ParsingParams{}, '70px', .width) or { panic('width') }
+	mut cascaded := longhand_reuse_cascade(width)
+	abstract_element := dom.AbstractElement.new(element, none)
+	computer.begin_computed_property_page_batch()
+	defer { computer.end_computed_property_page_batch() }
+	_ = computer.compute_properties(abstract_element, mut cascaded)
+	mut key := computer.computed_longhand_reuse_key(abstract_element, cascaded,
+		parent_style, false) or { panic('eligible initial style') }
+	mut probe := computed_properties_with_initial_values()
+	assert computer.restore_computed_longhands(key, cascaded, mut probe)
+
+	color := parent_style.property(.color, .no) or { panic('parent color') }
+	mut color_box := unsafe { &TypedStyleValueBox(color.css_value_handle) }
+	replacement := parse_css_value(ParsingParams{}, 'blue', .color) or { panic('blue') }
+	color_box.value = typed_style_value_logic_from_dom(replacement) or { panic('blue typed value') }
+	// Both wrapper and typed-handle identity survive this payload mutation.
+	assert !computer.restore_computed_longhands(key, cascaded, mut probe)
+	updated_parent := computer.compute_properties(abstract_element, mut cascaded)
+	longhand_reuse_assert_oracle(updated_parent, computer, element, mut cascaded)
+
+	key = computer.computed_longhand_reuse_key(abstract_element, cascaded,
+		parent_style, false) or { panic('eligible updated parent') }
+	assert computer.restore_computed_longhands(key, cascaded, mut probe)
+	mut width_box := unsafe { &TypedStyleValueBox(width.css_value_handle) }
+	width_box.value = StyleValue(LengthStyleValue.create(Length.make_px(93)))
+	assert !computer.restore_computed_longhands(key, cascaded, mut probe)
+	updated_width := computer.compute_properties(abstract_element, mut cascaded)
+	longhand_reuse_assert_oracle(updated_width, computer, element, mut cascaded)
+}
+
+fn test_longhand_reuse_excludes_relative_lengths_and_expires_at_outer_batch_end() {
+	computer, _, element, parent_style := longhand_reuse_fixture()
+	abstract_element := dom.AbstractElement.new(element, none)
+	mut relative := longhand_reuse_cascade(parse_css_value(ParsingParams{}, '2em', .width) or {
+		panic('relative width')
+	})
+	computer.begin_computed_property_page_batch()
+	computer.begin_computed_property_page_batch()
+	relative_is_eligible := computer.computed_longhand_reuse_key(abstract_element, relative, parent_style, false) != none
+	assert !relative_is_eligible
+	computed := computer.compute_properties(abstract_element, mut relative)
+	longhand_reuse_assert_oracle(computed, computer, element, mut relative)
+	mut absolute := longhand_reuse_cascade(parse_css_value(ParsingParams{}, '70px', .width) or {
+		panic('absolute width')
+	})
+	_ = computer.compute_properties(abstract_element, mut absolute)
+	key := computer.computed_longhand_reuse_key(abstract_element, absolute, parent_style, false) or {
+		panic('eligible absolute width')
+	}
+	mut probe := computed_properties_with_initial_values()
+	computer.end_computed_property_page_batch()
+	assert computer.restore_computed_longhands(key, absolute, mut probe)
+	computer.end_computed_property_page_batch()
+	assert !computer.restore_computed_longhands(key, absolute, mut probe)
+	outside_batch_is_eligible := computer.computed_longhand_reuse_key(abstract_element, absolute, parent_style, false) != none
+	assert !outside_batch_is_eligible
+}
+
+fn test_longhand_reuse_ignores_noninherited_parent_values_but_guards_inherited_payloads() {
+	computer, parent, first_element, parent_style := longhand_reuse_fixture()
+	mut other_parent := parent.document().create_element('div') or { panic(err) }
+	other_element := parent.document().create_element('span') or { panic(err) }
+	mut other_node := other_parent.as_node()
+	other_node.append_child(other_element.as_node()) or { panic(err) }
+	mut other_style := &ComputedProperties{
+		...parent_style
+		property_store_:                parent_style.clone_raw_property_store()
+		computed_property_graph_token_: unsafe { nil }
+	}
+	// These changes replace COW pages containing inherited inputs as well.
+	for name, text in {
+		'width':            '123px'
+		'background-color': 'blue'
+		'margin-left':      '19px'
+	} {
+		id := property_id_from_string(name) or { panic(name) }
+		other_style.set_property(id, parse_css_value(ParsingParams{}, text, id) or {
+			panic(name)
+		}, .no, .no)
+	}
+	mut other_abstract := dom.AbstractElement.new(other_parent, none)
+	other_abstract.set_computed_properties(computed_properties_to_dom(other_style))
+	mut cascaded := longhand_reuse_cascade(parse_css_value(ParsingParams{}, '70px', .width) or {
+		panic('child width')
+	})
+	computer.begin_computed_property_page_batch()
+	defer { computer.end_computed_property_page_batch() }
+	_ = computer.compute_properties(dom.AbstractElement.new(first_element, none), mut cascaded)
+	key := computer.computed_longhand_reuse_key(dom.AbstractElement.new(other_element, none),
+		cascaded, other_style, false) or { panic('equivalent inherited inputs') }
+	mut probe := computed_properties_with_initial_values()
+	assert computer.restore_computed_longhands(key, cascaded, mut probe)
+	actual := computer.compute_properties(dom.AbstractElement.new(other_element, none), mut cascaded)
+	longhand_reuse_assert_oracle(actual, computer, other_element, mut cascaded)
+
+	background := other_style.property(.background_color, .no) or { panic('parent background') }
+	mut background_box := unsafe { &TypedStyleValueBox(background.css_value_handle) }
+	background_box.value = StyleValue(ColorStyleValue.create(Color.rgba(0, 255, 0, 255)))
+	assert computer.restore_computed_longhands(key, cascaded, mut probe)
+	longhand_reuse_assert_oracle(actual, computer, other_element, mut cascaded)
+
+	color := other_style.property(.color, .no) or { panic('inherited color') }
+	mut color_box := unsafe { &TypedStyleValueBox(color.css_value_handle) }
+	color_box.value = StyleValue(ColorStyleValue.create(Color.rgba(0, 0, 255, 255)))
+	assert !computer.restore_computed_longhands(key, cascaded, mut probe)
+}
+
+fn test_longhand_reuse_guards_absent_inherited_inputs_even_with_a_hash_collision() {
+	computer, _, element, parent_style := longhand_reuse_fixture()
+	mut parent := unsafe { &ComputedProperties(parent_style) }
+	color_index := int(PropertyID.color) - int(first_longhand_property_id())
+	parent.set_raw_property_at_index(color_index, unsafe { nil })
+	mut cascaded := longhand_reuse_cascade(parse_css_value(ParsingParams{}, '70px', .width) or {
+		panic('child width')
+	})
+	abstract_element := dom.AbstractElement.new(element, none)
+	computer.begin_computed_property_page_batch()
+	defer { computer.end_computed_property_page_batch() }
+	_ = computer.compute_properties(abstract_element, mut cascaded)
+	key := computer.computed_longhand_reuse_key(abstract_element, cascaded, parent, false) or {
+		panic('eligible absent inherited value')
+	}
+	mut probe := computed_properties_with_initial_values()
+	assert computer.restore_computed_longhands(key, cascaded, mut probe)
+	parent.set_property(.color, parse_css_value(ParsingParams{}, 'red', .color) or {
+		panic('parent color')
+	}, .no, .no)
+	changed_key := computer.computed_longhand_reuse_key(abstract_element, cascaded, parent, false) or {
+		panic('eligible present inherited value')
+	}
+	// Deliberately collide the lookup hash to exercise the complete input guard.
+	collision_key := ComputedLonghandReuseKey{ ...changed_key, hash: key.hash }
+	assert !computer.restore_computed_longhands(collision_key, cascaded, mut probe)
+}
