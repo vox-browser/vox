@@ -1983,6 +1983,41 @@ because the requested ratio of at most 0.90 is not met. Every browser exits
 zero. No regression test suite was executed for this change; formatting and
 diff checks pass. The Brave speed target remains open.
 
+## Reject lazy intrinsic geometry copying, 2026-10-28
+
+`Build/hn-master-20261028-15/` measured a prototype that copied external
+containing-block geometry when an intrinsic probe first requested it. The
+canonical production build completed with build/guard exits zero in 371.396
+seconds and sampled peak RSS 6,656,147,456 bytes. Its executable SHA256 is
+`5d127037afc98c48b39633282789571019bc9708a8647409f8cb1c955654cb9e`.
+The source audit passes and native libraries match build 14. The generated C
+also contains concurrent shared-recording validation changes, so full-page
+differences cannot be attributed solely to this prototype.
+
+The corrected `cost-breakdown-2` diagnostic observes 128 borrowed-probe
+geometry lookups, zero differing Brave pixels and all 101 comment IDs. The
+first diagnostic could not attach to an inlined constructor and is retained
+as a failure. Neither diagnostic receives performance credit.
+
+Eight unprofiled matched pairs use two ABBA blocks with the original
+navigation-to-encoded-capture endpoint. Control counts are 6,819,469,303;
+6,849,325,277; 6,799,114,912; and 6,795,298,955. Candidate counts are
+6,843,929,463; 6,805,405,667; 6,789,060,978; and 6,830,852,840. Candidate
+and control medians are 6,818,129,253.5 and 6,809,292,107.5: the candidate
+uses 0.13% more instructions, with overlapping ranges. The 18-CPU host's load
+falls from roughly 30 to 23. All 16 browsers exit zero with exact pixels and
+all comments. The guard exits 1 solely because the Brave target fails,
+after 101.992 seconds with peak RSS 101,974,016 bytes. Candidate Brave
+lower-bound median is 1,900,846,818.5; worst-candidate/best-Brave is 3.6579.
+
+The prototype earns no optimization credit and is removed from canonical
+sources. It also left cold read-only external containing-block queries
+unpopulated, which would require a correctness fix before reuse. Its unrun
+focused test and implementation snapshots remain in the evidence directory.
+The completed build 14 bundle is restored byte for byte; the rejected binary
+is retained separately. Foreign working changes are preserved. No regression
+test suite was executed, as requested; the 0.90 Brave target remains open.
+
 ## Reuse rendered-text ASCII eligibility, 2026-10-27
 
 `4b8b075b` reads the ASCII fact refreshed with `text_for_rendering()` instead
