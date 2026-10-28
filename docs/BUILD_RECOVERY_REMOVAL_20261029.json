@@ -1,0 +1,513 @@
+{
+  "removed_utc": "2026-10-28T23:57:25.597739+00:00",
+  "master_head_before_removal": "ec77a039c828e9a9dddf5b27b758fbea8214bfb6",
+  "removed_directory": "/Users/alex/code/vox2-build-preservation",
+  "directory_absent": true,
+  "removed_allocated_bytes": 32274546688,
+  "filesystem_free_bytes_before": 3616997376,
+  "filesystem_free_bytes_after": 35848454144,
+  "canonical_files_verified_unchanged": 11406,
+  "canonical_inventory_sha256": "0443a3b124551166349d42c00f9ce206352f453c6c0d35fd127a5d1fa851d6c2",
+  "git_connectivity_exit": 0,
+  "git_object_alternates": false,
+  "recovery_files_changed_after_completed_logic_audit": false,
+  "verified_prior_receipt_hashes": 40,
+  "integrations": [
+    {
+      "commit": "cea29abf2fee674d414a7273267962e81d42e80b",
+      "subject": "Track rounded SVG ancestor compositing helper and failure tests",
+      "files": [
+        "native_rounded_svg_ancestor_darwin.h",
+        "tools/native_rounded_svg_ancestor_test.cpp"
+      ]
+    },
+    {
+      "commit": "560f07c3760a2729bbfa933de7a678104747df9e",
+      "subject": "Track Chromium rectangle prefetch integration and boundary tests",
+      "files": [
+        "main_chromium_rect_prefetch.v",
+        "main_chromium_rect_prefetch_scratch.v",
+        "main_chromium_rect_prefetch_test.v"
+      ]
+    },
+    {
+      "commit": "8ba6d5cca472f44712db17316bed3a3d49c0bab7",
+      "subject": "Preserve Chromium checked checkbox theme coordinates",
+      "files": [
+        "layout/chromium_checkbox_geometry.v",
+        "layout/chromium_checkbox_paint_test.v",
+        "layout/chromium_checked_checkbox.v",
+        "layout/paint_transport.v"
+      ]
+    },
+    {
+      "commit": "b4c80f62aa7dbfcb4126a347b4e198250aa61a2c",
+      "subject": "Borrow typed CSS values during color resolution",
+      "files": [
+        "css/borrowed_color_values_test.v",
+        "css/computed_interpolation.v",
+        "css/image_color_values.v",
+        "css/style_values_core.v"
+      ]
+    },
+    {
+      "commit": "c535622dbf1253b069804d8b0dcf3ca298875904",
+      "subject": "Resume shared compositor pictures after complete child effects",
+      "files": [
+        "Tests/Browser/Brave/input/compositor-parent-resume.html",
+        "main_chromium_shared_recording.v",
+        "main_chromium_shared_recording_test.v"
+      ]
+    }
+  ],
+  "committed_tested_source_sha256": {
+    "native_rounded_svg_ancestor_darwin.h": "376549eb7929608a3db3dd716a8cd8afc53a08116c9152612fb67cdde1ee7ec9",
+    "tools/native_rounded_svg_ancestor_test.cpp": "6a6c62142552ebbb8aadd357bbe92f3442cf799f17630eb189a885bee902837d",
+    "main_chromium_rect_prefetch.v": "8fd69a9331deed0f09664eb6a9583b058df64a3c415a90be814dc7618de4d41c",
+    "main_chromium_rect_prefetch_scratch.v": "3df8c16372e475d221bc83b23067ee2b1916c56b2f2ac1f8a93477b525922a35",
+    "main_chromium_rect_prefetch_test.v": "8373b0b876f2264220672e0d4738cee4a82652d3240c0937d86142359eeb1cda",
+    "layout/chromium_checkbox_geometry.v": "315c51ed1d334158611dcd2e76759c29e519b5fe28c651339a17cbbe7280e7fb",
+    "layout/chromium_checkbox_paint_test.v": "bf0e8867a86b8360a05abc51f8ba788ac6543b8ec23af2d92d6bcdcb4284c6c2",
+    "layout/chromium_checked_checkbox.v": "a481f96cef2b4becae9f8e13fae0640631fd4ea19ea464d4bad7d9843fc9748a",
+    "layout/paint_transport.v": "f09819068540fe1d52ef8b918d1c53bcab07eee24fd5600199a07785bb393f4f",
+    "css/borrowed_color_values_test.v": "a4a4683bca828d6dda3784cb30b7ae6cc0b6aeb135e6f30fdf98347bb7d1917c",
+    "css/computed_interpolation.v": "77522f9f055fba07aad21523bc76a5f7aa36c0e56f81929fc487f3dabb951ba0",
+    "css/image_color_values.v": "a52b5af391109c436b78badf317fb72e14e53f014364c5e1e84dc11f93f84a63",
+    "css/style_values_core.v": "7ba7a8265cb1b8b7bb5b31c09102c50b5bae93aa6e1d69f5bc9d5056f8d0776a",
+    "Tests/Browser/Brave/input/compositor-parent-resume.html": "6c1ed3adc8b9ac7f1d21bc297e24b88b5965dddd1ba6d5d80cb5584eb3a3ebc0",
+    "main_chromium_shared_recording.v": "9528f8a686a9f5e04fa419398a1a9026a21a30af3ef01f35e4f2c1f542c467b4",
+    "main_chromium_shared_recording_test.v": "4e7862e254519da53130b8ed90373a0131fafd0603ffba8da79d23561a946cb1"
+  },
+  "prior_validation_results": {
+    "rounded-results.json": {
+      "pins": {
+        "/Users/alex/code/vox2/native_rounded_svg_ancestor_darwin.h": "376549eb7929608a3db3dd716a8cd8afc53a08116c9152612fb67cdde1ee7ec9",
+        "/Users/alex/code/vox2/tools/native_rounded_svg_ancestor_test.cpp": "6a6c62142552ebbb8aadd357bbe92f3442cf799f17630eb189a885bee902837d",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "773487d27d5a7b3ef762a9928f8fe13a567674ad72b9a49e19d0d51d9925185a",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "82209846d5096fbbe12623012e4a0d322aa7fda1d20a89c8e92b93fdca7dfe0c",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "491d1580277797da4deb738e7e239fcc5542fd665206732f88b310aa58069ff8"
+      },
+      "rows": [
+        {
+          "command": [
+            "clang++",
+            "-std=c++20",
+            "-O2",
+            "-I",
+            "/Users/alex/code/vox2",
+            "/Users/alex/code/vox2/tools/native_rounded_svg_ancestor_test.cpp",
+            "-framework",
+            "CoreGraphics",
+            "-Wl,-rpath,/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS",
+            "-o",
+            "/Users/alex/code/vox2-build-preservation/20261028/logic-audit/rounded-test"
+          ],
+          "exit": 0
+        },
+        {
+          "command": [
+            "/Users/alex/code/vox2-build-preservation/20261028/logic-audit/rounded-test",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib",
+            "/Users/alex/code/vox2-build-preservation/20261028/logic-audit/rounded-1.rgba",
+            "1"
+          ],
+          "exit": 0
+        },
+        {
+          "command": [
+            "/Users/alex/code/vox2-build-preservation/20261028/logic-audit/rounded-test",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib",
+            "/Users/alex/code/vox2-build-preservation/20261028/logic-audit/rounded-2.rgba",
+            "2"
+          ],
+          "exit": 0
+        }
+      ],
+      "changed_inputs": []
+    },
+    "rect-v-results.json": {
+      "pins": {
+        "/Users/alex/code/vox2/main_chromium_rect_prefetch.v": "8fd69a9331deed0f09664eb6a9583b058df64a3c415a90be814dc7618de4d41c",
+        "/Users/alex/code/vox2/main_chromium_rect_prefetch_scratch.v": "3df8c16372e475d221bc83b23067ee2b1916c56b2f2ac1f8a93477b525922a35",
+        "/Users/alex/code/vox2/main_chromium_rect_prefetch_test.v": "8373b0b876f2264220672e0d4738cee4a82652d3240c0937d86142359eeb1cda"
+      },
+      "rows": [
+        {
+          "command": [
+            "/Users/alex/code/v/v",
+            "-memory-limit",
+            "10G",
+            "-enable-globals",
+            "-exclude",
+            "@vlib/time/zoneinfo.native.v",
+            "-d",
+            "vox_sparse_ttf",
+            "-path",
+            "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/httpcompat/b12ee53766b302d7/modules|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+            "-gc",
+            "boehm",
+            "-o",
+            "/Users/alex/code/vox2-build-preservation/20261028/logic-audit/rect-v-boehm",
+            "/Users/alex/code/vox2-build-preservation/20261028/logic-audit/rect-helper_test.v"
+          ],
+          "label": "rect-v-boehm-compile",
+          "exit": 0
+        },
+        {
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--lock",
+            "/Users/alex/code/vox2-build-preservation/20261028/logic-audit/rect-v-boehm.lock",
+            "--report",
+            "/Users/alex/code/vox2-build-preservation/20261028/logic-audit/rect-v-boehm-runtime-guard.json",
+            "--",
+            "/Users/alex/code/vox2-build-preservation/20261028/logic-audit/rect-v-boehm"
+          ],
+          "label": "rect-v-boehm-run",
+          "exit": 0
+        },
+        {
+          "command": [
+            "/Users/alex/code/v/v",
+            "-memory-limit",
+            "10G",
+            "-enable-globals",
+            "-exclude",
+            "@vlib/time/zoneinfo.native.v",
+            "-d",
+            "vox_sparse_ttf",
+            "-path",
+            "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/httpcompat/b12ee53766b302d7/modules|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+            "-gc",
+            "none",
+            "-o",
+            "/Users/alex/code/vox2-build-preservation/20261028/logic-audit/rect-v-none",
+            "/Users/alex/code/vox2-build-preservation/20261028/logic-audit/rect-helper_test.v"
+          ],
+          "label": "rect-v-none-compile",
+          "exit": 0
+        },
+        {
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--lock",
+            "/Users/alex/code/vox2-build-preservation/20261028/logic-audit/rect-v-none.lock",
+            "--report",
+            "/Users/alex/code/vox2-build-preservation/20261028/logic-audit/rect-v-none-runtime-guard.json",
+            "--",
+            "/Users/alex/code/vox2-build-preservation/20261028/logic-audit/rect-v-none"
+          ],
+          "label": "rect-v-none-run",
+          "exit": 0
+        },
+        {
+          "command": [
+            "/Users/alex/code/v/v",
+            "-memory-limit",
+            "10G",
+            "-enable-globals",
+            "-exclude",
+            "@vlib/time/zoneinfo.native.v",
+            "-d",
+            "vox_sparse_ttf",
+            "-path",
+            "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/httpcompat/b12ee53766b302d7/modules|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+            "-d",
+            "vox_ui2",
+            "-check",
+            "/Users/alex/code/vox2"
+          ],
+          "label": "rect-v-browser-typecheck",
+          "exit": 0
+        }
+      ],
+      "changed_inputs": []
+    },
+    "candidate-boehm-result.json": {
+      "pins": {
+        "layout/chromium_checkbox_geometry.v": "315c51ed1d334158611dcd2e76759c29e519b5fe28c651339a17cbbe7280e7fb",
+        "layout/chromium_checked_checkbox.v": "a481f96cef2b4becae9f8e13fae0640631fd4ea19ea464d4bad7d9843fc9748a",
+        "layout/chromium_checkbox_paint_test.v": "bf0e8867a86b8360a05abc51f8ba788ac6543b8ec23af2d92d6bcdcb4284c6c2",
+        "layout/paint_transport.v": "f09819068540fe1d52ef8b918d1c53bcab07eee24fd5600199a07785bb393f4f"
+      },
+      "compiler_command": [
+        "/Users/alex/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/httpcompat/b12ee53766b302d7/modules|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-gc",
+        "boehm",
+        "-o",
+        "/Users/alex/code/vox2/Build/logic-integration-checks-20261029/checkbox-candidate-boehm",
+        "/Users/alex/code/vox2/layout/chromium_checkbox_paint_test.v"
+      ],
+      "compile_exit": 0,
+      "runtime_command": [
+        "python3",
+        "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+        "--limit-gib",
+        "3",
+        "--lock",
+        "/Users/alex/code/vox2/Build/logic-integration-checks-20261029/candidate-boehm-run.lock",
+        "--report",
+        "/Users/alex/code/vox2/Build/logic-integration-checks-20261029/candidate-boehm-run-guard.json",
+        "--",
+        "/Users/alex/code/vox2/Build/logic-integration-checks-20261029/checkbox-candidate-boehm"
+      ],
+      "runtime_exit": 0,
+      "changed_inputs": []
+    },
+    "candidate-none-result.json": {
+      "pins": {
+        "layout/chromium_checkbox_geometry.v": "315c51ed1d334158611dcd2e76759c29e519b5fe28c651339a17cbbe7280e7fb",
+        "layout/chromium_checked_checkbox.v": "a481f96cef2b4becae9f8e13fae0640631fd4ea19ea464d4bad7d9843fc9748a",
+        "layout/chromium_checkbox_paint_test.v": "bf0e8867a86b8360a05abc51f8ba788ac6543b8ec23af2d92d6bcdcb4284c6c2",
+        "layout/paint_transport.v": "f09819068540fe1d52ef8b918d1c53bcab07eee24fd5600199a07785bb393f4f"
+      },
+      "compiler_command": [
+        "/Users/alex/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/httpcompat/b12ee53766b302d7/modules|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/logic-integration-checks-20261029/checkbox-candidate-none",
+        "/Users/alex/code/vox2/layout/chromium_checkbox_paint_test.v"
+      ],
+      "compile_exit": 0,
+      "runtime_command": [
+        "python3",
+        "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+        "--limit-gib",
+        "3",
+        "--lock",
+        "/Users/alex/code/vox2/Build/logic-integration-checks-20261029/candidate-none-run.lock",
+        "--report",
+        "/Users/alex/code/vox2/Build/logic-integration-checks-20261029/candidate-none-run-guard.json",
+        "--",
+        "/Users/alex/code/vox2/Build/logic-integration-checks-20261029/checkbox-candidate-none"
+      ],
+      "runtime_exit": 0,
+      "changed_inputs": []
+    },
+    "colors-boehm-result.json": {
+      "pins": {
+        "css/computed_interpolation.v": "77522f9f055fba07aad21523bc76a5f7aa36c0e56f81929fc487f3dabb951ba0",
+        "css/image_color_values.v": "a52b5af391109c436b78badf317fb72e14e53f014364c5e1e84dc11f93f84a63",
+        "css/style_values_core.v": "7ba7a8265cb1b8b7bb5b31c09102c50b5bae93aa6e1d69f5bc9d5056f8d0776a",
+        "css/borrowed_color_values_test.v": "a4a4683bca828d6dda3784cb30b7ae6cc0b6aeb135e6f30fdf98347bb7d1917c"
+      },
+      "compiler_command": [
+        "/Users/alex/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/httpcompat/b12ee53766b302d7/modules|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-gc",
+        "boehm",
+        "-o",
+        "/Users/alex/code/vox2/Build/logic-integration-checks-20261029/colors-colors-boehm",
+        "/Users/alex/code/vox2/css/borrowed_color_values_test.v"
+      ],
+      "compile_exit": 0,
+      "runtime_command": [
+        "python3",
+        "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+        "--limit-gib",
+        "3",
+        "--lock",
+        "/Users/alex/code/vox2/Build/logic-integration-checks-20261029/colors-boehm-run.lock",
+        "--report",
+        "/Users/alex/code/vox2/Build/logic-integration-checks-20261029/colors-boehm-run-guard.json",
+        "--",
+        "/Users/alex/code/vox2/Build/logic-integration-checks-20261029/colors-colors-boehm"
+      ],
+      "runtime_exit": 0,
+      "changed_inputs": []
+    },
+    "colors-none-result.json": {
+      "pins": {
+        "css/computed_interpolation.v": "77522f9f055fba07aad21523bc76a5f7aa36c0e56f81929fc487f3dabb951ba0",
+        "css/image_color_values.v": "a52b5af391109c436b78badf317fb72e14e53f014364c5e1e84dc11f93f84a63",
+        "css/style_values_core.v": "7ba7a8265cb1b8b7bb5b31c09102c50b5bae93aa6e1d69f5bc9d5056f8d0776a",
+        "css/borrowed_color_values_test.v": "a4a4683bca828d6dda3784cb30b7ae6cc0b6aeb135e6f30fdf98347bb7d1917c"
+      },
+      "compiler_command": [
+        "/Users/alex/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/httpcompat/b12ee53766b302d7/modules|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/logic-integration-checks-20261029/colors-colors-none",
+        "/Users/alex/code/vox2/css/borrowed_color_values_test.v"
+      ],
+      "compile_exit": 0,
+      "runtime_command": [
+        "python3",
+        "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+        "--limit-gib",
+        "3",
+        "--lock",
+        "/Users/alex/code/vox2/Build/logic-integration-checks-20261029/colors-none-run.lock",
+        "--report",
+        "/Users/alex/code/vox2/Build/logic-integration-checks-20261029/colors-none-run-guard.json",
+        "--",
+        "/Users/alex/code/vox2/Build/logic-integration-checks-20261029/colors-colors-none"
+      ],
+      "runtime_exit": 0,
+      "changed_inputs": []
+    },
+    "shared-fixed-boehm-result.json": {
+      "pins": {
+        "main_chromium_shared_recording.v": "9528f8a686a9f5e04fa419398a1a9026a21a30af3ef01f35e4f2c1f542c467b4",
+        "main_chromium_shared_recording_test.v": "4e7862e254519da53130b8ed90373a0131fafd0603ffba8da79d23561a946cb1",
+        "Tests/Browser/Brave/input/compositor-parent-resume.html": "6c1ed3adc8b9ac7f1d21bc297e24b88b5965dddd1ba6d5d80cb5584eb3a3ebc0"
+      },
+      "compiler_command": [
+        "/Users/alex/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/httpcompat/b12ee53766b302d7/modules|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-d",
+        "vox_ui2",
+        "-gc",
+        "boehm",
+        "-o",
+        "/Users/alex/code/vox2/Build/logic-integration-checks-20261029/shared-shared-fixed-boehm",
+        "/Users/alex/code/vox2/main_chromium_shared_recording_test.v"
+      ],
+      "compile_exit": 0,
+      "runtime_command": [
+        "python3",
+        "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+        "--limit-gib",
+        "3",
+        "--lock",
+        "/Users/alex/code/vox2/Build/logic-integration-checks-20261029/shared-fixed-boehm-run.lock",
+        "--report",
+        "/Users/alex/code/vox2/Build/logic-integration-checks-20261029/shared-fixed-boehm-run-guard.json",
+        "--",
+        "/Users/alex/code/vox2/Build/logic-integration-checks-20261029/shared-shared-fixed-boehm"
+      ],
+      "runtime_exit": 0,
+      "changed_inputs": []
+    },
+    "shared-fixed-none-result.json": {
+      "pins": {
+        "main_chromium_shared_recording.v": "9528f8a686a9f5e04fa419398a1a9026a21a30af3ef01f35e4f2c1f542c467b4",
+        "main_chromium_shared_recording_test.v": "4e7862e254519da53130b8ed90373a0131fafd0603ffba8da79d23561a946cb1",
+        "Tests/Browser/Brave/input/compositor-parent-resume.html": "6c1ed3adc8b9ac7f1d21bc297e24b88b5965dddd1ba6d5d80cb5584eb3a3ebc0"
+      },
+      "compiler_command": [
+        "/Users/alex/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/httpcompat/b12ee53766b302d7/modules|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-d",
+        "vox_ui2",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/logic-integration-checks-20261029/shared-shared-fixed-none",
+        "/Users/alex/code/vox2/main_chromium_shared_recording_test.v"
+      ],
+      "compile_exit": 0,
+      "runtime_command": [
+        "python3",
+        "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+        "--limit-gib",
+        "3",
+        "--lock",
+        "/Users/alex/code/vox2/Build/logic-integration-checks-20261029/shared-fixed-none-run.lock",
+        "--report",
+        "/Users/alex/code/vox2/Build/logic-integration-checks-20261029/shared-fixed-none-run-guard.json",
+        "--",
+        "/Users/alex/code/vox2/Build/logic-integration-checks-20261029/shared-shared-fixed-none"
+      ],
+      "runtime_exit": 0,
+      "changed_inputs": []
+    },
+    "rounded-2-guard.json": {
+      "command": [
+        "python3",
+        "/Users/alex/code/vox2-build-preservation/20261028/logic-audit/check-rounded.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 165773312,
+      "elapsed_seconds": 2.873692042,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "rect-v-compile-guard.json": {
+      "command": [
+        "python3",
+        "/Users/alex/code/vox2-build-preservation/20261028/logic-audit/check-rect-v.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 6698696704,
+      "elapsed_seconds": 336.999127959,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "native-shared-layer-guard.json": {
+      "command": [
+        "sh",
+        "tools/test_native_skia_shared_layer.sh"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 415268864,
+      "elapsed_seconds": 8.008306999999999,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "native-shared-layer-summary": "144 local compositor pictures match; root backgrounds and blocked fallback pixels preserved"
+  },
+  "scope": "Small verification metadata only; no source copies, code patches, binaries, or recovery archives retained by this operation."
+}

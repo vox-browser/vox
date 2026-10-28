@@ -51,14 +51,37 @@ At **2026-10-29 00:45:48 +03:00**, after the integration checks completed:
 - Small validation logs and JSON receipts were retained outside `Build/`;
   no new source archive was created for this correction.
 
-The machine-readable integration/removal receipt is
-`/Users/alex/code/vox2-build-preservation/20261028/logic-audit/master-integration-and-removal.json`.
-Its adjacent `integration-validation-20261029/` directory contains the focused
-test commands, source hashes, exit codes, and memory-guard reports. Existing
-archives from the earlier cleanup remain untouched; their existence is not
-the evidence used to claim integration.
+The original integration receipt and validation logs were initially retained
+in the recovery directory. That directory has since been deleted as described
+below; the committed verification report retains the test commands, source
+hashes, exit codes, and relevant memory-guard results.
 
 An already-running Vox process still mapped its deleted bundle when removal
 was checked. No new browser was launched. These checks establish source
 integration and focused correctness, not fresh whole-page Brave pixel parity.
 Future builds and tests may recreate `Build/` under the normal repository workflow.
+
+## Recovery archive removal
+
+At **2026-10-29 02:57:25 +03:00**, the entire
+`/Users/alex/code/vox2-build-preservation/` directory was deleted, including
+the 28.5 GiB object archive, later archives, extracted variants, patches,
+manifests, and recovery utilities. The directory occupied **32,274,546,688
+allocated bytes (30.1 GiB)** in total. Filesystem free space increased from
+**3.4 GiB to 33.4 GiB** during the operation.
+
+Before deletion, all five implementation commits were verified reachable from
+`master`. All 16 integrated implementation and test files matched both the
+committed contents and their successful focused-test source hashes. Forty
+original validation receipt hashes were rechecked, and no recovery files had
+been added or modified since the completed logic audit. The earlier rejected
+experiments remain excluded for the reasons recorded above.
+
+All 11,406 canonical files and symlinks outside `Build/` and `.git/` remained
+unchanged across this deletion. Git connectivity passed again, with no external
+object-store dependency or tracked symlink into the deleted directory.
+
+[The verification report](BUILD_RECOVERY_REMOVAL_20261029.json) contains only
+small audit metadata, commit identities, source hashes, and prior test results.
+No source archive, recovered source copies, patches, or binaries were retained
+by this operation. The currently generated `Build/` files were left in place.
