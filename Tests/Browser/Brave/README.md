@@ -469,6 +469,19 @@ with exact RGBA equality. The executed reference comparison has zero differing
 pixels. Focused layout tests also cover intrinsic sizes and persistent UA
 shadow-tree label geometry.
 
+`select-label-ink-clip` checks a label's glyph overhang at half-pixel positions,
+narrow labels, RTL, and a borderless `appearance: none` control. Its Brave
+156.1.98.60 reference uses
+800×600 CSS pixels at native scale 2. Compare the complete
+`expected/select-label-ink-clip@2x.png` viewport with exact RGBA equality.
+The compact label and persistent UA shadow label both clip overflowing ink;
+the focused retained-display-list test checks that their clips match. Two fresh
+Brave captures agree exactly, and the production browser matches all 1,920,000
+native pixels. The previous production browser differs at 1,179 pixels.
+The `chromium-select` reference was also refreshed from two matching independent
+Brave captures. Capture commands, hashes and full viewport comparisons are in
+`Build/4chan-catalog-20261028-catalog-acceptance-1/`.
+
 `shadow-raster-grid` places outer shadows at integer and fractional positions,
 across a root raster tile boundary and at the viewport edge. It includes
 rounded corners and an offset, spread shadow. The reference uses Brave
