@@ -1945,6 +1945,65 @@ is `intrinsic-fit-checkpoint-2` and pipeline is `intrinsic-fit-pipeline-3`.
 This validates savings against the parent candidate. The requested 10% fewer
 instructions than Brave remains open; independent gains are not added.
 
+## Reject pseudo candidates before ancestor bookkeeping, 2026-10-28
+
+`2235a560` moves origin-ancestor insertion and removal after pseudo-rule bucket
+admission. Accepted candidates retain the original ancestor scope through style
+installation and invalidation; rejected candidates still remove stale pseudo
+styles. Bucket admission uses one optional lookup instead of membership followed
+by lookup, and skips attribute enumeration when there are no attribute buckets.
+The new regression covers ancestor balance, matching pseudo styles, class changes
+and stale-style removal. It is authored but unrun: the user's instruction defers
+regression suites until Vox reaches Brave's speed.
+
+The canonical production build in `Build/hn-master-20261028-18` completes with
+guard exit 0 after 283.078600 seconds, sampled peak RSS 8,013,381,632 bytes.
+Its executable SHA256 is
+`df74db101be5d21cf51360514a518c575b56516dcfc6fe2def77d918dde7b5cb`.
+The source audit passes; the actual generated-C delta against build 17 contains
+only the two changed implementation functions. The separate instrumented
+eligibility run observes 24 rejected admission queries from style recomputation,
+all 101 comments and zero differing pixels. It receives no performance credit.
+
+One complete unprofiled ABBAABBA block retains every trial:
+
+| Trial | Variant | Vox instructions |
+| --- | --- | ---: |
+| 1 | control | 6,505,601,847 |
+| 2 | candidate | 6,433,708,222 |
+| 3 | candidate | 6,446,929,479 |
+| 4 | control | 6,472,613,046 |
+| 5 | control | 6,497,713,961 |
+| 6 | candidate | 6,466,215,878 |
+| 7 | candidate | 6,457,989,127 |
+| 8 | control | 6,435,134,069 |
+
+Control/candidate medians are 6,485,163,503.5 / 6,452,459,303 instructions
+(ratio 0.9949571); means are 6,477,765,730.75 / 6,451,210,676.5. Their ranges
+overlap. Every Vox and Brave process exits zero, every image has zero differing
+pixels out of 3,145,728, and all 101 comment identities match. The 18-CPU host's
+load averages move from 11.7524/10.5630/10.0186 to 9.6929/10.2178/9.9326.
+Fresh profiles, the frozen complete page, JavaScript, 1024×768 viewport at scale
+2, two-second settle, native libraries and the navigation-to-encoded-capture
+endpoint remain pinned. Candidate-paired Brave median lower bound is
+1,890,062,625 instructions; worst Vox / best Brave is 3.4505485, failing 0.90.
+The benchmark guard exits 1 because this Brave acceptance gate fails.
+
+Confirmation is incomplete. Its first five Vox trials are respectively
+6,516,137,481 (control), 6,522,448,903 (candidate), 6,450,203,319 (candidate),
+6,452,948,498 (control) and 6,436,403,482 (control). The pinned shared pixel-diff
+executable disappears during a concurrent Build cleanup, stopping the driver.
+A retry with a newly compiled private comparison tool rejects missing control
+executables before launching any browser. Both failures and partial results
+remain retained; neither supplies acceptance credit. The completed block alone
+does not establish repeatable optimization credit.
+
+Both fresh live discussion and reported-comment identity checks pass with this
+exact executable; their guard exits zero after 15.837122 seconds with sampled
+peak RSS 1,456,472,064 bytes. These checks establish live document identity,
+not live Brave pixel or performance parity. No regression suite was executed.
+The requested Brave speed and 10% instruction advantage remain open.
+
 ## Checked native indexes on canonical master, 2026-10-28
 
 `7e0dc8d7` gives the four V3 fixed-array index helpers an `always_inline`
