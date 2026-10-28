@@ -10,6 +10,8 @@ import sys
 import tempfile
 
 CASES = [
+    "platform/gc_keepalive_linux_test.v",
+    "libjs/stack_info_test.v",
     "platform/native_timer_test.v", "platform/native_deferred_test.v",
     "platform/fontconfig_linux_test.v", "browserjs/linux_runtime_test.v",
     "gfxfont/woff_test.v",
@@ -30,7 +32,8 @@ def main():
     args = parser.parse_args()
     repo = Path(__file__).resolve().parent.parent
     compiler = os.environ.get("V_BIN") or shutil.which("v") or str(Path.home() / "code/v/v")
-    environment = dict(os.environ, V_C_ERROR_BUG_REPORT_DISABLED="1")
+    environment = dict(os.environ, V_C_ERROR_BUG_REPORT_DISABLED="1",
+                       V_MACOS_V3_NO_FALLBACK="1")
     bypass = "127.0.0.1,localhost,::1," + environment.get("NO_PROXY", environment.get("no_proxy", ""))
     environment.update(NO_PROXY=bypass, no_proxy=bypass)
     environment["PKG_CONFIG_PATH"] = str(repo / "Build/deps/lib/pkgconfig") + ":" + environment.get("PKG_CONFIG_PATH", "")
@@ -40,12 +43,12 @@ def main():
     output.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="vox-native-") as temporary:
         for case in args.cases:
-            command = [compiler, "-enable-globals", "-cc", os.environ.get("CC", "clang"),
+            command = [compiler, "-memory-limit", "10G", "-enable-globals",
+                       "-cc", os.environ.get("CC", "clang"),
                        "-gc", args.gc, "-d", "use_openssl", "-path", paths]
             if args.gc != "none":
                 command += ["-d", "dynamic_boehm"]
-            # vtest in the compatibility compiler does not quote | in -path.
-            # Direct run preserves argument boundaries and runs the same tests.
+            # Run each file directly to preserve lookup-path argument boundaries.
             command += ["-o", str(Path(temporary) / Path(case).stem), "run", case]
             result = subprocess.run(command, cwd=repo, env=environment, text=True,
                                     stdout=subprocess.PIPE, stderr=subprocess.STDOUT)

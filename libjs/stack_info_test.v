@@ -1,5 +1,13 @@
 module libjs
 
+fn test_source_stack_info_current_thread_bounds_contain_current_frame() {
+	info := StackInfo.new()
+	assert info.size > 0
+	assert info.top > info.base
+	free := info.size_free()
+	assert free > 0 && free < info.size
+}
+
 fn stack_info_measure_thread_snapshot(original StackInfo) (uint, uint, uint) {
 	actual := StackInfo.new()
 	return original.size_free(), actual.size_free(), actual.size

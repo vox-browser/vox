@@ -6,7 +6,9 @@ set -eu
 # Environment overrides:
 #   V_BIN                     V compiler executable
 #   UI2_SOURCE_DIR            UI2 checkout (defaults to ~/.vmodules/ui2)
-#   LADYBIRD_V_GC            prealloc (default), boehm, boehm_full, or none
+#   LADYBIRD_V_GC            default: prealloc on macOS, boehm on Linux
+#                            Linux accepts boehm, boehm_full, or none
+#                            macOS also accepts prealloc
 #   LADYBIRD_V_PROFILE       V profiling report path (unset for normal builds)
 #   LADYBIRD_V_PROFILE_FNS   comma-separated C function names to profile
 #   LADYBIRD_SOURCE_DIR       upstream Ladybird checkout used for Skia

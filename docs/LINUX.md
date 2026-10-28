@@ -19,8 +19,8 @@ sudo apt-get install build-essential clang ninja-build generate-ninja pkg-config
     fonts-liberation2 fonts-dejavu-core
 ```
 
-You also need a current V checkout supporting `-old-compiler`, a Rust compiler
-with edition 2024 support, and Python 3.12 or newer. Set `V_BIN` if V is outside
+You also need a current V checkout, a Rust compiler with edition 2024 support,
+and Python 3.12 or newer. Set `V_BIN` if V is outside
 `PATH` and `~/code/v/v`.
 
 ```sh
@@ -31,9 +31,10 @@ Build/linux/vox https://example.com
 ```
 
 The build selects Linux or macOS automatically. `build-linux-browser.sh` can
-also be called directly. Linux uses the distribution's threaded Boehm collector;
-`LADYBIRD_V_GC=none` remains available for ownership diagnostics. Native bridges
-and image-codec archives stay under `Build/linux/native`, separate from macOS
+also be called directly. Both builds use the current V compiler without falling
+back to the compatibility compiler. Linux uses the distribution's threaded Boehm
+collector; `LADYBIRD_V_GC=none` remains available for ownership diagnostics. Native
+bridges and image-codec archives stay under `Build/linux/native`, separate from macOS
 objects. The browser embeds its adblock assets and needs no Ladybird checkout.
 The default build optimizes with `-O2`; use `VOX_LINUX_CFLAGS=-O0` for a faster
 diagnostic build. Allow at least 8 GB of RAM or additional swap for the large

@@ -26,6 +26,11 @@ case "$gc_mode" in
     *) echo "LADYBIRD_V_GC must be boehm, boehm_full, or none" >&2; exit 2 ;;
 esac
 
+# Use the current frontend, matching the macOS production build. The driver's
+# historical environment variable also controls fallback on Linux.
+V_MACOS_V3_NO_FALLBACK=1
+export V_MACOS_V3_NO_FALLBACK
+
 export PKG_CONFIG_PATH="$repo_dir/Build/deps/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
 for dependency in javascriptcoregtk-4.1 glib-2.0 fontconfig harfbuzz icu-uc icu-i18n egl glesv2 skia; do
     if ! pkg-config --exists "$dependency"; then
@@ -38,12 +43,12 @@ python3 "$repo_dir/tools/build_regex_backend.py"
 python3 "$repo_dir/tools/build_linux_native.py"
 http_modules=$(python3 "$repo_dir/tools/prepare_http_compat.py" "$v_compiler")
 linux_modules=$(python3 "$repo_dir/tools/prepare_linux_modules.py" "$v_compiler")
-# The compatibility compiler qualifies packages from the nearest `modules`,
+# The compiler qualifies packages from the nearest `modules`,
 # `.vmodules`, `vlib` or lookup-path-named directory, or from an ancestor v.mod.
 # A checkout such as ~/.vmodules/vox2 would compile `encoding` as
 # `vox2.encoding` while its imports still name vlib's `encoding` directory.
 # Listing the repository first keeps its packages unqualified wherever it lives.
-set -- -enable-globals -cc "${CC:-clang}" \
+set -- -memory-limit 10G -enable-globals -cc "${CC:-clang}" \
     -d use_openssl \
     -exclude '@vlib/time/zoneinfo.native.v' \
     -path "$repo_dir|$linux_modules|$http_modules|@vmodules|@vlib" -gc "$gc_mode"
@@ -55,6 +60,7 @@ else
     set -- "$@" -d dynamic_boehm
 fi
 cd "$repo_dir"
-"$v_compiler" "$@" -show-c-output -cflags "${VOX_LINUX_CFLAGS:--O2}" -o "$build_dir/vox" .
+# glibc exposes pthread_setname_np and pthread_getattr_np only with GNU extensions.
+"$v_compiler" "$@" -show-c-output -cflags "-D_GNU_SOURCE=1 ${VOX_LINUX_CFLAGS:--O2}" -o "$build_dir/vox" .
 echo "Built Vox: $build_dir/vox"
 echo "Run: '$build_dir/vox' https://example.com"
