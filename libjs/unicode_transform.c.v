@@ -8,21 +8,21 @@ module libjs
 @[typedef]
 struct C.UNormalizer2 {}
 
-fn C.u_strToLower(output &u16, capacity int, input &u16, length int, locale &char, status &int) int
-fn C.u_strToUpper(output &u16, capacity int, input &u16, length int, locale &char, status &int) int
-fn C.unorm2_getNFDInstance(status &int) &C.UNormalizer2
-fn C.unorm2_getNFCInstance(status &int) &C.UNormalizer2
-fn C.unorm2_getNFKDInstance(status &int) &C.UNormalizer2
-fn C.unorm2_getNFKCInstance(status &int) &C.UNormalizer2
-fn C.unorm2_normalize(normalizer &C.UNormalizer2, input &u16, length int, output &u16, capacity int, status &int) int
+fn C.u_strToLower(output &u16, capacity i32, input &u16, length i32, locale &char, status &i32) i32
+fn C.u_strToUpper(output &u16, capacity i32, input &u16, length i32, locale &char, status &i32) i32
+fn C.unorm2_getNFDInstance(status &i32) &C.UNormalizer2
+fn C.unorm2_getNFCInstance(status &i32) &C.UNormalizer2
+fn C.unorm2_getNFKDInstance(status &i32) &C.UNormalizer2
+fn C.unorm2_getNFKCInstance(status &i32) &C.UNormalizer2
+fn C.unorm2_normalize(normalizer &C.UNormalizer2, input &u16, length i32, output &u16, capacity i32, status &i32) i32
 
 fn icu_case_map(text Utf16String, uppercase bool) Utf16String {
 	if text.is_empty() { return text }
-	mut status := 0
+	mut status := i32(0)
 	length := if uppercase {
-		C.u_strToUpper(unsafe { nil }, 0, text.data.data, text.len(), unsafe { nil }, &status)
+		C.u_strToUpper(unsafe { nil }, 0, text.data.data, i32(text.len()), unsafe { nil }, &status)
 	} else {
-		C.u_strToLower(unsafe { nil }, 0, text.data.data, text.len(), unsafe { nil }, &status)
+		C.u_strToLower(unsafe { nil }, 0, text.data.data, i32(text.len()), unsafe { nil }, &status)
 	}
 	// ICU UnicodeString::caseMap marks failed results bogus (empty). Capacity
 	// preflight replaces its private buffer-growth code; warnings are success.
@@ -30,9 +30,9 @@ fn icu_case_map(text Utf16String, uppercase bool) Utf16String {
 	mut units := []u16{len: length}
 	status = 0
 	written := if uppercase {
-		C.u_strToUpper(units.data, units.len, text.data.data, text.len(), unsafe { nil }, &status)
+		C.u_strToUpper(units.data, i32(units.len), text.data.data, i32(text.len()), unsafe { nil }, &status)
 	} else {
-		C.u_strToLower(units.data, units.len, text.data.data, text.len(), unsafe { nil }, &status)
+		C.u_strToLower(units.data, i32(units.len), text.data.data, i32(text.len()), unsafe { nil }, &status)
 	}
 	if status > 0 { return Utf16String{} }
 	assert written >= 0 && written <= units.len

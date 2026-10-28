@@ -8,15 +8,15 @@ module libjs
 @[typedef]
 struct C.UCaseMap {}
 
-fn C.u_foldCase(code_point int, options u32) int
-fn C.ucasemap_open(locale &char, options u32, status &int) &C.UCaseMap
+fn C.u_foldCase(code_point i32, options u32) i32
+fn C.ucasemap_open(locale &char, options u32, status &i32) &C.UCaseMap
 fn C.ucasemap_close(case_map &C.UCaseMap)
-fn C.ucasemap_utf8ToUpper(case_map &C.UCaseMap, output &char, capacity int, input &char, length int, status &int) int
+fn C.ucasemap_utf8ToUpper(case_map &C.UCaseMap, output &char, capacity i32, input &char, length i32, status &i32) i32
 
 // LibUnicode::canonicalize and its Rust simple_case_fold FFI. Legacy mode uses
 // the same ICU UTF-8 full case case_map as AK::String::to_uppercase, not u_toupper.
 pub fn regex_canonicalize(code_point u32, unicode_mode bool) u32 {
-	if unicode_mode { return u32(C.u_foldCase(int(code_point), 0)) }
+	if unicode_mode { return u32(C.u_foldCase(i32(code_point), 0)) }
 	if code_point < 128 {
 		return if code_point >= 0x61 && code_point <= 0x7a { code_point - 32 } else { code_point }
 	}
@@ -25,17 +25,17 @@ pub fn regex_canonicalize(code_point u32, unicode_mode bool) u32 {
 	mut units := []u16{cap: 2}
 	append_utf16_code_point(mut units, code_point)
 	input := encode_utf16(units, false)
-	mut status := 0
+	mut status := i32(0)
 	case_map := C.ucasemap_open(unsafe { nil }, 0, &status)
 	if unsafe { case_map == nil } { return code_point }
 	defer { C.ucasemap_close(case_map) }
 	if status > 0 { return code_point }
-	length := C.ucasemap_utf8ToUpper(case_map, unsafe { nil }, 0, input.str, input.len, &status)
+	length := C.ucasemap_utf8ToUpper(case_map, unsafe { nil }, 0, input.str, i32(input.len), &status)
 	if length < 0 || (status > 0 && status != C.U_BUFFER_OVERFLOW_ERROR) { return code_point }
 	mut output := []u8{len: length}
 	status = 0
-	written := C.ucasemap_utf8ToUpper(case_map, &char(output.data), output.len, input.str,
-		input.len, &status)
+	written := C.ucasemap_utf8ToUpper(case_map, &char(output.data), i32(output.len), input.str,
+		i32(input.len), &status)
 	if status > 0 { return code_point }
 	assert written >= 0 && written <= output.len
 	points := output[..written].bytestr().runes()

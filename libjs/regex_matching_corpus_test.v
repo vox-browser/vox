@@ -1,7 +1,7 @@
 module libjs
 
 fn C.uloc_getDefault() &char
-fn C.uloc_setDefault(locale &char, status &int)
+fn C.uloc_setDefault(locale &char, status &i32)
 
 fn regex_matching_fixture_units(text string) []u16 {
 	if text == '-' { return []u16{} }
@@ -100,11 +100,11 @@ fn regex_matching_fixture_result(fields []string) string {
 fn test_regex_matching_helpers_match_every_native_output_exactly() {
 	original := unsafe { cstring_to_vstring(C.uloc_getDefault()).clone() }
 	defer {
-		mut status := 0
+		mut status := i32(0)
 		C.uloc_setDefault(original.str, &status)
 		assert status <= 0
 	}
-	mut status := 0
+	mut status := i32(0)
 	C.uloc_setDefault(c'en_US_POSIX', &status)
 	assert status <= 0
 	fixtures := [$embed_file('testdata/regex-matching.tsv').to_string(),
