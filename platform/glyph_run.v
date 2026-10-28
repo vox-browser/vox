@@ -186,6 +186,28 @@ pub fn GlyphRun.new_with_face(font &Font, text_type GlyphRunTextType, glyphs []G
 	return glyph_run_with_owned_glyphs(font, text_type, glyphs.clone(), face)
 }
 
+// Layout needs the shaped positions and advance while splitting a line, but
+// its final glyph vector is not ready for retained playback yet. Preserve the
+// original coordinates and defer replay buffers and ink bounds to publication.
+pub fn (run &GlyphRun) slice_for_layout(start int, length int) &GlyphRun {
+	glyphs := run.glyphs_[start..start + length].clone()
+	mut width := f32(0)
+	mut space_width := f32(run.font().point_size * 0.5)
+	for glyph in glyphs {
+		width += glyph.advance
+		if glyph.code_point == u32(` `) { space_width = glyph.advance }
+	}
+	return &GlyphRun{
+		font_:              run.font()
+		text_type_:         run.text_type()
+		face_:              run.face()
+		width_:             width
+		glyphs_:            glyphs
+		space_width:        space_width
+		replay_data_dirty_: true
+	}
+}
+
 // Copy and translate a slice without an intermediate caller-owned vector.
 // Replay buffers are built by refresh_replay_data() at line publication.
 // Intrinsic probes can measure the private glyph vector without building them.

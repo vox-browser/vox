@@ -183,7 +183,7 @@ fn (item &InlineLevelItem) split_overflow_item_at_shaped_glyph(node &Node,
 	}
 
 	split_x := run.glyphs_[split_glyph_index].position.x
-	mut prefix_run := run.slice(0, split_glyph_index)
+	mut prefix_run := run.slice_for_layout(0, split_glyph_index)
 	mut remainder_run := run.translated_slice_for_layout(split_glyph_index,
 		run.glyphs_.len - split_glyph_index, -split_x, 0)
 	prefix_run.width_ = split_x

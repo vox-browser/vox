@@ -45,6 +45,38 @@ fn glyph_slice_values(advances []f32) []Glyph {
 	return glyphs
 }
 
+fn test_layout_slices_match_eager_slices_after_publication_and_keep_private_storage() {
+	font := &Font{ family: 'SerenitySans', point_size: 13.25 }
+	for face in [GlyphRunFace.document, .emoji] {
+		for kind in [GlyphRunTextType.ltr, .rtl, .common] {
+			for advances in [[f32(7.5), -2, 4, 3.25],
+				[f32(16777216), 1, -16777216, 0.125], [f32(-40), 0.25, 0, -0.5]] {
+				mut glyphs := glyph_slice_values(advances)
+				glyphs[0].position.x = math.f32_from_bits(u32(0x80000000))
+				source := GlyphRun.new_with_face(font, kind, glyphs, face)
+				for first in 0 .. source.glyphs_.len + 1 {
+					for end in first .. source.glyphs_.len + 1 {
+						expected := source.slice(first, end - first)
+						mut actual := source.slice_for_layout(first, end - first)
+						assert actual.replay_data_dirty_
+						assert actual.glyph_indices().len == 0
+						assert actual.glyph_positions().len == 0
+						gc_collect()
+						assert_glyph_slice_equal(actual, expected)
+						if first < end {
+							assert actual.glyphs_.data != source.glyphs_.data
+							actual.invalidate_replay_data()
+							actual.glyphs_[0].position.x = 999
+							actual.refresh_replay_data()
+							assert source.glyphs_[first].position.x != 999
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
 fn test_translated_glyph_slices_match_the_independent_constructor_for_every_range() {
 	font := &Font{ family: 'SerenitySans', point_size: 13.25 }
 	for face in [GlyphRunFace.document, .emoji] {
