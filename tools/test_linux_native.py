@@ -45,8 +45,10 @@ def main():
         [sys.executable, str(repo / "tools/prepare_linux_modules.py"), compiler],
         cwd=repo, env=environment, text=True).strip()
     paths = f"{repo}|{linux_modules}|{http_modules}|@vmodules|@vlib"
-    output = repo / "Build/linux/tests" / args.gc
-    output.mkdir(parents=True, exist_ok=True)
+    output_root = repo / "Build/linux/tests" / args.gc
+    output_root.mkdir(parents=True, exist_ok=True)
+    output = Path(tempfile.mkdtemp(prefix="run-", dir=output_root))
+    print(f"Logs: {output}", flush=True)
     with tempfile.TemporaryDirectory(prefix="vox-native-") as temporary:
         for case in args.cases:
             command = [compiler, "-memory-limit", "10G", "-enable-globals",
@@ -55,11 +57,23 @@ def main():
                        "-exclude", "@vlib/time/zoneinfo.native.v", "-path", paths]
             if args.gc != "none":
                 command += ["-d", "dynamic_boehm"]
-            # Run each file directly to preserve lookup-path argument boundaries.
-            command += ["-o", str(Path(temporary) / Path(case).stem), "run", case]
+            # Compile separately so execution has the focused 3 GiB budget,
+            # while the caller's build guard retains its compiler allowance.
+            binary = Path(temporary) / Path(case).stem
+            command += ["-o", str(binary), case]
             result = subprocess.run(command, cwd=repo, env=environment, text=True,
                                     stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            (output / (Path(case).stem + ".log")).write_text(result.stdout)
+            log = output / (Path(case).stem + ".log")
+            log.write_text(result.stdout)
+            if result.returncode:
+                raise SystemExit(f"FAIL {case} (exit {result.returncode}):\n{result.stdout}")
+            command = [sys.executable, str(repo / "tools/run_memory_bounded.py"),
+                       "--limit-gib", "3", "--lock", str(output / (binary.name + ".lock")),
+                       "--report", str(output / (binary.name + ".json")), "--", str(binary)]
+            result = subprocess.run(command, cwd=repo, env=environment, text=True,
+                                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            with log.open("a") as stream:
+                stream.write(result.stdout)
             if result.returncode:
                 raise SystemExit(f"FAIL {case} (exit {result.returncode}):\n{result.stdout}")
             print(f"PASS {case} ({args.gc})", flush=True)
