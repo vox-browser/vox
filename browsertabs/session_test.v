@@ -107,10 +107,12 @@ fn test_failed_session_write_terminates_and_reaps_the_spawned_child() {
 	defer { session.leave() or {} }
 	temporary := os.join_path(session.folder, 'state.json.${os.getpid()}')
 	os.mkdir(temporary)!
+	// Keep the failure fixture intact when save() cleans up its temporary path.
+	os.write_file(os.join_path(temporary, 'blocker'), '')!
 	if _ := session.open('/bin/sleep', ['30'], false, Frame{}) {
 		assert false
 	}
-	os.rmdir(temporary)!
+	os.rmdir_all(temporary)!
 	assert session.state.tabs.len == 1
 	assert session.children.len == 1
 	pid := session.children[0]

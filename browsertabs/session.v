@@ -61,7 +61,7 @@ mut:
 pub fn create(frame Frame) !&Session {
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
-	_ = json2.encode(State{ tabs: [Tab{}] })
+	initialize_session_codec()!
 	folder := os.join_path(os.temp_dir(), 'vox-tabs-${rand.uuid_v4()}')
 	os.mkdir(folder)!
 	os.chmod(folder, 0o700)!
@@ -78,7 +78,7 @@ pub fn create(frame Frame) !&Session {
 pub fn join(folder string, id string) !&Session {
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
-	_ = json2.encode(State{ tabs: [Tab{}] })
+	initialize_session_codec()!
 	if !os.is_abs_path(folder) || id == '' { return error('invalid tab process session') }
 	mut session := &Session{ folder: folder.clone(), id: id.clone() }
 	fd := session.lock()!
@@ -89,6 +89,13 @@ pub fn join(folder string, id string) !&Session {
 	}
 	session.remember(state)
 	return session
+}
+
+fn initialize_session_codec() ! {
+	// Both codecs cache field metadata for the lifetime of the process. Warm
+	// every nested record in the caller's persistent allocation scope before
+	// remember() can initialize the decoder in a replaceable metadata arena.
+	_ = json2.decode[State](json2.encode(State{ tabs: [Tab{}] }))!
 }
 
 fn (session &Session) lock() !i32 {
