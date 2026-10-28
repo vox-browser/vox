@@ -2,7 +2,9 @@ module layout
 
 import dom
 import css
-import platform
+$if prealloc {
+	import platform
+}
 
 // The published vector owns every command needed to replay the current frame.
 // Between recordings, phase buckets and the returned vector are only reusable

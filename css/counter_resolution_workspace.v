@@ -1,6 +1,8 @@
 module css
 
-import platform
+$if prealloc {
+	import platform
+}
 
 // Counter inheritance and operations repeatedly copy and grow their working
 // set. Only its final vector is published to the layout tree. Own its names

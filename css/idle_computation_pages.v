@@ -1,7 +1,9 @@
 module css
 
 import dom
-import platform
+$if prealloc {
+	import platform
+}
 
 // Scratch pools retain capacity for the next style pass. Their reset scopes
 // have no readers, so idle can discard physical pages without losing capacity.

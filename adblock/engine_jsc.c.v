@@ -1,7 +1,9 @@
 module adblock
 
 import json2
-import platform
+$if prealloc {
+	import platform
+}
 import time
 
 

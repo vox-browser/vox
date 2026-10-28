@@ -2,7 +2,9 @@ module layout
 
 import html
 import painting
-import platform
+$if prealloc {
+	import platform
+}
 import svg
 
 struct SVGPaintPathProjection {

@@ -2,7 +2,9 @@ module css
 
 import dom
 import math
-import platform
+$if prealloc {
+	import platform
+}
 
 // Pure resolved-cache updates are written into a short-lived record. Its nested
 // values still allocate in the document. Once complete, share an equal frozen

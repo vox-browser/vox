@@ -1,6 +1,8 @@
 module css
 
-import platform
+$if prealloc {
+	import platform
+}
 
 // A property parse publishes typed values, not its tokenizer or component tree.
 // Keep those inputs in a retiring workspace. Simple typed graphs are exported

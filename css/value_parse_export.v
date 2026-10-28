@@ -1,6 +1,8 @@
 module css
 
-import platform
+$if prealloc {
+	import platform
+}
 
 // Most property grammars build several candidates before selecting the final
 // value. Only the explicitly supported immutable graphs below can leave this

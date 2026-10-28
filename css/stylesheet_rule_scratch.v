@@ -1,6 +1,8 @@
 module css
 
-import platform
+$if prealloc {
+	import platform
+}
 
 // Consume the raw rule tree separately from conversion. Qualified-rule and
 // child-list vectors, growing declaration lists and parse recovery temporaries

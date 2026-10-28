@@ -1,6 +1,8 @@
 module css
 
-import platform
+$if prealloc {
+	import platform
+}
 import svg
 
 // The d attribute is raw SVG path data. The CSS path() parser also parses that

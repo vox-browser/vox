@@ -1,6 +1,8 @@
 module css
 
-import platform
+$if prealloc {
+	import platform
+}
 
 // The syntax cache owns the immutable component tree, while tokenizer builders,
 // raw token copies and growing temporary vectors can retire after construction.

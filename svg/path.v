@@ -2,7 +2,9 @@ module svg
 
 import math
 import strings
-import platform
+$if prealloc {
+	import platform
+}
 
 pub enum PathInstructionType {
 	move

@@ -1,6 +1,8 @@
 module css
 
-import platform
+$if prealloc {
+	import platform
+}
 
 // Parsing only constructs a selector graph: it publishes no DOM, stylesheet or
 // global cache state. Retain its final graph, not identifier builders, rejected

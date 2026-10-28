@@ -1,7 +1,9 @@
 module layout
 
 import css
-import platform
+$if prealloc {
+	import platform
+}
 
 // InlineFormattingContext's inline box pieces. Each fragmented inline box gets
 // one piece per line it spans; the piece's border box covers the fragments the

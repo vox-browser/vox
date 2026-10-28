@@ -1,6 +1,8 @@
 module css
 
-import platform
+$if prealloc {
+	import platform
+}
 
 // A selector retains its serialized source and parsed graph, never the
 // component vectors or escaping buffers used to construct that source.
