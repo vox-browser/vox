@@ -9,15 +9,41 @@ import shutil
 import subprocess
 import sys
 
-from prepare_http_compat import compiler_vlib, write_if_changed
+from prepare_http_compat import compiler_vlib, remove_unused_private_helper, write_if_changed
+
+
+def condition_private_helpers(source, names, condition):
+    """Compile optional helpers with their callers, retaining test access."""
+    for name in names:
+        pattern = r"(?m)^fn " + re.escape(name) + r"\([^\n]*\{.*?^\}"
+        source = re.sub(pattern, lambda match: "$if " + condition + " {\n"
+                        + "\n".join("\t" + line for line in match[0].splitlines())
+                        + "\n}", source, flags=re.DOTALL)
+    return source
 
 
 def patch_module(package, source):
     if package == "stbi":
-        source = source.replace("import os\n", "import os as _\n")
+        source = source.replace("import os\n", "$if windows && clang {\n\timport os\n}\n")
     if package in {"gg", "net/openssl"}:
         source = re.sub(r'u64\(usize\((voidptr\([^()]*\))\)\)', r'u64(\1)', source)
         source = re.sub(r'\busize\(', 'uint(', source)
+    if package == "gg":
+        source = remove_unused_private_helper(source, "gg_fail_fn")
+        source = condition_private_helpers(source, ["gg_poison_gfx_render_owner"],
+                                           "gg_multiwindow ? || test")
+        source = re.sub(r"(?m)^const (err_multiwindow_render_(?!device_lost\b)\w+ = [^\n]+)$",
+                        r"$if gg_multiwindow ? || test {\n\tconst \1\n}", source)
+        recorder_helpers = ["screenshot_stdout_payload", "emit_recorded_frame_to_stdout",
+                            "new_gg_recorder_settings", "parse_screenshot_frames",
+                            "parse_screenshot_output", "recorder_env_value",
+                            "new_gg_recorder_settings_from_env"]
+        if any("fn " + name + "(" in source for name in recorder_helpers):
+            source = condition_private_helpers(source, recorder_helpers, "gg_record ? || test")
+            source = re.sub(r"(?m)^import ([\w.]+)$",
+                            r"$if gg_record ? || test {\n\timport \1\n}", source)
+        source = re.sub(r"(?m)^const ((?:recorder_settings|gg_record_stdout_prefix) = [^\n]+)$",
+                        r"$if gg_record ? || test {\n\tconst \1\n}", source)
     if package == "net/openssl":
         source = re.sub(r'(?m)^(\s*)unsafe \{\n\s*mut ptr_base := bytes\n',
                         r'\1mut ptr_base := unsafe { bytes }\n\1unsafe {\n', source)

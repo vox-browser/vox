@@ -24,6 +24,21 @@ def replace_function(source, signature, replacement):
     return result
 
 
+def remove_unused_private_helper(source, name):
+    """Drop compiler helpers made obsolete by our replacement implementations."""
+    pattern = re.compile(
+        r"(?m)^(?:\s*//[^\n]*\n|@\[[^\n]*\]\n)*fn "
+        + re.escape(name) + r"\([^\n]*\{.*?^\}\n?", re.DOTALL)
+    remaining, count = pattern.subn("", source)
+    if count > 1:
+        raise RuntimeError(f"Multiple private HTTP helpers named {name}")
+    # Some compiler revisions still call these helpers from unpatched APIs.
+    code = re.sub(r"//[^\n]*", "", remaining)
+    if count == 1 and not re.search(r"\b" + re.escape(name) + r"\b", code):
+        return remaining
+    return source
+
+
 def patch_header(source):
     """Keep the compiler's header API, enums and parser; replace bounded storage."""
     anchor = "data [max_headers]HeaderKV"
@@ -124,7 +139,7 @@ fn (mut h Header) vox_replace_header_value(key string, value string) {
     h.cur_pos = result.len
 }
 '''
-    return source
+    return remove_unused_private_helper(source, "header_value_without_ows")
 
 
 def write_if_changed(path, content):
@@ -170,7 +185,7 @@ def patch_proxy(source):
         source = source[:start] + source[end:]
     elif 'req.build_request_headers_with(method, host_name, port, default_port, path, data' not in source:
         raise RuntimeError('Unsupported HTTP proxy request target')
-    return replace_function(source, 'fn (pr &HttpProxy) ssl_dial(host string) !&ssl.SSLConn', r'''
+    source = replace_function(source, 'fn (pr &HttpProxy) ssl_dial(host string) !&ssl.SSLConn', r'''
 fn (pr &HttpProxy) ssl_dial(host string, req &Request) !&ssl.SSLConn {
     mut ssl_conn := ssl.new_ssl_conn(
         verify: req.verify
@@ -191,6 +206,7 @@ fn (pr &HttpProxy) ssl_dial(host string, req &Request) !&ssl.SSLConn {
     ssl_conn.set_read_timeout(req.read_timeout)
     return ssl_conn
 }''')
+    return remove_unused_private_helper(source, "proxy_request_target")
 
 
 def compiler_vlib(compiler, work):

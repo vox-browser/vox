@@ -2,10 +2,21 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from prepare_http_compat import patch_request, remove_obsolete_entries, staged_modules
+from prepare_http_compat import (patch_request, remove_obsolete_entries,
+                                 remove_unused_private_helper, staged_modules)
 
 
 class HTTPCompatibilityStagingTest(unittest.TestCase):
+    def test_obsolete_helpers_are_removed_only_when_no_callers_remain(self):
+        declaration = "// Helper description.\n@[inline]\nfn helper(value string) string {\n\treturn value\n}\n"
+        unused = "module http\n\n" + declaration + "\n// helper() was used by an old API.\n"
+        self.assertNotIn("fn helper", remove_unused_private_helper(unused, "helper"))
+        used = unused + "fn caller() string {\n\treturn helper('value')\n}\n"
+        self.assertEqual(used, remove_unused_private_helper(used, "helper"))
+        callback = unused + "fn caller() {\n\tcallback := helper\n\tcallback('value')\n}\n"
+        self.assertEqual(callback, remove_unused_private_helper(callback, "helper"))
+        self.assertEqual("module http\n", remove_unused_private_helper("module http\n", "helper"))
+
     def test_current_cookie_api_still_updates_deprecated_pointer_casts(self):
         source = 'cookie_header_value_with_header(header)\nu64(usize(data.str))'
         patched = patch_request(source)

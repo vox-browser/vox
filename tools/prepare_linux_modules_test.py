@@ -2,10 +2,41 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from prepare_linux_modules import stage_module
+from prepare_linux_modules import patch_module, stage_module
 
 
 class LinuxModuleStagingTest(unittest.TestCase):
+    def test_optional_graphics_helpers_follow_their_callers(self):
+        source = """module gg
+const err_multiwindow_render_nil_callback = 'nil callback'
+const err_multiwindow_render_device_lost = 'device lost'
+fn gg_poison_gfx_render_owner(owner int) {
+    poison(owner)
+}
+fn gg_fail_fn(msg string) {
+    println(msg)
+}
+// fail_userdata_cb: gg_fail_fn
+"""
+        patched = patch_module('gg', source)
+        self.assertIn('$if gg_multiwindow ? || test {\n\tconst err_multiwindow_render_nil_callback', patched)
+        self.assertIn("\nconst err_multiwindow_render_device_lost = 'device lost'", patched)
+        self.assertIn('$if gg_multiwindow ? || test {\n\tfn gg_poison_gfx_render_owner', patched)
+        self.assertNotIn('fn gg_fail_fn', patched)
+
+    def test_recording_helpers_keep_the_recording_and_test_conditions(self):
+        source = """module gg
+import os
+fn new_gg_recorder_settings() &SSRecorderSettings {
+    return &SSRecorderSettings{}
+}
+const recorder_settings = new_gg_recorder_settings()
+"""
+        patched = patch_module('gg', source)
+        self.assertIn('$if gg_record ? || test {\n\timport os\n}', patched)
+        self.assertIn('$if gg_record ? || test {\n\tfn new_gg_recorder_settings', patched)
+        self.assertIn('$if gg_record ? || test {\n\tconst recorder_settings', patched)
+
     def test_sources_assets_refresh_and_compiler_is_unchanged(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -26,13 +57,14 @@ class LinuxModuleStagingTest(unittest.TestCase):
             stage_module(source, target, 'gg')
             self.assertFalse((target / 'shader.h').is_symlink())
 
-    def test_stbi_keeps_conditionally_used_os_import(self):
+    def test_stbi_keeps_windows_clang_os_import(self):
         with tempfile.TemporaryDirectory() as directory:
             source, target = Path(directory) / 'stbi', Path(directory) / 'staged'
             source.mkdir()
-            (source / 'stbi.c.v').write_text('import os\n$if trace_stbi_allocations ? { os.args }')
+            (source / 'stbi.c.v').write_text('import os\n$if windows { $if clang { os.args } }')
             stage_module(source, target, 'stbi')
-            self.assertIn('import os as _\n', (target / 'stbi.c.v').read_text())
+            self.assertIn('$if windows && clang {\n\timport os\n}\n',
+                          (target / 'stbi.c.v').read_text())
 
     def test_tls_keeps_borrowed_write_buffer(self):
         with tempfile.TemporaryDirectory() as directory:
