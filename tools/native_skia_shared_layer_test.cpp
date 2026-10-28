@@ -29,11 +29,90 @@ static std::vector<uint32_t> reference(int scale, bool background, int alpha)
     canvas->drawRRect(SkRRect::MakeRectXY(SkRect::MakeXYWH(25, 120, 218, 40), 8, 8), paint);
     icon(canvas);
     auto bytes = recorder.finishRecordingAsPicture()->serialize();
-    std::vector<uint32_t> pixels(268 * 220 * scale * scale);
+    int tile_width = 270 * scale, tile_height = 222 * scale;
+    std::vector<uint32_t> tile(size_t(tile_width) * tile_height);
     float matrix[] {float(scale), 0, 0, 0, float(scale), 0, 0, 0, 1};
-    assert(shared_picture_draw()(reinterpret_cast<uint8_t*>(pixels.data()),
-        268 * scale, 220 * scale, 268 * scale * 4, bytes->data(), bytes->size(), matrix));
+    assert(shared_picture_draw()(reinterpret_cast<uint8_t*>(tile.data()),
+        tile_width, tile_height, tile_width * 4, bytes->data(), bytes->size(), matrix));
+    std::vector<uint32_t> pixels(268 * 220 * scale * scale);
+    for (int y = 0; y < 220 * scale; ++y)
+        std::copy_n(tile.data() + size_t(y) * tile_width, 268 * scale,
+            pixels.data() + size_t(y) * 268 * scale);
     return pixels;
+}
+
+// Assemble the expected viewport from independently rasterized full tiles.
+// Exercise both tile axes, border ownership, and a clipped/scrolled layer.
+static void tiled_layer(int scale, int scroll_y)
+{
+    constexpr int width = 704, height = 512, x = 17, y = 37;
+    constexpr int layer_width = 534, layer_height = 892;
+    int top = y - scroll_y;
+    int pitch = width * scale * 4;
+    std::vector<uint8_t> actual(size_t(pitch) * height * scale), expected(actual);
+    auto space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+    auto make = [&](auto& pixels) {
+        auto context = CGBitmapContextCreate(pixels.data(), width * scale, height * scale,
+            8, pitch, space, CGBitmapInfo(kCGImageAlphaPremultipliedLast) | kCGBitmapByteOrder32Big);
+        assert(context); CGContextScaleCTM(context, scale, scale); return context;
+    };
+    auto destination = make(actual), control = make(expected);
+    CGColorSpaceRelease(space);
+    SkPictureRecorder recorder;
+    auto* reference_canvas = recorder.beginRecording(SkRect::MakeWH(layer_width, layer_height));
+    auto draw = [](SkCanvas* canvas) {
+        SkPaint paint; paint.setAntiAlias(true);
+        for (int row = 0; row < 4; ++row) {
+            paint.setColor(SkColorSetRGB(0, 119, 255));
+            canvas->drawRRect(SkRRect::MakeRectXY(
+                SkRect::MakeXYWH(247, 201 + row * 220, 218, 40), 8, 8), paint);
+            canvas->save(); canvas->translate(245, 190 + row * 220); icon(canvas); canvas->restore();
+        }
+    };
+    draw(reference_canvas);
+    auto bytes = recorder.finishRecordingAsPicture()->serialize();
+    int tile_width = 270 * scale, tile_height = 222 * scale;
+    ladybird_v_skia_set_shared_recording(0, width, height);
+    ladybird_v_skia_set_raster_layer(x, y, 0);
+    ladybird_v_skia_set_raster_layer_size(layer_width, layer_height);
+    int cell = 0;
+    ladybird_v_skia_set_msaa_grid(&cell, 1, tile_width, tile_height, 2);
+    ladybird_v_skia_set_layer_shared_recording(1);
+    auto* canvas = shared_recording_canvas(destination);
+    assert(canvas);
+    canvas->translate(x, top); draw(canvas);
+    shared_recording_content(destination, SkRect::MakeXYWH(x, top, layer_width, layer_height), 0, scroll_y);
+    ladybird_v_skia_finish_shared_recording();
+
+    int first_y = std::max(0, -top) * scale;
+    int visible_height = std::min(layer_height * scale - first_y,
+        (height - std::max(0, top)) * scale);
+    int output_width = layer_width * scale;
+    std::vector<uint32_t> pixels(size_t(output_width) * visible_height);
+    for (int row = 0; row * (tile_height - 2) < first_y + visible_height; ++row) {
+        for (int column = 0; column < 2; ++column) {
+            int ox = column * (tile_width - 2), oy = row * (tile_height - 2);
+            float matrix[] {float(scale), 0, float(-ox), 0, float(scale), float(-oy), 0, 0, 1};
+            std::vector<uint32_t> tile(size_t(tile_width) * tile_height);
+            assert(shared_picture_draw()(reinterpret_cast<uint8_t*>(tile.data()),
+                tile_width, tile_height, tile_width * 4, bytes->data(), bytes->size(), matrix));
+            int left = column == 0 ? 0 : ox + 1;
+            int right = std::min(output_width, ox + tile_width - 1);
+            int begin = std::max(first_y, row == 0 ? 0 : oy + 1);
+            int end = std::min(first_y + visible_height, oy + tile_height - 1);
+            for (int py = begin; py < end; ++py)
+                std::copy_n(tile.data() + size_t(py - oy) * tile_width + left - ox,
+                    right - left, pixels.data() + size_t(py - first_y) * output_width + left);
+        }
+    }
+    composite_pixels(control, std::move(pixels), output_width, visible_height,
+        x, height - std::max(0, top) - float(visible_height) / scale,
+        layer_width, float(visible_height) / scale, true);
+    CGContextFlush(destination); CGContextFlush(control);
+    if (actual != expected)
+        std::cerr << "Tiled layer differs: scale=" << scale << " scroll=" << scroll_y << '\n';
+    assert(actual == expected);
+    CGContextRelease(destination); CGContextRelease(control);
 }
 
 static void root_background(int scale)
@@ -398,6 +477,7 @@ int main()
     for (bool batch : {false, true}) for (bool linear : {false, true})
         gradient_layer(scale, kind, stroke, batch, linear);
     for (int scale : {1, 2}) {
+        for (int scroll : {0, 151}) tiled_layer(scale, scroll);
         for (int alpha : {128, 255}) for (bool switch_layer : {false, true})
             backdrop_layers(scale, alpha, switch_layer);
         root_background(scale);

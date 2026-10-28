@@ -167,32 +167,54 @@ fn test_raster_layers_compositor_surfaces_own_their_raster_extent_and_commands()
 			document.set_font_rendering_policy(.chromium)
 			_ = layout_document_typed_in_viewport(document, 1024, 768)
 			commands := display_list_commands(document.record_display_list() or { panic('missing paint') })
-			plan := chromium_raster_layer_plan(document, commands, 1)
-			mut groups := 0
-			mut active := -1
-			mut depth := 0
-			for index, command in commands {
-				if command.kind == 'begin_css_effect_layer' {
-					depth++
-					active = plan.command_layers[index]
-					assert active > 0
-					assert !plan.layers[active].legacy_raster
-					assert plan.layers[active].bounds == LayoutRect{
-						x:      46 + groups * 300
-						y:      32
-						width:  268
-						height: 220
+			for scale in [f64(1), 2] {
+				plan := chromium_raster_layer_plan(document, commands, scale)
+				mut groups := 0
+				mut active := -1
+				mut depth := 0
+				for index, command in commands {
+					if command.kind == 'begin_css_effect_layer' {
+						depth++
+						active = plan.command_layers[index]
+						assert active > 0
+						assert !plan.layers[active].legacy_raster
+						assert plan.layers[active].bounds == LayoutRect{
+							x:      45 + groups * 300
+							y:      32
+							width:  269
+							height: 220
+						}
+						groups++
 					}
-					groups++
+					if depth > 0 {
+						assert plan.command_layers[index] == active
+					}
+					if command.kind == 'end_css_effect_layer' { depth-- }
 				}
-				if depth > 0 {
-					assert plan.command_layers[index] == active
-				}
-				if command.kind == 'end_css_effect_layer' { depth-- }
+				assert groups == 2 && depth == 0
 			}
-			assert groups == 2 && depth == 0
 		}
 	}
+}
+
+fn test_compositor_raster_bounds_enclose_positive_and_negative_fractional_edges() {
+	for x in [f64(45.8125), -45.8125] {
+		for y in [f64(31.8125), -31.8125] {
+			bounds := chromium_enclosing_raster_rect(LayoutRect{
+				x:      x
+				y:      y
+				width:  268.1875
+				height: 220.1875
+			})
+			assert bounds.x <= x && bounds.y <= y
+			assert bounds.x + bounds.width >= x + 268.1875
+			assert bounds.y + bounds.height >= y + 220.1875
+			assert bounds.x > x - 1 && bounds.y > y - 1
+			assert bounds.x + bounds.width < x + 269.1875
+			assert bounds.y + bounds.height < y + 221.1875
+		}
+	}
+	assert chromium_enclosing_raster_rect(LayoutRect{ x: -46, y: 32, width: 268, height: 220 }) == LayoutRect{ x: -46, y: 32, width: 268, height: 220 }
 }
 
 fn test_raster_layers_reject_sparse_merge_before_overlapping_scroll_content() {
@@ -344,12 +366,12 @@ fn test_raster_layers_promote_content_over_an_empty_opacity_hint_surface() {
 fn test_raster_layer_shadow_overlap_includes_transformed_blur_ink() {
 	box := BlockBox{ x: 10, y: 20, width: 100, height: 40 }
 	bounds := chromium_raster_chunk_bounds(&box, &PaintCommand{
-		kind: 'paint_outer_box_shadow'
-		x: 10
-		y: 24
-		width: 100
+		kind:   'paint_outer_box_shadow'
+		x:      10
+		y:      24
+		width:  100
 		height: 40
-		blur: 20
+		blur:   20
 	})
 	assert bounds == LayoutRect{ x: -20, y: -6, width: 160, height: 100 }
 }
@@ -367,22 +389,33 @@ fn test_raster_compositor_scope_scratch_outlives_recording_arenas() {
 		frame.leave(entry)
 		frame.reset()
 		assert scratch.compositor_scopes.len == count
-		for scope in 0 .. count { assert scratch.compositor_scopes[scope] == u64(scope + 1) }
+		for scope in 0 .. count {
+			assert scratch.compositor_scopes[scope] == u64(scope + 1)
+		}
 	}
 }
 
 fn test_raster_chunk_bounds_intersect_page_space_clip_after_transform() {
 	box := BlockBox{
-		x: 10, y: 20, width: 220, height: 40
+		x:               10
+		y:               20
+		width:           220
+		height:          40
 		paint_transform: [f64(0), 1, -1, 0, 100, 50]!
 	}
 	command := PaintCommand{
-		kind: 'draw_svg_path'
-		has_clip: true
-		clip_x: 50, clip_y: 70, clip_width: 20, clip_height: 48
+		kind:        'draw_svg_path'
+		has_clip:    true
+		clip_x:      50
+		clip_y:      70
+		clip_width:  20
+		clip_height: 48
 	}
 	assert chromium_raster_chunk_bounds(&box, &command) == LayoutRect{
-		x: 50, y: 70, width: 20, height: 48
+		x:      50
+		y:      70
+		width:  20
+		height: 48
 	}
 	outside := PaintCommand{ ...command, clip_x: 200 }
 	assert chromium_raster_chunk_bounds(&box, &outside).width == 0

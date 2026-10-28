@@ -261,7 +261,34 @@ void finish_shared_recording()
         float matrix[] {group->scale, 0, -left * group->scale,
             0, group->scale, -top * group->scale, 0, 0, 1};
         std::vector<uint32_t> pixels(size_t(width) * height);
-        if (!shared_picture_draw()(reinterpret_cast<uint8_t*>(pixels.data()), width,
+        double first_x = (left - group->origin_x) * group->scale;
+        double first_y = (top - group->origin_y - group->page_y + group->scroll_y) * group->scale;
+        VoxChromiumRasterGrid grid{group->tile_width, group->tile_height,
+            group->columns, group->rows};
+        // GPU coverage depends on the complete Chromium tile, including its
+        // border. Cropping the render target to the visible layer changes edge
+        // coverage when a tile contains both SVG paths and rounded rectangles.
+        // Overflow and fractional scrolling may not align to this grid; retain
+        // their existing picture raster rather than shifting the local phase.
+        bool tiled = grid.width > 2 && grid.height > 2 && grid.columns > 0 && grid.rows > 0
+            && first_x >= 0 && first_y >= 0
+            && std::abs(first_x - std::round(first_x)) < .001
+            && std::abs(first_y - std::round(first_y)) < .001
+            && first_x + width <= int64_t(grid.columns) * (grid.width - 2) + 2
+            && first_y + height <= int64_t(grid.rows) * (grid.height - 2) + 2;
+        if (tiled) {
+            if (!vox_draw_chromium_raster_grid(pixels, width, height,
+                    std::lround(first_x), std::lround(first_y), grid,
+                    [&](auto& tile, long offset_x, long offset_y, int) {
+                        float tile_matrix[9];
+                        std::copy(matrix, matrix + 9, tile_matrix);
+                        tile_matrix[2] += offset_x;
+                        tile_matrix[5] += offset_y;
+                        return shared_picture_draw()(reinterpret_cast<uint8_t*>(tile.data()),
+                            grid.width, grid.height, grid.width * 4,
+                            bytes->data(), bytes->size(), tile_matrix);
+                    })) return;
+        } else if (!shared_picture_draw()(reinterpret_cast<uint8_t*>(pixels.data()), width,
                 height, width * 4, bytes->data(), bytes->size(), matrix)) return;
         if (!group->backdrop.empty()) {
             // Each compositor picture blends over the pixels present before

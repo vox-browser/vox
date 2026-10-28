@@ -208,9 +208,9 @@ fn chromium_raster_chunk_bounds(box &BlockBox, command &PaintCommand) LayoutRect
 	if command.paint_phase == .background && box.canvas().paints_canvas_background {
 		canvas := box.canvas()
 		rect = chromium_layer_bounds_union(rect, LayoutRect{
-			x: canvas.canvas_x
-			y: canvas.canvas_y
-			width: canvas.canvas_width
+			x:      canvas.canvas_x
+			y:      canvas.canvas_y
+			width:  canvas.canvas_width
 			height: canvas.canvas_height
 		})
 	}
@@ -236,9 +236,9 @@ fn chromium_raster_chunk_bounds(box &BlockBox, command &PaintCommand) LayoutRect
 		// border box. Adjacent boxes can overlap through their shadows.
 		outset := math.ceil(math.max(0.0, command.blur) * 1.5)
 		rect = chromium_layer_bounds_union(rect, LayoutRect{
-			x: command.x - outset
-			y: command.y - outset
-			width: command.width + 2 * outset
+			x:      command.x - outset
+			y:      command.y - outset
+			width:  command.width + 2 * outset
 			height: command.height + 2 * outset
 		})
 	}
@@ -250,9 +250,9 @@ fn chromium_raster_chunk_bounds(box &BlockBox, command &PaintCommand) LayoutRect
 		x := math.max(mapped.x, command.clip_x)
 		y := math.max(mapped.y, command.clip_y)
 		mapped = LayoutRect{
-			x: x
-			y: y
-			width: math.max(0.0, math.min(mapped.x + mapped.width,
+			x:      x
+			y:      y
+			width:  math.max(0.0, math.min(mapped.x + mapped.width,
 				command.clip_x + command.clip_width) - x)
 			height: math.max(0.0, math.min(mapped.y + mapped.height,
 				command.clip_y + command.clip_height) - y)
@@ -330,7 +330,11 @@ pub fn update_chromium_raster_layer_plan(document &dom.Document, commands []Pain
 	for index < commands.len {
 		first := index
 		mut end := index + 1
-		mut effect_scope := if scratch.compositor_scopes.len > 0 { scratch.compositor_scopes.last() } else { u64(0) }
+		mut effect_scope := if scratch.compositor_scopes.len > 0 {
+			scratch.compositor_scopes.last()
+		} else {
+			u64(0)
+		}
 		mut legacy_effect := false
 		mut compositor_bounds := LayoutRect{}
 		if layer := commands[index].visual_layer_data {
@@ -380,10 +384,10 @@ pub fn update_chromium_raster_layer_plan(document &dom.Document, commands []Pain
 				// Even an empty will-change layer is an overlap barrier. Keep
 				// its container extent on this marker, not on every later chunk.
 				scratch.chunks << ChromiumRasterChunk{
-					state: state
-					bounds: compositor_bounds
+					state:         state
+					bounds:        compositor_bounds
 					command_index: first
-					command_end: end
+					command_end:   end
 				}
 				index = end
 				continue
@@ -483,9 +487,20 @@ pub fn update_chromium_raster_layer_plan(document &dom.Document, commands []Pain
 	chromium_layerize_chunks_into(scratch.chunks, commands.len, device_scale, mut plan, mut scratch.layer_states)
 	for layer_index, state in scratch.layer_states {
 		if state.effect_scope != 0 && !state.legacy_effect {
-			// Snap after unioning painted bounds; fractional descendant edges must
-			// not undo the compositor container's whole-CSS-pixel raster extent.
-			plan.layers[layer_index].bounds = pixel_snapped_layout_rect(plan.layers[layer_index].bounds)
+			// Compositor rasters enclose fractional geometry, independently of
+			// paint's nearest-pixel snapping. Round after unioning descendant ink.
+			plan.layers[layer_index].bounds = chromium_enclosing_raster_rect(plan.layers[layer_index].bounds)
 		}
+	}
+}
+
+fn chromium_enclosing_raster_rect(rect LayoutRect) LayoutRect {
+	left := math.floor(rect.x)
+	top := math.floor(rect.y)
+	return LayoutRect{
+		x:      left
+		y:      top
+		width:  math.ceil(rect.x + rect.width) - left
+		height: math.ceil(rect.y + rect.height) - top
 	}
 }
