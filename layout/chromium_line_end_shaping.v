@@ -21,9 +21,18 @@ fn (fragment &LineBoxFragment) chromium_visible_line_end(at_break bool) ?string 
 	if (trailing <= 0 && !at_break) || length <= 0 { return none }
 	mut covered := 0
 	mut has_glyph_indices := false
-	for glyph in run.glyphs_ {
-		covered += glyph.length_in_code_units
-		has_glyph_indices = has_glyph_indices || glyph.glyph_index != 0
+	if !isnil(fragment.intrinsic_glyph_runs_) {
+		for borrowed in fragment.intrinsic_glyph_runs_.runs {
+			for glyph in borrowed.glyphs_ {
+				covered += glyph.length_in_code_units
+				has_glyph_indices = has_glyph_indices || glyph.glyph_index != 0
+			}
+		}
+	} else {
+		for glyph in run.glyphs_ {
+			covered += glyph.length_in_code_units
+			has_glyph_indices = has_glyph_indices || glyph.glyph_index != 0
+		}
 	}
 	if covered != fragment.length_in_code_units_ || !has_glyph_indices { return none }
 	text := fragment.text() or { return none }
@@ -39,7 +48,8 @@ fn (fragment &LineBoxFragment) chromium_shape_without_trailing_whitespace(at_bre
 fn (fragment &LineBoxFragment) chromium_width_without_trailing_whitespace(at_break bool) ?f32 {
 	visible := fragment.chromium_visible_line_end(at_break) or { return none }
 	run := fragment.glyph_run_ or { return none }
-	if width := chromium_cached_safe_line_end(fragment.layout_node_, fragment.start_, visible.len, run) {
+	visible_length := fragment.length_in_code_units_ - fragment.trailing_whitespace_.length_in_code_units
+	if width := chromium_cached_safe_line_end(fragment.layout_node_, fragment.start_, visible_length, run) {
 		return width
 	}
 	return chromium_line_end_width(fragment.layout_node_, visible, run)
@@ -99,7 +109,7 @@ fn (projection &ProjectedTextAdvance) chromium_line_end_correction() CSSPixels {
 	text_node := projection.node.as_text_node() or { return CSSPixels.new(0) }
 	advance := chromium_cached_safe_line_end(projection.node, projection.segment_start,
 		projection.segment_length, projection.run) or {
-		text := utf16_substring_for_line_box(text_node.text_for_rendering(),
+		text := text_node.rendered_substring_for_line_box(
 			projection.segment_start, projection.segment_length)
 		chromium_line_end_width(projection.node, text, projection.run) or {
 			return CSSPixels.new(0)

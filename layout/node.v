@@ -2130,6 +2130,7 @@ pub mut:
 	attach_to_dom_node_                    bool = true
 	rendered_text_edits_                   []platform.TextMappingEdit
 	rendered_source_length_                int
+	safe_break_width_cache_ &platform.SafeBreakWidthCache = unsafe { nil }
 }
 
 pub fn (n &TextNode) font_for_rendering() &platform.Font {

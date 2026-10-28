@@ -169,6 +169,8 @@ pub mut:
 	typed_importance_mask_ u8
 mut:
 	deferred_declarations_ ?&DeferredStyleDeclaration
+	// Valid only with typed_properties_cache_; rebuilt after declaration changes.
+	typed_may_have_logical_aliases_ bool
 }
 
 pub fn CSSStyleProperties.create() &CSSStyleProperties {

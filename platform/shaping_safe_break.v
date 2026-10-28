@@ -43,16 +43,36 @@ fn cached_shape_safe_break_range_width(shape CachedShape, first int, end int) ?f
 	return f32(advance - f64(shape.glyphs[first].offset_x))
 }
 
+// Unicode punctuation is shaped with a guessed script. Require an ASCII
+// Latin letter in the piece as well as in the cached paragraph, so both
+// independent and contextual shaping select Latin. Offsets remain UTF-16.
+fn cached_shape_safe_latin_punctuation_width(shape CachedShape, start int, length int) ?f32 {
+	if shape.safe_break_boundaries.len == 0 { return none }
+	text_length := shape.safe_break_boundaries.len - 1
+	width := cached_shape_safe_break_width(shape, start, length, text_length) or { return none }
+	first := shape.safe_break_boundaries[start]
+	end := shape.safe_break_boundaries[start + length]
+	for index in first .. end {
+		code_point := shape.glyphs[index].code_point
+		if (code_point >= `A` && code_point <= `Z`) || (code_point >= `a` && code_point <= `z`) {
+			return width
+		}
+	}
+	return none
+}
+
 pub fn shaped_text_safe_break_width(letter_spacing f32, word_spacing f32, text string,
 	start int, length int, font &Font) ?f32 {
-	if font.font_rendering_policy != .chromium || !text.is_ascii() || start < 0
-		|| length <= 0 || start > text.len || length > text.len - start {
+	if font.font_rendering_policy != .chromium || start < 0 || length <= 0 {
 		return none
 	}
+	is_ascii := text.is_ascii()
+	if is_ascii && (start > text.len || length > text.len - start) { return none }
 	font_key := shaping_cache_font_key(font)
 	params := ShapeParams.new(.ltr, letter_spacing, word_spacing)
 	mut cache := shared_shaping_cache()
 	shape := cache.lookup(font_key, text, params) or { return none }
+	if !is_ascii { return cached_shape_safe_latin_punctuation_width(shape, start, length) }
 	return cached_shape_safe_break_width(shape, start, length, text.len)
 }
 
@@ -78,4 +98,56 @@ fn cached_shape_safe_break_boundaries(shape CachedShape) []int {
 	}
 	boundaries[length] = shape.glyphs.len
 	return boundaries
+}
+
+// A caller may retain this handle across layouts. Keys own their bytes; the
+// immutable glyph view is used only in the shared cache generation that owns
+// it. Evictions also change the generation, protecting the recency indices.
+@[heap]
+pub struct SafeBreakWidthCache {
+mut:
+	generation u64
+	font_key string
+	text string
+	params ShapeParams
+	shape CachedShape
+	font_index int
+	text_index int
+	is_ascii bool
+	has_repeated_spaces bool
+}
+
+pub fn shaped_text_safe_break_width_cached(mut local SafeBreakWidthCache,
+	letter_spacing f32, word_spacing f32, text string, start int, length int,
+	font &Font, collapses_spaces bool) ?f32 {
+	if font.font_rendering_policy != .chromium || start < 0 || length <= 0 { return none }
+	font_key := shaping_cache_font_key(font)
+	params := ShapeParams.new(.ltr, letter_spacing, word_spacing)
+	mut cache := shared_shaping_cache()
+	if local.generation != platform_safe_break_cache_generation || local.font_key != font_key
+		|| !local.params.matches(params) || local.text != text {
+		shape := cache.lookup(font_key, text, params) or { return none }
+		// Text may originate in a scratch scope. Retain independent key bytes.
+		persistent := enter_persistent()
+		if local.text != text { local.text = text.clone() }
+		if local.font_key != font_key { local.font_key = font_key.clone() }
+		leave_persistent(persistent)
+		local.is_ascii = text.is_ascii()
+		local.has_repeated_spaces = text.contains('  ')
+		local.params = params
+		local.shape = shape
+		local.font_index = cache.font_index(font_key)
+		local.text_index = cache.text_index(local.font_index, text)
+		local.generation = platform_safe_break_cache_generation
+	} else {
+		// Preserve lookup recency even when the immutable shape is already local.
+		cache.tick++
+		cache.fonts[local.font_index].last_used_tick = cache.tick
+		if local.text_index >= 0 {
+			cache.fonts[local.font_index].shapes_by_text[local.text_index].last_used_tick = cache.tick
+		}
+	}
+	if collapses_spaces && local.has_repeated_spaces { return none }
+	if local.is_ascii { return cached_shape_safe_break_width(local.shape, start, length, text.len) }
+	return cached_shape_safe_latin_punctuation_width(local.shape, start, length)
 }

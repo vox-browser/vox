@@ -75,6 +75,12 @@ mut:
 	harfbuzz_face_generation_ u64
 	pixel_metrics_            FontPixelMetrics
 	has_pixel_metrics_        bool
+	// Settled native coverage is immutable until the native font generation changes.
+	ascii_coverage_generation_ u64
+	ascii_coverage_known_low_ u64
+	ascii_coverage_known_high_ u64
+	ascii_coverage_present_low_ u64
+	ascii_coverage_present_high_ u64
 }
 
 pub struct FontPixelMetrics {
@@ -349,6 +355,20 @@ pub fn (font &Font) glyph_width(code_point u32) f32 {
 // .notdef glyph at index zero. Fonts without a concrete source retain the
 // synthetic fallback behavior used by standalone and unit-test configurations.
 pub fn (font &Font) contains_glyph(code_point u32) bool {
+	// Most layout probes repeat the same ASCII characters. Missing/pending
+	// sources never enter this memo, and idle retirement invalidates all bits.
+	if code_point < 128 && font.source_path == ''
+		&& font.ascii_coverage_generation_ == harfbuzz_cache_generation {
+		// Spread-created synthetic-capital variants may retain the same native
+		// face and coverage bits; index the native character after mapping.
+		mapped_code_point := font.shaping_code_point(code_point)
+		bit := u64(1) << (mapped_code_point & 63)
+		known := if mapped_code_point < 64 { font.ascii_coverage_known_low_ } else { font.ascii_coverage_known_high_ }
+		if known & bit != 0 {
+			present := if mapped_code_point < 64 { font.ascii_coverage_present_low_ } else { font.ascii_coverage_present_high_ }
+			return present & bit != 0
+		}
+	}
 	// Chromium on macOS also accepts CoreText's synthesized hyphens from
 	// downloaded fonts, even when their raw cmap has neither character.
 	if code_point in [u32(0x2010), 0x2011] && font.uses_system_font_matching() {

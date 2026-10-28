@@ -183,15 +183,9 @@ fn (item &InlineLevelItem) split_overflow_item_at_shaped_glyph(node &Node,
 	}
 
 	split_x := run.glyphs_[split_glyph_index].position.x
-	prefix_glyphs := run.glyphs_[..split_glyph_index].clone()
-	mut remainder_glyphs := run.glyphs_[split_glyph_index..].clone()
-	for index in 0 .. remainder_glyphs.len {
-		remainder_glyphs[index].position.translate_by(-split_x, 0)
-	}
-	mut prefix_run := platform.GlyphRun.new_with_face(run.font(), run.text_type(), prefix_glyphs,
-		run.face())
-	mut remainder_run := platform.GlyphRun.new_with_face(run.font(), run.text_type(), remainder_glyphs,
-		run.face())
+	mut prefix_run := run.slice(0, split_glyph_index)
+	mut remainder_run := run.translated_slice_for_layout(split_glyph_index,
+		run.glyphs_.len - split_glyph_index, -split_x, 0)
 	prefix_run.width_ = split_x
 	remainder_run.width_ = run.width() - split_x
 	prefix, remainder := overflow_split_items(item, node,

@@ -22,6 +22,11 @@ pub mut:
 	fragment_index int
 }
 
+struct IntrinsicGlyphRuns {
+mut:
+	runs []&platform.GlyphRun
+}
+
 pub struct LineBoxFragment {
 pub:
 	layout_node_         &Node = unsafe { nil }
@@ -59,6 +64,9 @@ pub mut:
 	item_prefix_     f64
 	item_offset_     CSSPixels
 	glyph_remainder_ f32
+	// Disposable intrinsic measurements borrow immutable chunk runs. No paint
+	// consumer can see these fragments; only widths and whitespace are read.
+	intrinsic_glyph_runs_ &IntrinsicGlyphRuns = unsafe { nil }
 }
 
 pub fn LineBoxFragment.new(layout_node &Node, start int, length_in_code_units int, inline_offset CSSPixels, block_offset CSSPixels, inline_length CSSPixels, block_length CSSPixels, border_box_top CSSPixels, direction css.Direction, writing_mode css.WritingMode, glyph_run ?&platform.GlyphRun) LineBoxFragment {
@@ -369,6 +377,16 @@ fn (mut fragment LineBoxFragment) append_glyph_run_ltr(glyph_run &platform.Glyph
 		fragment.current_insert_direction = run_direction
 	}
 	mut destination := fragment.glyph_run_ or { return }
+	if !isnil(fragment.intrinsic_glyph_runs_) {
+		mut borrowed := fragment.intrinsic_glyph_runs_
+		borrowed.runs << glyph_run
+		fragment.inline_length_ = fragment.inline_length_.plus(run_width)
+		if precise := fragment.precise_inline_length_ {
+			fragment.inline_length_ = inline_advance_to_css_pixels(fragment.item_prefix_ + precise,
+				destination.font()).minus(fragment.item_offset_)
+		}
+		return
+	}
 	destination.invalidate_replay_data()
 	match run_direction {
 		.ltr {
@@ -473,6 +491,7 @@ pub mut:
 	has_block_level_box_                 bool
 	static_position_markers_             []StaticPositionMarker
 	block_level_box_bottom_margin_       CSSPixels
+	intrinsic_width_only_ bool
 }
 
 pub fn LineBox.new(direction css.Direction, writing_mode css.WritingMode) LineBox {
@@ -574,7 +593,7 @@ pub fn (mut line LineBox) add_fragment_with_trailing_whitespace(layout_node &Nod
 					fragment_width = end.minus(inline_offset)
 					added_width = end.minus(line.inline_length_)
 					remainder = f32(item_prefix - item_offset.to_double())
-					if remainder != 0 {
+					if remainder != 0 && !line.intrinsic_width_only_ {
 						mut glyphs := run.glyphs().clone()
 						for mut glyph in glyphs {
 							glyph.position.translate_by(remainder, 0)
@@ -598,6 +617,11 @@ pub fn (mut line LineBox) add_fragment_with_trailing_whitespace(layout_node &Nod
 			}
 		}
 		fragment.trailing_whitespace_ = trailing_whitespace
+		if line.intrinsic_width_only_ {
+			if run := glyph_run {
+				fragment.intrinsic_glyph_runs_ = &IntrinsicGlyphRuns{ runs: [run] }
+			}
+		}
 		line.fragments_ << fragment
 	}
 	line.inline_length_ =
@@ -683,7 +707,7 @@ fn (mut line LineBox) calculate_or_trim_trailing_whitespace(should_remove Remove
 		|| last_fragment.has_trailing_whitespace_
 	mut reshaped := ?&platform.GlyphRun(none)
 	mut trimmed_advance := last_fragment.trailing_whitespace_advance(fragment_trailing_whitespace)
-	if should_remove == .yes {
+	if should_remove == .yes && isnil(last_fragment.intrinsic_glyph_runs_) {
 		reshaped = last_fragment.chromium_shape_without_trailing_whitespace(at_break)
 		if run := reshaped {
 			if precise := last_fragment.precise_inline_length_ {
@@ -736,6 +760,20 @@ fn (fragment &LineBoxFragment) trailing_whitespace_advance(trailing TrailingWhit
 	}
 	mut remaining := trailing.length_in_code_units
 	mut advance := 0.0
+	if !isnil(fragment.intrinsic_glyph_runs_) {
+		mut run_index := fragment.intrinsic_glyph_runs_.runs.len - 1
+		for remaining > 0 && run_index >= 0 {
+			borrowed := fragment.intrinsic_glyph_runs_.runs[run_index]
+			mut glyph_index := borrowed.glyphs_.len - 1
+			for remaining > 0 && glyph_index >= 0 {
+				advance += f64(borrowed.glyphs_[glyph_index].advance)
+				remaining -= borrowed.glyphs_[glyph_index].length_in_code_units
+				glyph_index--
+			}
+			run_index--
+		}
+		return if remaining == 0 { advance } else { none }
+	}
 	mut index := run.glyphs_.len - 1
 	for remaining > 0 && index >= 0 {
 		advance += f64(run.glyphs_[index].advance)

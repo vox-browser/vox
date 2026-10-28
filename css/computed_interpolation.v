@@ -10871,6 +10871,7 @@ pub mut:
 	// Only the exact target being installed may reuse its non-compositor slots.
 	// Arena rotation always rebuilds them before old samples can be retired.
 	animation_layout_compositor_only_ bool
+	longhand_reuse_cache_ &ComputedLonghandReuseCache = unsafe { nil }
 }
 
 pub fn StyleComputer.new(document &dom.Document) &StyleComputer {
@@ -11711,142 +11712,151 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 		inherited_source_available = true
 	}
 
-	for property_id in computed_interpolation_property_computation_order() {
-		property_index := int(property_id) - int(first_longhand_property_id())
-		has_cascaded_property := cascaded_properties.contained_properties_cache_[int(property_id)] != 0
-		if !has_cascaded_property
-			&& computed_interpolation_default_work_cache[property_index] == 0 {
-			continue
-		}
-		is_inherited_property := computed_interpolation_is_inherited_property(property_id)
-		// A non-inherited property's default is computed from the same generated
-		// initial value on every element. Cache that typed result after the first
-		// element; inherited defaults remain element-dependent through their parent.
-		can_reuse_default_computed_value := !has_cascaded_property && !is_inherited_property
-			&& property_requires_computation_with_initial_value(property_id)
-		if can_reuse_default_computed_value {
-			cached_default := computed_interpolation_default_computed_value_cache[property_index]
-			if cached_default != unsafe { nil } {
-				properties.note_raw_computed_property_graph_mutation()
-				properties.set_raw_property_at_index(property_index, cached_default)
+	reuse_key := s.computed_longhand_reuse_key(abstract_element, cascaded_properties,
+		inherited_computed, recascaded_font_size != none)
+	mut reused_longhands := false
+	if key := reuse_key {
+		reused_longhands = s.restore_computed_longhands(key, cascaded_properties, mut properties)
+	}
+	if !reused_longhands {
+		for property_id in computed_interpolation_property_computation_order() {
+			property_index := int(property_id) - int(first_longhand_property_id())
+			has_cascaded_property := cascaded_properties.contained_properties_cache_[int(property_id)] != 0
+			if !has_cascaded_property
+				&& computed_interpolation_default_work_cache[property_index] == 0 {
 				continue
 			}
-		}
-		mut value := ?&dom.StyleValue(none)
-		mut requires_computation := false
-		cascaded_style_property := if has_cascaded_property {
-			cascaded_properties.style_property(property_id)
-		} else {
-			?StyleProperty(none)
-		}
-
-		if active_cascaded_property := cascaded_style_property {
-			if active_cascaded_property.important == .yes {
-				properties.set_property_important(property_id, .yes)
-			}
-			value = active_cascaded_property.value
-			requires_computation = property_requires_computation_with_cascaded_value(property_id)
-			if property_id == .font_size {
-				properties.set_raw_cascaded_font_size(active_cascaded_property.value)
-			}
-		}
-		if property_id == .font_size && value == none && recascaded_font_size != none {
-			continue
-		}
-
-		mut should_inherit := value == none && is_inherited_property
-
-		// Classify the cascaded value once for inherit/unset and color's
-		// currentcolor inheritance rule. All three checks read the same value.
-		if style_value := value {
-			keyword := computed_interpolation_style_value_keyword(style_value) or { Keyword.invalid }
-			should_inherit = should_inherit || keyword == .inherit
-				|| (keyword == .unset && is_inherited_property)
-				|| (property_id == .color && keyword == .currentcolor)
-		}
-
-		if should_inherit && inherited_source_available {
-			properties.set_property_inherited(property_id, .yes)
-			if src := inherited_computed {
-				if inherited_value := src.property(property_id, .no) {
-					value = inherited_value
-				}
-				if property_affects_font_metrics(property_id)
-					&& src.font_metrics_depend_on_viewport_metrics() {
-					properties.set_font_metrics_depend_on_viewport_metrics()
+			is_inherited_property := computed_interpolation_is_inherited_property(property_id)
+			// A non-inherited property's default is computed from the same generated
+			// initial value on every element. Cache that typed result after the first
+			// element; inherited defaults remain element-dependent through their parent.
+			can_reuse_default_computed_value := !has_cascaded_property && !is_inherited_property
+				&& property_requires_computation_with_initial_value(property_id)
+			if can_reuse_default_computed_value {
+				cached_default := computed_interpolation_default_computed_value_cache[property_index]
+				if cached_default != unsafe { nil } {
+					properties.note_raw_computed_property_graph_mutation()
+					properties.set_raw_property_at_index(property_index, cached_default)
+					continue
 				}
 			}
-			requires_computation = property_requires_computation_with_inherited_value(property_id)
-			if animated_inherit := StyleComputer.get_animated_inherit_value(property_id, abstract_element) {
-				properties.set_animated_property(property_id, animated_inherit.value, animated_inherit.is_result_of_transition, .yes)
+			mut value := ?&dom.StyleValue(none)
+			mut requires_computation := false
+			cascaded_style_property := if has_cascaded_property {
+				cascaded_properties.style_property(property_id)
+			} else {
+				?StyleProperty(none)
 			}
-		}
 
-		if style_value := value {
-			// Inheritance may have replaced the value; classify that result afresh.
-			keyword := computed_interpolation_style_value_keyword(style_value) or { Keyword.invalid }
-			if keyword == .initial || keyword == .unset || (should_inherit && !inherited_source_available) {
+			if active_cascaded_property := cascaded_style_property {
+				if active_cascaded_property.important == .yes {
+					properties.set_property_important(property_id, .yes)
+				}
+				value = active_cascaded_property.value
+				requires_computation = property_requires_computation_with_cascaded_value(property_id)
+				if property_id == .font_size {
+					properties.set_raw_cascaded_font_size(active_cascaded_property.value)
+				}
+			}
+			if property_id == .font_size && value == none && recascaded_font_size != none {
+				continue
+			}
+
+			mut should_inherit := value == none && is_inherited_property
+
+			// Classify the cascaded value once for inherit/unset and color's
+			// currentcolor inheritance rule. All three checks read the same value.
+			if style_value := value {
+				keyword := computed_interpolation_style_value_keyword(style_value) or { Keyword.invalid }
+				should_inherit = should_inherit || keyword == .inherit
+					|| (keyword == .unset && is_inherited_property)
+					|| (property_id == .color && keyword == .currentcolor)
+			}
+
+			if should_inherit && inherited_source_available {
+				properties.set_property_inherited(property_id, .yes)
+				if src := inherited_computed {
+					if inherited_value := src.property(property_id, .no) {
+						value = inherited_value
+					}
+					if property_affects_font_metrics(property_id)
+						&& src.font_metrics_depend_on_viewport_metrics() {
+						properties.set_font_metrics_depend_on_viewport_metrics()
+					}
+				}
+				requires_computation = property_requires_computation_with_inherited_value(property_id)
+				if animated_inherit := StyleComputer.get_animated_inherit_value(property_id, abstract_element) {
+					properties.set_animated_property(property_id, animated_inherit.value, animated_inherit.is_result_of_transition, .yes)
+				}
+			}
+
+			if style_value := value {
+				// Inheritance may have replaced the value; classify that result afresh.
+				keyword := computed_interpolation_style_value_keyword(style_value) or { Keyword.invalid }
+				if keyword == .initial || keyword == .unset || (should_inherit && !inherited_source_available) {
+					value = computed_interpolation_property_initial_value(property_id)
+					requires_computation = property_requires_computation_with_initial_value(property_id)
+				}
+			} else {
 				value = computed_interpolation_property_initial_value(property_id)
 				requires_computation = property_requires_computation_with_initial_value(property_id)
 			}
-		} else {
-			value = computed_interpolation_property_initial_value(property_id)
-			requires_computation = property_requires_computation_with_initial_value(property_id)
-		}
 
-		style_value := value or { continue }
-		mut depends_on_inherited_info := false
-		if property_id == .font_weight || property_id == .font_size {
-			keyword := computed_interpolation_style_value_keyword(style_value) or { Keyword.invalid }
-			depends_on_inherited_info = (property_id == .font_weight
-				&& keyword in [.bolder, .lighter])
-				|| (property_id == .font_size && keyword in [.larger, .smaller])
-		}
-		if length := computed_interpolation_length_from_dom_style_value(style_value) {
-			depends_on_inherited_info = depends_on_inherited_info || length.is_font_relative()
-		}
-		if depends_on_inherited_info {
-			properties.add_inheritance_dependent_specified_value(property_id, style_value)
-		}
-		mut computed_value := style_value
-		if requires_computation {
-			mut computation_context := s.get_computation_context_for_property(property_id, properties, abstract_element)
-			computation_context.reset_viewport_metric_dependency_tracking()
-			if can_reuse_default_computed_value {
-				// This value is shared by all later documents. Only its calculation
-				// escapes; the element's property pages remain document-owned.
-				persistent := platform.enter_persistent()
-				computed_value = compute_value_of_property_from_source(property_id, style_value, property_source,
-					computation_context, 1.0)
-				platform.leave_persistent(persistent)
-			} else {
-				computed_value = compute_value_of_property_from_source(property_id, style_value, property_source,
-					computation_context, 1.0)
+			style_value := value or { continue }
+			mut depends_on_inherited_info := false
+			if property_id == .font_weight || property_id == .font_size {
+				keyword := computed_interpolation_style_value_keyword(style_value) or { Keyword.invalid }
+				depends_on_inherited_info = (property_id == .font_weight
+					&& keyword in [.bolder, .lighter])
+					|| (property_id == .font_size && keyword in [.larger, .smaller])
 			}
-			if computation_context.did_resolve_font_relative_length {
-				properties.font_input_depends_on_font_size_ = true
+			if length := computed_interpolation_length_from_dom_style_value(style_value) {
+				depends_on_inherited_info = depends_on_inherited_info || length.is_font_relative()
 			}
-			if computation_context.did_resolve_font_face_relative_length {
-				properties.font_input_refresh_safe_ = false
+			if depends_on_inherited_info {
+				properties.add_inheritance_dependent_specified_value(property_id, style_value)
 			}
-			if property_id == .font_size {
-				if typed := typed_style_value_logic_from_dom(style_value) {
-					if font_size_value_depends_on_inherited_font_size(typed) {
-						properties.font_input_refresh_safe_ = false
+			mut computed_value := style_value
+			if requires_computation {
+				mut computation_context := s.get_computation_context_for_property(property_id, properties, abstract_element)
+				computation_context.reset_viewport_metric_dependency_tracking()
+				if can_reuse_default_computed_value {
+					// This value is shared by all later documents. Only its calculation
+					// escapes; the element's property pages remain document-owned.
+					persistent := platform.enter_persistent()
+					computed_value = compute_value_of_property_from_source(property_id, style_value, property_source,
+						computation_context, 1.0)
+					platform.leave_persistent(persistent)
+				} else {
+					computed_value = compute_value_of_property_from_source(property_id, style_value, property_source,
+						computation_context, 1.0)
+				}
+				if computation_context.did_resolve_font_relative_length {
+					properties.font_input_depends_on_font_size_ = true
+				}
+				if computation_context.did_resolve_font_face_relative_length {
+					properties.font_input_refresh_safe_ = false
+				}
+				if property_id == .font_size {
+					if typed := typed_style_value_logic_from_dom(style_value) {
+						if font_size_value_depends_on_inherited_font_size(typed) {
+							properties.font_input_refresh_safe_ = false
+						}
+					}
+				}
+				if computation_context.depends_on_viewport_metrics() {
+					properties.set_depends_on_viewport_metrics()
+					if property_affects_font_metrics(property_id) {
+						properties.set_font_metrics_depend_on_viewport_metrics()
 					}
 				}
 			}
-			if computation_context.depends_on_viewport_metrics() {
-				properties.set_depends_on_viewport_metrics()
-				if property_affects_font_metrics(property_id) {
-					properties.set_font_metrics_depend_on_viewport_metrics()
-				}
+			properties.set_property_without_modifying_flags(property_id, computed_value)
+			if can_reuse_default_computed_value {
+				computed_interpolation_default_computed_value_cache[property_index] = computed_value
 			}
 		}
-		properties.set_property_without_modifying_flags(property_id, computed_value)
-		if can_reuse_default_computed_value {
-			computed_interpolation_default_computed_value_cache[property_index] = computed_value
-		}
+		if key := reuse_key { s.remember_computed_longhands(key, cascaded_properties, properties) }
 	}
 
 	// The root element establishes the root font metrics used by rem/rlh for every
@@ -13548,6 +13558,56 @@ pub fn (s &StyleComputer) build_matching_rule_set(abstract_element dom.AbstractE
 	return style_computer_build_matching_rule_set_impl(s, abstract_element, mut attempted_pseudo_class_matches, did_match_any_pseudo_element_rules, mode, scope)
 }
 
+// The preliminary writing-mode/direction cascade is needed only when a declaration
+// may map logical longhands. The complete cascade still computes both properties.
+// HTML presentational hints use physical longhands; other namespaces stay conservative.
+fn declaration_may_have_logical_aliases(declaration &CSSStyleProperties) bool {
+	_ = declaration_style_properties(declaration)
+	return declaration.typed_may_have_logical_aliases_
+}
+
+fn matching_rules_may_have_logical_aliases(rules []ScopedMatchingRule) bool {
+	for scoped_rule in rules {
+		rule := scoped_rule.rule.rule or { continue }
+		declaration := rule.style() or { continue }
+		if declaration_may_have_logical_aliases(declaration) {
+			return true
+		}
+	}
+	return false
+}
+
+fn cascade_may_have_logical_aliases(abstract_element dom.AbstractElement, matching_rule_set MatchingRuleSet) bool {
+	if !abstract_element.element().is_html_element() {
+		return true
+	}
+	if matching_rules_may_have_logical_aliases(matching_rule_set.user_agent_rules)
+		|| matching_rules_may_have_logical_aliases(matching_rule_set.user_rules) {
+		return true
+	}
+	for layer in matching_rule_set.author_rules {
+		if matching_rules_may_have_logical_aliases(layer.rules) {
+			return true
+		}
+	}
+	if abstract_element.pseudo_element() == none {
+		if inline_declaration := inline_style_for_abstract_element(abstract_element) {
+			if declaration_may_have_logical_aliases(inline_declaration) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+fn (s &StyleComputer) logical_alias_context_for_cascade(abstract_element dom.AbstractElement, mode ComputeStyleMode, matching_rule_set MatchingRuleSet) LogicalAliasMappingContext {
+	if cascade_may_have_logical_aliases(abstract_element, matching_rule_set) {
+		return s.compute_logical_alias_mapping_context(abstract_element, mode, matching_rule_set)
+	}
+	// This context will not be consumed: the cascade has no logical aliases.
+	return LogicalAliasMappingContext{}
+}
+
 pub fn (s &StyleComputer) compute_logical_alias_mapping_context(abstract_element dom.AbstractElement, mode ComputeStyleMode, matching_rule_set MatchingRuleSet) LogicalAliasMappingContext {
 	diagnostic_scope_start := begin_diagnostic_instruction_scope()
 	defer { record_diagnostic_instruction_scope(7, diagnostic_scope_start) }
@@ -13989,7 +14049,7 @@ fn (s &StyleComputer) compute_style_impl_with_animated_custom_property_recompute
 	profile_checkpoint = next_custom_checkpoint
 	css_style_profile_custom_ns += custom_elapsed
 
-	logical_alias_mapping_context := s.compute_logical_alias_mapping_context(abstract_element, mode, matching_rule_set)
+	logical_alias_mapping_context := s.logical_alias_context_for_cascade(abstract_element, mode, matching_rule_set)
 	next_logical_checkpoint, logical_elapsed := css_style_profile_checkpoint(profile_checkpoint)
 	profile_checkpoint = next_logical_checkpoint
 	css_style_profile_logical_ns += logical_elapsed

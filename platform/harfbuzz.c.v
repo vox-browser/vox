@@ -544,7 +544,32 @@ fn harfbuzz_font_contains_glyph(font &Font, code_point u32) ?bool {
 	hb_font := scaled_harfbuzz_font_with_policy(face, font.point_size, font.shaping_resolution(),
 		font.variations(), font.font_rendering_policy == .chromium && system_font_matching_supported())?
 	mut glyph := u32(0)
-	return C.hb_font_get_nominal_glyph(hb_font, font.shaping_code_point(code_point), &glyph) != 0 && glyph != 0
+	mapped_code_point := font.shaping_code_point(code_point)
+	present := C.hb_font_get_nominal_glyph(hb_font, mapped_code_point, &glyph) != 0 && glyph != 0
+	// A temporarily missing explicit source may resolve to another face later.
+	// Cache only settled system faces. Explicit fonts retain their legacy cmap
+	// coverage semantics, even when another caller probes them with HarfBuzz.
+	if code_point < 128 && font.source_path == '' && font.resolved_path_ != ''
+		&& font.harfbuzz_face_generation_ == harfbuzz_cache_generation
+		&& font.system_face() != none {
+		mut mutable_font := unsafe { &Font(font) }
+		if mutable_font.ascii_coverage_generation_ != harfbuzz_cache_generation {
+			mutable_font.ascii_coverage_known_low_ = 0
+			mutable_font.ascii_coverage_known_high_ = 0
+			mutable_font.ascii_coverage_present_low_ = 0
+			mutable_font.ascii_coverage_present_high_ = 0
+			mutable_font.ascii_coverage_generation_ = harfbuzz_cache_generation
+		}
+		bit := u64(1) << (mapped_code_point & 63)
+		if mapped_code_point < 64 {
+			mutable_font.ascii_coverage_known_low_ |= bit
+			if present { mutable_font.ascii_coverage_present_low_ |= bit }
+		} else {
+			mutable_font.ascii_coverage_known_high_ |= bit
+			if present { mutable_font.ascii_coverage_present_high_ |= bit }
+		}
+	}
+	return present
 }
 
 fn emoji_harfbuzz_face() ?voidptr {
@@ -802,6 +827,20 @@ fn code_point_is_default_ignorable(code_point u32) bool {
 	return C.u_hasBinaryProperty(i32(code_point), icu_default_ignorable_code_point_property) != 0
 }
 
+// Smart punctuation retains the Latin script chosen from an ASCII letter.
+// Combining, bidi, non-BMP and other script inputs retain unknown boundaries.
+fn harfbuzz_latin_punctuation_units(units []u16) bool {
+	mut has_latin := false
+	for unit in units {
+		if (unit >= `A` && unit <= `Z`) || (unit >= `a` && unit <= `z`) {
+			has_latin = true
+		} else if unit > 0x7f && unit !in [u16(0x2013), 0x2014, 0x2018, 0x2019, 0x201a, 0x201b, 0x201c, 0x201d, 0x201e, 0x201f, 0x2026] {
+			return false
+		}
+	}
+	return has_latin
+}
+
 fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, word_spacing f32, text string, font &Font, text_type GlyphRunTextType) ?ShapedText {
 	mut face := unsafe { nil }
 	uses_emoji := text_uses_emoji_fallback(text) && !font_supplies_chromium_emoji(font, text)
@@ -869,13 +908,14 @@ fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, word_spacing f32,
 	}
 	// UNSAFE_TO_BREAK is meaningful only at cluster starts. Reject duplicate,
 	// decreasing or missing cluster coverage rather than inferring offsets.
-	mut known_breaks := is_ascii && !uses_emoji && text_type == .ltr
+	mut known_breaks := (is_ascii || harfbuzz_latin_punctuation_units(utf16_units))
+		&& !uses_emoji && text_type == .ltr
 		&& font.font_rendering_policy == .chromium && glyph_count > 0
 	if known_breaks {
 		mut previous := -1
 		for index in 0 .. int(glyph_count) {
 			cluster := int(unsafe { infos[index] }.cluster)
-			if (index == 0 && cluster != 0) || cluster <= previous || cluster >= text.len {
+			if (index == 0 && cluster != 0) || cluster <= previous || cluster >= text_length_in_code_units {
 				known_breaks = false
 				break
 			}

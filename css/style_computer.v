@@ -661,6 +661,7 @@ fn declaration_style_properties(declaration &CSSStyleProperties) []StyleProperty
 	defer { platform.leave_persistent(persistent) }
 	mut result := []StyleProperty{cap: declaration.properties.len}
 	mut importance_mask := u8(0)
+	mut may_have_logical_aliases := false
 	for property in declaration.properties {
 		property_id := property_id_from_string(property.name) or { continue }
 		mut value := &dom.StyleValue(unsafe { nil })
@@ -676,10 +677,14 @@ fn declaration_style_properties(declaration &CSSStyleProperties) []StyleProperty
 			important: if property.important { Important.yes } else { Important.no }
 		}
 		importance_mask |= if property.important { u8(2) } else { u8(1) }
+		// Unexpanded shorthands are conservative: substitution can produce logical longhands.
+		may_have_logical_aliases = may_have_logical_aliases
+			|| property_is_logical_alias(property_id) || property_is_shorthand(property_id)
 	}
 	mut mutable_declaration := unsafe { &CSSStyleProperties(declaration) }
 	mutable_declaration.typed_properties_cache_ = result
 	mutable_declaration.typed_importance_mask_ = importance_mask
+	mutable_declaration.typed_may_have_logical_aliases_ = may_have_logical_aliases
 	return result
 }
 
@@ -2077,6 +2082,7 @@ pub fn computed_styles_with_and_without_inline(element &dom.Element) ?ComputedSt
 	saved_custom_properties := inline_style.custom_properties.clone()
 	saved_typed_properties_cache := inline_style.typed_properties_cache_
 	saved_typed_importance_mask := inline_style.typed_importance_mask_
+	saved_typed_logical_aliases := inline_style.typed_may_have_logical_aliases_
 	saved_custom_property_data := abstract_element.custom_property_data()
 
 	mut mutable_inline_style := unsafe { &CSSStyleProperties(inline_style) }
@@ -2090,6 +2096,7 @@ pub fn computed_styles_with_and_without_inline(element &dom.Element) ?ComputedSt
 	mutable_inline_style.custom_properties = saved_custom_properties.clone()
 	mutable_inline_style.typed_properties_cache_ = saved_typed_properties_cache
 	mutable_inline_style.typed_importance_mask_ = saved_typed_importance_mask
+	mutable_inline_style.typed_may_have_logical_aliases_ = saved_typed_logical_aliases
 	mut mutable_abstract_element := abstract_element
 	mutable_abstract_element.set_custom_property_data(saved_custom_property_data)
 

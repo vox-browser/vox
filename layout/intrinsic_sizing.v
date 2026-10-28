@@ -518,7 +518,7 @@ fn calculate_content_width_with_constraint(mut source_state LayoutState, box &Bo
 	}
 	if box_node.children_are_inline() {
 		if block_container := box_node.as_block_container() {
-			result := run_inline_formatting_context(mut throwaway, block_container, mut box_state, .intrinsic_sizing, AvailableSpace.new(available_width, available_height))
+			measured_width := measure_disposable_inline_width(mut throwaway, block_container, mut box_state, AvailableSpace.new(available_width, available_height))
 			// InlineFormattingContext asks its parent BFC for automatic width so
 			// floated inline-level children participate. The standalone intrinsic
 			// context has no parent object, so include those children explicitly.
@@ -528,7 +528,7 @@ fn calculate_content_width_with_constraint(mut source_state LayoutState, box &Bo
 			// than to its widest item.
 			// Keep the resulting float width separate from the line width: a line
 			// after a short float does not overlap it and must not inherit its width.
-			mut automatic_width := result.automatic_content_width
+			mut automatic_width := measured_width
 			mut left_floating_width := CSSPixels.new(0)
 			mut right_floating_width := CSSPixels.new(0)
 			for child in box_node.children() {

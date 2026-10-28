@@ -298,7 +298,10 @@ fn (mut iterator TextNodeChunkIterator) font_for_code_point(code_point u32) &pla
 			return fallback
 		}
 	}
-	if iterator.font_cascade_list == unsafe { nil } {
+	// An empty pending list cannot load a face or make this fallback invisible.
+	// Keep the full generation check for cascades with pending author faces.
+	if iterator.font_cascade_list == unsafe { nil }
+		|| iterator.font_cascade_list.pending_faces.len == 0 {
 		return iterator.synthetic_caps_font_for(selected, code_point)
 	}
 	font_computer := css.css_style_computer_for(iterator.text_node.Node.document()).font_computer()

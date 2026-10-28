@@ -111,6 +111,43 @@ fn (mut bfc BlockFormattingContext) run_inline_formatting_context_with_floats(mu
 }
 
 fn run_uncached_inline_formatting_context(mut state LayoutState, containing_block &BlockContainer, mut containing_block_used_values UsedValues, layout_mode LayoutMode, available_space AvailableSpace, parent_block_context ?&BlockFormattingContext) InlineFormattingResult {
+	return run_inline_formatting_context_for_width(mut state, containing_block,
+		mut containing_block_used_values, layout_mode, available_space, parent_block_context, false)
+}
+
+// Only a disposable intrinsic probe may omit vertical geometry. A closed
+// horizontal subtree has no float, atomic, positioned, or clamped descendant
+// whose width depends on its block position. Published APIs retain full lines.
+fn intrinsic_inline_width_is_independent(node &Node) bool {
+	style := node.computed_values()
+	if style.writing_mode() != .horizontal_tb || style.direction() != .ltr
+		|| style.text_align() == .justify || style.text_overflow() == .ellipsis {
+		return false
+	}
+	for child in node.children() {
+		if !intrinsic_inline_width_is_independent(child) { return false }
+	}
+	return true
+}
+
+fn measure_disposable_inline_width(mut state LayoutState, containing_block &BlockContainer,
+	mut used UsedValues, space AvailableSpace) CSSPixels {
+	root := unsafe { &Node(containing_block) }
+	if (!space.width.is_min_content() && !space.width.is_max_content())
+		|| !inline_layout_workspace_is_closed(root, true)
+		|| !intrinsic_inline_width_is_independent(root) {
+		return run_inline_formatting_context(mut state, containing_block, mut used,
+			.intrinsic_sizing, space).automatic_content_width
+	}
+	mut retained := retain_geometry_allocations()
+	defer { retained.finish() }
+	return run_inline_formatting_context_for_width(mut state, containing_block, mut used,
+		.intrinsic_sizing, space, none, true).automatic_content_width
+}
+
+fn run_inline_formatting_context_for_width(mut state LayoutState, containing_block &BlockContainer,
+	mut containing_block_used_values UsedValues, layout_mode LayoutMode, available_space AvailableSpace,
+	parent_block_context ?&BlockFormattingContext, width_only bool) InlineFormattingResult {
 	containing_block_used_values.clear_line_boxes()
 	if inline_context_has_only_discarded_text(containing_block) {
 		containing_block_used_values.set_inline_end_static_position_rect(StaticPositionRect{})
@@ -128,6 +165,7 @@ fn run_uncached_inline_formatting_context(mut state LayoutState, containing_bloc
 		item_buffers.finish()
 	}
 	mut line_builder := LineBuilder.new_with_block_context(mut state, containing_block, containing_block_used_values, available_space.width, direction, writing_mode, parent_block_context)
+	line_builder.intrinsic_width_only = width_only
 	mut leading_margin_from_collapsible_whitespace := CSSPixels.new(0)
 	mut leading_border_from_collapsible_whitespace := CSSPixels.new(0)
 	mut leading_padding_from_collapsible_whitespace := CSSPixels.new(0)
@@ -325,6 +363,14 @@ fn run_uncached_inline_formatting_context(mut state LayoutState, containing_bloc
 	for index in 0 .. containing_block_used_values.line_boxes.len {
 		containing_block_used_values.line_boxes[index].trim_trailing_whitespace()
 	}
+	}
+	if width_only {
+		line_builder.remove_last_line_if_empty()
+		mut content_width := CSSPixels.new(0)
+		for line_box in containing_block_used_values.line_boxes {
+			content_width = css_pixels_max(content_width, line_box.width())
+		}
+		return InlineFormattingResult{ automatic_content_width: content_width }
 	}
 	apply_text_overflow_ellipsis(containing_block, mut containing_block_used_values.line_boxes)
 	// Upstream finalizes the last line and resolves static positions before it

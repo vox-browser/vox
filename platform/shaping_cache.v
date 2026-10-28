@@ -142,6 +142,7 @@ fn (mut cache ShapingCache) lookup(font_key string, text string, params ShapePar
 }
 
 fn (mut cache ShapingCache) evict_least_recently_used_font() {
+	platform_safe_break_cache_generation++
 	if cache.fonts.len == 0 {
 		return
 	}
@@ -157,6 +158,7 @@ fn (mut cache ShapingCache) evict_least_recently_used_font() {
 }
 
 fn (mut cache ShapingCache) evict_least_recently_used_texts(font_index int) {
+	platform_safe_break_cache_generation++
 	mut ticks := []u64{cap: cache.fonts[font_index].shapes_by_text.len}
 	for entry in cache.fonts[font_index].shapes_by_text {
 		ticks << entry.last_used_tick
@@ -256,6 +258,7 @@ struct ShapingFontKey {
 }
 
 __global (
+	platform_safe_break_cache_generation u64
 	platform_shaping_cache        &ShapingCache
 	platform_shaping_cache_storage &Arena
 	last_shaping_font_key         &ShapingFontKey
@@ -272,6 +275,7 @@ fn shared_shaping_cache() &ShapingCache {
 				platform_shaping_cache_storage = new_arena('text shaping cache')
 			}
 		}
+		platform_safe_break_cache_generation++
 		platform_shaping_cache = &ShapingCache{ storage: platform_shaping_cache_storage }
 		leave_persistent(persistent)
 	}
@@ -281,6 +285,7 @@ fn shared_shaping_cache() &ShapingCache {
 // Returned glyph runs own their glyph storage. Static idle pages can discard
 // the lookup copies; a later measurement or shape request refills the cache.
 pub fn release_unused_text_shaping() {
+	platform_safe_break_cache_generation++
 	platform_shaping_cache = unsafe { nil }
 	$if prealloc {
 		if !isnil(platform_shaping_cache_storage) {

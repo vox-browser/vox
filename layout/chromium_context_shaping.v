@@ -194,38 +194,5 @@ fn chromium_context_slice_with_cursor(run &platform.GlyphRun, chunk TextNodeChun
 	if first < 0 || end <= first { return none }
 	cursor.index = end
 	cursor.offset = offset
-	// Blink sums the 16.16 advances of a line's part of an item exactly from
-	// its first glyph, then converts each sum to float. Subtracting the float
-	// pens of a paragraph-long run instead moves glyphs hundreds of pixels in
-	// by a few ULPs, enough to change their quarter-pixel raster position.
-	// The slice starts at its first glyph's placement, which HarfBuzz's split
-	// 'kern' adjustments can move, and ends at the next glyph's.
-	mut glyphs := run.glyphs_[first..end].clone()
-	origin := f64(glyphs[0].offset_x)
-	mut local := f64(0)
-	for mut glyph in glyphs {
-		glyph.position.x = f32(local + f64(glyph.offset_x) - origin)
-		local += f64(glyph.advance)
-	}
-	next_offset := if end < run.glyphs_.len { f64(run.glyphs_[end].offset_x) } else { f64(0) }
-	mut sliced := platform.GlyphRun.new_with_face(run.font(), .ltr, glyphs, run.face())
-	sliced.width_ = f32(local + next_offset - origin)
-	sliced.space_width = run.space_width
-	mut trailing_length := 0
-	mut trailing_advance := f32(0)
-	for index := glyphs.len - 1; index >= 0; index-- {
-		glyph := glyphs[index]
-		if glyph.code_point != u32(` `) {
-			break
-		}
-		trailing_length += glyph.length_in_code_units
-		trailing_advance += glyph.advance
-	}
-	return platform.ShapedText{
-		glyph_run:           sliced
-		trailing_whitespace: platform.TrailingWhitespace{
-			length_in_code_units: trailing_length
-			advance:              trailing_advance
-		}
-	}
+	return run.ltr_context_slice_for_layout(first, end)
 }

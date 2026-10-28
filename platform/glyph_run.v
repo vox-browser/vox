@@ -39,13 +39,13 @@ pub fn (mut position GlyphPosition) translate_by(x f32, y f32) {
 
 pub struct Glyph {
 pub mut:
-	code_point           u32
-	glyph_index          int
-	position             GlyphPosition
-	advance              f32
+	code_point  u32
+	glyph_index int
+	position    GlyphPosition
+	advance     f32
 	// HarfBuzz's horizontal placement, which position.x already includes.
 	offset_x             f32
-	length_in_code_units int = 1
+	length_in_code_units int  = 1
 	should_paint         bool = true
 	// Zero means unknown; HarfBuzz marks proven ASCII boundaries as safe (1)
 	// or unsafe (2). Keep manually constructed/fallback glyphs conservative.
@@ -103,9 +103,9 @@ fn glyph_run_face_font(font &Font, face GlyphRunFace) &Font {
 	if face == .emoji {
 		if path := emoji_font_path() {
 			return &Font{
-				family: 'emoji'
-				point_size: font.point_size
-				weight: font.weight
+				family:      'emoji'
+				point_size:  font.point_size
+				weight:      font.weight
 				source_path: path
 			}
 		}
@@ -186,6 +186,75 @@ pub fn GlyphRun.new_with_face(font &Font, text_type GlyphRunTextType, glyphs []G
 	return glyph_run_with_owned_glyphs(font, text_type, glyphs.clone(), face)
 }
 
+// Copy and translate a slice without an intermediate caller-owned vector.
+// Replay buffers are built by refresh_replay_data() at line publication.
+// Intrinsic probes can measure the private glyph vector without building them.
+pub fn (run &GlyphRun) translated_slice_for_layout(start int, length int, x f32, y f32) &GlyphRun {
+	mut glyphs := run.glyphs_[start..start + length].clone()
+	mut width := f32(0)
+	mut space_width := f32(run.font().point_size * 0.5)
+	for mut glyph in glyphs {
+		glyph.position.translate_by(x, y)
+		width += glyph.advance
+		if glyph.code_point == u32(` `) { space_width = glyph.advance }
+	}
+	return &GlyphRun{
+		font_:              run.font()
+		text_type_:         run.text_type()
+		face_:              run.face()
+		width_:             width
+		glyphs_:            glyphs
+		space_width:        space_width
+		replay_data_dirty_: true
+	}
+}
+
+// Materialize a nonempty, already checked LTR context range. Measure its
+// advance locally so paragraph pen rounding cannot shift the retained pixels.
+// The completed line must refresh replay data before publication.
+pub fn (run &GlyphRun) ltr_context_slice_for_layout(first int, end int) ShapedText {
+	// Blink sums the 16.16 advances of a line's part of an item exactly from
+	// its first glyph, then converts each sum to float. Subtracting the float
+	// pens of a paragraph-long run instead moves glyphs hundreds of pixels in
+	// by a few ULPs, enough to change their quarter-pixel raster position.
+	// The slice starts at its first glyph's placement, which HarfBuzz's split
+	// 'kern' adjustments can move, and ends at the next glyph's.
+	mut glyphs := run.glyphs_[first..end].clone()
+	origin := f64(glyphs[0].offset_x)
+	mut local := f64(0)
+	for mut glyph in glyphs {
+		glyph.position.x = f32(local + f64(glyph.offset_x) - origin)
+		local += f64(glyph.advance)
+	}
+	next_offset := if end < run.glyphs_.len { f64(run.glyphs_[end].offset_x) } else { f64(0) }
+	sliced := &GlyphRun{
+		font_:              run.font()
+		text_type_:         .ltr
+		face_:              run.face()
+		width_:             f32(local + next_offset - origin)
+		glyphs_:            glyphs
+		space_width:        run.space_width
+		replay_data_dirty_: true
+	}
+	mut trailing_length := 0
+	mut trailing_advance := f32(0)
+	for index := glyphs.len - 1; index >= 0; index-- {
+		glyph := glyphs[index]
+		if glyph.code_point != u32(` `) {
+			break
+		}
+		trailing_length += glyph.length_in_code_units
+		trailing_advance += glyph.advance
+	}
+	return ShapedText{
+		glyph_run:           sliced
+		trailing_whitespace: TrailingWhitespace{
+			length_in_code_units: trailing_length
+			advance:              trailing_advance
+		}
+	}
+}
+
 // The caller transfers a private glyph vector. Keep this boundary private so
 // public constructors retain their independent copy of caller-owned storage.
 fn glyph_run_with_owned_glyphs(font &Font, text_type GlyphRunTextType, glyphs []Glyph,
@@ -207,15 +276,15 @@ fn glyph_run_with_owned_glyphs(font &Font, text_type GlyphRunTextType, glyphs []
 		glyph_positions << f64(glyph.position.y)
 	}
 	return &GlyphRun{
-		font_: font
-		text_type_: text_type
-		face_: face
-		width_: width
-		glyphs_: glyphs
-		space_width: space_width
-		glyph_indices_: glyph_indices
+		font_:            font
+		text_type_:       text_type
+		face_:            face
+		width_:           width
+		glyphs_:          glyphs
+		space_width:      space_width
+		glyph_indices_:   glyph_indices
 		glyph_positions_: glyph_positions
-		bounding_box_: glyph_run_bounding_box(font, glyphs, face)
+		bounding_box_:    glyph_run_bounding_box(font, glyphs, face)
 	}
 }
 
@@ -244,15 +313,15 @@ pub fn (run &GlyphRun) bounding_box() GlyphRunBounds {
 // HarfBuzz result as long as every consumer gets independent mutable storage.
 pub fn (run &GlyphRun) clone_for_layout() &GlyphRun {
 	return &GlyphRun{
-		glyphs_: run.glyphs_.clone()
-		font_: run.font_
-		text_type_: run.text_type_
-		face_: run.face_
-		width_: run.width_
-		space_width: run.space_width
-		glyph_indices_: run.glyph_indices_.clone()
-		glyph_positions_: run.glyph_positions_.clone()
-		bounding_box_: run.bounding_box_
+		glyphs_:            run.glyphs_.clone()
+		font_:              run.font_
+		text_type_:         run.text_type_
+		face_:              run.face_
+		width_:             run.width_
+		space_width:        run.space_width
+		glyph_indices_:     run.glyph_indices_.clone()
+		glyph_positions_:   run.glyph_positions_.clone()
+		bounding_box_:      run.bounding_box_
 		replay_data_dirty_: run.replay_data_dirty_
 	}
 }
@@ -262,17 +331,17 @@ pub fn (run &GlyphRun) clone_for_layout() &GlyphRun {
 // Call invalidate_replay_data() before editing a fork's public glyph storage.
 pub fn (run &GlyphRun) fork_for_layout() &GlyphRun {
 	return &GlyphRun{
-		glyphs_: run.glyphs_
-		font_: run.font_
-		text_type_: run.text_type_
-		face_: run.face_
-		width_: run.width_
-		space_width: run.space_width
-		glyph_indices_: run.glyph_indices_
-		glyph_positions_: run.glyph_positions_
-		bounding_box_: run.bounding_box_
-		replay_data_dirty_: run.replay_data_dirty_
-		shared_glyphs_: true
+		glyphs_:             run.glyphs_
+		font_:               run.font_
+		text_type_:          run.text_type_
+		face_:               run.face_
+		width_:              run.width_
+		space_width:         run.space_width
+		glyph_indices_:      run.glyph_indices_
+		glyph_positions_:    run.glyph_positions_
+		bounding_box_:       run.bounding_box_
+		replay_data_dirty_:  run.replay_data_dirty_
+		shared_glyphs_:      true
 		shared_replay_data_: true
 	}
 }
@@ -446,8 +515,8 @@ fn (mut extent GlyphInkExtent) add_quadratic(p0 FontGlyphOutlinePoint, p1 FontGl
 
 fn outline_midpoint(first FontGlyphOutlinePoint, second FontGlyphOutlinePoint) FontGlyphOutlinePoint {
 	return FontGlyphOutlinePoint{
-		x: (first.x + second.x) * 0.5
-		y: (first.y + second.y) * 0.5
+		x:        (first.x + second.x) * 0.5
+		y:        (first.y + second.y) * 0.5
 		on_curve: true
 	}
 }
@@ -466,7 +535,7 @@ pub fn (run &GlyphRun) glyph_intercepts(scale f32, y_top f32, y_bottom f32) []f3
 		}
 		outline := run.font_.glyph_outline(glyph.glyph_index) or { continue }
 		mut extent := GlyphInkExtent{
-			band_top: (f64(y_top) - f64(glyph.position.y) * f64(scale)) / f64(scale)
+			band_top:    (f64(y_top) - f64(glyph.position.y) * f64(scale)) / f64(scale)
 			band_bottom: (f64(y_bottom) - f64(glyph.position.y) * f64(scale)) / f64(scale)
 		}
 		for contour in outline.contours {
@@ -596,14 +665,14 @@ fn shape_text_uncached(initial_x f32, letter_spacing f32, word_spacing f32, text
 			}
 		}
 		glyphs << Glyph{
-			code_point: code_point
-			glyph_index: glyph_index
-			position: GlyphPosition{
+			code_point:           code_point
+			glyph_index:          glyph_index
+			position:             GlyphPosition{
 				x: x
 			}
-			advance: advance
+			advance:              advance
 			length_in_code_units: if code_point > 0xffff { 2 } else { 1 }
-			should_paint: should_paint
+			should_paint:         should_paint
 		}
 		if code_unit_offset >= first_trailing_offset {
 			trailing_advance += advance
@@ -623,10 +692,10 @@ fn shape_text_uncached(initial_x f32, letter_spacing f32, word_spacing f32, text
 		x = 0
 	}
 	return ShapedText{
-		glyph_run: glyph_run_with_owned_glyphs(font, text_type, glyphs, .document)
+		glyph_run:           glyph_run_with_owned_glyphs(font, text_type, glyphs, .document)
 		trailing_whitespace: TrailingWhitespace{
 			length_in_code_units: trailing_length
-			advance: trailing_advance
+			advance:              trailing_advance
 		}
 	}
 }

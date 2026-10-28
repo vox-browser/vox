@@ -52,6 +52,7 @@ mut:
 	current_line_inline_offset       CSSPixels
 	current_line_committed_pending_margin bool
 	pending_margin_follows_block_level_box bool
+	intrinsic_width_only bool
 }
 
 pub fn LineBuilder.new(mut layout_state LayoutState, containing_block &BlockContainer, containing_block_used_values &UsedValues, available_width AvailableSize, direction css.Direction, writing_mode css.WritingMode) &LineBuilder {
@@ -259,7 +260,9 @@ fn (mut builder LineBuilder) ensure_last_line_box() &LineBox {
 		builder.containing_block_used_values.line_boxes << LineBox.new(builder.direction, builder.writing_mode)
 	}
 	last_index := builder.containing_block_used_values.line_boxes.len - 1
-	return &builder.containing_block_used_values.line_boxes[last_index]
+	mut line := &builder.containing_block_used_values.line_boxes[last_index]
+	line.intrinsic_width_only_ = builder.intrinsic_width_only
+	return line
 }
 
 // A dropped collapsible space can carry the end edges of the inline boxes it
@@ -545,6 +548,10 @@ fn (builder &LineBuilder) inline_box_alignment_delta(node &Node, line_box_baseli
 }
 
 pub fn (mut builder LineBuilder) update_last_line() {
+	if builder.intrinsic_width_only {
+		builder.last_line_needs_update = false
+		return
+	}
 	if !builder.last_line_needs_update {
 		return
 	}

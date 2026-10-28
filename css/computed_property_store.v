@@ -273,6 +273,7 @@ fn update_initial_computed_property_page(index int, value &dom.StyleValue) {
 fn (computer &StyleComputer) begin_computed_property_page_batch() {
 	mut owner := unsafe { &StyleComputer(computer) }
 	if owner.computed_property_page_batch_depth_ == 0 {
+		owner.longhand_reuse_cache_ = unsafe { nil }
 		owner.computed_property_page_interner_ = unsafe { nil }
 	}
 	owner.computed_property_page_batch_depth_++
@@ -283,6 +284,7 @@ fn (computer &StyleComputer) end_computed_property_page_batch() {
 	assert owner.computed_property_page_batch_depth_ > 0
 	owner.computed_property_page_batch_depth_--
 	if owner.computed_property_page_batch_depth_ == 0 {
+		owner.longhand_reuse_cache_ = unsafe { nil }
 		// Drop the entire pool: map.clear retains stale values in the fallback.
 		// Published readonly pages remain owned by the installed styles.
 		owner.computed_property_page_interner_ = unsafe { nil }
