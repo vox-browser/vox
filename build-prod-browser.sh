@@ -161,15 +161,17 @@ export V_MACOS_V3_NO_FALLBACK
 ui2_modules=$(python3 "$repo_dir/tools/prepare_ui2.py" "$v_compiler")
 http_modules=$(python3 "$repo_dir/tools/prepare_http_compat.py" "$v_compiler")
 prealloc_modules=""
-font_modules=""
+# Every collector uses glyph-index lookup in the platform font bridge. Avoid
+# decoding x.ttf's dense Unicode vectors only to discard them after each face
+# initialization. Stage the same checked initializer for every browser build.
+font_modules=$(python3 "$repo_dir/tools/prepare_font_runtime.py" "$v_compiler")
 if [ "$gc_mode" = prealloc ]; then
     prealloc_modules=$(python3 "$repo_dir/tools/prepare_prealloc_runtime.py" "$v_compiler")
-    font_modules=$(python3 "$repo_dir/tools/prepare_font_runtime.py" "$v_compiler")
 fi
 # Anchor package names at the repository; see build-linux-browser.sh. Without
 # it, a checkout under `modules`, `.vmodules`, `vlib` or another v.mod compiles
 # `encoding` as `vox2.encoding` while imports still resolve to vlib's name.
-set -- -memory-limit 10G -exclude "$zoneinfo_exclude" -enable-globals \
+set -- -memory-limit 10G -exclude "$zoneinfo_exclude" -enable-globals -d vox_sparse_ttf \
     -d vox_ui2 -path "$repo_dir|$prealloc_modules|$font_modules|$http_modules|$ui2_modules|@vmodules|@vlib"
 if [ "${VOX_KEEP_C:-0}" = 1 ]; then
     set -- "$@" -keepc
@@ -196,7 +198,7 @@ fi
 if [ "$gc_mode" = prealloc ]; then
     # Thread-local bump arenas without a collector; V's free() is a no-op.
     # -prealloc leaves V's default collector selected, so deselect it too.
-    set -- "$@" -prealloc -gc none -d vox_sparse_ttf
+    set -- "$@" -prealloc -gc none
     extra_cflags="$extra_cflags -O2"
 elif [ "$gc_mode" != none ]; then
     set -- "$@" -gc "$gc_mode"
@@ -236,11 +238,11 @@ fi
 # Keep the filter worker's entry point independent of browser/UI initialization.
 # It uses the same engine, snapshot resource and private transport as self-exec.
 helper_tmp=$(mktemp "$binary_dir/.adblock-worker.XXXXXX")
-set -- -memory-limit 10G -exclude "$zoneinfo_exclude" -enable-globals \
+set -- -memory-limit 10G -exclude "$zoneinfo_exclude" -enable-globals -d vox_sparse_ttf \
     -path "$repo_dir|$prealloc_modules|$font_modules|$http_modules|@vmodules|@vlib"
 helper_cflags=-O2
 if [ "$gc_mode" = prealloc ]; then
-    set -- "$@" -prealloc -gc none -d vox_sparse_ttf
+    set -- "$@" -prealloc -gc none
 elif [ "$gc_mode" != none ]; then
     set -- "$@" -gc "$gc_mode"
     helper_cflags="$helper_cflags -DLARGE_CONFIG=1"

@@ -33,6 +33,13 @@ fn test_normalized_font_initializer_preserves_checked_metadata_metrics_outlines_
 			assert actual.ascent == reference.ascent
 			assert actual.descent == reference.descent
 			assert actual.line_gap == reference.line_gap
+			// Scalar CSS metrics must also agree when production uses the sparse
+			// initializer with a collector, including zero and fractional sizes.
+			for size in [f32(0), 7.75, 13.25, 41.125] {
+				reference_font := Font{ source_path: path, point_size: size, decoded_face_: reference }
+				actual_font := Font{ source_path: path, point_size: size, decoded_face_: actual }
+				assert actual_font.pixel_metrics() == reference_font.pixel_metrics()
+			}
 			for character in 'AVTo0xéß漢'.runes() {
 				glyph := font_cmap_glyph(bytes, u32(character))
 				x, y := actual.get_horizontal_metrics(glyph)
