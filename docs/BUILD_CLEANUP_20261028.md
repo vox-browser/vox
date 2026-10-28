@@ -1,52 +1,64 @@
-# Build cleanup — 2026-10-28
+# Build cleanup and master integration
 
-The requested cleanup removes the entire `Build/` directory from the canonical
-`master` checkout at `/Users/alex/code/vox2`. Canonical implementation files and
-pending changes remain in place. Historical source variants are recoverable;
-they were not blindly applied over the current implementation.
+The cleanup was corrected on 2026-10-29 (Europe/Moscow): the identified missing
+implementations and pending changes were tested and committed directly on
+`master` before removing the entire `Build/` directory. The earlier archive
+verification established recoverability only; it did not establish that the
+code was integrated into `master` and was insufficient for the user's request.
 
-Recovery data is outside the checkout at
-`/Users/alex/code/vox2-build-preservation/20261028/`. Its `README.md` explains
-single-file restoration using `preserve.py`, `objects.zip`, and the numbered
-`segments/NNN/manifest.jsonl.gz` files. Keep the manifests with the object archive.
+## Code integration
 
-## Preservation evidence
+Source variants, patches, generated modules, and later recreated Build trees
+were compared with the canonical checkout and reachable `master` history.
+Semantic differences were reviewed after deduplicating repeated snapshots.
+That review found three missing implementations and two pending changes:
 
-- The original object archive is 30,598,507,391 bytes (28.50 GiB), SHA-256
-  `86fb0008ce28b2467e1bb1c4d2607fca899ced8d73349d77247e63abcddccf4c`.
-- Full decompression, CRC, and SHA-256 verification passed for all 400,323 unique
-  objects. Manifests preserve 6,339,150 file paths and 3,616,473 symlinks, including
-  historical sources, patches, fixtures, generated source, and nested Git data.
-  Repeated snapshots account for much of the path count.
-- Only 55,317 positively identified ELF/Mach-O compiled products were discarded
-  from the original tree. Unknown formats and Git files were retained. Two
-  unused FIFOs were moved intact with identity receipts; changed Finder metadata
-  was saved separately.
-- No file from the canonical checkout's 7,648-file initial inventory was missing.
-  Independent sessions changed five inventoried files during cleanup; those
-  changes were retained. Canonical Git connectivity passed.
-- Recovery checks restored a patch, a V source file, and the unique-source-variants
-  tarball with exact saved hashes. All 114 regular tar members were fully read
-  and hashed, including checking the gzip trailer.
-- Final audit and recovery checks both completed with exit code zero under the
-  3 GiB memory guard. See `final-verification.json`,
-  `recovery-verification.json`, and their guard reports in the recovery directory.
+| Commit | Implementation | Validation |
+| --- | --- | --- |
+| `cea29abf` | Rounded SVG ancestor compositing helper and failure handling | Native Skia and Graphite checks at scales 1 and 2, including failure paths that preserve the destination |
+| `560f07c3` | Chromium rectangle prefetch integration and scratch handling | Native boundary/scratch comparisons, three V tests in Boehm and `-gc none` modes, actual browser source type check |
+| `8ba6d5cc` | Checked-checkbox coordinates at large origins | Six tests in Boehm and `-gc none` modes; the added regression failed before the fix |
+| `b4c80f62` | Borrowed typed CSS color values and classifiers | Four tests in Boehm and `-gc none` modes, including ownership, animation priority, text fallback, and color calculations |
+| `c535622d` | Shared compositor pictures resuming after complete child effects, plus rounded border admission | Nineteen tests in Boehm and `-gc none` modes, layout fixtures at both scales, and the existing native shared-layer regression with 144 matching local pictures |
 
-The original tree was absent at the audited checkpoint of 18:31:11 UTC. Another
-session subsequently recreated Build for a browser build and measurement. Both
-later trees were also preserved, fully verified, and removed. Their separate
-`recreated/` and `recreated-2/` archives contain 5,190 and 869 file paths and occupy
-301,657,698 and 85,310,730 bytes respectively; these are additional to the original
-archive's counts and checksum. Their move records and `receipt.json` files retain
-the preservation and removal evidence.
+Each commit contains its focused tests. Every commit is an ancestor of `master`,
+and the tested source hashes were checked against the committed files.
+The compositor fixture is tracked with its implementation. Unrelated canonical
+working files were retained.
 
-`post-cleanup-verification.json` records the successful final audit at
-2026-10-28 18:42:02 UTC: Build absent, no missing canonical files, all eight
-referenced guards successful, and exact restoration of source scripts from both
-later archives. `post-cleanup-audit-2-guard.json` records audit exit code zero.
-The earlier post-cleanup audit failed because another session recreated Build;
-its log is retained alongside the subsequent successful audit.
+Older working implementations were already present in `master` or its history,
+including the DOM and Canvas fixes, font/runtime generators, native HLS media
+integration, and tab-process lifetime fix. Generated C, dependency copies, test
+binaries, and repeated source snapshots required no additional implementation.
 
-Future builds and tests normally recreate `Build/` according to the repository's
-build workflow. This cleanup does not change that workflow or remove code needed
-to rebuild. No browser rebuild was needed to validate removal of generated files.
+Failed or explicitly rejected experiments were reviewed rather than installed
+as working features: the arc-precision alternative, font-generation and
+font-selection caches, private color-context caching, cascade seed slabs, and
+the early CSS dependency-scope change. Their recorded failures, performance
+regressions, or unsafe ownership assumptions distinguish them from the missing
+working changes integrated above. They are not claimed as active master logic.
+
+## Removal verification
+
+At **2026-10-29 00:45:48 +03:00**, after the integration checks completed:
+
+- The entire `Build/` directory was removed. Its final measured allocated size
+  was **2,489,110,528 bytes (2.32 GiB)**.
+- All **11,406** inventoried canonical files and symlinks outside `Build/` and
+  `.git/` remained present and unchanged across removal, including untracked work.
+- `git fsck --connectivity-only --no-dangling` passed. Git has no object-store
+  dependency on `Build/`, and only the canonical master worktree remains.
+- Small validation logs and JSON receipts were retained outside `Build/`;
+  no new source archive was created for this correction.
+
+The machine-readable integration/removal receipt is
+`/Users/alex/code/vox2-build-preservation/20261028/logic-audit/master-integration-and-removal.json`.
+Its adjacent `integration-validation-20261029/` directory contains the focused
+test commands, source hashes, exit codes, and memory-guard reports. Existing
+archives from the earlier cleanup remain untouched; their existence is not
+the evidence used to claim integration.
+
+An already-running Vox process still mapped its deleted bundle when removal
+was checked. No new browser was launched. These checks establish source
+integration and focused correctness, not fresh whole-page Brave pixel parity.
+Future builds and tests may recreate `Build/` under the normal repository workflow.
