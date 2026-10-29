@@ -183,6 +183,7 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	if action == 'nodeConnected' { return json2.encode(root.is_connected()) }
 	if action == 'insertAdjacentHTML' { return binding.insert_adjacent_html_query(root, selector) }
 	if action == 'childNodeMutation' { return binding.child_node_query(root, selector) }
+	if action == 'parentNodeMutation' { return binding.parent_node_query(root, selector) }
 	if action == 'dataset' { return compact_dataset_query(root, selector) }
 	if action == 'inlineStyle' { return compact_inline_style_query(root, selector, binding.runtime) }
 	if action == 'createComment' { return binding.create_comment_query(root, selector) }
