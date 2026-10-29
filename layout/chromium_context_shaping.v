@@ -58,9 +58,9 @@ fn (iterator &InlineLevelIterator) chromium_context_run_for_text(text_node &Text
 		}
 	}
 	letter_spacing :=
-		resolved_text_spacing_for_node(unsafe { &Node(text_node) }, .letter_spacing).to_double()
+		resolved_text_spacing_for_shaping(unsafe { &Node(text_node) }, .letter_spacing)
 	word_spacing :=
-		resolved_text_spacing_for_node(unsafe { &Node(text_node) }, .word_spacing).to_double()
+		resolved_text_spacing_for_shaping(unsafe { &Node(text_node) }, .word_spacing)
 	context := chromium_collapsed_context_text(text_node, text)
 	run := iterator.shape_text_for_layout(text_node, 0, f32(letter_spacing), f32(word_spacing),
 		context.text, font, .ltr).glyph_run

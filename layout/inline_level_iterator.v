@@ -220,8 +220,8 @@ fn (item &InlineLevelItem) split_for_overflow_break(maximum_width CSSPixels, tak
 		return none
 	}
 
-	letter_spacing := f32(resolved_text_spacing_for_node(node, .letter_spacing).to_double())
-	word_spacing := f32(resolved_text_spacing_for_node(node, .word_spacing).to_double())
+	letter_spacing := f32(resolved_text_spacing_for_shaping(node, .letter_spacing))
+	word_spacing := f32(resolved_text_spacing_for_shaping(node, .word_spacing))
 	leading_width := css_pixels_sum3(item.margin_start, item.border_start, item.padding_start)
 	mut split := -1
 	for boundary in boundaries {
@@ -662,8 +662,8 @@ fn (mut iterator InlineLevelIterator) generate_next_item() ?InlineLevelItem {
 		// Item generation is synchronous. Resolve immutable text-node spacing
 		// once for this context, after preserved-break-only chunks return.
 		if !context.spacing_resolved {
-			context.letter_spacing = resolved_text_spacing_for_node(unsafe { &Node(text_node) }, .letter_spacing).to_double()
-			context.word_spacing = resolved_text_spacing_for_node(unsafe { &Node(text_node) }, .word_spacing).to_double()
+			context.letter_spacing = resolved_text_spacing_for_shaping(unsafe { &Node(text_node) }, .letter_spacing)
+			context.word_spacing = resolved_text_spacing_for_shaping(unsafe { &Node(text_node) }, .word_spacing)
 			context.spacing_resolved = true
 		}
 		letter_spacing := context.letter_spacing

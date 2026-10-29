@@ -774,9 +774,9 @@ fn apply_block_ellipsis(containing_block &BlockContainer, mut used UsedValues,
 	line.trim_trailing_whitespace()
 	style_source := unsafe { &Node(containing_block) }
 	font := block_ellipsis_font(style_source, ellipsis)
-	letter_spacing := resolved_text_spacing_for_node(style_source, .letter_spacing)
-	word_spacing := resolved_text_spacing_for_node(style_source, .word_spacing)
-	run := platform.shape_text_with_spacing(0, f32(letter_spacing.to_double()), f32(word_spacing.to_double()), ellipsis, font, .common).glyph_run
+	letter_spacing := resolved_text_spacing_for_shaping(style_source, .letter_spacing)
+	word_spacing := resolved_text_spacing_for_shaping(style_source, .word_spacing)
+	run := platform.shape_text_with_spacing(0, f32(letter_spacing), f32(word_spacing), ellipsis, font, .common).glyph_run
 	ellipsis_width := shaped_inline_width(run, 0)
 	available_width := if line.original_available_width().is_definite() {
 		line.original_available_width().to_px_or_zero()

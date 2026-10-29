@@ -62,8 +62,8 @@ fn chromium_shape_line_end(node &Node, visible string, run &platform.GlyphRun,
 		return none
 	}
 	if !chromium_context_has_single_supported_script(visible) { return none }
-	letter_spacing := f32(resolved_text_spacing_for_node(node, .letter_spacing).to_double())
-	word_spacing := f32(resolved_text_spacing_for_node(node, .word_spacing).to_double())
+	letter_spacing := f32(resolved_text_spacing_for_shaping(node, .letter_spacing))
+	word_spacing := f32(resolved_text_spacing_for_shaping(node, .word_spacing))
 	shape := platform.shape_text_with_spacing(0, letter_spacing, word_spacing, visible, run.font(), .ltr)
 	if shape.glyph_run.face() != run.face() { return none }
 	length := utf16_length_for_line_box(visible)
@@ -89,8 +89,8 @@ fn chromium_line_end_width(node &Node, visible string, run &platform.GlyphRun) ?
 		|| run.face() != .document || !chromium_context_has_single_supported_script(visible) {
 		return none
 	}
-	letter_spacing := f32(resolved_text_spacing_for_node(node, .letter_spacing).to_double())
-	word_spacing := f32(resolved_text_spacing_for_node(node, .word_spacing).to_double())
+	letter_spacing := f32(resolved_text_spacing_for_shaping(node, .letter_spacing))
+	word_spacing := f32(resolved_text_spacing_for_shaping(node, .word_spacing))
 	metrics := platform.shaped_text_context_metrics(letter_spacing, word_spacing, visible,
 		run.font(), .ltr) or { return none }
 	if metrics.face != run.face()

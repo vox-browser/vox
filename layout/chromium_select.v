@@ -24,8 +24,8 @@ fn chromium_menu_list_auto_size(node &Node) css.SizeWithAspectRatio {
 	element := dom_node.as_element() or { return css.SizeWithAspectRatio{} }
 	font := node.first_available_font()
 	values := node.computed_values()
-	letter_spacing := f32(resolved_text_spacing_for_node(node, .letter_spacing).to_double())
-	word_spacing := f32(resolved_text_spacing_for_node(node, .word_spacing).to_double())
+	letter_spacing := f32(resolved_text_spacing_for_shaping(node, .letter_spacing))
+	word_spacing := f32(resolved_text_spacing_for_shaping(node, .word_spacing))
 	mut maximum := f32(0)
 	for option in css.query_selector_all(element.as_node(), 'option') {
 		mut label := html.html_option_element_label(unsafe { &dom.HTMLOptionElement(option) })

@@ -17,8 +17,8 @@ fn chromium_cached_safe_line_end(node &Node, start int, length int,
 		platform.leave_persistent(persistent)
 	}
 	collapses_spaces := text_node.Node.computed_values().white_space_collapse() in [.collapse, .preserve_breaks]
-	letter := f32(resolved_text_spacing_for_node(node, .letter_spacing).to_double())
-	word := f32(resolved_text_spacing_for_node(node, .word_spacing).to_double())
+	letter := f32(resolved_text_spacing_for_shaping(node, .letter_spacing))
+	word := f32(resolved_text_spacing_for_shaping(node, .word_spacing))
 	return platform.shaped_text_safe_break_width_cached(mut mutable_text.safe_break_width_cache_,
 		letter, word, text, start, length, run.font(), collapses_spaces)
 }
