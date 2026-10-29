@@ -71,6 +71,10 @@ case "$(uname -m)" in
 esac
 
 mkdir -p "$binary_dir" "$resources_dir"
+# Failed compiler jobs can leave Mach-O/object scratch directories beside their
+# output. Keep those outside the app so they cannot invalidate bundle signing.
+compile_dir=$(mktemp -d "$build_dir/compiler-output.XXXXXX")
+echo "Compiler outputs: $compile_dir"
 cp "$repo_dir/packaging/Info.plist" "$bundle_dir/Contents/Info.plist"
 cp "$repo_dir/packaging/Vox.icns" "$resources_dir/Vox.icns"
 snapshot_resource_tmp=$(mktemp "$resources_dir/.adblock-snapshot.XXXXXX")
@@ -199,7 +203,9 @@ fi
 if [ "$gc_mode" = prealloc ]; then
     # Thread-local bump arenas without a collector; V's free() is a no-op.
     # -prealloc leaves V's default collector selected, so deselect it too.
-    set -- "$@" -prealloc -gc none
+    # Avoid retaining the imported-module cache graph and declaration-notice
+    # analysis alongside the complete prealloc browser under the 10 GiB budget.
+    set -- "$@" -w -n -nocache -prealloc -gc none
     extra_cflags="$extra_cflags -O2"
 elif [ "$gc_mode" != none ]; then
     set -- "$@" -gc "$gc_mode"
@@ -235,21 +241,22 @@ fi
 if [ -n "$extra_ldflags" ]; then
     "$v_compiler" "$@" \
         -cflags "$extra_cflags" -ldflags "$extra_ldflags" \
-        -o "$binary_dir/Vox" "$repo_dir"
+        -o "$compile_dir/Vox" "$repo_dir"
 else
     "$v_compiler" "$@" \
         -cflags "$extra_cflags" \
-        -o "$binary_dir/Vox" "$repo_dir"
+        -o "$compile_dir/Vox" "$repo_dir"
 fi
+mv -f "$compile_dir/Vox" "$binary_dir/Vox"
 
 # Keep the filter worker's entry point independent of browser/UI initialization.
 # It uses the same engine, snapshot resource and private transport as self-exec.
-helper_tmp=$(mktemp "$binary_dir/.adblock-worker.XXXXXX")
+helper_tmp="$compile_dir/VoxAdblockWorker"
 set -- -memory-limit 10G -exclude "$zoneinfo_exclude" -enable-globals -d vox_sparse_ttf \
     -path "$repo_dir|$prealloc_modules|$font_modules|$http_modules|@vmodules|@vlib"
 helper_cflags=-O2
 if [ "$gc_mode" = prealloc ]; then
-    set -- "$@" -prealloc -gc none
+    set -- "$@" -w -n -nocache -prealloc -gc none
 elif [ "$gc_mode" != none ]; then
     set -- "$@" -gc "$gc_mode"
     helper_cflags="$helper_cflags -DLARGE_CONFIG=1"
@@ -307,6 +314,7 @@ fi
 if command -v codesign >/dev/null 2>&1; then
     codesign --force --sign - "$bundle_dir" >/dev/null
 fi
+rm -rf "$compile_dir"
 
 echo "Built production Vox app: $bundle_dir"
 echo "Run: open '$bundle_dir'"

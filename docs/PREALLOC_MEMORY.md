@@ -21,6 +21,13 @@ links to the active V checkout. No Vox source tree is copied. The build invokes
 the staged compiler from its runtime directory with an absolute canonical
 source path, because V selects builtin from its compiler root rather than
 ordinary module search paths. The original compiler checkout stays unchanged.
+Production prealloc compilation uses `-nocache -w -n` to limit retained compiler
+state and declaration-notice analysis. The 10 GiB compiler limit and 12 GiB
+process-tree guard remain in effect, and generated native code uses `-O2`.
+Native compiler outputs are created in a fresh directory outside `Vox.app`
+and moved into the bundle after successful compilation. This keeps scratch
+files from failed compiles out of the signed app. Successful builds remove
+their compiler-output directory after signing.
 
 `python3 tools/prepare_prealloc_runtime_test.py` checks staging, reuse, source
 preservation, and unsupported allocator rejection. Native reallocation
