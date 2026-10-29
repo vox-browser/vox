@@ -1,0 +1,14 @@
+._1cnxcye0{fill:var(--_1tsb0ye2);margin-left:6px;display:inline-block}
+._1cnxcye1{aspect-ratio:1;background-color:var(--_1tsb0ye6b);border-radius:50%;justify-content:center;align-items:center;width:20%;min-width:24px;max-width:40px;display:flex;position:absolute;box-shadow:0 2px 2px #0003}
+._1cnxcye3{container:_1cnxcye2/inline-size}
+._1cnxcye4{inset:var(--_1tsb0ye10r)}
+._1cnxcye5{inset:var(--_1tsb0ye10r)}
+._1cnxcye6{inset:var(--_1tsb0ye10r)}
+._1cnxcye7{inset:var(--_1tsb0ye10s)}
+._1cnxcye8{inset:var(--_1tsb0ye10s)}
+._1cnxcye9{inset:var(--_1tsb0ye10t)}
+._1cnxcyea{fill:var(--_1tsb0ye6d);width:50%;height:50%}
+@media screen and (min-width:768px){._1cnxcye1{min-width:30px;max-width:48px}._1cnxcye6{inset:var(--_1tsb0ye10s)}._1cnxcye8{inset:var(--_1tsb0ye10t)}}
+@container _1cnxcye2 (min-width:100px){._1cnxcye4{inset:var(--_1tsb0ye10s)}}
+@container _1cnxcye2 (min-width:300px){._1cnxcye4{inset:var(--_1tsb0ye10t)}}
+/*# sourceMappingURL=2t-8am47tjx9q.css.map*/

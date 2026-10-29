@@ -1,0 +1,1 @@
+window.concertAdBlockDetectorLoaded = true;

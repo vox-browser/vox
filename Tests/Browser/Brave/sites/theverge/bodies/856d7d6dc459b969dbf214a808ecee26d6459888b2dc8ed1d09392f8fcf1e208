@@ -1,0 +1,6 @@
+self.__MIDDLEWARE_MATCHERS = [
+  {
+    "regexp": "^(?:\\/(_next\\/data\\/[^/]{1,}))?(?:\\/((?!^(?:$))(?!_next\\/(?!.*webpack.hot-update)|.well-known\\/|static-assets\\/|paywall-scripts\\/|ad-block-service-worker.js|swagger.json).*))(\\.json|\\.rsc|\\.segments\\/.+\\.segment\\.rsc)?[\\/#\\?]?$",
+    "originalSource": "/((?!^(?:$))(?!_next/(?!.*webpack.hot-update)|.well-known/|static-assets/|paywall-scripts/|ad-block-service-worker.js|swagger.json).*)"
+  }
+];self.__MIDDLEWARE_MATCHERS_CB && self.__MIDDLEWARE_MATCHERS_CB()

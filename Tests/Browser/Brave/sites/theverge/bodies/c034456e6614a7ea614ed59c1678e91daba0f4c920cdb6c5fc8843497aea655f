@@ -1,0 +1,280 @@
+self.__BUILD_MANIFEST = {
+  "/404": [
+    "static/chunks/16kr6c8kczfdg.js"
+  ],
+  "/500": [
+    "static/chunks/2fl5i8zt-apy4.js"
+  ],
+  "/_error": [
+    "static/chunks/0-lremtsg3420.js"
+  ],
+  "/account/feeds": [
+    "static/chunks/3t5ol0pfm2oy_.js"
+  ],
+  "/account/following": [
+    "static/chunks/2va3ta-d4vt2m.js"
+  ],
+  "/account/newsletters": [
+    "static/chunks/0uzppsiccfb_3.js"
+  ],
+  "/account/notification-settings": [
+    "static/chunks/3mee0-dyah8wg.js"
+  ],
+  "/account/podcasts": [
+    "static/chunks/0d_szrat7rmn9.js"
+  ],
+  "/account/profile": [
+    "static/chunks/2fpp206nl-kzd.js"
+  ],
+  "/account/subscription": [
+    "static/chunks/3wu9b-xn8myqa.js"
+  ],
+  "/account/upgrade": [
+    "static/chunks/3wtve_ecmm0w4.js"
+  ],
+  "/admin-tools": [
+    "static/chunks/3aqv6hux8bamj.js"
+  ],
+  "/admin-tools/recent-signups": [
+    "static/chunks/282vn5co5ek61.js"
+  ],
+  "/admin-tools/users": [
+    "static/chunks/1x5cfgjm8n0-8.js"
+  ],
+  "/auth/embedded-login": [
+    "static/chunks/0jajnipt77nmd.js"
+  ],
+  "/auth/login": [
+    "static/chunks/0mh2pgy4wo41h.js"
+  ],
+  "/auth/reset-password": [
+    "static/chunks/3o8yqihtun1vg.js"
+  ],
+  "/auth/verify-email": [
+    "static/chunks/1pisfcvn1gbpr.js"
+  ],
+  "/checkout": [
+    "static/chunks/1d__u5esqyajr.js"
+  ],
+  "/contact": [
+    "static/chunks/3lr0-co9lwqyk.js"
+  ],
+  "/dev-test/kicker-gallery": [
+    "static/chunks/247ir5mvs0ni1.js"
+  ],
+  "/dev-test/paywall-template": [
+    "static/chunks/048kksaqve9yb.js"
+  ],
+  "/dev-tools/api-docs": [
+    "static/chunks/19k801glv664q.js"
+  ],
+  "/dev-tools/gql-locks": [
+    "static/chunks/1ou0jc20y0vdu.js"
+  ],
+  "/dev-tools/mixer": [
+    "static/chunks/3qgmbc-edg9e8.js"
+  ],
+  "/error/[errorCode]/[errorName]": [
+    "static/chunks/41wxy3dbodiko.js"
+  ],
+  "/newsletters": [
+    "static/chunks/2zm9dy5erp_uo.js"
+  ],
+  "/notifications": [
+    "static/chunks/24encf9e3zg3o.js"
+  ],
+  "/resource/author-profile/[nodeId]": [
+    "static/chunks/1_u22t__pm4p4.js"
+  ],
+  "/resource/category/[nodeId]": [
+    "static/chunks/1zgw7y51z-sr2.js"
+  ],
+  "/resource/content/embed-story/[nodeId]": [
+    "static/chunks/2r743_pziriim.js"
+  ],
+  "/resource/content/package/[nodeId]": [
+    "static/chunks/1gqjq08lckemr.js"
+  ],
+  "/resource/content/package/archives/[nodeId]": [
+    "static/chunks/0-lhw5hj8de2a.js"
+  ],
+  "/resource/content/page/[nodeId]": [
+    "static/chunks/2vbnd5-z0s_ak.js"
+  ],
+  "/resource/content/post/[nodeId]": [
+    "static/chunks/3kh_sf_mo7uxp.js"
+  ],
+  "/resource/content/quick-post/[nodeId]": [
+    "static/chunks/1vdqy07ngw38i.js"
+  ],
+  "/resource/content/stream/[nodeId]": [
+    "static/chunks/1bdph5zvb_-qm.js"
+  ],
+  "/resource/content/stream/archives/[nodeId]": [
+    "static/chunks/2hi356d-nsvmg.js"
+  ],
+  "/resource/full-archive/[category]/[year]/[month]/[pageNumber]": [
+    "static/chunks/2z12k2qc3_qw2.js"
+  ],
+  "/resource/full-archive/homepage/[year]/[month]/[pageNumber]": [
+    "static/chunks/20nvuz_x_e8j8.js"
+  ],
+  "/resource/homepage": [
+    "static/chunks/31g6cfpf7zqpd.js"
+  ],
+  "/resource/homepage/archives/[pageNumber]": [
+    "static/chunks/1u8e4u7w30ccf.js"
+  ],
+  "/search": [
+    "static/chunks/2x3kahth6-d3f.js"
+  ],
+  "/subscribe-flash-sale": [
+    "static/chunks/26zcco10o0ixk.js"
+  ],
+  "/subscribe-now": [
+    "static/chunks/1nea_64u-t7q8.js"
+  ],
+  "/subscribe-winback": [
+    "static/chunks/0auc1gi0qsp95.js"
+  ],
+  "__rewrites": {
+    "afterFiles": [],
+    "beforeFiles": [],
+    "fallback": []
+  },
+  "sortedPages": [
+    "/404",
+    "/500",
+    "/_app",
+    "/_error",
+    "/account/feeds",
+    "/account/following",
+    "/account/newsletters",
+    "/account/notification-settings",
+    "/account/podcasts",
+    "/account/profile",
+    "/account/subscription",
+    "/account/upgrade",
+    "/admin-tools",
+    "/admin-tools/recent-signups",
+    "/admin-tools/users",
+    "/api/account/checkout/billing-portal-sessions",
+    "/api/account/checkout/billing-portal-upgrade-sessions",
+    "/api/account/checkout/checkout-session-callback",
+    "/api/account/checkout/checkout-sessions",
+    "/api/account/generate-article-gift-link",
+    "/api/account/gifted-articles-count",
+    "/api/account/notification-settings",
+    "/api/account/notifications",
+    "/api/account/notifications/mark-all-read",
+    "/api/account/notifications/[notificationId]",
+    "/api/account/podcasts",
+    "/api/account/subscriptions/[subscriptionId]",
+    "/api/account/update-commenting-name",
+    "/api/account/update-entitlement-badge-opt-out",
+    "/api/account/user-info",
+    "/api/admin-tools/apply-corporate-entitlement",
+    "/api/admin-tools/delete-user-avatar",
+    "/api/admin-tools/fetch-ip-info",
+    "/api/admin-tools/fetch-recent-signups",
+    "/api/admin-tools/fetch-user",
+    "/api/admin-tools/send-user-email",
+    "/api/admin-tools/set-admin-status",
+    "/api/admin-tools/set-ip-block-status",
+    "/api/auth",
+    "/api/auth/callback",
+    "/api/auth/csrf",
+    "/api/auth/firebase-check-email",
+    "/api/auth/firebase-confirm-reset",
+    "/api/auth/firebase-login",
+    "/api/auth/firebase-logout",
+    "/api/auth/firebase-post-email-verification",
+    "/api/auth/firebase-post-link",
+    "/api/auth/firebase-reset",
+    "/api/auth/firebase-send-email",
+    "/api/auth/firebase-verify",
+    "/api/auth/login",
+    "/api/auth/logout",
+    "/api/basic-auth",
+    "/api/boosted-post",
+    "/api/boosted-post/impression",
+    "/api/contact",
+    "/api/coral-counts",
+    "/api/dev-tools/gql-lock/bulk-test",
+    "/api/dev-tools/gql-lock/config",
+    "/api/dev-tools/gql-lock/extend",
+    "/api/dev-tools/gql-lock/lock",
+    "/api/dev-tools/gql-lock/locks",
+    "/api/dev-tools/gql-lock/metrics",
+    "/api/dev-tools/gql-lock/probe",
+    "/api/dev-tools/gql-lock/queries",
+    "/api/dev-tools/gql-lock/unlock",
+    "/api/dev-tools/mixer/trigger-deploy",
+    "/api/follows/latest/[userRef]",
+    "/api/gam/update-editorial-sponsorships",
+    "/api/geo",
+    "/api/graphql",
+    "/api/healthz",
+    "/api/kicker/today",
+    "/api/mobile/latest/following/river/[userId]",
+    "/api/mobile/latest/homepage/river",
+    "/api/mobile/latest/navigation",
+    "/api/mobile/latest/notifications/status",
+    "/api/mobile/latest/resource/type",
+    "/api/mobile/latest/surf/feed",
+    "/api/newsletter",
+    "/api/paywall/anonymous-session",
+    "/api/paywall/decision/[nodeId]",
+    "/api/paywall/template",
+    "/api/podcasts/latest/shows",
+    "/api/podcasts/latest/[show]/episodes",
+    "/api/regwall/newsletters",
+    "/api/resource/latest/author-profile/[nodeId]",
+    "/api/resource/latest/author-profile/[nodeId]/posts",
+    "/api/resource/latest/category/[nodeId]",
+    "/api/resource/latest/category/[nodeId]/posts",
+    "/api/resource/latest/content/embed-story/[nodeId]",
+    "/api/resource/latest/content/package/[nodeId]",
+    "/api/resource/latest/content/page/[nodeId]",
+    "/api/resource/latest/content/post/[nodeId]",
+    "/api/resource/latest/content/quick-post/[nodeId]",
+    "/api/resource/latest/content/stream/[nodeId]",
+    "/api/resource/latest/content/video-post/[nodeId]",
+    "/api/search",
+    "/api/users/checkout-success-callback",
+    "/api/users/trial-pricing-callback",
+    "/api/volume/latest/feed/[slug]",
+    "/auth/embedded-login",
+    "/auth/login",
+    "/auth/reset-password",
+    "/auth/verify-email",
+    "/checkout",
+    "/contact",
+    "/dev-test/kicker-gallery",
+    "/dev-test/paywall-template",
+    "/dev-tools/api-docs",
+    "/dev-tools/gql-locks",
+    "/dev-tools/mixer",
+    "/error/[errorCode]/[errorName]",
+    "/newsletters",
+    "/notifications",
+    "/resource/author-profile/[nodeId]",
+    "/resource/category/[nodeId]",
+    "/resource/content/embed-story/[nodeId]",
+    "/resource/content/package/archives/[nodeId]",
+    "/resource/content/package/[nodeId]",
+    "/resource/content/page/[nodeId]",
+    "/resource/content/post/[nodeId]",
+    "/resource/content/quick-post/[nodeId]",
+    "/resource/content/stream/archives/[nodeId]",
+    "/resource/content/stream/[nodeId]",
+    "/resource/full-archive/homepage/[year]/[month]/[pageNumber]",
+    "/resource/full-archive/[category]/[year]/[month]/[pageNumber]",
+    "/resource/homepage",
+    "/resource/homepage/archives/[pageNumber]",
+    "/search",
+    "/subscribe-flash-sale",
+    "/subscribe-now",
+    "/subscribe-winback"
+  ]
+};self.__BUILD_MANIFEST_CB && self.__BUILD_MANIFEST_CB()

@@ -1,0 +1,42 @@
+._77sxmb0{font:var(--_1tsb0ye4s);letter-spacing:var(--_1tsb0ye4t);padding-top:6px}
+._77sxmb3{text-align:var(--_1tsb0ye10m)}
+._77sxmb4{text-align:var(--_1tsb0ye10p)}
+._77sxmb5{color:var(--_1tsb0yeoa);font-style:normal;display:inline}
+._77sxmb8{color:var(--_1tsb0yeho)}
+._77sxmb9{color:var(--_1tsb0yeho)}
+._77sxmba{color:var(--_1tsb0ye4u);display:inline}
+._77sxmbd{color:var(--_1tsb0yeho)}
+._77sxmbe{color:var(--_1tsb0yeho)}
+@media screen and (min-width:1180px){._77sxmb3{text-align:var(--_1tsb0ye10n);padding-left:var(--_1tsb0ye10o)}._77sxmb4{text-align:var(--_1tsb0ye10q)}}
+._1l4uy9l0{height:100%;display:block;position:relative;overflow:hidden}
+._1l4uy9l1{width:auto;height:100%;position:relative}
+._1l4uy9l3{border-radius:10px;overflow:hidden}
+.ejz0tz0{width:100%;min-height:100px}
+.ejz0tz1 iframe,.ejz0tz1 blockquote{min-width:100%!important}
+.ejz0tz2{min-height:700px}
+.ejz0tz3{min-height:152px}
+.ejz0tz4{min-height:500px}
+.ejz0tz5{min-height:220px}
+.ejz0tz6{min-height:240px}
+.ejz0tz7{min-height:220px}
+.ejz0tz9 :has(>iframe){background-color:#0000;border-radius:12px;overflow:hidden}
+.ejz0tz9 iframe{background-color:#0000;border-radius:12px}
+.ejz0tza iframe{aspect-ratio:16/9;width:100%;height:100%}
+.ejz0tzc{border-radius:10px;overflow:hidden}
+.ejz0tzd .bluesky-embed{background-color:#0000;border-radius:32px;overflow:hidden}
+.ejz0tzd .bluesky-embed iframe{background-color:#0000;border-radius:32px}
+.ejz0tze iframe{min-height:220px}
+.ejz0tzf{padding:40px}
+.ejz0tzg{aspect-ratio:1;width:100%}
+@media screen and (min-width:768px){.ejz0tz8{max-width:460px}}
+@media screen and (min-width:1180px){.ejz0tzg{aspect-ratio:3/2}}
+._1k8kvzd0{width:100%;height:100%;position:relative}
+._1k8kvzd1{background-color:#e9e9e9;background-size:cover;height:100%;margin:0;position:relative;overflow:hidden}
+._1k8kvzd2{z-index:1;width:100%;height:100%;font:var(--_1tsb0yew);letter-spacing:var(--_1tsb0yex);color:#fff;opacity:.95;background-color:#000;flex-direction:column;justify-content:center;align-items:center;display:flex;position:absolute;inset:0}
+._1k8kvzd3{margin-bottom:10px}
+.f8x97j0{position:relative}
+.f8x97j1{width:100%;height:100%;position:absolute;top:0}
+.f8x97j2{width:100%;height:100%}
+.f8x97j3{width:100%}
+.r21yj71{border-radius:10px;overflow:hidden}
+/*# sourceMappingURL=0zpx0if60vvmt.css.map*/

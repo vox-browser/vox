@@ -1,0 +1,34 @@
+{
+  "status": "coverage-failure",
+  "reason": "Stack Overflow did not provide a completed page to the isolated full-uBO session.",
+  "observed_at": "2026-10-30",
+  "navigation": null,
+  "capture_guard": {
+    "command": [
+      "node",
+      "/Users/alex/code/vox2/tools/adblock/brave_parity.mjs",
+      "--url",
+      "https://stackoverflow.com/questions",
+      "--extension",
+      "/Users/alex/code/vox2/Build/forum-news-parity-20261030/extension/uBlock0.chromium",
+      "--checker",
+      "/Users/alex/code/vox2/Build/forum-news-parity-20261030/adblock-check",
+      "--brave",
+      "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+      "--settle",
+      "5.0",
+      "--proxy-server",
+      "http://127.0.0.1:55313",
+      "--capture-dir",
+      "/Users/alex/code/vox2/Build/forum-news-parity-20261030/routed-matrix/stackoverflow/capture",
+      "--output",
+      "/Users/alex/code/vox2/Build/forum-news-parity-20261030/routed-matrix/stackoverflow/capture.json"
+    ],
+    "reason": "completed",
+    "child_exit_code": 1,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 1736556544,
+    "elapsed_seconds": 21.87198125,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  }
+}

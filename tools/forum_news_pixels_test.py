@@ -23,6 +23,9 @@ class ForumNewsPixelTests(unittest.TestCase):
         self.assertEqual(len({s['id'] for s in sites}), 10)
         self.assertEqual(sites[0]['id'], 'hacker-news')
         self.assertIn('reddit', {s['id'] for s in sites})
+        for site in sites:
+            directory = CATALOG.parent / 'sites' / site['id']
+            self.assertTrue((directory / 'manifest.json').is_file() or (directory / 'status.json').is_file(), site['id'])
 
     def test_challenges_and_incomplete_filter_evidence_cannot_pass(self):
         check_filters(self.report())

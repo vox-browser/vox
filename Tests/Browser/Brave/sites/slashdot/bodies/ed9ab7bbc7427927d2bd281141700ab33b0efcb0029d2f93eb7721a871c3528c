@@ -1,0 +1,4189 @@
+<!doctype html>
+<html lang="en"><head><base href="https://slashdot.org/">
+	<!-- Render IE9 -->
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+
+	
+
+	
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"> 
+	
+		<title>Slashdot: News for nerds, stuff that matters, &amp; software</title>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	  
+		<meta name="description" content="Slashdot: News for nerds, stuff that matters. Timely news source for technology related news and B2B software reviews &amp; comparisons.">
+	    
+		<meta property="og:title" content="Slashdot: News for nerds, stuff that matters, &amp; software">
+		<meta property="og:description" content="Slashdot: News for nerds, stuff that matters. Timely news source for technology related news and B2B software reviews &amp; comparisons.">
+	  
+	
+	
+		<meta property="fb:admins" content="100000696822412">
+		<meta property="fb:page_id" content="267995220856">
+	
+		<meta name="viewport" content="width=1000, user-scalable=yes, minimum-scale=0, maximum-scale=10.0">
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black">
+	
+		<link rel="canonical" href="https://slashdot.org">
+		
+		<link rel="alternate" media="only screen and (max-width: 640px)" href="https://m.slashdot.org">
+	
+
+		<link rel="stylesheet" type="text/css" media="screen, projection" href="//a.fsdn.com/sd/classic.ssl.css?0ab6e7235c60a5c8">
+		<!--[if IE 8]><link rel="stylesheet" type="text/css" media="screen, projection" href="//a.fsdn.com/sd/ie8-classic.ssl.css?0ab6e7235c60a5c8" ><![endif]-->
+		<!--[if IE 7]><link rel="stylesheet" type="text/css" media="screen, projection" href="//a.fsdn.com/sd/ie7-classic.ssl.css?0ab6e7235c60a5c8" ><![endif]-->
+	
+	
+	
+
+
+
+	
+	<!--  -->
+
+	
+	
+
+	
+	<!-- SMACKS: NEW CSS -->
+	<link rel="stylesheet" href="//a.fsdn.com/sd/css/app.css?0ab6e7235c60a5c8">
+
+	
+	
+	
+	<link rel="stylesheet" href="//a.fsdn.com/con/css/sftheme/sandiego/cmp.css?2026-10-20" type="text/css">
+
+	
+
+
+
+
+
+
+
+<!-- AdBlock Check -->
+
+
+
+
+</head>
+
+<body class="anon index2 stories-view" style="overflow: hidden;"><div id="cmpwrapper" class="cmpwrapper"></div>
+
+	
+	<iframe name="__cmpLocator" style="display: none;"></iframe><iframe name="__uspapiLocator" style="display: none;"></iframe><iframe name="__tcfapiLocator" style="display: none;"></iframe><iframe name="__gppLocator" style="display: none;"></iframe>
+	
+	
+	
+	<!--[if lt IE 9]><script src="//a.fsdn.com/sd/html5.js"></script><![endif]-->
+	
+	
+	<!-- index2_variant |A|-->
+		<!-- html-header type=current end --><!-- header type=current begin -->
+	
+	
+	
+	<link rel="top" title="News for nerds, stuff that matters" href="//slashdot.org/">
+<link rel="search" title="Search Slashdot" href="//slashdot.org/search.pl">
+<link rel="alternate" title="Slashdot RSS" href="https://rss.slashdot.org/Slashdot/slashdotMain" type="application/rss+xml">
+	<link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+
+	
+		<div id="top_parent"></div>
+		<a name="topothepage"></a>
+		
+		<div class="container">
+			<div class="nav-wrap">
+				<nav class="nav-primary" role="navigation" aria-label="Global Navigation">
+					<h2 class="logo">
+	<a href="//slashdot.org"><span>Slashdot</span></a>
+</h2>
+
+<ul class="nav-site">
+	<li><a href="//slashdot.org"><i class="icon-book" title="Stories"></i><span>Stories</span></a></li>
+	<li>
+		<ul class="filter-firehose">
+			<li class="nav-label">Firehose <i class="icon-angle-right"></i></li>
+			<li><a href="//slashdot.org/recent">All</a></li>
+			<li><a href="//slashdot.org/popular">Popular</a></li>
+		</ul>
+	</li>
+	<li><a href="//slashdot.org/polls"><i class="icon-chart-bar" title="Polls"></i><span>Polls</span></a></li>
+
+	<!--
+	<li><a href="//ask.slashdot.org"><i class="icon-question-circle"></i><span>Ask</span></a></li>
+	
+	<li><a href="//events.slashdot.org"><i class="icon-calendar"></i><span>Events</span></a></li>
+	-->
+	<li><a href="https://slashdot.org/software/"><i class="sd-mini"></i> <span>Software</span></a></li>
+        <li><a href="//slashdot.org/content/"><span>Thought Leadership</span></a></li>
+</ul>
+<a href="//slashdot.org/submission" class="btn btn-success">Submit</a>
+				</nav>
+				<nav class="nav-user" role="navigation" aria-label="user access and account controls">
+					<div id="main-top-nav-wrapper">
+<form id="search" class="form-inline nav-search-form" method="get" action="//slashdot.org/index2.pl">
+<!-- //slashdot.org/index2.pl" -->
+	<div class="form-group">
+		<label class="sr-only" for="sitesearch">Search Slashdot</label>
+		<div class="input-group">
+			<input type="text" id="" class="" name="fhfilter" value="" placeholder="Search">
+		</div>
+	</div>
+	<button type="submit" class="btn icon-search"></button>
+</form>
+<ul class="user-access">
+	
+		
+			<li>
+				<a href="//slashdot.org/my/login" onclick="show_login_box(); return false;"><i class="icon-login"></i><span> Login</span></a>
+				
+			</li>
+		
+	
+		
+			<li class="nav-label">or</li>
+		
+	
+		
+			<li>
+				<a href="//slashdot.org/my/newuser"><i class="icon-user-add"></i><span> Sign up</span></a>
+				
+			</li>
+		
+	
+</ul>
+				</div></nav>
+			</div>
+			<div class="nav-secondary-wrap">
+				<nav class="nav-secondary" role="secondary-navigation">
+	<ul>
+		<li class="nav-label">Topics: </li>
+		<li><a href="//devices.slashdot.org">Devices</a></li>
+		<li><a href="//build.slashdot.org">Build</a></li>
+		<li><a href="//entertainment.slashdot.org">Entertainment</a></li>
+		<li><a href="//technology.slashdot.org">Technology</a></li>
+		<li><a href="//slashdot.org/?fhfilter=opensource">Open Source</a></li>
+		<li><a href="//science.slashdot.org">Science</a></li>
+		<li><a href="//yro.slashdot.org">YRO</a></li>
+		<!-- <li><a href="//slashdot.org/topics.pl">more...</a></li> -->
+	</ul>
+</nav>
+<nav class="nav-social" role="social navigation">
+	<ul>
+		<li class="nav-label">Follow us:</li>
+		<li><a href="https://rss.slashdot.org/Slashdot/slashdotMain" target="_blank" rel="nofollow"><i class="icon-rss-squared"></i><span class="sr-only">RSS</span></a></li>
+		<li><a href="https://www.facebook.com/slashdot" target="_blank" rel="nofollow"><i class="icon-facebook-squared"></i><span class="sr-only">Facebook</span></a></li>
+		<li><a href="https://www.linkedin.com/company/slashdot" target="_blank" rel="nofollow"><i class="icon-linkedin-squared"></i><span class="sr-only">LinkedIn</span></a></li>
+		<li><a href="https://x.com/slashdot" target="_blank" rel="nofollow"><i><svg style="height:20px;width:20px;margin: 3px 4px 0 4px;" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" id="Layer_1" width="512px" height="512px" viewBox="0 0 512 512" enable-background="new 0 0 512 512" xml:space="preserve"><g><path fill="#000000" d="M486,392.599C486,443.97,443.97,486,392.599,486H119.401C68.03,486,26,443.97,26,392.599V119.401   C26,68.031,68.03,26,119.401,26h273.198C443.97,26,486,68.031,486,119.401V392.599z"></path><path fill="#F0F0F1" d="M290.425,233.064l110.65-137.91h-32.05l-94.62,117.94l-94.63-117.94H74.125l147.45,183.78l-110.66,137.92   h32.05l94.63-117.95l94.64,117.95h105.65L290.425,233.064z M126.225,120.153h41.55l218,271.7h-41.55L126.225,120.153z"></path></g></svg></i><span class="sr-only">Twitter</span></a></li>
+		<li><a href="https://www.youtube.com/channel/UCsW36751Gy-EAbHQwe9WBNw" target="_blank" rel="nofollow"><i class="icon-youtube-squared">
+                    <!-- width="1792" height="1792" -->
+                    <svg viewBox="0 260 1792 1260" xmlns="http://www.w3.org/2000/svg"><path d="M711 1128l484-250-484-253v503zm185-862q168 0 324.5 4.5t229.5 9.5l73 4q1 0 17 1.5t23 3 23.5 4.5 28.5 8 28 13 31 19.5 29 26.5q6 6 15.5 18.5t29 58.5 26.5 101q8 64 12.5 136.5t5.5 113.5v176q1 145-18 290-7 55-25 99.5t-32 61.5l-14 17q-14 15-29 26.5t-31 19-28 12.5-28.5 8-24 4.5-23 3-16.5 1.5q-251 19-627 19-207-2-359.5-6.5t-200.5-7.5l-49-4-36-4q-36-5-54.5-10t-51-21-56.5-41q-6-6-15.5-18.5t-29-58.5-26.5-101q-8-64-12.5-136.5t-5.5-113.5v-176q-1-145 18-290 7-55 25-99.5t32-61.5l14-17q14-15 29-26.5t31-19.5 28-13 28.5-8 23.5-4.5 23-3 17-1.5q251-18 627-18z"></path></svg>
+                </i><span class="sr-only">Youtube</span></a></li>
+		<li><a href="https://mastodon.cloud/@slashdot" target="_blank" rel="me nofollow"><i class="icon-mastodon-squared">
+					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M433 179.11c0-97.2-63.71-125.7-63.71-125.7-62.52-28.7-228.56-28.4-290.48 0 0 0-63.72 28.5-63.72 125.7 0 115.7-6.6 259.4 105.63 289.1 40.51 10.7 75.32 13 103.33 11.4 50.81-2.8 79.32-18.1 79.32-18.1l-1.7-36.9s-36.31 11.4-77.12 10.1c-40.41-1.4-83-4.4-89.63-54a102.54 102.54 0 0 1-.9-13.9c85.63 20.9 158.65 9.1 178.75 6.7 56.12-6.7 105-41.3 111.23-72.9 9.8-49.8 9-121.5 9-121.5zm-75.12 125.2h-46.63v-114.2c0-49.7-64-51.6-64 6.9v62.5h-46.33V197c0-58.5-64-56.6-64-6.9v114.2H90.19c0-122.1-5.2-147.9 18.41-175 25.9-28.9 79.82-30.8 103.83 6.1l11.6 19.5 11.6-19.5c24.11-37.1 78.12-34.8 103.83-6.1 23.71 27.3 18.4 53 18.4 175z"></path></svg>
+				</i><span class="sr-only">Mastodon</span></a></li>
+		<li><a href="https://bsky.app/profile/slashdot.org" target="_blank" rel="nofollow"><i><svg xmlns="http://www.w3.org/2000/svg" role="img" viewBox="0 0 24 24" id="Bluesky--Streamline-Simple-Icons.svg" height="20" width="20" style="margin: 3px 4px 0 4px;"><title>Bluesky</title><path d="M12 10.8c-1.087 -2.114 -4.046 -6.053 -6.798 -7.995C2.566 0.944 1.561 1.266 0.902 1.565 0.139 1.908 0 3.08 0 3.768c0 0.69 0.378 5.65 0.624 6.479 0.815 2.736 3.713 3.66 6.383 3.364 0.136 -0.02 0.275 -0.039 0.415 -0.056 -0.138 0.022 -0.276 0.04 -0.415 0.056 -3.912 0.58 -7.387 2.005 -2.83 7.078 5.013 5.19 6.87 -1.113 7.823 -4.308 0.953 3.195 2.05 9.271 7.733 4.308 4.267 -4.308 1.172 -6.498 -2.74 -7.078a8.741 8.741 0 0 1 -0.415 -0.056c0.14 0.017 0.279 0.036 0.415 0.056 2.67 0.297 5.568 -0.628 6.383 -3.364 0.246 -0.828 0.624 -5.79 0.624 -6.478 0 -0.69 -0.139 -1.861 -0.902 -2.206 -0.659 -0.298 -1.664 -0.62 -4.3 1.24C16.046 4.748 13.087 8.687 12 10.8Z" fill="rgb(17, 133, 254)" stroke-width="1"></path></svg></i><span class="sr-only">Bluesky</span></a></li>
+	</ul>
+</nav>
+			</div>
+		</div>
+
+		<section>
+		
+                <!--
+			<div class="message-bar" id="firehose-message-tray">
+				<span class="icon-quote-left"></span>
+				<p>
+					
+						
+						Want to read Slashdot from your mobile device? Point it at <a href="http://m.slashdot.org">m.slashdot.org</a> and keep reading!
+					
+				</p>
+			</div>
+                -->
+		
+		
+			<div id="embbeded_login_modal" class="hide push">
+<form action="https://slashdot.org/my/login" method="post" onsubmit="if (global_returnto) { this.returnto.value = global_returnto }" class="embedded"><fieldset style="-webkit-border-radius:10px 10px 0 0;border-radius:10px 10px 0 0;-moz-border-radius:10px 10px 0 0">
+<div style="height:25px;">&nbsp;</div>
+    <input type="hidden" name="returnto" value="">
+    <input type="hidden" name="op" value="userlogin">
+    <p>
+        <label class="fleft" for="unickname">Nickname:</label>
+        <input type="text" name="unickname" value="">
+    </p>
+    <p>
+        <label class="fleft" for="upasswd">Password:</label>
+        <input type="password" name="upasswd">
+    </p>
+    <label class="checkbox"><input type="checkbox" name="login_temp" value="yes"> Public Terminal</label>
+    <br>
+    <hr>
+    <input type="submit" name="userlogin" value="Log In" class="fno"> <a href="//slashdot.org/my/mailpassword" class="btn link" onclick="getModalPrefs('sendPasswdModal', 'Retrieve Password', 1); return false;">Forgot your password?</a>
+</fieldset></form>
+
+<div class="actions">
+ <a class="ico close" onclick="hide_login_slider();" href=""><span>Close</span></a>
+</div>
+</div>
+		
+		<div class="banner-wrapper"></div>
+		
+		
+		<a name="main-articles"></a>
+	
+	<!-- header type=current end --><!--body begin -->
+
+
+
+
+
+
+
+
+	<style type="text/css">
+menu, menu * {
+	text-decoration:none;
+}
+
+menu[type=context] {
+	display:none;
+	position:absolute;
+	z-index:10000;
+}
+
+menu[type=context]:not(.brief) {
+	background-color:#dfdfdf;
+	margin:0;
+	padding:2px 0.5em;
+	border-style:solid;
+	border-width:1px;
+	border-color:#eeeeee #aaaaaa #aaaaaa #eeeeee;
+	-moz-border-radius-topright:.7em;
+	-webkit-border-top-right-radius: 0.7em 0.7em;
+}
+
+menu.full[type=context] > a.slash-hover:first-child {
+	-moz-border-radius-topright:.6em;
+	-webkit-border-top-right-radius: 0.6em 0.6em;
+}
+
+
+
+menu.brief[type=context] > a {
+	-moz-border-radius:.6em;
+	-webkit-border-radius: 0.6em;
+	color:#ffffff;
+	background-color:#000000;
+}
+
+/*
+span.briefmenu a.tag:not(.datatype) {
+    padding-left:.5em;
+}
+*/
+
+
+
+
+/* #tag-menu a, #feedback-menu a  { */
+menu.tag-menu-admin a {
+	display:list-item;
+	list-style:none;
+	text-align:left;
+	font-weight:bold;
+	color:black;
+	padding:0.1em 0.5em;
+	margin:-0.1em -0.5em;
+	cursor:pointer;
+}
+
+
+.tags .edit-bar { position:relative; }
+article aside .share .addthis_toolbox { display:block; width:60px; float:left; }
+article aside.view_mode .share { min-width:120px; padding-top:.5em; }
+#firehose.list article header h2 {padding-left: 20px; !important}
+.novote .vote { display:none; }
+
+.vote > a, .votedup > a, .voteddown > a {
+	display:inline-block;
+	height:22px;
+	width:22px;
+	margin: 2px 10px 0 0;
+	color:rgb(255,255,255);
+	text-decoration:none;
+	line-height:22px;
+	text-align:center;
+	font-weight:bold;
+	font-size:14px;
+	border-width:1px;
+	border-style:solid;
+	border-color:rgba(0,0,0,0.5);
+}
+
+.vote > a, .votedup > a, .voteddown > a {color:rgb(0,0,0);}
+
+article.fhitem-submission h2 .vote > a, article.fhitem-submission h2 .votedup > a, article.fhitem-submission h2 .voteddown > a { border-color:rgba(0,0,0,0.15); }
+.vote .up, .vote .down, .votedup .up, .votedup .down, .voteddown .up, .voteddown .down { border-radius: 4px; -moz-border-radius: 4px; -webkit-border-radius: 4px; /* text-shadow:0 0 2px #000000; }*/}
+article:not(.fhitem-story) .vote .up,article:not(.fhitem-story) .vote .down,article:not(.fhitem-story) .votedup .up,article:not(.fhitem-story) .votedup .down,article:not(.fhitem-story) .voteddown .up,article:not(.fhitem-story) .voteddown .down { /*text-shadow:none !important; */}
+.voteddown .down, .votedup .up { margin-right: 10px; text-indent:2px; line-height:24px; }
+article:not(.fhitem-story) .votedup .up,article:not(.fhitem-story) .voteddown .down {background: rgb(174,174,174);background-image: -webkit-gradient(linear, 0% 0%, 0% 100%, from(rgb(174,174,174)), to(rgb(193,193,193)));background-image: -moz-linear-gradient(100% 100% 90deg,rgb(193,193,193), rgb(174,174,174) 100%);color:rgb(0,0,0);}
+article.fhitem-story .votedup .up,article.fhitem-story .voteddown .down {background: rgb(0,66,66);background-image: -webkit-gradient(linear, 0% 0%, 0% 100%, from(rgb(0,53,53)), to(rgb(0,102,102)));background-image: -moz-linear-gradient(100% 100% 90deg,rgb(0,102,102), rgb(0,53,53) 100%);}
+
+
+
+
+#tag-menu span.var-tag {
+font-weight:normal;
+color:#444444;
+}
+
+menu.reasons-menu a {
+padding:0 .25em 0 .25em;
+font-size:80%;
+-moz-border-radius:.5em;
+-webkit-border-radius:.5em;
+cursor:pointer;
+}
+
+menu.reasons-menu a:hover {
+background:rgb(153,153,153);
+background:-moz-linear-gradient(100% 100% 90deg, rgb(102,102,102), rgb(153,153,153) 70%) repeat scroll 0 0 rgb(102,102,102);
+background-image: -webkit-gradient(linear, 0% 0%, 0% 100%, from(rgb(153,153,153)), to(rgb(102,102,102)));
+color:#fff;
+text-decoration:none;
+font-weignt:normal;
+}
+
+article.fhitem-story menu.reasons-menu a:hover {
+background:#002323 !important;
+background:-moz-linear-gradient(100% 100% 90deg, #002323, #005353 70%) repeat scroll 0 0 #002323 !important;
+background-image: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#005353), to(#002323)) !important;
+}
+
+
+menu.reasons-menu {
+	display:none;
+	margin:0;
+	padding:0;
+}
+
+div.fhitem h3 menu.reasons-menu {
+margin:0.25em 0 0;
+}
+
+div.fhitem h3 menu.reasons-menu a.tag {
+font-size:.8em;
+}
+
+#tag-menu a.slash-hover,
+#feedback-menu a.slash-hover,
+
+.tag-display span.tag:hover,
+.tag-display span.tag.trigger {
+	color:white;
+	background-color:rgb(0, 85, 85);
+}
+
+#tag-menu a.slash-hover span.var-tag {
+	color:#eee;
+}
+
+.tag-entry.default {
+        color:#ccc;
+}
+
+.brief .nix {
+	margin-top:-1.35em;
+	margin-left:0px;
+	margin-top:-1.15em;
+	text-decoration:none;
+	line-height:1.35em;
+	padding:0 2px;
+	-moz-border-radius:.6em 0 0 .6em;
+	-webkit-border-radius:.6em 0 0 .6em;
+	-o-border-radius:.6em 0 0 .6em;
+	border-radius:.6em 0 0 .6em;
+    color:#fff !important;
+    background:transparent !important;
+}
+
+.brief .nix:hover {
+    background:rgb(153,153,153) !important;
+    background:-moz-linear-gradient(100% 100% 90deg, rgb(102,102,102), rgb(153,153,153) 70%) repeat scroll 0 0 rgb(102,102,102) !important;
+    background-image: -webkit-gradient(linear, 0% 0%, 0% 100%, from(rgb(153,153,153)), to(rgb(102,102,102))) !important;
+}
+
+</style>
+
+<menu id="nix-reasons" style="display:none">
+	<a class="tag">binspam</a><a class="tag">dupe</a><a class="tag">notthebest</a><a class="tag">offtopic</a><a class="tag">slownewsday</a><a class="tag">stale</a><a class="tag">stupid</a>
+</menu>
+<menu id="nod-reasons" style="display:none">
+	<a class="tag">fresh</a><a class="tag">funny</a><a class="tag">insightful</a><a class="tag">interesting</a><a class="tag">maybe</a>
+</menu>
+<menu id="comment-nix-reasons" style="display:none">
+	<a class="tag">offtopic</a><a class="tag">flamebait</a><a class="tag">troll</a><a class="tag">redundant</a><a class="tag">overrated</a>
+</menu>
+<menu id="comment-nod-reasons" style="display:none">
+	<a class="tag">insightful</a><a class="tag">interesting</a><a class="tag">informative</a><a class="tag">funny</a><a class="tag">underrated</a>
+</menu>
+
+<menu id="tag-nod-reasons" style="display:none">
+	<a class="tag">descriptive</a>
+</menu>
+<menu id="feedback-menu" class="tag-menu-admin" type="context">
+	<a class="tag">typo</a><a class="tag">dupe</a><a class="tag">error</a>
+</menu>
+<menu id="tag-menu" class="tag-menu-admin none" type="context">
+
+<!--	<a data-op="!" class="nix">!<span class="var-tag hide"></span></a>-->
+
+</menu>
+
+
+	
+
+
+
+<div class="container">
+	<div class="main-wrap  has-rail-right">
+		<div class="main-content">
+			<div id="firehose" class="nothumbs ">
+				<!-- WIT -->
+				<a name="articles"></a>
+
+
+				
+					
+				
+
+
+				<div id="firehoselist" class="fhroot row ">
+					
+					<article id="firehose-186502524" data-fhid="186502524" data-fhtype="story" class="fhitem fhitem-story article usermode thumbs grid_24">
+		<span class="sd-info-block" style="display: none">
+			<span class="sd-key-firehose-id">186502524</span>
+			<span class="type">story</span>
+			
+		</span>
+
+
+
+
+
+
+
+	
+	
+
+<header>
+	
+		<span class="topic" id="topic-186502524">
+			<a href="//slashdot.org/index2.pl?fhfilter=bitcoin" onclick="return addfhfilter('bitcoin');">
+			
+				<img src="//a.fsdn.com/sd/topics/bitcoin_64.png" width="64" height="64" alt="Bitcoin" title="Bitcoin">
+			
+		</a>
+		</span>
+	
+    
+	<h2 class="story">
+		
+
+		
+
+		
+		
+
+		
+
+		
+
+		
+
+		<span id="title-186502524" class="story-title"> <a onclick="return toggle_fh_body_wrap_return(this);" href="//slashdot.org/story/26/10/29/2143222/multi-billion-binance-hack-hitting-crypto-markets">Multi-Billion Binance Hack Hitting Crypto Markets</a> <span class=" no extlnk"><a class="story-sourcelnk" href="https://www.coindesk.com/business/2026/10/29/potential-multi-billion-binance-hack-hitting-crypto-markets" title="External link - https://www.coindesk.com/business/2026/10/29/potential-multi-billion-binance-hack-hitting-crypto-markets" target="_blank"> (coindesk.com) </a></span></span>
+
+		
+		
+		<!--<span class="comments commentcnt-186502524" >4</span>-->
+		
+
+		
+		<!-- comment bubble -->
+		
+			<span class="comment-bubble"><a href="//slashdot.org/story/26/10/29/2143222/multi-billion-binance-hack-hitting-crypto-markets#comments" title="">4</a></span>
+		
+	</h2>
+	<div class="details" id="details-186502524">
+		<span class="story-details">
+		<span class="story-views">
+			<span class="sodify" onclick="firehose_set_options('color', 'red')" title="Filter Firehose to entries rated red or better"></span><span class="icon-beaker pop1 " alt="Popularity" title="Filter Firehose to entries rated red or better" onclick="firehose_set_options('color', 'red')"><span></span></span> 
+		</span>
+		</span>
+		<span class="story-byline">
+	
+				
+			Posted
+				by 
+		
+		
+			
+				  <a href="https://www.linkedin.com/in/beauhd/" rel="nofollow">BeauHD</a>
+			
+		
+		
+
+		
+		
+		<time id="fhtime-186502524" datetime="on Thursday October 29, 2026 @06:00PM">on Thursday October 29, 2026 @06:00PM</time>
+		
+		
+			 from the <span class="dept-text">breaking-news</span> dept.
+		
+		</span>
+	</div>
+</header>
+
+<div class="body" id="fhbody-186502524">
+	
+
+	
+		
+		<div id="text-186502524" class="p">
+			
+		 	
+				Binance is <a href="https://x.com/binance/status/2115915483832832425?s=46">investigating</a> a potential hack after <a href="https://www.coindesk.com/business/2026/10/29/potential-multi-billion-binance-hack-hitting-crypto-markets">more than $2 billion in crypto was drained from one of its wallets</a> into a new external account, with Blockaid <a href="https://x.com/blockaid_/status/2115914335512150480">estimating</a> nearly $3.3 billion was moved.
+<br> <br>
+"Our teams are aware of reports of a potential security issue and are actively investigating," <a href="https://x.com/binance/status/2115915483832832425?s=46">said</a> Binance on X.
+<br> <br>
+"User funds are safe," <a href="https://x.com/cz_binance/status/2115915423174853077">said</a> Binance founder CZ. "It does look like a hack on Binance. Appreciate the quick freeze from Tether (~$971m) and Circle (~$823m). I don't manage Binance anymore, but as a shareholder, I expect all user funds will be fully covered."<br>
+		 	
+		</div>
+
+		
+
+		
+
+		
+	</div>
+	<aside class="novote">
+		
+	</aside>
+	
+	  	
+
+		
+		<footer class="clearfix meta article-foot">
+			<div class="story-controls">
+				
+                    
+					
+				
+			</div>
+			
+				
+				<div class="story-tags">
+					<span class="tright tags"><menu type="toolbar" class="edit-bar">
+		<span id="tagbar-186502524" class="tag-bar none">
+			
+		</span>
+		
+		<!--
+			<a class="edit-toggle" href="/my/login/" onclick="show_login_box();return false;">
+				<span class="icon-tag btn collapse"></span>
+			</a>
+			-->
+		
+		
+		<div class="tag-menu">
+			<input class="tag-entry default" type="text" value="apply tags">
+		</div>
+		
+
+		
+		
+
+	</menu></span>
+				</div>
+				
+			
+		</footer>
+	
+
+
+
+	</article><article id="firehose-186502022" data-fhid="186502022" data-fhtype="story" class="fhitem fhitem-story article usermode thumbs grid_24">
+		<span class="sd-info-block" style="display: none">
+			<span class="sd-key-firehose-id">186502022</span>
+			<span class="type">story</span>
+			
+		</span>
+
+
+
+
+
+
+
+	
+	
+
+<header>
+	
+		<span class="topic" id="topic-186502022">
+			<a href="//slashdot.org/index2.pl?fhfilter=movies" onclick="return addfhfilter('movies');">
+			
+				<img src="//a.fsdn.com/sd/topics/movies_64.png" width="64" height="64" alt="Movies" title="Movies">
+			
+		</a>
+		</span>
+	
+    
+	<h2 class="story">
+		
+
+		
+
+		
+		
+
+		
+
+		
+
+		
+
+		<span id="title-186502022" class="story-title"> <a onclick="return toggle_fh_body_wrap_return(this);" href="//entertainment.slashdot.org/story/26/10/29/2059216/patrick-stewart-star-trek-captain-and-x-men-superhero-dies-at-86">Patrick Stewart, 'Star Trek' Captain and 'X-Men' Superhero, Dies At 86</a> <span class=" no extlnk"><a class="story-sourcelnk" href="https://www.hollywoodreporter.com/movies/movie-news/patrick-stewart-dead-star-trek-x-men-1236742932/" title="External link - https://www.hollywoodreporter.com/movies/movie-news/patrick-stewart-dead-star-trek-x-men-1236742932/" target="_blank"> (hollywoodreporter.com) </a></span></span>
+
+		
+		
+		<!--<span class="comments commentcnt-186502022" >26</span>-->
+		
+
+		
+		<!-- comment bubble -->
+		
+			<span class="comment-bubble"><a href="//entertainment.slashdot.org/story/26/10/29/2059216/patrick-stewart-star-trek-captain-and-x-men-superhero-dies-at-86#comments" title="">26</a></span>
+		
+	</h2>
+	<div class="details" id="details-186502022">
+		<span class="story-details">
+		<span class="story-views">
+			<span class="sodify" onclick="firehose_set_options('color', 'red')" title="Filter Firehose to entries rated red or better"></span><span class="icon-beaker pop1 " alt="Popularity" title="Filter Firehose to entries rated red or better" onclick="firehose_set_options('color', 'red')"><span></span></span> 
+		</span>
+		</span>
+		<span class="story-byline">
+	
+				
+			Posted
+				by 
+		
+		
+			
+				  <a href="https://www.linkedin.com/in/beauhd/" rel="nofollow">BeauHD</a>
+			
+		
+		
+
+		
+		
+		<time id="fhtime-186502022" datetime="on Thursday October 29, 2026 @05:00PM">on Thursday October 29, 2026 @05:00PM</time>
+		
+		
+			 from the <span class="dept-text">rest-in-peace</span> dept.
+		
+		</span>
+	</div>
+</header>
+
+<div class="body" id="fhbody-186502022">
+	
+
+	
+		
+		<div id="text-186502022" class="p">
+			
+		 	
+				Slashdot readers <a href="/~Cpt_Kirks">Cpt_Kirks</a>, <a href="https://slashdot.org/~eklektic">eklektic</a>, <a href="https://slashdot.org/~sconeu">sconeu</a>, and <a href="https://slashdot.org/~Vrallis">Vrallis</a> share the unfortunate news of Patrick Stewart's passing. Longtime spokesperson Kelly Bush Novak said Stewart <a href="https://www.hollywoodreporter.com/movies/movie-news/patrick-stewart-dead-star-trek-x-men-1236742932/">died Wednesday at the age of 86</a> at his home in Los Angeles following "a brief and poignant journey with Alzheimer's disease and Lewy body dementia."
+<br> <br>
+"He has been held in the warm embrace of family and friends, surrounded by live music, prayer, tears, laughter and the kind of profound emotion that only he could inspire after a lifetime of devotion to us all," Bush Novak wrote. "We will forever cherish the peaceful ease and reflection on his face, an enduring reminder of his invincible grace."
+<br> <br>
+The acclaimed British actor became a <a href="https://entertainment.slashdot.org/story/09/12/31/1322251/sir-patrick-stewart">science-fiction icon</a> as Capt. Jean-Luc Picard in Star Trek: The Next Generation and <a href="https://news.slashdot.org/story/00/07/17/0016204/slashdot-meets-x-men">Professor Charles Xavier</a> in the X-Men films. Beyond those iconic roles, Stewart earned multiple Emmy and Golden Globe nominations for performances in Moby Dick, The Lion in Winter, Extras, Hamlet, and Blunt Talk. He later <a href="https://entertainment.slashdot.org/story/19/07/21/2014201/comic-con-trailers-include-star-trek-picard-and-hbos-watchmen-series">returned</a> to his most famous role in Star Trek: Picard.<br>
+		 	
+		</div>
+
+		
+
+		
+
+		
+	</div>
+	<aside class="novote">
+		
+	</aside>
+	
+	  	
+
+		
+		<footer class="clearfix meta article-foot">
+			<div class="story-controls">
+				
+                    
+					
+				
+			</div>
+			
+				
+				<div class="story-tags">
+					<span class="tright tags"><menu type="toolbar" class="edit-bar">
+		<span id="tagbar-186502022" class="tag-bar none">
+			
+		</span>
+		
+		<!--
+			<a class="edit-toggle" href="/my/login/" onclick="show_login_box();return false;">
+				<span class="icon-tag btn collapse"></span>
+			</a>
+			-->
+		
+		
+		<div class="tag-menu">
+			<input class="tag-entry default" type="text" value="apply tags">
+		</div>
+		
+
+		
+		
+
+	</menu></span>
+				</div>
+				
+			
+		</footer>
+	
+
+
+
+	</article><article id="firehose-11279526O" class="fhitem fhitem-story article usermode thumbs grid_24 article-nel-20469" xuengbwrr="" suf5xr0u9="">
+    <style>
+        @media screen and (max-width: 830px) {
+            .body.ntv-preview-img-wrapper div.p {
+                float: left;
+            }
+        }
+        .nel-image {
+                margin-bottom: 10px;
+                margin-left: 10px;
+                margin-right: 10px;
+                float: left;
+        }
+        #firehose-11279526O {
+            margin-bottom: 20px;
+            display: block !important;
+        }
+        .ntv-sponsored-20469 > header > span.topic {
+            max-width: 120px;
+            right: 15px;
+        }
+        .article-nel-20469 > header > span.topic >a >img {
+            width: 100% !important;
+            height: auto !important;
+            background-color: white !important;
+            box-shadow: 0 2px 5px -2px rgba(0, 0, 0, 0.5);
+            padding: 2px;
+            max-width: 80px;
+            max-height: 40px;
+        }
+        #firehose article.article-nel-20469 header h2.story {
+            border-radius: 0;
+            padding-left: 130px;
+            padding-right: 110px;
+            background: #6D4634;
+            background-image: none !important;
+        }
+        div.ntv-sponsored-disclaimer {
+            position: absolute;
+            top: 4px;
+            margin-left: -4px;
+        }
+        div.ntv-sponsored-disclaimer a {
+            background-color: #A66934;
+            padding: 5px 7px;
+            font-size: 11px;
+            color: #fff;
+            line-height: 11px;
+            text-decoration: none;
+            float: left;
+        }
+        span.ntv-sponsored-question {
+            border: .21em solid #fff;
+            border-radius: 100%;
+            padding: 2px 4px 1px 4px;
+            text-align: center;
+            margin-left: 3px;
+            font-size: 9px;
+            line-height: 11px;
+            font-weight: bold;
+        }
+        .ntv-sponsored-disclaimer:before {
+            content: '';
+            height: 0;
+            width: 0;
+            display: block;
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            border-top: 4px solid #000;
+            border-left: 5px solid transparent;
+            z-index: 0;
+        }
+        .ntvAuthorLogoLink img {
+            max-width: 100px;
+            max-height: 64px;
+        }
+        .nel-button {
+                color: #ffffff ;
+                background: #34aa55 ;
+                display: table;
+                padding: 5px 12px;
+                text-decoration: none;
+                margin: 10px 0 0;
+                border: 0;
+                cursor: pointer;
+                text-decoration: none !important;
+        }
+        .nel-button:hover {}
+        .nel-lite-button {
+        color: #ffffff ;
+        background: #34aa55 ;
+        display: table;
+        padding: 5px 12px;
+        text-decoration: none;
+        border: 0;
+        cursor: pointer;
+        margin: 0 auto;
+        text-decoration: none !important;
+        }
+    #premium-wrapper {
+        max-width: 700px;
+        display: block;
+        margin-top: 10px;
+        height: 136px;
+        overflow: hidden;
+        position: relative;
+    }
+    #premium-overflow {
+        width: 100%;
+    }
+    #inner-overflow {
+        margin: 0;
+        -webkit-transform: translateZ(0);
+        -webkit-transition: all 800ms cubic-bezier(0.770, 0.000, 0.175, 1.000);
+        -moz-transition: all 800ms cubic-bezier(0.770, 0.000, 0.175, 1.000);
+        -ms-transition: all 800ms cubic-bezier(0.770, 0.000, 0.175, 1.000);
+        -o-transition: all 800ms cubic-bezier(0.770, 0.000, 0.175, 1.000);
+        transition: all 800ms cubic-bezier(0.770, 0.000, 0.175, 1.000); /* easeInOutQuart */
+
+        -webkit-transition-timing-function: cubic-bezier(0.770, 0.000, 0.175, 1.000);
+        -moz-transition-timing-function: cubic-bezier(0.770, 0.000, 0.175, 1.000);
+        -ms-transition-timing-function: cubic-bezier(0.770, 0.000, 0.175, 1.000);
+        -o-transition-timing-function: cubic-bezier(0.770, 0.000, 0.175, 1.000);
+        transition-timing-function: cubic-bezier(0.770, 0.000, 0.175, 1.000); /* easeInOutQuart */
+    }
+    .premium-question-wrapper {
+        display: inline-block;
+        font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
+    }
+    .premium-question-wrapper:last-child div[class^='premium-row-']:after {
+        content: 'One last question before you visit.';
+        display: block;
+        color: #FFCC00;
+        position: absolute;
+        top: 10px;
+        left: 15px;
+        background: url(/images/outbound_link_icon.svg) no-repeat 0 0;
+        padding-left: 22px;
+        background-size: auto 90%;
+    }
+
+    .premium-question-wrapper:first-child div[class^='premium-row-']:after {
+        content: 'Answer a few short questions to get started.';
+        display: block;
+        color: #FFCC00;
+        position: absolute;
+        top: 10px;
+        left: 15px;
+        background-size: auto 90%;
+    }
+
+    .premium-question-wrapper:first-child:nth-last-child(1) {width: 100%;}
+    .premium-question-wrapper:first-child:nth-last-child(2), .premium-question-wrapper:first-child:nth-last-child(2) ~ div {width: 50%;}
+    .premium-question-wrapper:first-child:nth-last-child(3), .premium-question-wrapper:first-child:nth-last-child(3) ~ div {width: 33.3333%;}
+    .premium-question-wrapper:first-child:nth-last-child(4), .premium-question-wrapper:first-child:nth-last-child(4) ~ div {width: 25%;}
+    .premium-question-wrapper:first-child:nth-last-child(4), .premium-question-wrapper:first-child:nth-last-child(4) ~ div {width: 25%;}
+    .premium-question-wrapper:first-child:nth-last-child(5), .premium-question-wrapper:first-child:nth-last-child(5) ~ div {width: 20%;}
+    .premium-question-wrapper:first-child:nth-last-child(6), .premium-question-wrapper:first-child:nth-last-child(6) ~ div {width: 16.6666%;}
+    .premium-question-wrapper:first-child:nth-last-child(7), .premium-question-wrapper:first-child:nth-last-child(7) ~ div {width: 14.2857%;}
+    .premium-question-wrapper:first-child:nth-last-child(8), .premium-question-wrapper:first-child:nth-last-child(8) ~ div {width: 12.5%;}
+    .premium-question-wrapper:first-child:nth-last-child(9), .premium-question-wrapper:first-child:nth-last-child(9) ~ div {width: 11.1111%;}
+    .premium-question-wrapper:first-child:nth-last-child(8), .premium-question-wrapper:first-child:nth-last-child(8) ~ div {width: 10%;}
+
+    #inner-overflow.p0 {margin-left: 0%;}
+    #inner-overflow.p1 {margin-left: -100%;}
+    #inner-overflow.p2 {margin-left: -200%;}
+    #inner-overflow.p3 {margin-left: -300%;}
+    #inner-overflow.p4 {margin-left: -400%;}
+    #inner-overflow.p5 {margin-left: -500%;}
+    #inner-overflow.p6 {margin-left: -600%;}
+    #inner-overflow.p7 {margin-left: -700%;}
+    #inner-overflow.p8 {margin-left: -800%;}
+    #inner-overflow.p9 {margin-left: -900%;}
+    #inner-overflow.p10 {margin-left: -1000%;}
+
+    div[class^='premium-row-'] {
+        display: table;
+        width: 100%;
+        height: 135px;
+        position: relative;
+    }
+    div[class^='premium-row-'] span {
+        display: block;
+    }
+    div[class^='premium-row-'] span input {
+        vertical-align: middle;
+        margin: 5px 10px 8px 0;
+    }
+    div.isoscelesRightPremium {
+        width: 0;
+        height: 0;
+        text-indent: -9999px;
+        border-top: 67.5px solid transparent;
+        border-bottom: 67.5px solid transparent;
+        border-left: 30px solid #6D4634;
+        margin-right: -30px;
+    }
+    div[class^='premium-text-'] {
+        display: table-cell;
+        vertical-align: middle;
+        background: #6D4634;
+        color: #fff;
+        text-align: left;
+        padding: 0 0 0 15px;
+        line-height: 1.2rem;
+        font-size: 12px;
+        box-sizing: border-box;
+        width: 55%;
+    }
+    div[class^='premium-inputs-'] {
+        display: table-cell;
+        vertical-align: middle;
+        margin: 0 auto;
+        border-right: solid 1px;
+        border-top: solid 1px;
+        border-bottom: solid 1px;
+        padding-left: 40px;
+    }
+    div.col-button {
+        display: table-cell;
+        vertical-align: middle;
+        margin: 0 auto;
+        border-right: solid 1px;
+        border-top: solid 1px;
+        border-bottom: solid 1px;
+    }
+    .ntv-preview-img-wrapper .p {
+        position: relative;
+    }
+    .ntv-preview-img-wrapper .p ul {
+        margin: 0 10px;
+    }
+    .ntv-preview-img-wrapper .p ul li {
+        list-style: inside;
+    }
+    .ntv-preview-img-wrapper .rating_bar {
+        display: inline-block;
+        position: relative;
+        width: 100px;
+        height: 16px;
+        margin-right: 10px;
+    }
+    .ntv-preview-img-wrapper .rating_bar .rating {
+        position: absolute;
+        top: 0;
+        left: 0;
+        overflow: hidden;
+        height: 16px;
+    }
+    .ntv-preview-img-wrapper .with-rating a {
+        color: rgb(0,102,102);
+    }
+    .ntv-preview-img-wrapper .rating_bar .icon-star {
+        font-size: 12px;
+        margin-right: 0px;
+        color: #d6d6d6;
+    }
+    .ntv-preview-img-wrapper .rating_bar .rating .icon-star {
+        color: #f27606;
+    }
+    .ntv-preview-img-wrapper .review_count {
+        text-decoration: underline;
+    }
+    @media screen and (min-width: 1350px) {
+        #premium-wrapper {
+            max-width: 700px;
+        }
+        div.lite-row {
+            display: table;
+            margin-top: 10px;
+            width: 700px;
+            height: 46px;
+        }
+        div[class^='premium-text-'] {
+            font-size: 15px;
+        }
+        div.lite-text {
+            display: table-cell;
+            vertical-align: middle;
+            background: #6D4634;
+            color: #fff;
+            text-align: left;
+            padding: 0 0 0 10px;
+            line-height: 1.2rem;
+            font-size: 15px;
+            box-sizing: border-box;
+            width: 65%;
+        }
+        div.isoscelesRight {
+            width: 0;
+            height: 0;
+            text-indent: -9999px;
+            border-top: 23px solid transparent;
+            border-bottom: 23px solid transparent;
+            border-left: 12px solid #6D4634;
+            margin-right: -12px;
+        }
+        }
+        @media screen and (max-width: 1349px) {
+        div.lite-row {
+            display: table;
+            margin-top: 10px;
+            width: 450px;
+            height: 80px;
+        }
+        div.lite-text {
+            display: table-cell;
+            vertical-align: middle;
+            background: #6D4634;
+            color: #fff;
+            text-align: left;
+            padding: 0 0 0 10px;
+            line-height: 1.2rem;
+            font-size: 15px;
+            box-sizing: border-box;
+            width: 50%;
+        }
+        div.isoscelesRight {
+            width: 0;
+            height: 0;
+            text-indent: -9999px;
+            border-top: 40px solid transparent;
+            border-bottom: 40px solid transparent;
+            border-left: 22px solid #6D4634;
+            margin-right: -22px;
+        }
+        div.col-button {
+            display: table-cell;
+            vertical-align: middle;
+            margin: 0 auto;
+            border-right: solid 1px;
+            border-top: solid 1px;
+            border-bottom: solid 1px;
+        }
+        }
+    </style>
+    <header>
+        <span class="topic">
+
+        </span>
+        <div class="ntv-sponsored-disclaimer"> <a target="_blank" title="How Fast and Reliable WiFi Can Improve Your Customerâs Experience" rel="nofollow" class="  ntv_link777074-148399" style="cursor: pointer;"><span class="">Sponsored Content</span> <span class="ntv-sponsored-question" style="">?</span>  </a> </div>
+        <h2 class="story"> <span> <a target="_blank" rel="nofollow" href="https://slashdot.org/software/link?oaparams=2__bannerid%3D90951__zoneid%3D88359__cb%3D7bfe7b9608__oadest%3Dhttps%3A%2F%2Fslashdot.org%2Fsoftware%2F%3Fpk_campaign%3DSDBSL-NEL%26pk_source%3DSD-NEL&amp;ident_s=ILIIZxzxTZ" title="Compare the top business software of 2026" style="cursor: pointer;">Compare the top business software of 2026</a></span> </h2>
+        <div class="details">
+        <span class="story-details">&nbsp;</span>
+        <span class="story-byline">
+                Posted by Slashdot
+        </span>
+        </div>
+    </header>
+    <div class="body ntv-preview-img-wrapper">
+        <div class="ntv-preview-img-wrapper" style="margin:0 !important; border:0 !important; padding:0 !important; position:relative !important;">
+            <img class="nel-image" width="120" src="data:image/png;base64,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">
+            <img data-name="nel-impression" data-source="https://slashdot.org/svc/z/?cb=7bfe7b9608&amp;b=90951&amp;c=16457&amp;z=88359&amp;rand=tGrfSFovbC" style="display:none;">
+        </div>
+        <style>
+            .ntv-play-overlay {
+                position: absolute !important;
+                top: 0px !important;
+                left: 0px !important;
+                width: 100% !important;
+                height: 100% !important;
+                opacity: 0.5 !important;
+                background: rgb(255, 255, 255) !important;
+            }
+            .ntv-video-play-button {
+                background: transparent !important;
+                width: 50px !important;
+                height: 50px !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                border: 0 !important;
+                top: 50% !important;
+                left: 50% !important;
+                position: absolute !important;
+                margin-top: -25px !important;
+                margin-left: -25px !important;
+            }
+            .ntv-preview-img-wrapper .ntv-body ol {
+                list-style-position: inside;
+            }
+        </style>
+        <div class="p ntv-body">
+                <strong>Did you know Slashdot offers the world’s largest business software comparison directory?</strong>
+                
+                <br>
+                Find the right software tools for you or your business using the Slashdot Business Software Comparison engine. Slashdot’s comparison engine contains over 100,000 software products, and over 4000 categories. Filter by pricing, features, integrations, user reviews, and more.
+                <br>
+                <span data-target="_blank" rel="nofollow" class="nel-button" data-dest="https://slashdot.org/software/link?oaparams=2__bannerid%3D90951__zoneid%3D88359__cb%3D7bfe7b9608__oadest%3Dhttps%3A%2F%2Fslashdot.org%2Fsoftware%2F%3Fpk_campaign%3DSDBSL-NEL%26pk_source%3DSD-NEL&amp;ident_s=ILIIZxzxTZ" title="Compare the top business software of 2026" style="cursor: pointer;">
+            Compare Now
+        </span>
+
+        </div>
+        <div style="display: none;">
+                ARRAY(0x55e0575bf230)
+        </div>
+    <div>
+    <aside class="novote"></aside>
+    
+</div></div></article>
+<article id="firehose-186499966" data-fhid="186499966" data-fhtype="story" class="fhitem fhitem-story article usermode thumbs grid_24">
+		<span class="sd-info-block" style="display: none">
+			<span class="sd-key-firehose-id">186499966</span>
+			<span class="type">story</span>
+			
+		</span>
+
+
+
+
+
+
+
+	
+	
+
+<header>
+	
+		<span class="topic" id="topic-186499966">
+			<a href="//slashdot.org/index2.pl?fhfilter=ai" onclick="return addfhfilter('ai');">
+			
+				<img src="//a.fsdn.com/sd/topics/ai_64.png" width="64" height="64" alt="AI" title="AI">
+			
+		</a>
+		</span>
+	
+    
+	<h2 class="story">
+		
+
+		
+
+		
+		
+
+		
+
+		
+
+		
+
+		<span id="title-186499966" class="story-title"> <a onclick="return toggle_fh_body_wrap_return(this);" href="//slashdot.org/story/26/10/29/189230/nvidia-chief-seen-as-target-of-chinese-spy-plot">Nvidia Chief Seen As Target of Chinese Spy Plot</a> <span class=" no extlnk"><a class="story-sourcelnk" href="https://www.cnbc.com/2026/10/29/nvidia-jensen-huang-chinese-intelligence-asset.html" title="External link - https://www.cnbc.com/2026/10/29/nvidia-jensen-huang-chinese-intelligence-asset.html" target="_blank"> (cnbc.com) </a></span></span>
+
+		
+		
+		<!--<span class="comments commentcnt-186499966" >14</span>-->
+		
+
+		
+		<!-- comment bubble -->
+		
+			<span class="comment-bubble"><a href="//slashdot.org/story/26/10/29/189230/nvidia-chief-seen-as-target-of-chinese-spy-plot#comments" title="">14</a></span>
+		
+	</h2>
+	<div class="details" id="details-186499966">
+		<span class="story-details">
+		<span class="story-views">
+			<span class="sodify" onclick="firehose_set_options('color', 'red')" title="Filter Firehose to entries rated red or better"></span><span class="icon-beaker pop1 " alt="Popularity" title="Filter Firehose to entries rated red or better" onclick="firehose_set_options('color', 'red')"><span></span></span> 
+		</span>
+		</span>
+		<span class="story-byline">
+	
+				
+			Posted
+				by 
+		
+		
+			
+				  <a href="https://www.linkedin.com/in/beauhd/" rel="nofollow">BeauHD</a>
+			
+		
+		
+
+		
+		
+		<time id="fhtime-186499966" datetime="on Thursday October 29, 2026 @04:00PM">on Thursday October 29, 2026 @04:00PM</time>
+		
+		
+			 from the <span class="dept-text">behind-the-scenes</span> dept.
+		
+		</span>
+	</div>
+</header>
+
+<div class="body" id="fhbody-186499966">
+	
+
+	
+		
+		<div id="text-186499966" class="p">
+			
+		 	
+				An anonymous reader quotes a report from The New York Times: <i>American spy agencies had gathered striking intelligence. A top executive at a Singapore-based data center company was under scrutiny for possibly steering advanced Nvidia A.I. chips to China. And now American officials had <a href="https://www.nytimes.com/2026/10/29/us/politics/nvidia-china-jensen-huang-trump.html">concluded that she was a Chinese intelligence asset</a> <em>(source paywalled; <a href="https://www.cnbc.com/2026/10/29/nvidia-jensen-huang-chinese-intelligence-asset.html">alternative source</a>),</em> funneling information to Beijing. But what came next was even more alarming. Surveillance of the executive, Alice Huang or Huang Le, a Chinese citizen, revealed that she had developed a close relationship with Jensen Huang, Nvidia's chief executive.
+<br> <br>
+For years, Washington has worked to deny China the technology needed to match or surpass the United States in the intense global competition for superiority in artificial intelligence. The discovery that Beijing was getting reports from someone with direct access to Mr. Huang, one of the most powerful figures in the A.I. revolution as well as an influential ally of President Trump's, set off alarms at the White House. Roughly a year ago, Mr. Trump was briefed about the intelligence findings, which have not been previously reported, and chose not to do anything with the information. Mr. Trump has been wary of disrupting Nvidia's chip sales, which are helping to drive the economy and the stock market, and of further complicating the trading relationship with China.
+<br> <br>
+This account is based on interviews with people briefed on the surveillance, who spoke on the condition of anonymity because the findings are drawn from classified intelligence, as well as other officials and industry executives and analysts. American officials already suspected that Ms. Huang was helping China evade constraints on its ability to gain access to advanced A.I. chips. But the revelation that she was feeding information directly to Beijing raised more troubling possibilities, including that Mr. Huang had insights into Mr. Trump's thinking on an issue of vital importance to both nations, one likely to come up when the president visits China next month. And it left questions about whether she could be gleaning information about Nvidia, which as much as any company accounts for the lead the United States has maintained in developing cutting-edge A.I. models. The surveillance of Ms. Huang continues, they said, and companies that have been affiliated with her continued this year to purchase Nvidia chips. </i>
+
+Nvidia said in a statement: "Jensen's interactions with Ms. Huang are not unusual or unexpected. Meetings with customers are part of a CEO's job; Jensen talks with thousands of customer executives every year." Nvidia is "confident that if the U.S. government believes that any person is a threat to American industry, it would let us know." Customers like Megaspeed, the company that employed Ms. Huang, "receive ordinary business information -- not sensitive Nvidia trade secrets -- and zero information relevant to national security," the company added.
+<br> <br>
+In a statement to The New York Times, Megaspeed said that its "current leadership" takes the matter "extremely seriously and is committed to getting to the facts behind these allegations." It added that "outside counsel has been retained to conduct a thorough internal investigation and has notified the U.S. government that we are fully committed to cooperating."<br>
+		 	
+		</div>
+
+		
+
+		
+
+		
+	</div>
+	<aside class="novote">
+		
+	</aside>
+	
+	  	
+
+		
+		<footer class="clearfix meta article-foot">
+			<div class="story-controls">
+				
+                    
+					
+				
+			</div>
+			
+				
+				<div class="story-tags">
+					<span class="tright tags"><menu type="toolbar" class="edit-bar">
+		<span id="tagbar-186499966" class="tag-bar none">
+			
+		</span>
+		
+		<!--
+			<a class="edit-toggle" href="/my/login/" onclick="show_login_box();return false;">
+				<span class="icon-tag btn collapse"></span>
+			</a>
+			-->
+		
+		
+		<div class="tag-menu">
+			<input class="tag-entry default" type="text" value="apply tags">
+		</div>
+		
+
+		
+		
+
+	</menu></span>
+				</div>
+				
+			
+		</footer>
+	
+
+
+
+	</article><article id="firehose-186499786" data-fhid="186499786" data-fhtype="story" class="fhitem fhitem-story article usermode thumbs grid_24">
+		<span class="sd-info-block" style="display: none">
+			<span class="sd-key-firehose-id">186499786</span>
+			<span class="type">story</span>
+			
+		</span>
+
+
+
+
+
+
+
+	
+	
+
+<header>
+	
+		<span class="topic" id="topic-186499786">
+			<a href="//slashdot.org/index2.pl?fhfilter=business" onclick="return addfhfilter('business');">
+			
+				<img src="//a.fsdn.com/sd/topics/business_64.png" width="64" height="64" alt="Businesses" title="Businesses">
+			
+		</a>
+		</span>
+	
+    
+	<h2 class="story">
+		
+
+		
+
+		
+		
+
+		
+
+		
+
+		
+
+		<span id="title-186499786" class="story-title"> <a onclick="return toggle_fh_body_wrap_return(this);" href="//news.slashdot.org/story/26/10/29/1756212/alphabet-heads-for-a-500-billion-drop-in-market-value">Alphabet Heads For a $500 Billion Drop In Market Value</a> <span class=" no extlnk"><a class="story-sourcelnk" href="https://finance.yahoo.com/markets/article/alphabet-heads-for-a-500-billion-drop-in-market-value-the-biggest-in-its-history-134824763.html" title="External link - https://finance.yahoo.com/markets/article/alphabet-heads-for-a-500-billion-drop-in-market-value-the-biggest-in-its-history-134824763.html" target="_blank"> (yahoo.com) </a></span></span>
+
+		
+		
+		<!--<span class="comments commentcnt-186499786" >47</span>-->
+		
+
+		
+		<!-- comment bubble -->
+		
+			<span class="comment-bubble"><a href="//news.slashdot.org/story/26/10/29/1756212/alphabet-heads-for-a-500-billion-drop-in-market-value#comments" title="">47</a></span>
+		
+	</h2>
+	<div class="details" id="details-186499786">
+		<span class="story-details">
+		<span class="story-views">
+			<span class="sodify" onclick="firehose_set_options('color', 'red')" title="Filter Firehose to entries rated red or better"></span><span class="icon-beaker pop1 " alt="Popularity" title="Filter Firehose to entries rated red or better" onclick="firehose_set_options('color', 'red')"><span></span></span> 
+		</span>
+		</span>
+		<span class="story-byline">
+	
+				
+			Posted
+				by 
+		
+		
+			
+				  <a href="https://www.linkedin.com/in/beauhd/" rel="nofollow">BeauHD</a>
+			
+		
+		
+
+		
+		
+		<time id="fhtime-186499786" datetime="on Thursday October 29, 2026 @03:00PM">on Thursday October 29, 2026 @03:00PM</time>
+		
+		
+			 from the <span class="dept-text">worst-day-ever</span> dept.
+		
+		</span>
+	</div>
+</header>
+
+<div class="body" id="fhbody-186499786">
+	
+
+	
+		
+		<div id="text-186499786" class="p">
+			
+		 	
+				Yesterday, Google <a href="https://tech.slashdot.org/story/26/10/29/0444201/google-struggling-to-make-ai-mode-searches-pay">reported</a> its Q3 results that showed searches made through its AI Mode generate less revenue than traditional search, even as overall search revenue grew 12% year over year to $63.25 billion. The news sent <a href="https://finance.yahoo.com/quote/GOOG/">Alphabet shares</a> plunging, with Bespoke Investment Group reporting that the stock is on track for its <a href="https://finance.yahoo.com/markets/article/alphabet-heads-for-a-500-billion-drop-in-market-value-the-biggest-in-its-history-134824763.html">steepest post-earnings decline since the company went public in 2004</a>. Yahoo Finance reports: <i> At its low, Alphabet had lost $524 billion in stock market value, the second-biggest one-day loss ever for a US-listed company. Only Nvidia has lost more, about $593 billion on Jan. 27, 2025, the day China's DeepSeek rattled AI investors. Alphabet would need to close at about $274.75, down roughly 15%, to take Nvidia's record, by Yahoo Finance calculations. It has already blown past the $400 billion SpaceX lost on June 22, the previous No. 2.
+<br> <br>
+In dollars, it's Alphabet's worst day by far. Its previous worst was about $275 billion on July 23. It's also on track for the stock's steepest drop after an earnings report since the company went public, according to Bespoke Investment Group. The previous low was a slide of nearly 10% in July 2008.
+<br> <br>
+[...] US-listed stocks have shed $200 billion or more in a single session 18 times this year through Wednesday. That's up from 13 in all of 2025 and none before 2022, according to Yahoo Finance calculations from Bloomberg data. Alphabet alone has lost about $1.4 trillion since its record in May. </i><br>
+		 	
+		</div>
+
+		
+
+		
+
+		
+	</div>
+	<aside class="novote">
+		
+	</aside>
+	
+	  	
+
+		
+		<footer class="clearfix meta article-foot">
+			<div class="story-controls">
+				
+                    
+					
+				
+			</div>
+			
+				
+				<div class="story-tags">
+					<span class="tright tags"><menu type="toolbar" class="edit-bar">
+		<span id="tagbar-186499786" class="tag-bar none">
+			
+		</span>
+		
+		<!--
+			<a class="edit-toggle" href="/my/login/" onclick="show_login_box();return false;">
+				<span class="icon-tag btn collapse"></span>
+			</a>
+			-->
+		
+		
+		<div class="tag-menu">
+			<input class="tag-entry default" type="text" value="apply tags">
+		</div>
+		
+
+		
+		
+
+	</menu></span>
+				</div>
+				
+			
+		</footer>
+	
+
+
+
+	</article><article id="firehose-186499588" data-fhid="186499588" data-fhtype="story" class="fhitem fhitem-story article usermode thumbs grid_24">
+		<span class="sd-info-block" style="display: none">
+			<span class="sd-key-firehose-id">186499588</span>
+			<span class="type">story</span>
+			
+		</span>
+
+
+
+
+
+
+
+	
+	
+
+<header>
+	
+		<span class="topic" id="topic-186499588">
+			<a href="//slashdot.org/index2.pl?fhfilter=eu" onclick="return addfhfilter('eu');">
+			
+				<img src="//a.fsdn.com/sd/topics/eu_64.png" width="64" height="64" alt="EU" title="EU">
+			
+		</a>
+		</span>
+	
+    
+	<h2 class="story">
+		
+
+		
+
+		
+		
+
+		
+
+		
+
+		
+
+		<span id="title-186499588" class="story-title"> <a onclick="return toggle_fh_body_wrap_return(this);" href="//news.slashdot.org/story/26/10/29/1741210/canada-to-join-eu-network-of-supercomputers">Canada to Join EU Network of Supercomputers</a> <span class=" no extlnk"><a class="story-sourcelnk" href="https://www.politico.eu/article/canada-joining-eu-supercomputer-network/" title="External link - https://www.politico.eu/article/canada-joining-eu-supercomputer-network/" target="_blank"> (politico.eu) </a></span></span>
+
+		
+		
+		<!--<span class="comments commentcnt-186499588" >9</span>-->
+		
+
+		
+		<!-- comment bubble -->
+		
+			<span class="comment-bubble"><a href="//news.slashdot.org/story/26/10/29/1741210/canada-to-join-eu-network-of-supercomputers#comments" title="">9</a></span>
+		
+	</h2>
+	<div class="details" id="details-186499588">
+		<span class="story-details">
+		<span class="story-views">
+			<span class="sodify" onclick="firehose_set_options('color', 'red')" title="Filter Firehose to entries rated red or better"></span><span class="icon-beaker pop1 " alt="Popularity" title="Filter Firehose to entries rated red or better" onclick="firehose_set_options('color', 'red')"><span></span></span> 
+		</span>
+		</span>
+		<span class="story-byline">
+	
+				
+			Posted
+				by 
+		
+		
+			
+				  <a href="https://www.linkedin.com/in/beauhd/" rel="nofollow">BeauHD</a>
+			
+		
+		
+
+		
+		
+		<time id="fhtime-186499588" datetime="on Thursday October 29, 2026 @02:00PM">on Thursday October 29, 2026 @02:00PM</time>
+		
+		
+			 from the <span class="dept-text">joined-forces</span> dept.
+		
+		</span>
+	</div>
+</header>
+
+<div class="body" id="fhbody-186499588">
+	
+
+	
+		
+		<div id="text-186499588" class="p">
+			
+		 	
+				Canada is <a href="https://www.politico.eu/article/canada-joining-eu-supercomputer-network/">joining the European Union's supercomputing network</a> to give Canadian companies, startups, and researchers access to European computing resources for AI development. The partnership aims to strengthen AI cooperation and reduce dependence on US technology. Politico reports: <i> The EU's supercomputing network is run by the <a href="https://www.eurohpc-ju.europa.eu/index_en">EuroHPC Joint Undertaking</a>, an EU public-private vehicle with an 8.2 billion-euro budget. The network consists of 14 supercomputers (some ranked in the global top 10), 19 AI-focused AI factories and 10 quantum computers. The vehicle will also run seven massive AI data center hubs, known as AI gigafactories, set to be built next year with a total investment cost of 30 billion euros.
+<br> <br>
+Experts praised a possible EU-Canadian compute power team-up, but warned it's only the start. "Compute cooperation is one of the most obvious short-term 'middle power' cooperation plays in AI," said Anton Leicht, technology and international affairs fellow at Carnegie Endowment for International Peace. But he added that for now "it doesn't put a dent into the actual dependence" on the U.S. "As long as the U.S. builds gigawatt-scale clusters, no amount of cooperation that doesn't result in massive buildouts will help," he said.
+<br> <br>
+Canada's engagement in the EU's supercomputer network builds further on Canada's previous partial involvement in the EU's flagship research and development program, Horizon Europe. Horizon Europe partially funds EuroHPC. To date, 38 countries have participated in the EU's supercomputing network: 27 EU member countries plus non-EU countries including Norway, Switzerland, the United Kingdom, Israel and Turkey.</i><br>
+		 	
+		</div>
+
+		
+
+		
+
+		
+	</div>
+	<aside class="novote">
+		
+	</aside>
+	
+	  	
+
+		
+		<footer class="clearfix meta article-foot">
+			<div class="story-controls">
+				
+                    
+					
+				
+			</div>
+			
+				
+				<div class="story-tags">
+					<span class="tright tags"><menu type="toolbar" class="edit-bar">
+		<span id="tagbar-186499588" class="tag-bar none">
+			
+		</span>
+		
+		<!--
+			<a class="edit-toggle" href="/my/login/" onclick="show_login_box();return false;">
+				<span class="icon-tag btn collapse"></span>
+			</a>
+			-->
+		
+		
+		<div class="tag-menu">
+			<input class="tag-entry default" type="text" value="apply tags">
+		</div>
+		
+
+		
+		
+
+	</menu></span>
+				</div>
+				
+			
+		</footer>
+	
+
+
+
+	</article><article id="firehose-186499018" data-fhid="186499018" data-fhtype="story" class="fhitem fhitem-story article usermode thumbs grid_24">
+		<span class="sd-info-block" style="display: none">
+			<span class="sd-key-firehose-id">186499018</span>
+			<span class="type">story</span>
+			
+		</span>
+
+
+
+
+
+
+
+	
+	
+
+<header>
+	
+		<span class="topic" id="topic-186499018">
+			<a href="//slashdot.org/index2.pl?fhfilter=business" onclick="return addfhfilter('business');">
+			
+				<img src="//a.fsdn.com/sd/topics/business_64.png" width="64" height="64" alt="Businesses" title="Businesses">
+			
+		</a>
+		</span>
+	
+    
+	<h2 class="story">
+		
+
+		
+
+		
+		
+
+		
+
+		
+
+		
+
+		<span id="title-186499018" class="story-title"> <a onclick="return toggle_fh_body_wrap_return(this);" href="//slashdot.org/story/26/10/29/1644224/doordash-strikes-17-billion-deal-for-us-rival-instacart">DoorDash Strikes $17 Billion Deal For US Rival Instacart</a> <span class=" no extlnk"><a class="story-sourcelnk" href="https://finance.yahoo.com/small-business/articles/doordash-strikes-17-billion-deal-122549998.html" title="External link - https://finance.yahoo.com/small-business/articles/doordash-strikes-17-billion-deal-122549998.html" target="_blank"> (yahoo.com) </a></span></span>
+
+		
+		
+		<!--<span class="comments commentcnt-186499018" >16</span>-->
+		
+
+		
+		<!-- comment bubble -->
+		
+			<span class="comment-bubble"><a href="//slashdot.org/story/26/10/29/1644224/doordash-strikes-17-billion-deal-for-us-rival-instacart#comments" title="">16</a></span>
+		
+	</h2>
+	<div class="details" id="details-186499018">
+		<span class="story-details">
+		<span class="story-views">
+			<span class="sodify" onclick="firehose_set_options('color', 'red')" title="Filter Firehose to entries rated red or better"></span><span class="icon-beaker pop1 " alt="Popularity" title="Filter Firehose to entries rated red or better" onclick="firehose_set_options('color', 'red')"><span></span></span> 
+		</span>
+		</span>
+		<span class="story-byline">
+	
+				
+			Posted
+				by 
+		
+		
+			
+				  <a href="https://www.linkedin.com/in/beauhd/" rel="nofollow">BeauHD</a>
+			
+		
+		
+
+		
+		
+		<time id="fhtime-186499018" datetime="on Thursday October 29, 2026 @01:00PM">on Thursday October 29, 2026 @01:00PM</time>
+		
+		
+			 from the <span class="dept-text">all-your-delivery-needs</span> dept.
+		
+		</span>
+	</div>
+</header>
+
+<div class="body" id="fhbody-186499018">
+	
+
+	
+		
+		<div id="text-186499018" class="p">
+			
+		 	
+				DoorDash has <a href="https://finance.yahoo.com/small-business/articles/doordash-strikes-17-billion-deal-122549998.html">agreed to acquire Instacart for about $17 billion</a> as it expands beyond restaurant delivery and deeper into the U.S. grocery market. The deal, expected to close in late 2027 or the first half of 2028, could face regulatory scrutiny over further consolidation in the delivery industry. Reuters reports: <i> DoorDash has offered Instacart shareholders $65 per share held, representing a premium of about 26% to the stock's closing price on October 22 before reports of deal talks first emerged. The consideration will be at least 75% cash, with Instacart shareholders able to elect cash, DoorDash stock or a combination of the two, the companies said.
+<br> <br>
+[...] The transaction is expected to close at the end of 2027 or the first half of 2028. The deal could face scrutiny over its impact on competition, with New York City's Department of Consumer and Worker Protection (DCWP) saying on Wednesday that a potential merger continued a "troubling trend" of corporate consolidation. DoorDash, however, pledged on Thursday that local grocers could continue to work with any delivery platform they choose.</i><br>
+		 	
+		</div>
+
+		
+
+		
+
+		
+	</div>
+	<aside class="novote">
+		
+	</aside>
+	
+	  	
+
+		
+		<footer class="clearfix meta article-foot">
+			<div class="story-controls">
+				
+                    
+					
+				
+			</div>
+			
+				
+				<div class="story-tags">
+					<span class="tright tags"><menu type="toolbar" class="edit-bar">
+		<span id="tagbar-186499018" class="tag-bar none">
+			
+		</span>
+		
+		<!--
+			<a class="edit-toggle" href="/my/login/" onclick="show_login_box();return false;">
+				<span class="icon-tag btn collapse"></span>
+			</a>
+			-->
+		
+		
+		<div class="tag-menu">
+			<input class="tag-entry default" type="text" value="apply tags">
+		</div>
+		
+
+		
+		
+
+	</menu></span>
+				</div>
+				
+			
+		</footer>
+	
+
+
+
+	</article><article id="firehose-186492092" data-fhid="186492092" data-fhtype="story" class="fhitem fhitem-story article usermode thumbs grid_24">
+		<span class="sd-info-block" style="display: none">
+			<span class="sd-key-firehose-id">186492092</span>
+			<span class="type">story</span>
+			
+		</span>
+
+
+
+
+
+
+
+	
+	
+
+<header>
+	
+		<span class="topic" id="topic-186492092">
+			<a href="//slashdot.org/index2.pl?fhfilter=social" onclick="return addfhfilter('social');">
+			
+				<img src="//a.fsdn.com/sd/topics/social_64.png" width="64" height="64" alt="Social Networks" title="Social Networks">
+			
+		</a>
+		</span>
+	
+    
+	<h2 class="story">
+		
+
+		
+
+		
+		
+
+		
+
+		
+
+		
+
+		<span id="title-186492092" class="story-title"> <a onclick="return toggle_fh_body_wrap_return(this);" href="//tech.slashdot.org/story/26/10/29/0518249/reddit-is-getting-a-for-you-feed">Reddit Is Getting a 'For You' Feed</a> <span class=" no extlnk"><a class="story-sourcelnk" href="https://www.theverge.com/tech/1020751/reddit-for-you-following-feeds" title="External link - https://www.theverge.com/tech/1020751/reddit-for-you-following-feeds" target="_blank"> (theverge.com) </a></span></span>
+
+		
+		
+		<!--<span class="comments commentcnt-186492092" >23</span>-->
+		
+
+		
+		<!-- comment bubble -->
+		
+			<span class="comment-bubble"><a href="//tech.slashdot.org/story/26/10/29/0518249/reddit-is-getting-a-for-you-feed#comments" title="">23</a></span>
+		
+	</h2>
+	<div class="details" id="details-186492092">
+		<span class="story-details">
+		<span class="story-views">
+			<span class="sodify" onclick="firehose_set_options('color', 'red')" title="Filter Firehose to entries rated red or better"></span><span class="icon-beaker pop1 " alt="Popularity" title="Filter Firehose to entries rated red or better" onclick="firehose_set_options('color', 'red')"><span></span></span> 
+		</span>
+		</span>
+		<span class="story-byline">
+	
+				
+			Posted
+				by 
+		
+		
+			
+				  <a href="https://www.linkedin.com/in/beauhd/" rel="nofollow">BeauHD</a>
+			
+		
+		
+
+		
+		
+		<time id="fhtime-186492092" datetime="on Thursday October 29, 2026 @12:00PM">on Thursday October 29, 2026 @12:00PM</time>
+		
+		
+			 from the <span class="dept-text">big-shift</span> dept.
+		
+		</span>
+	</div>
+</header>
+
+<div class="body" id="fhbody-186492092">
+	
+
+	
+		
+		<div id="text-186492092" class="p">
+			
+		 	
+				Reddit is overhauling its homepage with <a href="https://www.theverge.com/tech/1020751/reddit-for-you-following-feeds">separate "For You" and "Following" feeds</a>, with the former combining posts from subscribed communities and algorithmic recommendations based on users' interests and activity. The Verge reports: <i> It's a big shift for the platform, but not an entirely surprising one, as Reddit hasn't been shy about wanting to switch up the homepage. Earlier this year, the company announced it would be deprecating r/all, which surfaced posts that were popular across the platform, as part of its "ongoing efforts to simplify Reddit and improve Home feed personalization." </i> "This new feed experience is a first step in helping drive discovery that leads to something novel and relevant -- an idea, a connection, a unique perspective, or even a new interest," Reddit <a href="https://redditinc.com/news/explore-more-communities-with-reddits-new-feed-updates">says</a>. "A more human internet is not just something you sit back and watch, it is something you find value in and want to participate in."<br>
+		 	
+		</div>
+
+		
+
+		
+
+		
+	</div>
+	<aside class="novote">
+		
+	</aside>
+	
+	  	
+
+		
+		<footer class="clearfix meta article-foot">
+			<div class="story-controls">
+				
+                    
+					
+				
+			</div>
+			
+				
+				<div class="story-tags">
+					<span class="tright tags"><menu type="toolbar" class="edit-bar">
+		<span id="tagbar-186492092" class="tag-bar none">
+			
+		</span>
+		
+		<!--
+			<a class="edit-toggle" href="/my/login/" onclick="show_login_box();return false;">
+				<span class="icon-tag btn collapse"></span>
+			</a>
+			-->
+		
+		
+		<div class="tag-menu">
+			<input class="tag-entry default" type="text" value="apply tags">
+		</div>
+		
+
+		
+		
+
+	</menu></span>
+				</div>
+				
+			
+		</footer>
+	
+
+
+
+	</article><article id="firehose-186491996" data-fhid="186491996" data-fhtype="story" class="fhitem fhitem-story article usermode thumbs grid_24">
+		<span class="sd-info-block" style="display: none">
+			<span class="sd-key-firehose-id">186491996</span>
+			<span class="type">story</span>
+			
+		</span>
+
+
+
+
+
+
+
+	
+	
+
+<header>
+	
+		<span class="topic" id="topic-186491996">
+			<a href="//slashdot.org/index2.pl?fhfilter=internet" onclick="return addfhfilter('internet');">
+			
+				<img src="//a.fsdn.com/sd/topics/internet_64.png" width="64" height="64" alt="The Internet" title="The Internet">
+			
+		</a>
+		</span>
+	
+    
+	<h2 class="story">
+		
+
+		
+
+		
+		
+
+		
+
+		
+
+		
+
+		<span id="title-186491996" class="story-title"> <a onclick="return toggle_fh_body_wrap_return(this);" href="//tech.slashdot.org/story/26/10/29/052237/please-let-the-internet-die">'Please Let the Internet Die'</a> <span class=" no extlnk"><a class="story-sourcelnk" href="https://www.wired.com/story/let-the-internet-die/" title="External link - https://www.wired.com/story/let-the-internet-die/" target="_blank"> (wired.com) </a></span></span>
+
+		
+		
+		<!--<span class="comments commentcnt-186491996" >137</span>-->
+		
+
+		
+		<!-- comment bubble -->
+		
+			<span class="comment-bubble"><a href="//tech.slashdot.org/story/26/10/29/052237/please-let-the-internet-die#comments" title="">137</a></span>
+		
+	</h2>
+	<div class="details" id="details-186491996">
+		<span class="story-details">
+		<span class="story-views">
+			<span class="sodify" onclick="firehose_set_options('color', 'red')" title="Filter Firehose to entries rated red or better"></span><span class="icon-beaker pop1 " alt="Popularity" title="Filter Firehose to entries rated red or better" onclick="firehose_set_options('color', 'red')"><span></span></span> 
+		</span>
+		</span>
+		<span class="story-byline">
+	
+				
+			Posted
+				by 
+		
+		
+			
+				  <a href="https://www.linkedin.com/in/beauhd/" rel="nofollow">BeauHD</a>
+			
+		
+		
+
+		
+		
+		<time id="fhtime-186491996" datetime="on Thursday October 29, 2026 @11:00AM">on Thursday October 29, 2026 @11:00AM</time>
+		
+		
+			 from the <span class="dept-text">time-to-start-over</span> dept.
+		
+		</span>
+	</div>
+</header>
+
+<div class="body" id="fhbody-186491996">
+	
+
+	
+		
+		<div id="text-186491996" class="p">
+			
+		 	
+				Slashdot reader <a href="/~fjo3">fjo3</a> shares an article from Wired: <i> The internet <a href="https://www.wired.com/story/let-the-internet-die/">must be put out of its misery</a>. Any rational observer can admit that the current iteration of the web -- and the social fabric woven there -- is not what they signed up for. Symptoms of advanced cultural decay can no longer be ignored. This thing is eating itself. Giants including Meta and Google have been forced to <a href="https://yro.slashdot.org/story/26/08/26/1632251/meta-reaches-18-billion-of-settlements-over-childrens-social-media-addiction">settle massive consumer lawsuits</a> brought over <a href="https://yro.slashdot.org/story/26/01/26/2222213/google-settles-68-million-lawsuit-claiming-it-recorded-private-conversations">privacy violations</a> and <a href="https://meta.slashdot.org/story/26/03/25/1745232/meta-and-youtube-found-negligent-in-landmark-social-media-addiction-case">mental health harms</a> allegedly caused by the addictive mechanisms of their platforms. Schools are <a href="https://mobile.slashdot.org/story/26/04/20/2014246/mobile-phones-to-be-banned-in-schools-in-england-under-new-plans">banning smartphones</a> as multiple countries institute <a href="https://tech.slashdot.org/story/25/12/09/2112230/millions-of-australian-teens-lose-access-to-social-media-as-ban-takes-effect">social media restrictions</a> for under-16s. Parents are in a panic about their kids aspiring to <a href="https://tech.slashdot.org/story/26/07/27/0238219/a-new-middle-class-of-content-creators-is-quietly-quitting-the-9-to-5">careers as social media celebrities</a>, losing themselves in a vast ecosystem of <a href="https://tech.slashdot.org/story/25/07/30/205208/scammers-unleash-flood-of-slick-online-gaming-sites">online casinos</a>, or <a href="https://yro.slashdot.org/story/17/05/07/0126206/social-media-giants-sued-for-helping-isis">joining extremist movements</a>. Generative AI, briefly considered an amusing novelty, is now a <a href="https://tech.slashdot.org/story/26/03/17/2243219/ai-job-loss-research-ignores-how-ai-is-utterly-destroying-the-internet">turbocharged slop engine</a> for the web, filling feeds and comment sections with <a href="https://tech.slashdot.org/story/25/08/23/022223/making-cash-off-ai-slop-the-surreal-video-business-taking-over-the-web">useless, grotesque content</a>. As humans scroll past headlines about <a href="https://slashdot.org/story/26/08/25/1756243/ai-is-hitting-entry-level-jobs-hardest-stanford-study-finds">AI taking their jobs</a>, confusing fantasy for reality, and <a href="https://science.slashdot.org/story/26/04/03/2334204/cognitive-surrender-leads-ai-users-to-abandon-logical-thinking-research-finds">contributing to cognitive decline</a>, any consumer appeal the technology might have is turning to anguish. The data centers that power it have become <a href="https://news.slashdot.org/story/26/05/15/0217208/americans-would-rather-have-a-nuclear-plant-in-their-backyard-than-a-datacenter">increasingly unpopular</a>, and <a href="https://politics.slashdot.org/story/26/08/20/1951246/voters-arent-waiting-for-november-to-try-ousting-officials-over-data-centers">politically radioactive</a>.
+<br> <br>
+To be online, many now admit, is to be endlessly manipulated and exploited. In December, Oxford University Press <a href="https://tech.slashdot.org/story/25/12/06/026245/rage-bait-named-oxford-word-of-the-year-2025">declared</a> rage bait to be the word of the year, noting that use of the term had tripled over the previous 12 months. The lexical spike represented a heightened awareness that monetized social accounts <a href="https://politics.slashdot.org/story/26/08/19/1623200/xs-algorithm-feeds-off-ragebait-and-impacts-democrats-more-study-finds">churn out bad-faith takes and extremist content</a>, automating this abusive behavior with generative AI, simply to <a href="https://tech.slashdot.org/story/25/09/09/0048216/sam-altman-says-bots-are-making-social-media-feel-fake">profit off hostile engagement</a>. Billionaire oligarchs have opened the floodgates to such inauthentic activity, conspiracy-mongering, and <a href="https://tech.slashdot.org/story/26/06/10/1748245/threats-against-politicians-tripled-after-meta-changed-its-speech-rules">hate speech by rolling back moderation</a>. In short, when you hang around online in 2026, you see little worth saving. Perhaps a decade ago, you felt that the glimmers of community and joy, of artistic and intellectual exchange, were enough to balance out the toxic junk. No longer.</i><br>
+		 	
+		</div>
+
+		
+
+		
+
+		
+	</div>
+	<aside class="novote">
+		
+	</aside>
+	
+	  	
+
+		
+		<footer class="clearfix meta article-foot">
+			<div class="story-controls">
+				
+                    
+					
+				
+			</div>
+			
+				
+				<div class="story-tags">
+					<span class="tright tags"><menu type="toolbar" class="edit-bar">
+		<span id="tagbar-186491996" class="tag-bar none">
+			
+		</span>
+		
+		<!--
+			<a class="edit-toggle" href="/my/login/" onclick="show_login_box();return false;">
+				<span class="icon-tag btn collapse"></span>
+			</a>
+			-->
+		
+		
+		<div class="tag-menu">
+			<input class="tag-entry default" type="text" value="apply tags">
+		</div>
+		
+
+		
+		
+
+	</menu></span>
+				</div>
+				
+			
+		</footer>
+	
+
+
+
+	</article><article id="firehose-186491900" data-fhid="186491900" data-fhtype="story" class="fhitem fhitem-story article usermode thumbs grid_24">
+		<span class="sd-info-block" style="display: none">
+			<span class="sd-key-firehose-id">186491900</span>
+			<span class="type">story</span>
+			
+		</span>
+
+
+
+
+
+
+
+	
+	
+
+<header>
+	
+		<span class="topic" id="topic-186491900">
+			<a href="//slashdot.org/index2.pl?fhfilter=google" onclick="return addfhfilter('google');">
+			
+				<img src="//a.fsdn.com/sd/topics/google_64.png" width="64" height="64" alt="Google" title="Google">
+			
+		</a>
+		</span>
+	
+    
+	<h2 class="story">
+		
+
+		
+
+		
+		
+
+		
+
+		
+
+		
+
+		<span id="title-186491900" class="story-title"> <a onclick="return toggle_fh_body_wrap_return(this);" href="//tech.slashdot.org/story/26/10/29/0444201/google-struggling-to-make-ai-mode-searches-pay">Google Struggling to Make AI Mode Searches Pay</a></span>
+
+		
+		
+		<!--<span class="comments commentcnt-186491900" >75</span>-->
+		
+
+		
+		<!-- comment bubble -->
+		
+			<span class="comment-bubble"><a href="//tech.slashdot.org/story/26/10/29/0444201/google-struggling-to-make-ai-mode-searches-pay#comments" title="">75</a></span>
+		
+	</h2>
+	<div class="details" id="details-186491900">
+		<span class="story-details">
+		<span class="story-views">
+			<span class="sodify" onclick="firehose_set_options('color', 'red')" title="Filter Firehose to entries rated red or better"></span><span class="icon-beaker pop1 " alt="Popularity" title="Filter Firehose to entries rated red or better" onclick="firehose_set_options('color', 'red')"><span></span></span> 
+		</span>
+		</span>
+		<span class="story-byline">
+	
+				
+			Posted
+				by 
+		
+		
+			
+				  <a href="https://www.linkedin.com/in/beauhd/" rel="nofollow">BeauHD</a>
+			
+		
+		
+
+		
+		
+		<time id="fhtime-186491900" datetime="on Thursday October 29, 2026 @07:00AM">on Thursday October 29, 2026 @07:00AM</time>
+		
+		
+			 from the <span class="dept-text">monetization-gap</span> dept.
+		
+		</span>
+	</div>
+</header>
+
+<div class="body" id="fhbody-186491900">
+	
+
+	
+		
+		<div id="text-186491900" class="p">
+			
+		 	
+				Alphabet shares fell nearly 10% after Google disclosed that searches through its AI Mode <a href="https://www.theregister.com/ai-and-ml/2026/10/29/google-struggling-to-make-ai-mode-searches-pay/5306181">generate less revenue than traditional search</a>, even as overall search revenue grew 12% year over year to $63.25 billion. The Register reports: <i> Alphabet on Wednesday <a href="https://blog.google/company-news/inside-google/message-ceo/alphabet-earnings-q3-2026/">reported</a> its Q3 results, which included news that its year-over-year search query growth rate is the highest it's been in the last five years. Some of that growth comes from users adopting "AI Mode" -- Google's latest LLM-powered search system. Google's revenue from search rose 12 percent year-over-year to $63.25 billion, a little lower than the 14.5 percent growth the company reported in last year's Q3.
+<br> <br>
+During Alphabet's earnings call, chief business officer Philipp Schindler said the slowdown was caused by "lower monetization we were seeing in AI Mode." That's a worry given that Google is spending enormous sums on infrastructure. $51.4 billion went out the door in Q3, around two thirds of it going towards servers and networking equipment. The rest funded datacenter builds. That spending appears to have impacted profitability, as Alphabet reported $26.17 billion net income for the quarter. Last year's Q3, during which Google revenue was $102.35 billion, produced $35 billion net income.
+<br> <br>
+Schindler argued that AI search will pay off. "On AI Mode, many of these queries are upper funnel queries, allowing us to capture new, high-value commercial intent," he told investors. "In addition, the majority of AI Mode queries are incremental, creating more monetization opportunities over time." Google tried to seize one of those opportunities today, by turning on ads alongside AI Mode searches around the world, after first testing them in the US only. But for now, AI Mode searches aren't as lucrative as Google's existing search business, which brought in just under half of Alphabet's $125.8 billion quarterly revenue. </i>
+		 	
+		</div>
+
+		
+
+		
+
+		
+	</div>
+	<aside class="novote">
+		
+	</aside>
+	
+	  	
+
+		
+		<footer class="clearfix meta article-foot">
+			<div class="story-controls">
+				
+                    
+					
+				
+			</div>
+			
+				
+				<div class="story-tags">
+					<span class="tright tags"><menu type="toolbar" class="edit-bar">
+		<span id="tagbar-186491900" class="tag-bar none">
+			
+		</span>
+		
+		<!--
+			<a class="edit-toggle" href="/my/login/" onclick="show_login_box();return false;">
+				<span class="icon-tag btn collapse"></span>
+			</a>
+			-->
+		
+		
+		<div class="tag-menu">
+			<input class="tag-entry default" type="text" value="apply tags">
+		</div>
+		
+
+		
+		
+
+	</menu></span>
+				</div>
+				
+			
+		</footer>
+	
+
+
+
+	</article><article id="firehose-186491860" data-fhid="186491860" data-fhtype="story" class="fhitem fhitem-story article usermode thumbs grid_24">
+		<span class="sd-info-block" style="display: none">
+			<span class="sd-key-firehose-id">186491860</span>
+			<span class="type">story</span>
+			
+		</span>
+
+
+
+
+
+
+
+	
+	
+
+<header>
+	
+		<span class="topic" id="topic-186491860">
+			<a href="//slashdot.org/index2.pl?fhfilter=awards" onclick="return addfhfilter('awards');">
+			
+				<img src="//a.fsdn.com/sd/topics/topicbeanies.gif" width="50" height="40" alt="The 2000 Beanies" title="The 2000 Beanies">
+			
+		</a>
+		</span>
+	
+    
+	<h2 class="story">
+		
+
+		
+
+		
+		
+
+		
+
+		
+
+		
+
+		<span id="title-186491860" class="story-title"> <a onclick="return toggle_fh_body_wrap_return(this);" href="//slashdot.org/story/26/10/29/0436243/ink-droplets-in-motion-snag-top-prize-in-nikon-small-world-contest">Ink Droplets In Motion Snag Top Prize In Nikon Small World Contest</a> <span class=" no extlnk"><a class="story-sourcelnk" href="https://arstechnica.com/science/2026/10/meet-the-2026-winner-of-nikons-small-world-photomicrography-contest/" title="External link - https://arstechnica.com/science/2026/10/meet-the-2026-winner-of-nikons-small-world-photomicrography-contest/" target="_blank"> (arstechnica.com) </a></span></span>
+
+		
+		
+		<!--<span class="comments commentcnt-186491860" >21</span>-->
+		
+
+		
+		<!-- comment bubble -->
+		
+			<span class="comment-bubble"><a href="//slashdot.org/story/26/10/29/0436243/ink-droplets-in-motion-snag-top-prize-in-nikon-small-world-contest#comments" title="">21</a></span>
+		
+	</h2>
+	<div class="details" id="details-186491860">
+		<span class="story-details">
+		<span class="story-views">
+			<span class="sodify" onclick="firehose_set_options('color', 'red')" title="Filter Firehose to entries rated red or better"></span><span class="icon-beaker pop1 " alt="Popularity" title="Filter Firehose to entries rated red or better" onclick="firehose_set_options('color', 'red')"><span></span></span> 
+		</span>
+		</span>
+		<span class="story-byline">
+	
+				
+			Posted
+				by 
+		
+		
+			
+				  <a href="https://www.linkedin.com/in/beauhd/" rel="nofollow">BeauHD</a>
+			
+		
+		
+
+		
+		
+		<time id="fhtime-186491860" datetime="on Thursday October 29, 2026 @03:00AM">on Thursday October 29, 2026 @03:00AM</time>
+		
+		
+			 from the <span class="dept-text">freeze-frame</span> dept.
+		
+		</span>
+	</div>
+</header>
+
+<div class="body" id="fhbody-186491860">
+	
+
+	
+		
+		<div id="text-186491860" class="p">
+			
+		 	
+				A 25-year-old German photographer <a href="https://arstechnica.com/science/2026/10/meet-the-2026-winner-of-nikons-small-world-photomicrography-contest/">won the 2026 Nikon Small World competition</a> with a microscopic image freezing ink droplets in midair as an inkjet printer deposits them onto paper. Ars Technica reports that Ole Bielfeldt "beat out 1,802 other entries hailing from 69 different countries." From the report: <i> Bielfeldt became interested in photomicrography during the COVID-19 lockdown after discovering an old microscope in his parents' attic. He figured out how to build an adaptor out of a tube and some wood to connect the microscope to his father's camera and taught himself the art through trial and error, building custom tools as needed. He <a href="https://www.instagram.com/macrofying/?hl=en">documents</a> how he captures transformative images of everyday objects with behind-the-scenes videos posted to <a href="https://www.macrofying.com/">macrofying</a>, his photography and videography brand.
+<br> <br>
+It was Bielfeldt's curiosity about the inner workings of inkjet printers that inspired his winning entry, but capturing the action of ink drops being deposited on paper was a challenge, given that the process happens so quickly. The droplets, for instance, moved faster than the camera's shutter speed. Bielfeldt's solution was to deconstruct the printer so that the paper moved under a stationary (rather than moving) printhead, and then take the image in a dark room, using a flash to serve as the shutter, thereby freezing the ink drops mid-air. There was no need for pricey equipment. Bielfeldt does not use AI in his images, preferring to rely on traditional techniques. </i> "Ole Bielfeldt's winning image embodies what makes Nikon Small World so powerful: the intersection of microscope imaging, ingenuity, and artistry," said Eric Flem, a spokesperson for Nikon Instruments. "By using a microscope objective in a different way, he transformed a familiar object into something altogether new and previously unseen. It is a reminder that the microscope is not only a scientific tool but also a creative one, capable of expanding how we see and imagine the world around us."
+<br> <br>
+The full list of winners can be found <a href="https://www.nikonsmallworld.com/">here</a>.<br>
+		 	
+		</div>
+
+		
+
+		
+
+		
+	</div>
+	<aside class="novote">
+		
+	</aside>
+	
+	  	
+
+		
+		<footer class="clearfix meta article-foot">
+			<div class="story-controls">
+				
+                    
+					
+				
+			</div>
+			
+				
+				<div class="story-tags">
+					<span class="tright tags"><menu type="toolbar" class="edit-bar">
+		<span id="tagbar-186491860" class="tag-bar none">
+			
+		</span>
+		
+		<!--
+			<a class="edit-toggle" href="/my/login/" onclick="show_login_box();return false;">
+				<span class="icon-tag btn collapse"></span>
+			</a>
+			-->
+		
+		
+		<div class="tag-menu">
+			<input class="tag-entry default" type="text" value="apply tags">
+		</div>
+		
+
+		
+		
+
+	</menu></span>
+				</div>
+				
+			
+		</footer>
+	
+
+
+
+	</article><article id="firehose-186489464" data-fhid="186489464" data-fhtype="story" class="fhitem fhitem-story article usermode thumbs grid_24">
+		<span class="sd-info-block" style="display: none">
+			<span class="sd-key-firehose-id">186489464</span>
+			<span class="type">story</span>
+			
+		</span>
+
+
+
+
+
+
+
+	
+	
+
+<header>
+	
+		<span class="topic" id="topic-186489464">
+			<a href="//slashdot.org/index2.pl?fhfilter=privacy" onclick="return addfhfilter('privacy');">
+			
+				<img src="//a.fsdn.com/sd/topics/privacy_64.png" width="64" height="64" alt="Privacy" title="Privacy">
+			
+		</a>
+		</span>
+	
+    
+	<h2 class="story">
+		
+
+		
+
+		
+		
+
+		
+
+		
+
+		
+
+		<span id="title-186489464" class="story-title"> <a onclick="return toggle_fh_body_wrap_return(this);" href="//yro.slashdot.org/story/26/10/28/2247205/bank-of-america-kindly-asks-that-you-dont-share-your-password-with-your-ai-assistant">Bank of America Kindly Asks That You Don't Share Your Password With Your AI Assistant</a></span>
+
+		
+		
+		<!--<span class="comments commentcnt-186489464" >51</span>-->
+		
+
+		
+		<!-- comment bubble -->
+		
+			<span class="comment-bubble"><a href="//yro.slashdot.org/story/26/10/28/2247205/bank-of-america-kindly-asks-that-you-dont-share-your-password-with-your-ai-assistant#comments" title="">51</a></span>
+		
+	</h2>
+	<div class="details" id="details-186489464">
+		<span class="story-details">
+		<span class="story-views">
+			<span class="sodify" onclick="firehose_set_options('color', 'red')" title="Filter Firehose to entries rated red or better"></span><span class="icon-beaker pop1 " alt="Popularity" title="Filter Firehose to entries rated red or better" onclick="firehose_set_options('color', 'red')"><span></span></span> 
+		</span>
+		</span>
+		<span class="story-byline">
+	
+				
+			Posted
+				by 
+		
+		
+			
+				  <a href="https://www.linkedin.com/in/beauhd/" rel="nofollow">BeauHD</a>
+			
+		
+		
+
+		
+		
+		<time id="fhtime-186489464" datetime="on Wednesday October 28, 2026 @11:30PM">on Wednesday October 28, 2026 @11:30PM</time>
+		
+		
+			 from the <span class="dept-text">heed-thy-warning</span> dept.
+		
+		</span>
+	</div>
+</header>
+
+<div class="body" id="fhbody-186489464">
+	
+
+	
+		
+		<div id="text-186489464" class="p">
+			
+		 	
+				Longtime Slashdot reader <a href="/~schwit1">schwit1</a> shares a report from TechCrunch: <i>In an email blast to customers titled "Protecting your finances in the Al World," Bank of America urged customers to never share their username and password with another person or an outside service, "<a href="https://techcrunch.com/2026/10/27/bank-of-america-kindly-asks-that-you-dont-share-your-banking-password-with-your-ai-assistant/">including an Al-enabled tool or agent that offers to act on your behalf</a>." [...] A spokesperson for Bank of America confirmed the authenticity of the bank's email that was <a href="https://bsky.app/profile/btoporek.bsky.social/post/3myuzetgir2u6">posted</a> to social media. But heed the bank's warning, for if things go wrong, it's on you. Account agreements at most banks <a href="https://www.usbank.com/caas/digital-services-agreement.html?invoca_hold=true">hold customers responsible</a> for anyone they give their log-in to. "If you do share your credentials," its email reads, "keep in mind that you're responsible for activity resulting from that access."</i>
+		 	
+		</div>
+
+		
+
+		
+
+		
+	</div>
+	<aside class="novote">
+		
+	</aside>
+	
+	  	
+
+		
+		<footer class="clearfix meta article-foot">
+			<div class="story-controls">
+				
+                    
+					
+				
+			</div>
+			
+				
+				<div class="story-tags">
+					<span class="tright tags"><menu type="toolbar" class="edit-bar">
+		<span id="tagbar-186489464" class="tag-bar none">
+			
+		</span>
+		
+		<!--
+			<a class="edit-toggle" href="/my/login/" onclick="show_login_box();return false;">
+				<span class="icon-tag btn collapse"></span>
+			</a>
+			-->
+		
+		
+		<div class="tag-menu">
+			<input class="tag-entry default" type="text" value="apply tags">
+		</div>
+		
+
+		
+		
+
+	</menu></span>
+				</div>
+				
+			
+		</footer>
+	
+
+
+
+	</article><article id="firehose-186489234" data-fhid="186489234" data-fhtype="story" class="fhitem fhitem-story article usermode thumbs grid_24">
+		<span class="sd-info-block" style="display: none">
+			<span class="sd-key-firehose-id">186489234</span>
+			<span class="type">story</span>
+			
+		</span>
+
+
+
+
+
+
+
+	
+	
+
+<header>
+	
+		<span class="topic" id="topic-186489234">
+			<a href="//slashdot.org/index2.pl?fhfilter=ai" onclick="return addfhfilter('ai');">
+			
+				<img src="//a.fsdn.com/sd/topics/ai_64.png" width="64" height="64" alt="AI" title="AI">
+			
+		</a>
+		</span>
+	
+    
+	<h2 class="story">
+		
+
+		
+
+		
+		
+
+		
+
+		
+
+		
+
+		<span id="title-186489234" class="story-title"> <a onclick="return toggle_fh_body_wrap_return(this);" href="//slashdot.org/story/26/10/28/2222217/anthropic-engineer-declares-the-coding-interview-dead">Anthropic Engineer Declares the Coding Interview Dead</a></span>
+
+		
+		
+		<!--<span class="comments commentcnt-186489234" >122</span>-->
+		
+
+		
+		<!-- comment bubble -->
+		
+			<span class="comment-bubble"><a href="//slashdot.org/story/26/10/28/2222217/anthropic-engineer-declares-the-coding-interview-dead#comments" title="">122</a></span>
+		
+	</h2>
+	<div class="details" id="details-186489234">
+		<span class="story-details">
+		<span class="story-views">
+			<span class="sodify" onclick="firehose_set_options('color', 'red')" title="Filter Firehose to entries rated red or better"></span><span class="icon-beaker pop1 " alt="Popularity" title="Filter Firehose to entries rated red or better" onclick="firehose_set_options('color', 'red')"><span></span></span> 
+		</span>
+		</span>
+		<span class="story-byline">
+	
+				
+			Posted
+				by 
+		
+		
+			
+				  <a href="https://www.linkedin.com/in/beauhd/" rel="nofollow">BeauHD</a>
+			
+		
+		
+
+		
+		
+		<time id="fhtime-186489234" datetime="on Wednesday October 28, 2026 @07:00PM">on Wednesday October 28, 2026 @07:00PM</time>
+		
+		
+			 from the <span class="dept-text">why-test-what-claude-can-do</span> dept.
+		
+		</span>
+	</div>
+</header>
+
+<div class="body" id="fhbody-186489234">
+	
+
+	
+		
+		<div id="text-186489234" class="p">
+			
+		 	
+				An Anthropic engineering manager says he has <a href="https://www.theregister.com/ai-and-ml/2026/10/28/anthropic-engineer-declares-the-coding-interview-dead/5306115">stopped using traditional coding interviews</a> because AI can now outperform candidates on the kinds of programming challenges they typically contain. "There's no more point in giving you a little React challenge than there is in quizzing people about assembly; Claude is now better at both," said Felix Rieseberg in a <a href="https://x.com/felixrieseberg/status/2115200995546566910?s=20">blog post</a>. "Our most impactful builders are successful regardless of how good they are at these tests." The Register reports: <i> "I don't think the coding interview is going to come back," said Rieseberg. "It's easy to get sentimental given how many copies of 'Algorithms and Data Structures' were bought in hopes of unlocking good jobs and a better future -- or how the death of the coding interview is another milestone in software engineering reaching a new level of abstraction."
+<br> <br>
+At the same time, he's not certain what will replace it. "I'm probably not the only manager trying to figure out how to interview for people who build well with AI," Rieseberg wrote. "I haven't quite gotten there yet -- but I'm scanning resumes and portfolios for little prototypes that exhibit taste, empathy, and principled thinking. If you have figured out something better, I'd love to hear how." </i>
+In a response posted to social media, Jaana Dogan, principal engineer at Google, said: "I'm not doing a ton of coding interviews nowadays but I'd be interested to interview how people use coding agents," she wrote. "That itself gives me more signals about candidates' coding skills."
+<br> <br>
+"We are not seeing tech companies abandon skills assessments widely across the industry -- at least not yet," added Nicole Bachaud, labor economist at ZipRecruiter. "In fact, based on our October 2026 Employer Survey of 1,500 employers, we see the tech industry (Information sector specifically) is actually the most likely to test for skills, with 62.5 percent of employers requiring formal skill tests on initial applications."
+<br> <br>
+"The change at Anthropic might be reflecting a shift away from technical skills towards more human, soft skills," said Bachaud. "As AI becomes fully capable of writing code, tech employers may be pivoting away from rote technical testing and heavily toward human-centric soft skills." She argues that while AI may be able to code well, it can't replace critical thinking. "A staggering 61.5 percent of Information employers now report that 'critical thinking' is a primary skill lacking in today's candidate pool," she said.
+		 	
+		</div>
+
+		
+
+		
+
+		
+	</div>
+	<aside class="novote">
+		
+	</aside>
+	
+	  	
+
+		
+		<footer class="clearfix meta article-foot">
+			<div class="story-controls">
+				
+                    
+					
+				
+			</div>
+			
+				
+				<div class="story-tags">
+					<span class="tright tags"><menu type="toolbar" class="edit-bar">
+		<span id="tagbar-186489234" class="tag-bar none">
+			
+		</span>
+		
+		<!--
+			<a class="edit-toggle" href="/my/login/" onclick="show_login_box();return false;">
+				<span class="icon-tag btn collapse"></span>
+			</a>
+			-->
+		
+		
+		<div class="tag-menu">
+			<input class="tag-entry default" type="text" value="apply tags">
+		</div>
+		
+
+		
+		
+
+	</menu></span>
+				</div>
+				
+			
+		</footer>
+	
+
+
+
+	</article><article id="firehose-186489026" data-fhid="186489026" data-fhtype="story" class="fhitem fhitem-story article usermode thumbs grid_24">
+		<span class="sd-info-block" style="display: none">
+			<span class="sd-key-firehose-id">186489026</span>
+			<span class="type">story</span>
+			
+		</span>
+
+
+
+
+
+
+
+	
+	
+
+<header>
+	
+		<span class="topic" id="topic-186489026">
+			<a href="//slashdot.org/index2.pl?fhfilter=privacy" onclick="return addfhfilter('privacy');">
+			
+				<img src="//a.fsdn.com/sd/topics/privacy_64.png" width="64" height="64" alt="Privacy" title="Privacy">
+			
+		</a>
+		</span>
+	
+    
+	<h2 class="story">
+		
+
+		
+
+		
+		
+
+		
+
+		
+
+		
+
+		<span id="title-186489026" class="story-title"> <a onclick="return toggle_fh_body_wrap_return(this);" href="//yro.slashdot.org/story/26/10/28/2158201/massive-leak-exposes-41000-homeland-security-workers">Massive Leak Exposes 41,000 Homeland Security Workers</a> <span class=" no extlnk"><a class="story-sourcelnk" href="https://www.wired.com/story/massive-leak-exposes-41000-homeland-security-workers-including-undercover-ice-agents/" title="External link - https://www.wired.com/story/massive-leak-exposes-41000-homeland-security-workers-including-undercover-ice-agents/" target="_blank"> (wired.com) </a></span></span>
+
+		
+		
+		<!--<span class="comments commentcnt-186489026" >72</span>-->
+		
+
+		
+		<!-- comment bubble -->
+		
+			<span class="comment-bubble"><a href="//yro.slashdot.org/story/26/10/28/2158201/massive-leak-exposes-41000-homeland-security-workers#comments" title="">72</a></span>
+		
+	</h2>
+	<div class="details" id="details-186489026">
+		<span class="story-details">
+		<span class="story-views">
+			<span class="sodify" onclick="firehose_set_options('color', 'red')" title="Filter Firehose to entries rated red or better"></span><span class="icon-beaker pop1 " alt="Popularity" title="Filter Firehose to entries rated red or better" onclick="firehose_set_options('color', 'red')"><span></span></span> 
+		</span>
+		</span>
+		<span class="story-byline">
+	
+				
+			Posted
+				by 
+		
+		
+			
+				  <a href="https://www.linkedin.com/in/beauhd/" rel="nofollow">BeauHD</a>
+			
+		
+		
+
+		
+		
+		<time id="fhtime-186489026" datetime="on Wednesday October 28, 2026 @06:00PM">on Wednesday October 28, 2026 @06:00PM</time>
+		
+		
+			 from the <span class="dept-text">homeland-insecurity</span> dept.
+		
+		</span>
+	</div>
+</header>
+
+<div class="body" id="fhbody-186489026">
+	
+
+	
+		
+		<div id="text-186489026" class="p">
+			
+		 	
+				A massive leak has <a href="https://www.wired.com/story/massive-leak-exposes-41000-homeland-security-workers-including-undercover-ice-agents/">exposed records tied to more than 41,000 DHS employees and contractors</a>, including roughly 10,000 ICE personnel. The data, reportedly taken from DHS's Okta login system, reveals phone numbers, email and office addresses, reporting relationships, and permission groups associated with undercover operations, wiretapping and surveillance tools. Wired reports: <i> In all, the leak provides a map of how DHS is organized and how it operates. The records, which span DHS itself as well as seven component agencies, including Immigration and Customs Enforcement and US Customs and Border Protection, were last updated on August 19, 2026.
+<br> <br>
+The transparency nonprofit Distributed Denial of Secrets and cybersecurity researcher and journalist maia arson crimew previewed the data to WIRED, which they say they obtained from a group calling itself the Department of Peace. DDoSecrets <a href="https://ddosecrets.org/article/icepick">published the archive</a>, which it calls "Icepick," on Wednesday. In a press release, DDoSecrets says the data is from DHS's Okta login system. In a note with the files, the hackers wrote, "They have our information, so it's only fair that we have theirs." An Okta spokesperson tells WIRED that it is unaware of any breach of its systems. "We are aware of this report. Okta is secure, and we have no evidence our data or systems were compromised," the spokesperson says.</i><br>
+		 	
+		</div>
+
+		
+
+		
+
+		
+	</div>
+	<aside class="novote">
+		
+	</aside>
+	
+	  	
+
+		
+		<footer class="clearfix meta article-foot">
+			<div class="story-controls">
+				
+                    
+					
+				
+			</div>
+			
+				
+				<div class="story-tags">
+					<span class="tright tags"><menu type="toolbar" class="edit-bar">
+		<span id="tagbar-186489026" class="tag-bar none">
+			
+		</span>
+		
+		<!--
+			<a class="edit-toggle" href="/my/login/" onclick="show_login_box();return false;">
+				<span class="icon-tag btn collapse"></span>
+			</a>
+			-->
+		
+		
+		<div class="tag-menu">
+			<input class="tag-entry default" type="text" value="apply tags">
+		</div>
+		
+
+		
+		
+
+	</menu></span>
+				</div>
+				
+			
+		</footer>
+	
+
+
+
+	</article><article id="firehose-186487338" data-fhid="186487338" data-fhtype="story" class="fhitem fhitem-story article usermode thumbs grid_24">
+		<span class="sd-info-block" style="display: none">
+			<span class="sd-key-firehose-id">186487338</span>
+			<span class="type">story</span>
+			
+		</span>
+
+
+
+
+
+
+
+	
+	
+
+<header>
+	
+		<span class="topic" id="topic-186487338">
+			<a href="//slashdot.org/index2.pl?fhfilter=privacy" onclick="return addfhfilter('privacy');">
+			
+				<img src="//a.fsdn.com/sd/topics/privacy_64.png" width="64" height="64" alt="Privacy" title="Privacy">
+			
+		</a>
+		</span>
+	
+    
+	<h2 class="story">
+		
+
+		
+
+		
+		
+
+		
+
+		
+
+		
+
+		<span id="title-186487338" class="story-title"> <a onclick="return toggle_fh_body_wrap_return(this);" href="//yro.slashdot.org/story/26/10/28/191236/amazon-puts-a-camera-in-its-echo-studio-so-alexa-can-see">Amazon Puts a Camera In Its Echo Studio So Alexa Can See</a></span>
+
+		
+		
+		<!--<span class="comments commentcnt-186487338" >28</span>-->
+		
+
+		
+		<!-- comment bubble -->
+		
+			<span class="comment-bubble"><a href="//yro.slashdot.org/story/26/10/28/191236/amazon-puts-a-camera-in-its-echo-studio-so-alexa-can-see#comments" title="">28</a></span>
+		
+	</h2>
+	<div class="details" id="details-186487338">
+		<span class="story-details">
+		<span class="story-views">
+			<span class="sodify" onclick="firehose_set_options('color', 'red')" title="Filter Firehose to entries rated red or better"></span><span class="icon-beaker pop1 " alt="Popularity" title="Filter Firehose to entries rated red or better" onclick="firehose_set_options('color', 'red')"><span></span></span> 
+		</span>
+		</span>
+		<span class="story-byline">
+	
+				
+			Posted
+				by 
+		
+		
+			
+				  <a href="https://www.linkedin.com/in/beauhd/" rel="nofollow">BeauHD</a>
+			
+		
+		
+
+		
+		
+		<time id="fhtime-186487338" datetime="on Wednesday October 28, 2026 @05:00PM">on Wednesday October 28, 2026 @05:00PM</time>
+		
+		
+			 from the <span class="dept-text">always-watching</span> dept.
+		
+		</span>
+	</div>
+</header>
+
+<div class="body" id="fhbody-186487338">
+	
+
+	
+		
+		<div id="text-186487338" class="p">
+			
+		 	
+				Amazon has <a href="https://thenextweb.com/news/amazon-echo-studio-camera-echo-dot-show-16-alexa-devices">added a camera to its Echo Studio speaker</a>, allowing Alexa to visually identify objects, help with tasks and remotely monitor a room. For those concerned about privacy, Amazon is keeping a camera-free version available. The Next Web reports: <i> The camera speaker ships today for $249.99. Hold up a board game box and Alexa can explain the rules, or show it a box of cereal and it can help you reorder it, <a href="https://www.aboutamazon.com/news/devices/echo-speaker-lineup">according to Amazon</a>. Owners can also check in on the room from the Alexa app while they are away. The Echo Studio without a camera stays on sale at $219.99.
+<br> <br>
+A dedicated button turns off the microphones and any camera, and a visual indicator shows when a camera streams images or video to the cloud, Amazon said. Certain features require Alexa+, which is included with a Prime membership. </i> Other devices Amazon <a href="https://www.aboutamazon.com/news/devices/new-alexa-devices-2026">unveiled today</a> include an Echo Time alarm clock, an Alexa Photo Frame and the Echo Show 16.
+		 	
+		</div>
+
+		
+
+		
+
+		
+	</div>
+	<aside class="novote">
+		
+	</aside>
+	
+	  	
+
+		
+		<footer class="clearfix meta article-foot">
+			<div class="story-controls">
+				
+                    
+					
+				
+			</div>
+			
+				
+				<div class="story-tags">
+					<span class="tright tags"><menu type="toolbar" class="edit-bar">
+		<span id="tagbar-186487338" class="tag-bar none">
+			
+		</span>
+		
+		<!--
+			<a class="edit-toggle" href="/my/login/" onclick="show_login_box();return false;">
+				<span class="icon-tag btn collapse"></span>
+			</a>
+			-->
+		
+		
+		<div class="tag-menu">
+			<input class="tag-entry default" type="text" value="apply tags">
+		</div>
+		
+
+		
+		
+
+	</menu></span>
+				</div>
+				
+			
+		</footer>
+	
+
+
+
+	</article><article id="firehose-186487448" data-fhid="186487448" data-fhtype="story" class="fhitem fhitem-story article usermode thumbs grid_24">
+		<span class="sd-info-block" style="display: none">
+			<span class="sd-key-firehose-id">186487448</span>
+			<span class="type">story</span>
+			
+		</span>
+
+
+
+
+
+
+
+	
+	
+
+<header>
+	
+		<span class="topic" id="topic-186487448">
+			<a href="//slashdot.org/index2.pl?fhfilter=ai" onclick="return addfhfilter('ai');">
+			
+				<img src="//a.fsdn.com/sd/topics/ai_64.png" width="64" height="64" alt="AI" title="AI">
+			
+		</a>
+		</span>
+	
+    
+	<h2 class="story">
+		
+
+		
+
+		
+		
+
+		
+
+		
+
+		
+
+		<span id="title-186487448" class="story-title"> <a onclick="return toggle_fh_body_wrap_return(this);" href="//slashdot.org/story/26/10/28/199238/are-ai-execs-too-out-of-touch-to-build-for-the-general-public">Are AI Execs Too Out of Touch To Build For the General Public?</a> <span class=" no extlnk"><a class="story-sourcelnk" href="https://techcrunch.com/2026/10/28/ai-execs-may-be-too-out-of-touch-to-build-for-the-general-public/" title="External link - https://techcrunch.com/2026/10/28/ai-execs-may-be-too-out-of-touch-to-build-for-the-general-public/" target="_blank"> (techcrunch.com) </a></span></span>
+
+		
+		
+		<!--<span class="comments commentcnt-186487448" >75</span>-->
+		
+
+		
+		<!-- comment bubble -->
+		
+			<span class="comment-bubble"><a href="//slashdot.org/story/26/10/28/199238/are-ai-execs-too-out-of-touch-to-build-for-the-general-public#comments" title="">75</a></span>
+		
+	</h2>
+	<div class="details" id="details-186487448">
+		<span class="story-details">
+		<span class="story-views">
+			<span class="sodify" onclick="firehose_set_options('color', 'red')" title="Filter Firehose to entries rated red or better"></span><span class="icon-beaker pop1 " alt="Popularity" title="Filter Firehose to entries rated red or better" onclick="firehose_set_options('color', 'red')"><span></span></span> 
+		</span>
+		</span>
+		<span class="story-byline">
+	
+				
+			Posted
+				by 
+		
+		
+			
+				  <a href="https://www.linkedin.com/in/beauhd/" rel="nofollow">BeauHD</a>
+			
+		
+		
+
+		
+		
+		<time id="fhtime-186487448" datetime="on Wednesday October 28, 2026 @04:00PM">on Wednesday October 28, 2026 @04:00PM</time>
+		
+		
+			 from the <span class="dept-text">outsourced-to-AI</span> dept.
+		
+		</span>
+	</div>
+</header>
+
+<div class="body" id="fhbody-186487448">
+	
+
+	
+		
+		<div id="text-186487448" class="p">
+			
+		 	
+				An anonymous reader quotes a report from TechCrunch: <i>Former Yahoo CEO and early Google engineer Marissa Mayer is catching a lot of flak for how she uses AI. In <a href="https://www.nytimes.com/2026/10/25/style/marissa-mayer-ai-assistants-women.html">an interview</a> about her new app <a href="https://dazzle.ai/dazzle/">Dazzle</a>, an AI assistant that learns from your camera roll, Mayer poses what she believes is an impressive flex for the product: It helped her come up with three bullet points about her 10-year-old daughter for a birthday presentation at school, describing her as "empathetic, creative, and an animal lover."
+<br> <br>
+It's a vague description, like a generic horoscope -- it could probably describe a lot of 10-year-olds. Some onlookers, like progressive activist Leah Greenberg, <a href="https://x.com/Leahgreenb/status/2114537457051897889">marveled</a> that "the fact that Marissa Mayer would voluntarily disclose this to a reporter is a pretty good demonstration of how deeply the culture of Silicon Valley has diverged from the rest of humanity." [...] After publication, Mayer defended herself in a long <a href="https://x.com/marissamayer/status/2114784525226229996">X post</a>. She claims she was not relying on Dazzle to explain her child to her, but rather, she was testing what her prototype could do -- it resurfaced photos of "forgotten kindergarten projects," like a "snake devenomer" or "sandcat playground," illustrating her daughter's creativity and care for animals.
+<br> <br>
+Fair enough. But Mayer remarks in the same interview that people could also use her AI to outsource the mental load of "figuring out the theme for your child's birthday party." She says she's used her app to plan a playdate for her daughter, book family activities on vacation, and decide what to be for Halloween. She even proposes that her AI assistant could coordinate plans with her husband's AI assistant. When the reporter asks her if it's depressing to imagine this "frictionless future  planned by AI," Mayer replies, "I haven't really thought that through."</i> The bigger question is: What should we outsource to AI? "What feels like grunt work to someone might be a meaningful part of parenthood for someone else," <a href="https://www.linkedin.com/feed/update/urn:li:activity:7520935832439074816/">says</a> Fortune's Emma Hinchliffe.
+<br> <br>
+Michael Tasner, Founder and CEO of No Joke Marketing, <a href="https://www.linkedin.com/feed/update/urn:li:activity:7520914602386329600/">adds</a>: "Customers are drowning in AI slop, and they can spot it. Use AI for the low-stakes work behind the scenes. Keep the moments that matter to your customers human. Human connection is becoming the new premium."<br>
+		 	
+		</div>
+
+		
+
+		
+
+		
+	</div>
+	<aside class="novote">
+		
+	</aside>
+	
+	  	
+
+		
+		<footer class="clearfix meta article-foot">
+			<div class="story-controls">
+				
+                    
+					
+				
+			</div>
+			
+				
+				<div class="story-tags">
+					<span class="tright tags"><menu type="toolbar" class="edit-bar">
+		<span id="tagbar-186487448" class="tag-bar none">
+			
+		</span>
+		
+		<!--
+			<a class="edit-toggle" href="/my/login/" onclick="show_login_box();return false;">
+				<span class="icon-tag btn collapse"></span>
+			</a>
+			-->
+		
+		
+		<div class="tag-menu">
+			<input class="tag-entry default" type="text" value="apply tags">
+		</div>
+		
+
+		
+		
+
+	</menu></span>
+				</div>
+				
+			
+		</footer>
+	
+
+
+
+	</article>
+				</div>
+
+				<!-- LOWER PAGINATION -->
+				<div class="row">
+					<div class="paginate" id="fh-pag-div">
+<div class="menu2" id="fh-paginate">
+
+
+
+
+
+	 
+	 <a class="prevnextbutdis" href="#" onclick="return false;">« Newer</a>
+
+	
+		<a class="prevnextbutact" href="//slashdot.org/?page=1">Older »</a>
+
+	<span class="inactive more">
+		
+	</span>
+
+
+
+
+
+</div>
+</div>
+				</div>
+
+				<!-- WIT -->
+				<span id="itemsreturned" class="row">
+					
+				</span>
+				
+
+				<div class="row">
+				</div>
+
+				
+
+				<!-- Slashdot Deals 6 Best Sellers -->
+				<div class="row">
+					<div class="deals-wrapper">
+					  <div class="deals-header"><h2>Slashdot Top Deals</h2></div>
+					  <div id="deals-output">
+						
+					  </div>
+					</div>
+				</div>
+				
+
+			<!-- End Slashdot Deals 6 Best Sellers -->
+
+				<!-- SLASH-4560 NEW AD HERE (dhand) -->
+				<div id="bottomadspace">
+					<table id="bottomadtable">
+						<tbody><tr>
+							<td></td>
+						</tr>
+					</tbody></table>
+				</div>
+			</div>
+		</div>
+	</div>
+
+		
+	<aside id="slashboxes" class="rail-right scroll-fixable ui-sortable"><article id="firehose-1127913O4" class="fhitem fhitem-story article usermode thumbs grid_24 article-nel-20469" xuengbwrr="" suf5xr0u9="">
+    <style>
+        @media screen and (max-width: 830px) {
+            .body.ntv-preview-img-wrapper div.p {
+                float: left;
+            }
+        }
+        .nel-image {
+                margin-bottom: 10px;
+                margin-left: 10px;
+                margin-right: 10px;
+                float: left;
+        }
+        #firehose-1127913O4 {
+            margin-bottom: 20px;
+            display: block !important;
+        }
+        .ntv-sponsored-20469 > header > span.topic {
+            max-width: 120px;
+            right: 15px;
+        }
+        .article-nel-20469 > header > span.topic >a >img {
+            width: 100% !important;
+            height: auto !important;
+            background-color: white !important;
+            box-shadow: 0 2px 5px -2px rgba(0, 0, 0, 0.5);
+            padding: 2px;
+            max-width: 80px;
+            max-height: 40px;
+        }
+        #firehose article.article-nel-20469 header h2.story {
+            border-radius: 0;
+            padding-left: 130px;
+            padding-right: 110px;
+            background: #6D4634;
+            background-image: none !important;
+        }
+        div.ntv-sponsored-disclaimer {
+            position: absolute;
+            top: 4px;
+            margin-left: -4px;
+        }
+        div.ntv-sponsored-disclaimer a {
+            background-color: #A66934;
+            padding: 5px 7px;
+            font-size: 11px;
+            color: #fff;
+            line-height: 11px;
+            text-decoration: none;
+            float: left;
+        }
+        span.ntv-sponsored-question {
+            border: .21em solid #fff;
+            border-radius: 100%;
+            padding: 2px 4px 1px 4px;
+            text-align: center;
+            margin-left: 3px;
+            font-size: 9px;
+            line-height: 11px;
+            font-weight: bold;
+        }
+        .ntv-sponsored-disclaimer:before {
+            content: '';
+            height: 0;
+            width: 0;
+            display: block;
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            border-top: 4px solid #000;
+            border-left: 5px solid transparent;
+            z-index: 0;
+        }
+        .ntvAuthorLogoLink img {
+            max-width: 100px;
+            max-height: 64px;
+        }
+        .nel-button {
+                color: #ffffff ;
+                background: #34aa55 ;
+                display: table;
+                padding: 5px 12px;
+                text-decoration: none;
+                margin: 10px 0 0;
+                border: 0;
+                cursor: pointer;
+                text-decoration: none !important;
+        }
+        .nel-button:hover {}
+        .nel-lite-button {
+        color: #ffffff ;
+        background: #34aa55 ;
+        display: table;
+        padding: 5px 12px;
+        text-decoration: none;
+        border: 0;
+        cursor: pointer;
+        margin: 0 auto;
+        text-decoration: none !important;
+        }
+    #premium-wrapper {
+        max-width: 700px;
+        display: block;
+        margin-top: 10px;
+        height: 136px;
+        overflow: hidden;
+        position: relative;
+    }
+    #premium-overflow {
+        width: 100%;
+    }
+    #inner-overflow {
+        margin: 0;
+        -webkit-transform: translateZ(0);
+        -webkit-transition: all 800ms cubic-bezier(0.770, 0.000, 0.175, 1.000);
+        -moz-transition: all 800ms cubic-bezier(0.770, 0.000, 0.175, 1.000);
+        -ms-transition: all 800ms cubic-bezier(0.770, 0.000, 0.175, 1.000);
+        -o-transition: all 800ms cubic-bezier(0.770, 0.000, 0.175, 1.000);
+        transition: all 800ms cubic-bezier(0.770, 0.000, 0.175, 1.000); /* easeInOutQuart */
+
+        -webkit-transition-timing-function: cubic-bezier(0.770, 0.000, 0.175, 1.000);
+        -moz-transition-timing-function: cubic-bezier(0.770, 0.000, 0.175, 1.000);
+        -ms-transition-timing-function: cubic-bezier(0.770, 0.000, 0.175, 1.000);
+        -o-transition-timing-function: cubic-bezier(0.770, 0.000, 0.175, 1.000);
+        transition-timing-function: cubic-bezier(0.770, 0.000, 0.175, 1.000); /* easeInOutQuart */
+    }
+    .premium-question-wrapper {
+        display: inline-block;
+        font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
+    }
+    .premium-question-wrapper:last-child div[class^='premium-row-']:after {
+        content: 'One last question before you visit.';
+        display: block;
+        color: #FFCC00;
+        position: absolute;
+        top: 10px;
+        left: 15px;
+        background: url(/images/outbound_link_icon.svg) no-repeat 0 0;
+        padding-left: 22px;
+        background-size: auto 90%;
+    }
+
+    .premium-question-wrapper:first-child div[class^='premium-row-']:after {
+        content: 'Answer a few short questions to get started.';
+        display: block;
+        color: #FFCC00;
+        position: absolute;
+        top: 10px;
+        left: 15px;
+        background-size: auto 90%;
+    }
+
+    .premium-question-wrapper:first-child:nth-last-child(1) {width: 100%;}
+    .premium-question-wrapper:first-child:nth-last-child(2), .premium-question-wrapper:first-child:nth-last-child(2) ~ div {width: 50%;}
+    .premium-question-wrapper:first-child:nth-last-child(3), .premium-question-wrapper:first-child:nth-last-child(3) ~ div {width: 33.3333%;}
+    .premium-question-wrapper:first-child:nth-last-child(4), .premium-question-wrapper:first-child:nth-last-child(4) ~ div {width: 25%;}
+    .premium-question-wrapper:first-child:nth-last-child(4), .premium-question-wrapper:first-child:nth-last-child(4) ~ div {width: 25%;}
+    .premium-question-wrapper:first-child:nth-last-child(5), .premium-question-wrapper:first-child:nth-last-child(5) ~ div {width: 20%;}
+    .premium-question-wrapper:first-child:nth-last-child(6), .premium-question-wrapper:first-child:nth-last-child(6) ~ div {width: 16.6666%;}
+    .premium-question-wrapper:first-child:nth-last-child(7), .premium-question-wrapper:first-child:nth-last-child(7) ~ div {width: 14.2857%;}
+    .premium-question-wrapper:first-child:nth-last-child(8), .premium-question-wrapper:first-child:nth-last-child(8) ~ div {width: 12.5%;}
+    .premium-question-wrapper:first-child:nth-last-child(9), .premium-question-wrapper:first-child:nth-last-child(9) ~ div {width: 11.1111%;}
+    .premium-question-wrapper:first-child:nth-last-child(8), .premium-question-wrapper:first-child:nth-last-child(8) ~ div {width: 10%;}
+
+    #inner-overflow.p0 {margin-left: 0%;}
+    #inner-overflow.p1 {margin-left: -100%;}
+    #inner-overflow.p2 {margin-left: -200%;}
+    #inner-overflow.p3 {margin-left: -300%;}
+    #inner-overflow.p4 {margin-left: -400%;}
+    #inner-overflow.p5 {margin-left: -500%;}
+    #inner-overflow.p6 {margin-left: -600%;}
+    #inner-overflow.p7 {margin-left: -700%;}
+    #inner-overflow.p8 {margin-left: -800%;}
+    #inner-overflow.p9 {margin-left: -900%;}
+    #inner-overflow.p10 {margin-left: -1000%;}
+
+    div[class^='premium-row-'] {
+        display: table;
+        width: 100%;
+        height: 135px;
+        position: relative;
+    }
+    div[class^='premium-row-'] span {
+        display: block;
+    }
+    div[class^='premium-row-'] span input {
+        vertical-align: middle;
+        margin: 5px 10px 8px 0;
+    }
+    div.isoscelesRightPremium {
+        width: 0;
+        height: 0;
+        text-indent: -9999px;
+        border-top: 67.5px solid transparent;
+        border-bottom: 67.5px solid transparent;
+        border-left: 30px solid #6D4634;
+        margin-right: -30px;
+    }
+    div[class^='premium-text-'] {
+        display: table-cell;
+        vertical-align: middle;
+        background: #6D4634;
+        color: #fff;
+        text-align: left;
+        padding: 0 0 0 15px;
+        line-height: 1.2rem;
+        font-size: 12px;
+        box-sizing: border-box;
+        width: 55%;
+    }
+    div[class^='premium-inputs-'] {
+        display: table-cell;
+        vertical-align: middle;
+        margin: 0 auto;
+        border-right: solid 1px;
+        border-top: solid 1px;
+        border-bottom: solid 1px;
+        padding-left: 40px;
+    }
+    div.col-button {
+        display: table-cell;
+        vertical-align: middle;
+        margin: 0 auto;
+        border-right: solid 1px;
+        border-top: solid 1px;
+        border-bottom: solid 1px;
+    }
+    .ntv-preview-img-wrapper .p {
+        position: relative;
+    }
+    .ntv-preview-img-wrapper .p ul {
+        margin: 0 10px;
+    }
+    .ntv-preview-img-wrapper .p ul li {
+        list-style: inside;
+    }
+    .ntv-preview-img-wrapper .rating_bar {
+        display: inline-block;
+        position: relative;
+        width: 100px;
+        height: 16px;
+        margin-right: 10px;
+    }
+    .ntv-preview-img-wrapper .rating_bar .rating {
+        position: absolute;
+        top: 0;
+        left: 0;
+        overflow: hidden;
+        height: 16px;
+    }
+    .ntv-preview-img-wrapper .with-rating a {
+        color: rgb(0,102,102);
+    }
+    .ntv-preview-img-wrapper .rating_bar .icon-star {
+        font-size: 12px;
+        margin-right: 0px;
+        color: #d6d6d6;
+    }
+    .ntv-preview-img-wrapper .rating_bar .rating .icon-star {
+        color: #f27606;
+    }
+    .ntv-preview-img-wrapper .review_count {
+        text-decoration: underline;
+    }
+    @media screen and (min-width: 1350px) {
+        #premium-wrapper {
+            max-width: 700px;
+        }
+        div.lite-row {
+            display: table;
+            margin-top: 10px;
+            width: 700px;
+            height: 46px;
+        }
+        div[class^='premium-text-'] {
+            font-size: 15px;
+        }
+        div.lite-text {
+            display: table-cell;
+            vertical-align: middle;
+            background: #6D4634;
+            color: #fff;
+            text-align: left;
+            padding: 0 0 0 10px;
+            line-height: 1.2rem;
+            font-size: 15px;
+            box-sizing: border-box;
+            width: 65%;
+        }
+        div.isoscelesRight {
+            width: 0;
+            height: 0;
+            text-indent: -9999px;
+            border-top: 23px solid transparent;
+            border-bottom: 23px solid transparent;
+            border-left: 12px solid #6D4634;
+            margin-right: -12px;
+        }
+        }
+        @media screen and (max-width: 1349px) {
+        div.lite-row {
+            display: table;
+            margin-top: 10px;
+            width: 450px;
+            height: 80px;
+        }
+        div.lite-text {
+            display: table-cell;
+            vertical-align: middle;
+            background: #6D4634;
+            color: #fff;
+            text-align: left;
+            padding: 0 0 0 10px;
+            line-height: 1.2rem;
+            font-size: 15px;
+            box-sizing: border-box;
+            width: 50%;
+        }
+        div.isoscelesRight {
+            width: 0;
+            height: 0;
+            text-indent: -9999px;
+            border-top: 40px solid transparent;
+            border-bottom: 40px solid transparent;
+            border-left: 22px solid #6D4634;
+            margin-right: -22px;
+        }
+        div.col-button {
+            display: table-cell;
+            vertical-align: middle;
+            margin: 0 auto;
+            border-right: solid 1px;
+            border-top: solid 1px;
+            border-bottom: solid 1px;
+        }
+        }
+    </style>
+    <header>
+        <span class="topic">
+
+        </span>
+        <div class="ntv-sponsored-disclaimer"> <a target="_blank" title="How Fast and Reliable WiFi Can Improve Your Customerâs Experience" rel="nofollow" class="  ntv_link777074-148399" style="cursor: pointer;"><span class="">Featured Content</span> <span class="ntv-sponsored-question" style="">?</span>  </a> </div>
+        <h2 class="story"> <span> <a target="_blank" rel="nofollow" href="https://slashdot.org/software/link?oaparams=2__bannerid%3D90951__zoneid%3D88359__cb%3D7bfe7b9608__oadest%3Dhttps%3A%2F%2Fslashdot.org%2Fsoftware%2F%3Fpk_campaign%3DSDBSL-NEL%26pk_source%3DSD-NEL&amp;ident_s=PICrJNtOSe" title="Compare the top business software of 2026" style="cursor: pointer;">Compare the top business software of 2026</a></span> </h2>
+        <div class="details">
+        <span class="story-details">&nbsp;</span>
+        <span class="story-byline">
+                Posted by Slashdot
+        </span>
+        </div>
+    </header>
+    <div class="body ntv-preview-img-wrapper">
+        <div class="ntv-preview-img-wrapper" style="margin:0 !important; border:0 !important; padding:0 !important; position:relative !important;">
+            <img class="nel-image" width="120" src="data:image/png;base64,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">
+            <img data-name="nel-impression" data-source="https://slashdot.org/svc/z/?cb=7bfe7b9608&amp;b=90951&amp;c=16457&amp;z=88359&amp;rand=TstUvJ7B41" style="display:none;">
+        </div>
+        <style>
+            .ntv-play-overlay {
+                position: absolute !important;
+                top: 0px !important;
+                left: 0px !important;
+                width: 100% !important;
+                height: 100% !important;
+                opacity: 0.5 !important;
+                background: rgb(255, 255, 255) !important;
+            }
+            .ntv-video-play-button {
+                background: transparent !important;
+                width: 50px !important;
+                height: 50px !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                border: 0 !important;
+                top: 50% !important;
+                left: 50% !important;
+                position: absolute !important;
+                margin-top: -25px !important;
+                margin-left: -25px !important;
+            }
+            .ntv-preview-img-wrapper .ntv-body ol {
+                list-style-position: inside;
+            }
+        </style>
+        <div class="p ntv-body">
+                <strong>Did you know Slashdot offers the world’s largest business software comparison directory?</strong>
+                
+                <br>
+                Find the right software tools for you or your business using the Slashdot Business Software Comparison engine. Slashdot’s comparison engine contains over 100,000 software products, and over 4000 categories. Filter by pricing, features, integrations, user reviews, and more.
+                <br>
+                <span data-target="_blank" rel="nofollow" class="nel-button" data-dest="https://slashdot.org/software/link?oaparams=2__bannerid%3D90951__zoneid%3D88359__cb%3D7bfe7b9608__oadest%3Dhttps%3A%2F%2Fslashdot.org%2Fsoftware%2F%3Fpk_campaign%3DSDBSL-NEL%26pk_source%3DSD-NEL&amp;ident_s=PICrJNtOSe" title="Compare the top business software of 2026" style="cursor: pointer;">
+            Compare Now
+        </span>
+
+        </div>
+        <div style="display: none;">
+                ARRAY(0x55fd531d7ee8)
+        </div>
+    <div>
+    <aside class="novote"></aside>
+    
+</div></div></article>
+
+
+	   
+		   
+	   
+
+		<article class="deals-rail" style="">
+		  <header id="slashdot_deals-title" class="ui-sortable-handle"><h2>Slashdot Top Deals</h2><div class="actions"><a class="ico close" href="#"><b class="ui-icon close"></b><span>Close</span></a></div></header>
+		  <div id="deals-rail-output">
+			
+		  </div>
+		</article>
+
+		<!-- Newsletter image -->
+		<div class="ad-blocked-newsletter">
+			<a href="/software/?pk_campaign=SD300&amp;pk_source=sidebar" target="_blank" rel="nofollow"><img src="//a.fsdn.com/sd/NewsletterSubscription.png?v=2" alt=""></a>
+		</div>
+
+
+		
+
+
+			
+			<div id="my_forgebox">
+				 
+			</div>
+
+			
+
+					<article id="slashdot_deals" class="nosort">
+		<header id="slashdot_deals-title">
+			<h2><a href="http://deals.slashdot.org/">Slashdot Deals</a></h2>
+		</header>
+		<section class="b" id="slashdot_deals-content">
+			
+<div id="div-gpt-ad-1435005138111-0" style="height:250px; width:300px;">
+
+
+</div>
+			
+		</section>
+	</article><article class="nosort">
+	<header id="poll-title">
+		<h2>Slashdot Poll</h2>
+	</header>
+	<section class="b" id="poll-content">
+		
+	<style>
+		.poll-voted { display: none; }
+	</style>
+	
+		<div class="units-6 poll-group-form">
+			
+				<h3>How much of your coding is done by AI coding agents these days?</h3>
+			
+			<h3 class="output"></h3>
+			<form id="pollBooth" action="//slashdot.org/pollBooth.pl" method="post">
+				<input type="hidden" name="qid" value="3284">
+				
+					<input type="hidden" name="section" value="slashdot">
+				
+					
+						<label>
+							<input type="radio" name="aid" value="1">
+							Almost all of it (80%+)
+						</label>
+					
+						<label>
+							<input type="radio" name="aid" value="2">
+							More than half, but I still review everything
+						</label>
+					
+						<label>
+							<input type="radio" name="aid" value="3">
+							About half and half
+						</label>
+					
+						<label>
+							<input type="radio" name="aid" value="4">
+							Mostly me, with AI helping occasionally
+						</label>
+					
+						<label>
+							<input type="radio" name="aid" value="5">
+							I write nearly all code myself
+						</label>
+					
+						<label>
+							<input type="radio" name="aid" value="6">
+							I don't use AI coding agents for coding
+						</label>
+					
+						<label>
+							<input type="radio" name="aid" value="7">
+							I don't do any coding at all (AI or otherwise)
+						</label>
+					
+					<div class="poll-controls">
+						<button type="submit" class="btn-polls">vote now</button>
+						
+					</div>
+					<footer>
+						<span>
+							<a href="/poll/3284/how-much-of-your-coding-is-done-by-ai-coding-agents-these-days">Read the <strong>33</strong> comments </a> |
+							<strong>31820</strong> votes
+						</span>
+					</footer>
+			</form>
+		</div>
+		<div class="units-6 poll-results-inline">
+			<h3 id="message-completed-poll">
+				
+					Looks like someone has already voted from this IP. If you would like to vote please login and try again.
+				
+			</h3>
+			
+				<h3>How much of your coding is done by AI coding agents these days?</h3>
+			
+			<div class="doughnut-chart-wrapper">
+				<div class="doughnut-chart" data-percent="0"><span>0</span></div>
+				<div class="doughnut-chart-label">
+					<span>Percentage of others that also voted for:</span>
+					<h3></h3>
+				</div>
+			</div>
+
+			<div class="poll-controls">
+				<ul class="poll-options">
+					<li>
+						<a href="/poll/3284/how-much-of-your-coding-is-done-by-ai-coding-agents-these-days" class="btn-polls">view results</a>
+					</li>
+					<li class="poll-choice"> Or </li><li>
+					</li><li>
+						<a href="//slashdot.org/polls" class="btn-polls">view more</a>
+						<input type="hidden" id="reskey" name="reskey" value="38Pi0ThlagjLyPSQRiIh">
+					</li>
+				</ul>
+			</div>
+			<footer>
+				<span>
+					<a href="/poll/3284/how-much-of-your-coding-is-done-by-ai-coding-agents-these-days">Read the <strong>33</strong> comments </a> |
+					<strong>31820</strong> voted
+				</span>
+			</footer>
+		</div>
+	</section>
+</article><article class="nosort">
+	<header id="mostdiscussed-title">
+		<h2>Most Discussed</h2>
+	</header>
+	<section class="b" id="mostdiscussed-content">
+		<ul id="mostdiscussed">
+
+
+<li>
+<span class="cmntcnt"><span class="slant"></span><span>171<span class="hide"> comments</span></span></span>
+ <a href="//hardware.slashdot.org/story/26/10/27/2151204/fords-most-affordable-ev-will-offer-built-in-bidirectional-home-charging?sbsrc=md">Ford's Most Affordable EV Will Offer Built-In Bidirectional Home Charging</a>
+</li>
+
+
+<li>
+<span class="cmntcnt"><span class="slant"></span><span>137<span class="hide"> comments</span></span></span>
+ <a href="//tech.slashdot.org/story/26/10/29/052237/please-let-the-internet-die?sbsrc=md">'Please Let the Internet Die'</a>
+</li>
+
+
+<li>
+<span class="cmntcnt"><span class="slant"></span><span>122<span class="hide"> comments</span></span></span>
+ <a href="//slashdot.org/story/26/10/28/2222217/anthropic-engineer-declares-the-coding-interview-dead?sbsrc=md">Anthropic Engineer Declares the Coding Interview Dead</a>
+</li>
+
+
+<li>
+<span class="cmntcnt"><span class="slant"></span><span>97<span class="hide"> comments</span></span></span>
+ <a href="//news.slashdot.org/story/26/10/28/1541214/emacs-turns-50?sbsrc=md">EMACS Turns 50</a>
+</li>
+
+
+<li>
+<span class="cmntcnt"><span class="slant"></span><span>88<span class="hide"> comments</span></span></span>
+ <a href="//news.slashdot.org/story/26/10/27/2325218/greenhouse-gas-levels-set-records-in-2025-un-says?sbsrc=md">Greenhouse Gas Levels Set Records In 2025, UN Says</a>
+</li>
+
+</ul>
+	</section>
+</article><article class="nosort">
+	<header id="srandblock-title">
+		<h2><a href="//science.slashdot.org">Science</a></h2>
+	</header>
+	<section class="b" id="srandblock-content">
+		<ul>
+<li>
+
+	
+	<a href="//science.slashdot.org/story/26/10/28/1532238/fcc-approves-amazon-leos-115-billion-acquisition-of-globalstar?utm_source=rss0.9mainlinkanon&amp;utm_medium=feed&amp;sbsrc=science">
+		FCC Approves Amazon Leo's $11.5 Billion Acquisition of Globalstar
+	</a>
+</li><li>
+
+	
+	<a href="//science.slashdot.org/story/26/10/28/035218/astronomers-may-have-just-discovered-our-solar-systems-sixth-dwarf-planet?utm_source=rss0.9mainlinkanon&amp;utm_medium=feed&amp;sbsrc=science">
+		Astronomers May Have Just Discovered Our Solar System's Sixth Dwarf Planet
+	</a>
+</li><li>
+
+	
+	<a href="//science.slashdot.org/story/26/10/28/0256204/cdc-warns-of-rising-threat-of-drug-resistant-germs?utm_source=rss0.9mainlinkanon&amp;utm_medium=feed&amp;sbsrc=science">
+		CDC Warns of Rising Threat of Drug-Resistant Germs
+	</a>
+</li><li>
+
+	
+	<a href="//science.slashdot.org/story/26/10/27/0232248/industry-executives-knew-for-decades-that-microplastics-were-infiltrating-the-human-body?utm_source=rss0.9mainlinkanon&amp;utm_medium=feed&amp;sbsrc=science">
+		Industry Executives Knew For Decades That Microplastics Were Infiltrating the Human Body
+	</a>
+</li><li>
+
+	
+	<a href="//science.slashdot.org/story/26/10/25/062240/old-blood-cells-have-been-transformed-into-brain-stem-cells-that-get-younger?utm_source=rss0.9mainlinkanon&amp;utm_medium=feed&amp;sbsrc=science">
+		Old Blood Cells Have Been Transformed Into Brain Stem Cells That Get Younger
+	</a>
+</li>
+</ul>
+	</section>
+</article><article id="thisday" class="nosort">
+		<header id="thisday-title">
+			<h2><a href="">This Day on Slashdot</a></h2>
+		</header>
+		<section class="b" id="thisday-content">
+			<table bgcolor="333333" class="thisday-tb"><tbody>
+
+
+<tr>
+	<td class="thisday-yr">
+		2012
+	</td>
+	<td>
+		<a href="//science.slashdot.org/story/12/10/26/0230247/dr-richard-dawkins-on-why-disagreeing-with-religion-isnt-insulting?sbsrc=thisday">Dr. Richard Dawkins On Why Disagreeing With Religion Isn't Insulting</a>
+	</td>
+	<td>
+	<span style="" class="cmntcnt"><span style="background:#333" class="slant"></span><span style="background: #333; color:#fff; font-weight:bold; font-size:.85em">1152<span class="hide"> comments</span></span></span>
+	</td>
+</tr>
+
+
+<tr>
+	<td class="thisday-yr">
+		2008
+	</td>
+	<td>
+		<a href="//politics.slashdot.org/story/08/10/29/1227202/discuss-the-us-presidential-election-the-economy?sbsrc=thisday">Discuss the US Presidential Election &amp; the Economy</a>
+	</td>
+	<td>
+	<span style="" class="cmntcnt"><span style="background:#333" class="slant"></span><span style="background: #333; color:#fff; font-weight:bold; font-size:.85em">2369<span class="hide"> comments</span></span></span>
+	</td>
+</tr>
+
+
+<tr>
+	<td class="thisday-yr">
+		2007
+	</td>
+	<td>
+		<a href="//yro.slashdot.org/story/07/10/29/1833227/best-buy-customer-gets-box-full-of-bathroom-tiles-instead-of-hard-drive?sbsrc=thisday">Best Buy Customer Gets Box Full of Bathroom Tiles Instead of Hard Drive</a>
+	</td>
+	<td>
+	<span style="" class="cmntcnt"><span style="background:#333" class="slant"></span><span style="background: #333; color:#fff; font-weight:bold; font-size:.85em">990<span class="hide"> comments</span></span></span>
+	</td>
+</tr>
+
+
+<tr>
+	<td class="thisday-yr">
+		2004
+	</td>
+	<td>
+		<a href="//yro.slashdot.org/story/04/10/29/0014250/dept-of-homeland-security-enforces-expired-patent?sbsrc=thisday">Dept. of Homeland Security Enforces Expired Patent</a>
+	</td>
+	<td>
+	<span style="" class="cmntcnt"><span style="background:#333" class="slant"></span><span style="background: #333; color:#fff; font-weight:bold; font-size:.85em">1006<span class="hide"> comments</span></span></span>
+	</td>
+</tr>
+
+
+<tr>
+	<td class="thisday-yr">
+		2003
+	</td>
+	<td>
+		<a href="//yro.slashdot.org/story/03/10/29/1421223/microsoft-fires-mac-fan-for-blog-photo?sbsrc=thisday">Microsoft Fires Mac Fan For Blog Photo</a>
+	</td>
+	<td>
+	<span style="" class="cmntcnt"><span style="background:#333" class="slant"></span><span style="background: #333; color:#fff; font-weight:bold; font-size:.85em">1087<span class="hide"> comments</span></span></span>
+	</td>
+</tr>
+
+</tbody></table>
+			
+		</section>
+	</article><article id="sourceforge2" class="nosort">
+		<header id="sourceforge2-title">
+			<h2><a href="">Sourceforge Top Downloads</a></h2>
+		</header>
+		<section class="b" id="sourceforge2-content">
+			<ul class="sf_widget">
+<li>
+<a onclick="trackLink(this, 'sfSlashboxDownloadLink', 'https://sourceforge.net/projects/corefonts/?source=sd_slashbox'); return false;" href="https://sourceforge.net/projects/corefonts/?source=sd_slashbox" title="Microsoft's TrueType core fonts">
+TrueType core fonts <span class="sf-size">2.2B downloads</span></a>
+</li>
+<li>
+<a onclick="trackLink(this, 'sfSlashboxDownloadLink', 'https://sourceforge.net/projects/npppluginmgr/?source=sd_slashbox'); return false;" href="https://sourceforge.net/projects/npppluginmgr/?source=sd_slashbox" title="Notepad++ Plugin Manager (old repo)">
+Notepad++ Plugin Mgr <span class="sf-size">1.5B downloads</span></a>
+</li>
+<li>
+<a onclick="trackLink(this, 'sfSlashboxDownloadLink', 'https://sourceforge.net/projects/vlc/?source=sd_slashbox'); return false;" href="https://sourceforge.net/projects/vlc/?source=sd_slashbox" title="VLC media player">
+VLC media player <span class="sf-size">899M downloads</span></a>
+</li>
+<li>
+<a onclick="trackLink(this, 'sfSlashboxDownloadLink', 'https://sourceforge.net/projects/emule/?source=sd_slashbox'); return false;" href="https://sourceforge.net/projects/emule/?source=sd_slashbox" title="eMule">
+eMule <span class="sf-size">686M downloads</span></a>
+</li>
+<li>
+<a onclick="trackLink(this, 'sfSlashboxDownloadLink', 'https://sourceforge.net/projects/mingw/?source=sd_slashbox'); return false;" href="https://sourceforge.net/projects/mingw/?source=sd_slashbox" title="MinGW - Minimalist GNU for Windows">
+MinGW <span class="sf-size">631M downloads</span></a>
+</li>
+</ul>
+<div id="sf-logo">
+<p>Powered By</p>
+<a onclick="trackLink(this, 'sfSlashboxHomeLink', 'https://sourceforge.net/?source=sd_slashbox'); return false;" href="https://sourceforge.net/?source=sd_slashbox">sf</a>
+</div>
+
+			
+		</section>
+	</article>
+					
+					
+						
+						
+					
+				
+			
+	</aside>
+</div>
+
+<!-- footer type=current begin -->
+
+	
+	</section>
+	
+	
+
+
+	<footer id="fhft" class="grid_24 nf">
+		<div id="logo_nf" class="fleft">
+			<a href="//slashdot.org"><span>Slashdot</span></a>
+		</div>
+		<nav role="firehose footer">
+			
+
+			
+				<ul id="pagination-controls">
+					
+						
+						<li class="fleft">
+							<a href="//news.slashdot.org/?issue=20261029">Today</a>
+						</li>
+					
+						
+						<li class="fleft">
+							<a href="//news.slashdot.org/?issue=20261028">Wednesday</a>
+						</li>
+					
+						
+						<li class="fleft">
+							<a href="//news.slashdot.org/?issue=20261027">Tuesday</a>
+						</li>
+					
+						
+						<li class="fleft">
+							<a href="//news.slashdot.org/?issue=20261026">Monday</a>
+						</li>
+					
+						
+						<li class="fleft">
+							<a href="//news.slashdot.org/?issue=20261025">Sunday</a>
+						</li>
+					
+						
+						<li class="fleft">
+							<a href="//news.slashdot.org/?issue=20261024">Saturday</a>
+						</li>
+					
+						
+						<li class="fleft">
+							<a href="//news.slashdot.org/?issue=20261023">Friday</a>
+						</li>
+					
+						
+						<li class="fleft">
+							<a href="//news.slashdot.org/?issue=20261022">Thursday</a>
+						</li>
+					
+				</ul>
+				
+			
+			<ul class="fright submitstory">
+					<li class="fright">
+						<a href="/submit">Submit<span class="opt"> Story</span></a>
+					</li>
+			</ul>
+		</nav>
+		
+
+
+	</footer>
+	<section class="bq">
+		<blockquote class="msg grid_24" cite="https://slashdot.org">
+			<p>To see a need and wait to be asked, is to already refuse.</p>
+			<span class="slant"></span>
+		</blockquote>
+	</section>
+	<footer id="ft" class="grid_24">
+		<nav class="grid_10" role="footer">
+			<ul>
+				<li><a href="//slashdot.org/faq">FAQ</a></li>
+				<li><a href="//slashdot.org/archive.pl">Story Archive</a></li>
+				<li><a href="//slashdot.org/hof.shtml">Hall of Fame</a></li>
+				<li><a href="https://slashdotmedia.com/advertising-and-marketing-services/" rel="nofollow">Advertising</a></li>
+				<li><a href="https://slashdotmedia.com/terms-of-use/" rel="nofollow">Terms</a></li>
+				<li><a href="https://slashdotmedia.com/privacy-statement/" rel="nofollow">Privacy Statement</a></li>
+				<li><a href="//slashdot.org/faq/slashmeta.shtml">About</a></li>
+				<li><a href="mailto:feedback@slashdot.org">Feedback</a></li>
+				<li><a href="#" onclick="set_mobile_pref('mobile',1);return false;">Mobile View</a></li>
+				<li><a href="//slashdot.org/blog">Blog</a></li>
+				<li><a id="cookie-choices-link" href="#" style="white-space: nowrap">Cookie Choices</a></li><li><a href="#" id="opt-out-link"><a href="#" title="Privacy Choices" onclick="bizx.cmp.promptConsent(); return false;">Privacy Choices</a></a></li>
+				<li><button class="btn opt-out" id="opt-out-button" style="display:none">Your Opt-Out Rights</button></li>
+
+			</ul>
+		</nav>
+		<br>
+		
+		<div class="grid_14 tright tm"><span class="nobr">Copyright © 2026 Slashdot Media. All Rights Reserved.</span></div>
+
+	<div class="modal-custom overlay-custom" id="ccpa-modal" style="max-width:100%">
+		<div class="modal-content modal-content-ccpa">
+	    	<span class="close" id="modal-close">×</span>
+			<div class="modal-header" id="ccpa-modal-content-destination"><h2>YOUR PRIVACY CHOICES (DO NOT SELL/SHARE/TARGET)</h2><p>Under some U.S. Privacy Laws, consumers have the right to opt-out of processing of personal info for "targeted advertising," and activities that are classified as "sale" and/or "sharing." To submit an opt-out request that will apply to personal information collected by cookies and other tracking technologies ("cookie PI"), move the toggle below to the left and click "Confirm My Cookie PI Choice."</p><p>We will apply the opt-out to cookies that may implicate "sale", "sharing," or "targeted advertising." There are other cookies, such as essential cookies and other cookies operated by "service providers" or "processors" to which we do not apply the opt-out. You must exercise your preferences on each of our websites you visit, from each browser you use, and on each device that you use. If you clear or block cookies, your preferences will no longer be effective, and you will need to enable them again via this tool. In addition, this tool only has the capability of applying your opt-out to cookies.</p><p>To submit an opt-out request as to non-cookie PI (such as email address), you must opt-out separately. Please click on the "Non-Cookie PI Opt-Out" button below to access our webform.</p><p>For more information regarding our privacy practices, please visit our <a href="https://slashdotmedia.com/privacy-statement/" rel="nofollow" target="_blank">Privacy Policy</a> and <a href="https://slashdotmedia.com/privacy-statement/#rightsToKnow" rel="nofollow" target="_blank">U.S. State Privacy Policy</a>.<br>To submit an information request or to request deletion, <a href="https://privacyportal.onetrust.com/webform/611e70e2-1994-43ff-b07b-646df870db4b/f4165d65-f39c-4ea5-8628-163090b74137" target="_blank">use this form</a>.</p><div class="ccpa-modal-inner"><section><div><a href="https://privacyportal-cdn.onetrust.com/dsarwebform/611e70e2-1994-43ff-b07b-646df870db4b/c1c0acac-ab24-4dac-b3e6-43421a684626.html" rel="nofollow" target="_blank" class="button green">NON-COOKIE PI OPT-OUT FORM</a></div><div><div class="toggler"><span class="out">Opted-out</span> <input id="opt-toggle" type="checkbox"> <span class="in">Opted-in</span></div><div id="cmp-confirm-msg"></div><a href="#" class="button green" id="cmp-submit-request">CONFIRM MY COOKIE-PI CHOICE</a></div></section></div></div>
+		</div>
+	</div>
+
+	</footer>
+	
+	<div class="overlay" style="display: none;"></div>
+<div class="modal-box" style="display: none;">
+    <a href="#" id="close-modal">Close</a>
+    <article class="modal-content">
+    </article>
+    <footer>
+</footer></div>
+
+
+
+
+<div id="modal_cover" class="hide" onclick="hide_modal_box(); return false;"></div>
+<div id="modal_box" class="hide push">
+      <div id="modal_box_content"></div>
+      <header class="n">
+                  <span class="fadeout"></span>
+                  <span class="fadeoutfade"></span>
+		  <span class="pf"><a class="ico close" onclick="hide_modal_box(); return false;" href="#"><span>Close</span></a></span>
+		  <h3 class="pf"><div id="logo"><a href="//slashdot.org">Slashdot</a></div><span id="preference_title"></span></h3>
+      </header>
+</div>
+	
+	
+
+<!-- CCM GA Push -->
+
+
+<!-- Sticky Ads -->
+
+
+<style>
+#slashboxes .ntv-preview-img-wrapper {
+    display: block;
+    margin: 0 auto !important;
+    width: 100%;
+    float: none;
+    text-align: center;
+}
+#slashboxes strong {
+    margin-bottom: -5px;
+    display: block;
+}
+#slashboxes .ntv-preview-img-wrapper {background: #F7F7F7;}
+#slashboxes .nel-image {
+    float: none;
+    margin-top: 10px;
+}
+#slashboxes .p.ntv-body {
+    text-align: left;
+    border-top: 1px solid #CCCCCC;
+}
+
+#slashboxes .p.ntv-body strong {
+    display: block;
+}
+
+#slashboxes .p.ntv-body .nel-button {
+    width: 100%;
+    text-align: center;
+    margin: 15px 0;
+    padding: 8px;
+}
+
+#slashboxes .p.ntv-body {
+    background: #fff;
+    margin: 0;
+    padding: 10px 10px 1px 10px;
+}
+#slashboxes article:first-child {
+    border-radius: 0px !important;
+    padding-top: 1;
+}
+#slashboxes article:first-child header {
+    border-radius: 0px !important;
+}
+#slashboxes article:first-child h2.story {
+    padding-left: 10px;
+    background: #6D4634;
+}
+
+#slashboxes .details {
+    display: none;
+}
+#slashboxes .ntv-sponsored-disclaimer {
+    position: relative;
+    top: 0;
+    background: #6D4634;
+    padding-left: 10px;
+    padding-top: 10px;
+    margin-left: 0;
+}
+#slashboxes .ntv-sponsored-disclaimer:before {
+    display: none;
+}
+#slashboxes .ntv-sponsored-question {
+    display: none;
+}
+#slashboxes .ntv-sponsored-disclaimer a {
+    float: none;
+    text-transform: uppercase;
+}
+</style>
+<!-- Piwik -->
+
+
+
+
+
+
+	
+	
+	<img src="//slashdot.org/images/js.gif?806" i3kd74n1i="">
+<noscript>
+	<img src="//slashdot.org/images/njs.gif?437">
+</noscript>
+	<div class="busy genericspinner hide"><span>Working...</span></div>
+
+	    
+
+	
+	
+
+	
+		<!-- 1x1 home page -->
+		
+	
+    
+	<iframe height="1" width="1" style="position: absolute; top: 0px; left: 0px; border-width: medium; border-style: none; border-color: currentcolor; border-image: none; visibility: hidden;"></iframe>
+	
+
+
+	<style type="text/css">div.cmpwrapper:empty, div.cmpwrapper, div#cmpwrapper.cmpwrapper, div#cmpwrapper.cmpwrapper:empty{ display: block !important;}</style></body></html>

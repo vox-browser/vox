@@ -145,6 +145,9 @@ def run_case(site, args):
         guarded([*common, *capture_route, '--capture-dir', capture, '--output', report],
                 output / 'capture', args.timeout)
         seal_capture(capture, archive, report)
+    if not (archive / 'manifest.json').is_file() and (archive / 'status.json').is_file():
+        unavailable = read_json(archive / 'status.json')
+        raise RuntimeError('Site fixture unavailable: ' + unavailable['reason'])
     manifest = load_archive(archive)
     provenance = archive / 'capture.json'
     if digest(provenance.read_bytes()) != manifest['capture_report_sha256']:

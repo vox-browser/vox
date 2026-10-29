@@ -1,0 +1,11 @@
+._14u4qgp0{z-index:11000;position:fixed;inset:0;overflow:hidden}
+._14u4qgp1{background-color:var(--_1tsb0ye8l);width:100%;max-width:450px;height:100%;box-shadow:var(--_1tsb0ye1eh);overscroll-behavior:contain;flex-direction:column;justify-content:space-between;display:flex;position:fixed;top:0;right:0;overflow:hidden scroll}
+._14u4qgp2{position:static}
+._14u4qgp3{transition:none!important}
+._14u4qgp4{transition-property:all;transition-duration:.15s;transition-timing-function:ease-out}
+._14u4qgp5{transform:translate(100%)}
+._14u4qgp6{transform:translate(0)}
+._14u4qgp7{transition-property:all;transition-duration:.15s;transition-timing-function:ease-in}
+._14u4qgp8{transform:translate(0)}
+._14u4qgp9{transform:translate(100%)}
+/*# sourceMappingURL=1mci-4dizoq8q.css.map*/

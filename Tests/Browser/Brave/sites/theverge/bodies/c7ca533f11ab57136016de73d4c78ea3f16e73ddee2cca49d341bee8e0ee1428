@@ -1,0 +1,27 @@
+@keyframes _1ds4jca0{0%{opacity:0}to{opacity:1}}
+@keyframes _1ds4jca5{0%{transform:rotate(0)}to{transform:rotate(180deg)}}
+._1ds4jca1{z-index:12000;color:#000;background:#fff;border-top-right-radius:8px;border-bottom-right-radius:8px;padding:12px;animation-name:_1ds4jca0;animation-duration:.1s;animation-timing-function:ease-in;position:fixed;top:10%;box-shadow:2px 2px 8px 1px #0000001a}
+._1ds4jca1:hover{padding:14px}
+._1ds4jca2{overscroll-behavior:contain;max-height:calc(90% - 16px);overflow-y:auto}
+._1ds4jca3{border-bottom:1px solid var(--_1tsb0ye5);text-transform:uppercase;line-height:22.5px;font:var(--_1tsb0ye16);letter-spacing:var(--_1tsb0ye18);margin-bottom:4px}
+._1ds4jca4{width:100%;font-family:var(--_1tsb0ye1e);font-weight:var(--_1tsb0ye1j);font-size:13px;display:inline-block}
+._1ds4jca4:hover{text-decoration:underline}
+._1ds4jca6{visibility:hidden;pointer-events:none;position:absolute}
+._1ds4jca7{animation-name:_1ds4jca5;animation-duration:1.5s;animation-timing-function:ease-in-out}
+._1ds4jca8{align-items:center;display:flex}
+._1ds4jca9{margin-bottom:4px}
+._1ds4jcaa{font-family:var(--_1tsb0ye1i);font-weight:var(--_1tsb0ye1j);white-space:nowrap;font-variant-numeric:tabular-nums;align-items:center;gap:3px;font-size:12px;display:inline-flex}
+._1ds4jcab{border-left:1px solid var(--_1tsb0ye5);margin-left:8px;padding-left:8px}
+._1ds4jcac{color:#1a7f37}
+._1ds4jcad{color:#9a6700}
+._1ds4jcae{color:#cf222e}
+._1ds4jcaf{font-family:var(--_1tsb0ye1e);font-weight:var(--_1tsb0ye1j);margin-top:6px;font-size:11px}
+._1ds4jcag{color:#cf222e}
+._1ds4jcah{cursor:pointer;font-family:var(--_1tsb0ye1e);font-weight:var(--_1tsb0ye1j);color:inherit;background:0 0;border:none;margin-top:6px;padding:0;font-size:11px;text-decoration:underline}
+._1ds4jcah:disabled{cursor:default;opacity:.5}
+._1ds4jcai{margin-top:10px}
+._1ds4jcaj{margin-top:6px}
+._1ds4jcak{font-family:var(--_1tsb0ye1e);font-weight:var(--_1tsb0ye1j);font-size:11px;display:block}
+._1ds4jcal{width:100%;font-family:var(--_1tsb0ye1i);font-weight:var(--_1tsb0ye1j);background:#eee6ff;padding:1px 3px;font-size:11px;display:block;overflow-x:scroll}
+._1ds4jcal:focus{outline:none}
+/*# sourceMappingURL=3z4ehe_btklns.css.map*/

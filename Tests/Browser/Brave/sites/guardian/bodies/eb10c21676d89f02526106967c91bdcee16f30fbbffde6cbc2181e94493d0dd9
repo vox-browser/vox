@@ -1,0 +1,2 @@
+"use strict";(self.webpackChunk_guardian_dotcom_rendering=self.webpackChunk_guardian_dotcom_rendering||[]).push([[3537],{26247(e,r,a){a.r(r);var n=a(65532),s=a(94042),d=a(44863);a.d(r,["BrazeMessaging",0,e=>{let{idApiUrl:r}=e;const{renderingTarget:a}=(0,d.U)(),{brazeMessages:t,brazeCards:g}=(0,s.m)(r,a);return t&&(0,n.Rm)("tx","Braze Messages Interface loaded",t),g&&(0,n.Rm)("tx","Braze Cards Interface loaded",g),null}])}}]);
+//# sourceMappingURL=BrazeMessaging-island.client.web.086011d521f546d6d854.js.map

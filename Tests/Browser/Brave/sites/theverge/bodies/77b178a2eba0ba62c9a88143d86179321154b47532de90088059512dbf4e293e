@@ -1,0 +1,5677 @@
+{
+  "slots": [
+    {
+      "name": "btf_leaderboard_variable_article",
+      "selector": ".duet--navigation--footer > *:first-child",
+      "insertion": "before",
+      "classNames": [
+        "dfp_ad--footer",
+        "duet--ad-container--default"
+      ],
+      "sizes": [
+        [
+          728,
+          90
+        ],
+        [
+          1020,
+          90
+        ],
+        [
+          970,
+          90
+        ],
+        [
+          620,
+          366
+        ],
+        [
+          620,
+          371
+        ],
+        [
+          620,
+          415
+        ],
+        [
+          1030,
+          590
+        ],
+        {
+          "size": [
+            1060,
+            610
+          ],
+          "filters": {
+            "containerWidth": {
+              "min": 1060
+            }
+          }
+        }
+      ],
+      "holdSize": [
+        728,
+        90
+      ],
+      "previewHoldSize": [
+        728,
+        90
+      ],
+      "destroyOnReinstall": true,
+      "blockthrough": {
+        "dataId": "5d83baa15d-377"
+      },
+      "filters": {
+        "viewportWidth": {
+          "min": 1181
+        },
+        "showIfPresent": {
+          "selector": ".duet--page-layout--standard-article"
+        },
+        "hideIfPresent": {
+          "selector": ".duet--article--boosted-post-wrapper"
+        },
+        "hideIfSubscription": true
+      }
+    },
+    {
+      "name": "tablet_btf_leaderboard_article",
+      "classNames": [
+        "dfp_ad--footer",
+        "duet--ad-container--default"
+      ],
+      "selector": ".duet--navigation--footer > *:first-child",
+      "insertion": "before",
+      "sizes": [
+        [
+          728,
+          90
+        ],
+        [
+          620,
+          366
+        ],
+        [
+          620,
+          371
+        ],
+        [
+          620,
+          415
+        ],
+        [
+          1030,
+          590
+        ]
+      ],
+      "holdSize": [
+        728,
+        90
+      ],
+      "previewHoldSize": [
+        728,
+        90
+      ],
+      "destroyOnReinstall": true,
+      "blockthrough": {
+        "dataId": "5d83baa49c-377"
+      },
+      "filters": {
+        "viewportWidth": {
+          "min": 768,
+          "max": 1180
+        },
+        "showIfPresent": {
+          "selector": ".duet--page-layout--standard-article"
+        },
+        "hideIfSubscription": true,
+        "hideIfPresent": {
+          "selector": ".duet--article--boosted-post-wrapper"
+        }
+      }
+    },
+    {
+      "name": "medrec_frontpage_river_tablet_desktop_follows",
+      "classNames": [
+        "duet--ad-container--border-bottom",
+        "dfp_ad--pb-30",
+        "dfp_ad--mt-10"
+      ],
+      "prebidName": "desktop_article_medrec_dynamic",
+      "selector": ".duet--page-layout--homepage #follows-panel .duet--layout--river .duet--content-cards--content-card:first-of-type",
+      "insertion": "after",
+      "maxSlots": 1,
+      "sizes": [
+        [
+          300,
+          250
+        ]
+      ],
+      "allowSiblings": true,
+      "holdSize": [
+        300,
+        250
+      ],
+      "previewHoldSize": [
+        300,
+        250
+      ],
+      "filters": {
+        "viewportWidth": {
+          "min": 768
+        },
+        "hideIfSubscription": true
+      }
+    },
+    {
+      "name": "prelude",
+      "selector": ".duet--app",
+      "classNames": [
+        "prelude"
+      ],
+      "sizes": [
+        [
+          1400,
+          600
+        ],
+        [
+          1180,
+          450
+        ]
+      ],
+      "prebidEligible": false,
+      "refreshEligible": false,
+      "watcherEligible": false,
+      "allowSiblings": true,
+      "previewHoldSize": [
+        728,
+        90
+      ],
+      "filters": {
+        "showIfPresent": {
+          "selector": "[class*=\"duet--page-layout--group\"], .duet--page-layout--front-page, .duet--page-layout--category"
+        },
+        "hideIfPresent": {
+          "selector": "[data-concert*=\"leaderboard_top_tablet_desktop\"], .duet--page-layout--front-page"
+        },
+        "viewportWidth": {
+          "min": 1181
+        },
+        "deviceType": "desktop"
+      }
+    },
+    {
+      "name": "athena_article_subscription",
+      "classNames": [
+        "duet--ad-container--default"
+      ],
+      "selector": ".duet--navigation--footer",
+      "insertion": "before",
+      "sizes": [
+        [
+          1030,
+          590
+        ],
+        [
+          620,
+          366
+        ],
+        [
+          620,
+          371
+        ],
+        [
+          620,
+          415
+        ]
+      ],
+      "shouldSkipTransition": true,
+      "holdSize": [
+        620,
+        366
+      ],
+      "previewHoldSize": [
+        620,
+        366
+      ],
+      "destroyOnReinstall": true,
+      "maxSlots": 1,
+      "inlineStyles": {
+        "max-width": "620px",
+        "max-height": "415px"
+      },
+      "filters": {
+        "viewportWidth": {
+          "min": 768
+        },
+        "showIfSubscription": true,
+        "showIfPresent": {
+          "selector": ".duet--page-layout--standard-article"
+        },
+        "hideIfPresent": {
+          "selector": ".duet--article--boosted-post-wrapper"
+        }
+      }
+    },
+    {
+      "name": "mobile_river_leaderboard_q4",
+      "selector": ".duet--recirculation--list-breaker-compact",
+      "classNames": [
+        "duet--mobile-athena-styles"
+      ],
+      "sizes": [
+        [
+          320,
+          50
+        ],
+        [
+          300,
+          250
+        ],
+        [
+          1030,
+          590
+        ],
+        [
+          325,
+          204
+        ],
+        [
+          325,
+          508
+        ],
+        [
+          300,
+          "250v"
+        ]
+      ],
+      "shouldSkipTransition": true,
+      "maxSlots": 2,
+      "holdSize": [
+        300,
+        250
+      ],
+      "previewHoldSize": [
+        300,
+        250
+      ],
+      "filters": {
+        "viewportWidth": {
+          "max": 767
+        },
+        "hideIfSubscription": true
+      }
+    },
+    {
+      "name": "medium_rectangle_river_homepage",
+      "classNames": [
+        "duet--ad-container--border-bottom"
+      ],
+      "selector": ".duet--page-layout--homepage #storyStream-panel .duet--layout--river .duet--content-cards--content-card:nth-of-type(3n+1)",
+      "insertion": "after",
+      "sizes": [
+        [
+          300,
+          250
+        ]
+      ],
+      "holdSize": [
+        300,
+        250
+      ],
+      "previewHoldSize": [
+        300,
+        250
+      ],
+      "allowSiblings": true,
+      "blockthrough": {
+        "dataId": "5d83bac72f-377"
+      },
+      "filters": {
+        "viewportWidth": {
+          "min": 1181
+        },
+        "showIfPresent": {
+          "selector": ".duet--page-layout--homepage"
+        },
+        "avoidElements": {
+          "after": {
+            "className": "m-ad__medium_rectangle_river_homepage"
+          }
+        }
+      },
+      "conditional": {
+        "condition": {
+          "useIfSubscription": true
+        },
+        "selector": "[data-concert*=\"medium_rectangle_river\"]",
+        "insertion": "inside"
+      }
+    },
+    {
+      "name": "desktop_top_stories_leaderboard",
+      "selector": "[data-concert=\"desktop_topstories_river\"]",
+      "insertion": "inside",
+      "sizes": [
+        [
+          728,
+          90
+        ],
+        [
+          620,
+          366
+        ],
+        {
+          "size": [
+            1030,
+            590
+          ],
+          "filters": {
+            "containerWidth": {
+              "min": 800
+            }
+          }
+        }
+      ],
+      "filters": {
+        "viewportWidth": {
+          "min": 1181
+        }
+      }
+    },
+    {
+      "name": "hub_river_leaderboard_subscription",
+      "classNames": [
+        "duet--ad-container--border-bottom",
+        "duet--desktop-athena-styles",
+        "dfp_ad--pb-30",
+        "dfp_ad--mt-10"
+      ],
+      "selector": "[class*=duet--page-layout--group] .duet--layout--river .duet--content-cards--content-card:nth-of-type(10n+3),  [class*=duet--page-layout--category] .duet--layout--river .duet--content-cards--content-card:nth-of-type(10n+3),  [class*=duet--page-layout--homepage-archive] .duet--layout--river .duet--content-cards--content-card:nth-of-type(10n+3),  [class*=duet--page-layout--full-archive] .duet--layout--river .duet--content-cards--content-card:nth-of-type(10n+3),  [duet--page-layout--author] .duet--layout--river .duet--content-cards--content-card:nth-of-type(10n+3)",
+      "sizes": [
+        [
+          620,
+          366
+        ],
+        [
+          1030,
+          590
+        ],
+        [
+          300,
+          250
+        ]
+      ],
+      "holdSize": [
+        620,
+        90
+      ],
+      "previewHoldSize": [
+        620,
+        90
+      ],
+      "insertion": "after",
+      "allowSiblings": false,
+      "filters": {
+        "viewportWidth": {
+          "min": 768
+        },
+        "showIfSubscription": true
+      }
+    },
+    {
+      "name": "mobile_article_headline_leaderboard",
+      "slotClassName": "m-ad__mobile_article_headline_leaderboard",
+      "prebidName": "mobile_leaderboard",
+      "selector": ".duet--page-layout--standard-article #content, .duet--page-layout--post #content",
+      "insertion": "before",
+      "classNames": [
+        "dfp_ad--full-width"
+      ],
+      "sizes": [
+        [
+          320,
+          50
+        ]
+      ],
+      "holdSize": [
+        320,
+        50
+      ],
+      "previewHoldSize": [
+        320,
+        50
+      ],
+      "maxSlots": 1,
+      "watcherEligible": false,
+      "blockthrough": {
+        "dataId": "5d83bacec0-377"
+      },
+      "filters": {
+        "hideIfSubscription": true,
+        "hideIfPresent": {
+          "selector": ".m-ad__mobile_leaderboard, .duet--page-layout--feature-article"
+        },
+        "viewportWidth": {
+          "max": 767
+        }
+      }
+    },
+    {
+      "name": "desktop_btf_river_leaderboard",
+      "selector": ".duet--page-layout--homepage .duet--homepage--category-shelf:nth-of-type(2n)",
+      "insertion": "after",
+      "sizes": [
+        [
+          728,
+          90
+        ]
+      ],
+      "maxSlots": 2,
+      "filters": {
+        "viewportWidth": {
+          "min": 1181
+        },
+        "hideIfSubscription": true
+      }
+    },
+    {
+      "name": "desktop_homepage_btf_medium_rectangle_variable",
+      "selector": ".duet--page-layout--homepage .duet--homepage-category-shelves-container .duet--layout--rail .duet--homepage-category-shelves-rail-section",
+      "insertion": "inside",
+      "inlineStyles": {
+        "margin-bottom": "50px"
+      },
+      "sticky": {
+        "enabled": true,
+        "offset": 100
+      },
+      "sizes": [
+        [
+          300,
+          250
+        ],
+        [
+          300,
+          600
+        ]
+      ],
+      "maxSlots": 2,
+      "filters": {
+        "viewportWidth": {
+          "min": 1181
+        }
+      }
+    },
+    {
+      "name": "mobile_med_rec_athena_subscription",
+      "selector": "[class*=duet--page-layout--group] .duet--layout--river .duet--content-cards--content-card:nth-of-type(10n+3),  [class*=duet--page-layout--category] .duet--layout--river .duet--content-cards--content-card:nth-of-type(10n+3),  [class*=duet--page-layout--homepage-archive] .duet--layout--river .duet--content-cards--content-card:nth-of-type(10n+3),  [class*=duet--page-layout--full-archive] .duet--layout--river .duet--content-cards--content-card:nth-of-type(10n+3),  [duet--page-layout--author] .duet--layout--river .duet--content-cards--content-card:nth-of-type(10n+3)",
+      "classNames": [
+        "duet--ad-container--default",
+        "duet--mobile-athena-styles",
+        "dfp_ad--pb-30",
+        "dfp_ad--mt-10"
+      ],
+      "sizes": [
+        [
+          300,
+          250
+        ],
+        [
+          300,
+          "250v"
+        ],
+        [
+          1030,
+          590
+        ],
+        [
+          325,
+          508
+        ],
+        [
+          300,
+          265
+        ],
+        [
+          325,
+          204
+        ]
+      ],
+      "shouldSkipTransition": true,
+      "holdSize": [
+        325,
+        300
+      ],
+      "previewHoldSize": [
+        325,
+        300
+      ],
+      "insertion": "after",
+      "filters": {
+        "viewportWidth": {
+          "max": 767
+        },
+        "showIfSubscription": true
+      }
+    },
+    {
+      "name": "mobile_article_body_second_paragraph",
+      "selector": ".duet--page-layout--standard-article .duet--article--article-body-component:nth-of-type(2), .duet--page-layout--post .duet--article--article-body-component:nth-of-type(2)",
+      "insertion": "after",
+      "classNames": [
+        "duet--ad-container--default",
+        "duet--mobile-athena-styles"
+      ],
+      "sizes": [
+        [
+          300,
+          250
+        ],
+        [
+          300,
+          "250v"
+        ],
+        [
+          1030,
+          590
+        ],
+        [
+          325,
+          508
+        ],
+        [
+          325,
+          204
+        ]
+      ],
+      "shouldSkipTransition": true,
+      "holdSize": [
+        300,
+        250
+      ],
+      "previewHoldSize": [
+        300,
+        250
+      ],
+      "maxSlots": 1,
+      "filters": {
+        "hideIfPresent": {
+          "selector": ".duet--page-layout--feature-article"
+        },
+        "avoidElementsWithin": [
+          {
+            "selector": ".duet--article--article-body-component h2, .duet--article--article-body-component h3, .duet--article--article-body-component h4, .duet--article--article-body-component .duet--article--image-group-two-up, .duet--article--article-body-component > .duet--article--action-box, .duet--article--image-gallery-image, .duet--page-layout--feature-article #content > div:last-of-type, .m-ad",
+            "before": 100
+          },
+          {
+            "selector": ".duet--article--article-body-component > figure, .duet--article--article-body-component *[role=\"button\"] > figure, .duet--article--article-body-component > .duet--media--embed, .duet--article--article-body-component > .duet--media--video-embed, .duet--article--article-body-component > .duet--article--image-comparison, .duet--article--image-gallery-image, .duet--article--article-body-component > .duet--article--scorecard, .duet--article--article-body-component > .duet--article--product-card, .duet--article--article-body-component > .duet--article--dangerously-set-cms-markup iframe, .duet--article--article-body-component > .duet--article--dangerously-set-cms-markup .video-container, .duet--article--article-body-component > .duet--article--dangerously-set-cms-markup .vrg-video-inline, .duet--article--article-body-component > .duet--article--article-pullquote, [class*=\"ArticleFooter\"], .m-ad",
+            "before": 100,
+            "after": 100
+          },
+          {
+            "selector": "div[class*=float-left].duet--article--article-body-component, div[class*=float-right].duet--article--article-body-component",
+            "before": 150,
+            "after": 150
+          },
+          {
+            "selector": ".tiktok-embed",
+            "before": 500,
+            "after": 300
+          }
+        ],
+        "viewportWidth": {
+          "max": 767
+        },
+        "hideIfSubscription": true
+      }
+    },
+    {
+      "name": "hub_sponsorship_white",
+      "slotClassName": "m-ad__hub_sponsorship",
+      "selector": "[data-concert*=\"hub_sponsorship\"]",
+      "insertion": "inside",
+      "maxSlots": 1,
+      "sizes": [
+        [
+          200,
+          41
+        ]
+      ],
+      "prebidEligible": false,
+      "refreshEligible": false,
+      "watcherEligible": false
+    },
+    {
+      "name": "medium_rectangle_variable_author",
+      "prebidName": "medium_rectangle_variable",
+      "slotClassName": "m-ad__medium_rectangle_variable",
+      "selector": ".duet--page-layout--author [data-concert=\"medium_rectangle_variable\"]",
+      "sizes": [
+        [
+          300,
+          250
+        ],
+        [
+          300,
+          "250v"
+        ],
+        {
+          "size": [
+            300,
+            600
+          ],
+          "filters": {
+            "hideIfSubscription": true
+          }
+        }
+      ],
+      "holdSize": [
+        300,
+        250
+      ],
+      "previewHoldSize": [
+        300,
+        250
+      ],
+      "insertion": "inside",
+      "allowSiblings": true,
+      "blockthrough": {
+        "dataId": "5d83bac72f-377"
+      },
+      "filters": {
+        "viewportWidth": {
+          "min": 1181
+        }
+      }
+    },
+    {
+      "name": "sponsored_quickpost",
+      "selector": ".duet--page-layout--homepage .duet--layout--river .duet--content-cards--content-card:nth-child(3), .duet--page-layout--full-archive .duet--layout--river .duet--content-cards--content-card:nth-child(3), .duet--page-layout--category .duet--layout--river .duet--content-cards--content-card:nth-child(3), .duet--page-layout--homepage-archive .duet--layout--river .duet--content-cards--content-card:nth-child(3)",
+      "classNames": [
+        "visually-hidden",
+        "m-ad__sponsored_quickpost"
+      ],
+      "maxSlots": 1,
+      "sizes": [
+        [
+          1,
+          1
+        ],
+        [
+          300,
+          250
+        ]
+      ],
+      "outOfPage": true,
+      "allowSiblings": true,
+      "insertion": "before",
+      "refreshEligible": false,
+      "watcherEligible": false
+    },
+    {
+      "name": "sponsored_quickpost_1_category",
+      "selector": ".duet--page-layout--category .duet--layout--river .duet--content-cards--content-card:nth-child(9)",
+      "classNames": [
+        "visually-hidden",
+        "m-ad__sponsored_quickpost"
+      ],
+      "maxSlots": 1,
+      "sizes": [
+        [
+          1,
+          1
+        ]
+      ],
+      "outOfPage": true,
+      "allowSiblings": true,
+      "insertion": "after",
+      "refreshEligible": false,
+      "watcherEligible": false
+    },
+    {
+      "name": "sponsored_quickpost_1_homepage_desktop",
+      "selector": ".duet--page-layout--homepage .duet--layout--river .duet--content-cards--content-card:nth-child(20)",
+      "classNames": [
+        "visually-hidden",
+        "m-ad__sponsored_quickpost"
+      ],
+      "maxSlots": 1,
+      "sizes": [
+        [
+          1,
+          1
+        ],
+        [
+          300,
+          250
+        ]
+      ],
+      "outOfPage": true,
+      "allowSiblings": true,
+      "insertion": "after",
+      "refreshEligible": false,
+      "watcherEligible": false,
+      "filters": {
+        "viewportWidth": {
+          "min": 1181
+        }
+      }
+    },
+    {
+      "name": "sponsored_quickpost_1_homepage_mobile_tablet",
+      "selector": ".duet--page-layout--homepage .duet--layout--river .duet--content-cards--content-card:nth-child(10)",
+      "classNames": [
+        "visually-hidden",
+        "m-ad__sponsored_quickpost"
+      ],
+      "maxSlots": 1,
+      "sizes": [
+        [
+          1,
+          1
+        ]
+      ],
+      "outOfPage": true,
+      "allowSiblings": true,
+      "insertion": "before",
+      "refreshEligible": false,
+      "watcherEligible": false,
+      "filters": {
+        "viewportWidth": {
+          "max": 1180
+        }
+      }
+    },
+    {
+      "name": "sponsored_quickpost_topstories_mobile_tablet",
+      "selector": ".duet--homepage-latest-quickposts .duet--content-cards--content-card:nth-child(2)",
+      "classNames": [
+        "visually-hidden",
+        "m-ad__sponsored_quickpost"
+      ],
+      "maxSlots": 1,
+      "sizes": [
+        [
+          1,
+          1
+        ]
+      ],
+      "outOfPage": true,
+      "allowSiblings": true,
+      "insertion": "after",
+      "refreshEligible": false,
+      "watcherEligible": false,
+      "filters": {
+        "viewportWidth": {
+          "max": 1180
+        }
+      }
+    },
+    {
+      "name": "q4_opt_feature_below_connatix",
+      "classNames": [
+        "duet--ad-container--default"
+      ],
+      "selector": "article",
+      "insertion": "after",
+      "maxSlots": 1,
+      "sizes": [
+        [
+          1030,
+          590
+        ],
+        [
+          728,
+          90
+        ],
+        [
+          620,
+          366
+        ],
+        [
+          620,
+          371
+        ],
+        [
+          620,
+          415
+        ],
+        {
+          "size": [
+            970,
+            250
+          ],
+          "filters": {
+            "containerWidth": {
+              "min": 970
+            }
+          }
+        }
+      ],
+      "filters": {
+        "viewportWidth": {
+          "min": 768
+        },
+        "hideIfPresent": {
+          "selector": ".duet--page-layout--standard-article"
+        },
+        "hideIfSubscription": true
+      }
+    },
+    {
+      "name": "mobile_q4_opt_article_below_connatix",
+      "selector": ".duet--page-layout--post .duet--layout--article-recirc-color-container",
+      "classNames": [
+        "duet--ad-container--default",
+        "duet--mobile-athena-styles"
+      ],
+      "insertion": "before",
+      "maxSlots": 1,
+      "sizes": [
+        [
+          1030,
+          590
+        ],
+        [
+          325,
+          508
+        ],
+        [
+          325,
+          204
+        ],
+        [
+          300,
+          250
+        ],
+        [
+          300,
+          "250v"
+        ]
+      ],
+      "filters": {
+        "viewportWidth": {
+          "max": 767
+        },
+        "hideIfPresent": {
+          "selector": ".duet--page-layout--feature-article"
+        },
+        "hideIfSubscription": true
+      }
+    },
+    {
+      "name": "mobile_q4_opt_feature_below_connatix",
+      "selector": ".duet--page-layout--post .duet--layout--article-recirc-color-container",
+      "classNames": [
+        "duet--ad-container--default",
+        "duet--mobile-athena-styles"
+      ],
+      "insertion": "before",
+      "maxSlots": 1,
+      "sizes": [
+        [
+          1030,
+          590
+        ],
+        [
+          325,
+          508
+        ],
+        [
+          325,
+          204
+        ],
+        [
+          300,
+          250
+        ],
+        [
+          300,
+          "250v"
+        ]
+      ],
+      "filters": {
+        "viewportWidth": {
+          "max": 767
+        },
+        "hideIfPresent": {
+          "selector": ".duet--page-layout--standard-article"
+        },
+        "hideIfSubscription": true
+      }
+    },
+    {
+      "name": "desktop_verizon_takeover_homepage_firstfour",
+      "insertion": "after",
+      "selector": ".duet--page-layout--homepage .duet--homepage--hero .duet--content-cards--content-card",
+      "classNames": [
+        "duet--ad-container--default"
+      ],
+      "inlineStyles": {
+        "margin-top": "40px"
+      },
+      "maxSlots": 1,
+      "sizes": [
+        [
+          728,
+          90
+        ]
+      ],
+      "filters": {
+        "viewportWidth": {
+          "min": 1181
+        },
+        "hideIfSubscription": true
+      }
+    },
+    {
+      "name": "mobile_verizon_takeover_homepage_firstfour",
+      "insertion": "after",
+      "selector": ".duet--page-layout--homepage .duet--homepage--hero .duet--content-cards--content-card",
+      "classNames": [
+        "duet--ad-container--default"
+      ],
+      "maxSlots": 1,
+      "inlineStyles": {
+        "margin-top": "24px",
+        "margin-bottom": "24px"
+      },
+      "sizes": [
+        [
+          300,
+          250
+        ]
+      ],
+      "filters": {
+        "viewportWidth": {
+          "max": 1180
+        },
+        "hideIfSubscription": true
+      }
+    },
+    {
+      "name": "desktop_verizon_takeover_homepage_leaderboard",
+      "insertion": "before",
+      "selector": ".duet--homepage-bottom-curated-content-section-0, .duet--homepage--most-discussed",
+      "classNames": [
+        "duet--ad-container--no-padding"
+      ],
+      "sizes": [
+        [
+          728,
+          90
+        ]
+      ],
+      "filters": {
+        "viewportWidth": {
+          "min": 1181
+        },
+        "hideIfSubscription": true
+      }
+    },
+    {
+      "name": "mobile_verizon_takeover_homepage_medrec_quickpost",
+      "insertion": "after",
+      "selector": ".duet--homepage-latest-quickposts .duet--content-cards--content-card",
+      "maxSlots": 1,
+      "classNames": [
+        "duet--ad-container--default"
+      ],
+      "inlineStyles": {
+        "margin-top": "24px"
+      },
+      "sizes": [
+        [
+          300,
+          250
+        ]
+      ],
+      "filters": {
+        "viewportWidth": {
+          "max": 767
+        },
+        "hideIfSubscription": true
+      }
+    },
+    {
+      "name": "mobile_verizon_takeover_homepage_medrec_back_to_school",
+      "insertion": "after",
+      "selector": ".duet--homepage-top-curated-content-section-0 .duet--content-cards--content-card",
+      "maxSlots": 1,
+      "classNames": [
+        "duet--ad-container--default"
+      ],
+      "inlineStyles": {
+        "margin-top": "24px"
+      },
+      "sizes": [
+        [
+          300,
+          250
+        ]
+      ],
+      "filters": {
+        "viewportWidth": {
+          "max": 767
+        },
+        "hideIfSubscription": true
+      }
+    },
+    {
+      "name": "mobile_verizon_takeover_feature_apex",
+      "selector": ".duet--app",
+      "sizes": [
+        [
+          320,
+          50
+        ]
+      ],
+      "insertion": "before",
+      "watcherEligible": false,
+      "refreshEligible": true,
+      "allowSiblings": true,
+      "inlineStyles": {
+        "margin": "10px 0"
+      },
+      "filters": {
+        "viewportWidth": {
+          "max": 767
+        },
+        "showIfPresent": {
+          "selector": ".duet--page-layout--feature-article"
+        },
+        "hideIfSubscription": true
+      }
+    },
+    {
+      "reused_elements": null,
+      "test_item": "hello",
+      "bp_mobile_end": 767,
+      "bp_tablet_start": 768,
+      "bp_tablet_end": 1180,
+      "bp_desktop_start": 1181,
+      "entry_body_avoid_elements_within_filter": [
+        {
+          "selector": ".duet--article--article-body-component h2, .duet--article--article-body-component h3, .duet--article--article-body-component h4, .duet--article--article-body-component .duet--article--image-group-two-up, .duet--article--article-body-component > .duet--article--action-box, .duet--article--image-gallery-image, .duet--page-layout--feature-article #content > div:last-of-type, .m-ad",
+          "before": 100
+        },
+        {
+          "selector": ".duet--article--article-body-component > figure, .duet--article--article-body-component *[role=\"button\"] > figure, .duet--article--article-body-component > .duet--media--embed, .duet--article--article-body-component > .duet--media--video-embed, .duet--article--article-body-component > .duet--article--image-comparison, .duet--article--image-gallery-image, .duet--article--article-body-component > .duet--article--scorecard, .duet--article--article-body-component > .duet--article--product-card, .duet--article--article-body-component > .duet--article--dangerously-set-cms-markup iframe, .duet--article--article-body-component > .duet--article--dangerously-set-cms-markup .video-container, .duet--article--article-body-component > .duet--article--dangerously-set-cms-markup .vrg-video-inline, .duet--article--article-body-component > .duet--article--article-pullquote, [class*=\"ArticleFooter\"], .m-ad",
+          "before": 100,
+          "after": 100
+        },
+        {
+          "selector": "div[class*=float-left].duet--article--article-body-component, div[class*=float-right].duet--article--article-body-component",
+          "before": 150,
+          "after": 150
+        },
+        {
+          "selector": ".tiktok-embed",
+          "before": 500,
+          "after": 300
+        }
+      ],
+      "mobile_athena_styles": {
+        "max-height": "508px",
+        "max-width": "325px"
+      }
+    },
+    {
+      "name": "small_prelude",
+      "selector": ".duet--app",
+      "classNames": [
+        "small-prelude",
+        "duet--ad-container--background-boxshadow"
+      ],
+      "sizes": [
+        [
+          1400,
+          600
+        ],
+        [
+          1180,
+          450
+        ],
+        [
+          970,
+          353
+        ]
+      ],
+      "prebidEligible": false,
+      "refreshEligible": false,
+      "watcherEligible": false,
+      "allowSiblings": true,
+      "previewHoldSize": [
+        0,
+        0
+      ],
+      "filters": {
+        "viewportWidth": {
+          "min": 1181
+        },
+        "deviceType": "desktop",
+        "matchUrl": {
+          "urls": "theverge.com/ai-artificial-intelligence/688592/futureproof-artists-and-ai, theverge.com/tech/809421/holiday-gift-guide-2025, theverge.com/tech/800440/best-gifts-under-100-2025, https://www.theverge.com/tech/785418/best-teen-gift-ideas-2025, https://www.theverge.com/gadgets/780850/gaming-entertainment-gifts-ideas-2025-nintendo-asus-meta-quest-ghibli, https://www.theverge.com/tech/799419/best-gifts-for-travelers-holiday-2025, https://www.theverge.com/tech/800449/the-verges-2025-smart-home-holiday-gift-guide-robot-vacuums-video-doorbells, https://www.theverge.com/gadgets/780850/gaming-entertainment-gifts-ideas-2025, https://www.theverge.com/tech/799419/best-gifts-for-travelers-2025, https://www.theverge.com/tech/800449/best-smart-home-gift-ideas-2025, https://www.theverge.com/tech/808624/black-friday-cyber-monday-guide-2025, https://www.theverge.com/gadgets/780850/gaming-entertainment-gifts-ideas-2025, https://www.theverge.com/tech/799419/best-gifts-for-travelers-2025, https://www.theverge.com/gadgets/799419/best-gifts-for-travelers-2025, https://www.theverge.com/gadgets/800449/best-practical-smart-home-gift-ideas-2025, https://www.theverge.com/gadgets/800449/best-practical-smart-home-gift-ideas-2025, https://www.theverge.com/tech/942658/summer-upgrade-week-2026, https://www.theverge.com/gadgets/943057/ooni-portable-pizza-oven-is-great-for-bbqs, https://www.theverge.com/games/942678/nintendo-ds-rules-for-travel, https://www.theverge.com/tech/942932/portable-light-camping-work-travel, https://www.theverge.com/tech/942873/ikape-cera-portable-espresso-review, https://www.theverge.com/tech/942657/library-ebook-borrowing-stream-tv-movies-hoopla-kanopy-overdrive, https://www.theverge.com/ai-artificial-intelligence/942119/vibecoding-backyard-app-gardening-organizing, https://www.theverge.com/gadgets/947310/gadget-veteran-travel-gear, https://www.theverge.com/tech/942472/dry-studio-atm98-silent-evoworks-evo75-mechanical-keyboard-thocky-review, https://www.theverge.com/tech/942854/apple-vehicle-motion-cues-review-really-work, https://www.theverge.com/tech/942467/smart-lighting-backyard-govee-outdoor, https://www.theverge.com/ad/982968/xfinity-gateway-shield-home-protection"
+        }
+      }
+    },
+    {
+      "name": "leaderboard_top",
+      "classNames": [
+        "prelude"
+      ],
+      "selector": "[data-concert*=\"leaderboard_top_tablet_desktop\"]",
+      "insertion": "inside",
+      "sizes": [
+        [
+          728,
+          90
+        ],
+        {
+          "size": [
+            1180,
+            450
+          ],
+          "filters": {
+            "viewportWidth": {
+              "min": 1180
+            }
+          }
+        },
+        {
+          "size": [
+            1400,
+            600
+          ],
+          "filters": {
+            "viewportWidth": {
+              "min": 1181
+            }
+          }
+        },
+        {
+          "size": [
+            970,
+            250
+          ],
+          "filters": {
+            "viewportWidth": {
+              "min": 970
+            }
+          }
+        }
+      ],
+      "previewHoldSize": [
+        728,
+        90
+      ],
+      "refreshEligible": false,
+      "watcherEligible": false,
+      "allowSiblings": false,
+      "filters": {
+        "viewportWidth": {
+          "min": 768
+        }
+      }
+    },
+    {
+      "name": "medrec_frontpage_hero_mobile",
+      "selector": "[data-concert*=\"medrec_frontpage_hero_mobile\"]",
+      "insertion": "inside",
+      "sizes": [
+        [
+          300,
+          250
+        ]
+      ],
+      "previewHoldSize": [
+        300,
+        250
+      ],
+      "holdSize": [
+        300,
+        250
+      ],
+      "allowSiblings": true,
+      "filters": {
+        "viewportWidth": {
+          "max": 767
+        }
+      }
+    },
+    {
+      "name": "desktop_hero",
+      "selector": ".duet--page-layout--homepage .duet--homepage--hero",
+      "insertion": "after",
+      "maxSlots": 1,
+      "sizes": [
+        [
+          620,
+          366
+        ],
+        [
+          728,
+          90
+        ],
+        {
+          "size": [
+            1030,
+            590
+          ],
+          "filters": {
+            "containerWidth": {
+              "min": 800
+            }
+          }
+        }
+      ],
+      "previewHoldSize": [
+        728,
+        90
+      ],
+      "filters": {
+        "viewportWidth": {
+          "min": 1181
+        },
+        "hideIfSubscription": true
+      },
+      "classNames": [
+        "duet--ad-container--default"
+      ],
+      "inlineStyles": {
+        "width": "100%"
+      }
+    },
+    {
+      "name": "desktop_leaderboard_variable",
+      "selector": "[data-concert*=\"desktop_leaderboard_variable\"], [data-concert=\"storystream_top_leaderboard_desktop\"]",
+      "sizes": [
+        [
+          728,
+          90
+        ],
+        {
+          "size": [
+            970,
+            90
+          ],
+          "filters": {
+            "containerWidth": {
+              "min": 970
+            }
+          }
+        },
+        {
+          "size": [
+            1020,
+            90
+          ],
+          "filters": {
+            "containerWidth": {
+              "min": 1020
+            }
+          }
+        }
+      ],
+      "holdSize": [
+        970,
+        90
+      ],
+      "previewHoldSize": [
+        970,
+        90
+      ],
+      "watcherEligible": false,
+      "insertion": "inside",
+      "blockthrough": {
+        "dataId": "5d83ba8f7b-377"
+      },
+      "filters": {
+        "viewportWidth": {
+          "min": 1181
+        }
+      },
+      "conditional": {
+        "condition": {
+          "useIfInBoostContainer": true
+        },
+        "sizes": [
+          [
+            728,
+            90
+          ],
+          {
+            "size": [
+              970,
+              90
+            ],
+            "filters": {
+              "containerWidth": {
+                "min": 970
+              }
+            }
+          }
+        ],
+        "watcherEligible": true
+      }
+    },
+    {
+      "name": "desktop_leaderboard_variable_boost",
+      "selector": ".duet--article--boosted-post-wrapper > article",
+      "sizes": [
+        [
+          728,
+          90
+        ],
+        {
+          "size": [
+            970,
+            90
+          ],
+          "filters": {
+            "containerWidth": {
+              "min": 970
+            }
+          }
+        }
+      ],
+      "inlineStyles": {
+        "padding-bottom": "60px"
+      },
+      "holdSize": [
+        970,
+        90
+      ],
+      "previewHoldSize": [
+        970,
+        90
+      ],
+      "watcherEligible": true,
+      "insertion": "above",
+      "blockthrough": {
+        "dataId": "5d83ba8f7b-377"
+      },
+      "filters": {
+        "viewportWidth": {
+          "min": 1181
+        },
+        "showIfPresent": {
+          "selector": ".duet--ledes--feature-lede, .duet--ledes--special-feature-lede, .duet--ledes--feature-lede-overlay"
+        },
+        "hideIfPresent": {
+          "selector": ".duet--page-layout--standard-article"
+        }
+      }
+    },
+    {
+      "name": "medium_rectangle_variable",
+      "selector": "[data-concert=\"medium_rectangle_variable\"]",
+      "sizes": [
+        [
+          300,
+          250
+        ],
+        [
+          300,
+          "250v"
+        ],
+        {
+          "size": [
+            300,
+            600
+          ],
+          "filters": {
+            "hideIfPresent": {
+              "selector": ".gift-guide-rail"
+            },
+            "hideIfSubscription": true
+          }
+        }
+      ],
+      "holdSize": [
+        300,
+        250
+      ],
+      "previewHoldSize": [
+        300,
+        250
+      ],
+      "insertion": "inside",
+      "maxSlots": 1,
+      "allowSiblings": true,
+      "blockthrough": {
+        "dataId": "5d83bac72f-377"
+      },
+      "filters": {
+        "viewportWidth": {
+          "min": 1181
+        },
+        "hideIfPresent": {
+          "selector": ".duet--page-layout--stream, .duet--page-layout--author"
+        }
+      },
+      "conditional": {
+        "condition": {
+          "useIfInBoostContainer": true
+        },
+        "sizes": [
+          [
+            300,
+            250
+          ]
+        ]
+      }
+    },
+    {
+      "name": "medium_rectangle_short",
+      "prebidName": "desktop_article_medrec_dynamic",
+      "selector": "[data-concert=\"medium_rectangle_variable\"]",
+      "sizes": [
+        [
+          300,
+          250
+        ],
+        [
+          300,
+          "250v"
+        ]
+      ],
+      "holdSize": [
+        300,
+        250
+      ],
+      "previewHoldSize": [
+        300,
+        250
+      ],
+      "insertion": "inside",
+      "maxSlots": 1,
+      "allowSiblings": true,
+      "filters": {
+        "viewportWidth": {
+          "min": 1181
+        },
+        "elementHeight": {
+          "selector": ".duet--article--article-body-component-container, [class*=duet--page-layout--group]",
+          "max": 2000
+        }
+      }
+    },
+    {
+      "name": "medium_rectangle_river",
+      "selector": "[data-concert*=\"medium_rectangle_river\"]",
+      "sizes": [
+        [
+          300,
+          250
+        ],
+        [
+          300,
+          "250v"
+        ]
+      ],
+      "holdSize": [
+        300,
+        250
+      ],
+      "previewHoldSize": [
+        300,
+        250
+      ],
+      "allowSiblings": false,
+      "insertion": "inside",
+      "blockthrough": {
+        "dataId": "5d83bac72f-377"
+      },
+      "filters": {
+        "viewportWidth": {
+          "min": 1181
+        }
+      },
+      "classNames": [
+        "duet--ad-container--default",
+        "dfp_ad--pb-50"
+      ]
+    },
+    {
+      "name": "btf_medium_rectangle_variable_article",
+      "slotClassName": "m-ad__btf_medium_rectangle_variable",
+      "prebidName": "btf_medium_rectangle_variable",
+      "selector": "[data-concert=\"btf_medium_rectangle_variable\"]",
+      "sizes": [
+        [
+          300,
+          250
+        ],
+        [
+          300,
+          "250v"
+        ],
+        {
+          "size": [
+            300,
+            600
+          ],
+          "filters": {
+            "viewportHeight": {
+              "min": 600
+            },
+            "elementHeight": {
+              "selector": ".duet--layout--entry-body",
+              "min": 3600
+            }
+          }
+        }
+      ],
+      "holdSize": [
+        300,
+        250
+      ],
+      "previewHoldSize": [
+        300,
+        250
+      ],
+      "insertion": "inside",
+      "maxSlots": 1,
+      "blockthrough": {
+        "dataId": "5d83bacb2e-377"
+      },
+      "filters": {
+        "viewportWidth": {
+          "min": 1181
+        },
+        "showIfPresent": {
+          "selector": ".duet--page-layout--standard-article, .duet--page-layout--feature-article"
+        }
+      }
+    },
+    {
+      "name": "btf_medium_rectangle_variable_feature_extended_sticky",
+      "slotClassName": "m-ad__btf_medium_rectangle_variable",
+      "prebidName": "btf_medium_rectangle_variable",
+      "selector": "[data-concert=\"btf_medium_rectangle_variable_feature_extended_sticky\"]",
+      "sizes": [
+        [
+          300,
+          250
+        ],
+        [
+          300,
+          "250v"
+        ],
+        {
+          "size": [
+            300,
+            600
+          ],
+          "filters": {
+            "viewportHeight": {
+              "min": 600
+            },
+            "hideIfSubscription": true
+          }
+        }
+      ],
+      "holdSize": [
+        300,
+        250
+      ],
+      "previewHoldSize": [
+        300,
+        250
+      ],
+      "insertion": "inside",
+      "maxSlots": 1,
+      "sticky": {
+        "enabled": true,
+        "offset": 100
+      },
+      "blockthrough": {
+        "dataId": "5d83bacb2e-377"
+      },
+      "filters": {
+        "viewportWidth": {
+          "min": 1181
+        },
+        "elementHeight": {
+          "selector": ".duet--article--article-body-component-container",
+          "min": 11000
+        },
+        "hideIfPresent": {
+          "selector": ".duet--page-layout--branded-article, .duet--page-layout--stream-article, .gift-guide-rail"
+        }
+      },
+      "refreshRate": 15
+    },
+    {
+      "name": "medium_rectangle_gamestop_desktop",
+      "slotClassName": "medium_rectangle_gamestop",
+      "prebidName": "medium_rectangle_gamestop",
+      "selector": "[data-concert=\"medium_rectangle_gamestop_desktop\"]",
+      "sizes": [
+        [
+          300,
+          250
+        ]
+      ],
+      "holdSize": [
+        300,
+        250
+      ],
+      "previewHoldSize": [
+        300,
+        250
+      ],
+      "insertion": "inside",
+      "filters": {
+        "viewportWidth": {
+          "min": 1181
+        }
+      }
+    },
+    {
+      "name": "medium_rectangle_quickpost_mobile_tablet",
+      "slotClassName": "m-ad__btf_medium_rectangle_variable",
+      "prebidName": "btf_medium_rectangle_variable",
+      "selector": ".duet--page-layout--quick-post > div:last-child > *:first-child",
+      "sizes": [
+        [
+          300,
+          250
+        ]
+      ],
+      "holdSize": [
+        300,
+        250
+      ],
+      "previewHoldSize": [
+        300,
+        250
+      ],
+      "insertion": "before",
+      "inlineStyles": {
+        "margin-top": "50px"
+      },
+      "filters": {
+        "viewportWidth": {
+          "max": 1180
+        }
+      }
+    },
+    {
+      "name": "btf_medium_rectangle_variable_hub",
+      "selector": "[data-concert=\"btf_medium_rectangle_variable_hub\"]",
+      "sizes": [
+        [
+          300,
+          250
+        ],
+        [
+          300,
+          "250v"
+        ],
+        [
+          300,
+          600
+        ]
+      ],
+      "holdSize": [
+        300,
+        250
+      ],
+      "previewHoldSize": [
+        300,
+        250
+      ],
+      "insertion": "inside",
+      "maxSlots": 2,
+      "filters": {
+        "viewportWidth": {
+          "min": 1181
+        }
+      }
+    },
+    {
+      "name": "desktop_article_body",
+      "selector": ".duet--page-layout--post .duet--article--article-body-component + .duet--article--article-body-component",
+      "classNames": [
+        "duet--ad-container--default"
+      ],
+      "maxSlots": 1,
+      "sizes": [
+        [
+          1030,
+          590
+        ],
+        [
+          300,
+          250
+        ]
+      ],
+      "holdSize": [
+        600,
+        366
+      ],
+      "previewHoldSize": [
+        600,
+        366
+      ],
+      "blockthrough": {
+        "dataId": "5d83baae9e-377"
+      },
+      "shouldSkipTransition": true,
+      "filters": {
+        "hideIfPresent": {
+          "selector": ".duet--page-layout--feature-article"
+        },
+        "avoidElementsWithin": [
+          {
+            "selector": ".duet--article--article-body-component h2, .duet--article--article-body-component h3, .duet--article--article-body-component h4, .duet--article--article-body-component .duet--article--image-group-two-up, .duet--article--article-body-component > .duet--article--action-box, .duet--article--image-gallery-image, .duet--page-layout--feature-article #content > div:last-of-type",
+            "before": 100
+          },
+          {
+            "selector": ".duet--article--article-body-component > figure, .duet--article--article-body-component *[role=\"button\"] > figure, .duet--article--article-body-component > .duet--media--embed, .duet--article--article-body-component > .duet--media--video-embed, .duet--article--article-body-component > .duet--article--image-comparison, .duet--article--image-gallery-image, .duet--article--article-body-component > .duet--article--scorecard, .duet--article--article-body-component > .duet--article--product-card, .duet--article--article-body-component > .duet--article--dangerously-set-cms-markup iframe, .duet--article--article-body-component > .duet--article--dangerously-set-cms-markup .video-container, .duet--article--article-body-component > .duet--article--dangerously-set-cms-markup .vrg-video-inline, .duet--article--article-body-component > .duet--article--article-pullquote, [class*=\"ArticleFooter\"]",
+            "before": 100,
+            "after": 100
+          },
+          {
+            "selector": "div[class*=float-left].duet--article--article-body-component, div[class*=float-right].duet--article--article-body-component, .duet--article--boosted-post-collapse-button",
+            "before": 150,
+            "after": 150
+          },
+          {
+            "selector": ".tiktok-embed",
+            "before": 500,
+            "after": 300
+          }
+        ],
+        "viewportWidth": {
+          "min": 768
+        },
+        "avoidFloats": true,
+        "spacing": {
+          "before": 1000,
+          "after": 450
+        },
+        "paragraphHeight": {
+          "above": 150,
+          "below": 250
+        },
+        "containerWidth": {
+          "min": 599
+        }
+      }
+    },
+    {
+      "name": "desktop_article_body_failsafe",
+      "prebidName": "desktop_article_body",
+      "selector": ".duet--page-layout--post .duet--article--article-body-component + .duet--article--article-body-component",
+      "classNames": [
+        "duet--ad-container--default"
+      ],
+      "sizes": [
+        [
+          1030,
+          590
+        ],
+        [
+          300,
+          250
+        ]
+      ],
+      "holdSize": [
+        600,
+        366
+      ],
+      "previewHoldSize": [
+        600,
+        366
+      ],
+      "insertion": "after",
+      "maxSlots": 1,
+      "shouldSkipTransition": true,
+      "filters": {
+        "viewportWidth": {
+          "min": 768
+        },
+        "avoidFloats": true,
+        "spacing": {
+          "before": 200,
+          "after": 120,
+          "conditional": {
+            "condition": {
+              "useIfSubscription": true
+            },
+            "after": 450
+          }
+        },
+        "containerWidth": {
+          "min": 599
+        },
+        "hideIfPresent": {
+          "selector": ".m-ad__desktop_article_body, .m-ad__desktop_feature_body, .duet--page-layout--feature-article"
+        }
+      }
+    },
+    {
+      "name": "athena_article",
+      "classNames": [
+        "duet--ad-container--default",
+        "dfp_ad--mt-80"
+      ],
+      "prebidName": "athena",
+      "selector": ".duet--layout--article-recirc-color-container",
+      "insertion": "before",
+      "sizes": [
+        [
+          1030,
+          590
+        ],
+        [
+          728,
+          90
+        ],
+        [
+          620,
+          366
+        ],
+        [
+          620,
+          371
+        ],
+        [
+          620,
+          415
+        ],
+        {
+          "size": [
+            970,
+            250
+          ],
+          "filters": {
+            "viewportWidth": {
+              "min": 970
+            }
+          }
+        }
+      ],
+      "shouldSkipTransition": true,
+      "holdSize": [
+        620,
+        366
+      ],
+      "previewHoldSize": [
+        620,
+        366
+      ],
+      "maxSlots": 1,
+      "filters": {
+        "viewportWidth": {
+          "min": 768
+        },
+        "hideIfPresent": {
+          "selector": ".c-package-subnav, .duet--page-layout--quick-post"
+        },
+        "showIfPresent": {
+          "selector": ".duet--page-layout--standard-article"
+        },
+        "hideIfSubscription": true
+      }
+    },
+    {
+      "name": "athena_feature_footer_desktop",
+      "prebidName": "athena",
+      "selector": ".duet--layout--article-recirc-color-container",
+      "classNames": [
+        "duet--ad-container--default",
+        "dfp_ad--mt-80"
+      ],
+      "insertion": "after",
+      "sizes": [
+        [
+          1030,
+          590
+        ],
+        [
+          728,
+          90
+        ],
+        {
+          "size": [
+            1060,
+            610
+          ],
+          "filters": {
+            "containerWidth": {
+              "min": 1060
+            }
+          }
+        },
+        {
+          "size": [
+            620,
+            366
+          ],
+          "filters": {
+            "containerWidth": {
+              "max": 1059
+            }
+          }
+        },
+        {
+          "size": [
+            970,
+            250
+          ],
+          "filters": {
+            "viewportWidth": {
+              "min": 970
+            }
+          }
+        },
+        {
+          "size": [
+            620,
+            371
+          ],
+          "filters": {
+            "containerWidth": {
+              "max": 1059
+            }
+          }
+        },
+        {
+          "size": [
+            620,
+            415
+          ],
+          "filters": {
+            "containerWidth": {
+              "max": 1059
+            }
+          }
+        }
+      ],
+      "shouldSkipTransition": true,
+      "holdSize": [
+        620,
+        366
+      ],
+      "previewHoldSize": [
+        620,
+        366
+      ],
+      "maxSlots": 1,
+      "destroyOnReinstall": true,
+      "filters": {
+        "viewportWidth": {
+          "min": 768
+        },
+        "hideIfSubscription": true,
+        "showIfPresent": {
+          "selector": ".duet--page-layout--feature-article"
+        },
+        "hideIfPresent": {
+          "selector": ".duet--article--boosted-post-wrapper"
+        }
+      },
+      "slotClassName": "m-ad__athena",
+      "athenaMaxSize": 1060
+    },
+    {
+      "name": "athena_feature_mobile_more_stories",
+      "classNames": [
+        "dfp_ad--in-body"
+      ],
+      "selector": ".duet--page-layout--feature-article .duet--article--more-stories",
+      "insertion": "after",
+      "sizes": [
+        [
+          300,
+          250
+        ],
+        [
+          300,
+          265
+        ],
+        [
+          325,
+          508
+        ],
+        [
+          325,
+          204
+        ],
+        [
+          1030,
+          590
+        ]
+      ],
+      "holdSize": [
+        325,
+        300
+      ],
+      "previewHoldSize": [
+        325,
+        300
+      ],
+      "shouldSkipTransition": true,
+      "filters": {
+        "viewportWidth": {
+          "max": 767
+        },
+        "hideIfPresent": {
+          "selector": ".duet--page-layout--branded-article"
+        },
+        "hideIfSubscription": true
+      }
+    },
+    {
+      "name": "athena_packaged_content",
+      "slotClassName": "m-ad__athena",
+      "classNames": [
+        "dfp_ad--full-width"
+      ],
+      "prebidName": "athena",
+      "selector": ".duet--page-layout--package-article .duet--article--package-toc",
+      "insertion": "before",
+      "athenaMaxSize": 1060,
+      "sizes": [
+        [
+          1030,
+          590
+        ],
+        [
+          728,
+          90
+        ],
+        {
+          "size": [
+            1060,
+            610
+          ],
+          "filters": {
+            "containerWidth": {
+              "min": 1060
+            }
+          }
+        },
+        {
+          "size": [
+            620,
+            366
+          ],
+          "filters": {
+            "containerWidth": {
+              "max": 1059
+            }
+          }
+        },
+        {
+          "size": [
+            970,
+            250
+          ],
+          "filters": {
+            "viewportWidth": {
+              "min": 970
+            }
+          }
+        },
+        {
+          "size": [
+            620,
+            371
+          ],
+          "filters": {
+            "containerWidth": {
+              "max": 1059
+            }
+          }
+        },
+        {
+          "size": [
+            620,
+            415
+          ],
+          "filters": {
+            "containerWidth": {
+              "max": 1059
+            }
+          }
+        }
+      ],
+      "shouldSkipTransition": true,
+      "holdSize": [
+        620,
+        366
+      ],
+      "previewHoldSize": [
+        620,
+        366
+      ],
+      "maxSlots": 1,
+      "filters": {
+        "viewportWidth": {
+          "min": 768
+        }
+      }
+    },
+    {
+      "name": "editorially_placed_athena_mobile",
+      "slotClassName": "m-ad__editorially_placed_athena",
+      "classNames": [
+        "duet--ad-container--default",
+        "duet--mobile-athena-styles"
+      ],
+      "prebidName": "mobile_article_body",
+      "inlineStyles": {
+        "padding": "24px 0px",
+        "margin-bottom": "37px"
+      },
+      "selector": ".m-ad__editorial-athena-placement",
+      "insertion": "inside",
+      "shouldSkipTransition": true,
+      "sizes": [
+        [
+          320,
+          50
+        ],
+        [
+          1030,
+          590
+        ],
+        [
+          325,
+          508
+        ],
+        [
+          325,
+          204
+        ],
+        [
+          300,
+          250
+        ],
+        [
+          300,
+          "250v"
+        ]
+      ],
+      "holdSize": [
+        300,
+        250
+      ],
+      "previewHoldSize": [
+        300,
+        250
+      ],
+      "filters": {
+        "viewportWidth": {
+          "max": 767
+        }
+      }
+    },
+    {
+      "name": "editorially_placed_athena_desktop",
+      "slotClassName": "m-ad__editorially_placed_athena",
+      "classNames": [
+        "duet--ad-container--default"
+      ],
+      "prebidName": "desktop_article_body",
+      "inlineStyles": {
+        "padding": "24px 0px",
+        "margin-bottom": "37px"
+      },
+      "selector": ".m-ad__editorial-athena-placement",
+      "athenaMaxSize": 1060,
+      "insertion": "inside",
+      "shouldSkipTransition": true,
+      "holdSize": [
+        600,
+        295
+      ],
+      "previewHoldSize": [
+        600,
+        295
+      ],
+      "sizes": [
+        [
+          1030,
+          590
+        ],
+        [
+          300,
+          250
+        ],
+        {
+          "size": [
+            728,
+            90
+          ],
+          "filters": {
+            "containerWidth": {
+              "min": 728
+            }
+          }
+        },
+        {
+          "size": [
+            970,
+            250
+          ],
+          "filters": {
+            "containerWidth": {
+              "min": 970
+            }
+          }
+        },
+        {
+          "size": [
+            620,
+            371
+          ],
+          "filters": {
+            "containerWidth": {
+              "min": 620
+            }
+          }
+        },
+        {
+          "size": [
+            620,
+            415
+          ],
+          "filters": {
+            "containerWidth": {
+              "min": 620
+            }
+          }
+        },
+        {
+          "size": [
+            620,
+            366
+          ],
+          "filters": {
+            "containerWidth": {
+              "min": 620
+            }
+          }
+        }
+      ],
+      "filters": {
+        "viewportWidth": {
+          "min": 768
+        }
+      }
+    },
+    {
+      "name": "editorially_placed_leaderboard",
+      "prebidName": "desktop_article_body",
+      "insertion": "inside",
+      "selector": ".m-ad__editorial-leaderboard-placement",
+      "inlineStyles": {
+        "padding": "24px 0px",
+        "margin-bottom": "37px"
+      },
+      "sizes": [
+        [
+          728,
+          90
+        ]
+      ],
+      "holdSize": [
+        600,
+        90
+      ],
+      "previewHoldSize": [
+        600,
+        90
+      ],
+      "filters": {
+        "viewportWidth": {
+          "min": 768
+        }
+      }
+    },
+    {
+      "name": "btf_medium_rectangle_variable_package",
+      "selector": ".duet--page-layout--package-article #content section:first-of-type div:nth-child(2)",
+      "sizes": [
+        [
+          300,
+          250
+        ],
+        [
+          300,
+          "250v"
+        ],
+        {
+          "size": [
+            300,
+            600
+          ],
+          "filters": {
+            "hideIfSubscription": true
+          }
+        }
+      ],
+      "holdSize": [
+        300,
+        250
+      ],
+      "previewHoldSize": [
+        300,
+        250
+      ],
+      "sticky": {
+        "enabled": true,
+        "offset": 100
+      },
+      "inlineStyles": {
+        "margin-top": "40px"
+      },
+      "insertion": "inside",
+      "maxSlots": 2,
+      "filters": {
+        "elementHeight": {
+          "selector": "#content > div:first-of-type > section:first-of-type",
+          "min": 1000
+        },
+        "viewportWidth": {
+          "min": 1181
+        }
+      }
+    },
+    {
+      "name": "athena_packaged_content_hub_desktop_tablet",
+      "classNames": [
+        "dfp_ad--in-body",
+        "duet--ad-container--default"
+      ],
+      "selector": ".duet--page-layout--package .duet--cta--read-more-wrapper",
+      "insertion": "after",
+      "maxSlots": 1,
+      "watcherEligible": true,
+      "sizes": [
+        [
+          728,
+          90
+        ],
+        [
+          1030,
+          590
+        ],
+        [
+          620,
+          366
+        ],
+        {
+          "size": [
+            1060,
+            610
+          ],
+          "filters": {
+            "containerWidth": {
+              "min": 1060
+            }
+          }
+        }
+      ],
+      "holdSize": [
+        728,
+        90
+      ],
+      "filters": {
+        "hideIfUrlPresent": {
+          "urls": "/archives"
+        },
+        "viewportWidth": {
+          "min": 768
+        }
+      }
+    },
+    {
+      "name": "packaged_content_hub_mobile",
+      "classNames": [
+        "dfp_ad--in-body",
+        "duet--mobile-athena-styles"
+      ],
+      "selector": ".duet--page-layout--package article section:nth-child(1)",
+      "insertion": "after",
+      "maxSlots": 1,
+      "watcherEligible": true,
+      "sizes": [
+        [
+          300,
+          250
+        ],
+        [
+          320,
+          50
+        ]
+      ],
+      "holdSize": [
+        300,
+        250
+      ],
+      "filters": {
+        "viewportWidth": {
+          "max": 767
+        }
+      },
+      "inlineStyles": {
+        "max-height": "508px",
+        "max-width": "325px",
+        "margin-bottom": "60px"
+      }
+    },
+    {
+      "name": "athena_packaged_content_hub_mobile",
+      "classNames": [
+        "duet--ad-container--default",
+        "duet--mobile-athena-styles",
+        "dfp_ad--mb-48"
+      ],
+      "selector": ".duet--page-layout--package .duet--cta--read-more-wrapper",
+      "insertion": "after",
+      "maxSlots": 1,
+      "watcherEligible": true,
+      "sizes": [
+        [
+          300,
+          250
+        ],
+        [
+          1030,
+          590
+        ],
+        [
+          320,
+          50
+        ],
+        [
+          325,
+          204
+        ],
+        [
+          325,
+          508
+        ]
+      ],
+      "holdSize": [
+        300,
+        250
+      ],
+      "filters": {
+        "viewportWidth": {
+          "max": 767
+        }
+      }
+    },
+    {
+      "name": "athena_package_mobile",
+      "classNames": [
+        "dfp_ad--in-body"
+      ],
+      "selector": ".duet--page-layout--package-article .duet--article--article-body-component:first-of-type",
+      "insertion": "after",
+      "sizes": [
+        [
+          300,
+          250
+        ],
+        [
+          1030,
+          590
+        ]
+      ],
+      "holdSize": [
+        325,
+        300
+      ],
+      "previewHoldSize": [
+        325,
+        300
+      ],
+      "shouldSkipTransition": true,
+      "filters": {
+        "viewportWidth": {
+          "max": 767
+        },
+        "hideIfPresent": {
+          "selector": ".duet--page-layout--branded-article"
+        }
+      }
+    },
+    {
+      "name": "btf_medrec_package_mobile",
+      "classNames": [
+        "dfp_ad--in-body"
+      ],
+      "selector": ".duet--page-layout--package-article .duet--article--article-body-component:last-of-type, .duet--page-layout--package-article .duet--article--package-toc > .flex > .flex-col:last-of-type",
+      "insertion": "before",
+      "sizes": [
+        [
+          300,
+          250
+        ]
+      ],
+      "holdSize": [
+        300,
+        250
+      ],
+      "previewHoldSize": [
+        300,
+        250
+      ],
+      "shouldSkipTransition": true,
+      "filters": {
+        "viewportWidth": {
+          "max": 767
+        }
+      }
+    },
+    {
+      "name": "connatix-article-desktop",
+      "type": "connatix",
+      "selector": "[data-concert='connatix_right_rail']",
+      "insertion": "inside",
+      "classNames": [
+        "dfp_ad--in-body",
+        "dfp-ad--connatix"
+      ],
+      "maxSlots": 1,
+      "previewHoldSize": [
+        600,
+        300
+      ],
+      "watcherEligible": false,
+      "allowSiblings": true,
+      "filters": {
+        "viewportWidth": {
+          "min": 1181
+        },
+        "hideIfSubscription": true,
+        "hideIfPresent": {
+          "selector": ".duet--ledes--branded-lede"
+        }
+      },
+      "inlineStyles": {
+        "min-width": "300px"
+      },
+      "connatixPlayer": "highlights",
+      "playerId": "a30088be-673a-47d9-976a-9b40423b67eb",
+      "scriptId": "be342655032d4365a9096aab52456d91"
+    },
+    {
+      "name": "connatix-feature-desktop",
+      "type": "connatix",
+      "maxSlots": 1,
+      "previewHoldSize": [
+        600,
+        300
+      ],
+      "watcherEligible": false,
+      "connatixPlayer": "highlights",
+      "insertion": "after",
+      "selector": "#zephr-anchor",
+      "playerId": "296a68d8-38f2-4b8e-ba6c-446cfc4a35a3",
+      "scriptId": "702c0151d9e04e7eac3e1165aa85772a",
+      "classNames": [
+        "dfp_ad--in-body",
+        "dfp-ad--connatix",
+        "duet--ad-container--default"
+      ],
+      "filters": {
+        "viewportWidth": {
+          "min": 768
+        },
+        "hideIfSubscription": true,
+        "showIfPresent": {
+          "selector": ".duet--page-layout--feature-article"
+        },
+        "hideIfPresent": {
+          "selector": ".duet--ledes--branded-lede"
+        }
+      },
+      "inlineStyles": ""
+    },
+    {
+      "name": "connatix-feature-desktop-packaged-content",
+      "type": "connatix",
+      "selector": ".duet--page-layout--package-article > main, .duet--page-layout--package > main",
+      "classNames": [
+        "dfp_ad--in-body",
+        "dfp-ad--connatix"
+      ],
+      "insertion": "after",
+      "maxSlots": 1,
+      "previewHoldSize": [
+        600,
+        300
+      ],
+      "watcherEligible": false,
+      "connatixPlayer": "full",
+      "filters": {
+        "viewportWidth": {
+          "min": 768
+        },
+        "hideIfPresent": {
+          "selector": ".duet--ledes--branded-lede"
+        }
+      },
+      "playerId": "edea5ee3-87a9-43dc-a3f9-edb8c582da26",
+      "scriptId": "ea58792bb6744d4ea386caf57f19830d"
+    },
+    {
+      "name": "connatix-article-mobile",
+      "type": "connatix",
+      "connatixPlayer": "highlights",
+      "selector": ".duet--page-layout--post article",
+      "insertion": "after",
+      "classNames": [
+        "dfp-ad--connatix",
+        "duet--ad-container--default",
+        "dfp_ad--pr-20",
+        "dfp_ad--pl-20",
+        "dfp_ad--mt-60"
+      ],
+      "maxSlots": 1,
+      "previewHoldSize": [
+        300,
+        250
+      ],
+      "watcherEligible": false,
+      "filters": {
+        "hideIfPresent": {
+          "selector": ".duet--page-layout--feature-article, .duet--ledes--branded-lede"
+        },
+        "viewportWidth": {
+          "max": 1180
+        },
+        "hideIfSubscription": true
+      },
+      "playerId": "d0a62f72-8491-42a8-948b-a911651796d6",
+      "scriptId": "c6d2846d670c4dd5b621c5496fbbea59"
+    },
+    {
+      "name": "connatix-feature-mobile",
+      "type": "connatix",
+      "connatixPlayer": "highlights",
+      "selector": "#zephr-anchor",
+      "insertion": "after",
+      "classNames": [
+        "dfp_ad--in-body",
+        "dfp-ad--connatix",
+        "duet--ad-container--default"
+      ],
+      "maxSlots": 1,
+      "previewHoldSize": [
+        300,
+        250
+      ],
+      "watcherEligible": false,
+      "filters": {
+        "viewportWidth": {
+          "max": 767
+        },
+        "hideIfSubscription": true,
+        "showIfPresent": {
+          "selector": ".duet--page-layout--feature-article"
+        },
+        "hideIfPresent": {
+          "selector": ".duet--ledes--branded-lede"
+        }
+      },
+      "playerId": "69daecb1-2b97-45f4-a27f-a5e98f7a1baf",
+      "scriptId": "b1ed5abcb9f848df9c337eb714ce921d"
+    },
+    {
+      "name": "athena_hub",
+      "selector": "[class*=duet--page-layout--group] .duet--layout--river-container, [class*=duet--page-layout--category] .duet--layout--river-container",
+      "classNames": [
+        "duet--ad-container--default",
+        "dfp_ad--full-width"
+      ],
+      "athenaMaxSize": 970,
+      "sizes": [
+        [
+          970,
+          250
+        ],
+        [
+          728,
+          90
+        ],
+        [
+          620,
+          366
+        ]
+      ],
+      "holdSize": [
+        620,
+        250
+      ],
+      "previewHoldSize": [
+        620,
+        366
+      ],
+      "insertion": "before",
+      "maxSlots": 1,
+      "filters": {
+        "viewportWidth": {
+          "min": 1181
+        }
+      }
+    },
+    {
+      "name": "mobile_med_rec_athena",
+      "selector": "[class*=duet--page-layout--group] .duet--layout--river .duet--content-cards--content-card:nth-of-type(5n+3),  [class*=duet--page-layout--category] .duet--layout--river .duet--content-cards--content-card:nth-of-type(3n+1),  [class*=duet--page-layout--homepage-archive] .duet--layout--river .duet--content-cards--content-card:nth-of-type(5n+3),  [class*=duet--page-layout--full-archive] .duet--layout--river .duet--content-cards--content-card:nth-of-type(5n+3),  [class*=duet--page-layout--author] .duet--layout--river .duet--content-cards--content-card:nth-of-type(5n+3), [class*=duet--page-layout--package] .duet--content-cards--content-card:nth-of-type(5n+3)",
+      "classNames": [
+        "duet--ad-container--default",
+        "duet--mobile-athena-styles",
+        "dfp_ad--pb-30",
+        "dfp_ad--mt-10"
+      ],
+      "sizes": [
+        [
+          300,
+          250
+        ],
+        [
+          300,
+          "250v"
+        ],
+        [
+          1030,
+          590
+        ],
+        [
+          325,
+          508
+        ],
+        [
+          300,
+          265
+        ],
+        [
+          325,
+          204
+        ]
+      ],
+      "shouldSkipTransition": true,
+      "holdSize": [
+        325,
+        300
+      ],
+      "previewHoldSize": [
+        325,
+        300
+      ],
+      "insertion": "after",
+      "filters": {
+        "spacing": {
+          "after": 200
+        },
+        "viewportWidth": {
+          "max": 767
+        },
+        "hideIfSubscription": true
+      }
+    },
+    {
+      "name": "hub_river_leaderboard",
+      "classNames": [
+        "duet--ad-container--border-bottom",
+        "duet--desktop-athena-styles",
+        "dfp_ad--pb-30",
+        "dfp_ad--mt-10"
+      ],
+      "selector": "[class*=duet--page-layout--group] .duet--layout--river .duet--content-cards--content-card:nth-of-type(5n+3),  [class*=duet--page-layout--category] .duet--layout--river .duet--content-cards--content-card:nth-of-type(3n+1),  [class*=duet--page-layout--homepage-archive] .duet--layout--river .duet--content-cards--content-card:nth-of-type(5n+3),  [class*=duet--page-layout--full-archive] .duet--layout--river .duet--content-cards--content-card:nth-of-type(5n+3),  [class*=duet--page-layout--author] .duet--layout--river .duet--content-cards--content-card:nth-of-type(5n+3), [class*=duet--page-layout--package] .duet--content-cards--content-card:nth-of-type(5n+3)",
+      "sizes": [
+        [
+          620,
+          366
+        ],
+        [
+          1030,
+          590
+        ],
+        [
+          300,
+          250
+        ]
+      ],
+      "holdSize": [
+        620,
+        90
+      ],
+      "previewHoldSize": [
+        620,
+        90
+      ],
+      "insertion": "after",
+      "allowSiblings": false,
+      "filters": {
+        "viewportWidth": {
+          "min": 768
+        },
+        "hideIfSubscription": true
+      }
+    },
+    {
+      "name": "desktop_river_leaderboard",
+      "classNames": [
+        "network-river"
+      ],
+      "selector": "[data-concert=\"desktop_network_river\"]",
+      "sizes": [
+        [
+          728,
+          90
+        ],
+        [
+          620,
+          366
+        ],
+        [
+          620,
+          371
+        ],
+        [
+          620,
+          415
+        ],
+        [
+          1030,
+          590
+        ],
+        {
+          "size": [
+            970,
+            250
+          ],
+          "filters": {
+            "containerWidth": {
+              "min": 970
+            }
+          }
+        },
+        {
+          "size": [
+            970,
+            90
+          ],
+          "filters": {
+            "containerWidth": {
+              "min": 970
+            }
+          }
+        }
+      ],
+      "shouldSkipTransition": true,
+      "holdSize": [
+        620,
+        90
+      ],
+      "previewHoldSize": [
+        620,
+        90
+      ],
+      "insertion": "inside",
+      "filters": {
+        "viewportWidth": {
+          "min": 1181
+        }
+      }
+    },
+    {
+      "name": "mobile_leaderboard",
+      "selector": ".duet--page-layout--standard-article .duet--article--article-body-component + .duet--article--article-body-component, .duet--page-layout--post .duet--article--article-body-component + .duet--article--article-body-component",
+      "classNames": [
+        "duet--ad-container--default",
+        "duet--mobile-athena-styles"
+      ],
+      "sizes": [
+        [
+          1030,
+          590
+        ],
+        [
+          320,
+          50
+        ],
+        [
+          300,
+          250
+        ],
+        [
+          300,
+          "250v"
+        ]
+      ],
+      "shouldSkipTransition": true,
+      "holdSize": [
+        300,
+        250
+      ],
+      "previewHoldSize": [
+        300,
+        250
+      ],
+      "maxSlots": 1,
+      "filters": {
+        "hideIfPresent": {
+          "selector": ".duet--page-layout--feature-article",
+          "conditional": {
+            "condition": {
+              "useIfSubscription": true
+            },
+            "above": 300
+          }
+        },
+        "spacing": {
+          "before": 80,
+          "after": 80,
+          "conditional": {
+            "condition": {
+              "useIfSubscription": true
+            },
+            "before": 550,
+            "after": 100
+          }
+        },
+        "viewportWidth": {
+          "max": 767
+        }
+      },
+      "conditional": {
+        "condition": {
+          "useIfInBoostContainer": true
+        },
+        "selector": ".duet--article--boosted-post-wrapper > article",
+        "sizes": [
+          [
+            320,
+            50
+          ],
+          [
+            300,
+            250
+          ],
+          [
+            325,
+            204
+          ]
+        ],
+        "insertion": "before",
+        "filters": {
+          "hideIfPresent": {
+            "selector": ".duet--page-layout--feature-article"
+          },
+          "paragraphHeight": {
+            "above": 0
+          },
+          "spacing": {
+            "before": 0,
+            "after": 0
+          },
+          "viewportWidth": {
+            "max": 767
+          }
+        }
+      }
+    },
+    {
+      "name": "mobile_article_body",
+      "selector": ".duet--page-layout--post .duet--article--article-body-component + .duet--article--article-body-component",
+      "classNames": [
+        "duet--ad-container--default",
+        "duet--mobile-athena-styles"
+      ],
+      "sizes": [
+        [
+          1030,
+          590
+        ],
+        [
+          325,
+          508
+        ],
+        [
+          300,
+          250
+        ],
+        [
+          300,
+          "250v"
+        ]
+      ],
+      "holdSize": [
+        325,
+        300
+      ],
+      "previewHoldSize": [
+        300,
+        250
+      ],
+      "maxSlots": 1,
+      "shouldSkipTransition": true,
+      "filters": {
+        "hideIfPresent": {
+          "selector": ".duet--page-layout--feature-article"
+        },
+        "avoidElementsWithin": [
+          {
+            "selector": ".duet--article--article-body-component h2, .duet--article--article-body-component h3, .duet--article--article-body-component h4, .duet--article--article-body-component .duet--article--image-group-two-up, .duet--article--article-body-component > .duet--article--action-box, .duet--article--image-gallery-image, .duet--page-layout--feature-article #content > div:last-of-type, .m-ad",
+            "before": 100
+          },
+          {
+            "selector": ".duet--article--article-body-component > figure, .duet--article--article-body-component *[role=\"button\"] > figure, .duet--article--article-body-component > .duet--media--embed, .duet--article--article-body-component > .duet--media--video-embed, .duet--article--article-body-component > .duet--article--image-comparison, .duet--article--image-gallery-image, .duet--article--article-body-component > .duet--article--scorecard, .duet--article--article-body-component > .duet--article--product-card, .duet--article--article-body-component > .duet--article--dangerously-set-cms-markup iframe, .duet--article--article-body-component > .duet--article--dangerously-set-cms-markup .video-container, .duet--article--article-body-component > .duet--article--dangerously-set-cms-markup .vrg-video-inline, .duet--article--article-body-component > .duet--article--article-pullquote, [class*=\"ArticleFooter\"], .m-ad",
+            "before": 100,
+            "after": 100
+          },
+          {
+            "selector": "div[class*=float-left].duet--article--article-body-component, div[class*=float-right].duet--article--article-body-component",
+            "before": 150,
+            "after": 150
+          },
+          {
+            "selector": ".tiktok-embed",
+            "before": 500,
+            "after": 300
+          }
+        ],
+        "viewportWidth": {
+          "max": 767
+        },
+        "spacing": {
+          "before": 450,
+          "conditional": {
+            "condition": {
+              "useIfSubscription": true
+            },
+            "before": 1350,
+            "after": 1200
+          }
+        }
+      }
+    },
+    {
+      "name": "native_ad_mobile",
+      "selector": ".duet--page-layout--post .duet--article--article-body-component + .duet--article--article-body-component",
+      "classNames": [
+        "duet--ad-container--default",
+        "duet--mobile-athena-styles"
+      ],
+      "sizes": [
+        [
+          1030,
+          590
+        ],
+        [
+          325,
+          508
+        ],
+        [
+          300,
+          250
+        ],
+        [
+          300,
+          "250v"
+        ],
+        [
+          300,
+          265
+        ],
+        [
+          325,
+          204
+        ]
+      ],
+      "holdSize": [
+        325,
+        300
+      ],
+      "previewHoldSize": [
+        300,
+        250
+      ],
+      "maxSlots": 1,
+      "filters": {
+        "hideIfPresent": {
+          "selector": ".duet--page-layout--feature-article"
+        },
+        "avoidElementsWithin": [
+          {
+            "selector": ".duet--article--article-body-component h2, .duet--article--article-body-component h3, .duet--article--article-body-component h4, .duet--article--article-body-component .duet--article--image-group-two-up, .duet--article--article-body-component > .duet--article--action-box, .duet--article--image-gallery-image, .duet--page-layout--feature-article #content > div:last-of-type, .m-ad",
+            "before": 100
+          },
+          {
+            "selector": ".duet--article--article-body-component > figure, .duet--article--article-body-component *[role=\"button\"] > figure, .duet--article--article-body-component > .duet--media--embed, .duet--article--article-body-component > .duet--media--video-embed, .duet--article--article-body-component > .duet--article--image-comparison, .duet--article--image-gallery-image, .duet--article--article-body-component > .duet--article--scorecard, .duet--article--article-body-component > .duet--article--product-card, .duet--article--article-body-component > .duet--article--dangerously-set-cms-markup iframe, .duet--article--article-body-component > .duet--article--dangerously-set-cms-markup .video-container, .duet--article--article-body-component > .duet--article--dangerously-set-cms-markup .vrg-video-inline, .duet--article--article-body-component > .duet--article--article-pullquote, [class*=\"ArticleFooter\"], .m-ad",
+            "before": 100,
+            "after": 100
+          },
+          {
+            "selector": "div[class*=float-left].duet--article--article-body-component, div[class*=float-right].duet--article--article-body-component",
+            "before": 150,
+            "after": 150
+          },
+          {
+            "selector": ".tiktok-embed",
+            "before": 500,
+            "after": 300
+          }
+        ],
+        "viewportWidth": {
+          "max": 767
+        },
+        "spacing": {
+          "before": 600,
+          "after": 100
+        },
+        "hideIfSubscription": true
+      }
+    },
+    {
+      "name": "mobile_article_body_med_rec_dynamic",
+      "selector": ".duet--page-layout--post .duet--article--article-body-component + .duet--article--article-body-component",
+      "classNames": [
+        "duet--ad-container--default",
+        "duet--mobile-athena-styles"
+      ],
+      "sizes": [
+        [
+          300,
+          250
+        ],
+        [
+          300,
+          "250v"
+        ],
+        [
+          1030,
+          590
+        ],
+        [
+          325,
+          508
+        ],
+        [
+          325,
+          204
+        ]
+      ],
+      "shouldSkipTransition": true,
+      "holdSize": [
+        325,
+        300
+      ],
+      "previewHoldSize": [
+        325,
+        300
+      ],
+      "filters": {
+        "hideIfPresent": {
+          "selector": ".duet--page-layout--feature-article"
+        },
+        "avoidElementsWithin": [
+          {
+            "selector": ".duet--article--article-body-component h2, .duet--article--article-body-component h3, .duet--article--article-body-component h4, .duet--article--article-body-component .duet--article--image-group-two-up, .duet--article--article-body-component > .duet--article--action-box, .duet--article--image-gallery-image, .duet--page-layout--feature-article #content > div:last-of-type, .m-ad",
+            "before": 100
+          },
+          {
+            "selector": ".duet--article--article-body-component > figure, .duet--article--article-body-component *[role=\"button\"] > figure, .duet--article--article-body-component > .duet--media--embed, .duet--article--article-body-component > .duet--media--video-embed, .duet--article--article-body-component > .duet--article--image-comparison, .duet--article--image-gallery-image, .duet--article--article-body-component > .duet--article--scorecard, .duet--article--article-body-component > .duet--article--product-card, .duet--article--article-body-component > .duet--article--dangerously-set-cms-markup iframe, .duet--article--article-body-component > .duet--article--dangerously-set-cms-markup .video-container, .duet--article--article-body-component > .duet--article--dangerously-set-cms-markup .vrg-video-inline, .duet--article--article-body-component > .duet--article--article-pullquote, [class*=\"ArticleFooter\"], .m-ad",
+            "before": 100,
+            "after": 100
+          },
+          {
+            "selector": "div[class*=float-left].duet--article--article-body-component, div[class*=float-right].duet--article--article-body-component",
+            "before": 150,
+            "after": 150
+          },
+          {
+            "selector": ".tiktok-embed",
+            "before": 500,
+            "after": 300
+          }
+        ],
+        "viewportWidth": {
+          "max": 768
+        },
+        "spacing": {
+          "before": 450,
+          "conditional": {
+            "condition": {
+              "useIfSubscription": true
+            },
+            "before": 2250,
+            "after": 1200
+          }
+        },
+        "paragraphHeight": {
+          "above": 100,
+          "below": 100
+        }
+      }
+    },
+    {
+      "name": "athena_article_mobile",
+      "selector": ".duet--page-layout--standard-article .duet--layout--river-container",
+      "classNames": [
+        "dfp_ad--in-body"
+      ],
+      "sizes": [
+        [
+          300,
+          250
+        ],
+        [
+          300,
+          265
+        ],
+        [
+          325,
+          508
+        ],
+        [
+          325,
+          204
+        ],
+        [
+          1030,
+          590
+        ]
+      ],
+      "shouldSkipTransition": true,
+      "holdSize": [
+        325,
+        300
+      ],
+      "previewHoldSize": [
+        300,
+        250
+      ],
+      "filters": {
+        "viewportWidth": {
+          "max": 767
+        }
+      }
+    },
+    {
+      "name": "btf_leaderboard_variable",
+      "selector": ".duet--navigation--footer > *:first-child",
+      "insertion": "before",
+      "classNames": [
+        "dfp_ad--footer",
+        "duet--ad-container--default"
+      ],
+      "sizes": [
+        [
+          728,
+          90
+        ],
+        [
+          1020,
+          90
+        ],
+        [
+          970,
+          90
+        ],
+        [
+          620,
+          366
+        ],
+        [
+          620,
+          371
+        ],
+        [
+          620,
+          415
+        ],
+        [
+          1030,
+          590
+        ],
+        {
+          "size": [
+            1060,
+            610
+          ],
+          "filters": {
+            "containerWidth": {
+              "min": 1060
+            }
+          }
+        }
+      ],
+      "holdSize": [
+        728,
+        90
+      ],
+      "previewHoldSize": [
+        728,
+        90
+      ],
+      "blockthrough": {
+        "dataId": "5d83baa15d-377"
+      },
+      "destroyOnReinstall": true,
+      "filters": {
+        "viewportWidth": {
+          "min": 1181
+        },
+        "hideIfPresent": {
+          "selector": ".duet--page-layout--standard-article, .duet--page-layout--package, .duet--page-layout--feature-article"
+        }
+      }
+    },
+    {
+      "name": "package_btf_leaderboard_variable",
+      "selector": ".duet--page-layout--package ~ .duet--navigation--footer > *:first-child",
+      "insertion": "before",
+      "classNames": [
+        "dfp_ad--footer",
+        "duet--ad-container--default"
+      ],
+      "sizes": [
+        [
+          728,
+          90
+        ],
+        [
+          1020,
+          90
+        ],
+        [
+          970,
+          90
+        ],
+        [
+          620,
+          366
+        ],
+        [
+          620,
+          371
+        ],
+        [
+          620,
+          415
+        ],
+        [
+          1030,
+          590
+        ],
+        {
+          "size": [
+            1060,
+            610
+          ],
+          "filters": {
+            "containerWidth": {
+              "min": 1060
+            }
+          }
+        }
+      ],
+      "holdSize": [
+        728,
+        90
+      ],
+      "previewHoldSize": [
+        728,
+        90
+      ],
+      "blockthrough": {
+        "dataId": "5d83baa15d-377"
+      },
+      "filters": {
+        "viewportWidth": {
+          "min": 1181
+        },
+        "showIfPresent": {
+          "selector": ".duet--layout--river, .duet--layout--header-pattern"
+        }
+      }
+    },
+    {
+      "name": "tablet_hero",
+      "selector": ".duet--page-layout--homepage .duet--homepage--hero",
+      "insertion": "after",
+      "classNames": [
+        "duet--ad-container--default",
+        "duet--desktop-athena-styles"
+      ],
+      "maxSlots": 1,
+      "sizes": [
+        [
+          1030,
+          590
+        ],
+        {
+          "size": [
+            728,
+            90
+          ],
+          "filters": {
+            "containerWidth": {
+              "min": 728
+            }
+          }
+        }
+      ],
+      "shouldSkipTransition": true,
+      "holdSize": [
+        620,
+        90
+      ],
+      "previewHoldSize": [
+        620,
+        90
+      ],
+      "filters": {
+        "viewportWidth": {
+          "min": 768,
+          "max": 1180
+        }
+      }
+    },
+    {
+      "name": "tablet_leaderboard",
+      "selector": "[data-concert*=\"tablet_leaderboard\"], [data-concert=\"storystream_top_leaderboard_tablet\"]",
+      "sizes": [
+        [
+          728,
+          90
+        ]
+      ],
+      "holdSize": [
+        728,
+        90
+      ],
+      "previewHoldSize": [
+        728,
+        90
+      ],
+      "watcherEligible": false,
+      "insertion": "inside",
+      "blockthrough": {
+        "dataId": "5d83ba9a69-377"
+      },
+      "filters": {
+        "viewportWidth": {
+          "min": 768,
+          "max": 1180
+        }
+      },
+      "conditional": {
+        "condition": {
+          "useIfInBoostContainer": true
+        },
+        "sizes": [
+          [
+            728,
+            90
+          ]
+        ]
+      },
+      "classNames": [
+        "dfp_ad--full-width"
+      ]
+    },
+    {
+      "name": "tablet_leaderboard_boost",
+      "selector": ".duet--article--boosted-post-wrapper > article",
+      "sizes": [
+        [
+          1030,
+          590
+        ],
+        [
+          320,
+          50
+        ],
+        [
+          300,
+          250
+        ],
+        [
+          325,
+          204
+        ],
+        [
+          325,
+          508
+        ]
+      ],
+      "holdSize": [
+        728,
+        90
+      ],
+      "previewHoldSize": [
+        728,
+        90
+      ],
+      "watcherEligible": false,
+      "insertion": "above",
+      "blockthrough": {
+        "dataId": "5d83ba9a69-377"
+      },
+      "filters": {
+        "viewportWidth": {
+          "min": 768,
+          "max": 1180
+        },
+        "showIfPresent": {
+          "selector": ".duet--ledes--feature-lede, .duet--ledes--special-feature-lede, .duet--ledes--feature-lede-overlay"
+        },
+        "hideIfPresent": {
+          "selector": ".duet--page-layout--standard-article"
+        }
+      }
+    },
+    {
+      "name": "tablet_river_leaderboard",
+      "selector": "[data-concert=\"tablet_network_river\"]",
+      "sizes": [
+        [
+          1030,
+          590
+        ],
+        [
+          300,
+          250
+        ]
+      ],
+      "shouldSkipTransition": true,
+      "inlineStyles": {
+        "max-height": "415px"
+      },
+      "holdSize": [
+        300,
+        250
+      ],
+      "previewHoldSize": [
+        300,
+        250
+      ],
+      "insertion": "inside",
+      "filters": {
+        "viewportWidth": {
+          "min": 768,
+          "max": 1180
+        }
+      }
+    },
+    {
+      "name": "tablet_btf_leaderboard",
+      "classNames": [
+        "dfp_ad--footer",
+        "duet--ad-container--default"
+      ],
+      "selector": ".duet--navigation--footer > *:first-child",
+      "insertion": "before",
+      "sizes": [
+        [
+          728,
+          90
+        ],
+        [
+          620,
+          366
+        ],
+        [
+          620,
+          371
+        ],
+        [
+          620,
+          415
+        ],
+        [
+          1030,
+          590
+        ]
+      ],
+      "holdSize": [
+        728,
+        90
+      ],
+      "previewHoldSize": [
+        728,
+        90
+      ],
+      "blockthrough": {
+        "dataId": "5d83baa49c-377"
+      },
+      "destroyOnReinstall": true,
+      "filters": {
+        "viewportWidth": {
+          "min": 768,
+          "max": 1180
+        },
+        "hideIfPresent": {
+          "selector": ".duet--page-layout--standard-article, .duet--page-layout--package, .duet--page-layout--feature-article"
+        }
+      }
+    },
+    {
+      "name": "package_tablet_btf_leaderboard",
+      "classNames": [
+        "dfp_ad--footer",
+        "duet--ad-container--default"
+      ],
+      "selector": ".duet--page-layout--package ~ .duet--navigation--footer > *:first-child",
+      "insertion": "before",
+      "sizes": [
+        [
+          728,
+          90
+        ]
+      ],
+      "holdSize": [
+        728,
+        90
+      ],
+      "previewHoldSize": [
+        728,
+        90
+      ],
+      "blockthrough": {
+        "dataId": "5d83baa49c-377"
+      },
+      "filters": {
+        "viewportWidth": {
+          "min": 768,
+          "max": 1180
+        },
+        "showIfPresent": {
+          "selector": ".duet--layout--river, .duet--layout--header-pattern"
+        }
+      }
+    },
+    {
+      "name": "mobile_river_leaderboard",
+      "selector": "[data-concert=\"mobile_network_river\"]",
+      "classNames": [
+        "duet--mobile-athena-styles"
+      ],
+      "sizes": [
+        [
+          300,
+          250
+        ],
+        [
+          1030,
+          590
+        ],
+        [
+          325,
+          204
+        ],
+        [
+          325,
+          508
+        ],
+        [
+          300,
+          "250v"
+        ]
+      ],
+      "shouldSkipTransition": true,
+      "holdSize": [
+        300,
+        250
+      ],
+      "previewHoldSize": [
+        300,
+        250
+      ],
+      "insertion": "inside",
+      "filters": {
+        "viewportWidth": {
+          "max": 767
+        }
+      }
+    },
+    {
+      "name": "mobile_leaderboard_hub",
+      "slotClassName": "m-ad__mobile_leaderboard",
+      "prebidName": "mobile_leaderboard",
+      "watcherEligible": false,
+      "selector": "[data-concert*=\"mobile_leaderboard\"]",
+      "sizes": [
+        [
+          320,
+          50
+        ],
+        [
+          300,
+          250
+        ],
+        [
+          300,
+          "250v"
+        ]
+      ],
+      "holdSize": [
+        300,
+        250
+      ],
+      "previewHoldSize": [
+        300,
+        250
+      ],
+      "insertion": "inside",
+      "blockthrough": {
+        "dataId": "5d83bacec0-377"
+      },
+      "filters": {
+        "viewportWidth": {
+          "max": 767
+        }
+      },
+      "classNames": [
+        "dfp_ad--full-width"
+      ]
+    },
+    {
+      "name": "failsafe_mobile_leaderboard",
+      "selector": ".duet--page-layout--standard-article .duet--article--article-body-component + div:nth-of-type(2)",
+      "classNames": [
+        "dfp_ad--in-body"
+      ],
+      "sizes": [
+        [
+          320,
+          50
+        ],
+        [
+          300,
+          250
+        ],
+        [
+          300,
+          "250v"
+        ]
+      ],
+      "holdSize": [
+        300,
+        250
+      ],
+      "previewHoldSize": [
+        300,
+        250
+      ],
+      "insertion": "after",
+      "maxSlots": 1,
+      "filters": {
+        "paragraphHeight": {
+          "above": 300
+        },
+        "spacing": {
+          "before": 100,
+          "after": 100,
+          "conditional": {
+            "condition": {
+              "useIfSubscription": true
+            },
+            "after": 450
+          }
+        },
+        "hideIfPresent": {
+          "selector": ".m-ad__mobile_leaderboard"
+        },
+        "viewportWidth": {
+          "max": 767
+        }
+      }
+    },
+    {
+      "name": "mobile_footer",
+      "classNames": [
+        "dfp_ad--footer",
+        "duet--ad-container--default",
+        "duet--mobile-athena-styles"
+      ],
+      "selector": ".duet--navigation--footer > *:first-child",
+      "insertion": "before",
+      "sizes": [
+        [
+          320,
+          50
+        ],
+        [
+          300,
+          250
+        ],
+        [
+          300,
+          "250v"
+        ],
+        [
+          325,
+          204
+        ],
+        [
+          325,
+          508
+        ],
+        [
+          1030,
+          590
+        ]
+      ],
+      "shouldSkipTransition": true,
+      "holdSize": [
+        300,
+        250
+      ],
+      "previewHoldSize": [
+        300,
+        250
+      ],
+      "blockthrough": {
+        "dataId": "5d83bad557-377"
+      },
+      "destroyOnReinstall": true,
+      "filters": {
+        "viewportWidth": {
+          "max": 767
+        },
+        "hideIfPresent": {
+          "selector": ".duet--page-layout--package, .duet--page-layout--fan-post-feed, .duet--article--boosted-post-wrapper"
+        }
+      }
+    },
+    {
+      "name": "package_mobile_footer",
+      "classNames": [
+        "dfp_ad--footer",
+        "duet--ad-container--default",
+        "duet--mobile-athena-styles",
+        "dfp_ad--mt-40"
+      ],
+      "selector": ".duet--page-layout--package ~ .duet--navigation--footer > *:first-child",
+      "insertion": "before",
+      "sizes": [
+        [
+          320,
+          50
+        ],
+        [
+          300,
+          250
+        ],
+        [
+          300,
+          "250v"
+        ],
+        [
+          325,
+          204
+        ],
+        [
+          325,
+          508
+        ],
+        [
+          1030,
+          590
+        ]
+      ],
+      "shouldSkipTransition": true,
+      "holdSize": [
+        300,
+        250
+      ],
+      "previewHoldSize": [
+        300,
+        250
+      ],
+      "blockthrough": {
+        "dataId": "5d83bad557-377"
+      },
+      "filters": {
+        "viewportWidth": {
+          "max": 767
+        },
+        "showIfPresent": {
+          "selector": ".duet--layout--river, .duet--layout--header-pattern"
+        }
+      }
+    },
+    {
+      "name": "mobile_feature_body",
+      "slotClassName": "m-ad__mobile_article_body_med_rec_dynamic",
+      "classNames": [
+        "dfp_ad--in-body",
+        "duet--mobile-athena-styles",
+        "duet--ad-container--default"
+      ],
+      "prebidName": "mobile_article_body_med_rec_dynamic",
+      "selector": ".duet--page-layout--post .duet--article--article-body-component + .duet--article--article-body-component",
+      "sizes": [
+        [
+          300,
+          250
+        ],
+        [
+          300,
+          "250v"
+        ],
+        [
+          325,
+          508
+        ],
+        [
+          325,
+          204
+        ],
+        [
+          320,
+          50
+        ],
+        [
+          1030,
+          590
+        ]
+      ],
+      "shouldSkipTransition": true,
+      "holdSize": [
+        300,
+        250
+      ],
+      "previewHoldSize": [
+        300,
+        250
+      ],
+      "maxSlots": 1,
+      "filters": {
+        "avoidElementsWithin": [
+          {
+            "selector": ".duet--article--article-body-component h2, .duet--article--article-body-component h3, .duet--article--article-body-component h4, .duet--article--article-body-component .duet--article--image-group-two-up, .duet--article--article-body-component > .duet--article--action-box, .duet--article--image-gallery-image, .duet--page-layout--feature-article #content > div:last-of-type, .m-ad",
+            "before": 100
+          },
+          {
+            "selector": ".duet--article--article-body-component > figure, .duet--article--article-body-component *[role=\"button\"] > figure, .duet--article--article-body-component > .duet--media--embed, .duet--article--article-body-component > .duet--media--video-embed, .duet--article--article-body-component > .duet--article--image-comparison, .duet--article--image-gallery-image, .duet--article--article-body-component > .duet--article--scorecard, .duet--article--article-body-component > .duet--article--product-card, .duet--article--article-body-component > .duet--article--dangerously-set-cms-markup iframe, .duet--article--article-body-component > .duet--article--dangerously-set-cms-markup .video-container, .duet--article--article-body-component > .duet--article--dangerously-set-cms-markup .vrg-video-inline, .duet--article--article-body-component > .duet--article--article-pullquote, [class*=\"ArticleFooter\"], .m-ad",
+            "before": 100,
+            "after": 100
+          },
+          {
+            "selector": "div[class*=float-left].duet--article--article-body-component, div[class*=float-right].duet--article--article-body-component",
+            "before": 150,
+            "after": 150
+          },
+          {
+            "selector": ".tiktok-embed",
+            "before": 500,
+            "after": 300
+          }
+        ],
+        "spacing": {
+          "before": 300,
+          "conditional": {
+            "condition": {
+              "useIfSubscription": true
+            },
+            "before": 2700
+          }
+        },
+        "viewportWidth": {
+          "max": 767
+        },
+        "showIfPresent": {
+          "selector": ".duet--page-layout--feature-article"
+        }
+      }
+    },
+    {
+      "name": "athena_features_mobile",
+      "slotClassName": "m-ad__athena_features",
+      "classNames": [
+        "dfp_ad--in-body",
+        "duet--mobile-athena-styles",
+        "duet--ad-container--default"
+      ],
+      "selector": ".duet--article--article-body-component + .duet--article--article-body-component",
+      "sizes": [
+        [
+          1030,
+          590
+        ],
+        [
+          325,
+          508
+        ],
+        [
+          300,
+          250
+        ],
+        [
+          300,
+          265
+        ],
+        [
+          325,
+          304
+        ]
+      ],
+      "shouldSkipTransition": true,
+      "holdSize": [
+        300,
+        250
+      ],
+      "previewHoldSize": [
+        300,
+        250
+      ],
+      "maxSlots": 1,
+      "filters": {
+        "avoidElementsWithin": [
+          {
+            "selector": ".duet--article--article-body-component h2, .duet--article--article-body-component h3, .duet--article--article-body-component h4, .duet--article--article-body-component .duet--article--image-group-two-up, .duet--article--article-body-component > .duet--article--action-box, .duet--article--image-gallery-image, .duet--page-layout--feature-article #content > div:last-of-type, .m-ad",
+            "before": 100
+          },
+          {
+            "selector": ".duet--article--article-body-component > figure, .duet--article--article-body-component *[role=\"button\"] > figure, .duet--article--article-body-component > .duet--media--embed, .duet--article--article-body-component > .duet--media--video-embed, .duet--article--article-body-component > .duet--article--image-comparison, .duet--article--image-gallery-image, .duet--article--article-body-component > .duet--article--scorecard, .duet--article--article-body-component > .duet--article--product-card, .duet--article--article-body-component > .duet--article--dangerously-set-cms-markup iframe, .duet--article--article-body-component > .duet--article--dangerously-set-cms-markup .video-container, .duet--article--article-body-component > .duet--article--dangerously-set-cms-markup .vrg-video-inline, .duet--article--article-body-component > .duet--article--article-pullquote, [class*=\"ArticleFooter\"], .m-ad",
+            "before": 100,
+            "after": 100
+          },
+          {
+            "selector": "div[class*=float-left].duet--article--article-body-component, div[class*=float-right].duet--article--article-body-component",
+            "before": 150,
+            "after": 150
+          },
+          {
+            "selector": ".tiktok-embed",
+            "before": 500,
+            "after": 300
+          }
+        ],
+        "avoidFloats": true,
+        "paragraphHeight": {
+          "above": 200
+        },
+        "viewportWidth": {
+          "max": 767
+        },
+        "spacing": {
+          "before": 900,
+          "after": 900,
+          "conditional": {
+            "condition": {
+              "useIfSubscription": true
+            },
+            "before": 2700,
+            "after": 1800
+          }
+        },
+        "showIfPresent": {
+          "selector": ".duet--page-layout--feature-article"
+        }
+      },
+      "prebidEligible": false
+    },
+    {
+      "name": "athena_features_dynamic_mobile",
+      "slotClassName": "m-ad__athena_features_dynamic",
+      "prebidName": "athena_features_dynamic",
+      "selector": ".duet--article--article-body-component + .duet--article--article-body-component",
+      "classNames": [
+        "dfp_ad--in-body",
+        "duet--mobile-athena-styles",
+        "duet--ad-container--default"
+      ],
+      "sizes": [
+        [
+          1030,
+          590
+        ],
+        [
+          325,
+          508
+        ],
+        [
+          300,
+          250
+        ],
+        [
+          300,
+          "250v"
+        ],
+        [
+          300,
+          265
+        ],
+        [
+          325,
+          204
+        ]
+      ],
+      "shouldSkipTransition": true,
+      "holdSize": [
+        300,
+        250
+      ],
+      "previewHoldSize": [
+        300,
+        250
+      ],
+      "maxSlots": 10,
+      "filters": {
+        "avoidElementsWithin": [
+          {
+            "selector": ".duet--article--article-body-component h2, .duet--article--article-body-component h3, .duet--article--article-body-component h4, .duet--article--article-body-component .duet--article--image-group-two-up, .duet--article--article-body-component > .duet--article--action-box, .duet--article--image-gallery-image, .duet--page-layout--feature-article #content > div:last-of-type, .m-ad",
+            "before": 100
+          },
+          {
+            "selector": ".duet--article--article-body-component > figure, .duet--article--article-body-component *[role=\"button\"] > figure, .duet--article--article-body-component > .duet--media--embed, .duet--article--article-body-component > .duet--media--video-embed, .duet--article--article-body-component > .duet--article--image-comparison, .duet--article--image-gallery-image, .duet--article--article-body-component > .duet--article--scorecard, .duet--article--article-body-component > .duet--article--product-card, .duet--article--article-body-component > .duet--article--dangerously-set-cms-markup iframe, .duet--article--article-body-component > .duet--article--dangerously-set-cms-markup .video-container, .duet--article--article-body-component > .duet--article--dangerously-set-cms-markup .vrg-video-inline, .duet--article--article-body-component > .duet--article--article-pullquote, [class*=\"ArticleFooter\"], .m-ad",
+            "before": 100,
+            "after": 100
+          },
+          {
+            "selector": "div[class*=float-left].duet--article--article-body-component, div[class*=float-right].duet--article--article-body-component",
+            "before": 150,
+            "after": 150
+          },
+          {
+            "selector": ".tiktok-embed",
+            "before": 500,
+            "after": 300
+          }
+        ],
+        "avoidFloats": true,
+        "paragraphHeight": {
+          "above": 200
+        },
+        "viewportWidth": {
+          "max": 767
+        },
+        "spacing": {
+          "before": 900,
+          "after": 600,
+          "conditional": {
+            "condition": {
+              "useIfSubscription": true
+            },
+            "before": 2700,
+            "after": 1200
+          }
+        },
+        "showIfPresent": {
+          "selector": ".duet--page-layout--feature-article"
+        }
+      }
+    },
+    {
+      "name": "storystream_bottom_leaderboard_variable_desktop",
+      "classNames": [
+        "duet--ad-container--default",
+        "dfp_ad--mt-20"
+      ],
+      "selector": ".duet--page-layout--stream  #updates-section > ul > li:nth-child(2)",
+      "insertion": "after",
+      "sizes": [
+        [
+          1030,
+          590
+        ],
+        [
+          300,
+          250
+        ]
+      ],
+      "maxSlots": 1,
+      "shouldSkipTransition": true,
+      "holdSize": [
+        300,
+        250
+      ],
+      "previewHoldSize": [
+        300,
+        250
+      ],
+      "filters": {
+        "viewportWidth": {
+          "min": 768
+        }
+      }
+    },
+    {
+      "name": "storystream_river_leaderboard_variable_desktop",
+      "classNames": [
+        "duet--ad-container--default",
+        "dfp_ad--mt-20"
+      ],
+      "selector": ".duet--page-layout--stream #updates-section > ul > li:nth-of-type(4n+6)",
+      "sizes": [
+        [
+          1030,
+          590
+        ],
+        [
+          300,
+          250
+        ]
+      ],
+      "holdSize": [
+        300,
+        250
+      ],
+      "previewHoldSize": [
+        300,
+        250
+      ],
+      "insertion": "after",
+      "shouldSkipTransition": true,
+      "filters": {
+        "avoidElementsWithin": [
+          {
+            "selector": "section.duet--article--gallery",
+            "before": 100,
+            "after": 100
+          }
+        ],
+        "viewportWidth": {
+          "min": 768
+        },
+        "spacing": {
+          "after": 1200
+        }
+      }
+    },
+    {
+      "name": "storystream_bottom_leaderboard_variable_mobile",
+      "classNames": [
+        "duet--ad-container--default",
+        "duet--mobile-athena-styles",
+        "dfp_ad--mb-20"
+      ],
+      "selector": ".duet--page-layout--stream .duet--article--article-body-component:nth-of-type(2)",
+      "insertion": "after",
+      "sizes": [
+        [
+          320,
+          50
+        ],
+        [
+          300,
+          250
+        ],
+        [
+          300,
+          "250v"
+        ],
+        [
+          1030,
+          590
+        ],
+        [
+          325,
+          508
+        ],
+        [
+          325,
+          204
+        ],
+        {
+          "size": [
+            620,
+            366
+          ],
+          "filters": {
+            "viewportWidth": {
+              "min": 620
+            }
+          }
+        }
+      ],
+      "shouldSkipTransition": true,
+      "holdSize": [
+        300,
+        250
+      ],
+      "previewHoldSize": [
+        300,
+        250
+      ],
+      "maxSlots": 1,
+      "filters": {
+        "viewportWidth": {
+          "max": 767
+        }
+      }
+    },
+    {
+      "name": "storystream_river_leaderboard_top_mobile",
+      "classNames": [
+        "duet--ad-container--default",
+        "duet--mobile-athena-styles",
+        "dfp_ad--mt-20"
+      ],
+      "selector": ".duet--page-layout--stream  #updates-section > ul > li:nth-child(2)",
+      "sizes": [
+        [
+          320,
+          50
+        ],
+        [
+          300,
+          250
+        ],
+        [
+          300,
+          "250v"
+        ]
+      ],
+      "customSizes": [
+        {
+          "placement": 2,
+          "sizes": [
+            [
+              320,
+              50
+            ],
+            [
+              300,
+              250
+            ],
+            [
+              300,
+              "250v"
+            ],
+            [
+              1030,
+              590
+            ],
+            [
+              325,
+              508
+            ],
+            [
+              325,
+              204
+            ]
+          ]
+        }
+      ],
+      "shouldSkipTransition": true,
+      "holdSize": [
+        300,
+        250
+      ],
+      "previewHoldSize": [
+        300,
+        250
+      ],
+      "insertion": "after",
+      "filters": {
+        "viewportWidth": {
+          "max": 767
+        },
+        "avoidElementsWithin": [
+          {
+            "selector": ".duet--article--gallery",
+            "before": 25,
+            "after": 25
+          }
+        ]
+      }
+    },
+    {
+      "name": "storystream_river_leaderboard_variable_mobile",
+      "selector": ".duet--page-layout--stream .duet--layout--entry-body #updates-section ul li:nth-of-type(3n+5)",
+      "classNames": [
+        "duet--ad-container--default",
+        "duet--mobile-athena-styles",
+        "dfp_ad--mt-20"
+      ],
+      "sizes": [
+        [
+          320,
+          50
+        ],
+        [
+          300,
+          250
+        ],
+        [
+          300,
+          "250v"
+        ]
+      ],
+      "customSizes": [
+        {
+          "placement": 2,
+          "sizes": [
+            [
+              320,
+              50
+            ],
+            [
+              300,
+              250
+            ],
+            [
+              300,
+              "250v"
+            ],
+            [
+              1030,
+              590
+            ],
+            [
+              325,
+              508
+            ],
+            [
+              325,
+              204
+            ]
+          ]
+        }
+      ],
+      "shouldSkipTransition": true,
+      "previewHoldSize": [
+        300,
+        250
+      ],
+      "insertion": "after",
+      "filters": {
+        "viewportWidth": {
+          "max": 767
+        },
+        "spacing": {
+          "after": 1000
+        }
+      }
+    },
+    {
+      "name": "desktop_feature_footer",
+      "inlineStyles": {
+        "max-height": "415px"
+      },
+      "selector": ".duet--page-layout--feature-article  .duet--article--article-body-component-container .duet--article--article-body-component:last-of-type",
+      "classNames": [
+        "dfp_ad--in-body"
+      ],
+      "insertion": "after",
+      "maxSlots": 1,
+      "sizes": [
+        [
+          1030,
+          590
+        ],
+        [
+          300,
+          250
+        ]
+      ],
+      "holdSize": [
+        300,
+        250
+      ],
+      "previewHoldSize": [
+        300,
+        250
+      ],
+      "shouldSkipTransition": true,
+      "filters": {
+        "avoidElementsWithin": [
+          {
+            "selector": ".duet--article--article-body-component h2, .duet--article--article-body-component h3, .duet--article--article-body-component h4, .duet--article--article-body-component .duet--article--image-group-two-up, .duet--article--article-body-component > .duet--article--action-box, .duet--article--image-gallery-image, .duet--page-layout--feature-article #content > div:last-of-type, .m-ad",
+            "before": 100
+          },
+          {
+            "selector": ".duet--article--article-body-component > figure, .duet--article--article-body-component *[role=\"button\"] > figure, .duet--article--article-body-component > .duet--media--embed, .duet--article--article-body-component > .duet--media--video-embed, .duet--article--article-body-component > .duet--article--image-comparison, .duet--article--image-gallery-image, .duet--article--article-body-component > .duet--article--scorecard, .duet--article--article-body-component > .duet--article--product-card, .duet--article--article-body-component > .duet--article--dangerously-set-cms-markup iframe, .duet--article--article-body-component > .duet--article--dangerously-set-cms-markup .video-container, .duet--article--article-body-component > .duet--article--dangerously-set-cms-markup .vrg-video-inline, .duet--article--article-body-component > .duet--article--article-pullquote, [class*=\"ArticleFooter\"], .m-ad",
+            "before": 100,
+            "after": 100
+          },
+          {
+            "selector": "div[class*=float-left].duet--article--article-body-component, div[class*=float-right].duet--article--article-body-component",
+            "before": 150,
+            "after": 150
+          },
+          {
+            "selector": ".tiktok-embed",
+            "before": 500,
+            "after": 300
+          }
+        ],
+        "spacing": {
+          "before": 700
+        },
+        "viewportWidth": {
+          "min": 768
+        }
+      }
+    },
+    {
+      "name": "desktop_feature_body",
+      "prebidName": "desktop_article_body",
+      "classNames": [
+        "dfp_ad--in-body",
+        "duet--ad-container--default"
+      ],
+      "selector": ".duet--article--article-body-component:nth-of-type(3)",
+      "sizes": [
+        [
+          1030,
+          590
+        ],
+        [
+          300,
+          250
+        ]
+      ],
+      "holdSize": [
+        300,
+        250
+      ],
+      "previewHoldSize": [
+        300,
+        250
+      ],
+      "maxSlots": 1,
+      "insertion": "after",
+      "shouldSkipTransition": true,
+      "filters": {
+        "avoidElementsWithin": [
+          {
+            "selector": ".duet--article--article-body-component h2, .duet--article--article-body-component h3, .duet--article--article-body-component h4, .duet--article--article-body-component .duet--article--image-group-two-up, .duet--article--article-body-component > .duet--article--action-box, .duet--article--image-gallery-image, .duet--page-layout--feature-article #content > div:last-of-type, .m-ad",
+            "before": 100
+          },
+          {
+            "selector": ".duet--article--article-body-component > figure, .duet--article--article-body-component *[role=\"button\"] > figure, .duet--article--article-body-component > .duet--media--embed, .duet--article--article-body-component > .duet--media--video-embed, .duet--article--article-body-component > .duet--article--image-comparison, .duet--article--image-gallery-image, .duet--article--article-body-component > .duet--article--scorecard, .duet--article--article-body-component > .duet--article--product-card, .duet--article--article-body-component > .duet--article--dangerously-set-cms-markup iframe, .duet--article--article-body-component > .duet--article--dangerously-set-cms-markup .video-container, .duet--article--article-body-component > .duet--article--dangerously-set-cms-markup .vrg-video-inline, .duet--article--article-body-component > .duet--article--article-pullquote, [class*=\"ArticleFooter\"], .m-ad",
+            "before": 100,
+            "after": 100
+          },
+          {
+            "selector": "div[class*=float-left].duet--article--article-body-component, div[class*=float-right].duet--article--article-body-component",
+            "before": 150,
+            "after": 150
+          },
+          {
+            "selector": ".tiktok-embed",
+            "before": 500,
+            "after": 300
+          }
+        ],
+        "avoidFloats": true,
+        "spacing": {
+          "before": 275,
+          "after": 450
+        },
+        "paragraphHeight": {
+          "above": 100
+        },
+        "viewportWidth": {
+          "min": 768
+        },
+        "showIfPresent": {
+          "selector": ".duet--page-layout--feature-article"
+        }
+      },
+      "inlineStyles": {
+        "max-height": "415px"
+      }
+    },
+    {
+      "name": "desktop_feature_body_dynamic",
+      "inlineStyles": {
+        "max-height": "415px"
+      },
+      "prebidName": "desktop_article_body",
+      "selector": ".duet--article--article-body-component + .duet--article--article-body-component",
+      "slotClassName": "m-ad__desktop_feature_body",
+      "classNames": [
+        "dfp_ad--in-body",
+        "duet--ad-container--default"
+      ],
+      "sizes": [
+        [
+          300,
+          250
+        ],
+        [
+          300,
+          "250v"
+        ],
+        [
+          1030,
+          590
+        ]
+      ],
+      "holdSize": [
+        300,
+        250
+      ],
+      "previewHoldSize": [
+        300,
+        250
+      ],
+      "maxSlots": 3,
+      "shouldSkipTransition": true,
+      "filters": {
+        "avoidElementsWithin": [
+          {
+            "selector": ".duet--article--article-body-component h2, .duet--article--article-body-component h3, .duet--article--article-body-component h4, .duet--article--article-body-component .duet--article--image-group-two-up, .duet--article--article-body-component > .duet--article--action-box, .duet--article--image-gallery-image, .duet--page-layout--feature-article #content > div:last-of-type, .m-ad",
+            "before": 100
+          },
+          {
+            "selector": ".duet--article--article-body-component > figure, .duet--article--article-body-component *[role=\"button\"] > figure, .duet--article--article-body-component > .duet--media--embed, .duet--article--article-body-component > .duet--media--video-embed, .duet--article--article-body-component > .duet--article--image-comparison, .duet--article--image-gallery-image, .duet--article--article-body-component > .duet--article--scorecard, .duet--article--article-body-component > .duet--article--product-card, .duet--article--article-body-component > .duet--article--dangerously-set-cms-markup iframe, .duet--article--article-body-component > .duet--article--dangerously-set-cms-markup .video-container, .duet--article--article-body-component > .duet--article--dangerously-set-cms-markup .vrg-video-inline, .duet--article--article-body-component > .duet--article--article-pullquote, [class*=\"ArticleFooter\"], .m-ad",
+            "before": 100,
+            "after": 100
+          },
+          {
+            "selector": "div[class*=float-left].duet--article--article-body-component, div[class*=float-right].duet--article--article-body-component",
+            "before": 150,
+            "after": 150
+          },
+          {
+            "selector": ".tiktok-embed",
+            "before": 500,
+            "after": 300
+          }
+        ],
+        "avoidFloats": true,
+        "spacing": {
+          "before": 450,
+          "after": 450,
+          "conditional": {
+            "condition": {
+              "useIfSubscription": true
+            },
+            "before": 900,
+            "after": 900
+          }
+        },
+        "paragraphHeight": {
+          "above": 200
+        },
+        "viewportWidth": {
+          "min": 768
+        },
+        "showIfPresent": {
+          "selector": ".duet--page-layout--feature-article"
+        }
+      }
+    },
+    {
+      "name": "athena_features_desktop",
+      "slotClassName": "m-ad__athena_features",
+      "prebidName": "desktop_article_body",
+      "inlineStyles": {
+        "max-height": "415px"
+      },
+      "holdSize": [
+        300,
+        250
+      ],
+      "previewHoldSize": [
+        300,
+        250
+      ],
+      "shouldSkipTransition": true,
+      "selector": ".duet--page-layout--post .duet--article--article-body-component + .duet--article--article-body-component",
+      "classNames": [
+        "duet--ad-container--default"
+      ],
+      "sizes": [
+        [
+          1030,
+          590
+        ],
+        [
+          300,
+          250
+        ]
+      ],
+      "filters": {
+        "hideIfPresent": {
+          "selector": ".duet--page-layout--standard-article"
+        },
+        "avoidElementsWithin": [
+          {
+            "selector": ".duet--article--article-body-component h2, .duet--article--article-body-component h3, .duet--article--article-body-component h4, .duet--article--article-body-component .duet--article--image-group-two-up, .duet--article--article-body-component > .duet--article--action-box, .duet--article--image-gallery-image, .duet--page-layout--feature-article #content > div:last-of-type, .m-ad",
+            "before": 100
+          },
+          {
+            "selector": ".duet--article--article-body-component > figure, .duet--article--article-body-component *[role=\"button\"] > figure, .duet--article--article-body-component > .duet--media--embed, .duet--article--article-body-component > .duet--media--video-embed, .duet--article--article-body-component > .duet--article--image-comparison, .duet--article--image-gallery-image, .duet--article--article-body-component > .duet--article--scorecard, .duet--article--article-body-component > .duet--article--product-card, .duet--article--article-body-component > .duet--article--dangerously-set-cms-markup iframe, .duet--article--article-body-component > .duet--article--dangerously-set-cms-markup .video-container, .duet--article--article-body-component > .duet--article--dangerously-set-cms-markup .vrg-video-inline, .duet--article--article-body-component > .duet--article--article-pullquote, [class*=\"ArticleFooter\"], .m-ad",
+            "before": 100,
+            "after": 100
+          },
+          {
+            "selector": "div[class*=float-left].duet--article--article-body-component, div[class*=float-right].duet--article--article-body-component",
+            "before": 150,
+            "after": 150
+          },
+          {
+            "selector": ".tiktok-embed",
+            "before": 500,
+            "after": 300
+          }
+        ],
+        "paragraphHeight": {
+          "above": 200
+        },
+        "avoidFloats": true,
+        "viewportWidth": {
+          "min": 1181
+        },
+        "spacing": {
+          "after": 900,
+          "before": 900
+        }
+      }
+    },
+    {
+      "name": "article_sponsorship_mobile_and_tablet",
+      "slotClassName": "m-ad__article_sponsorship",
+      "selector": "[data-concert=\"article_sponsorship_mobile_and_tablet\"], [data-concert=\"article_sponsorship_headline_above_mobile_and_tablet\"]",
+      "insertion": "inside",
+      "maxSlots": 1,
+      "sizes": [
+        [
+          200,
+          40
+        ]
+      ],
+      "prebidEligible": false,
+      "refreshEligible": false,
+      "watcherEligible": false,
+      "filters": {
+        "viewportWidth": {
+          "max": 1180
+        },
+        "hideIfPresent": {
+          "selector": ".duet--page-layout--map, .duet--article--branded-content-disclaimer"
+        }
+      },
+      "conditional": {
+        "condition": {
+          "useIfInBoostContainer": true
+        },
+        "watcherEligible": true
+      }
+    },
+    {
+      "name": "article_sponsorship_desktop",
+      "selector": "[data-concert=\"article_sponsorship_desktop\"], [data-concert=\"article_sponsorship_headline_above_desktop\"]",
+      "slotClassName": "m-ad__article_sponsorship",
+      "insertion": "inside",
+      "maxSlots": 1,
+      "sizes": [
+        [
+          200,
+          40
+        ]
+      ],
+      "prebidEligible": false,
+      "refreshEligible": false,
+      "watcherEligible": false,
+      "filters": {
+        "viewportWidth": {
+          "min": 1181
+        },
+        "hideIfPresent": {
+          "selector": ".duet--page-layout--map, .duet--article--branded-content-disclaimer"
+        }
+      },
+      "conditional": {
+        "condition": {
+          "useIfInBoostContainer": true
+        },
+        "watcherEligible": true
+      }
+    },
+    {
+      "name": "mapstack_sponsorship_mobile_and_tablet",
+      "selector": "[data-concert=\"article_sponsorship_mobile_and_tablet\"]",
+      "slotClassName": "m-ad__map_sponsorship",
+      "insertion": "inside",
+      "maxSlots": 1,
+      "sizes": [
+        [
+          200,
+          40
+        ]
+      ],
+      "prebidEligible": false,
+      "refreshEligible": false,
+      "watcherEligible": false,
+      "filters": {
+        "viewportWidth": {
+          "max": 1180
+        },
+        "showIfPresent": {
+          "selector": ".duet--page-layout--map"
+        }
+      }
+    },
+    {
+      "name": "mapstack_sponsorship",
+      "selector": "[data-concert=\"article_sponsorship_desktop\"]",
+      "slotClassName": "m-ad__map_sponsorship",
+      "insertion": "inside",
+      "sizes": [
+        [
+          200,
+          40
+        ]
+      ],
+      "prebidEligible": false,
+      "refreshEligible": false,
+      "watcherEligible": false,
+      "filters": {
+        "viewportWidth": {
+          "min": 1181
+        },
+        "showIfPresent": {
+          "selector": ".duet--page-layout--map"
+        }
+      }
+    },
+    {
+      "name": "native_ad_latest",
+      "selector": ".dynamic-native-ad-native_ad_latest",
+      "prebidName": "desktop_article_medrec_dynamic",
+      "insertion": "inside",
+      "sizes": [
+        [
+          300,
+          100
+        ]
+      ],
+      "prebidEligible": false,
+      "refreshEligible": false,
+      "watcherEligible": false,
+      "filters": {
+        "viewportWidth": {
+          "min": 1181
+        },
+        "hideIfPresent": {
+          "selector": ".duet--article--boosted-post-wrapper > div"
+        }
+      }
+    },
+    {
+      "name": "native_ad_linkset_link",
+      "selector": ".dynamic-native-ad-native_ad_linkset_link",
+      "sizes": [
+        [
+          1200,
+          100
+        ]
+      ],
+      "prebidEligible": false,
+      "refreshEligible": false,
+      "watcherEligible": false,
+      "filters": {
+        "hideIfPresent": {
+          "selector": ".duet--article--boosted-post-wrapper > div"
+        }
+      }
+    },
+    {
+      "name": "native_ad_linkset_link_boost",
+      "selector": ".dynamic-native-ad-native_ad_linkset_link",
+      "sizes": [
+        [
+          1200,
+          100
+        ]
+      ],
+      "prebidEligible": false,
+      "refreshEligible": false,
+      "watcherEligible": true,
+      "filters": {
+        "showIfPresent": {
+          "selector": ".duet--article--boosted-post-wrapper > div"
+        }
+      }
+    },
+    {
+      "name": "native_ad_content_link",
+      "selector": ".dynamic-native-ad-native_ad_content_link",
+      "sizes": [
+        [
+          650,
+          150
+        ]
+      ],
+      "prebidEligible": false,
+      "refreshEligible": false,
+      "watcherEligible": false
+    },
+    {
+      "name": "package_sponsorship",
+      "slotClassName": "m-ad__package_sponsorship",
+      "selector": "[data-concert*=\"package_sponsorship\"]",
+      "insertion": "inside",
+      "maxSlots": 1,
+      "sizes": [
+        [
+          200,
+          40
+        ]
+      ],
+      "prebidEligible": false,
+      "refreshEligible": false,
+      "watcherEligible": false
+    },
+    {
+      "name": "prelude_special_sponsorship",
+      "selector": ".duet--app",
+      "classNames": [
+        "prelude"
+      ],
+      "sizes": [
+        [
+          1400,
+          600
+        ]
+      ],
+      "prebidEligible": false,
+      "refreshEligible": false,
+      "watcherEligible": false,
+      "allowSiblings": true,
+      "previewHoldSize": [
+        728,
+        90
+      ],
+      "filters": {
+        "showIfPresent": {
+          "selector": ".gift-guide-rail"
+        },
+        "viewportWidth": {
+          "min": 1181
+        }
+      }
+    },
+    {
+      "name": "mobile_special_sponsorship",
+      "selector": "[id*=\"buying_guide_item\"]:nth-of-type(10n)",
+      "insertion": "after",
+      "classNames": [
+        "duet--mobile-athena-styles"
+      ],
+      "shouldSkipTransition": true,
+      "sizes": [
+        [
+          1030,
+          590
+        ],
+        [
+          300,
+          250
+        ]
+      ],
+      "holdSize": [
+        300,
+        500
+      ],
+      "previewHoldSize": [
+        300,
+        250
+      ],
+      "filters": {
+        "showIfPresent": {
+          "selector": ".gift-guide-rail"
+        },
+        "viewportWidth": {
+          "max": 767
+        }
+      },
+      "inlineStyles": {
+        "max-height": "508px",
+        "max-width": "325px"
+      }
+    },
+    {
+      "name": "article_sponsorship_white_desktop",
+      "slotClassName": "m-ad__article_sponsorship",
+      "selector": "[data-concert=\"article_sponsorship_white_desktop\"]",
+      "insertion": "inside",
+      "maxSlots": 1,
+      "sizes": [
+        [
+          200,
+          41
+        ]
+      ],
+      "prebidEligible": false,
+      "refreshEligible": false,
+      "watcherEligible": false,
+      "filters": {
+        "viewportWidth": {
+          "min": 1181
+        },
+        "hideIfPresent": {
+          "selector": ".duet--article--branded-content-disclaimer"
+        }
+      }
+    },
+    {
+      "name": "article_sponsorship_white_mobile_and_tablet",
+      "selector": "[data-concert=\"article_sponsorship_white_mobile_and_tablet\"]",
+      "insertion": "inside",
+      "maxSlots": 1,
+      "sizes": [
+        [
+          200,
+          41
+        ]
+      ],
+      "prebidEligible": false,
+      "refreshEligible": false,
+      "watcherEligible": false,
+      "filters": {
+        "viewportWidth": {
+          "max": 1180
+        },
+        "hideIfPresent": {
+          "selector": ".duet--article--branded-content-disclaimer"
+        }
+      }
+    },
+    {
+      "name": "btf_medium_rectangle_variable",
+      "selector": "[data-concert=\"btf_medium_rectangle_variable\"]",
+      "sizes": [
+        [
+          300,
+          250
+        ],
+        [
+          300,
+          "250v"
+        ],
+        {
+          "size": [
+            300,
+            600
+          ],
+          "filters": {
+            "viewportHeight": {
+              "min": 600
+            },
+            "hideIfSubscription": true
+          }
+        }
+      ],
+      "holdSize": [
+        300,
+        250
+      ],
+      "previewHoldSize": [
+        300,
+        250
+      ],
+      "insertion": "inside",
+      "maxSlots": 1,
+      "filters": {
+        "viewportWidth": {
+          "min": 1181
+        }
+      }
+    },
+    {
+      "name": "medium_rectangle_variable_stream",
+      "insertion": "inside",
+      "selector": ".duet--page-layout--stream [data-concert='medium_rectangle_variable']",
+      "sizes": [
+        [
+          300,
+          250
+        ],
+        [
+          300,
+          "250v"
+        ],
+        [
+          300,
+          600
+        ]
+      ],
+      "maxSlots": 1,
+      "filters": {
+        "viewportWidth": {
+          "min": 1181
+        }
+      }
+    },
+    {
+      "name": "recirc_oop",
+      "maxSlots": 1,
+      "selector": ".duet--app",
+      "sizes": [
+        [
+          1,
+          1
+        ]
+      ],
+      "outOfPage": true,
+      "allowSiblings": true,
+      "watcherEligible": false,
+      "prebidEligible": false,
+      "refreshEligible": false,
+      "destroyOnReinstall": true,
+      "filters": {
+        "showIfPresent": {
+          "selector": ".duet--page-layout--post"
+        },
+        "hideIfPresent": {
+          "selector": ".duet--article--boosted-post-wrapper"
+        }
+      }
+    },
+    {
+      "name": "csk_ceros_article_leaderboard",
+      "selector": "[data-concert-ad='ceros_leaderboard']",
+      "insertion": "inside",
+      "maxSlots": 1,
+      "sizes": [
+        {
+          "size": [
+            320,
+            50
+          ],
+          "filters": {
+            "viewportWidth": {
+              "max": 727
+            }
+          }
+        },
+        {
+          "size": [
+            300,
+            250
+          ],
+          "filters": {
+            "viewportWidth": {
+              "max": 727
+            }
+          }
+        },
+        {
+          "size": [
+            728,
+            90
+          ],
+          "filters": {
+            "viewportWidth": {
+              "min": 728
+            }
+          }
+        },
+        {
+          "size": [
+            970,
+            90
+          ],
+          "filters": {
+            "viewportWidth": {
+              "min": 970
+            }
+          }
+        },
+        {
+          "size": [
+            970,
+            250
+          ],
+          "filters": {
+            "viewportWidth": {
+              "min": 970
+            }
+          }
+        }
+      ],
+      "prebidEligible": false,
+      "refreshEligible": false,
+      "watcherEligible": false
+    },
+    {
+      "name": "in_map",
+      "selector": "div > div:nth-child(2n+1) > .duet--article--map-card",
+      "classNames": [
+        "duet--ad-container--default",
+        "dfp_ad--mt-40"
+      ],
+      "inlineStyles": {
+        "max-width": "520px"
+      },
+      "insertion": "before",
+      "sizes": [
+        [
+          300,
+          250
+        ],
+        [
+          300,
+          "250v"
+        ],
+        [
+          1030,
+          590
+        ]
+      ],
+      "previewHoldSize": [
+        300,
+        250
+      ],
+      "holdSize": [
+        300,
+        250
+      ],
+      "filters": {
+        "viewportWidth": {
+          "min": 768
+        }
+      }
+    },
+    {
+      "name": "in_map_mobile",
+      "selector": "div > div:nth-child(2n+1) > .duet--article--map-card",
+      "classNames": [
+        "duet--ad-container--default",
+        "duet--mobile-athena-styles"
+      ],
+      "insertion": "before",
+      "sizes": [
+        [
+          300,
+          250
+        ],
+        [
+          300,
+          "250v"
+        ],
+        [
+          1030,
+          590
+        ],
+        [
+          325,
+          204
+        ],
+        [
+          325,
+          508
+        ]
+      ],
+      "previewHoldSize": [
+        300,
+        250
+      ],
+      "holdSize": [
+        300,
+        379
+      ],
+      "filters": {
+        "viewportWidth": {
+          "max": 767
+        }
+      }
+    },
+    {
+      "name": "video_layout_athena_desktop_tablet",
+      "selector": ".duet--page-layout--video-post .duet--layout--article-recirc",
+      "insertion": "before",
+      "classNames": [
+        "duet--ad-container--default"
+      ],
+      "filters": {
+        "viewportWidth": {
+          "min": 768
+        }
+      },
+      "sizes": [
+        [
+          1030,
+          590
+        ],
+        [
+          728,
+          90
+        ],
+        {
+          "size": [
+            620,
+            366
+          ],
+          "filters": {
+            "viewportWidth": {
+              "min": 1181
+            }
+          }
+        },
+        {
+          "size": [
+            970,
+            250
+          ],
+          "filters": {
+            "viewportWidth": {
+              "min": 1181
+            }
+          }
+        },
+        {
+          "size": [
+            620,
+            371
+          ],
+          "filters": {
+            "viewportWidth": {
+              "min": 1181
+            }
+          }
+        },
+        {
+          "size": [
+            620,
+            415
+          ],
+          "filters": {
+            "viewportWidth": {
+              "min": 1181
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "video_layout_athena_mobile",
+      "selector": ".duet--page-layout--video-post .duet--layout--article-recirc",
+      "insertion": "before",
+      "classNames": [
+        "duet--ad-container--default",
+        "duet--mobile-athena-styles"
+      ],
+      "filters": {
+        "viewportWidth": {
+          "max": 767
+        }
+      },
+      "sizes": [
+        [
+          1030,
+          590
+        ],
+        [
+          300,
+          250
+        ],
+        [
+          325,
+          204
+        ],
+        [
+          325,
+          508
+        ]
+      ]
+    }
+  ],
+  "prebid": {
+    "biddingEnabled": true,
+    "prebidEnabled": false,
+    "rubiconDemandManagerEnabled": true,
+    "rubiconDemandManagerUrl": "https://micro.rubiconproject.com/prebid/dynamic/7470.js",
+    "auctionTimeout": 2500,
+    "amazonPubId": 3176,
+    "amazonUrl": "https://c.amazon-adsystem.com/aax2/apstag.js",
+    "observerThreshold": "500px",
+    "priceGranularity": "dense",
+    "loadRDMScriptInConcertAds": true,
+    "loadAmazonScriptInConcertAds": false,
+    "amazonNCAEnabled": true,
+    "amazonNCAPubUUID": "7e906fa4-15aa-4692-9593-08bb306b8750"
+  },
+  "classifiers": [
+    {
+      "name": "contextual_segments",
+      "when": "immediate",
+      "timeout": 5000,
+      "classifiers": [
+        {
+          "loadContextualSegments": {
+            "endpoint": "https://cdn.concert.io/fins/segment",
+            "targetingKey": "fins"
+          }
+        }
+      ]
+    },
+    {
+      "name": "brand_safety",
+      "when": "immediate",
+      "timeout": 5000,
+      "classifiers": [
+        {
+          "loadMotifTargeting": {
+            "endpoint": "https://cdn.concert.io/lookup/"
+          }
+        }
+      ]
+    },
+    {
+      "name": "whitelist_adblock_conversion",
+      "when": "immediate",
+      "classifiers": [
+        {
+          "localStorage": {
+            "storageKey": "dfp_variables"
+          }
+        }
+      ]
+    }
+  ],
+  "_meta": {
+    "created_at": "Wed, 28 Oct 2026 22:19:57 GMT",
+    "git_commit": "c032e795ab891725aaa95b0dd6f622271ac4e2bc"
+  },
+  "repository": "duet",
+  "refreshRate": 15,
+  "concertTrackingEnabled": true,
+  "adLightningReporting": false,
+  "canUsePageVisibilityAPI": true,
+  "lazyBid": true,
+  "googlePairEnabled": false,
+  "observerThreshold": "100px 0px 400px 0px",
+  "viewportResize": [
+    768,
+    1180
+  ],
+  "previewHoldSizeEnabled": true,
+  "blockthroughScriptURL": "https://btloader.com/tag?o=6315858775244800&upapi=true",
+  "permutiveEnabled": true,
+  "permutiveSyncingWithNaviWidgetEnabled": true,
+  "permutive": {
+    "projectId": "d2fb08da-1c03-4c8a-978f-ad8a96b4c31f",
+    "publicApiKey": "f8d3dda6-1372-4e33-b0e4-848b39d58874",
+    "scriptTimeout": 4000
+  },
+  "connatixPlayer": "full",
+  "connatixScriptTimeout": 4000,
+  "doubleVerify": {
+    "enabled": true
+  },
+  "nodeResize": [
+    {
+      "targetSelectors": [
+        ".duet--layout--river-container"
+      ],
+      "observe": "minHeight",
+      "observeLimit": 400,
+      "insert": {
+        "includedSlots": [
+          "medium_rectangle_river",
+          "mobile_river_leaderboard",
+          "tablet_river_leaderboard"
+        ]
+      }
+    },
+    {
+      "targetSelectors": [
+        "#storyStream-panel"
+      ],
+      "observe": "minHeight",
+      "observeLimit": 400,
+      "insert": {
+        "domSelector": "#storyStream-panel",
+        "includedSlots": [
+          "medium_rectangle_river_homepage",
+          "mobile_river_leaderboard",
+          "tablet_river_leaderboard"
+        ]
+      },
+      "continuous": true
+    },
+    {
+      "targetSelectors": [
+        "#follows-panel"
+      ],
+      "observe": "minHeight",
+      "observeLimit": 400,
+      "insert": {
+        "includedSlots": [
+          "medrec_frontpage_river_tablet_desktop_follows",
+          "mobile_river_leaderboard",
+          "tablet_river_leaderboard",
+          "desktop_river_leaderboard"
+        ]
+      },
+      "continuous": true
+    },
+    {
+      "targetSelectors": [
+        "#topStories-panel"
+      ],
+      "observe": "minHeight",
+      "observeLimit": 400,
+      "insert": {
+        "includedSlots": [
+          "desktop_top_stories_leaderboard",
+          "desktop_hero",
+          "mobile_river_leaderboard",
+          "tablet_river_leaderboard"
+        ]
+      },
+      "continuous": true
+    },
+    {
+      "targetSelectors": [
+        ".duet--homepage-latest-quickposts"
+      ],
+      "observe": "minHeight",
+      "observeLimit": 600,
+      "breakpointMax": 1180,
+      "insert": {
+        "includedSlots": [
+          "sponsored_quickpost_topstories_mobile_tablet"
+        ]
+      }
+    },
+    {
+      "targetSelectors": [
+        ".duet--homepage-category-shelves-container"
+      ],
+      "observe": "minHeight",
+      "observeLimit": 600,
+      "insert": {
+        "includedSlots": [
+          "mobile_river_leaderboard",
+          "tablet_river_leaderboard",
+          "desktop_btf_river_leaderboard"
+        ]
+      }
+    }
+  ],
+  "smartLazyLoadThreshold": {
+    "default": "100px 0px 400px 0px",
+    "hero": {
+      "default": "100px 0px 700px 0px",
+      "mobile": "100px 0px 1150px 0px",
+      "mobileIOS": "100px 0px 945px 0px"
+    },
+    "top": {
+      "default": "100px 0px 600px 0px",
+      "mobile": "100px 0px 900px 0px",
+      "mobileIOS": "100px 0px 740px 0px"
+    },
+    "middle": {
+      "default": "100px 0px 435px 0px",
+      "mobile": "100px 0px 785px 0px",
+      "mobileIOS": "100px 0px 640px 0px"
+    },
+    "bottom": {
+      "default": "100px 0px 390px 0px",
+      "mobile": "100px 0px 540px 0px",
+      "mobileIOS": "100px 0px 440px 0px"
+    },
+    "remaining": {
+      "default": "100px 0px 390px 0px",
+      "mobile": "100px 0px 500px 0px",
+      "mobileIOS": "100px 0px 425px 0px"
+    }
+  },
+  "subscriberRefreshRate": 0,
+  "smartLazyLoad": {
+    "enabled": true,
+    "auctionThresholdAdjustment": "100px",
+    "sectionBoundaries": {
+      "mobile": {
+        "hero": {
+          "minVh": 0,
+          "maxVh": 2
+        },
+        "top": {
+          "minVh": 2,
+          "maxVh": 5
+        },
+        "middle": {
+          "minVh": 5,
+          "maxVh": 9
+        },
+        "bottom": {
+          "minVh": 9,
+          "maxVh": 13
+        },
+        "remaining": {
+          "minVh": 13
+        }
+      },
+      "default": {
+        "hero": {
+          "minVh": 0,
+          "maxVh": 1
+        },
+        "top": {
+          "minVh": 1,
+          "maxVh": 3
+        },
+        "middle": {
+          "minVh": 3,
+          "maxVh": 7
+        },
+        "bottom": {
+          "minVh": 7,
+          "maxVh": 10
+        },
+        "remaining": {
+          "minVh": 10
+        }
+      }
+    }
+  }
+}

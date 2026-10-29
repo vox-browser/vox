@@ -1,0 +1,2824 @@
+{
+  "version": 1,
+  "url": "https://pikabu.ru/",
+  "sealed_unix": 1793314308.880939,
+  "responses": {
+    "https://pikabu.ru/": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "X-DNS-Prefetch-Control",
+          "value": "off"
+        },
+        {
+          "name": "accept-ch",
+          "value": "Sec-CH-UA-Platform-Version"
+        },
+        {
+          "name": "cache-control",
+          "value": "no-cache"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests, frame-ancestors *.pikabu.ru pikabu.ru"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:45:56 GMT"
+        },
+        {
+          "name": "expires",
+          "value": "Thu, 01 Jan 1970 00:00:01 GMT"
+        },
+        {
+          "name": "feature-policy",
+          "value": "geolocation 'none'"
+        },
+        {
+          "name": "front",
+          "value": "lxru-nginx-web01"
+        },
+        {
+          "name": "pragma",
+          "value": "no-cache"
+        },
+        {
+          "name": "server",
+          "value": "ddos-guard"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "x-frame-options",
+          "value": "sameorigin"
+        },
+        {
+          "name": "content-length",
+          "value": "1681878"
+        },
+        {
+          "name": "Content-Type",
+          "value": "text/html;charset=utf-8"
+        }
+      ],
+      "sha256": "cb5f372ba42e5912cfadc68643727d7cb4c4b4b49050f0088439beb55fa4c9c5",
+      "bytes": 1681878
+    },
+    "https://cs17.pikabu.ru/s/2026/10/29/22/shrnaulc.jpg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "ddg-cache-status",
+          "value": "HIT,HIT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=604800"
+        },
+        {
+          "name": "timing-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "etag",
+          "value": "\"6ae3a54d-3f77\""
+        },
+        {
+          "name": "age",
+          "value": "10071"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD, OPTIONS"
+        },
+        {
+          "name": "expires",
+          "value": "Thu, 05 Nov 2026 19:58:05 GMT"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "https://pikabu.ru"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 19:58:05 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/jpeg"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 19:58:05 GMT"
+        },
+        {
+          "name": "server",
+          "value": "ddos-guard"
+        },
+        {
+          "name": "vary",
+          "value": "Origin, Access-Control-Request-Headers, Access-Control-Request-Method"
+        },
+        {
+          "name": "content-length",
+          "value": "16247"
+        }
+      ],
+      "sha256": "035b88300c50ff4710260e61f5be8fa07edb9e3ed93b8899990d1018edf1cc44",
+      "bytes": 16247
+    },
+    "https://cs.pikabu.ru/apps/ub/5.4.1031/desktop/app.54b894a28dc4.mo.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-allow-headers",
+          "value": "Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,X-AAB-HTTP-Check"
+        },
+        {
+          "name": "ddg-cache-status",
+          "value": "HIT,MISS"
+        },
+        {
+          "name": "access-control-max-age",
+          "value": "1728000"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=604800"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6ae30220-1b6b6f\""
+        },
+        {
+          "name": "age",
+          "value": "11475"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "true"
+        },
+        {
+          "name": "expires",
+          "value": "Thu, 05 Nov 2026 19:34:41 GMT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 19:34:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript; charset=utf-8"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 08:21:52 GMT"
+        },
+        {
+          "name": "server",
+          "value": "ddos-guard"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin, Access-Control-Request-Headers, Access-Control-Request-Method"
+        },
+        {
+          "name": "content-length",
+          "value": "1796975"
+        }
+      ],
+      "sha256": "c536d8cd70ad6a4c2f4e080e62ff607bce120c787daf6fc628c48fe3c0ac4707",
+      "bytes": 1796975
+    },
+    "https://cs20.pikabu.ru/s/2026/10/28/15/klbso7lv.png": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "ddg-cache-status",
+          "value": "HIT,MISS"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=604800"
+        },
+        {
+          "name": "timing-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "etag",
+          "value": "\"6ae1ef8a-4ee6\""
+        },
+        {
+          "name": "age",
+          "value": "116656"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD, OPTIONS"
+        },
+        {
+          "name": "expires",
+          "value": "Wed, 04 Nov 2026 14:21:40 GMT"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "https://pikabu.ru"
+        },
+        {
+          "name": "date",
+          "value": "Wed, 28 Oct 2026 14:21:40 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/png"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 12:50:18 GMT"
+        },
+        {
+          "name": "server",
+          "value": "ddos-guard"
+        },
+        {
+          "name": "vary",
+          "value": "Origin, Access-Control-Request-Headers, Access-Control-Request-Method"
+        },
+        {
+          "name": "content-length",
+          "value": "20198"
+        }
+      ],
+      "sha256": "fa73d5e6d62dcb0e8f6614cb071e015634d36f78c5156aa00a5315abc4551a6e",
+      "bytes": 20198
+    },
+    "https://cs.pikabu.ru/apps/ub/5.0.1/desktop/style/roboto-regular.woff2": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-max-age",
+          "value": "1728000"
+        },
+        {
+          "name": "etag",
+          "value": "\"6166acee-55d0\""
+        },
+        {
+          "name": "age",
+          "value": "12927"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD, OPTIONS"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 30 Oct 2026 07:22:10 GMT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 19:10:29 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/octet-stream"
+        },
+        {
+          "name": "vary",
+          "value": "Origin, Access-Control-Request-Headers, Access-Control-Request-Method"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 13 Oct 2021 09:54:54 GMT"
+        },
+        {
+          "name": "access-control-allow-headers",
+          "value": "Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,X-AAB-HTTP-Check"
+        },
+        {
+          "name": "ddg-cache-status",
+          "value": "HIT,HIT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=604800"
+        },
+        {
+          "name": "timing-allow-origin",
+          "value": "https://pikabu.ru"
+        },
+        {
+          "name": "x-zone",
+          "value": "2"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "true"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "https://pikabu.ru"
+        },
+        {
+          "name": "server",
+          "value": "ddos-guard"
+        },
+        {
+          "name": "content-length",
+          "value": "21968"
+        }
+      ],
+      "sha256": "094200f2d29103a679d7255326c73deb6cf303dbcdb5ed714ff4e5d034ed4836",
+      "bytes": 21968
+    },
+    "https://cs.pikabu.ru/apps/ub/5.4.81/desktop/style/roboto-bold.woff2": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-max-age",
+          "value": "1728000"
+        },
+        {
+          "name": "etag",
+          "value": "\"680b0950-10234\""
+        },
+        {
+          "name": "age",
+          "value": "540616"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD, OPTIONS"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 30 Oct 2026 16:35:40 GMT"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 23 Oct 2026 16:35:40 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/octet-stream"
+        },
+        {
+          "name": "vary",
+          "value": "Origin, Access-Control-Request-Headers, Access-Control-Request-Method"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 25 Apr 2025 04:02:24 GMT"
+        },
+        {
+          "name": "access-control-allow-headers",
+          "value": "Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,X-AAB-HTTP-Check"
+        },
+        {
+          "name": "ddg-cache-status",
+          "value": "HIT,HIT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=604800"
+        },
+        {
+          "name": "timing-allow-origin",
+          "value": "https://pikabu.ru"
+        },
+        {
+          "name": "x-zone",
+          "value": "2"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "true"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "https://pikabu.ru"
+        },
+        {
+          "name": "server",
+          "value": "ddos-guard"
+        },
+        {
+          "name": "content-length",
+          "value": "66100"
+        }
+      ],
+      "sha256": "16d2ad3ed38dd261336bdcefa00a85a3e78b6c09c1f952c8da44c2349cfa3a5e",
+      "bytes": 66100
+    },
+    "https://cs17.pikabu.ru/s/games_showcase/2025/12/29/20/5qbvlecd_lg.webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "ddg-cache-status",
+          "value": "HIT,HIT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=604800"
+        },
+        {
+          "name": "timing-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "etag",
+          "value": "\"6952b3d2-12282\""
+        },
+        {
+          "name": "age",
+          "value": "379328"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD, OPTIONS"
+        },
+        {
+          "name": "expires",
+          "value": "Sun, 01 Nov 2026 13:23:48 GMT"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "https://pikabu.ru"
+        },
+        {
+          "name": "date",
+          "value": "Sun, 25 Oct 2026 13:23:48 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 29 Dec 2025 17:01:06 GMT"
+        },
+        {
+          "name": "server",
+          "value": "ddos-guard"
+        },
+        {
+          "name": "vary",
+          "value": "Origin, Access-Control-Request-Headers, Access-Control-Request-Method"
+        },
+        {
+          "name": "content-length",
+          "value": "74370"
+        }
+      ],
+      "sha256": "cdcef4b4ff5485fb21e7154a095a2f7a890fe6af39beb98bbfe4704446b7e5c4",
+      "bytes": 74370
+    },
+    "https://cs.pikabu.ru/apps/ub/5.0.1/desktop/style/roboto-500.woff2": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-max-age",
+          "value": "1728000"
+        },
+        {
+          "name": "etag",
+          "value": "\"6166acee-57b8\""
+        },
+        {
+          "name": "age",
+          "value": "129412"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD, OPTIONS"
+        },
+        {
+          "name": "expires",
+          "value": "Wed, 04 Nov 2026 10:49:04 GMT"
+        },
+        {
+          "name": "date",
+          "value": "Wed, 28 Oct 2026 10:49:04 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/octet-stream"
+        },
+        {
+          "name": "vary",
+          "value": "Origin, Access-Control-Request-Headers, Access-Control-Request-Method"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 13 Oct 2021 09:54:54 GMT"
+        },
+        {
+          "name": "access-control-allow-headers",
+          "value": "Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,X-AAB-HTTP-Check"
+        },
+        {
+          "name": "ddg-cache-status",
+          "value": "HIT,HIT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=604800"
+        },
+        {
+          "name": "timing-allow-origin",
+          "value": "https://pikabu.ru"
+        },
+        {
+          "name": "x-zone",
+          "value": "2"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "true"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "https://pikabu.ru"
+        },
+        {
+          "name": "server",
+          "value": "ddos-guard"
+        },
+        {
+          "name": "content-length",
+          "value": "22456"
+        }
+      ],
+      "sha256": "98c1227870d08bd31d6926cdd79b211043847ec75250b53fd7fb030b370a3ffe",
+      "bytes": 22456
+    },
+    "https://cs.pikabu.ru/apps/ub/5.4.1029/desktop/app.mo.css": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-allow-headers",
+          "value": "Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,X-AAB-HTTP-Check"
+        },
+        {
+          "name": "ddg-cache-status",
+          "value": "HIT,HIT"
+        },
+        {
+          "name": "access-control-max-age",
+          "value": "1728000"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=604800"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6ae1dcd6-abc9c\""
+        },
+        {
+          "name": "age",
+          "value": "116041"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "true"
+        },
+        {
+          "name": "expires",
+          "value": "Wed, 04 Nov 2026 14:31:55 GMT"
+        },
+        {
+          "name": "date",
+          "value": "Wed, 28 Oct 2026 14:31:55 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/css"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 11:30:30 GMT"
+        },
+        {
+          "name": "server",
+          "value": "ddos-guard"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin, Access-Control-Request-Headers, Access-Control-Request-Method"
+        },
+        {
+          "name": "content-length",
+          "value": "703644"
+        }
+      ],
+      "sha256": "f24977151e9e94922dcdf9767b33838b43cf5878a2a054e7951f5ba190a9b025",
+      "bytes": 703644
+    },
+    "https://cs.pikabu.ru/images/big_svg/onboarding-hot.svg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-max-age",
+          "value": "1728000"
+        },
+        {
+          "name": "etag",
+          "value": "\"62eaba43-16712\""
+        },
+        {
+          "name": "age",
+          "value": "395131"
+        },
+        {
+          "name": "expires",
+          "value": "Sun, 01 Nov 2026 08:57:10 GMT"
+        },
+        {
+          "name": "date",
+          "value": "Sun, 25 Oct 2026 09:00:25 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "vary",
+          "value": "Origin, Access-Control-Request-Headers, Access-Control-Request-Method"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 03 Aug 2022 18:11:15 GMT"
+        },
+        {
+          "name": "access-control-allow-headers",
+          "value": "Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,X-AAB-HTTP-Check"
+        },
+        {
+          "name": "ddg-cache-status",
+          "value": "HIT,HIT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=604800"
+        },
+        {
+          "name": "x-zone",
+          "value": "2"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "true"
+        },
+        {
+          "name": "server",
+          "value": "ddos-guard"
+        },
+        {
+          "name": "content-length",
+          "value": "91922"
+        }
+      ],
+      "sha256": "7672313bb9f2dd8101e4373942461cb3808b263e730cbfd20b98cebedf12a2f4",
+      "bytes": 91922
+    },
+    "https://cs2.pikabu.ru/s/2026/10/29/13/nfbhu4te.webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "ddg-cache-status",
+          "value": "HIT,HIT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=604800"
+        },
+        {
+          "name": "timing-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "etag",
+          "value": "\"6ae31ddb-80e2\""
+        },
+        {
+          "name": "age",
+          "value": "44435"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD, OPTIONS"
+        },
+        {
+          "name": "expires",
+          "value": "Thu, 05 Nov 2026 10:25:22 GMT"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "https://pikabu.ru"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 10:25:22 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 10:20:11 GMT"
+        },
+        {
+          "name": "server",
+          "value": "ddos-guard"
+        },
+        {
+          "name": "vary",
+          "value": "Origin, Access-Control-Request-Headers, Access-Control-Request-Method"
+        },
+        {
+          "name": "content-length",
+          "value": "32994"
+        }
+      ],
+      "sha256": "e2c29fdd3d688197b365296e5e81a468b2308da909ae32af6296240a6fe3e9dc",
+      "bytes": 32994
+    },
+    "https://pikabu.ru/.well-known/ddos-guard/check": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "expires",
+          "value": "Thu, 29 Oct 2026 23:45:57 GMT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:45:57 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript"
+        },
+        {
+          "name": "server",
+          "value": "ddos-guard"
+        },
+        {
+          "name": "content-length",
+          "value": "182639"
+        }
+      ],
+      "sha256": "c0b29d3a559222ece78bb120579bb57db3382cd04ad7fe63adad7f73a1b188ab",
+      "bytes": 182639
+    },
+    "https://cs.pikabu.ru/apps/ub/5.4.1029/desktop/sprite.svg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-max-age",
+          "value": "1728000"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6ae1dcd6-139990\""
+        },
+        {
+          "name": "age",
+          "value": "116042"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD, OPTIONS"
+        },
+        {
+          "name": "expires",
+          "value": "Wed, 04 Nov 2026 14:31:55 GMT"
+        },
+        {
+          "name": "date",
+          "value": "Wed, 28 Oct 2026 14:31:55 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 11:30:30 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin, Access-Control-Request-Headers, Access-Control-Request-Method"
+        },
+        {
+          "name": "access-control-allow-headers",
+          "value": "Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,X-AAB-HTTP-Check"
+        },
+        {
+          "name": "ddg-cache-status",
+          "value": "HIT,HIT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=604800"
+        },
+        {
+          "name": "timing-allow-origin",
+          "value": "https://pikabu.ru"
+        },
+        {
+          "name": "x-zone",
+          "value": "2"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "true"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "https://pikabu.ru"
+        },
+        {
+          "name": "server",
+          "value": "ddos-guard"
+        },
+        {
+          "name": "content-length",
+          "value": "1284496"
+        }
+      ],
+      "sha256": "7a21da7fa010e82fa29090881bb1943c5c1a483448400751ad823849a850da7e",
+      "bytes": 1284496
+    },
+    "https://cs17.pikabu.ru/s/2026/02/20/12/sprfk6lh.webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "ddg-cache-status",
+          "value": "HIT,HIT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=604800"
+        },
+        {
+          "name": "timing-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "etag",
+          "value": "\"6998304d-416\""
+        },
+        {
+          "name": "age",
+          "value": "106167"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD, OPTIONS"
+        },
+        {
+          "name": "expires",
+          "value": "Wed, 04 Nov 2026 11:56:55 GMT"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "https://pikabu.ru"
+        },
+        {
+          "name": "date",
+          "value": "Wed, 28 Oct 2026 17:16:30 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 20 Feb 2026 09:58:37 GMT"
+        },
+        {
+          "name": "server",
+          "value": "ddos-guard"
+        },
+        {
+          "name": "vary",
+          "value": "Origin, Access-Control-Request-Headers, Access-Control-Request-Method"
+        },
+        {
+          "name": "content-length",
+          "value": "1046"
+        }
+      ],
+      "sha256": "ecf4aca534bd807e20edb416bd27c18d1de54fc1b7d151eb275c097b439c539b",
+      "bytes": 1046
+    },
+    "https://cs.pikabu.ru/apps/ub/5.4.1031/desktop/ui.d0982e01c078.mo.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-allow-headers",
+          "value": "Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,X-AAB-HTTP-Check"
+        },
+        {
+          "name": "ddg-cache-status",
+          "value": "HIT,MISS"
+        },
+        {
+          "name": "access-control-max-age",
+          "value": "1728000"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=604800"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6ae30220-82168\""
+        },
+        {
+          "name": "age",
+          "value": "11475"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "true"
+        },
+        {
+          "name": "expires",
+          "value": "Thu, 05 Nov 2026 19:34:41 GMT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 19:34:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript; charset=utf-8"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 08:21:52 GMT"
+        },
+        {
+          "name": "server",
+          "value": "ddos-guard"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin, Access-Control-Request-Headers, Access-Control-Request-Method"
+        },
+        {
+          "name": "content-length",
+          "value": "532840"
+        }
+      ],
+      "sha256": "7f2435a904dc09ea8c0ab23bcd141b0e83106f5d8463c9adb2f536a593e5388e",
+      "bytes": 532840
+    },
+    "https://cs17.pikabu.ru/s/2026/06/22/16/nfbew7zs.webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "ddg-cache-status",
+          "value": "HIT,MISS"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=604800"
+        },
+        {
+          "name": "timing-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "etag",
+          "value": "\"6a3935d7-6dc\""
+        },
+        {
+          "name": "age",
+          "value": "104034"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD, OPTIONS"
+        },
+        {
+          "name": "expires",
+          "value": "Wed, 04 Nov 2026 17:52:03 GMT"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "https://pikabu.ru"
+        },
+        {
+          "name": "date",
+          "value": "Wed, 28 Oct 2026 17:52:03 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 22 Jun 2026 13:17:11 GMT"
+        },
+        {
+          "name": "server",
+          "value": "ddos-guard"
+        },
+        {
+          "name": "vary",
+          "value": "Origin, Access-Control-Request-Headers, Access-Control-Request-Method"
+        },
+        {
+          "name": "content-length",
+          "value": "1756"
+        }
+      ],
+      "sha256": "8aa529ff6cc6990881b36b78ac3ed2995331c6c515b03a640a60875743f6cfdc",
+      "bytes": 1756
+    },
+    "https://cs.pikabu.ru/apps/ub/5.4.1031/desktop/vendors.1a208e3f9087.mo.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-allow-headers",
+          "value": "Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,X-AAB-HTTP-Check"
+        },
+        {
+          "name": "ddg-cache-status",
+          "value": "HIT,MISS"
+        },
+        {
+          "name": "access-control-max-age",
+          "value": "1728000"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=604800"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6ae30220-11ae2c\""
+        },
+        {
+          "name": "age",
+          "value": "11475"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "true"
+        },
+        {
+          "name": "expires",
+          "value": "Thu, 05 Nov 2026 19:34:41 GMT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 19:34:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript; charset=utf-8"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 08:21:52 GMT"
+        },
+        {
+          "name": "server",
+          "value": "ddos-guard"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin, Access-Control-Request-Headers, Access-Control-Request-Method"
+        },
+        {
+          "name": "content-length",
+          "value": "1158700"
+        }
+      ],
+      "sha256": "b4fadb52dd8ae8e2b7da225884843d31b49c6c338103bd709accd0648b1bf38b",
+      "bytes": 1158700
+    },
+    "https://cs5.pikabu.ru/s/2026/10/18/10/iipyrvcr.webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "ddg-cache-status",
+          "value": "HIT,HIT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=604800"
+        },
+        {
+          "name": "timing-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "etag",
+          "value": "\"6ad47071-b54\""
+        },
+        {
+          "name": "age",
+          "value": "401827"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD, OPTIONS"
+        },
+        {
+          "name": "expires",
+          "value": "Sun, 01 Nov 2026 07:08:42 GMT"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "https://pikabu.ru"
+        },
+        {
+          "name": "date",
+          "value": "Sun, 25 Oct 2026 07:08:50 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Sun, 18 Oct 2026 07:08:33 GMT"
+        },
+        {
+          "name": "server",
+          "value": "ddos-guard"
+        },
+        {
+          "name": "vary",
+          "value": "Origin, Access-Control-Request-Headers, Access-Control-Request-Method"
+        },
+        {
+          "name": "content-length",
+          "value": "2900"
+        }
+      ],
+      "sha256": "164d68d23445b35a0ad452c5fec0c414ba1de9629f8a7490228e0f93421b9302",
+      "bytes": 2900
+    },
+    "https://cs15.pikabu.ru/images/community/396/1721514100333386566.png": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "ddg-cache-status",
+          "value": "HIT,MISS"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=604800"
+        },
+        {
+          "name": "timing-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "etag",
+          "value": "\"669c3874-5b20\""
+        },
+        {
+          "name": "age",
+          "value": "116581"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD, OPTIONS"
+        },
+        {
+          "name": "expires",
+          "value": "Wed, 04 Nov 2026 14:22:56 GMT"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "https://pikabu.ru"
+        },
+        {
+          "name": "date",
+          "value": "Wed, 28 Oct 2026 14:22:56 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/png"
+        },
+        {
+          "name": "last-modified",
+          "value": "Sat, 20 Jul 2024 22:21:40 GMT"
+        },
+        {
+          "name": "server",
+          "value": "ddos-guard"
+        },
+        {
+          "name": "vary",
+          "value": "Origin, Access-Control-Request-Headers, Access-Control-Request-Method"
+        },
+        {
+          "name": "content-length",
+          "value": "23328"
+        }
+      ],
+      "sha256": "6f414456dfade499f222213763213f57456e4d9f481974293c5beb859958aff2",
+      "bytes": 23328
+    },
+    "https://cs14.pikabu.ru/avatars/338/s338284-1189422260.png": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "ddg-cache-status",
+          "value": "HIT,MISS"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=604800"
+        },
+        {
+          "name": "timing-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "etag",
+          "value": "\"6338bcb6-d9d\""
+        },
+        {
+          "name": "age",
+          "value": "101765"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD, OPTIONS"
+        },
+        {
+          "name": "expires",
+          "value": "Wed, 04 Nov 2026 18:29:52 GMT"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "https://pikabu.ru"
+        },
+        {
+          "name": "date",
+          "value": "Wed, 28 Oct 2026 18:29:52 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/png"
+        },
+        {
+          "name": "last-modified",
+          "value": "Sat, 01 Oct 2022 22:18:30 GMT"
+        },
+        {
+          "name": "server",
+          "value": "ddos-guard"
+        },
+        {
+          "name": "vary",
+          "value": "Origin, Access-Control-Request-Headers, Access-Control-Request-Method"
+        },
+        {
+          "name": "content-length",
+          "value": "3485"
+        }
+      ],
+      "sha256": "d7d7fca1f6961078484503d3f0c44364b8566cfa8f64db93fea2f2043c531fc1",
+      "bytes": 3485
+    },
+    "https://cs16.pikabu.ru/s/2025/05/14/18/sfssj3vi.png": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "ddg-cache-status",
+          "value": "HIT,MISS"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=604800"
+        },
+        {
+          "name": "timing-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "etag",
+          "value": "\"6824b60e-6fcc\""
+        },
+        {
+          "name": "age",
+          "value": "116212"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD, OPTIONS"
+        },
+        {
+          "name": "expires",
+          "value": "Wed, 04 Nov 2026 14:29:05 GMT"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "https://pikabu.ru"
+        },
+        {
+          "name": "date",
+          "value": "Wed, 28 Oct 2026 14:29:05 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/png"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 14 May 2025 15:26:06 GMT"
+        },
+        {
+          "name": "server",
+          "value": "ddos-guard"
+        },
+        {
+          "name": "vary",
+          "value": "Origin, Access-Control-Request-Headers, Access-Control-Request-Method"
+        },
+        {
+          "name": "content-length",
+          "value": "28620"
+        }
+      ],
+      "sha256": "6d0a2649743c377c3cbb30c3ede383d26d8aa9a77056d0ef46eba52dbb40754c",
+      "bytes": 28620
+    },
+    "https://vk.ru/dist/public/api/openapi.0872b5cf548850a00f9eb9dac3a9a0a4.js?169": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-frontend",
+          "value": "front923504"
+        },
+        {
+          "name": "access-control-expose-headers",
+          "value": "X-Frontend, X-Frontend, X-Frontend"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=345600"
+        },
+        {
+          "name": "nel",
+          "value": "{\"report_to\":\"default\",\"max_age\":86400,\"include_subdomains\":true,\"failure_fraction\":1.0}"
+        },
+        {
+          "name": "x-trace-id",
+          "value": "Z5-gNcIPoIzROyu1JbF6JslTT63bqA"
+        },
+        {
+          "name": "expires",
+          "value": "Mon, 02 Nov 2026 22:45:57 GMT"
+        },
+        {
+          "name": "server-timing",
+          "value": "tid;desc=\"Z5-gNcIPoIzROyu1JbF6JslTT63bqA\",front;dur=0.190"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:45:57 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript; charset=utf-8"
+        },
+        {
+          "name": "last-modified",
+          "value": "Sun, 25 Oct 2026 03:05:59 GMT"
+        },
+        {
+          "name": "server",
+          "value": "kittenx"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Available-Dictionary"
+        },
+        {
+          "name": "content-length",
+          "value": "57993"
+        }
+      ],
+      "sha256": "5a761e5833ab089b185479219c48144132fc257abc6c78bd48086940facd5213",
+      "bytes": 57993
+    },
+    "https://cs.pikabu.ru/apps/ub/5.4.1031/desktop/app.201710b0b3e9.mo.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-allow-headers",
+          "value": "Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,X-AAB-HTTP-Check"
+        },
+        {
+          "name": "ddg-cache-status",
+          "value": "HIT,MISS"
+        },
+        {
+          "name": "access-control-max-age",
+          "value": "1728000"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=604800"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6ae30220-e292\""
+        },
+        {
+          "name": "age",
+          "value": "11475"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "true"
+        },
+        {
+          "name": "expires",
+          "value": "Thu, 05 Nov 2026 19:34:41 GMT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 19:34:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript; charset=utf-8"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 08:21:52 GMT"
+        },
+        {
+          "name": "server",
+          "value": "ddos-guard"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin, Access-Control-Request-Headers, Access-Control-Request-Method"
+        },
+        {
+          "name": "content-length",
+          "value": "58002"
+        }
+      ],
+      "sha256": "9b9fde4fd3ae9e86976a23e41fdf7ebd670c67b27a3d8aa7a15c4711f90895eb",
+      "bytes": 58002
+    },
+    "https://cs.pikabu.ru/images/subs-empty.svg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-max-age",
+          "value": "1728000"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"5dee1d04-b521\""
+        },
+        {
+          "name": "age",
+          "value": "285757"
+        },
+        {
+          "name": "expires",
+          "value": "Mon, 02 Nov 2026 15:23:20 GMT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 26 Oct 2026 15:23:20 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 09 Dec 2019 10:08:04 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin, Access-Control-Request-Headers, Access-Control-Request-Method"
+        },
+        {
+          "name": "access-control-allow-headers",
+          "value": "Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,X-AAB-HTTP-Check"
+        },
+        {
+          "name": "ddg-cache-status",
+          "value": "HIT,MISS"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=604800"
+        },
+        {
+          "name": "x-zone",
+          "value": "2"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "true"
+        },
+        {
+          "name": "server",
+          "value": "ddos-guard"
+        },
+        {
+          "name": "content-length",
+          "value": "46369"
+        }
+      ],
+      "sha256": "24eb642c42c4feb02dd423341deb3ece0a36bfac1f058133dce79f6a0a8b096e",
+      "bytes": 46369
+    },
+    "https://cs.pikabu.ru/images/themes/humor.svg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-max-age",
+          "value": "1728000"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6a4395da-8ce\""
+        },
+        {
+          "name": "age",
+          "value": "369305"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 30 Oct 2026 17:34:00 GMT"
+        },
+        {
+          "name": "date",
+          "value": "Sun, 25 Oct 2026 16:10:52 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 30 Jun 2026 10:09:30 GMT"
+        },
+        {
+          "name": "access-control-allow-headers",
+          "value": "Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,X-AAB-HTTP-Check"
+        },
+        {
+          "name": "ddg-cache-status",
+          "value": "HIT,HIT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=604800"
+        },
+        {
+          "name": "x-zone",
+          "value": "2"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "true"
+        },
+        {
+          "name": "server",
+          "value": "ddos-guard"
+        },
+        {
+          "name": "content-length",
+          "value": "2254"
+        }
+      ],
+      "sha256": "5f34c0501824b975c6eab2fc7e77b82a12bd2883f4cc24476c942161f823deb1",
+      "bytes": 2254
+    },
+    "https://cs.pikabu.ru/images/themes/politics.svg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-max-age",
+          "value": "1728000"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6a4395d7-6a9\""
+        },
+        {
+          "name": "age",
+          "value": "125468"
+        },
+        {
+          "name": "expires",
+          "value": "Wed, 04 Nov 2026 11:21:32 GMT"
+        },
+        {
+          "name": "date",
+          "value": "Wed, 28 Oct 2026 11:54:49 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 30 Jun 2026 10:09:27 GMT"
+        },
+        {
+          "name": "access-control-allow-headers",
+          "value": "Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,X-AAB-HTTP-Check"
+        },
+        {
+          "name": "ddg-cache-status",
+          "value": "HIT,HIT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=604800"
+        },
+        {
+          "name": "x-zone",
+          "value": "2"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "true"
+        },
+        {
+          "name": "server",
+          "value": "ddos-guard"
+        },
+        {
+          "name": "content-length",
+          "value": "1705"
+        }
+      ],
+      "sha256": "8eb6b165a817e10487eba86494de80e7fec59ea19439bd4e69a001599f85cb8d",
+      "bytes": 1705
+    },
+    "https://cs.pikabu.ru/images/themes/adults.svg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-max-age",
+          "value": "1728000"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6a4395d6-b07\""
+        },
+        {
+          "name": "age",
+          "value": "18227"
+        },
+        {
+          "name": "expires",
+          "value": "Thu, 05 Nov 2026 17:42:10 GMT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 17:42:10 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 30 Jun 2026 10:09:26 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin, Access-Control-Request-Headers, Access-Control-Request-Method"
+        },
+        {
+          "name": "access-control-allow-headers",
+          "value": "Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,X-AAB-HTTP-Check"
+        },
+        {
+          "name": "ddg-cache-status",
+          "value": "HIT,HIT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=604800"
+        },
+        {
+          "name": "x-zone",
+          "value": "2"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "true"
+        },
+        {
+          "name": "server",
+          "value": "ddos-guard"
+        },
+        {
+          "name": "content-length",
+          "value": "2823"
+        }
+      ],
+      "sha256": "4bcd73fa8baa3c27a9183971fe9e6e78258a8d0fd191e6d02e58775905899943",
+      "bytes": 2823
+    },
+    "https://cs.pikabu.ru/images/themes/relationships.svg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-max-age",
+          "value": "1728000"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6a4395d7-29a\""
+        },
+        {
+          "name": "age",
+          "value": "564606"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 30 Oct 2026 09:06:17 GMT"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 23 Oct 2026 09:55:51 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "vary",
+          "value": "Origin, Access-Control-Request-Headers, Access-Control-Request-Method, Accept-Encoding"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 30 Jun 2026 10:09:27 GMT"
+        },
+        {
+          "name": "access-control-allow-headers",
+          "value": "Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,X-AAB-HTTP-Check"
+        },
+        {
+          "name": "ddg-cache-status",
+          "value": "HIT,HIT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=604800"
+        },
+        {
+          "name": "x-zone",
+          "value": "2"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "true"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "server",
+          "value": "ddos-guard"
+        },
+        {
+          "name": "content-length",
+          "value": "666"
+        }
+      ],
+      "sha256": "40c174438022d4c30cb8e3bab443e13fb80371c8b2f9d00d74fc0c03631e3443",
+      "bytes": 666
+    },
+    "https://cs.pikabu.ru/images/themes/transport.svg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-max-age",
+          "value": "1728000"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6a4395da-1118\""
+        },
+        {
+          "name": "age",
+          "value": "315915"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 30 Oct 2026 17:34:00 GMT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 26 Oct 2026 07:00:42 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 30 Jun 2026 10:09:30 GMT"
+        },
+        {
+          "name": "access-control-allow-headers",
+          "value": "Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,X-AAB-HTTP-Check"
+        },
+        {
+          "name": "ddg-cache-status",
+          "value": "HIT,HIT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=604800"
+        },
+        {
+          "name": "x-zone",
+          "value": "2"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "true"
+        },
+        {
+          "name": "server",
+          "value": "ddos-guard"
+        },
+        {
+          "name": "content-length",
+          "value": "4376"
+        }
+      ],
+      "sha256": "415cda2ce27b74777421b107b8635a6db05d356aba0873f78f27753cadf8e85b",
+      "bytes": 4376
+    },
+    "https://cs.pikabu.ru/images/ui-kit/avatars/user.svg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-max-age",
+          "value": "1728000"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"69f9a7f2-9d2\""
+        },
+        {
+          "name": "age",
+          "value": "281964"
+        },
+        {
+          "name": "expires",
+          "value": "Mon, 02 Nov 2026 16:26:33 GMT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 26 Oct 2026 16:26:33 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 05 May 2026 08:18:58 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin, Access-Control-Request-Headers, Access-Control-Request-Method"
+        },
+        {
+          "name": "access-control-allow-headers",
+          "value": "Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,X-AAB-HTTP-Check"
+        },
+        {
+          "name": "ddg-cache-status",
+          "value": "HIT,HIT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=604800"
+        },
+        {
+          "name": "x-zone",
+          "value": "2"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "true"
+        },
+        {
+          "name": "server",
+          "value": "ddos-guard"
+        },
+        {
+          "name": "content-length",
+          "value": "2514"
+        }
+      ],
+      "sha256": "402552c9f28e5d57aa2d5f1b64f0252a0742a51a872b2e36f2279ceca2f4b61d",
+      "bytes": 2514
+    },
+    "https://cs.pikabu.ru/images/themes/animals.svg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-max-age",
+          "value": "1728000"
+        },
+        {
+          "name": "etag",
+          "value": "\"6a4395d6-4fe\""
+        },
+        {
+          "name": "age",
+          "value": "264348"
+        },
+        {
+          "name": "expires",
+          "value": "Sun, 01 Nov 2026 19:40:27 GMT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 26 Oct 2026 21:20:09 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "vary",
+          "value": "Origin, Access-Control-Request-Headers, Access-Control-Request-Method"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 30 Jun 2026 10:09:26 GMT"
+        },
+        {
+          "name": "access-control-allow-headers",
+          "value": "Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,X-AAB-HTTP-Check"
+        },
+        {
+          "name": "ddg-cache-status",
+          "value": "HIT,HIT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=604800"
+        },
+        {
+          "name": "x-zone",
+          "value": "2"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "true"
+        },
+        {
+          "name": "server",
+          "value": "ddos-guard"
+        },
+        {
+          "name": "content-length",
+          "value": "1278"
+        }
+      ],
+      "sha256": "ea6953eb8e1185daad481c1e923738ce4536ee56cc5ee61c1a42c933bbe9525f",
+      "bytes": 1278
+    },
+    "https://cs.pikabu.ru/apps/ub/5.4.1018/desktop/vendors-editor.2a8e9b805351.mo.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-allow-headers",
+          "value": "Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,X-AAB-HTTP-Check"
+        },
+        {
+          "name": "ddg-cache-status",
+          "value": "HIT,MISS"
+        },
+        {
+          "name": "access-control-max-age",
+          "value": "1728000"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=604800"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6ae0190e-21cfb\""
+        },
+        {
+          "name": "age",
+          "value": "11475"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "true"
+        },
+        {
+          "name": "expires",
+          "value": "Thu, 05 Nov 2026 19:34:41 GMT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 19:34:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript; charset=utf-8"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 27 Oct 2026 03:22:54 GMT"
+        },
+        {
+          "name": "server",
+          "value": "ddos-guard"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin, Access-Control-Request-Headers, Access-Control-Request-Method"
+        },
+        {
+          "name": "content-length",
+          "value": "138491"
+        }
+      ],
+      "sha256": "6a87c7297814ad258605014a0221fdb6155ac8d85b33127f7ba123ce76782d00",
+      "bytes": 138491
+    },
+    "https://cs.pikabu.ru/apps/ub/5.4.0/desktop/vendors-secondary.f9f59a4cfb03.mo.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-allow-headers",
+          "value": "Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,X-AAB-HTTP-Check"
+        },
+        {
+          "name": "ddg-cache-status",
+          "value": "HIT,MISS"
+        },
+        {
+          "name": "access-control-max-age",
+          "value": "1728000"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=604800"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"67d7a46a-180e4\""
+        },
+        {
+          "name": "age",
+          "value": "11471"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "true"
+        },
+        {
+          "name": "expires",
+          "value": "Thu, 05 Nov 2026 19:34:46 GMT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 19:34:46 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript; charset=utf-8"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 17 Mar 2025 04:26:18 GMT"
+        },
+        {
+          "name": "server",
+          "value": "ddos-guard"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin, Access-Control-Request-Headers, Access-Control-Request-Method"
+        },
+        {
+          "name": "content-length",
+          "value": "98532"
+        }
+      ],
+      "sha256": "e02844132c5d1461b29b4c1c1e3631c0c0f3b56cc990a450f9f810908ceb2c5f",
+      "bytes": 98532
+    },
+    "https://cs.pikabu.ru/apps/ub/5.4.943/desktop/vendors-hls.509955f6d0eb.mo.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-allow-headers",
+          "value": "Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,X-AAB-HTTP-Check"
+        },
+        {
+          "name": "ddg-cache-status",
+          "value": "HIT,MISS"
+        },
+        {
+          "name": "access-control-max-age",
+          "value": "1728000"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=604800"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6aa26604-901cb\""
+        },
+        {
+          "name": "age",
+          "value": "11471"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "true"
+        },
+        {
+          "name": "expires",
+          "value": "Thu, 05 Nov 2026 19:34:46 GMT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 19:34:46 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript; charset=utf-8"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 10 Sep 2026 08:10:44 GMT"
+        },
+        {
+          "name": "server",
+          "value": "ddos-guard"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin, Access-Control-Request-Headers, Access-Control-Request-Method"
+        },
+        {
+          "name": "content-length",
+          "value": "590283"
+        }
+      ],
+      "sha256": "af9233fa67a847a9d756fd26740338d4aca187ec1980fcde35998a6aaebe3ed2",
+      "bytes": 590283
+    },
+    "https://cs.pikabu.ru/apps/ub/5.0.1/animations/signin.png": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-max-age",
+          "value": "1728000"
+        },
+        {
+          "name": "etag",
+          "value": "\"6166acee-227a\""
+        },
+        {
+          "name": "age",
+          "value": "104034"
+        },
+        {
+          "name": "expires",
+          "value": "Wed, 04 Nov 2026 17:52:04 GMT"
+        },
+        {
+          "name": "date",
+          "value": "Wed, 28 Oct 2026 17:52:04 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/png"
+        },
+        {
+          "name": "vary",
+          "value": "Origin, Access-Control-Request-Headers, Access-Control-Request-Method"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 13 Oct 2021 09:54:54 GMT"
+        },
+        {
+          "name": "access-control-allow-headers",
+          "value": "Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,X-AAB-HTTP-Check"
+        },
+        {
+          "name": "ddg-cache-status",
+          "value": "HIT,MISS"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=604800"
+        },
+        {
+          "name": "x-zone",
+          "value": "1"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "true"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "server",
+          "value": "ddos-guard"
+        },
+        {
+          "name": "content-length",
+          "value": "8826"
+        }
+      ],
+      "sha256": "6693297a5101f660e38f587c7221ed5fdaed92e29149b28f7e3b7d7e238d4db5",
+      "bytes": 8826
+    },
+    "https://cs.pikabu.ru/images/themes/movies.svg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-max-age",
+          "value": "1728000"
+        },
+        {
+          "name": "etag",
+          "value": "\"6a4395d7-4cd\""
+        },
+        {
+          "name": "age",
+          "value": "583056"
+        },
+        {
+          "name": "expires",
+          "value": "Thu, 29 Oct 2026 06:13:05 GMT"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 23 Oct 2026 04:48:22 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "vary",
+          "value": "Origin, Access-Control-Request-Headers, Access-Control-Request-Method"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 30 Jun 2026 10:09:27 GMT"
+        },
+        {
+          "name": "access-control-allow-headers",
+          "value": "Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,X-AAB-HTTP-Check"
+        },
+        {
+          "name": "ddg-cache-status",
+          "value": "HIT,HIT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=604800"
+        },
+        {
+          "name": "x-zone",
+          "value": "2"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "true"
+        },
+        {
+          "name": "server",
+          "value": "ddos-guard"
+        },
+        {
+          "name": "content-length",
+          "value": "1229"
+        }
+      ],
+      "sha256": "41aa70e9ca2cac19573b487c34d0864f74b44d159a595297423ec7bdc1105927",
+      "bytes": 1229
+    },
+    "https://cs.pikabu.ru/images/themes/games.svg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-max-age",
+          "value": "1728000"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6a4395d6-7d4\""
+        },
+        {
+          "name": "age",
+          "value": "37396"
+        },
+        {
+          "name": "expires",
+          "value": "Sun, 01 Nov 2026 14:37:00 GMT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 12:22:42 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 30 Jun 2026 10:09:26 GMT"
+        },
+        {
+          "name": "access-control-allow-headers",
+          "value": "Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,X-AAB-HTTP-Check"
+        },
+        {
+          "name": "ddg-cache-status",
+          "value": "HIT,HIT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=604800"
+        },
+        {
+          "name": "x-zone",
+          "value": "2"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "true"
+        },
+        {
+          "name": "server",
+          "value": "ddos-guard"
+        },
+        {
+          "name": "content-length",
+          "value": "2004"
+        }
+      ],
+      "sha256": "b08929db193836320bf64e3a41a92541b6ee8dd8b7cafcdaa048008b3be35a45",
+      "bytes": 2004
+    },
+    "https://pikabu.ru/ajax/counters/story/14473610.txt": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "age",
+          "value": "60"
+        },
+        {
+          "name": "front",
+          "value": "lxru-nginx-web02"
+        },
+        {
+          "name": "expires",
+          "value": "Thu, 29 Oct 2026 22:45:58 GMT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:44:58 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/json"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "feature-policy",
+          "value": "geolocation 'none'"
+        },
+        {
+          "name": "x-frame-options",
+          "value": "sameorigin"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "ddg-cache-status",
+          "value": "HIT,HIT"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests, frame-ancestors *.pikabu.ru pikabu.ru"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=60"
+        },
+        {
+          "name": "accept-ch",
+          "value": "Sec-CH-UA-Platform-Version"
+        },
+        {
+          "name": "server",
+          "value": "ddos-guard"
+        },
+        {
+          "name": "content-length",
+          "value": "361"
+        }
+      ],
+      "sha256": "b45e74952129be0ac2efdbef8c7cca42f891e2c197f1b56a62884b965adf8346",
+      "bytes": 361
+    },
+    "https://cs18.pikabu.ru/s/2025/04/10/11/wm3jggbb_m.webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "ddg-cache-status",
+          "value": "HIT,HIT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=604800"
+        },
+        {
+          "name": "timing-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "etag",
+          "value": "\"67f77dfb-614\""
+        },
+        {
+          "name": "age",
+          "value": "192161"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD, OPTIONS"
+        },
+        {
+          "name": "expires",
+          "value": "Sat, 31 Oct 2026 17:44:38 GMT"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "https://pikabu.ru"
+        },
+        {
+          "name": "date",
+          "value": "Tue, 27 Oct 2026 17:23:17 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 10 Apr 2025 08:14:51 GMT"
+        },
+        {
+          "name": "server",
+          "value": "ddos-guard"
+        },
+        {
+          "name": "vary",
+          "value": "Origin, Access-Control-Request-Headers, Access-Control-Request-Method"
+        },
+        {
+          "name": "content-length",
+          "value": "1556"
+        }
+      ],
+      "sha256": "059dd646cd698d6acd5b14ba600f71154a3f1a4297636c3622ff051e86edaa44",
+      "bytes": 1556
+    },
+    "https://cs.pikabu.ru/assets/favicon.ico": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-max-age",
+          "value": "1728000"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6ad9be3b-1536\""
+        },
+        {
+          "name": "age",
+          "value": "11469"
+        },
+        {
+          "name": "expires",
+          "value": "Thu, 05 Nov 2026 19:34:49 GMT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 19:34:49 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/x-icon"
+        },
+        {
+          "name": "vary",
+          "value": "Origin, Access-Control-Request-Headers, Access-Control-Request-Method, Accept-Encoding"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 22 Oct 2026 07:41:47 GMT"
+        },
+        {
+          "name": "access-control-allow-headers",
+          "value": "Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,X-AAB-HTTP-Check"
+        },
+        {
+          "name": "ddg-cache-status",
+          "value": "HIT,MISS"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=604800"
+        },
+        {
+          "name": "x-zone",
+          "value": "1"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "true"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "server",
+          "value": "ddos-guard"
+        },
+        {
+          "name": "content-length",
+          "value": "5430"
+        }
+      ],
+      "sha256": "b136c8444148253d0264dd45d3f2dd3653a14a3d4bd6dad9653255df114376b8",
+      "bytes": 5430
+    },
+    "https://pikabu.ru/ajax.php?route=ws/get-client-token": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-frame-options",
+          "value": "sameorigin"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests, frame-ancestors *.pikabu.ru pikabu.ru"
+        },
+        {
+          "name": "cache-control",
+          "value": "no-cache"
+        },
+        {
+          "name": "pragma",
+          "value": "no-cache"
+        },
+        {
+          "name": "accept-ch",
+          "value": "Sec-CH-UA-Platform-Version"
+        },
+        {
+          "name": "front",
+          "value": "lxru-nginx-web01"
+        },
+        {
+          "name": "expires",
+          "value": "Thu, 01 Jan 1970 00:00:01 GMT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:46:00 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/json"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "server",
+          "value": "ddos-guard"
+        },
+        {
+          "name": "feature-policy",
+          "value": "geolocation 'none'"
+        },
+        {
+          "name": "content-length",
+          "value": "133"
+        }
+      ],
+      "sha256": "ccd21a18f1e37abd52631e4e4e4c4cd7b6a3b7dea46d5c121ff5fb99cf541b55",
+      "bytes": 133
+    },
+    "https://yastatic.net/s3/passport-sdk/autofill/v1/sdk-suggest-with-polyfills-latest.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-robots-tag",
+          "value": "noindex, noarchive, nofollow"
+        },
+        {
+          "name": "x-request-id",
+          "value": "217f87219e018874"
+        },
+        {
+          "name": "etag",
+          "value": "\"98fe415a1d0bd7117fbdb76640e37828\""
+        },
+        {
+          "name": "report-to",
+          "value": "{ \"group\": \"network-errors\", \"max_age\": 7200, \"endpoints\": [ { \"url\": \"https://dr.yandex.net/nel\"}]}"
+        },
+        {
+          "name": "expires",
+          "value": "Sun, 25 Oct 2026 20:05:21 GMT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:46:03 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 17 Jul 2026 11:05:15 GMT"
+        },
+        {
+          "name": "cache-host",
+          "value": "cloudcdn-spbmiran-26.cdn.yandex.net"
+        },
+        {
+          "name": "nel",
+          "value": "{\"report_to\": \"network-errors\", \"max_age\": 7200, \"success_fraction\": 0.001, \"failure_fraction\": 0.01}"
+        },
+        {
+          "name": "timing-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=216013"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-strm-log-split",
+          "value": "4"
+        },
+        {
+          "name": "cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "server",
+          "value": "nginx"
+        },
+        {
+          "name": "content-length",
+          "value": "17095"
+        }
+      ],
+      "sha256": "7e52749af81dde46fa66c0a0c52a6a4187108ca11f7da81d5f8aca42d518459d",
+      "bytes": 17095
+    }
+  },
+  "workload": "Frozen guest DOM; scripts removed; original resource bytes",
+  "live_png_sha256": "3bd49e38624a0489263ad3216c03f06d0854f548c15688360deae96b94fd083c",
+  "capture_report_sha256": "87e71e63b543b9b9059bdbb74294d4fb233ed18d2f380c6f409469a64a9a7412"
+}

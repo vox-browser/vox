@@ -1,0 +1,49 @@
+{
+  "status": "coverage-failure",
+  "reason": "HTTP 403: Reddit blocks this guest session with a network-security access check.",
+  "observed_at": "2026-10-30",
+  "navigation": {
+    "requested_url": "https://www.reddit.com/",
+    "url": "https://www.reddit.com/",
+    "title": "",
+    "status": 403,
+    "ready_state": "complete",
+    "body_text_length": 222,
+    "body_text_sample": "You've been blocked by network security.\nTo continue, log in to your Reddit account or use your developer token\n\nIf you think you've been blocked by mistake, file a ticket below and we'll look into it.\nLog in\nFile a ticket",
+    "element_count": 22,
+    "challenge_detected": true,
+    "challenge_evidence": [
+      "Access check: You've been blocked by network security"
+    ],
+    "load_error": "",
+    "coverage": "error"
+  },
+  "capture_guard": {
+    "command": [
+      "node",
+      "/Users/alex/code/vox2/tools/adblock/brave_parity.mjs",
+      "--url",
+      "https://www.reddit.com/",
+      "--extension",
+      "/Users/alex/code/vox2/Build/forum-news-parity-20261030/extension/uBlock0.chromium",
+      "--checker",
+      "/Users/alex/code/vox2/Build/forum-news-parity-20261030/adblock-check",
+      "--brave",
+      "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+      "--settle",
+      "5.0",
+      "--proxy-server",
+      "http://127.0.0.1:55313",
+      "--capture-dir",
+      "/Users/alex/code/vox2/Build/forum-news-parity-20261030/routed-matrix/reddit/capture",
+      "--output",
+      "/Users/alex/code/vox2/Build/forum-news-parity-20261030/routed-matrix/reddit/capture.json"
+    ],
+    "reason": "completed",
+    "child_exit_code": 1,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 1683111936,
+    "elapsed_seconds": 16.607703875000002,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  }
+}

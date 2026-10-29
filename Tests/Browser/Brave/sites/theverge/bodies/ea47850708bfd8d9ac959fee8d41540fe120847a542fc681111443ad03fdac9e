@@ -1,0 +1,6 @@
+._82xsiq0{display:none}
+._82xsiq1{text-align:center}
+._82xsiq2{column-gap:20px;padding:0 20px;display:flex;overflow:scroll hidden}
+@media screen and (min-width:768px){._82xsiq0{grid-gap:40px 25px;grid-template-columns:repeat(3,1fr);display:grid}}
+@media screen and (min-width:768px) and (max-width:1179px){._82xsiq0{width:calc(100% - 20px);margin-left:20px}}
+/*# sourceMappingURL=3gmzo7t-ancji.css.map*/

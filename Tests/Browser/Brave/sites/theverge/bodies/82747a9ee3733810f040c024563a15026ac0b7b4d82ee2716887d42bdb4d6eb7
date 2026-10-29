@@ -1,0 +1,7 @@
+._1hofmaw0{display:none}
+._1hofmaw2{flex-direction:column;display:flex}
+._1hofmaw3{column-gap:20px;padding:0 20px;display:flex;overflow-y:scroll}
+@media screen and (min-width:768px){._1hofmaw0{grid-gap:40px 25px;grid-template-columns:repeat(2,1fr);display:grid}._1hofmaw2{display:none}}
+@media screen and (min-width:1180px){._1hofmaw0{grid-template-columns:repeat(3,1fr)}._1hofmaw1:not(:nth-child(3n),:last-child){border-right:var(--_1tsb0ye14m)}}
+@media screen and (min-width:768px) and (max-width:1179px){._1hofmaw1:not(:nth-child(2n),:last-child){border-right:var(--_1tsb0ye14m)}}
+/*# sourceMappingURL=0omi6a6_n_8m5.css.map*/

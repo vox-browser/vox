@@ -1,0 +1,16 @@
+/* global $, anonEv */
+function maxnav_loader(){
+        fetch('https://sourceforge.net/about/maxnav')
+        .then(response => response.text())
+        .then(text => {
+            var searchContainer = document.getElementById('main-search') || document.getElementById('main-top-nav-wrapper');
+            searchContainer.insertAdjacentHTML('afterbegin', text);
+            // keep in sync with chrome.js
+            $('#main-nav-badge-link').off('click').on('click', function (e) {
+                var label = $(this).data('label') || 'MaxNav';
+                var client = $(this).data('client') || 'maxnav';
+                anonEv({source: 'sf', client}, ['trackEvent', 'Nav Menu', label]);
+            });
+        });
+}
+maxnav_loader();

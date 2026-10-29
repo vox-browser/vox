@@ -1,0 +1,6209 @@
+{
+  "version": 1,
+  "url": "https://edition.cnn.com/",
+  "sealed_unix": 1793314308.6664839,
+  "responses": {
+    "https://edition.cnn.com/": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "X-DNS-Prefetch-Control",
+          "value": "off"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "age",
+          "value": "14"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=60"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "default-src 'self' blob: https://*.cnn.com:* http://*.cnn.com:* *.cnn.io:* *.cnn.net:* *.turner.com:* *.turner.io:* *.ugdturner.com:* courageousstudio.com *.vgtf.net:*; script-src 'unsafe-eval' 'unsafe-inline' 'self' *; style-src 'unsafe-inline' 'self' blob: *; child-src 'self' blob: *; frame-src 'self' *; object-src 'self' *; img-src 'self' data: blob: *; media-src 'self' data: blob: *; font-src 'self' data: *; connect-src 'self' data: *; frame-ancestors 'self' https://*.cnn.com:* http://*.cnn.com https://*.cnn.io:* http://*.cnn.io:* *.turner.com:* courageousstudio.com;"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:33 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding,Origin,Accept-Language"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 11, 1"
+        },
+        {
+          "name": "x-content-hub",
+          "value": "build-env=prod; unique-deployment-key=rn102140; build-version=v8.6.20-0-g0b5179b; build-commit-hash=0b5179b9974864a7e2b890259f77e5515c08ec7b"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "x-last-modified",
+          "value": "Thu, 29 Oct 2026 22:32:54 GMT"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-chi-klot8100118-CHI, cache-chi-klot8100160-CHI, cache-fra-etou8220031-FRA"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313814.944489,VS0,VE5"
+        },
+        {
+          "name": "x-xss-protection",
+          "value": "1; mode=block"
+        },
+        {
+          "name": "content-length",
+          "value": "3894561"
+        },
+        {
+          "name": "Content-Type",
+          "value": "text/html;charset=utf-8"
+        }
+      ],
+      "sha256": "191e0c53d5e2667b274372d2e9b709b99737a4a37987967b488de69b2955e503",
+      "bytes": 3894561
+    },
+    "https://edition.cnn.com/fonts/cnn/cnn_sans_display-medium-v1.woff2": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "W/\"b548-1a165179a00\""
+        },
+        {
+          "name": "age",
+          "value": "596895"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "x-content-hub",
+          "value": "build-env=prod; unique-deployment-key=rn102140; build-version=v8.6.8-0-g66f4efd; build-commit-hash=66f4efd6dfa32b5f1eff2b7abaffda1e16407077"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 22 Oct 2026 19:30:08 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "font/woff2"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-chi-klot8100054-CHI, cache-chi-klot8100072-CHI, cache-fra-etou8220031-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 555, 693"
+        },
+        {
+          "name": "vary",
+          "value": "Origin,Accept-Language"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "default-src 'self' blob: https://*.cnn.com:* http://*.cnn.com:* *.cnn.io:* *.cnn.net:* *.turner.com:* *.turner.io:* *.ugdturner.com:* courageousstudio.com *.vgtf.net:*; script-src 'unsafe-eval' 'unsafe-inline' 'self' *; style-src 'unsafe-inline' 'self' blob: *; child-src 'self' blob: *; frame-src 'self' *; object-src 'self' *; img-src 'self' data: blob: *; media-src 'self' data: blob: *; font-src 'self' data: *; connect-src 'self' data: *; frame-ancestors 'self' https://*.cnn.com:* http://*.cnn.com https://*.cnn.io:* http://*.cnn.io:* *.turner.com:* courageousstudio.com;"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=3000000, stale-if-error=90000, stale-while-revalidate=60, immutable"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313814.049221,VS0,VE2"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-xss-protection",
+          "value": "1; mode=block"
+        },
+        {
+          "name": "content-length",
+          "value": "46408"
+        }
+      ],
+      "sha256": "1e87aaf30e9cf92975c0d8d8a6633bcca81a06e30ee4921afc110e924ec76499",
+      "bytes": 46408
+    },
+    "https://edition.cnn.com/fonts/cnn/noto_serif_display-v1.woff2": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "W/\"20804-1a16a57dae8\""
+        },
+        {
+          "name": "age",
+          "value": "305321"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "x-content-hub",
+          "value": "build-env=prod; unique-deployment-key=rn102140; build-version=v8.6.10-0-gfe96c47; build-commit-hash=fe96c4728382fea67db6a223bbe81c0be81598a7"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 23 Oct 2026 19:58:25 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "font/woff2"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-chi-kigq8000062-CHI, cache-chi-kigq8000062-CHI, cache-fra-etou8220031-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 9749, 141"
+        },
+        {
+          "name": "vary",
+          "value": "Origin,Accept-Language"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "default-src 'self' blob: https://*.cnn.com:* http://*.cnn.com:* *.cnn.io:* *.cnn.net:* *.turner.com:* *.turner.io:* *.ugdturner.com:* courageousstudio.com *.vgtf.net:*; script-src 'unsafe-eval' 'unsafe-inline' 'self' *; style-src 'unsafe-inline' 'self' blob: *; child-src 'self' blob: *; frame-src 'self' *; object-src 'self' *; img-src 'self' data: blob: *; media-src 'self' data: blob: *; font-src 'self' data: *; connect-src 'self' data: *; frame-ancestors 'self' https://*.cnn.com:* http://*.cnn.com https://*.cnn.io:* http://*.cnn.io:* *.turner.com:* courageousstudio.com;"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=3000000, stale-if-error=90000, stale-while-revalidate=60, immutable"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313814.048599,VS0,VE2"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-xss-protection",
+          "value": "1; mode=block"
+        },
+        {
+          "name": "content-length",
+          "value": "133124"
+        }
+      ],
+      "sha256": "2150007875acebba7283b4a514e3627161be388ae3db2114ea4d2258dbbb02f9",
+      "bytes": 133124
+    },
+    "https://edition.cnn.com/fonts/cnn/cnn_sans_display-v1.woff2": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "W/\"b580-1a0f8d74a70\""
+        },
+        {
+          "name": "age",
+          "value": "2411830"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "x-content-hub",
+          "value": "build-env=prod; unique-deployment-key=rn100153; build-version=v8.5.5-0-ga372721; build-commit-hash=a3727216c59b2430b30cadc6ce57796f9970787e"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "font/woff2"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 01 Oct 2026 19:00:54 GMT"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-chi-kigq8000138-CHI, cache-chi-kigq8000128-CHI, cache-fra-etou8220031-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 673, 754"
+        },
+        {
+          "name": "vary",
+          "value": "Origin,Accept-Language"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "default-src 'self' blob: https://*.cnn.com:* http://*.cnn.com:* *.cnn.io:* *.cnn.net:* *.turner.com:* *.turner.io:* *.ugdturner.com:* courageousstudio.com *.vgtf.net:*; script-src 'unsafe-eval' 'unsafe-inline' 'self' *; style-src 'unsafe-inline' 'self' blob: *; child-src 'self' blob: *; frame-src 'self' *; object-src 'self' *; img-src 'self' data: blob: *; media-src 'self' data: blob: *; font-src 'self' data: *; connect-src 'self' data: *; frame-ancestors 'self' https://*.cnn.com:* http://*.cnn.com https://*.cnn.io:* http://*.cnn.io:* *.turner.com:* courageousstudio.com;"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=3000000, stale-if-error=90000, stale-while-revalidate=60, immutable"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313814.049513,VS0,VE3"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-xss-protection",
+          "value": "1; mode=block"
+        },
+        {
+          "name": "content-length",
+          "value": "46464"
+        }
+      ],
+      "sha256": "67e8269cd944134ebe49deda2f7b3c76fba0b2b97037c8649d0a411007de23f5",
+      "bytes": 46464
+    },
+    "https://edition.cnn.com/fonts/cnn/cnn_sans_display-bold-v1.woff2": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "W/\"b87c-1a160d6eae0\""
+        },
+        {
+          "name": "age",
+          "value": "659642"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "x-content-hub",
+          "value": "build-env=prod; unique-deployment-key=rn102140; build-version=v8.6.5-0-g0a5ff3c; build-commit-hash=0a5ff3c25057ecc70591b85c2ba34115ae56d48c"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 21 Oct 2026 23:41:00 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "font/woff2"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-chi-kigq8000166-CHI, cache-chi-kigq8000166-CHI, cache-fra-etou8220031-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 642, 755"
+        },
+        {
+          "name": "vary",
+          "value": "Origin,Accept-Language"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "default-src 'self' blob: https://*.cnn.com:* http://*.cnn.com:* *.cnn.io:* *.cnn.net:* *.turner.com:* *.turner.io:* *.ugdturner.com:* courageousstudio.com *.vgtf.net:*; script-src 'unsafe-eval' 'unsafe-inline' 'self' *; style-src 'unsafe-inline' 'self' blob: *; child-src 'self' blob: *; frame-src 'self' *; object-src 'self' *; img-src 'self' data: blob: *; media-src 'self' data: blob: *; font-src 'self' data: *; connect-src 'self' data: *; frame-ancestors 'self' https://*.cnn.com:* http://*.cnn.com https://*.cnn.io:* http://*.cnn.io:* *.turner.com:* courageousstudio.com;"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=3000000, stale-if-error=90000, stale-while-revalidate=60, immutable"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313814.049072,VS0,VE4"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-xss-protection",
+          "value": "1; mode=block"
+        },
+        {
+          "name": "content-length",
+          "value": "47228"
+        }
+      ],
+      "sha256": "6a95904e1928a3909cebb37532034c0f283b4016492079d022f8409ed4247d9c",
+      "bytes": 47228
+    },
+    "https://edition.cnn.com/media/sites/js/bundles/cnn-edition-adfuel-41088f557462fde981445fa7055f73bbcdce93fe0dfe99c13ecc14d127167bd6.min.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "W/\"3e01b-1a183dbd668\""
+        },
+        {
+          "name": "age",
+          "value": "79459"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "x-content-hub",
+          "value": "build-env=prod; unique-deployment-key=rn102140; build-version=v8.6.18-0-g1a0966d; build-commit-hash=1a0966d5eccdb4f13a3a04ad7d520bbbef1f4e11"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 18:53:05 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript; charset=UTF-8"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-chi-kigq8000165-CHI, cache-chi-kigq8000165-CHI, cache-fra-etou8220031-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 1, 482"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding,Origin,Accept-Language"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "default-src 'self' blob: https://*.cnn.com:* http://*.cnn.com:* *.cnn.io:* *.cnn.net:* *.turner.com:* *.turner.io:* *.ugdturner.com:* courageousstudio.com *.vgtf.net:*; script-src 'unsafe-eval' 'unsafe-inline' 'self' *; style-src 'unsafe-inline' 'self' blob: *; child-src 'self' blob: *; frame-src 'self' *; object-src 'self' *; img-src 'self' data: blob: *; media-src 'self' data: blob: *; font-src 'self' data: *; connect-src 'self' data: *; frame-ancestors 'self' https://*.cnn.com:* http://*.cnn.com https://*.cnn.io:* http://*.cnn.io:* *.turner.com:* courageousstudio.com;"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=7200"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313814.048295,VS0,VE3"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-xss-protection",
+          "value": "1; mode=block"
+        },
+        {
+          "name": "content-length",
+          "value": "253979"
+        }
+      ],
+      "sha256": "41088f557462fde981445fa7055f73bbcdce93fe0dfe99c13ecc14d127167bd6",
+      "bytes": 253979
+    },
+    "https://edition.cnn.com/media/sites/js/bundles/cnn-edition-adfuel-body-f5f29a92b42af7c045a57b85f77667e4f871a89098f7fff2468fd5b7c9fcd250.min.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "W/\"3bfb7-1a1884d1ef0\""
+        },
+        {
+          "name": "age",
+          "value": "11933"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "x-content-hub",
+          "value": "build-env=prod; unique-deployment-key=rn102140; build-version=v8.6.19-0-g5f6e356; build-commit-hash=5f6e356c7a80f86254f855db3f4522cd1e7cd156"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, MISS, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 15:35:18 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript; charset=UTF-8"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-chi-kigq8000131-CHI, cache-chi-kigq8000131-CHI, cache-fra-etou8220031-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 0, 55"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding,Origin,Accept-Language"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "default-src 'self' blob: https://*.cnn.com:* http://*.cnn.com:* *.cnn.io:* *.cnn.net:* *.turner.com:* *.turner.io:* *.ugdturner.com:* courageousstudio.com *.vgtf.net:*; script-src 'unsafe-eval' 'unsafe-inline' 'self' *; style-src 'unsafe-inline' 'self' blob: *; child-src 'self' blob: *; frame-src 'self' *; object-src 'self' *; img-src 'self' data: blob: *; media-src 'self' data: blob: *; font-src 'self' data: *; connect-src 'self' data: *; frame-ancestors 'self' https://*.cnn.com:* http://*.cnn.com https://*.cnn.io:* http://*.cnn.io:* *.turner.com:* courageousstudio.com;"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=7200"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313814.048105,VS0,VE4"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-xss-protection",
+          "value": "1; mode=block"
+        },
+        {
+          "name": "content-length",
+          "value": "245687"
+        }
+      ],
+      "sha256": "f5f29a92b42af7c045a57b85f77667e4f871a89098f7fff2468fd5b7c9fcd250",
+      "bytes": 245687
+    },
+    "https://edition.cnn.com/media/sites/cnn/icons/video-icon-header.svg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "W/\"2f9-1a189176048\""
+        },
+        {
+          "name": "age",
+          "value": "464"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "x-content-hub",
+          "value": "build-env=prod; unique-deployment-key=rn102140; build-version=v8.6.20-0-g0b5179b; build-commit-hash=0b5179b9974864a7e2b890259f77e5515c08ec7b"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 19:16:13 GMT"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-chi-klot8100032-CHI, cache-chi-klot8100092-CHI, cache-fra-etou8220070-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 722, 2"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding,Origin,Accept-Language"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "default-src 'self' blob: https://*.cnn.com:* http://*.cnn.com:* *.cnn.io:* *.cnn.net:* *.turner.com:* *.turner.io:* *.ugdturner.com:* courageousstudio.com *.vgtf.net:*; script-src 'unsafe-eval' 'unsafe-inline' 'self' *; style-src 'unsafe-inline' 'self' blob: *; child-src 'self' blob: *; frame-src 'self' *; object-src 'self' *; img-src 'self' data: blob: *; media-src 'self' data: blob: *; font-src 'self' data: *; connect-src 'self' data: *; frame-ancestors 'self' https://*.cnn.com:* http://*.cnn.com https://*.cnn.io:* http://*.cnn.io:* *.turner.com:* courageousstudio.com;"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=60"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313814.251883,VS0,VE1"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-xss-protection",
+          "value": "1; mode=block"
+        },
+        {
+          "name": "content-length",
+          "value": "761"
+        }
+      ],
+      "sha256": "01adb675f526945846c1ece0877962319572afb8e1d485bb12b07f0e9bc728a8",
+      "bytes": 761
+    },
+    "https://edition.cnn.com/media/sites/cnn/google-play-cnn-app-qr-code.png": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "W/\"5523-1a189176048\""
+        },
+        {
+          "name": "age",
+          "value": "4306"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "x-content-hub",
+          "value": "build-env=prod; unique-deployment-key=rn102140; build-version=v8.6.20-0-g0b5179b; build-commit-hash=0b5179b9974864a7e2b890259f77e5515c08ec7b"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/png"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 19:16:13 GMT"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-chi-kmdw8640095-CHI, cache-chi-kmdw8640029-CHI, cache-fra-etou8220070-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 1, 27"
+        },
+        {
+          "name": "vary",
+          "value": "Origin,Accept-Language"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "default-src 'self' blob: https://*.cnn.com:* http://*.cnn.com:* *.cnn.io:* *.cnn.net:* *.turner.com:* *.turner.io:* *.ugdturner.com:* courageousstudio.com *.vgtf.net:*; script-src 'unsafe-eval' 'unsafe-inline' 'self' *; style-src 'unsafe-inline' 'self' blob: *; child-src 'self' blob: *; frame-src 'self' *; object-src 'self' *; img-src 'self' data: blob: *; media-src 'self' data: blob: *; font-src 'self' data: *; connect-src 'self' data: *; frame-ancestors 'self' https://*.cnn.com:* http://*.cnn.com https://*.cnn.io:* http://*.cnn.io:* *.turner.com:* courageousstudio.com;"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=60"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313814.251429,VS0,VE2"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-xss-protection",
+          "value": "1; mode=block"
+        },
+        {
+          "name": "content-length",
+          "value": "21795"
+        }
+      ],
+      "sha256": "c756a388bfe8fc53b0e9730cc456a695071984368196f5ec2f2792094dbb1aa0",
+      "bytes": 21795
+    },
+    "https://edition.cnn.com/media/sites/cnn/app-store-cnn-app-qr-code.png": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "W/\"5799-1a189176048\""
+        },
+        {
+          "name": "age",
+          "value": "3134"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "x-content-hub",
+          "value": "build-env=prod; unique-deployment-key=rn102140; build-version=v8.6.20-0-g0b5179b; build-commit-hash=0b5179b9974864a7e2b890259f77e5515c08ec7b"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/png"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 19:16:13 GMT"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-chi-klot8100061-CHI, cache-chi-klot8100061-CHI, cache-fra-etou8220070-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 654, 21"
+        },
+        {
+          "name": "vary",
+          "value": "Origin,Accept-Language"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "default-src 'self' blob: https://*.cnn.com:* http://*.cnn.com:* *.cnn.io:* *.cnn.net:* *.turner.com:* *.turner.io:* *.ugdturner.com:* courageousstudio.com *.vgtf.net:*; script-src 'unsafe-eval' 'unsafe-inline' 'self' *; style-src 'unsafe-inline' 'self' blob: *; child-src 'self' blob: *; frame-src 'self' *; object-src 'self' *; img-src 'self' data: blob: *; media-src 'self' data: blob: *; font-src 'self' data: *; connect-src 'self' data: *; frame-ancestors 'self' https://*.cnn.com:* http://*.cnn.com https://*.cnn.io:* http://*.cnn.io:* *.turner.com:* courageousstudio.com;"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=60"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313814.251390,VS0,VE2"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-xss-protection",
+          "value": "1; mode=block"
+        },
+        {
+          "name": "content-length",
+          "value": "22425"
+        }
+      ],
+      "sha256": "a653b9e8762fab0be7137baf87d6c22be8f9f31d08d2761020f141f80daba2eb",
+      "bytes": 22425
+    },
+    "https://edition.cnn.com/media/sites/cnn/icons/live-tv-icon-header.svg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "W/\"90-1a189176048\""
+        },
+        {
+          "name": "age",
+          "value": "3766"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "x-content-hub",
+          "value": "build-env=prod; unique-deployment-key=rn102140; build-version=v8.6.20-0-g0b5179b; build-commit-hash=0b5179b9974864a7e2b890259f77e5515c08ec7b"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 19:16:13 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-chi-klot8100088-CHI, cache-chi-klot8100048-CHI, cache-fra-etou8220070-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 16, 21"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding,Origin,Accept-Language"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "default-src 'self' blob: https://*.cnn.com:* http://*.cnn.com:* *.cnn.io:* *.cnn.net:* *.turner.com:* *.turner.io:* *.ugdturner.com:* courageousstudio.com *.vgtf.net:*; script-src 'unsafe-eval' 'unsafe-inline' 'self' *; style-src 'unsafe-inline' 'self' blob: *; child-src 'self' blob: *; frame-src 'self' *; object-src 'self' *; img-src 'self' data: blob: *; media-src 'self' data: blob: *; font-src 'self' data: *; connect-src 'self' data: *; frame-ancestors 'self' https://*.cnn.com:* http://*.cnn.com https://*.cnn.io:* http://*.cnn.io:* *.turner.com:* courageousstudio.com;"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=60"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313814.252195,VS0,VE2"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-xss-protection",
+          "value": "1; mode=block"
+        },
+        {
+          "name": "content-length",
+          "value": "144"
+        }
+      ],
+      "sha256": "7066882a59ab571649211fc7c92fe561ed9ee1578598c3b15c91143af7ecaaa2",
+      "bytes": 144
+    },
+    "https://edition.cnn.com/media/sites/cnn/icons/ui-search.svg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "W/\"1df-1a189176048\""
+        },
+        {
+          "name": "age",
+          "value": "2907"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "x-content-hub",
+          "value": "build-env=prod; unique-deployment-key=rn102140; build-version=v8.6.20-0-g0b5179b; build-commit-hash=0b5179b9974864a7e2b890259f77e5515c08ec7b"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 19:16:13 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-chi-kmdw8640038-CHI, cache-chi-kmdw8640038-CHI, cache-fra-etou8220070-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 576, 15"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding,Origin,Accept-Language"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "default-src 'self' blob: https://*.cnn.com:* http://*.cnn.com:* *.cnn.io:* *.cnn.net:* *.turner.com:* *.turner.io:* *.ugdturner.com:* courageousstudio.com *.vgtf.net:*; script-src 'unsafe-eval' 'unsafe-inline' 'self' *; style-src 'unsafe-inline' 'self' blob: *; child-src 'self' blob: *; frame-src 'self' *; object-src 'self' *; img-src 'self' data: blob: *; media-src 'self' data: blob: *; font-src 'self' data: *; connect-src 'self' data: *; frame-ancestors 'self' https://*.cnn.com:* http://*.cnn.com https://*.cnn.io:* http://*.cnn.io:* *.turner.com:* courageousstudio.com;"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=60"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313814.256898,VS0,VE1"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-xss-protection",
+          "value": "1; mode=block"
+        },
+        {
+          "name": "content-length",
+          "value": "479"
+        }
+      ],
+      "sha256": "b96cb7151256f1a6e8034d3103ce64d4d1109a0511f358c2aa9131ba00c94ca8",
+      "bytes": 479
+    },
+    "https://edition.cnn.com/media/sites/cnn/icons/audio-icon-header.svg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "W/\"4a0-1a189176048\""
+        },
+        {
+          "name": "age",
+          "value": "1514"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "x-content-hub",
+          "value": "build-env=prod; unique-deployment-key=rn102140; build-version=v8.6.20-0-g0b5179b; build-commit-hash=0b5179b9974864a7e2b890259f77e5515c08ec7b"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 19:16:13 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-chi-kmdw8640048-CHI, cache-chi-kmdw8640096-CHI, cache-fra-etou8220070-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 711, 8"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding,Origin,Accept-Language"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "default-src 'self' blob: https://*.cnn.com:* http://*.cnn.com:* *.cnn.io:* *.cnn.net:* *.turner.com:* *.turner.io:* *.ugdturner.com:* courageousstudio.com *.vgtf.net:*; script-src 'unsafe-eval' 'unsafe-inline' 'self' *; style-src 'unsafe-inline' 'self' blob: *; child-src 'self' blob: *; frame-src 'self' *; object-src 'self' *; img-src 'self' data: blob: *; media-src 'self' data: blob: *; font-src 'self' data: *; connect-src 'self' data: *; frame-ancestors 'self' https://*.cnn.com:* http://*.cnn.com https://*.cnn.io:* http://*.cnn.io:* *.turner.com:* courageousstudio.com;"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=60"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313814.252220,VS0,VE1"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-xss-protection",
+          "value": "1; mode=block"
+        },
+        {
+          "name": "content-length",
+          "value": "1184"
+        }
+      ],
+      "sha256": "7e6e0f4d89a905891b21e5e5cf3fde0a14ac27a2aaae92dad9483eb8bf2f41a2",
+      "bytes": 1184
+    },
+    "https://edition.cnn.com/media/sites/cnn/icons/video.svg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "W/\"328-1a189176048\""
+        },
+        {
+          "name": "age",
+          "value": "2407"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "x-content-hub",
+          "value": "build-env=prod; unique-deployment-key=rn102140; build-version=v8.6.20-0-g0b5179b; build-commit-hash=0b5179b9974864a7e2b890259f77e5515c08ec7b"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 19:16:13 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-chi-klot8100178-CHI, cache-chi-klot8100123-CHI, cache-fra-etou8220070-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 531, 9"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding,Origin,Accept-Language"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "default-src 'self' blob: https://*.cnn.com:* http://*.cnn.com:* *.cnn.io:* *.cnn.net:* *.turner.com:* *.turner.io:* *.ugdturner.com:* courageousstudio.com *.vgtf.net:*; script-src 'unsafe-eval' 'unsafe-inline' 'self' *; style-src 'unsafe-inline' 'self' blob: *; child-src 'self' blob: *; frame-src 'self' *; object-src 'self' *; img-src 'self' data: blob: *; media-src 'self' data: blob: *; font-src 'self' data: *; connect-src 'self' data: *; frame-ancestors 'self' https://*.cnn.com:* http://*.cnn.com https://*.cnn.io:* http://*.cnn.io:* *.turner.com:* courageousstudio.com;"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=60"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313814.252029,VS0,VE2"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-xss-protection",
+          "value": "1; mode=block"
+        },
+        {
+          "name": "content-length",
+          "value": "808"
+        }
+      ],
+      "sha256": "bbd7a1a7361fc3b325920555d863f4b5c162cff35719be4d83c9ff6597a8310b",
+      "bytes": 808
+    },
+    "https://edition.cnn.com/media/sites/cnn/video-placeholder.svg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "W/\"593-1a189176048\""
+        },
+        {
+          "name": "age",
+          "value": "2171"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "x-content-hub",
+          "value": "build-env=prod; unique-deployment-key=rn102140; build-version=v8.6.20-0-g0b5179b; build-commit-hash=0b5179b9974864a7e2b890259f77e5515c08ec7b"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 19:16:13 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-chi-kmdw8640030-CHI, cache-chi-kmdw8640027-CHI, cache-fra-etou8220070-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 564, 7"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding,Origin,Accept-Language"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "default-src 'self' blob: https://*.cnn.com:* http://*.cnn.com:* *.cnn.io:* *.cnn.net:* *.turner.com:* *.turner.io:* *.ugdturner.com:* courageousstudio.com *.vgtf.net:*; script-src 'unsafe-eval' 'unsafe-inline' 'self' *; style-src 'unsafe-inline' 'self' blob: *; child-src 'self' blob: *; frame-src 'self' *; object-src 'self' *; img-src 'self' data: blob: *; media-src 'self' data: blob: *; font-src 'self' data: *; connect-src 'self' data: *; frame-ancestors 'self' https://*.cnn.com:* http://*.cnn.com https://*.cnn.io:* http://*.cnn.io:* *.turner.com:* courageousstudio.com;"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=60"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313814.262695,VS0,VE2"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-xss-protection",
+          "value": "1; mode=block"
+        },
+        {
+          "name": "content-length",
+          "value": "1427"
+        }
+      ],
+      "sha256": "149f8752f35155dca87362377145dc3ade1bd4e3051c9a59132fbc35bf463798",
+      "bytes": 1427
+    },
+    "https://edition.cnn.com/media/sites/cnn/icons/video-dark.svg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "W/\"32c-1a189176048\""
+        },
+        {
+          "name": "age",
+          "value": "802"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "x-content-hub",
+          "value": "build-env=prod; unique-deployment-key=rn102140; build-version=v8.6.20-0-g0b5179b; build-commit-hash=0b5179b9974864a7e2b890259f77e5515c08ec7b"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 19:16:13 GMT"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-chi-kmdw8640062-CHI, cache-chi-kmdw8640032-CHI, cache-fra-etou8220070-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 612, 2"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding,Origin,Accept-Language"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "default-src 'self' blob: https://*.cnn.com:* http://*.cnn.com:* *.cnn.io:* *.cnn.net:* *.turner.com:* *.turner.io:* *.ugdturner.com:* courageousstudio.com *.vgtf.net:*; script-src 'unsafe-eval' 'unsafe-inline' 'self' *; style-src 'unsafe-inline' 'self' blob: *; child-src 'self' blob: *; frame-src 'self' *; object-src 'self' *; img-src 'self' data: blob: *; media-src 'self' data: blob: *; font-src 'self' data: *; connect-src 'self' data: *; frame-ancestors 'self' https://*.cnn.com:* http://*.cnn.com https://*.cnn.io:* http://*.cnn.io:* *.turner.com:* courageousstudio.com;"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=60"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313814.262853,VS0,VE2"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-xss-protection",
+          "value": "1; mode=block"
+        },
+        {
+          "name": "content-length",
+          "value": "812"
+        }
+      ],
+      "sha256": "73682b5e4e9a9b6278d2615b89b9e9f2f7447e091ceb2695eb25f98eaf3e1bfa",
+      "bytes": 812
+    },
+    "https://edition.cnn.com/media/sites/cnn/visual-cues/play-icon.svg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "W/\"2f4-1a189176048\""
+        },
+        {
+          "name": "age",
+          "value": "516"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "x-content-hub",
+          "value": "build-env=prod; unique-deployment-key=rn102140; build-version=v8.6.20-0-g0b5179b; build-commit-hash=0b5179b9974864a7e2b890259f77e5515c08ec7b"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 19:16:13 GMT"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-chi-klot8100105-CHI, cache-chi-klot8100105-CHI, cache-fra-etou8220070-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 417, 2"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding,Origin,Accept-Language"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "default-src 'self' blob: https://*.cnn.com:* http://*.cnn.com:* *.cnn.io:* *.cnn.net:* *.turner.com:* *.turner.io:* *.ugdturner.com:* courageousstudio.com *.vgtf.net:*; script-src 'unsafe-eval' 'unsafe-inline' 'self' *; style-src 'unsafe-inline' 'self' blob: *; child-src 'self' blob: *; frame-src 'self' *; object-src 'self' *; img-src 'self' data: blob: *; media-src 'self' data: blob: *; font-src 'self' data: *; connect-src 'self' data: *; frame-ancestors 'self' https://*.cnn.com:* http://*.cnn.com https://*.cnn.io:* http://*.cnn.io:* *.turner.com:* courageousstudio.com;"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=60"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313814.267900,VS0,VE1"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-xss-protection",
+          "value": "1; mode=block"
+        },
+        {
+          "name": "content-length",
+          "value": "756"
+        }
+      ],
+      "sha256": "d927d3e82a8865ebdb992473c66969454203953252244739923640610f4a2470",
+      "bytes": 756
+    },
+    "https://experience.piano.io/xbuilder/experience/load?aid=RCoM2QBLpu": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-request-id",
+          "value": "tskaujzgh3"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "age",
+          "value": "1904"
+        },
+        {
+          "name": "expires",
+          "value": "Thu, 29 Oct 2026 22:41:50 GMT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "server-timing",
+          "value": "cfExtPri"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 22:11:50 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript; charset=UTF-8"
+        },
+        {
+          "name": "vary",
+          "value": "Origin, accept-encoding"
+        },
+        {
+          "name": "priority",
+          "value": "u=3,i=?0"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=1800, s-maxage=1800"
+        },
+        {
+          "name": "pragma",
+          "value": ""
+        },
+        {
+          "name": "cf-ray",
+          "value": "a525b32cb94d3904-ARN"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "3796"
+        }
+      ],
+      "sha256": "2123e747ed35d9d9e93ae922bd77e9b6b6c0497b128a62362428a3919e9e92fe",
+      "bytes": 3796
+    },
+    "https://media.cnn.com/api/v1/images/stellar/prod/ap26301649071113.jpg?c=16x9&q=h_540,w_960,c_fill/f_webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "max-age=300"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313815.534212,VS0,VE0"
+        },
+        {
+          "name": "age",
+          "value": "16241"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "x-content-hub-dam",
+          "value": "build-env=prod; unique-deployment-key=dam0002; build-version=v8.1.0; build-commit-hash=fedd52cbf91bc074366c6a4eed345d60a8173b2a"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 14:14:20 GMT"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-kcgs7200027-IAD, cache-iad-kcgs7200046-IAD, cache-fra-eddf8230094-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 1, 6"
+        },
+        {
+          "name": "content-length",
+          "value": "102280"
+        }
+      ],
+      "sha256": "781d2b9c3ec6b401a4b2e9dbdce964f4ba3f6ecdb9880466d85dc30df6227139",
+      "bytes": 102280
+    },
+    "https://registry.api.cnn.io/bundles/fave/latest-4.x/js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-expose-headers",
+          "value": "WWW-Authenticate,Server-Authorization"
+        },
+        {
+          "name": "age",
+          "value": "2603"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 16:51:38 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript; charset=utf-8"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-chi-klot8100156-CHI, cache-chi-klot8100156-CHI, cache-fra-eddf8230135-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 5116, 31"
+        },
+        {
+          "name": "vary",
+          "value": "origin,Accept-Encoding"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=600"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313815.538411,VS0,VE1"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "content-length",
+          "value": "181330"
+        }
+      ],
+      "sha256": "54ef9ccd4a06625a42b19601c4da4cb64ecea61ed2c7445ddebdd47a2e343f0a",
+      "bytes": 181330
+    },
+    "https://edition.cnn.com/media/sites/cnn/icons/gray-caret.svg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "W/\"af-1a189176048\""
+        },
+        {
+          "name": "age",
+          "value": "3739"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "x-content-hub",
+          "value": "build-env=prod; unique-deployment-key=rn102140; build-version=v8.6.20-0-g0b5179b; build-commit-hash=0b5179b9974864a7e2b890259f77e5515c08ec7b"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 19:16:13 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-chi-klot8100088-CHI, cache-chi-klot8100088-CHI, cache-fra-etou8220175-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 17, 9"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding,Origin,Accept-Language"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "default-src 'self' blob: https://*.cnn.com:* http://*.cnn.com:* *.cnn.io:* *.cnn.net:* *.turner.com:* *.turner.io:* *.ugdturner.com:* courageousstudio.com *.vgtf.net:*; script-src 'unsafe-eval' 'unsafe-inline' 'self' *; style-src 'unsafe-inline' 'self' blob: *; child-src 'self' blob: *; frame-src 'self' *; object-src 'self' *; img-src 'self' data: blob: *; media-src 'self' data: blob: *; font-src 'self' data: *; connect-src 'self' data: *; frame-ancestors 'self' https://*.cnn.com:* http://*.cnn.com https://*.cnn.io:* http://*.cnn.io:* *.turner.com:* courageousstudio.com;"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=60"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313815.539181,VS0,VE4"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-xss-protection",
+          "value": "1; mode=block"
+        },
+        {
+          "name": "content-length",
+          "value": "175"
+        }
+      ],
+      "sha256": "91d15197f9cd236caf5686860953db9536c17a584ad6d75da895b08702c80d0d",
+      "bytes": 175
+    },
+    "https://edition.cnn.com/public/api/alerts": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "41050bd0f8dd2a22b49e631c5c340344"
+        },
+        {
+          "name": "age",
+          "value": "36"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "x-content-hub",
+          "value": "build-env=prod; unique-deployment-key=rn102140; build-version=v8.6.8-0-g66f4efd; build-commit-hash=66f4efd6dfa32b5f1eff2b7abaffda1e16407077"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/json; charset=utf-8"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-chi-kigq8000028-CHI, cache-chi-kigq8000058-CHI, cache-fra-etou8220175-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 221202, 3"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding,Origin,Accept-Language"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "default-src 'self' blob: https://*.cnn.com:* http://*.cnn.com:* *.cnn.io:* *.cnn.net:* *.turner.com:* *.turner.io:* *.ugdturner.com:* courageousstudio.com *.vgtf.net:*; script-src 'unsafe-eval' 'unsafe-inline' 'self' *; style-src 'unsafe-inline' 'self' blob: *; child-src 'self' blob: *; frame-src 'self' *; object-src 'self' *; img-src 'self' data: blob: *; media-src 'self' data: blob: *; font-src 'self' data: *; connect-src 'self' data: *; frame-ancestors 'self' https://*.cnn.com:* http://*.cnn.com https://*.cnn.io:* http://*.cnn.io:* *.turner.com:* courageousstudio.com;"
+        },
+        {
+          "name": "cache-control",
+          "value": "no-cache"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313815.538636,VS0,VE5"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-xss-protection",
+          "value": "1; mode=block"
+        },
+        {
+          "name": "content-length",
+          "value": "13"
+        }
+      ],
+      "sha256": "f43c62200c7815091a6fe618461fbcb6ffd38e0f8ff7aaa9ee863ab0f5d47092",
+      "bytes": 13
+    },
+    "https://edition.cnn.com/media/sites/cnn/icons/ui-caret-right-thick.svg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "W/\"1a8-1a189176048\""
+        },
+        {
+          "name": "age",
+          "value": "4496"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "x-content-hub",
+          "value": "build-env=prod; unique-deployment-key=rn102140; build-version=v8.6.20-0-g0b5179b; build-commit-hash=0b5179b9974864a7e2b890259f77e5515c08ec7b"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 19:16:13 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-chi-kmdw8640068-CHI, cache-chi-kmdw8640092-CHI, cache-fra-etou8220175-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 6, 5"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding,Origin,Accept-Language"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "default-src 'self' blob: https://*.cnn.com:* http://*.cnn.com:* *.cnn.io:* *.cnn.net:* *.turner.com:* *.turner.io:* *.ugdturner.com:* courageousstudio.com *.vgtf.net:*; script-src 'unsafe-eval' 'unsafe-inline' 'self' *; style-src 'unsafe-inline' 'self' blob: *; child-src 'self' blob: *; frame-src 'self' *; object-src 'self' *; img-src 'self' data: blob: *; media-src 'self' data: blob: *; font-src 'self' data: *; connect-src 'self' data: *; frame-ancestors 'self' https://*.cnn.com:* http://*.cnn.com https://*.cnn.io:* http://*.cnn.io:* *.turner.com:* courageousstudio.com;"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=60"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313815.538599,VS0,VE6"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-xss-protection",
+          "value": "1; mode=block"
+        },
+        {
+          "name": "content-length",
+          "value": "424"
+        }
+      ],
+      "sha256": "09073072224d20ef2ef69589312e6524887b9bde35167caade725669d1854ad0",
+      "bytes": 424
+    },
+    "https://edition.cnn.com/media/sites/cnn/icons/ui-caret-left-thick.svg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "W/\"168-1a189176048\""
+        },
+        {
+          "name": "age",
+          "value": "4237"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "x-content-hub",
+          "value": "build-env=prod; unique-deployment-key=rn102140; build-version=v8.6.20-0-g0b5179b; build-commit-hash=0b5179b9974864a7e2b890259f77e5515c08ec7b"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 19:16:13 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-chi-kigq8000068-CHI, cache-chi-kigq8000068-CHI, cache-fra-etou8220175-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 14, 5"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding,Origin,Accept-Language"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "default-src 'self' blob: https://*.cnn.com:* http://*.cnn.com:* *.cnn.io:* *.cnn.net:* *.turner.com:* *.turner.io:* *.ugdturner.com:* courageousstudio.com *.vgtf.net:*; script-src 'unsafe-eval' 'unsafe-inline' 'self' *; style-src 'unsafe-inline' 'self' blob: *; child-src 'self' blob: *; frame-src 'self' *; object-src 'self' *; img-src 'self' data: blob: *; media-src 'self' data: blob: *; font-src 'self' data: *; connect-src 'self' data: *; frame-ancestors 'self' https://*.cnn.com:* http://*.cnn.com https://*.cnn.io:* http://*.cnn.io:* *.turner.com:* courageousstudio.com;"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=60"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313815.539919,VS0,VE5"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-xss-protection",
+          "value": "1; mode=block"
+        },
+        {
+          "name": "content-length",
+          "value": "360"
+        }
+      ],
+      "sha256": "862a3dda8af12cc3df6590d1391cee285b77265f1f7a3bc58d74d73e6ce21e0f",
+      "bytes": 360
+    },
+    "https://edition.cnn.com/wbdotp/scripttemplates/otSDKStub.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "\"ac8709d9af7f2e38c2f687015f64e116\""
+        },
+        {
+          "name": "age",
+          "value": "6123"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT, HIT, MISS, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 01 Sep 2026 17:04:08 GMT"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-chi-klot8100050-CHI, cache-fra-eddf8230213-FRA, cache-fra-eddf8230213-FRA, cache-fra-etou8220175-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "1885, 0, 0, 22"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding,Origin,Accept-Language"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=7200, public"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313815.538424,VS0,VE7"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "content-length",
+          "value": "26819"
+        }
+      ],
+      "sha256": "7b097fc5a3d173f4747604ed6b8c3d0d0eaace7dbc80261e2ba2a5e0073d0d40",
+      "bytes": 26819
+    },
+    "https://media.cnn.com/api/v1/images/stellar/prod/c-gettyimages-2302066955.jpg?c=16x9&q=w_1280,c_fill/f_webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "max-age=300"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313815.534054,VS0,VE3"
+        },
+        {
+          "name": "age",
+          "value": "683"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "x-content-hub-dam",
+          "value": "build-env=prod; unique-deployment-key=dam0002; build-version=v8.1.0; build-commit-hash=fedd52cbf91bc074366c6a4eed345d60a8173b2a"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 22:30:13 GMT"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-kcgs7200022-IAD, cache-iad-kcgs7200105-IAD, cache-fra-eddf8230094-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 121, 1"
+        },
+        {
+          "name": "content-length",
+          "value": "33178"
+        }
+      ],
+      "sha256": "4eac45cddbcdce864f86204bc16e05da0609cd75345110e8a1ff1a088324463f",
+      "bytes": 33178
+    },
+    "https://media.cnn.com/api/v1/images/stellar/prod/c-2026-10-28t022715z-1786810854-rc21coamd7ev-rtrmadp-3-israel-election.jpg?c=16x9&q=h_540,w_960,c_fill/f_webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "max-age=300"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313815.536025,VS0,VE2"
+        },
+        {
+          "name": "age",
+          "value": "95883"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "x-content-hub-dam",
+          "value": "build-env=prod; unique-deployment-key=dam0002; build-version=v8.1.0; build-commit-hash=fedd52cbf91bc074366c6a4eed345d60a8173b2a"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 18:47:00 GMT"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-kiad7000200-IAD, cache-iad-kiad7000200-IAD, cache-fra-eddf8230094-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 192, 1"
+        },
+        {
+          "name": "content-length",
+          "value": "36562"
+        }
+      ],
+      "sha256": "c528c3f7032614459d9dbfeefc807d9c7f1a27911f08f49c2bc5aff7f0370bad",
+      "bytes": 36562
+    },
+    "https://js.stripe.com/dahlia/stripe.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "W/\"d52da1b99c7a0b7de48b3a644f53e505\""
+        },
+        {
+          "name": "age",
+          "value": "44"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "AUpfB3SJlRDq1vGUD--ZhrsBrbn96Gk2OFG66eADFGT90T1a74uTJA=="
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript; charset=utf-8"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 21:09:38 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=120"
+        },
+        {
+          "name": "timing-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "via",
+          "value": "1.1 3d622fd2dbfa16c86afe2660e869a6d2.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "ARN53-P4"
+        },
+        {
+          "name": "server",
+          "value": "Cloudfront"
+        },
+        {
+          "name": "content-length",
+          "value": "1153559"
+        }
+      ],
+      "sha256": "7c4d4ead9d8d90f9ef21b42ab5e5d30546fa46f42eee4516503df0095e8dd9f1",
+      "bytes": 1153559
+    },
+    "https://edition.cnn.com/wbdotp/consent/3d9a6f21-8e47-43f8-8d58-d86150f3e92b/3d9a6f21-8e47-43f8-8d58-d86150f3e92b.json": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "\"ee084f85b5163b02f929dc206df3d78b\""
+        },
+        {
+          "name": "age",
+          "value": "1773"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT, HIT, MISS, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 01 Sep 2026 17:04:27 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/json"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-chi-kmdw8640047-CHI, cache-fra-eddf8230118-FRA, cache-fra-eddf8230118-FRA, cache-fra-etou8220175-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "17307, 4, 0, 9"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding,Origin,Accept-Language"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=7200, public"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313815.613930,VS0,VE1"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "content-length",
+          "value": "6731"
+        }
+      ],
+      "sha256": "dcf9b3d348b2467fb147525a5f2b72df97228eabec229d440331a4af25cfd867",
+      "bytes": 6731
+    },
+    "https://accounts.google.com/gsi/client": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "content-security-policy",
+          "value": "script-src 'report-sample' 'nonce-W24oslYX2xs8SGxpOjKlog' 'unsafe-inline' 'strict-dynamic' https: http: 'unsafe-eval';object-src 'none';base-uri 'self';report-uri https://csp.withgoogle.com/csp/identity-sign-in-google-http, require-trusted-types-for 'script';report-uri https://csp.withgoogle.com/csp/identity-sign-in-google-http"
+        },
+        {
+          "name": "cache-control",
+          "value": "private, max-age=1800"
+        },
+        {
+          "name": "cross-origin-resource-policy",
+          "value": "cross-origin"
+        },
+        {
+          "name": "report-to",
+          "value": "{\"group\":\"coop_dd7de8473bddc59c6b748810a67a39b1\",\"max_age\":2592000,\"endpoints\":[{\"url\":\"https://csp.withgoogle.com/csp/report-to/dd7de8473bddc59c6b748810a67a39b1\"}]}"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "expires",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000"
+        },
+        {
+          "name": "cross-origin-opener-policy-report-only",
+          "value": "same-origin; report-to=\"coop_dd7de8473bddc59c6b748810a67a39b1\""
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "x-xss-protection",
+          "value": "0"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript; charset=utf-8"
+        },
+        {
+          "name": "vary",
+          "value": "Sec-Fetch-Dest, Sec-Fetch-Mode, Sec-Fetch-Site"
+        },
+        {
+          "name": "server",
+          "value": "ESF"
+        },
+        {
+          "name": "x-frame-options",
+          "value": "SAMEORIGIN"
+        },
+        {
+          "name": "content-length",
+          "value": "279353"
+        }
+      ],
+      "sha256": "663a75f809e96f43a51219fa9ab3c1e1465f8a05d260013383e9efe839ee7e19",
+      "bytes": 279353
+    },
+    "https://media.cnn.com/api/v1/images/stellar/prod/01-gettyimages-2302424385.JPG?c=16x9&q=h_270,w_480,c_fill/f_webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "max-age=300"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313815.535948,VS0,VE2"
+        },
+        {
+          "name": "age",
+          "value": "18931"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "x-content-hub-dam",
+          "value": "build-env=prod; unique-deployment-key=dam0002; build-version=v8.1.0; build-commit-hash=fedd52cbf91bc074366c6a4eed345d60a8173b2a"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 16:46:27 GMT"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-kcgs7200174-IAD, cache-iad-kcgs7200105-IAD, cache-fra-eddf8230094-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 4, 59"
+        },
+        {
+          "name": "content-length",
+          "value": "8080"
+        }
+      ],
+      "sha256": "3b55183527c54f500074b88bd2e0fb0a9a976358fa04f5a5197b9d1314f005e8",
+      "bytes": 8080
+    },
+    "https://media.cnn.com/api/v1/images/stellar/prod/barnesicecapwide-oli2-20260712.jpg?c=16x9&q=h_438,w_780,c_fill/f_webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "max-age=300"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313815.535648,VS0,VE2"
+        },
+        {
+          "name": "age",
+          "value": "24848"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "x-content-hub-dam",
+          "value": "build-env=prod; unique-deployment-key=dam0002; build-version=v8.1.0; build-commit-hash=fedd52cbf91bc074366c6a4eed345d60a8173b2a"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 11:36:43 GMT"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-kcgs7200137-IAD, cache-iad-kcgs7200137-IAD, cache-fra-eddf8230094-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 454, 1"
+        },
+        {
+          "name": "content-length",
+          "value": "68214"
+        }
+      ],
+      "sha256": "fbe3994f267a5bfabc1f8856b9adcce31ba8350b3853265605ecbeadc6a52d12",
+      "bytes": 68214
+    },
+    "https://cdn.tinypass.com/api/tinypass.min.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"b298e09b5a13505da3f6b0db2a34e35b\""
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "_RUQq2OyU220Go.R79Tx2KTi9ipt3RLV"
+        },
+        {
+          "name": "age",
+          "value": "5508"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 30 Oct 2026 02:43:34 GMT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "server-timing",
+          "value": "cfExtPri"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 08:10:59 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "priority",
+          "value": "u=3,i=?0"
+        },
+        {
+          "name": "x-amz-id-2",
+          "value": "TmSkWA6HQubQ4mXdQSj1lKgRBgmRMP9GlKSQCjGqhURQOJMtYcXv4+ka1Iqs3nQ/voAVQmxF+y0="
+        },
+        {
+          "name": "x-amz-replication-status",
+          "value": "REPLICA"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=14400"
+        },
+        {
+          "name": "x-amz-request-id",
+          "value": "3DDR064P3VES1RZN"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a525b32d8ec7f11b-DME"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "497751"
+        }
+      ],
+      "sha256": "b7c42d08846f10e6c2def4ea4ea19867b85a9e956361be06914343da58ac48fb",
+      "bytes": 497751
+    },
+    "https://media.cnn.com/api/v1/images/stellar/prod/cnn-headlines-international-logo-v2.png?c=16x9&q=w_1280,c_fill/f_webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "max-age=300"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313815.535372,VS0,VE1"
+        },
+        {
+          "name": "age",
+          "value": "78610"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "x-content-hub-dam",
+          "value": "build-env=prod; unique-deployment-key=dam0002; build-version=v8.1.0; build-commit-hash=fedd52cbf91bc074366c6a4eed345d60a8173b2a"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 18 Aug 2026 03:55:53 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-kiad7000026-IAD, cache-iad-kiad7000207-IAD, cache-fra-eddf8230094-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 18368, 445"
+        },
+        {
+          "name": "content-length",
+          "value": "28100"
+        }
+      ],
+      "sha256": "1444e339bc56ef6ab975fec31809dc616a22015d1c730037d5550af5759cd1dc",
+      "bytes": 28100
+    },
+    "https://media.cnn.com/api/v1/images/stellar/prod/23114007-train-crash-cause169-00-00-00-13-still001.jpg?c=16x9&q=h_270,w_480,c_fill/f_webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "max-age=300"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313815.535193,VS0,VE0"
+        },
+        {
+          "name": "age",
+          "value": "39293"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "x-content-hub-dam",
+          "value": "build-env=prod; unique-deployment-key=dam0002; build-version=v8.1.0; build-commit-hash=fedd52cbf91bc074366c6a4eed345d60a8173b2a"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 11:43:17 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-khef600090-IAD, cache-iad-khef600090-IAD, cache-fra-eddf8230094-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 27, 97"
+        },
+        {
+          "name": "content-length",
+          "value": "12926"
+        }
+      ],
+      "sha256": "1f1ea2536d7f4cb1e3d805beab53611f4c990e069f1da6181ebad55725654572",
+      "bytes": 12926
+    },
+    "https://media.cnn.com/api/v1/images/stellar/prod/c-gettyimages-2292258172.jpg?c=16x9&q=h_144,w_256,c_fill/f_webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "max-age=300"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313815.534818,VS0,VE0"
+        },
+        {
+          "name": "age",
+          "value": "6098"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "x-content-hub-dam",
+          "value": "build-env=prod; unique-deployment-key=dam0002; build-version=v8.1.0; build-commit-hash=fedd52cbf91bc074366c6a4eed345d60a8173b2a"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 21:01:19 GMT"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-kcgs7200169-IAD, cache-iad-kcgs7200169-IAD, cache-fra-eddf8230094-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 221, 5"
+        },
+        {
+          "name": "content-length",
+          "value": "2338"
+        }
+      ],
+      "sha256": "64c0bec89a02c6abf49a57bc3a3723f395d6cb2b7ef76ab0a0d429bf33b2dd8f",
+      "bytes": 2338
+    },
+    "https://media.cnn.com/api/v1/images/stellar/prod/split2-20261029014133737.png?c=3x2&q=h_256,w_384,c_fill/f_webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "max-age=300"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313815.534811,VS0,VE2"
+        },
+        {
+          "name": "age",
+          "value": "48982"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "x-content-hub-dam",
+          "value": "build-env=prod; unique-deployment-key=dam0002; build-version=v8.1.0; build-commit-hash=fedd52cbf91bc074366c6a4eed345d60a8173b2a"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 02:01:59 GMT"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-kiad7000172-IAD, cache-iad-kiad7000172-IAD, cache-fra-eddf8230094-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 1, 1"
+        },
+        {
+          "name": "content-length",
+          "value": "19032"
+        }
+      ],
+      "sha256": "8b5b39bdd93c5525ab3d88ddc0eb79739f88e4341b666fb090eb5ebf462d050d",
+      "bytes": 19032
+    },
+    "https://media.cnn.com/api/v1/images/stellar/prod/arabisreal-thumb.jpg?c=3x2&q=h_256,w_384,c_fill/f_webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "max-age=300"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313815.535093,VS0,VE2"
+        },
+        {
+          "name": "age",
+          "value": "14597"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "x-content-hub-dam",
+          "value": "build-env=prod; unique-deployment-key=dam0002; build-version=v8.1.0; build-commit-hash=fedd52cbf91bc074366c6a4eed345d60a8173b2a"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 17:57:56 GMT"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-kiad7000111-IAD, cache-iad-kiad7000184-IAD, cache-fra-eddf8230094-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 4, 1"
+        },
+        {
+          "name": "content-length",
+          "value": "6078"
+        }
+      ],
+      "sha256": "8a1dcd4227139c9907c6d879badca78ba20e7320189c76c7cfead1f6edb14be3",
+      "bytes": 6078
+    },
+    "https://media.cnn.com/api/v1/images/stellar/prod/gettyimages-2181404760.jpg?c=16x9&q=h_144,w_256,c_fill/f_webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "max-age=300"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313815.571382,VS0,VE1"
+        },
+        {
+          "name": "age",
+          "value": "41964"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "x-content-hub-dam",
+          "value": "build-env=prod; unique-deployment-key=dam0002; build-version=v8.1.0; build-commit-hash=fedd52cbf91bc074366c6a4eed345d60a8173b2a"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 11:03:33 GMT"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-kcgs7200136-IAD, cache-iad-kiad7000166-IAD, cache-fra-eddf8230094-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 108, 1"
+        },
+        {
+          "name": "content-length",
+          "value": "11154"
+        }
+      ],
+      "sha256": "2c7de90a4cea88a93a0046871e5dcc2ae8acc652e8226933943e000f09e95ee3",
+      "bytes": 11154
+    },
+    "https://media.cnn.com/api/v1/images/stellar/prod/20261020-agatha-christie.jpg?c=16x9&q=h_144,w_256,c_fill/f_webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "max-age=300"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313815.571648,VS0,VE2"
+        },
+        {
+          "name": "age",
+          "value": "45469"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "x-content-hub-dam",
+          "value": "build-env=prod; unique-deployment-key=dam0002; build-version=v8.1.0; build-commit-hash=fedd52cbf91bc074366c6a4eed345d60a8173b2a"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 21 Oct 2026 13:09:29 GMT"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-kcgs7200069-IAD, cache-iad-kcgs7200069-IAD, cache-fra-eddf8230094-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 8, 1"
+        },
+        {
+          "name": "content-length",
+          "value": "6936"
+        }
+      ],
+      "sha256": "2d338feb546c9174830bd1d62aeb806b1c41a36a4743f8d67133a48c121f58a9",
+      "bytes": 6936
+    },
+    "https://media.cnn.com/api/v1/images/stellar/prod/20261026-somalia-pirates.jpg?c=2x3&q=h_479,w_320,c_fill/f_webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "max-age=300"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313815.571259,VS0,VE1"
+        },
+        {
+          "name": "age",
+          "value": "52790"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "x-content-hub-dam",
+          "value": "build-env=prod; unique-deployment-key=dam0002; build-version=v8.1.0; build-commit-hash=fedd52cbf91bc074366c6a4eed345d60a8173b2a"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 27 Oct 2026 13:51:27 GMT"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-kiad7000127-IAD, cache-iad-kiad7000127-IAD, cache-fra-eddf8230094-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 2, 1"
+        },
+        {
+          "name": "content-length",
+          "value": "30534"
+        }
+      ],
+      "sha256": "dca1d1dfbce0412f36084f3d9a5f5416e1df1735890c26d601e88ad942fab7c0",
+      "bytes": 30534
+    },
+    "https://media.cnn.com/api/v1/images/stellar/prod/photo-credit-matthew-sherman-9.jpg?c=3x2&q=h_533,w_800,c_fill/f_webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "max-age=300"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313815.571094,VS0,VE3"
+        },
+        {
+          "name": "age",
+          "value": "8778"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "x-content-hub-dam",
+          "value": "build-env=prod; unique-deployment-key=dam0002; build-version=v8.1.0; build-commit-hash=fedd52cbf91bc074366c6a4eed345d60a8173b2a"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 20:17:04 GMT"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-kiad7000121-IAD, cache-iad-kiad7000125-IAD, cache-fra-eddf8230094-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 3, 1"
+        },
+        {
+          "name": "content-length",
+          "value": "33622"
+        }
+      ],
+      "sha256": "ae5aa5099541be6e6dc60368a98be056fa7fb20aab004829eea9c1bb08c7056c",
+      "bytes": 33622
+    },
+    "https://media.cnn.com/api/v1/images/stellar/prod/gettyimages-2259952847.jpg?c=16x9&q=h_438,w_780,c_fill/f_webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "max-age=300"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313815.570832,VS0,VE2"
+        },
+        {
+          "name": "age",
+          "value": "1594"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "x-content-hub-dam",
+          "value": "build-env=prod; unique-deployment-key=dam0002; build-version=v8.1.0; build-commit-hash=fedd52cbf91bc074366c6a4eed345d60a8173b2a"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 10 Feb 2026 21:39:04 GMT"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-kcgs7200069-IAD, cache-iad-kcgs7200096-IAD, cache-fra-eddf8230094-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 1, 1"
+        },
+        {
+          "name": "content-length",
+          "value": "60714"
+        }
+      ],
+      "sha256": "cfa5c33a248202e173bfc66fa37cc198249a14c392eea81fa08dae7c5099bb7c",
+      "bytes": 60714
+    },
+    "https://edition.cnn.com/wbdotp/scripttemplates/202608.1.0/otBannerSdk.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "\"91a69f7f419ea85d3e7c8801035aea29\""
+        },
+        {
+          "name": "age",
+          "value": "826"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT, HIT, MISS, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 01 Sep 2026 17:04:09 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-chi-kigq8000050-CHI, cache-fra-etou8220090-FRA, cache-fra-etou8220090-FRA, cache-fra-etou8220175-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "1388, 1, 0, 3"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding,Origin,Accept-Language"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=7200, public"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313815.741346,VS0,VE1"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "content-length",
+          "value": "604329"
+        }
+      ],
+      "sha256": "3d2f7f7ae2fdfbf24acada1eaeaa636b84db784d2587115af8c7288565c65208",
+      "bytes": 604329
+    },
+    "https://fave.api.cnn.io/v1/runtime-configs?env=prod": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-expose-headers",
+          "value": "WWW-Authenticate,Server-Authorization"
+        },
+        {
+          "name": "age",
+          "value": "137"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/json; charset=utf-8"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-chi-kmdw8640032-CHI, cache-chi-kmdw8640091-CHI, cache-fra-eddf8230055-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 23, 1"
+        },
+        {
+          "name": "vary",
+          "value": "origin,Accept-Encoding"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=60"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313815.847033,VS0,VE2"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "content-length",
+          "value": "1199"
+        }
+      ],
+      "sha256": "df2ba7e7acd6efe4662cac2898682143ec82a68d5c65f885fdb28a8cf90fdf00",
+      "bytes": 1199
+    },
+    "https://registry.api.cnn.io/bundles/fave/4.72.1/css": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-expose-headers",
+          "value": "WWW-Authenticate,Server-Authorization"
+        },
+        {
+          "name": "age",
+          "value": "2603"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 16:51:38 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/css; charset=utf-8"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-chi-klot8100173-CHI, cache-chi-klot8100173-CHI, cache-fra-eddf8230135-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 5151, 31"
+        },
+        {
+          "name": "vary",
+          "value": "origin,Accept-Encoding"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=600"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313815.960804,VS0,VE1"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "content-length",
+          "value": "302399"
+        }
+      ],
+      "sha256": "3772ca34b90584d9ede97448e39be962ceeedc05cbae6a436b51610074db5795",
+      "bytes": 302399
+    },
+    "https://registry.api.cnn.io/bundles/fave/4.72.1/vendorHashes": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-expose-headers",
+          "value": "WWW-Authenticate,Server-Authorization"
+        },
+        {
+          "name": "age",
+          "value": "2604"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 16:51:38 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript; charset=utf-8"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-chi-kmdw8640090-CHI, cache-chi-kmdw8640059-CHI, cache-fra-eddf8230135-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 6056, 21"
+        },
+        {
+          "name": "vary",
+          "value": "origin,Accept-Encoding"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=600"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313815.960931,VS0,VE0"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "content-length",
+          "value": "574"
+        }
+      ],
+      "sha256": "636017bd7de4df86286e2fc027c3cab5117f64cfcd6e81e2ad4f5acee52d03a3",
+      "bytes": 574
+    },
+    "https://media.cnn.com/api/v1/images/stellar/prod/gettyimages-2251879450.jpg?c=16x9&q=h_270,w_480,c_fill/f_webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "max-age=300"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313815.570390,VS0,VE0"
+        },
+        {
+          "name": "age",
+          "value": "43290"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "x-content-hub-dam",
+          "value": "build-env=prod; unique-deployment-key=dam0002; build-version=v8.1.0; build-commit-hash=fedd52cbf91bc074366c6a4eed345d60a8173b2a"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 10:32:45 GMT"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-kcgs7200023-IAD, cache-iad-kcgs7200055-IAD, cache-fra-eddf8230094-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 20, 61"
+        },
+        {
+          "name": "content-length",
+          "value": "13068"
+        }
+      ],
+      "sha256": "60ddc0e5c7450627cf98c02875674cb7fca7d665f24ac3213b683dbf1f9be065",
+      "bytes": 13068
+    },
+    "https://media.cnn.com/api/v1/images/stellar/prod/20261026-somalia-pirates.jpg?c=16x9&q=h_540,w_960,c_fill/f_webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "max-age=300"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313815.570909,VS0,VE0"
+        },
+        {
+          "name": "age",
+          "value": "52939"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "x-content-hub-dam",
+          "value": "build-env=prod; unique-deployment-key=dam0002; build-version=v8.1.0; build-commit-hash=fedd52cbf91bc074366c6a4eed345d60a8173b2a"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 27 Oct 2026 13:51:27 GMT"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-kcgs7200071-IAD, cache-iad-kcgs7200141-IAD, cache-fra-eddf8230094-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 3, 11"
+        },
+        {
+          "name": "content-length",
+          "value": "119270"
+        }
+      ],
+      "sha256": "5fb5f3df35b17613ca74cdaf3d796b16b68632f28c4b3ee868691944ac276f3f",
+      "bytes": 119270
+    },
+    "https://media.cnn.com/api/v1/images/stellar/prod/gettyimages-2301817600.jpg?c=16x9&q=h_270,w_480,c_fill/f_webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "max-age=300"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313815.570338,VS0,VE0"
+        },
+        {
+          "name": "age",
+          "value": "36314"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "x-content-hub-dam",
+          "value": "build-env=prod; unique-deployment-key=dam0002; build-version=v8.1.0; build-commit-hash=fedd52cbf91bc074366c6a4eed345d60a8173b2a"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 12:37:37 GMT"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-kiad7000176-IAD, cache-iad-kiad7000176-IAD, cache-fra-eddf8230094-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 34, 91"
+        },
+        {
+          "name": "content-length",
+          "value": "28856"
+        }
+      ],
+      "sha256": "0ddbc0e11904833e8ca88c7bb43bd0fed4aa3ae436712b3f0063dc91fa0acd65",
+      "bytes": 28856
+    },
+    "https://media.cnn.com/api/v1/images/stellar/prod/01-gettyimages-2302280715.JPG?c=16x9&q=h_270,w_480,c_fill/f_webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "max-age=300"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313815.572851,VS0,VE0"
+        },
+        {
+          "name": "age",
+          "value": "49227"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "x-content-hub-dam",
+          "value": "build-env=prod; unique-deployment-key=dam0002; build-version=v8.1.0; build-commit-hash=fedd52cbf91bc074366c6a4eed345d60a8173b2a"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 21:21:08 GMT"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-kcgs7200148-IAD, cache-iad-kcgs7200157-IAD, cache-fra-eddf8230094-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 10, 145"
+        },
+        {
+          "name": "content-length",
+          "value": "14938"
+        }
+      ],
+      "sha256": "5c2191543ae1c4d47dd5047eb0a81265793eb03345fa5cfe1910f046dcc51b38",
+      "bytes": 14938
+    },
+    "https://registry.api.cnn.io/bundles/fave/vendor-ccb335e9/vendor": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-expose-headers",
+          "value": "WWW-Authenticate,Server-Authorization"
+        },
+        {
+          "name": "age",
+          "value": "228"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:35 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 16:51:38 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript; charset=utf-8"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-chi-kmdw8640022-CHI, cache-chi-kmdw8640040-CHI, cache-fra-eddf8230083-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 5579, 4"
+        },
+        {
+          "name": "vary",
+          "value": "origin,Accept-Encoding"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=600"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313815.047341,VS0,VE1"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "content-length",
+          "value": "1294513"
+        }
+      ],
+      "sha256": "67cf24c8a8f10e15ee8ef950f12cca5a441bb4b3e6825ccc94be0ac8ced61cd1",
+      "bytes": 1294513
+    },
+    "https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "expires",
+          "value": "Thu, 29 Oct 2026 22:43:35 GMT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:35 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/css; charset=utf-8"
+        },
+        {
+          "name": "vary",
+          "value": "Sec-Fetch-Dest, Sec-Fetch-Mode, Sec-Fetch-Site"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 21:37:39 GMT"
+        },
+        {
+          "name": "x-frame-options",
+          "value": "SAMEORIGIN"
+        },
+        {
+          "name": "link",
+          "value": "<https://fonts.gstatic.com>; rel=preconnect; crossorigin"
+        },
+        {
+          "name": "cache-control",
+          "value": "private, max-age=86400, stale-while-revalidate=604800"
+        },
+        {
+          "name": "timing-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "cross-origin-opener-policy",
+          "value": "same-origin-allow-popups"
+        },
+        {
+          "name": "cross-origin-resource-policy",
+          "value": "cross-origin"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-xss-protection",
+          "value": "0"
+        },
+        {
+          "name": "server",
+          "value": "ESF"
+        },
+        {
+          "name": "content-length",
+          "value": "11238"
+        }
+      ],
+      "sha256": "9c674cea9fe3e8adef1240e627c0c86d3c2bbf915c3f778a0501220ad8483bc3",
+      "bytes": 11238
+    },
+    "https://media.cnn.com/api/v1/images/stellar/prod/2026-10-28t165151z-1-lynxnpem9r1yt-rtroptp-4-ukraine-crisis-un.jpg?c=16x9&q=h_438,w_780,c_fill/f_webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "max-age=300"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313815.572837,VS0,VE3"
+        },
+        {
+          "name": "age",
+          "value": "88849"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "x-content-hub-dam",
+          "value": "build-env=prod; unique-deployment-key=dam0002; build-version=v8.1.0; build-commit-hash=fedd52cbf91bc074366c6a4eed345d60a8173b2a"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, MISS, HIT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 21:26:40 GMT"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-kcgs7200103-IAD, cache-iad-kcgs7200080-IAD, cache-fra-eddf8230094-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 0, 1"
+        },
+        {
+          "name": "content-length",
+          "value": "27896"
+        }
+      ],
+      "sha256": "58e3c9760f54581af9b7d308f4c0da2e15f56ef9fc87cee7caeddd5450878219",
+      "bytes": 27896
+    },
+    "https://edition.cnn.com/wbdotp/consent/3d9a6f21-8e47-43f8-8d58-d86150f3e92b/019e2847-ca26-73dd-8805-bb386cd0cb8f/en.json": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "\"a90d81c29acb04451cf94c9add45e6c4\""
+        },
+        {
+          "name": "age",
+          "value": "4353"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT, HIT, MISS, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:35 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 01 Sep 2026 17:04:29 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/json"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-chi-kigq8000165-CHI, cache-fra-etou8220090-FRA, cache-fra-etou8220090-FRA, cache-fra-etou8220175-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "8872, 903, 0, 2"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding,Origin,Accept-Language"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=7200, public"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313815.299491,VS0,VE1"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "content-length",
+          "value": "355933"
+        }
+      ],
+      "sha256": "1b5407f5da6340c8f25ed9a287fc28bb5af2bd630f9c7545ddad2f57f0558258",
+      "bytes": 355933
+    },
+    "https://registry.api.cnn.io/bundles/fave/4.72.1/app": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-expose-headers",
+          "value": "WWW-Authenticate,Server-Authorization"
+        },
+        {
+          "name": "age",
+          "value": "2603"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:35 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript; charset=utf-8"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 16:51:38 GMT"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-chi-klot8100143-CHI, cache-chi-klot8100162-CHI, cache-fra-eddf8230083-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 5610, 47"
+        },
+        {
+          "name": "vary",
+          "value": "origin,Accept-Encoding"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=600"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313815.047452,VS0,VE1"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "content-length",
+          "value": "15877"
+        }
+      ],
+      "sha256": "54032ac49c4ff837149cd11deef54480de395233f4c56bd22ae56aae4a906fb3",
+      "bytes": 15877
+    },
+    "https://edition.cnn.com/wbdotp/scripttemplates/202608.1.0/assets/otFlat.json": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "\"908d90159e9866a48b940f65a197102d\""
+        },
+        {
+          "name": "age",
+          "value": "4288"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT, HIT, MISS, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:35 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 01 Sep 2026 17:04:10 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/json"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-chi-klot8100147-CHI, cache-fra-etou8220183-FRA, cache-fra-etou8220183-FRA, cache-fra-etou8220175-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "13181, 1, 0, 15"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding,Origin,Accept-Language"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=7200, public"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313815.449036,VS0,VE1"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "content-length",
+          "value": "20721"
+        }
+      ],
+      "sha256": "4094c6314c974b3347e0c3adbf78e24c8cfd1d838af3a5ad38d36316c24c73a1",
+      "bytes": 20721
+    },
+    "https://edition.cnn.com/wbdotp/scripttemplates/202608.1.0/assets/v2/otPcCenter.json": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "\"578496d568b82047d2802f84a9e35b3d\""
+        },
+        {
+          "name": "age",
+          "value": "5760"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT, HIT, MISS, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:35 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 01 Sep 2026 17:04:12 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/json"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-chi-kigq8000060-CHI, cache-fra-etou8220110-FRA, cache-fra-etou8220110-FRA, cache-fra-etou8220175-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "1388, 22, 0, 19"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding,Origin,Accept-Language"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=7200, public"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313815.449391,VS0,VE1"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "content-length",
+          "value": "74288"
+        }
+      ],
+      "sha256": "35886f7c3b3b53782e5cced85c25accd4affbe2cfc6f8a9925aca0831175a934",
+      "bytes": 74288
+    },
+    "https://media.cnn.com/api/v1/images/stellar/prod/thumbnail-01-20261029102856760.jpg?c=16x9&q=h_438,w_780,c_fill/f_webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "max-age=300"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313815.576184,VS0,VE4"
+        },
+        {
+          "name": "age",
+          "value": "35291"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "x-content-hub-dam",
+          "value": "build-env=prod; unique-deployment-key=dam0002; build-version=v8.1.0; build-commit-hash=fedd52cbf91bc074366c6a4eed345d60a8173b2a"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 10:29:04 GMT"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-kcgs7200088-IAD, cache-iad-kcgs7270024-IAD, cache-fra-eddf8230094-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 41, 1"
+        },
+        {
+          "name": "content-length",
+          "value": "40262"
+        }
+      ],
+      "sha256": "1ad57c195b052d8af379f8eb0e5d95dbe596440fa99692e400cd5bf62cb64b20",
+      "bytes": 40262
+    },
+    "https://edition.cnn.com/wbdotp/scripttemplates/202608.1.0/assets/otCommonStyles.css": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "\"0d17a2dc241960eebbc7a9e93da9b54d\""
+        },
+        {
+          "name": "age",
+          "value": "73916"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT, HIT, MISS, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:35 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 01 Sep 2026 17:04:13 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/css"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-chi-kmdw8640047-CHI, cache-fra-etou8220105-FRA, cache-fra-etou8220105-FRA, cache-fra-etou8220175-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "13253, 599, 0, 1"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding,Origin,Accept-Language"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=7200, public"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313815.449363,VS0,VE3"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "content-length",
+          "value": "27926"
+        }
+      ],
+      "sha256": "e70d0c7dcc897292d8254bdfff1b999bd53a98f6ecbfbd5b18736002a2519668",
+      "bytes": 27926
+    },
+    "https://registry.api.cnn.io/bundles/fave/boltInstance-3ae8be52/boltInstance": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-expose-headers",
+          "value": "WWW-Authenticate,Server-Authorization"
+        },
+        {
+          "name": "age",
+          "value": "2603"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:35 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 16:51:38 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript; charset=utf-8"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-chi-klot8100045-CHI, cache-chi-klot8100045-CHI, cache-fra-eddf8230083-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 5029, 33"
+        },
+        {
+          "name": "vary",
+          "value": "origin,Accept-Encoding"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=600"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313816.552677,VS0,VE0"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "content-length",
+          "value": "280023"
+        }
+      ],
+      "sha256": "fc523edc6cc41eb8e76504f33ebe021ab5e9f2d4afd8925a7a592879c69079b1",
+      "bytes": 280023
+    },
+    "https://registry.api.cnn.io/bundles/fave/boltPlayer-6e360a3f/boltPlayer": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-expose-headers",
+          "value": "WWW-Authenticate,Server-Authorization"
+        },
+        {
+          "name": "age",
+          "value": "664"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:35 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 16:51:38 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript; charset=utf-8"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-chi-kigq8000091-CHI, cache-chi-kigq8000091-CHI, cache-fra-eddf8230083-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 8042, 1"
+        },
+        {
+          "name": "vary",
+          "value": "origin,Accept-Encoding"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=600"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313816.551866,VS0,VE6"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "content-length",
+          "value": "3554313"
+        }
+      ],
+      "sha256": "2205b60cf6976ee07bd03daa50c9efce1c94cd773dae7b867126e50e65c6508e",
+      "bytes": 3554313
+    },
+    "https://edition.cnn.com/wbdotp/consent/3d9a6f21-8e47-43f8-8d58-d86150f3e92b/019e2847-ca26-73dd-8805-bb386cd0cb8f/logos/9651e1f6-c35b-4377-be7f-5a0c93f0ecb8/fd2c628a-153d-49d4-b7b4-92a834c64b28/507420f5-a79f-4038-baea-bb890032307c/CNN_logo.png": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "max-age=7200, public"
+        },
+        {
+          "name": "etag",
+          "value": "\"d787d68d733e57b369bd067e6a18826b\""
+        },
+        {
+          "name": "age",
+          "value": "1340"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313816.588137,VS0,VE3"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT, HIT, MISS, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:35 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 01 Sep 2026 17:04:29 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/png"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-chi-kigq8000064-CHI, cache-fra-etou8220076-FRA, cache-fra-etou8220076-FRA, cache-fra-etou8220175-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "1361, 1, 0, 1"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding,Origin,Accept-Language"
+        },
+        {
+          "name": "content-length",
+          "value": "3721"
+        }
+      ],
+      "sha256": "46001b8206f6fecc2abe084e3712dc3b6efb0bfcfa378ebeb9c5526f830ce5bd",
+      "bytes": 3721
+    },
+    "https://edition.cnn.com/wbdotp/consent/3d9a6f21-8e47-43f8-8d58-d86150f3e92b/019e2847-ca26-73dd-8805-bb386cd0cb8f/logos/static/powered_by_logo.svg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "\"c8c7a294aa7aadeb834c6d5e3627df46\""
+        },
+        {
+          "name": "age",
+          "value": "2405"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT, HIT, MISS, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:35 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 01 Sep 2026 17:04:29 GMT"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-chi-kigq8000122-CHI, cache-fra-etou8220126-FRA, cache-fra-etou8220126-FRA, cache-fra-etou8220175-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "2467, 0, 0, 2"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding,Origin,Accept-Language"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=7200, public"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313816.587966,VS0,VE4"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "content-length",
+          "value": "5445"
+        }
+      ],
+      "sha256": "cddd450a33be5e50d6f27aea78d2e278beae2762678b22fc2dcee8de29cbc0be",
+      "bytes": 5445
+    },
+    "https://edition.cnn.com/wbdotp/consent/3d9a6f21-8e47-43f8-8d58-d86150f3e92b/019e2847-ca26-73dd-8805-bb386cd0cb8f/logos/static/ot_guard_logo.svg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "\"b57c99c9d1e3c50b2114c6db053d7ff0\""
+        },
+        {
+          "name": "age",
+          "value": "273"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT, HIT, MISS, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:35 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 01 Sep 2026 17:04:29 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-chi-klot8100053-CHI, cache-fra-eddf8230089-FRA, cache-fra-eddf8230089-FRA, cache-fra-etou8220175-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "273, 11, 0, 1"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding,Origin,Accept-Language"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=7200, public"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313816.588366,VS0,VE5"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "content-length",
+          "value": "497"
+        }
+      ],
+      "sha256": "691dcdb24853a0f5ce4e6597e5713dea66799b57ffe2c2a10f28f98e0b569b19",
+      "bytes": 497
+    },
+    "https://media.cnn.com/api/v1/images/stellar/prod/bdf8e63a-5593-485a-9745-3c618e3bf70c.jpg?c=16x9&q=h_438,w_780,c_fill/f_webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "max-age=300"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313815.575846,VS0,VE1"
+        },
+        {
+          "name": "age",
+          "value": "121533"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "x-content-hub-dam",
+          "value": "build-env=prod; unique-deployment-key=dam0002; build-version=v8.1.0; build-commit-hash=fedd52cbf91bc074366c6a4eed345d60a8173b2a"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 12:25:03 GMT"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-kcgs7200097-IAD, cache-iad-kcgs7270043-IAD, cache-fra-eddf8230094-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 8, 1"
+        },
+        {
+          "name": "content-length",
+          "value": "139186"
+        }
+      ],
+      "sha256": "0946e98e4b370953adc65d07e04dc400802d3d0accc7e6db2c05165ae37d5037",
+      "bytes": 139186
+    },
+    "https://media.cnn.com/api/v1/images/stellar/prod/102826-kaxmixmextxpoll-16x9-v2.jpg?c=16x9&q=h_438,w_780,c_fill/f_webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "max-age=300"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313815.575797,VS0,VE2"
+        },
+        {
+          "name": "age",
+          "value": "48514"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "x-content-hub-dam",
+          "value": "build-env=prod; unique-deployment-key=dam0002; build-version=v8.1.0; build-commit-hash=fedd52cbf91bc074366c6a4eed345d60a8173b2a"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 23:17:24 GMT"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-kiad7000187-IAD, cache-iad-kiad7000138-IAD, cache-fra-eddf8230094-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 3, 1"
+        },
+        {
+          "name": "content-length",
+          "value": "74482"
+        }
+      ],
+      "sha256": "fb49982d7982daf6c71efad866a9f866f6a07906309a3aa6f10a5b2757f4bccf",
+      "bytes": 74482
+    },
+    "https://media.cnn.com/api/v1/images/stellar/prod/snake-thumb-2.jpg?c=16x9&q=h_144,w_256,c_fill/f_webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "max-age=300"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313815.575045,VS0,VE3"
+        },
+        {
+          "name": "age",
+          "value": "41902"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "x-content-hub-dam",
+          "value": "build-env=prod; unique-deployment-key=dam0002; build-version=v8.1.0; build-commit-hash=fedd52cbf91bc074366c6a4eed345d60a8173b2a"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, MISS, HIT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 11:05:09 GMT"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-kiad7000206-IAD, cache-iad-kiad7000069-IAD, cache-fra-eddf8230094-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 2, 1"
+        },
+        {
+          "name": "content-length",
+          "value": "4150"
+        }
+      ],
+      "sha256": "dcb3c564bbcb7261a7b9629eb1ab211a23674224e087935803e5ef5d7dc64d68",
+      "bytes": 4150
+    },
+    "https://media.cnn.com/api/v1/images/stellar/prod/2026-10-28t021708z-600651298-rc21coaqn7r9-rtrmadp-3-usa-trump-texas.JPG?c=16x9&q=h_144,w_256,c_fill/f_webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "max-age=300"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313815.575484,VS0,VE2"
+        },
+        {
+          "name": "age",
+          "value": "45468"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "x-content-hub-dam",
+          "value": "build-env=prod; unique-deployment-key=dam0002; build-version=v8.1.0; build-commit-hash=fedd52cbf91bc074366c6a4eed345d60a8173b2a"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 16:54:15 GMT"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-kiad7000153-IAD, cache-iad-kiad7000153-IAD, cache-fra-eddf8230094-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 749, 1"
+        },
+        {
+          "name": "content-length",
+          "value": "2478"
+        }
+      ],
+      "sha256": "98f086d9ffb0ed7932b1c68beb0fc213d22884c4fa68458ef5e4e607056d802f",
+      "bytes": 2478
+    },
+    "https://media.cnn.com/api/v1/images/stellar/prod/20261028-voter-fraud-card-exlargetease.png?c=16x9&q=h_144,w_256,c_fill/f_webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "max-age=300"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313815.575083,VS0,VE3"
+        },
+        {
+          "name": "age",
+          "value": "48193"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "x-content-hub-dam",
+          "value": "build-env=prod; unique-deployment-key=dam0002; build-version=v8.1.0; build-commit-hash=fedd52cbf91bc074366c6a4eed345d60a8173b2a"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 19:12:18 GMT"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-kiad7000046-IAD, cache-iad-kiad7000046-IAD, cache-fra-eddf8230094-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 13, 1"
+        },
+        {
+          "name": "content-length",
+          "value": "2152"
+        }
+      ],
+      "sha256": "e415106f18b2659f5991fc83f8b4b899f51e2af548356d574aad71c13609c47c",
+      "bytes": 2152
+    },
+    "https://media.cnn.com/api/v1/images/stellar/prod/photo-credit-matthew-sherman-9.jpg?c=16x9&q=h_438,w_780,c_fill/f_webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "max-age=300"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313815.575087,VS0,VE2"
+        },
+        {
+          "name": "age",
+          "value": "8780"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "x-content-hub-dam",
+          "value": "build-env=prod; unique-deployment-key=dam0002; build-version=v8.1.0; build-commit-hash=fedd52cbf91bc074366c6a4eed345d60a8173b2a"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:34 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 20:17:04 GMT"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-kiad7000127-IAD, cache-iad-kiad7000127-IAD, cache-fra-eddf8230094-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 2, 1"
+        },
+        {
+          "name": "content-length",
+          "value": "27892"
+        }
+      ],
+      "sha256": "c6c94705bf16abcca846bdf1857d420ceaaed1bdc30093224a721b9de88f44d7",
+      "bytes": 27892
+    },
+    "https://registry.api.cnn.io/bundles/fave/zion-347f262b/zion": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-expose-headers",
+          "value": "WWW-Authenticate,Server-Authorization"
+        },
+        {
+          "name": "age",
+          "value": "716"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:36 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 16:51:38 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript; charset=utf-8"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-chi-klot8100134-CHI, cache-chi-klot8100134-CHI, cache-fra-eddf8230083-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 3860, 1"
+        },
+        {
+          "name": "vary",
+          "value": "origin,Accept-Encoding"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=600"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313816.256905,VS0,VE2"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "content-length",
+          "value": "278538"
+        }
+      ],
+      "sha256": "c957ad370ff3b2ae5273713db184c67f6c5805a2734bf5b3026ce843280b1638",
+      "bytes": 278538
+    },
+    "https://accounts.google.com/gsi/style": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "content-security-policy",
+          "value": "script-src 'report-sample' 'nonce-TkDIco0PRUQfarCrEduPkw' 'unsafe-inline' 'strict-dynamic' https: http: 'unsafe-eval';object-src 'none';base-uri 'self';report-uri https://csp.withgoogle.com/csp/identity-sign-in-google-http, require-trusted-types-for 'script';report-uri https://csp.withgoogle.com/csp/identity-sign-in-google-http"
+        },
+        {
+          "name": "cache-control",
+          "value": "private, max-age=86400"
+        },
+        {
+          "name": "cross-origin-resource-policy",
+          "value": "cross-origin"
+        },
+        {
+          "name": "report-to",
+          "value": "{\"group\":\"coop_dd7de8473bddc59c6b748810a67a39b1\",\"max_age\":2592000,\"endpoints\":[{\"url\":\"https://csp.withgoogle.com/csp/report-to/dd7de8473bddc59c6b748810a67a39b1\"}]}"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "expires",
+          "value": "Thu, 29 Oct 2026 22:43:36 GMT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000"
+        },
+        {
+          "name": "cross-origin-opener-policy-report-only",
+          "value": "same-origin; report-to=\"coop_dd7de8473bddc59c6b748810a67a39b1\""
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:36 GMT"
+        },
+        {
+          "name": "x-xss-protection",
+          "value": "0"
+        },
+        {
+          "name": "content-type",
+          "value": "text/css; charset=utf-8"
+        },
+        {
+          "name": "server",
+          "value": "ESF"
+        },
+        {
+          "name": "x-frame-options",
+          "value": "SAMEORIGIN"
+        },
+        {
+          "name": "content-length",
+          "value": "696"
+        }
+      ],
+      "sha256": "d49e8f04be7ccbb69e87ae474ee50f6903b780451989e66d35ffc247a80510fe",
+      "bytes": 696
+    },
+    "https://accounts.google.com/gsi/status?client_id=173709198955-nkj6h0ag8soarm2bpbp9pc0ulp0s5t2b.apps.googleusercontent.com&cas=5q9uiBzeVo8Gb7B0musUWAbYpOFGY5Xvm12pRMGPLgM&bs=lY%2BZ6ulX79lk4DOIHXkWs11feG4yY6u7qRDQeu7XgjU&has_opted_out_fedcm=false&is_itp=false": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "report-to",
+          "value": "{\"group\":\"coop_dd7de8473bddc59c6b748810a67a39b1\",\"max_age\":2592000,\"endpoints\":[{\"url\":\"https://csp.withgoogle.com/csp/report-to/dd7de8473bddc59c6b748810a67a39b1\"}]}"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "expires",
+          "value": "Mon, 01 Jan 1990 00:00:00 GMT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:36 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/json; charset=utf-8"
+        },
+        {
+          "name": "vary",
+          "value": "Sec-Fetch-Dest, Sec-Fetch-Mode, Sec-Fetch-Site"
+        },
+        {
+          "name": "content-disposition",
+          "value": "attachment; filename=\"json.txt\"; filename*=UTF-8''json.txt"
+        },
+        {
+          "name": "x-frame-options",
+          "value": "SAMEORIGIN"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "script-src 'report-sample' 'nonce-AuvVk3wRn7KCDOZIQfiXJw' 'unsafe-inline' 'strict-dynamic' https: http: 'unsafe-eval';object-src 'none';base-uri 'self';report-uri https://csp.withgoogle.com/csp/identity-sign-in-google-http, require-trusted-types-for 'script';report-uri https://csp.withgoogle.com/csp/identity-sign-in-google-http"
+        },
+        {
+          "name": "cache-control",
+          "value": "no-cache, no-store, max-age=0, must-revalidate"
+        },
+        {
+          "name": "pragma",
+          "value": "no-cache"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "true"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "https://edition.cnn.com"
+        },
+        {
+          "name": "cross-origin-opener-policy-report-only",
+          "value": "same-origin; report-to=\"coop_dd7de8473bddc59c6b748810a67a39b1\""
+        },
+        {
+          "name": "x-xss-protection",
+          "value": "0"
+        },
+        {
+          "name": "server",
+          "value": "ESF"
+        },
+        {
+          "name": "content-length",
+          "value": "79"
+        }
+      ],
+      "sha256": "edf84d27e7be57811976f2d38ec867e08f346b6e848bb1e1aa2dfef4a0ed7cdd",
+      "bytes": 79
+    },
+    "https://default.any-any.prd.api.bolt.cnn.com/v2_token?realm=bolt": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "no-cache, no-store"
+        },
+        {
+          "name": "access-control-expose-headers",
+          "value": "date,x-wbd-ace,x-wbd-refresh,x-wbd-session-state,x-wbd-token-response,x-wbd-transport"
+        },
+        {
+          "name": "pragma",
+          "value": "no-cache"
+        },
+        {
+          "name": "x-wbd-refresh",
+          "value": "bootstrap"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "true"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "https://edition.cnn.com"
+        },
+        {
+          "name": "x-wbd-session-state",
+          "value": "localization:eyJhbGciOiJIUzI1NiJ9.eyJtZXRhZGF0YSI6eyJpZCI6ImxvY2FsaXphdGlvbiIsInZlcnNpb24iOiJ2MiIsInN0YXR1cyI6IlNUQVRVU19BQ1RJVkUifSwic2VsZWN0ZWRMYW5ndWFnZXMiOlsiZW4tVVMiXSwiZm9ybWF0IjoiZW4tVVMiLCJ0aW1lWm9uZSI6IkV1cm9wZS9Nb3Njb3ciLCJzZWxlY3RlZEZvcm1hdHMiOlsiZW4tUlUiLCJlbi1VUyJdfQ.CwwFWTO-zi8pebauvBuUoi2IG29xTZXMImRobC4ncQI;overrides:eyJlbmMiOiJBMjU2R0NNIiwiYWxnIjoiZGlyIn0..VNMmrxB63QRAc3lG.qG8Bv344YcMf2b1Iri6IzPw3006XqMygWu6ArPkS_hPWGEofv2AELokMz96NqIcGuFhHs4iOQKaNRhzYhl0ItLRpCpKvEFLYt0FUpZVOxbUQkc2jmdvNlndcmacmFYeoyzqgo6Y_L44qSTdrVQwaKQUd4KxDD4hfmmBNTALPompGJcQmSNoGGxGlQkYDPAwmaBwEA_ITZxX-Tx7SUe51u4bDk1iw4T-8sVbBZzUPU5Ei3LAzhv6IvrbcedBr05sRGeDfXaArelfzKjmmtGFvpYSeMKcV93-_4eNvwqotfaVxhryCsBzz4Snkif5Jt9KLzEjTelTyEg7p5zwHfHPZ3-WY4ebjlncQkJfBV8s-b3TP7Nh8YQ.myKGRvWHNQ2OgywCD-xtwg;experience:eyJhbGciOiJIUzI1NiJ9.eyJtZXRhZGF0YSI6eyJpZCI6ImV4cGVyaWVuY2UiLCJ2ZXJzaW9uIjoidjEiLCJzdGF0dXMiOiJTVEFUVVNfQUNUSVZFIn0sImFwcEV4cGVyaWVuY2UiOiJjbm4iLCJwcm9kdWN0TGluZSI6IjAxMjI0NzEwLWE1NWMtNGM5Zi1hOWIxLTZlODQxMzlmMWQxYSIsImNvbW1lcmNlTGluZSI6IjFCSDVOTiJ9.ESNji3hHUpJ1i4aoolpOX_VsJKktITh0nvRaCRDqWwc;device:eyJlbmMiOiJBMjU2R0NNIiwiYWxnIjoiZGlyIn0..6cgKYtAT9AUTJZwX.C8oLiT5HACN2Kp_cEQjHGj1xw30tuFsBP3JSXrhENIGvlpZ1gBOHN3CEk1JMpyAU1EfxeQ9nHNzkt5Cm7ni6Pysh73MvBFHc7plMyYWWrgQWafXP9XzrX8fpWq6eAMX-1l4wcDSq-OSrsfkzUbmyxVM_K3B64U5bExK97GTcltikNK52MV7sgaxuif8tqjjdnXQ_TWqs3pHDJ-DCWzh7gn4YPNMUoiTjAAx6-BhybQpQ3r6NVVmYVnpJcaC5F341IvI9bXu9OdjaeCKc6jdXt04fS8M0JtAYLVDCNbunfSZmKoSWuXnwVTfe78oeOrv7LLfnlwK8Y-FLF0_7xWsI3hd6pCWbfJezRR3oBUBAcVHq5E1WMIiv5_g73gwtahOfgwaa8z4XoltK74vsLTdUh5f3Ju_h2sLQdBIOehfTMebv0G-EovDEiCn2CoCxQoqK1zwkVEhA2KH5toRXE1JsaL8lMGd73q-S41dWQqMhf8tYhyhqq59XaD7Xa0H8JKNwg53mLg8.a2jAHQ4aZgAY1xvuZhhvxA;token:eyJlbmMiOiJBMjU2R0NNIiwiYWxnIjoiZGlyIn0..yGV3lunlYDm0yhyz.XUQHPW368RMLfRhJFsGW--yKFB_QLgALIPrG8Nk5ey8Dq7WtyfjOHZSRH4epkac1RERaFcZQp_gcVCNYFwjZE3KIb1PlfRDwa3TnC-1BBKDpXHFEVW9P7zNdEkz_uv1Li68gpihd2A.uPEy4zhaC8XvWsKxn4MzSw;geolocation:eyJlbmMiOiJBMjU2R0NNIiwiYWxnIjoiZGlyIn0..KKlxOzLnsUA0H6PW.if7DwbIrVdE-462LMHmSY_ZxekAX5QGW3Xm3xBijhtetBqc-HDo85q3jSEJjdALNg0K7StwNQ1V16d1n9tnC3a4LkMaD1VevttpOOc38i_mWMJYTi0OJiZ0KxJKMdvnCRUtiycFj7VUPpn86R_v9aR1I6qOwAag2Og9Nzirj6UPvIXD_3ezUm6z6iNpOK2uf72mVwTU8d11a62sQmAipP2xbkEPC7mUBUcrgd3laHZsjI3_5IkIRfNDKurcKRMU0LHmnqJ-75wIFWmfOIaXQApG8ba-eVFNQcPM9Pe96hTbUqekZRuiv9IBt4DGtOVlXki9GLfuxTITrvaYUi2GQS8jNPDAz71_nNKI2HexzBhvV4P2E_7K-tQ569wbxFYYsSdDnypb_s_OymcnbdmQ77rRthrTbMqWSFhJO6VNgDA_2tkJHxUrA9u4OBsIhaIs03oiNgtjkamjsSS4Q8BKakpmtQc69HUet5NmqApBV0csO2SpjW2ktm-sepcled-oJwHxrx_eEEhD8RRcAXXInP0v5ipq3umi7zGftWP15v-wGXRtIva6WXizeU46B0g.pnRV9w-Ym3qQvurIjS4FdA"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:36 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/json"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "x-wbd-token-response",
+          "value": "true"
+        },
+        {
+          "name": "content-length",
+          "value": "932"
+        }
+      ],
+      "sha256": "b880ca1bb30887c5c6a9cb2cbe8ce721eb40536b4e5fe45d92fe9004a173dc0a",
+      "bytes": 932
+    },
+    "https://edition.cnn.com/media/sites/cnn/favicon.ico": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "W/\"2cee-1a189176048\""
+        },
+        {
+          "name": "age",
+          "value": "1853"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "x-content-hub",
+          "value": "build-env=prod; unique-deployment-key=rn102140; build-version=v8.6.20-0-g0b5179b; build-commit-hash=0b5179b9974864a7e2b890259f77e5515c08ec7b"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:37 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 19:16:13 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/x-icon"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-chi-kmdw8640020-CHI, cache-chi-kmdw8640020-CHI, cache-fra-etou8220175-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 559, 7"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding,Origin,Accept-Language"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "default-src 'self' blob: https://*.cnn.com:* http://*.cnn.com:* *.cnn.io:* *.cnn.net:* *.turner.com:* *.turner.io:* *.ugdturner.com:* courageousstudio.com *.vgtf.net:*; script-src 'unsafe-eval' 'unsafe-inline' 'self' *; style-src 'unsafe-inline' 'self' blob: *; child-src 'self' blob: *; frame-src 'self' *; object-src 'self' *; img-src 'self' data: blob: *; media-src 'self' data: blob: *; font-src 'self' data: *; connect-src 'self' data: *; frame-ancestors 'self' https://*.cnn.com:* http://*.cnn.com https://*.cnn.io:* http://*.cnn.io:* *.turner.com:* courageousstudio.com;"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=60"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313817.166180,VS0,VE3"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-xss-protection",
+          "value": "1; mode=block"
+        },
+        {
+          "name": "content-length",
+          "value": "11502"
+        }
+      ],
+      "sha256": "0cf453fe1114b59fa626c511484e5a9e502ddc2cc32875cfa6c37dd0673ba953",
+      "bytes": 11502
+    },
+    "https://media.cnn.com/api/v1/images/stellar/prod/vance-peltola-clean-thumb-20261029152044467-20261029152058635.jpg?c=9x16&q=h_480,w_270,c_fill": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "max-age=300"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313822.528562,VS0,VE0"
+        },
+        {
+          "name": "age",
+          "value": "23628"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "x-content-hub-dam",
+          "value": "build-env=prod; unique-deployment-key=dam0002; build-version=v8.1.0; build-commit-hash=fedd52cbf91bc074366c6a4eed345d60a8173b2a"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/jpeg"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 15:22:01 GMT"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-kcgs7200132-IAD, cache-iad-kcgs7200115-IAD, cache-fra-eddf8230143-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 78, 11"
+        },
+        {
+          "name": "content-length",
+          "value": "19463"
+        }
+      ],
+      "sha256": "1b7603866be44d88c72137d3918b0c55b4ff2a05cf1fc36a37fc14d772028903",
+      "bytes": 19463
+    },
+    "https://media.cnn.com/api/v1/images/stellar/prod/23113500-elex-machine-vote-vv-00-00-03-24-still001.jpg?c=9x16&q=h_480,w_270,c_fill": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "max-age=300"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313822.528583,VS0,VE0"
+        },
+        {
+          "name": "age",
+          "value": "27489"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "x-content-hub-dam",
+          "value": "build-env=prod; unique-deployment-key=dam0002; build-version=v8.1.0; build-commit-hash=fedd52cbf91bc074366c6a4eed345d60a8173b2a"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/jpeg"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 15:05:29 GMT"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-khef600030-IAD, cache-iad-khef600086-IAD, cache-fra-eddf8230143-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 15, 21"
+        },
+        {
+          "name": "content-length",
+          "value": "19815"
+        }
+      ],
+      "sha256": "bf5f6dcf2bc35a0342558be456bd77c37285fa86c4c62cd0d5ca6f29a5870bf7",
+      "bytes": 19815
+    },
+    "https://media.cnn.com/api/v1/images/stellar/prod/chalain-thumb-2.jpg?c=9x16&q=h_480,w_270,c_fill": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "max-age=300"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313822.528817,VS0,VE0"
+        },
+        {
+          "name": "age",
+          "value": "35520"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "x-content-hub-dam",
+          "value": "build-env=prod; unique-deployment-key=dam0002; build-version=v8.1.0; build-commit-hash=fedd52cbf91bc074366c6a4eed345d60a8173b2a"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/jpeg"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 12:48:55 GMT"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-khef600087-IAD, cache-iad-khef600022-IAD, cache-fra-eddf8230143-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 72, 22"
+        },
+        {
+          "name": "content-length",
+          "value": "30661"
+        }
+      ],
+      "sha256": "2477b9c15c2b79b8c85b0a0d725f23f0f17fae81736bd15a4c183e3ef34f9ed0",
+      "bytes": 30661
+    },
+    "https://media.cnn.com/api/v1/images/stellar/prod/23114809-period-tear-gas-vv-2-00-00-57-26-still001.jpg?c=9x16&q=h_480,w_270,c_fill": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "max-age=300"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313822.536151,VS0,VE0"
+        },
+        {
+          "name": "age",
+          "value": "22102"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "x-content-hub-dam",
+          "value": "build-env=prod; unique-deployment-key=dam0002; build-version=v8.1.0; build-commit-hash=fedd52cbf91bc074366c6a4eed345d60a8173b2a"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/jpeg"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 16:30:03 GMT"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-kiad7000181-IAD, cache-iad-kiad7000097-IAD, cache-fra-eddf8230143-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 101, 15"
+        },
+        {
+          "name": "content-length",
+          "value": "20314"
+        }
+      ],
+      "sha256": "c6d56c8e434efcd75220053a3c26c2cb57cba3745300504bbfd2ac64ee39fb19",
+      "bytes": 20314
+    },
+    "https://media.cnn.com/api/v1/images/stellar/prod/ryebreadthumb-clean.jpg?c=9x16&q=h_480,w_270,c_fill": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "max-age=300"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313822.536225,VS0,VE0"
+        },
+        {
+          "name": "age",
+          "value": "20936"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "x-content-hub-dam",
+          "value": "build-env=prod; unique-deployment-key=dam0002; build-version=v8.1.0; build-commit-hash=fedd52cbf91bc074366c6a4eed345d60a8173b2a"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/jpeg"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 16:54:42 GMT"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-khef600094-IAD, cache-iad-khef600075-IAD, cache-fra-eddf8230143-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 21, 9"
+        },
+        {
+          "name": "content-length",
+          "value": "27731"
+        }
+      ],
+      "sha256": "8284564f55438617d353aaf6b0849bd0965eab42233577f58d2468acdea29744",
+      "bytes": 27731
+    },
+    "https://media.cnn.com/api/v1/images/stellar/prod/wxapp-spooky-foggy-witch.jpg?c=9x16&q=h_480,w_270,c_fill": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "max-age=300"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313822.549627,VS0,VE0"
+        },
+        {
+          "name": "age",
+          "value": "5000"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "x-content-hub-dam",
+          "value": "build-env=prod; unique-deployment-key=dam0002; build-version=v8.1.0; build-commit-hash=fedd52cbf91bc074366c6a4eed345d60a8173b2a"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/jpeg"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 21:13:14 GMT"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-kiad7000057-IAD, cache-iad-kiad7000146-IAD, cache-fra-eddf8230143-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 13, 2"
+        },
+        {
+          "name": "content-length",
+          "value": "7667"
+        }
+      ],
+      "sha256": "1cb698e84db11691e5b04e5e09e30ee06beec05703846e9890618131be02b773",
+      "bytes": 7667
+    },
+    "https://media.cnn.com/api/v1/images/stellar/prod/iowa-crash-thumb-clean.jpg?c=9x16&q=h_480,w_270,c_fill": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "max-age=300"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313822.550578,VS0,VE1"
+        },
+        {
+          "name": "age",
+          "value": "14596"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "x-content-hub-dam",
+          "value": "build-env=prod; unique-deployment-key=dam0002; build-version=v8.1.0; build-commit-hash=fedd52cbf91bc074366c6a4eed345d60a8173b2a"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/jpeg"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 18:30:17 GMT"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-kcgs7200165-IAD, cache-iad-kcgs7200100-IAD, cache-fra-eddf8230143-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 54, 0"
+        },
+        {
+          "name": "content-length",
+          "value": "20497"
+        }
+      ],
+      "sha256": "10dce5de79f69a05fd87fb4a0a2d84d86e42037da21fda964fd4dafe145118b3",
+      "bytes": 20497
+    },
+    "https://media.cnn.com/api/v1/images/stellar/prod/john-kerry-trump-clean-thumb.jpg?c=9x16&q=h_480,w_270,c_fill": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "max-age=300"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313822.550080,VS0,VE1"
+        },
+        {
+          "name": "age",
+          "value": "17533"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "x-content-hub-dam",
+          "value": "build-env=prod; unique-deployment-key=dam0002; build-version=v8.1.0; build-commit-hash=fedd52cbf91bc074366c6a4eed345d60a8173b2a"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/jpeg"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 17:16:42 GMT"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-khef600092-IAD, cache-iad-khef600095-IAD, cache-fra-eddf8230143-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 130, 0"
+        },
+        {
+          "name": "content-length",
+          "value": "19304"
+        }
+      ],
+      "sha256": "78e4a926e0730878e332ee42dc9925f594bf361f19363a63d7759e31218efa49",
+      "bytes": 19304
+    },
+    "https://media.cnn.com/api/v1/images/stellar/prod/cruise-ship-villa-vie-vrtc.jpg?c=9x16&q=h_480,w_270,c_fill": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "max-age=300"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793313822.550611,VS0,VE1"
+        },
+        {
+          "name": "age",
+          "value": "14299"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "x-content-hub-dam",
+          "value": "build-env=prod; unique-deployment-key=dam0002; build-version=v8.1.0; build-commit-hash=fedd52cbf91bc074366c6a4eed345d60a8173b2a"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:43:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/jpeg"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 18:10:20 GMT"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-kiad7000114-IAD, cache-iad-kiad7000150-IAD, cache-fra-eddf8230143-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 34, 0"
+        },
+        {
+          "name": "content-length",
+          "value": "13960"
+        }
+      ],
+      "sha256": "7367ca3b8ac1f6053c3b05f8c3e6befbb399800607c277806068e0bb1d178830",
+      "bytes": 13960
+    }
+  },
+  "workload": "Frozen guest DOM; scripts removed; original resource bytes",
+  "live_png_sha256": "5239da8f46b5f81e0d59fdc66c813f053fed704a7d23c1fdde03898d55d76ae9",
+  "capture_report_sha256": "364daa953f2f4cd56e0363687d3792d17b90d9a4941adb3d5e150082158f5b4e"
+}

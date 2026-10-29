@@ -1,0 +1,1739 @@
+/*global __tcfapi, __cmp, __gpp, console, Promise */
+var bizx = window.bizx || {};
+bizx.cmp = {};
+
+bizx.cmp.usPrivacyTextStart = '<h2>YOUR PRIVACY CHOICES (DO NOT SELL/SHARE/TARGET)</h2><p>Under some U.S. Privacy Laws, consumers have the right to opt-out of processing of personal info for "targeted advertising," and activities that are classified as "sale" and/or "sharing." To submit an opt-out request that will apply to personal information collected by cookies and other tracking technologies ("cookie PI"), move the toggle below to the left and click "Confirm My Cookie PI Choice."<p>We will apply the opt-out to cookies that may implicate "sale", "sharing," or "targeted advertising." There are other cookies, such as essential cookies and other cookies operated by "service providers" or "processors" to which we do not apply the opt-out. You must exercise your preferences on each of our websites you visit, from each browser you use, and on each device that you use. If you clear or block cookies, your preferences will no longer be effective, and you will need to enable them again via this tool. In addition, this tool only has the capability of applying your opt-out to cookies.<p>To submit an opt-out request as to non-cookie PI (such as email address)';
+bizx.cmp.usPrivacyTextNoLoginOptions = ', you must opt-out separately. Please click on the "Non-Cookie PI Opt-Out" button below to access our webform.';
+bizx.cmp.usPrivacyTextLoginOptions = ':<ul><li>If you are logged into your account, we will also apply your cookie PI opt-out request to non-cookie PI such as email address. You do not need to take further action to apply your opt-out to non-cookie PI.<li>If you are not logged into an account' + bizx.cmp.usPrivacyTextNoLoginOptions + '</ul>';
+bizx.cmp.usPrivacyTextEnd = '<p>For more information regarding our privacy practices, please visit our <a href="https://slashdotmedia.com/privacy-statement/" rel=nofollow target=_blank>Privacy Policy</a> and <a href="https://slashdotmedia.com/privacy-statement/#rightsToKnow" rel=nofollow target=_blank>U.S. State Privacy Policy</a>.<br>To submit an information request or to request deletion, <a href="https://privacyportal.onetrust.com/webform/611e70e2-1994-43ff-b07b-646df870db4b/f4165d65-f39c-4ea5-8628-163090b74137" target=_blank>use this form</a>.<div class=ccpa-modal-inner><section><div><a href="https://privacyportal-cdn.onetrust.com/dsarwebform/611e70e2-1994-43ff-b07b-646df870db4b/c1c0acac-ab24-4dac-b3e6-43421a684626.html" rel=nofollow target=_blank class="button green">NON-COOKIE PI OPT-OUT FORM</a></div><div><div class=toggler><span class=out>Opted-out</span> <input id=opt-toggle type=checkbox> <span class=in>Opted-in</span></div><div id=cmp-confirm-msg></div><a href=# class="button green" id=cmp-submit-request>CONFIRM MY COOKIE-PI CHOICE</a></div></section></div>';
+
+/* jshint ignore:start */
+/* https://github.com/taylorhakes/promise-polyfill */
+!function(e,n){"object"==typeof exports&&"undefined"!=typeof module?n():"function"==typeof define&&define.amd?define(n):n()}(0,function(){"use strict";function e(){}function n(e){if(!(this instanceof n))throw new TypeError("Promises must be constructed via new");if("function"!=typeof e)throw new TypeError("not a function");this._state=0,this._handled=!1,this._value=undefined,this._deferreds=[],f(e,this)}function t(e,t){for(;3===e._state;)e=e._value;0!==e._state?(e._handled=!0,n._immediateFn(function(){var n=1===e._state?t.onFulfilled:t.onRejected;if(null!==n){var i;try{i=n(e._value)}catch(f){return void r(t.promise,f)}o(t.promise,i)}else(1===e._state?o:r)(t.promise,e._value)})):e._deferreds.push(t)}function o(e,t){try{if(t===e)throw new TypeError("A promise cannot be resolved with itself.");if(t&&("object"==typeof t||"function"==typeof t)){var o=t.then;if(t instanceof n)return e._state=3,e._value=t,void i(e);if("function"==typeof o)return void f(function(e,n){return function(){e.apply(n,arguments)}}(o,t),e)}e._state=1,e._value=t,i(e)}catch(u){r(e,u)}}function r(e,n){e._state=2,e._value=n,i(e)}function i(e){2===e._state&&0===e._deferreds.length&&n._immediateFn(function(){e._handled||n._unhandledRejectionFn(e._value)});for(var o=0,r=e._deferreds.length;r>o;o++)t(e,e._deferreds[o]);e._deferreds=null}function f(e,n){var t=!1;try{e(function(e){t||(t=!0,o(n,e))},function(e){t||(t=!0,r(n,e))})}catch(i){if(t)return;t=!0,r(n,i)}}var u=function(e){var n=this.constructor;return this.then(function(t){return n.resolve(e()).then(function(){return t})},function(t){return n.resolve(e()).then(function(){return n.reject(t)})})},c=setTimeout;n.prototype["catch"]=function(e){return this.then(null,e)},n.prototype.then=function(n,o){var r=new this.constructor(e);return t(this,new function(e,n,t){this.onFulfilled="function"==typeof e?e:null,this.onRejected="function"==typeof n?n:null,this.promise=t}(n,o,r)),r},n.prototype["finally"]=u,n.all=function(e){return new n(function(n,t){function o(e,f){try{if(f&&("object"==typeof f||"function"==typeof f)){var u=f.then;if("function"==typeof u)return void u.call(f,function(n){o(e,n)},t)}r[e]=f,0==--i&&n(r)}catch(c){t(c)}}if(!e||"undefined"==typeof e.length)throw new TypeError("Promise.all accepts an array");var r=Array.prototype.slice.call(e);if(0===r.length)return n([]);for(var i=r.length,f=0;r.length>f;f++)o(f,r[f])})},n.resolve=function(e){return e&&"object"==typeof e&&e.constructor===n?e:new n(function(n){n(e)})},n.reject=function(e){return new n(function(n,t){t(e)})},n.race=function(e){return new n(function(n,t){for(var o=0,r=e.length;r>o;o++)e[o].then(n,t)})},n._immediateFn="function"==typeof setImmediate&&function(e){setImmediate(e)}||function(e){c(e,0)},n._unhandledRejectionFn=function(e){void 0!==console&&console&&console.warn("Possible Unhandled Promise Rejection:",e)};var l=function(){if("undefined"!=typeof self)return self;if("undefined"!=typeof window)return window;if("undefined"!=typeof global)return global;throw Error("unable to locate global object")}();l.Promise?l.Promise.prototype["finally"]||(l.Promise.prototype["finally"]=u):l.Promise=n});
+/* jshint ignore:end */
+
+// very simple polyfill, not supporting fromIndex 2nd param
+if (!Array.prototype.includes) {
+  Object.defineProperty(Array.prototype, 'includes', {
+      value: function (searchElement) {
+          return this.indexOf(searchElement) !== -1;
+      }
+  });
+}
+
+// appends a new element next to do not sell information button when a global privacy control signal is received
+var OptOutHonored = {
+    init: function(){
+        this.mobile = window.matchMedia('(max-width: 992px)');
+        var nosellbtn = document.getElementById('opt-out-button') || document.querySelector('[data-open="ccpa-modal"]');
+        if (nosellbtn && nosellbtn.offsetParent !== null){ //make sure is not hidden
+            this.appendElement(nosellbtn);
+            return false;
+        }
+    },
+    appendElement: function(nosellbtn) {
+        if (document.getElementById('honored-container')){
+            return false;
+        }
+        var container = document.createElement('div');
+        container.setAttribute('id', 'honored-container');
+        container.setAttribute('style', 'display:flex;gap:5px;');
+        nosellbtn.setAttribute('style', nosellbtn.getAttribute('style') + 'margin-right:0;');
+        var honoredbtn = document.createElement('button');
+        honoredbtn.setAttribute('class', 'button blue hollow short btn opt-out');
+        honoredbtn.setAttribute('style', 'pointer-events: none;margin-right:0;');
+        honoredbtn.innerHTML = "&#10003; Opt-Out Preference Signal Honored";
+        if (nosellbtn.parentNode.tagName === 'LI') { // all sites except sf, slashdotmedia, wirefly
+            nosellbtn.parentNode.style.display = 'flex';
+            nosellbtn.parentNode.style.justifyContent = 'flex-start';
+            honoredbtn.setAttribute('id', 'opt-out-button');
+            if (window.location.hostname.includes('linuxjournal')) {
+                honoredbtn.removeAttribute('class'); // remove rounded corners on button
+                honoredbtn.setAttribute('class', 'opt-out');
+            }
+        }
+        if (nosellbtn.tagName === 'DIV' ){
+            if (window.location.hostname.includes('tmonews')) {// is tmonews
+                container.style.flexDirection = 'column';
+                honoredbtn.removeAttribute('class');
+                honoredbtn.setAttribute('class', 'button-outer');
+            }
+            if (window.location.hostname.includes('voipreview')) {
+                honoredbtn.style.fontWeight = 'bold';
+                honoredbtn.style.fontSise = '12px';
+                honoredbtn.style.setProperty("color", "#000", "important");
+                honoredbtn.style.borderRadius = '25px';
+                honoredbtn.style.height = '35px';
+                nosellbtn.style.height = '35px';
+            }
+        }
+        if (window.location.hostname.includes('wirefly')){ // is wirefly.com
+            container.removeAttribute('style');
+            container.setAttribute('style','float:left');
+            nosellbtn.style.margin = '0';
+
+        }
+        if (window.location.hostname.includes('library.slashdotmedia.com')) {
+            honoredbtn.removeAttribute('class');
+            honoredbtn.setAttribute('class', 'opt-out');
+        }
+        if (nosellbtn.parentNode.className === 'et_pb_text_inner'){ // slashdotmedia
+            var styles = honoredbtn.getAttribute('style') + 'border: 1px solid white;font-weight:bold;';
+            container.style.flexDirection = 'column';
+            honoredbtn.removeAttribute('class');
+            honoredbtn.setAttribute('class', 'policyBTN');
+            if (nosellbtn.getAttribute('id') !== 'opt-out-button-mobile'){
+                styles += 'color:#008BC7;';
+            }
+            honoredbtn.setAttribute('style', styles);
+        }
+        if (window.location.hostname.includes('tahoesbest')){
+            honoredbtn.style.fontWeight = 'bold';
+            honoredbtn.style.textTransform = 'uppercase';
+            honoredbtn.style.color = '#816A4F';
+        }
+        nosellbtn.parentNode.insertBefore(honoredbtn, nosellbtn.nextSibling);
+        nosellbtn.parentNode.appendChild(container);
+        container.appendChild(nosellbtn);
+        container.appendChild(honoredbtn);
+        var that = this;
+        this.mobile.onchange = function(e) {
+            that.mobileListener(e, container);
+        };
+        this.mobileListener(this.mobile, container);
+    },
+    mobileListener: function(event, container){
+        if (event.matches){
+            container.style.justifyContent = 'center';
+            container.style.flex = '1';
+            if (window.location.hostname.includes('tmonews')) {
+                container.style.marginTop = '30px';
+            }
+        }else{
+            if (!window.location.hostname.includes('slashdot.org')) {
+                container.style.justifyContent = 'flex-end';
+            }
+        }
+    }
+};
+
+bizx.cmp.default_cmp_id = 11319;
+
+/* this is a lightly modified version of the snippet as copied from consentmanager.net.
+   if it ever needs to be updated again from the CMnet console, these mods will have to made again by hand:
+   - changes the main entry point from self-invoking to a named function
+   - cmp_id can be passed in, or defaults to our main CMP id
+*/
+/*jshint ignore:start*/
+
+bizx.cmp.embedCMPSnippet = function (cmp_id) {
+    window.gdprAppliesGlobally = false;
+    var cmp_cdid = {
+        '11319': 'f46fb9b4e114',
+        '12126': 'dba15d148b97',
+        '13101': '8a4e60353a46',
+        '59316': '41874560817f2',
+    }
+    if (!("cmp_id" in window) || window.cmp_id < 1) {
+        window.cmp_id = 0
+    }
+    if (!("cmp_cdid" in window)) {
+        window.cmp_cdid = cmp_cdid[cmp_id || bizx.cmp.default_cmp_id];
+    }
+    if (!("cmp_params" in window)) {
+        window.cmp_params = ""
+    }
+    if (!("cmp_host" in window)) {
+        window.cmp_host = "d.delivery.consentmanager.net"
+    }
+    if (!("cmp_cdn" in window)) {
+        window.cmp_cdn = "cdn.consentmanager.net"
+    }
+    if (!("cmp_proto" in window)) {
+        window.cmp_proto = "https:"
+    }
+    if (!("cmp_codesrc" in window)) {
+        window.cmp_codesrc = "1"
+    }
+    window.cmp_getsupportedLangs = function () {
+        var b = ["DE", "EN", "FR", "IT", "NO", "DA", "FI", "ES", "PT", "RO", "BG", "ET", "EL", "GA", "HR", "LV", "LT", "MT", "NL", "PL", "SV", "SK", "SL", "CS", "HU", "RU", "SR", "ZH", "TR", "UK", "AR", "BS"];
+        if ("cmp_customlanguages" in window) {
+            for (var a = 0; a < window.cmp_customlanguages.length; a++) {
+                b.push(window.cmp_customlanguages[a].l.toUpperCase())
+            }
+        }
+        return b
+    };
+    window.cmp_getRTLLangs = function () {
+        var a = ["AR"];
+        if ("cmp_customlanguages" in window) {
+            for (var b = 0; b < window.cmp_customlanguages.length; b++) {
+                if ("r" in window.cmp_customlanguages[b] && window.cmp_customlanguages[b].r) {
+                    a.push(window.cmp_customlanguages[b].l)
+                }
+            }
+        }
+        return a
+    };
+    window.cmp_getlang = function (j) {
+        if (typeof (j) != "boolean") {
+            j = true
+        }
+        if (j && typeof (cmp_getlang.usedlang) == "string" && cmp_getlang.usedlang !== "") {
+            return cmp_getlang.usedlang
+        }
+        var g = window.cmp_getsupportedLangs();
+        var c = [];
+        var f = location.hash;
+        var e = location.search;
+        var a = "languages" in navigator ? navigator.languages : [];
+        if (f.indexOf("cmplang=") != -1) {
+            c.push(f.substr(f.indexOf("cmplang=") + 8, 2).toUpperCase())
+        } else {
+            if (e.indexOf("cmplang=") != -1) {
+                c.push(e.substr(e.indexOf("cmplang=") + 8, 2).toUpperCase())
+            } else {
+                if ("cmp_setlang" in window && window.cmp_setlang != "") {
+                    c.push(window.cmp_setlang.toUpperCase())
+                } else {
+                    if (a.length > 0) {
+                        for (var d = 0; d < a.length; d++) {
+                            c.push(a[d])
+                        }
+                    }
+                }
+            }
+        }
+        if ("language" in navigator) {
+            c.push(navigator.language)
+        }
+        if ("userLanguage" in navigator) {
+            c.push(navigator.userLanguage)
+        }
+        var h = "";
+        for (var d = 0; d < c.length; d++) {
+            var b = c[d].toUpperCase();
+            if (g.indexOf(b) != -1) {
+                h = b;
+                break
+            }
+            if (b.indexOf("-") != -1) {
+                b = b.substr(0, 2)
+            }
+            if (g.indexOf(b) != -1) {
+                h = b;
+                break
+            }
+        }
+        if (h == "" && typeof (cmp_getlang.defaultlang) == "string" && cmp_getlang.defaultlang !== "") {
+            return cmp_getlang.defaultlang
+        } else {
+            if (h == "") {
+                h = "EN"
+            }
+        }
+        h = h.toUpperCase();
+        return h
+    };
+    (function () {
+        var n = document;
+        // var p = n.getElementsByTagName;
+        var q = window;
+        var f = "";
+        var b = "_en";
+        if ("cmp_getlang" in q) {
+            f = q.cmp_getlang().toLowerCase();
+            if ("cmp_customlanguages" in q) {
+                for (var h = 0; h < q.cmp_customlanguages.length; h++) {
+                    if (q.cmp_customlanguages[h].l.toUpperCase() == f.toUpperCase()) {
+                        f = "en";
+                        break
+                    }
+                }
+            }
+            b = "_" + f
+        }
+
+        function g(i, e) {
+            var t = "";
+            i += "=";
+            var s = i.length;
+            var d = location;
+            if (d.hash.indexOf(i) != -1) {
+                t = d.hash.substr(d.hash.indexOf(i) + s, 9999)
+            } else {
+                if (d.search.indexOf(i) != -1) {
+                    t = d.search.substr(d.search.indexOf(i) + s, 9999)
+                } else {
+                    return e
+                }
+            }
+            if (t.indexOf("&") != -1) {
+                t = t.substr(0, t.indexOf("&"))
+            }
+            return t
+        }
+
+        var j = ("cmp_proto" in q) ? q.cmp_proto : "https:";
+        if (j != "http:" && j != "https:") {
+            j = "https:"
+        }
+        var k = ("cmp_ref" in q) ? q.cmp_ref : location.href;
+        var r = n.createElement("script");
+        r.setAttribute("data-cmp-ab", "1");
+        var c = g("cmpdesign", "cmp_design" in q ? q.cmp_design : "");
+        var a = g("cmpregulationkey", "cmp_regulationkey" in q ? q.cmp_regulationkey : "");
+        var o = g("cmpatt", "cmp_att" in q ? q.cmp_att : "");
+        r.src = j + "//" + q.cmp_host + "/delivery/cmp.php?" + ("cmp_id" in q && q.cmp_id > 0 ? "id=" + q.cmp_id : "") + ("cmp_cdid" in q ? "&cdid=" + q.cmp_cdid : "") + "&h=" + encodeURIComponent(k) + (c != "" ? "&cmpdesign=" + encodeURIComponent(c) : "") + (a != "" ? "&cmpregulationkey=" + encodeURIComponent(a) : "") + (o != "" ? "&cmpatt=" + encodeURIComponent(o) : "") + ("cmp_params" in q ? "&" + q.cmp_params : "") + (n.cookie.length > 0 ? "&__cmpfcc=1" : "") + "&l=" + f.toLowerCase() + "&o=" + (new Date()).getTime();
+        r.type = "text/javascript";
+        r.async = true;
+        if (n.currentScript && n.currentScript.parentElement) {
+            n.currentScript.parentElement.appendChild(r)
+        } else {
+            if (n.body) {
+                n.body.appendChild(r)
+            } else {
+                var m = n.getElementsByTagName("body");
+                if (m.length == 0) {
+                    m = n.getElementsByTagName("div")
+                }
+                if (m.length == 0) {
+                    m = n.getElementsByTagName("span")
+                }
+                if (m.length == 0) {
+                    m = n.getElementsByTagName("ins")
+                }
+                if (m.length == 0) {
+                    m = n.getElementsByTagName("script")
+                }
+                if (m.length == 0) {
+                    m = n.getElementsByTagName("head")
+                }
+                if (m.length > 0) {
+                    m[0].appendChild(r)
+                }
+            }
+        }
+        var r = n.createElement("script");
+        r.src = j + "//" + q.cmp_cdn + "/delivery/js/cmp" + b + ".min.js";
+        r.type = "text/javascript";
+        r.setAttribute("data-cmp-ab", "1");
+        r.async = true;
+        if (n.currentScript && n.currentScript.parentElement) {
+            n.currentScript.parentElement.appendChild(r)
+        } else {
+            if (n.body) {
+                n.body.appendChild(r)
+            } else {
+                var m = n.getElementsByTagName("body");
+                if (m.length == 0) {
+                    m = n.getElementsByTagName("div")
+                }
+                if (m.length == 0) {
+                    m = n.getElementsByTagName("span")
+                }
+                if (m.length == 0) {
+                    m = n.getElementsByTagName("ins")
+                }
+                if (m.length == 0) {
+                    m = n.getElementsByTagName("script")
+                }
+                if (m.length == 0) {
+                    m = n.getElementsByTagName("head")
+                }
+                if (m.length > 0) {
+                    m[0].appendChild(r)
+                }
+            }
+        }
+    })();
+    window.cmp_addFrame = function (b) {
+        if (!window.frames[b]) {
+            if (document.body) {
+                var a = document.createElement("iframe");
+                a.style.cssText = "display:none";
+                if ("cmp_cdn" in window && "cmp_ultrablocking" in window && window.cmp_ultrablocking > 0) {
+                    a.src = "//" + window.cmp_cdn + "/delivery/empty.html"
+                }
+                a.name = b;
+                document.body.appendChild(a)
+            } else {
+                window.setTimeout(window.cmp_addFrame, 10, b)
+            }
+        }
+    };
+    window.cmp_rc = function (h) {
+        var b = document.cookie;
+        var f = "";
+        var d = 0;
+        while (b != "" && d < 100) {
+            d++;
+            while (b.substr(0, 1) == " ") {
+                b = b.substr(1, b.length)
+            }
+            var g = b.substring(0, b.indexOf("="));
+            if (b.indexOf(";") != -1) {
+                var c = b.substring(b.indexOf("=") + 1, b.indexOf(";"))
+            } else {
+                var c = b.substr(b.indexOf("=") + 1, b.length)
+            }
+            if (h == g) {
+                f = c
+            }
+            var e = b.indexOf(";") + 1;
+            if (e == 0) {
+                e = b.length
+            }
+            b = b.substring(e, b.length)
+        }
+        return (f)
+    };
+    window.cmp_stub = function () {
+        var a = arguments;
+        __cmp.a = __cmp.a || [];
+        if (!a.length) {
+            return __cmp.a
+        } else {
+            if (a[0] === "ping") {
+                if (a[1] === 2) {
+                    a[2]({
+                        gdprApplies: gdprAppliesGlobally,
+                        cmpLoaded: false,
+                        cmpStatus: "stub",
+                        displayStatus: "hidden",
+                        apiVersion: "2.0",
+                        cmpId: 31
+                    }, true)
+                } else {
+                    a[2](false, true)
+                }
+            } else {
+                if (a[0] === "getUSPData") {
+                    a[2]({version: 1, uspString: window.cmp_rc("")}, true)
+                } else {
+                    if (a[0] === "getTCData") {
+                        __cmp.a.push([].slice.apply(a))
+                    } else {
+                        if (a[0] === "addEventListener" || a[0] === "removeEventListener") {
+                            __cmp.a.push([].slice.apply(a))
+                        } else {
+                            if (a.length == 4 && a[3] === false) {
+                                a[2]({}, false)
+                            } else {
+                                __cmp.a.push([].slice.apply(a))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    };
+    window.cmp_gppstub = function () {
+        var a = arguments;
+        __gpp.q = __gpp.q || [];
+        if (!a.length) {
+            return __gpp.q
+        }
+        var g = a[0];
+        var f = a.length > 1 ? a[1] : null;
+        var e = a.length > 2 ? a[2] : null;
+        if (g === "ping") {
+            return {
+                gppVersion: "1.0",
+                cmpStatus: "stub",
+                cmpDisplayStatus: "hidden",
+                apiSupport: ["tcfeuv2", "tcfva", "usnat"],
+                currentAPI: "",
+                cmpId: 31
+            }
+        } else {
+            if (g === "addEventListener") {
+                __gpp.e = __gpp.e || [];
+                if (!("lastId" in __gpp)) {
+                    __gpp.lastId = 0
+                }
+                __gpp.lastId++;
+                var c = __gpp.lastId;
+                __gpp.e.push({id: c, callback: f});
+                return {
+                    eventName: "listenerRegistered",
+                    listenerId: c,
+                    data: true,
+                    pingData: {
+                        gppVersion: "1.0",
+                        cmpStatus: "stub",
+                        cmpDisplayStatus: "hidden",
+                        apiSupport: [],
+                        currentAPI: "",
+                        cmpId: 31
+                    }
+                }
+            } else {
+                if (g === "removeEventListener") {
+                    var h = false;
+                    __gpp.e = __gpp.e || [];
+                    for (var d = 0; d < __gpp.e.length; d++) {
+                        if (__gpp.e[d].id == e) {
+                            __gpp.e[d].splice(d, 1);
+                            h = true;
+                            break
+                        }
+                    }
+                    return {eventName: "listenerRemoved", listenerId: e, data: h}
+                } else {
+                    if (g === "hasSection" || g === "getSection" || g === "getField" || g === "getGPPString") {
+                        return null
+                    } else {
+                        __gpp.q.push([].slice.apply(a))
+                    }
+                }
+            }
+        }
+    };
+    window.cmp_msghandler = function (d) {
+        var a = typeof d.data === "string";
+        try {
+            var c = a ? JSON.parse(d.data) : d.data
+        } catch (f) {
+            var c = null
+        }
+        if (typeof (c) === "object" && c !== null && "__cmpCall" in c) {
+            var b = c.__cmpCall;
+            window.__cmp(b.command, b.parameter, function (h, g) {
+                var e = {__cmpReturn: {returnValue: h, success: g, callId: b.callId}};
+                d.source.postMessage(a ? JSON.stringify(e) : e, "*")
+            })
+        }
+        if (typeof (c) === "object" && c !== null && "__uspapiCall" in c) {
+            var b = c.__uspapiCall;
+            window.__uspapi(b.command, b.version, function (h, g) {
+                var e = {__uspapiReturn: {returnValue: h, success: g, callId: b.callId}};
+                d.source.postMessage(a ? JSON.stringify(e) : e, "*")
+            })
+        }
+        if (typeof (c) === "object" && c !== null && "__tcfapiCall" in c) {
+            var b = c.__tcfapiCall;
+            window.__tcfapi(b.command, b.version, function (h, g) {
+                var e = {__tcfapiReturn: {returnValue: h, success: g, callId: b.callId}};
+                d.source.postMessage(a ? JSON.stringify(e) : e, "*")
+            }, b.parameter)
+        }
+        if (typeof (c) === "object" && c !== null && "__gppCall" in c) {
+            var b = c.__gppCall;
+            window.__gpp(b.command, function (h, g) {
+                var e = {__gppReturn: {returnValue: h, success: g, callId: b.callId}};
+                d.source.postMessage(a ? JSON.stringify(e) : e, "*")
+            }, b.parameter, "version" in b ? b.version : 1)
+        }
+    };
+    window.cmp_setStub = function (a) {
+        if (!(a in window) || (typeof (window[a]) !== "function" && typeof (window[a]) !== "object" && (typeof (window[a]) === "undefined" || window[a] !== null))) {
+            window[a] = window.cmp_stub;
+            window[a].msgHandler = window.cmp_msghandler;
+            window.addEventListener("message", window.cmp_msghandler, false)
+        }
+    };
+    window.cmp_setGppStub = function (a) {
+        if (!(a in window) || (typeof (window[a]) !== "function" && typeof (window[a]) !== "object" && (typeof (window[a]) === "undefined" || window[a] !== null))) {
+            window[a] = window.cmp_gppstub;
+            window[a].msgHandler = window.cmp_msghandler;
+            window.addEventListener("message", window.cmp_msghandler, false)
+        }
+    };
+    window.cmp_addFrame("__cmpLocator");
+    if (!("cmp_disableusp" in window) || !window.cmp_disableusp) {
+        window.cmp_addFrame("__uspapiLocator")
+    }
+    if (!("cmp_disabletcf" in window) || !window.cmp_disabletcf) {
+        window.cmp_addFrame("__tcfapiLocator")
+    }
+    if (!("cmp_disablegpp" in window) || !window.cmp_disablegpp) {
+        window.cmp_addFrame("__gppLocator")
+    }
+    window.cmp_setStub("__cmp");
+    if (!("cmp_disabletcf" in window) || !window.cmp_disabletcf) {
+        window.cmp_setStub("__tcfapi")
+    }
+    if (!("cmp_disableusp" in window) || !window.cmp_disableusp) {
+        window.cmp_setStub("__uspapi")
+    }
+    if (!("cmp_disablegpp" in window) || !window.cmp_disablegpp) {
+        window.cmp_setGppStub("__gpp")
+    }
+    ;
+};
+/*jshint ignore:end*/
+
+
+// values from https://github.com/InteractiveAdvertisingBureau/Global-Privacy-Platform/tree/main/Sections/US-States
+// keep in sync with do_not_sell_state_regulations & gpc_means_optout_states & purpose_id_sellok
+bizx.cmp.donotsells = {
+    CCPA: {
+        gppname: 'usca', gppid: 8, state: 'CA', gpc: true},
+    USVCDPA: {
+        gppname: 'usva', gppid: 9, state: 'VA'},
+    USCPA: {
+        gppname: 'usco', gppid: 10, state: 'CO', gpc: true},
+    USCAPDP: {
+        gppname: 'usct', gppid: 12, state: 'CT', gpc: true},
+    USUCPA: {
+        gppname: 'usut', gppid: 11, state: 'UT'},
+    USDPDPA: {
+        gppname: 'usde', gppid: 17, state: 'DE', gpc: true},
+    USICDPA: {
+        gppname: 'usia', gppid: 18, state: 'IA'},
+    USMTCDPA: {
+        gppname: 'usmt', gppid: 14, state: 'MT', gpc: true},
+    USNEDPA: {
+        gppname: 'usne', gppid: 19, state: 'NE', gpc: true},
+    USNHPA: {
+        gppname: 'usnh', gppid: 20, state: 'NH', gpc: true},
+    USNJDPA: {
+        gppname: 'usnj', gppid: 21, state: 'NJ', gpc: true},
+    USOCDPA: {
+        gppname: 'usor', gppid: 15, state: 'OR', gpc:true},
+    USTDPSA: {
+        gppname: 'ustx', gppid: 16, state: 'TX', gpc:true},
+    USTIPA: {
+        gppname: 'ustn', gppid: 22, state: 'TN'},
+    USMCDPA: {
+        gppname: 'usmn', gppid: 23, state: 'MN', gpc: true},
+    USMDODPA: {
+        gppname: 'usmd', gppid: 24, state: 'MD', gpc: true},
+    USINCDPA: {
+        gppname: 'usin', gppid: 25, state: 'IN'},
+    USKYACDP: {
+        gppname: 'usky', gppid: 26, state: 'KY'},
+    USRIDTPPA: {
+        gppname: 'usri', gppid: 27, state: 'RI'},
+
+};
+
+bizx.cmp.donotsell_regulations = Object.keys(bizx.cmp.donotsells);
+
+bizx.cmp.donotsell_states = [];
+bizx.cmp.donotsell_gpc_regs = [];
+for (var reg in bizx.cmp.donotsells) {
+    if (bizx.cmp.donotsells.hasOwnProperty(reg)) {
+        var info = bizx.cmp.donotsells[reg];
+        bizx.cmp.donotsell_states.push(info.state);
+        if (info.gpc) {
+            bizx.cmp.donotsell_gpc_regs.push(reg);
+        }
+    }
+}
+
+// keep in sync with consent.py vars
+bizx.cmp.cookie_notice_states = ['CA', 'IL'];
+bizx.cmp.cookie_notice_optional = true;
+
+// the ids must be IAB ids when possible, and then s## or c## if its not IAB.  Get them from the Vendors section of our CMP
+// They keys can be whatever friendly name we want to use in ifConsent calls
+bizx.cmp.vendor_ids = {
+    'bombora': 163,
+    'adroll': 130,  // nextroll
+    'nextroll': 130,  // aka adroll
+    'google-ads': 755,
+    'prebid': -1,  // not an actual vendor, but a special indicator for us
+
+    'sdm': -2,  // not an actual vendor, but a special indicator for us
+
+    'adobe': 264,
+    'amazon-ads': 793,
+    'blockthrough': 815,
+    'clearbit': 'c37910',
+    'consentmanager': 's23',
+    'disqus': 833,
+    'equativ': 45,
+    'eyeota': 120,
+    'google': 's135',
+    'jobbio': 'c33095',
+    'liveramp': 97,
+    'lotame': 95,
+    'magnite': 52,
+    'mixpanel': 'c48392',
+    'mailchimp': 's2437',
+    'pubmatic': 76,
+    'sharethrough': 80,
+    'sovrn': 13,
+    'uk-trade-desk': 21,
+    'xandr': 32,
+    'youtube': 's30',
+    '6sense': 740,
+    'hubspot': 's10',
+    'adshield': 'c63062',
+    'google-analytics': 's26',
+    'apollo': 'c67592',
+    'narrative': 'c67992',
+};
+
+bizx.cmp.embedScript = function (src, async, location, callback, defer, extra_attrs) {
+    location = location || 'head';
+    var s = document.createElement('script');
+    if (extra_attrs) {
+        for (var x in extra_attrs) {
+            if (extra_attrs.hasOwnProperty(x)) {
+                s.setAttribute(x, extra_attrs[x]);
+            }
+        }
+    }
+    if (bizx.cmp.googleads_load_from_limited_domain && src === 'https://securepubads.g.doubleclick.net/tag/js/gpt.js') {
+        // https://developers.google.com/publisher-tag/guides/general-best-practices#load_from_an_official_source
+        src = 'https://pagead2.googlesyndication.com/tag/js/gpt.js';
+    }
+    s.setAttribute('src', src);
+    s.async = async || true;
+    s.defer = defer || true;
+    if (callback) {
+        s.onload = callback;
+    }
+    document[location].appendChild(s);
+};
+
+bizx.cmp.logs = [];
+
+bizx.cmp.log = function () {
+    if (document.URL.indexOf('cmp_debug') >= 0) {
+        var args = arguments;
+        args = [].slice.call(args);  // convert to normal array
+        bizx.cmp.logs.push(args.slice());
+        if (navigator.webdriver) {  // selenium webdriver
+            args.unshift('CMP');
+        } else {
+            args.unshift('display: inline-block; color: #fff; background: darkgreen; padding: 1px 4px; border-radius: 3px;');
+            args.unshift('%cCMP');
+        }
+        console.log.apply(console, args);
+    }
+};
+
+
+bizx.cmp.promptConsent = function () {
+    __tcfapi('showScreen');
+    return false;
+};
+
+
+bizx.cmp.cmpIsPresent = function () {
+    // to determine if the cmp is really present or not.
+    var apiString = window.__tcfapi && window.__tcfapi.toString();
+    return !!(apiString &&
+        apiString.indexOf("CMP not found") < 0 && // prebid cmp integration used to create a dummy obj with this in it
+        apiString.indexOf("._tcfapi_calls.push(") < 0  // adroll creates a dummy __tcfapi object with this in it
+    );
+};
+
+/**
+ * wait for consent to run callbacks
+ * @param party_or_options either '' to support old format, or an object of the format {purposes: [], vendors: []}
+ * @param purposesAndVendors "all" or list of: purpose group names, and/or vendor names, and/or "all".  See getTCFandRunCallbacks for names in detail.
+ * @param hasConsentFn runs if consent
+ * @param rejectedFn runs if consent is rejected
+ * @param finallyFn runs after consent is determined (both yes or no)
+ * @param unknownFn runs after a few seconds if no consent ever determined (e.g. cookie banner not interacted with, or some error)
+ */
+bizx.cmp.ifConsent = function (party_or_options, purposesAndVendors, hasConsentFn, rejectedFn, finallyFn, unknownFn) {
+    /*
+        first convert from v1 signature...
+            ifConsent('', ['all', 'bombora'], function(){} ...)
+        ...to v2 signature
+            ifConsent(options, function(){} ...)
+    */
+    var purposes, vendors;
+    var _version = 2;
+    if (typeof party_or_options === 'string') {
+        _version = 1;
+        purposes = purposesAndVendors.slice();
+        vendors = purposesAndVendors.slice();
+    } else {
+        // is options!
+        purposes = party_or_options.purposes || [];
+        vendors = party_or_options.vendors || [];
+        // shift up all the callbacks
+        unknownFn = finallyFn;
+        finallyFn = rejectedFn;
+        rejectedFn = hasConsentFn;
+        hasConsentFn = purposesAndVendors;
+        purposesAndVendors = undefined;
+    }
+    // if (rejectedFn && !unknownFn) {
+    //     console.warn('ifConsent: you provided a rejectedFn, you probably should provide a unknownFn too.  rejectedFn=' + rejectedFn);
+    // }
+
+    if (typeof purposes === 'string') {
+        purposes = [purposes];
+    }
+    if (typeof vendors === 'string') {
+        vendors = [vendors];
+    }
+
+    var allPurposes = ['storage', 'personalization', 'ads', 'content', 'measurement'];
+    var allall = allPurposes.concat(['all']);
+    if (purposes[0] === 'all') {
+        purposes = allPurposes;
+    } else {
+        purposes = purposes.filter(function(val) { return allPurposes.includes(val);});
+    }
+    vendors = vendors.filter(function(val) { return !allall.includes(val);});
+
+    var vendor_ids = [];
+    for (var iv = 0; iv < vendors.length; iv++) {
+        var vid = bizx.cmp.vendor_ids[vendors[iv]];
+        if (typeof vid === 'undefined') {
+            throw new Error('Unexpected vendor id: ' + vendors[iv]);
+        }
+        vendor_ids.push(vid);
+    }
+
+    function runConsentAndFinally() {
+        if (hasConsentFn) {
+            hasConsentFn();
+        }
+        if (finallyFn) {
+            finallyFn();
+        }
+    }
+
+    if (!bizx.cmp.cmpIsPresent()) {
+        bizx.cmp.log('no CMP present');
+        // if the CMP isn't present on the page, we can assume consent and short-circuit checks.
+        runConsentAndFinally();
+        return;
+    }
+
+    if (bizx.cmp.cookie_notice_applies() && vendors.includes('google-ads')) {
+        // run Google Ads even if general consent not given, but do it via Limited Ads
+        unknownFn = rejectedFn = function() {
+            if (!hasConsentFn) {
+                return;
+            }
+            bizx.cmp.googleads_load_from_limited_domain = true;
+            if (window.googletag && window.googletag.cmd) {
+                bizx.cmp.log('will tell Google Ads to do Limited Ads');
+                var limitedAds = function() {
+                    bizx.cmp.log('actually telling Google Ads to do Limited Ads');
+                    window.googletag.pubads().setPrivacySettings({limitedAds: true});
+                };
+                if (window.googletag.cmd.unshift) {
+                    // if `cmd` is still a plain array, put it first
+                    window.googletag.cmd.unshift(limitedAds);
+                } else {
+                    window.googletag.cmd.push(limitedAds);
+                }
+            } else {
+                bizx.cmp.log('no Google Ads found to do Limited Ads');
+            }
+            // call *hasConsentFn* so Google Ads will run (but restricted now)
+            hasConsentFn();
+            hasConsentFn = null;  // so this callback won't run again if actual consent is given.  Nor again in this version of rejectedFn
+        };
+    }
+
+    // wait until the CMP is ready to inform us of consents.
+    bizx.cmp.ConsentReadyPromise.then(function () {
+        var regulation = bizx.cmp.getRegulation();
+        if (bizx.cmp.cookie_notice_applies()) {  // must check before donotsell_regulations
+            bizx.cmp.log('checking consent choices with cookie-notice', purposes, vendors);
+            if (bizx.cmp.donotsell_regulations.includes(regulation)) {
+                // use GPP for the places that we have it set up
+                bizx.cmp.getGPPandRunCallbacks(bizx.cmp.donotsells[regulation].gppname, hasConsentFn, rejectedFn, finallyFn);
+            } else {
+                // TCF code seems to work ok even though TCF is only really for GDPR
+                bizx.cmp.getTCFandRunCallbacks(purposes, vendor_ids, hasConsentFn, rejectedFn, finallyFn);
+            }
+        } else if (bizx.cmp.donotsell_regulations.includes(regulation)) {
+            // this may not run, depending on which states get cookie notice logic (must be checked first) vs states in do-not-sell
+            if (vendors.includes('google-ads')) {
+                // https://support.google.com/admanager/answer/14117049?hl=en says they support GPP
+                // but not in all states (e.g. Utah, maybe new ones in future)
+                // GAM, Privacy & Messaging > US state regulations > Settings lists more states, but still not Nebraska
+                // therefore we have our own noConsent func that restricts it
+                // (if it was perfectly supported, we could just run runConsentAndFinally() instead of getGPPandRunCallbacks with localNoConsentFn)
+                var localNoConsentFn = function() {
+                    if (window.googletag) {
+                        bizx.cmp.log('will tell Google Ads to restrict data processing');
+                        var doNotSellAdSettings = function() {
+                            bizx.cmp.log('actually telling Google Ads to restrict data processing');
+                            window.googletag.pubads().setPrivacySettings({restrictDataProcessing: true, nonPersonalizedAds: true});
+                        };
+                        if (window.googletag.cmd.unshift) {
+                            // if `cmd` is still a plain array, put it first
+                            window.googletag.cmd.unshift(doNotSellAdSettings);
+                        } else {
+                            window.googletag.cmd.push(doNotSellAdSettings);
+                        }
+                    } else {
+                        bizx.cmp.log('no Google Ads found to restrict data processing');
+                    }
+                    // call *hasConsentFn* so Google Ads will run (but restricted now)
+                    if (hasConsentFn) {
+                        hasConsentFn();
+                    }
+                };
+                bizx.cmp.getGPPandRunCallbacks(bizx.cmp.donotsells[regulation].gppname, hasConsentFn, localNoConsentFn, finallyFn);
+            } else if (purposes.includes('ads')) { // Do-Not-Sell only applies to 'ads' (third-party) basically, not storage, personalization etc
+                bizx.cmp.getGPPandRunCallbacks(bizx.cmp.donotsells[regulation].gppname, hasConsentFn, rejectedFn, finallyFn);
+            } else {
+                bizx.cmp.log(regulation + ' mode, and no "ads" or "all" purpose (got ' + purposes + '); so allowed');
+                runConsentAndFinally();
+            }
+        } else if (['GDPR', 'GDPRUK'].includes(regulation)) {
+            if (vendors.includes('google-ads')) {
+                bizx.cmp.log('google ads will automatically trigger "Limited Ads" if needed, so allowing');
+                runConsentAndFinally();
+            } else {
+                bizx.cmp.log('checking the GDPR consent choices', purposes, vendors);
+                bizx.cmp.getTCFandRunCallbacks(purposes, vendor_ids, hasConsentFn, rejectedFn, finallyFn);
+            }
+        } else {
+            bizx.cmp.log('unexpected CMP regulation:', regulation);
+            runConsentAndFinally();
+        }
+    });
+
+    // run something in case the CMP had problems running, or if consent is not decided yet
+    if (unknownFn) {
+        // if we know we're waiting on user input and might not get it, run as soon as possible
+        if (bizx.cmp.cookie_notice_applies() && bizx.cmp.cookie_notice_optional){
+            // 'settings' event could work too, but would also have to check !__cmp('getCMPData').userChoiceExists
+            __cmp("addEventListener",["loadShowing", function(){
+                bizx.cmp.log('cookie banner with working CMP, but waiting on user choice, so running unknownFn');
+                unknownFn();
+                unknownFn.ran = true;
+            },false],null);
+        }
+        // failsafe in case CMP didn't load or something
+        setTimeout(function () {
+            var shadowEl = document.querySelector('#cmpwrapper');
+            var queryEl = shadowEl ? shadowEl.shadowRoot : document;
+            var cmpbox = queryEl.getElementById('cmpbox');
+            var cmpbox_visible = cmpbox && window.getComputedStyle(cmpbox).display !== 'none';
+            if (cmpbox_visible && (bizx.cmp.getRegulation() === 'GDPR' ||
+                                   (bizx.cmp.cookie_notice_applies() && !bizx.cmp.cookie_notice_optional))) {
+                bizx.cmp.log('CMP visible and waiting on user, not running unknownFn');
+            } else if (bizx.cmp.consent_is_known) {
+                bizx.cmp.log('consent is known, not running unknownFn');
+            } else if (unknownFn && !unknownFn.ran) {
+                bizx.cmp.log('running unknownFn (failsafe)');
+                unknownFn();
+            }
+        }, 4000);  // long timeout in case CMP is slow to load for some people
+    }
+};
+
+bizx.cmp._isGPPDataOptOut = function(gppData) {
+    if (!gppData || !gppData.length) {
+        return true;  // no data, assume opt-out
+    }
+    for (var i = 0; i < gppData.length; i++) {
+        if (gppData[i].SaleOptOut === 1 || gppData[i].TargetedAdvertisingOptOut === 1 || gppData[i].SharingOptOut === 1) {  // 1 is Opted Out
+            return true;
+        }
+    }
+    return false;
+};
+
+bizx.cmp.getGPPandRunCallbacks = function(gppSection, callback, rejectedFn, finallyFn) {
+    bizx.cmp.log(gppSection, 'GPP consent promise fulfilled; now checking consent value for', callback);
+    __gpp(
+        'getSection',
+        function(gppData) {
+            try {
+                var optOut = bizx.cmp._isGPPDataOptOut(gppData);
+                if (optOut) {
+                    bizx.cmp.log('gpp not allowed:', gppData ? gppData: 'no GPP response data!');
+                    if (rejectedFn) {
+                        rejectedFn();
+                    }
+                } else {
+                    bizx.cmp.log('gpp allowed:', gppData ? gppData: 'no GPP response data!');
+                    if (callback) {
+                        callback();
+                    }
+                }
+                if (finallyFn) {
+                    finallyFn();
+                }
+            } catch (e) {
+                console.error('error within __gpp getSection:', e);
+            }
+        },
+        gppSection
+    );
+};
+
+bizx.cmp.checkGPPoptoutNow = function() {
+    // realtime check with no callbacks.  Don't use this in most cases!
+    try {
+        var gppSection = bizx.cmp.donotsells[bizx.cmp.getRegulation()].gppname;
+        var data = __gpp('getSection', function(){}, gppSection);
+        return bizx.cmp._isGPPDataOptOut(data);
+    } catch (e) {
+        console.error('error within checkGPPoptoutNow', e);
+    }
+};
+
+bizx.cmp.getTCFandRunCallbacks = function (purposes, vendor_ids, callback, rejectedFn, finallyFn) {
+    /*
+    var v1purpose_ids = {'storage': 1, 'personalization': 2, 'ads': 3, 'content': 4, 'measurement': 5};
+    var v2purpose_ids = {
+        'storage': 1,
+        'ads': 2, 'ads-profile': 3, 'ads-select': 4,
+        'content-profile': 5, 'content-select': 6,
+        'ads-perf': 7, 'content-perf': 8,
+        'market-research': 9,
+        'improve-products': 10,
+    };
+     */
+
+    // the `purposes` names originate from TCF v1 spec and are used throughout our websites' ifConsent checks.
+    // this maps those purposes to the current TCF spec: https://iabeurope.eu/iab-europe-transparency-consent-framework-policies/#Appendix_A_Purposes_and_Features_Definitions
+    var purpose_ids = {
+        'storage': [1],
+        'personalization': [5],
+        'ads': [2, 3, 4, 7, 9],
+        'content': [6],
+        'measurement': [8],
+        // [10] not used yet
+    };
+
+    // specialFeatures: 1=precise geo,  2=device characteristics for ID
+
+    __tcfapi('getTCData', 2, function(consentInfo, success) {
+        // getTCData is deprecated and __tcfapi('addEventListener', would be better but it doesn't run for our ROW cookie notice
+        try {
+            // bizx.cmp.log('callback fired for', purposes, consentInfo);
+
+            if (success) {
+                // check if purposes granted
+                var consents = consentInfo.purpose.consents;
+                var meetsAll = true;
+                outer_loop: for (var i = 0; i < purposes.length; i++) {
+                    var ids = purpose_ids[purposes[i]];
+                    for (var j = 0; j < ids.length; j++) {
+                        var id = ids[j];
+                        if (!consents[id]) {
+                            meetsAll = false;
+                            //bizx.cmp.log('consent failed on ' + id, purposes[i], consents);
+                            break outer_loop;
+                        }
+                    }
+                }
+                // check if vendors granted.  TODO use in GPP check too? but it doesn't have vendor data, would have to call getTCData again.
+                for (var iv = 0; iv < vendor_ids.length; iv++) {
+                    var vid = vendor_ids[iv];
+                    if (vid < 0) {
+                        continue;
+                    } else if (!consentInfo.vendor.consents[vid] && !consentInfo.customVendorConsents[vid]) {
+                        //bizx.cmp.log('consent failed on', vid);
+                        meetsAll = false;
+                        break;
+                    }
+                }
+
+                if (meetsAll) {
+                    bizx.cmp.log('consent granted for', purposes, vendor_ids, consentInfo);
+                    if (callback) {
+                        callback(consentInfo, success);
+                    }
+                } else {
+                    bizx.cmp.log('consent NOT granted for', purposes, vendor_ids, consentInfo);
+                    if (rejectedFn) {
+                        rejectedFn(success);
+                    }
+                }
+            } else {
+                bizx.cmp.log('consent failed to detect for', purposes, vendor_ids, consentInfo);
+                if (rejectedFn) {
+                    rejectedFn(success);
+                }
+            }
+
+            if (finallyFn) {
+                finallyFn(consentInfo, success);
+            }
+        } catch (e) {
+            console.error('error within __tcfapi getTCData:', e);
+        }
+    });
+};
+
+
+bizx.cmp.handleOpen = function (ev, cmpo) {
+    bizx.cmp.log('handleOpen');
+
+    if (bizx.cmp.getRegulation() === 'GDPR') {
+        var cmpStatus = __cmp('consentStatus');
+        if (cmpStatus && cmpStatus.userChoiceExists) {
+            // they haven't made the choice quite yet, but likely will :)
+            bizx.cmp.visitorMadeSubsequentChange = true;
+        } else {
+            // this is the very initial load in GDPR, its only their first choice, so track that.
+            bizx.cmp.visitorMadeSubsequentChange = false;
+        }
+    }
+};
+
+bizx.cmp.handleCustomChoicesScreen = function(eventname, cmpobject, subtype) {
+    bizx.cmp.fetchVendorList().then(
+        /** @param {{success: bool, vendors: Array.<ParentVendor>}} payload */
+        function (payload) {
+            if(!payload.success || !payload.vendors || payload.vendors.length < 1) {
+                console.error('bad payload', JSON.stringify(payload));
+                return;
+            }
+            payload.vendors.forEach(function (vendor) {
+                var vendorName = vendor.vendor_name;
+                var vendorElem = findVendorElemByName(vendorName);
+                if (vendorElem) {
+                    appendVendorData(vendorElem, vendor);
+                } else {
+                    console.error('could not find element for', vendorName);
+                }
+            });
+        }, function(err){ console.error('fetchVendorList Failed', err); });
+
+
+    function findVendorElemByName(label) {
+        // with accessibility mode enabled, there's a wrapper and we have to query
+        //  via its shadowRoot. otherwise, can just query from `document'.
+        var shadowEl = document.querySelector('#cmpwrapper');
+        var queryEl = shadowEl ? shadowEl.shadowRoot : document;
+
+        var vendorItems = queryEl.querySelectorAll('table.cmptbl tbody tr.cmpvenditem');
+        for (var i = 0; i < vendorItems.length; i++) {
+            var span = vendorItems[i].querySelector('td.cmpvendname > span');
+            if (span && span.textContent === label) {
+                return vendorItems[i];
+            }
+        }
+        return null;
+    }
+
+    /** @param {HTMLElement} vendorItem
+     * @param {ParentVendor} vendor */
+    function appendVendorData(vendorItem, vendor) {
+        /** @type HTMLTableDataCellElement */
+        var row = document.createElement('td');
+        row.colSpan = 2;
+        row.style.textAlign = 'left';
+        row.classList.add('cmpvendorspecial');
+        var output = 'The following vendors may be included via ' + vendor.vendor_name + ' if it is enabled: ';
+        output += vendor.sub_vendors.map(function (vendor) {
+            var name = vendor[0];
+            var url = vendor[1];
+            var html = '<span>' + name + '</span>';
+            if (url) {
+                html = '<a href="' + url + '" target="_blank">' + name + '</a>';
+            }
+            return html;
+        }).join(", ");
+        row.innerHTML = output;
+
+        // need a dummy row to keep alternating highlights
+        vendorItem.insertAdjacentElement('afterend', document.createElement('tr'));
+        vendorItem.insertAdjacentElement('afterend', row);
+    }
+};
+
+bizx.cmp.handleClose = function (args) {
+    bizx.cmp.log('handleClose');
+    if (bizx.cmp.onUICloseComplete) {  // was in SD mobile, no longer used, can be removed soon
+        bizx.cmp.onUICloseComplete();
+    }
+    // make sure user's selection is respected immediately (stop any scripts currently running on the page)
+    if (bizx.cmp.visitorMadeSubsequentChange) {
+        bizx.cmp.ifConsent({purposes: ['ads']},
+            bizx.cmp.handleUserOptIn, // hasConsentFn
+            function() { // rejectedFn
+                window.googletag?.secureSignalProviders?.clearAllCache();  // make sure prior google signals don't remain after user opt-out
+            },
+            function() { // finallyFn
+                location.reload();  // reload no matter what choice they made
+            }
+        );
+    }
+};
+
+
+bizx.cmp.handleSettingsReady = function(eventname, cmpobject, subtype) {
+    bizx.cmp.log('handleSettingsReady');
+    // this event is the earliest we can get the Regulation
+    // NOTE: the `if` conditions here must be duplicated in handleLoadShowing to close the banner
+
+    var gpc_means_optout = bizx.cmp.donotsell_gpc_regs.includes(bizx.cmp.getRegulation());
+    if (window.navigator.globalPrivacyControl && gpc_means_optout) {
+        bizx.cmp.log('intepreting GPC signal as optout');
+        bizx.cmp.visitorChoseDoNotSellShare = true;
+        bizx.cmp.rejectCause = 'GPC';
+        __cmp('setConsent', 0);  // this is a "reject"  (but doesn't necessarily close the cookie banner, see handleLoadShowing)
+        OptOutHonored.init();
+    }
+
+    if (document.cookie.indexOf('__cmpccpausps=1YYN') >= 0 && bizx.cmp.options.logged_in_user_record_api) {
+        // this is particularly important for restoring cookies from logged-in users who opted out.  Otherwise we'd have to update server-side code on several sites.
+        if (!bizx.cmp.checkGPPoptoutNow()) {  // only if NOT already opted out
+            bizx.cmp.log('backwards compatibility: old CCPA cookie triggering an opt-out');
+            bizx.cmp.rejectCause = 'CCPA-style cookie';
+            __cmp('setConsent', 0);
+        }
+    }
+};
+
+bizx.cmp.setCookie = function(name, value, days, opts) {
+    var d = new Date();
+    d.setTime(d.getTime() + 24 * 60 * 60 * 1000 * days);
+    var cookieStr = name + "=" + value + ";path=/;expires=" + d.toGMTString();
+    if (opts && opts.samesite) {
+        cookieStr += ';SameSite=' + opts.samesite;
+        if (opts.samesite === 'None') {
+            cookieStr += ';Secure';
+        }
+    }
+    document.cookie = cookieStr;
+    document.cookie = cookieStr + ';domain=.sf.net';  // sandboxes end up with this domain used too
+};
+
+bizx.cmp.handleLoadShowing = function() {
+    // NOTE: the `if` conditions match those in handleSettingsReady
+    var gpc_means_optout = bizx.cmp.donotsell_regulations.includes(bizx.cmp.getRegulation());
+    if (window.navigator.globalPrivacyControl && gpc_means_optout) {
+        bizx.cmp.log('GPC triggered a reject in handleSettingsReady, but ensuring the banner gets closed too');
+        __cmp('close');
+    }
+    if (document.cookie.indexOf('__cmpccpausps=1YYN') >= 0) {
+        bizx.cmp.log('backwards compatibility: old CCPA cookie triggered an opt-out, but ensuring the banner gets closed too');
+        __cmp('close');
+    }
+};
+
+bizx.cmp.trackingPixel = function(party, purposesAndVendors, src, alt, parentId, delay){
+    src = src.replace(/&amp;/g, '&');  // HTML escaping can introduce &amp; which we don't want
+    bizx.cmp.ifConsent(party, purposesAndVendors, function(){
+        if (delay && navigator.sendBeacon) {
+            navigator.sendBeacon(src);
+        } else {
+            var pixel = document.createElement("img");
+            pixel.src = src;
+            pixel.height = 1;
+            pixel.width = 1;
+            pixel.alt = alt || '';
+            pixel.style = "display: none";
+            var node = document.getElementById(parentId);
+            node.insertBefore(pixel, null);
+        }
+    });
+};
+
+
+bizx.cmp.fetchVendorList = (function () {
+
+    var promise;
+
+    return function() {
+        if(promise) {
+            return promise;
+        }
+
+        promise = new Promise(function (resolve, reject) {
+            var xhr = new XMLHttpRequest();
+
+            xhr.onload = function () {
+                if (xhr.status >= 400) {
+                    reject('failure ' + xhr.status);
+                    return;
+                }
+                try {
+                    /** @typedef {{vendor_name: string, vendor_id:int, sub_vendors: SubVendor }} ParentVendor */
+                    /** @typedef {[string, string]} SubVendor */
+                    var json = JSON.parse(xhr.responseText);
+                    resolve(json);
+                } catch (err) {
+                    reject('error parsing json ' + err.message);
+                }
+            };
+
+            xhr.onerror = function () {
+                reject('Vendor List failed due to a XHR Transport error. Code: ' + xhr.status);
+            };
+
+            var url = 'https://a.fsdn.com/con/app/vendor_list_v2';
+            xhr.open('GET', url, true);
+            xhr.setRequestHeader('Accept', 'application/json, */*; q=0.01');
+            xhr.send();
+        });
+
+        return promise;
+    };
+})();
+
+/**
+ * @returns {string|null} - a consentmanager.net code, see some at https://help.consentmanager.net/books/cmp/page/client-side-configuration-options
+ */
+bizx.cmp.getRegulation = function() {
+    // window.cmpmngr.getRegulation() can also get the numbers
+    // window.cmp_config_data.regulationkey can also get the string values (capitalized)
+    // but best to use a real API
+    var reg;
+    if (typeof __cmp !== 'undefined') {
+        var cmpData = __cmp('getCMPData');
+        // if not fully loaded yet, sometimes this incorrectly reports GDPR!
+        if (cmpData && cmpData?.gppdata?.cmpStatus === 'loaded') {
+            reg = cmpData.regulationKey;
+        }
+    }
+    if (!reg) {
+        reg = window.cmp_config_data?.regulationkey;
+    }
+    return reg;
+};
+
+
+bizx.cmp.init = function (options, provider) {
+    bizx.cmp.options = options;
+    bizx.cmp.visitorMadeSubsequentChange = false;
+    bizx.cmp.visitorChoseDoNotSellShare = false;
+    var url_override = window.location.search.match(new RegExp('cmpregulationkey=(GDPR|ROW|' + bizx.cmp.donotsell_regulations.join('|') + ')'));
+    var override_reg = url_override ? url_override[1] : null;
+    if (options.geo) {
+        if (override_reg === 'GDPR') {
+            options.geo = {country_code2: 'DE', is_euro_union: 1};
+        } else if (override_reg === 'ROW') {
+            if (window.location.search.includes('row=cookie-notice')) {
+                options.geo = {country_code2: 'US', is_euro_union: 0, region: 'IL'};
+            } else {
+                options.geo = {country_code2: 'NZ', is_euro_union: 0};
+            }
+        } else if (override_reg) {
+            options.geo = {country_code2: 'US', region: bizx.cmp.donotsells[override_reg].state, is_euro_union: 0};
+        }
+        if (!bizx.cmp.show_do_not_sell() && options.geo.is_euro_union !== 1 && !bizx.cmp.cookie_notice_applies()) {
+            bizx.cmp.log('cmp not needed in this geo, so not initializing');
+            return;
+        }
+        // force a regulation key based on our own geo detection
+        if (bizx.cmp.donotsells){
+            Object.keys(bizx.cmp.donotsells).forEach(function(regulation) {
+                if (bizx.cmp.donotsells[regulation].state === options.geo.region) {
+                    window.cmp_regulationkey = regulation;
+                    override_reg = regulation;
+                }
+            });
+        }
+        if (!override_reg && bizx.cmp.cookie_notice_states) {
+            bizx.cmp.cookie_notice_states.forEach(function(state) {
+                if (state === options.geo.region) {
+                    window.cmp_regulationkey = 'ROW';  // cookie notice only
+                    override_reg = 'ROW';
+                }
+            });
+        }
+        if (["AT","BE","BG","CY","CZ","DE","DK","EE","ES","FI","FR","GB","GR","HR","HU","IE","IT","LT","LU","LV","MT","NL","PL","PT","RO","SE","SI","SK","ME","YT","RE","MF","MQ","GP","GF","PM","GL","BL","SX","AW","CW","WF","PF","NC","TF","AI","BM","IO","VG","KY","FK","MS","PN","SH","GS","TC","AX","JE","GG","GI","CH","IS","NO","LI"].includes(options.geo.country_code2)){
+            window.cmp_regulationkey = 'GDPR';
+            override_reg = 'GDPR';
+        }
+
+    }
+
+    // URL override for some settings should also set GPP override (not url-controllable)
+    if (override_reg && bizx.cmp.donotsells[override_reg]) {
+        window.cmp_params="&cmpgppkey=" + bizx.cmp.donotsells[override_reg].gppname;
+    }
+    bizx.cmp.embedCMPSnippet(options.cmp_id);
+
+    __tcfapi("addEventListener",["consentscreen", bizx.cmp.handleOpen,false],null);
+    __tcfapi("addEventListener",["consentscreenoff", bizx.cmp.handleClose,false],null);
+    __cmp("addEventListener",["loadShowing", bizx.cmp.handleLoadShowing,false],null);
+    __tcfapi("addEventListener",["consentscreencustom", bizx.cmp.handleCustomChoicesScreen,false],null);
+    __cmp("addEventListener",["settings", bizx.cmp.handleSettingsReady,false],null);
+    __cmp('addEventListener', ["consent", bizx.cmp.handleUserOptOut, false], null);
+    __cmp('addEventListener', ["consent", bizx.cmp.updateDoNotSellToggle, false], null);
+    __cmp('addEventListener', ["consentrejected", bizx.cmp.handleConsentRejected, false], null);
+    // SF-10352 debugging
+    __cmp('addEventListener', ["consentapproved", function () {
+        localStorage.removeItem('SF_cmp_reject_logged');
+    }, false], null);
+    __cmp('addEventListener', ["consentcustom", function () {
+        if (window.debug_cmp_reject) {
+            window.debug_cmp_reject('custom');
+        }
+    }, false], null);
+    __cmp('addEventListener', ["consentrejected", function () {
+        if (window.debug_cmp_reject) {
+            window.debug_cmp_reject('reject');
+        }
+    }, false], null);
+
+    window.addEventListener('DOMContentLoaded', function () {
+        var elModalContentDest = document.getElementById('ccpa-modal-content-destination');
+        if (elModalContentDest) {
+            var text = bizx.cmp.usPrivacyTextStart;
+            if (bizx.cmp.options.logged_in_user_record_api) {
+                text += bizx.cmp.usPrivacyTextLoginOptions;
+            } else {
+                text += bizx.cmp.usPrivacyTextNoLoginOptions;
+            }
+            text += bizx.cmp.usPrivacyTextEnd;
+            elModalContentDest.innerHTML = text;
+
+            var elToggle = document.getElementById('opt-toggle');
+            var elConfirmBtn = document.getElementById('cmp-submit-request');
+            var elMsg = document.getElementById('cmp-confirm-msg');
+            document.querySelector('.toggler .out').addEventListener('click', function(e) {
+                elToggle.checked = false;
+                elToggle.dispatchEvent(new Event('change'));
+            });
+            document.querySelector('.toggler .in').addEventListener('click', function(e) {
+                elToggle.checked = true;
+                elToggle.dispatchEvent(new Event('change'));
+            });
+            elToggle.addEventListener('change', function(e) {
+                elMsg.innerHTML = '';
+            });
+            elConfirmBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                bizx.cmp.log('visitor has confirmed their opt-out/in choice');
+                var success;
+                if (elToggle.checked) {
+                    success = __cmp('setConsent', 1);  // accept
+                    bizx.cmp.setCookie('__cmpccpausps', '', -1);  // old backwards compatibility cookie that the CMP may not clear
+                } else {
+                    bizx.cmp.visitorChoseDoNotSellShare = true;
+                    bizx.cmp.rejectCause = 'do-not-sell button toggled and confirmed';
+                    success = __cmp('setConsent', 0);  // reject
+                }
+                var message;
+                if (success) {
+                    message = '<span style=color:blue>Your choice has been saved.</span>';
+                } else {
+                    message = '<span style=color:red>Error.  Adblock may be preventing this.</span>';
+                }
+                elMsg.innerHTML = message;
+                bizx.cmp.visitorMadeSubsequentChange = true;
+                bizx.cmp.handleClose();  // since we're not using the CMP, we should call this ourselves
+            });
+        }
+        setTimeout(function(){  // in case 'opt-out-button' is created by other DOM-ready JS and isn't here yet
+            var elDoNotSell = document.getElementById('opt-out-button') || document.querySelector('[data-open="ccpa-modal"]');
+            if (elDoNotSell) {
+                if (bizx.cmp.options.geo.region === 'CA') {
+                    // expand an original shorter label to full label
+                    elDoNotSell.innerHTML = elDoNotSell.innerHTML.replace('Do Not Sell My', 'Do Not Sell or Share My');
+                } else {
+                    // all other states get this
+                    elDoNotSell.innerHTML = 'Your Opt-Out Rights';
+                }
+            }
+            if (!document.getElementById('cookie-choices-link') && (elDoNotSell || bizx.cmp.cookie_notice_applies())) {
+                // add a Cookie Choices link that does the same as Do Not Sell
+                // OR for cookie *notice* mode, opens the banner CMP again
+                var otherFooterLink;
+                if (elDoNotSell && elDoNotSell.style.display !== 'none') {
+                    otherFooterLink = elDoNotSell;
+                } else {
+                    otherFooterLink = document.querySelector('#opt-out-link') || document.querySelector('a[href*="/opt-out-choices"]');
+                }
+                var cookieLinkHtml = '<a id="cookie-choices-link" href=# style="white-space: nowrap">Cookie Choices</a>';
+                var cookieLinkSibling = otherFooterLink;
+                var cookieLinkPos = 'beforebegin';
+                if (window.location.hostname.includes('wirefly') || window.location.hostname.includes('library.slashdotmedia')) {
+                    cookieLinkHtml = cookieLinkHtml.replace('>Cookie', '> | Cookie');
+                }
+                if (otherFooterLink.parentElement.tagName === 'LI') {
+                    cookieLinkHtml = '<li>' + cookieLinkHtml + '</li>';
+                    cookieLinkSibling = otherFooterLink.parentElement;
+                }
+                if (window.location.hostname === 'slashdotmedia.com') {
+                    cookieLinkHtml = '<p class=footerLinks>' + cookieLinkHtml + '</p>';
+                    cookieLinkSibling = document.querySelector('.footerLinks:has(a[href="/opt-out-choices"])') || cookieLinkSibling;
+                    cookieLinkPos = 'afterend';
+                }
+                if ((window.location.hostname.includes('sourceforge') || window.location.hostname.includes('sf-')) && !window.location.hostname.includes('sponsoredprojects')) {
+                    cookieLinkPos = 'afterend';
+                }
+                if (window.location.hostname.startsWith('m.')) {
+                    cookieLinkSibling = document.querySelector('#footer li:last-of-type') || cookieLinkSibling;
+                    cookieLinkHtml = '<li>' + cookieLinkHtml + '</li>';
+                    cookieLinkPos = 'afterend';
+                }
+                cookieLinkSibling.insertAdjacentHTML(cookieLinkPos, cookieLinkHtml);
+                document.getElementById('cookie-choices-link').addEventListener('click', function(e) {
+                    e.preventDefault();
+                    if (elDoNotSell && elDoNotSell.style.display !== 'none') {
+                        elDoNotSell.click();
+                    } else {
+                        bizx.cmp.promptConsent();
+                    }
+                });
+            }
+        }, 10);
+
+        var elModal = document.getElementById('ccpa-modal');
+        if (elModal) {
+            // watch for the modal to be visible (we don't trigger it ourselves so have to use this), and then lock the body scroll
+            var body_orig_overflow = document.body.style.overflow;
+            var modalVisibleWatcher = new IntersectionObserver(function (entries) {
+                if (entries[0].isIntersecting) {
+                    document.body.style.overflow = 'hidden';
+                } else {
+                    document.body.style.overflow = body_orig_overflow;
+                }
+            });
+            modalVisibleWatcher.observe(elModal);
+        }
+    });
+
+    bizx.cmp.ConsentReadyPromise = new Promise(function(resolve, reject){
+        function resolver() {
+            bizx.cmp.log('"consent" data available fired, ConsentReadyPromise resolver now running');
+            bizx.cmp.consent_is_known = true;
+            resolve();
+        }
+        bizx.cmp.log('waiting for "consent" event');
+        __cmp("addEventListener", ["consent", resolver, false], null);
+    });
+};
+
+bizx.cmp.handleConsentRejected = function() {
+    bizx.cmp.debug_cmp_reject('reject');
+
+    // build payload for our network request
+    var data = {};
+    data.jurisdiction = bizx.cmp.getRegulation();
+    try {
+        var ids = window.pbjs.getUserIds();
+        if (Object.keys(ids).length !== 0) {
+            data.id5id = ids.id5id.uid;
+        }
+    } catch (e) {
+        console.log('could not get id5id from prebid: ' + e);
+    }
+    if (!data.id5id) {  // if no prebid, try to get it from localStorage
+        try {
+            var id5data = JSON.parse(decodeURIComponent(window.localStorage.getItem('id5id')));
+            data.id5id = id5data?.universal_uid;
+        } catch (e) {
+            console.log('could not get id5id from localStorage: ' + e);
+        }
+    }
+    var hem = bizx.uids.getHem();
+    if (hem) {
+        data.hem = hem;
+    }
+
+    // after do-not-sell opt-out, make any network request, so that the server-side processing happens for users (RememberConsentForUsersMiddleware) even if user never navigates to another page themselves
+    // also record visitor consent change
+    try {
+        // endpoint only exists for SF/SD/TBS not other sites, but we'll just run it anyway and let it error
+        var url = '/p/sfapi/update_vid';
+        var xhr = new XMLHttpRequest();
+        xhr.open('PUT', url, false); // false makes the request synchronous.  Otherwise page reload will cancel this request.
+        if (Object.keys(data).length !== 0) {
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.send(JSON.stringify(data));
+        } else {
+            xhr.send();
+        }
+        if (xhr.status !== 200 && xhr.status > 300) {
+            throw new Error(`Request failed with status: ${xhr.status}`);
+        }
+    } catch (e) {
+        console.error('updateVid failed:', e);
+    }
+
+    bizx.uids.clearAllUids();
+};
+
+bizx.cmp.debug_cmp_reject = function(action) {
+    if (!bizx.cmp.show_do_not_sell()){
+        // Calif only
+        return;
+    }
+    if (localStorage.getItem('SF_cmp_reject_logged')) {
+        return;
+    }
+    var details = '';
+    var log_details = '';
+    try {
+        details += bizx.cmp.rejectCause;
+        details += '. visitorChoseDoNotSellShare=' + bizx.cmp.visitorChoseDoNotSellShare + ' visitorMadeSubsequentChange=' + bizx.cmp.visitorMadeSubsequentChange;
+        var pageOpenTime = Math.round((Date.now() - performance.timeOrigin) / 1000);
+        details += '. Page opened ' + pageOpenTime + 's ago';
+        log_details = details + '. Call Stack:\n' + new Error().stack.replace('Error\n', '');
+    } catch (e) {
+        log_details += '. Error getting details: ' + e.message;
+    }
+    if (window.SF?.logjs) {
+        window.SF.logjs.info('CMP ' + action + ': ' + log_details);
+    }
+    localStorage.setItem('SF_cmp_reject_logged', (new Date()).toISOString() + ' ' + details);  // without stack
+};
+
+bizx.cmp.updateDoNotSellToggle = function() {
+    var elToggle = document.getElementById('opt-toggle');
+    if (!elToggle) {
+        return;
+    }
+    bizx.cmp.ifConsent('', ['ads'], function () {
+        // accepted
+        elToggle.checked = true;
+    }, function () {
+        // rejected
+        elToggle.checked = false;
+    });
+};
+
+bizx.cmp.ls_key = 'recorded_user_optout';
+
+bizx.cmp.handleUserOptOut = function () {
+    // for logged-in users only
+    if (!bizx.cmp.options.logged_in_user_record_api) {
+        localStorage.removeItem(bizx.cmp.ls_key);  // in case a different user will log in later
+        return;
+    }
+    // all do-not-sell regions need handle this and do backend optouts.  Only California will save the value for the user.
+    if (!bizx.cmp.donotsell_regulations.includes(bizx.cmp.getRegulation())) {
+        return;
+    }
+    function no_ads_consent() {
+        var interval = 6 * 60 * 60 * 1000; // 6 hrs, expressed in ms
+        var recorded_user_optout = new Date(localStorage.getItem(bizx.cmp.ls_key));
+        if (!bizx.cmp.visitorChoseDoNotSellShare && new Date() - recorded_user_optout < interval) {
+            return;
+        }
+        bizx.cmp.log('logged-in user recording opt-out');
+        var xhr = new XMLHttpRequest();
+        var endpoint = bizx.cmp.options.logged_in_user_record_api;
+        endpoint += '?page=' + encodeURIComponent(window.location.pathname);
+        if (bizx.cmp.visitorChoseDoNotSellShare) {
+            endpoint += '&backend=1';
+        }
+        xhr.open('PUT', endpoint, false);  // async=false so that page reload later doesn't cancel it
+        xhr.addEventListener('load', function(e) {
+            if (e.target.status >= 400 || e.target.status < 200) {
+                bizx.cmp.log('logged-in user recording failed!', e.target);
+                return;
+            }
+            bizx.cmp.log('logged-in user recording success');
+            localStorage.setItem(bizx.cmp.ls_key, new Date());
+        });
+        xhr.send();
+    }
+    bizx.cmp.log('logged-in user checking if opt-out');
+    bizx.cmp.ifConsent('', ['ads'], null, no_ads_consent);
+};
+
+bizx.cmp.handleUserOptIn = function() {
+    // for logged-in users
+    if (!bizx.cmp.options.logged_in_user_record_api_in) {
+        return;
+    }
+    if (!bizx.cmp.donotsell_regulations.includes(bizx.cmp.getRegulation())) {
+        return;
+    }
+    bizx.cmp.log('logged-in user recording opt-in');
+    localStorage.removeItem(bizx.cmp.ls_key);
+    var xhr = new XMLHttpRequest();
+    xhr.open('PUT',
+        bizx.cmp.options.logged_in_user_record_api_in,
+        false  // false = not async.  wait for it, otherwise the page reload that happens next will send a stale opt-out CCPA cookie
+    );
+    xhr.addEventListener('load', function(e) {
+        if (e.target.status >= 400 || e.target.status < 200) {
+            bizx.cmp.log('logged-in user recording failed!', e.target);
+            return;
+        }
+        bizx.cmp.log('logged-in user recording success');
+    });
+    xhr.send();
+};
+
+bizx.cmp.show_do_not_sell = function() {
+    if (!bizx.cmp.options.geo) {
+        throw Error('must provide options.geo vals to use this function');
+    }
+    return bizx.cmp.options.geo.country_code2 === 'US' && bizx.cmp.donotsell_states.includes(bizx.cmp.options.geo.region);
+};
+
+bizx.cmp.cookie_notice_applies = function() {
+    if (!bizx.cmp.options.geo) {
+        throw Error('must provide options.geo vals to use this function');
+    }
+    return bizx.cmp.options.geo.country_code2 === 'US' && bizx.cmp.cookie_notice_states.includes(bizx.cmp.options.geo.region);
+};
+
+
+bizx.uids = {
+    KEYS: {
+        HEM_HEX: 'bizx_uids_hem_hex',
+    },
+    BAD_QUERY_PARAMS: ['hem', 'email'],
+};
+
+bizx.uids.gather = function(data={}) {
+    var url = new URL(document.URL);
+    var hem = url.searchParams.get('hem') || data?.hem;
+    if (hem) {
+        bizx.cmp.ifConsent({ purposes: 'all' }, function() {
+            if (hem.length !== 64 || hem.match(/[^0-9a-fA-F]/)) {
+                console.warn('invalid hem value');
+                return;
+            }
+            bizx.uids.saveUid(bizx.uids.KEYS.HEM_HEX, hem);
+        });
+    }
+};
+
+bizx.uids.clear = function() {
+    bizx.uids.clearAllUids();
+};
+
+bizx.uids.clearAllUids = function() {
+    bizx.uids.clearUid(bizx.uids.KEYS.HEM_HEX);
+};
+
+bizx.uids.saveUid = function(key, val) {
+    localStorage.setItem(key, val);
+};
+
+bizx.uids.loadUid = function(key) {
+    return localStorage.getItem(key);
+};
+
+bizx.uids.clearUid = function(key) {
+    localStorage.removeItem(key);
+};
+
+bizx.uids.getHem = function() {
+    return bizx.uids.loadUid(bizx.uids.KEYS.HEM_HEX);
+};
+
+bizx.uids.cleanQueryString = function(bad_query_params) {
+    bad_query_params = bad_query_params || bizx.uids.BAD_QUERY_PARAMS;
+    var origUrl = new URL(window.location.href);
+
+    var cleanedParams = new URLSearchParams();
+    for (const [key, value] of origUrl.searchParams) {
+        // console.log(`${key}, ${value}`);
+        if (bad_query_params.indexOf(key) === -1) {
+            cleanedParams.append(key, value);
+        }
+    }
+    var searches = [];
+    for (const [key, value] of cleanedParams) {
+        /* cleanedParams.toString() returns `cmp_debug=` by default, so we manually create empty keys */
+        if (!!value) {
+            searches.push(`${key}=${value}`);
+        } else {
+            searches.push(key);
+        }
+    }
+
+    origUrl.search = searches.join('&');
+    window.history.replaceState({}, '', origUrl.toString());
+};
+
+bizx.uids.gatherAndClean = function(data) {
+    bizx.uids.gather(data);
+    bizx.uids.cleanQueryString(bizx.uids.BAD_QUERY_PARAMS);
+};

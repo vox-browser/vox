@@ -1,0 +1,11 @@
+.noh1q10{flex-direction:column;flex:1;margin:20px 0;display:flex}
+.noh1q11{display:none}
+.noh1q12{flex:auto}
+.noh1q14{max-height:1000px}
+.noh1q15{max-height:1200px}
+.noh1q16{max-height:1200px}
+.noh1q12>*{top:var(--_1tsb0ye19t);margin-bottom:0;position:sticky}
+.noh1q17{margin:var(--_1tsb0ye19r);top:var(--_1tsb0ye19s)}
+.noh1q18>*{top:calc(var(--_1tsb0ye173) + 40px)}
+@media screen and (min-width:1180px){.noh1q10{max-width:var(--_1tsb0ye14k);gap:60px;margin:0}.noh1q11{display:flex}.noh1q13{flex:auto}.noh1q13>*{top:var(--_1tsb0ye19u);margin-bottom:0;position:sticky}}
+/*# sourceMappingURL=1unggdklrtkza.css.map*/

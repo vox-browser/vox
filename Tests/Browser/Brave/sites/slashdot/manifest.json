@@ -1,0 +1,2190 @@
+{
+  "version": 1,
+  "url": "https://slashdot.org/",
+  "sealed_unix": 1793314308.9239318,
+  "responses": {
+    "https://slashdot.org/": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "X-DNS-Prefetch-Control",
+          "value": "off"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "cache-control",
+          "value": "no-cache"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a525b6219940444c-ZRH"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "frame-ancestors 'self'; upgrade-insecure-requests;form-action 'self' slashdot.org slashdot.us15.list-manage.com;fenced-frame-src https:; frame-src 'self' slashdot.org *.lijit.com btloader.com *.btloader.com *.btmessage.com http://*.pro-market.net *.crsspxl.com *.google.com *.googlesyndication.com *.safeframe.usercontent.goog *.doubleclick.net *.gstatic.com *.googleadservices.com *.adtrafficquality.google console.googletagservices.com *.amazon-adsystem.com challenges.cloudflare.com *.adnxs.com *.indexww.com *.rubiconproject.com *.pubmatic.com *.smartadserver.com *.tapad.com http://*.youtube.com http://*.youtube-nocookie.com player.twitch.tv slashdotmedia.com as.slashdot.org *.as.slashdot.org error-report.com *.error-report.com html-load.com *.html-load.com *.fb.html-load.com content-loader.com *.content-loader.com *.fb.content-loader.com css-load.com *.css-load.com 07c225f3.online *.07c225f3.online *.criteo.com *.openx.net *.pghub.io; object-src http://*.youtube.com;script-src 'self' slashdot.org *.slashdot.org *.slashdotmedia.com a.fsdn.com challenges.cloudflare.com *.lijit.com *.moatads.com *.adsafeprotected.com *.sharethrough.com *.2mdn.net *.adnxs.com *.bing.com *.script.ac *.ybp.yahoo.com *.adnxs-simple.com *.truste.com *.adrta.com pghub.io/js/pandg-sdk.js *.pubmatic.com ml314.com *.stack-sonar.com *.licdn.com translate.googleapis.com *.doubleclick.net *.googleadservices.com *.adtrafficquality.google translate.google.cn *.gstatic.cn *.google.com *.ampproject.org *.amazon-adsystem.com *.criteo.net *.creativecdn.com *.crwdcntrl.net *.uidapi.com *.im-apps.net *.euid.eu *.openxcdn.net *.id5-sync.com cdn.jsdelivr.net/gh/prebid/shared-id/ *.33across.com *.permutive.app *.consentmanager.net *.microsofttranslator.com *.gstatic.com *.googletagservices.com *.google-analytics.com *.googlesyndication.com *.cloudflareinsights.com d3tglifpd8whs6.cloudfront.net rpxnow.com btloader.com *.btmessage.com *.crsspxl.com http://*.pro-market.net *.4dex.io *.adnxs-simple.com *.s-onetag.com *.rubiconproject.com *.trustarc.com *.truste.com *.doubleverify.com *.tapad.com *.pghub.io pghub.io *.sharethru.com j.6sc.co as.slashdot.org *.as.slashdot.org html-load.com *.html-load.com *.fb.html-load.com content-loader.com *.content-loader.com *.fb.content-loader.com css-load.com *.css-load.com 07c225f3.online *.07c225f3.online cmp.inmobi.com *.inmobicdn.net blob: data: 'unsafe-inline' 'unsafe-eval';"
+        },
+        {
+          "name": "cross-origin-opener-policy",
+          "value": "same-origin"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:45:35 GMT"
+        },
+        {
+          "name": "permissions-policy",
+          "value": "geolocation=(), microphone=(), camera=(), payment=(), document-domain=(), display-capture=(), autoplay=(), bluetooth=(), identity-credentials-get=(), otp-credentials=(), publickey-credentials-create=(), publickey-credentials-get=(), usb=(), accelerometer=(), ambient-light-sensor=(), captured-surface-control=(), compute-pressure=(), gamepad=(), hid=(), idle-detection=(), local-fonts=(), magnetometer=(), midi=(), screen-wake-lock=(), serial=(), speaker-selection=(), window-management=(), xr-spatial-tracking=(), local-network=(), local-network-access=(), loopback-network=()"
+        },
+        {
+          "name": "pragma",
+          "value": "no-cache"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "slash_log_data",
+          "value": "shtml"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "vary",
+          "value": "accept-encoding"
+        },
+        {
+          "name": "x-frame-options",
+          "value": "SAMEORIGIN"
+        },
+        {
+          "name": "x-xrds-location",
+          "value": "https://slashdot.org/slashdot.xrds"
+        },
+        {
+          "name": "content-length",
+          "value": "194486"
+        },
+        {
+          "name": "Content-Type",
+          "value": "text/html;charset=utf-8"
+        }
+      ],
+      "sha256": "ed9ab7bbc7427927d2bd281141700ab33b0efcb0029d2f93eb7721a871c3528c",
+      "bytes": 194486
+    },
+    "https://a.fsdn.com/sd/css/app.css?0ab6e7235c60a5c8": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "public, max-age=2678400"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6aa9a874-1ddaa\""
+        },
+        {
+          "name": "age",
+          "value": "1185"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a525b633aeb9c4a5-ZRH"
+        },
+        {
+          "name": "expires",
+          "value": "Sun, 29 Nov 2026 22:45:38 GMT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:45:38 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/css"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 15 Sep 2026 20:20:04 GMT"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "vary",
+          "value": "accept-encoding"
+        },
+        {
+          "name": "content-length",
+          "value": "122282"
+        }
+      ],
+      "sha256": "61de86672656ad9cffdd31e97e945e13584e618bde246a194ab4053bb89ef0f9",
+      "bytes": 122282
+    },
+    "https://a.fsdn.com/sd/classic.ssl.css?0ab6e7235c60a5c8": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "public, max-age=2678400"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6aa9a87d-231f6\""
+        },
+        {
+          "name": "age",
+          "value": "3492"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a525b633aeb8c4a5-ZRH"
+        },
+        {
+          "name": "expires",
+          "value": "Sun, 29 Nov 2026 22:45:38 GMT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:45:38 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/css"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 15 Sep 2026 20:20:13 GMT"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "vary",
+          "value": "accept-encoding"
+        },
+        {
+          "name": "content-length",
+          "value": "143862"
+        }
+      ],
+      "sha256": "8465f2213a47bda82df7f268593a54c39343f3b1090c06b8dbe6f45e9749a930",
+      "bytes": 143862
+    },
+    "https://a.fsdn.com/sd/NewsletterSubscription.png?v=2": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-bgj",
+          "value": "imgq:100,h2pri"
+        },
+        {
+          "name": "etag",
+          "value": "\"67508e4c-19d3b\""
+        },
+        {
+          "name": "age",
+          "value": "423"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "expires",
+          "value": "Sun, 29 Nov 2026 22:45:38 GMT"
+        },
+        {
+          "name": "cf-polished",
+          "value": "ok, orig_size=105787"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:45:38 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 04 Dec 2024 17:15:56 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "accept, accept-encoding"
+        },
+        {
+          "name": "priority",
+          "value": "u=4;i=?0,cf-chb=(45;u=5;i)"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=2678400"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a525b633aebec4a5-ZRH"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "70364"
+        }
+      ],
+      "sha256": "84603f28dd910996e0e4297c039f66287fcbc15f339b68f71f240c72545ae202",
+      "bytes": 70364
+    },
+    "https://a.fsdn.com/con/js/sftheme/cmp-slashdot.js?2026-10-20": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "public, max-age=2678400"
+        },
+        {
+          "name": "timing-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6973958d-12da9\""
+        },
+        {
+          "name": "age",
+          "value": "115938"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a525b633aebbc4a5-ZRH"
+        },
+        {
+          "name": "expires",
+          "value": "Sun, 29 Nov 2026 22:45:38 GMT"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:45:38 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 23 Jan 2026 15:36:45 GMT"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "vary",
+          "value": "accept-encoding"
+        },
+        {
+          "name": "content-length",
+          "value": "77225"
+        }
+      ],
+      "sha256": "fabcbf8d5633b3ab3d6b987a36cb20657775240aa0e05999feaf0e01468358cb",
+      "bytes": 77225
+    },
+    "https://a.fsdn.com/con/css/sftheme/sandiego/cmp.css?2026-10-20": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "public, max-age=2678400"
+        },
+        {
+          "name": "timing-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"689c99b4-d49\""
+        },
+        {
+          "name": "age",
+          "value": "191812"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a525b633aebac4a5-ZRH"
+        },
+        {
+          "name": "expires",
+          "value": "Sun, 29 Nov 2026 22:45:38 GMT"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:45:38 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/css"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 13 Aug 2025 13:57:08 GMT"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "vary",
+          "value": "accept-encoding"
+        },
+        {
+          "name": "content-length",
+          "value": "3398"
+        }
+      ],
+      "sha256": "3d0c018a6cc74eb09830ead364789a094a0364994fecb89e5421b70a755caf7c",
+      "bytes": 3398
+    },
+    "https://a.fsdn.com/sd/all-minified.js?0ab6e7235c60a5c8": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "public, max-age=2678400"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"66183b94-68fe8\""
+        },
+        {
+          "name": "age",
+          "value": "2090"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a525b633aebcc4a5-ZRH"
+        },
+        {
+          "name": "expires",
+          "value": "Sun, 29 Nov 2026 22:45:38 GMT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:45:38 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 11 Apr 2024 19:35:48 GMT"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "vary",
+          "value": "accept-encoding"
+        },
+        {
+          "name": "content-length",
+          "value": "430056"
+        }
+      ],
+      "sha256": "1a4d2c243593427fbb697a56c9215c4045c979755082e3256b85a4167f62eeb9",
+      "bytes": 430056
+    },
+    "https://a.fsdn.com/sd/ccpa-optout.png": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-bgj",
+          "value": "imgq:100,h2pri"
+        },
+        {
+          "name": "etag",
+          "value": "\"617b14c7-775\""
+        },
+        {
+          "name": "age",
+          "value": "684"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "expires",
+          "value": "Sun, 29 Nov 2026 22:45:38 GMT"
+        },
+        {
+          "name": "cf-polished",
+          "value": "ok, orig_size=1909"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:45:38 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 28 Oct 2021 21:23:19 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "accept, accept-encoding"
+        },
+        {
+          "name": "priority",
+          "value": "u=4;i=?0,cf-chb=(37;u=2;i=?0 498;u=5;i=?0)"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=2678400"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a525b6345fb9c4a5-ZRH"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "752"
+        }
+      ],
+      "sha256": "4ef6bb6647835be9fa8b228ccf2d0a3a4332599444657ca79eb648b97bd1f4c7",
+      "bytes": 752
+    },
+    "https://a.fsdn.com/con/js/sandiego/floating-unit.js?2026-10-20": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "public, max-age=2678400"
+        },
+        {
+          "name": "timing-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6ada7357-4a09\""
+        },
+        {
+          "name": "age",
+          "value": "191786"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a525b637fdb1c4a5-ZRH"
+        },
+        {
+          "name": "expires",
+          "value": "Sun, 29 Nov 2026 22:45:39 GMT"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:45:39 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 22 Oct 2026 20:34:31 GMT"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "vary",
+          "value": "accept-encoding"
+        },
+        {
+          "name": "content-length",
+          "value": "18953"
+        }
+      ],
+      "sha256": "468fd54562d65e4b02e9454a14b3b6f635036f2607675f856bb3a42e66ad96f4",
+      "bytes": 18953
+    },
+    "https://a.fsdn.com/sd/topics/bitcoin_64.png": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-bgj",
+          "value": "imgq:100,h2pri"
+        },
+        {
+          "name": "etag",
+          "value": "\"5f7bb2fa-30fd\""
+        },
+        {
+          "name": "age",
+          "value": "1613"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "expires",
+          "value": "Sun, 29 Nov 2026 22:45:39 GMT"
+        },
+        {
+          "name": "cf-polished",
+          "value": "ok, orig_size=12541"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:45:39 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 05 Oct 2020 23:57:46 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "accept, accept-encoding"
+        },
+        {
+          "name": "priority",
+          "value": "u=4;i=?0,cf-chb=(102;u=5;i=?0)"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=2678400"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a525b637fdb3c4a5-ZRH"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "6378"
+        }
+      ],
+      "sha256": "599d93d0569ffb32a55680d23d5cc773f0a29fda7cff686b6f4d7834bf35343e",
+      "bytes": 6378
+    },
+    "https://a.fsdn.com/sd/topics/movies_64.png": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-bgj",
+          "value": "h2pri,imgq:100"
+        },
+        {
+          "name": "etag",
+          "value": "\"5f7bb2fa-b3b\""
+        },
+        {
+          "name": "age",
+          "value": "5811"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "expires",
+          "value": "Sun, 29 Nov 2026 22:45:39 GMT"
+        },
+        {
+          "name": "cf-polished",
+          "value": "ok, orig_size=2875"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:45:39 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 05 Oct 2020 23:57:46 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "accept, accept-encoding"
+        },
+        {
+          "name": "priority",
+          "value": "u=4;i=?0,cf-chb=(45;u=5;i=?0)"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=2678400"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a525b637fdb5c4a5-ZRH"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "1914"
+        }
+      ],
+      "sha256": "a16b11e6188aeec52a19f9679c999709335c8616d3e8210b61153f6b3fd02d86",
+      "bytes": 1914
+    },
+    "https://a.fsdn.com/sd/topics/social_64.png": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-bgj",
+          "value": "h2pri,imgq:100"
+        },
+        {
+          "name": "etag",
+          "value": "\"5f7bb2fa-18bb\""
+        },
+        {
+          "name": "age",
+          "value": "6103"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "expires",
+          "value": "Sun, 29 Nov 2026 22:45:39 GMT"
+        },
+        {
+          "name": "cf-polished",
+          "value": "ok, orig_size=6331"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:45:39 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 05 Oct 2020 23:57:46 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "accept, accept-encoding"
+        },
+        {
+          "name": "priority",
+          "value": "u=4;i=?0,cf-chb=(45;u=5;i=?0)"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=2678400"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a525b637fdb9c4a5-ZRH"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "5092"
+        }
+      ],
+      "sha256": "c882ba4fc9ff85f304a5e48d49f216632daa63cde7fc403f88a4f4fa9591c107",
+      "bytes": 5092
+    },
+    "https://a.fsdn.com/sd/topics/eu_64.png": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-bgj",
+          "value": "h2pri,imgq:100"
+        },
+        {
+          "name": "etag",
+          "value": "\"61cf4523-1a00\""
+        },
+        {
+          "name": "age",
+          "value": "5370"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "expires",
+          "value": "Sun, 29 Nov 2026 22:45:39 GMT"
+        },
+        {
+          "name": "cf-polished",
+          "value": "ok, orig_size=6656"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:45:39 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 31 Dec 2021 18:00:03 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "accept, accept-encoding"
+        },
+        {
+          "name": "priority",
+          "value": "u=4;i=?0,cf-chb=(102;u=5;i=?0)"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=2678400"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a525b637fdb8c4a5-ZRH"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "3168"
+        }
+      ],
+      "sha256": "1a2e3e79be73d32f2ad2e1b41ad6e202a6424473b6c72d530a6cf89d302a7912",
+      "bytes": 3168
+    },
+    "https://a.fsdn.com/con/js/sandiego/maxnav.js?2026-10-20": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "public, max-age=2678400"
+        },
+        {
+          "name": "timing-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"69a1e35f-2e6\""
+        },
+        {
+          "name": "age",
+          "value": "191812"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a525b637fdaec4a5-ZRH"
+        },
+        {
+          "name": "expires",
+          "value": "Sun, 29 Nov 2026 22:45:39 GMT"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:45:39 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 27 Feb 2026 18:33:03 GMT"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "vary",
+          "value": "accept-encoding"
+        },
+        {
+          "name": "content-length",
+          "value": "742"
+        }
+      ],
+      "sha256": "d86e5a24e509602fa291f0751dfe60ba97c09a2a2af83aec97043500178dbf8a",
+      "bytes": 742
+    },
+    "https://a.fsdn.com/sd/topics/ai_64.png": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-bgj",
+          "value": "imgq:100,h2pri"
+        },
+        {
+          "name": "etag",
+          "value": "\"61ce3d3d-2a00\""
+        },
+        {
+          "name": "age",
+          "value": "735"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "expires",
+          "value": "Sun, 29 Nov 2026 22:45:39 GMT"
+        },
+        {
+          "name": "cf-polished",
+          "value": "ok, orig_size=10752"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:45:39 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 30 Dec 2021 23:14:05 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "accept, accept-encoding"
+        },
+        {
+          "name": "priority",
+          "value": "u=4;i=?0,cf-chb=(102;u=5;i=?0)"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=2678400"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a525b637fdb6c4a5-ZRH"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "4914"
+        }
+      ],
+      "sha256": "746a3f41a930da26c7d9f48506f05511309db77f121756876b9ae4e456df6594",
+      "bytes": 4914
+    },
+    "https://a.fsdn.com/sd/topics/privacy_64.png": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-bgj",
+          "value": "imgq:100,h2pri"
+        },
+        {
+          "name": "etag",
+          "value": "\"5f7bb2fa-14fc\""
+        },
+        {
+          "name": "age",
+          "value": "5438"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "expires",
+          "value": "Sun, 29 Nov 2026 22:45:39 GMT"
+        },
+        {
+          "name": "cf-polished",
+          "value": "ok, orig_size=5372"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:45:39 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 05 Oct 2020 23:57:46 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "accept, accept-encoding"
+        },
+        {
+          "name": "priority",
+          "value": "u=4;i=?0,cf-chb=(45;u=5;i=?0)"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=2678400"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a525b637fdc1c4a5-ZRH"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "3774"
+        }
+      ],
+      "sha256": "8b61e43e83b546571992667674c3452f5e88b4853f2fc306ed75070f09850184",
+      "bytes": 3774
+    },
+    "https://a.fsdn.com/sd/topics/google_64.png": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-bgj",
+          "value": "imgq:100,h2pri"
+        },
+        {
+          "name": "etag",
+          "value": "\"61cf4523-b1e\""
+        },
+        {
+          "name": "age",
+          "value": "908"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "expires",
+          "value": "Sun, 29 Nov 2026 22:45:39 GMT"
+        },
+        {
+          "name": "cf-polished",
+          "value": "ok, orig_size=2846"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:45:39 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 31 Dec 2021 18:00:03 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "accept, accept-encoding"
+        },
+        {
+          "name": "priority",
+          "value": "u=4;i=?0,cf-chb=(45;u=5;i=?0)"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=2678400"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a525b637fdbec4a5-ZRH"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "2538"
+        }
+      ],
+      "sha256": "bd33ba1dae7607c15082f7d081d9db80069a62476d361cad9728a0c0cb34438b",
+      "bytes": 2538
+    },
+    "https://a.fsdn.com/sd/topics/topicbeanies.gif": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-bgj",
+          "value": "imgq:100,h2pri"
+        },
+        {
+          "name": "etag",
+          "value": "\"61cf4523-425\""
+        },
+        {
+          "name": "age",
+          "value": "412"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "expires",
+          "value": "Sun, 29 Nov 2026 22:45:39 GMT"
+        },
+        {
+          "name": "cf-polished",
+          "value": "ok, orig_size=1061"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:45:39 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/gif"
+        },
+        {
+          "name": "vary",
+          "value": "accept-encoding"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 31 Dec 2021 18:00:03 GMT"
+        },
+        {
+          "name": "priority",
+          "value": "u=4;i=?0,cf-chb=(225;u=3;i=?0 642;u=5;i=?0 1059;u=6;i=?0)"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=2678400"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a525b637fdbfc4a5-ZRH"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "1061"
+        }
+      ],
+      "sha256": "b6b63101adc0c3cbb951818cea54fecac7f57b5450fec8c1fc1fbb559868aaf7",
+      "bytes": 1061
+    },
+    "https://a.fsdn.com/sd/sdlogo.svg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "public, max-age=2678400"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"61ce3d3d-889\""
+        },
+        {
+          "name": "age",
+          "value": "5683"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a525b6380dc8c4a5-ZRH"
+        },
+        {
+          "name": "expires",
+          "value": "Sun, 29 Nov 2026 22:45:39 GMT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:45:39 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 30 Dec 2021 23:14:05 GMT"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "vary",
+          "value": "accept-encoding"
+        },
+        {
+          "name": "content-length",
+          "value": "2185"
+        }
+      ],
+      "sha256": "c54cce6af217271cf459a481704772625f0861f881946e463b91c77f62e4688d",
+      "bytes": 2185
+    },
+    "https://a.fsdn.com/sd/topics/business_64.png": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-bgj",
+          "value": "imgq:100,h2pri"
+        },
+        {
+          "name": "etag",
+          "value": "\"617b14c7-184d\""
+        },
+        {
+          "name": "age",
+          "value": "1299"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "expires",
+          "value": "Sun, 29 Nov 2026 22:45:39 GMT"
+        },
+        {
+          "name": "cf-polished",
+          "value": "ok, orig_size=6221"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:45:39 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 28 Oct 2021 21:23:19 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "accept, accept-encoding"
+        },
+        {
+          "name": "priority",
+          "value": "u=4;i=?0,cf-chb=(45;u=5;i=?0)"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=2678400"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a525b637fdb7c4a5-ZRH"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "3876"
+        }
+      ],
+      "sha256": "15ba75e6270ea4b1eb2e846f9716e4716d012f21890e9a451c50ece4f0577780",
+      "bytes": 3876
+    },
+    "https://a.fsdn.com/sd/slashdot_favicon_white.png": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-bgj",
+          "value": "h2pri,imgq:100"
+        },
+        {
+          "name": "etag",
+          "value": "\"61cf4523-4db6\""
+        },
+        {
+          "name": "age",
+          "value": "4269"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "expires",
+          "value": "Sun, 29 Nov 2026 22:45:39 GMT"
+        },
+        {
+          "name": "cf-polished",
+          "value": "ok, orig_size=19894"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:45:39 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 31 Dec 2021 18:00:03 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "accept, accept-encoding"
+        },
+        {
+          "name": "priority",
+          "value": "u=4;i=?0,cf-chb=(89;u=4;i=?0)"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=2678400"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a525b6380dc5c4a5-ZRH"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "218"
+        }
+      ],
+      "sha256": "f97241e6103a32e7415ded731f409a571e8b2bcf3139dd36a5d887ef383a8785",
+      "bytes": 218
+    },
+    "https://a.fsdn.com/sd/sf-logo.png": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-bgj",
+          "value": "imgq:100,h2pri"
+        },
+        {
+          "name": "etag",
+          "value": "\"5f7bb2fa-169b\""
+        },
+        {
+          "name": "age",
+          "value": "4372"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "expires",
+          "value": "Sun, 29 Nov 2026 22:45:39 GMT"
+        },
+        {
+          "name": "cf-polished",
+          "value": "ok, orig_size=5787"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:45:39 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 05 Oct 2020 23:57:46 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "accept, accept-encoding"
+        },
+        {
+          "name": "priority",
+          "value": "u=4;i=?0,cf-chb=(45;u=5;i=?0)"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=2678400"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a525b6380dc6c4a5-ZRH"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "2956"
+        }
+      ],
+      "sha256": "ef066918a365be3defc80ad95336697c72e18aedb752d828a157d0a50a9b2b67",
+      "bytes": 2956
+    },
+    "https://a.fsdn.com/sd/topics/internet_64.png": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-bgj",
+          "value": "h2pri,imgq:100"
+        },
+        {
+          "name": "etag",
+          "value": "\"5f7bb2fa-2081\""
+        },
+        {
+          "name": "age",
+          "value": "286"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "expires",
+          "value": "Sun, 29 Nov 2026 22:45:39 GMT"
+        },
+        {
+          "name": "cf-polished",
+          "value": "ok, orig_size=8321"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:45:39 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 05 Oct 2020 23:57:46 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "accept, accept-encoding"
+        },
+        {
+          "name": "priority",
+          "value": "u=4;i=?0,cf-chb=(45;u=5;i=?0)"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=2678400"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a525b637fdbdc4a5-ZRH"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "6712"
+        }
+      ],
+      "sha256": "ba414189c469cb532afc958e7ebdc1719bacb9e83f9c7a8a6c9ddee39b75094b",
+      "bytes": 6712
+    },
+    "https://a.fsdn.com/sd/slashdot_tm.svg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "public, max-age=2678400"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"660464d3-c42\""
+        },
+        {
+          "name": "age",
+          "value": "358"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a525b6380dc3c4a5-ZRH"
+        },
+        {
+          "name": "expires",
+          "value": "Sun, 29 Nov 2026 22:45:39 GMT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:45:39 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 27 Mar 2024 18:26:27 GMT"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "vary",
+          "value": "accept-encoding"
+        },
+        {
+          "name": "content-length",
+          "value": "3138"
+        }
+      ],
+      "sha256": "fd4cb081c6812060e4bfddb4788cc0eb67b632e6efe1ca4c3b33326c1020ef48",
+      "bytes": 3138
+    },
+    "https://d.delivery.consentmanager.net/delivery/cmp.php?&cdid=dba15d148b97&h=https%3A%2F%2Fslashdot.org%2F&cmpregulationkey=GDPR&&l=en&o=1793313938639": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "no-store, no-cache, must-revalidate"
+        },
+        {
+          "name": "pragma",
+          "value": "no-cache"
+        },
+        {
+          "name": "cross-origin-resource-policy",
+          "value": "cross-origin"
+        },
+        {
+          "name": "expires",
+          "value": "Thu, 01 Dec 1994 16:00:00 GMT"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:45:39 GMT"
+        },
+        {
+          "name": "edge-control",
+          "value": "no-store, no-cache, must-revalidate"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 22:45:39 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "server",
+          "value": "Apache/2.4.68 (Debian)"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript; charset=utf-8"
+        },
+        {
+          "name": "content-length",
+          "value": "1036"
+        }
+      ],
+      "sha256": "01e07d9dbc2bb464ad8df2f8d0729ad8e3486746652c8523dd9d10394351f38d",
+      "bytes": 1036
+    },
+    "https://cdn.consentmanager.net/delivery/js/cmp_en.min.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "W/\"79ec9-65dc8e21308a1\""
+        },
+        {
+          "name": "age",
+          "value": "49659"
+        },
+        {
+          "name": "x-77-cache",
+          "value": "HIT"
+        },
+        {
+          "name": "expires",
+          "value": "Thu, 15 Oct 2026 08:57:45 GMT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:45:39 GMT"
+        },
+        {
+          "name": "edge-control",
+          "value": "max-age=86400"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript; charset=utf-8"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 14 Oct 2026 08:40:28 GMT"
+        },
+        {
+          "name": "x-77-nzt-ray",
+          "value": "d9f4d126b182c4a6b8cce36a729cad22"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "x-77-nzt",
+          "value": "knvpS2cDI3wQyfYJ+fwMYPS9td3Hf8HW5XSAfvgNt0ufbgHUh9beGLs"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=86400"
+        },
+        {
+          "name": "cross-origin-resource-policy",
+          "value": "cross-origin, cross-origin"
+        },
+        {
+          "name": "x-77-pop",
+          "value": "frankfurtDE"
+        },
+        {
+          "name": "x-77-age",
+          "value": "49659"
+        },
+        {
+          "name": "server",
+          "value": "CDN77-Turbo"
+        },
+        {
+          "name": "content-length",
+          "value": "499401"
+        }
+      ],
+      "sha256": "28fd555d70f9edfe2c530256333d15a5f5d083729a45bf41db7ed7f5b58867c2",
+      "bytes": 499401
+    },
+    "https://a.fsdn.com/sd/font/sdicon.woff?0ab6e7235c60a5c8": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "public, max-age=2678400"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "\"617b14c7-b17c\""
+        },
+        {
+          "name": "age",
+          "value": "4522"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a525b63b196ecd00-ZRH"
+        },
+        {
+          "name": "expires",
+          "value": "Sun, 29 Nov 2026 22:45:39 GMT"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:45:39 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "font/woff"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 28 Oct 2021 21:23:19 GMT"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "vary",
+          "value": "accept-encoding"
+        },
+        {
+          "name": "content-length",
+          "value": "45436"
+        }
+      ],
+      "sha256": "625cd71745541c37495055244a8c139e6f3c784b0f5262503ee0f304ee52944e",
+      "bytes": 45436
+    },
+    "https://slashdot.org/cdn-cgi/challenge-platform/h/g/scripts/jsd/c787ce48cf6b/main.js?ray=a525b6219940444c": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "max-age=14400, stale-if-error=10800, stale-while-revalidate=10800, public"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a525b63b1eda444c-ZRH"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:45:39 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript; charset=UTF-8"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "43026"
+        }
+      ],
+      "sha256": "291e32a682b84294482e603ba4c4ece8d36e62d094b741cf376c1c884bc3c30d",
+      "bytes": 43026
+    },
+    "https://c.delivery.consentmanager.net/delivery/cmp.php?__cmpcc=1&id=12126&o=1793313939&h=https%3A%2F%2Fslashdot.org%2F&&l=en&odw=0&dlt=1&l=en&cmpregulationkey=GDPR": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "no-store, no-cache, must-revalidate"
+        },
+        {
+          "name": "pragma",
+          "value": "no-cache"
+        },
+        {
+          "name": "cross-origin-resource-policy",
+          "value": "cross-origin"
+        },
+        {
+          "name": "expires",
+          "value": "Thu, 01 Dec 1994 16:00:00 GMT"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:45:40 GMT"
+        },
+        {
+          "name": "edge-control",
+          "value": "no-store, no-cache, must-revalidate"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 22:45:40 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "server",
+          "value": "Apache/2.4.68 (Debian)"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript; charset=utf-8"
+        },
+        {
+          "name": "content-length",
+          "value": "1036"
+        }
+      ],
+      "sha256": "778b5a2284f7c2ba01d9bb374bee2fb5fa63c772f06210a7443588b533db2475",
+      "bytes": 1036
+    },
+    "https://c.delivery.consentmanager.net/delivery/cmp.php?__cmpcc=2&__cmpfcc=1&id=12126&o=1793313940&h=https%3A%2F%2Fslashdot.org%2F&&l=en&odw=0&dlt=1&l=en&cmpregulationkey=GDPR": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "no-store, no-cache, must-revalidate"
+        },
+        {
+          "name": "pragma",
+          "value": "no-cache"
+        },
+        {
+          "name": "cross-origin-resource-policy",
+          "value": "cross-origin"
+        },
+        {
+          "name": "expires",
+          "value": "Thu, 01 Dec 1994 16:00:00 GMT"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:45:40 GMT"
+        },
+        {
+          "name": "edge-control",
+          "value": "no-store, no-cache, must-revalidate"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 22:45:40 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "server",
+          "value": "Apache/2.4.68 (Debian)"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript; charset=utf-8"
+        },
+        {
+          "name": "content-length",
+          "value": "5616"
+        }
+      ],
+      "sha256": "6aca4bb2d0548dcc02d0bd921647e69c3504639d5d792dd606bb3491c61b9a73",
+      "bytes": 5616
+    },
+    "https://cdn.consentmanager.net/delivery/customdata/bV8xLndfMTIxMjYucl9HRFBSLmxfZW4uZF8yNDkyLnhfMTUudi5wLnRfMjQ5Mi54dF84Mg.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "age",
+          "value": "213"
+        },
+        {
+          "name": "x-77-cache",
+          "value": "HIT"
+        },
+        {
+          "name": "expires",
+          "value": "Thu, 29 Oct 2026 23:42:07 GMT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:45:40 GMT"
+        },
+        {
+          "name": "edge-control",
+          "value": "public, max-age=3600"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript; charset=utf-8"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 22:42:07 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "x-77-nzt-ray",
+          "value": "d9f4d126b182c4a6b9cce36a5f8a602e"
+        },
+        {
+          "name": "x-77-nzt",
+          "value": "ko8dJ6jrAJVR3DZNYWhUftwejZILGuhXx8+lvwP7wY8ox5659/2YmJs"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=3600"
+        },
+        {
+          "name": "cross-origin-resource-policy",
+          "value": "cross-origin"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-77-pop",
+          "value": "frankfurtDE"
+        },
+        {
+          "name": "x-77-age",
+          "value": "213"
+        },
+        {
+          "name": "server",
+          "value": "CDN77-Turbo"
+        },
+        {
+          "name": "content-length",
+          "value": "74466"
+        }
+      ],
+      "sha256": "4a5e6e1dec999388a01dfaa3dc262a2355e344ecbc962a18c848d97eb2f3e6ce",
+      "bytes": 74466
+    },
+    "https://slashdot.org/favicon.ico": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "public, max-age=14400"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6596fc2b-309\""
+        },
+        {
+          "name": "age",
+          "value": "56"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a525b64299f9444c-ZRH"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 30 Oct 2026 02:45:40 GMT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:45:40 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/x-icon"
+        },
+        {
+          "name": "vary",
+          "value": "accept-encoding"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 04 Jan 2024 18:42:51 GMT"
+        },
+        {
+          "name": "content-length",
+          "value": "777"
+        }
+      ],
+      "sha256": "246b69d49e6e2c4548220e20030cd8f50837156cb993ea5f5f81c62fcbeeb59e",
+      "bytes": 777
+    }
+  },
+  "workload": "Frozen guest DOM; scripts removed; original resource bytes",
+  "live_png_sha256": "95adc10f41d62e0fbd114e5f2f3cb8d99f605d9ee291bf9840a82b4354d9ed43",
+  "capture_report_sha256": "e509cd29641b88677751287c2b6e3756416759e4fd66ea942de5195abeef8c31"
+}
