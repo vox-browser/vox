@@ -13,6 +13,7 @@ set -eu
 #   LADYBIRD_V_PROFILE_FNS   comma-separated C function names to profile
 #   LADYBIRD_SOURCE_DIR       upstream Ladybird checkout used for Skia
 #   LADYBIRD_VCPKG_TRIPLET    upstream vcpkg triplet directory
+#   VOX_BUILD_SCRATCH_DIR     compiler output root (defaults to Build/v)
 
 case "$(uname -s)" in
     Linux) exec sh "$(dirname -- "$0")/build-linux-browser.sh" "$@" ;;
@@ -73,7 +74,9 @@ esac
 mkdir -p "$binary_dir" "$resources_dir"
 # Failed compiler jobs can leave Mach-O/object scratch directories beside their
 # output. Keep those outside the app so they cannot invalidate bundle signing.
-compile_dir=$(mktemp -d "$build_dir/compiler-output.XXXXXX")
+compiler_output_root=${VOX_BUILD_SCRATCH_DIR:-$build_dir}
+mkdir -p "$compiler_output_root"
+compile_dir=$(mktemp -d "$compiler_output_root/compiler-output.XXXXXX")
 echo "Compiler outputs: $compile_dir"
 cp "$repo_dir/packaging/Info.plist" "$bundle_dir/Contents/Info.plist"
 cp "$repo_dir/packaging/Vox.icns" "$resources_dir/Vox.icns"
