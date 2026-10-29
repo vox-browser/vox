@@ -167,6 +167,7 @@ prealloc_modules=""
 font_modules=$(python3 "$repo_dir/tools/prepare_font_runtime.py" "$v_compiler")
 if [ "$gc_mode" = prealloc ]; then
     prealloc_modules=$(python3 "$repo_dir/tools/prepare_prealloc_runtime.py" "$v_compiler")
+    v_compiler="$prealloc_modules/compiler/v"
 fi
 # Anchor package names at the repository; see build-linux-browser.sh. Without
 # it, a checkout under `modules`, `.vmodules`, `vlib` or another v.mod compiles
@@ -224,15 +225,21 @@ if [ -n "${LADYBIRD_V_PROFILE:-}" ]; then
 fi
 echo "Building Vox with: $* -cflags $extra_cflags"
 # Root browser features are split across main.v and companion module files.
-cd "$repo_dir"
+if [ "$gc_mode" = prealloc ]; then
+    # V resolves builtin from its compiler root rather than -path. The staged
+    # executable/library view selects our bounded allocator without editing V.
+    cd "$prealloc_modules/compiler"
+else
+    cd "$repo_dir"
+fi
 if [ -n "$extra_ldflags" ]; then
     "$v_compiler" "$@" \
         -cflags "$extra_cflags" -ldflags "$extra_ldflags" \
-        -o "$binary_dir/Vox" .
+        -o "$binary_dir/Vox" "$repo_dir"
 else
     "$v_compiler" "$@" \
         -cflags "$extra_cflags" \
-        -o "$binary_dir/Vox" .
+        -o "$binary_dir/Vox" "$repo_dir"
 fi
 
 # Keep the filter worker's entry point independent of browser/UI initialization.

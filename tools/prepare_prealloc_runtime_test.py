@@ -3,7 +3,20 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from prepare_prealloc_runtime import prepare, validate_allocator
+from prepare_prealloc_runtime import patch_allocator, prepare, validate_allocator
+
+
+UNBOUNDED = """module builtin
+pub fn v_realloc(b &u8, n int) &u8 {
+\t$if prealloc {
+\t\tunsafe {
+\t\t\tnew_ptr = malloc(n)
+\t\t\tC.memcpy(new_ptr, b, n)
+\t\t}
+\t}
+}
+"""
+PREALLOC = "module builtin\nfn prealloc_realloc(old_data &u8, old_size int, new_size int) &u8 {}\n"
 
 
 class PreallocAllocatorCompatibilityTest(unittest.TestCase):
@@ -44,6 +57,56 @@ class PreallocAllocatorCompatibilityTest(unittest.TestCase):
                 with self.assertRaisesRegex(RuntimeError, "bounded v_realloc"):
                     prepare("/moved/compiler/v")
                 self.assertEqual(resolve.call_args.args[0], "/moved/compiler/v")
+
+    def test_stages_the_known_allocator_and_leaves_bounded_versions_unchanged(self):
+        allocation, prealloc = patch_allocator(UNBOUNDED, PREALLOC)
+        self.assertNotIn("C.memcpy(new_ptr, b, n)", allocation)
+        self.validate(allocation, prealloc)
+        self.assertEqual(patch_allocator(allocation, prealloc), (allocation, prealloc))
+
+    def test_unknown_and_partial_allocators_are_rejected(self):
+        for allocation, prealloc in [
+            (UNBOUNDED.replace("malloc(n)", "other_allocator(n)"), PREALLOC),
+            (UNBOUNDED, PREALLOC + "fn prealloc_realloc_copy_size() {}"),
+            (UNBOUNDED.replace("C.memcpy(new_ptr, b, n)", "prealloc_realloc_copy_size(b, n)"), PREALLOC),
+        ]:
+            with self.subTest(allocation=allocation):
+                with self.assertRaisesRegex(RuntimeError, "Unsupported V allocator"):
+                    patch_allocator(allocation, prealloc)
+
+    def test_runtime_staging_preserves_compiler_sources_and_has_immutable_identities(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            vlib = base / 'v-source/vlib'
+            builtin = vlib / 'builtin'
+            closure = builtin / 'closure'
+            closure.mkdir(parents=True)
+            (builtin / 'allocation.c.v').write_text(UNBOUNDED)
+            (builtin / 'prealloc.c.v').write_text(PREALLOC)
+            (builtin / 'other.v').write_text('module builtin\n')
+            (closure / 'closure.c.v').write_text('module closure\nfn closure_init_body() {\n}\n')
+            (vlib / 'os').mkdir()
+            compiler = base / 'v-source/v'
+            compiler.write_bytes(b'compiler identity')
+            before = {str(p): p.read_bytes() for p in vlib.rglob('*') if p.is_file()}
+            with patch('prepare_prealloc_runtime.compiler_vlib', return_value=vlib):
+                staged = prepare(compiler, base / 'output')
+                self.assertEqual(prepare(compiler, base / 'output'), staged)
+                validate_allocator(staged / 'builtin')
+                self.assertEqual((staged / 'compiler/v').read_bytes(), compiler.read_bytes())
+                self.assertEqual((staged / 'compiler/vlib/builtin').resolve(), staged / 'builtin')
+                self.assertEqual((staged / 'compiler/vlib/os').resolve(), (vlib / 'os').resolve())
+                self.assertTrue((staged / 'builtin/other.v').is_symlink())
+                self.assertIn('closure_metadata_enter()', (staged / 'builtin/closure/closure.c.v').read_text())
+                self.assertEqual(before, {str(p): p.read_bytes() for p in vlib.rglob('*') if p.is_file()})
+                compiler.write_bytes(b'new compiler identity')
+                newer = prepare(compiler, base / 'output')
+                self.assertNotEqual(newer, staged)
+                self.assertEqual((staged / 'compiler/v').read_bytes(), b'compiler identity')
+                allocator = newer / 'builtin/allocation.c.v'
+                allocator.write_text(allocator.read_text() + '\n// changed\n')
+                with self.assertRaisesRegex(RuntimeError, 'modified staged V runtime'):
+                    prepare(compiler, base / 'output')
 
 
 if __name__ == "__main__":

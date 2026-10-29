@@ -7,6 +7,27 @@ only when a whole arena is reset or released, so the rule for every piece of
 retained state is: for a fixed live workload, retained memory must stop
 growing after warm-up, however many frames or replacements happen.
 
+The production build stages its prealloc runtime with
+`tools/prepare_prealloc_runtime.py`. For the supported current V allocator, it
+bounds `v_realloc` copies before allocating the destination and handles
+`realloc(nil, n)` without reading from null. An already bounded compiler runtime
+is preserved; unfamiliar or partially patched allocators are rejected.
+The same staging retains the persistent closure bookkeeping described below.
+
+Each staged view has an immutable identity covering the compiler binary and
+runtime inputs. Only the compiler executable, patched allocator files, and
+closure files are copied; the remaining standard library and dependencies use
+links to the active V checkout. No Vox source tree is copied. The build invokes
+the staged compiler from its runtime directory with an absolute canonical
+source path, because V selects builtin from its compiler root rather than
+ordinary module search paths. The original compiler checkout stays unchanged.
+
+`python3 tools/prepare_prealloc_runtime_test.py` checks staging, reuse, source
+preservation, and unsupported allocator rejection. Native reallocation
+regressions live in `tools/prealloc_runtime_checks/realloc_test.v`; compile them
+with the staged compiler from that runtime directory using `-prealloc -gc none`
+and absolute input/output paths, under the usual memory guards.
+
 This document records what the `-prealloc` build already bounds, the contracts
 code must follow, how to measure it, and what remains to meet the RAM target.
 The default has changed. The latest three-pair 60-second Pikabu comparison and
