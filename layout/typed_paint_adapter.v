@@ -1329,16 +1329,25 @@ fn resolve_linear_gradient_data(resolution_context css.LengthResolutionContext,
 	}
 }
 
-fn radial_extent_size(extent css.RadialExtent, center_x f64, center_y f64, width f64, height f64) (f64, f64) {
+fn radial_extent_size(extent css.RadialExtent, center_x f64, center_y f64, width f64, height f64,
+	circle bool) (f64, f64) {
 	left := math.abs(center_x)
 	right := math.abs(width - center_x)
 	top := math.abs(center_y)
 	bottom := math.abs(height - center_y)
 	match extent {
 		.closest_side {
+			if circle {
+				radius := math.min(math.min(left, right), math.min(top, bottom))
+				return radius, radius
+			}
 			return math.min(left, right), math.min(top, bottom)
 		}
 		.farthest_side {
+			if circle {
+				radius := math.max(math.max(left, right), math.max(top, bottom))
+				return radius, radius
+			}
 			return math.max(left, right), math.max(top, bottom)
 		}
 		.closest_corner, .farthest_corner {
@@ -1351,6 +1360,10 @@ fn radial_extent_size(extent css.RadialExtent, center_x f64, center_y f64, width
 				math.min(top, bottom)
 			} else {
 				math.max(top, bottom)
+			}
+			if circle {
+				radius := math.sqrt(base_x * base_x + base_y * base_y)
+				return radius, radius
 			}
 			if base_y == 0 {
 				return base_x, 1.0 / 64.0
@@ -1379,7 +1392,8 @@ fn resolve_radial_gradient_data(resolution_context css.LengthResolutionContext,
 		first := components[0]
 		match first {
 			css.RadialExtentComponent {
-				radius_x, radius_y = radial_extent_size(first.extent, center_x, center_y, width, height)
+				radius_x, radius_y = radial_extent_size(first.extent, center_x, center_y, width, height,
+					gradient.ending_shape_ == .circle)
 			}
 			css.StyleValue {
 				if gradient.ending_shape_ == .circle {
@@ -1403,20 +1417,6 @@ fn resolve_radial_gradient_data(resolution_context css.LengthResolutionContext,
 					}
 				}
 			}
-		}
-	}
-	if gradient.ending_shape_ == .circle {
-		if components.len > 0 && components[0] is css.RadialExtentComponent {
-			extent := (components[0] as css.RadialExtentComponent).extent
-			radius := match extent {
-				.closest_side { math.min(radius_x, radius_y) }
-				.farthest_side { math.max(radius_x, radius_y) }
-				.closest_corner, .farthest_corner {
-					math.sqrt(radius_x * radius_x + radius_y * radius_y)
-				}
-			}
-			radius_x = radius
-			radius_y = radius
 		}
 	}
 	if radius_x <= 0 {
