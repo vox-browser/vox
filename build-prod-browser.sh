@@ -175,7 +175,7 @@ prealloc_modules=""
 # initialization. Stage the same checked initializer for every browser build.
 font_modules=$(python3 "$repo_dir/tools/prepare_font_runtime.py" "$v_compiler")
 if [ "$gc_mode" = prealloc ]; then
-    prealloc_modules=$(python3 "$repo_dir/tools/prepare_prealloc_runtime.py" "$v_compiler")
+    prealloc_modules=$(python3 "$repo_dir/tools/prepare_prealloc_runtime.py" "$v_compiler" "$compiler_output_root/prealloc-runtime")
     v_compiler="$prealloc_modules/compiler/v"
 fi
 # Anchor package names at the repository; see build-linux-browser.sh. Without

@@ -151,4 +151,4 @@ def write_runtime(staged, root, vlib, builtin, owned, compiler, identity):
 
 
 if __name__ == "__main__":
-    print(prepare(sys.argv[1]))
+    print(prepare(sys.argv[1], Path(sys.argv[2]) if len(sys.argv) > 2 else None))
