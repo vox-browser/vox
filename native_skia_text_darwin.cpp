@@ -1005,6 +1005,9 @@ extern "C" int ladybird_v_skia_register_system_face(char const* key, char const*
             CFRelease(wanted);
         return 0;
     }
+    // Downloaded standalone faces have no installed PostScript identity.
+    if (!selected && !*postscript_name && CFArrayGetCount(descriptors) > 0)
+        selected = static_cast<CTFontDescriptorRef>(CFRetain(CFArrayGetValueAtIndex(descriptors, 0)));
     for (CFIndex index = 0; !selected && wanted && index < CFArrayGetCount(descriptors); ++index) {
         auto descriptor = static_cast<CTFontDescriptorRef>(CFArrayGetValueAtIndex(descriptors, index));
         auto name = static_cast<CFStringRef>(CTFontDescriptorCopyAttribute(descriptor, kCTFontNameAttribute));

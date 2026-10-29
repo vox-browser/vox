@@ -136,7 +136,7 @@ __global native_registered_system_faces = map[string]bool{}
 // by system font matching are registered with the native replay bridge under a
 // key naming the face and its variation coordinates.
 fn native_replay_font_path(font &platform.Font) string {
-	face := font.system_face() or { return font.font_path() or { '' } }
+	face := font.replay_face() or { return font.font_path() or { '' } }
 	mut key := 'vox-system-face:${face.path}#${face.face_index}|${face.postscript_name}'
 	for axis in face.variations {
 		key += '|${axis.tag}=${axis.value}'

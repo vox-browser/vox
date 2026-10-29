@@ -3492,6 +3492,7 @@ pub mut:
 	italic bool
 mut:
 	metrics_font_ &platform.Font = unsafe { nil }
+	native_variations_ FontVariationSettings
 	pixel_size_override_ ?f32
 }
 
@@ -3519,11 +3520,13 @@ pub fn (font &PlatformFont) font_for_rendering() &platform.Font {
 		weight: int(font.variations.weight)
 		italic: font.italic
 		source_path: font.typeface.source_path.clone()
+		requested_variations: if font.typeface.source_path == '' { []platform.FontVariationAxis{} } else { font.variations.native_axes() }
 		is_invisible: font.is_invisible
 		font_rendering_policy: font.font_rendering_policy
 	}
 	mut mutable_font := unsafe { &PlatformFont(font) }
 	mutable_font.metrics_font_ = native_font
+	mutable_font.native_variations_ = font.variations.owned_clone()
 	return native_font
 }
 
@@ -3535,6 +3538,10 @@ fn (font &PlatformFont) matches_native_font(cached &platform.Font) bool {
 		&& cached.source_path == font.typeface.source_path
 		&& cached.is_invisible == font.is_invisible
 		&& cached.font_rendering_policy == font.font_rendering_policy
+		&& (font.typeface.source_path == '' || (font.native_variations_.weight == font.variations.weight
+			&& font.native_variations_.width == font.variations.width
+			&& font.native_variations_.opsz == font.variations.opsz
+			&& font.native_variations_.axis_values_equal(font.variations)))
 }
 
 fn owned_platform_typeface(typeface &PlatformTypeface) &PlatformTypeface {
@@ -3570,6 +3577,7 @@ fn owned_platform_font(font &PlatformFont) PlatformFont {
 		// An input mutation replaces the clone's cache on its next lookup; the
 		// immutable old handle remains valid for previously retained fragments.
 		metrics_font_: if font.matches_native_font(font.metrics_font_) { font.metrics_font_ } else { unsafe { &platform.Font(nil) } }
+		native_variations_: font.native_variations_.owned_clone()
 	}
 }
 

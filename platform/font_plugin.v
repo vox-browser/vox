@@ -60,12 +60,15 @@ pub:
 	// A decoded @font-face source. System fonts leave this empty and resolve
 	// through the family cascade.
 	source_path           string
+	requested_variations  []FontVariationAxis
 	is_invisible          bool
 	font_rendering_policy FontRenderingPolicy
 	synthesize_ascii_caps bool
 	// A character-fallback face selected by the platform cascade.
 	system_face_override ?SystemFontFace
 mut:
+	resolved_variations_ []FontVariationAxis
+	variations_resolved_ bool
 	resolved_system_face_     ?SystemFontFace
 	system_face_resolved_     bool
 	resolved_path_            string

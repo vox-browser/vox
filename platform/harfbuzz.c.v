@@ -634,6 +634,8 @@ type SkiaSystemFaceAdvances = fn (key &char, path &char, postscript_name &char, 
 
 type SkiaFaceAdvances = fn (path &char, face_index int, weight int, size f32, glyphs &u16, count int, advances &f32) int
 
+type SkiaRegisterFace = fn (key &char, path &char, postscript_name &char, tags &u32, values &f32, count int) int
+
 __global skia_system_face_advances_lookup = SkiaSystemFaceAdvancesLookup{}
 
 struct SkiaSystemFaceAdvancesLookup {
@@ -641,6 +643,7 @@ mut:
 	attempted     bool
 	function      voidptr
 	face_function voidptr
+	register_function voidptr
 	// Cleared whenever native faces retire; their addresses can be reused.
 	bitmap_faces map[u64]bool
 }
@@ -654,6 +657,8 @@ fn skia_system_face_advances_function() voidptr {
 				c'ladybird_v_skia_system_face_advances')
 			skia_system_face_advances_lookup.face_function = C.dlsym(unsafe { voidptr(int(-2)) },
 				c'ladybird_v_skia_face_advances')
+			skia_system_face_advances_lookup.register_function = C.dlsym(unsafe { voidptr(int(-2)) },
+				c'ladybird_v_skia_register_system_face')
 		}
 		return skia_system_face_advances_lookup.function
 	} $else {
@@ -692,10 +697,10 @@ fn harfbuzz_face_is_bitmap_face(face voidptr) bool {
 fn chromium_outline_face_advances(font &Font, face voidptr, hb_font voidptr, infos &C.hb_glyph_info_t,
 	positions &C.hb_glyph_position_t, count int) []f32 {
 	if font.font_rendering_policy != .chromium || count <= 0 || harfbuzz_face_is_bitmap_face(face)
-		|| font.variations().len > 0 {
+		|| (font.source_path == '' && font.variations().len > 0) {
 		return []f32{}
 	}
-	widths := if font.system_face() != none {
+	widths := if font.replay_face() != none {
 		skia_system_face_widths(font, infos, count)
 	} else {
 		skia_document_face_widths(font, infos, count)
@@ -751,7 +756,7 @@ fn skia_document_face_widths(font &Font, infos &C.hb_glyph_info_t, count int) []
 }
 
 fn skia_system_face_widths(font &Font, infos &C.hb_glyph_info_t, count int) []f32 {
-	system_face := font.system_face() or { return []f32{} }
+	system_face := font.replay_face() or { return []f32{} }
 	function := skia_system_face_advances_function()
 	if function == unsafe { nil } {
 		return []f32{}
@@ -763,6 +768,14 @@ fn skia_system_face_widths(font &Font, infos &C.hb_glyph_info_t, count int) []f3
 	mut advances := []f32{len: count}
 	measure := unsafe { SkiaSystemFaceAdvances(function) }
 	key := system_face.replay_key()
+	if font.source_path != '' && system_face.variations.len > 0 {
+		register := skia_system_face_advances_lookup.register_function
+		if register == unsafe { nil } { return []f32{} }
+		tags := system_face.variations.map(it.tag)
+		values := system_face.variations.map(it.value)
+		register_face := unsafe { SkiaRegisterFace(register) }
+		if register_face(&char(key.str), &char(system_face.path.str), &char(system_face.postscript_name.str), tags.data, values.data, tags.len) == 0 { return []f32{} }
+	}
 	if measure(&char(key.str), &char(system_face.path.str), &char(system_face.postscript_name.str),
 		font.point_size, glyph_ids.data, count, advances.data) == 0 {
 		return []f32{}

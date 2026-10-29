@@ -254,6 +254,7 @@ struct ShapingFontKey {
 	is_invisible    bool
 	font_rendering_policy FontRenderingPolicy
 	synthesize_ascii_caps bool
+	requested_variations []FontVariationAxis
 	key             string
 }
 
@@ -307,6 +308,7 @@ fn (entry &ShapingFontKey) matches(font &Font, point_size_bits u32) bool {
 		&& entry.font_rendering_policy == font.font_rendering_policy
 		&& entry.synthesize_ascii_caps == font.synthesize_ascii_caps
 		&& entry.source_path == font.source_path && entry.resolved_path == font.resolved_path_
+		&& entry.requested_variations == font.requested_variations
 }
 
 // Keep the last key as the common fast path, and retain a bounded ring for
@@ -321,7 +323,8 @@ fn shaping_cache_font_key(font &Font) string {
 		&& previous.point_size_bits == math.f32_bits(font.point_size)
 		&& previous.is_invisible == font.is_invisible
 		&& previous.font_rendering_policy == font.font_rendering_policy
-		&& previous.synthesize_ascii_caps == font.synthesize_ascii_caps {
+		&& previous.synthesize_ascii_caps == font.synthesize_ascii_caps
+		&& previous.requested_variations == font.requested_variations {
 		return previous.key
 	}
 	return shaping_font_key_after_last_miss(font)
@@ -342,7 +345,7 @@ fn shaping_font_key_after_last_miss(font &Font) string {
 	persistent := enter_persistent()
 	defer { leave_persistent(persistent) }
 	resolved_path := font.font_path() or { '' }
-	key := '${font.family.len}:${font.family}|${font.source_path.len}:${font.source_path}|${resolved_path.len}:${resolved_path}|${font.weight}|${font.face_index()}|${point_size_bits}|${font.is_invisible}|${font.font_rendering_policy}|${font.synthesize_ascii_caps}' + if font.italic { '|italic' } else { '' }
+	key := '${font.family.len}:${font.family}|${font.source_path.len}:${font.source_path}|${resolved_path.len}:${resolved_path}|${font.weight}|${font.face_index()}|${point_size_bits}|${font.is_invisible}|${font.font_rendering_policy}|${font.synthesize_ascii_caps}' + if font.italic { '|italic' } else { '' } + if font.requested_variations.len > 0 { '|${font.requested_variations}' } else { '' }
 	// An unavailable explicit source can appear later. Its fallback path remains
 	// unpinned, and must continue through the original resolution on each call.
 	if font.resolved_path_ != '' {
@@ -356,6 +359,7 @@ fn shaping_font_key_after_last_miss(font &Font) string {
 			is_invisible:    font.is_invisible
 			font_rendering_policy: font.font_rendering_policy
 			synthesize_ascii_caps: font.synthesize_ascii_caps
+			requested_variations: font.requested_variations.clone()
 			key:             key
 		}
 		last_shaping_font_key = entry

@@ -29,6 +29,36 @@ fn test_native_font_is_shared_by_metrics_and_rendering_without_repeated_allocati
 	}
 }
 
+fn test_native_author_font_retains_axes_and_replaces_handles_after_axis_changes() {
+	mut font := PlatformFont{
+		typeface: &PlatformTypeface{family_name:'Variable fixture',source_path:'/font/variable.ttf'}
+		point_size:12
+		variations:FontVariationSettings{weight:500,width:90,opsz:16}
+	}
+	font.variations.set_axis('wght',550)
+	font.variations.set_axis('TEST',7)
+	first := font.font_for_rendering()
+	assert first.requested_variations == [
+		platform.FontVariationAxis{tag:0x54455354,value:7},
+		platform.FontVariationAxis{tag:0x6f70737a,value:16},
+		platform.FontVariationAxis{tag:0x77647468,value:90},
+		platform.FontVariationAxis{tag:0x77676874,value:550},
+	]
+	assert voidptr(font.font_for_rendering()) == voidptr(first)
+	mut copy := owned_platform_font(&font)
+	assert voidptr(copy.font_for_rendering()) == voidptr(first)
+	font.variations.set_axis('wght',650)
+	second := font.font_for_rendering()
+	assert voidptr(second) != voidptr(first)
+	assert second.requested_variations[3].value == 650
+	assert first.requested_variations[3].value == 550
+	font.variations.opsz = 24
+	third := font.font_for_rendering()
+	assert voidptr(third) != voidptr(second)
+	assert third.requested_variations[1].value == 24
+	assert copy.font_for_rendering().requested_variations[1].value == 16
+}
+
 fn test_native_font_visibility_changes_replace_the_handle_and_preserve_snapshots() {
 	mut font := PlatformFont{
 		typeface: &PlatformTypeface{ family_name: 'SerenitySans' }

@@ -334,5 +334,14 @@ pub fn (font &Font) variations() []FontVariationAxis {
 	if face := font.system_face() {
 		return face.variations
 	}
-	return []
+	return font.source_variations()
+}
+
+// File-backed variable faces use the same concrete identity for shaping,
+// strike advances and retained glyph painting.
+pub fn (font &Font) replay_face() ?SystemFontFace {
+	if face := font.system_face() { return face }
+	axes := font.variations()
+	if axes.len == 0 { return none }
+	return SystemFontFace{path: font.font_path()?, postscript_name: '', face_index: font.face_index(), variations: axes}
 }
