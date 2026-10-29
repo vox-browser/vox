@@ -80,10 +80,12 @@ compile_dir=$(mktemp -d "$compiler_output_root/compiler-output.XXXXXX")
 echo "Compiler outputs: $compile_dir"
 cp "$repo_dir/packaging/Info.plist" "$bundle_dir/Contents/Info.plist"
 cp "$repo_dir/packaging/Vox.icns" "$resources_dir/Vox.icns"
-snapshot_resource_tmp=$(mktemp "$resources_dir/.adblock-snapshot.XXXXXX")
-cp "$repo_dir/adblock/engine.snapshot.bin" "$snapshot_resource_tmp"
-chmod 644 "$snapshot_resource_tmp"
-mv -f "$snapshot_resource_tmp" "$resources_dir/adblock.snapshot.bin"
+if ! cmp -s "$repo_dir/adblock/engine.snapshot.bin" "$resources_dir/adblock.snapshot.bin"; then
+    snapshot_resource_tmp=$(mktemp "$resources_dir/.adblock-snapshot.XXXXXX")
+    cp "$repo_dir/adblock/engine.snapshot.bin" "$snapshot_resource_tmp"
+    chmod 644 "$snapshot_resource_tmp"
+    mv -f "$snapshot_resource_tmp" "$resources_dir/adblock.snapshot.bin"
+fi
 
 extra_cflags=""
 if [ "$gc_mode" = boehm ] || [ "$gc_mode" = boehm_full ]; then
