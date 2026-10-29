@@ -48,6 +48,11 @@ def main():
     try:
         main_source = (ROOT / 'main.v').read_text().split('fn main() {', 1)[1]
         first = re.sub(r'^\s*(?://[^\n]*\n\s*)*', '', main_source)
+        # JavaScript's self-helper also dispatches before browser setup. It
+        # returns immediately for the filter worker's distinct role flag.
+        js_dispatch = 'if status := browserjs.run_worker_process_role(os.args) { exit(status) }'
+        if first.startswith(js_dispatch):
+            first = first[len(js_dispatch):].lstrip()
         assert first.startswith('if status := adblock.run_default_worker_role(os.args)'), 'Worker dispatch must precede browser heap/font/GUI initialization'
         helper = args.helper.resolve() if args.helper else output / 'helper'
         if not args.helper:
