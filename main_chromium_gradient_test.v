@@ -168,7 +168,7 @@ fn test_chromium_gradient_clip_transfer_preserves_local_rect_and_corner_order() 
 	assert chromium_gradient_uses_gpu_clip(command, gradient)
 	assert !chromium_gradient_uses_gpu_clip(layout.PaintCommand{ ...command, gradient_background_layer: false }, gradient)
 	assert !chromium_gradient_uses_gpu_clip(command, layout.LinearGradient{ ...gradient, y2: 0 })
-	assert !chromium_gradient_uses_gpu_clip(command, layout.LinearGradient{ ...gradient, kind: 'radial' })
+	assert chromium_gradient_uses_gpu_clip(command, layout.LinearGradient{ ...gradient, kind: 'radial' })
 }
 
 fn test_chromium_gradient_transfers_only_compatible_rounded_ancestor() {
@@ -198,4 +198,34 @@ fn test_chromium_gradient_transfers_only_compatible_rounded_ancestor() {
 	assert chromium_gradient_gpu_ancestor_clip_index(&layout.PaintCommand{...command, gradient_background_layer: false}) == -1
 	assert chromium_gradient_gpu_ancestor_clip_index(&layout.PaintCommand{...command, has_clip: false}) == -1
 	assert chromium_gradient_gpu_ancestor_clip_index(&layout.PaintCommand{...command, clip_list: &layout.PaintClipList{items: clips[1..]}}) == -1
+}
+
+fn test_chromium_radial_gradient_retains_unquantized_stops_and_gpu_clips() {
+	gradient := layout.LinearGradient{
+		kind: 'radial'
+		radial: true
+		radius_x: .7
+		radius_y: .9
+		stops: [layout.GradientStop{css.Color{23,43,66,31}, 0},
+			layout.GradientStop{css.Color{0,0,0,0}, .64}]
+	}
+	mut stops := []f32{}
+	assert chromium_gradient_stop_data_into(gradient, .5, mut stops)
+	assert stops.len == 10
+	assert stops[0] == f32(23) / 255
+	assert stops[3] == f32(f64(31) / 255 * .5)
+	assert stops[5] == stops[0] && stops[6] == stops[1] && stops[7] == stops[2]
+	assert stops[8] == 0 && stops[9] == f32(.64)
+	command := layout.PaintCommand{gradient_background_layer: true}
+	assert chromium_gradient_uses_gpu_clip(command, gradient)
+	assert !chromium_gradient_uses_gpu_clip(command, layout.LinearGradient{...gradient, radius_x: 0})
+	assert !chromium_gradient_uses_gpu_clip(command, layout.LinearGradient{
+		...gradient
+		interpolation_method: css.ColorInterpolationMethod(css.RectangularColorSpace.oklab)
+	})
+	assert !chromium_gradient_uses_gpu_clip(command, layout.LinearGradient{
+		...gradient
+		stops: [layout.GradientStop{css.Color{255,0,0,128}, 0},
+			layout.GradientStop{css.Color{0,0,255,255}, 1}]
+	})
 }

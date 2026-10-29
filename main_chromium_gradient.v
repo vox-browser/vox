@@ -57,7 +57,7 @@ fn chromium_linear_gradient_points(gradient layout.LinearGradient, tile painting
 
 // The SVG GPU shader's straight-component interpolation is also the CSS
 // premultiplied result when alpha is constant or all visible RGB components
-// are constant (invisible RGB is normalized below). Preserve original stops for these sRGB linear gradients rather
+// are constant (invisible RGB is normalized below). Preserve original stops for these sRGB gradients rather
 // than quantizing an intermediate set of samples to eight bits.
 $if test {
 	fn chromium_linear_gradient_stop_data(gradient layout.LinearGradient, opacity f64) ?[]f32 {
@@ -69,10 +69,19 @@ $if test {
 
 fn chromium_linear_gradient_stop_data_into(gradient layout.LinearGradient, opacity f64,
 	mut data []f32) bool {
+	if gradient.kind != 'linear' || gradient.radial {
+		data.clear()
+		return false
+	}
+	return chromium_gradient_stop_data_into(gradient, opacity, mut data)
+}
+
+fn chromium_gradient_stop_data_into(gradient layout.LinearGradient, opacity f64,
+	mut data []f32) bool {
 	persistent := platform.enter_persistent_if(platform.transient_arena_entered())
 	defer { platform.leave_persistent(persistent) }
 	data.clear()
-	analysis := chromium_linear_gradient_stop_analysis(gradient) or { return false }
+	analysis := chromium_gradient_stop_analysis(gradient) or { return false }
 	for index in 0 .. analysis.count {
 		stop := chromium_gradient_stop(gradient.stops, gradient.colors, index)
 		color := if analysis.same_rgb && stop.color.a == 0 { analysis.visible_color } else { stop.color }
@@ -93,8 +102,8 @@ struct ChromiumGradientStopAnalysis {
 
 // Whether the original stops can be drawn as they are (see above), without
 // building their data: the checks run several times for every gradient draw.
-fn chromium_linear_gradient_stop_analysis(gradient layout.LinearGradient) ?ChromiumGradientStopAnalysis {
-	if gradient.kind != 'linear' || gradient.radial { return none }
+fn chromium_gradient_stop_analysis(gradient layout.LinearGradient) ?ChromiumGradientStopAnalysis {
+	if gradient.kind != 'linear' && gradient.kind != 'radial' { return none }
 	if method := gradient.interpolation_method {
 		if method is css.RectangularColorSpace {
 			if method != .srgb { return none }
@@ -149,8 +158,15 @@ fn chromium_gradient_stop(stops []layout.GradientStop, colors []css.Color, index
 // A later CoreGraphics clip applies a different fractional corner coverage.
 fn chromium_gradient_uses_gpu_clip(command layout.PaintCommand, gradient layout.LinearGradient) bool {
 	return command.gradient_background_layer
-		&& (gradient.x1 != gradient.x2 || gradient.y1 != gradient.y2)
-		&& chromium_linear_gradient_stop_analysis(gradient) != none
+		&& chromium_gradient_has_gpu_geometry(gradient)
+		&& chromium_gradient_stop_analysis(gradient) != none
+}
+
+fn chromium_gradient_has_gpu_geometry(gradient layout.LinearGradient) bool {
+	if gradient.kind == 'radial' || gradient.radial {
+		return gradient.radius_x > 0 && gradient.radius_y > 0
+	}
+	return gradient.kind == 'linear' && (gradient.x1 != gradient.x2 || gradient.y1 != gradient.y2)
 }
 
 fn chromium_gradient_clip_data(command layout.PaintCommand) [12]f32 {

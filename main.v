@@ -230,6 +230,8 @@ fn C.native_draw_svg_path_srgb(data &f32, segment_count int, even_odd int, trans
 fn C.native_draw_svg_linear_gradient_path(data &f32, segment_count int, even_odd int, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_height f32, stroke int, stroke_width f32, line_cap int, line_join int, miter_limit f32, start_x f32, start_y f32, end_x f32, end_y f32, gradient_a f32, gradient_b f32, gradient_c f32, gradient_d f32, gradient_e f32, gradient_f f32, spread_method int, linear_color_space int, stop_data &f32, stop_count int, opacity f32)
 fn C.native_draw_clipped_svg_linear_gradient_path(data &f32, segment_count i32, even_odd i32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_height f32, stroke i32, stroke_width f32, line_cap i32, line_join i32, miter_limit f32, start_x f32, start_y f32, end_x f32, end_y f32, gradient_a f32, gradient_b f32, gradient_c f32, gradient_d f32, gradient_e f32, gradient_f f32, spread_method i32, linear_color_space i32, stop_data &f32, stop_count i32, opacity f32, clip &f32, ancestor_clip &f32) i32
 
+fn C.native_draw_clipped_svg_radial_gradient_path(data &f32, segment_count i32, even_odd i32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_height f32, stroke i32, stroke_width f32, line_cap i32, line_join i32, miter_limit f32, start_x f32, start_y f32, start_radius f32, end_x f32, end_y f32, end_radius f32, gradient_a f32, gradient_b f32, gradient_c f32, gradient_d f32, gradient_e f32, gradient_f f32, spread_method i32, linear_color_space i32, stop_data &f32, stop_count i32, opacity f32, clip &f32, ancestor_clip &f32) i32
+
 fn C.native_draw_svg_radial_gradient_path(data &f32, segment_count int, even_odd int, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_height f32, stroke int, stroke_width f32, line_cap int, line_join int, miter_limit f32, start_x f32, start_y f32, start_radius f32, end_x f32, end_y f32, end_radius f32, gradient_a f32, gradient_b f32, gradient_c f32, gradient_d f32, gradient_e f32, gradient_f f32, spread_method int, linear_color_space int, stop_data &f32, stop_count int, opacity f32)
 
 fn C.native_draw_css_gradient_path(data &f32, segment_count int, even_odd int, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_height f32, kind int, tile_x f32, tile_y f32, tile_width f32, tile_height f32, x1 f32, y1 f32, x2 f32, y2 f32, center_x f32, center_y f32, radius_x f32, radius_y f32, start_degrees f32, stop_data &f32, stop_count int) int
@@ -4591,6 +4593,43 @@ fn draw_native_css_gradient_tile(command &layout.PaintCommand, gradient layout.L
 		native_gradient_clip_path_into(*command, tile, mut path_data)
 		if path_data.len < layout.compatibility_clip_path_segment_stride {
 			return false
+		}
+		if chromium && (gradient.kind == 'radial' || gradient.radial)
+			&& chromium_gradient_has_gpu_geometry(gradient)
+			&& chromium_gradient_stop_data_into(gradient, command.opacity, mut gpu_stops) {
+			clip := chromium_gradient_clip_data(*command)
+			ancestor_index := chromium_gradient_gpu_ancestor_clip_index(command)
+			ancestor := if ancestor_index >= 0 {
+				chromium_paint_clip_data(command.clip_list.items[ancestor_index])
+			} else { [12]f32{} }
+			clip_pointer := if command.gradient_background_layer { unsafe { &clip[0] } }
+				else { unsafe { &f32(nil) } }
+			ancestor_pointer := if ancestor_index >= 0 { unsafe { &ancestor[0] } }
+				else { unsafe { &f32(nil) } }
+			drawn := unsafe { C.native_draw_clipped_svg_radial_gradient_path(&path_data[0],
+				i32(path_data.len / layout.compatibility_clip_path_segment_stride), 0,
+				f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]),
+				f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), canvas_height,
+				0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 1,
+				f32(gradient.radius_x * tile.width), 0, 0, f32(gradient.radius_y * tile.height),
+				f32(tile.x + gradient.center_x * tile.width),
+				f32(tile.y + gradient.center_y * tile.height), 0, 0,
+				gpu_stops.data, i32(gpu_stops.len / 5), 1, clip_pointer, ancestor_pointer) }
+			if drawn != 0 { return true }
+			// The caller transferred these clips to the GPU draw. Restore them
+			// before falling back to CoreGraphics if that draw was unavailable.
+			if command.gradient_background_layer {
+				C.native_add_corner_rounded_clip(clip[0],clip[1],clip[2],clip[3],
+					clip[4],clip[5],clip[6],clip[7],clip[8],clip[9],clip[10],clip[11],
+					f32(matrix[0]),f32(matrix[1]),f32(matrix[2]),f32(matrix[3]),f32(matrix[4]),f32(matrix[5]),
+					page_x,page_y,f32(scroll_y),canvas_height)
+				if ancestor_index >= 0 {
+					C.native_add_corner_rounded_clip(ancestor[0],ancestor[1],ancestor[2],ancestor[3],
+						ancestor[4],ancestor[5],ancestor[6],ancestor[7],ancestor[8],ancestor[9],ancestor[10],ancestor[11],
+						f32(matrix[0]),f32(matrix[1]),f32(matrix[2]),f32(matrix[3]),f32(matrix[4]),f32(matrix[5]),
+						page_x,page_y,f32(scroll_y),canvas_height)
+				}
+			}
 		}
 		if chromium && (gradient.x1 != gradient.x2 || gradient.y1 != gradient.y2) {
 			if chromium_linear_gradient_stop_data_into(gradient, command.opacity, mut gpu_stops) {

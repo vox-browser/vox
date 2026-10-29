@@ -502,3 +502,10 @@ transforms stay local until entering page space, and supported rectangular clip
 scopes share path sample coverage. Both scales require exact RGBA equality.
 Capture commands, source hashes and fresh-process identities are retained in
 `Build/pikabu-rectangular-mask-1793128123792884000/visual-results.json`.
+
+`css-radial-gradient` covers sRGB elliptical and circular fades, layered
+backgrounds, hard stops, and a rounded descendant clip at 800×600 and scale 1.
+Its Brave 156.1.98.60 reference is pixel-exact. Eligible radial gradients retain
+the original stops and use the same Skia path as linear gradients.
+The adjacent `diagnostic/css-radial-rounded-border.html` and its unchanged Brave
+PNG keep an outer rounded-border case open: eight pixels differ by one level.

@@ -1,0 +1,12 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>CSS radial gradient interpolation and rounded clips</title>
+<style>
+* {box-sizing:border-box} body {margin:0;background:#090b0f}
+.hero {height:180px;background:radial-gradient(ellipse at 50% 90%,#172b421f,transparent 64%)}
+.scene {position:relative;margin:20px;width:620px;height:220px;border:1px solid #344151;border-radius:0;overflow:hidden;
+background:radial-gradient(ellipse at 60% 110%,#43699557,transparent 65%),linear-gradient(130deg,#121b28,#10151e 55%,#172233)}
+.nested {position:absolute;inset:30px;border-radius:23px 6px;background:radial-gradient(circle at 78% 72%,#4a78aa45,transparent 38%)}
+.hard {margin:20px;width:620px;height:110px;background:radial-gradient(ellipse at 35% 40%,#243859 0%,#243859 30%,#52779a 30%,#52779a 55%,#183451 55%)}
+</style>
+<div class="hero"></div><div class="scene"><div class="nested"></div></div><div class="hard"></div>

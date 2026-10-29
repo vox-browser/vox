@@ -4204,6 +4204,40 @@ extern "C" int ladybird_v_skia_draw_clipped_svg_linear_gradient_path(
         linear_color_space, stop_data, stop_count, opacity, opaque_backdrop, clip, ancestor_clip);
 }
 
+static int draw_svg_radial_gradient_path_with_clip(
+    CGContextRef destination, float const* data, int segment_count, int even_odd,
+    float transform_a, float transform_b, float transform_c, float transform_d,
+    float transform_e, float transform_f, float page_x, float page_y,
+    float scroll_y, float canvas_width, float canvas_height, int stroke,
+    float stroke_width, int line_cap, int line_join, float miter_limit,
+    float start_x, float start_y, float start_radius, float end_x, float end_y,
+    float end_radius, float gradient_a, float gradient_b, float gradient_c,
+    float gradient_d, float gradient_e, float gradient_f, int spread_method,
+    int linear_color_space, float const* stop_data, int stop_count, float opacity,
+    int opaque_backdrop, float const* clip, float const* ancestor_clip)
+{
+    float const gradient_points[] { start_x, start_y, std::max(start_radius, 0.0f),
+        end_x, end_y, std::max(end_radius, 0.0f) };
+    return draw_svg_gradient_path(destination, data, segment_count, even_odd,
+        transform_a, transform_b, transform_c, transform_d, transform_e,
+        transform_f, page_x, page_y, scroll_y, canvas_width, canvas_height,
+        stroke, stroke_width, line_cap, line_join, miter_limit, gradient_a,
+        gradient_b, gradient_c, gradient_d, gradient_e, gradient_f,
+        spread_method, linear_color_space, stop_data, stop_count, opacity,
+        2, gradient_points, opaque_backdrop, clip, ancestor_clip,
+        [=](std::vector<SkColor4f> const& colors,
+            std::vector<SkScalar> const& positions, SkTileMode tile_mode,
+            SkMatrix const& gradient_matrix) {
+            SkGradientShader::Interpolation interpolation;
+            return SkGradientShader::MakeTwoPointConical(
+                SkPoint::Make(start_x, start_y), std::max(start_radius, 0.0f),
+                SkPoint::Make(end_x, end_y), std::max(end_radius, 0.0f),
+                colors.data(), nullptr, positions.data(),
+                static_cast<int>(colors.size()), tile_mode, interpolation,
+                &gradient_matrix);
+        });
+}
+
 extern "C" int ladybird_v_skia_draw_svg_radial_gradient_path(
     CGContextRef destination, float const* data, int segment_count, int even_odd,
     float transform_a, float transform_b, float transform_c, float transform_d,
@@ -4216,24 +4250,32 @@ extern "C" int ladybird_v_skia_draw_svg_radial_gradient_path(
     int linear_color_space, float const* stop_data, int stop_count, float opacity,
     int opaque_backdrop)
 {
-    float const gradient_points[] { start_x, start_y, std::max(start_radius, 0.0f),
-        end_x, end_y, std::max(end_radius, 0.0f) };
-    return draw_svg_gradient_path(destination, data, segment_count, even_odd,
-        transform_a, transform_b, transform_c, transform_d, transform_e,
-        transform_f, page_x, page_y, scroll_y, canvas_width, canvas_height,
-        stroke, stroke_width, line_cap, line_join, miter_limit, gradient_a,
-        gradient_b, gradient_c, gradient_d, gradient_e, gradient_f,
-        spread_method, linear_color_space, stop_data, stop_count, opacity,
-        2, gradient_points, opaque_backdrop, nullptr, nullptr,
-        [=](std::vector<SkColor4f> const& colors,
-            std::vector<SkScalar> const& positions, SkTileMode tile_mode,
-            SkMatrix const& gradient_matrix) {
-            SkGradientShader::Interpolation interpolation;
-            return SkGradientShader::MakeTwoPointConical(
-                SkPoint::Make(start_x, start_y), std::max(start_radius, 0.0f),
-                SkPoint::Make(end_x, end_y), std::max(end_radius, 0.0f),
-                colors.data(), nullptr, positions.data(),
-                static_cast<int>(colors.size()), tile_mode, interpolation,
-                &gradient_matrix);
-        });
+    return draw_svg_radial_gradient_path_with_clip(destination, data, segment_count,
+        even_odd, transform_a, transform_b, transform_c, transform_d, transform_e,
+        transform_f, page_x, page_y, scroll_y, canvas_width, canvas_height, stroke,
+        stroke_width, line_cap, line_join, miter_limit, start_x, start_y,
+        start_radius, end_x, end_y, end_radius, gradient_a, gradient_b, gradient_c,
+        gradient_d, gradient_e, gradient_f, spread_method, linear_color_space,
+        stop_data, stop_count, opacity, opaque_backdrop, nullptr, nullptr);
+}
+
+extern "C" int ladybird_v_skia_draw_clipped_svg_radial_gradient_path(
+    CGContextRef destination, float const* data, int segment_count, int even_odd,
+    float transform_a, float transform_b, float transform_c, float transform_d,
+    float transform_e, float transform_f, float page_x, float page_y,
+    float scroll_y, float canvas_width, float canvas_height, int stroke,
+    float stroke_width, int line_cap, int line_join, float miter_limit,
+    float start_x, float start_y, float start_radius, float end_x, float end_y,
+    float end_radius, float gradient_a, float gradient_b, float gradient_c,
+    float gradient_d, float gradient_e, float gradient_f, int spread_method,
+    int linear_color_space, float const* stop_data, int stop_count, float opacity,
+    int opaque_backdrop, float const* clip, float const* ancestor_clip)
+{
+    return draw_svg_radial_gradient_path_with_clip(destination, data, segment_count,
+        even_odd, transform_a, transform_b, transform_c, transform_d, transform_e,
+        transform_f, page_x, page_y, scroll_y, canvas_width, canvas_height, stroke,
+        stroke_width, line_cap, line_join, miter_limit, start_x, start_y,
+        start_radius, end_x, end_y, end_radius, gradient_a, gradient_b, gradient_c,
+        gradient_d, gradient_e, gradient_f, spread_method, linear_color_space,
+        stop_data, stop_count, opacity, opaque_backdrop, clip, ancestor_clip);
 }

@@ -163,6 +163,17 @@ extern int ladybird_v_skia_draw_svg_radial_gradient_path(
 	float gradient_d, float gradient_e, float gradient_f, int spread_method,
 	int linear_color_space, const float *stop_data, int stop_count, float opacity,
 	int opaque_backdrop);
+extern int ladybird_v_skia_draw_clipped_svg_radial_gradient_path(
+	CGContextRef destination, const float *data, int segment_count, int even_odd,
+	float transform_a, float transform_b, float transform_c, float transform_d,
+	float transform_e, float transform_f, float page_x, float page_y,
+	float scroll_y, float canvas_width, float canvas_height, int stroke,
+	float stroke_width, int line_cap, int line_join, float miter_limit,
+	float start_x, float start_y, float start_radius, float end_x, float end_y,
+	float end_radius, float gradient_a, float gradient_b, float gradient_c,
+	float gradient_d, float gradient_e, float gradient_f, int spread_method,
+	int linear_color_space, const float *stop_data, int stop_count, float opacity,
+	int opaque_backdrop, const float *clip, const float *ancestor_clip);
 extern int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
 	const uint8_t *pixels, int image_width, int image_height, int image_pitch,
 	float destination_x, float destination_y, float destination_width,
@@ -1935,6 +1946,33 @@ int native_draw_clipped_svg_linear_gradient_path(const float *data, int segment_
         transform_d, transform_e, transform_f, page_x, page_y, scroll_y,
         canvas_width, canvas_height, stroke, stroke_width, line_cap, line_join,
         miter_limit, start_x, start_y, end_x, end_y, gradient_a, gradient_b,
+        gradient_c, gradient_d, gradient_e, gradient_f, spread_method,
+        linear_color_space, stop_data, stop_count, opacity,
+        context == native_font_compositing_context
+            && native_font_compositing_transparency_depth == 0, clip, ancestor_clip);
+#else
+    return 0;
+#endif
+}
+
+int native_draw_clipped_svg_radial_gradient_path(const float *data, int segment_count,
+	int even_odd, float transform_a, float transform_b, float transform_c,
+	float transform_d, float transform_e, float transform_f, float page_x,
+	float page_y, float scroll_y, float canvas_height, int stroke,
+	float stroke_width, int line_cap, int line_join, float miter_limit,
+	float start_x, float start_y, float start_radius, float end_x, float end_y,
+	float end_radius, float gradient_a,
+	float gradient_b, float gradient_c, float gradient_d, float gradient_e,
+	float gradient_f, int spread_method, int linear_color_space,
+	const float *stop_data, int stop_count, float opacity, const float *clip, const float *ancestor_clip) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+    CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
+    float canvas_width = (float)[native_browser_view() bounds].size.width;
+    return ladybird_v_skia_draw_clipped_svg_radial_gradient_path(context, data,
+        segment_count, even_odd, transform_a, transform_b, transform_c,
+        transform_d, transform_e, transform_f, page_x, page_y, scroll_y,
+        canvas_width, canvas_height, stroke, stroke_width, line_cap, line_join,
+        miter_limit, start_x, start_y, start_radius, end_x, end_y, end_radius, gradient_a, gradient_b,
         gradient_c, gradient_d, gradient_e, gradient_f, spread_method,
         linear_color_space, stop_data, stop_count, opacity,
         context == native_font_compositing_context
