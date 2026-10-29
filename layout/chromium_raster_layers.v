@@ -411,10 +411,15 @@ pub fn update_chromium_raster_layer_plan(document &dom.Document, commands []Pain
 				chromium_root_raster_plan_into(commands.len, mut plan)
 				return
 			}
-			// SVG clips and masks are paint operations inside the enclosing
-			// compositor picture, rather than independent CSS surfaces. Keep
-			// their balanced run atomic without introducing a new layer state.
-			if layer.kind != .css_effect && scratch.compositor_scopes.len > 0 {
+			// Static filters, SVG clips and masks remain atomic paint runs
+			// inside their surrounding raster instead of promoting overlapping
+			// content into another compositor surface.
+			if layer.kind == .css_filter && scratch.compositor_scopes.len == 0 {
+				// A static filter is an atomic paint effect in the surrounding
+				// raster. It does not promote every later overlapping chunk.
+				effect_scope = 0
+				legacy_effect = false
+			} else if layer.kind != .css_effect && scratch.compositor_scopes.len > 0 {
 				effect_scope = scratch.compositor_scopes.last()
 				legacy_effect = false
 			}
