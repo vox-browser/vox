@@ -104,3 +104,43 @@ They also preserve uBO's generic-hide exceptions on YouTube, Reddit, Amazon,
 GitHub, and Wikipedia. These deterministic native effects remain testable when
 a public site is unreachable, while the live matrix continues to report the
 missing page coverage.
+
+
+## Strict rendering checkpoint, October 30, 2026
+
+The ten-site pixel suite is implemented in `tools/forum_news_pixels.py` with
+`Tests/Browser/Brave/forum-news.json`. It uses full MV2 uBO 1.75.0 and the exact
+repository filter-list bytes in both engines. Each native capture gets a fresh
+private profile, a pinned executable/library identity, and a 3 GiB process-tree
+guard. The shared production bundle is reused without an automatic rebuild.
+
+Commits `cbea4277` and `29a4305e` register all ten cases, retain eight sealed
+guest-page captures, and record explicit coverage failures for Reddit and
+Stack Overflow. `69515a3d` preserves the content-addressed HTTP bodies as binary
+assets so line-ending conversion cannot change their hashes.
+
+Only **Hacker News** currently has exact full-viewport evidence: zero differing
+RGBA pixels at 1024 by 768, including an exact live-to-frozen Brave comparison
+and matching actual Vox/full-uBO request decisions. The other nine acceptance
+cases remain open. Captures for CNN, The Verge, and Pikabu show pixel differences;
+Lobsters and BBC also differ between the live capture and frozen replay.
+The Slashdot native attempt is invalid because another session replaced the
+shared bundle during capture. Reddit returns an HTTP 403 network-security
+block. Stack Overflow's response-body capture is incomplete. None are skips or
+passing comparisons, and no mismatch bounds were introduced.
+
+Fix `05f1d30a` makes native RequestServer subresources honor navigation's
+process-local `SSL_CERT_FILE` trust configuration. The focused default-GC TLS
+regression passes its trusted-CA, unrelated-CA, and wrong-host checks. The
+no-GC attempt stalls on a later unrelated-CA check and remains unresolved.
+A production build fails at C compilation while the shared disk is exhausted;
+the later diagnostic compiler and its guard receipt also encounter ENOSPC.
+The last completed browser remains available but does not validate this fix.
+
+The tooling checks pass four Python cases and twelve Node cases. Raw reports,
+screenshots, actual guard outcomes and the consolidated `summary.json` are
+retained under `Build/forum-news-parity-20261030/`. Duplicate intermediate
+archives and private replay caches were removed after sealing their canonical
+bytes in the fixtures; screenshots, raw filter evidence and logs are retained.
+This workstream contains one native code fix. Broad regression suites were
+not run and the repository's existing broad-test baseline was not reset.
