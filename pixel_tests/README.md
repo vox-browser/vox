@@ -1,5 +1,46 @@
 # Site pixel comparisons
 
+For the ten-site **Brave + full uBlock Origin** comparison, use
+[`tools/forum_news_pixels.py`](../tools/forum_news_pixels.py). Its separate
+catalog is [`Tests/Browser/Brave/forum-news.json`](../Tests/Browser/Brave/forum-news.json).
+It requires **zero differing RGBA pixels** and does not use the allowances below.
+
+```sh
+python3 tools/forum_news_pixels.py --extension /path/to/uBlock0.chromium \
+  --checker Build/adblock-check
+```
+
+Build the checker with current V and the repository memory guard:
+
+```sh
+python3 tools/run_memory_bounded.py --limit-gib 3 \
+  --lock Build/forum-checker.lock --report Build/forum-checker.json -- \
+  ~/code/v/v -memory-limit 10G -enable-globals -o Build/adblock-check tools/adblock_check.v
+```
+
+`--sites hacker-news` selects a site. `--capture --fixtures Build/new-site-fixtures`
+records new guest-page fixtures without overwriting existing archives. All
+browser/compiler children run through their own 3 GiB memory guards. The runner
+uses the installed production bundle directly and never schedules a rebuild.
+Each Vox capture launches a new process with an empty private profile, records
+the executable/native-library identities, and rejects a concurrent bundle change.
+
+The reference runs the full MV2 uBO version pinned in `adblock/lists/manifest.json`,
+with the identical list bytes, no custom filters and Brave Shields disabled.
+Both engines request the same captured document and resources at their original
+URLs through a local archive proxy that never forwards missing requests. TLS
+trust is private to those processes. The DOM snapshot removes author scripts;
+it preserves author layout/styles rather than replacing them with computed
+geometry or a page image. The archived live Brave screenshot must also match
+the replay, and two consecutive reference captures must be stable. This is a
+frozen viewport regression, not a claim of live JavaScript/interaction parity.
+
+The runner checks native document identity/readiness and compares the requests
+actually recorded by Vox with full uBO before assessing pixels. Every site gets
+a result in `Build/forum-news-pixels-*/summary.json`; missing fixtures, access
+checks, incomplete references, filtering disagreements and pixel differences
+all fail. A failure on one site does not prevent checking the remaining sites.
+
 These tests compare screenshots from the V browser with checked-in screenshots
 from the upstream C++ Ladybird browser. The pages and visible resources are
 frozen locally so a site update, network failure, advertisement, or timestamp

@@ -1,0 +1,15 @@
+{
+  "description": "Ten representative forum, social news, and news sites. This is a coverage set, not a traffic ranking.",
+  "sites": [
+    {"id": "hacker-news", "name": "Hacker News", "url": "https://news.ycombinator.com/"},
+    {"id": "reddit", "name": "Reddit", "url": "https://www.reddit.com/"},
+    {"id": "lobsters", "name": "Lobsters", "url": "https://lobste.rs/"},
+    {"id": "slashdot", "name": "Slashdot", "url": "https://slashdot.org/"},
+    {"id": "stackoverflow", "name": "Stack Overflow", "url": "https://stackoverflow.com/questions"},
+    {"id": "bbc", "name": "BBC News", "url": "https://www.bbc.com/news"},
+    {"id": "cnn", "name": "CNN", "url": "https://edition.cnn.com/"},
+    {"id": "guardian", "name": "The Guardian", "url": "https://www.theguardian.com/international"},
+    {"id": "theverge", "name": "The Verge", "url": "https://www.theverge.com/"},
+    {"id": "pikabu", "name": "Pikabu", "url": "https://pikabu.ru/"}
+  ]
+}

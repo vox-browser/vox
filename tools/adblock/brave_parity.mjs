@@ -9,6 +9,7 @@ import { spawn, execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { captureArchive } from './capture_archive.mjs';
 import { createOracleProfile } from './oracle_profile.mjs';
+import { capturePixelReference, referenceLaunchArguments, waitForPixelDocument } from './pixel_reference.mjs';
 import { navigationObservation } from './navigation.mjs';
 import { hasHeaderFilter, requestIdentity, summarizeRequestParity } from './request_stream.mjs';
 import { collectVisibility, validateVisibilityProbe } from './visibility_probe.mjs';
@@ -25,6 +26,9 @@ const options = {
     'visibility-probe': '',
     'capture-dir': '',
     'profile-template': '',
+    'pixel-reference': '',
+    'proxy-server': '',
+    'replay-spki': '',
     settle: 15,
 };
 for (let i = 2; i < process.argv.length; i += 2) {
@@ -145,6 +149,7 @@ const profile = await createOracleProfile(options['profile-template']);
 const browser = spawn(options.brave, [
     '--headless=new', '--no-first-run', '--no-default-browser-check', '--disable-sync',
     '--disable-background-networking', '--remote-debugging-port=0', '--remote-allow-origins=*',
+    ...referenceLaunchArguments(options),
     `--user-data-dir=${profile}`, `--load-extension=${extension}`, 'about:blank',
 ], { stdio: ['ignore', 'ignore', 'ignore'] });
 let background, page;
@@ -219,7 +224,10 @@ try {
     })()`);
     await page.send('Page.enable');
     await page.send('Network.enable', options['capture-dir'] ? {maxTotalBufferSize: 128 * 1024 * 1024, maxResourceBufferSize: 16 * 1024 * 1024} : {});
-    if (options['capture-dir']) await page.send('Emulation.setDeviceMetricsOverride', {width:1024,height:768,deviceScaleFactor:1,mobile:false});
+    if (options['capture-dir'] || options['pixel-reference']) {
+        await page.send('Emulation.setDeviceMetricsOverride', {width:1024,height:768,deviceScaleFactor:1,mobile:false});
+        await page.send('Emulation.setFocusEmulationEnabled', {enabled:true});
+    }
     let navigation = null;
     let documentFixture = null;
     let visibility = null;
@@ -227,6 +235,8 @@ try {
     if (!replayInput) {
         const result = await page.send('Page.navigate', { url: options.url });
         mainFrameID = result.frameId;
+        if (!result.errorText && (options['capture-dir'] || options['pixel-reference'])
+            && !await waitForPixelDocument(page)) result.errorText = 'Pixel capture document did not complete loading';
         await pause(options.settle * 1000);
         const snapshot = await page.evaluate(`({url:location.href,title:document.title,ready_state:document.readyState,body_text_length:document.body?.innerText.length||0,body_text_sample:document.body?.innerText.slice(0,4000)||'',element_count:document.querySelectorAll('*').length})`);
         navigation = navigationObservation(options.url, result, snapshot, page.events);
@@ -257,8 +267,12 @@ try {
             observer_settle_ms: 2000,
         };
     }
-    if (options['capture-dir'] && navigation?.coverage !== 'page') throw new Error('Archive requires successful page coverage');
-    const archive = options['capture-dir'] ? await captureArchive(page, path.resolve(options['capture-dir']), options.url) : null;
+    const pixelReference = options['pixel-reference']
+        ? await capturePixelReference(page, path.resolve(options['pixel-reference']), navigation) : null;
+    // Retain the navigation/filter report for inaccessible sites as well. A
+    // challenge must fail coverage without replacing a previously valid archive.
+    const archive = options['capture-dir'] && navigation?.coverage === 'page'
+        ? await captureArchive(page, path.resolve(options['capture-dir']), options.url) : null;
     const documentURL = navigation?.url && /^https?:/.test(navigation.url) ? navigation.url : options.url;
     const raw = await background.evaluate(`(async()=> (await import('./js/logger.js')).default.readAll('vox-parity'))()`);
     const logs = raw.map(JSON.parse).filter(entry => entry.realm === 'network' && /^https?:/.test(entry.url));
@@ -381,6 +395,7 @@ try {
     const capture = {
         captured_at: new Date().toISOString(), url: options.url,
         navigation,
+        ...(pixelReference ? {pixel_reference:pixelReference} : {}),
         document_fixture: documentFixture,
         ...(archive ? {archive} : {}),
         visibility,

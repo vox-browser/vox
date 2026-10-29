@@ -1,0 +1,284 @@
+{
+  "version": 1,
+  "url": "https://news.ycombinator.com/",
+  "sealed_unix": 1793313733.872628,
+  "responses": {
+    "https://news.ycombinator.com/": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "X-DNS-Prefetch-Control",
+          "value": "off"
+        },
+        {
+          "name": "cache-control",
+          "value": "private; max-age=0"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/ https://cdnjs.cloudflare.com/; frame-src 'self' https://www.google.com/recaptcha/; style-src 'self' 'unsafe-inline'; img-src 'self' https://account.ycombinator.com; frame-ancestors 'self'"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:37:15 GMT"
+        },
+        {
+          "name": "referrer-policy",
+          "value": "origin"
+        },
+        {
+          "name": "server",
+          "value": "nginx"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=31556900"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "x-frame-options",
+          "value": "DENY"
+        },
+        {
+          "name": "x-xss-protection",
+          "value": "1; mode=block"
+        },
+        {
+          "name": "content-length",
+          "value": "34572"
+        },
+        {
+          "name": "Content-Type",
+          "value": "text/html;charset=utf-8"
+        }
+      ],
+      "sha256": "f88337cfb794e5dbf9a4169e0170e3e2aac3052c7785582718d487b67bdc6358",
+      "bytes": 34572
+    },
+    "https://news.ycombinator.com/news.css?sUOFZAvup8PKgWMfJBaT": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "max-age=310603513, public"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6a9b3695-1cfa\""
+        },
+        {
+          "name": "expires",
+          "value": "Mon, 01 Sep 2036 21:22:29 GMT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:37:16 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/css; charset=utf-8"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 04 Sep 2026 21:22:29 GMT"
+        },
+        {
+          "name": "server",
+          "value": "nginx"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "content-length",
+          "value": "7418"
+        }
+      ],
+      "sha256": "de4722818cb6e7859a4287ba956bf04973a63ca97318f6d4c4f44d55e7d454b5",
+      "bytes": 7418
+    },
+    "https://news.ycombinator.com/y18.svg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "max-age=225582332, public"
+        },
+        {
+          "name": "etag",
+          "value": "\"6589e498-13b\""
+        },
+        {
+          "name": "expires",
+          "value": "Thu, 22 Dec 2033 20:22:48 GMT"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:37:16 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 25 Dec 2023 20:22:48 GMT"
+        },
+        {
+          "name": "server",
+          "value": "nginx"
+        },
+        {
+          "name": "content-length",
+          "value": "315"
+        }
+      ],
+      "sha256": "e1b6622b6ea15f1f48dfda6e720265cd426981d2a7ae1f9d7ddeb8409897c6ff",
+      "bytes": 315
+    },
+    "https://news.ycombinator.com/s.gif": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "max-age=181089452, public"
+        },
+        {
+          "name": "etag",
+          "value": "\"62e2fc48-2b\""
+        },
+        {
+          "name": "expires",
+          "value": "Sun, 25 Jul 2032 21:14:48 GMT"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:37:16 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/gif"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 28 Jul 2022 21:14:48 GMT"
+        },
+        {
+          "name": "server",
+          "value": "nginx"
+        },
+        {
+          "name": "content-length",
+          "value": "43"
+        }
+      ],
+      "sha256": "2dfe28cbdb83f01c940de6a88ab86200154fd772d568035ac568664e52068363",
+      "bytes": 43
+    },
+    "https://news.ycombinator.com/hn.js?sUOFZAvup8PKgWMfJBaT": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "max-age=311145539, public"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6aa37bdf-1461\""
+        },
+        {
+          "name": "expires",
+          "value": "Mon, 08 Sep 2036 03:56:15 GMT"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:37:16 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript; charset=utf-8"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 11 Sep 2026 03:56:15 GMT"
+        },
+        {
+          "name": "server",
+          "value": "nginx"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "content-length",
+          "value": "5217"
+        }
+      ],
+      "sha256": "2e38ff883bd36dc4cc26f129f19169b0357cf32059988c926a4f73e5bfaa37f0",
+      "bytes": 5217
+    },
+    "https://news.ycombinator.com/triangle.svg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "max-age=224927898, public"
+        },
+        {
+          "name": "etag",
+          "value": "\"657fe836-83\""
+        },
+        {
+          "name": "expires",
+          "value": "Thu, 15 Dec 2033 06:35:34 GMT"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 22:37:16 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 18 Dec 2023 06:35:34 GMT"
+        },
+        {
+          "name": "server",
+          "value": "nginx"
+        },
+        {
+          "name": "content-length",
+          "value": "131"
+        }
+      ],
+      "sha256": "3e155f895282e786a1a3c540eba727b4f04865eccbdad5dac17b3c2e184a5bd8",
+      "bytes": 131
+    }
+  },
+  "workload": "Frozen guest DOM; scripts removed; original resource bytes",
+  "live_png_sha256": "dbd34f4d057df8ebb491d8123f47fa19692c0ffc561552394e1b2c747b30cc9c",
+  "capture_report_sha256": "26aa3a05be8365c5cf8c7b5c14ff779c333309a74355bfd6664f6b4eda62d1e8"
+}
