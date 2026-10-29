@@ -4355,6 +4355,7 @@ fn uncached_text_lines_from_typed_layout(container &Node, used &UsedValues, stat
 			font_metrics := fragment.style_source().first_available_font().pixel_metrics()
 			mut color := css.Color{0, 0, 0, 255}
 			mut background := css.Color{0, 0, 0, 0}
+			mut background_color_clip := 'border-box'
 			mut background_images := []BackgroundImageLayer{}
 			mut border_color := color
 			mut border_colors := BoxColors{color, color, color, color}
@@ -4402,6 +4403,7 @@ fn uncached_text_lines_from_typed_layout(container &Node, used &UsedValues, stat
 				if inline_owner := inline_paint_owner(fragment.layout_node_) {
 					owner_computed := inline_owner.computed_values()
 					background = computed_paint_color(owner_computed, .background_color, color_context, background)
+					background_color_clip = background_box_name(owner_computed.background_color_clip())
 					if owner := painted_owner_element(inline_owner) {
 						mut owner_color_context := color_resolution_context_for_typed_node(inline_owner, owner_computed.color())
 						owner_color_context.current_color = owner_computed.color()
@@ -4498,6 +4500,7 @@ fn uncached_text_lines_from_typed_layout(container &Node, used &UsedValues, stat
 				fragment_right_edge_away: fragment_index == line_box.fragments_.len - 1
 					&& last_fragment_continues_next_line
 				background_color: background
+				background_color_clip: background_color_clip
 				background_images: background_images
 				border: border
 				padding: padding

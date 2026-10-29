@@ -158,6 +158,7 @@ pub:
 	fragment_left_edge_away  bool
 	fragment_right_edge_away bool
 	background_color         css.Color
+	background_color_clip    string = 'border-box'
 	background_images        []BackgroundImageLayer
 	border                   BoxEdges
 	padding                  BoxEdges
@@ -3829,28 +3830,7 @@ fn paint_empty_cursor(box &BlockBox, layout_node &Node, dom_node &dom.Node,
 fn append_background_text_clip_runs(box &BlockBox, mut runs []PaintTextClipRun) {
 	if box.paintable_with_lines {
 		for line in box.lines {
-			for command in unselected_text_fragment_commands(line.fragments, 1.0) {
-				if command.kind != 'draw_text' || command.text == '' {
-					continue
-				}
-				runs << PaintTextClipRun{
-					x: command.x
-					y: command.y
-					width: command.width
-					height: command.height
-					text: command.text
-					font_size: command.font_size
-					bold: command.bold
-					italic: command.italic
-					mono: command.mono
-					rtl: command.rtl
-					glyph_run: command.glyph_run
-					glyph_translation_x: command.glyph_translation_x
-					glyph_translation_y: command.glyph_translation_y
-					glyph_orientation: command.glyph_orientation
-					font_smoothing: command.font_smoothing
-				}
-			}
+			append_text_fragment_clip_runs(line.fragments, mut runs)
 		}
 	}
 	// Borrow each child: passing a loop copy's address would heap-allocate it.
@@ -3862,6 +3842,68 @@ fn append_background_text_clip_runs(box &BlockBox, mut runs []PaintTextClipRun) 
 			continue
 		}
 		append_background_text_clip_runs(child, mut runs)
+	}
+}
+
+fn append_text_fragment_clip_runs(fragments []TextFragment, mut runs []PaintTextClipRun) {
+	for command in unselected_text_fragment_commands(fragments, 1.0) {
+		if command.kind != 'draw_text' || command.text == '' {
+			continue
+		}
+		runs << PaintTextClipRun{
+			x: command.x
+			y: command.y
+			width: command.width
+			height: command.height
+			text: command.text
+			font_size: command.font_size
+			bold: command.bold
+			italic: command.italic
+			mono: command.mono
+			rtl: command.rtl
+			glyph_run: command.glyph_run
+			glyph_translation_x: command.glyph_translation_x
+			glyph_translation_y: command.glyph_translation_y
+			glyph_orientation: command.glyph_orientation
+			font_smoothing: command.font_smoothing
+		}
+	}
+}
+
+// Inline backgrounds use the glyphs owned by this inline, including nested
+// inline descendants on the same line. Decoration-only pieces have no glyphs.
+fn inline_background_text_clip_runs(fragments []TextFragment, owner_id i64) []PaintTextClipRun {
+	mut selected := []TextFragment{}
+	for fragment in fragments {
+		if fragment.text == '' { continue }
+		mut belongs := fragment.inline_node_id == owner_id
+		if fragment.layout_handle != unsafe { nil } {
+			mut ancestor := unsafe { &Node(fragment.layout_handle) }.parent()
+			for ancestor != none {
+				node := ancestor or { break }
+				if !node.is_inline_node() || node.is_atomic_inline() { break }
+				if element := painted_owner_element(node) {
+					if i64(element.as_node().unique_id()) == owner_id { belongs = true; break }
+				}
+				ancestor = node.parent()
+			}
+		}
+		if belongs { selected << fragment }
+	}
+	mut runs := []PaintTextClipRun{}
+	append_text_fragment_clip_runs(selected, mut runs)
+	return runs
+}
+
+fn begin_inline_background_text_clip(mut commands []PaintCommand, rect LayoutRect,
+	runs []PaintTextClipRun) {
+	commands << PaintCommand{
+		kind: 'begin_background_text_clip'
+		x: rect.x
+		y: rect.y
+		width: rect.width
+		height: rect.height
+		text_clip_runs: runs
 	}
 }
 
@@ -3972,9 +4014,17 @@ fn inline_fragment_commands(fragments []TextFragment, opacity f64) InlineFragmen
 			chromium_inset_opaque_shadow_clips(mut commands, outer_start, first.layout_handle)
 		}
 		background_start := commands.len
+		needs_text_clip := first.background_color_clip == 'text'
+			|| first.background_images.any(it.clip == 'text')
+		text_clip_runs := if needs_text_clip {
+			inline_background_text_clip_runs(fragments, first.inline_node_id)
+		} else { []PaintTextClipRun{} }
 		background_isolated := first.background_images.any(background_image_layer_blend_mode(it) != .normal)
 		if background_isolated {
 			commands << PaintCommand{ kind: 'begin_background_blend_group' }
+		}
+		if first.background_color_clip == 'text' {
+			begin_inline_background_text_clip(mut commands, border_rect, text_clip_runs)
 		}
 		if first.background_color.a > 0 && !box_radii_are_zero(fragment_radii) {
 			if uniform_circle_radii {
@@ -4012,8 +4062,14 @@ fn inline_fragment_commands(fragments []TextFragment, opacity f64) InlineFragmen
 				radius: radius
 			}
 		}
+		if first.background_color_clip == 'text' {
+			commands << PaintCommand{ kind: 'end_background_text_clip' }
+		}
 		for layer_index := first.background_images.len - 1; layer_index >= 0; layer_index-- {
 			layer := first.background_images[layer_index]
+			if layer.clip == 'text' {
+				begin_inline_background_text_clip(mut commands, border_rect, text_clip_runs)
+			}
 			origin := inline_background_box_rect(decorating_fragment, layer.origin, border_rect)
 			clip := inline_background_box_rect(decorating_fragment, layer.clip, border_rect)
 			if command := background_layer_command(layer, origin, clip, fragment_radii, opacity, radius, []f64{}, painting.Point{}, .auto_, none, LayoutRect{}, first_is_chromium, none) {
@@ -4021,6 +4077,9 @@ fn inline_fragment_commands(fragments []TextFragment, opacity f64) InlineFragmen
 				if first_is_chromium {
 					chromium_pair_background_image_color(mut commands)
 				}
+			}
+			if layer.clip == 'text' {
+				commands << PaintCommand{ kind: 'end_background_text_clip' }
 			}
 		}
 		if background_isolated {

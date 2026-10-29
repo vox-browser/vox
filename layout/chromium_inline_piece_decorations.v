@@ -93,6 +93,7 @@ fn inline_piece_decoration_fragment(piece InlineBoxPiece, container_position css
 		fragment_left_edge_away: !piece.has_low_edge
 		fragment_right_edge_away: !piece.has_high_edge
 		background_color: computed_paint_color(computed, .background_color, color_context, css.Color{})
+		background_color_clip: background_box_name(computed.background_color_clip())
 		background_images: computed_background_image_layers(node, owner, computed, color_context)
 		border: border
 		padding: padding
