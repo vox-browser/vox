@@ -8,9 +8,8 @@ import os
 from pathlib import Path
 import subprocess
 import sys
-import tarfile
 
-from build_mac_graphite import REVISION, SHA512, executable
+from build_mac_graphite import REVISION, SHA512, executable, extract_skia_archive
 
 DAWN_REVISION = '42d0e90fe3552a2a8e95ca8e506bc19bbda12729'
 DEPENDENCIES = [
@@ -54,14 +53,7 @@ def main():
         archive = repo / 'Build/deps/skia-brave' / f'{REVISION}.tar.gz'
         if not archive.is_file() or hashlib.sha512(archive.read_bytes()).hexdigest() != SHA512:
             raise RuntimeError('Build the pinned native Metal backend before the Dawn backend')
-        with tarfile.open(archive) as bundle:
-            for member in bundle.getmembers():
-                path = Path(member.name)
-                if path.is_absolute() or '..' in path.parts or path.parts[0] != f'skia-{REVISION}':
-                    raise RuntimeError('Unexpected Skia archive path')
-                if member.issym() or member.islnk():
-                    raise RuntimeError('Unexpected Skia archive link')
-            bundle.extractall(root)
+        extract_skia_archive(archive, root)
         (root / f'skia-{REVISION}').rename(source)
     external = source / 'third_party/externals'
     external.mkdir(exist_ok=True)

@@ -31,6 +31,24 @@ PATCH_INPUTS = {
 LEGACY_MSL_SHA256 = "761dc0b22373b425120adda011b9d74c40ca572ec7c179bfd3979c5c09554a23"
 
 
+def extract_skia_archive(archive, destination):
+    """Extract the pinned archive, allowing links confined to its single root."""
+    with tarfile.open(archive) as bundle:
+        for member in bundle.getmembers():
+            path = Path(member.name)
+            if (path.is_absolute() or ".." in path.parts
+                    or not path.parts or path.parts[0] != f"skia-{REVISION}"):
+                raise SystemExit("Unexpected Skia archive member")
+            if member.issym() or member.islnk():
+                target = (posixpath.join(str(path.parent), member.linkname)
+                          if member.issym() else member.linkname)
+                normalized = Path(posixpath.normpath(target))
+                if (normalized.is_absolute() or not normalized.parts
+                        or normalized.parts[0] != f"skia-{REVISION}"):
+                    raise SystemExit("Unexpected Skia archive link")
+        bundle.extractall(destination)
+
+
 def prepare_precision_patch(source, archive, patch):
     """Apply the pinned patch or upgrade the previous, authenticated patch."""
     actual = {name: hashlib.sha256((source / name).read_bytes()).hexdigest()
@@ -93,21 +111,7 @@ def main():
     source = root / "source"
     stamp = source / ".vox-revision"
     if not source.exists():
-        # The archive is pinned above; reject paths outside its single root.
-        with tarfile.open(archive) as bundle:
-            for member in bundle.getmembers():
-                path = Path(member.name)
-                if (path.is_absolute() or ".." in path.parts
-                        or not path.parts or path.parts[0] != f"skia-{REVISION}"):
-                    raise SystemExit("Unexpected Skia archive member")
-                if member.issym() or member.islnk():
-                    target = (posixpath.join(str(path.parent), member.linkname)
-                              if member.issym() else member.linkname)
-                    normalized = Path(posixpath.normpath(target))
-                    if (normalized.is_absolute() or not normalized.parts
-                            or normalized.parts[0] != f"skia-{REVISION}"):
-                        raise SystemExit("Unexpected Skia archive link")
-            bundle.extractall(root)
+        extract_skia_archive(archive, root)
         (root / f"skia-{REVISION}").rename(source)
         stamp.write_text(REVISION + "\n")
     elif not stamp.is_file() or stamp.read_text().strip() != REVISION:
