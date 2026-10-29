@@ -1,0 +1,2 @@
+# Content-addressed HTTP responses must retain their captured bytes verbatim.
+Tests/Browser/Brave/sites/*/bodies/* binary
