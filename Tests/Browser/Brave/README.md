@@ -518,3 +518,12 @@ adjacent Brave 156.1.98.60 PNG preserve three cases at 800×600 and scale 1.
 The current native output differs at 7,257 pixels, all by one channel level;
 this remains a diagnostic, not an exact-parity fixture. The separate existing
 `drop-shadow-chain` reference comparison remains pixel-exact.
+
+`system-ui-variable-weight` checks the system UI star at eleven CSS weights,
+including 550 and 650, at 800×600 and scale 1. It uses `font-synthesis:none`,
+as vlang.io does, and matches Brave 156.1.98.60 exactly. System UI selection
+retains the requested variable weight after choosing symbolic traits.
+The original default-synthesis case remains in
+`diagnostic/system-ui-variable-weight-synthesis.html` with its unchanged Brave
+PNG: weight 550 retains 69 differing pixels, maximum channel error 123.
+Synthetic bold at intermediate system weights remains open.

@@ -298,6 +298,43 @@ static CTFontRef vox_ct_system_font(int weight, int italic, double size) {
 			font = styled;
 		}
 	}
+	// Blink retains the requested weight on the system UI variable face after
+	// selecting its symbolic traits. Semibold must not become the bold master.
+	if (weight != 400) {
+		double value = weight;
+		const int tag = 0x77676874; // wght
+		CFArrayRef axes = CTFontCopyVariationAxes(font);
+		for (CFIndex index = 0; axes && index < CFArrayGetCount(axes); ++index) {
+			CFDictionaryRef axis = (CFDictionaryRef)CFArrayGetValueAtIndex(axes, index);
+			if ((int)vox_ct_number(axis, kCTFontVariationAxisIdentifierKey) == tag) {
+				value = fmax(vox_ct_number(axis, kCTFontVariationAxisMinimumValueKey),
+					fmin(vox_ct_number(axis, kCTFontVariationAxisMaximumValueKey), value));
+				break;
+			}
+		}
+		if (axes) CFRelease(axes);
+		CFNumberRef axis_tag = CFNumberCreate(NULL, kCFNumberIntType, &tag);
+		CFNumberRef coordinate = CFNumberCreate(NULL, kCFNumberDoubleType, &value);
+		const void *keys[] = { axis_tag };
+		const void *values[] = { coordinate };
+		CFDictionaryRef variations = CFDictionaryCreate(NULL, keys, values, 1,
+			&kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+		const void *attribute_keys[] = { kCTFontVariationAttribute };
+		const void *attribute_values[] = { variations };
+		CFDictionaryRef attributes = CFDictionaryCreate(NULL, attribute_keys, attribute_values, 1,
+			&kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+		CTFontDescriptorRef descriptor = CTFontDescriptorCreateWithAttributes(attributes);
+		CTFontRef varied = CTFontCreateCopyWithAttributes(font, size, NULL, descriptor);
+		if (varied) {
+			CFRelease(font);
+			font = varied;
+		}
+		CFRelease(descriptor);
+		CFRelease(attributes);
+		CFRelease(variations);
+		CFRelease(coordinate);
+		CFRelease(axis_tag);
+	}
 	return font;
 }
 
