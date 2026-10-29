@@ -1,0 +1,13 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>CSS blur of premultiplied gradient and solid-color inputs</title>
+<style>
+body {margin:0;background:#090b0f}
+.glow {position:absolute;left:20px;top:40px;width:760px;height:220px;
+background:radial-gradient(ellipse at center,#263d5d28,transparent 68%);filter:blur(30px)}
+.block {position:absolute;left:80px;top:350px;width:170px;height:100px;
+border-radius:10px;background:#648ca7aa;filter:blur(8px)}
+.stripes {position:absolute;left:350px;top:350px;width:300px;height:150px;
+filter:blur(5px)}
+ .stripes i{position:absolute;top:0;height:100%;width:105px;background:#a3bddecc}.stripes i:last-child{left:195px;background:#344a6c}</style>
+<div class="glow"></div><div class="block"></div><div class="stripes"><i></i><i></i></div>

@@ -283,6 +283,8 @@ fn C.native_begin_svg_mask_layer()
 fn C.native_end_svg_mask_layer(cache_key u64, content_mask int, canvas_width f32, canvas_height f32, page_x f32, page_y f32, scroll_y f32)
 
 fn C.native_begin_css_filter_layer(canvas_width f32, canvas_height f32)
+
+fn C.native_record_css_gradient_blur_input()
 fn C.native_begin_font_compositing_layer(canvas_width f32, canvas_height f32)
 fn C.native_set_chromium_raster_scroll_y(scroll_y f64)
 fn C.native_set_chromium_raster_layer(origin_x f64, origin_y f64, root int)
@@ -7293,6 +7295,14 @@ fn (mut app BrowserApp) draw() {
 				app.scroll_profile.replay_kind_bytes[command.kind] += platform.thread_arena_usage().used - before
 			} else {
 				app.draw_command(*command, 0, page_y, window.height)
+			}
+			$if macos {
+				if app.ctx.native_rendering && app.document != unsafe { nil }
+					&& app.document.font_rendering_policy() == .chromium
+					&& command.kind == 'begin_css_filter_layer'
+					&& chromium_gradient_blur_input_supported(app.paint_commands, command_index) {
+					C.native_record_css_gradient_blur_input()
+				}
 			}
 		}
 		app.flush_rounded_rect_underlay(0, page_y, window.height)

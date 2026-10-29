@@ -509,3 +509,12 @@ Its Brave 156.1.98.60 reference is pixel-exact. Eligible radial gradients retain
 the original stops and use the same Skia path as linear gradients.
 The adjacent `diagnostic/css-radial-rounded-border.html` and its unchanged Brave
 PNG keep an outer rounded-border case open: eight pixels differ by one level.
+
+CSS blur uses Skia's premultiplied sRGB image-filter path in the Chromium
+profile. A supported single gradient retains its drawing commands through
+the filter input instead of quantizing to a bitmap before blur.
+[`diagnostic/css-blur-radial.html`](diagnostic/css-blur-radial.html) and its
+adjacent Brave 156.1.98.60 PNG preserve three cases at 800×600 and scale 1.
+The current native output differs at 7,257 pixels, all by one channel level;
+this remains a diagnostic, not an exact-parity fixture. The separate existing
+`drop-shadow-chain` reference comparison remains pixel-exact.

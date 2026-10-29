@@ -82,6 +82,20 @@ namespace {
 
 VoxRasterBufferPool s_sparse_raster_pool;
 
+struct CSSGradientBlurRecording {
+    SkPictureRecorder recorder;
+    SkRect bounds = SkRect::MakeEmpty();
+    bool unsupported = false;
+};
+std::unordered_map<CGContextRef, std::unique_ptr<CSSGradientBlurRecording>> s_css_gradient_blur_recordings;
+
+SkCanvas* css_gradient_blur_recording_canvas(CGContextRef context)
+{
+    auto found = s_css_gradient_blur_recordings.find(context);
+    return found == s_css_gradient_blur_recordings.end() ? nullptr
+        : found->second->recorder.getRecordingCanvas();
+}
+
 SkCanvas* shared_recording_canvas(CGContextRef);
 void shared_recording_clip(CGContextRef, SkCanvas*);
 void shared_recording_block(SkRect);
@@ -1950,14 +1964,13 @@ extern "C" int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
         static_cast<float>(region.width()), static_cast<float>(region.height()), has_background);
 }
 
-// Each seven-float record is dx, dy, sigma, red, green, blue, alpha. Records
-// follow CSS application order; later shadows include all earlier shadows.
-extern "C" int ladybird_v_skia_draw_drop_shadow_chain(CGContextRef destination,
-    CGImageRef source, float canvas_width, float canvas_height, float scale,
-    const float* shadows, size_t shadow_count)
+// Rasterize a CSS image filter through the same premultiplied Skia surface
+// used for drop shadows. Chromium does not convert this input to linear RGB.
+static int draw_css_image_filter(CGContextRef destination, CGImageRef source,
+    float canvas_width, float canvas_height, float scale, sk_sp<SkImageFilter> filter)
 {
     if (!destination || !source || canvas_width <= 0 || canvas_height <= 0
-        || scale <= 0 || !shadows || shadow_count == 0)
+        || scale <= 0 || !filter)
         return 0;
     auto width = static_cast<int>(CGImageGetWidth(source));
     auto height = static_cast<int>(CGImageGetHeight(source));
@@ -2003,17 +2016,6 @@ extern "C" int ladybird_v_skia_draw_drop_shadow_chain(CGContextRef destination,
         kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
     SkPaint paint;
     paint.setAntiAlias(true);
-    sk_sp<SkImageFilter> filter;
-    for (size_t index = 0; index < shadow_count; ++index) {
-        const float* shadow = shadows + index * 7;
-        auto channel = [](float value) {
-            return static_cast<uint8_t>(std::lround(std::clamp(value, 0.0f, 1.0f) * 255));
-        };
-        filter = SkImageFilters::DropShadow(shadow[0] * scale, shadow[1] * scale,
-            std::max(shadow[2], 0.0f) * scale, std::max(shadow[2], 0.0f) * scale,
-            SkColorSetARGB(channel(shadow[6]), channel(shadow[3]),
-                channel(shadow[4]), channel(shadow[5])), std::move(filter));
-    }
     paint.setImageFilter(std::move(filter));
 
     if (s_chromium_painting && width <= 16384 && height <= 16384
@@ -2076,6 +2078,90 @@ extern "C" int ladybird_v_skia_draw_drop_shadow_chain(CGContextRef destination,
     surface.reset();
     return composite_pixels(destination, std::move(output_pixels), width, height, 0, 0,
         canvas_width, canvas_height);
+}
+
+// Each seven-float record is dx, dy, sigma, red, green, blue, alpha. Records
+// follow CSS application order; later shadows include all earlier shadows.
+extern "C" int ladybird_v_skia_draw_drop_shadow_chain(CGContextRef destination,
+    CGImageRef source, float canvas_width, float canvas_height, float scale,
+    const float* shadows, size_t shadow_count)
+{
+    if (!shadows || !shadow_count || !(scale > 0)) return 0;
+    sk_sp<SkImageFilter> filter;
+    for (size_t index = 0; index < shadow_count; ++index) {
+        const float* shadow = shadows + index * 7;
+        auto channel = [](float value) {
+            return static_cast<uint8_t>(std::lround(std::clamp(value, 0.0f, 1.0f) * 255));
+        };
+        filter = SkImageFilters::DropShadow(shadow[0] * scale, shadow[1] * scale,
+            std::max(shadow[2], 0.0f) * scale, std::max(shadow[2], 0.0f) * scale,
+            SkColorSetARGB(channel(shadow[6]), channel(shadow[3]),
+                channel(shadow[4]), channel(shadow[5])), std::move(filter));
+    }
+    return draw_css_image_filter(destination, source, canvas_width, canvas_height,
+        scale, std::move(filter));
+}
+
+extern "C" int ladybird_v_skia_draw_css_blur(CGContextRef destination,
+    CGImageRef source, float canvas_width, float canvas_height, float scale, float sigma)
+{
+    if (!s_chromium_painting || !(sigma > 0) || !(scale > 0)) return 0;
+    return draw_css_image_filter(destination, source, canvas_width, canvas_height,
+        scale, SkImageFilters::Blur(sigma * scale, sigma * scale, SkTileMode::kDecal, nullptr));
+}
+
+extern "C" int ladybird_v_skia_begin_css_gradient_blur(CGContextRef context,
+    float width, float height)
+{
+    if (!context || !s_chromium_painting || !shared_picture_draw()
+        || !(width > 0 && height > 0) || width > 16384 || height > 16384) return 0;
+    auto recording = std::make_unique<CSSGradientBlurRecording>();
+    recording->recorder.beginRecording(SkRect::MakeWH(width, height));
+    s_css_gradient_blur_recordings[context] = std::move(recording);
+    return 1;
+}
+
+extern "C" int ladybird_v_skia_end_css_gradient_blur(CGContextRef context,
+    CGContextRef destination, float canvas_width, float canvas_height, float scale, float sigma)
+{
+    auto found = s_css_gradient_blur_recordings.find(context);
+    if (found == s_css_gradient_blur_recordings.end()) return 0;
+    auto recording = std::move(found->second);
+    s_css_gradient_blur_recordings.erase(found);
+    if (recording->unsupported || recording->bounds.isEmpty() || !destination
+        || !(scale > 0 && sigma > 0)) return 0;
+    auto input = recording->recorder.finishRecordingAsPicture();
+    if (!input) return 0;
+    int width = raster_dimension(canvas_width, scale);
+    int height = raster_dimension(canvas_height, scale);
+    if (width > 16384 || height > 16384 || size_t(width) * height > 8 * 1024 * 1024) return 0;
+    std::vector<uint32_t> pixels(size_t(width) * height);
+    RasterRegion region {0, 0, static_cast<int>(std::ceil(canvas_width)),
+        static_cast<int>(std::ceil(canvas_height))};
+    bool has_background = copy_backdrop(destination, region, scale, width, height, pixels);
+    if (!has_background) return 0;
+    auto info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
+        kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
+    auto backdrop = SkImages::RasterFromPixmapCopy(SkPixmap(info, pixels.data(), size_t(width) * 4));
+    if (!backdrop) return 0;
+    SkPictureRecorder output;
+    auto* canvas = output.beginRecording(SkRect::MakeWH(width, height));
+    canvas->drawImage(backdrop, 0, 0);
+    canvas->scale(scale, scale);
+    SkPaint paint;
+    paint.setImageFilter(SkImageFilters::Blur(sigma, sigma, SkTileMode::kDecal, nullptr));
+    canvas->saveLayer(recording->bounds, &paint);
+    canvas->drawPicture(input);
+    canvas->restore();
+    auto picture = output.finishRecordingAsPicture();
+    SkSerialProcs procs;
+    procs.fImageProc = serialize_shared_picture_image;
+    auto bytes = picture->serialize(&procs);
+    float identity[] {1, 0, 0, 0, 1, 0, 0, 0, 1};
+    if (!bytes || !shared_picture_draw()(reinterpret_cast<uint8_t*>(pixels.data()),
+            width, height, width * 4, bytes->data(), bytes->size(), identity)) return 0;
+    return composite_pixels(destination, std::move(pixels), width, height,
+        0, 0, canvas_width, canvas_height, true);
 }
 
 extern "C" int ladybird_v_skia_draw_drop_shadow(CGContextRef destination,

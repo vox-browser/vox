@@ -50,6 +50,7 @@ decltype(&vox_graphite_draw_picture_pixels) shared_picture_draw()
 
 SkCanvas* shared_recording_canvas(CGContextRef destination)
 {
+    if (auto* canvas = css_gradient_blur_recording_canvas(destination)) return canvas;
     if (!(s_raster_layer_is_root ? s_shared_root_enabled : s_shared_layer_enabled)
         || !s_chromium_painting || !destination || !shared_picture_draw()) return nullptr;
     if (!s_shared_root_recording) {
@@ -98,6 +99,11 @@ void shared_recording_clip(CGContextRef destination, SkCanvas* canvas)
     auto found = s_shared_clips.find(destination);
     if (found == s_shared_clips.end()) return;
     if (found->second.unsupported) {
+        auto filter = s_css_gradient_blur_recordings.find(destination);
+        if (filter != s_css_gradient_blur_recordings.end()) {
+            filter->second->unsupported = true;
+            return;
+        }
         shared_recording_block(SkRect::MakeWH(s_shared_root_recording->canvas_width,
             s_shared_root_recording->canvas_height));
         return;
@@ -111,6 +117,11 @@ void shared_recording_clip(CGContextRef destination, SkCanvas* canvas)
 
 void shared_recording_content(CGContextRef destination, SkRect bounds, float page_y, float scroll_y)
 {
+    auto filter = s_css_gradient_blur_recordings.find(destination);
+    if (filter != s_css_gradient_blur_recordings.end()) {
+        filter->second->bounds.join(bounds);
+        return;
+    }
     if (!shared_recording_canvas(destination) || s_msaa_grid_columns <= 0) return;
     auto& group = *s_shared_root_recording;
     group.replay_bounds.push_back(bounds);

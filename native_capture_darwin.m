@@ -190,6 +190,11 @@ extern int ladybird_v_skia_draw_rgba_image_tiles(CGContextRef destination,
 	float transform_d, float transform_e, float transform_f, float page_x,
 	float page_y, float scroll_y, float canvas_width, float canvas_height,
 	float opacity, int nearest_neighbor, int image_flags, float const *clip_radii);
+extern int ladybird_v_skia_begin_css_gradient_blur(CGContextRef context, float width, float height);
+extern int ladybird_v_skia_end_css_gradient_blur(CGContextRef context, CGContextRef destination,
+    float width, float height, float scale, float sigma);
+extern int ladybird_v_skia_draw_css_blur(CGContextRef destination,
+    CGImageRef source, float canvas_width, float canvas_height, float scale, float sigma);
 extern int ladybird_v_skia_draw_drop_shadow(CGContextRef destination,
 	CGImageRef source, float canvas_width, float canvas_height, float scale,
 	float offset_x, float offset_y, float standard_deviation, uint8_t red,
@@ -2421,6 +2426,7 @@ typedef struct {
 	int active;
 	int copies_to_fresh_frame;
 	int borrows_fresh_frame;
+	int gradient_blur_recording;
 } NativeCSSFilterLayer;
 
 static NativeCSSFilterLayer native_css_filter_stack[NATIVE_CSS_FILTER_MAX_DEPTH];
@@ -2543,6 +2549,18 @@ void native_begin_css_filter_layer(float canvas_width, float canvas_height) {
 }
 
 void native_end_css_filter_layer(void);
+
+void native_record_css_gradient_blur_input(void) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	if (native_css_filter_overflow_depth || native_css_filter_stack_depth <= 0) return;
+	NativeCSSFilterLayer *layer = &native_css_filter_stack[native_css_filter_stack_depth - 1];
+	if (!layer->active || layer->operation_count != 1 || layer->operations[0].kind != 0
+		|| layer->destination != native_font_compositing_context
+		|| native_font_compositing_transparency_depth != 0) return;
+	layer->gradient_blur_recording = ladybird_v_skia_begin_css_gradient_blur(layer->context,
+		layer->canvas_width, layer->canvas_height);
+#endif
+}
 
 // Keep root scrolling distinct from the per-command transform.
 void native_set_chromium_raster_scroll_y(double scroll_y) {
@@ -3861,6 +3879,17 @@ void native_end_css_filter_layer(void) {
 	if (layer.borrows_fresh_frame)
 		CGContextClearRect(layer.destination,
 			CGRectMake(0, 0, layer.canvas_width, layer.canvas_height));
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	if (layer.gradient_blur_recording
+		&& ladybird_v_skia_end_css_gradient_blur(layer.context, layer.destination,
+			layer.canvas_width, layer.canvas_height, layer.scale, layer.operations[0].first)) {
+		if (source_image) CGImageRelease(source_image);
+		free(layer.operations);
+		native_free_svg_filter_graph(&layer);
+		return;
+	}
+#endif
+
 	if (source_image == NULL) {
 		free(layer.operations);
 		native_free_svg_filter_graph(&layer);
@@ -3872,6 +3901,15 @@ void native_end_css_filter_layer(void) {
 		CGImageRef filtered_image = NULL;
 		int rendered_with_skia = 0;
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
+		if (layer.operation_count == 1 && layer.graph_node_count == 0
+			&& layer.operations[0].kind == 0
+			&& layer.destination == native_font_compositing_context
+			&& native_font_compositing_transparency_depth == 0) {
+			rendered_with_skia = ladybird_v_skia_draw_css_blur(layer.destination,
+				source_image, layer.canvas_width, layer.canvas_height, layer.scale,
+				layer.operations[0].first);
+		}
+
 		if (layer.operation_count == 1 && layer.graph_node_count == 0
 			&& layer.operations[0].kind == 1 && layer.destination != NULL) {
 			NativeCSSFilterOperation operation = layer.operations[0];
