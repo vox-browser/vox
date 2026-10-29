@@ -84,6 +84,15 @@ pub fn (mut connection CurlConnection) start_fetch(params &fetch.FetchParams, in
 	check_curl_result(C.vox_curl_setopt_long(native.easy_, C.CURLOPT_NOSIGNAL, 1), C.CURLE_OK)
 	check_curl_result(C.vox_curl_setopt_pointer(native.easy_, C.CURLOPT_ACCEPT_ENCODING, c''), C.CURLE_OK)
 	check_curl_result(C.vox_curl_setopt_pointer(native.easy_, C.CURLOPT_URL, request.current_url().serialize().str), C.CURLE_OK)
+	// Match document navigation's process-local trust configuration. libcurl's
+	// API does not read the curl command-line tool's CA environment variables.
+	// Keep its certificate and hostname verification enabled.
+	if certificate_file := os.getenv_opt('SSL_CERT_FILE') {
+		if os.is_file(certificate_file) {
+			check_curl_result(C.vox_curl_setopt_pointer(native.easy_, C.CURLOPT_CAINFO,
+				certificate_file.str), C.CURLE_OK)
+		}
+	}
 	if proxy := browsersettings.proxy_override(request.current_url().serialize()) {
 		check_curl_result(C.vox_curl_setopt_pointer(native.easy_, C.CURLOPT_PROXY, proxy.str), C.CURLE_OK)
 		check_curl_result(C.vox_curl_setopt_pointer(native.easy_, C.CURLOPT_NOPROXY, c''), C.CURLE_OK)
