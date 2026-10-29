@@ -150,9 +150,18 @@ def write_if_changed(path, content):
 
 
 def patch_request(source):
-    """Preserve an explicit Cookie header when the optional cookie map is empty."""
+    """Preserve request-target bytes and explicit Cookie headers."""
     # Pointer identity must retain its full width with both compiler generations.
     source = re.sub(r'u64\(usize\(([^()]*)\)\)', r'u64(voidptr(\1))', source)
+    if 'fn (req &Request) method_and_url_to_response(' in source:
+        old_target = "p := url.escaped_path().trim_left('/')\n\tpath := if url.query().len > 0 { '/${p}?${url.query().encode()}' } else { '/${p}' }"
+        # Parsing a request query as form fields treats semicolons as separators,
+        # changing URLs such as Google Fonts' wght@400;500 selection. The URL's
+        # request URI already preserves escapes, duplicates and an empty query.
+        if source.count(old_target) == 1:
+            source = source.replace(old_target, 'path := url.request_uri()', 1)
+        elif source.count('path := url.request_uri()') != 1:
+            raise RuntimeError('Unsupported HTTP request-target source')
     signature = 'fn (req &Request) build_request_cookies_header_with_header(header Header) string'
     if 'cookie_header_value_with_header(header)' in source:
         # Current V already serializes an explicit Cookie header itself.

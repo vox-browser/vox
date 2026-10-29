@@ -944,7 +944,11 @@ fn browser_snapshot_cache_enabled() bool {
 }
 
 fn browser_cache_entry_path(cache_root string, category string, resource_url string) string {
-	return os.join_path(cache_root, category, sha256.hexhash(resource_url))
+	// Older HTTP/1 requests rebuilt queries as form fields, losing semicolon
+	// values and other wire spelling. Do not reuse their responses after fixing
+	// the transport; keep query-free cache entries available.
+	key := if resource_url.contains('?') { 'raw-request-uri-v1\n' + resource_url } else { resource_url }
+	return os.join_path(cache_root, category, sha256.hexhash(key))
 }
 
 fn read_browser_cache_entry(path string) ?string {

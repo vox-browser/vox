@@ -31,6 +31,23 @@ class HTTPCompatibilityStagingTest(unittest.TestCase):
             self.assertNotEqual(first, second)
             self.assertEqual(first, staged_modules(work, work / "first/vlib"))
 
+    def test_request_targets_use_the_original_uri_instead_of_form_query_serialization(self):
+        source = """fn (req &Request) method_and_url_to_response(method Method, url urllib.URL, data string, header Header) !Response {
+\tp := url.escaped_path().trim_left('/')
+\tpath := if url.query().len > 0 { '/${p}?${url.query().encode()}' } else { '/${p}' }
+\t// cookie_header_value_with_header(header)
+}
+"""
+        patched = patch_request(source)
+        self.assertIn('path := url.request_uri()', patched)
+        self.assertNotIn('url.query()', patched)
+        self.assertNotIn('trim_left', patched)
+        self.assertEqual(patched, patch_request(patched))
+
+    def test_unknown_request_target_implementations_fail_before_staging(self):
+        with self.assertRaisesRegex(RuntimeError, 'Unsupported HTTP request-target'):
+            patch_request('fn (req &Request) method_and_url_to_response() {}')
+
     def test_removed_compiler_files_do_not_survive_a_refresh(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
