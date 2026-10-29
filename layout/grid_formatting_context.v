@@ -2782,7 +2782,11 @@ fn run_grid_formatting_context(mut state LayoutState, container &Node, mut conta
 	}
 	maximize_grid_tracks(mut columns, available_space.width, column_gap, column_maximum_size)
 	if !width_is_intrinsic {
-		expand_flexible_grid_tracks(mut columns, container_width, column_gap)
+		if container.document().font_rendering_policy() == .chromium {
+			chromium_expand_flexible_grid_tracks(mut columns, container_width, column_gap)
+		} else {
+			expand_flexible_grid_tracks(mut columns, container_width, column_gap)
+		}
 	}
 	mut columns_before_alignment := column_gap.scaled(f64(grid_gutter_count(columns, 0,
 		columns.len - 1)))
@@ -2921,7 +2925,11 @@ fn run_grid_formatting_context(mut state LayoutState, container &Node, mut conta
 	// block-size constraint after min/max clamping.
 	maximize_grid_tracks(mut rows, available_space.height, row_gap, none)
 	if available_space.height.is_definite() {
-		expand_flexible_grid_tracks(mut rows, available_space.height.to_px_or_zero(), row_gap)
+		if container.document().font_rendering_policy() == .chromium {
+			chromium_expand_flexible_grid_tracks(mut rows, available_space.height.to_px_or_zero(), row_gap)
+		} else {
+			expand_flexible_grid_tracks(mut rows, available_space.height.to_px_or_zero(), row_gap)
+		}
 	} else {
 		// GridFormattingContext::expand_flexible_tracks(), indefinite-space
 		// branch. Include every item crossing a flexible row, rather than only
