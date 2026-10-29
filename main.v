@@ -7754,6 +7754,7 @@ fn main() {
 		exit(1)
 	}
 	install_browser_font_resource_cache()
+	css.install_remote_style_sheet_loader(load_browser_imported_style_sheet)
 	defer { requestserver.close_native_font_fetch_host() }
 	xpath.install_dom_xpath_bridge()
 	mut options := parse_launch_options(os.args[1..]) or {

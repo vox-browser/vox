@@ -7,6 +7,15 @@ import dom
 import os
 import url
 
+fn load_browser_imported_style_sheet(document &dom.Document, address string) ?css.ImportedStyleSheetSource {
+	resource := fetch_browser_resource(address, document.base_url().serialize(),
+		document.url.serialize(), 'stylesheet') or { return none }
+	return css.ImportedStyleSheetSource{
+		css_text: resource.body
+		response_url: resource.final_url
+	}
+}
+
 // Remote link stylesheets are inlined as <style> elements, which have no
 // alternate flag. Resolve the CSSOM preferred style sheet set here instead:
 // its name is the title of the first enabled, non-alternate titled sheet in

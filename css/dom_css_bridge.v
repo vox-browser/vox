@@ -515,6 +515,34 @@ fn read_local_stylesheet(reference string, base_url string) ?(string, string) {
 	return os.read_file(path) or { return none }, resolved_url
 }
 
+pub struct ImportedStyleSheetSource {
+pub:
+	css_text string
+	response_url string
+}
+
+// The embedding browser supplies its stylesheet transport and cache. Keeping
+// this boundary in CSS lets imports retain their rule tree and response base
+// URL instead of flattening their text into the importing sheet.
+pub type RemoteStyleSheetLoader = fn (&dom.Document, string) ?ImportedStyleSheetSource
+
+__global remote_style_sheet_loader_ ?RemoteStyleSheetLoader
+
+pub fn install_remote_style_sheet_loader(loader ?RemoteStyleSheetLoader) {
+	remote_style_sheet_loader_ = loader
+}
+
+fn read_imported_stylesheet(document &dom.Document, reference string, base_url string) ?(string, string) {
+	resolved_url := resolve_stylesheet_url(reference, base_url) or { return none }
+	if path := local_path_for_stylesheet_url(resolved_url) {
+		return os.read_file(path) or { return none }, resolved_url
+	}
+	if !resolved_url.starts_with('https://') && !resolved_url.starts_with('http://') { return none }
+	loader := remote_style_sheet_loader_ or { return none }
+	source := loader(document, resolved_url) or { return none }
+	return source.css_text, source.response_url
+}
+
 // The text of remote stylesheets that the browser fetched for links that
 // scripts inserted after the document's initial resources, by resolved URL.
 __global remote_link_style_sheets = map[string]string{}
@@ -554,7 +582,7 @@ fn read_link_stylesheet(link &dom.Element, reference string, base_url string) ?(
 	return css_text, resolved_url
 }
 
-fn load_local_imported_stylesheets(document &dom.Document, mut sheet CSSStyleSheet, location string, mut active_urls map[string]bool) {
+fn load_imported_stylesheets(document &dom.Document, mut sheet CSSStyleSheet, location string, mut active_urls map[string]bool) {
 	for mut import_rule in sheet.import_rules {
 		if supports := import_rule.supports {
 			if !supports.matches_condition() {
@@ -567,17 +595,21 @@ fn load_local_imported_stylesheets(document &dom.Document, mut sheet CSSStyleShe
 				continue
 			}
 		}
-		css_text, resolved_url := read_local_stylesheet(import_rule.kind_data().url, location) or { continue }
-		if active_urls[resolved_url] {
+		request_url := resolve_stylesheet_url(import_rule.kind_data().url, location) or { continue }
+		if active_urls[request_url] {
 			continue
 		}
+		css_text, resolved_url := read_imported_stylesheet(document, request_url, location) or { continue }
+		if active_urls[resolved_url] { continue }
+		active_urls[request_url] = true
 		active_urls[resolved_url] = true
 		mut imported_sheet := parse_css_stylesheet_with_parser(css_text, resolved_url)
 		imported_sheet.set_parent_css_style_sheet(sheet)
-		load_local_imported_stylesheets(document, mut imported_sheet, resolved_url, mut active_urls)
+		load_imported_stylesheets(document, mut imported_sheet, resolved_url, mut active_urls)
 		imported_sheet.evaluate_media_queries(document)
 		import_rule.set_style_sheet(imported_sheet)
 		active_urls.delete(resolved_url)
+		active_urls.delete(request_url)
 	}
 }
 
@@ -589,11 +621,9 @@ fn dump_css_style_sheet_if_requested(sheet &CSSStyleSheet) {
 	}
 }
 
-// Parse a style sheet for a style or link element and load its local @import
-// sheets before the sheet joins its style sheet list.
-// Boundary: fetch-backed CSSImportRule loading is not wired, so local imports
-// load synchronously here, ahead of the add a CSS style sheet steps, which
-// then see the imported rules when they invalidate style.
+// Load imports before the sheet joins its style sheet list so imported fonts,
+// layers and style rules participate in the owner's initial invalidation.
+// Like local imports, the embedding browser's remote loader is synchronous.
 fn parse_css_style_sheet_for_owner_node(document &dom.Document, css_text string, location string) &CSSStyleSheet {
 	phase_mark := platform.arena_phase_begin()
 	defer {
@@ -603,7 +633,7 @@ fn parse_css_style_sheet_for_owner_node(document &dom.Document, css_text string,
 	sheet.base.type_string = 'text/css'
 	mut active_urls := map[string]bool{}
 	active_urls[location] = true
-	load_local_imported_stylesheets(document, mut sheet, location, mut active_urls)
+	load_imported_stylesheets(document, mut sheet, location, mut active_urls)
 	dump_css_style_sheet_if_requested(sheet)
 	return sheet
 }
