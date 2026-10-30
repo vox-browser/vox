@@ -506,6 +506,8 @@ fn layout_uncached_independent_formatting_context(mut state LayoutState, box &No
 		}
 		automatic_height_children = wrapper_flow_children.clone()
 	}
+	mut has_collapsing_child := false
+	mut has_non_collapsing_child := false
 	for child in automatic_height_children {
 		if child.is_absolutely_positioned() {
 			continue
@@ -518,6 +520,14 @@ fn layout_uncached_independent_formatting_context(mut state LayoutState, box &No
 		if child_state.is_invisible_for_line_clamp() {
 			continue
 		}
+		// An empty block's adjoining margins already belong to the run's
+		// collapsed aggregate. Its placed offset includes that margin, so
+		// adding its bottom margin again would count the same gap twice.
+		if !child.is_floating() && margins_collapse_through(child_styled, state) {
+			has_collapsing_child = true
+			continue
+		}
+		has_non_collapsing_child = true
 		mut margin_bottom := child_state.margin_bottom
 		if trailing := child_context.trailing_collapsed_margin {
 			if layout_nodes_same(trailing.child, child) {
@@ -526,6 +536,11 @@ fn layout_uncached_independent_formatting_context(mut state LayoutState, box &No
 		}
 		child_bottom := child_state.offset.y().plus(child_state.content_height()).plus(child_state.border_box_bottom()).plus(margin_bottom)
 		height = css_pixels_max(height, child_bottom)
+	}
+	if has_collapsing_child && !has_non_collapsing_child {
+		// With no real in-flow box, there is no child on which to retain the
+		// aggregate. Margins still cannot escape this formatting context.
+		height = css_pixels_max(height, css_px(child_context.margin_state.current_collapsed_margin()))
 	}
 	// Include every floating descendant whose bottom margin edge extends below
 	// the in-flow content bottom. Float records are in root coordinates.

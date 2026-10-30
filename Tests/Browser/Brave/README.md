@@ -13,6 +13,14 @@ python3 tools/check_pixel_equality.py Tests/Browser/Brave/expected/font-rasteriz
 
 This comparison requires exact RGBA equality, with no excluded pixels or tolerance.
 
+`trailing-empty-block-margins` checks empty paragraphs after ordinary content,
+larger collapsing margins, empty-only containers, and grid row sizing. The
+800×600, scale 1 fixture matches Brave 156.1.98.60 exactly; the previous output
+differed at 97,822 pixels. A formatting-context root consumes the run's collapsed
+margin once instead of adding an empty child's placed margin a second time.
+Focused cases also cover negative margins, nested empty blocks, and borders
+that prevent the margins from collapsing through a child.
+
 `font-synthesis` covers inherited synthesis controls through the `font` shorthand,
 synthetic italic, bold and small caps, `oblique-only`, and real bold/italic faces.
 The 800×600, scale 1 fixture matches Brave 156.1.98.60 exactly; ignoring the

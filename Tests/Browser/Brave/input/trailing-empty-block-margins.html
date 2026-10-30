@@ -1,0 +1,18 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Trailing empty block margins</title>
+<style>
+body { margin: 20px; background: #142236; color: #d5e1f0; font: 16px/24px Arial; }
+.grid { display: grid; grid-template-columns: 350px 350px; gap: 15px; align-items: start; }
+.card { padding: 20px; border: 1px solid #496080; background: #20334a; }
+.card p { margin: 12px 0; }
+.tall { margin: 30px 0 !important; }
+</style>
+<div class="grid">
+  <div class="card"><p>Text before an empty paragraph</p><p></p></div>
+  <div class="card"><p>Text with no trailing empty paragraph</p></div>
+  <div class="card"><p>Text before a larger empty paragraph</p><p class="tall"></p></div>
+  <div class="card"><p class="tall"></p></div>
+  <div class="card"><p>Text before two empty paragraphs</p><p></p><p></p></div>
+  <div class="card"><p></p><p>Text after an empty paragraph</p></div>
+</div>
