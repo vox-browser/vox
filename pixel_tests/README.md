@@ -24,6 +24,11 @@ browser/compiler children run through their own 3 GiB memory guards. The runner
 uses the installed production bundle directly and never schedules a rebuild.
 Each Vox capture launches a new process with an empty private profile, records
 the executable/native-library identities, and rejects a concurrent bundle change.
+For the separate `capture_screenshot.sh` / `compare_screenshots.sh` workflow,
+`SCREENSHOT_REUSE_PRODUCTION=1` explicitly reuses the installed bundle even
+when newer source exists. It fails if the executable is missing. Record the
+bundle identity and verify that it contains the change being tested; this
+option does not establish that an older binary contains new code.
 `--audit-config FILE` selects additional native layout observations while
 diagnosing a mismatch; retain the `body` and `images` selectors in that config.
 The checker is built without temporary module-cache dependencies so it remains

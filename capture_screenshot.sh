@@ -17,6 +17,9 @@ case "$width:$height" in
     *[!0-9:]*|0:*|*:0) echo "WIDTH and HEIGHT must be positive integers" >&2; exit 2 ;;
 esac
 
+# Callers that pin a completed shared bundle can test it while newer source
+# changes are being built elsewhere. They remain responsible for its identity.
+if [ "${SCREENSHOT_REUSE_PRODUCTION:-0}" != 1 ]; then
 if [ ! -x "$browser" ] \
     || [ ! -f "$repo_dir/Build/v/Vox.app/Contents/Resources/Vox.icns" ] \
     || [ ! -f "$repo_dir/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin" ] \
@@ -34,6 +37,11 @@ if [ ! -x "$browser" ] \
     -type f \( -name '*.v' -o -name '*.m' -o -name '*.cpp' -o -name '*.h' \) ! -name '*_test.v' \
     ! -path "$repo_dir/tools/*" -newer "$browser" -print -quit | grep -q .; then
     "$repo_dir/build_ladybird.sh"
+fi
+fi
+if [ ! -x "$browser" ]; then
+    echo "Production browser is missing: $browser" >&2
+    exit 1
 fi
 
 capture_tmp=$(mktemp -d /tmp/ladybird-v-screenshot.XXXXXX)
