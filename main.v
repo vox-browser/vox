@@ -7284,7 +7284,7 @@ fn (mut app BrowserApp) draw() {
 				}
 			}
 			if command.kind == 'paint_outer_box_shadow' {
-				outer_end := app.draw_chromium_outer_decorations(command_index, page_y, window.height)
+				outer_end := app.draw_chromium_outer_decorations(command_index, page_y, window.height, mut culling)
 				if outer_end > command_index {
 					shared_svg_end = outer_end
 					continue

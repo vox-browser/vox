@@ -55,6 +55,13 @@ and adjacent Brave PNG are now exact too; they previously differed at 474
 pixels. The recording excludes browser chrome and preserves the root tile
 origin. Unsupported recordings retain the ordinary fallback pixels.
 
+`overlapping-shadow-boxes` checks adjacent transparent boxes with different
+transforms and overlapping outer shadows. Their shadow/border pairs share one
+root raster pass, skipping only commands culled by ordinary viewport replay.
+Visible paint, resource inputs, and compositor boundaries stop the group. The
+800×600, scale 1 fixture is exact against Brave 156.1.98.60; resolving each box
+separately differed at 192 pixels, all by one channel level.
+
 `box-shadow-blur` checks square and two rounded outer shadows. The native
 Chromium profile uses an isolated Skia 155 Metal backend for these shadows,
 including Chromium's legacy rounded clip shader and full precision arithmetic.
