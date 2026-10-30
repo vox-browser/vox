@@ -24,6 +24,14 @@ corner radii and fills one outer/inner rounded-rectangle ring. The full fixture
 requires exact equality; four separately painted border sides differed at
 1,539 pixels, with a maximum channel error of 8.
 
+`transformed-border-offset` checks an elliptical border whose untransformed
+origin has fractional coordinates. Geometry snaps in the box's local paint
+space before rotation; the full 800×600 fixture is exact against Brave
+156.1.98.60. Transformed outer shadows retain the same local paint offset.
+The unchanged [combined shadow diagnostic](diagnostic/transformed-border-shadow-offset.html)
+and adjacent Brave reference still differ at 474 pixels, by at most two channel
+levels. That diagnostic remains open.
+
 `box-shadow-blur` checks square and two rounded outer shadows. The native
 Chromium profile uses an isolated Skia 155 Metal backend for these shadows,
 including Chromium's legacy rounded clip shader and full precision arithmetic.

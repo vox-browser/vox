@@ -2626,6 +2626,7 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 		for command_index := command_start; command_index < commands.len; command_index++ {
 			commands[command_index].transform = box.paint_transform
 			chromium_local_background(mut commands[command_index], box)
+			chromium_local_border_shadow(mut commands[command_index], box, border_rect)
 			data := commands[command_index].local_border_data
 			if data != unsafe { nil } {
 				commands[command_index].transform = chromium_local_border_transform(data,
