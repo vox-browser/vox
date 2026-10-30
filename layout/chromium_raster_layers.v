@@ -18,6 +18,8 @@ pub mut:
 	scroll_contents bool
 	// Fixed, sticky and hinted contents likewise rasterize before compositing.
 	composited_contents bool
+mut:
+	unbounded_sticky_overlap bool
 }
 
 pub struct ChromiumRasterLayerPlan {
@@ -37,6 +39,7 @@ mut:
 	legacy_effect        bool
 	fixed_to_viewport    bool
 	requires_root_raster bool
+	scrollbar            bool
 }
 
 struct ChromiumRasterChunk {
@@ -44,6 +47,7 @@ struct ChromiumRasterChunk {
 	bounds        LayoutRect
 	command_index int
 	command_end   int
+	unbounded_sticky_overlap bool
 }
 
 // Working storage of chromium_raster_layer_plan, reused by every recording:
@@ -114,6 +118,7 @@ fn (mut plan ChromiumRasterLayerPlan) prepare(count int) {
 		plan.layer_storage[index].legacy_raster = false
 		plan.layer_storage[index].scroll_contents = false
 		plan.layer_storage[index].composited_contents = false
+		plan.layer_storage[index].unbounded_sticky_overlap = false
 		plan.layer_storage[index].command_indices.clear()
 	}
 	plan.layers = []ChromiumRasterLayer{}
@@ -127,6 +132,7 @@ fn (mut plan ChromiumRasterLayerPlan) append_layer(legacy bool) {
 	plan.layer_storage[index].legacy_raster = legacy
 	plan.layer_storage[index].scroll_contents = false
 	plan.layer_storage[index].composited_contents = false
+	plan.layer_storage[index].unbounded_sticky_overlap = false
 	plan.layers = unsafe { plan.layer_storage[..index + 1] }
 }
 
@@ -147,6 +153,7 @@ fn chromium_layerize_chunks_into(chunks []ChromiumRasterChunk, count int, device
 	states << ChromiumRasterPropertyState{}
 	for chunk in chunks {
 		mut merged := -1
+		mut separated_by_overlap := false
 		for index := plan.layers.len - 1; index >= 0; index-- {
 			merged_bounds := chromium_layer_bounds_union(plan.layers[index].bounds, chunk.bounds)
 			home := plan.layers[index].bounds
@@ -160,15 +167,24 @@ fn chromium_layerize_chunks_into(chunks []ChromiumRasterChunk, count int, device
 			}
 			// A matching earlier layer cannot be reached through overlapping
 			// independently scrolling content without changing paint order.
-			if chromium_layer_bounds_overlap(plan.layers[index].bounds, chunk.bounds) {
+			// Chromium's overlap projection treats an unclipped sticky
+			// translation as unbounded. Its current position cannot establish
+			// that later content can be reordered behind it during scrolling.
+			sticky_overlap := states[index].sticky_frame != chunk.state.sticky_frame
+				&& (plan.layers[index].unbounded_sticky_overlap || chunk.unbounded_sticky_overlap)
+			if sticky_overlap || chromium_layer_bounds_overlap(plan.layers[index].bounds, chunk.bounds) {
+				separated_by_overlap = true
 				break
 			}
 		}
 		if merged < 0 {
 			merged = plan.layers.len
 			plan.append_layer(chunk.state.legacy_effect)
+			plan.layers[merged].composited_contents = separated_by_overlap && !chunk.state.legacy_effect
 			states << chunk.state
 		}
+		plan.layers[merged].unbounded_sticky_overlap = plan.layers[merged].unbounded_sticky_overlap
+			|| chunk.unbounded_sticky_overlap
 		plan.layers[merged].bounds = chromium_layer_bounds_union(plan.layers[merged].bounds, chunk.bounds)
 		end := if chunk.command_end > chunk.command_index {
 			chunk.command_end
@@ -479,6 +495,7 @@ pub fn update_chromium_raster_layer_plan(document &dom.Document, commands []Pain
 		mut bounds := compositor_bounds
 		mut state := ChromiumRasterPropertyState{}
 		mut has_state := false
+		mut unbounded_sticky_overlap := false
 		for position in first .. end {
 			command := unsafe { &commands[position] }
 			// Lowered begin/end commands own no box; their enclosed commands
@@ -513,7 +530,13 @@ pub fn update_chromium_raster_layer_plan(document &dom.Document, commands []Pain
 				state.effect_scope = effect_scope
 				state.legacy_effect = legacy_effect
 				state.fixed_to_viewport = command.fixed_to_viewport
+				// Scrollbars retain their own raster identity; appending one
+				// must not turn preceding overlap text into a mixed paint run.
+				state.scrollbar = command.scrollbar_axis != ''
 				has_state = true
+			}
+			if state.sticky_frame > 0 && !state.legacy_effect && !command.has_clip {
+				unbounded_sticky_overlap = true
 			}
 			bounds = chromium_layer_bounds_union(bounds, chromium_raster_chunk_bounds(box, command))
 			// A fixed container establishes its compositor layer even when only
@@ -537,6 +560,7 @@ pub fn update_chromium_raster_layer_plan(document &dom.Document, commands []Pain
 				bounds:        bounds
 				command_index: first
 				command_end:   end
+				unbounded_sticky_overlap: unbounded_sticky_overlap
 			}
 		}
 		index = end
@@ -549,7 +573,8 @@ pub fn update_chromium_raster_layer_plan(document &dom.Document, commands []Pain
 	for layer_index, state in scratch.layer_states {
 		plan.layers[layer_index].scroll_contents = state.scroll_frame > 0
 		plan.layers[layer_index].composited_contents = !state.legacy_effect
-			&& (state.scroll_frame > 0 || state.sticky_frame > 0 || state.fixed_to_viewport
+			&& (plan.layers[layer_index].composited_contents
+				|| state.scroll_frame > 0 || state.sticky_frame > 0 || state.fixed_to_viewport
 				|| state.effect_scope != 0)
 		if state.effect_scope != 0 && !state.legacy_effect {
 			// Compositor rasters enclose fractional geometry, independently of

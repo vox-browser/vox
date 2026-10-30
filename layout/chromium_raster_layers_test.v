@@ -200,6 +200,93 @@ fn test_raster_layers_different_sticky_states_do_not_merge() {
 	assert chromium_root_raster_plan(3).layers[0].command_indices == [0, 1, 2]
 }
 
+fn test_unclipped_sticky_overlap_prevents_reordering_disjoint_root_content() {
+	for unbounded in [false, true] {
+		plan := chromium_layerize_chunks([
+			ChromiumRasterChunk{
+				bounds: LayoutRect{width:800, height:2000}
+				command_index: 0
+			},
+			ChromiumRasterChunk{
+				state: ChromiumRasterPropertyState{sticky_frame:1}
+				bounds: LayoutRect{x:24, y:88, width:164, height:40}
+				unbounded_sticky_overlap: unbounded
+				command_index: 1
+			},
+			ChromiumRasterChunk{
+				bounds: LayoutRect{x:484, y:88, width:164, height:40}
+				command_index: 2
+			},
+		], 3, 1)
+		if unbounded {
+			assert plan.command_layers == [0, 1, 2]
+			assert plan.layers[2].composited_contents
+		} else {
+			assert plan.command_layers == [0, 1, 0]
+			assert !plan.layers[0].composited_contents
+		}
+	}
+}
+
+fn test_sticky_overlap_respects_clips_and_refreshes_a_reused_plan() {
+	mut document := html.parse_document('<!doctype html><style>
+		body{margin:0;min-height:2000px;background:white}
+		#frame{position:absolute;left:24px;top:0;width:164px;height:600px}
+		section{position:sticky;top:0;height:600px}#spacer{height:1400px}
+		#later{position:absolute;left:484px;top:88px}
+	</style><div id="frame"><section>Sticky</section><div id="spacer"></div></div><div id="later">Later</div>')
+	defer { document.finalize() }
+	document.set_font_rendering_policy(.chromium)
+	mut frame := document.get_element_by_id('frame') or { panic('missing frame') }
+	mut plan := ChromiumRasterLayerPlan{}
+	for clipped in [false, true, false] {
+		frame.set_attribute_value('style', if clipped { 'overflow:hidden' } else { 'overflow:visible' })
+		_ = layout_document_typed_in_viewport(document, 800, 600)
+		commands := display_list_commands(document.record_display_list() or { panic('missing overlap paint') })
+		update_chromium_raster_layer_plan(document, commands, 1, mut plan)
+		mut seen := false
+		for index, command in commands {
+			if command.kind != 'draw_text' || command.text != 'Later' { continue }
+			seen = true
+			owner := plan.command_layers[index]
+			assert plan.layers[owner].composited_contents == !clipped
+			assert (owner > 0) == !clipped
+			for command_index in plan.layers[owner].command_indices {
+				assert commands[command_index].scrollbar_axis == ''
+			}
+		}
+		assert seen
+	}
+}
+
+fn test_scrollbars_keep_their_identity_after_an_overlap_text_layer() {
+	plan := chromium_layerize_chunks([
+		ChromiumRasterChunk{
+			bounds: LayoutRect{width:800, height:2000}
+			command_index: 0
+		},
+		ChromiumRasterChunk{
+			state: ChromiumRasterPropertyState{sticky_frame:1}
+			bounds: LayoutRect{width:164, height:600}
+			unbounded_sticky_overlap: true
+			command_index: 1
+		},
+		ChromiumRasterChunk{
+			bounds: LayoutRect{x:484, y:543, width:78, height:17}
+			command_index: 2
+		},
+		ChromiumRasterChunk{
+			state: ChromiumRasterPropertyState{scrollbar:true}
+			bounds: LayoutRect{width:800, height:2000}
+			command_index: 3
+		},
+	], 4, 1)
+	assert plan.command_layers == [0, 1, 2, 3]
+	assert plan.layers[2].composited_contents
+	assert plan.layers[2].command_indices == [2]
+	assert plan.layers[3].command_indices == [3]
+}
+
 fn test_raster_layers_follow_retained_scrolling_and_escaped_absolute_ancestry() {
 	mut document :=
 		html.parse_document('<!doctype html><style>html,body{margin:0}#wrap{position:relative;margin:20px;width:200px}#scroll{overflow-x:auto;overflow-y:hidden;height:30px}#wide{width:400px;height:30px;background:rgb(1 2 3)}#overlay{position:absolute;right:0;top:-5px;width:40px;height:40px;background:rgb(4 5 6)}</style><div id="wrap"><div id="scroll"><div id="wide"></div><div id="overlay"></div></div></div>')

@@ -89,6 +89,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_programmatically_scrollable_sticky_text_keeps_its_compositor_raster(self):
         self.compare_fixture('stackoverflow-programmatic-sticky-text')
 
+    def test_text_after_unclipped_sticky_content_keeps_its_overlap_raster(self):
+        self.compare_fixture('stackoverflow-sticky-overlap-text')
+
 
 if __name__ == '__main__':
     unittest.main()
