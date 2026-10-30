@@ -1989,7 +1989,17 @@ fn increase_grid_flexible_tracks_for_spanning_items(mut state LayoutState, conta
 			if affected_track_count == 0 {
 				continue
 			}
-			minimum_contribution := (if columns {
+			// Intrinsic probes can lay out an entire nested grid. Only measure the
+			// contributions consumed by this phase; computing all three eagerly
+			// repeats that work even when the result cannot affect any track.
+			needs_minimum := phase in [.intrinsic, .limited_max_content]
+			needs_min_content := phase == .min_content || (phase == .intrinsic
+				&& (available_size.is_max_content() || (!columns && available_size.is_min_content())))
+			needs_max_content := phase == .max_content || (phase == .limited_max_content
+				&& !(total_flex == 0 && flex_item_is_scroll_container(placement.item)))
+			minimum_contribution := (if !needs_minimum {
+				CSSPixels.new(0)
+			} else if columns {
 				grid_item_minimum_outer_inline_contribution(mut state, placement.item, tracks, start, span, gap)
 			} else {
 				styled := placement.item.as_node_with_style() or { continue }
@@ -1997,14 +2007,18 @@ fn increase_grid_flexible_tracks_for_spanning_items(mut state LayoutState, conta
 				grid_item_minimum_outer_block_contribution(mut state, placement.item, item_state, tracks, start, span, available_height_is_definite, percentage_basis, gap)
 			}).plus(placement.sizing_extra(columns))
 			spanned_track_size := grid_track_range_size(tracks, start, span, gap)
-			min_content_contribution := (if columns {
+			min_content_contribution := (if !needs_min_content {
+				CSSPixels.new(0)
+			} else if columns {
 				grid_intrinsic_outer_width_contribution(mut state, placement.item, .min_content)
 			} else {
 				styled := placement.item.as_node_with_style() or { continue }
 				item_state := state.get(styled)
 				grid_item_outer_block_content_contribution(mut state, placement.item, item_state, .min_content, available_height_is_definite, percentage_basis, spanned_track_size)
 			}).plus(placement.sizing_extra(columns))
-			max_content_contribution := (if columns {
+			max_content_contribution := (if !needs_max_content {
+				CSSPixels.new(0)
+			} else if columns {
 				grid_intrinsic_outer_width_contribution(mut state, placement.item, .max_content)
 			} else {
 				styled := placement.item.as_node_with_style() or { continue }
