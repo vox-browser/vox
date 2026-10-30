@@ -210,6 +210,21 @@ fn chromium_user_scrollable_box(box &BlockBox) bool {
 	]
 }
 
+fn chromium_scrollport_has_range(box &BlockBox) bool {
+	overflow := box.scrollable_overflow or { return false }
+	padding_width := if box.is_viewport_scroller {
+		box.canvas().viewport_width
+	} else {
+		box.width + box.padding.left + box.padding.right
+	}
+	padding_height := if box.is_viewport_scroller {
+		box.canvas().viewport_height
+	} else {
+		box.height + box.padding.top + box.padding.bottom
+	}
+	return overflow.width > padding_width || overflow.height > padding_height
+}
+
 // A sticky scroll frame exists even when its scrollport has no scroll range.
 // Only a scrolling nearest container promotes that sticky content. Inert
 // overflow containers must stop the search rather than borrowing the viewport's
@@ -222,7 +237,9 @@ fn chromium_sticky_needs_compositing(box &BlockBox, boxes_by_layout map[u64]&Blo
 		ancestor := containing_block or { break }
 		if ancestor_box := boxes_by_layout[u64(voidptr(ancestor))] {
 			if ancestor_box.is_viewport_scroller || ancestor.is_scroll_container() {
-				return paintable_box_could_be_scrolled_by_wheel_event(ancestor_box)
+				// Hidden overflow can still scroll programmatically. Promotion
+				// depends on its range rather than its wheel-input policy.
+				return chromium_scrollport_has_range(ancestor_box)
 			}
 		}
 		if ancestor.is_fixed_position() { return false }

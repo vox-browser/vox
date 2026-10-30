@@ -46,7 +46,7 @@ fn test_inert_inner_scrollport_does_not_borrow_the_viewports_scroll_range() {
 }
 
 fn test_sticky_content_in_an_overflowing_scroller_keeps_its_compositor_identity() {
-	for overflow in ['auto', 'scroll'] {
+	for overflow in ['auto', 'scroll', 'hidden'] {
 		plan, owner := sticky_promotion_text_owner('<!doctype html><style>
 			body{margin:0}#scroller{overflow:${overflow};height:200px;width:164px}
 			section{position:sticky;top:0;height:200px}span{position:absolute;left:34px;top:40px}
@@ -54,6 +54,18 @@ fn test_sticky_content_in_an_overflowing_scroller_keeps_its_compositor_identity(
 		</style><div id="scroller"><section><span>Tags</span></section><div id="spacer"></div></div>')
 		assert owner > 0
 		assert plan.layers[owner].composited_contents
+	}
+}
+
+fn test_sticky_promotion_excludes_scrollport_padding_from_the_scroll_range() {
+	for spacer_height in [0, 1000] {
+		plan, owner := sticky_promotion_text_owner('<!doctype html><style>
+			body{margin:0;min-height:2000px}
+			#scroller{overflow:hidden;width:164px;height:200px;padding:12px}
+			section{position:sticky;top:0;height:200px}span{position:absolute;left:34px;top:40px}
+			#spacer{height:${spacer_height}px}
+		</style><div id="scroller"><section><span>Tags</span></section><div id="spacer"></div></div>')
+		assert plan.layers[owner].composited_contents == (spacer_height > 0)
 	}
 }
 
