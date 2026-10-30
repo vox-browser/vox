@@ -110,7 +110,8 @@ fn (mut app BrowserApp) draw_chromium_svg_image_group(command layout.PaintComman
 					stroke_width:       f32(path.stroke_width * if svg.non_scaling_stroke { app.document.layout_coordinate_scale() } else { 1.0 })
 					miter_limit:        f32(svg.stroke_miterlimit)
 					has_float_alpha:    1
-					opacity: f32(f64(color.a) / 255 * if part == 0 { svg.fill_opacity } else { svg.stroke_opacity })
+					opacity: f32(chromium_svg_solid_paint_alpha(&path, part != 0, color.a) *
+						if part == 0 { svg.fill_opacity } else { svg.stroke_opacity })
 				}
 			}
 		}

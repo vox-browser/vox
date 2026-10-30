@@ -2,6 +2,7 @@ module main
 
 import layout
 import painting
+import css
 
 fn svg_solid_group_test_command() layout.PaintCommand {
 	return layout.PaintCommand{
@@ -86,6 +87,32 @@ fn test_single_svg_paint_opacity_uses_the_float_recording_without_crossing_a_bar
 			assert chromium_svg_solid_run_end([layout.PaintCommand{ ...command, group_opacity: .5 }], [], 0) == 0
 		}
 	}
+}
+
+fn test_single_svg_color_alpha_selects_the_float_recording() {
+	base := svg_solid_group_test_command()
+	serialized := 'rgba(236, 174, 99, 0.5882352941)'
+	fill := layout.PaintCommand{
+		...base
+		color: serialized
+		svg_data: &layout.PaintSVGPathData{
+			...base.svg_data
+			svg_solid_color_data: &layout.PaintSVGSolidColorData{
+				fill_serialized: serialized
+				fill: css.Color{236, 174, 99, 150}
+				has_fill: true
+				fill_alpha: 0.59
+				has_fill_alpha: true
+			}
+		}
+	}
+	assert chromium_svg_solid_run_end([fill], [], 0) == 1
+	assert chromium_svg_solid_paint_alpha(&fill, false, 150) == 0.59
+	changed := layout.PaintCommand{ ...fill, color: 'red' }
+	assert chromium_svg_solid_run_end([changed], [], 0) == 0
+	assert chromium_svg_solid_paint_alpha(&changed, false, 255) == 1
+	assert chromium_svg_solid_run_end([fill, layout.PaintCommand{kind:'end_svg_mask_layer'}, base], [], 0) == 1
+	assert chromium_svg_solid_run_end([fill, base], [0, 1], 0) == 1
 }
 
 fn test_solid_svg_runs_reject_clips_that_need_individual_replay() {

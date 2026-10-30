@@ -74,6 +74,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_transparent_svg_backgrounds_do_not_change_neighboring_antialiasing(self):
         self.compare_fixture('lobsters-transparent-svg-background')
 
+    def test_modern_svg_color_alpha_survives_solid_paint_conversion(self):
+        self.compare_fixture('forum-modern-svg-color-alpha')
+
 
 if __name__ == '__main__':
     unittest.main()

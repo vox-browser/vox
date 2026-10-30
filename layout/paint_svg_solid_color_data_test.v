@@ -102,3 +102,58 @@ fn test_non_solid_svg_and_ordinary_commands_do_not_allocate_solid_color_data() {
 	assert command.retained_svg_stroke_color() == none
 	assert command.fill_linear_gradient() != none
 }
+
+fn test_chromium_svg_solids_keep_modern_rgb_alpha_before_byte_conversion() {
+	for chromium in [true, false] {
+		mut document := html.parse_document('<!doctype html><svg width="40" height="30"><path d="M0 0L30 0L30 20Z" fill="rgb(51 91 131 / 59%)" stroke="rgb(190 70 20 / 30%)"/></svg>')
+		defer { document.finalize() }
+		if chromium { document.set_font_rendering_policy(.chromium) }
+		_ = layout_document_typed_in_viewport(document, 80, 60)
+		command := solid_svg_recording(mut document)
+		assert command.retained_svg_fill_color()? == css.Color{51, 91, 131, 150}
+		assert command.retained_svg_stroke_color()? == css.Color{190, 70, 20, 77}
+		if chromium {
+			assert command.retained_svg_solid_alpha(false)? == 0.59
+			assert command.retained_svg_solid_alpha(true)? == 0.3
+		} else {
+			assert command.retained_svg_solid_alpha(false) == none
+			assert command.retained_svg_solid_alpha(true) == none
+		}
+	}
+}
+
+fn test_svg_alpha_snapshots_follow_currentcolor_mutations_and_preserve_old_recordings() {
+	mut document := html.parse_document('<!doctype html><svg width="40" height="30" style="color:rgb(51 91 131 / 59%)"><path id="alpha-path" d="M0 0L30 0L30 20Z" fill="currentColor"/></svg>')
+	defer { document.finalize() }
+	document.set_font_rendering_policy(.chromium)
+	_ = layout_document_typed_in_viewport(document, 80, 60)
+	first := solid_svg_recording(mut document)
+	assert first.retained_svg_solid_alpha(false)? == 0.59
+	mut path := document.get_element_by_id('alpha-path') or { panic('missing alpha path') }
+	path.set_attribute_value('fill', 'rgb(51 91 131 / 31%)')
+	_ = layout_document_typed_in_viewport(document, 80, 60)
+	second := solid_svg_recording(mut document)
+	$if gcboehm ? { C.GC_gcollect() }
+	assert first.retained_svg_solid_alpha(false)? == 0.59
+	assert second.retained_svg_solid_alpha(false)? == 0.31
+	path.set_attribute_value('fill', 'rgb(51 91 131 / .3101)')
+	_ = layout_document_typed_in_viewport(document, 80, 60)
+	third := solid_svg_recording(mut document)
+	assert second.color == third.color
+	assert second.retained_svg_solid_alpha(false)? == 0.31
+	assert third.retained_svg_solid_alpha(false)? == 0.3101
+	mut changed := second
+	changed.color = 'red'
+	assert changed.retained_svg_solid_alpha(false) == none
+}
+
+fn test_legacy_svg_alpha_and_exact_byte_values_keep_the_existing_color_path() {
+	for color in ['rgba(51,91,131,.59)', 'rgb(51 91 131 / 20%)', 'rgb(51 91 131)'] {
+		mut document := html.parse_document('<!doctype html><svg width="40" height="30"><path d="M0 0L30 0L30 20Z" fill="${color}"/></svg>')
+		defer { document.finalize() }
+		document.set_font_rendering_policy(.chromium)
+		_ = layout_document_typed_in_viewport(document, 80, 60)
+		command := solid_svg_recording(mut document)
+		assert command.retained_svg_solid_alpha(false) == none
+	}
+}
