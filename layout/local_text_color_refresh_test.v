@@ -69,6 +69,7 @@ fn test_inherited_color_qualification_keeps_custom_property_font_changes_in_layo
 	document.set_hovered_node(link.as_node())
 	document.update_layout(.event_handler_handle_mouse_move)
 	assert label.get_bounding_client_rect().height > before.height * 2
-	commands := display_list_commands(document.record_display_list()?)
+	list := document.record_display_list()?
+	commands := display_list_commands(list)
 	assert commands.any(it.kind == 'draw_text' && it.font_size == 40 && it.color == 'rgb(255 0 0)')
 }
