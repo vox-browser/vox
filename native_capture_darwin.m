@@ -5293,14 +5293,16 @@ static CGImageRef native_copy_cg_image(gg__Image *image) {
 	NSData *icc_profile = image->nr_channels == VOX_PNG_ICC_CHANNEL_MARKER
 	    ? native_image_icc_profile(image->data, image->width, image->height) : nil;
 	NSData *icc_pixels = nil;
+	VoxImageColorProfile icc_color_profile = { 0 };
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
-	if (icc_profile) icc_pixels = native_image_icc_pixels(image->data, image->width, image->height);
+	if (icc_profile) icc_pixels = native_image_icc_source(image->data, image->width,
+	    image->height, &icc_color_profile);
 #endif
 	CGDataProviderRef provider = icc_pixels
 	    ? CGDataProviderCreateWithCFData((__bridge CFDataRef)icc_pixels)
 	    : CGDataProviderCreateWithData(NULL, image->data,
 	        bytes_per_row * (size_t)image->height, NULL);
-	CGColorSpaceRef color_space = icc_profile && !icc_pixels
+	CGColorSpaceRef color_space = icc_profile && (!icc_pixels || icc_color_profile.values[0] == -1)
 	    ? CGColorSpaceCreateWithICCData((__bridge CFDataRef)icc_profile) : NULL;
 	if (!color_space) color_space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
 	CGImageRef cg_image = CGImageCreate((size_t)image->width, (size_t)image->height,
@@ -5381,8 +5383,9 @@ static int native_begin_skia_image_source(CGContextRef context, gg__Image *image
 		return 0;
 	}
 	if (image->width <= 0 || image->height <= 0 || image->width > INT_MAX / 4) return 0;
+	VoxImageColorProfile icc_color_profile = { 0 };
 	NSData *icc_pixels = image->nr_channels == VOX_PNG_ICC_CHANNEL_MARKER
-	    ? native_image_icc_pixels(image->data, image->width, image->height) : nil;
+	    ? native_image_icc_source(image->data, image->width, image->height, &icc_color_profile) : nil;
 	if (image->nr_channels == VOX_PNG_ICC_CHANNEL_MARKER && !icc_pixels) return 0;
 	const uint8_t *decoded_pixels = icc_pixels ? icc_pixels.bytes : image->data;
 	size_t pitch = (size_t)image->width * 4;
@@ -5410,6 +5413,7 @@ static int native_begin_skia_image_source(CGContextRef context, gg__Image *image
 	}
 	VoxPngColorProfile color_profile;
 	ladybird_v_skia_set_image_color_profile(
+	    icc_pixels && icc_color_profile.values[0] == -1 ? icc_color_profile.values :
 	    native_image_color_profile(image->data, image->width, image->height,
 	        &color_profile) ? color_profile.values : NULL);
 	*source = (NativeSkiaImageSource){

@@ -8,6 +8,7 @@
 #include "include/core/SkBlurTypes.h"
 #include "include/core/SkColorSpace.h"
 #include "modules/skcms/skcms.h"
+#include "native_skia_image_color_space.h"
 #include "include/core/SkImageInfo.h"
 #include "include/core/SkMaskFilter.h"
 #include "include/core/SkPaint.h"
@@ -279,15 +280,7 @@ int vox_graphite_draw_shadow_pixels(uint8_t* pixels, int width, int height,
 // GPU converts it to sRGB, as Chromium's raster does.
 static sk_sp<SkColorSpace> vox_image_color_space(VoxGraphiteImage const* image)
 {
-    if (!image->has_color_profile) return SkColorSpace::MakeSRGB();
-    float const* profile = image->color_profile;
-    skcms_TransferFunction transfer { profile[0], 1, 0, 0, 0, 0, 0 };
-    skcms_Matrix3x3 gamut = SkNamedGamut::kSRGB;
-    if (profile[1] != 0 && !skcms_PrimariesToXYZD50(profile[2], profile[3], profile[4],
-            profile[5], profile[6], profile[7], profile[8], profile[9], &gamut))
-        return SkColorSpace::MakeSRGB();
-    auto space = SkColorSpace::MakeRGB(transfer, gamut);
-    return space ? space : SkColorSpace::MakeSRGB();
+    return vox_image_color_space_from_profile(image->has_color_profile ? image->color_profile : nullptr);
 }
 
 static void force_msaa_render_pass(SkCanvas* canvas, int width, int height)

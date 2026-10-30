@@ -12,9 +12,7 @@
 // destination while drawing. stb_image returns the encoded values unchanged.
 // A profile is: [0] inverse gamma, [1] whether primaries follow, [2..9] the
 // red, green, blue and white x/y chromaticities.
-typedef struct {
-    float values[10];
-} VoxPngColorProfile;
+typedef VoxImageColorProfile VoxPngColorProfile;
 
 static uint32_t native_png_read_u32(const uint8_t *bytes)
 {

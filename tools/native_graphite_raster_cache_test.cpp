@@ -85,7 +85,7 @@ int main()
         planar.flags = flags;
         if (!flags) { planes.resize(36, 50); planar.pixels = planes.data(); }
         planar.has_color_profile = 1;
-        for (int p = 0; p < 10; ++p) planar.color_profile[p] = .1f * p;
+        for (int p = 0; p < VOX_IMAGE_COLOR_PROFILE_VALUES; ++p) planar.color_profile[p] = .1f * p;
         auto request = cache.prepare(planar, 2, 2, 8, false, pixels.data());
         assert(!request.hit && request.pending);
         cache.finish(std::move(request), pixels.data(), 8);
@@ -94,7 +94,7 @@ int main()
         planes[last]++;
         assert(!cache.prepare(planar, 2, 2, 8, false, pixels.data()).hit);
         planes[last]--;
-        for (int p = 0; p < 10; ++p) {
+        for (int p = 0; p < VOX_IMAGE_COLOR_PROFILE_VALUES; ++p) {
             auto profile = planar;
             profile.color_profile[p] += .1f;
             assert(!cache.prepare(profile, 2, 2, 8, false, pixels.data()).hit);
@@ -406,7 +406,10 @@ int main()
     changed = descriptor; changed.has_color_profile = 1; changed.color_profile[0] = 1.8f;
     upload = uploads.prepare(changed, 2, 2, false);
     uploads.finish(std::move(upload), texture);
-    changed.color_profile[0] = 2.2f; upload_misses(changed);
+    auto original_profile = changed;
+    for (int field = 0; field < VOX_IMAGE_COLOR_PROFILE_VALUES; ++field) {
+        changed = original_profile; changed.color_profile[field] += .125f; upload_misses(changed);
+    }
     assert(!uploads.prepare(descriptor, 2, 2, false).texture); // Count eviction.
     for (int flags : {4, 12, 20, 28}) {
         std::vector<uint8_t> planes(33, 91);

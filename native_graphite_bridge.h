@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include "native_image_color_profile.h"
 
 enum {
     VOX_GRAPHITE_IMAGE_FORCE_MSAA = 32,
@@ -28,10 +29,9 @@ typedef struct {
     float opacity;
     int width, height, pitch, flags, nearest;
     const uint8_t *pixels;
-    // A PNG gAMA/cHRM profile: inverse gamma, whether primaries follow, then
-    // red, green, blue and white chromaticities. Untagged images are sRGB.
+    // A retained numerical ICC or legacy gAMA/cHRM image color space.
     int has_color_profile;
-    float color_profile[10];
+    float color_profile[VOX_IMAGE_COLOR_PROFILE_VALUES];
     // Background color and image share one rounded clip and MSAA coverage.
     int has_background_color;
     uint8_t background_rgba[4];

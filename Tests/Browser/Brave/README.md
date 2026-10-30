@@ -22,19 +22,31 @@ scroll offsets and other scales retain their existing path. The
 [10px-radius diagnostic](diagnostic/scrolling-gradient-rounded.html) still has
 twelve corner differences against its adjacent reference PNG.
 
+`png-icc-sampling` checks continuous Display P3 colors and alpha at natural,
+downscaled and upscaled sizes, with an untagged natural-size control. Its
+800×600, scale 1 Brave 156.1.98.60 reference is pixel-exact through file and
+HTTP loading; the previous CPU conversion changed 2,090 pixels. Prepared
+source rows remain premultiplied in their encoded color space. A representable
+ICC transfer function and D50 gamut matrix cross the native boundary as plain
+values; the GPU upload converts them to an 8-bit sRGB texture before filtering.
+This also makes the original compilation thumbnail exact at natural size.
+The complete [sampling controls diagnostic](diagnostic/png-icc-sampling-controls.html)
+retains an unrelated untagged downscale mismatch of 1,014 pixels, unchanged
+by this fix. Its adjacent PNG remains the Brave reference.
+
 `png-icc-matrix` checks an embedded Display P3 ICC profile on opaque and
 translucent pixels, an untagged control, a CSS background, and a resized image.
 Its 800×600, scale 1 reference from Brave 156.1.98.60 is pixel-exact through
 both file and HTTP resource loading; ignoring the profile changed 38,400 pixels.
 The synthetic PNGs contain original four-color artwork and a Skia-generated
-matrix profile. Native Chromium rendering preserves the original ICC curves,
-premultiplies decoded source bytes, converts through floating-point sRGB, then
-stores the final premultiplied bytes. Converted rasters use a 32 MiB, 128-entry
-cache, and only explicitly tagged PNG buffers consult it. Unsupported conversions
-retain the original profile for the Core Graphics fallback. The metadata harness
-(`python3 tools/test_png_icc.py`) checks bounded extraction, retagging, conversion
-failure, and cache eviction under AddressSanitizer; the browser fixture exercises
-the real color converter. This covers packed 8-bit RGB PNGs, including alpha.
+matrix profile. Profiles that Skia cannot represent retain the original curves
+through the floating-point skcms fallback. Prepared rasters use a 32 MiB,
+128-entry cache, and only explicitly tagged PNG buffers consult it. Unsupported
+conversions retain the original profile for the Core Graphics fallback.
+`python3 tools/test_png_icc.py` checks bounded extraction, retagging, conversion
+failure, color-space transport, original-curve fallback and cache eviction under
+AddressSanitizer; the browser fixtures exercise GPU conversion and sampling.
+This covers packed 8-bit RGB PNGs, including alpha.
 
 `capture-lazy-scroll-order` checks a scrolled capture after the initial viewport's
 lazy images have loaded. Serve this fixture over HTTP, capture at 800×600 and

@@ -8,11 +8,13 @@
 static int conversions;
 static int fail_conversion;
 int ladybird_v_skia_convert_icc_rgba(const void *bytes, size_t length,
-    const uint8_t *source, int width, int height, uint8_t *destination)
+    const uint8_t *source, int width, int height, uint8_t *destination, float *color_profile)
 {
     if (length < 128 || memcmp((const uint8_t *)bytes + 36, "acsp", 4)) return 0;
     ++conversions;
     if (fail_conversion) return 0;
+    color_profile[0] = -1;
+    color_profile[16] = 0.75f;
     memset(destination, 0x55, (size_t)width * height * 4);
     return 1;
 }
@@ -42,8 +44,13 @@ int main(int argc, char **argv) {
             assert(pixels[index] == 0);
         }
         assert(native_image_icc_pixels(pixels, 2, 2) == converted && conversions == 1);
+        VoxImageColorProfile cached_profile;
+        assert(native_image_icc_source(pixels, 2, 2, &cached_profile) == converted);
+        assert(cached_profile.values[0] == -1 && cached_profile.values[16] == 0.75f);
         assert(!native_image_color_profile(pixels, 4, 1, &profile));
         assert(!native_image_icc_pixels(pixels, 4, 1));
+        assert(!native_image_icc_source(pixels, 4, 1, &cached_profile));
+        assert(cached_profile.values[0] == 0 && cached_profile.values[16] == 0);
         native_tag_image_color_profile(pixels, 2, 2, png.bytes, png.length, 0);
         assert(!native_image_color_profile(pixels, 2, 2, &profile));
         assert(!native_image_icc_pixels(pixels, 2, 2));

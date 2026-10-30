@@ -27,6 +27,7 @@
 #include "include/core/SkColor.h"
 #include "include/core/SkColorFilter.h"
 #include "include/core/SkColorSpace.h"
+#include "native_skia_image_color_space.h"
 #include "include/core/SkData.h"
 #include "include/core/SkFont.h"
 #include "include/core/SkFontArguments.h"
@@ -1547,24 +1548,23 @@ extern "C" int ladybird_v_skia_draw_line(CGContextRef destination,
 // native image player: inverse gamma, whether primaries follow, then red,
 // green, blue and white chromaticities.
 static bool s_has_image_color_profile = false;
-static float s_image_color_profile[10] {};
+static float s_image_color_profile[VOX_IMAGE_COLOR_PROFILE_VALUES] {};
 
 extern "C" void ladybird_v_skia_set_image_color_profile(float const* profile)
 {
     s_has_image_color_profile = profile != nullptr;
     if (profile)
-        std::copy_n(profile, 10, s_image_color_profile);
+        std::copy_n(profile, VOX_IMAGE_COLOR_PROFILE_VALUES, s_image_color_profile);
 }
 
-// Keep original ICC curves, including tables, instead of fitting a numerical
-// SkColorSpace. Chromium's image upload premultiplies the decoded source bytes
-// before its color conversion; retain extended converted colors until the final
-// 8-bit store rather than clipping them to alpha ahead of that conversion.
+// Retain a representable source color space until image sampling, as Chromium
+// does. Unrepresentable ICC curves keep the original skcms conversion fallback.
 extern "C" int ladybird_v_skia_convert_icc_rgba(void const* bytes, size_t length,
-    uint8_t const* source, int width, int height, uint8_t* destination)
+    uint8_t const* source, int width, int height, uint8_t* destination, float* color_profile)
 {
-    if (!bytes || !source || !destination || width <= 0 || height <= 0
+    if (!bytes || !source || !destination || !color_profile || width <= 0 || height <= 0
         || size_t(width) > SIZE_MAX / 16 / size_t(height)) return 0;
+    std::fill_n(color_profile, VOX_IMAGE_COLOR_PROFILE_VALUES, 0);
     skcms_ICCProfile profile {};
     if (!skcms_Parse(bytes, length, &profile)) return 0;
     size_t count = size_t(width) * height;
@@ -1574,6 +1574,11 @@ extern "C" int ladybird_v_skia_convert_icc_rgba(void const* bytes, size_t length
     auto premul_info = info.makeAlphaType(kPremul_SkAlphaType);
     if (!SkPixmap(info, source, size_t(width) * 4).readPixels(premul_info,
             premultiplied.data(), size_t(width) * 4)) return 0;
+    auto space = SkColorSpace::Make(profile);
+    if (vox_store_image_color_space(space.get(), color_profile)) {
+        std::copy(premultiplied.begin(), premultiplied.end(), destination);
+        return 1;
+    }
     std::vector<float> converted(count * 4);
     if (!skcms_Transform(premultiplied.data(), skcms_PixelFormat_RGBA_8888,
             skcms_AlphaFormat_PremulAsEncoded, &profile, converted.data(), skcms_PixelFormat_RGBA_ffff,
@@ -1585,14 +1590,7 @@ extern "C" int ladybird_v_skia_convert_icc_rgba(void const* bytes, size_t length
 
 static sk_sp<SkColorSpace> image_color_space()
 {
-    if (!s_has_image_color_profile) return SkColorSpace::MakeSRGB();
-    skcms_TransferFunction transfer { s_image_color_profile[0], 1, 0, 0, 0, 0, 0 };
-    skcms_Matrix3x3 gamut = SkNamedGamut::kSRGB;
-    float const* p = s_image_color_profile;
-    if (p[1] != 0 && !skcms_PrimariesToXYZD50(p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], &gamut))
-        return SkColorSpace::MakeSRGB();
-    auto space = SkColorSpace::MakeRGB(transfer, gamut);
-    return space ? space : SkColorSpace::MakeSRGB();
+    return vox_image_color_space_from_profile(s_has_image_color_profile ? s_image_color_profile : nullptr);
 }
 
 static sk_sp<SkShader> webp_yuv_shader(uint8_t const* planes, int width, int height,
@@ -1781,7 +1779,7 @@ extern "C" int ladybird_v_skia_draw_rgba_image_tiles(CGContextRef destination,
             .pitch = image_pitch, .flags = image_flags, .nearest = nearest_neighbor == 1,
             .pixels = source_pixels, .has_color_profile = s_has_image_color_profile
         };
-        std::copy_n(s_image_color_profile, 10, descriptor.color_profile);
+        std::copy_n(s_image_color_profile, VOX_IMAGE_COLOR_PROFILE_VALUES, descriptor.color_profile);
         if (clip_radii) std::copy_n(clip_radii, 8, descriptor.clip + 4);
         std::copy_n(raster_transform, 9, descriptor.matrix);
         descriptors.push_back(descriptor);
@@ -1905,7 +1903,7 @@ extern "C" int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
             std::copy_n(s_image_border_rect, 12, descriptor.border_rect);
             std::copy_n(s_image_border_rgba, 4, descriptor.border_rgba);
         }
-        std::copy_n(s_image_color_profile, 10, descriptor.color_profile);
+        std::copy_n(s_image_color_profile, VOX_IMAGE_COLOR_PROFILE_VALUES, descriptor.color_profile);
         if (clip_radii) std::copy_n(clip_radii, 8, descriptor.clip + 4);
         shared_recording_image(destination, matrix, descriptor);
         raster_matrix(matrix, region, raster_scale_x, raster_scale_y).get9(descriptor.matrix);

@@ -2,7 +2,7 @@ module main
 
 @[typedef]
 struct C.VoxPngColorProfile {
-	values [10]f32
+	values [17]f32
 }
 
 fn C.native_png_color_profile(bytes &u8, length uint, profile &C.VoxPngColorProfile) int

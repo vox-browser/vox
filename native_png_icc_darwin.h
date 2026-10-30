@@ -5,6 +5,7 @@
 #include <string.h>
 #include <limits.h>
 #include <zlib.h>
+#include "native_image_color_profile.h"
 
 // Packed, top-down, straight RGBA with a separately retained PNG ICC profile.
 // Ordinary RGBA and planar YUV buffers must never consult the ICC pointer map.
@@ -76,6 +77,7 @@ static int native_png_has_icc_profile(const uint8_t *bytes, size_t length)
 @property(nonatomic) int height;
 @property(nonatomic, strong) NSData *profile;
 @property(nonatomic, strong) NSData *converted;
+@property(nonatomic) VoxImageColorProfile color_profile;
 @property(nonatomic) BOOL conversion_failed;
 @end
 @implementation VoxPNGICCTag
@@ -123,10 +125,12 @@ static NSData *native_image_icc_profile(const void *pixels, int width, int heigh
 
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
 extern int ladybird_v_skia_convert_icc_rgba(const void *, size_t, const uint8_t *,
-    int, int, uint8_t *);
+    int, int, uint8_t *, float *);
 
-static NSData *native_image_icc_pixels(const void *pixels, int width, int height)
+static NSData *native_image_icc_source(const void *pixels, int width, int height,
+    VoxImageColorProfile *color_profile)
 {
+    if (color_profile) memset(color_profile, 0, sizeof(*color_profile));
     if (!pixels || width <= 0 || height <= 0 || width > INT_MAX / 4
         || (size_t)height > SIZE_MAX / ((size_t)width * 4)) return nil;
     NSValue *key = [NSValue valueWithPointer:pixels];
@@ -138,22 +142,28 @@ static NSData *native_image_icc_pixels(const void *pixels, int width, int height
         if (tag.converted) {
             [native_png_icc_lru removeObjectIdenticalTo:tag];
             [native_png_icc_lru addObject:tag];
+            if (color_profile) *color_profile = tag.color_profile;
             return tag.converted;
         }
     }
     size_t size = (size_t)width * height * 4;
     NSMutableData *converted = [NSMutableData dataWithLength:size];
+    VoxImageColorProfile prepared_profile = { 0 };
     if (!ladybird_v_skia_convert_icc_rgba(tag.profile.bytes, tag.profile.length,
-            pixels, width, height, converted.mutableBytes)) {
+            pixels, width, height, converted.mutableBytes, prepared_profile.values)) {
         @synchronized ([NSValue class]) {
             if (native_png_icc_tags[key] == tag) tag.conversion_failed = YES;
         }
         return nil;
     }
+    if (color_profile) *color_profile = prepared_profile;
     @synchronized ([NSValue class]) {
         // A request can retag a reused buffer while conversion is running.
         if (native_png_icc_tags[key] != tag) return converted;
-        if (tag.converted) return tag.converted;
+        if (tag.converted) {
+            if (color_profile) *color_profile = tag.color_profile;
+            return tag.converted;
+        }
         if (size <= native_png_icc_cache_limit) {
             if (!native_png_icc_lru) native_png_icc_lru = [NSMutableArray array];
             while (native_png_icc_cached_bytes + size > native_png_icc_cache_limit
@@ -164,11 +174,17 @@ static NSData *native_image_icc_pixels(const void *pixels, int width, int height
                 [native_png_icc_lru removeObjectAtIndex:0];
             }
             tag.converted = converted;
+            tag.color_profile = prepared_profile;
             native_png_icc_cached_bytes += size;
             [native_png_icc_lru addObject:tag];
         }
     }
     return converted;
+}
+
+static NSData *native_image_icc_pixels(const void *pixels, int width, int height)
+{
+    return native_image_icc_source(pixels, width, height, NULL);
 }
 #endif
 #endif

@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Check native PNG ICC metadata bounds and buffer tagging on macOS."""
+"""Check native PNG ICC metadata, source color spaces and image caches on macOS."""
 
 import argparse
 import json
 import os
+import platform
 from pathlib import Path
 import struct
 import subprocess
@@ -91,20 +92,41 @@ def main():
     compile_command = ['clang', '-fobjc-arc', '-O1', '-g', '-fsanitize=address',
                        '-fno-omit-frame-pointer', '-I' + str(REPO), '-framework', 'Foundation',
                        '-lz', str(REPO / 'tools/native_png_icc_test.m'), '-o', str(executable)]
+    upstream = Path(os.environ.get('LADYBIRD_SOURCE_DIR', REPO.parent / '3rd/ladybird'))
+    triplet = os.environ.get('LADYBIRD_VCPKG_TRIPLET',
+                            'arm64-osx-dynamic' if platform.machine() == 'arm64' else 'x64-osx-dynamic')
+    skia = upstream / 'Build/release/vcpkg_installed' / triplet
+    native = output / 'native_skia_image_color_profile_test'
+    cache = output / 'native_graphite_raster_cache_test'
+    native_compile = ['clang++', '-std=c++20', '-O1', '-g', '-fsanitize=address',
+                      '-fno-omit-frame-pointer', '-x', 'objective-c++',
+                      '-I' + str(skia / 'include/skia'), '-I' + str(skia / 'include'),
+                      str(REPO / 'tools/native_skia_image_color_profile_test.cpp'),
+                      '-L' + str(skia / 'lib'), '-lskia', '-Wl,-rpath,' + str(skia / 'lib')]
+    for framework in ['CoreFoundation', 'CoreGraphics', 'CoreText', 'Foundation', 'Metal']:
+        native_compile += ['-framework', framework]
+    native_compile += ['-o', str(native)]
     for name, command, limit in [
         ('compile', compile_command, '12'),
         ('runtime', [sys.executable, str(Path(__file__).resolve()), '--execute', str(executable),
                      '--output-dir', str(output)], '3'),
+        ('source-compile', native_compile, '12'),
+        ('source-runtime', [str(native)], '3'),
+        ('cache-compile', ['clang++', '-std=c++20', '-O1', '-g', '-fsanitize=address',
+                           '-fno-omit-frame-pointer', str(REPO / 'tools/native_graphite_raster_cache_test.cpp'),
+                           '-o', str(cache)], '12'),
+        ('cache-runtime', [str(cache)], '3'),
     ]:
         with (output / (name + '.log')).open('x') as log:
             result = subprocess.run([sys.executable, str(REPO / 'tools/run_memory_bounded.py'),
                                      '--lock', str(output / (name + '.lock')), '--report',
                                      str(output / (name + '-guard.json')), '--limit-gib', limit,
-                                     '--'] + command, stdout=log, stderr=subprocess.STDOUT)
+                                     '--'] + command, stdout=log, stderr=subprocess.STDOUT,
+                                    env=dict(os.environ, ASAN_OPTIONS='detect_leaks=0'))
         if result.returncode:
             print(f'{name} failed; evidence: {output}')
             return result.returncode
-    print(f'ICC metadata checks passed; evidence: {output}')
+    print(f'ICC image profile checks passed; evidence: {output}')
     return 0
 
 
