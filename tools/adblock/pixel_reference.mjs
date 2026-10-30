@@ -40,6 +40,9 @@ export async function capturePixelReference(page, file, navigation) {
         return {url:location.href,title:document.title,ready:document.readyState,
             width:innerWidth,height:innerHeight,scale:devicePixelRatio,fonts:document.fonts.status,
             text:document.body?.innerText||'',
+            styles:[...document.querySelectorAll('link[rel~="stylesheet"]')].map(link=>({
+                url:link.href,active:!link.disabled && (!link.media||matchMedia(link.media).matches),
+                loaded:Boolean(link.sheet)})),
             images:[...document.images].map(image=>{const r=image.getBoundingClientRect();
                 return {url:image.currentSrc||image.src,complete:image.complete,naturalWidth:image.naturalWidth,
                     x:r.x,y:r.y,width:r.width,height:r.height};}),
@@ -58,6 +61,9 @@ export async function capturePixelReference(page, file, navigation) {
         && i.x+i.width>0 && i.y+i.height>0 && (!i.complete || !i.naturalWidth));
     if (missing.length) throw new Error(`Pixel reference has ${missing.length} missing visible images: `+
         missing.map(image=>image.url||'(unknown URL)').join(', '));
+    const missingStyles=(state.styles||[]).filter(style=>style.active&&!style.loaded);
+    if(missingStyles.length) throw new Error('Pixel reference has missing active stylesheets: '+
+        missingStyles.map(style=>style.url).join(', '));
     const capture = async()=>Buffer.from((await page.send('Page.captureScreenshot',
         {format:'png',captureBeyondViewport:false})).data,'base64');
     const first = await capture();

@@ -59,9 +59,10 @@ test('failed navigation, incomplete pages and missing visible images cannot beco
     const page={evaluate:async()=>state,send:()=>{throw Error('Unexpected screenshot');}};
     await assert.rejects(capturePixelReference(page,file,{coverage:'challenge'}),/successful page coverage/);
     for (const change of [{ready:'loading'},{fonts:'loading'},{width:800},{scale:2},{text:'Access denied'},
-        {url:'https://other.test/'},{images:[{url:'https://example.test/avatar.png',width:10,height:10,x:0,y:0,complete:true,naturalWidth:0}]}]) {
+        {url:'https://other.test/'},{images:[{url:'https://example.test/avatar.png',width:10,height:10,x:0,y:0,complete:true,naturalWidth:0}]},
+        {styles:[{url:'https://example.test/main.css',active:true,loaded:false}]}]) {
         await assert.rejects(capturePixelReference({...page,evaluate:async()=>({...state,...change})},file,nav),
-            /not ready|missing visible images/);
+            /not ready|missing visible images|missing active stylesheets/);
         const diagnostic=JSON.parse(await fs.readFile(file+'.json','utf8'));
         assert.equal(diagnostic.stable,false);
         for (const [key,value] of Object.entries(change)) assert.deepEqual(diagnostic[key],value);
