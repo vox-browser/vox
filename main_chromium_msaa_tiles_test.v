@@ -58,6 +58,104 @@ fn msaa_test_underline(y f64, clips int) layout.PaintCommand {
 	}
 }
 
+fn test_empty_clips_do_not_change_the_document_tile_multisampling_mode() {
+	for extent in [[f64(0), 20], [f64(20), 0], [f64(-1), 20], [f64(20), -1]] {
+		width := extent[0]
+		height := extent[1]
+		for leaf in [msaa_test_svg_path(10, 30, 'svg'), msaa_test_underline(10, 2), layout.PaintCommand{
+			kind:         'paint_uniform_border'
+			x:            10
+			y:            10
+			width:        30
+			height:       20
+			stroke_width: 1
+			corner_radii: layout.BoxRadii{ top_left: layout.CornerRadius{5, 3} }
+		}] {
+			clipped := layout.PaintCommand{
+				...leaf
+				has_clip:    true
+				clip_width:  width
+				clip_height: height
+			}
+			assert chromium_msaa_triggers([clipped]).len == 0
+			assert chromium_msaa_tiles([clipped, msaa_test_svg_path(300, 310, 'svg')], 1, 256) == [1]
+		}
+	}
+	visible := layout.PaintCommand{
+		...msaa_test_svg_path(10, 30, 'svg')
+		has_clip:    true
+		clip_width:  40
+		clip_height: 40
+	}
+	assert chromium_msaa_tiles([visible], 1, 256) == [0]
+}
+
+fn test_empty_nested_viewport_clips_discard_their_vector_triggers() {
+	image := layout.PaintCommand{
+		kind:                      'paint_nested_display_list'
+		has_clip:                  true
+		clip_width:                0
+		clip_height:               20
+		nested_viewport_paintable: &painting.NavigableContainerViewportPaintable{
+			viewport_rect: painting.Rect{10, 10, 20, 20}
+		}
+		nested_viewport_commands:  [msaa_test_svg_path(0, 20, 'svg')]
+	}
+	assert chromium_msaa_triggers([image]).len == 0
+	assert chromium_msaa_tiles([layout.PaintCommand{ ...image, clip_width: 20 }], 1, 256) == [0]
+}
+
+fn test_collapsed_path_clips_ignore_their_positive_reference_box() {
+	for points in [
+		[]f32{},
+		[f32(0), 10, 10, 1, 10, 20, 5, 0, 0],
+		[f32(0), 10, 10, 1, 20, 10, 5, 0, 0],
+		[f32(0), 10, 10, 1, 10, 10, 5, 0, 0],
+	] {
+		mut packed := []f32{}
+		for offset := 0; offset < points.len; offset += 3 {
+			mut segment := []f32{len: layout.compatibility_clip_path_segment_stride}
+			segment[0] = points[offset]
+			segment[1] = points[offset + 1]
+			segment[2] = points[offset + 2]
+			packed << segment
+		}
+		command := layout.PaintCommand{
+			...msaa_test_svg_path(10, 30, 'svg')
+			has_clip: true
+			clip_width: 100
+			clip_height: 100
+			clip_list: &layout.PaintClipList{items:[layout.PaintClip{
+				rect: layout.LayoutRect{width:100,height:100}
+				is_path: true
+				path_data: packed
+			}]}
+		}
+		assert chromium_msaa_tiles([command, msaa_test_svg_path(300, 310, 'svg')], 1, 256) == [1]
+	}
+}
+
+fn test_visible_and_curved_clip_paths_keep_multisampling() {
+	mut polygon := []f32{len: layout.compatibility_clip_path_segment_stride * 3}
+	polygon[layout.compatibility_clip_path_segment_stride] = 1
+	polygon[layout.compatibility_clip_path_segment_stride + 1] = 20
+	polygon[layout.compatibility_clip_path_segment_stride * 2] = 1
+	polygon[layout.compatibility_clip_path_segment_stride * 2 + 2] = 20
+	for kind in [1, 2, 3, 4, 6] {
+		mut path := polygon.clone()
+		path[layout.compatibility_clip_path_segment_stride] = f32(kind)
+		clip := layout.PaintClip{is_path:true,path_data:path}
+		command := layout.PaintCommand{
+			...msaa_test_svg_path(10, 30, 'svg')
+			has_clip: true
+			clip_width: 100
+			clip_height: 100
+			clip_list: &layout.PaintClipList{items:[clip]}
+		}
+		assert chromium_msaa_tiles([command], 1, 256) == [0]
+	}
+}
+
 fn test_css_border_diagonal_miters_multisample_but_orthogonal_edges_do_not() {
 	for index, points in [
 		[f32(0), 10, 20, 1, 30, 20, 1, 30, 40, 1, 10, 40, 5, 0, 0],

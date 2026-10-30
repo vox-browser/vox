@@ -68,6 +68,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_svg_rectangles_preserve_fractional_user_coordinates(self):
         self.compare_fixture('forum-fractional-svg-rectangles')
 
+    def test_empty_clips_do_not_change_neighboring_tag_and_avatar_antialiasing(self):
+        self.compare_fixture('lobsters-empty-clip-antialiasing')
+
 
 if __name__ == '__main__':
     unittest.main()

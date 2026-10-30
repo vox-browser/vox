@@ -56,6 +56,12 @@ fn append_chromium_msaa_triggers(commands []layout.PaintCommand,
 
 fn append_chromium_msaa_trigger(command layout.PaintCommand, index int,
 	viewport ?ChromiumMSAAViewport, mut triggers []ChromiumMSAATrigger) {
+	// Native replay discards empty clips before drawing. Culled geometry must
+	// not select multisampling for the other draws in its document tile.
+	if command.has_clip && (command.clip_width <= 0 || command.clip_height <= 0
+		|| chromium_msaa_clip_list_has_empty_clip(command.clip_list)) {
+		return
+	}
 	if rect := chromium_msaa_trigger_rect(command) {
 		triggers << ChromiumMSAATrigger{index, rect.y, rect.y + rect.height, rect.x, rect.x + rect.width}
 	} else if command.kind == 'draw_background_image' {
