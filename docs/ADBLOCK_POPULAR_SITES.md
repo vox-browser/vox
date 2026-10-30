@@ -789,3 +789,42 @@ Evidence is under `Build/forum-news-svg-color-alpha-20261030/`, including
 retained failures. Further Stack Overflow isolation is retained under
 `Build/forum-news-stackoverflow-remaining-20261030/`. Broad-test baseline remains
 `88275919`; this is the seventh completed native fix since that baseline.
+
+
+## Fractional flex and grid gaps, 30 October 2026
+
+`607bb32f` truncates fixed Chromium gaps to the 1/64px layout unit after
+resolving their length. The prior nearest-unit rounding widened Stack
+Overflow's shrink-to-fit counter row and shifted its end-aligned number. The
+3.9px gap now resolves to 3.890625px, matching Brave's glyph positions.
+Percentage, calculated and normal gaps retain their existing resolution; the
+LibWeb rendering policy keeps its existing nearest-unit conversion.
+
+The extracted counter fixture improves from **74 differing pixels to zero**,
+with two agreeing independent Brave references. Three focused tests pass in
+both GC modes, covering absolute, font-relative and root-relative lengths,
+flex/grid placement, column gaps, shrink-to-fit rows and the unaffected gap
+forms. All **fifteen native Brave fixtures** and three canonical SVG reftests
+are exact. The first focused compile failed because the new test used point
+fields instead of accessors; that failure is retained alongside the corrected
+passing run.
+
+The production build completes within the unchanged 12 GiB guard with stable
+watched inputs. Native validation retains one executable/library/snapshot
+identity and an unchanged 326-file oracle template. The full-uBO matrix still
+accepts **one of ten**: native differences are HN 0, Lobsters 115, Slashdot 9,773,
+Stack Overflow **592**, BBC 76,604, CNN 101,466, The Verge 315,921 and Pikabu
+13,863. Stack Overflow's live-to-frozen reference remains exact; its 37-pixel
+native improvement matches the isolated counter diagnosis. CNN and Pikabu's
+other changed results are retained without attribution to this gap fix.
+Reddit remains unavailable with guest HTTP 403, and The Guardian's consecutive
+Brave references remain unstable. Lobsters' live-to-frozen mismatch remains
+44 pixels. All eight completed native comparisons retain matching full-uBO
+request/header, cosmetic, procedural and scriptlet evidence.
+
+Evidence is under `Build/forum-news-flex-gap-20261030/`, including
+`checkpoint.json`, `verified/`, `baseline/` and focused receipts. Read-only GPU,
+font and geometry diagnostics are under
+`Build/forum-news-so-native-colors-20261030/`; they do not themselves validate a
+fix. Broad-test baseline remains `88275919`; this is the eighth completed
+native fix since that baseline.
