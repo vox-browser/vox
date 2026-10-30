@@ -574,3 +574,29 @@ Evidence is under `Build/forum-news-svg-color-20261030/`, including the final
 completed `typeface-cache/verified/` matrix. Its aggregate site command exits
 nonzero as required. Broad-test baseline remains `88275919`; these are **two**
 completed native fixes since that baseline.
+
+### Block text-control border-box widths
+
+`49e81496` makes Chromium-mode block and floating text controls subtract their border-box
+edges once. The prior block replaced-size path subtracted the inline borders a
+second time, leaving Stack Overflow's search input two pixels narrower than its
+correctly sized parent. The translated LibWeb path and aspect-ratio transfer
+retain their existing behavior.
+
+The focused cases cover percentage and fractional widths, fixed lengths,
+`calc()`, min/max constraints, intrinsic widths, padding floors, textareas,
+floating controls and inline/flex/grid comparisons. All eleven focused V cases
+pass in both GC modes. The native fixture covers
+the same box-model boundaries without font rasterization noise. Two independent
+Brave references agree, and all ten focused native Brave fixtures are exact.
+The completed v43 production bundle contains the fix; its source timing and
+hashes, fresh-process captures and executable/native-library identities are
+recorded under `Build/forum-news-search-width-20261030/`.
+
+With full uBO evidence intact, Stack Overflow improves from **957 to 871**
+differing pixels, and its live-to-frozen Brave comparison remains exact. Hacker
+News remains exact. The two-site command correctly exits nonzero for Stack
+Overflow's remaining mismatch. Overall acceptance remains **one of ten**; the
+other sites' failures in the preceding matrix remain open. No tolerance or
+existing golden changed. Broad-test baseline remains `88275919`; this is the
+third completed native fix since that baseline.
