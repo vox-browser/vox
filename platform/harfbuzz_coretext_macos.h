@@ -65,6 +65,43 @@ static CTFontRef vox_hb_coretext_font(hb_face_t *face) {
     return selected;
 }
 
+typedef struct {
+    hb_codepoint_t glyphs[2];
+} vox_hb_coretext_hyphens;
+
+static hb_user_data_key_t vox_hb_coretext_hyphens_key;
+
+// The native probe always uses the selected face at 12pt, without variations.
+// Its nominal glyph IDs therefore belong to the face, independently of the
+// scaled HarfBuzz font. Retain misses too: a color emoji face can have hundreds
+// of megabytes of tables and still supply neither synthesized hyphen.
+static const vox_hb_coretext_hyphens *vox_hb_cached_coretext_hyphens(hb_face_t *face) {
+    const vox_hb_coretext_hyphens *cached = hb_face_get_user_data(face,
+        &vox_hb_coretext_hyphens_key);
+    if (cached)
+        return cached;
+    vox_hb_coretext_hyphens *result = calloc(1, sizeof(*result));
+    if (!result)
+        return NULL;
+    CTFontRef native = vox_hb_coretext_font(face);
+    if (native) {
+        for (int i = 0; i < 2; ++i) {
+            UniChar character = 0x2010 + i;
+            CGGlyph glyph = 0;
+            if (CTFontGetGlyphsForCharacters(native, &character, &glyph, 1))
+                result->glyphs[i] = glyph;
+        }
+        CFRelease(native);
+    }
+    // HarfBuzz releases this payload with the face during native cache
+    // retirement. A concurrent publisher wins without replacing live data.
+    if (!hb_face_set_user_data(face, &vox_hb_coretext_hyphens_key, result, free, false)) {
+        free(result);
+        return hb_face_get_user_data(face, &vox_hb_coretext_hyphens_key);
+    }
+    return result;
+}
+
 // Returns a new owned sub-font only when the native face supplies a missing
 // hyphen. Its parent continues to supply all advances, metrics and other
 // glyph mappings. HarfBuzz owns the small mapping until cache retirement.
@@ -75,21 +112,18 @@ static hb_font_t *vox_hb_with_coretext_hyphens(hb_font_t *parent) {
         missing[i] = !hb_font_get_nominal_glyph(parent, 0x2010 + i, &glyphs[i]) || !glyphs[i];
     if (!missing[0] && !missing[1])
         return NULL;
-    CTFontRef native = vox_hb_coretext_font(hb_font_get_face(parent));
+    const vox_hb_coretext_hyphens *native = vox_hb_cached_coretext_hyphens(hb_font_get_face(parent));
     if (!native)
         return NULL;
     int supplied = 0;
     for (int i = 0; i < 2; ++i) {
         if (!missing[i])
             continue;
-        UniChar character = 0x2010 + i;
-        CGGlyph glyph = 0;
-        if (CTFontGetGlyphsForCharacters(native, &character, &glyph, 1) && glyph) {
-            glyphs[i] = glyph;
+        if (native->glyphs[i]) {
+            glyphs[i] = native->glyphs[i];
             supplied = 1;
         }
     }
-    CFRelease(native);
     if (!supplied)
         return NULL;
     hb_codepoint_t *mapping = malloc(sizeof(glyphs));
