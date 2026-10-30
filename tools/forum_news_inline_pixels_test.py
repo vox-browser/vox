@@ -44,6 +44,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_fractional_foregrounds_match_brave_exactly(self):
         self.compare_fixture('forum-fractional-foreground')
 
+    def test_inline_backgrounds_and_borders_share_multisample_coverage(self):
+        self.compare_fixture('lobsters-inline-msaa-compositing')
+
 
 if __name__ == '__main__':
     unittest.main()

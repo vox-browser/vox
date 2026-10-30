@@ -58,7 +58,7 @@ pub fn rounded_single_border_mode(kind string) int {
 
 // Retain shared antialias coverage between a rounded background and border.
 // Single sides with transparent neighbors also need Blink's ClipLayer. Pair
-// only consecutive solid fills with the same geometry and painting state.
+// only consecutive solid fills with matching geometry and painting state.
 fn chromium_pair_rounded_border_background(mut commands []PaintCommand, background_start int,
 	border_start int, border_end int) {
 	if background_start < 0 || border_start != background_start + 1
@@ -70,14 +70,24 @@ fn chromium_pair_rounded_border_background(mut commands []PaintCommand, backgrou
 	if (rounded_single_border_mode(border.kind) == 0 && border.kind != 'paint_uniform_border')
 		|| background.kind != 'fill_rect'
 		|| background.radius <= 0 || background.opacity != border.opacity
-		|| background.clip_outs != border.clip_outs
-		|| [background.x, background.y, background.width, background.height] !=
-			[border.x, border.y, border.width, border.height] {
+		|| background.clip_outs != border.clip_outs {
 		return
 	}
-	for radius in [border.corner_radii.top_left, border.corner_radii.top_right,
+	// Block backgrounds already share the stroke's center rectangle. Inline
+	// backgrounds fill the outer border box instead; retain that full extent
+	// while keeping both draws in one multisampled render pass.
+	mut inset := 0.0
+	if border.kind == 'paint_uniform_border' && background.x != border.x {
+		inset = border.stroke_width / 2
+		if inset <= 0 { return }
+	}
+	if [background.x + inset, background.y + inset,
+		background.width - inset * 2, background.height - inset * 2] !=
+		[border.x, border.y, border.width, border.height] { return }
+	radius := non_negative(background.radius - inset)
+	for corner in [border.corner_radii.top_left, border.corner_radii.top_right,
 		border.corner_radii.bottom_right, border.corner_radii.bottom_left] {
-		if radius.x != background.radius || radius.y != background.radius { return }
+		if corner.x != radius || corner.y != radius { return }
 	}
 	commands[background_start].underlays_next = true
 }
