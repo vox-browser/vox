@@ -12,10 +12,10 @@ from forum_news_pixels import REPO, VOX, executable_identity, guarded, write_jso
 
 @unittest.skipUnless(sys.platform == 'darwin', 'The reference uses native macOS fonts')
 class ForumNewsInlinePixelsTests(unittest.TestCase):
-    def test_middle_aligned_story_tags_match_brave_exactly(self):
+    def compare_fixture(self, name):
         output = Path(tempfile.mkdtemp(prefix='forum-news-inline-', dir=REPO / 'Build'))
-        fixture = REPO / 'Tests/Browser/Brave/input/lobsters-tag-alignment.html'
-        reference = REPO / 'Tests/Browser/Brave/expected/lobsters-tag-alignment.png'
+        fixture = REPO / 'Tests/Browser/Brave/input' / (name + '.html')
+        reference = REPO / 'Tests/Browser/Brave/expected' / (name + '.png')
         actual = output / 'actual.png'
         environment = {k:v for k,v in os.environ.items()
                        if not k.lower().endswith('_proxy') and not k.startswith(('VOX_', 'LADYBIRD_', 'DYLD_', 'GC_'))}
@@ -34,6 +34,12 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
         verdict = compare(reference, actual, output / 'diff.png', tool)
         write_json(output / 'pixels.json', verdict)
         self.assertTrue(verdict['exact'], verdict['metrics'] + '\nArtifacts: ' + str(output))
+
+    def test_middle_aligned_story_tags_match_brave_exactly(self):
+        self.compare_fixture('lobsters-tag-alignment')
+
+    def test_rounded_inline_backgrounds_match_brave_exactly(self):
+        self.compare_fixture('lobsters-rounded-inline-background')
 
 
 if __name__ == '__main__':
