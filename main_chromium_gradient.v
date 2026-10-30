@@ -8,6 +8,16 @@ import platform
 
 fn C.tanf(f32) f32
 
+// The native bridge reserves 0..2 for SVG pad/reflect/repeat. This mode
+// retains a repeated CSS generated-image tile before compositing it.
+const chromium_gradient_pattern_spread = 3
+
+fn chromium_gradient_native_spread(command &layout.PaintCommand) i32 {
+	if command.image_data == unsafe { nil } { return 0 }
+	data := command.image_data.background_layer_data or { return 0 }
+	return if data.gradient_pattern { i32(chromium_gradient_pattern_spread) } else { i32(0) }
+}
+
 // Blink's EndPointsFromAngle retains float intermediates. Keep the original
 // CSS angle so normalization to unit coordinates does not change their final
 // rounding when the gradient is expanded to its tile.

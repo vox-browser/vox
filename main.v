@@ -4654,7 +4654,8 @@ fn draw_native_css_gradient_tile(command &layout.PaintCommand, gradient layout.L
 						0, 0, 0, 0, 4, points[0], points[1], points[2], points[3], 1, 0, 0, 1,
 						if gradient.css_angle_degrees != none { f32(tile.x) } else { f32(0) },
 						if gradient.css_angle_degrees != none { f32(tile.y) } else { f32(0) },
-						0, 0, gpu_stops.data, i32(gpu_stops.len / 5), 1, &clip[0], ancestor_pointer) }
+						chromium_gradient_native_spread(command),
+						0, gpu_stops.data, i32(gpu_stops.len / 5), 1, &clip[0], ancestor_pointer) }
 					if drawn != 0 { return true }
 					// Preserve the ordinary Cocoa clip if the native draw failed.
 					C.native_begin_clip()

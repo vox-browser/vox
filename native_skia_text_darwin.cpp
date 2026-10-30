@@ -4242,6 +4242,29 @@ static int draw_svg_gradient_path(CGContextRef destination, float const* data,
         svg_gradient_tile_mode(spread_method), gradient_matrix);
     if (!shader)
         return 0;
+    // Spread values 0..2 retain SVG pad/reflect/repeat. Value 3 asks for
+    // a CSS generated-image tile, preserving its premultiplied raster.
+    bool picture_pattern = spread_method == 3 && clip && gradient_kind == 1 && !stroke
+        && local_bounds.width() > 0 && local_bounds.height() > 0;
+    if (picture_pattern) {
+        constexpr double maximum_pattern_pixels = 8 * 1024 * 1024;
+        if (double(local_bounds.width()) * local_bounds.height() > maximum_pattern_pixels)
+            return 0;
+        SkPictureRecorder recorder;
+        auto bounds = SkRect::MakeWH(local_bounds.width(), local_bounds.height());
+        auto* canvas = recorder.beginRecording(bounds);
+        canvas->translate(-local_bounds.x(), -local_bounds.y());
+        SkPaint inner;
+        inner.setAntiAlias(true);
+        inner.setDither(true);
+        inner.setShader(shader);
+        canvas->drawRect(local_bounds, inner);
+        auto picture = recorder.finishRecordingAsPicture();
+        auto placement = SkMatrix::Translate(local_bounds.x(), local_bounds.y());
+        shader = picture->makeShader(SkTileMode::kRepeat, SkTileMode::kRepeat,
+            SkFilterMode::kLinear, &placement, &bounds);
+        if (!shader) return 0;
+    }
     paint.setShader(std::move(shader));
     paint.setAlphaf(std::clamp(opacity, 0.0f, 1.0f));
     if (linear_color_space)
@@ -4312,12 +4335,36 @@ static int draw_svg_gradient_path(CGContextRef destination, float const* data,
         }
         raster_matrix(matrix, region, raster_scale_x, raster_scale_y).get9(descriptor.matrix);
         gradient_matrix.get9(descriptor.gradient_matrix);
-        if (opaque_backdrop && draw_clipped_root_gradient(destination, region,
+        if (!picture_pattern && opaque_backdrop && draw_clipped_root_gradient(destination, region,
                 destination_scale, canvas_height, raster_width, raster_height, descriptor)) return 1;
         pixels.resize(size_t(raster_width) * raster_height);
         bool has_background = s_raster_layer_is_root && opaque_backdrop && copy_backdrop(destination, region,
             destination_scale, raster_width, raster_height, pixels);
-        auto draw = graphite_path_draw();
+        if (picture_pattern && shared_picture_draw()) {
+            SkPictureRecorder output;
+            auto* canvas = output.beginRecording(SkRect::MakeWH(raster_width, raster_height));
+            // Picture replay starts transparent. Retain the destination in the
+            // same GPU draw so the tile's premultiplied color blends once.
+            auto backdrop = SkImages::RasterFromPixmapCopy(SkPixmap(
+                SkImageInfo::Make(raster_width, raster_height, kBGRA_8888_SkColorType, kPremul_SkAlphaType),
+                pixels.data(), raster_width * 4));
+            if (backdrop) canvas->drawImage(backdrop, 0, 0);
+            canvas->setMatrix(raster_matrix(matrix, region, raster_scale_x, raster_scale_y));
+            if (clip) canvas->clipRRect(rounded_rect_from_data(clip), SkClipOp::kIntersect, true);
+            if (ancestor_clip) canvas->clipRRect(rounded_rect_from_data(ancestor_clip), SkClipOp::kIntersect, true);
+            canvas->drawPath(path, paint);
+            auto picture = output.finishRecordingAsPicture();
+            SkSerialProcs procs;
+            procs.fImageProc = serialize_shared_picture_image;
+            auto bytes = picture->serialize(&procs);
+            float identity[] {1, 0, 0, 0, 1, 0, 0, 0, 1};
+            if (bytes && shared_picture_draw()(reinterpret_cast<uint8_t*>(pixels.data()), raster_width,
+                    raster_height, raster_width * 4, bytes->data(), bytes->size(), identity)) {
+                return composite_pixels(destination, std::move(pixels), raster_width, raster_height,
+                    region.left, canvas_height - region.bottom, region.width(), region.height(), has_background);
+            }
+        }
+        auto draw = picture_pattern ? nullptr : graphite_path_draw();
         int tile_width = static_cast<int>(std::ceil(canvas_width));
         bool drawn;
         if (chromium_root_gradient_tiles_eligible(destination_scale, page_x, page_y,

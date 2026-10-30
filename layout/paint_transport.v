@@ -809,6 +809,7 @@ pub:
 	layer              css.BackgroundLayerData
 	resolution_context css.LengthResolutionContext
 	layout_coordinate_scale f64 = 1
+	gradient_pattern bool
 }
 
 // Source-shaped geometry retained only by inner and outer box shadows.
@@ -1295,12 +1296,13 @@ fn background_image_layer_blend_mode(layer BackgroundImageLayer) painting.BlendM
 	return .normal
 }
 
-fn retained_background_layer_data(layer BackgroundImageLayer) ?&PaintBackgroundLayerData {
+fn retained_background_layer_data(layer BackgroundImageLayer, gradient_pattern bool) ?&PaintBackgroundLayerData {
 	computed_layer := layer.computed_layer or { return none }
 	return &PaintBackgroundLayerData{
 		layer: computed_layer
 		resolution_context: layer.resolution_context
 		layout_coordinate_scale: layer.layout_coordinate_scale
+		gradient_pattern: gradient_pattern
 	}
 }
 
@@ -1308,7 +1310,7 @@ fn background_layer_command(layer BackgroundImageLayer, origin LayoutRect, clip 
 	clip_radii BoxRadii, opacity f64, radius f64, points []f64,
 	background_scroll_offset painting.Point, image_rendering css.ImageRendering,
 	fixed_background_visual_context ?int, initial_containing_block LayoutRect,
-	snap_generated_image bool, image_destination ?LayoutRect) ?PaintCommand {
+	snap_generated_image bool, image_destination ?LayoutRect, gradient_bleed_clip bool) ?PaintCommand {
 	blend_mode := background_image_layer_blend_mode(layer)
 	mut positioning_area := origin
 	mut visual_context_index := ?int(none)
@@ -1320,11 +1322,19 @@ fn background_layer_command(layer BackgroundImageLayer, origin LayoutRect, clip 
 	}
 	if source := layer.gradient_source {
 		computed_layer := layer.computed_layer or { return none }
+		unsnapped_area := positioning_area
 		// The default auto-size, zero-position gradient fills the snapped
 		// positioning area. Other sizes retain their separate positioning phase.
 		if snap_generated_image && chromium_default_gradient_geometry(computed_layer) {
 			positioning_area = pixel_snapped_layout_rect(positioning_area)
 		}
+		// Blink's single-tile draw must cover the unsnapped paint area. When
+		// snapping makes a default gradient tile smaller, DrawPattern retains
+		// a generated-image tile instead of painting the shader directly.
+		gradient_pattern := snap_generated_image && gradient_bleed_clip
+			&& chromium_default_gradient_geometry(computed_layer)
+			&& (f32(unsnapped_area.width) > f32(positioning_area.width)
+				|| f32(unsnapped_area.height) > f32(positioning_area.height))
 		resolved_layer := painting.resolve_background_layer_without_intrinsic(painting.BackgroundLayerWithoutIntrinsicResolutionInput{
 			layer: computed_layer
 			image_id: source.serialize(.normal)
@@ -1354,7 +1364,7 @@ fn background_layer_command(layer BackgroundImageLayer, origin LayoutRect, clip 
 				image_clip_height: clip.height
 				image_clip_radii: clip_radii
 				image_attachment: layer.attachment
-				background_layer_data: retained_background_layer_data(layer)
+				background_layer_data: retained_background_layer_data(layer, gradient_pattern)
 				background_blend_mode: blend_mode
 			}
 			image_scroll_offset_x: background_scroll_offset.x
@@ -1394,7 +1404,7 @@ fn background_layer_command(layer BackgroundImageLayer, origin LayoutRect, clip 
 			image_clip_height: clip.height
 			image_clip_radii: clip_radii
 			image_attachment: layer.attachment
-			background_layer_data: retained_background_layer_data(layer)
+			background_layer_data: retained_background_layer_data(layer, false)
 			background_blend_mode: blend_mode
 		}
 		force_dark_role: .background
@@ -2299,10 +2309,13 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 				} else {
 					background_box_radii(box, layer.clip, box_radii, clip)
 				}
+				mut gradient_bleed_clip := false
 				if box.snaps_background_rect && layer.clip == 'border-box'
 					&& !box.canvas().paints_canvas_background && !box_radii_are_zero(clip_radii) {
+					unshrunk_clip := clip
 					clip, clip_radii = chromium_background_under_opaque_border(clip,
 						clip_radii, box.border, effective_border_colors(box.border_colors, box.border_color), box.border_styles)
+					gradient_bleed_clip = clip != unshrunk_clip
 				}
 				if command := background_layer_command(layer, origin, clip, clip_radii, opacity, if box.canvas().paints_canvas_background {
 					0.0
@@ -2313,7 +2326,7 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 					y: 0
 					width: b.canvas().viewport_width
 					height: b.canvas().viewport_height
-				}, box.snaps_background_rect, image_destination) {
+				}, box.snaps_background_rect, image_destination, gradient_bleed_clip) {
 					// Canvas images move with the viewport's scroll frame. The
 					// canvas color and fixed layers stay in the box's own context.
 					commands << if box.canvas().paints_canvas_background && layer.attachment == 'scroll' {
@@ -4087,7 +4100,7 @@ fn inline_fragment_commands(fragments []TextFragment, opacity f64) InlineFragmen
 			}
 			origin := inline_background_box_rect(decorating_fragment, layer.origin, border_rect)
 			clip := inline_background_box_rect(decorating_fragment, layer.clip, border_rect)
-			if command := background_layer_command(layer, origin, clip, fragment_radii, opacity, radius, []f64{}, painting.Point{}, .auto_, none, LayoutRect{}, first_is_chromium, none) {
+			if command := background_layer_command(layer, origin, clip, fragment_radii, opacity, radius, []f64{}, painting.Point{}, .auto_, none, LayoutRect{}, first_is_chromium, none, false) {
 				commands << command
 				if first_is_chromium {
 					chromium_pair_background_image_color(mut commands)

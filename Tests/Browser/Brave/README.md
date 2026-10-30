@@ -13,6 +13,16 @@ python3 tools/check_pixel_equality.py Tests/Browser/Brave/expected/font-rasteriz
 
 This comparison requires exact RGBA equality, with no excluded pixels or tolerance.
 
+`fractional-gradient-pattern` checks a generated gradient tile beneath a rounded
+opaque border, with integer-size and square-corner controls. Its 1280×800,
+scale 1 fixture matches Brave 156.1.98.60 exactly; painting the shader directly
+differed at 211,888 pixels. When rounded-border bleed clipping disables the
+direct image path and the snapped tile cannot cover the original area, retain
+the tile's premultiplied raster before blending it over its parent.
+The small corner radius isolates tiling from curved-border coverage. The
+[larger-radius diagnostic](diagnostic/rounded-gradient-pattern.html) still has
+eight one-level corner differences and remains open.
+
 `trailing-empty-block-margins` checks empty paragraphs after ordinary content,
 larger collapsing margins, empty-only containers, and grid row sizing. The
 800×600, scale 1 fixture matches Brave 156.1.98.60 exactly; the previous output

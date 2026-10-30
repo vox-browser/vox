@@ -218,7 +218,7 @@ fn image_payload_legacy_background_layer_command(layer BackgroundImageLayer, ori
 			image_clip_height:         clip.height
 			image_clip_radii:          clip_radii
 			image_attachment:          layer.attachment
-			background_layer_data:     retained_background_layer_data(layer)
+			background_layer_data:     retained_background_layer_data(layer, false)
 			image_scroll_offset_x:     background_scroll_offset.x
 			image_scroll_offset_y:     background_scroll_offset.y
 			background_blend_mode:     blend_mode
@@ -257,7 +257,7 @@ fn image_payload_legacy_background_layer_command(layer BackgroundImageLayer, ori
 		image_clip_height:           clip.height
 		image_clip_radii:            clip_radii
 		image_attachment:            layer.attachment
-		background_layer_data:       retained_background_layer_data(layer)
+		background_layer_data:       retained_background_layer_data(layer, false)
 		image_scroll_offset_x:       background_scroll_offset.x
 		image_scroll_offset_y:       background_scroll_offset.y
 		background_blend_mode:       blend_mode
@@ -343,7 +343,7 @@ fn test_image_payload_background_producers_match_original_fields_and_gradients()
 				2,
 				3,
 				4,
-			], painting.Point{13, 17}, .pixelated, fixed_context, LayoutRect{0, 0, 240, 160}, false, none) or { panic('missing new command') }
+			], painting.Point{13, 17}, .pixelated, fixed_context, LayoutRect{0, 0, 240, 160}, false, none, false) or { panic('missing new command') }
 			expected := image_payload_legacy_background_layer_command(layer, LayoutRect{3, 4, 120, 80}, LayoutRect{5, 6, 90, 60}, BoxRadii{ top_left: CornerRadius{3, 7} }, 0.7, 9, [
 				f64(1),
 				2,
