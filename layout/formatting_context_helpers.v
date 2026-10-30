@@ -152,7 +152,15 @@ fn resolve_layout_gap(node &Node, property_id css.PropertyID, percentage_basis C
 	if gap.is_normal {
 		return CSSPixels.new(0)
 	}
-	return gap.length_percentage.to_px(layout_length_resolution_context(node), percentage_basis)
+	context := layout_length_resolution_context(node)
+	if gap.length_percentage.is_length()
+		&& node.document().font_rendering_policy() == .chromium {
+		// Blink constructs the gap's LayoutUnit from the resolved float length.
+		// Rounding here can enlarge a shrink-to-fit flex item by one unit and
+		// shift its end-aligned contents across a glyph rasterization boundary.
+		return CSSPixels.truncated_value_for(gap.length_percentage.length().to_px_without_rounding(context))
+	}
+	return gap.length_percentage.to_px(context, percentage_basis)
 }
 
 // LayoutNG converts a fixed relative offset with LayoutUnit(float), which

@@ -1,0 +1,24 @@
+<!doctype html><meta charset="utf-8"><title>Fractional gaps in forum counters</title>
+<style>
+html { font-size: 16px; }
+body { margin: 0; background: white; color: hsl(210, 8%, 42%); font: 13px/17px -apple-system, system-ui, sans-serif; }
+.stats { position: absolute; left: 181px; width: 108px; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.counter { display: flex; align-items: center; justify-content: center; gap: .3em; border: 1px solid transparent; }
+.number { font-weight: 500; }
+.grid { position: absolute; left: 340px; display: grid; grid-template-columns: 10px 10px; gap: 3.9px; }
+.grid div { width: 10px; height: 10px; background: #596169; }
+.column { position: absolute; left: 440px; display: flex; flex-direction: column; gap: .24375rem; }
+.column div { width: 10px; height: 10px; background: #596169; }
+</style>
+<div class="stats" style="top:206.3125px">
+  <div class="counter"><span class="number">0</span><span>votes</span></div>
+  <div class="counter"><span class="number">0</span><span>answers</span></div>
+  <div class="counter"><span class="number">24</span><span>views</span></div>
+</div>
+<div class="stats" style="top:330.3125px">
+  <div class="counter"><span class="number">24</span><span>views</span></div>
+  <div class="counter"><span class="number">124</span><span>views</span></div>
+  <div class="counter"><span class="number">240</span><span>views</span></div>
+</div>
+<div class="grid" style="top:206.3125px"><div></div><div></div><div></div><div></div></div>
+<div class="column" style="top:330.3125px"><div></div><div></div><div></div></div>

@@ -77,6 +77,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_modern_svg_color_alpha_survives_solid_paint_conversion(self):
         self.compare_fixture('forum-modern-svg-color-alpha')
 
+    def test_fractional_gaps_keep_forum_counters_on_their_brave_glyph_positions(self):
+        self.compare_fixture('stackoverflow-fractional-flex-gap')
+
 
 if __name__ == '__main__':
     unittest.main()
