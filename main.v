@@ -7291,6 +7291,11 @@ fn (mut app BrowserApp) draw() {
 				}
 			}
 			if command.kind in ['fill_rect', 'fill_rounded_rect'] {
+				rounded_end := app.draw_chromium_rounded_background_pair(command_index, page_y, window.height)
+				if rounded_end > command_index {
+					shared_svg_end = rounded_end
+					continue
+				}
 				inset_end := app.draw_chromium_inset_decorations(command_index, page_y, window.height)
 				if inset_end > command_index {
 					shared_svg_end = inset_end

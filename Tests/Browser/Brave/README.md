@@ -62,6 +62,12 @@ Visible paint, resource inputs, and compositor boundaries stop the group. The
 800×600, scale 1 fixture is exact against Brave 156.1.98.60; resolving each box
 separately differed at 192 pixels, all by one channel level.
 
+`rounded-background-border-root` checks backgrounds and uniform borders with
+different corner radii after a text mask. A complex SVG in the same raster row
+selects multisampling. Each background/border pair shares one root picture;
+the 1280×800, scale 1 fixture is exact against Brave 156.1.98.60. Separate draws
+previously differed at 15 pixels, all by one channel level.
+
 `box-shadow-blur` checks square and two rounded outer shadows. The native
 Chromium profile uses an isolated Skia 155 Metal backend for these shadows,
 including Chromium's legacy rounded clip shader and full precision arithmetic.
