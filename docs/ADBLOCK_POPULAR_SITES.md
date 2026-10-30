@@ -751,3 +751,41 @@ including `checkpoint.json`, `verified/`, focused checks and retained failures.
 Additional oracle diagnostics are under `Build/forum-news-tile-mode-20261030/`.
 Broad-test baseline remains `88275919`; this is the sixth completed native fix
 since that baseline.
+
+## Modern RGB alpha in solid SVG recordings, 30 October 2026
+
+`eefbe1a1` retains modern RGB paint alpha before SVG solid colors become byte
+colors. Supported solid recordings use that alpha for fills, simple strokes and
+SVG images, and select the float recording for an isolated modern translucent
+paint. Legacy syntax keeps its existing byte-alpha conversion. Serialized color
+keys still reject metadata after callers replace a paint color.
+
+The extracted fixture improves from **46,544 differing pixels to zero**. It
+covers direct fills, inherited `currentColor`, nearly opaque paints, strokes,
+legacy controls and embedded SVG images. Two independent Brave references agree.
+All **fourteen native Brave fixtures** and three canonical SVG reftests are exact.
+Sixteen focused storage/replay cases pass in both GC modes, including collection,
+retained old recordings and a live alpha change from .31 to .3101 whose byte
+color string remains identical. The final mutation check changes only its test
+after the production build; implementation hashes match the build inputs.
+
+The production build completes within the unchanged 12 GiB guard with stable
+watched inputs. Native validation retains one executable/library/snapshot
+identity and the unchanged 326-file oracle template. All eight completed native
+comparisons retain matching full-uBO request/header, cosmetic, procedural and
+scriptlet evidence. The matrix still accepts **one of ten**: native differences
+are HN 0, Lobsters 115, Slashdot 9,773, Stack Overflow 629, BBC 76,604, CNN 107,059,
+The Verge 315,921 and Pikabu 13,925. Reddit remains unavailable with guest HTTP
+403, and The Guardian's consecutive Brave captures remain unstable.
+
+Lobsters' Brave reference flips back by 115 pixels while Vox's PNG stays
+pixel-identical to the preceding run. Its live-to-frozen difference returns to
+44 pixels. Stack Overflow retains its stable 629-pixel difference and exact
+live-to-frozen reference. CNN and Pikabu retain the preceding run's mismatches;
+neither is credited as an improvement from this SVG-alpha change.
+
+Evidence is under `Build/forum-news-svg-color-alpha-20261030/`, including
+`checkpoint.json`, `verified/`, the two-reference baseline, focused checks and
+retained failures. Further Stack Overflow isolation is retained under
+`Build/forum-news-stackoverflow-remaining-20261030/`. Broad-test baseline remains
+`88275919`; this is the seventh completed native fix since that baseline.
