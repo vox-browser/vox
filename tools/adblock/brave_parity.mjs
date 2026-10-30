@@ -236,7 +236,7 @@ try {
         const result = await page.send('Page.navigate', { url: options.url });
         mainFrameID = result.frameId;
         if (!result.errorText && (options['capture-dir'] || options['pixel-reference'])
-            && !await waitForPixelDocument(page)) result.errorText = 'Pixel capture document did not complete loading';
+            && !await waitForPixelDocument(page,options.url)) result.errorText = 'Pixel capture document did not complete loading';
         await pause(options.settle * 1000);
         const snapshot = await page.evaluate(`({url:location.href,title:document.title,ready_state:document.readyState,body_text_length:document.body?.innerText.length||0,body_text_sample:document.body?.innerText.slice(0,4000)||'',element_count:document.querySelectorAll('*').length})`);
         navigation = navigationObservation(options.url, result, snapshot, page.events);

@@ -3,14 +3,40 @@ import {test} from 'node:test';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import vm from 'node:vm';
 import {capturePixelReference, referenceLaunchArguments, waitForPixelDocument} from './pixel_reference.mjs';
 
 test('capture waits for document load before the settle period',async()=>{
     let expression;
     const page={evaluate:async source=>{expression=source;return false;}};
-    assert.equal(await waitForPixelDocument(page),false);
+    assert.equal(await waitForPixelDocument(page,'https://example.com/',{timeoutMs:0}),false);
     assert.match(expression,/document.readyState==='complete'/);
-    assert.match(expression,/document.fonts.ready/);
+    assert.match(expression,/document.fonts.status==='loaded'/);
+    assert.match(expression,/https:\/\/example.com\//);
+});
+
+test('the old blank document, streaming HTML and pending fonts cannot start settling',async()=>{
+    const states=[['about:blank','complete','loaded'],['https://example.com/','loading','loaded'],
+        ['https://example.com/','complete','loading'],['https://news.example.com/','complete','loaded']];
+    let checks=0;
+    const page={evaluate:async expression=>{
+        const [href,readyState,status]=states[checks++];
+        return vm.runInNewContext(expression,{URL,location:{href},document:{readyState,fonts:{status}}});
+    }};
+    assert.equal(await waitForPixelDocument(page,'https://example.com/',{timeoutMs:1000,pollMs:0}),true);
+    assert.equal(checks,4);
+});
+
+test('a replaced execution context is retried while unrelated debugger errors propagate',async()=>{
+    let checks=0;
+    const page={evaluate:async()=>{
+        if(!checks++) throw Error('Execution context was destroyed.');
+        return true;
+    }};
+    assert.equal(await waitForPixelDocument(page,'https://example.com/',{timeoutMs:1000,pollMs:0}),true);
+    assert.equal(checks,2);
+    await assert.rejects(waitForPixelDocument({evaluate:async()=>{throw Error('Debugger closed');}},
+        'https://example.com/'),/Debugger closed/);
 });
 
 test('archive certificate trust is scoped to its SPKI and requires a proxy',()=>{

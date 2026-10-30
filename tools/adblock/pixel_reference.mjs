@@ -1,19 +1,24 @@
 // Capture through the real full-uBO profile, after its content scripts ran.
 import fs from 'node:fs/promises';
 import crypto from 'node:crypto';
+import {isExpectedSiteURL} from './navigation.mjs';
 
-export async function waitForPixelDocument(page) {
-    // A navigation can return while its response body is still streaming. Start
-    // the caller's settle period after load, rather than freezing partial HTML.
-    return page.evaluate(`new Promise(resolve=>{
-        const deadline=Date.now()+45000;
-        const check=()=>{
-            if(Date.now()>=deadline) {resolve(false);return;}
-            if(document.readyState==='complete') document.fonts.ready.then(()=>resolve(true));
-            else setTimeout(check,50);
-        };
-        check();
-    })`);
+export async function waitForPixelDocument(page, expectedURL, {timeoutMs=45000,pollMs=50}={}) {
+    // Page.navigate can return before the old about:blank context is replaced.
+    // Poll from the client so a destroyed context cannot lose the load waiter.
+    const expression=`(${isExpectedSiteURL.toString()})(${JSON.stringify(expectedURL)},location.href)
+        && document.readyState==='complete' && document.fonts.status==='loaded'`;
+    const deadline=Date.now()+timeoutMs;
+    do {
+        try {
+            if(await page.evaluate(expression)) return true;
+        } catch(error) {
+            if(!/Execution context was destroyed|Cannot find (?:default execution )?context|Inspected target navigated/i.test(error.message)) throw error;
+        }
+        if(Date.now()>=deadline) return false;
+        await new Promise(resolve=>setTimeout(resolve,Math.min(pollMs,deadline-Date.now())));
+    } while(Date.now()<deadline);
+    return false;
 }
 
 export function referenceLaunchArguments(options) {
