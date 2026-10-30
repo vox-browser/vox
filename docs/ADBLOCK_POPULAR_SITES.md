@@ -515,3 +515,62 @@ under `Build/forum-news-svg-opacity-20261030/` and
 every completed regression stage have recorded actual exit statuses; the
 ten-site command correctly exits nonzero. This workstream's new broad-test
 baseline is `88275919`; completed native fixes since that baseline: **zero**.
+
+### Composited SVG contents and reusable picture typefaces
+
+`3451ccc0` isolates supported SVG compositor contents together with their own
+backgrounds and glyphs before blending them over the parent. The layer plan
+retains fixed, sticky, scrolling and hinted compositor ownership. Contiguous
+solid-vector layers use the existing isolated destination; unsupported effects,
+resources and child-layer gaps retain their previous player. The new
+`forum-composited-svg-edges` fixture covers transparent and painted fixed layers,
+with ordinary, transformed, will-change and opacity controls. Two independently
+captured Brave references agree, and all **nine focused Brave fixtures are exact**.
+
+`30918985` reuses decoded typefaces across GPU picture replays. The producer frames
+the same embedded font bytes, and Dawn retains decoded faces by exact packet
+content under its renderer mutex. The cache charges both packet and font-stream
+storage, caps that charge at 128 MiB and 64 entries, and preserves ordinary
+unframed picture fonts. Four actual embedded faces cover system, bold, Helvetica
+and Courier styles; ownership, deterministic packets, eviction, oversize and
+invalid input tests pass. Mixed-font pictures match through the CPU protocol and
+four cold/warm old-versus-new GPU comparisons. The existing 14 glyph-cache and
+144 compositor-picture comparisons also pass.
+
+Eighteen focused V cases pass in both GC modes. Stack Overflow now completes
+under the unchanged 3 GiB runtime guard, with a sampled aggregate RSS peak of
+2,124,365,824 bytes. Its native difference improves from **1,051 to 957 pixels**;
+the fresh full-uBO Brave frame remains identical to the archived live frame.
+Hacker News remains exact, and completed native comparisons retain matching
+request/header and cosmetic evidence. No existing golden or tolerance changed.
+
+The complete ten-site rerun still accepts **one of ten**:
+
+| Site | Native differing pixels | Remaining acceptance failure |
+| --- | ---: | --- |
+| Hacker News | 0 | Pass |
+| Reddit | — | Guest HTTP 403 fixture remains unavailable |
+| Lobsters | 115 | Live-to-frozen Brave differs at 44 pixels |
+| Slashdot | 9,795 | Live-to-frozen Brave differs at 598,814 pixels |
+| Stack Overflow | 957 | Native pixel mismatch; live-to-frozen Brave is exact |
+| BBC News | 76,604 | Live-to-frozen Brave differs at 526,496 pixels |
+| CNN | — | Native process exceeds its 3 GiB guard |
+| The Guardian | — | Consecutive Brave reference captures differ |
+| The Verge | 315,921 | Live-to-frozen Brave differs at 135,187 pixels |
+| Pikabu | — | Native font-load fallback panics before the final capture |
+
+The first per-path SVG prototype regressed the painted header and was rejected.
+Its images and failed receipts remain in the evidence. A full V rebuild later
+failed during concurrent CSS enum generation. Accepted checks reuse the completed
+v42 executable, whose source snapshots contain the SVG change, with separately
+compiled and tested native libraries. Their code/data sections and bundle
+signatures verify; the executable UUID matches the original v42 sample. Signing
+changes its raw file hash, so checks pin the post-signing identity. This native
+refresh does not establish a successful full V rebuild or validate later shared
+font-synthesis edits.
+
+Evidence is under `Build/forum-news-svg-color-20261030/`, including the final
+`checkpoint.json`, `layer-isolation/focused-final/`, native cache tests and the
+completed `typeface-cache/verified/` matrix. Its aggregate site command exits
+nonzero as required. Broad-test baseline remains `88275919`; these are **two**
+completed native fixes since that baseline.
