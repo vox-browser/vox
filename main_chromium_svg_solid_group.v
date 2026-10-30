@@ -73,7 +73,10 @@ fn chromium_svg_solid_run_end(commands []layout.PaintCommand, layers []int, star
 		}
 		end++
 	}
-	return if end - start >= 2 { end } else { start }
+	// The leaf SVG bridge rounds paint opacity into its byte alpha. Use the
+	// recording's float alpha for a single translucent paint as well.
+	alpha := if first.color == '' { first.svg_data.stroke_opacity } else { first.svg_data.fill_opacity }
+	return if end - start >= 2 || alpha != 1 { end } else { start }
 }
 
 fn (mut app BrowserApp) draw_chromium_svg_solid_group(commands []layout.PaintCommand,

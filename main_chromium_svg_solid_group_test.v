@@ -55,6 +55,39 @@ fn test_solid_svg_runs_accept_equivalent_mapped_rectangular_clips() {
 	}
 }
 
+fn test_single_svg_paint_opacity_uses_the_float_recording_without_crossing_a_barrier() {
+	base := svg_solid_group_test_command()
+	for opacity in [0.0, 0.3, 0.5, 0.75] {
+		fill := layout.PaintCommand{
+			...base
+			svg_data: &layout.PaintSVGPathData{
+				...base.svg_data
+				fill_opacity: opacity
+			}
+		}
+		stroke := layout.PaintCommand{
+			...base
+			color:        ''
+			stroke_color: '#348dc7'
+			stroke_width: 2
+			svg_data:     &layout.PaintSVGPathData{
+				stroke_opacity: opacity
+				path_data:      [f32(0), 0, 14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 14, 0, 0, 0, 0, 0,
+					0, 0, 0, 0, 0]
+			}
+		}
+		for command in [fill, stroke] {
+			assert chromium_svg_solid_run_end([command], [], 0) == 1
+			commands := [command, layout.PaintCommand{ kind: 'end_svg_mask_layer' }, base]
+			assert chromium_svg_solid_run_end(commands, [], 0) == 1
+			assert chromium_svg_solid_run_end(commands, [], 1) == 1
+			assert chromium_svg_solid_run_end([command, base], [1, 2], 0) == 1
+			assert chromium_svg_solid_run_end([layout.PaintCommand{ ...command, opacity: .5 }], [], 0) == 0
+			assert chromium_svg_solid_run_end([layout.PaintCommand{ ...command, group_opacity: .5 }], [], 0) == 0
+		}
+	}
+}
+
 fn test_solid_svg_runs_reject_clips_that_need_individual_replay() {
 	fill := svg_solid_group_test_command()
 	for clip in [

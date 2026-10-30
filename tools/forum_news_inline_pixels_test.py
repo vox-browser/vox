@@ -56,6 +56,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_fractional_border_colors_match_brave_exactly(self):
         self.compare_fixture('stackoverflow-fractional-borders')
 
+    def test_single_svg_paths_preserve_fill_and_stroke_opacity(self):
+        self.compare_fixture('forum-single-svg-opacity')
+
 
 if __name__ == '__main__':
     unittest.main()

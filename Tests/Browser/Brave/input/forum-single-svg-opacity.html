@@ -1,0 +1,8 @@
+<!doctype html><meta charset="utf-8"><title>Single SVG paths retain paint opacity</title>
+<style>body{margin:0;background:white}svg{position:absolute;left:24px;width:80px;height:40px}</style>
+<svg style="top:24px" viewBox="0 0 80 40"><path d="M0 0H80V40H0Z" fill="black" fill-opacity=".5"/></svg>
+<svg style="top:104px" viewBox="0 0 80 40"><path d="M0 0H80V40H0Z" fill="#348dc7" fill-opacity=".3"/></svg>
+<svg style="top:184px" viewBox="0 0 80 40"><path d="M0 0H80V40H0Z" fill="#d74821" fill-opacity=".75"/></svg>
+<svg style="top:264px" viewBox="0 0 80 40"><path d="M0 20H80" fill="none" stroke="black" stroke-width="10" stroke-opacity=".5"/></svg>
+<svg style="top:344px" viewBox="0 0 80 40"><path d="M0 20H80" fill="none" stroke="#348dc7" stroke-width="10" stroke-opacity=".3"/></svg>
+<svg style="top:424px" viewBox="0 0 80 40"><path d="M0 0H80V40H0Z" fill="#348dc7"/></svg>
