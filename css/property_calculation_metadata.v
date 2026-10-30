@@ -183,6 +183,7 @@ fn canonical_property_name_from_metadata(name string) string {
 }
 
 fn property_id_from_canonical_name(name string) ?PropertyID {
+	if name == 'hyphens' { return .hyphens }
 	// Keep bucket selection scalar; wrap the result once after a full match.
 	mut value := PropertyID.webkit_box_orient
 	mut found := false
@@ -3190,6 +3191,7 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 
 pub fn string_from_property_id(property_id PropertyID) string {
 	return match property_id {
+		.hyphens { 'hyphens' }
 		.webkit_box_orient { '-webkit-box-orient' }
 		.webkit_font_smoothing { '-webkit-font-smoothing' }
 		.webkit_line_clamp { '-webkit-line-clamp' }
@@ -3661,6 +3663,7 @@ pub fn property_has_quirk(property_id PropertyID, quirk PropertyQuirk) bool {
 
 pub fn is_inherited_property(property_id PropertyID) bool {
 	return match property_id {
+		.hyphens { true }
 		.block_ellipsis { true }
 		.webkit_font_smoothing, .webkit_text_fill_color, .accent_color, .border_collapse, .border_spacing, .caption_side, .caret_color, .clip_rule, .color, .color_interpolation, .color_interpolation_filters, .color_scheme, .cursor, .direction, .dominant_baseline, .empty_cells, .fill, .fill_opacity, .fill_rule, .font_family, .font_feature_settings, .font_kerning, .font_language_override, .font_optical_sizing, .font_size, .font_style, .font_variant_alternates, .font_variant_caps, .font_variant_east_asian, .font_variant_emoji, .font_variant_ligatures, .font_variant_numeric, .font_variant_position, .font_variation_settings, .font_weight, .font_width, .image_rendering, .letter_spacing, .line_height, .list_style_image, .list_style_position, .list_style_type, .math_depth, .math_shift, .math_style, .orphans, .overflow_wrap, .paint_order, .pointer_events, .quotes, .scrollbar_color, .shape_rendering, .stroke, .stroke_dasharray, .stroke_dashoffset, .stroke_linecap, .stroke_linejoin, .stroke_miterlimit, .stroke_opacity, .stroke_width, .tab_size, .text_align, .text_anchor, .text_decoration_line, .text_decoration_skip_ink, .text_indent, .text_justify, .text_rendering, .text_shadow, .text_transform, .text_underline_offset, .text_underline_position, .text_wrap_mode, .text_wrap_style, .visibility, .white_space_collapse, .widows, .word_break, .word_spacing, .writing_mode {
 			true
@@ -3671,6 +3674,7 @@ pub fn is_inherited_property(property_id PropertyID) bool {
 
 pub fn property_initial_value_string(property_id PropertyID) string {
 	return match property_id {
+		.hyphens { 'manual' }
 		.webkit_box_orient { 'horizontal' }
 		.webkit_font_smoothing { 'auto' }
 		.webkit_line_clamp { 'none' }
@@ -4100,6 +4104,7 @@ pub fn property_initial_value_string(property_id PropertyID) string {
 
 fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 	return match property_id {
+		.hyphens { AnimationType.discrete }
 		.backface_visibility { AnimationType.discrete }
 		.scroll_snap_align, .scroll_snap_stop, .scroll_snap_type { AnimationType.discrete }
 		.scroll_padding_block_end, .scroll_padding_block_start, .scroll_padding_bottom, .scroll_padding_inline_end, .scroll_padding_inline_start, .scroll_padding_left, .scroll_padding_right, .scroll_padding_top {
@@ -4140,6 +4145,7 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 
 pub fn is_animatable_property(property_id PropertyID) bool {
 	return match property_id {
+		.hyphens { true }
 		.backface_visibility { true }
 		.scroll_snap_align, .scroll_snap_stop, .scroll_snap_type { true }
 		.color_interpolation_filters { true }
@@ -4182,6 +4188,7 @@ pub fn property_multiplicity(property_id PropertyID) PropertyMultiplicity {
 
 pub fn property_affects_layout(property_id PropertyID) bool {
 	return match property_id {
+		.hyphens { true }
 		.scroll_padding, .scroll_padding_block, .scroll_padding_block_end, .scroll_padding_block_start, .scroll_padding_bottom, .scroll_padding_inline, .scroll_padding_inline_end, .scroll_padding_inline_start, .scroll_padding_left, .scroll_padding_right, .scroll_padding_top {
 			true
 		}
@@ -4509,6 +4516,7 @@ fn property_custom_ident_blacklist(property_id PropertyID) []string {
 fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 	lowercase_value := to_ascii_lowercase(value)
 	return match property_id {
+		.hyphens { lowercase_value in ['none', 'manual', 'auto'] }
 		.scroll_padding, .scroll_padding_block, .scroll_padding_block_end, .scroll_padding_block_start, .scroll_padding_bottom, .scroll_padding_inline, .scroll_padding_inline_end, .scroll_padding_inline_start, .scroll_padding_left, .scroll_padding_right, .scroll_padding_top {
 			lowercase_value == 'auto'
 		}

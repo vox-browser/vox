@@ -13,6 +13,8 @@ import collections
 import re
 from pathlib import Path
 
+from css_translation_extensions import KEYWORDS
+
 
 PAIR = re.compile(r'^\s*\{"([^"]+)"sv, Keyword::([A-Za-z0-9_]+)\},\s*$', re.MULTILINE)
 V_ARM = re.compile(r"^\s*\.([A-Za-z0-9_]+)\s*\{\s*'([^']*)'\s*\}\s*$", re.MULTILINE)
@@ -108,6 +110,7 @@ def main() -> int:
     keywords = [css_text for css_text, _ in PAIR.findall(upstream)]
     if len(keywords) < 800 or len(set(keywords)) != len(keywords):
         raise SystemExit(f"unexpected upstream keyword table: {len(keywords)} entries")
+    keywords += [keyword for keyword in KEYWORDS if keyword not in keywords]
 
     existing_cases = {css_text: case for case, css_text in V_ARM.findall(source)}
     used_cases: dict[str, str] = {"invalid": ""}

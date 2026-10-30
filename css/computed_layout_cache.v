@@ -62,6 +62,7 @@ mut:
 	computed_values_text_wrap_mode_                TextWrapMode
 	computed_values_white_space_collapse_          WhiteSpaceCollapse
 	computed_values_word_break_                    WordBreak
+	computed_values_hyphens_                       Hyphens
 	computed_values_visibility_                    Visibility
 	computed_values_box_sizing_                    BoxSizing
 	computed_values_vertical_align_                VerticalAlign

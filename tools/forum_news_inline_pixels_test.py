@@ -47,6 +47,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_inline_backgrounds_and_borders_share_multisample_coverage(self):
         self.compare_fixture('lobsters-inline-msaa-compositing')
 
+    def test_automatic_hyphenation_matches_brave_exactly(self):
+        self.compare_fixture('stackoverflow-auto-hyphenation')
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -38,7 +38,7 @@ pub fn property_is_list_valued(property_id PropertyID) bool {
 	return property_multiplicity(property_id) != .single
 }
 
-pub const number_of_longhand_properties = 355
+pub const number_of_longhand_properties = 356
 
 pub fn first_longhand_property_id() PropertyID {
 	return .accent_color
@@ -404,7 +404,8 @@ fn property_id_from_longhand_index(index int) ?PropertyID {
 		351 { PropertyID.color_interpolation_filters }
 		352 { PropertyID.backface_visibility }
 		353 { PropertyID.vector_effect }
-		354 { PropertyID.webkit_font_smoothing }
+		354 { PropertyID.hyphens }
+		355 { PropertyID.webkit_font_smoothing }
 		else { none }
 	}
 }

@@ -9,6 +9,7 @@ import platform
 // and leave bidi, fallback faces and ambiguous cluster coverage alone.
 fn (fragment &LineBoxFragment) chromium_visible_line_end(at_break bool) ?string {
 	run := fragment.glyph_run_ or { return none }
+	if automatic_hyphen_character(run) != none { return none }
 	if run.font().font_rendering_policy != .chromium || run.text_type() != .ltr
 		|| fragment.direction_ != .ltr || fragment.precise_inline_length_ == none
 		|| run.face() != .document {
@@ -23,6 +24,7 @@ fn (fragment &LineBoxFragment) chromium_visible_line_end(at_break bool) ?string 
 	mut has_glyph_indices := false
 	if !isnil(fragment.intrinsic_glyph_runs_) {
 		for borrowed in fragment.intrinsic_glyph_runs_.runs {
+			if automatic_hyphen_character(borrowed) != none { return none }
 			for glyph in borrowed.glyphs_ {
 				covered += glyph.length_in_code_units
 				has_glyph_indices = has_glyph_indices || glyph.glyph_index != 0
@@ -101,6 +103,9 @@ fn chromium_line_end_width(node &Node, visible string, run &platform.GlyphRun) ?
 }
 
 fn (projection &ProjectedTextAdvance) chromium_line_end_correction() CSSPixels {
+	if projection.run != unsafe { nil } && automatic_hyphen_character(projection.run) != none {
+		return CSSPixels.new(0)
+	}
 	if projection.node == unsafe { nil } || projection.run == unsafe { nil }
 		|| projection.segment_length <= 0
 		|| projection.segment_start + projection.segment_length != projection.end {

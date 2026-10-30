@@ -47,6 +47,8 @@ pub mut:
 	offset_x             f32
 	length_in_code_units int  = 1
 	should_paint         bool = true
+	// A dictionary hyphen paints at the line end without consuming DOM text.
+	is_automatic_hyphen bool
 	// Zero means unknown; HarfBuzz marks proven ASCII boundaries as safe (1)
 	// or unsafe (2). Keep manually constructed/fallback glyphs conservative.
 	shaping_break_safety u8

@@ -2085,6 +2085,7 @@ pub enum Keyword {
 	zhuyin
 	zoom_in
 	zoom_out
+	manual
 }
 
 pub fn (keyword Keyword) is_css_wide_keyword() bool {
@@ -2985,11 +2986,13 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.zhuyin { 'zhuyin' }
 		.zoom_in { 'zoom-in' }
 		.zoom_out { 'zoom-out' }
+		.manual { 'manual' }
 	}
 }
 
 pub fn keyword_from_string(input string) ?Keyword {
 	name := to_ascii_lowercase(input)
+	if name == 'manual' { return .manual }
 	// Keep bucket selection scalar; wrap the result once after a full match.
 	mut value := Keyword.negative_infinity
 	mut found := false

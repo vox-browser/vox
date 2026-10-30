@@ -3269,6 +3269,11 @@ fn append_unselected_text_fragment_commands(mut commands []PaintCommand,
 			text_command.glyph_translation_y = text_fragment_paint_top(first) + first.baseline
 			text_command.glyph_orientation = first.paintable_fragment.orientation
 		}
+		if run := text_command.glyph_run {
+			if hyphen := automatic_hyphen_character(run) {
+				text_command.text += hyphen.str()
+			}
+		}
 		commands << text_command
 		for k := i; k < j; k++ {
 			commands << decoration_commands(fragments[k], opacity)

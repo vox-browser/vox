@@ -651,6 +651,7 @@ pub fn resolve_computed_values(style &ComputedProperties) &ComputedValues {
 	values.set_text_wrap_mode(style.text_wrap_mode())
 	values.set_white_space_collapse(style.white_space_collapse())
 	values.set_word_break(style.word_break())
+	values.set_hyphens(style.hyphens())
 	values.set_visibility(style.visibility())
 	values.set_box_sizing(style.box_sizing())
 	values.set_vertical_align(style.vertical_align())
@@ -1869,6 +1870,7 @@ pub fn (mut values MutableComputedValues) inherit_from(other &ComputedValues) {
 	values.ensure_computed_layout_cache().computed_values_text_wrap_mode_ = other.computed_layout_cache().computed_values_text_wrap_mode_
 	values.ensure_computed_layout_cache().computed_values_white_space_collapse_ = other.computed_layout_cache().computed_values_white_space_collapse_
 	values.ensure_computed_layout_cache().computed_values_word_break_ = other.computed_layout_cache().computed_values_word_break_
+	values.ensure_computed_layout_cache().computed_values_hyphens_ = other.computed_layout_cache().computed_values_hyphens_
 	values.ensure_computed_layout_cache().computed_values_list_style_position_ = other.computed_layout_cache().computed_values_list_style_position_
 	values.computed_list_style_storage_ = other.computed_list_style_storage_
 	values.ensure_computed_layout_cache().computed_values_visibility_ = other.computed_layout_cache().computed_values_visibility_

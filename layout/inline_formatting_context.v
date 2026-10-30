@@ -319,7 +319,13 @@ fn run_inline_formatting_context_for_width(mut state LayoutState, containing_blo
 							line_builder.projected_text_sequence_width_for_line_break(item,
 								iterator.next_non_whitespace_sequence_items())
 						} else { item.border_box_width().plus(next_width) }
-						broke_line := if iterator.next_non_whitespace_text_allows_overflow_break() {
+						remaining := line_builder.remaining_width_for_overflow_break() or { CSSPixels.new(0) }
+						can_hyphenate := available_space.width.is_definite()
+							&& sequence_width.raw_value() > remaining.raw_value()
+							&& iterator.next_word_can_hyphenate(remaining.minus(item.border_box_width()))
+						broke_line := if can_hyphenate {
+							false
+						} else if iterator.next_non_whitespace_text_allows_overflow_break() {
 							line_builder.break_if_needed_before_overflow_breakable_item(sequence_width)
 						} else {
 							line_builder.break_if_needed(sequence_width)
@@ -335,6 +341,10 @@ fn run_inline_formatting_context_for_width(mut state LayoutState, containing_blo
 						|| (can_break_after_previous_overflow_item && !overflow_break_allowed)
 						|| (containing_block_used_values.line_boxes.len > 0
 						&& containing_block_used_values.line_boxes.last().ends_in_preserved_whitespace())
+					if !is_whitespace && style.hyphens() == .auto_ {
+						break_automatically_hyphenated_item(mut line_builder, mut item,
+							iterator.next_glued_text_items())
+					}
 					if can_break_before_item && !is_whitespace {
 						glued := if node.document().font_rendering_policy() == .chromium {
 							iterator.next_glued_text_items()

@@ -36,6 +36,7 @@ fn resolve_anonymous_computed_geometry(style &ComputedProperties, inherited &Com
 	values.ensure_computed_layout_cache().computed_values_text_wrap_mode_ = inherited.computed_values_text_wrap_mode_
 	values.ensure_computed_layout_cache().computed_values_white_space_collapse_ = inherited.computed_values_white_space_collapse_
 	values.ensure_computed_layout_cache().computed_values_word_break_ = inherited.computed_values_word_break_
+	values.ensure_computed_layout_cache().computed_values_hyphens_ = inherited.computed_values_hyphens_
 	values.ensure_computed_layout_cache().computed_values_visibility_ = inherited.computed_values_visibility_
 	values.ensure_computed_layout_cache().computed_values_caption_side_ = inherited.computed_values_caption_side_
 	values.ensure_computed_layout_cache().computed_values_border_collapse_ = inherited.computed_values_border_collapse_

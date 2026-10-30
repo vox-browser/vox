@@ -1836,6 +1836,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.word_break {
 			return parser.parse_word_break_value(mut tokens)
 		}
+		.hyphens {
+			return parse_property_keyword_value(mut tokens, ['none', 'manual', 'auto'])
+		}
 		.z_index {
 			return parser.parse_z_index_value(mut tokens)
 		}

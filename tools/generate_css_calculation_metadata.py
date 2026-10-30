@@ -15,6 +15,8 @@ import json
 from collections import defaultdict
 from pathlib import Path
 
+from css_translation_extensions import extend_properties
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
@@ -792,7 +794,7 @@ def main() -> int:
         args.ladybird / "Libraries/LibWeb/CSS/LogicalPropertyGroups.json"
     )
     enums_path = args.ladybird / "Libraries/LibWeb/CSS/Enums.json"
-    properties = json.loads(properties_path.read_text())
+    properties = extend_properties(json.loads(properties_path.read_text()))
     logical_property_groups = json.loads(logical_property_groups_path.read_text())
     properties = replace_logical_aliases(properties, logical_property_groups)
     properties = populate_all_property_longhands(properties)

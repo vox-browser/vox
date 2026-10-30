@@ -12,6 +12,8 @@ import argparse
 import re
 from pathlib import Path
 
+from css_translation_extensions import extend_shorthand_tables
+
 
 FUNCTION = re.compile(
     r"Vector<PropertyID> const& (?P<name>longhands_for_shorthand|expanded_longhands_for_shorthand|shorthands_for_longhand)"
@@ -137,7 +139,7 @@ def emit_boolean_function(name: str, properties: list[str]) -> list[str]:
 
 def generate(source_path: Path) -> str:
     source = source_path.read_text()
-    tables = extract_tables(source)
+    tables = extend_shorthand_tables(extract_tables(source))
     boolean_tables = extract_boolean_tables(source)
     output = [
         "// Generated from Ladybird's generated LibWeb/CSS/PropertyID.cpp by",

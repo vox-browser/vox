@@ -141,6 +141,11 @@ fn TextNodeChunkIterator.new_with_direction(text_node &TextNode, should_wrap_lin
 	if text_node.Node.document().font_rendering_policy() == .chromium {
 		apply_chromium_ascii_line_breaks(code_units, mut line_boundaries)
 	}
+	if text_node.Node.computed_values().hyphens() == .none_ && line_boundaries.len > 0 {
+		for index in 1 .. line_boundaries.len {
+			if code_units[index - 1] == 0xad { line_boundaries[index] = false }
+		}
+	}
 	mut iterator := &TextNodeChunkIterator{
 		text_node: text_node
 		should_wrap_lines_: should_wrap_lines

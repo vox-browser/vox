@@ -80,6 +80,7 @@ fn anonymous_geometry_assert_same(actual &ComputedValues, expected &ComputedValu
 	assert actual.computed_layout_cache().computed_values_text_wrap_mode_ == expected.computed_layout_cache().computed_values_text_wrap_mode_, 'computed_values_text_wrap_mode_'
 	assert actual.computed_layout_cache().computed_values_white_space_collapse_ == expected.computed_layout_cache().computed_values_white_space_collapse_, 'computed_values_white_space_collapse_'
 	assert actual.computed_layout_cache().computed_values_word_break_ == expected.computed_layout_cache().computed_values_word_break_, 'computed_values_word_break_'
+	assert actual.hyphens() == expected.hyphens(), 'hyphens'
 	assert actual.computed_layout_cache().computed_values_visibility_ == expected.computed_layout_cache().computed_values_visibility_, 'computed_values_visibility_'
 	assert actual.computed_layout_cache().computed_values_box_sizing_ == expected.computed_layout_cache().computed_values_box_sizing_, 'computed_values_box_sizing_'
 	assert actual.computed_layout_cache().computed_values_vertical_align_ == expected.computed_layout_cache().computed_values_vertical_align_, 'computed_values_vertical_align_'
@@ -291,6 +292,7 @@ fn test_anonymous_geometry_matches_full_materialization_for_default_and_rich_inh
 	anonymous_geometry_set(mut source, .text_wrap_mode, 'nowrap')
 	anonymous_geometry_set(mut source, .white_space_collapse, 'preserve')
 	anonymous_geometry_set(mut source, .word_break, 'break-all')
+	anonymous_geometry_set(mut source, .hyphens, 'auto')
 	anonymous_geometry_set(mut source, .tab_size, '6')
 	anonymous_geometry_set(mut source, .letter_spacing, '3px')
 	anonymous_geometry_set(mut source, .word_spacing, '5px')
