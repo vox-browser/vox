@@ -195,6 +195,10 @@ class Replay:
 
         class Server(socketserver.ThreadingMixIn, socketserver.TCPServer):
             daemon_threads = True
+            # A browser can open connections for many archived origins in one
+            # burst. The default five-entry queue resets excess connections on
+            # macOS before a request reaches the replay log.
+            request_queue_size = 128
 
         self.server = Server(('127.0.0.1', 0), Handler)
         self.ready = dict(url=self.manifest['url'], archive=str(self.archive), forwarding=False,

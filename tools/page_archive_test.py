@@ -16,6 +16,36 @@ from measure_disk_scroll import offline_environment
 
 
 class PageArchiveTests(unittest.TestCase):
+    def test_replay_accepts_browser_connection_bursts(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            archive, url, bodies = self.fixture(root)
+            replay = page_archive.Replay(archive, root / 'replay')
+            clients = []
+            thread = None
+            try:
+                # Browser resource loaders open several host connections before
+                # the replay thread necessarily gets another CPU timeslice.
+                for _ in range(16):
+                    clients.append(socket.create_connection(replay.server.server_address, timeout=.25))
+                thread = threading.Thread(target=replay.server.serve_forever, daemon=True)
+                thread.start()
+                for client in clients:
+                    client.settimeout(5)
+                    client.sendall(('GET ' + url + ' HTTP/1.1\r\nHost: archive.test\r\n\r\n').encode())
+                    response = bytearray()
+                    while chunk := client.recv(65536):
+                        response.extend(chunk)
+                    self.assertTrue(response.startswith(b'HTTP/1.1 200 '))
+                    self.assertEqual(response.split(b'\r\n\r\n', 1)[1], bodies[url][0])
+            finally:
+                for client in clients:
+                    client.close()
+                if thread:
+                    replay.server.shutdown()
+                    thread.join()
+                replay.server.server_close()
+
     def test_large_replay_body_finishes_with_a_clean_tls_shutdown(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
