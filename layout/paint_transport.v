@@ -2549,6 +2549,8 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 			}
 		}
 		border_end := commands.len
+		retain_chromium_border_color(mut commands, border_start, box.layout_handle,
+			box.border, effective_border_colors(box.border_colors, box.border_color), box.border_styles, box_radii)
 		chromium_pair_rounded_border_background(mut commands, background_paint_start,
 			border_start, border_end, false)
 		table_border_start := commands.len
@@ -4105,6 +4107,8 @@ fn inline_fragment_commands(fragments []TextFragment, opacity f64) InlineFragmen
 		border_start := commands.len
 		append_translated_border_commands(mut commands, effective_border, border_colors, first.border_styles, fragment_radii, left, top, width, height, opacity, chromium_border)
 		if first_is_chromium {
+			retain_chromium_border_color(mut commands, border_start, first.layout_handle,
+				effective_border, border_colors, first.border_styles, fragment_radii)
 			chromium_pair_rounded_border_background(mut commands, background_start,
 				border_start, commands.len, true)
 		}
@@ -5025,6 +5029,7 @@ pub:
 	stops                []GradientStop
 	interpolation_method ?css.ColorInterpolationMethod
 	css_angle_degrees    ?f64
+	css_radial_geometry ?CSSRadialGradientGeometry
 	radial               bool // compatibility discriminator; `kind` is authoritative
 	kind                 string = 'linear' // linear/radial/conic
 	center_x             f64 = 0.5

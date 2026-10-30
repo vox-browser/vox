@@ -1,0 +1,13 @@
+<!doctype html><html><meta charset="utf-8"><title>Fractional border colors reach native rasterization</title>
+<style>
+body{margin:0;background:white;font:16px/24px Arial}
+div{position:absolute;left:24px;width:512px;height:40px;box-sizing:border-box}
+.rule{border-bottom:1px solid hsl(210 8% 90%)}
+.round{border:1px solid hsl(210 8% 90%);border-radius:8px}
+.rgb{border:2px solid rgb(157.25 159.5 161.75);border-radius:12px/8px}
+.inline{top:340px;border:0;font:16px/23.2px "Helvetica Neue",Arial,sans-serif}span{border:1px solid hsl(210 8% 90%);border-radius:5px;font-size:10.56px;margin-left:.25em;padding:0 .4em 1px;color:transparent}
+</style>
+<div class="rule" style="top:24px"></div><div class="rule" style="top:84px"></div>
+<div class="round" style="top:160px"></div><div class="rgb" style="top:240px"></div>
+<div class="inline"><span>Fractional inline border</span></div>
+</html>

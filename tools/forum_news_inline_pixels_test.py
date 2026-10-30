@@ -53,6 +53,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_clamped_excerpts_retain_partial_words_before_the_ellipsis(self):
         self.compare_fixture('stackoverflow-clamped-excerpts')
 
+    def test_fractional_border_colors_match_brave_exactly(self):
+        self.compare_fixture('stackoverflow-fractional-borders')
+
 
 if __name__ == '__main__':
     unittest.main()
