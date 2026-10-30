@@ -1293,3 +1293,56 @@ Evidence is under `Build/forum-news-variable-ink-20261030/`, especially
 and `pikabu-retry/`. The broad baseline remains **`9144d886`**, with **six**
 completed native fixes after it. The remaining SVG/image differences, font-load
 failures and site/reference failures remain open.
+
+
+## Inserted hyphen shaping, 30 October 2026
+
+`770fd7c7` shapes a Chromium-policy automatic hyphen independently of the source
+prefix, then retains both sets of glyphs in the line's paint run. Previously,
+shaping the concatenated text applied the SFNS `r`–hyphen kern across the
+insertion boundary, shifting the hyphen by 0.6640625px and underestimating its
+fit. Explicit source hyphens keep their normal contextual shaping, and inserted
+hyphens still consume zero DOM code units. The other rendering policy retains
+its existing behavior.
+
+The new system-font fixture improves from **515 differing pixels to zero**
+against two agreeing independent Brave references. It includes fractional line
+placement, explicit and Arial controls, and a narrow case where the old kern
+incorrectly admitted a longer prefix. Three focused V files, containing eleven
+test functions, pass in both GC modes. All **24 native Brave fixtures**, three
+canonical SVG reftests, signing, startup and five catalog/harness tests pass.
+The guarded production build completes at an 8.18 GiB sampled peak under the
+unchanged 12 GiB limit. The feature's production source hashes stay unchanged;
+five concurrent startup/frame source edits are outside this feature's commit.
+Final captures use the pinned executable `44fe25b5…`; the shared bundle has
+since advanced independently.
+
+The full Stack Overflow comparison improves from **257 to 251** differing
+pixels. Its Brave reference is unchanged, and exactly the six incorrect title
+hyphen pixels change in the native frame. Maximum channel error falls from 178
+to 59. Its remaining differences, using document boundaries, are header 12,
+left sidebar 146, main column 2 and right sidebar 91. The largest remaining
+errors occur on the header buttons' rounded edges.
+
+The full-uBO ten-site run still accepts **one of ten**: native differences are
+HN 0, Lobsters 0, Slashdot 9,773, Stack Overflow 251, BBC 76,604, CNN 65,056,
+The Verge 315,921 and Pikabu 13,925. Lobsters' live-to-frozen difference remains
+71. Reddit's guest HTTP 403 and The Guardian's unstable consecutive references
+remain failures. All eight completed native cases retain matching full-uBO
+behavior, and the closed 326-file oracle template stays unchanged.
+
+CNN's reference changes at 73,834 pixels against the preceding run. A separate
+full-uBO capture of the production build that preceded this hyphen fix has a
+native frame identical to the candidate, including 63 one-level icon changes
+already present since the preceding feature's checked build. Both current
+native frames differ at 65,056 pixels against the same candidate reference.
+Those icon and reference changes receive no credit for this fix. Every other
+completed native frame is unchanged apart from Stack Overflow's six pixels.
+Pikabu completes on its first attempt in this run; its earlier load failures
+remain unresolved and retained in the preceding evidence.
+
+Evidence is under `Build/forum-news-hyphen-instance-20261030/`, especially
+`checkpoint.json`, `fixture-baseline/`, `focused/`, `verified/`,
+`stack-overflow-comparison/`, `baseline-cnn/` and `frame-comparison/`.
+The broad baseline remains **`9144d886`**, with **seven** completed native fixes
+after it. Full ten-site pixel parity remains open.

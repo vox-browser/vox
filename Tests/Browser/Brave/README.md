@@ -149,6 +149,13 @@ with `python3 -m unittest discover -s tools -p forum_news_inline_pixels_test.py`
 The test uses the current production bundle in a fresh process without an
 automatic rebuild and retains its identities, memory-guard reports and diffs.
 
+`stackoverflow-independent-hyphen-shaping` checks inserted system-font hyphens
+at integer and fractional line origins, narrow line fitting, explicit hyphen
+controls, and Arial. Its 800×600, scale 1 reference comes from two agreeing
+Brave 156.1.98.60 captures and is pixel-exact. Shape the inserted hyphen
+independently so the source word cannot kern with it; the previous renderer
+differed at 515 pixels, including an incorrectly fitted line.
+
 [`diagnostic/forum-translucent-text.html`](diagnostic/forum-translucent-text.html)
 and its adjacent Brave 156.1.98.60 PNG cover modern and legacy alpha,
 fractional RGB channels, inheritance, and an opacity group at 800×600, scale 1.
