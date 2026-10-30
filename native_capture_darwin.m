@@ -4081,7 +4081,7 @@ static void native_discard_background_text_recording(CGContextRef context) {
 void native_begin_background_text_clip(float canvas_width, float canvas_height,
 	float clip_x, float clip_y, float clip_width, float clip_height) {
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
-	ladybird_v_skia_block_shared_clip([[NSGraphicsContext currentContext] CGContext]);
+	ladybird_v_skia_block_shared_recording([[NSGraphicsContext currentContext] CGContext]);
 #endif
 	if (native_background_text_content_context != NULL) {
 		native_discard_background_text_recording(native_background_text_content_context);
@@ -4243,6 +4243,12 @@ void native_finish_background_text_clip(void) {
 #endif
 	native_background_text_mask_input = NULL;
 	CGContextSaveGState(destination);
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	// Only the bitmap fallback changes the destination's clip. Keep its
+	// unsupported state in the same scope as the CoreGraphics mask.
+	ladybird_v_skia_save_shared_clip(destination);
+	ladybird_v_skia_block_shared_clip(destination);
+#endif
 	if (native_background_text_clip_image != NULL
 		&& !CGRectIsEmpty(native_background_text_clip_rect)) {
 		CGContextClipToRect(destination, native_background_text_clip_rect);
@@ -4305,6 +4311,9 @@ void native_end_background_text_clip(void) {
 	if (context != NULL) {
 		native_end_tracked_transparency_layer(context);
 		CGContextRestoreGState(context);
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+		ladybird_v_skia_restore_shared_clip(context);
+#endif
 	}
 	native_background_text_clip_active = 0;
 }

@@ -143,6 +143,14 @@ an intermediate 8-bit gradient image. Both block cases are pixel-exact against
 Brave 156.1.98.60. Mixed backgrounds and fallback glyph drawing retain the
 existing bitmap path.
 
+`background-text-clip-scope` places rounded decorations after a gradient text
+mask. It is pixel-exact against Brave 156.1.98.60 at 800×600 and scale 1.
+Offscreen mask
+preparation blocks the active picture without leaving the destination clip
+unsupported. The bitmap fallback saves and restores its shared clip with the
+CoreGraphics mask. Native scope tests cover existing parent clips and parent
+recordings, empty masks, both raster scales, and later sibling pixels.
+
 The unchanged broader input and its original Brave reference are preserved in
 [`diagnostic/background-clip-text-retained-gradient.html`](diagnostic/background-clip-text-retained-gradient.html).
 Its inline angled gradient still has one-level dither differences, and its
