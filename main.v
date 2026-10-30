@@ -3752,7 +3752,8 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 		_ = prepare_document_render_heap(app.document)
 	}
 	if app.js_runtime == unsafe { nil } && !is_browser_new_tab_url(loaded.url) {
-		install_static_browser_image_fetch_hooks(app.document, app.nonrendered_image_preloads)
+		static_image_loader := if app.layout_tree_only { ?&BrowserImageRequestLoader(none) } else { image_loader }
+		install_static_browser_image_fetch_hooks_with_loader(app.document, app.nonrendered_image_preloads, static_image_loader)
 	}
 	if cookie_blocker_enabled_by_default {
 		hide_cookie_banners(app.document)

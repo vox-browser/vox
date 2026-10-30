@@ -33,6 +33,13 @@ fn (mut app BrowserApp) finish_frame_preparation() {
 		document.update_layout(.html_event_loop_rendering_update)
 		app.adopt_current_document_geometry()
 	}
+	// Lazy requests need committed geometry, including after scrolling or a
+	// hidden subtree is revealed. A cache hit may change intrinsic dimensions.
+	if app.resume_deferred_lazy_image_requests()
+		&& (document.needs_style_update_after_layout() || !document.layout_is_up_to_date()) {
+		document.update_layout(.html_event_loop_rendering_update)
+		app.adopt_current_document_geometry()
+	}
 	app.scroll_profile_mark('layout')
 	// A synchronous query may already have recorded the new document's list.
 	// Pending commands must still be adopted even when that cache is populated.

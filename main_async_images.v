@@ -25,6 +25,7 @@ mut:
 	queued []BrowserImageFetchJob
 	active_fetches int
 	cancelled bool
+	deferred_lazy_images []DeferredBrowserLazyImage
 }
 
 fn new_browser_image_request_loader(document &dom.Document, resources map[string]PreloadedResource) &BrowserImageRequestLoader {
@@ -49,6 +50,10 @@ fn (mut loader BrowserImageRequestLoader) finish_initialization(has_runtime bool
 
 fn (mut loader BrowserImageRequestLoader) cancel() {
 	loader.cancelled = true
+	for request in loader.deferred_lazy_images {
+		platform.release_closure(voidptr(request.complete))
+	}
+	loader.deferred_lazy_images = []DeferredBrowserLazyImage{}
 	loader.queued = []BrowserImageFetchJob{}
 	for _, completions in loader.pending {
 		for complete in completions { platform.release_closure(voidptr(complete)) }
@@ -82,6 +87,26 @@ fn (loader &BrowserImageRequestLoader) callback() browserjs.ImageAsyncRequestFet
 }
 
 fn (mut loader BrowserImageRequestLoader) request(image &dom.HTMLImageElement,
+	model &html.HTMLImageElementModel, address dom.URL, complete html.HTMLImageFetchCompletion) {
+	if loader.cancelled { finish_browser_image_request(complete, none); return }
+	if voidptr(unsafe { &dom.Element(image) }.document()) == voidptr(loader.document)
+		&& browser_lazy_image_needs_deferral(image) {
+		if pending := model.pending_request() {
+			loader.deferred_lazy_images << DeferredBrowserLazyImage{
+				image: image
+				model: model
+				request: pending
+				address: address
+				complete: complete
+			}
+			request_browser_frame()
+			return
+		}
+	}
+	loader.request_now(image, model, address, complete)
+}
+
+fn (mut loader BrowserImageRequestLoader) request_now(image &dom.HTMLImageElement,
 	model &html.HTMLImageElementModel, address dom.URL, complete html.HTMLImageFetchCompletion) {
 	if loader.cancelled { finish_browser_image_request(complete, none); return }
 	if address.scheme() !in ['http', 'https'] {

@@ -78,6 +78,13 @@ fn (app &BrowserApp) font_resources_ready_for_capture() bool {
 
 fn (app &BrowserApp) document_resources_ready_for_capture() bool {
 	if app.document == unsafe { nil } || app.document.readiness() != .complete { return false }
+	// Lazy images do not delay the document's load event. Once proximity has
+	// started their requests, the captured viewport still needs their pixels.
+	if loader := app.image_request_loader {
+		if voidptr(loader.document) == voidptr(app.document) && loader.pending.len > 0 {
+			return false
+		}
+	}
 	// Font and load-event delayers can settle before the queued load task
 	// advances an interactive document to complete. Capture after that task.
 	return app.font_resources_ready_for_capture()

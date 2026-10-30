@@ -94,11 +94,24 @@ fn browser_image_model_fetch(model &html.HTMLImageElementModel, address dom.URL)
 // Static pages still need real HTML image requests. Installing the JavaScript
 // ImageHost must not be a prerequisite for decoding and displaying an <img>.
 fn install_static_browser_image_fetch_hooks(document &dom.Document, deferred map[string]bool) {
+	install_static_browser_image_fetch_hooks_with_loader(document, deferred, none)
+}
+
+fn install_static_browser_image_fetch_hooks_with_loader(document &dom.Document,
+	deferred map[string]bool, image_loader ?&BrowserImageRequestLoader) {
 	for element in css.query_selector_all(document.as_node(), 'img') {
 		if !element.is_html_element() { continue }
 		image := unsafe { &dom.HTMLImageElement(element) }
 		mut model := html.html_image_element_model_for_dom_element(image)
-		model.set_model_fetch_hook(browser_image_model_fetch)
+		if owner := image_loader {
+			if browser_image_has_lazy_loading_policy(image) {
+				model.set_model_async_fetch_hook(owner.lazy_static_callback())
+			} else {
+				model.set_model_fetch_hook(browser_image_model_fetch)
+			}
+		} else {
+			model.set_model_fetch_hook(browser_image_model_fetch)
+		}
 		address := resolve_document_reference(element.get_attribute_value('src'), document.base_url().serialize())
 		if address !in deferred && (element.has_attribute('src') || element.has_attribute('srcset')) {
 			model.update_the_image_data(false, false)
