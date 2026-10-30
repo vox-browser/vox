@@ -60,7 +60,7 @@ pub fn rounded_single_border_mode(kind string) int {
 // Single sides with transparent neighbors also need Blink's ClipLayer. Pair
 // only consecutive solid fills with matching geometry and painting state.
 fn chromium_pair_rounded_border_background(mut commands []PaintCommand, background_start int,
-	border_start int, border_end int) {
+	border_start int, border_end int, inline_background bool) {
 	if background_start < 0 || border_start != background_start + 1
 		|| border_end != border_start + 1 || border_end > commands.len {
 		return
@@ -77,7 +77,7 @@ fn chromium_pair_rounded_border_background(mut commands []PaintCommand, backgrou
 	// backgrounds fill the outer border box instead; retain that full extent
 	// while keeping both draws in one multisampled render pass.
 	mut inset := 0.0
-	if border.kind == 'paint_uniform_border' && background.x != border.x {
+	if inline_background && border.kind == 'paint_uniform_border' && background.x != border.x {
 		inset = border.stroke_width / 2
 		if inset <= 0 { return }
 	}

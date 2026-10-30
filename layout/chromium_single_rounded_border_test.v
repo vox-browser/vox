@@ -136,17 +136,17 @@ fn test_chromium_single_border_background_pair_requires_matching_decoration_geom
 		opacity:      1
 	}
 	mut paired := [background, border]
-	chromium_pair_rounded_border_background(mut paired, 0, 1, 2)
+	chromium_pair_rounded_border_background(mut paired, 0, 1, 2, false)
 	assert paired[0].underlays_next
 	for incompatible in [PaintCommand{ ...background, x: 11 },
 		PaintCommand{ ...background, radius: 5 }, PaintCommand{ ...background, opacity: 0.5 },
 		PaintCommand{ ...background, kind: 'fill_gradient' }] {
 		mut commands := [incompatible, border]
-		chromium_pair_rounded_border_background(mut commands, 0, 1, 2)
+		chromium_pair_rounded_border_background(mut commands, 0, 1, 2, false)
 		assert !commands[0].underlays_next
 	}
 	mut interrupted := [background, PaintCommand{ kind: 'draw_background_image' }, border]
-	chromium_pair_rounded_border_background(mut interrupted, 0, 2, 3)
+	chromium_pair_rounded_border_background(mut interrupted, 0, 2, 3, false)
 	assert !interrupted[0].underlays_next
 }
 
