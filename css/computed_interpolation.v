@@ -11949,8 +11949,11 @@ pub fn html_select_element_adjust_computed_style(mut properties ComputedProperti
 	if display.is_inline_outside() && display.is_flow_inside() {
 		properties.set_property_without_modifying_flags(.display, dom_style_value_from_value_logic(StyleValue(DisplayStyleValue.create(Display.from_short(.inline_block)))))
 	}
-	// Chromium applies an author line-height to a select's label instead.
-	if element.document().font_rendering_policy() != .chromium {
+	// Blink's native menu-list theme resets line-height after the cascade.
+	// Custom appearance and list boxes retain their author line-height.
+	chromium_menu_list := properties.appearance() != .none_
+		&& !element.has_attribute('multiple') && element.get_attribute_value('size').int() <= 1
+	if element.document().font_rendering_policy() != .chromium || chromium_menu_list {
 		properties.set_property_without_modifying_flags(.line_height, dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.normal))))
 	}
 }

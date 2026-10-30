@@ -13,6 +13,12 @@ python3 tools/check_pixel_equality.py Tests/Browser/Brave/expected/font-rasteriz
 
 This comparison requires exact RGBA equality, with no excluded pixels or tolerance.
 
+`select-native-line-height` covers inherited and authored line heights on native
+menu lists, plus an `appearance:none` control that retains its authored line
+height. The 800×600, scale 1 fixture matches Brave 156.1.98.60 exactly. Resetting
+the native menu's line height also gives the vlang.io example picker its 23px
+height instead of 26.84px; its width and centered position remain authored.
+
 `lobsters-tag-alignment` extracts the story-title and tag alignment from Lobsters.
 It covers middle-aligned bold text, nested inline-block tags, fractional line
 heights, and an empty tall inline-block control. All six lines match Brave
