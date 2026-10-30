@@ -351,8 +351,12 @@ fn test_full_node_grapheme_cache_transforms_language_password_generated_and_rang
 
 fn grapheme_cache_assert_item(actual InlineLevelItem, expected InlineLevelItem) {
 	assert InlineLevelItem{ ...actual, glyph_run: none } == InlineLevelItem{ ...expected, glyph_run: none }
-	a := actual.glyph_run or { panic('actual run') }
-	b := expected.glyph_run or { panic('legacy run') }
+	mut a := actual.glyph_run or { panic('actual run') }
+	mut b := expected.glyph_run or { panic('legacy run') }
+	// Layout slices defer packed replay buffers until line publication. Compare
+	// both completed runs rather than requiring the old eager allocation timing.
+	a.refresh_replay_data()
+	b.refresh_replay_data()
 	assert a.font().has_same_identity(b.font())
 	assert a.text_type() == b.text_type() && a.face() == b.face()
 	assert a.width() == b.width() && a.space_width == b.space_width
