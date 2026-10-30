@@ -1,0 +1,16 @@
+<!doctype html><meta charset="utf-8"><title>Block text control border-box widths</title>
+<style>
+body {margin:0;background:white}
+.row {position:absolute;left:20px;width:320px;height:48px}
+input,textarea,.control {appearance:none;box-sizing:border-box;margin:0;padding:6px 8px;border:1px solid #123456;border-radius:0;background:white;font:13px Arial;height:32px;resize:none}
+input,textarea {display:block;width:100%}
+</style>
+<div class="row" style="top:20px"><input id="percentage"></div>
+<div class="row" style="top:80px"><input id="length" style="width:240px;border-width:4px"></div>
+<div class="row" style="top:140px"><input id="clamp" style="min-width:260px;max-width:280px"></div>
+<div class="row" style="top:200px"><textarea id="area"></textarea></div>
+<div class="row" style="top:260px"><input id="floating" style="float:left;width:240px"></div>
+<div class="row" style="top:320px"><input id="inline" style="display:inline-block;width:240px"></div>
+<div class="row" style="top:380px"><div id="block" class="control" style="width:240px"></div></div>
+<div class="row" style="top:440px"><input id="floor" style="width:10px;padding:12px;border-width:8px"></div>
+<div class="row" style="top:500px"><input id="calc" style="width:calc(50% + 12px)"></div>

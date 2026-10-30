@@ -62,6 +62,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_composited_svg_edges_round_before_blending_with_the_parent(self):
         self.compare_fixture('forum-composited-svg-edges')
 
+    def test_block_text_controls_subtract_border_box_edges_once(self):
+        self.compare_fixture('stackoverflow-block-text-control-width')
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -461,6 +461,18 @@ fn calculate_inner_width_for_used_px(node &Node, box_state &UsedValues, width CS
 // `box-sizing: border-box` really does lose its inline border and padding twice.
 fn compute_size_for_block_level_replaced_element_in_normal_flow(box &Box, box_state &UsedValues, available_space AvailableSpace) CSSPixelSize {
 	node := unsafe { &Node(box) }
+	// Chromium text controls convert the author border-box width once, with
+	// the final padding already available. The translated LibWeb path below
+	// intentionally retains its second conversion and ratio transfer.
+	if node.document().font_rendering_policy() == .chromium
+		&& node.computed_values().box_sizing() == .border_box
+		&& (node.is_text_input_box() || node.is_textarea_box())
+		&& !box.has_preferred_aspect_ratio() {
+		return compute_replaced_size_with_box_model(box, available_space, ReplacedBoxModel{
+			percentage_basis:    available_space.width.to_px_or_zero()
+			used_inline_padding: box_state.padding_left.plus(box_state.padding_right)
+		})
+	}
 	tentative := compute_replaced_size_with_box_model(box, available_space, ReplacedBoxModel{
 		percentage_basis: available_space.width.to_px_or_zero()
 		used_inline_padding: CSSPixels.new(0)
