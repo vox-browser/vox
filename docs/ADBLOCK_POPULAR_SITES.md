@@ -863,3 +863,77 @@ Stack Overflow PNGs are pixel-identical to their matching pre-experiment gap-fix
 captures. The 326-file oracle template is unchanged. This focused restoration
 check does not replace the preceding full ten-site matrix: strict acceptance
 remains **one of ten**.
+
+
+## Promoted text and inert sticky scrollports, 30 October 2026
+
+`efeb1cc6` isolates contiguous text-only fixed and sticky compositor layers before
+blending them over their parent. Scrolling text already used that path; other
+promoted text incorrectly painted directly over the parent's pixels and skipped
+premultiplied intermediate rounding. The extracted fixed/sticky sidebar fixture
+improves from **312 differing pixels to zero**, with an unchanged opaque control
+and two agreeing independent Brave references. Four focused eligibility and
+real-document cases pass in both GC modes.
+
+The short-document diagnostic then exposes a **140-pixel** regression: a sticky
+scroll frame exists even when its scrollport cannot scroll. `9144d886` limits
+sticky promotion to a scrolling nearest container. Inert overflow containers stop
+the search instead of borrowing the viewport's range, and fixed ancestors block
+outside scrolling. The new inert-sticky fixture retains a separately promoted
+fixed control and improves from **140 differing pixels to zero**. The focused
+layer suite covers active and inert viewports, nested scrollports, fixed ancestry,
+and scroll ranges that disappear and return. A failed layer-count expectation
+is retained; its correction checks the absent sticky promotion while preserving
+fixed compositing, rather than assuming all fixed descendants merge into one
+layer.
+
+The original Stack Overflow text differences survive hiding surrounding page
+content. Reduced fixed/sticky sidebars reproduce the same edge colors when their
+ancestor can scroll; ordinary opaque controls match. These findings locate a
+compositing boundary rather than a screenshot readback problem. They do not
+establish full-page parity: the last complete promoted-text matrix retains Stack
+Overflow at **592** pixels and accepts **one of ten** sites. A separate transparent
+root-scrolling control still differs at **156** pixels. Mixed, noncontiguous
+sidebar layers and this root-content case remain outside the text-only slice.
+
+Evidence is retained under `Build/forum-news-promoted-text-20261030/` and
+`Build/forum-news-inert-sticky-20261030/`, with reduction probes under
+`Build/forum-news-so-dom-reduction-20261030/` and
+`Build/forum-news-so-layer-backdrop-20261030/`. The resource-light, inlined-CSS
+plan diagnostic is not a substitute for the native full-page comparison. These
+are the ninth and tenth native fixes after `88275919`; the broader verification
+batch follows this boundary.
+
+
+Broader verification completes through **`9144d886`**: all **28 selected test
+files pass in both GC modes** (56 executed binaries), including complete painting
+and Skia packages, selected CSS/layout/glyph-storage cases, and the native TLS
+regression. All **100 LibJS AST fixtures** match exactly. All **11 default
+screenshot comparisons** pass with their existing bounds. All **eight required
+SVG mutation/image reftests** are exact; the additional SVG use-element geometry
+case is also exact. Two already-passing SVG cases are reused on the same recorded
+bundle identity instead of being recaptured. All **seventeen native Brave
+fixtures**, signing and startup smoke checks pass. Watched repository sources and
+the compiler remain unchanged throughout the broad unit batch. The new broad-test
+baseline is **`9144d886`**, with zero subsequent completed native fixes at this
+checkpoint.
+
+The complete site run still accepts **one of ten**. Native differences are HN 0,
+Lobsters 115, Slashdot 9,773, Stack Overflow 592, BBC 76,604, CNN 101,466 and The
+Verge 315,921. Reddit remains unavailable with guest HTTP 403; The Guardian's
+consecutive references remain unstable. Pikabu initially fails an inline-layout
+saturation assertion during font-failure handling, then completes on a fresh
+same-build replay with 13,925 native differing pixels and 21,603 live-to-frozen
+pixels. Both attempts are retained. Seven native comparisons complete in the
+full run; the separate Pikabu replay supplies the eighth matching full-uBO
+request/header, cosmetic, procedural and scriptlet check. The 326-file closed
+oracle template is unchanged after that replay.
+
+Stack Overflow's native and Brave frames are unchanged from the promoted-text
+run. CNN's native frame is unchanged while its Brave reference changes at 15,866
+pixels; Pikabu's native frame is unchanged while its reference changes at 66
+pixels. Those reference changes receive no native improvement or regression
+credit. A further diagnostic finds **28** differing pixels for sticky text in an
+overflowing `overflow:hidden` container, which can scroll programmatically. That
+separate case remains open after the broad baseline; it is not covered by the
+inert-scrollport acceptance claim.
