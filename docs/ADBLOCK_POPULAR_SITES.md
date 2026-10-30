@@ -937,3 +937,35 @@ credit. A further diagnostic finds **28** differing pixels for sticky text in an
 overflowing `overflow:hidden` container, which can scroll programmatically. That
 separate case remains open after the broad baseline; it is not covered by the
 inert-scrollport acceptance claim.
+
+
+## Programmatic sticky scrollports, 30 October 2026
+
+`21f20edc` bases sticky promotion on the nearest scrollport's actual range,
+including programmatically scrollable `overflow:hidden` containers. Wheel-input
+policy no longer determines that promotion. Padding belongs to the scrollport
+and does not count as overflow; inert inner containers and fixed ancestry retain
+their existing barriers. The new hidden/auto scrollport fixture improves from
+**28 differing pixels to zero**, against two agreeing independent Brave captures.
+The focused layer and text suites pass in both GC modes, including padded inert
+and overflowing controls. All **eighteen native Brave fixtures**, three canonical
+SVG reftests, signing and startup smoke checks pass on one recorded fresh bundle
+identity. The production guard completes at 8.17 GiB sampled peak with unchanged
+watched inputs.
+
+The full-uBO ten-site matrix still accepts **one of ten**. Native differences are
+HN 0, Lobsters 0, Slashdot 9,773, Stack Overflow 592, BBC 76,604, CNN 101,466, The
+Verge 315,921 and Pikabu 13,863. Reddit remains unavailable with guest HTTP 403;
+The Guardian's consecutive references remain unstable. Lobsters' live-to-frozen
+difference is 71 pixels, so its frozen match does not establish live acceptance.
+Its native frame is unchanged from the preceding run while its Brave reference
+changes at 115 pixels; that change receives no native improvement credit. Stack
+Overflow's native and reference frames are both unchanged. The closed 326-file
+oracle template remains unchanged, and all eight completed native comparisons
+retain matching full-uBO behavior evidence.
+
+Evidence is under `Build/forum-news-programmatic-sticky-20261030/`, including
+`checkpoint.json`, focused/build/validation receipts and `frame-comparison/`.
+The broad baseline remains **`9144d886`**; this is the first completed native fix
+after that baseline. A separate 156-pixel ordinary-text overlap mismatch remains
+open and has its own two agreeing Brave references.
