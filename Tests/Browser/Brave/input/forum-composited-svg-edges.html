@@ -1,0 +1,19 @@
+<!doctype html><html lang="en">
+<meta charset="utf-8"><title>Composited SVG, text and sibling backgrounds</title>
+<style>
+body {margin:0;background:white}
+div {position:absolute;left:24px;width:400px;height:40px;color:hsl(210,8%,25%);font:13px/26px -apple-system,system-ui,sans-serif}
+path {fill:currentColor}
+span {padding-left:8px}
+</style>
+<!-- Fixed transparent and opaque layers retain their own backgrounds and glyphs.
+     Ordinary, transformed, will-change and opacity layers are controls. -->
+<div style="top:24px;"><svg width="18" height="18" viewBox="0 0 18 18"><path d="M15 10v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-5H0l9-9 9 9zm-8 1v6h4v-6z"/></svg><span>Home About Products Stack Overflow</span></div>
+<div style="top:84px;transform:translateZ(0);background:#e4edf5"><svg width="18" height="18" viewBox="0 0 18 18"><path d="M15 10v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-5H0l9-9 9 9zm-8 1v6h4v-6z"/></svg><span>Home About Products Stack Overflow</span></div>
+<div style="top:144px;will-change:transform;background:white"><svg width="18" height="18" viewBox="0 0 18 18"><path d="M15 10v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-5H0l9-9 9 9zm-8 1v6h4v-6z"/></svg><span>Home About Products Stack Overflow</span></div>
+<div style="top:204px;position:fixed"><svg width="18" height="18" viewBox="0 0 18 18"><path d="M15 10v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-5H0l9-9 9 9zm-8 1v6h4v-6z"/></svg><span>Home About Products Stack Overflow</span></div>
+<div style="top:264px;opacity:.99;background:#f0f0f0"><svg width="18" height="18" viewBox="0 0 18 18"><path d="M15 10v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-5H0l9-9 9 9zm-8 1v6h4v-6z"/></svg><span>Home About Products Stack Overflow</span></div>
+<div style="top:324px;opacity:.5"><svg width="18" height="18" viewBox="0 0 18 18"><path d="M15 10v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-5H0l9-9 9 9zm-8 1v6h4v-6z"/></svg><span>Home About Products Stack Overflow</span></div>
+<div style="top:384px;transform:translate(0);background:#f5f5f5"><svg width="18" height="18" viewBox="0 0 18 18"><path d="M15 10v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-5H0l9-9 9 9zm-8 1v6h4v-6z"/></svg><span>Home About Products Stack Overflow</span></div>
+<div style="top:444px;position:fixed;background:#f5f5f5"><svg width="18" height="18" viewBox="0 0 18 18"><path d="M15 10v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-5H0l9-9 9 9zm-8 1v6h4v-6z"/></svg><span>Home About Products Stack Overflow</span></div>
+</html>

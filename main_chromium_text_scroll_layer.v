@@ -40,7 +40,8 @@ fn (mut app BrowserApp) begin_chromium_text_scroll_layer(index int) bool {
 	$if macos {
 		if !app.ctx.native_rendering || app.page_zoom != 1 || app.document == unsafe { nil }
 			|| app.document.font_rendering_policy() != .chromium
-			|| !chromium_text_scroll_layer_supported(app.paint_commands, app.chromium_raster_plan, index) {
+			|| (!chromium_text_scroll_layer_supported(app.paint_commands, app.chromium_raster_plan, index)
+				&& !chromium_svg_compositor_layer_supported(app.paint_commands, app.chromium_raster_plan, index)) {
 			return false
 		}
 		// Install a transparent destination before enabling picture recording;

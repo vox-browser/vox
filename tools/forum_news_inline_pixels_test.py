@@ -59,6 +59,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_single_svg_paths_preserve_fill_and_stroke_opacity(self):
         self.compare_fixture('forum-single-svg-opacity')
 
+    def test_composited_svg_edges_round_before_blending_with_the_parent(self):
+        self.compare_fixture('forum-composited-svg-edges')
+
 
 if __name__ == '__main__':
     unittest.main()
