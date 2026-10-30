@@ -1027,3 +1027,79 @@ Evidence is under `Build/forum-news-root-text-20261030/`, especially
 `region-diagnostic/`. The broad baseline remains **`9144d886`**; this is the
 second completed native fix after that baseline. The remaining full-page
 sidebar differences and intermittent font-loading behavior remain open.
+
+
+## Native sidebar trace and scoped SVG opacity, 30 October 2026
+
+A fresh native trace of the `5c41bc95` behavior captures four validated raster
+plans. The final plan has **395 commands and 15 layers**, and the diagnostic
+screenshot is pixel-identical to the unprofiled native frame. A small program
+compiled with the repository's V compiler measures the array, command and layer
+field offsets; the debugger checks array element sizes, ownership indices and
+the executable UUID before writing snapshots. Six duplicate return-breakpoint
+callbacks in that first probe are retained as probe errors and receive no capture
+credit. The initial 3 GiB diagnostic guard stops the debugger before any plan is
+captured; the separate default 12 GiB diagnostic guard completes at about
+5.48 GiB sampled peak. These are debugger diagnostics, not performance trials.
+
+The trace locates the remaining sidebar text in a scrolling raster split around
+single-path SVG opacity effects. It also identifies a nested SVG viewport for
+the Stack Internal illustration; that image contains a mask. An unrestricted
+opacity-group repartitioning candidate passes the twenty-fixture reduction
+batch but **regresses the full Stack Overflow comparison from 584 to 662
+pixels**. Its new ten-layer plan merges the nested image into the main sidebar
+raster, which the native isolation eligibility check then rejects. The candidate,
+its trace, screenshot and failed full-page comparison remain retained; that
+unrestricted behavior is **not adopted**.
+
+`772b06bf` keeps a balanced, normal-blend, single solid SVG opacity group inside
+its parent raster **only when the recording contains no nested viewport**.
+Recordings with nested viewports retain the preceding atomic raster policy. The
+native eligibility check recognizes the supported three-command opacity scope,
+checks its scope identity and ownership, and leaves retained opacity untouched
+for replay. Typed recording's paint opacity of 1 and native recording's
+cumulative paint opacity are both accepted after matching their group opacity
+at native float precision. Complex effects and unsupported payloads retain the
+existing replay path.
+
+The new extracted fixture improves from **44 differing pixels to zero**, against
+two agreeing independent Brave references. Real-document layer tests cover the
+parent scroll raster and the nested-viewport fallback; eligibility tests cover
+both retained-opacity forms, mismatched scopes, ownership and unsupported paint.
+All three focused test files pass in both GC modes. The final build completes
+within the unchanged 12 GiB guard with stable watched inputs. Signing, startup,
+all **twenty native Brave fixtures** and three canonical SVG reftests pass on the
+recorded bundle identity. The colored SVG control improves from 299 to **261**
+differing pixels and remains an unresolved diagnostic, rather than an exact
+regression fixture or a claim of complete SVG color parity.
+
+The final full-uBO ten-site run still accepts **one of ten**. Native differences
+are HN 0, Lobsters 115, Slashdot 9,773, Stack Overflow **584**, BBC 76,604, CNN
+101,467 and The Verge 315,921. All seven completed native frames are identical
+to the preceding committed build. CNN's reference changes at four pixels,
+accounting for its changed mismatch count without native regression credit.
+Reddit remains unavailable with guest HTTP 403, and The Guardian's references
+remain unstable. Pikabu again hits the previously observed inline-layout
+saturation assertion during font-failure handling after about 92 seconds; a
+fresh same-build retry completes with 13,863 native differing pixels and 21,537
+live-to-frozen pixels. Both retry frames exactly match their preceding baseline
+frames. The first failed attempt remains retained. The completed native checks,
+including that retry, retain matching full-uBO evidence, and the 326-file closed
+oracle template remains unchanged.
+
+Concurrent sessions subsequently update shared source files and replace the
+production bundle. Those edits are excluded from this seven-path feature
+commit. A fresh check of the newer completed bundle passes signing, startup,
+all twenty native fixtures, three canonical SVG cases and the full-uBO HN/SO
+comparisons (0/584). Every check pins its executable/library/snapshot identity;
+subsequent shared bundle replacements are outside those recorded results. This
+does not claim validation of unbuilt concurrent font, cache or native-color edits.
+
+The original native trace is under `Build/forum-news-so-native-plan-20261030/`.
+Feature evidence is under `Build/forum-news-svg-opacity-raster-20261030/`, with
+`checkpoint.json`, `focused-resource-guard/`, `production-resource-guard/`,
+`verified-resource-guard/`, `latest-bundle/`, `frame-comparison/`,
+`pikabu-resource-retry/` and the retained unrestricted-candidate diagnostics.
+The broad baseline remains **`9144d886`**, with **three** completed native fixes
+after it. Full sidebar resource isolation, the colored SVG diagnostic and
+intermittent font-loading failures remain open.
