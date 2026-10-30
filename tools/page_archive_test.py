@@ -7,6 +7,7 @@ import socket
 import ssl
 import tempfile
 import threading
+import time
 import unittest
 from unittest import mock
 
@@ -15,6 +16,42 @@ from measure_disk_scroll import offline_environment
 
 
 class PageArchiveTests(unittest.TestCase):
+    def test_large_replay_body_finishes_with_a_clean_tls_shutdown(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            archive = root / 'archive'
+            (archive / 'bodies').mkdir(parents=True)
+            url = 'https://archive.invalid/large.css'
+            body = b'p{color:green}\n' * 65536
+            sha = page_archive.digest(body)
+            (archive / 'bodies' / sha).write_bytes(body)
+            (archive / 'manifest.json').write_text(json.dumps(dict(version=1, url=url,
+                sealed_unix=time.time(), responses={url:dict(status=200,sha256=sha,
+                    bytes=len(body),headers=[dict(name='Content-Type',value='text/css')])})))
+            replay = page_archive.Replay(archive, root / 'replay')
+            thread = threading.Thread(target=replay.server.serve_forever, daemon=True)
+            thread.start()
+            try:
+                with socket.create_connection(replay.server.server_address, timeout=5) as raw:
+                    raw.sendall(b'CONNECT archive.invalid:443 HTTP/1.1\r\n\r\n')
+                    self.assertIn(b'200', raw.recv(4096))
+                    context = ssl.create_default_context(cafile=replay.ready['ca'])
+                    with context.wrap_socket(raw,server_hostname='archive.invalid',
+                            suppress_ragged_eofs=False) as sock:
+                        sock.sendall(b'GET /large.css HTTP/1.1\r\nHost: archive.invalid\r\n\r\n')
+                        chunks=[]
+                        while part := sock.recv(65536):
+                            chunks.append(part)
+                        response=b''.join(chunks)
+                        _,_,actual=response.partition(b'\r\n\r\n')
+                        self.assertEqual(len(actual),len(body))
+                        self.assertEqual(page_archive.digest(actual),sha)
+                        sock.unwrap().close()
+            finally:
+                replay.server.shutdown()
+                replay.server.server_close()
+                thread.join(timeout=5)
+
     def fixture(self, root):
         cache = root / 'cache'
         (cache / 'pages').mkdir(parents=True)

@@ -294,6 +294,15 @@ class Replay:
             response = f'HTTP/1.1 {status} Archive\r\n' + ''.join(
                 h['name'] + ': ' + h['value'] + '\r\n' for h in headers) + '\r\n'
             sock.sendall(response.encode('iso-8859-1') + (body if method != 'HEAD' else b''))
+            if isinstance(sock, ssl.SSLSocket):
+                # Deliver close_notify after the complete response. An abrupt
+                # TLS EOF can make Chromium discard an otherwise served body.
+                try:
+                    sock = sock.unwrap()
+                except (OSError, ValueError):
+                    # Some clients close after Content-Length without sending
+                    # their own alert. The response has already been sent.
+                    pass
         except (OSError, ValueError) as error:
             self.record(error=str(error))
         finally:
