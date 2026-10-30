@@ -98,6 +98,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_masked_vector_images_share_the_parent_svg_and_text_raster(self):
         self.compare_fixture('stackoverflow-masked-svg-scroll-raster')
 
+    def test_fractional_underline_colors_keep_precision_in_the_parent_raster(self):
+        self.compare_fixture('forum-fractional-underline-color')
+
 
 if __name__ == '__main__':
     unittest.main()

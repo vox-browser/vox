@@ -4570,6 +4570,7 @@ fn append_chromium_solid_underline(mut commands []PaintCommand, fragment TextFra
 		color:            color
 		opacity:          opacity
 		antialiased_rect: true
+		srgb_color_data:  chromium_decoration_srgb_color(&fragment, color)
 		clip_outs:        chromium_skip_ink_clips(fragment, font_ascent, line_offset, thickness,
 			top, height)
 	}
