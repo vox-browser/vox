@@ -95,6 +95,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_inert_sticky_text_keeps_its_ancestor_raster(self):
         self.compare_fixture('stackoverflow-inert-sticky-text')
 
+    def test_partial_sticky_recordings_keep_their_container_relative_tile_origin(self):
+        self.compare_fixture('stackoverflow-sticky-raster-bounds', width=1024, height=768)
+
     def test_programmatically_scrollable_sticky_text_keeps_its_compositor_raster(self):
         self.compare_fixture('stackoverflow-programmatic-sticky-text')
 

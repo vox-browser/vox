@@ -60,6 +60,8 @@ mut:
 	layer_states       []ChromiumRasterPropertyState
 	composited_scrolls map[int]bool
 	composited_stickies map[int]bool
+	sticky_bounds      map[int]LayoutRect
+	sticky_scroll_parents map[int]int
 	fixed_bounds       map[u64]LayoutRect
 	compositor_bounds  map[u64]LayoutRect
 	compositor_scopes  []u64
@@ -366,6 +368,8 @@ pub fn update_chromium_raster_layer_plan(document &dom.Document, commands []Pain
 	mut scratch := unsafe { &chromium_raster_plan_scratch_ }
 	scratch.composited_scrolls.clear()
 	scratch.composited_stickies.clear()
+	scratch.sticky_bounds.clear()
+	scratch.sticky_scroll_parents.clear()
 	scratch.fixed_bounds.clear()
 	scratch.compositor_bounds.clear()
 	for entry in result.paint_order {
@@ -385,6 +389,8 @@ pub fn update_chromium_raster_layer_plan(document &dom.Document, commands []Pain
 		if box.sticky_scroll_frame_index > 0
 			&& chromium_sticky_needs_compositing(box, result.boxes_by_layout_cache) {
 			scratch.composited_stickies[box.sticky_scroll_frame_index] = true
+			scratch.sticky_bounds[box.sticky_scroll_frame_index] =
+				compatibility_affine_map_rect(box.paint_transform, box.border_box())
 		}
 		if box.fixed_to_viewport && box.layout_handle != unsafe { nil } {
 			node := unsafe { &Node(box.layout_handle) }
@@ -404,6 +410,7 @@ pub fn update_chromium_raster_layer_plan(document &dom.Document, commands []Pain
 		if node.data is painting.ScrollVisualData {
 			if node.data.is_sticky && scratch.composited_stickies[node.data.scroll_frame_index] {
 				scratch.properties[index].sticky_frame = node.data.scroll_frame_index
+				scratch.sticky_scroll_parents[node.data.scroll_frame_index] = scratch.properties[index].scroll_frame
 			} else if !node.data.is_sticky && scratch.composited_scrolls[node.data.scroll_frame_index] {
 				scratch.properties[index].scroll_frame = node.data.scroll_frame_index
 			}
@@ -610,11 +617,41 @@ pub fn update_chromium_raster_layer_plan(document &dom.Document, commands []Pain
 			&& (plan.layers[layer_index].composited_contents
 				|| state.scroll_frame > 0 || state.sticky_frame > 0 || state.fixed_to_viewport
 				|| state.effect_scope != 0)
+		// PictureLayerTiling::ComputeTilingRect snaps partial recordings in
+		// the complete layer's coordinate space, not at their tight ink origin.
+		// Nested surfaces and independently scrolling descendants own their
+		// own recordings rather than borrowing this sticky container's extent.
+		if state.effect_scope == 0 && !state.legacy_effect && !state.fixed_to_viewport
+			&& state.scroll_frame == scratch.sticky_scroll_parents[state.sticky_frame] {
+			if rect := scratch.sticky_bounds[state.sticky_frame] {
+				plan.layers[layer_index].bounds = chromium_recorded_tiling_rect(rect,
+					plan.layers[layer_index].bounds, device_scale)
+			}
+		}
 		if state.effect_scope != 0 && !state.legacy_effect {
 			// Compositor rasters enclose fractional geometry, independently of
 			// paint's nearest-pixel snapping. Round after unioning descendant ink.
 			plan.layers[layer_index].bounds = chromium_enclosing_raster_rect(plan.layers[layer_index].bounds)
 		}
+	}
+}
+
+fn chromium_recorded_tiling_rect(container LayoutRect, recorded LayoutRect, scale f64) LayoutRect {
+	if !(scale > 0) || math.is_inf(scale, 0) || math.is_nan(scale)
+		|| !(recorded.width > 0 && recorded.height > 0) { return recorded }
+	layer := chromium_enclosing_raster_rect(chromium_layer_bounds_union(container, recorded))
+	ink := chromium_enclosing_raster_rect(recorded)
+	left := math.floor(math.floor((ink.x - layer.x) * scale) / 128) * 128
+	top := math.floor(math.floor((ink.y - layer.y) * scale) / 128) * 128
+	layer_right := math.ceil(layer.width * scale)
+	layer_bottom := math.ceil(layer.height * scale)
+	right := math.ceil((ink.x + ink.width - layer.x) * scale)
+	bottom := math.ceil((ink.y + ink.height - layer.y) * scale)
+	return LayoutRect{
+		x: layer.x + left / scale
+		y: layer.y + top / scale
+		width: ((if right + 128 > layer_right { layer_right } else { right }) - left) / scale
+		height: ((if bottom + 128 > layer_bottom { layer_bottom } else { bottom }) - top) / scale
 	}
 }
 
