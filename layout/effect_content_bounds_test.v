@@ -218,3 +218,23 @@ fn test_effect_content_bounds_retain_pointwise_filters_and_reject_spatial_or_unk
 	assert effects.len == 1
 	assert content_bounds_clip(effects[0]) == LayoutRect{20, 10000, 50, 30}
 }
+
+fn test_effect_content_bounds_use_the_hosted_viewport_clip_for_overflowing_nested_content() {
+	command := PaintCommand{
+		kind: 'paint_nested_display_list'
+		x: -1000
+		y: -1000
+		width: 9000
+		height: 9000
+		nested_viewport_paintable: &painting.NavigableContainerViewportPaintable{
+			viewport_rect: painting.Rect{20, 10000, 50, 30}
+			nested_rect: painting.Rect{-1000, -1000, 9000, 9000}
+		}
+	}
+	assert content_bounds_clip(content_bounds_group([command])[0]) == LayoutRect{19, 9999, 52, 32}
+	assert paint_leaf_is_outside_canvas(command, 0, 60, 800, 660)
+	visible := PaintCommand{...command, transform: [f64(1), 0, 0, 1, 0, -10000]!}
+	assert !paint_leaf_is_outside_canvas(visible, 0, 60, 800, 660)
+	assert !paint_leaf_is_outside_canvas(PaintCommand{...command,
+		nested_viewport_paintable: none}, 0, 60, 800, 660)
+}

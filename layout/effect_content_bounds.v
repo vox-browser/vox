@@ -56,6 +56,14 @@ fn effect_leaf_ink_bounds_with_precision_guard(command &PaintCommand, native_pre
 				image.image_rect.width, image.image_rect.height}
 			outset = 1
 		}
+		'paint_nested_display_list' {
+			// The native player clips both SVG images and child documents to
+			// this viewport, even when the hosted content overflows its bounds.
+			nested := command.nested_viewport_paintable or { return none }
+			rect = LayoutRect{nested.viewport_rect.x, nested.viewport_rect.y,
+				nested.viewport_rect.width, nested.viewport_rect.height}
+			outset = 1
+		}
 		'draw_background_image' {
 			// Background origin and clip may differ (for example padding-box
 			// positioning with border-box painting). The clip owns the output.
