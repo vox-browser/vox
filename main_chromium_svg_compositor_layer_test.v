@@ -2,6 +2,8 @@ module main
 
 import html
 import layout
+import painting
+import math
 
 fn svg_compositor_test_path() layout.PaintCommand {
 	return layout.PaintCommand{
@@ -99,6 +101,33 @@ fn test_svg_compositor_isolation_keeps_its_background_and_text_together() {
 	ordinary.layers[1].composited_contents = true
 	ordinary.layers[1].legacy_raster = true
 	assert !chromium_svg_compositor_layer_supported(commands, ordinary, 1)
+}
+
+fn test_svg_compositor_isolation_accepts_a_captured_masked_vector_image() {
+	path := svg_compositor_test_path()
+	layer := &layout.PaintVisualLayer{kind:.svg_mask,scope_id:7,
+		mask_clip:layout.PaintClip{is_svg_content_mask:true,scope_id:7,cache_key:17,
+			rect:layout.LayoutRect{width:24,height:24},mask_luminance:true,
+			mask_operations:[layout.PaintMaskOperation{kind:.path,has_fill:true,fill_color:'white',
+				path_data:path.svg_data.path_data}]}}
+	image := layout.PaintCommand{kind:'paint_nested_display_list',width:24,height:24,
+		nested_viewport_paintable:&painting.NavigableContainerViewportPaintable{
+			viewport_rect:painting.Rect{width:24,height:24}},
+		nested_viewport_commands:[layout.PaintCommand{kind:'begin_svg_mask_layer',visual_layer_data:layer},
+			path,layout.PaintCommand{kind:'end_svg_mask_layer',visual_layer_data:layer}]}
+	commands := [layout.PaintCommand{kind:'fill_rect'},layout.PaintCommand{kind:'draw_text',text:'Tags'},
+		image,layout.PaintCommand{kind:'fill_rect',clip_outs:[f64(8),12,10,14]},
+		layout.PaintCommand{kind:'fill_rect'}]
+	assert chromium_svg_compositor_layer_supported(commands,svg_compositor_test_plan(),1)
+	mut changed := commands.clone()
+	for clips in [[f64(8),12,10], [f64(10),12,8,14], [f64(8),14,10,12],
+		[f64(8),12,math.inf(1),14]] {
+		changed[3] = layout.PaintCommand{...commands[3],clip_outs:clips}
+		assert !chromium_svg_compositor_layer_supported(changed,svg_compositor_test_plan(),1)
+	}
+	changed[3] = commands[3]
+	changed[2] = layout.PaintCommand{...image,nested_viewport_commands:[layout.PaintCommand{kind:'draw_text'}]}
+	assert !chromium_svg_compositor_layer_supported(changed,svg_compositor_test_plan(),1)
 }
 
 fn test_svg_compositor_isolation_rejects_effects_resources_and_missing_vectors() {

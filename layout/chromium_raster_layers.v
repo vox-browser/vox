@@ -415,12 +415,12 @@ pub fn update_chromium_raster_layer_plan(document &dom.Document, commands []Pain
 			scratch.properties[index].requires_root_raster = true
 		}
 	}
-	// Repartitioning can merge a later nested viewport into the surrounding
-	// scroll raster. Keep its previous atomic policy until the native player
-	// can isolate that complete resource-bearing raster as well.
+	// Only captured vector SVG viewports can join the isolated parent raster.
+	// Other nested content retains the preceding atomic raster policy.
 	mut can_embed_svg_opacity := true
 	for command_index in 0 .. commands.len {
-		if commands[command_index].kind == 'paint_nested_display_list' {
+		if commands[command_index].kind == 'paint_nested_display_list'
+			&& !chromium_nested_svg_raster_supported(&commands[command_index]) {
 			can_embed_svg_opacity = false
 			break
 		}

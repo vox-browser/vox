@@ -1,6 +1,23 @@
 module main
 
 import layout
+import math
+
+fn chromium_svg_compositor_clip_outs_supported(command &layout.PaintCommand) bool {
+	if command.clip_outs.len == 0 { return true }
+	// Text-decoration skip-ink rectangles already replay in the local fill
+	// coordinates. They do not sample the parent or require another resource.
+	if command.kind != 'fill_rect' || command.clip_outs.len % 4 != 0
+		|| command.clip_outs.len > 32768 { return false }
+	for value in command.clip_outs {
+		if math.is_nan(value) || math.is_inf(value, 0) { return false }
+	}
+	for offset := 0; offset < command.clip_outs.len; offset += 4 {
+		if command.clip_outs[offset + 2] < command.clip_outs[offset]
+			|| command.clip_outs[offset + 3] < command.clip_outs[offset + 1] { return false }
+	}
+	return true
+}
 
 fn chromium_svg_opacity_group_end(commands []layout.PaintCommand, start int) int {
 	if start < 0 || start + 2 >= commands.len || commands[start].kind != 'begin_css_effect_layer'
@@ -57,7 +74,8 @@ fn chromium_svg_compositor_layer_supported(commands []layout.PaintCommand,
 		if command_index < opacity_end { continue }
 		command := unsafe { &commands[command_index] }
 		if command.opacity != 1 || command.group_opacity != 1 || command.blur != 0
-			|| command.outer_shadow || command.clip_outs.len > 0 || command.scrollbar_axis != ''
+			|| command.outer_shadow || !chromium_svg_compositor_clip_outs_supported(command)
+			|| command.scrollbar_axis != ''
 			|| !chromium_shared_recording_clips_supported(command) {
 			return false
 		}
@@ -69,6 +87,10 @@ fn chromium_svg_compositor_layer_supported(commands []layout.PaintCommand,
 			}
 			'draw_svg_path' {
 				if !chromium_svg_solid_path_supported(command) { return false }
+				has_svg = true
+			}
+			'paint_nested_display_list' {
+				if !layout.chromium_nested_svg_raster_supported(command) { return false }
 				has_svg = true
 			}
 			'draw_text', 'fill_rect', 'fill_rounded_rect', 'paint_uniform_border' {}

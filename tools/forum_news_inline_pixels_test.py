@@ -95,6 +95,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_svg_opacity_groups_remain_inside_the_parent_scroll_raster(self):
         self.compare_fixture('stackoverflow-svg-opacity-scroll-raster')
 
+    def test_masked_vector_images_share_the_parent_svg_and_text_raster(self):
+        self.compare_fixture('stackoverflow-masked-svg-scroll-raster')
+
 
 if __name__ == '__main__':
     unittest.main()
