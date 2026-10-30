@@ -1346,3 +1346,57 @@ Evidence is under `Build/forum-news-hyphen-instance-20261030/`, especially
 `stack-overflow-comparison/`, `baseline-cnn/` and `frame-comparison/`.
 The broad baseline remains **`9144d886`**, with **seven** completed native fixes
 after it. Full ten-site pixel parity remains open.
+
+## Collapsed accessibility clips, 31 October 2026
+
+`85f1d6b9` recognizes a basic-shape clip whose exact finite path geometry
+collapses along an axis, even when its conservative reference box remains
+nonempty. It propagates that empty-clip state through the visual tree and
+consults it in both compact phase recorders before flattening a paint input.
+Curve controls participate in the proof; arcs and nonfinite geometry stay
+conservative. Thin fills and self-intersecting contours are retained.
+
+The new fixed-header fixture improves from **eight differing pixels to zero**
+against two independently agreeing Brave captures. Removing only the hidden
+accessibility anchor was already an exact control in the preceding bundle.
+Six new focused functions and three existing replay functions pass in both GC
+modes. The existing replay fixture now supplies a nonempty SVG clip component
+for the visible mask it exercises. All **25 native Brave fixtures**, three
+canonical SVG reftests, signing and startup pass. The five catalog/harness
+tests also pass.
+
+Production completes under the unchanged 12 GiB guard at a sampled peak of
+**7.29 GiB**. All required implementation sources remain stable throughout the
+build; two test files are corrected during compilation and subsequently pass
+their final focused runs. Native captures use the pinned executable
+`e7e540b500291da53cedcf151434e0bdc6702e1e5469cf603a450f83c9eae22b`.
+The first scalar-only candidate still differed at eight pixels and receives no
+acceptance credit. Its logs and the intermediate focused-test failures remain
+with the evidence.
+
+Stack Overflow improves from **251 to 246** differing pixels against an
+unchanged Brave reference. Its header changes at thirteen pixels: nine become
+correct and four previously correct samples differ. Header differences fall
+from twelve to seven; the left sidebar's 146, main column's two and right
+sidebar's 91 remain unchanged. Maximum channel error remains 59. The separate
+bordered-header diagnostic retains four button-edge differences, so the full
+header is not accepted as pixel-exact.
+
+The full-uBO ten-site run still accepts **one of ten**. Native differences are
+HN 0, Lobsters 0, Slashdot 9,773, Stack Overflow 246, BBC 76,604, CNN 101,529,
+The Verge 315,921 and Pikabu 13,925. Lobsters retains its 71-pixel live-to-frozen
+mismatch. Reddit's guest HTTP 403 and The Guardian's changing consecutive
+references remain failures. Every completed native frame outside Stack
+Overflow is unchanged. CNN's reference changes at 73,834 pixels, explaining
+its changed comparison total; this fix receives no CNN credit. All eight
+completed native cases retain matching full-uBO request/header decisions and
+validated full-uBO document references. The closed 326-file oracle template
+remains unchanged.
+
+Evidence is under `Build/forum-news-rounded-corners-20261030/`, especially
+`checkpoint.json`, `combined-focused.json`, `geometry-compiled-c.json`,
+`production-geometry.guard.json` and `verified-geometry/`. That final directory
+contains the pinned identity, all regression artifacts, reference provenance,
+ten-site results and complete frame comparisons. The broad baseline remains
+**`9144d886`**, with **eight** completed native fixes after it. Full ten-site
+pixel parity remains open.

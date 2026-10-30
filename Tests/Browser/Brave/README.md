@@ -1,5 +1,13 @@
 # Brave rendering fixtures
 
+`stackoverflow-empty-accessibility-clip` checks rounded header controls beside
+an accessibility link clipped with `inset(50%)`. Its 800×600, scale 1 reference
+comes from two agreeing Brave 156.1.98.60 captures. The fixture is pixel-exact;
+recording the invisible path-clipped content changed eight pixels. Recognize
+the collapsed path despite its nonempty reference-box bounds, and omit its
+paint before compact context flattening. The full site's remaining header
+coverage differences are tracked in [the site report](../../../docs/ADBLOCK_POPULAR_SITES.md).
+
 References were captured from Brave 155.1.97.57 on macOS at device scale 1.
 `font-rasterization` covers Arial and Verdana at integer and fractional sizes,
 automatic and antialiased smoothing, three foreground colors, and white and
