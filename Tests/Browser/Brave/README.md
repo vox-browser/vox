@@ -13,6 +13,17 @@ python3 tools/check_pixel_equality.py Tests/Browser/Brave/expected/font-rasteriz
 
 This comparison requires exact RGBA equality, with no excluded pixels or tolerance.
 
+`capture-lazy-scroll-order` checks a scrolled capture after the initial viewport's
+lazy images have loaded. Serve this fixture over HTTP, capture at 800×600 and
+scale 1 with `--screenshot-scroll-y 3200`, and set
+`VOX_CAPTURE_INITIAL_VIEWPORT=1`. This opt-in mode presents the initial document
+and waits for its requested images and fonts before scrolling, then waits for
+the destination viewport as usual. Immediate jump captures keep their existing
+behavior. The Brave 156.1.98.60 reference follows that same initial-load order;
+skipping the image requests moved the destination by seven pixels and changed
+14,191 pixels. File and data URLs complete synchronously and do not reproduce
+this HTTP loading sequence.
+
 `table-grid-intrinsic-height` checks a collapsed-border table's contribution to
 an automatic grid row against an ordinary block control. The 1280×800, scale 1
 fixture matches Brave 156.1.98.60 exactly; the previous extra outer border share

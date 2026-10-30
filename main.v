@@ -493,6 +493,7 @@ mut:
 	screenshot_viewport_height          int
 	screenshot_scroll_y                 int
 	screenshot_scroll_applied           bool
+	screenshot_initial_viewport_ready   bool
 	layout_tree_only                    bool
 	document_presented                  bool
 	paint_timing                        BrowserPaintTiming
@@ -3636,6 +3637,7 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 	app.restore_browser_zoom(loaded.url)
 	// A screenshot strip scrolls the replacement document to its offset again.
 	app.screenshot_scroll_applied = false
+	app.screenshot_initial_viewport_ready = false
 	app.load_status = loaded.status
 	app.document_presented = false
 	app.snapshot_cached = false
@@ -7416,8 +7418,10 @@ fn (mut app BrowserApp) draw() {
 	// delaying the window.
 	app.start_pending_navigation()
 	if app.screenshot_path != '' && !app.scroll_profile.enabled && !app.screenshot_scheduled && app.document != unsafe { nil } && !app.load_status.starts_with('Loading ') && app.background_resource_pending.len == 0 {
-		if !paint_document || !app.document_resources_ready_for_capture() {
-			$if macos { C.native_schedule_capture_retry(capture_retry_needs_frame, voidptr(&app)) }
+		app.note_screenshot_initial_viewport(paint_document)
+		if !paint_document || app.screenshot_initial_viewport_pending()
+			|| !app.document_resources_ready_for_capture() {
+			$if macos { C.native_schedule_capture_retry(capture_scroll_retry_needs_frame, voidptr(&app)) }
 			return
 		}
 		$if macos { C.native_cancel_capture_retry() }

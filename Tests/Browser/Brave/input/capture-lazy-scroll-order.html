@@ -1,0 +1,18 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Settle the first viewport before a scrolled capture</title>
+<style>
+* { box-sizing: border-box; }
+body { margin: 0; background: #132030; color: #d5e1f0; font: 18px/30px Arial; }
+.sponsors { display: grid; grid-template-columns: 200px 200px; gap: 20px; }
+.sponsors a { display: flex; align-items: center; justify-content: center; padding: 10px; border: 1px solid #496880; min-height: 85px; }
+img { display: block; width: 140px; max-height: 70px; }
+.spacer { height: 3200px; }
+.target { height: 900px; padding: 30px; border-top: 4px solid #6ea5ce; background: #20334a; }
+</style>
+<div class="sponsors">
+  <a><img loading="lazy" alt="" src="../resources/lazy-scroll-sizing.png"></a>
+  <a><img loading="lazy" alt="" src="../resources/lazy-scroll-sizing.png"></a>
+</div>
+<div class="spacer"></div>
+<div class="target">The initial lazy images contribute 92 pixels before the spacer.</div>

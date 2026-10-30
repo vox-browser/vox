@@ -31,13 +31,14 @@ fn test_screenshot_strips_scroll_to_their_offset_past_short_content() {
 // replacement scrolls to the strip's offset again instead of the top.
 fn test_screenshot_strips_scroll_a_replacement_document_again() {
 	mut app := BrowserApp{
-		viewport_width:             320
-		viewport_height:            200
-		screenshot_path:            '/tmp/strip.png'
-		screenshot_viewport_height: 200
-		screenshot_scroll_y:        40
-		screenshot_scroll_applied:  true
-		scroll_y:                   40
+		viewport_width:                    320
+		viewport_height:                   200
+		screenshot_path:                   '/tmp/strip.png'
+		screenshot_viewport_height:        200
+		screenshot_scroll_y:               40
+		screenshot_scroll_applied:         true
+		screenshot_initial_viewport_ready: true
+		scroll_y:                          40
 	}
 	app.install_loaded_page(LoadedPage{
 		url:          'https://strip.example/'
@@ -48,5 +49,5 @@ fn test_screenshot_strips_scroll_a_replacement_document_again() {
 	defer { document.finalize() }
 	assert app.scroll_y == 0
 	assert !app.screenshot_scroll_applied
+	assert !app.screenshot_initial_viewport_ready
 }
-
