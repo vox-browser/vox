@@ -171,7 +171,9 @@ fn bound_visual_effect_contents(mut commands []PaintCommand) {
 			stack << EffectContentBounds{
 				begin:   index
 				filter_depth: filters.len
-				bounded: command.visual_layer().blend_mode == .normal
+				// Screen leaves the backdrop unchanged wherever the source is
+				// transparent, so its extent is bounded by the same painted ink.
+				bounded: command.visual_layer().blend_mode in [.normal, .screen]
 			}
 			continue
 		}

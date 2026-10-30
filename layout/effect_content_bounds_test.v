@@ -238,3 +238,14 @@ fn test_effect_content_bounds_use_the_hosted_viewport_clip_for_overflowing_neste
 	assert !paint_leaf_is_outside_canvas(PaintCommand{...command,
 		nested_viewport_paintable: none}, 0, 60, 800, 660)
 }
+
+fn test_screen_blended_pointwise_filter_keeps_the_painted_source_bounds() {
+	mut document := html.parse_document('<!doctype html><style>body{margin:0}div{position:absolute;left:20px;top:10000px;width:50px;height:30px;background:red;opacity:.85;filter:grayscale(1);mix-blend-mode:screen}</style><div></div>')
+	defer { document.finalize() }
+	_ = layout_document_typed_in_viewport(document, 800, 600)
+	commands := display_list_commands(document.record_display_list() or { panic('missing paint') })
+	effects := commands.filter(it.kind == 'begin_css_effect_layer')
+	assert effects.len == 1
+	assert effects[0].visual_layer().blend_mode == .screen
+	assert content_bounds_clip(effects[0]) == LayoutRect{20, 10000, 50, 30}
+}
