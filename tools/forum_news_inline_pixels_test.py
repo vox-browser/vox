@@ -74,6 +74,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_empty_clips_do_not_change_neighboring_tag_and_avatar_antialiasing(self):
         self.compare_fixture('lobsters-empty-clip-antialiasing')
 
+    def test_empty_accessibility_clips_preserve_the_header_raster(self):
+        self.compare_fixture('stackoverflow-empty-accessibility-clip')
+
     def test_transparent_svg_backgrounds_do_not_change_neighboring_antialiasing(self):
         self.compare_fixture('lobsters-transparent-svg-background')
 

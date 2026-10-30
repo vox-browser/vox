@@ -282,6 +282,7 @@ pub fn (mut tree AccumulatedVisualContextTree) append(data VisualContextData, pa
 			ClipPathVisualData {
 				data.bounding_rect.is_empty()
 					|| (data.polygons.all(it.len < 3) && data.polygon.len < 3)
+					|| clip_path_has_collapsed_axis(data)
 			}
 			SVGClipVisualData {
 				data.bounding_rect.is_empty() || data.components.len == 0

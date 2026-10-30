@@ -2375,6 +2375,13 @@ fn lower_visual_replay_steps(commands []PaintCommand, steps []CompatibilityVisua
 	return result
 }
 
+// Match DisplayList::append for the compact phase recorder as well. Dropping
+// a clipped leaf before flattening keeps its path and resources out of native
+// replay, while the surrounding visible commands retain their layer scopes.
+fn compatibility_context_is_fully_clipped(tree &painting.AccumulatedVisualContextTree, index int) bool {
+	return index > 0 && index < tree.nodes.len && tree.has_empty_effective_clip(index)
+}
+
 $if test {
 	fn replay_cached_paint_commands_with_visual_context(steps []CompatibilityPaintStep,
 		phase_commands [][]PaintCommand, command_count int, tree painting.AccumulatedVisualContextTree,
@@ -2397,6 +2404,7 @@ $if test {
 				command := unsafe { &phase_commands[bucket][index] }
 				if command.line_box_debug && !show_line_box_borders { continue }
 				context_index := command.visual_context_index or { default_context_index }
+				if compatibility_context_is_fully_clipped(&tree, context_index) { continue }
 				context := if cached_context := flattened_contexts[context_index] {
 					cached_context
 				} else {
@@ -2435,6 +2443,7 @@ $if test {
 			for index in 0 .. phase_commands[bucket].len {
 				cached_command := unsafe { &phase_commands[bucket][index] }
 				context_index := cached_command.visual_context_index or { default_context_index }
+				if compatibility_context_is_fully_clipped(&tree, context_index) { continue }
 				context := if cached_context := flattened_contexts[context_index] {
 					cached_context
 				} else {
@@ -2611,6 +2620,7 @@ fn record_cached_paint_commands_with_visual_context_into(steps []CompatibilityPa
 		for index in 0 .. phase_commands[bucket].len {
 			cached := unsafe { &phase_commands[bucket][index] }
 			context_index := cached.visual_context_index or { default_context_index }
+			if compatibility_context_is_fully_clipped(tree, context_index) { continue }
 			context_slot := contexts.resolve(context_index)
 			context := unsafe { &contexts.contexts[context_slot] }
 			if context.backface_culled { continue }

@@ -59,6 +59,8 @@ fn test_fused_visual_replay_matches_two_stage_layers_clips_backfaces_and_live_of
 		bounding_rect: painting.IntRect{0, 0, 100, 100}
 		scope_id:      99
 		cache_key:     101
+		components: [painting.SVGClipPathComponent{path:painting.ClipPathVisualData{
+			polygon:[painting.Point{0,0},painting.Point{100,0},painting.Point{0,100}]}}]
 	}, transform)
 	clip := tree.append(painting.ClipVisualData{ rect: painting.IntRect{2, 3, 40, 50} }, mask)
 	guide_only := tree.append(painting.EffectsVisualData{ opacity: 0.5 }, effect)
