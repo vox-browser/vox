@@ -12,7 +12,7 @@ from forum_news_pixels import REPO, VOX, executable_identity, guarded, write_jso
 
 @unittest.skipUnless(sys.platform == 'darwin', 'The reference uses native macOS fonts')
 class ForumNewsInlinePixelsTests(unittest.TestCase):
-    def compare_fixture(self, name):
+    def compare_fixture(self, name, width=800, height=600):
         output = Path(tempfile.mkdtemp(prefix='forum-news-inline-', dir=REPO / 'Build'))
         fixture = REPO / 'Tests/Browser/Brave/input' / (name + '.html')
         reference = REPO / 'Tests/Browser/Brave/expected' / (name + '.png')
@@ -24,7 +24,7 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
             LADYBIRD_SCREENSHOT_DELAY_SECONDS='0')
         identity = executable_identity(VOX)
         write_json(output / 'identity.json', identity)
-        guarded([VOX, '--window-width', '800', '--window-height', '684',
+        guarded([VOX, '--window-width', str(width), '--window-height', str(height + 84),
                  '--screenshot', actual, fixture], output / 'capture', 60, environment)
         self.assertEqual(executable_identity(VOX), identity, 'Production bundle changed during capture')
         compiler = os.environ.get('V_BIN') or shutil.which('v') or str(Path.home() / 'code/v/v')
@@ -76,6 +76,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
 
     def test_empty_accessibility_clips_preserve_the_header_raster(self):
         self.compare_fixture('stackoverflow-empty-accessibility-clip')
+
+    def test_svg_border_fringe_keeps_the_header_on_its_full_raster_tile(self):
+        self.compare_fixture('stackoverflow-bordered-header', width=1024, height=768)
 
     def test_transparent_svg_backgrounds_do_not_change_neighboring_antialiasing(self):
         self.compare_fixture('lobsters-transparent-svg-background')

@@ -3642,7 +3642,7 @@ static sk_sp<SkShader> chromium_svg_gradient_shader(VoxGraphitePath const& sourc
 
 static bool record_chromium_svg_path_batch(SkCanvas* canvas,
     VoxGraphitePath const* paths, int count, SkMatrix const& matrix, SkRect viewport,
-    float const* rounded_clip)
+    float const* rounded_clip, SkRect* ink_bounds = nullptr)
 {
     // Validate the complete batch before recording any commands. A rejected
     // shader must preserve the existing leaf raster for the whole layer.
@@ -3652,6 +3652,7 @@ static bool record_chromium_svg_path_batch(SkCanvas* canvas,
         shaders[index] = chromium_svg_gradient_shader(paths[index]);
         if (!shaders[index]) return false;
     }
+    SkRect ink = SkRect::MakeEmpty();
     canvas->save();
     canvas->setMatrix(matrix);
     canvas->clipRect(viewport);
@@ -3695,11 +3696,18 @@ static bool record_chromium_svg_path_batch(SkCanvas* canvas,
                 if (local.invert(&inverse)) canvas->concat(inverse);
             }
         }
+        if (ink_bounds) {
+            SkRect storage;
+            auto bounds = canvas->getTotalMatrix().mapRect(
+                paint.computeFastBounds(geometry.getBounds(), &storage));
+            if (bounds.intersect(matrix.mapRect(viewport))) ink.join(bounds);
+        }
         canvas->drawPath(geometry, paint);
         canvas->restore();
     }
     if (rounded_clip) canvas->restore();
     canvas->restore();
+    if (ink_bounds) *ink_bounds = ink;
     return true;
 }
 
@@ -3715,13 +3723,18 @@ extern "C" int ladybird_v_skia_draw_svg_path_batch(CGContextRef destination,
         outer[1], outer[3], page_y - scroll_y + outer[5], 0, 0, 1);
     if (auto* canvas = shared_recording_canvas(destination)) {
         auto bounds = matrix.mapRect(SkRect::MakeXYWH(x, y, width, height));
+        SkRect ink;
         canvas->save();
         shared_recording_clip(destination, canvas);
         bool recorded = record_chromium_svg_path_batch(canvas, paths, count, matrix,
-            SkRect::MakeXYWH(x, y, width, height), rounded_clip);
+            SkRect::MakeXYWH(x, y, width, height), rounded_clip, &ink);
         canvas->restore();
-        if (recorded) shared_recording_content(destination, bounds, page_y, scroll_y);
-        else shared_recording_block(bounds);
+        // The batch viewport includes the MSAA trigger's safety fringe. It
+        // does not imply that the picture paints outside its compositor box:
+        // treating it as ink crops the raster tile and changes nearby edges.
+        if (recorded) {
+            if (!ink.isEmpty()) shared_recording_content(destination, ink, page_y, scroll_y);
+        } else shared_recording_block(bounds);
     }
     RasterRegion region;
     if (!clipped_raster_region(matrix.mapRect(SkRect::MakeXYWH(x, y, width, height)),
