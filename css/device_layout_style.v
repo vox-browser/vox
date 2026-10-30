@@ -59,6 +59,7 @@ fn device_layout_font_matches_projection(source &PlatformFont, projected &Platfo
 		&& source.is_invisible == projected.is_invisible
 		&& source.font_rendering_policy == projected.font_rendering_policy
 		&& source.italic == projected.italic
+		&& source.font_synthesis_disabled == projected.font_synthesis_disabled
 }
 
 fn device_layout_fonts_match_projection(source &FontCascadeList, projected &FontCascadeList, factor f64, pixel_size f64) bool {

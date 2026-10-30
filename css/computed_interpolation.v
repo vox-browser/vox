@@ -1431,6 +1431,10 @@ fn computed_interpolation_property_computation_order() ComputedInterpolationProp
 		.font_optical_sizing,
 		.font_size,
 		.font_style,
+		.font_synthesis_weight,
+		.font_synthesis_style,
+		.font_synthesis_small_caps,
+		.font_synthesis_position,
 		.font_variant_alternates,
 		.font_variant_caps,
 		.font_variant_east_asian,
@@ -1594,7 +1598,8 @@ fn property_affects_computed_font_list(id PropertyID) bool {
 		.font_variation_settings, .font_optical_sizing, .font_feature_settings,
 		.font_variant_alternates, .font_variant_caps, .font_variant_east_asian,
 		.font_variant_emoji, .font_variant_ligatures, .font_variant_numeric,
-		.font_variant_position, .font_kerning, .text_rendering]
+		.font_variant_position, .font_kerning, .text_rendering, .font_synthesis_weight,
+		.font_synthesis_style, .font_synthesis_small_caps, .font_synthesis_position]
 }
 
 fn property_affects_font_metrics(id PropertyID) bool {
@@ -5918,7 +5923,7 @@ pub fn (mut c ComputedProperties) computed_font_list(font_computer &FontComputer
 		families << 'sans-serif'
 	}
 	font_size_px := if font_computer.font_rendering_policy() == .chromium { c.resolved_font_size_px() } else { c.font_size().to_double() }
-	font_list := mutable_font_computer.compute_font_for_style_values_at_size(families, font_size_px, c.font_slope(), c.font_weight(), c.font_width(), c.font_optical_sizing(), font_computer.variation_settings_for_computation(c), font_computer.feature_data_for_computation(c))
+	font_list := mutable_font_computer.compute_font_for_style_values_with_synthesis(families, font_size_px, c.font_slope(), c.font_weight(), c.font_width(), c.font_optical_sizing(), font_computer.variation_settings_for_computation(c), font_computer.feature_data_for_computation(c), c.disabled_font_synthesis())
 	inputs.finish()
 	assert !font_list.is_empty()
 	c.cached_computed_font_list_ = font_list

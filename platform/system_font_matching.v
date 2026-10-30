@@ -208,7 +208,7 @@ pub fn system_fallback_font(code_point u32, language string, base &Font) ?&Font 
 	}
 	work := begin_thread_scratch('System fallback font query')
 	defer { work.finish() }
-	key := '${code_point}|${language}|${base.family}|${base.weight}|${base.italic}|${base.point_size}'
+	key := '${code_point}|${language}|${base.family}|${base.weight}|${base.italic}|${base.point_size}|${base.font_synthesis_disabled}'
 	if font := platform_system_fallbacks[key] {
 		return font
 	}
@@ -227,6 +227,7 @@ pub fn system_fallback_font(code_point u32, language string, base &Font) ?&Font 
 			point_size:            base.point_size
 			weight:                base.weight
 			italic:                base.italic
+			font_synthesis_disabled: base.font_synthesis_disabled
 			font_rendering_policy: base.font_rendering_policy
 		}
 		if candidate.system_face() != none && candidate.contains_glyph(code_point) {
@@ -243,6 +244,7 @@ pub fn system_fallback_font(code_point u32, language string, base &Font) ?&Font 
 					point_size:            base.point_size
 					weight:                base.weight
 					italic:                base.italic
+					font_synthesis_disabled: base.font_synthesis_disabled
 					font_rendering_policy: base.font_rendering_policy
 					system_face_override:  face
 				}
@@ -271,7 +273,7 @@ fn canonical_system_fallback_font(font &Font) &Font {
 	} else {
 		font.family
 	}
-	key := '${face_key}|${font.point_size}|${font.weight}|${font.italic}|${font.font_rendering_policy}'
+	key := '${face_key}|${font.point_size}|${font.weight}|${font.italic}|${font.font_rendering_policy}|${font.font_synthesis_disabled}'
 	if existing := platform_system_fallback_faces[key] {
 		return existing
 	}
@@ -289,6 +291,7 @@ fn canonical_system_fallback_font(font &Font) &Font {
 		point_size:            font.point_size
 		weight:                font.weight
 		italic:                font.italic
+		font_synthesis_disabled: font.font_synthesis_disabled
 		font_rendering_policy: font.font_rendering_policy
 		system_face_override:  override_face
 	}

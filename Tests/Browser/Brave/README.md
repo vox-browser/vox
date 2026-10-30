@@ -13,6 +13,15 @@ python3 tools/check_pixel_equality.py Tests/Browser/Brave/expected/font-rasteriz
 
 This comparison requires exact RGBA equality, with no excluded pixels or tolerance.
 
+`font-synthesis` covers inherited synthesis controls through the `font` shorthand,
+synthetic italic, bold and small caps, `oblique-only`, and real bold/italic faces.
+The 800×600, scale 1 fixture matches Brave 156.1.98.60 exactly; ignoring the
+controls differed at 1,567 pixels. Font matching keeps the requested style while
+the inherited longhands independently prohibit manufactured variants. The
+regular-only Ahem font comes from Ladybird's `Tests/LibWeb/Ref/data/fonts/`;
+its embedded public-domain/CC0 notice is preserved in
+[`resources/Ahem-LICENSE.txt`](resources/Ahem-LICENSE.txt).
+
 `multicol-atomic-blocks` covers balanced `break-inside:avoid` blocks with mixed
 heights, column-break margins, and two or three columns. The 800×600, scale 1
 fixture matches Brave 156.1.98.60 exactly; the previous single-column output

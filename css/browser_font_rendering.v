@@ -26,6 +26,18 @@ input[type=radio i] { margin: 3px 3px 0px 5px; }')
 	return chromium_control_font_stylesheet
 }
 
+fn (mut list FontCascadeList) set_font_synthesis_disabled(disabled u8) {
+	for index, entry in list.fonts {
+		list.fonts[index] = FontCascadeEntry{
+			font: PlatformFont{ ...entry.font, font_synthesis_disabled: disabled }
+			unicode_ranges: entry.unicode_ranges
+		}
+	}
+	if list.last_resort_font != unsafe { nil } {
+		list.last_resort_font = &PlatformFont{ ...list.last_resort_font, font_synthesis_disabled: disabled }
+	}
+}
+
 fn (computer &FontComputer) font_rendering_policy() platform.FontRenderingPolicy {
 	if document := computer.document_ {
 		if document.font_rendering_policy() == .chromium { return .chromium }

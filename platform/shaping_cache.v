@@ -254,6 +254,7 @@ struct ShapingFontKey {
 	is_invisible    bool
 	font_rendering_policy FontRenderingPolicy
 	synthesize_ascii_caps bool
+	font_synthesis_disabled u8
 	requested_variations []FontVariationAxis
 	key             string
 }
@@ -304,6 +305,7 @@ pub fn release_unused_text_shaping() {
 fn (entry &ShapingFontKey) matches(font &Font, point_size_bits u32) bool {
 	return entry.weight == font.weight && entry.point_size_bits == point_size_bits
 		&& entry.italic == font.italic
+		&& entry.font_synthesis_disabled == font.font_synthesis_disabled
 		&& entry.is_invisible == font.is_invisible && entry.family == font.family
 		&& entry.font_rendering_policy == font.font_rendering_policy
 		&& entry.synthesize_ascii_caps == font.synthesize_ascii_caps
@@ -320,6 +322,7 @@ fn shaping_cache_font_key(font &Font) string {
 		&& previous.source_path == font.source_path && previous.resolved_path == font.resolved_path_
 		&& previous.weight == font.weight
 		&& previous.italic == font.italic
+		&& previous.font_synthesis_disabled == font.font_synthesis_disabled
 		&& previous.point_size_bits == math.f32_bits(font.point_size)
 		&& previous.is_invisible == font.is_invisible
 		&& previous.font_rendering_policy == font.font_rendering_policy
@@ -345,7 +348,7 @@ fn shaping_font_key_after_last_miss(font &Font) string {
 	persistent := enter_persistent()
 	defer { leave_persistent(persistent) }
 	resolved_path := font.font_path() or { '' }
-	key := '${font.family.len}:${font.family}|${font.source_path.len}:${font.source_path}|${resolved_path.len}:${resolved_path}|${font.weight}|${font.face_index()}|${point_size_bits}|${font.is_invisible}|${font.font_rendering_policy}|${font.synthesize_ascii_caps}' + if font.italic { '|italic' } else { '' } + if font.requested_variations.len > 0 { '|${font.requested_variations}' } else { '' }
+	key := '${font.family.len}:${font.family}|${font.source_path.len}:${font.source_path}|${resolved_path.len}:${resolved_path}|${font.weight}|${font.face_index()}|${point_size_bits}|${font.is_invisible}|${font.font_rendering_policy}|${font.synthesize_ascii_caps}' + if font.italic { '|italic' } else { '' } + if font.requested_variations.len > 0 { '|${font.requested_variations}' } else { '' } + if font.font_synthesis_disabled != 0 { '|synthesis:${font.font_synthesis_disabled}' } else { '' }
 	// An unavailable explicit source can appear later. Its fallback path remains
 	// unpinned, and must continue through the original resolution on each call.
 	if font.resolved_path_ != '' {
@@ -355,6 +358,7 @@ fn shaping_font_key_after_last_miss(font &Font) string {
 			resolved_path:   resolved_path.clone()
 			weight:          font.weight
 			italic:          font.italic
+			font_synthesis_disabled: font.font_synthesis_disabled
 			point_size_bits: point_size_bits
 			is_invisible:    font.is_invisible
 			font_rendering_policy: font.font_rendering_policy

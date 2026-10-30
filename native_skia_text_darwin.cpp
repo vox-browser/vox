@@ -1116,7 +1116,7 @@ static int draw_retained_glyph_run(CGContextRef destination,
     SkFont font(sk_ref_sp(typeface), std::max(font_size, 0.0f));
     // Blink synthesizes bold when the selected face has no bold instance.
     // Keep the retained glyph positions; Skia expands the glyph outlines.
-    font.setEmbolden((font_smoothing & 16) && font_weight >= 600
+    font.setEmbolden((font_smoothing & 16) && !(font_smoothing & 128) && font_weight >= 600
         && typeface->fontStyle().weight() < 600);
     font.setSkewX((font_smoothing & 64) && !typeface->isItalic() ? -0.25f : 0.0f);
     if (font_smoothing & 16) {

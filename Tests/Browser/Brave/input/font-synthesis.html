@@ -1,0 +1,29 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Font synthesis controls</title>
+<style>
+@font-face {
+  font-family: SynthesisTest;
+  src: url(../resources/Ahem.ttf);
+  font-weight: 400;
+  font-style: normal;
+}
+html { background: #142236; font-synthesis: none; }
+body { margin: 20px; color: #d5e1f0; font: 20px/40px SynthesisTest; -webkit-font-smoothing: antialiased; }
+.automatic { font-synthesis: weight style small-caps; }
+.italic { font-style: italic; }
+.bold { font-weight: 700; }
+.caps { font-variant-caps: small-caps; }
+.oblique-only { font-synthesis-style: oblique-only; }
+.real { font-family: Arial; font-weight: 700; font-style: italic; }
+</style>
+<div>abcDE</div>
+<div class="italic">abcDE</div>
+<div class="italic automatic">abcDE</div>
+<div class="bold">abcDE</div>
+<div class="bold automatic">abcDE</div>
+<div class="caps">abcDE</div>
+<div class="caps automatic">abcDE</div>
+<div style="font: italic bold 20px/40px SynthesisTest">abcDE</div>
+<div class="italic oblique-only">abcDE</div>
+<div class="real">Real italic and bold remain available.</div>

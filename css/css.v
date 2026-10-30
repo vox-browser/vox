@@ -445,6 +445,10 @@ pub enum PropertyID {
 	backface_visibility
 	vector_effect
 	hyphens
+	font_synthesis_weight
+	font_synthesis_style
+	font_synthesis_small_caps
+	font_synthesis_position
 	webkit_font_smoothing
 	// Shorthands (not longhands; excluded from the longhand index/count).
 	overflow
@@ -489,6 +493,7 @@ pub enum PropertyID {
 	list_style
 	text_decoration
 	font_variant
+	font_synthesis
 	flex
 	corner_shape
 	corner_top_shape

@@ -3490,6 +3490,7 @@ pub mut:
 	is_invisible bool
 	font_rendering_policy platform.FontRenderingPolicy
 	italic bool
+	font_synthesis_disabled u8
 mut:
 	metrics_font_ &platform.Font = unsafe { nil }
 	native_variations_ FontVariationSettings
@@ -3519,6 +3520,7 @@ pub fn (font &PlatformFont) font_for_rendering() &platform.Font {
 		point_size: font.pixel_size_override_ or { font.point_size / 0.75 }
 		weight: int(font.variations.weight)
 		italic: font.italic
+		font_synthesis_disabled: font.font_synthesis_disabled
 		source_path: font.typeface.source_path.clone()
 		requested_variations: if font.typeface.source_path == '' { []platform.FontVariationAxis{} } else { font.variations.native_axes() }
 		is_invisible: font.is_invisible
@@ -3535,6 +3537,7 @@ fn (font &PlatformFont) matches_native_font(cached &platform.Font) bool {
 		&& cached.point_size == (font.pixel_size_override_ or { font.point_size / 0.75 })
 		&& cached.weight == int(font.variations.weight)
 		&& cached.italic == font.italic
+		&& cached.font_synthesis_disabled == font.font_synthesis_disabled
 		&& cached.source_path == font.typeface.source_path
 		&& cached.is_invisible == font.is_invisible
 		&& cached.font_rendering_policy == font.font_rendering_policy
@@ -3573,6 +3576,7 @@ fn owned_platform_font(font &PlatformFont) PlatformFont {
 		is_invisible: font.is_invisible
 		font_rendering_policy: font.font_rendering_policy
 		italic: font.italic
+		font_synthesis_disabled: font.font_synthesis_disabled
 		pixel_size_override_: font.pixel_size_override_
 		// An input mutation replaces the clone's cache on its next lookup; the
 		// immutable old handle remains valid for previously retained fragments.
@@ -3704,6 +3708,7 @@ fn platform_font_equals(left PlatformFont, right PlatformFont) bool {
 		&& left.variations.axis_values_equal(&right.variations) && left.features == right.features
 		&& left.is_invisible == right.is_invisible
 		&& left.italic == right.italic
+		&& left.font_synthesis_disabled == right.font_synthesis_disabled
 }
 
 pub fn (list &FontCascadeList) equals(other &FontCascadeList) bool {
@@ -3759,7 +3764,7 @@ fn (mut list FontCascadeList) resolve_pending_faces(code_point u32, through_font
 }
 
 fn platform_font_cache_key(font &PlatformFont) string {
-	return '${font.typeface.family_name}|${font.typeface.source_path}|${font.typeface.weight_}|${font.typeface.width_}|${font.typeface.slope_}|${font.point_size}|${font.variations.weight}|${font.variations.width}|${font.variations.opsz}|${font.font_rendering_policy}|${font.pixel_size_override_}|${font.italic}'
+	return '${font.typeface.family_name}|${font.typeface.source_path}|${font.typeface.weight_}|${font.typeface.width_}|${font.typeface.slope_}|${font.point_size}|${font.variations.weight}|${font.variations.width}|${font.variations.opsz}|${font.font_rendering_policy}|${font.pixel_size_override_}|${font.italic}|${font.font_synthesis_disabled}'
 }
 
 fn (list &FontCascadeList) font_with_visibility(font &PlatformFont, invisible bool) &PlatformFont {
@@ -3779,6 +3784,7 @@ fn (list &FontCascadeList) font_with_visibility(font &PlatformFont, invisible bo
 		is_invisible: true
 		font_rendering_policy: font.font_rendering_policy
 		italic: font.italic
+		font_synthesis_disabled: font.font_synthesis_disabled
 		pixel_size_override_: font.pixel_size_override_
 	}
 	mut storage := mutable_list.ensure_invisible_font_storage()
@@ -3909,12 +3915,14 @@ pub mut:
 	font_width              Percentage
 	font_variation_settings map[string]f64
 	font_feature_data       FontFeatureData
+	font_synthesis_disabled u8
 }
 
 pub fn (key ComputedFontCacheKey) id() string {
 	mut builder := strings.new_builder(64)
 	builder.write_string(key.font_family.join(','))
 	builder.write_string('|${key.font_optical_sizing}|${key.font_size.raw_value()}|${key.font_slope}|${key.font_weight}|${key.font_width.value()}')
+	if key.font_synthesis_disabled != 0 { builder.write_string('|synthesis:${key.font_synthesis_disabled}') }
 	for name, value in key.font_variation_settings {
 		builder.write_string('|${name}:${value}')
 	}
@@ -4504,6 +4512,12 @@ pub fn (mut computer FontComputer) compute_font_for_style_values(font_family []s
 }
 
 fn (mut computer FontComputer) compute_font_for_style_values_at_size(font_family []string, font_size_px f64, font_slope int, font_weight f64, font_width Percentage, font_optical_sizing FontOpticalSizing, font_variation_settings map[string]f64, font_feature_data FontFeatureData) &FontCascadeList {
+	return computer.compute_font_for_style_values_with_synthesis(font_family, font_size_px,
+		font_slope, font_weight, font_width, font_optical_sizing, font_variation_settings,
+		font_feature_data, 0)
+}
+
+fn (mut computer FontComputer) compute_font_for_style_values_with_synthesis(font_family []string, font_size_px f64, font_slope int, font_weight f64, font_width Percentage, font_optical_sizing FontOpticalSizing, font_variation_settings map[string]f64, font_feature_data FontFeatureData, synthesis_disabled u8) &FontCascadeList {
 	// id() consumes these inputs synchronously and retains only its own string.
 	// The cached cascade still owns the font data materialized on a cache miss.
 	cache_key := ComputedFontCacheKey{
@@ -4515,6 +4529,7 @@ fn (mut computer FontComputer) compute_font_for_style_values_at_size(font_family
 		font_width: font_width
 		font_variation_settings: font_variation_settings
 		font_feature_data: font_feature_data
+		font_synthesis_disabled: synthesis_disabled
 	}
 	policy := computer.font_rendering_policy()
 	cached, key := computer.lookup_font_cache_key(cache_key, policy, font_size_px)
@@ -4532,6 +4547,7 @@ fn (mut computer FontComputer) compute_font_for_style_values_at_size(font_family
 	owned_key := key.clone()
 	mut value := computer.compute_font_for_style_values_impl(font_family, font_size_px, font_slope, font_weight, font_width, font_optical_sizing, font_variation_settings, font_feature_data)
 	value.set_font_rendering_policy(policy, font_size_px, font_slope)
+	value.set_font_synthesis_disabled(synthesis_disabled)
 	computer.computed_font_cache[owned_key] = value
 	return value
 }

@@ -1506,6 +1506,12 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.font_variant {
 			return parser.parse_font_variant(mut tokens)
 		}
+		.font_synthesis {
+			return parser.parse_font_synthesis(mut tokens)
+		}
+		.font_synthesis_weight, .font_synthesis_style, .font_synthesis_small_caps, .font_synthesis_position {
+			return parse_property_keyword_value_from_metadata(property_id, mut tokens)
+		}
 		.flex {
 			return parser.parse_flex_shorthand_value(mut tokens)
 		}

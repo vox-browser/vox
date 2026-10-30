@@ -64,6 +64,7 @@ pub:
 	is_invisible          bool
 	font_rendering_policy FontRenderingPolicy
 	synthesize_ascii_caps bool
+	font_synthesis_disabled u8
 	// A character-fallback face selected by the platform cascade.
 	system_face_override ?SystemFontFace
 mut:
@@ -162,6 +163,7 @@ pub fn (font &Font) has_same_identity(other &Font) bool {
 	if font.synthesize_ascii_caps != other.synthesize_ascii_caps {
 		return false
 	}
+	if font.font_synthesis_disabled != other.font_synthesis_disabled { return false }
 	if font_path := font.font_path() {
 		other_path := other.font_path() or { return false }
 		return font_path == other_path && font.face_index() == other.face_index()

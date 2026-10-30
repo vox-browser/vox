@@ -2086,6 +2086,7 @@ pub enum Keyword {
 	zoom_in
 	zoom_out
 	manual
+	oblique_only
 }
 
 pub fn (keyword Keyword) is_css_wide_keyword() bool {
@@ -2114,6 +2115,7 @@ pub fn is_valid_custom_ident(ident string, blacklist []string) bool {
 
 pub fn string_from_keyword(keyword Keyword) string {
 	return match keyword {
+		.oblique_only { 'oblique-only' }
 		.invalid { '' }
 		.negative_infinity { '-infinity' }
 		.libweb_buttonfacedisabled { '-libweb-buttonfacedisabled' }
@@ -2992,6 +2994,7 @@ pub fn string_from_keyword(keyword Keyword) string {
 
 pub fn keyword_from_string(input string) ?Keyword {
 	name := to_ascii_lowercase(input)
+	if name == 'oblique-only' { return .oblique_only }
 	if name == 'manual' { return .manual }
 	// Keep bucket selection scalar; wrap the result once after a full match.
 	mut value := Keyword.negative_infinity

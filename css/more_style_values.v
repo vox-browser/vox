@@ -2807,6 +2807,7 @@ fn (style_value ShorthandStyleValue) serialize_border_family(mode SerializationM
 }
 
 pub fn (style_value ShorthandStyleValue) serialize(mode SerializationMode) string {
+	if synthesis := style_value.serialize_font_synthesis(mode) { return synthesis }
 	if s := style_value.serialize_page_break_legacy_shorthand(mode) {
 		return s
 	}

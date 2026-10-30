@@ -35,7 +35,7 @@ fn test_column_rule_property_metadata() {
 	assert !property_affects_layout(.column_rule)
 	assert !property_affects_layout(.column_rule_width)
 	assert generated_property_needs_layout_node_for_resolved_value(.column_rule_color)
-	assert number_of_longhand_properties == 356
+	assert number_of_longhand_properties == 360
 	assert last_longhand_property_id() == .webkit_font_smoothing
 }
 

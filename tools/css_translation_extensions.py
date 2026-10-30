@@ -1,6 +1,23 @@
 """Compatibility properties not yet present in the LibWeb source snapshot."""
 
 PROPERTIES = {
+    'font-synthesis': {
+        'initial': 'weight style small-caps position',
+        'longhands': ['font-synthesis-weight', 'font-synthesis-style',
+                      'font-synthesis-small-caps', 'font-synthesis-position'],
+        'valid-types': ['string'],
+    },
+    **{
+        'font-synthesis-' + name: {
+            'animation-type': 'discrete',
+            'initial': 'auto',
+            'inherited': True,
+            'requires-computation': 'never',
+            'valid-identifiers': ['auto', 'none'] +
+                                 (['oblique-only'] if name == 'style' else []),
+        }
+        for name in ['weight', 'style', 'small-caps', 'position']
+    },
     'hyphens': {
         'style-group': 'InheritedTextValues',
         'animation-type': 'discrete',
@@ -11,7 +28,7 @@ PROPERTIES = {
     },
 }
 
-KEYWORDS = ['manual']
+KEYWORDS = ['manual', 'oblique-only']
 
 
 def extend_properties(properties):
@@ -26,6 +43,11 @@ def extend_shorthand_tables(tables):
         if definition.get('legacy-alias-for'):
             continue
         identifier = name.replace('-', '_')
+        longhands = definition.get('longhands')
+        if longhands:
+            for table in ['longhands_for_shorthand', 'expanded_longhands_for_shorthand']:
+                tables[table].append((identifier, [value.replace('-', '_') for value in longhands]))
+            continue
         for table in ['longhands_for_shorthand', 'expanded_longhands_for_shorthand']:
             for shorthand, values in tables[table]:
                 if shorthand == 'all' and identifier not in values:
@@ -38,5 +60,7 @@ def extend_shorthand_tables(tables):
                                      if css_name(value) > name), len(values))
                     values.insert(position, identifier)
         if not any(property_name == identifier for property_name, _ in tables['shorthands_for_longhand']):
-            tables['shorthands_for_longhand'].append((identifier, ['all']))
+            shorthands = [shorthand.replace('-', '_') for shorthand, value in PROPERTIES.items()
+                          if name in value.get('longhands', [])]
+            tables['shorthands_for_longhand'].append((identifier, shorthands + ['all']))
     return tables

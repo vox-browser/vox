@@ -4,6 +4,9 @@ module css
 
 pub fn generated_longhands_for_shorthand(property_id PropertyID) []PropertyID {
 	return match property_id {
+		.font_synthesis {
+			[.font_synthesis_weight, .font_synthesis_style, .font_synthesis_small_caps, .font_synthesis_position]
+		}
 		.all {
 			[.webkit_box_orient, .webkit_font_smoothing, .webkit_text_fill_color, .accent_color,
 				.align_content, .align_items, .align_self, .anchor_name, .anchor_scope,
@@ -41,7 +44,8 @@ pub fn generated_longhands_for_shorthand(property_id PropertyID) []PropertyID {
 				.fill_rule, .filter, .flex_basis, .flex_direction, .flex_grow, .flex_shrink,
 				.flex_wrap, .float_, .flood_color, .flood_opacity, .font_family,
 				.font_feature_settings, .font_kerning, .font_language_override, .font_optical_sizing,
-				.font_size, .font_style, .font_variant_alternates, .font_variant_caps,
+				.font_size, .font_style,
+				.font_synthesis_position, .font_synthesis_small_caps, .font_synthesis_style, .font_synthesis_weight, .font_variant_alternates, .font_variant_caps,
 				.font_variant_east_asian, .font_variant_emoji, .font_variant_ligatures,
 				.font_variant_numeric, .font_variant_position, .font_variation_settings, .font_weight,
 				.font_width, .grid_auto_columns, .grid_auto_flow, .grid_auto_rows, .grid_column_end,
@@ -360,6 +364,9 @@ pub fn generated_longhands_for_shorthand(property_id PropertyID) []PropertyID {
 
 pub fn generated_expanded_longhands_for_shorthand(property_id PropertyID) []PropertyID {
 	return match property_id {
+		.font_synthesis {
+			[.font_synthesis_weight, .font_synthesis_style, .font_synthesis_small_caps, .font_synthesis_position]
+		}
 		.all {
 			[.webkit_box_orient, .webkit_font_smoothing, .webkit_text_fill_color, .accent_color,
 				.align_content, .align_items, .align_self, .anchor_name, .anchor_scope,
@@ -397,7 +404,8 @@ pub fn generated_expanded_longhands_for_shorthand(property_id PropertyID) []Prop
 				.fill_rule, .filter, .flex_basis, .flex_direction, .flex_grow, .flex_shrink,
 				.flex_wrap, .float_, .flood_color, .flood_opacity, .font_family,
 				.font_feature_settings, .font_kerning, .font_language_override, .font_optical_sizing,
-				.font_size, .font_style, .font_variant_alternates, .font_variant_caps,
+				.font_size, .font_style,
+				.font_synthesis_position, .font_synthesis_small_caps, .font_synthesis_style, .font_synthesis_weight, .font_variant_alternates, .font_variant_caps,
 				.font_variant_east_asian, .font_variant_emoji, .font_variant_ligatures,
 				.font_variant_numeric, .font_variant_position, .font_variation_settings, .font_weight,
 				.font_width, .grid_auto_columns, .grid_auto_flow, .grid_auto_rows, .grid_column_end,
@@ -725,6 +733,18 @@ pub fn generated_expanded_longhands_for_shorthand(property_id PropertyID) []Prop
 
 pub fn generated_shorthands_for_longhand(property_id PropertyID) []PropertyID {
 	return match property_id {
+		.font_synthesis_weight {
+			[.font_synthesis, .all]
+		}
+		.font_synthesis_style {
+			[.font_synthesis, .all]
+		}
+		.font_synthesis_small_caps {
+			[.font_synthesis, .all]
+		}
+		.font_synthesis_position {
+			[.font_synthesis, .all]
+		}
 		.hyphens { [.all] }
 		.scroll_snap_align, .scroll_snap_stop, .scroll_snap_type {
 			[.all]

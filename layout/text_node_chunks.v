@@ -82,6 +82,7 @@ fn text_node_chunk_invisible_font(font &platform.Font) &platform.Font {
 		is_invisible: true
 		font_rendering_policy: font.font_rendering_policy
 		synthesize_ascii_caps: font.synthesize_ascii_caps
+		font_synthesis_disabled: font.font_synthesis_disabled
 		system_face_override: font.system_face_override
 	}
 }
@@ -335,12 +336,13 @@ fn (mut iterator TextNodeChunkIterator) font_for_code_point(code_point u32) &pla
 
 fn (mut iterator TextNodeChunkIterator) synthetic_caps_font_for(selected &platform.Font, code_point u32) &platform.Font {
 	if selected.font_rendering_policy != .chromium { return selected }
+	if selected.font_synthesis_disabled & platform.font_synthesis_small_caps_disabled != 0 { return selected }
 	variant := iterator.font_variant_caps
 	if variant !in [.small_caps, .all_small_caps] { return selected }
 	needs_cap := (code_point >= u32(`a`) && code_point <= u32(`z`))
 		|| (variant == .all_small_caps && code_point < 128)
 	if !needs_cap { return selected }
-	key := 'caps:${selected.family}|${selected.source_path}|${selected.point_size}|${selected.weight}|${selected.is_invisible}'
+	key := 'caps:${selected.family}|${selected.source_path}|${selected.point_size}|${selected.weight}|${selected.is_invisible}|${selected.font_synthesis_disabled}'
 	if iterator.selected_font_storage_ != unsafe { nil } {
 		if font := iterator.selected_font_storage_.values[key] { return font }
 	}
@@ -359,6 +361,7 @@ fn (mut iterator TextNodeChunkIterator) synthetic_caps_font_for(selected &platfo
 		is_invisible: selected.is_invisible
 		font_rendering_policy: selected.font_rendering_policy
 		synthesize_ascii_caps: true
+		font_synthesis_disabled: selected.font_synthesis_disabled
 	}
 	platform.leave_persistent(persistent)
 	retained.finish()
