@@ -87,6 +87,10 @@ fn chromium_outer_decoration_visible_run_end(commands []layout.PaintCommand, lay
 			if os.getenv('VOX_TRACE_OUTER_DECORATIONS') != '' {
 				barrier := unsafe { &commands[scan] }
 				eprintln('Outer decorations ${index}..${end}: barrier ${scan} ${barrier.kind}, layer=${layers[scan]}, opacity=${barrier.opacity}, clip=${barrier.has_clip} (${barrier.clip_x},${barrier.clip_y},${barrier.clip_width},${barrier.clip_height})')
+				for j in scan .. math.min(scan + 5, commands.len) {
+					leaf := unsafe { &commands[j] }
+					eprintln('  ${j} ${leaf.kind} (${leaf.x},${leaf.y},${leaf.width},${leaf.height}) image=${leaf.image_paintable != none} nested=${leaf.nested_viewport_paintable != none}')
+				}
 			}
 			break
 		}
