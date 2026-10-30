@@ -94,7 +94,15 @@ pub fn (mut client PageClient) will_begin_rendering_update() {
 }
 
 pub fn (client &PageClient) has_rendering_opportunity() bool {
-	return client.rendering_opportunity_granted_ || client.rendering_opportunity_for_update_
+	return !client.rendering_opportunities_deferred_
+		&& (client.rendering_opportunity_granted_ || client.rendering_opportunity_for_update_)
+}
+
+// A native navigation can replace the active document after its display tick
+// already queued a rendering task. Retain that grant while the host batches
+// initial font work, so the queued task cannot lay out the replacement early.
+pub fn (mut client PageClient) defer_rendering_opportunities(deferred bool) {
+	client.rendering_opportunities_deferred_ = deferred
 }
 
 pub fn (mut client PageClient) did_finish_rendering_update() {

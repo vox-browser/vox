@@ -10,6 +10,7 @@ import strconv
 import platform
 
 fn (app &BrowserApp) document_pixels_ready_for_frame() bool {
+	if app.initial_layout_pending { return false }
 	$if macos {
 		// A batch capture needs the completed viewport. Keep servicing engine
 		// tasks and layout while loading, then replay document pixels once ready.
@@ -31,6 +32,7 @@ fn capture_retry_needs_frame(target voidptr) int {
 	app := unsafe { &BrowserApp(target) }
 	if app.screenshot_scheduled || app.screenshot_path == '' { return -1 }
 	if app.document == unsafe { nil } || app.pending_navigation != none { return 1 }
+	if app.initial_layout_waits_for_fonts() { return 0 }
 	if app.paint_commands_pending || app.document.needs_style_update_after_layout()
 		|| !app.document.layout_is_up_to_date() || app.javascript_tasks_have_unadopted_paint()
 		|| (app.js_runtime != unsafe { nil } && app.js_runtime.has_pending_document_state()) {

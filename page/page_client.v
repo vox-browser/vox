@@ -52,6 +52,7 @@ pub mut:
 	rendering_update_requested_        bool
 	rendering_opportunity_granted_     bool = true
 	rendering_opportunity_for_update_  bool
+	rendering_opportunities_deferred_  bool
 	last_rendering_frame_time_ns_      i64
 	last_rendering_frame_interval_ms_  f64
 	downloads_                         map[u64]DownloadState

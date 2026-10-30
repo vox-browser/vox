@@ -500,6 +500,7 @@ mut:
 	paint_display_list                  &dom.DisplayList = unsafe { nil }
 	// Frame activity compares revisions without rooting the previous list.
 	paint_generation                    u64
+	initial_layout_pending              bool
 	// Storage behind paint_commands, retained until the next adoption.
 	paint_scene      voidptr
 	paint_status_key PaintStatusKey
@@ -3495,6 +3496,23 @@ fn focus_compact_browser_navigable(document &dom.Document) {
 }
 
 fn (mut app BrowserApp) relayout(window_width int, window_height int) {
+	if app.initial_layout_pending && app.document != unsafe { nil }
+		&& !app.document.layout_is_up_to_date() && !app.initial_text_fonts_are_loading() {
+		// Loaded metrics can change font selection in the already computed
+		// styles. Settle those new requests before constructing capture geometry.
+		layout.prepare_initial_document_fonts(app.document)
+		if processmetrics.instructions_enabled() && app.initial_text_fonts_are_loading() {
+			eprintln('Vox initial font layout: requested another style-dependent face batch')
+		}
+	}
+	if app.initial_layout_waits_for_fonts() {
+		app.viewport_width = if window_width > 0 { window_width } else { initial_width }
+		app.viewport_height = if window_height > app.chrome_height() { window_height - app.chrome_height() } else { 1 }
+		app.paint_commands_pending = true
+		return
+	}
+	app.initial_layout_pending = false
+	app.defer_initial_rendering_opportunity(false)
 	if app.document == unsafe { nil } {
 		return
 	}
@@ -3638,6 +3656,8 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 	// A screenshot strip scrolls the replacement document to its offset again.
 	app.screenshot_scroll_applied = false
 	app.screenshot_initial_viewport_ready = false
+	app.initial_layout_pending = false
+	app.defer_initial_rendering_opportunity(false)
 	app.load_status = loaded.status
 	app.document_presented = false
 	app.snapshot_cached = false
@@ -3787,7 +3807,7 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 	}
 	app.install_browser_history_listeners()
 	app.record_browser_visit(loaded)
-	app.relayout(if app.viewport_width > 0 { app.viewport_width } else { initial_width }, if app.viewport_height > 0 {
+	app.prepare_initial_document_layout(if app.viewport_width > 0 { app.viewport_width } else { initial_width }, if app.viewport_height > 0 {
 		app.viewport_height + app.chrome_height()
 	} else {
 		initial_height
@@ -3796,7 +3816,7 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 	// Script-inserted images laid out near the viewport, whose bytes the disk
 	// cache holds, are completed before the first paint. One whose size cannot
 	// depend on its natural size only needs repainting.
-	ready_script_images := app.request_script_inserted_images()
+	ready_script_images := if app.initial_layout_pending { []string{} } else { app.request_script_inserted_images() }
 	if ready_script_images.len > 0 && app.complete_script_inserted_images(url_set(ready_script_images)) {
 		if app.document.layout_is_up_to_date() {
 			app.paint_commands_pending = true

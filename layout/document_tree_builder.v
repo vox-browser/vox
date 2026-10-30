@@ -273,6 +273,66 @@ fn prepare_document_for_layout(document &dom.Document) {
 	materialize_media_controls_shadow_trees(document)
 }
 
+// Prepare the same document/style inputs as a first layout without producing
+// geometry. Native navigation can return to its task queue after this step;
+// forced DOM geometry queries retain the ordinary installed layout hook.
+pub fn prepare_initial_document_fonts(document &dom.Document) {
+	mut font_policy := platform.begin_layout_font_policy_scope()
+	defer { font_policy.finish() }
+	mut allocations := document.enter_native_storage()
+	defer { allocations.finish() }
+	css.begin_selector_parse_cache()
+	defer { css.end_selector_parse_cache() }
+	prepare_document_style_inputs(document)
+	install_document_layout_hook(document)
+	mut owner := unsafe { &dom.Document(document) }
+	owner.update_style()
+	// Start only faces selected by rendered text, without building throwaway
+	// fallback geometry. Metric-only font queries intentionally do not fetch.
+	computer := css.css_style_computer_for(document).font_computer()
+	unsafe { &dom.Node(document) }.visit_subtree(fn [computer] (node &dom.Node) dom.TraversalDecision {
+		if element := node.as_element() {
+			computed := css.computed_properties_for_element(element) or { return .skip_children_and_continue }
+			if computed.display().is_none() { return .skip_children_and_continue }
+			// Non-rendered SVG definitions are instantiated by their referencers.
+			if !element.is_html_element() && element.local_name() in ['defs', 'symbol', 'clipPath', 'mask', 'pattern', 'filter', 'marker', 'title', 'desc'] {
+				return .skip_children_and_continue
+			}
+			return .@continue
+		}
+		if !node.is_text() { return .@continue }
+		data := node.as_character_data() or { return .@continue }
+		parent := node.parent_element() or { return .@continue }
+		computed := css.computed_properties_for_element(parent) or { return .@continue }
+		if computed.visibility() != .visible { return .@continue }
+		text := data.data()
+		if text.len == 0 || (string_is_ascii_whitespace(text)
+			&& computed.white_space_collapse() in [.collapse, .preserve_breaks]) {
+			return .@continue
+		}
+		fonts := computed.computed_font_list(computer)
+		for code_point in text.runes() {
+			_ = fonts.font_for_code_point_for_shaping(u32(code_point))
+		}
+		return .@continue
+	})
+}
+
+fn prepare_document_style_inputs(document &dom.Document) {
+	mut owner := unsafe { &dom.Document(document) }
+	// Browsing identity and its registry outlive document payload storage.
+	identity_storage := platform.enter_persistent()
+	if owner.get_browsing_context() == none {
+		owner.set_browsing_context(&dom.BrowsingContext{active_document_:document})
+	}
+	if owner.navigable() == none {
+		owner.set_cached_navigable(&dom.Navigable{active_document_:document})
+	}
+	platform.leave_persistent(identity_storage)
+	prepare_document_for_layout(document)
+	css.sync_document_style_elements(document)
+}
+
 // Selection and caret painting read these native owners. Create their rendering
 // state before style and layout, so the first display list cannot insert an
 // input shadow tree into an already committed document.
@@ -665,26 +725,11 @@ fn run_document_layout_with_renderer_mode(document &dom.Document, viewport_width
 	// size must preserve scrolling without turning a paint update into a resize.
 	viewport_changed := old_viewport.width != viewport_width || old_viewport.height != viewport_height
 	mutable_document.set_viewport_rect(dom.Rect{old_viewport.x, old_viewport.y, viewport_width, viewport_height})
-	// Navigable identity and its process-wide registry outlive document payload
-	// storage. Isolated SVGs can first reach this path inside their payload owner.
-	identity_storage := platform.enter_persistent()
-	if mutable_document.get_browsing_context() == none {
-		mutable_document.set_browsing_context(&dom.BrowsingContext{
-			active_document_: document
-		})
-	}
-	if mutable_document.navigable() == none {
-		mutable_document.set_cached_navigable(&dom.Navigable{
-			active_document_: document
-		})
-	}
-	platform.leave_persistent(identity_storage)
 	css.begin_selector_parse_cache()
 	defer {
 		css.end_selector_parse_cache()
 	}
-	prepare_document_for_layout(document)
-	css.sync_document_style_elements(document)
+	prepare_document_style_inputs(document)
 	if build_paint_tree {
 		install_document_layout_hook(document)
 	} else {

@@ -17,6 +17,17 @@ fn (mut app BrowserApp) finish_frame_preparation() {
 	if app.frame_preparation_depth == 0 { return }
 	mut heap_scope := platform.begin_browser_activity_heap_scope_for_scripting(app.document_scripting_enabled_for_heap())
 	defer { heap_scope.finish() }
+	if app.initial_layout_pending {
+		if app.initial_layout_waits_for_fonts() {
+			app.frame_preparation_depth--
+			return
+		}
+		app.relayout(app.viewport_width, app.viewport_height + app.chrome_height())
+		if app.initial_layout_pending {
+			app.frame_preparation_depth--
+			return
+		}
+	}
 	app.frame_preparation_depth--
 	app.flush_page_editing_scroll()
 	if app.layout_tree_only { return }
