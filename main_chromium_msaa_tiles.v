@@ -126,6 +126,18 @@ $if test {
 
 fn chromium_msaa_trigger_rect(command layout.PaintCommand) ?layout.LayoutRect {
 	match command.kind {
+		'paint_uniform_border' {
+			// An elliptical ring clips its inner rrect through the path
+			// renderer. Other draws in the same tile share that MSAA pass.
+			r := command.corner_radii
+			if r.top_left.x == r.top_left.y && r.top_right.x == r.top_right.y
+				&& r.bottom_right.x == r.bottom_right.y && r.bottom_left.x == r.bottom_left.y {
+				return none
+			}
+			outset := math.max(command.stroke_width, 0) / 2 + 1
+			return transformed_raster_bounds(command.transform, command.x - outset,
+				command.y - outset, command.width + outset * 2, command.height + outset * 2)
+		}
 		'paint_rounded_border_top', 'paint_rounded_border_right', 'paint_rounded_border_bottom', 'paint_rounded_border_left' {
 			// A single rounded side is filled through intersecting outer and
 			// inner clips (and corner miters), requiring a multisampled pass.

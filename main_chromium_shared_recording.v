@@ -84,9 +84,18 @@ fn chromium_shared_recording_leaf_supported(command &layout.PaintCommand) (bool,
 		return true, false
 	}
 	if !chromium_shared_recording_clips_supported(command)
-		|| command.clip_outs.len > 0 || command.blur != 0 || command.outer_shadow {
+		|| command.clip_outs.len > 0 || command.outer_shadow {
 		return false, false
 	}
+	if command.kind == 'paint_inner_box_shadow' {
+		data := command.box_shadow_data
+		if data == unsafe { nil } || command.width <= 0 || command.height <= 0
+			|| data.content_rect.width <= 0 || data.content_rect.height <= 0 {
+			return false, false
+		}
+		return true, true
+	}
+	if command.blur != 0 { return false, false }
 	match command.kind {
 		'draw_background_image' {
 			data := command.image_data

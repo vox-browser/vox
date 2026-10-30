@@ -28,6 +28,13 @@ static std::vector<uint8_t> render_inner(int root, int opaque, int scale, int al
     ladybird_v_skia_set_chromium_painting(enabled);
     ladybird_v_skia_set_raster_layer(0, 0, root);
     if (grouped) {
+        int tile = 0;
+        ladybird_v_skia_set_raster_layer_size(128, 96);
+        ladybird_v_skia_set_msaa_grid(&tile, 1, 128 * scale, 256, 1);
+        ladybird_v_skia_set_shared_recording(1, 128, 96);
+        assert(!ladybird_v_skia_begin_inset_decorations(context,
+            16, 14, 80, 60, 128, 96, 0, 0));
+        ladybird_v_skia_set_shared_recording(0, 128, 96);
         assert(ladybird_v_skia_begin_inset_decorations(context,
             16, 14, 80, 60, 128, 96, 0, 0));
         assert(!ladybird_v_skia_begin_inset_decorations(context,
@@ -46,6 +53,7 @@ static std::vector<uint8_t> render_inner(int root, int opaque, int scale, int al
     }
     CGContextFlush(context);
     CGContextRelease(context);
+    ladybird_v_skia_set_msaa_grid(nullptr, 0, 0, 0, 0);
     bool changed = false;
     for (int y = 0; y < height; ++y) {
         for (int x = 0; x < pitch; ++x) {

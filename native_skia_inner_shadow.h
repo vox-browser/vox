@@ -1,5 +1,35 @@
 // Included after the raster-grid and shared-picture helpers. Inset shadows
 // retain their rounded padding-box hole and clip through the Chromium GPU backend.
+static sk_sp<SkData> inset_picture_bytes(SkPicture* picture, bool multisampled)
+{
+    sk_sp<SkPicture> forced;
+    if (multisampled) {
+        auto bounds = picture->cullRect();
+        SkPictureRecorder recorder;
+        auto* canvas = recorder.beginRecording(bounds);
+        canvas->drawPicture(picture);
+        // Graphite chooses multisampling for a complete render pass. Carry
+        // the owning tile's choice even when this picture has only analytic
+        // shapes. A transparent complex path keeps every color unchanged.
+        SkPaint noop;
+        noop.setAntiAlias(true);
+        noop.setShader(SkShaders::Color(SK_ColorTRANSPARENT));
+        SkPath path;
+        path.moveTo(bounds.left(), bounds.top());
+        path.cubicTo(bounds.right(), bounds.top() + bounds.height() * .1f,
+            bounds.left(), bounds.bottom(), bounds.right(), bounds.bottom());
+        path.lineTo(bounds.left() + bounds.width() * .5f,
+            bounds.top() + bounds.height() * .2f);
+        path.close();
+        canvas->drawPath(path, noop);
+        forced = recorder.finishRecordingAsPicture();
+        picture = forced.get();
+    }
+    SkSerialProcs procs;
+    procs.fImageProc = serialize_shared_picture_image;
+    return picture->serialize(&procs);
+}
+
 extern "C" int ladybird_v_skia_draw_inner_box_shadow(CGContextRef destination,
     float const* outer_data, float const* inner_data, float const* content_data,
     float const* clip_data, float const* transform, float page_x, float page_y,
@@ -74,30 +104,54 @@ extern "C" int ladybird_v_skia_draw_inner_box_shadow(CGContextRef destination,
     if (!inner.isEmpty()) path.addRRect(inner);
     SkPaint paint;
     paint.setAntiAlias(true);
-    paint.setColor(SkColorSetARGB(alpha, red, green, blue));
+    paint.setColor(SkColorSetRGB(red, green, blue));
+    paint.setColorFilter(SkColorFilters::Blend(
+        SkColor4f::FromColor(SkColorSetARGB(alpha, red, green, blue)),
+        SkColorSpace::MakeSRGB(), SkBlendMode::kSrcIn));
     if (blur > 0) paint.setMaskFilter(SkMaskFilter::MakeBlur(kNormal_SkBlurStyle, blur / 2));
-    if (auto* recording = isolated_input_recording_canvas(destination)) {
+    SkRRect outer;
+    outer.setRect(caster.makeOffset(-offset_x, -offset_y));
+    auto local_inner = inner;
+    local_inner.offset(-offset_x, -offset_y);
+    // Keep Skia's double-rrect operation. Its circular-hole fast path has
+    // different coverage and blur rounding from an equivalent even-odd path.
+    auto draw_shadow = [&](SkCanvas* target) {
+        if (!inner.isEmpty() && caster.contains(inner.rect())) {
+            // Blink retains the offset on the canvas after installing the
+            // content clip. Moving the vertices changes clip-edge rounding.
+            target->save();
+            target->translate(offset_x, offset_y);
+            target->drawDRRect(outer, local_inner, paint);
+            target->restore();
+        } else {
+            target->drawPath(path, paint);
+        }
+    };
+    if (auto* recording = shared_recording_canvas(destination)) {
         recording->save();
         shared_recording_clip(destination, recording);
         recording->setMatrix(matrix);
         recording->clipRRect(content, true);
-        recording->drawPath(path, paint);
+        draw_shadow(recording);
         recording->restore();
         shared_recording_content(destination, matrix.mapRect(content.rect()), page_y, scroll_y);
     }
-    canvas->drawPath(path, paint);
+    draw_shadow(canvas);
     auto picture = recorder.finishRecordingAsPicture();
-    SkSerialProcs procs;
-    procs.fImageProc = serialize_shared_picture_image;
-    auto bytes = picture->serialize(&procs);
+    auto bytes = inset_picture_bytes(picture.get(), false);
+    sk_sp<SkData> multisampled_bytes;
     if (!bytes) return 0;
     bool rendered = draw_chromium_root_raster_grid(pixels, width, height,
         region, page_x, page_y, scroll_y, scale,
-        [&](auto& tile, long offset_x, long offset_y, bool) {
+        [&](auto& tile, long offset_x, long offset_y, bool multisampled) {
+            if (multisampled && !multisampled_bytes)
+                multisampled_bytes = inset_picture_bytes(picture.get(), true);
+            auto const& selected = multisampled ? multisampled_bytes : bytes;
+            if (!selected) return false;
             float translation[] {1, 0, float(offset_x), 0, 1, float(offset_y), 0, 0, 1};
             return draw(reinterpret_cast<uint8_t*>(tile.data()), s_msaa_grid_width,
-                s_msaa_grid_height, s_msaa_grid_width * 4, bytes->data(),
-                bytes->size(), translation) != 0;
+                s_msaa_grid_height, s_msaa_grid_width * 4, selected->data(),
+                selected->size(), translation) != 0;
         });
     if (!rendered) {
         float identity[] {1, 0, 0, 0, 1, 0, 0, 0, 1};
@@ -124,7 +178,7 @@ extern "C" int ladybird_v_skia_begin_inset_decorations(CGContextRef destination,
     float x, float y, float width, float height, float canvas_width,
     float canvas_height, float page_y, float scroll_y)
 {
-    if (!s_chromium_painting || !s_raster_layer_is_root || !destination
+    if (!s_chromium_painting || !s_raster_layer_is_root || !destination || s_shared_root_enabled
         || !shared_picture_draw() || s_inset_decoration_recording
         || s_isolated_input_recordings.count(destination)) return 0;
     for (float value : {x, y, width, height, canvas_width, canvas_height, page_y, scroll_y})
@@ -172,18 +226,21 @@ extern "C" int ladybird_v_skia_end_inset_decorations(CGContextRef destination)
     canvas->translate(-group->region.left, -group->region.top);
     canvas->drawPicture(content);
     auto picture = recorder.finishRecordingAsPicture();
-    SkSerialProcs procs;
-    procs.fImageProc = serialize_shared_picture_image;
-    auto bytes = picture->serialize(&procs);
+    auto bytes = inset_picture_bytes(picture.get(), false);
+    sk_sp<SkData> multisampled_bytes;
     if (!bytes) return 0;
     auto pixels = group->backdrop;
     auto draw = shared_picture_draw();
     bool rendered = draw_chromium_root_raster_grid(pixels, group->width, group->height,
         group->region, 0, group->page_y, group->scroll_y, group->scale,
-        [&](auto& tile, long offset_x, long offset_y, bool) {
+        [&](auto& tile, long offset_x, long offset_y, bool multisampled) {
+            if (multisampled && !multisampled_bytes)
+                multisampled_bytes = inset_picture_bytes(picture.get(), true);
+            auto const& selected = multisampled ? multisampled_bytes : bytes;
+            if (!selected) return false;
             float translation[] {1, 0, float(offset_x), 0, 1, float(offset_y), 0, 0, 1};
             return draw(reinterpret_cast<uint8_t*>(tile.data()), s_msaa_grid_width,
-                s_msaa_grid_height, s_msaa_grid_width * 4, bytes->data(), bytes->size(), translation) != 0;
+                s_msaa_grid_height, s_msaa_grid_width * 4, selected->data(), selected->size(), translation) != 0;
         });
     if (!rendered) {
         float identity[] {1, 0, 0, 0, 1, 0, 0, 0, 1};

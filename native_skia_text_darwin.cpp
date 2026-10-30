@@ -36,6 +36,7 @@
 #include "include/core/SkMaskFilter.h"
 #include "include/core/SkMatrix.h"
 #include "include/core/SkPaint.h"
+#include "include/core/SkShader.h"
 #include "include/core/SkPicture.h"
 #include "include/core/SkPictureRecorder.h"
 #include "include/core/SkSerialProcs.h"
