@@ -1099,6 +1099,38 @@ extern "C" int ladybird_v_skia_face_advances(char const* font_path, int face_ind
     return 1;
 }
 
+// Glyph paths for a variable face must use the same instance as glyph replay.
+// The portable TrueType reader retains the default contours without gvar.
+extern "C" int ladybird_v_skia_glyph_intercepts(char const* key, int face_index,
+    float size, int weight, int italic, int synthesis_disabled,
+    uint16_t const* glyphs, float const* xy, int count, float top, float bottom,
+    float* output, int capacity)
+{
+    if (!key || !std::isfinite(size) || !(size > 0) || !std::isfinite(top)
+        || !std::isfinite(bottom) || top > bottom || count < 0 || count > 32768
+        || capacity < 0) return -1;
+    if (!count) return 0;
+    if (!glyphs || !xy || !output) return -1;
+    auto* typeface = select_typeface(key, face_index, weight, 0);
+    if (!typeface) return -1;
+    std::vector<SkPoint> positions;
+    positions.reserve(count);
+    for (int index = 0; index < count; ++index) {
+        if (!std::isfinite(xy[index * 2]) || !std::isfinite(xy[index * 2 + 1])) return -1;
+        positions.push_back(SkPoint::Make(xy[index * 2], xy[index * 2 + 1]));
+    }
+    SkFont font(sk_ref_sp(typeface), size);
+    font.setSubpixel(true);
+    font.setEmbolden(weight >= 600 && !(synthesis_disabled & 1)
+        && typeface->fontStyle().weight() < 600);
+    font.setSkewX(italic && !(synthesis_disabled & 2) && !typeface->isItalic() ? -.25f : 0);
+    auto intervals = font.getIntercepts({glyphs, static_cast<size_t>(count)},
+        {positions.data(), positions.size()}, top, bottom);
+    if (intervals.size() > static_cast<size_t>(capacity)) return -1;
+    std::copy(intervals.begin(), intervals.end(), output);
+    return static_cast<int>(intervals.size());
+}
+
 static bool apply_unrounded_glyph_color(SkPaint&);
 
 static int draw_retained_glyph_run(CGContextRef destination,

@@ -101,6 +101,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_fractional_underline_colors_keep_precision_in_the_parent_raster(self):
         self.compare_fixture('forum-fractional-underline-color')
 
+    def test_variable_font_underlines_skip_the_instantiated_glyph_ink(self):
+        self.compare_fixture('stackoverflow-variable-font-skip-ink')
+
 
 if __name__ == '__main__':
     unittest.main()
