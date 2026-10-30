@@ -828,3 +828,38 @@ font and geometry diagnostics are under
 `Build/forum-news-so-native-colors-20261030/`; they do not themselves validate a
 fix. Broad-test baseline remains `88275919`; this is the eighth completed
 native fix since that baseline.
+
+
+## Remaining color diagnostics and discarded experiment, 30 October 2026
+
+Read-only tracing confirms that Stack Overflow's fractional text colors reach
+the GPU. For the traced opaque glyph patches, GPU readback and the final native
+PNG agree exactly; the one-channel difference from Brave is already present
+before the capture. Reduced direct, variable, calculated and RGB color cases
+still match their own Brave references, so they do not establish the cause of
+the full-page difference.
+
+A broader solid-SVG RGB pass-through experiment was **discarded**. Its diagnostic
+fixture changes from 13,089 to 13,207 differing pixels, including a scaled-icon
+regression, while the existing fifteen fixtures remain exact. Tracing confirms
+that the proposed float channels reached the native batch. Those results do not
+justify adopting the change. Its patch, fixture, agreeing Brave references and
+failed checks remain under `Build/forum-news-svg-rgb-20261030/`; the experiment
+adds no source change, test-suite change or completed-fix credit.
+
+The installed bundle is rebuilt from the restored source after the experiment.
+The first restoration attempt reports a busy shared production guard and queues
+no build. A concurrent shared build detects changed inputs and exits 2; that
+result receives no validation credit. The subsequent restoration completes
+within the unchanged 12 GiB guard with stable watched inputs. The fifteen native
+Brave fixtures, three canonical SVG reftests, signing and startup smoke check
+pass on one fresh executable/library/snapshot identity. Evidence is retained in
+`restore-production-retry/` and `restore-verified/` under the experiment directory.
+Broad-test cadence remains **eight** completed native fixes after `88275919`.
+
+The restoration's full-uBO checks retain HN **0** and Stack Overflow **592**
+differing pixels, each with an exact live-to-frozen reference. Both restored
+Stack Overflow PNGs are pixel-identical to their matching pre-experiment gap-fix
+captures. The 326-file oracle template is unchanged. This focused restoration
+check does not replace the preceding full ten-site matrix: strict acceptance
+remains **one of ten**.
