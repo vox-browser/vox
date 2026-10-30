@@ -138,6 +138,7 @@ def main():
                "skia_enable_graphite=true", "skia_use_metal=true",
                'extra_cflags=["-fPIC","-fvisibility=hidden",'
                '"-DSK_GRAPHITE_USE_LEGACY_RRECT_CLIP_SHADER",'
+               '"-DSK_SUPPORT_LEGACY_RRECT_TRANSFORM",'
                '"-DSK_SUPPORT_LEGACY_ANISOTROPIC_MIPMAP_SCALE"]']
     gn_args += [f"skia_enable_{name}=false" for name in disabled]
     gn_args += [f"skia_use_{name}=false" for name in unused]

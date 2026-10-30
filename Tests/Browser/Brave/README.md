@@ -68,6 +68,13 @@ selects multisampling. Each background/border pair shares one root picture;
 the 1280×800, scale 1 fixture is exact against Brave 156.1.98.60. Separate draws
 previously differed at 15 pixels, all by one channel level.
 
+`rounded-image-clip-transform` checks a minified bitmap inside a translated
+rounded clip at 1280×800 and scale 1. Both GPU backends use Chromium's
+`SK_SUPPORT_LEGACY_RRECT_TRANSFORM` option, preserving the clip's radii through
+the raster transform. The fixture is exact against Brave 156.1.98.60; deriving
+the transformed radii from a contour differed at nine pixels. Its image is a
+713×540 decoded mip of the frozen vlang.io compilation poster.
+
 `box-shadow-blur` checks square and two rounded outer shadows. The native
 Chromium profile uses an isolated Skia 155 Metal backend for these shadows,
 including Chromium's legacy rounded clip shader and full precision arithmetic.
