@@ -1,0 +1,12 @@
+<!doctype html>
+<meta charset="utf-8">
+<style>
+  body { margin: 24px; background: #090b0f; font: 72px/1.25 Arial; font-synthesis: none; }
+  .gradient { color: transparent; background-clip: text; }
+  .linear { background-image: linear-gradient(110deg, #79a8f3, #c9ddff 55%, #729bde); }
+  .radial { background-image: radial-gradient(ellipse at 20% 30%, #f7bc86, #a073cb 75%); }
+  .block { width: 660px; margin-top: 28px; }
+</style>
+<span class="gradient linear">Gradient <b>text</b></span>
+<div class="gradient radial block">Retained glyphs</div>
+<div class="block"><span class="gradient linear">Wrapped gradient words</span></div>

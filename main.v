@@ -179,6 +179,8 @@ fn compact_select_value(select_element &dom.HTMLSelectElement) string {
 	return ''
 }
 
+fn C.native_prepare_background_text_gradient_input()
+
 fn C.native_finish_background_text_clip()
 
 fn C.native_end_background_text_clip()
@@ -7287,6 +7289,14 @@ fn (mut app BrowserApp) draw() {
 				if group_end > command_index {
 					shared_svg_end = group_end
 					continue
+				}
+			}
+			$if macos {
+				if app.ctx.native_rendering && app.document != unsafe { nil }
+					&& app.document.font_rendering_policy() == .chromium
+					&& command.kind == 'begin_background_text_clip'
+					&& chromium_gradient_text_input_supported(app.paint_commands, command_index) {
+					C.native_prepare_background_text_gradient_input()
 				}
 			}
 			if app.scroll_profile.active && app.scroll_profile.replay_kinds {

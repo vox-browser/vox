@@ -82,17 +82,17 @@ namespace {
 
 VoxRasterBufferPool s_sparse_raster_pool;
 
-struct CSSGradientBlurRecording {
+struct IsolatedInputRecording {
     SkPictureRecorder recorder;
     SkRect bounds = SkRect::MakeEmpty();
     bool unsupported = false;
 };
-std::unordered_map<CGContextRef, std::unique_ptr<CSSGradientBlurRecording>> s_css_gradient_blur_recordings;
+std::unordered_map<CGContextRef, std::unique_ptr<IsolatedInputRecording>> s_isolated_input_recordings;
 
-SkCanvas* css_gradient_blur_recording_canvas(CGContextRef context)
+SkCanvas* isolated_input_recording_canvas(CGContextRef context)
 {
-    auto found = s_css_gradient_blur_recordings.find(context);
-    return found == s_css_gradient_blur_recordings.end() ? nullptr
+    auto found = s_isolated_input_recordings.find(context);
+    return found == s_isolated_input_recordings.end() ? nullptr
         : found->second->recorder.getRecordingCanvas();
 }
 
@@ -1164,6 +1164,11 @@ static int draw_retained_glyph_run(CGContextRef destination,
         0.0f, 0.0f, 1.0f);
 
     if (auto* canvas = shared_recording_canvas(destination)) {
+        auto input = s_isolated_input_recordings.find(destination);
+        if (input != s_isolated_input_recordings.end()) {
+            auto bounds = blob->bounds().makeOffset(baseline_x, baseline_y);
+            input->second->bounds.join(matrix.mapRect(bounds));
+        }
         canvas->save();
         shared_recording_clip(destination, canvas);
         canvas->setMatrix(matrix);
@@ -2110,24 +2115,107 @@ extern "C" int ladybird_v_skia_draw_css_blur(CGContextRef destination,
         scale, SkImageFilters::Blur(sigma * scale, sigma * scale, SkTileMode::kDecal, nullptr));
 }
 
-extern "C" int ladybird_v_skia_begin_css_gradient_blur(CGContextRef context,
+extern "C" int ladybird_v_skia_begin_isolated_input(CGContextRef context,
     float width, float height)
 {
     if (!context || !s_chromium_painting || !shared_picture_draw()
         || !(width > 0 && height > 0) || width > 16384 || height > 16384) return 0;
-    auto recording = std::make_unique<CSSGradientBlurRecording>();
+    auto recording = std::make_unique<IsolatedInputRecording>();
     recording->recorder.beginRecording(SkRect::MakeWH(width, height));
-    s_css_gradient_blur_recordings[context] = std::move(recording);
+    s_isolated_input_recordings[context] = std::move(recording);
     return 1;
+}
+
+// A mask context is released before its content context is allocated. Detach
+// its owned recording first, so CoreGraphics can safely reuse that address.
+extern "C" void* ladybird_v_skia_take_isolated_input(CGContextRef context)
+{
+    auto found = s_isolated_input_recordings.find(context);
+    if (found == s_isolated_input_recordings.end()) return nullptr;
+    auto* recording = found->second.release();
+    s_isolated_input_recordings.erase(found);
+    return recording;
+}
+
+extern "C" void ladybird_v_skia_discard_isolated_input(void* input)
+{
+    delete static_cast<IsolatedInputRecording*>(input);
+}
+
+// Consumes both inputs on success and failure; the native bitmap inputs remain
+// available for fallback when recording, backdrop access or GPU replay fails.
+extern "C" int ladybird_v_skia_draw_gradient_text(CGContextRef context,
+    void* mask_input, CGContextRef destination, float canvas_width,
+    float canvas_height, float scale, float x, float y, float width, float height)
+{
+    std::unique_ptr<IsolatedInputRecording> mask(
+        static_cast<IsolatedInputRecording*>(mask_input));
+    std::unique_ptr<IsolatedInputRecording> content(
+        static_cast<IsolatedInputRecording*>(ladybird_v_skia_take_isolated_input(context)));
+    if (!mask || !content || mask->unsupported || content->unsupported
+        || mask->bounds.isEmpty() || content->bounds.isEmpty() || !destination
+        || !s_chromium_painting || !shared_picture_draw()
+        || !(canvas_width > 0 && canvas_height > 0 && scale > 0 && width > 0 && height > 0))
+        return 0;
+    auto mask_picture = mask->recorder.finishRecordingAsPicture();
+    auto content_picture = content->recorder.finishRecordingAsPicture();
+    if (!mask_picture || !content_picture) return 0;
+    int pixel_width = raster_dimension(canvas_width, scale);
+    int pixel_height = raster_dimension(canvas_height, scale);
+    if (pixel_width > 16384 || pixel_height > 16384
+        || size_t(pixel_width) * pixel_height > 8 * 1024 * 1024) return 0;
+    std::vector<uint32_t> pixels(size_t(pixel_width) * pixel_height);
+    RasterRegion region {0, 0, static_cast<int>(std::ceil(canvas_width)),
+        static_cast<int>(std::ceil(canvas_height))};
+    if (!copy_backdrop(destination, region, scale, pixel_width, pixel_height, pixels)) return 0;
+    auto info = SkImageInfo::Make(pixel_width, pixel_height, kBGRA_8888_SkColorType,
+        kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
+    auto backdrop = SkImages::RasterFromPixmapCopy(
+        SkPixmap(info, pixels.data(), size_t(pixel_width) * 4));
+    if (!backdrop) return 0;
+    SkPictureRecorder output;
+    auto* canvas = output.beginRecording(SkRect::MakeWH(pixel_width, pixel_height));
+    canvas->drawImage(backdrop, 0, 0);
+    canvas->scale(scale, scale);
+    auto bounds = SkRect::MakeXYWH(x, canvas_height - y - height, width, height);
+    canvas->clipRect(bounds);
+    canvas->saveLayer(bounds, nullptr);
+    canvas->drawPicture(content_picture);
+    SkPaint mask_paint;
+    mask_paint.setBlendMode(SkBlendMode::kDstIn);
+    canvas->saveLayer(bounds, &mask_paint);
+    canvas->drawPicture(mask_picture);
+    canvas->restore();
+    canvas->restore();
+    auto picture = output.finishRecordingAsPicture();
+    SkSerialProcs procs;
+    procs.fImageProc = serialize_shared_picture_image;
+    auto bytes = picture->serialize(&procs);
+    float identity[] {1, 0, 0, 0, 1, 0, 0, 0, 1};
+    if (!bytes || !shared_picture_draw()(reinterpret_cast<uint8_t*>(pixels.data()),
+            pixel_width, pixel_height, pixel_width * 4, bytes->data(), bytes->size(), identity))
+        return 0;
+    // Replaying the backdrop can round an existing colored glyph by one level.
+    // Publish only the mask's device-aligned bounds, preserving other content.
+    CGContextSaveGState(destination);
+    auto left = std::floor(x * scale) / scale;
+    auto bottom = std::floor(y * scale) / scale;
+    auto right = std::ceil((x + width) * scale) / scale;
+    auto top = std::ceil((y + height) * scale) / scale;
+    CGContextClipToRect(destination, CGRectMake(left, bottom, right - left, top - bottom));
+    auto drawn = composite_pixels(destination, std::move(pixels), pixel_width, pixel_height,
+        0, 0, canvas_width, canvas_height, true);
+    CGContextRestoreGState(destination);
+    return drawn;
 }
 
 extern "C" int ladybird_v_skia_end_css_gradient_blur(CGContextRef context,
     CGContextRef destination, float canvas_width, float canvas_height, float scale, float sigma)
 {
-    auto found = s_css_gradient_blur_recordings.find(context);
-    if (found == s_css_gradient_blur_recordings.end()) return 0;
+    auto found = s_isolated_input_recordings.find(context);
+    if (found == s_isolated_input_recordings.end()) return 0;
     auto recording = std::move(found->second);
-    s_css_gradient_blur_recordings.erase(found);
+    s_isolated_input_recordings.erase(found);
     if (recording->unsupported || recording->bounds.isEmpty() || !destination
         || !(scale > 0 && sigma > 0)) return 0;
     auto input = recording->recorder.finishRecordingAsPicture();

@@ -72,6 +72,19 @@ path requires constant alpha or constant RGB so straight and premultiplied
 interpolation agree; other color spaces and gradients retain the existing
 renderer. All three cases require exact equality.
 
+`background-clip-text-retained-gradient` checks linear and radial gradients
+clipped to shaped text at 800×600 and scale 1. Eligible masks retain the original
+glyph and gradient operations through GPU DestinationIn composition, avoiding
+an intermediate 8-bit gradient image. Both block cases are pixel-exact against
+Brave 156.1.98.60. Mixed backgrounds and fallback glyph drawing retain the
+existing bitmap path.
+
+The unchanged broader input and its original Brave reference are preserved in
+[`diagnostic/background-clip-text-retained-gradient.html`](diagnostic/background-clip-text-retained-gradient.html).
+Its inline angled gradient still has one-level dither differences, and its
+wrapped inline background has larger positioning differences. Those cases
+remain open; the exact block fixture does not establish general inline parity.
+
 A fully transparent gradient stop contributes no premultiplied RGB. The
 constant-color GPU path therefore normalizes its invisible RGB to the visible
 color before interpolating. `css-linear-premult-transparent` checks an angled

@@ -190,7 +190,12 @@ extern int ladybird_v_skia_draw_rgba_image_tiles(CGContextRef destination,
 	float transform_d, float transform_e, float transform_f, float page_x,
 	float page_y, float scroll_y, float canvas_width, float canvas_height,
 	float opacity, int nearest_neighbor, int image_flags, float const *clip_radii);
-extern int ladybird_v_skia_begin_css_gradient_blur(CGContextRef context, float width, float height);
+extern int ladybird_v_skia_begin_isolated_input(CGContextRef context, float width, float height);
+extern void *ladybird_v_skia_take_isolated_input(CGContextRef context);
+extern void ladybird_v_skia_discard_isolated_input(void *input);
+extern int ladybird_v_skia_draw_gradient_text(CGContextRef context, void *mask_input,
+	CGContextRef destination, float canvas_width, float canvas_height, float scale,
+	float x, float y, float width, float height);
 extern int ladybird_v_skia_end_css_gradient_blur(CGContextRef context, CGContextRef destination,
     float width, float height, float scale, float sigma);
 extern int ladybird_v_skia_draw_css_blur(CGContextRef destination,
@@ -2557,7 +2562,7 @@ void native_record_css_gradient_blur_input(void) {
 	if (!layer->active || layer->operation_count != 1 || layer->operations[0].kind != 0
 		|| layer->destination != native_font_compositing_context
 		|| native_font_compositing_transparency_depth != 0) return;
-	layer->gradient_blur_recording = ladybird_v_skia_begin_css_gradient_blur(layer->context,
+	layer->gradient_blur_recording = ladybird_v_skia_begin_isolated_input(layer->context,
 		layer->canvas_width, layer->canvas_height);
 #endif
 }
@@ -4050,6 +4055,20 @@ static CGContextRef native_background_text_destination;
 static CGImageRef native_background_text_clip_image;
 static CGRect native_background_text_clip_rect;
 static int native_background_text_clip_active;
+static int native_background_text_gradient_pending;
+static int native_background_text_gradient_recording;
+static void *native_background_text_mask_input;
+static float native_background_text_canvas_width, native_background_text_canvas_height;
+
+void native_prepare_background_text_gradient_input(void) {
+	native_background_text_gradient_pending = 1;
+}
+
+static void native_discard_background_text_recording(CGContextRef context) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	ladybird_v_skia_discard_isolated_input(ladybird_v_skia_take_isolated_input(context));
+#endif
+}
 
 void native_begin_background_text_clip(float canvas_width, float canvas_height,
 	float clip_x, float clip_y, float clip_width, float clip_height) {
@@ -4057,11 +4076,13 @@ void native_begin_background_text_clip(float canvas_width, float canvas_height,
 	ladybird_v_skia_block_shared_clip([[NSGraphicsContext currentContext] CGContext]);
 #endif
 	if (native_background_text_content_context != NULL) {
+		native_discard_background_text_recording(native_background_text_content_context);
 		CGContextRelease(native_background_text_content_context);
 		native_background_text_content_context = NULL;
 	}
 	native_background_text_destination = NULL;
 	if (native_background_text_clip_build_context != NULL) {
+		native_discard_background_text_recording(native_background_text_clip_build_context);
 		CGContextRelease(native_background_text_clip_build_context);
 		native_background_text_clip_build_context = NULL;
 	}
@@ -4069,6 +4090,14 @@ void native_begin_background_text_clip(float canvas_width, float canvas_height,
 		CGImageRelease(native_background_text_clip_image);
 		native_background_text_clip_image = NULL;
 	}
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	ladybird_v_skia_discard_isolated_input(native_background_text_mask_input);
+#endif
+	native_background_text_mask_input = NULL;
+	native_background_text_gradient_recording = native_background_text_gradient_pending;
+	native_background_text_gradient_pending = 0;
+	native_background_text_canvas_width = canvas_width;
+	native_background_text_canvas_height = canvas_height;
 	CGRect canvas_rect = CGRectMake(0, 0, canvas_width, canvas_height);
 	native_background_text_clip_rect = CGRectIntersection(
 		CGRectStandardize(CGRectMake(clip_x, clip_y, clip_width, clip_height)), canvas_rect);
@@ -4094,6 +4123,12 @@ void native_begin_background_text_clip(float canvas_width, float canvas_height,
 		-native_background_text_clip_rect.origin.x,
 		-native_background_text_clip_rect.origin.y);
 	CGContextSetShouldAntialias(native_background_text_clip_build_context, true);
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	if (native_background_text_gradient_recording) {
+		native_background_text_gradient_recording = ladybird_v_skia_begin_isolated_input(
+			native_background_text_clip_build_context, canvas_width, canvas_height);
+	}
+#endif
 }
 
 void native_add_background_text_clip_run(float x, float y, string value,
@@ -4101,6 +4136,9 @@ void native_add_background_text_clip_run(float x, float y, string value,
 	if (native_background_text_clip_build_context == NULL) {
 		return;
 	}
+	// CoreText fallback drawing is absent from the retained Skia mask.
+	native_discard_background_text_recording(native_background_text_clip_build_context);
+	native_background_text_gradient_recording = 0;
 	NSString *text = native_capture_string(value);
 	NSFont *font = native_document_font(size, bold, italic, monospace);
 	NSGraphicsContext *graphics = [NSGraphicsContext
@@ -4143,12 +4181,22 @@ int native_add_background_glyph_clip_run(const uint16_t *glyphs,
 void native_finish_background_text_clip(void) {
 	CGContextRef destination = [[NSGraphicsContext currentContext] CGContext];
 	if (native_background_text_clip_build_context != NULL) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+		if (native_background_text_gradient_recording) {
+			native_background_text_mask_input = ladybird_v_skia_take_isolated_input(
+				native_background_text_clip_build_context);
+		}
+#endif
 		native_background_text_clip_image = CGBitmapContextCreateImage(
 			native_background_text_clip_build_context);
 		CGContextRelease(native_background_text_clip_build_context);
 		native_background_text_clip_build_context = NULL;
 	}
 	if (destination == NULL) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+		ladybird_v_skia_discard_isolated_input(native_background_text_mask_input);
+#endif
+		native_background_text_mask_input = NULL;
 		return;
 	}
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
@@ -4174,10 +4222,18 @@ void native_finish_background_text_clip(void) {
 				graphicsContextWithCGContext:native_background_text_content_context
 				flipped:NO]];
 			native_background_text_clip_active = 2;
+			if (native_background_text_mask_input != NULL) {
+				ladybird_v_skia_begin_isolated_input(native_background_text_content_context,
+					native_background_text_canvas_width, native_background_text_canvas_height);
+			}
 			return;
 		}
 	}
 #endif
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	ladybird_v_skia_discard_isolated_input(native_background_text_mask_input);
+#endif
+	native_background_text_mask_input = NULL;
 	CGContextSaveGState(destination);
 	if (native_background_text_clip_image != NULL
 		&& !CGRectIsEmpty(native_background_text_clip_rect)) {
@@ -4203,11 +4259,19 @@ void native_end_background_text_clip(void) {
 		CGContextFlush(native_background_text_content_context);
 		CGImageRef content = CGBitmapContextCreateImage(
 			native_background_text_content_context);
-		CGContextRelease(native_background_text_content_context);
-		native_background_text_content_context = NULL;
 		[NSGraphicsContext restoreGraphicsState];
+		int retained = 0;
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
-		if (content != NULL && native_background_text_clip_image != NULL
+		if (native_background_text_mask_input != NULL) {
+			retained = ladybird_v_skia_draw_gradient_text(native_background_text_content_context,
+				native_background_text_mask_input, native_background_text_destination,
+				native_background_text_canvas_width, native_background_text_canvas_height,
+				native_svg_mask_backing_scale(), native_background_text_clip_rect.origin.x,
+				native_background_text_clip_rect.origin.y, native_background_text_clip_rect.size.width,
+				native_background_text_clip_rect.size.height);
+			native_background_text_mask_input = NULL;
+		}
+		if (!retained && content != NULL && native_background_text_clip_image != NULL
 			&& native_background_text_destination != NULL) {
 			ladybird_v_skia_draw_masked_image(native_background_text_destination,
 				content, native_background_text_clip_image,
@@ -4217,6 +4281,9 @@ void native_end_background_text_clip(void) {
 				native_background_text_clip_rect.size.height);
 		}
 #endif
+		native_discard_background_text_recording(native_background_text_content_context);
+		CGContextRelease(native_background_text_content_context);
+		native_background_text_content_context = NULL;
 		if (content != NULL) CGImageRelease(content);
 		if (native_background_text_clip_image != NULL) {
 			CGImageRelease(native_background_text_clip_image);
