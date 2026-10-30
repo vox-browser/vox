@@ -351,6 +351,49 @@ fn test_raster_layers_effect_groups_remain_atomic_without_disabling_other_scroll
 	assert depth == 0
 }
 
+fn test_single_path_svg_opacity_stays_inside_its_parent_scroll_raster() {
+	mut document := html.parse_document('<!doctype html><style>
+		body{margin:0;background:white}#scroll{width:164px;height:600px;overflow:auto}
+		#content{position:relative;height:2000px}svg{position:absolute;left:8px;top:88px}
+		span{position:absolute;left:34px;top:88px}
+	</style><div id="scroll"><div id="content"><svg width="18" height="18">
+		<path d="M1 2h12l4 4v9H1z"/><g opacity=".4"><path d="M2 3h12v9H2z"/></g>
+	</svg><span>Tags</span></div></div>')
+	defer { document.finalize() }
+	document.set_font_rendering_policy(.chromium)
+	_ = layout_document_typed_in_viewport(document, 800, 600)
+	commands := display_list_commands(document.record_display_list() or { panic('missing opacity paint') })
+	for nested_viewport in [false, true] {
+		mut input := commands.clone()
+		if nested_viewport {
+			// Borrow valid box/context metadata while adding a resource command
+			// to exercise the recording's conservative raster policy.
+			input << PaintCommand{...commands.last(), kind:'paint_nested_display_list', scrollbar_axis:''}
+		}
+		plan := chromium_raster_layer_plan(document, input, 1)
+		mut owner := -1
+		for index, command in input {
+			if command.kind == 'draw_text' && command.text == 'Tags' { owner = plan.command_layers[index] }
+		}
+		assert owner > 0 && plan.layers[owner].scroll_contents && !plan.layers[owner].legacy_raster
+		mut groups := 0
+		for index, command in input {
+			if command.kind != 'begin_css_effect_layer' { continue }
+			groups++
+			assert input[index + 1].kind == 'draw_svg_path'
+			assert input[index + 2].kind == 'end_css_effect_layer'
+			group_owner := plan.command_layers[index]
+			for position in index .. index + 3 { assert plan.command_layers[position] == group_owner }
+			if nested_viewport {
+				assert group_owner != owner && plan.layers[group_owner].legacy_raster
+			} else {
+				assert group_owner == owner
+			}
+		}
+		assert groups == 1
+	}
+}
+
 fn test_raster_layers_compositor_surfaces_own_their_raster_extent_and_commands() {
 	for hint in ['transform:translateZ(0)', 'will-change:transform'] {
 		for background in ['', 'background:rgb(10 20 30)'] {

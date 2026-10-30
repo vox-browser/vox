@@ -241,6 +241,23 @@ fn chromium_scrollport_has_range(box &BlockBox) bool {
 	return overflow.width > padding_width || overflow.height > padding_height
 }
 
+fn chromium_single_svg_opacity_group(commands []PaintCommand, first int, end int,
+	layer &PaintVisualLayer) bool {
+	if layer.kind != .css_effect || layer.opacity <= 0 || layer.opacity >= 1
+		|| layer.blend_mode != .normal || layer.filter != none || end != first + 3 {
+		return false
+	}
+	command := unsafe { &commands[first + 1] }
+	if command.kind != 'draw_svg_path' || command.svg_data == unsafe { nil }
+		|| command.color == '' || (command.stroke_color != '' && command.stroke_width > 0)
+		|| (command.opacity != 1 && f32(command.opacity) != f32(layer.opacity))
+		|| f32(command.group_opacity) != f32(layer.opacity) {
+		return false
+	}
+	data := command.svg_data
+	return data.fill_pattern == none && data.stroke_pattern == none && data.svg_gradient_data == none
+}
+
 // A sticky scroll frame exists even when its scrollport has no scroll range.
 // Only a scrolling nearest container promotes that sticky content. Inert
 // overflow containers must stop the search rather than borrowing the viewport's
@@ -398,6 +415,16 @@ pub fn update_chromium_raster_layer_plan(document &dom.Document, commands []Pain
 			scratch.properties[index].requires_root_raster = true
 		}
 	}
+	// Repartitioning can merge a later nested viewport into the surrounding
+	// scroll raster. Keep its previous atomic policy until the native player
+	// can isolate that complete resource-bearing raster as well.
+	mut can_embed_svg_opacity := true
+	for command_index in 0 .. commands.len {
+		if commands[command_index].kind == 'paint_nested_display_list' {
+			can_embed_svg_opacity = false
+			break
+		}
+	}
 	mut index := 0
 	for index < commands.len {
 		first := index
@@ -482,7 +509,14 @@ pub fn update_chromium_raster_layer_plan(document &dom.Document, commands []Pain
 			// Static filters, SVG clips and masks remain atomic paint runs
 			// inside their surrounding raster instead of promoting overlapping
 			// content into another compositor surface.
-			if layer.kind == .css_filter && scratch.compositor_scopes.len == 0 {
+			if can_embed_svg_opacity && chromium_single_svg_opacity_group(commands, first, end, layer) {
+				// An ordinary SVG opacity group is painted atomically inside
+				// its parent raster; it does not create a compositor boundary.
+				effect_scope = if scratch.compositor_scopes.len > 0 {
+					scratch.compositor_scopes.last()
+				} else { u64(0) }
+				legacy_effect = false
+			} else if layer.kind == .css_filter && scratch.compositor_scopes.len == 0 {
 				// A static filter is an atomic paint effect in the surrounding
 				// raster. It does not promote every later overlapping chunk.
 				effect_scope = 0

@@ -23,6 +23,66 @@ fn svg_compositor_test_plan() layout.ChromiumRasterLayerPlan {
 	}
 }
 
+fn svg_opacity_compositor_test_commands() []layout.PaintCommand {
+	layer := &layout.PaintVisualLayer{kind:.css_effect, scope_id:55, opacity:.4, blend_mode:.normal}
+	path := svg_compositor_test_path()
+	return [layout.PaintCommand{kind:'fill_rect'}, path,
+		layout.PaintCommand{kind:'begin_css_effect_layer', visual_layer_data:layer},
+		layout.PaintCommand{...path, opacity:.4, group_opacity:.4},
+		layout.PaintCommand{kind:'end_css_effect_layer', visual_layer_data:layer},
+		layout.PaintCommand{kind:'draw_text', text:'Tags'}, layout.PaintCommand{kind:'fill_rect'}]
+}
+
+fn svg_opacity_compositor_test_plan() layout.ChromiumRasterLayerPlan {
+	return layout.ChromiumRasterLayerPlan{
+		layers: [layout.ChromiumRasterLayer{}, layout.ChromiumRasterLayer{
+			composited_contents:true
+			command_indices:[1,2,3,4,5]
+		}]
+		command_layers:[0,1,1,1,1,1,0]
+	}
+}
+
+fn test_svg_opacity_group_isolation_retains_the_balanced_single_paint_scope() {
+	commands := svg_opacity_compositor_test_commands()
+	plan := svg_opacity_compositor_test_plan()
+	assert chromium_svg_opacity_group_end(commands, 2) == 5
+	assert chromium_svg_compositor_layer_supported(commands, plan, 1)
+	for opacity in [f64(1), f64(f32(.4))] {
+		mut retained := commands.clone()
+		retained[3] = layout.PaintCommand{...commands[3], opacity:opacity, group_opacity:f64(f32(.4))}
+		assert chromium_svg_compositor_layer_supported(retained, plan, 1)
+	}
+	for replacement in [layout.PaintCommand{...commands[3], opacity:.5},
+		layout.PaintCommand{...commands[3], group_opacity:.2},
+		layout.PaintCommand{...commands[3], blur:1},
+		layout.PaintCommand{kind:'draw_replaced_image', opacity:.4, group_opacity:.4}] {
+		mut changed := commands.clone()
+		changed[3] = replacement
+		assert !chromium_svg_compositor_layer_supported(changed, plan, 1)
+	}
+}
+
+fn test_svg_opacity_group_isolation_rejects_mismatched_scopes_and_ownership() {
+	commands := svg_opacity_compositor_test_commands()
+	plan := svg_opacity_compositor_test_plan()
+	for replacement in [layout.PaintCommand{kind:'end_css_effect_layer'},
+		layout.PaintCommand{kind:'end_css_effect_layer', visual_layer_data:&layout.PaintVisualLayer{
+			kind:.css_effect, scope_id:56, opacity:.4, blend_mode:.normal}},
+		layout.PaintCommand{kind:'end_css_filter_layer', visual_layer_data:commands[4].visual_layer_data}] {
+		mut changed := commands.clone()
+		changed[4] = replacement
+		assert !chromium_svg_compositor_layer_supported(changed, plan, 1)
+	}
+	mut changed := commands.clone()
+	changed[2] = layout.PaintCommand{kind:'begin_css_effect_layer', visual_layer_data:&layout.PaintVisualLayer{
+		kind:.css_effect, scope_id:55, opacity:.4, blend_mode:.multiply}}
+	assert !chromium_svg_compositor_layer_supported(changed, plan, 1)
+	mut ownership := svg_opacity_compositor_test_plan()
+	ownership.command_layers[3] = 0
+	assert !chromium_svg_compositor_layer_supported(commands, ownership, 1)
+}
+
 fn test_svg_compositor_isolation_keeps_its_background_and_text_together() {
 	commands := [layout.PaintCommand{ kind: 'fill_rect' },
 		layout.PaintCommand{ kind: 'fill_rect', color: 'white' }, svg_compositor_test_path(),

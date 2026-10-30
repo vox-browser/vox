@@ -92,6 +92,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_text_after_unclipped_sticky_content_keeps_its_overlap_raster(self):
         self.compare_fixture('stackoverflow-sticky-overlap-text')
 
+    def test_svg_opacity_groups_remain_inside_the_parent_scroll_raster(self):
+        self.compare_fixture('stackoverflow-svg-opacity-scroll-raster')
+
 
 if __name__ == '__main__':
     unittest.main()
