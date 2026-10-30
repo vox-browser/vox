@@ -1103,3 +1103,73 @@ Feature evidence is under `Build/forum-news-svg-opacity-raster-20261030/`, with
 The broad baseline remains **`9144d886`**, with **three** completed native fixes
 after it. Full sidebar resource isolation, the colored SVG diagnostic and
 intermittent font-loading failures remain open.
+
+
+## Captured SVG masks in sidebar rasters, 30 October 2026
+
+`b65a2ab2` lets captured vector SVG viewports share their parent compositor
+raster with neighboring SVG opacity groups and text. The validator accepts only
+bounded, finite vector paths, rectangular clips and balanced captured vector
+masks. Nested HTML, external image resources, filters, unsupported masks and
+malformed scopes retain the preceding replay policy. Rectangular skip-ink
+exclusions on ordinary fills also remain in that raster after their complete
+coordinate list is checked; other command kinds retain their exclusion gate.
+
+The first candidate passes the reduced mask fixture but regresses the complete
+Stack Overflow frame from **584 to 662** differing pixels. A fresh native trace
+shows that the nested SVG is accepted, while a later underline's skip-ink
+rectangles reject the whole parent raster. That failed candidate and its full
+matrix remain retained. A separate debugger experiment forces only this sidebar
+isolation and produces 258 differing pixels. This is diagnostic evidence; the
+subsequent unmodified production browser independently reproduces the same
+frame exactly and confirms **584 to 258** against an unchanged Brave reference.
+Its native frame changes at 365 pixels. Remaining differences are 12 in the
+header, **147 in the left sidebar**, 64 in main content and 35 in the right
+sidebar. This does not establish complete Stack Overflow parity.
+
+The permanent masked-SVG/opacity/text fixture includes a black underlined link
+with skip-ink exclusions. It improves from **44 differing pixels to zero**
+against two agreeing independent Brave references. An earlier colored-underline
+variant retains a separate **one-pixel** blue-channel error at the fractional
+underline endpoint. Its source, agreeing references and failed native frame are
+retained under `baseline-skip-ink/` and `underline-color-open.json`; no pixel
+tolerance is added. The real Stack Internal illustration reduction still has
+66 differences, and the earlier colored SVG control still has 261. These remain
+open diagnostics rather than exact regression fixtures.
+
+All four focused test files pass in both GC modes. The SVG compositor consumer
+is rerun in both modes after adding skip-ink eligibility, including malformed,
+reversed and nonfinite exclusions. All **21 native Brave fixtures**, three
+canonical SVG reftests, signing and startup smoke checks pass. The five catalog
+and harness unit tests also pass. The existing completed shared production
+bundle supplies the initial candidate checks. One production build is then
+required for the new skip-ink eligibility; it completes with unchanged watched
+inputs and a 7.97 GiB sampled peak under the unchanged 12 GiB guard. The completed
+bundle is copied as a pinned binary artifact so concurrent bundle replacements
+cannot mix executable or native-library identities during the matrix.
+
+The final full-uBO run accepts **one of ten**. Native differences are HN 0,
+Lobsters 115, Slashdot 9,773, Stack Overflow 258, BBC 76,604, CNN 102,112,
+The Verge 315,921 and Pikabu 13,925. Reddit remains unavailable with guest HTTP
+403, and The Guardian's consecutive references remain unstable. All eight
+completed native cases retain matching full-uBO request/header, cosmetic,
+procedural and scriptlet evidence. The closed 326-file oracle template is
+unchanged. The first candidate batch's BBC uBO-subprocess guard failure is
+retained; the complete final batch passes that native filtering check.
+
+All completed native frames other than Stack Overflow are unchanged from their
+preceding baselines. CNN's Brave frame changes at 698 pixels. Pikabu's native
+frame is identical to the preceding successful retry while its Brave frame
+changes at 66 pixels. Those reference changes receive no native improvement or
+regression credit. Lobsters' live-to-frozen difference remains 44, so it still
+cannot count as an accepted live match. Concurrent changes to `main.v` and
+`main_frame_paint.v` after the checked build are excluded from this feature's
+validation claims and commit.
+
+Evidence is under `Build/forum-news-nested-svg-isolation-20261030/`, especially
+`checkpoint.json`, `focused/`, `focused-skip-ink/`, `native-eligibility/`,
+`force-isolation-diagnostic/`, `production-skip-ink/`, `accepted-skip-ink/`,
+`frame-comparison-final/` and `final-comparisons/`. The broad baseline remains
+**`9144d886`**, with **four** completed native fixes after it. The remaining
+sidebar colors, image fringes, underline behavior and site/reference failures
+remain open.
