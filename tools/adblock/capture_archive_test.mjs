@@ -4,7 +4,36 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import {archiveHeaders, captureArchive, imageAccept} from './capture_archive.mjs';
+import vm from 'node:vm';
+import {archiveHeaders, captureArchive, freezeDocument, imageAccept} from './capture_archive.mjs';
+
+test('freezing retains live CSSOM author rules, raw color syntax and document mode',()=>{
+    const raw='p{color:rgb(51 51 51 / 59%)}';
+    for(const doctype of [null,{name:'html',publicId:'',systemId:''},
+        {name:'html',publicId:'-//W3C//DTD HTML 4.01 Transitional//EN',systemId:''}]) {
+        const styles=[{textContent:'',sheet:{cssRules:[{cssText:'p { color: red; }'}]}},
+            {textContent:raw,sheet:{cssRules:[{cssText:'p { color: rgba(51,51,51,.59); }'}]}},
+            {textContent:'p{display:none}',sheet:{disabled:true}}];
+        const cloned=styles.map(source=>({textContent:source.textContent}));
+        const clone={querySelectorAll:selector=>selector==='style'?cloned:[],
+            querySelector:()=>({prepend:()=>{}}),
+            get outerHTML(){return '<html><head>'+cloned.map(s=>'<style'+
+                (s.media?' media="'+s.media+'"':'')+'>'+s.textContent+'</style>').join('')+'</head></html>';}};
+        const document={documentElement:{cloneNode:()=>clone},doctype,
+            compatMode:doctype?'CSS1Compat':'BackCompat',baseURI:'https://example.com/',
+            title:'News',body:{innerText:'story '.repeat(300)},
+            querySelectorAll:()=>styles,createElement:()=>({})};
+        const result=vm.runInNewContext('('+freezeDocument.toString()+')()',
+            {document,location:{href:document.baseURI},innerWidth:1024,innerHeight:768,devicePixelRatio:1});
+        assert.equal(result.cssom_styles,1);
+        assert.equal(result.compat_mode,document.compatMode);
+        assert(result.html.includes('p { color: red; }'));
+        assert(result.html.includes(raw));
+        assert(result.html.includes('media="not all"'));
+        assert.equal(result.html.startsWith('<!DOCTYPE'),Boolean(doctype));
+        if(doctype?.publicId) assert(result.html.startsWith('<!DOCTYPE html PUBLIC "'+doctype.publicId+'">'));
+    }
+});
 
 test('decoded body keeps response policy and repeated values, replacing only wire framing', () => {
     const headers = archiveHeaders({headers:{'Content-Encoding':'br','Transfer-Encoding':'chunked',

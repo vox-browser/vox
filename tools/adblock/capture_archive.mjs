@@ -10,6 +10,23 @@ const digest = value => crypto.createHash('sha256').update(value).digest('hex');
 
 export function freezeDocument() {
     const clone = document.documentElement.cloneNode(true);
+    const styles=[...document.querySelectorAll('style')];
+    const clonedStyles=[...clone.querySelectorAll('style')];
+    let cssomStyles=0;
+    for(let index=0;index<styles.length;++index) {
+        const source=styles[index],sheet=source.sheet;
+        if(!sheet) continue;
+        if(sheet.disabled) {clonedStyles[index].media='not all';continue;}
+        // CSS-in-JS commonly inserts rules into an empty style element. Its
+        // outerHTML contains none of the author rules actually being painted.
+        // Retain raw authored text whenever it exists, including color syntax.
+        if(source.textContent.trim()) continue;
+        const rules=[...sheet.cssRules].map(rule=>rule.cssText);
+        if(rules.length) {
+            clonedStyles[index].textContent=rules.join('\n');
+            ++cssomStyles;
+        }
+    }
     const scripts = clone.querySelectorAll('script');
     const removedScripts = scripts.length;
     // Consistent with the Reddit workload: retain normal noscript parsing,
@@ -19,8 +36,13 @@ export function freezeDocument() {
     const base = document.createElement('base');
     base.href = document.baseURI;
     clone.querySelector('head').prepend(base);
-    return {html: '<!doctype html>\n' + clone.outerHTML, url: location.href,
+    const type=document.doctype;
+    const doctype=!type ? '' : '<!DOCTYPE '+type.name+
+        (type.publicId ? ' PUBLIC "'+type.publicId+'"' : '')+
+        (type.systemId ? (type.publicId ? '' : ' SYSTEM')+' "'+type.systemId+'"' : '')+'>\n';
+    return {html: doctype + clone.outerHTML, url: location.href,
         base: document.baseURI, removed_scripts: removedScripts,
+        compat_mode:document.compatMode,cssom_styles:cssomStyles,
         elements: clone.querySelectorAll('*').length, title: document.title,
         text: document.body.innerText, width: innerWidth, height: innerHeight,
         scale: devicePixelRatio};
@@ -113,6 +135,7 @@ export async function captureArchive(page, directory, expectedURL, {mainFrameID}
         workload: 'Frozen live DOM, scripts removed, normal scripting policy, original encoded resource bodies; no saved raster or computed-style replacement.'};
     await fs.writeFile(path.join(directory, 'archive.json'), JSON.stringify(report, null, 2) + '\n');
     return {directory, url: snapshot.url, document_request_method:main.method,
+        compat_mode:snapshot.compat_mode,cssom_styles:snapshot.cssom_styles||0,
         resources: resources.filter(r => !r.error).length,
         failed_body_captures: resources.filter(r => r.error).length, frozen_html_sha256: digest(html)};
 }
