@@ -4145,12 +4145,21 @@ fn (mut loader FontLoader) font_did_load_or_fail(typeface &PlatformTypeface) {
 		loader.typeface = owned_platform_typeface(typeface)
 	}
 	loader.has_completed = true
-	if mut delayer := loader.document_load_event_delayer_ { delayer.finish() }
-	loader.document_load_event_delayer_ = none
 	for callback in loader.subscribers {
 		callback(loader.typeface)
 	}
 	loader.subscribers.clear()
+	// Subscribers enqueue the FontFace completion tasks. Release the load delay
+	// on that same task source after those completions, so a parser check cannot
+	// shape fallback text between transport completion and FontFace publication.
+	if loader.document_load_event_delayer_ != none {
+		loader_handle := voidptr(&loader)
+		queue_font_loading_task(loader.font_computer, true, fn [loader_handle] () {
+			mut owner := unsafe { &FontLoader(loader_handle) }
+			if mut delayer := owner.document_load_event_delayer_ { delayer.finish() }
+			owner.document_load_event_delayer_ = none
+		})
+	}
 	loader.fetch_controller_ = none
 }
 
