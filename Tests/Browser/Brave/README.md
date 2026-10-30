@@ -83,6 +83,14 @@ exports pixels and plain values only; its hidden Skia symbols cannot interpose
 on LibWeb's existing Skia library. Builds require GN and Ninja and cache the
 verified dependency under `Build/deps/skia-brave`.
 
+`radial-gradient-float-geometry` checks a percentage-positioned circle and an
+explicit ellipse at 1280×800, scale 1. CSS radial gradients retain float center
+and radius geometry, and the painter scales the ellipse around that center.
+The separate [large ellipse diagnostic](diagnostic/radial-gradient-ellipse-rounding.html)
+and adjacent Brave 156.1.98.60 reference retain nine one-level differences;
+its geometry matches Brave's recorded shader, but its complete raster is still
+open. These checks do not establish full-page vlang.io parity.
+
 The three opaque shadow cases are exact. A separate diagnostic with a shadow
 inside `opacity: .5` still differs by 1 at five pixels after the native layer
 is composited. This fixture does not establish translucent-group parity.

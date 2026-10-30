@@ -4610,14 +4610,14 @@ fn draw_native_css_gradient_tile(command &layout.PaintCommand, gradient layout.L
 				else { unsafe { &f32(nil) } }
 			ancestor_pointer := if ancestor_index >= 0 { unsafe { &ancestor[0] } }
 				else { unsafe { &f32(nil) } }
+			radial_data := chromium_radial_gradient_geometry(gradient, tile)
 			drawn := unsafe { C.native_draw_clipped_svg_radial_gradient_path(&path_data[0],
 				i32(path_data.len / layout.compatibility_clip_path_segment_stride), 0,
 				f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]),
 				f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), canvas_height,
-				0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 1,
-				f32(gradient.radius_x * tile.width), 0, 0, f32(gradient.radius_y * tile.height),
-				f32(tile.x + gradient.center_x * tile.width),
-				f32(tile.y + gradient.center_y * tile.height), 0, 0,
+				0, 0, 0, 0, 4, radial_data[0], radial_data[1], radial_data[2], radial_data[3], radial_data[4],
+				radial_data[5], radial_data[6], radial_data[7], radial_data[8], radial_data[9], radial_data[10],
+				radial_data[11], 0, 0,
 				gpu_stops.data, i32(gpu_stops.len / 5), 1, clip_pointer, ancestor_pointer) }
 			if drawn != 0 { return true }
 			// The caller transferred these clips to the GPU draw. Restore them

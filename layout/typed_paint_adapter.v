@@ -1438,6 +1438,8 @@ fn resolve_radial_gradient_data(resolution_context css.LengthResolutionContext,
 		interpolation_method: gradient.interpolation_method()
 		radial: true
 		kind: 'radial'
+		css_radial_geometry: chromium_resolve_radial_gradient_geometry(gradient,
+			resolution_context, width, height, radius_x, radius_y)
 		center_x: center_fraction_x
 		center_y: center_fraction_y
 		radius_x: if width == 0 { 0.0 } else { radius_x / width }
