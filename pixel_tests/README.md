@@ -57,9 +57,10 @@ python3 tools/test_forum_news_capture_state.py --extension /path/to/uBlock0.chro
 python3 -m unittest discover -s tools -p forum_news_inline_pixels_test.py
 ```
 
-The second command checks five native regressions against exact Brave
+The second command checks six native regressions against exact Brave
 references: three forum-tag cases, fractional foreground/opacity-group
-painting, and Stack Overflow automatic hyphenation. The hyphenation case also
+painting, Stack Overflow automatic hyphenation, and legacy line-clamp excerpts.
+The hyphenation case also
 covers min-content sizing, manual wrapping, and an unknown language.
 Replay accepts bursts of archived-origin connections without forwarding any
 requests. Current site results and remaining failures are recorded in

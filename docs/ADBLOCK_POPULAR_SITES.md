@@ -399,3 +399,23 @@ contains the final source and its source snapshot remains unchanged.
 Seven native fixes belong to this workstream. Broad suites were not run, and
 the broad-test baseline is unchanged. The complete acceptance count remains
 **one of ten**; live-page and remaining-site parity are open.
+
+### Legacy line-clamp truncation checkpoint
+
+`84e3bcaa` retains the glyphs that fit before the ellipsis in legacy
+`-webkit-line-clamp`, including partial words. The previous soft-wrap preference
+discarded a complete trailing word after automatic hyphenation introduced a
+dictionary break. Standard block-ellipsis retains its existing behavior.
+The new three-excerpt fixture reproduces 364 differing pixels before the fix
+and matches Brave exactly afterward. Two fresh Brave captures are identical.
+
+All six focused native pixel fixtures pass. The new layout case and eight
+existing line-clamp cases pass in both GC modes; production signing and a
+fresh startup check pass. The full-uBO Stack Overflow comparison improves
+from **3,064 to 2,818 differing pixels**, with exact live-to-frozen Brave
+pixels and matching actual native filtering decisions. The remaining errors
+still fail strict acceptance. Source, identity, build/run receipts and images
+are retained in `Build/forum-news-ellipsis-20261030/`.
+
+Eight native fixes belong to this workstream. Broad suites were not run, and
+the broad-test baseline is unchanged. Complete acceptance remains **one of ten**.
