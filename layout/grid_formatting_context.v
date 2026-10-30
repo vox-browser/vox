@@ -2553,9 +2553,12 @@ fn grid_intrinsic_outer_width_contribution(mut state LayoutState, item &Node, co
 }
 
 fn run_grid_formatting_context(mut state LayoutState, container &Node, mut container_state UsedValues, layout_mode LayoutMode, available_space AvailableSpace) FormattingContextResult {
+	// A resolved block size can be reused during intrinsic measurement. An
+	// indefinite one still needs row sizing: a nested grid's auto height is
+	// part of its block parent's contribution to an ancestor grid row.
 	if layout_mode == .intrinsic_sizing
 		&& !available_space.width.is_intrinsic_sizing_constraint()
-		&& !available_space.height.is_intrinsic_sizing_constraint() {
+		&& available_space.height.is_definite() {
 		return FormattingContextResult{
 			automatic_content_width: container_state.content_width()
 			automatic_content_height: container_state.content_height()

@@ -13,6 +13,12 @@ python3 tools/check_pixel_equality.py Tests/Browser/Brave/expected/font-rasteriz
 
 This comparison requires exact RGBA equality, with no excluded pixels or tolerance.
 
+`nested-grid-block-size` checks auto rows whose block children contain nested
+grids. Its 800×600, scale 1 reference matches Brave 156.1.98.60 exactly; the
+previous output differed at 112,672 pixels. Intrinsic height measurement must
+size a nested grid's rows when its block size is indefinite. A parent-resolved
+definite block size still uses the existing measurement shortcut.
+
 `translucent-rect-fill` covers solid alpha fills over three opaque backgrounds,
 including legacy alpha, modern fractional color components, and a fractional
 box position. The 800×600, scale 1 reference uses Brave 156.1.98.60 and is
