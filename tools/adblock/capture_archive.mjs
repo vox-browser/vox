@@ -112,6 +112,7 @@ export async function captureArchive(page, directory, expectedURL, {mainFrameID}
     const report = {...metadata, document_request_method:main.method, frozen_html_sha256: digest(html), resources,
         workload: 'Frozen live DOM, scripts removed, normal scripting policy, original encoded resource bodies; no saved raster or computed-style replacement.'};
     await fs.writeFile(path.join(directory, 'archive.json'), JSON.stringify(report, null, 2) + '\n');
-    return {directory, url: snapshot.url, resources: resources.filter(r => !r.error).length,
+    return {directory, url: snapshot.url, document_request_method:main.method,
+        resources: resources.filter(r => !r.error).length,
         failed_body_captures: resources.filter(r => r.error).length, frozen_html_sha256: digest(html)};
 }

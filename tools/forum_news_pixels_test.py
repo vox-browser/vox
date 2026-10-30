@@ -72,13 +72,14 @@ class ForumNewsPixelTests(unittest.TestCase):
             source.write_bytes(html)
             write_json(Path(str(source) + '.headers.json'), [dict(name='Content-Type', value='text/html;charset=windows-1251'),
                        dict(name='Content-Security-Policy', value="default-src 'self'")])
-            write_json(capture / 'archive.json', dict(url=url, frozen_html_sha256=digest(html), resources=[
+            write_json(capture / 'archive.json', dict(url=url, document_request_method='POST', frozen_html_sha256=digest(html), resources=[
                 dict(url=url, sha256=digest(b'original scripted document')),
                 dict(url=url + 'missing.png', error='body unavailable')]))
             report = root / 'report.json'
             write_json(report, self.report())
             seal_capture(capture, archive, report)
             manifest = load_archive(archive)
+            self.assertEqual(manifest['source_document_request_method'], 'POST')
             self.assertEqual(set(manifest['responses']), {url})
             entry = manifest['responses'][url]
             self.assertEqual((archive / 'bodies' / entry['sha256']).read_bytes(), html)

@@ -78,7 +78,8 @@ test('a completed POST main navigation can be frozen only with its verified top 
             assert.deepEqual(captured,[]);
             continue;
         }
-        await captureArchive(page,directory,url,{mainFrameID});
+        const result=await captureArchive(page,directory,url,{mainFrameID});
+        assert.equal(result.document_request_method,'POST');
         assert.deepEqual(captured,['main']);
         const report=JSON.parse(await fs.readFile(path.join(directory,'archive.json'),'utf8'));
         assert.equal(report.document_request_method,'POST');

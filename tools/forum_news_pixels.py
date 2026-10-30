@@ -95,6 +95,7 @@ def seal_capture(capture, archive, report_file):
     write_json(archive / 'capture.json', report)
     shutil.copyfile(capture / 'live.png', archive / 'live.png')
     write_json(archive / 'manifest.json', dict(version=1, url=metadata['url'],
+        source_document_request_method=metadata.get('document_request_method', 'GET'),
         sealed_unix=time.time(), responses=entries, workload='Frozen guest DOM; scripts removed; original resource bytes',
         live_png_sha256=digest((archive / 'live.png').read_bytes()),
         capture_report_sha256=digest((archive / 'capture.json').read_bytes())))
