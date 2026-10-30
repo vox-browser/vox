@@ -133,12 +133,19 @@ def guarded(command, prefix, timeout, environment=None):
     return read_json(Path(str(prefix) + '.guard.json'))
 
 
+def oracle_command(site, args):
+    command = ['node', str(HARNESS), '--url', site['url'], '--extension', str(args.extension),
+               '--checker', str(args.checker), '--brave', str(args.brave), '--settle', str(args.settle)]
+    if args.profile_template:
+        command.extend(['--profile-template', str(args.profile_template)])
+    return command
+
+
 def run_case(site, args):
     output = args.output / site['id']
     output.mkdir(parents=True, exist_ok=False)
     archive = args.fixtures / site['id']
-    common = ['node', str(HARNESS), '--url', site['url'], '--extension', str(args.extension),
-              '--checker', str(args.checker), '--brave', str(args.brave), '--settle', str(args.settle)]
+    common = oracle_command(site, args)
     if args.capture:
         capture = output / 'capture'
         report = output / 'capture.json'
@@ -232,6 +239,8 @@ def main():
     parser.add_argument('--extension', type=Path, required=True, help='Full MV2 uBO matching adblock/lists/manifest.json')
     parser.add_argument('--checker', type=Path, required=True, help='Native tools/adblock_check.v executable')
     parser.add_argument('--brave', type=Path, default=BRAVE)
+    parser.add_argument('--profile-template', type=Path,
+                        help='Copy a closed prepared Brave profile into each disposable oracle profile')
     parser.add_argument('--vox', type=Path, default=VOX)
     parser.add_argument('--diff-tool', type=Path)
     parser.add_argument('--audit-config', type=Path, help='Native capture selectors for diagnosing a mismatch; include body and images')
@@ -250,6 +259,10 @@ def main():
         setattr(args, name, getattr(args, name).resolve())
     if args.audit_config:
         args.audit_config = args.audit_config.resolve()
+    if args.profile_template:
+        args.profile_template = args.profile_template.resolve()
+        if not args.profile_template.is_dir():
+            parser.error('profile-template must be an existing closed Brave profile directory')
     args.output.mkdir(parents=True, exist_ok=False)
     if args.diff_tool:
         args.diff_tool = args.diff_tool.resolve()

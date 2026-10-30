@@ -1,13 +1,26 @@
 import json
 from pathlib import Path
 import tempfile
+from types import SimpleNamespace
 import unittest
 
-from forum_news_pixels import CATALOG, check_filters, check_native, seal_capture, write_json
+from forum_news_pixels import CATALOG, check_filters, check_native, oracle_command, seal_capture, write_json
 from page_archive import digest, load_archive
 
 
 class ForumNewsPixelTests(unittest.TestCase):
+    def test_closed_oracle_template_is_forwarded_without_changing_filter_inputs(self):
+        args = SimpleNamespace(extension=Path('/extension'), checker=Path('/checker'),
+                               brave=Path('/brave'), settle=5, profile_template=None)
+        site = dict(url='https://news.example/')
+        fresh = oracle_command(site, args)
+        self.assertNotIn('--profile-template', fresh)
+        args.profile_template = Path('/closed-profile')
+        prepared = oracle_command(site, args)
+        self.assertEqual(prepared, fresh + ['--profile-template', '/closed-profile'])
+        self.assertEqual(prepared[prepared.index('--extension') + 1], '/extension')
+        self.assertEqual(prepared[prepared.index('--checker') + 1], '/checker')
+
     def report(self):
         return dict(counts=dict(requests=1, blocked=0, allowed=1, mismatches=0, oracle_disagreements=0),
                     requests=[dict(actual=dict(blocked=False, exception=False),
