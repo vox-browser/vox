@@ -668,3 +668,42 @@ Evidence is under `Build/forum-news-svg-rect-precision-20261030/`, including
 the original and focused diagnostics, and the production receipt. Broad-test
 baseline remains `88275919`; this is the fourth completed native fix since that
 baseline.
+
+## Empty clips and tile antialiasing, 30 October 2026
+
+`2a7b23e7` excludes fully clipped geometry from Chromium tile-MSAA selection.
+Zero-size overflow clips and collapsed straight clip paths now discard their
+vector triggers before nested traversal. Packed clip geometry determines whether
+a path is empty; its positive reference box does not. Curved clips retain the
+existing conservative behavior, and SVG masks keep their separate replay path.
+
+The extracted tag/avatar fixture improves from **115 differing pixels to zero**
+against two agreeing Brave references. All **twelve native Brave fixtures** and
+three canonical SVG reftests are exact. Sixteen focused tile-selection tests pass
+with both default GC and `-gc none`. An initial scalar-only prototype passed its
+unit tests but failed the native fixture; that failure remains in the evidence.
+
+The shared production guard was busy, so validation reused the next completed
+shared bundle. Its receipt completes within the unchanged 12 GiB budget, and
+the owned clip sources match before/after build hashes. That build also reports
+concurrent changes to the separate lazy-image files. Every validation stage
+retains the same executable, native-library and adblock-snapshot hashes.
+
+The new full-uBO matrix still accepts **one of ten**. Native differences are HN
+0, Lobsters 115, Slashdot 9,773, Stack Overflow 629, BBC 76,604, CNN **87,907**,
+The Verge 315,921 and Pikabu **39,337**. Reddit remains unavailable with guest
+HTTP 403, and The Guardian's consecutive Brave references remain unstable.
+Lobsters' live-to-frozen difference remains 44 pixels: the extracted empty-clip
+fix does not reduce that sealed page's mismatch. CNN and Pikabu regress versus
+the preceding run; their causes are not established. Their live-to-frozen
+differences also change, to 88,131 and 21,603 pixels respectively. These results
+are retained without changing a golden or acceptance threshold.
+
+All eight completed native comparisons retain matching full-uBO request/header,
+cosmetic, procedural and scriptlet evidence. The 326-file closed oracle template
+is unchanged. The site command correctly exits nonzero; its validating controller
+completes successfully after recording that result. Evidence is under
+`Build/forum-news-tile-mode-20261030/`, including `checkpoint.json`,
+`path-clips-verified/`, focused checks and the retained prototype failures.
+Broad-test baseline remains `88275919`; this is the fifth completed native fix
+since that baseline.
