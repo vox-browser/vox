@@ -4846,10 +4846,10 @@ fn (mut app BrowserApp) create_image_from_resource_bytes(image_url string, bytes
 			// Retain the final rows after retiring stb's decoder workspace, just
 			// as the document image decoder does.
 			bitmap := browser_decode_stb_raster_bytes(bytes)!
-			mut image := gg.Image{width: bitmap.width, height: bitmap.height,
-				nr_channels: native_bitmap_channel_marker(bitmap, false), ok: true,
-				data: bitmap.data.data}
 			chromium := app.document != unsafe { nil } && app.document.font_rendering_policy() == .chromium
+			mut image := gg.Image{width: bitmap.width, height: bitmap.height,
+				nr_channels: native_png_channel_marker(bitmap, bytes, chromium), ok: true,
+				data: bitmap.data.data}
 			C.native_tag_image_color_profile(image.data, image.width, image.height, bytes.data,
 				uint(bytes.len), int(chromium))
 			image.id = app.ctx.cache_image(image)
@@ -5025,9 +5025,9 @@ fn (mut app BrowserApp) background_image_uncached(image_url string) ?&gg.Image {
 	}
 	mut image := if image_url.starts_with('file://') {
 		path := browser_local_file_path(image_url) or { return none }
-		app.ctx.create_image(path) or { return none }
+		app.create_local_image_with_profile(image_url, path) or { return none }
 	} else if !image_url.contains('://') && !image_url.starts_with('data:') && os.is_file(image_url) {
-		app.ctx.create_image(image_url) or { return none }
+		app.create_local_image_with_profile(image_url, image_url) or { return none }
 	} else {
 		bytes := app.background_image_bytes(image_url) or { return none }
 		app.create_image_from_resource_bytes(image_url, bytes) or { return none }

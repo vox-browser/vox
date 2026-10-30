@@ -1556,6 +1556,33 @@ extern "C" void ladybird_v_skia_set_image_color_profile(float const* profile)
         std::copy_n(profile, 10, s_image_color_profile);
 }
 
+// Keep original ICC curves, including tables, instead of fitting a numerical
+// SkColorSpace. Chromium's image upload premultiplies the decoded source bytes
+// before its color conversion; retain extended converted colors until the final
+// 8-bit store rather than clipping them to alpha ahead of that conversion.
+extern "C" int ladybird_v_skia_convert_icc_rgba(void const* bytes, size_t length,
+    uint8_t const* source, int width, int height, uint8_t* destination)
+{
+    if (!bytes || !source || !destination || width <= 0 || height <= 0
+        || size_t(width) > SIZE_MAX / 16 / size_t(height)) return 0;
+    skcms_ICCProfile profile {};
+    if (!skcms_Parse(bytes, length, &profile)) return 0;
+    size_t count = size_t(width) * height;
+    auto info = SkImageInfo::Make(width, height, kRGBA_8888_SkColorType,
+        kUnpremul_SkAlphaType, SkColorSpace::MakeSRGB());
+    std::vector<uint8_t> premultiplied(count * 4);
+    auto premul_info = info.makeAlphaType(kPremul_SkAlphaType);
+    if (!SkPixmap(info, source, size_t(width) * 4).readPixels(premul_info,
+            premultiplied.data(), size_t(width) * 4)) return 0;
+    std::vector<float> converted(count * 4);
+    if (!skcms_Transform(premultiplied.data(), skcms_PixelFormat_RGBA_8888,
+            skcms_AlphaFormat_PremulAsEncoded, &profile, converted.data(), skcms_PixelFormat_RGBA_ffff,
+            skcms_AlphaFormat_PremulAsEncoded, skcms_sRGB_profile(), count)) return 0;
+    auto converted_info = premul_info.makeColorType(kRGBA_F32_SkColorType);
+    return SkPixmap(converted_info, converted.data(), size_t(width) * 16)
+        .readPixels(premul_info, destination, size_t(width) * 4);
+}
+
 static sk_sp<SkColorSpace> image_color_space()
 {
     if (!s_has_image_color_profile) return SkColorSpace::MakeSRGB();

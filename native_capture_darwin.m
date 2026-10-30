@@ -5285,16 +5285,27 @@ static CGImageRef native_copy_cg_image(gg__Image *image) {
 	// create_image_from_byte_array() stores stb-decoded RGBA pixels rather than
 	// an NSImage in Image.data. Wrap those bytes directly instead of treating
 	// their first machine word as an Objective-C object.
-	if (image->nr_channels < 4 || image->nr_channels > 7) {
+	if (image->nr_channels < 4 || (image->nr_channels > 7
+	    && image->nr_channels != VOX_PNG_ICC_CHANNEL_MARKER)) {
 		return NULL;
 	}
 	size_t bytes_per_row = (size_t)image->width * 4;
-	CGDataProviderRef provider = CGDataProviderCreateWithData(NULL, image->data,
-		bytes_per_row * (size_t)image->height, NULL);
-	CGColorSpaceRef color_space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+	NSData *icc_profile = image->nr_channels == VOX_PNG_ICC_CHANNEL_MARKER
+	    ? native_image_icc_profile(image->data, image->width, image->height) : nil;
+	NSData *icc_pixels = nil;
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	if (icc_profile) icc_pixels = native_image_icc_pixels(image->data, image->width, image->height);
+#endif
+	CGDataProviderRef provider = icc_pixels
+	    ? CGDataProviderCreateWithCFData((__bridge CFDataRef)icc_pixels)
+	    : CGDataProviderCreateWithData(NULL, image->data,
+	        bytes_per_row * (size_t)image->height, NULL);
+	CGColorSpaceRef color_space = icc_profile && !icc_pixels
+	    ? CGColorSpaceCreateWithICCData((__bridge CFDataRef)icc_profile) : NULL;
+	if (!color_space) color_space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
 	CGImageRef cg_image = CGImageCreate((size_t)image->width, (size_t)image->height,
 		8, 32, bytes_per_row, color_space,
-		((image->nr_channels == 5 || image->nr_channels == 7)
+		((icc_pixels || image->nr_channels == 5 || image->nr_channels == 7)
 			? kCGImageAlphaPremultipliedLast : kCGImageAlphaLast)
 			| kCGBitmapByteOrder32Big, provider, NULL, false,
 		kCGRenderingIntentDefault);
@@ -5356,6 +5367,7 @@ static int native_draw_cg_image_part_with_skia(CGContextRef destination,
 typedef struct {
 	uint8_t const *pixels;
 	uint8_t *flipped_pixels;
+	CFDataRef icc_pixels;
 	int pitch;
 	int flags;
 } NativeSkiaImageSource;
@@ -5364,9 +5376,15 @@ static int native_begin_skia_image_source(CGContextRef context, gg__Image *image
 	NativeSkiaImageSource *source) {
 	// Markers 8 to 10 retain planar YUV rather than packed RGBA for native
 	// sampling: limited-range 4:2:0, full-range 4:2:0 and full-range 4:4:4.
-	if (image->path.len != 0 || image->nr_channels < 4 || image->nr_channels > 10) {
+	if (image->path.len != 0 || image->nr_channels < 4
+	    || image->nr_channels > VOX_PNG_ICC_CHANNEL_MARKER) {
 		return 0;
 	}
+	if (image->width <= 0 || image->height <= 0 || image->width > INT_MAX / 4) return 0;
+	NSData *icc_pixels = image->nr_channels == VOX_PNG_ICC_CHANNEL_MARKER
+	    ? native_image_icc_pixels(image->data, image->width, image->height) : nil;
+	if (image->nr_channels == VOX_PNG_ICC_CHANNEL_MARKER && !icc_pixels) return 0;
+	const uint8_t *decoded_pixels = icc_pixels ? icc_pixels.bytes : image->data;
 	size_t pitch = (size_t)image->width * 4;
 	size_t byte_count = (size_t)image->height <= SIZE_MAX / pitch
 	    ? pitch * (size_t)image->height
@@ -5375,7 +5393,7 @@ static int native_begin_skia_image_source(CGContextRef context, gg__Image *image
 	uint8_t *flipped_pixels = needs_vertical_flip && byte_count > 0
 	    ? malloc(byte_count) : NULL;
 	uint8_t const *source_pixels = needs_vertical_flip ? flipped_pixels
-	    : (uint8_t const *)image->data;
+	    : decoded_pixels;
 	if (source_pixels == NULL) {
 		return 0;
 	}
@@ -5385,7 +5403,7 @@ static int native_begin_skia_image_source(CGContextRef context, gg__Image *image
 	if (needs_vertical_flip) {
 		for (int row = 0; row < image->height; ++row) {
 			memcpy(flipped_pixels + (size_t)row * pitch,
-			    (uint8_t const *)image->data
+			    decoded_pixels
 			        + (size_t)(image->height - row - 1) * pitch,
 			    pitch);
 		}
@@ -5397,8 +5415,9 @@ static int native_begin_skia_image_source(CGContextRef context, gg__Image *image
 	*source = (NativeSkiaImageSource){
 		.pixels = source_pixels,
 		.flipped_pixels = flipped_pixels,
+		.icc_pixels = icc_pixels ? (CFDataRef)CFBridgingRetain(icc_pixels) : NULL,
 		.pitch = (int)pitch,
-		.flags = (image->nr_channels == 5 || image->nr_channels == 7)
+		.flags = (icc_pixels != nil || image->nr_channels == 5 || image->nr_channels == 7)
 		    | (image->nr_channels == 8 ? 4 : 0)
 		    | (image->nr_channels == 9 ? 12 : 0)
 		    | (image->nr_channels == 10 ? 28 : 0)
@@ -5410,6 +5429,8 @@ static int native_begin_skia_image_source(CGContextRef context, gg__Image *image
 
 static void native_end_skia_image_source(NativeSkiaImageSource *source) {
 	ladybird_v_skia_set_image_color_profile(NULL);
+	if (source->icc_pixels) CFRelease(source->icc_pixels);
+	source->icc_pixels = NULL;
 	free(source->flipped_pixels);
 	source->flipped_pixels = NULL;
 }

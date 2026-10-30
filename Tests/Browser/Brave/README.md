@@ -13,6 +13,20 @@ python3 tools/check_pixel_equality.py Tests/Browser/Brave/expected/font-rasteriz
 
 This comparison requires exact RGBA equality, with no excluded pixels or tolerance.
 
+`png-icc-matrix` checks an embedded Display P3 ICC profile on opaque and
+translucent pixels, an untagged control, a CSS background, and a resized image.
+Its 800×600, scale 1 reference from Brave 156.1.98.60 is pixel-exact through
+both file and HTTP resource loading; ignoring the profile changed 38,400 pixels.
+The synthetic PNGs contain original four-color artwork and a Skia-generated
+matrix profile. Native Chromium rendering preserves the original ICC curves,
+premultiplies decoded source bytes, converts through floating-point sRGB, then
+stores the final premultiplied bytes. Converted rasters use a 32 MiB, 128-entry
+cache, and only explicitly tagged PNG buffers consult it. Unsupported conversions
+retain the original profile for the Core Graphics fallback. The metadata harness
+(`python3 tools/test_png_icc.py`) checks bounded extraction, retagging, conversion
+failure, and cache eviction under AddressSanitizer; the browser fixture exercises
+the real color converter. This covers packed 8-bit RGB PNGs, including alpha.
+
 `capture-lazy-scroll-order` checks a scrolled capture after the initial viewport's
 lazy images have loaded. Serve this fixture over HTTP, capture at 800×600 and
 scale 1 with `--screenshot-scroll-y 3200`, and set

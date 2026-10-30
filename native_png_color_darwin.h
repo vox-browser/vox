@@ -5,6 +5,7 @@
 #include <math.h>
 #include <stdint.h>
 #include <string.h>
+#include "native_png_icc_darwin.h"
 
 // Skia's PNG codec, which Chromium uses, tags an image with a color profile
 // built from its gAMA and cHRM chunks; the GPU raster converts it to the
@@ -72,7 +73,8 @@ static int native_png_color_profile(const uint8_t *bytes, size_t length, VoxPngC
 static int native_png_has_color_profile(const uint8_t *bytes, size_t length)
 {
     VoxPngColorProfile profile;
-    return native_png_color_profile(bytes, length, &profile);
+    return native_png_icc_data(bytes, length) != nil
+        || native_png_color_profile(bytes, length, &profile);
 }
 
 typedef struct {
@@ -90,6 +92,8 @@ void native_tag_image_color_profile(const void *pixels, int width, int height,
     const uint8_t *bytes, size_t length, int enabled)
 {
     if (!pixels) return;
+    native_tag_png_icc_profile(pixels, width, height,
+        enabled ? native_png_icc_data(bytes, length) : nil);
     VoxTaggedImageColorProfile tagged = { width, height };
     int has_profile = enabled && native_png_color_profile(bytes, length, &tagged.profile);
     @synchronized ([NSValue class]) {
