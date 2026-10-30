@@ -17,6 +17,15 @@ viewport for rasterization. Run `python3 tools/test_skia_svg_ink_bounds.py` for
 the focused AddressSanitizer checks. The native regression harness accepts this
 fixture's viewport explicitly and preserves the other fixtures' 800×600 size.
 
+`stackoverflow-sticky-raster-bounds` checks a rounded widget below empty space
+in a tall sticky container. Its 1024×768, scale 1 reference comes from two
+agreeing Brave 156.1.98.60 captures. The fixture improves from four differing
+pixels to zero. Partial recordings snap their tile origin in 128-device-pixel
+steps relative to the container, retaining nearby trailing layer edges. Layout
+checks cover resizing, both device scales, overflow and nested compositor and
+scroll surfaces. The full Stack Overflow page still has separate fallback
+renderer differences; see the site report above.
+
 References were captured from Brave 155.1.97.57 on macOS at device scale 1.
 `font-rasterization` covers Arial and Verdana at integer and fractional sizes,
 automatic and antialiased smoothing, three foreground colors, and white and

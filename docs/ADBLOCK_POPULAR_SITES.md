@@ -1467,3 +1467,77 @@ Evidence is under `Build/forum-news-svg-ink-bounds-20261031/`, especially
 origin, grid and picture probes remain in the adjacent `forum-news-border-*`
 directories. The broad baseline remains **`9144d886`**, with **nine** completed
 native fixes after it. Full ten-site parity remains open.
+
+## Partial sticky recording bounds, 31 October 2026
+
+`adf10924` adds `stackoverflow-sticky-raster-bounds`, placing a rounded blog
+widget below empty space in a tall sticky container. It improves from **four
+differing pixels to zero** against two agreeing 1024×768, scale 1 Brave
+156.1.98.60 references. Brave's compositor trace retains a 300×2561 layer at
+(700,80), records local bounds (0,295,300,366), and uses a 320×416 tile starting
+at local y=256. Tightening that tile to the widget's ink moves its origin and
+changes rounded-edge coverage. Extending only the layer bounds also fails:
+that diagnostic introduces seven bottom-corner differences.
+
+The V layer plan now follows
+[Chromium's partial-recording tiling rule](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/cc/tiles/picture_layer_tiling.cc#888):
+snap the recording's leading edges down in 128-device-pixel steps relative to
+the complete container, and retain trailing layer edges less than 128 pixels
+away. Apply this after layer merging, preserving its overlap decisions. Nested
+compositor and independent scroll surfaces retain their own extents. Focused
+layout checks cover resizing, device scales 1 and 2, the exact edge threshold,
+overflow, nested surfaces and sticky containers inside composited scrollers.
+All four focused files pass in both GC modes. All **27 native Brave fixtures**,
+three focused canonical SVG reftests, signing, startup and five harness checks
+pass. The broad checkpoint executes **58 runtime binaries** across 29 selected
+files in both GC modes, matches all **100 upstream AST cases** exactly, and
+passes eleven default screenshots under their existing bounds plus nine exact
+SVG reftests, including the three focused cases.
+
+The guarded production build completes at **8.19 GiB** sampled peak RSS under
+the unchanged 12 GiB limit. Captures pin executable
+`64f70d824d8970f86d9b525e9a0353c7d1ce645bdef9484266bc63d08d82ca38`
+and native bridge
+`e220b085a158565e6aa2f706f9c5753674dba3d09f31d0b77fb325561b37466d`.
+Vox source inputs remain stable during compilation. The canonical V executable
+is replaced independently during the build, while the build's private compiler
+retains its original verified hash. The broad checks pin a binary copy of the
+latest current compiler separately.
+
+The full-uBO matrix still accepts **one of ten**. Its completed native cases
+report HN 0, Lobsters 115, Slashdot 9,773, Stack Overflow 239, BBC 76,604,
+CNN 101,529, The Verge 315,921 and Pikabu 13,863. Reddit's guest HTTP 403 and
+The Guardian's unstable references remain failures. Lobsters' native frame is
+unchanged; its reference changes at 115 pixels and still differs from the live
+capture at 44 pixels. Pikabu completes without the preceding intermittent
+panic, but this supplies no crash-fix credit: its native frame matches the
+preceding successful retry, whose reference differs at 66 pixels.
+
+Stack Overflow's reference and native frame both remain unchanged. Its header
+is exact; the left sidebar retains 146 differences, the main column two and
+the right sidebar 91. A fresh debugger capture reproduces that frame exactly
+and shows the blog border using the fallback renderer with shared recording
+disabled. The reduced recording fix receives no full-page pixel credit. CNN's
+native frame changes alongside independent font-loading and initial-layout
+source changes between builds; this fix receives no CNN credit. Every other
+completed native frame remains unchanged. All eight completed workloads retain
+matching full-uBO request/header decisions and validated full-uBO document
+references. The closed 326-file oracle template remains unchanged.
+
+The original broad supervisor exits 1 because its source watcher sees an
+independent edit to `page/page_client_runtime_test.v`. Every selected compile
+and runtime exits zero; that imported-package test file is outside the
+selection and is excluded from production and AST builds. A separate guarded
+audit exits zero after verifying all implementation and selected-test hashes,
+the completed receipts and the pinned compiler and browser identities. The
+shared canonical bundle is replaced after the screenshot stages, during unit
+checks which do not execute it; the tested pinned bundle remains unchanged.
+Both initial failed audit and successful corrected audit receipts are retained,
+and no successful check is rerun. The ten-fix checkpoint is complete, with
+**`adf10924`** as the new broad baseline and **zero** later native fixes.
+
+Evidence is under `Build/forum-news-blog-border-20261031/`, especially
+`diagnosis.json`, `brave-raster-trace-v2/sidebar-tiles.json`, `focused-v5/`,
+`candidate-v2/verified/`, `candidate-v2/actual-compiler.json`, `broad/` and
+`full-page-trace/`. The original full-container candidate and its failed native
+fixture remain retained. Full ten-site parity remains open.
