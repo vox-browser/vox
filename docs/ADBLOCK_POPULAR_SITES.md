@@ -452,3 +452,66 @@ the remaining color-difference analysis. Nine native fixes belong to this
 workstream. Broad suites were not run; the next completed native fix reaches
 the ten-fix verification boundary. The broad-test baseline is unchanged, and
 complete site acceptance remains **one of ten**.
+
+### Single-path opacity and completed broader verification
+
+`285c38e8` routes a single translucent SVG paint through the existing float-alpha
+recording path. Previously, only groups of paths used that path; an isolated
+fill or stroke rounded its paint opacity into a byte too early. The new
+`forum-single-svg-opacity` fixture improves from **4,000 differing pixels to
+zero**. Two fresh Brave references are identical. Seven focused grouping cases
+pass in both GC modes, covering mask/effect boundaries, clips, root raster
+layers, and rejection of unsupported paint combinations. All eight focused
+Brave fixtures are now exact. This is the tenth native fix in this workstream.
+
+The required broader batch exposed a separate canonical-font problem:
+navigation and preload documents selected Chromium metrics even when
+`LADYBIRD_LAYOUT_TEST_FONT` explicitly requested the upstream test font.
+`88275919` installs LibWeb's fixture policies before either parser starts in
+that mode. Normal browser documents retain Chromium's policies. Five focused
+policy cases pass in both GC modes. `9a89f8ad` also lets screenshot callers
+explicitly reuse the selected production bundle without starting another build.
+
+Broader verification is complete through `88275919`:
+
+- 461 cases across 27 files pass in each GC mode, including the complete
+  painting and Skia packages and selected CSS, layout, and glyph-storage cases.
+- The native TLS regression also passes in both GC modes: trusted CA succeeds;
+  wrong hostname and unrelated CA remain rejected. This resolves the previously
+  pending no-GC verification, bringing the broad unit count to **462 per mode**.
+- All **100 LibJS AST fixtures** match without case overrides.
+- All **11 default screenshot comparisons** pass: eight are exact and three
+  use their existing upstream/platform bounds. The previously failing
+  `inline-node`, `ordered-list`, and `text-decorations` comparisons now pass.
+- All **eight SVG mutation/image reftests** are exact. The eight Brave regression
+  fixtures remain exact on the final shared production build. Signing and
+  fresh startup checks pass.
+
+No reference image or tolerance was changed. The latest complete ten-site run
+retains these failures rather than treating them as skips:
+
+| Site | Native differing pixels | Remaining acceptance failure |
+| --- | ---: | --- |
+| Hacker News | 0 | Pass; live-to-frozen Brave is also exact |
+| Reddit | — | Guest HTTP 403 fixture remains unavailable |
+| Lobsters | 115 | Live-to-frozen Brave differs at 44 pixels |
+| Slashdot | 9,795 | Live-to-frozen Brave differs at 598,814 pixels |
+| Stack Overflow | 1,051 | Native pixel mismatch; live-to-frozen Brave is exact |
+| BBC News | 76,604 | Live-to-frozen Brave differs at 526,496 pixels |
+| CNN | — | Native process exceeds its 3 GiB guard |
+| The Guardian | — | Consecutive Brave reference captures differ |
+| The Verge | 315,921 | Live-to-frozen Brave differs at 135,187 pixels |
+| Pikabu | 14,267 | Live-to-frozen Brave differs at 21,603 pixels |
+
+Lobsters' native PNG is unchanged between the shared builds; its Brave frame
+changes by 115 pixels. Both Stack Overflow PNGs are unchanged. An earlier
+Pikabu attempt had a Roboto face error and 39,565 differing pixels; that failed
+font load is retained separately, and the final attempt loads that face.
+Complete site acceptance remains **one of ten**.
+
+Raw commands, source/build identities, guard receipts, images and metrics are
+under `Build/forum-news-svg-opacity-20261030/` and
+`Build/forum-news-layout-font-20261030/`. The final validation controller and
+every completed regression stage have recorded actual exit statuses; the
+ten-site command correctly exits nonzero. This workstream's new broad-test
+baseline is `88275919`; completed native fixes since that baseline: **zero**.

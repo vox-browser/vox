@@ -29,6 +29,9 @@ For the separate `capture_screenshot.sh` / `compare_screenshots.sh` workflow,
 when newer source exists. It fails if the executable is missing. Record the
 bundle identity and verify that it contains the change being tested; this
 option does not establish that an older binary contains new code.
+An explicit `LADYBIRD_LAYOUT_TEST_FONT` selects LibWeb's canonical font sizes
+and metrics for both preloading and navigation. Ordinary browser documents
+continue to use Chromium's policies.
 `--audit-config FILE` selects additional native layout observations while
 diagnosing a mismatch; retain the `body` and `images` selectors in that config.
 The checker is built without temporary module-cache dependencies so it remains
@@ -62,10 +65,10 @@ python3 tools/test_forum_news_capture_state.py --extension /path/to/uBlock0.chro
 python3 -m unittest discover -s tools -p forum_news_inline_pixels_test.py
 ```
 
-The second command checks seven native regressions against exact Brave
+The second command checks eight native regressions against exact Brave
 references: three forum-tag cases, fractional foreground/opacity-group
 painting, Stack Overflow automatic hyphenation, legacy line-clamp excerpts,
-and fractional border colors. The hyphenation case also
+fractional border colors, and single-path SVG fill/stroke opacity. The hyphenation case also
 covers min-content sizing, manual wrapping, and an unknown language.
 Replay accepts bursts of archived-origin connections without forwarding any
 requests. Current site results and remaining failures are recorded in
