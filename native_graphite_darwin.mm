@@ -365,6 +365,12 @@ static bool prepare_image_texture(skgpu::graphite::Recorder* recorder,
     content_image.flags &= ~VOX_GRAPHITE_IMAGE_FORCE_MSAA;
     auto upload = image_upload_cache.prepare(content_image, upload_width, upload_height, prepared.needs_mips);
     sk_sp<SkImage> texture = upload.texture;
+    if (upload.needs_mipmaps) {
+        texture = SkImages::TextureFromImage(recorder, texture, properties);
+        if (!texture) return false;
+        // Reusing an uploaded image matches Chromium's mip upgrade: the
+        // GPU generates its levels instead of uploading a fresh CPU chain.
+    }
     if (!texture && (image->flags & 4)) {
         // Flag 16 marks full-resolution 4:4:4 chroma planes.
         bool full_chroma = image->flags & 16;

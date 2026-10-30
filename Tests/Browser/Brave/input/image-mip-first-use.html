@@ -1,0 +1,14 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>First-use mipmapped image upload</title>
+<style>
+body { margin:20px; background:#20334a; color:white; font:16px Arial }
+.grid { display:flex; gap:30px }
+img, video { display:block; width:73px; height:47px; margin-top:12px }
+</style>
+<!-- Unlike png-icc-sampling, the first draw already needs mipmaps.
+     Both the image and video poster must retain the initial CPU mip chain. -->
+<div class="grid">
+  <div>Decoded image<img src="../resources/icc-sampling-untagged.png"></div>
+  <div>Video poster<video preload="none" poster="../resources/icc-sampling-untagged.png"></video></div>
+</div>

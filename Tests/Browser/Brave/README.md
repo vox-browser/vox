@@ -23,16 +23,20 @@ scroll offsets and other scales retain their existing path. The
 twelve corner differences against its adjacent reference PNG.
 
 `png-icc-sampling` checks continuous Display P3 colors and alpha at natural,
-downscaled and upscaled sizes, with an untagged natural-size control. Its
+downscaled and upscaled sizes, with untagged controls at all three sizes. Its
 800×600, scale 1 Brave 156.1.98.60 reference is pixel-exact through file and
 HTTP loading; the previous CPU conversion changed 2,090 pixels. Prepared
 source rows remain premultiplied in their encoded color space. A representable
 ICC transfer function and D50 gamut matrix cross the native boundary as plain
 values; the GPU upload converts them to an 8-bit sRGB texture before filtering.
 This also makes the original compilation thumbnail exact at natural size.
-The complete [sampling controls diagnostic](diagnostic/png-icc-sampling-controls.html)
-retains an unrelated untagged downscale mismatch of 1,014 pixels, unchanged
-by this fix. Its adjacent PNG remains the Brave reference.
+The untagged image is drawn at natural size before its smaller draw. That later
+draw upgrades the cached GPU texture with mipmaps instead of uploading a new
+CPU-generated mip chain; this removes another 1,014 differing pixels. The
+[original diagnostic](diagnostic/png-icc-sampling-controls.html) now matches too.
+`image-mip-first-use` checks the opposite order: an image and video poster whose
+first draw already needs mipmaps keep the initial CPU-generated levels. This
+also preserves the compilation video's poster on vlang.io.
 
 `png-icc-matrix` checks an embedded Display P3 ICC profile on opaque and
 translucent pixels, an untagged control, a CSS background, and a resized image.

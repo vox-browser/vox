@@ -29,6 +29,9 @@ public:
     struct Request {
         Texture texture;
         std::unique_ptr<Entry> pending;
+        // An earlier non-mipmapped upload can gain GPU-generated levels.
+        // New uploads still use the raster image's CPU mipmaps.
+        bool needs_mipmaps = false;
     };
     Request prepare(VoxGraphiteImage const& image, int upload_width, int upload_height, bool mipmapped)
     {
@@ -49,17 +52,24 @@ public:
         if (mipmapped) texture_bytes += texture_bytes / 3 + 64;
         size_t cost = row_bytes * rows + texture_bytes;
         if (cost > limit) return {};
+        Texture mipmap_source {};
         for (auto it = entries.begin(); it != entries.end(); ++it) {
             auto const& entry = **it;
             auto const& prior = entry.image;
             if (entry.upload_width != upload_width || entry.upload_height != upload_height
-                || entry.mipmapped != mipmapped || prior.width != image.width || prior.height != image.height
+                || prior.width != image.width || prior.height != image.height
                 || prior.flags != image.flags || prior.has_color_profile != image.has_color_profile
                 || (image.has_color_profile && std::memcmp(prior.color_profile, image.color_profile, sizeof(image.color_profile)))) continue;
             bool equal = true;
             for (size_t y = 0; equal && y < rows; ++y)
                 equal = !std::memcmp(entry.source.data() + y * row_bytes, image.pixels + y * pitch, row_bytes);
             if (!equal) continue;
+            // Prefer an existing complete upload to upgrading another entry.
+            // Planar YUV retains its own plane-upload path.
+            if (mipmapped && !entry.mipmapped) {
+                if (!(image.flags & 4)) mipmap_source = entry.texture;
+                continue;
+            }
             auto texture = entry.texture;
             entries.splice(entries.begin(), entries, it);
             return {std::move(texture), nullptr};
@@ -71,7 +81,8 @@ public:
         entry->source.resize(row_bytes * rows);
         for (size_t y = 0; y < rows; ++y)
             std::memcpy(entry->source.data() + y * row_bytes, image.pixels + y * pitch, row_bytes);
-        return {Texture {}, std::move(entry)};
+        bool needs_mipmaps = bool(mipmap_source);
+        return {std::move(mipmap_source), std::move(entry), needs_mipmaps};
     }
     void finish(Request&& request, Texture texture)
     {

@@ -396,13 +396,24 @@ int main()
     changed = descriptor; changed.has_color_profile = 1; upload_misses(changed);
     assert(!uploads.prepare(descriptor, 1, 2, false).texture);
     assert(!uploads.prepare(descriptor, 2, 1, false).texture);
-    assert(!uploads.prepare(descriptor, 2, 2, true).texture);
+    auto upgrade = uploads.prepare(descriptor, 2, 2, true);
+    assert(upgrade.texture == texture && upgrade.pending && upgrade.needs_mipmaps);
+    // A failed upgrade must leave the original upload available to retry.
+    uploads.finish(std::move(upgrade), nullptr);
+    assert(uploads.prepare(descriptor, 2, 2, false).texture == texture);
+    upgrade = uploads.prepare(descriptor, 2, 2, true);
+    assert(upgrade.texture == texture && upgrade.needs_mipmaps);
+    auto mip_texture = std::make_shared<int>(74);
+    uploads.finish(std::move(upgrade), mip_texture);
+    upgrade = uploads.prepare(descriptor, 2, 2, true);
+    assert(upgrade.texture == mip_texture && !upgrade.pending && !upgrade.needs_mipmaps);
+    assert(uploads.prepare(descriptor, 2, 2, false).texture == mip_texture);
     for (int y = 0; y < 2; ++y)
         std::memcpy(padded_source.data() + y * 12, source.data() + y * 8, 8);
     changed = descriptor; changed.pixels = padded_source.data(); changed.pitch = 12;
-    assert(uploads.prepare(changed, 2, 2, false).texture == texture);
+    assert(uploads.prepare(changed, 2, 2, false).texture == mip_texture);
     padded_source[11]++;
-    assert(uploads.prepare(changed, 2, 2, false).texture == texture);
+    assert(uploads.prepare(changed, 2, 2, false).texture == mip_texture);
     changed = descriptor; changed.has_color_profile = 1; changed.color_profile[0] = 1.8f;
     upload = uploads.prepare(changed, 2, 2, false);
     uploads.finish(std::move(upload), texture);
@@ -419,12 +430,17 @@ int main()
         assert(upload.pending);
         uploads.finish(std::move(upload), texture);
         assert(uploads.prepare(yuv, 3, 3, false).texture == texture);
+        // Do not turn a planar upload into an RGBA copy while adding mips.
+        auto planar_mips = uploads.prepare(yuv, 3, 3, true);
+        assert(!planar_mips.texture && planar_mips.pending && !planar_mips.needs_mipmaps);
         size_t last = flags & 16 ? 26 : 16;
         planes[last]++;
         assert(!uploads.prepare(yuv, 3, 3, false).texture);
     }
     uploads.clear();
     assert(!uploads.prepare(descriptor, 2, 2, false).texture);
+    auto first_mips = uploads.prepare(descriptor, 2, 2, true);
+    assert(!first_mips.texture && first_mips.pending && !first_mips.needs_mipmaps);
     upload = uploads.prepare(descriptor, 2, 2, false);
     uploads.finish(std::move(upload), nullptr);
     assert(!uploads.prepare(descriptor, 2, 2, false).texture);
@@ -433,6 +449,38 @@ int main()
     changed = descriptor; changed.width = std::numeric_limits<int>::max();
     assert(!uploads.prepare(changed, 2, 2, false).pending);
     assert(!uploads.prepare(descriptor, std::numeric_limits<int>::max(), 2, false).pending);
+    {
+        VoxGraphiteImageUploadCache<std::shared_ptr<int>> upgrades(8192, 4);
+        auto base = upgrades.prepare(descriptor, 2, 2, false);
+        auto later_base = upgrades.prepare(descriptor, 2, 2, false);
+        upgrades.finish(std::move(base), texture);
+        auto mips = upgrades.prepare(descriptor, 2, 2, true);
+        assert(mips.texture == texture && mips.pending && mips.needs_mipmaps);
+        upgrades.finish(std::move(mips), mip_texture);
+        // Publish another base entry ahead of the completed mipmapped entry.
+        // An exact mipmapped hit must win over that potential upgrade source.
+        upgrades.finish(std::move(later_base), texture);
+        auto base_hit = upgrades.prepare(descriptor, 2, 2, false);
+        assert(base_hit.texture == texture && !base_hit.needs_mipmaps);
+        mips = upgrades.prepare(descriptor, 2, 2, true);
+        assert(mips.texture == mip_texture && !mips.pending && !mips.needs_mipmaps);
+        source.back()++;
+        auto mutated = upgrades.prepare(descriptor, 2, 2, true);
+        assert(!mutated.texture && mutated.pending && !mutated.needs_mipmaps);
+        source.back()--;
+        auto other_profile = descriptor;
+        other_profile.has_color_profile = 1;
+        auto interpreted = upgrades.prepare(other_profile, 2, 2, true);
+        assert(!interpreted.texture && interpreted.pending && !interpreted.needs_mipmaps);
+        // A pending upgrade owns its decoded bytes across cache eviction.
+        upgrades.clear();
+        base = upgrades.prepare(descriptor, 2, 2, false);
+        upgrades.finish(std::move(base), texture);
+        mips = upgrades.prepare(descriptor, 2, 2, true);
+        upgrades.clear();
+        upgrades.finish(std::move(mips), mip_texture);
+        assert(upgrades.prepare(descriptor, 2, 2, true).texture == mip_texture);
+    }
     // Packed and strided sheets/output have identical active pixels. Exercise
     // long rows and tails, keeping source and destination padding unobservable.
     {
