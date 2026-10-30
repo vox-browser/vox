@@ -703,12 +703,10 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 		none
 	}
 
-	// Collapsed-border conflict resolution happens inside the table formatting
-	// context. Keep the position that was resolved from the table's authored
-	// (uncollapsed) border so the final content origin can be rebased by the
-	// change in its used outer-grid border.
+	// The table context resolves its vertical origin together with captions.
+	// Horizontal placement precedes conflict resolution, so retain its
+	// authored border for the final inline-axis rebase.
 	pre_run_table_border_box_left := box_state.border_left.plus(box_state.padding_left)
-	pre_run_table_border_box_top := box_state.border_top.plus(box_state.padding_top)
 	mut content_height_from_children := 0.0
 	if box_as_node.is_replaced_box() && !box_as_node.is_replaced_box_with_children() {
 		content_height_from_children = box_state.content_height().to_double()
@@ -754,26 +752,7 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 		}
 		inside_result := layout_inside_independent_formatting_context_with_mode(mut state, box_as_node, mut box_state, bfc.layout_mode, AvailableSpace.new(AvailableSize.make_definite(css_px(content_width)), available_height))
 		if box_as_node.display().is_table_inside() && box_state.use_collapsing_borders_model() {
-			old_content_y := box_state.offset.y()
 			box_state.set_content_x(box_state.offset.x().plus(box_state.border_box_left().minus(pre_run_table_border_box_left)))
-			box_state.set_content_y(box_state.offset.y().plus(box_state.border_box_top().minus(pre_run_table_border_box_top)))
-			baseline_shift := box_state.offset.y().minus(old_content_y)
-			if baseline_shift.raw_value() != 0 {
-				if wrapper_values := box_state.containing_block_used_values() {
-					mut wrapper_state := unsafe { &UsedValues(wrapper_values) }
-					shifted_first := if baseline := wrapper_state.derived_first_baseline() {
-						?CSSPixels(baseline.plus(baseline_shift))
-					} else {
-						?CSSPixels(none)
-					}
-					shifted_last := if baseline := wrapper_state.derived_last_baseline() {
-						?CSSPixels(baseline.plus(baseline_shift))
-					} else {
-						?CSSPixels(none)
-					}
-					wrapper_state.set_derived_baselines(shifted_first, shifted_last)
-				}
-			}
 		}
 		content_height_from_children = if box_as_node.is_replaced_box() {
 			box_state.content_height().to_double()

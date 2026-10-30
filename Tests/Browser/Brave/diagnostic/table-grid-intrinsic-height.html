@@ -1,0 +1,24 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Intrinsic table height in grid</title>
+<style>
+body { margin: 20px; background: #132030; color: #d5e1f0; font: 15px/1.65 Arial; }
+.grid { display: grid; grid-template-columns: 583px 583px; gap: 18px; }
+.card { display: flow-root; padding: 30px; border: 1px solid #496880; background: #20334a; }
+table { border-collapse: collapse; width: 100%; font-size: 11px; line-height: 18.140625px; margin: 20px 0; }
+td { border: 1px solid #4e6b7a; padding: 10px; }
+.control { width: 583px; box-sizing: border-box; margin-top: 20px; }
+</style>
+<div class="grid" id="grid">
+  <div class="card" id="card"><table>
+    <tr><td>Alpha</td><td>Beta</td><td>Gamma</td></tr>
+    <tr><td>Alpha</td><td>Beta</td><td>Gamma</td></tr>
+    <tr><td>Alpha</td><td>Beta</td><td>Gamma</td></tr>
+  </table></div>
+  <div class="card">Grid control</div>
+</div>
+<div class="card control" id="control"><table>
+  <tr><td>Alpha</td><td>Beta</td><td>Gamma</td></tr>
+  <tr><td>Alpha</td><td>Beta</td><td>Gamma</td></tr>
+  <tr><td>Alpha</td><td>Beta</td><td>Gamma</td></tr>
+</table></div>

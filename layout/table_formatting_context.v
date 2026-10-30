@@ -2113,9 +2113,12 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 		available_space.height)
 	bottom_caption_height := layout_table_captions(mut state, table, mut table_state, .bottom,
 		CSSPixels.new(0), available_space.height)
-	table_state.set_content_y(top_caption_height.plus(table_state.margin_box_top()))
 	computed := table.computed_values()
 	resolve_collapsed_table_borders(mut state, table, rows, placements, column_definitions, column_count)
+	// Intrinsic-width measurement can already have installed the winning
+	// borders. Resolve the vertical origin once, after conflict resolution,
+	// so cold and cached measurements reserve the same outer shares.
+	table_state.set_content_y(top_caption_height.plus(table_state.margin_box_top()))
 	if computed.border_collapse() == .collapse {
 		if wrapper_state := table_state.containing_block_used_values() {
 			table_state.set_content_width(wrapper_state.content_width().minus(table_state.border_box_left()).minus(table_state.border_box_right()))

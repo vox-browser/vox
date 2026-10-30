@@ -13,6 +13,17 @@ python3 tools/check_pixel_equality.py Tests/Browser/Brave/expected/font-rasteriz
 
 This comparison requires exact RGBA equality, with no excluded pixels or tolerance.
 
+`table-grid-intrinsic-height` checks a collapsed-border table's contribution to
+an automatic grid row against an ordinary block control. The 1280×800, scale 1
+fixture matches Brave 156.1.98.60 exactly; the previous extra outer border share
+changed 2,328 pixels. Transparent cell borders isolate the container height.
+The [visible-table companion](diagnostic/table-grid-intrinsic-height.html),
+with its adjacent Brave PNG, also matches exactly, including its text, borders,
+and following control. Focused layout cases cover both rendering policies,
+odd and even border widths, authored table borders, and top/bottom captions.
+The table context positions its vertical origin after border conflict
+resolution; callers must not apply the same border adjustment again.
+
 `fractional-gradient-pattern` checks a generated gradient tile beneath a rounded
 opaque border, with integer-size and square-corner controls. Its 1280×800,
 scale 1 fixture matches Brave 156.1.98.60 exactly; painting the shader directly
