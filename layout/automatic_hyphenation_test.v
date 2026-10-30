@@ -1,6 +1,54 @@
 module layout
 
 import html
+import math
+import platform
+
+fn test_inserted_hyphen_does_not_kern_with_the_source_word() {
+	$if !macos { return }
+	font := &platform.Font{family: 'system-ui', point_size: 17, font_rendering_policy: .chromium}
+	whole := platform.shape_text(0, 0, 'generated', font, .ltr)
+	// This face has a real r-hyphen kern. Explicit text keeps it, while an
+	// automatically inserted hyphen must preserve the unkerned source end.
+	joined := platform.shape_text(0, 0, 'gener‐', font, .ltr)
+	for spacing in [f32(0), f32(0.25)] {
+		prefix := platform.shape_text_with_spacing(0, spacing, 0, 'gener', font, .ltr).glyph_run
+		hyphen := platform.shape_text_with_spacing(0, spacing, 0, '‐', font, .ltr).glyph_run
+		run := shape_automatically_hyphenated_prefix('gener', '‐', whole, spacing, 0)
+		assert run.glyphs_.len == prefix.glyphs_.len + 1
+		for index, glyph in prefix.glyphs_ { assert run.glyphs_[index] == glyph }
+		last := run.glyphs_.last()
+		assert last.glyph_index == hyphen.glyphs_[0].glyph_index
+		assert last.position.x == prefix.width() + hyphen.glyphs_[0].position.x
+		assert math.abs(run.width() - (prefix.width() + hyphen.width())) < 0.00001
+		if spacing == 0 {
+			assert run.glyphs_.last().position.x - joined.glyphs_.last().position.x > 0.5
+		}
+	}
+}
+
+fn test_automatic_hyphen_fit_includes_the_independent_hyphen_width() {
+	$if !macos { return }
+	mut document := html.parse_document('<!doctype html><html lang="en"><style>
+		body{margin:0;font:17px/22.1px system-ui}div{width:51.25px;hyphens:auto}
+	</style><div>generated</div>')
+	defer { document.finalize() }
+	document.set_font_rendering_policy(.chromium)
+	root := layout_document_typed_in_viewport(document, 320, 240)
+	commands := root.paint_commands().filter(it.kind == 'draw_text')
+	assert commands.len == 2
+	assert commands[0].text == 'gen‐'
+	assert commands[1].text == 'erated'
+	assert commands[0].width <= 51.25
+	first := commands[0].glyph_run or { panic('missing prefix run') }
+	last := first.glyphs_.last()
+	assert last.is_automatic_hyphen && last.length_in_code_units == 0
+	mut source_length := 0
+	for glyph in first.glyphs_ { source_length += glyph.length_in_code_units }
+	assert source_length == 3
+	body := document.body() or { panic('missing body') }
+	assert (body.as_node().text_content() or { '' }) == 'generated'
+}
 
 fn test_automatic_hyphenation_fills_the_line_before_a_word_wrap() {
 	$if !macos {

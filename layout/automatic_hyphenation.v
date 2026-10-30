@@ -72,9 +72,8 @@ fn (item &InlineLevelItem) split_for_automatic_hyphenation(maximum_width CSSPixe
 	for index in 0 .. boundaries.len {
 		boundary := boundaries[if min_content { index } else { boundaries.len - 1 - index }]
 		prefix := text.rendered_substring_for_line_box(item.offset_in_node, boundary - item.offset_in_node)
-		prefix_shape := platform.shape_text_with_spacing(0, letter_spacing, word_spacing,
-			prefix + hyphen, run.font(), run.text_type())
-		mut prefix_run := prefix_shape.glyph_run
+		mut prefix_run := shape_automatically_hyphenated_prefix(prefix, hyphen, run,
+			letter_spacing, word_spacing)
 		if prefix_run.glyphs_.len == 0 { continue }
 		if !min_content && leading.plus(shaped_inline_width(prefix_run, 0)).raw_value() > maximum_width.raw_value() {
 			continue
@@ -93,6 +92,28 @@ fn (item &InlineLevelItem) split_for_automatic_hyphenation(maximum_width CSSPixe
 			trailing_whitespace_from_shaped_text(remainder_shape))
 	}
 	return none
+}
+
+fn shape_automatically_hyphenated_prefix(prefix string, hyphen string,
+	run &platform.GlyphRun, letter_spacing f32, word_spacing f32) &platform.GlyphRun {
+	if run.font().font_rendering_policy != .chromium {
+		return platform.shape_text_with_spacing(0, letter_spacing, word_spacing,
+			prefix + hyphen, run.font(), run.text_type()).glyph_run
+	}
+	// Blink shapes its inserted hyphen independently of the source text.
+	// Shaping prefix+hyphen together kerns across that boundary (for example
+	// SFNS's r-hyphen pair), shifting the hyphen and underestimating its fit.
+	prefix_run := platform.shape_text_with_spacing(0, letter_spacing, word_spacing,
+		prefix, run.font(), run.text_type()).glyph_run
+	hyphen_run := platform.shape_text_with_spacing(0, letter_spacing, word_spacing,
+		hyphen, run.font(), run.text_type()).glyph_run
+	mut glyphs := prefix_run.glyphs_.clone()
+	for source in hyphen_run.glyphs_ {
+		mut glyph := source
+		glyph.position.translate_by(prefix_run.width(), 0)
+		glyphs << glyph
+	}
+	return platform.GlyphRun.new_with_face(run.font(), run.text_type(), glyphs, run.face())
 }
 
 fn (iterator &InlineLevelIterator) next_word_can_hyphenate(available CSSPixels) bool {
