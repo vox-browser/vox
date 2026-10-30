@@ -13,6 +13,12 @@ python3 tools/check_pixel_equality.py Tests/Browser/Brave/expected/font-rasteriz
 
 This comparison requires exact RGBA equality, with no excluded pixels or tolerance.
 
+`translucent-rect-fill` covers solid alpha fills over three opaque backgrounds,
+including legacy alpha, modern fractional color components, and a fractional
+box position. The 800×600, scale 1 reference uses Brave 156.1.98.60 and is
+pixel-exact. Retaining the source color through Skia's blend removes 184,800
+one-level pixel differences from the previous CoreGraphics fill path.
+
 `scrolling-text-raster` checks colored text inside an overflowing scroll container
 and an `overflow:hidden` control. The 800×600, scale 1 fixture matches Brave
 156.1.98.60 exactly. Contiguous text-only scrolling layers retain a transparent

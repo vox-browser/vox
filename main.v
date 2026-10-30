@@ -5949,8 +5949,12 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 		'fill_rect' {
 			fill := app.paint_colors.color(command.color, command.opacity)
 			$if macos {
+				// CoreGraphics quantizes translucent solid colors before blending.
+				// Keep Chromium's source color in the Skia raster until the blend.
+				chromium_alpha := fill.a > 0 && fill.a < 255 && app.document != unsafe { nil }
+					&& app.document.font_rendering_policy() == .chromium
 				if app.ctx.native_rendering && !command.outer_shadow
-					&& (command.radius > 0 || command.antialiased_rect) {
+					&& (command.radius > 0 || command.antialiased_rect || chromium_alpha) {
 					if command.underlays_next && C.native_rounded_rect_underlay_supported() != 0 {
 						app.rounded_rect_underlay = *command
 						app.rounded_rect_underlay_source = source_command
@@ -5969,7 +5973,8 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 						C.native_set_rounded_rect_underlay(&rect[0], app.paint_colors.color(underlay.color, underlay.opacity))
 					}
 					set_native_chromium_paint_color(*command)
-					C.native_draw_rounded_rect_srgb(f32(command.x), f32(command.y), f32(command.width), f32(command.height), used_radius, used_radius, used_radius, used_radius, used_radius, used_radius, used_radius, used_radius, f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), fill, 1, 0, if command.scrollbar_axis == '' && !command.disable_antialias {
+					C.native_draw_rounded_rect_srgb(f32(command.x), f32(command.y), f32(command.width), f32(command.height), used_radius, used_radius, used_radius, used_radius, used_radius, used_radius, used_radius, used_radius, f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), fill, 1, 0, if command.scrollbar_axis == '' && !command.disable_antialias
+						&& (command.radius > 0 || command.antialiased_rect) {
 						1
 					} else {
 						0
