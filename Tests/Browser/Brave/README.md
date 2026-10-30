@@ -13,6 +13,15 @@ python3 tools/check_pixel_equality.py Tests/Browser/Brave/expected/font-rasteriz
 
 This comparison requires exact RGBA equality, with no excluded pixels or tolerance.
 
+`scrolling-gradient-raster` checks translucent generated gradients after a
+6,400px scroll, including an inset shadow. Capture at 1280×800, scale 1 with
+`--screenshot-scroll-y 6400`. The Brave 156.1.98.60 reference is pixel-exact;
+the previous bounded raster changed 79,675 pixels. Integral root scrolling
+keeps the document's gradient tile coordinates through rasterization. Fractional
+scroll offsets and other scales retain their existing path. The
+[10px-radius diagnostic](diagnostic/scrolling-gradient-rounded.html) still has
+twelve corner differences against its adjacent reference PNG.
+
 `png-icc-matrix` checks an embedded Display P3 ICC profile on opaque and
 translucent pixels, an untagged control, a CSS background, and a resized image.
 Its 800×600, scale 1 reference from Brave 156.1.98.60 is pixel-exact through

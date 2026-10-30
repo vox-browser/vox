@@ -4126,11 +4126,14 @@ static bool draw_chromium_layer_image_tiles(std::vector<uint32_t>& pixels,
 static bool chromium_root_gradient_tiles_eligible(float scale, float page_x,
     float page_y, bool has_background, int tile_width, RasterRegion const& region)
 {
-    // Other scales, scrolled roots and isolated layers keep the existing
-    // bounded leaf renderer until their raster origins are supplied separately.
+    // Integral root scrolling retains the document's tile origin. Fractional
+    // scroll offsets, other scales and isolated layers keep leaf rendering.
     constexpr size_t maximum_tile_pixels = 8 * 1024 * 1024;
     return scale == 1 && page_x == 0 && page_y == std::round(page_y)
-        && s_raster_layer_is_root && s_root_raster_scroll_y == 0 && has_background && tile_width > 0
+        && s_raster_layer_is_root && std::isfinite(s_root_raster_scroll_y)
+        && s_root_raster_scroll_y >= 0 && s_root_raster_scroll_y <= INT_MAX
+        && s_root_raster_scroll_y == std::round(s_root_raster_scroll_y)
+        && has_background && tile_width > 0
         && region.left >= 0 && region.right <= tile_width
         && static_cast<size_t>(tile_width) * s_msaa_tile_rows <= maximum_tile_pixels;
 }
@@ -4399,7 +4402,8 @@ static int draw_svg_gradient_path(CGContextRef destination, float const* data,
             // A page-aligned eight-pixel dither pattern stops matching at the
             // next Chromium tile. Replay in each tile's actual coordinate
             // space, retaining its border texels and immutable backdrop.
-            long first_row = std::lround(static_cast<float>(region.top) - page_y + scroll_y);
+            long first_row = std::lround(static_cast<float>(region.top) - page_y + scroll_y
+                + s_root_raster_scroll_y);
             drawn = draw_chromium_root_gradient_tiles(draw, pixels, raster_width,
                 raster_height, tile_width, region.left, first_row, descriptor);
         } else {
