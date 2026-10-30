@@ -1,0 +1,4147 @@
+{
+  "version": 1,
+  "url": "https://stackoverflow.com/questions",
+  "source_document_request_method": "POST",
+  "sealed_unix": 1793332373.7467709,
+  "responses": {
+    "https://stackoverflow.com/questions": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "private"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a52770a31f19f126-DME"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests; frame-ancestors 'self' https://stackexchange.com"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 03:47:40 GMT"
+        },
+        {
+          "name": "feature-policy",
+          "value": "microphone 'none'; speaker 'none'"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=31536000; includeSubDomains"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "x-clacks-overhead",
+          "value": "GNU Terry Pratchett"
+        },
+        {
+          "name": "x-dns-prefetch-control",
+          "value": "off"
+        },
+        {
+          "name": "x-frame-options",
+          "value": "SAMEORIGIN"
+        },
+        {
+          "name": "x-request-guid",
+          "value": "e891b00f-99c1-4f25-849f-f220b26cc183"
+        },
+        {
+          "name": "x-worker-origin-response-time",
+          "value": "166000000"
+        },
+        {
+          "name": "content-length",
+          "value": "282540"
+        },
+        {
+          "name": "Content-Type",
+          "value": "text/html;charset=utf-8"
+        }
+      ],
+      "sha256": "592d214f1f87bc26c3aa98ca70bb609dd03e0dad76b5558828e967d7ada7a8e1",
+      "bytes": 282540
+    },
+    "https://stackoverflow.com/Content/Js/google-analytics.en.js?v=48615a9a9bc4": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-clacks-overhead",
+          "value": "GNU Terry Pratchett"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "age",
+          "value": "195124"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 06 Nov 2026 03:47:41 GMT"
+        },
+        {
+          "name": "x-request-guid",
+          "value": "403c42bd-e324-4110-964d-5ec866edd9e4"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 03:47:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 27 Oct 2026 16:28:48 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "feature-policy",
+          "value": "microphone 'none'; speaker 'none'"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=31536000; includeSubDomains"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests; frame-ancestors 'self' https://stackexchange.com"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=604800"
+        },
+        {
+          "name": "x-dns-prefetch-control",
+          "value": "off"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a52770a528aef126-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "5248"
+        }
+      ],
+      "sha256": "ca6a9e777bdb8a1689d3424700d5f4700ba53a24b3177f776a025e7790b03b56",
+      "bytes": 5248
+    },
+    "https://stackoverflow.com/Content/Js/stub.en.js?v=c4a2a2be622d": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-clacks-overhead",
+          "value": "GNU Terry Pratchett"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "age",
+          "value": "1658"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 06 Nov 2026 03:47:41 GMT"
+        },
+        {
+          "name": "x-request-guid",
+          "value": "afc223e9-ba05-4c46-aea6-3a4e455305ab"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 03:47:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 10:24:40 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "feature-policy",
+          "value": "microphone 'none'; speaker 'none'"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=31536000; includeSubDomains"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests; frame-ancestors 'self' https://stackexchange.com"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=604800"
+        },
+        {
+          "name": "x-dns-prefetch-control",
+          "value": "off"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a52770a538b2f126-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "48817"
+        }
+      ],
+      "sha256": "5d1b24f128ca97bc163f8427cda7c24d3e697463969679a70d647889051094ac",
+      "bytes": 48817
+    },
+    "https://stackoverflow.com/Content/Shared/stacks.css?v=b2264ccf0463": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-clacks-overhead",
+          "value": "GNU Terry Pratchett"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "age",
+          "value": "16070"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 06 Nov 2026 03:47:41 GMT"
+        },
+        {
+          "name": "x-request-guid",
+          "value": "e37aa0ce-a406-4d06-abc5-6badf672a4fd"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 03:47:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/css"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 10:24:54 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "feature-policy",
+          "value": "microphone 'none'; speaker 'none'"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=31536000; includeSubDomains"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests; frame-ancestors 'self' https://stackexchange.com"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=604800"
+        },
+        {
+          "name": "x-dns-prefetch-control",
+          "value": "off"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a52770a538b4f126-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "830743"
+        }
+      ],
+      "sha256": "9cad65f8e18428b759968166f434d48686e0e77050e71b74c5a90dd7730f456a",
+      "bytes": 830743
+    },
+    "https://stackoverflow.com/Content/Shared/Channels/channels.css?v=d431b1be5a03": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-clacks-overhead",
+          "value": "GNU Terry Pratchett"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "age",
+          "value": "11285"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 06 Nov 2026 03:47:41 GMT"
+        },
+        {
+          "name": "x-request-guid",
+          "value": "8ab80958-3a3a-4aa3-b703-3ad8302a4e70"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 03:47:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/css"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 10:24:53 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "feature-policy",
+          "value": "microphone 'none'; speaker 'none'"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=31536000; includeSubDomains"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests; frame-ancestors 'self' https://stackexchange.com"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=604800"
+        },
+        {
+          "name": "x-dns-prefetch-control",
+          "value": "off"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a52770a538b8f126-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "17319"
+        }
+      ],
+      "sha256": "27c3b70df5a72f4684c71a80ca8ed3168a0d54b90e86edf61a8d1d69925cf929",
+      "bytes": 17319
+    },
+    "https://stackoverflow.com/Content/Sites/stackoverflow/primary.css?v=d25e8336a53c": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-clacks-overhead",
+          "value": "GNU Terry Pratchett"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "age",
+          "value": "180342"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 06 Nov 2026 03:47:41 GMT"
+        },
+        {
+          "name": "x-request-guid",
+          "value": "58a2127c-e409-4e72-baf4-d6cd9d7a1fa9"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 03:47:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/css"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 27 Oct 2026 16:29:27 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "feature-policy",
+          "value": "microphone 'none'; speaker 'none'"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=31536000; includeSubDomains"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests; frame-ancestors 'self' https://stackexchange.com"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=604800"
+        },
+        {
+          "name": "x-dns-prefetch-control",
+          "value": "off"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a52770a538b6f126-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "382664"
+        }
+      ],
+      "sha256": "1c52c7ebaaa6d733783f5d725573b3ad14c9e6b0a6819328c72badb4b6c90e91",
+      "bytes": 382664
+    },
+    "https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "age",
+          "value": "308219"
+        },
+        {
+          "name": "report-to",
+          "value": "{\"group\":\"hosted-libraries-pushers\",\"max_age\":2592000,\"endpoints\":[{\"url\":\"https://csp.withgoogle.com/csp/report-to/hosted-libraries-pushers\"}]}"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 26 Oct 2027 14:10:42 GMT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 26 Oct 2026 14:10:42 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 12 Sep 2023 02:38:22 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript; charset=UTF-8"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000, stale-while-revalidate=2592000"
+        },
+        {
+          "name": "timing-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "cross-origin-opener-policy",
+          "value": "same-origin; report-to=\"hosted-libraries-pushers\""
+        },
+        {
+          "name": "cross-origin-resource-policy",
+          "value": "cross-origin"
+        },
+        {
+          "name": "content-security-policy-report-only",
+          "value": "require-trusted-types-for 'script'; report-uri https://csp.withgoogle.com/csp/hosted-libraries-pushers"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-xss-protection",
+          "value": "0"
+        },
+        {
+          "name": "server",
+          "value": "sffe"
+        },
+        {
+          "name": "content-length",
+          "value": "87533"
+        }
+      ],
+      "sha256": "fc9a93dd241f6b045cbff0481cf4e1901becd0e12fb45166a8f17f95823f0b1a",
+      "bytes": 87533
+    },
+    "https://stackoverflow.com/Content/Js/third-party/npm/@stackoverflow/stacks/dist/js/stacks.min.js?v=79a2fd33ef4b": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-clacks-overhead",
+          "value": "GNU Terry Pratchett"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "age",
+          "value": "177047"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 06 Nov 2026 03:47:41 GMT"
+        },
+        {
+          "name": "x-request-guid",
+          "value": "77744370-e187-49ea-8cda-8323a35ae0d8"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 03:47:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 27 Oct 2026 16:28:48 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "feature-policy",
+          "value": "microphone 'none'; speaker 'none'"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=31536000; includeSubDomains"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests; frame-ancestors 'self' https://stackexchange.com"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=604800"
+        },
+        {
+          "name": "x-dns-prefetch-control",
+          "value": "off"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a52770a6ea6cf126-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "97090"
+        }
+      ],
+      "sha256": "a7fb502ce66e28b7bef728a26ee390429c030dfa95124ea570dca104d99985bf",
+      "bytes": 97090
+    },
+    "https://stackoverflow.com/Content/Js/webpack-chunks/5102.en.js?v=1e6c2976e394": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-clacks-overhead",
+          "value": "GNU Terry Pratchett"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "age",
+          "value": "193606"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 06 Nov 2026 03:47:41 GMT"
+        },
+        {
+          "name": "x-request-guid",
+          "value": "af7e6153-dfb5-4eda-9959-8a6b1eb0cd4a"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 03:47:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 27 Oct 2026 16:28:48 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "feature-policy",
+          "value": "microphone 'none'; speaker 'none'"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=31536000; includeSubDomains"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests; frame-ancestors 'self' https://stackexchange.com"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=604800"
+        },
+        {
+          "name": "x-dns-prefetch-control",
+          "value": "off"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a52770a73aa7f126-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "2201"
+        }
+      ],
+      "sha256": "c64b87356eee8933469472990f7c32ad65610e8a7003e1e2e35d40a2d3185ffe",
+      "bytes": 2201
+    },
+    "https://stackoverflow.com/Content/Js/questions/list.en.js?v=ef70b7edd6a8": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-clacks-overhead",
+          "value": "GNU Terry Pratchett"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "age",
+          "value": "17777"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 06 Nov 2026 03:47:41 GMT"
+        },
+        {
+          "name": "x-request-guid",
+          "value": "ea1ed339-abdb-4ad5-b497-f241e0212f5a"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 03:47:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 10:24:40 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "feature-policy",
+          "value": "microphone 'none'; speaker 'none'"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=31536000; includeSubDomains"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests; frame-ancestors 'self' https://stackexchange.com"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=604800"
+        },
+        {
+          "name": "x-dns-prefetch-control",
+          "value": "off"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a52770a78addf126-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "32474"
+        }
+      ],
+      "sha256": "a0e0f67a5c072db54c0178e859aba93f5fb9a4ba6dfd77d2d635a0dd4b62e94d",
+      "bytes": 32474
+    },
+    "https://stackoverflow.com/Content/Js/sprinkles/cookie-consent.en.js?v=7ee6963139c5": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-clacks-overhead",
+          "value": "GNU Terry Pratchett"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "age",
+          "value": "196042"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 06 Nov 2026 03:47:41 GMT"
+        },
+        {
+          "name": "x-request-guid",
+          "value": "e7171256-c0fb-4f50-b74c-9af9cde6c07a"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 03:47:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 27 Oct 2026 16:28:48 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "feature-policy",
+          "value": "microphone 'none'; speaker 'none'"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=31536000; includeSubDomains"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests; frame-ancestors 'self' https://stackexchange.com"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=604800"
+        },
+        {
+          "name": "x-dns-prefetch-control",
+          "value": "off"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a52770a7eb7ff126-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "1708"
+        }
+      ],
+      "sha256": "cc27a0cd04775814ff7e219e849b667e9756ba8a3c4680a60a395a414b32d820",
+      "bytes": 1708
+    },
+    "https://stackoverflow.com/Content/Js/webpack-chunks/svelte.en.js?v=4fa0815f8485": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-clacks-overhead",
+          "value": "GNU Terry Pratchett"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "age",
+          "value": "11303"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 06 Nov 2026 03:47:41 GMT"
+        },
+        {
+          "name": "x-request-guid",
+          "value": "54f1316e-2d6f-462e-8ea6-f97e550adfdf"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 03:47:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 10:24:40 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "feature-policy",
+          "value": "microphone 'none'; speaker 'none'"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=31536000; includeSubDomains"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests; frame-ancestors 'self' https://stackexchange.com"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=604800"
+        },
+        {
+          "name": "x-dns-prefetch-control",
+          "value": "off"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a52770a88cb1f126-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "76680"
+        }
+      ],
+      "sha256": "0c7d7710083ccb0312a23983e4dcbec9dc6db6bed76163bd72a7ac9924913218",
+      "bytes": 76680
+    },
+    "https://stackoverflow.com/Content/Js/webpack-chunks/svelte-floating-ui.en.js?v=a2f77eef5fb2": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-clacks-overhead",
+          "value": "GNU Terry Pratchett"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "age",
+          "value": "9016"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 06 Nov 2026 03:47:41 GMT"
+        },
+        {
+          "name": "x-request-guid",
+          "value": "38657045-2024-4c42-a63f-32be5a97fee8"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 03:47:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 10:24:40 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "feature-policy",
+          "value": "microphone 'none'; speaker 'none'"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=31536000; includeSubDomains"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests; frame-ancestors 'self' https://stackexchange.com"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=604800"
+        },
+        {
+          "name": "x-dns-prefetch-control",
+          "value": "off"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a52770a8dd2cf126-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "1123"
+        }
+      ],
+      "sha256": "c4fc3bf5c19117b2172b834bd0d1bd8c3a0467dc70ae5ca3e2da45001db9d4fe",
+      "bytes": 1123
+    },
+    "https://stackoverflow.com/Content/Js/webpack-chunks/stacks-svelte.en.js?v=037086a248a8": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-clacks-overhead",
+          "value": "GNU Terry Pratchett"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "age",
+          "value": "94224"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 06 Nov 2026 03:47:41 GMT"
+        },
+        {
+          "name": "x-request-guid",
+          "value": "d302cd49-24da-4067-b230-5c4dab16359b"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 03:47:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 10:24:40 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "feature-policy",
+          "value": "microphone 'none'; speaker 'none'"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=31536000; includeSubDomains"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests; frame-ancestors 'self' https://stackexchange.com"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=604800"
+        },
+        {
+          "name": "x-dns-prefetch-control",
+          "value": "off"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a52770a91db7f126-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "52901"
+        }
+      ],
+      "sha256": "0586ea1f307d93b2ff36d0d99437f889d1b54ade9351c4647d88a4e43306302c",
+      "bytes": 52901
+    },
+    "https://stackoverflow.com/Content/Js/webpack-chunks/9366.en.js?v=c8d4e4e64bf3": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-clacks-overhead",
+          "value": "GNU Terry Pratchett"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "age",
+          "value": "183243"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 06 Nov 2026 03:47:41 GMT"
+        },
+        {
+          "name": "x-request-guid",
+          "value": "f0e582f4-e688-47ee-bb06-3c87ceef4b20"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 03:47:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 27 Oct 2026 16:28:48 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "feature-policy",
+          "value": "microphone 'none'; speaker 'none'"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=31536000; includeSubDomains"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests; frame-ancestors 'self' https://stackexchange.com"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=604800"
+        },
+        {
+          "name": "x-dns-prefetch-control",
+          "value": "off"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a52770a97e4df126-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "23221"
+        }
+      ],
+      "sha256": "092a8f5ec776b7733a61ca4422b2d796c5b32a64466490a5a31907133f27d274",
+      "bytes": 23221
+    },
+    "https://stackoverflow.com/Content/Js/islands/signup-modal.en.js?v=580e775cb394": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-clacks-overhead",
+          "value": "GNU Terry Pratchett"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "age",
+          "value": "179004"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 06 Nov 2026 03:47:41 GMT"
+        },
+        {
+          "name": "x-request-guid",
+          "value": "ebb65baf-aaae-48a7-944b-8a0c9aa74515"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 03:47:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 27 Oct 2026 16:28:48 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "feature-policy",
+          "value": "microphone 'none'; speaker 'none'"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=31536000; includeSubDomains"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests; frame-ancestors 'self' https://stackexchange.com"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=604800"
+        },
+        {
+          "name": "x-dns-prefetch-control",
+          "value": "off"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a52770a9ce95f126-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "21883"
+        }
+      ],
+      "sha256": "376a6ae63e82aad5c1672cb4c87f193057595a87f6b66c8ae838a4b01d127d42",
+      "bytes": 21883
+    },
+    "https://stackoverflow.com/Content/Js/islands/one-tap.en.js?v=85d7fce4ff2d": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-clacks-overhead",
+          "value": "GNU Terry Pratchett"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "age",
+          "value": "1934"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 06 Nov 2026 03:47:41 GMT"
+        },
+        {
+          "name": "x-request-guid",
+          "value": "03b206d0-0353-49d7-9c1b-7c2dd9122e03"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 03:47:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 10:24:40 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "feature-policy",
+          "value": "microphone 'none'; speaker 'none'"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=31536000; includeSubDomains"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests; frame-ancestors 'self' https://stackexchange.com"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=604800"
+        },
+        {
+          "name": "x-dns-prefetch-control",
+          "value": "off"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a52770aa1ed7f126-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "3067"
+        }
+      ],
+      "sha256": "7da31713044cb94e13d7146ced418d000bfc5d2d7fcbb1c1ee789872b5c0e177",
+      "bytes": 3067
+    },
+    "https://stackoverflow.com/Content/Js/sprinkles/left-nav-events.en.js?v=2ac13fd60bf6": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-clacks-overhead",
+          "value": "GNU Terry Pratchett"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "age",
+          "value": "87704"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 06 Nov 2026 03:47:41 GMT"
+        },
+        {
+          "name": "x-request-guid",
+          "value": "7a604dce-49af-43f9-bc84-5ae210fa1c29"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 03:47:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 10:24:40 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "feature-policy",
+          "value": "microphone 'none'; speaker 'none'"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=31536000; includeSubDomains"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests; frame-ancestors 'self' https://stackexchange.com"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=604800"
+        },
+        {
+          "name": "x-dns-prefetch-control",
+          "value": "off"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a52770aa6f11f126-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "2106"
+        }
+      ],
+      "sha256": "695caf608e0ec49ddb9c38c509543722b972a6590a14b9ccf33dc89e811dab52",
+      "bytes": 2106
+    },
+    "https://stackoverflow.com/Content/Js/webpack-chunks/stacks-svelte-labs.en.js?v=1e6a63b6a405": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-clacks-overhead",
+          "value": "GNU Terry Pratchett"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "age",
+          "value": "173354"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 06 Nov 2026 03:47:41 GMT"
+        },
+        {
+          "name": "x-request-guid",
+          "value": "3c32bf86-1b2d-412c-ac55-3bedac20aed6"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 03:47:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 27 Oct 2026 16:28:48 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "feature-policy",
+          "value": "microphone 'none'; speaker 'none'"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=31536000; includeSubDomains"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests; frame-ancestors 'self' https://stackexchange.com"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=604800"
+        },
+        {
+          "name": "x-dns-prefetch-control",
+          "value": "off"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a52770aaaf44f126-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "21791"
+        }
+      ],
+      "sha256": "723f8f41ef61288fa6014151d8e6d677b430c53e309a36b221b34d810ba76383",
+      "bytes": 21791
+    },
+    "https://stackoverflow.com/Content/Js/webpack-chunks/8339.en.js?v=9f34435513c3": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-clacks-overhead",
+          "value": "GNU Terry Pratchett"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "age",
+          "value": "170352"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 06 Nov 2026 03:47:41 GMT"
+        },
+        {
+          "name": "x-request-guid",
+          "value": "c3f2ca6e-f4ab-4e2c-bbeb-7e719b2e6829"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 03:47:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 27 Oct 2026 16:28:48 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "feature-policy",
+          "value": "microphone 'none'; speaker 'none'"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=31536000; includeSubDomains"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests; frame-ancestors 'self' https://stackexchange.com"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=604800"
+        },
+        {
+          "name": "x-dns-prefetch-control",
+          "value": "off"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a52770ab6fbdf126-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "11920"
+        }
+      ],
+      "sha256": "2b35e111d3139aa6b507b38c3111879b31dd226785ec6b0266b7fc940062e83e",
+      "bytes": 11920
+    },
+    "https://stackoverflow.com/Content/Js/webpack-chunks/7663.en.js?v=c67f16729ba4": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-clacks-overhead",
+          "value": "GNU Terry Pratchett"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "age",
+          "value": "173387"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 06 Nov 2026 03:47:42 GMT"
+        },
+        {
+          "name": "x-request-guid",
+          "value": "1dec2480-6c9e-4728-9d19-26fb06ffb624"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 03:47:42 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 27 Oct 2026 16:28:48 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "feature-policy",
+          "value": "microphone 'none'; speaker 'none'"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=31536000; includeSubDomains"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests; frame-ancestors 'self' https://stackexchange.com"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=604800"
+        },
+        {
+          "name": "x-dns-prefetch-control",
+          "value": "off"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a52770aba80bf126-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "17674"
+        }
+      ],
+      "sha256": "a4d142302c49a291de77ff888dc1704e30e464522a44b05e2e69afac8f8053f2",
+      "bytes": 17674
+    },
+    "https://stackoverflow.com/Content/Js/webpack-chunks/3696.en.js?v=7ef09fb6562b": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-clacks-overhead",
+          "value": "GNU Terry Pratchett"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "age",
+          "value": "13954"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 06 Nov 2026 03:47:42 GMT"
+        },
+        {
+          "name": "x-request-guid",
+          "value": "be2f16af-6c8c-487a-915b-52ac7837d239"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 03:47:42 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 10:24:40 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "feature-policy",
+          "value": "microphone 'none'; speaker 'none'"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=31536000; includeSubDomains"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests; frame-ancestors 'self' https://stackexchange.com"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=604800"
+        },
+        {
+          "name": "x-dns-prefetch-control",
+          "value": "off"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a52770abf842f126-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "6254"
+        }
+      ],
+      "sha256": "a11bfdc79df489dea5ef11747ceb09a3b5d80659377e202e51dbe92874312a7f",
+      "bytes": 6254
+    },
+    "https://stackoverflow.com/Content/Js/webpack-chunks/2458.en.js?v=33cc3da05f78": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-clacks-overhead",
+          "value": "GNU Terry Pratchett"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "age",
+          "value": "92077"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 06 Nov 2026 03:47:42 GMT"
+        },
+        {
+          "name": "x-request-guid",
+          "value": "7747fd62-2821-4e36-8b53-032222cdf569"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 03:47:42 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 10:24:40 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "feature-policy",
+          "value": "microphone 'none'; speaker 'none'"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=31536000; includeSubDomains"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests; frame-ancestors 'self' https://stackexchange.com"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=604800"
+        },
+        {
+          "name": "x-dns-prefetch-control",
+          "value": "off"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a52770ac4878f126-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "1933"
+        }
+      ],
+      "sha256": "ba3a1232d70893f5dec10226e8ea24b4a87d20cd0a73899d268b7b3a09dae504",
+      "bytes": 1933
+    },
+    "https://stackoverflow.com/Content/Js/webpack-chunks/8414.en.js?v=1e33b1044838": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-clacks-overhead",
+          "value": "GNU Terry Pratchett"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "age",
+          "value": "185912"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 06 Nov 2026 03:47:42 GMT"
+        },
+        {
+          "name": "x-request-guid",
+          "value": "208bf6ed-b1c1-48ce-a015-a53cde0d2d26"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 03:47:42 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 27 Oct 2026 16:28:48 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "feature-policy",
+          "value": "microphone 'none'; speaker 'none'"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=31536000; includeSubDomains"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests; frame-ancestors 'self' https://stackexchange.com"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=604800"
+        },
+        {
+          "name": "x-dns-prefetch-control",
+          "value": "off"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a52770ac88a2f126-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "3821"
+        }
+      ],
+      "sha256": "03ad1f68e9aa328c8f28ba72c48d3b239f2c8a43752d2f334f44b3b49752a282",
+      "bytes": 3821
+    },
+    "https://stackoverflow.com/Content/Js/webpack-chunks/7612.en.js?v=87c9867a5876": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-clacks-overhead",
+          "value": "GNU Terry Pratchett"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "age",
+          "value": "96691"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 06 Nov 2026 03:47:42 GMT"
+        },
+        {
+          "name": "x-request-guid",
+          "value": "6d24c054-5337-4c86-b247-96fd99aa17f1"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 03:47:42 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 10:24:40 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "feature-policy",
+          "value": "microphone 'none'; speaker 'none'"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=31536000; includeSubDomains"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests; frame-ancestors 'self' https://stackexchange.com"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=604800"
+        },
+        {
+          "name": "x-dns-prefetch-control",
+          "value": "off"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a52770acf8f9f126-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "10287"
+        }
+      ],
+      "sha256": "14c15c2be2c1c68a24b350cc8b7c8849a4b8297940475612a27f4755947dfba7",
+      "bytes": 10287
+    },
+    "https://stackoverflow.com/Content/Js/islands/homepage-wizard.en.js?v=95406877b527": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-clacks-overhead",
+          "value": "GNU Terry Pratchett"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "age",
+          "value": "160550"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 06 Nov 2026 03:47:42 GMT"
+        },
+        {
+          "name": "x-request-guid",
+          "value": "a7608754-38d1-4bee-bf20-d50254e1db75"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 03:47:42 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 27 Oct 2026 16:28:48 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "feature-policy",
+          "value": "microphone 'none'; speaker 'none'"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=31536000; includeSubDomains"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests; frame-ancestors 'self' https://stackexchange.com"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=604800"
+        },
+        {
+          "name": "x-dns-prefetch-control",
+          "value": "off"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a52770adb977f126-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "45222"
+        }
+      ],
+      "sha256": "5995a3494849d07f45d756f70e26dd73452e5c58ccd794ec432fb8f7f705ef92",
+      "bytes": 45222
+    },
+    "https://stackoverflow.com/Content/Img/stack-internal-left-tile-pinned.svg?v=16878b0d76c5": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-clacks-overhead",
+          "value": "GNU Terry Pratchett"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "age",
+          "value": "137417"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 06 Nov 2026 03:47:42 GMT"
+        },
+        {
+          "name": "x-request-guid",
+          "value": "622ea5fb-72a0-4e84-8004-b5020639ce25"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 03:47:42 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 10:19:01 GMT"
+        },
+        {
+          "name": "feature-policy",
+          "value": "microphone 'none'; speaker 'none'"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=31536000; includeSubDomains"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests; frame-ancestors 'self' https://stackexchange.com"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=604800"
+        },
+        {
+          "name": "x-dns-prefetch-control",
+          "value": "off"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a52770ae39e7f126-DME"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "12373"
+        }
+      ],
+      "sha256": "d4969bcfb0706fc7cc6a55d7e8cf87a3046c06fbb6ceeae1c0e970aef2a499f3",
+      "bytes": 12373
+    },
+    "https://stackoverflow.com/Content/Img/stack-internal-left-tile-drawer.svg?v=0056d71cd7e6": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-clacks-overhead",
+          "value": "GNU Terry Pratchett"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "age",
+          "value": "93761"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 06 Nov 2026 03:47:42 GMT"
+        },
+        {
+          "name": "x-request-guid",
+          "value": "e7392b17-6388-411f-bb1d-c3441b9036fb"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 03:47:42 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 10:19:01 GMT"
+        },
+        {
+          "name": "feature-policy",
+          "value": "microphone 'none'; speaker 'none'"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=31536000; includeSubDomains"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests; frame-ancestors 'self' https://stackexchange.com"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=604800"
+        },
+        {
+          "name": "x-dns-prefetch-control",
+          "value": "off"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a52770ae8a1bf126-DME"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "9262"
+        }
+      ],
+      "sha256": "819c2015b29acfd5a724c960bee296f58139c322bedd60c33f5ecba797a3841e",
+      "bytes": 9262
+    },
+    "https://stackoverflow.com/Content/Js/questions/userQuestionList.en.js?v=b0a9689c5c17": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-clacks-overhead",
+          "value": "GNU Terry Pratchett"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "age",
+          "value": "83450"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 06 Nov 2026 03:47:42 GMT"
+        },
+        {
+          "name": "x-request-guid",
+          "value": "4bf667da-5932-4835-85dc-2d2fdc0bc553"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 03:47:42 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 10:24:40 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "feature-policy",
+          "value": "microphone 'none'; speaker 'none'"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=31536000; includeSubDomains"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests; frame-ancestors 'self' https://stackexchange.com"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=604800"
+        },
+        {
+          "name": "x-dns-prefetch-control",
+          "value": "off"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a52770aeca49f126-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "45002"
+        }
+      ],
+      "sha256": "efc5eb98917d1abb877086aabd42b0adf055431d4f256244cb922f009d388074",
+      "bytes": 45002
+    },
+    "https://i.sstatic.net/49E1X.jpg?s=32": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "\"cfHPyTNF57ytVIDkuXrMH09FtUraNnSdVmuTtwMDIkDQ:0x8DC6A0B2C4C5A31\""
+        },
+        {
+          "name": "age",
+          "value": "10130"
+        },
+        {
+          "name": "cf-resized",
+          "value": "internal=ok/m q=0 n=184+0 c=2+3 v=2026.8.5 l=755 f=false c2=0 wv=2026.10.0"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "server-timing",
+          "value": "cfExtPri"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 03:47:42 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/jpeg"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 01 May 2024 18:19:00 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "accept"
+        },
+        {
+          "name": "priority",
+          "value": "u=4,i"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a52770b00ae6e918-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "755"
+        }
+      ],
+      "sha256": "2778a8416e4ba59763ba70e89a08b6671c3533cf0c9b971e19569f83dfabe77e",
+      "bytes": 755
+    },
+    "https://lh3.googleusercontent.com/a-/AOh14GgPviKl-TwLtRLVxxOPqlksB8oWZStJ6MfD4FBbdw=k-s32": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-expose-headers",
+          "value": "Content-Length"
+        },
+        {
+          "name": "etag",
+          "value": "\"v1eb\""
+        },
+        {
+          "name": "age",
+          "value": "4032"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "expires",
+          "value": "Sat, 31 Oct 2026 02:40:30 GMT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 02:40:30 GMT"
+        },
+        {
+          "name": "content-disposition",
+          "value": "inline;filename=\"unnamed.jpg\""
+        },
+        {
+          "name": "content-type",
+          "value": "image/jpeg"
+        },
+        {
+          "name": "vary",
+          "value": "Origin"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=86400, no-transform"
+        },
+        {
+          "name": "timing-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-xss-protection",
+          "value": "0"
+        },
+        {
+          "name": "server",
+          "value": "fife"
+        },
+        {
+          "name": "content-length",
+          "value": "1063"
+        }
+      ],
+      "sha256": "98deb42cd0132d010daf635d570a3abc0d1dd131079f59272201f486ae73f88b",
+      "bytes": 1063
+    },
+    "https://i.sstatic.net/fsnlna6t.jpg?s=32": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "\"cfFoqDqkEsIJ93gRSm8Waq9vDxraNnSdVmuTtwMDIkDQ:0x8DDD72609B3F6BA\""
+        },
+        {
+          "name": "age",
+          "value": "7769"
+        },
+        {
+          "name": "cf-resized",
+          "value": "internal=ok/m q=0 n=156+0 c=13+3 v=2026.10.7 l=658 f=false c2=0 wv=2026.10.0"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "server-timing",
+          "value": "cfExtPri"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 03:47:43 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/jpeg"
+        },
+        {
+          "name": "last-modified",
+          "value": "Sat, 09 Aug 2025 09:20:52 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "accept"
+        },
+        {
+          "name": "priority",
+          "value": "u=4,i"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a52770b1cc84e918-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "658"
+        }
+      ],
+      "sha256": "77d7d3c56832fae4d056e2e9898cce99a744d55decf3bafbe936e25ca06f2597",
+      "bytes": 658
+    },
+    "https://www.gravatar.com/avatar/f54280e83e2d06924973f1617f5cb236?s=32&d=identicon&r=PG&f=y&so-version=2": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "link",
+          "value": "<https://gravatar.com/avatar/f54280e83e2d06924973f1617f5cb236?s=32&d=identicon&r=PG&f=y>; rel=\"canonical\""
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=300"
+        },
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "x-nc",
+          "value": "HIT hhn 16"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 30 Oct 2026 03:52:43 GMT"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "alt-svc",
+          "value": "clear"
+        },
+        {
+          "name": "server-timing",
+          "value": "a8c-cdn, dc;desc=hhn, cache;desc=HIT;dur=0.0"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 03:47:43 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/png"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 11 Jan 1984 08:00:00 GMT"
+        },
+        {
+          "name": "server",
+          "value": "nginx"
+        },
+        {
+          "name": "content-length",
+          "value": "1001"
+        }
+      ],
+      "sha256": "75a3d507290a6511cf0a63844449f4642402317a79d8a8b3486d5f228a193dce",
+      "bytes": 1001
+    },
+    "https://www.gravatar.com/avatar/e4402aa013ca3be24e5da0b1ea738cc0?s=32&d=identicon&r=PG&f=y&so-version=2": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "link",
+          "value": "<https://gravatar.com/avatar/e4402aa013ca3be24e5da0b1ea738cc0?s=32&d=identicon&r=PG&f=y>; rel=\"canonical\""
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=300"
+        },
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "x-nc",
+          "value": "HIT hhn 16"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 30 Oct 2026 03:52:43 GMT"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "alt-svc",
+          "value": "clear"
+        },
+        {
+          "name": "server-timing",
+          "value": "a8c-cdn, dc;desc=hhn, cache;desc=HIT;dur=0.0"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 03:47:43 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/png"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 11 Jan 1984 08:00:00 GMT"
+        },
+        {
+          "name": "server",
+          "value": "nginx"
+        },
+        {
+          "name": "content-length",
+          "value": "1163"
+        }
+      ],
+      "sha256": "b5d74cb1ff19eae78eef2bb7de4ad6c26dcf2ed5a1131769b9681ef435c9bef8",
+      "bytes": 1163
+    },
+    "https://www.gravatar.com/avatar/ac799d33628c7792a9dfb665110a8150?s=32&d=identicon&r=PG&f=y&so-version=2": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "link",
+          "value": "<https://gravatar.com/avatar/ac799d33628c7792a9dfb665110a8150?s=32&d=identicon&r=PG&f=y>; rel=\"canonical\""
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=300"
+        },
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "x-nc",
+          "value": "HIT hhn 16"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 30 Oct 2026 03:52:43 GMT"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "alt-svc",
+          "value": "clear"
+        },
+        {
+          "name": "server-timing",
+          "value": "a8c-cdn, dc;desc=hhn, cache;desc=HIT;dur=0.0"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 03:47:43 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/png"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 11 Jan 1984 08:00:00 GMT"
+        },
+        {
+          "name": "server",
+          "value": "nginx"
+        },
+        {
+          "name": "content-length",
+          "value": "431"
+        }
+      ],
+      "sha256": "d18c004c835b0188384f19c703d8c8025cf979dca8dd47f65ae3dec5996c47d3",
+      "bytes": 431
+    },
+    "https://www.gravatar.com/avatar/8ead589ecf667501e3085adfc0bead6b?s=32&d=identicon&r=PG&f=y&so-version=2": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "link",
+          "value": "<https://gravatar.com/avatar/8ead589ecf667501e3085adfc0bead6b?s=32&d=identicon&r=PG&f=y>; rel=\"canonical\""
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=300"
+        },
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "x-nc",
+          "value": "HIT hhn 16"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 30 Oct 2026 03:52:43 GMT"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "alt-svc",
+          "value": "clear"
+        },
+        {
+          "name": "server-timing",
+          "value": "a8c-cdn, dc;desc=hhn, cache;desc=HIT;dur=0.0"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 03:47:43 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/png"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 11 Jan 1984 08:00:00 GMT"
+        },
+        {
+          "name": "server",
+          "value": "nginx"
+        },
+        {
+          "name": "content-length",
+          "value": "863"
+        }
+      ],
+      "sha256": "cb96c1ee657f0897fb4c207f86dcc954b01824d2c954f3b0ecedf944684c4ba4",
+      "bytes": 863
+    },
+    "https://www.gravatar.com/avatar/0ebe5d4f57d3c8f20dd90df1287879da?s=32&d=identicon&r=PG&f=y&so-version=2": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "link",
+          "value": "<https://gravatar.com/avatar/0ebe5d4f57d3c8f20dd90df1287879da?s=32&d=identicon&r=PG&f=y>; rel=\"canonical\""
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=300"
+        },
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "x-nc",
+          "value": "HIT hhn 16"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 30 Oct 2026 03:52:43 GMT"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "alt-svc",
+          "value": "clear"
+        },
+        {
+          "name": "server-timing",
+          "value": "a8c-cdn, dc;desc=hhn, cache;desc=HIT;dur=0.0"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 03:47:43 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/png"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 11 Jan 1984 08:00:00 GMT"
+        },
+        {
+          "name": "server",
+          "value": "nginx"
+        },
+        {
+          "name": "content-length",
+          "value": "1407"
+        }
+      ],
+      "sha256": "f37665b825989c0b8fbe7423bd17ceedaf44e979371d361305e950d596adf2bd",
+      "bytes": 1407
+    },
+    "https://www.gravatar.com/avatar/48b41aacc56a1a72f3b7a934e40e4c4d?s=32&d=identicon&r=PG&f=y&so-version=2": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "link",
+          "value": "<https://gravatar.com/avatar/48b41aacc56a1a72f3b7a934e40e4c4d?s=32&d=identicon&r=PG&f=y>; rel=\"canonical\""
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=300"
+        },
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "x-nc",
+          "value": "HIT hhn 16"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 30 Oct 2026 03:52:43 GMT"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "alt-svc",
+          "value": "clear"
+        },
+        {
+          "name": "server-timing",
+          "value": "a8c-cdn, dc;desc=hhn, cache;desc=HIT;dur=1.0"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 03:47:43 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/png"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 11 Jan 1984 08:00:00 GMT"
+        },
+        {
+          "name": "server",
+          "value": "nginx"
+        },
+        {
+          "name": "content-length",
+          "value": "587"
+        }
+      ],
+      "sha256": "8f6aa3549c190a5c6c80173a57ce92b661b4c0ab977e5e27f9896edcf7809d56",
+      "bytes": 587
+    },
+    "https://www.gravatar.com/avatar/a179bc554929b561ac274afb2f40c5ab?s=32&d=identicon&r=PG&f=y&so-version=2": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "link",
+          "value": "<https://gravatar.com/avatar/a179bc554929b561ac274afb2f40c5ab?s=32&d=identicon&r=PG&f=y>; rel=\"canonical\""
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=300"
+        },
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "x-nc",
+          "value": "HIT hhn 16"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 30 Oct 2026 03:52:43 GMT"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "alt-svc",
+          "value": "clear"
+        },
+        {
+          "name": "server-timing",
+          "value": "a8c-cdn, dc;desc=hhn, cache;desc=HIT;dur=0.0"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 03:47:43 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/png"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 11 Jan 1984 08:00:00 GMT"
+        },
+        {
+          "name": "server",
+          "value": "nginx"
+        },
+        {
+          "name": "content-length",
+          "value": "1473"
+        }
+      ],
+      "sha256": "65643590d7fb4d5015213f59300c8cf0f0306679a4a8152d00baee7c8f5e7bad",
+      "bytes": 1473
+    },
+    "https://www.gravatar.com/avatar/e87855839d158ff501004f4ae865e403?s=32&d=identicon&r=PG&f=y&so-version=2": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "link",
+          "value": "<https://gravatar.com/avatar/e87855839d158ff501004f4ae865e403?s=32&d=identicon&r=PG&f=y>; rel=\"canonical\""
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=300"
+        },
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "x-nc",
+          "value": "HIT hhn 16"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 30 Oct 2026 03:52:43 GMT"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "alt-svc",
+          "value": "clear"
+        },
+        {
+          "name": "server-timing",
+          "value": "a8c-cdn, dc;desc=hhn, cache;desc=HIT;dur=0.0"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 03:47:43 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/png"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 11 Jan 1984 08:00:00 GMT"
+        },
+        {
+          "name": "server",
+          "value": "nginx"
+        },
+        {
+          "name": "content-length",
+          "value": "1680"
+        }
+      ],
+      "sha256": "251a5d40d0b5f1de41c2a26851c049810e7005999be560c89ea227fede9b3e91",
+      "bytes": 1680
+    },
+    "https://i.sstatic.net/zUUq9.jpg?s=32": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "\"cf4dzNaG_zE2BffvZYTP2m5qXOraNnSdVmuTtwMDIkDQ:0x8DC6A311A760F32\""
+        },
+        {
+          "name": "age",
+          "value": "29509"
+        },
+        {
+          "name": "cf-resized",
+          "value": "internal=ram/- q=0 n=0+0 c=0+0 v=2026.10.7 l=814 wv=2026.10.0"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "server-timing",
+          "value": "cfExtPri"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 03:47:43 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/jpeg"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 01 May 2024 22:50:30 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "accept"
+        },
+        {
+          "name": "priority",
+          "value": "u=4,i"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a52770b61fafe918-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "814"
+        }
+      ],
+      "sha256": "7e34cbfb41039abc71be4971ffb926a066f13b650f9270caf6623b8d236be413",
+      "bytes": 814
+    },
+    "https://lh3.googleusercontent.com/a/ACg8ocKgod2kPbp1lnTnLYiVGYyZEgT9Hh__X8waMO-4Lt44CWE=k-s32": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-expose-headers",
+          "value": "Content-Length"
+        },
+        {
+          "name": "etag",
+          "value": "\"v1b66\""
+        },
+        {
+          "name": "age",
+          "value": "1912"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "expires",
+          "value": "Sat, 31 Oct 2026 03:15:51 GMT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 03:15:51 GMT"
+        },
+        {
+          "name": "content-disposition",
+          "value": "inline;filename=\"unnamed.png\""
+        },
+        {
+          "name": "content-type",
+          "value": "image/png"
+        },
+        {
+          "name": "vary",
+          "value": "Origin"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=86400, no-transform"
+        },
+        {
+          "name": "timing-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-xss-protection",
+          "value": "0"
+        },
+        {
+          "name": "server",
+          "value": "fife"
+        },
+        {
+          "name": "content-length",
+          "value": "2053"
+        }
+      ],
+      "sha256": "acaa5086eb14fe215bc7d135ce32fa3d207bcd493f1789417c9b43b3910c9109",
+      "bytes": 2053
+    },
+    "https://www.gravatar.com/avatar/ab0ec3508669a7746cfee6b0ae690c09?s=32&d=identicon&r=PG&f=y&so-version=2": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "link",
+          "value": "<https://gravatar.com/avatar/ab0ec3508669a7746cfee6b0ae690c09?s=32&d=identicon&r=PG&f=y>; rel=\"canonical\""
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=300"
+        },
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "x-nc",
+          "value": "HIT hhn 16"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 30 Oct 2026 03:52:43 GMT"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "alt-svc",
+          "value": "clear"
+        },
+        {
+          "name": "server-timing",
+          "value": "a8c-cdn, dc;desc=hhn, cache;desc=HIT;dur=0.0"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 03:47:43 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/png"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 11 Jan 1984 08:00:00 GMT"
+        },
+        {
+          "name": "server",
+          "value": "nginx"
+        },
+        {
+          "name": "content-length",
+          "value": "853"
+        }
+      ],
+      "sha256": "e16e606acc8f6ca0e55a638049c47297fd214a849e0e092ea0eab450a9e7e4e6",
+      "bytes": 853
+    },
+    "https://i.sstatic.net/IKrb6.png?s=32": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "\"cfAa5-nNDhw_tpSVRTmAUO8uG1raNnSdVmuTtwMDIkDQ:0x8DC6A64AC3C71A1\""
+        },
+        {
+          "name": "age",
+          "value": "35085"
+        },
+        {
+          "name": "cf-resized",
+          "value": "internal=ok/m q=0 n=1069+0 c=63+14 v=2026.7.6 l=1438 f=false c2=0 wv=2026.10.0"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "server-timing",
+          "value": "cfExtPri"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 03:47:43 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/png"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 02 May 2024 04:59:39 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "accept"
+        },
+        {
+          "name": "priority",
+          "value": "u=4,i"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a52770b7389ae918-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "1438"
+        }
+      ],
+      "sha256": "ef59a543c6482d213909bb2b4c58feddeae9d7031cd0e140fe1fc11c95efedd0",
+      "bytes": 1438
+    },
+    "https://stackoverflow.com/Content/Js/sidebar/stackoverflow-for-agents-sidebar-promo.en.js?v=9d765d6401f5": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-clacks-overhead",
+          "value": "GNU Terry Pratchett"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "age",
+          "value": "573401"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 06 Nov 2026 03:47:43 GMT"
+        },
+        {
+          "name": "x-request-guid",
+          "value": "42c809fc-c623-4b00-a57e-71487d6a23e1"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 03:47:43 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 21 Oct 2026 20:21:40 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "feature-policy",
+          "value": "microphone 'none'; speaker 'none'"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=31536000; includeSubDomains"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests; frame-ancestors 'self' https://stackexchange.com"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=604800"
+        },
+        {
+          "name": "x-dns-prefetch-control",
+          "value": "off"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a52770b78897f126-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "11695"
+        }
+      ],
+      "sha256": "636e6d89df643520b38070f15ff7913a578927dfc26edbc0a4f0c845dbf29a56",
+      "bytes": 11695
+    },
+    "https://stackoverflow.com/Content/Sites/stackoverflow/Img/subcommunities/google-cloud.svg?v=fbae32ddf178": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-clacks-overhead",
+          "value": "GNU Terry Pratchett"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "age",
+          "value": "181135"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 06 Nov 2026 03:48:11 GMT"
+        },
+        {
+          "name": "x-request-guid",
+          "value": "b4b731f9-7836-4db3-aaa8-314c5b1a61c5"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 03:48:11 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 27 Oct 2026 16:22:03 GMT"
+        },
+        {
+          "name": "feature-policy",
+          "value": "microphone 'none'; speaker 'none'"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=31536000; includeSubDomains"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests; frame-ancestors 'self' https://stackexchange.com"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=604800"
+        },
+        {
+          "name": "x-dns-prefetch-control",
+          "value": "off"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a52771617b31f126-DME"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "1884"
+        }
+      ],
+      "sha256": "249b57fe5fe1afbfb3376b775d903ed652647b196e607c755946069db8ce8d7f",
+      "bytes": 1884
+    },
+    "https://stackoverflow.com/Content/Img/favicons-sprite16.png?v=87856d25ec04": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-clacks-overhead",
+          "value": "GNU Terry Pratchett"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "age",
+          "value": "202396"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 06 Nov 2026 03:48:11 GMT"
+        },
+        {
+          "name": "x-request-guid",
+          "value": "899ca7fb-3343-4e01-abc4-105f983c7ec3"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 03:48:11 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/png"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 27 Oct 2026 16:22:03 GMT"
+        },
+        {
+          "name": "feature-policy",
+          "value": "microphone 'none'; speaker 'none'"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=31536000; includeSubDomains"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests; frame-ancestors 'self' https://stackexchange.com"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=604800"
+        },
+        {
+          "name": "x-dns-prefetch-control",
+          "value": "off"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a52771618b42f126-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "89695"
+        }
+      ],
+      "sha256": "503de571d3e6865cabc867f48ef3baece06159f7611bcd178408b8271af1c014",
+      "bytes": 89695
+    },
+    "https://stackoverflow.com/Content/Sites/stackoverflow/Img/subcommunities/openai.svg?v=ccb38f6b8a32": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-clacks-overhead",
+          "value": "GNU Terry Pratchett"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "age",
+          "value": "194964"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 06 Nov 2026 03:48:11 GMT"
+        },
+        {
+          "name": "x-request-guid",
+          "value": "c6fc0fad-1a59-4960-adbc-b701fe60c874"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 03:48:11 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 27 Oct 2026 16:22:03 GMT"
+        },
+        {
+          "name": "feature-policy",
+          "value": "microphone 'none'; speaker 'none'"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=31536000; includeSubDomains"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests; frame-ancestors 'self' https://stackexchange.com"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=604800"
+        },
+        {
+          "name": "x-dns-prefetch-control",
+          "value": "off"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a52771618b4ef126-DME"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "71960"
+        }
+      ],
+      "sha256": "f9ee54a62b6fc5752b0d69857d356450fc5f0ba923c76976adc94ede41d506e6",
+      "bytes": 71960
+    },
+    "https://stackoverflow.com/Content/Sites/stackoverflow/Img/subcommunities/aws.svg?v=46d86cbff922": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-clacks-overhead",
+          "value": "GNU Terry Pratchett"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "age",
+          "value": "166513"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 06 Nov 2026 03:48:11 GMT"
+        },
+        {
+          "name": "x-request-guid",
+          "value": "99016854-634b-4a8b-858a-8c9ea2d7f5bc"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 03:48:11 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 27 Oct 2026 16:22:03 GMT"
+        },
+        {
+          "name": "feature-policy",
+          "value": "microphone 'none'; speaker 'none'"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=31536000; includeSubDomains"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests; frame-ancestors 'self' https://stackexchange.com"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=604800"
+        },
+        {
+          "name": "x-dns-prefetch-control",
+          "value": "off"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a52771618b4af126-DME"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "8759"
+        }
+      ],
+      "sha256": "f8fbfa48a671fab23fee87c5c12618456d660f6251194a09d1e60bf31d7e313d",
+      "bytes": 8759
+    },
+    "https://stackoverflow.com/Content/Sites/stackoverflow/Img/icon-48.png?v=6452e6a98212": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-clacks-overhead",
+          "value": "GNU Terry Pratchett"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "age",
+          "value": "194603"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 06 Nov 2026 03:48:11 GMT"
+        },
+        {
+          "name": "x-request-guid",
+          "value": "a0fefdbe-627a-4f79-9bbd-43cdc8533c69"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 03:48:11 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/png"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 27 Oct 2026 16:22:03 GMT"
+        },
+        {
+          "name": "feature-policy",
+          "value": "microphone 'none'; speaker 'none'"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=31536000; includeSubDomains"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests; frame-ancestors 'self' https://stackexchange.com"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=604800"
+        },
+        {
+          "name": "x-dns-prefetch-control",
+          "value": "off"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a5277161dbc7f126-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "353"
+        }
+      ],
+      "sha256": "4acb3494fed505a31d2b6a221b31b1d7fb633f24967ac48ab962317b61a6d75f",
+      "bytes": 353
+    },
+    "https://stackoverflow.com/cdn-cgi/challenge-platform/h/g/scripts/precursor/c787ce48cf6b/main.js?ray=a52770a31f2cf103": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-ray",
+          "value": "a52771622c53f126-DME"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=14400, stale-if-error=10800, stale-while-revalidate=10800, public"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 03:48:11 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript; charset=UTF-8"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "content-length",
+          "value": "44082"
+        }
+      ],
+      "sha256": "1bedecdb0aaf44ff81c27e1b497015ec7820a62eba57a2a9d3fae910a86099ce",
+      "bytes": 44082
+    },
+    "https://stackoverflow.com/Content/Js/full-anon.en.js?v=83347bfd1754": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-clacks-overhead",
+          "value": "GNU Terry Pratchett"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "age",
+          "value": "81141"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 06 Nov 2026 03:48:11 GMT"
+        },
+        {
+          "name": "x-request-guid",
+          "value": "38e37deb-bc4f-4740-9185-19df69453ffb"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 03:48:11 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 10:24:39 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "feature-policy",
+          "value": "microphone 'none'; speaker 'none'"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=31536000; includeSubDomains"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests; frame-ancestors 'self' https://stackexchange.com"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=604800"
+        },
+        {
+          "name": "x-dns-prefetch-control",
+          "value": "off"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a52771622c5cf126-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "403137"
+        }
+      ],
+      "sha256": "30b9310b1572940e44ec69d822f4276b444cf75b3f437db01f623d66ee97b949",
+      "bytes": 403137
+    },
+    "https://accounts.google.com/gsi/client": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "content-security-policy",
+          "value": "script-src 'report-sample' 'nonce-msdScsqZRCSiZ7jGzXf62Q' 'unsafe-inline' 'strict-dynamic' https: http: 'unsafe-eval';object-src 'none';base-uri 'self';report-uri https://csp.withgoogle.com/csp/identity-sign-in-google-http, require-trusted-types-for 'script';report-uri https://csp.withgoogle.com/csp/identity-sign-in-google-http"
+        },
+        {
+          "name": "cache-control",
+          "value": "private, max-age=1800"
+        },
+        {
+          "name": "cross-origin-resource-policy",
+          "value": "cross-origin"
+        },
+        {
+          "name": "report-to",
+          "value": "{\"group\":\"coop_dd7de8473bddc59c6b748810a67a39b1\",\"max_age\":2592000,\"endpoints\":[{\"url\":\"https://csp.withgoogle.com/csp/report-to/dd7de8473bddc59c6b748810a67a39b1\"}]}"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 30 Oct 2026 03:48:11 GMT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000"
+        },
+        {
+          "name": "cross-origin-opener-policy-report-only",
+          "value": "same-origin; report-to=\"coop_dd7de8473bddc59c6b748810a67a39b1\""
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 03:48:11 GMT"
+        },
+        {
+          "name": "x-xss-protection",
+          "value": "0"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript; charset=utf-8"
+        },
+        {
+          "name": "vary",
+          "value": "Sec-Fetch-Dest, Sec-Fetch-Mode, Sec-Fetch-Site"
+        },
+        {
+          "name": "server",
+          "value": "ESF"
+        },
+        {
+          "name": "x-frame-options",
+          "value": "SAMEORIGIN"
+        },
+        {
+          "name": "content-length",
+          "value": "279384"
+        }
+      ],
+      "sha256": "3975a0ca38e45e61739b52d331e2971f5f2282475d6d008f04353c5d0305c3e0",
+      "bytes": 279384
+    },
+    "https://accounts.google.com/gsi/style": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "content-security-policy",
+          "value": "script-src 'report-sample' 'nonce-H8GGrnkAVDIZBdAUfzspSA' 'unsafe-inline' 'strict-dynamic' https: http: 'unsafe-eval';object-src 'none';base-uri 'self';report-uri https://csp.withgoogle.com/csp/identity-sign-in-google-http, require-trusted-types-for 'script';report-uri https://csp.withgoogle.com/csp/identity-sign-in-google-http"
+        },
+        {
+          "name": "cache-control",
+          "value": "private, max-age=86400"
+        },
+        {
+          "name": "cross-origin-resource-policy",
+          "value": "cross-origin"
+        },
+        {
+          "name": "report-to",
+          "value": "{\"group\":\"coop_dd7de8473bddc59c6b748810a67a39b1\",\"max_age\":2592000,\"endpoints\":[{\"url\":\"https://csp.withgoogle.com/csp/report-to/dd7de8473bddc59c6b748810a67a39b1\"}]}"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 30 Oct 2026 03:48:11 GMT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000"
+        },
+        {
+          "name": "cross-origin-opener-policy-report-only",
+          "value": "same-origin; report-to=\"coop_dd7de8473bddc59c6b748810a67a39b1\""
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 03:48:11 GMT"
+        },
+        {
+          "name": "x-xss-protection",
+          "value": "0"
+        },
+        {
+          "name": "content-type",
+          "value": "text/css; charset=utf-8"
+        },
+        {
+          "name": "server",
+          "value": "ESF"
+        },
+        {
+          "name": "x-frame-options",
+          "value": "SAMEORIGIN"
+        },
+        {
+          "name": "content-length",
+          "value": "696"
+        }
+      ],
+      "sha256": "d49e8f04be7ccbb69e87ae474ee50f6903b780451989e66d35ffc247a80510fe",
+      "bytes": 696
+    },
+    "https://stackoverflow.com/Content/Sites/stackoverflow/Img/favicon.svg?v=916c1b91e14c": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-clacks-overhead",
+          "value": "GNU Terry Pratchett"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "age",
+          "value": "188161"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 06 Nov 2026 03:48:11 GMT"
+        },
+        {
+          "name": "x-request-guid",
+          "value": "36e9d77b-8662-45a5-9e04-e60f0117aec2"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 03:48:11 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 27 Oct 2026 16:22:03 GMT"
+        },
+        {
+          "name": "feature-policy",
+          "value": "microphone 'none'; speaker 'none'"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=31536000; includeSubDomains"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests; frame-ancestors 'self' https://stackexchange.com"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=604800"
+        },
+        {
+          "name": "x-dns-prefetch-control",
+          "value": "off"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a5277164afb5f126-DME"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "785"
+        }
+      ],
+      "sha256": "9c6d89774c792309c4d83fbd849cdafe300cba114c110049695e3c8eb05c41a0",
+      "bytes": 785
+    },
+    "https://accounts.google.com/gsi/status?client_id=717762328687-iludtf96g1hinl76e4lc1b9a82g457nn.apps.googleusercontent.com&cas=i%2FVIZ3ZcVfKDiBOz%2FCUXivdWcHFSXcIE850SQXmaL8U&bs=0%2BsW26bFq60ltMd%2Fh1ohM55KVe%2BgFCWyGuKWqEJYq%2Bw&has_opted_out_fedcm=false&is_itp=false": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "report-to",
+          "value": "{\"group\":\"coop_dd7de8473bddc59c6b748810a67a39b1\",\"max_age\":2592000,\"endpoints\":[{\"url\":\"https://csp.withgoogle.com/csp/report-to/dd7de8473bddc59c6b748810a67a39b1\"}]}"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "expires",
+          "value": "Mon, 01 Jan 1990 00:00:00 GMT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 03:48:11 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/json; charset=utf-8"
+        },
+        {
+          "name": "vary",
+          "value": "Sec-Fetch-Dest, Sec-Fetch-Mode, Sec-Fetch-Site"
+        },
+        {
+          "name": "content-disposition",
+          "value": "attachment; filename=\"json.txt\"; filename*=UTF-8''json.txt"
+        },
+        {
+          "name": "x-frame-options",
+          "value": "SAMEORIGIN"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "require-trusted-types-for 'script';report-uri https://csp.withgoogle.com/csp/identity-sign-in-google-http, script-src 'report-sample' 'nonce-SXtPk_jFLtIaS70VAvqqvQ' 'unsafe-inline' 'strict-dynamic' https: http: 'unsafe-eval';object-src 'none';base-uri 'self';report-uri https://csp.withgoogle.com/csp/identity-sign-in-google-http"
+        },
+        {
+          "name": "cache-control",
+          "value": "no-cache, no-store, max-age=0, must-revalidate"
+        },
+        {
+          "name": "pragma",
+          "value": "no-cache"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "true"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "https://stackoverflow.com"
+        },
+        {
+          "name": "cross-origin-opener-policy-report-only",
+          "value": "same-origin; report-to=\"coop_dd7de8473bddc59c6b748810a67a39b1\""
+        },
+        {
+          "name": "x-xss-protection",
+          "value": "0"
+        },
+        {
+          "name": "server",
+          "value": "ESF"
+        },
+        {
+          "name": "content-length",
+          "value": "79"
+        }
+      ],
+      "sha256": "709c2ba167da3cb3f2ce5714dbaf1be2b773d7397fc8ceafd0e87d4aece6a49c",
+      "bytes": 79
+    }
+  },
+  "workload": "Frozen guest DOM; scripts removed; original resource bytes",
+  "live_png_sha256": "90b378d7cbb9e884fb8d17b91ef6bf3b9eb5c69f5d8629deb9c5d279897175f4",
+  "capture_report_sha256": "33ee4a511c18c0a54d5062e38750c6987f5f5fda08241acf627e539dfa52b18b"
+}
