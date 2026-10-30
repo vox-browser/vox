@@ -3240,6 +3240,7 @@ fn append_unselected_text_fragment_commands(mut commands []PaintCommand,
 			width: run_right - run_left
 			height: first.height
 			color: first.color.serialize()
+			srgb_color_data: chromium_text_srgb_color(&first)
 			text: text
 			font_size: first.font_size
 			bold: first.bold

@@ -1097,6 +1097,8 @@ extern "C" int ladybird_v_skia_face_advances(char const* font_path, int face_ind
     return 1;
 }
 
+static bool apply_unrounded_glyph_color(SkPaint&);
+
 static int draw_retained_glyph_run(CGContextRef destination,
     char const* font_path, int face_index, uint16_t const* glyphs, double const* packed_positions, int glyph_count,
     float font_size, int font_weight, int emoji_face, float baseline_x,
@@ -1157,6 +1159,7 @@ static int draw_retained_glyph_run(CGContextRef destination,
 
     SkPaint paint;
     paint.setColor(SkColorSetARGB(alpha, red, green, blue));
+    bool const has_float_color = apply_unrounded_glyph_color(paint);
     if (blur > 0)
         paint.setMaskFilter(SkMaskFilter::MakeBlur(kNormal_SkBlurStyle, blur * 0.5f));
     auto matrix = SkMatrix::MakeAll(
@@ -1217,8 +1220,10 @@ static int draw_retained_glyph_run(CGContextRef destination,
             uint32_t(font_smoothing), uint32_t(font.isEmbolden()), SkColorSetARGB(alpha, red, green, blue),
             uint32_t(raster_width), uint32_t(raster_height), uint32_t(glyph_count),
             uint32_t(CGBitmapContextGetBitmapInfo(destination)),
-            uint32_t(CGBitmapContextGetBitsPerPixel(destination))};
+            uint32_t(CGBitmapContextGetBitsPerPixel(destination)), uint32_t(has_float_color)};
         append_glyph_key(key, font_key, sizeof(font_key) / sizeof(font_key[0]));
+        auto color_key = paint.getColor4f();
+        append_glyph_key(key, &color_key.fR, 4);
         float geometry[] {font_size, baseline_x, baseline_y, blur, font.getSkewX()};
         append_glyph_key(key, geometry, 5);
         SkScalar values[9]; draw_matrix.get9(values); append_glyph_key(key, values, 9);
@@ -1241,15 +1246,26 @@ static int draw_retained_glyph_run(CGContextRef destination,
     // masks use the sRGB transfer with zero contrast boost.
     SkSurfaceProps chromium_coverage(0, kUnknown_SkPixelGeometry, 0.0f,
         (font_smoothing & 15) == 2 ? 1.0f : 0.0f);
-    auto surface = SkSurfaces::WrapPixels(image_info, pixels.data(), row_bytes,
+    // The 8888 CPU blitter quantizes a constant paint color before coverage.
+    // Fractional CSS colors need a float surface until the final page blend.
+    std::vector<float> float_pixels(has_float_color ? pixel_count * 4 : 0);
+    auto raster_info = has_float_color
+        ? image_info.makeColorType(kRGBA_F32_SkColorType) : image_info;
+    auto surface = SkSurfaces::WrapPixels(raster_info,
+        has_float_color ? static_cast<void*>(float_pixels.data()) : pixels.data(),
+        has_float_color ? size_t(raster_width) * sizeof(float) * 4 : row_bytes,
         chromium ? &chromium_coverage : nullptr);
     if (!surface)
         return 0;
+    if (has_float_color && has_background)
+        surface->writePixels(SkPixmap(image_info, pixels.data(), row_bytes), 0, 0);
 
     auto* canvas = surface->getCanvas();
     if (!has_background) canvas->clear(SK_ColorTRANSPARENT);
     canvas->setMatrix(draw_matrix);
     canvas->drawTextBlob(blob, baseline_x, baseline_y, paint);
+    if (has_float_color && !surface->readPixels(image_info, pixels.data(), row_bytes, 0, 0))
+        return 0;
     surface.reset();
     auto image = create_pixel_image(destination, std::move(pixels), raster_width, raster_height);
     int result = composite_image(destination, image, destination_rect, has_background);
@@ -2486,6 +2502,16 @@ extern "C" void ladybird_v_skia_set_unrounded_paint_color(float const* color)
 {
     s_has_unrounded_paint_color = color != nullptr;
     if (color) std::copy_n(color, 4, s_unrounded_paint_color);
+}
+static bool apply_unrounded_glyph_color(SkPaint& paint)
+{
+    if (s_has_unrounded_paint_color) {
+        paint.setColor4f({s_unrounded_paint_color[0], s_unrounded_paint_color[1],
+            s_unrounded_paint_color[2], s_unrounded_paint_color[3]}, nullptr);
+        s_has_unrounded_paint_color = false;
+        return true;
+    }
+    return false;
 }
 static float s_rounded_border_widths[4];
 extern "C" void ladybird_v_skia_set_rounded_border_widths(float const* widths)

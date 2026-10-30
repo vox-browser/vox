@@ -21,6 +21,17 @@ with `python3 -m unittest discover -s tools -p forum_news_inline_pixels_test.py`
 The test uses the current production bundle in a fresh process without an
 automatic rebuild and retains its identities, memory-guard reports and diffs.
 
+[`diagnostic/forum-translucent-text.html`](diagnostic/forum-translucent-text.html)
+and its adjacent Brave 156.1.98.60 PNG cover modern and legacy alpha,
+fractional RGB channels, inheritance, and an opacity group at 800×600, scale 1.
+Foreground colors retain their computed precision through glyph coverage and
+the final page blend; cached glyphs distinguish those float colors. The native
+output improves from 3,270 differing pixels to six, with maximum channel error
+three. This remains an open diagnostic, including one inherited-text pixel and
+five opacity-group pixels. Run the focused transport cases in
+`layout/chromium_text_color_test.v` and the cold/warm glyph checks with
+`sh tools/test_native_skia_text_color.sh` under the required memory guard.
+
 `font-large-distance-field` checks colored 180px text in a shared SVG raster tile
 at 800×600 and scale 1. The standalone Skia build's A8 gamma adjustment must be
 disabled to match Chromium's macOS text coverage, including distance-field

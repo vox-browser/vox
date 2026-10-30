@@ -1,0 +1,16 @@
+<!doctype html><meta charset="utf-8"><title>Forum foreground paint colors</title>
+<style>
+body { margin: 20px; background: rgb(254 254 254); font: 16px/24px "Helvetica Neue", Arial, sans-serif; }
+div { margin-bottom: 12px; }
+.modern { color: rgb(51 51 51 / 59%); }
+.legacy { color: rgba(51, 51, 51, .59); }
+.fractional { color: rgb(10.5 20.25 30.75 / 59%); }
+.opaque { color: rgb(51 51 51); }
+.group { opacity: .5; }
+</style>
+<div class="modern">Modern translucent forum author and timestamp</div>
+<div class="legacy">Legacy translucent foreground control</div>
+<div class="modern"><span>Inherited translucent foreground</span></div>
+<div class="fractional">Fractional RGB foreground components</div>
+<div class="opaque">Opaque foreground control</div>
+<div class="group modern">Translucent foreground inside an opacity group</div>

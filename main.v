@@ -7032,6 +7032,8 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 				text_color := app.paint_colors.color(command.color, command.opacity)
 				$if macos {
 					if app.ctx.native_rendering {
+						set_native_chromium_paint_color(*command)
+						defer { C.native_set_unrounded_paint_color(unsafe { nil }) }
 						if native_draw_retained_glyph_run(*command, page_x, page_y, scroll_y, f32(app.ctx.width), f32(app.ctx.height), text_color, 0, false) {
 							return
 						}
