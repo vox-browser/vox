@@ -419,3 +419,36 @@ are retained in `Build/forum-news-ellipsis-20261030/`.
 
 Eight native fixes belong to this workstream. Broad suites were not run, and
 the broad-test baseline is unchanged. Complete acceptance remains **one of ten**.
+
+### Fractional border-color checkpoint
+
+`5df83edf` preserves fractional computed sRGB channels on opaque solid borders
+whose visible sides share the same components. Rounded borders pass those
+components to native Skia; a single square side uses its equivalent rectangle
+instead of quantizing a generic border path. Integer colors, translucent
+colors, and sides with different precision retain their existing paths.
+This does not cover every multicolored or translucent border path.
+
+The `stackoverflow-fractional-borders` fixture previously differed at 4,500
+pixels, all within one channel value. It now matches every Brave pixel. Two
+fresh Brave profiles produce identical references. The fixture includes
+horizontal rules, circular and elliptical corners, and the established inline
+tag geometry. An initial larger-font padded inline diagnostic exposed a
+separate geometry discrepancy; that input and its failure remain in the raw
+artifacts rather than being counted as a passing comparison.
+
+All seven native pixel fixtures pass. Thirteen focused border cases pass in
+both GC modes, and the production build, signing, and fresh startup checks
+pass. The full-uBO Stack Overflow comparison improves from **2,818 to 1,051
+differing pixels**, with an exact live-to-frozen Brave comparison. A fresh
+Hacker News control remains exact. Both sites pass their actual native
+request/header and cosmetic checks. The remaining Stack Overflow pixels still
+fail acceptance; no threshold or archived reference changed.
+
+Evidence is retained under `Build/forum-news-border-color-20261030/`: initial
+and corrected focused-test receipts, source snapshots, build and executable
+identities, seven-fixture results, `final-sites/`, `control-hacker-news/`, and
+the remaining color-difference analysis. Nine native fixes belong to this
+workstream. Broad suites were not run; the next completed native fix reaches
+the ten-fix verification boundary. The broad-test baseline is unchanged, and
+complete site acceptance remains **one of ten**.
