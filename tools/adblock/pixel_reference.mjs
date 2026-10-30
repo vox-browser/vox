@@ -42,12 +42,16 @@ export async function capturePixelReference(page, file, navigation) {
                 return {tag:element.tagName,id:element.id,classes:element.getAttribute('class'),
                     x:r.x,y:r.y,width:r.width,height:r.height};})};
     })()`);
+    // Retain readiness and resource failures even when no PNG can qualify as
+    // a reference. A failed run must never leave a sidecar claiming stability.
+    await fs.writeFile(file+'.json',JSON.stringify({...state,stable:false},null,2)+'\n');
     if (state.ready !== 'complete' || state.fonts !== 'loaded' || state.text.length < 1000
         || state.width !== 1024 || state.height !== 768 || state.scale !== 1
         || state.url !== navigation.url) throw new Error('Pixel reference is not ready at the required viewport');
     const missing = state.images.filter(i=>i.width>0 && i.height>0 && i.x<1024 && i.y<768
         && i.x+i.width>0 && i.y+i.height>0 && (!i.complete || !i.naturalWidth));
-    if (missing.length) throw new Error(`Pixel reference has ${missing.length} missing visible images`);
+    if (missing.length) throw new Error(`Pixel reference has ${missing.length} missing visible images: `+
+        missing.map(image=>image.url||'(unknown URL)').join(', '));
     const capture = async()=>Buffer.from((await page.send('Page.captureScreenshot',
         {format:'png',captureBeyondViewport:false})).data,'base64');
     const first = await capture();
@@ -55,7 +59,7 @@ export async function capturePixelReference(page, file, navigation) {
     const second = await capture();
     if (!first.equals(second)) throw new Error('Pixel reference changed between consecutive captures');
     await fs.writeFile(file,second);
-    await fs.writeFile(file+'.json',JSON.stringify(state,null,2)+'\n');
+    await fs.writeFile(file+'.json',JSON.stringify({...state,stable:true},null,2)+'\n');
     return {file,sha256:crypto.createHash('sha256').update(second).digest('hex'),
         width:state.width,height:state.height,scale:state.scale,stable:true};
 }
