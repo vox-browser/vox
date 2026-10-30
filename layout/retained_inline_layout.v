@@ -2,6 +2,7 @@ module layout
 
 import css
 import dom
+import processmetrics
 
 struct RetainedInlineInput {
 	node           &Node
@@ -11,6 +12,10 @@ struct RetainedInlineInput {
 	parent_id      u64
 	sibling_index  int
 	text           string
+	font_list      ?&css.FontCascadeList
+	line_height    CSSPixels
+	root_font_size f64
+	root_line_height f64
 }
 
 struct RetainedInlineValues {
@@ -51,6 +56,7 @@ mut:
 // children, positioned content, first-letter splits or clamp side effects.
 // Other contexts continue through the ordinary formatting algorithm.
 fn collect_retained_inline_inputs(node &Node, root bool, mut inputs []RetainedInlineInput) bool {
+	computed := node.computed_values()
 	if node.is_generated_for_pseudo_element() || node.is_generated_text_node()
 		|| node.is_in_ua_internal_shadow_tree() || node.is_svg_box() || node.is_replaced_box()
 		|| node.is_floating() || node.is_positioned() || node.is_list_item_box()
@@ -64,8 +70,7 @@ fn collect_retained_inline_inputs(node &Node, root bool, mut inputs []RetainedIn
 		|| node.computed_values().writing_mode() != .horizontal_tb) {
 		return false
 	}
-	if node.computed_values().has_animated_properties()
-		|| node.computed_values().mutation_revision() == 0 {
+	if computed.has_animated_properties() || computed.mutation_revision() == 0 {
 		return false
 	}
 	if metrics := node.as_node_with_style_and_box_model_metrics() {
@@ -79,10 +84,11 @@ fn collect_retained_inline_inputs(node &Node, root bool, mut inputs []RetainedIn
 		}
 		text = value.text_for_rendering()
 	}
+	line_height := computed.line_height()
 	inputs << RetainedInlineInput{
 		node:           node
-		style:          node.computed_values()
-		style_revision: node.computed_values().mutation_revision()
+		style:          computed
+		style_revision: computed.mutation_revision()
 		child_count:    node.child_count()
 		parent_id:      if root {
 			u64(0)
@@ -93,6 +99,10 @@ fn collect_retained_inline_inputs(node &Node, root bool, mut inputs []RetainedIn
 		}
 		sibling_index:  node.index_in_parent_
 		text:           text
+		font_list:      computed.cached_computed_font_list()
+		line_height:    line_height
+		root_font_size: computed.root_font_size_px_
+		root_line_height: computed.root_line_height_px_
 	}
 	for child in node.children() {
 		if !collect_retained_inline_inputs(child, false, mut inputs) { return false }
@@ -118,6 +128,26 @@ fn retained_inline_inputs_are_current(inputs []RetainedInlineInput) bool {
 		}
 		if text := input.node.as_text_node() {
 			if text.text_for_rendering() != input.text { return false }
+		}
+	}
+	return true
+}
+
+// A completed face advances the document font generation even for other
+// weights and families. After ordinary style/tree validation, settled cascades
+// can retain their geometry when their actual faces and metric contexts match.
+// FontCascadeList::equals rejects either cascade while it has pending faces,
+// so fallback visibility and first-use loading keep the full layout path.
+fn retained_layout_fonts_are_current(inputs []RetainedInlineInput) bool {
+	for input in inputs {
+		previous := input.font_list or { return false }
+		computed := input.node.computed_values()
+		computer := css.css_style_computer_for(input.node.document()).font_computer()
+		current := computed.computed_font_list(computer)
+		if !previous.equals(current) || computed.line_height() != input.line_height
+			|| computed.root_font_size_px_ != input.root_font_size
+			|| computed.root_line_height_px_ != input.root_line_height {
+			return false
 		}
 	}
 	return true
@@ -185,11 +215,16 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 		css.css_style_computer_for(root.document()).font_computer().environment_generation()
 	key := u64(voidptr(root))
 	if cached := state.previous_inline_layouts_[key] {
-		if cached.space == space && cached.font_generation == font_generation
+		if cached.space == space
 			&& cached.font_policy == root.document().font_rendering_policy()
 			&& cached.style_environment == root.document().style_environment_version()
 			&& cached.content_width == used.content_width()
-			&& retained_inline_inputs_are_current(cached.inputs) {
+			&& retained_inline_inputs_are_current(cached.inputs)
+			&& (cached.font_generation == font_generation
+				|| retained_layout_fonts_are_current(cached.inputs)) {
+			if cached.font_generation != font_generation && processmetrics.instructions_enabled() {
+				eprintln('Vox retained inline font generation: ${cached.font_generation} -> ${font_generation}, ${cached.inputs.len} inputs')
+			}
 			used.borrow_retained_line_boxes(cached.lines)
 			used.set_inline_end_static_position_rect(cached.inline_end)
 			containing_values := state.get(unsafe { &NodeWithStyle(containing_block) })

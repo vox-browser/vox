@@ -2,6 +2,7 @@ module layout
 
 import css
 import dom
+import processmetrics
 
 struct RetainedBlockValues {
 	node       &NodeWithStyle
@@ -78,6 +79,7 @@ fn collect_retained_block_inputs(node &Node, mut inputs []RetainedInlineInput) b
 		}
 		text = value.text_for_rendering()
 	}
+	line_height := computed.line_height()
 	inputs << RetainedInlineInput{
 		node: node
 		style: computed
@@ -86,6 +88,10 @@ fn collect_retained_block_inputs(node &Node, mut inputs []RetainedInlineInput) b
 		parent_id: if inputs.len == 0 { u64(0) } else if parent := node.parent() { u64(voidptr(parent)) } else { 0 }
 		sibling_index: node.index_in_parent_
 		text: text
+		font_list: computed.cached_computed_font_list()
+		line_height: line_height
+		root_font_size: computed.root_font_size_px_
+		root_line_height: computed.root_line_height_px_
 	}
 	for child in node.children() {
 		if !collect_retained_block_inputs(child, mut inputs) { return false }
@@ -115,10 +121,14 @@ fn run_retaining_independent_formatting_context(mut state LayoutState, box &Node
 			&& cached.definite_height == used.has_definite_height()
 			&& cached.width_constraint == used.width_constraint
 			&& cached.height_constraint == used.height_constraint
-			&& cached.font_generation == font_generation
 			&& cached.font_policy == box.document().font_rendering_policy()
 			&& cached.style_environment == box.document().style_environment_version()
-			&& retained_inline_inputs_are_current(cached.inputs) {
+			&& retained_inline_inputs_are_current(cached.inputs)
+			&& (cached.font_generation == font_generation
+				|| retained_layout_fonts_are_current(cached.inputs)) {
+			if cached.font_generation != font_generation && processmetrics.instructions_enabled() {
+				eprintln('Vox retained block font generation: ${cached.font_generation} -> ${font_generation}, ${cached.inputs.len} inputs')
+			}
 			used.borrow_retained_line_boxes(cached.lines)
 			if end := cached.inline_end { used.set_inline_end_static_position_rect(end) }
 			for index in 0 .. cached.values.len {
