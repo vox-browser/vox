@@ -574,6 +574,39 @@ fn (builder &LineBuilder) inline_box_alignment_delta(node &Node, line_box_baseli
 	return aligned.minus(alphabetic)
 }
 
+// A middle-aligned inline participates at its aligned top, rather than at its
+// face's unshifted baseline. Keep that face baseline on the fragment for paint.
+fn (builder &LineBuilder) chromium_middle_baseline_shift(fragment &LineBoxFragment,
+	baseline CSSPixels, container_font_metrics platform.FontPixelMetrics,
+	container_font_size CSSPixels) CSSPixels {
+	if builder.fragment_uses_container_alignment(fragment) { return CSSPixels.new(0) }
+	source := fragment_alignment_style_source(fragment)
+	computed := source.computed_values()
+	mut shift := CSSPixels.new(0)
+	if fragment.layout_node_.is_text_node() && computed.vertical_align() == .middle
+		&& computed.vertical_align_length_percentage() == none {
+		parent_metrics := if parent := source.parent() {
+			layout_font_metrics_for_node(parent)
+		} else { container_font_metrics }
+		shift = baseline.plus(middle_alignment_offset(fragment.layout_node_, CSSPixels.new(0),
+			CSSPixels.new(0), computed.line_height(), parent_metrics.x_height))
+	}
+	mut ancestor := source.parent()
+	containing_block := unsafe { &Node(builder.containing_block) }
+	for {
+		current := ancestor or { break }
+		if layout_nodes_same(current, containing_block) || !current.is_inline_node()
+			|| line_relative_alignment(current) != none { break }
+		style := current.computed_values()
+		if style.vertical_align() == .middle && style.vertical_align_length_percentage() == none {
+			shift = shift.plus(builder.inline_box_alignment_delta(current, CSSPixels.new(0),
+				container_font_metrics, container_font_size))
+		}
+		ancestor = current.parent()
+	}
+	return shift
+}
+
 pub fn (mut builder LineBuilder) update_last_line() {
 	if builder.intrinsic_width_only {
 		builder.last_line_needs_update = false
@@ -726,7 +759,14 @@ pub fn (mut builder LineBuilder) update_last_line() {
 		if used_font_baseline.raw_value() > 0 {
 			used_font_baseline = used_font_baseline.plus(fragment_baseline.minus(fragment.baseline()))
 		}
-		line_box_baseline = css_pixels_max(css_pixels_max(line_box_baseline, fragment_baseline),
+		mut contribution := fragment_baseline
+		if document.font_rendering_policy() == .chromium {
+			shift := builder.chromium_middle_baseline_shift(fragment, fragment_baseline,
+				container_font_metrics, container_font_size)
+			contribution = contribution.minus(shift)
+			if used_font_baseline.raw_value() > 0 { used_font_baseline = used_font_baseline.minus(shift) }
+		}
+		line_box_baseline = css_pixels_max(css_pixels_max(line_box_baseline, contribution),
 			used_font_baseline)
 	}
 
@@ -1102,7 +1142,11 @@ fn middle_alignment_offset(node &Node, top CSSPixels, bottom CSSPixels, height C
 		// LayoutUnit::FromFloatRound uses roundf (ties away from zero),
 		// whereas LibWeb CSSPixels uses ties-to-even rounding.
 		half_x_height := CSSPixels.from_raw(int(math.round(f64(x_height) * 32)))
-		return CSSPixels.from_raw(top.minus(bottom).minus(height).raw_value() / 2)
+		// Blink derives the shift from (ascent - descent) / 2 before
+		// subtracting ascent. With odd subpixels that floors the resulting
+		// negative half-height instead of truncating it toward zero.
+		half_height := int(math.floor(f64(top.minus(bottom).minus(height).raw_value()) / 2))
+		return CSSPixels.from_raw(half_height)
 			.minus(half_x_height)
 	}
 	return CSSPixels.from_raw(top.minus(bottom).minus(height)
