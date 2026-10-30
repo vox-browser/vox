@@ -169,6 +169,17 @@ fn chromium_msaa_trigger_rect(command layout.PaintCommand) ?layout.LayoutRect {
 				return none
 			}
 			svg_data := command.svg_data
+			// A transparent fill without a visible stroke never reaches the
+			// path renderer, including paths inside recorded SVG backgrounds.
+			mut has_stroke := command.stroke_color != '' || svg_data.stroke_pattern != none
+			if gradients := svg_data.svg_gradient_data {
+				has_stroke = has_stroke || gradients.stroke_linear_gradient != none
+					|| gradients.stroke_radial_gradient != none
+			}
+			if command.opacity <= 0 || (svg_data.fill_opacity <= 0
+				&& (!has_stroke || command.stroke_width <= 0 || svg_data.stroke_opacity <= 0)) {
+				return none
+			}
 			stride := layout.compatibility_clip_path_segment_stride
 			if svg_data.path_data.len < stride {
 				return none

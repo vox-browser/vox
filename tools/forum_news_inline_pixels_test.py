@@ -71,6 +71,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_empty_clips_do_not_change_neighboring_tag_and_avatar_antialiasing(self):
         self.compare_fixture('lobsters-empty-clip-antialiasing')
 
+    def test_transparent_svg_backgrounds_do_not_change_neighboring_antialiasing(self):
+        self.compare_fixture('lobsters-transparent-svg-background')
+
 
 if __name__ == '__main__':
     unittest.main()

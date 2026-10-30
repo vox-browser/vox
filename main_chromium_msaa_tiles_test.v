@@ -156,6 +156,92 @@ fn test_visible_and_curved_clip_paths_keep_multisampling() {
 	}
 }
 
+fn test_zero_opacity_svg_paints_do_not_multisample_neighboring_draws() {
+	base := msaa_test_svg_path(10, 30, 'svg')
+	for fill_opacity in [f64(0), -0.5] {
+		for stroke_width in [f64(0), 2] {
+			command := layout.PaintCommand{
+				...base
+				color: '#000'
+				stroke_color: '#f00'
+				stroke_width: stroke_width
+				svg_data: &layout.PaintSVGPathData{
+					...base.svg_data
+					fill_opacity: fill_opacity
+					stroke_opacity: 0
+				}
+			}
+			assert chromium_msaa_tiles([command, msaa_test_svg_path(300, 310, 'svg')], 1, 256) == [1]
+		}
+	}
+	unstroked := layout.PaintCommand{
+		...base
+		color: '#000'
+		stroke_width: 2
+		svg_data: &layout.PaintSVGPathData{ ...base.svg_data, fill_opacity: 0 }
+	}
+	assert chromium_msaa_triggers([unstroked]).len == 0
+	assert chromium_msaa_triggers([layout.PaintCommand{ ...base, opacity: 0 }]).len == 0
+}
+
+fn test_svg_paint_culling_keeps_visible_fills_and_strokes() {
+	base := msaa_test_svg_path(10, 30, 'svg')
+	for alpha in [f64(1), 0.25, 0.00001] {
+		fill := layout.PaintCommand{
+			...base
+			color: '#000'
+			svg_data: &layout.PaintSVGPathData{ ...base.svg_data, fill_opacity: alpha }
+		}
+		stroke := layout.PaintCommand{
+			...base
+			color: '#000'
+			stroke_color: '#f00'
+			stroke_width: 2
+			svg_data: &layout.PaintSVGPathData{
+				...base.svg_data
+				fill_opacity: 0
+				stroke_opacity: alpha
+			}
+		}
+		assert chromium_msaa_tiles([fill], 1, 256) == [0]
+		assert chromium_msaa_tiles([stroke], 1, 256) == [0]
+	}
+}
+
+fn test_transparent_fills_keep_gradient_and_pattern_stroke_triggers() {
+	base := msaa_test_svg_path(10, 30, 'svg')
+	for data in [
+		&layout.PaintSVGPathData{
+			...base.svg_data
+			fill_opacity: 0
+			svg_gradient_data: &layout.PaintSVGGradientData{
+				stroke_linear_gradient: painting.SVGLinearGradientPaintStyle{}
+			}
+		},
+		&layout.PaintSVGPathData{
+			...base.svg_data
+			fill_opacity: 0
+			svg_gradient_data: &layout.PaintSVGGradientData{
+				stroke_radial_gradient: painting.SVGRadialGradientPaintStyle{}
+			}
+		},
+		&layout.PaintSVGPathData{
+			...base.svg_data
+			fill_opacity: 0
+			stroke_pattern: &painting.SVGPatternPaintStyle{}
+		},
+	] {
+		command := layout.PaintCommand{ ...base, stroke_width: 2, svg_data: data }
+		assert chromium_msaa_tiles([command], 1, 256) == [0]
+	}
+}
+
+fn test_transparent_svg_background_paths_do_not_trigger_document_msaa() {
+	command, mut image := msaa_test_svg_background_with_opacity(10, 0)
+	defer { image.finalize() }
+	assert chromium_msaa_tiles([command], 1, 256) == []int{}
+}
+
 fn test_css_border_diagonal_miters_multisample_but_orthogonal_edges_do_not() {
 	for index, points in [
 		[f32(0), 10, 20, 1, 30, 20, 1, 30, 40, 1, 10, 40, 5, 0, 0],
@@ -299,12 +385,16 @@ fn test_chromium_msaa_layer_tiles_keep_path_triggers_in_their_own_layer() {
 }
 
 fn msaa_test_svg_background(y f64) (layout.PaintCommand,&dom.Document) {
+ return msaa_test_svg_background_with_opacity(y, 1)
+}
+
+fn msaa_test_svg_background_with_opacity(y f64, alpha f64) (layout.PaintCommand,&dom.Document) {
  mut image:=dom.Document.create(dom.URL{value:'https://msaa.test/path.svg'})
  image.set_content_type('image/svg+xml')
  image.set_document_type(.xml)
  image.set_is_svg_image_document(true)
  image.set_font_rendering_policy(.chromium)
- html.parse_xml_document_source(image,'<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64"><path d="M0 0L64 64L0 64Z"/></svg>') or {panic(err)}
+ html.parse_xml_document_source(image,'<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64"><path fill-opacity="${alpha}" d="M0 0L64 64L0 64Z"/></svg>') or {panic(err)}
  command:=layout.PaintCommand{kind:'draw_background_image',transform:[f64(1),0,0,1,0,0]!,x:51,y:y,width:17.1,height:17.1,image_data:&layout.PaintImageData{
   background_svg_document:image,image_url:'https://msaa.test/path.svg',image_clip_x:51,image_clip_y:y,image_clip_width:17.1,image_clip_height:17.1,
   background_layer_data:&layout.PaintBackgroundLayerData{layer:css.BackgroundLayerData{repeat_x:.no_repeat,repeat_y:.no_repeat,size_x:css.LengthPercentageOrAuto.from_length(css.Length.make_px(17.1)),size_y:css.LengthPercentageOrAuto.from_length(css.Length.make_px(17.1))},resolution_context:css.LengthResolutionContext.default()}
