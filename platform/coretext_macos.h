@@ -3,14 +3,6 @@
 // documents. Each result names the concrete face file, its collection index and
 // the CoreText variation coordinates, so HarfBuzz shaping and native replay use
 // exactly the face that CoreText selected.
-#include <CoreFoundation/CoreFoundation.h>
-#include <CoreText/CoreText.h>
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <strings.h>
-
 typedef struct {
 	char path[1024];
 	char postscript[256];
@@ -28,6 +20,17 @@ typedef struct {
 	unsigned int axis_tags[16];
 	float axis_values[16];
 } vox_ct_face;
+
+#if !defined(V3CACHE_NATIVE_INTERFACE) || defined(V3CACHE_NATIVE_OWNER)
+#include <CoreFoundation/CoreFoundation.h>
+#include <CoreText/CoreText.h>
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <strings.h>
+
+
 
 // CSS weights for the CoreText weight-trait values AppKit uses for the named
 // weights. Faces between two named values select the nearer one.
@@ -467,3 +470,5 @@ static int vox_ct_fallback(const unsigned short *text, int length, const char *l
 	CFRelease(base);
 	return ok;
 }
+
+#endif

@@ -5,8 +5,8 @@ import gg
 $if vox_ui2 ? {
 	import ui2
 
-	#include "native_browser_chrome_darwin.h"
-	#include "native_browser_chrome_style_darwin.h"
+	#include "native_browser_chrome_darwin.m"
+	#include "native_browser_chrome_style_darwin.m"
 	fn C.native_browser_chrome_prepare_window(parent voidptr)
 	fn C.native_browser_chrome_restore_window()
 	fn C.native_browser_chrome_style_controls(toolbar voidptr, back voidptr, forward voidptr, reload voidptr, address voidptr)

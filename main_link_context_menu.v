@@ -28,7 +28,7 @@ fn (mut app BrowserApp) show_link_context_menu(x f32, y f32) {
 }
 
 $if macos {
-	#include "native_link_context_menu_darwin.h"
+	#include "native_link_context_menu_darwin.m"
 	fn C.native_browser_view() voidptr
 	fn C.native_browser_link_context_menu(view voidptr, url &u8, length int, x f64, y f64) int
 }

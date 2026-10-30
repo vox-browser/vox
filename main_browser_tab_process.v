@@ -9,7 +9,7 @@ import sokol.sapp
 import time
 
 $if macos {
-	#include "native_browser_tab_process_darwin.h"
+	#include "native_browser_tab_process_darwin.m"
 	fn C.vox_tab_window_prepare(voidptr)
 	fn C.vox_tab_window_frame(voidptr, &f64)
 	fn C.vox_tab_window_show(voidptr, i32, f64, f64, f64, f64)

@@ -5,7 +5,7 @@ $if vox_ui2 ? {
 	import macos
 	import sokol.sapp
 
-	#include "native_address_bar_darwin.h"
+	#include "native_address_bar_darwin.m"
 
 	fn C.native_address_bar_install_shortcuts(field voidptr, owner voidptr, callback fn (voidptr, int))
 	fn C.native_address_bar_remove_shortcuts()

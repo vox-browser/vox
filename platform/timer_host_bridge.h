@@ -1,3 +1,4 @@
+#if !defined(V3CACHE_NATIVE_INTERFACE) || defined(V3CACHE_NATIVE_OWNER)
 /* Native macOS timer registration boundary for the translated Core::Timer. */
 #ifndef LIBWEB_V_TIMER_HOST_BRIDGE_H
 #define LIBWEB_V_TIMER_HOST_BRIDGE_H
@@ -97,4 +98,6 @@ static void libweb_v_pump_native_events(double wait_seconds) {
     g_source_unref(deadline);
 }
 #endif
+#endif
+
 #endif

@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: BSD-2-Clause
 #pragma once
 
+#if !defined(V3CACHE_NATIVE_INTERFACE) || defined(V3CACHE_NATIVE_OWNER)
+
 #include <CoreText/CoreText.h>
 #include <hb.h>
 #include <stdlib.h>
@@ -108,3 +110,5 @@ static hb_font_t *vox_hb_with_coretext_hyphens(hb_font_t *parent) {
     hb_font_funcs_destroy(funcs);
     return font;
 }
+
+#endif

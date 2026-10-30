@@ -100,6 +100,6 @@ fn browser_select_picker_option(option html.SelectItemOption, grouped bool) map[
 }
 
 $if macos {
-	#include "native_select_picker_darwin.h"
+	#include "native_select_picker_darwin.m"
 	fn C.native_browser_select_picker(view voidptr, items &u8, length int, x f64, y f64, width f64) i64
 }

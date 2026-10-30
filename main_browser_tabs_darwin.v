@@ -4,7 +4,7 @@ $if vox_ui2 ? {
 	import ui2
 	import platform
 
-	#include "native_browser_tabs_darwin.h"
+	#include "native_browser_tabs_darwin.m"
 	fn C.native_browser_tabs_update(toolbar voidptr, owner voidptr, callback fn (voidptr, int, int, int), count int, selected int, first int, end int, width f64)
 	fn C.native_browser_tabs_process_mode(i32)
 	fn C.native_browser_tabs_remove()

@@ -1,3 +1,4 @@
+#if !defined(V3CACHE_NATIVE_INTERFACE) || defined(V3CACHE_NATIVE_OWNER)
 /* BSD-2-Clause. AK/Types.h uses _Float16; Runtime/ArrayBuffer.h converts
  * directly between that type and double and copies its representation. V has
  * no binary16 scalar, so these two primitive representation operations stay
@@ -21,4 +22,6 @@ static inline double vox2_libjs_float16_from_bits(uint16_t bits)
     memcpy(&value, &bits, sizeof(value));
     return (double)value;
 }
+#endif
+
 #endif

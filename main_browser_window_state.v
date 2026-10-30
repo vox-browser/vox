@@ -4,7 +4,7 @@ $if macos {
 	import browsersettings
 	import os
 
-	#include "native_browser_window_state_darwin.h"
+	#include "native_browser_window_state_darwin.m"
 }
 
 fn C.native_prepare_browser_window_state(path &char)

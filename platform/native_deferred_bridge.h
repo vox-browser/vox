@@ -1,3 +1,4 @@
+#if !defined(V3CACHE_NATIVE_INTERFACE) || defined(V3CACHE_NATIVE_OWNER)
 #pragma once
 #ifdef __APPLE__
 #include <CoreFoundation/CoreFoundation.h>
@@ -54,4 +55,6 @@ static void vox_defer_on_origin_run_loop(void *loop, void *context, void (*callb
     g_source_unref(source);
 }
 static uint64_t vox_deferred_thread_identity(void) { return (uint64_t)(uintptr_t)pthread_self(); }
+#endif
+
 #endif

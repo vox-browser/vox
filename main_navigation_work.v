@@ -8,7 +8,7 @@ $if macos {
 }
 
 $if macos {
-	#include "native_navigation_work_darwin.h"
+	#include "native_navigation_work_darwin.m"
 }
 
 fn C.vox_service_navigation_ui() int

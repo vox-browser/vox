@@ -3,7 +3,7 @@ module main
 $if vox_ui2 ? {
 	import ui2
 
-	#include "native_browser_bookmarks_darwin.h"
+	#include "native_browser_bookmarks_darwin.m"
 	fn C.native_browser_bookmarks_begin(toolbar voidptr, owner voidptr, callback fn (voidptr, int, int), visible int, top f64, width f64, version u64, error &u8, error_length int) int
 	fn C.native_browser_bookmarks_item(index int, title &u8, title_length int, address &u8, address_length int)
 	fn C.native_browser_bookmarks_end(count int)

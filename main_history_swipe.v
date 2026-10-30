@@ -3,7 +3,7 @@ module main
 import page
 
 $if macos {
-	#include "native_history_swipe_darwin.h"
+	#include "native_history_swipe_darwin.m"
 	fn C.native_history_swipe_install(window voidptr, owner voidptr,
 		begin fn (voidptr, i32, f64, f64, f64, f64, &voidptr) i32,
 		commit fn (voidptr, voidptr, i32))

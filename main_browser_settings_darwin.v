@@ -5,7 +5,7 @@ $if vox_ui2 ? {
 	import platform
 	import ui2
 
-	#include "native_browser_settings_darwin.h"
+	#include "native_browser_settings_darwin.m"
 	fn C.native_browser_settings_install(callback fn ())
 	fn C.native_browser_settings_content() voidptr
 	fn C.native_browser_settings_visible() int
