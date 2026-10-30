@@ -80,6 +80,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_fractional_gaps_keep_forum_counters_on_their_brave_glyph_positions(self):
         self.compare_fixture('stackoverflow-fractional-flex-gap')
 
+    def test_promoted_sidebar_text_blends_through_its_transparent_raster(self):
+        self.compare_fixture('stackoverflow-promoted-sidebar-text')
+
 
 if __name__ == '__main__':
     unittest.main()

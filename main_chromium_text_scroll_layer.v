@@ -2,8 +2,8 @@ module main
 
 import layout
 
-// A scrolling text raster is transparent before the compositor blends it
-// over its parent. Painting glyphs directly over that parent's pixels skips
+// Scrolling, fixed and sticky text rasters are transparent before the compositor
+// blends them over their parent. Painting glyphs directly over that parent's pixels skips
 // the intermediate premultiplied rounding. Keep this slice contiguous and
 // free of nested effects, resources, and child-layer gaps.
 fn chromium_text_scroll_layer_supported(commands []layout.PaintCommand,
@@ -12,7 +12,8 @@ fn chromium_text_scroll_layer_supported(commands []layout.PaintCommand,
 		return false
 	}
 	layer := plan.layers[index]
-	if layer.legacy_raster || !layer.scroll_contents || layer.command_indices.len == 0 {
+	if layer.legacy_raster || (!layer.scroll_contents && !layer.composited_contents)
+		|| layer.command_indices.len == 0 {
 		return false
 	}
 	first := layer.command_indices.first()
