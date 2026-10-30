@@ -56,11 +56,23 @@ static void check_face(const char *path, unsigned index, int expect_synthesized)
     assert(missing);
     assert((synthesized != 0) == expect_synthesized);
     unsigned copies_before = data_copies;
+    assert(!hb_face_get_user_data(face, &vox_hb_coretext_hyphens_key));
     for (unsigned size = 5; size <= 36; ++size) {
         hb_font_t *parent = scaled(face, size);
         hb_font_t *mapped = vox_hb_with_coretext_hyphens(parent);
-        assert((mapped != NULL) == expect_synthesized);
+        assert(mapped);
         hb_font_t *result = mapped ? mapped : parent;
+        // Creating scaled fonts and looking up ordinary/missing characters
+        // must not open CoreText's full backing collection for hyphen fallback.
+        for (unsigned character = 32; character < 127; ++character) {
+            hb_codepoint_t original = 0, actual = 0;
+            hb_font_get_nominal_glyph(parent, character, &original);
+            hb_font_get_nominal_glyph(result, character, &actual);
+            assert(actual == original);
+        }
+        hb_codepoint_t absent = 0;
+        assert(!hb_font_get_nominal_glyph(result, 0x10ffff, &absent));
+        assert(data_copies == copies_before + (size > 5));
         for (unsigned i = 0; i < 2; ++i) {
             hb_codepoint_t glyph = 0;
             hb_font_get_nominal_glyph(result, 0x2010 + i, &glyph);
@@ -86,12 +98,16 @@ static void check_face(const char *path, unsigned index, int expect_synthesized)
     face = hb_face_create(blob, index);
     hb_font_t *parent = scaled(face, 18);
     hb_font_t *mapped = vox_hb_with_coretext_hyphens(parent);
+    assert(mapped && data_copies == copies_before + 1);
+    hb_codepoint_t glyph = 0;
+    hb_font_get_nominal_glyph(mapped, 0x2011, &glyph);
+    assert(glyph == expected[1]);
     assert(data_copies == copies_before + 2);
     if (mapped) hb_font_destroy(mapped);
     hb_font_destroy(parent);
     hb_face_destroy(face);
     hb_blob_destroy(blob);
-    printf("PASS %s[%u]: one native probe across 32 sizes; glyphs, advances and retirement\n", path, index);
+    printf("PASS %s[%u]: lazy native probe across 32 sizes; glyphs, advances and retirement\n", path, index);
 }
 
 int main(void) {
