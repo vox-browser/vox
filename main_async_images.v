@@ -99,7 +99,7 @@ fn (mut loader BrowserImageRequestLoader) request(image &dom.HTMLImageElement,
 				address: address
 				complete: complete
 			}
-			request_browser_frame()
+			request_browser_frame_during_preparation()
 			return
 		}
 	}
@@ -202,6 +202,6 @@ fn (mut app BrowserApp) poll_browser_image_requests() {
 	}
 	if completed {
 		app.paint_commands_pending = true
-		request_browser_frame()
+		app.request_document_frame()
 	}
 }

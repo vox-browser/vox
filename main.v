@@ -3921,7 +3921,7 @@ fn (mut app BrowserApp) poll_navigation_and_background_resources() {
 		app.poll_browser_image_requests()
 		app.poll_background_resources()
 	} else {
-		request_browser_frame()
+		app.request_document_frame()
 	}
 }
 
