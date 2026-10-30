@@ -600,3 +600,71 @@ Overflow's remaining mismatch. Overall acceptance remains **one of ten**; the
 other sites' failures in the preceding matrix remain open. No tolerance or
 existing golden changed. Broad-test baseline remains `88275919`; this is the
 third completed native fix since that baseline.
+
+### Fractional SVG rectangle geometry
+
+`eef7e195` resolves Chromium-mode SVG rectangles in floating user units, sharing
+the existing ellipse length resolver. Rectangle positions, sizes and radii keep
+their precision through presentation attributes, author CSS, percentages and
+`calc()`. The LibWeb path retains its existing layout precision. Four focused V
+cases pass in both GC modes, including live CSS overrides and retained path
+endpoints.
+
+The new `forum-fractional-svg-rectangles` fixture checks straight rectangles in
+inline SVG and an SVG image. Two independent Brave references agree. All
+**eleven focused native Brave fixtures** and three canonical SVG reftests are
+pixel-exact. The canonical checks cover image-source replacement, use-element
+geometry and colliding paint-server IDs. A completed production build contains
+the change; captures pin its executable and native-library hashes.
+
+The larger SVG diagnostic improves from 1,703 to 1,055 differing pixels. Its
+unscaled tiles improve from 328 to four each, while scaled and rounded cases
+remain open. That diagnostic is retained separately from the exact fixture.
+Stack Overflow's new native capture differs at **629 pixels**, compared with
+871 before this build. All 148 recorded request/header decisions match the
+preceding full-uBO-verified stream exactly.
+
+Fresh empty Brave profiles stalled on an unresolved `storage.managed.get()`
+before uBO became ready; the same failure occurred without the archive proxy.
+The failed and interrupted matrix attempts remain in the evidence. A disposable
+profile prepared with an explicitly empty cached managed-settings snapshot
+reached full uBO's actual ready state and was closed before copying.
+`4e8b52a5` exposes the oracle's existing closed-profile copy option in the
+ten-site driver through `--profile-template`. Each copy reloads the repository's
+exact lists and clears user filters through the full extension. Five driver
+tests and three profile-copy tests pass. Profile preparation and configuration
+are recorded alongside the run; this is a controlled unmanaged test profile.
+
+The completed fresh ten-site run still accepts **one of ten**. Stack Overflow's
+fresh full-uBO reference confirms the same 629-pixel native difference and an
+exact live-to-frozen comparison. The profile template's file hashes remain
+unchanged after all copies.
+
+| Site | Native differing pixels | Remaining acceptance failure |
+| --- | ---: | --- |
+| Hacker News | 0 | Pass |
+| Reddit | — | Guest HTTP 403 fixture remains unavailable |
+| Lobsters | 115 | Live-to-frozen Brave differs at 44 pixels |
+| Slashdot | 9,773 | Live-to-frozen Brave differs at 598,814 pixels |
+| Stack Overflow | 629 | Native mismatch; live-to-frozen Brave is exact |
+| BBC News | 76,604 | Live-to-frozen Brave differs at 526,496 pixels |
+| CNN | 86,250 | Live-to-frozen Brave differs at 86,524 pixels |
+| The Guardian | — | Consecutive Brave reference captures differ |
+| The Verge | 315,921 | Live-to-frozen Brave differs at 135,187 pixels |
+| Pikabu | 13,863 | Live-to-frozen Brave differs at 21,537 pixels |
+
+Slashdot's first guard failed during process-group cleanup after its Brave
+command finished. The retained retry completes with the result above. CNN and
+Pikabu both complete within the unchanged 3 GiB runtime guard in this run, with
+sampled aggregate RSS peaks of 1,488,060,416 and 1,509,081,088 bytes. This does not
+identify the cause of the earlier memory-limit failure or font-fallback panic;
+those failed runs remain in the evidence. Completed native comparisons retain
+matching full-uBO request/header, cosmetic, procedural and scriptlet evidence.
+The aggregate site command exits nonzero for the remaining failures. Existing
+goldens and the zero-difference acceptance threshold are unchanged.
+
+Evidence is under `Build/forum-news-svg-rect-precision-20261030/`, including
+`checkpoint.json`, `focused/`, `regressions.json`, `verified/`, `slashdot-retry/`,
+the original and focused diagnostics, and the production receipt. Broad-test
+baseline remains `88275919`; this is the fourth completed native fix since that
+baseline.
