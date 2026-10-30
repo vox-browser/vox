@@ -83,6 +83,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_promoted_sidebar_text_blends_through_its_transparent_raster(self):
         self.compare_fixture('stackoverflow-promoted-sidebar-text')
 
+    def test_inert_sticky_text_keeps_its_ancestor_raster(self):
+        self.compare_fixture('stackoverflow-inert-sticky-text')
+
 
 if __name__ == '__main__':
     unittest.main()

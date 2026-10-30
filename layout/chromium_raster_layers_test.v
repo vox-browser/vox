@@ -3,6 +3,96 @@ module layout
 import html
 import platform
 
+fn sticky_promotion_text_owner(source string) (ChromiumRasterLayerPlan, int) {
+	mut document := html.parse_document(source)
+	defer { document.finalize() }
+	document.set_font_rendering_policy(.chromium)
+	_ = layout_document_typed_in_viewport(document, 800, 600)
+	commands := display_list_commands(document.record_display_list() or { panic('missing sticky paint') })
+	plan := chromium_raster_layer_plan(document, commands, 1)
+	for index, command in commands {
+		if command.kind == 'draw_text' && command.text == 'Tags' {
+			return plan, plan.command_layers[index]
+		}
+	}
+	panic('missing sticky text')
+}
+
+fn test_sticky_raster_promotion_requires_scroll_range_in_the_nearest_scrollport() {
+	for height in [600, 2000] {
+		plan, owner := sticky_promotion_text_owner('<!doctype html><style>
+			body{margin:0;min-height:${height}px}
+			section{position:sticky;top:0;width:164px;height:600px}
+			span{position:absolute;left:34px;top:186px}
+		</style><section><span>Tags</span></section>')
+		if height == 600 {
+			assert owner == 0
+			assert !plan.layers[owner].composited_contents
+		} else {
+			assert owner > 0
+			assert plan.layers[owner].composited_contents
+		}
+	}
+}
+
+fn test_inert_inner_scrollport_does_not_borrow_the_viewports_scroll_range() {
+	for overflow in ['auto', 'scroll', 'hidden'] {
+		plan, owner := sticky_promotion_text_owner('<!doctype html><style>
+			body{margin:0;min-height:2000px}#scroller{overflow:${overflow};height:400px;width:164px}
+			section{position:sticky;top:0;height:200px}span{position:absolute;left:34px;top:40px}
+		</style><div id="scroller"><section><span>Tags</span></section></div>')
+		assert !plan.layers[owner].composited_contents
+	}
+}
+
+fn test_sticky_content_in_an_overflowing_scroller_keeps_its_compositor_identity() {
+	for overflow in ['auto', 'scroll'] {
+		plan, owner := sticky_promotion_text_owner('<!doctype html><style>
+			body{margin:0}#scroller{overflow:${overflow};height:200px;width:164px}
+			section{position:sticky;top:0;height:200px}span{position:absolute;left:34px;top:40px}
+			#spacer{height:1000px}
+		</style><div id="scroller"><section><span>Tags</span></section><div id="spacer"></div></div>')
+		assert owner > 0
+		assert plan.layers[owner].composited_contents
+	}
+}
+
+fn test_a_fixed_ancestor_blocks_sticky_promotion_from_outside_scrolling() {
+	plan, owner := sticky_promotion_text_owner('<!doctype html><style>
+		body{margin:0;min-height:2000px}#fixed{position:fixed;top:0;width:164px;height:400px;background:#eee}
+		section{position:sticky;top:0}span{position:absolute;left:34px;top:40px}
+	</style><div id="fixed"><section><span>Tags</span></section></div>')
+	// The fixed container still supplies its own composited state; the sticky
+	// descendant must not create another property state merely from the viewport.
+	assert owner > 0
+	assert plan.layers[owner].composited_contents
+	assert chromium_raster_plan_scratch_.layer_states[owner].sticky_frame == 0
+}
+
+fn test_sticky_promotion_refreshes_after_the_scroll_range_disappears_and_returns() {
+	mut document := html.parse_document('<!doctype html><style>body{margin:0}
+		section{position:sticky;top:0;width:164px;height:600px}
+		span{position:absolute;left:34px;top:186px}</style><section><span>Tags</span></section>')
+	defer { document.finalize() }
+	document.set_font_rendering_policy(.chromium)
+	mut plan := ChromiumRasterLayerPlan{}
+	mut body := document.body() or { panic('missing body') }
+	for height in [2000, 600, 2000] {
+		body.set_attribute_value('style', 'min-height:${height}px')
+		_ = layout_document_typed_in_viewport(document, 800, 600)
+		commands := display_list_commands(document.record_display_list() or { panic('missing paint') })
+		update_chromium_raster_layer_plan(document, commands, 1, mut plan)
+		mut seen := false
+		for index, command in commands {
+			if command.kind != 'draw_text' || command.text != 'Tags' { continue }
+			seen = true
+			owner := plan.command_layers[index]
+			assert plan.layers[owner].composited_contents == (height == 2000)
+		}
+		assert seen
+	}
+}
+
 fn test_raster_layers_preserve_overlap_and_merge_disjoint_chunks() {
 	root := ChromiumRasterPropertyState{}
 	scroll := ChromiumRasterPropertyState{

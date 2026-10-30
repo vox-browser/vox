@@ -55,6 +55,7 @@ mut:
 	chunks             []ChromiumRasterChunk
 	layer_states       []ChromiumRasterPropertyState
 	composited_scrolls map[int]bool
+	composited_stickies map[int]bool
 	fixed_bounds       map[u64]LayoutRect
 	compositor_bounds  map[u64]LayoutRect
 	compositor_scopes  []u64
@@ -209,6 +210,27 @@ fn chromium_user_scrollable_box(box &BlockBox) bool {
 	]
 }
 
+// A sticky scroll frame exists even when its scrollport has no scroll range.
+// Only a scrolling nearest container promotes that sticky content. Inert
+// overflow containers must stop the search rather than borrowing the viewport's
+// range, and a fixed ancestor cannot move with an outside viewport scroll.
+fn chromium_sticky_needs_compositing(box &BlockBox, boxes_by_layout map[u64]&BlockBox) bool {
+	if box.layout_handle == unsafe { nil } { return false }
+	node := unsafe { &Node(box.layout_handle) }
+	mut containing_block := node.containing_block()
+	for containing_block != none {
+		ancestor := containing_block or { break }
+		if ancestor_box := boxes_by_layout[u64(voidptr(ancestor))] {
+			if ancestor_box.is_viewport_scroller || ancestor.is_scroll_container() {
+				return paintable_box_could_be_scrolled_by_wheel_event(ancestor_box)
+			}
+		}
+		if ancestor.is_fixed_position() { return false }
+		containing_block = ancestor.containing_block()
+	}
+	return false
+}
+
 fn chromium_raster_chunk_bounds(box &BlockBox, command &PaintCommand) LayoutRect {
 	if command.has_clip && (command.clip_width <= 0 || command.clip_height <= 0) {
 		return LayoutRect{}
@@ -293,6 +315,7 @@ pub fn update_chromium_raster_layer_plan(document &dom.Document, commands []Pain
 	}
 	mut scratch := unsafe { &chromium_raster_plan_scratch_ }
 	scratch.composited_scrolls.clear()
+	scratch.composited_stickies.clear()
 	scratch.fixed_bounds.clear()
 	scratch.compositor_bounds.clear()
 	for entry in result.paint_order {
@@ -308,6 +331,10 @@ pub fn update_chromium_raster_layer_plan(document &dom.Document, commands []Pain
 		}
 		if chromium_user_scrollable_box(box) {
 			scratch.composited_scrolls[box.own_scroll_frame_index] = true
+		}
+		if box.sticky_scroll_frame_index > 0
+			&& chromium_sticky_needs_compositing(box, result.boxes_by_layout_cache) {
+			scratch.composited_stickies[box.sticky_scroll_frame_index] = true
 		}
 		if box.fixed_to_viewport && box.layout_handle != unsafe { nil } {
 			node := unsafe { &Node(box.layout_handle) }
@@ -325,9 +352,9 @@ pub fn update_chromium_raster_layer_plan(document &dom.Document, commands []Pain
 			scratch.properties[index] = scratch.properties[node.parent_index]
 		}
 		if node.data is painting.ScrollVisualData {
-			if node.data.is_sticky {
+			if node.data.is_sticky && scratch.composited_stickies[node.data.scroll_frame_index] {
 				scratch.properties[index].sticky_frame = node.data.scroll_frame_index
-			} else if scratch.composited_scrolls[node.data.scroll_frame_index] {
+			} else if !node.data.is_sticky && scratch.composited_scrolls[node.data.scroll_frame_index] {
 				scratch.properties[index].scroll_frame = node.data.scroll_frame_index
 			}
 		} else if node.data is painting.ScrollCompensationVisualData
