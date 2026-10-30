@@ -144,3 +144,46 @@ archives and private replay caches were removed after sealing their canonical
 bytes in the fixtures; screenshots, raw filter evidence and logs are retained.
 This workstream contains one native code fix. Broad regression suites were
 not run and the repository's existing broad-test baseline was not reset.
+
+### Resumed checks and Lobsters fixes
+
+Evidence for the resumed work is in
+`Build/forum-news-parity-resume-20261030/`. The unchanged RequestServer TLS
+test now passes with `-gc none`, including trusted CA, unrelated CA and wrong
+hostname checks. The original stalled attempt is retained; its cause was not
+established. A current-V production build, signing verification and fresh
+headless startup also pass. An attempted build with the stale alternative V
+compiler is retained as a failure, not production validation.
+
+`f9126fb6` corrects middle-aligned text's contribution to line baselines and
+negative half-subpixel rounding. New and existing inline geometry tests pass
+in both GC modes. `5c42f6b1` adds a six-line native regression extracted from
+Lobsters; all 480,000 RGBA pixels match its Brave reference. On the sealed
+Lobsters page, story-row geometry now matches Brave, reducing the mismatch
+from 130,582 pixels to 18,323.
+
+`9bb7020d` retains fractional foreground components through native glyph
+blending and includes the actual float color in glyph-cache identities. Its
+two transport tests pass in both GC modes, including inherited colors and a
+hover change between alpha values with the same byte representation. Native
+checks pass seven fractional/byte cache comparisons and the existing 6,240
+glyph-cache replay comparisons, 720 raster-composite comparisons, 36 shadow
+layer comparisons and 15 clipping cases. The text-paint regression passes in
+both GC modes. `6d9a6495` repairs an existing test's inline optional recording
+call; its three text-refresh cases pass in both modes without weakening their
+assertions. Original failed attempts remain in the evidence directory.
+
+The full Lobsters comparison now differs at **111 pixels**, with zero actual
+Vox/full-uBO decision mismatches. It still fails: 44 pixels have larger rounded
+tag-border differences, and its original live Brave PNG differs from the frozen
+Brave replay at 71 pixels. A six-line translucent-text diagnostic improves from
+3,270 differing pixels to six but remains open. No thresholds or excluded
+regions were added. One replay attempt failed image readiness; a fresh attempt
+with a ten-second settle completed. Failed Brave captures now retain readiness
+and missing-image details through `f7c87ca9`; the related nine Node tests pass.
+
+CNN's resumed native capture exceeds the focused 3 GiB process-tree limit and
+is killed by its guard; it supplies no pixel result. The other site's previous
+coverage failures remain open. This checkpoint contains three native fixes in
+this workstream; broad suites were not run and the broad-test baseline remains
+unchanged.
