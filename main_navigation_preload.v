@@ -50,8 +50,7 @@ fn parse_page_preload_document(loaded LoadedPage, scripting_enabled bool) &dom.D
 	// policy as the eventual navigation document, including system-face metrics.
 	// Otherwise preflight decodes the deterministic test fonts into permanent
 	// font caches even though the native page will never use those faces.
-	document.set_font_size_keyword_policy(.chromium)
-	document.set_font_rendering_policy(.chromium)
+	install_browser_document_font_policies(mut document)
 	document.set_display_device_pixel_ratio(html.display_device_pixel_ratio())
 	document.enable_native_storage()
 	mut allocations := document.enter_native_storage()
