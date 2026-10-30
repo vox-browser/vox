@@ -44,6 +44,19 @@ The three opaque shadow cases are exact. A separate diagnostic with a shadow
 inside `opacity: .5` still differs by 1 at five pixels after the native layer
 is composited. This fixture does not establish translucent-group parity.
 
+`inset-box-shadow` checks unblurred and blurred inset shadows, offsets and
+spread at 800×600 and scale 1 against Brave 156.1.98.60. It is pixel-exact.
+The Chromium renderer retains the rectangular outer caster, rounded padding-box
+hole and clip through Skia GPU replay. Consecutive backgrounds, inset shadows
+and a uniform border from one root-layer box share antialias coverage; an
+unsupported recording or GPU failure preserves ordinary rendering.
+
+The unchanged [rounded inset diagnostic](diagnostic/inset-rounded-box-shadow.html)
+and adjacent Brave PNG improve from 17,183 differing pixels (maximum error 77)
+to 262 (maximum error 10). Its asymmetric elliptical case is exact, while its
+circular border cases remain open. The exact square fixture does not establish
+general rounded-shadow parity.
+
 `webp-yuv-scaled` checks a lossy WebP at half size. The Chromium image path
 selects an upload size with rounded-up mip dimensions, scales each decoded
 plane using Chromium's CPU mip selection, promotes scaled YUV to 4:4:4, and

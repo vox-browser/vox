@@ -1022,6 +1022,12 @@ mut:
 	paint_phase     CompatibilityPaintPhase
 }
 
+// A renderer may combine consecutive decorations only while they retain the
+// identity of the same box in this recorded display list.
+pub fn (command &PaintCommand) shares_paint_box_with(other &PaintCommand) bool {
+	return command.paint_box_index == other.paint_box_index
+}
+
 // Logical SVG defaults require no payload allocation for ordinary commands.
 pub fn (command &PaintCommand) svg() PaintSVGPathData {
 	if command.svg_data != unsafe { nil } {

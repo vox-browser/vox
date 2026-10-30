@@ -3308,6 +3308,7 @@ extern "C" int ladybird_v_skia_prefetch_plain_rects(CGContextRef destination,
 }
 
 #include "native_skia_rect_prefetch_scratch.h"
+#include "native_skia_inner_shadow.h"
 
 extern "C" int ladybird_v_skia_draw_outer_box_shadow(CGContextRef destination,
     float shadow_x, float shadow_y, float shadow_width, float shadow_height,

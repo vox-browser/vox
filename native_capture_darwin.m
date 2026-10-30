@@ -107,6 +107,11 @@ extern int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
 	float scroll_y, float canvas_width, float canvas_height, uint8_t red,
 	uint8_t green, uint8_t blue, uint8_t alpha, int fill, float thickness,
 	int anti_alias, int opaque_backdrop);
+extern int ladybird_v_skia_draw_inner_box_shadow(CGContextRef destination,
+    const float *outer, const float *inner, const float *content, const float *clip,
+    const float *transform, float page_x, float page_y, float scroll_y,
+    float canvas_width, float canvas_height, float blur,
+    uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha, int opaque_backdrop);
 extern int ladybird_v_skia_draw_outer_box_shadow(CGContextRef destination,
 	float shadow_x, float shadow_y, float shadow_width, float shadow_height,
 	float shadow_top_left_x, float shadow_top_left_y, float shadow_top_right_x,
@@ -193,6 +198,9 @@ extern int ladybird_v_skia_draw_rgba_image_tiles(CGContextRef destination,
 extern int ladybird_v_skia_begin_isolated_input(CGContextRef context, float width, float height);
 extern void *ladybird_v_skia_take_isolated_input(CGContextRef context);
 extern void ladybird_v_skia_discard_isolated_input(void *input);
+extern int ladybird_v_skia_begin_inset_decorations(CGContextRef, float, float, float, float,
+    float, float, float, float);
+extern int ladybird_v_skia_end_inset_decorations(CGContextRef);
 extern int ladybird_v_skia_draw_gradient_text(CGContextRef context, void *mask_input,
 	CGContextRef destination, float canvas_width, float canvas_height, float scale,
 	float x, float y, float width, float height);
@@ -5039,6 +5047,23 @@ void native_draw_outer_box_shadow_corners_srgb(float shadow_x, float shadow_y,
 	CGPathRelease(local_shadow);
 }
 
+int native_begin_inset_decorations(float x, float y, float width, float height,
+    float canvas_width, float canvas_height, float page_y, float scroll_y) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+    return ladybird_v_skia_begin_inset_decorations(
+        [[NSGraphicsContext currentContext] CGContext], x, y, width, height,
+        canvas_width, canvas_height, page_y, scroll_y);
+#else
+    return 0;
+#endif
+}
+
+void native_end_inset_decorations(void) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+    ladybird_v_skia_end_inset_decorations([[NSGraphicsContext currentContext] CGContext]);
+#endif
+}
+
 void native_draw_inner_box_shadow_corners_srgb(float outer_x, float outer_y,
 	float outer_width, float outer_height, float outer_top_left_x,
 	float outer_top_left_y, float outer_top_right_x, float outer_top_right_y,
@@ -5055,13 +5080,33 @@ void native_draw_inner_box_shadow_corners_srgb(float outer_x, float outer_y,
 	float clip_bottom_right_x, float clip_bottom_right_y, float clip_bottom_left_x,
 	float clip_bottom_left_y, float transform_a, float transform_b, float transform_c,
 	float transform_d, float transform_e, float transform_f, float page_x, float page_y,
-	float scroll_y, float canvas_height, float blur, gg__Color color) {
+	float scroll_y, float canvas_width, float canvas_height, float blur, gg__Color color) {
 	if (outer_width <= 0.0f || outer_height <= 0.0f || content_width <= 0.0f
 		|| content_height <= 0.0f)
 		return;
 	CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
 	if (context == NULL)
 		return;
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+    const float outer[] = {outer_x, outer_y, outer_width, outer_height,
+        outer_top_left_x, outer_top_left_y, outer_top_right_x, outer_top_right_y,
+        outer_bottom_right_x, outer_bottom_right_y, outer_bottom_left_x, outer_bottom_left_y};
+    const float inner[] = {inner_x, inner_y, inner_width, inner_height,
+        inner_top_left_x, inner_top_left_y, inner_top_right_x, inner_top_right_y,
+        inner_bottom_right_x, inner_bottom_right_y, inner_bottom_left_x, inner_bottom_left_y};
+    const float content[] = {content_x, content_y, content_width, content_height,
+        content_top_left_x, content_top_left_y, content_top_right_x, content_top_right_y,
+        content_bottom_right_x, content_bottom_right_y, content_bottom_left_x, content_bottom_left_y};
+    const float clip[] = {content_x, content_y, content_width, content_height,
+        clip_top_left_x, clip_top_left_y, clip_top_right_x, clip_top_right_y,
+        clip_bottom_right_x, clip_bottom_right_y, clip_bottom_left_x, clip_bottom_left_y};
+    const float transform[] = {transform_a, transform_b, transform_c, transform_d, transform_e, transform_f};
+    if (ladybird_v_skia_draw_inner_box_shadow(context, outer, inner, content, clip,
+        transform, page_x, page_y, scroll_y, canvas_width, canvas_height, blur,
+        color.r, color.g, color.b, color.a,
+        context == native_font_compositing_context && native_font_compositing_transparency_depth == 0))
+        return;
+#endif
 	CGPathRef local_outer = native_create_corner_rounded_rect_path(outer_x, outer_y,
 		outer_width, outer_height, outer_top_left_x, outer_top_left_y, outer_top_right_x,
 		outer_top_right_y, outer_bottom_right_x, outer_bottom_right_y, outer_bottom_left_x,
