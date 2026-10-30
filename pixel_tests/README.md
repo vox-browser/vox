@@ -57,8 +57,10 @@ python3 tools/test_forum_news_capture_state.py --extension /path/to/uBlock0.chro
 python3 -m unittest discover -s tools -p forum_news_inline_pixels_test.py
 ```
 
-The second command checks the two exact native forum-tag regressions against
-Brave references. Current site results and remaining failures are recorded in
+The second command checks the two native forum-tag regressions and the
+fractional foreground/opacity-group regression against exact Brave references.
+Replay accepts bursts of archived-origin connections without forwarding any
+requests. Current site results and remaining failures are recorded in
 [`docs/ADBLOCK_POPULAR_SITES.md`](../docs/ADBLOCK_POPULAR_SITES.md).
 
 These tests compare screenshots from the V browser with checked-in screenshots

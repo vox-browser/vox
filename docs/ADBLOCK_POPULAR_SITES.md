@@ -227,7 +227,7 @@ establish the cause of every intermittent archived-resource reset. The original
 failed responses and the complete `final-matrix/` and `clean-tls-matrix/` runs
 are retained.
 
-The latest retained observations still give **one full passing site out of ten**:
+The four-fix checkpoint gave **one full passing site out of ten**:
 
 | Site | Native/reference pixels | Remaining acceptance failure |
 | --- | --- | --- |
@@ -247,4 +247,60 @@ references were unstyled and recorded a connection reset, so they are not
 rendering acceptance evidence. Fresh BBC and Slashdot captures with the corrected snapshot
 logic hit navigation connection failures, so their existing fixtures were not
 replaced. All pixel thresholds remain zero. Four native fixes belong to this
-workstream; broad suites were not run and the broad-test baseline is unchanged.
+workstream at that checkpoint; broad suites were not run and the broad-test baseline is unchanged.
+
+### GPU glyph precision follow-up
+
+`45e7a1e8` keeps fractional foreground colors and glyph coverage in the same GPU
+picture before rounding the page pixel. The path uses the existing bounded
+glyph cache (at most 4,096 glyphs and 32,768 raster pixels), with the float CPU
+fallback retained. The new `forum-fractional-foreground` fixture covers modern
+and legacy alpha, fractional RGB, inheritance, opaque controls and an opacity
+group. Its previous eight differing pixels now match Brave exactly. All three
+focused native fixtures pass at 800×600, scale 1; 14 GPU/CPU glyph cache cases
+and the existing clip, composite, shadow, image and glyph replay checks pass.
+The unchanged broader translucent-text diagnostic improves from six differing
+pixels to two; the first glyph of its opacity group still paints outside the
+reference layer edge.
+
+The completed production receipt is `production-glyph-gpu-v2.json` under
+`Build/forum-news-parity-resume-20261030/`, with source hashes, executable/library
+identities, signing and startup results alongside it. An initial build attempt
+found the shared guard busy and did not queue. Earlier injected-library trials
+remain separately labelled candidate evidence.
+
+`8e2c340f` raises the archive replay's accept queue to handle browser connection
+bursts. A focused test reproduced a connection reset before a request reached
+the log with the previous five-entry queue; all 16 connections and response
+bodies pass after the fix. Six archive and four forum-runner cases pass. This
+does not establish the cause of every remaining resource failure.
+
+The complete `glyph-gpu-production-matrix/` run still passes **one of ten sites**:
+
+| Site | Native/reference pixels | Remaining acceptance failure |
+| --- | --- | --- |
+| Hacker News | 0 | Pass; live-to-frozen also exact |
+| Reddit | No captured page | Guest HTTP 403 network-security block |
+| Lobsters | 18, maximum channel error 1 | Live-to-frozen Brave differs at 71 pixels |
+| Slashdot | 9,795 | Live-to-frozen differs at 598,814 pixels |
+| Stack Overflow | 7,022 | Native pixels differ; live-to-frozen exact |
+| BBC News | 76,604 | Live-to-frozen differs at 526,496 pixels |
+| CNN | No native PNG | 3 GiB guard terminates the process |
+| The Guardian | No stable reference PNG | Consecutive Brave frames differ |
+| The Verge | 315,921 | Live-to-frozen differs at 135,187 pixels |
+| Pikabu | 39,565 initially; 14,267 on retry | Regular-font loading failed initially; live-to-frozen differs at 21,603 pixels |
+
+Lobsters improves from 55 to 18 against the same reference pixels, and Stack
+Overflow from 9,489 to 7,022. A separate fresh Brave trial changed some tag-edge
+pixels, so its 115-pixel candidate result is also retained; no reference was
+replaced to make a case pass. Stack Overflow still requests automatic
+hyphenation, which the CSS/layout implementation does not yet support.
+
+Pikabu's first native run took about 98 seconds and showed bold fallback text;
+its sample was in font-error completion and style/layout updates. The fresh
+`glyph-gpu-pikabu-retry/` run loaded the regular font and restored the previous
+14,267-pixel result. Both runs remain evidence. The Verge completed within the
+memory guard this time; this is not attributed to the glyph change because
+other shared source and runtime conditions also changed. Thresholds remain
+zero. Five native fixes belong to this workstream; broad suites were not run
+and the broad-test baseline is unchanged. The ten-site task remains incomplete.
