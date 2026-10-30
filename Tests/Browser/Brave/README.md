@@ -22,6 +22,15 @@ scroll offsets and other scales retain their existing path. The
 [10px-radius diagnostic](diagnostic/scrolling-gradient-rounded.html) still has
 twelve corner differences against its adjacent reference PNG.
 
+`gradient-compositor-backdrop` checks two background gradients inside each
+`will-change:opacity` compositor layer. Native gradient replay retains the
+readable layer's existing pixels while shifting its dither origin, so GPU
+blending happens before the result is quantized. Its 800×600, scale 1 Brave
+156.1.98.60 reference is exact; the previous leaf path changed 25,086 pixels. Run the
+real GPU backdrop comparison and native tile ownership checks with
+`python3 tools/test_skia_gradient_backdrop.py`; both use AddressSanitizer and
+the memory guard.
+
 `png-icc-sampling` checks continuous Display P3 colors and alpha at natural,
 downscaled and upscaled sizes, with untagged controls at all three sizes. Its
 800×600, scale 1 Brave 156.1.98.60 reference is pixel-exact through file and

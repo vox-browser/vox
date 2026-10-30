@@ -4398,7 +4398,11 @@ static int draw_svg_gradient_path(CGContextRef destination, float const* data,
         if (!picture_pattern && opaque_backdrop && draw_clipped_root_gradient(destination, region,
                 destination_scale, canvas_height, raster_width, raster_height, descriptor)) return 1;
         pixels.resize(size_t(raster_width) * raster_height);
-        bool has_background = s_raster_layer_is_root && opaque_backdrop && copy_backdrop(destination, region,
+        // The caller can supply a readable isolated canvas as well as the
+        // root canvas. Blend with that canvas's existing pixels in the GPU;
+        // compositing a separately quantized gradient through Quartz changes
+        // translucent colors inside the group.
+        bool has_background = opaque_backdrop && copy_backdrop(destination, region,
             destination_scale, raster_width, raster_height, pixels);
         if (picture_pattern && shared_picture_draw()) {
             SkPictureRecorder output;
@@ -4447,10 +4451,15 @@ static int draw_svg_gradient_path(CGContextRef destination, float const* data,
                     s_raster_origin_y, destination_scale);
                 int width = raster_width + phase_x, height = raster_height + phase_y;
                 std::vector<uint32_t> shifted(static_cast<size_t>(width) * height);
+                if (has_background) {
+                    for (int row = 0; row < raster_height; ++row)
+                        std::copy_n(pixels.begin() + static_cast<size_t>(row) * raster_width,
+                            raster_width, shifted.begin() + static_cast<size_t>(row + phase_y) * width + phase_x);
+                }
                 descriptor.matrix[2] += phase_x;
                 descriptor.matrix[5] += phase_y;
                 drawn = draw && draw(reinterpret_cast<uint8_t*>(shifted.data()), width,
-                    height, width * 4, 0, &descriptor);
+                    height, width * 4, has_background, &descriptor);
                 if (drawn) {
                     for (int row = 0; row < raster_height; ++row)
                         std::copy_n(shifted.begin() + static_cast<size_t>(row + phase_y) * width + phase_x,
