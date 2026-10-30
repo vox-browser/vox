@@ -45,6 +45,22 @@ a result in `Build/forum-news-pixels-*/summary.json`; missing fixtures, access
 checks, incomplete references, filtering disagreements and pixel differences
 all fail. A failure on one site does not prevent checking the remaining sites.
 
+References also require every active linked stylesheet to load. Captures retain
+CSS-in-JS rules inserted into empty style elements and the original document
+mode; they keep existing author CSS text unchanged. The focused capture-state
+regression uses two fresh Brave/full-uBO profiles and a local origin that never
+forwards requests:
+
+```sh
+python3 tools/test_forum_news_capture_state.py --extension /path/to/uBlock0.chromium \
+  --checker Build/adblock-check --diff-tool /path/to/pixel_diff
+python3 -m unittest discover -s tools -p forum_news_inline_pixels_test.py
+```
+
+The second command checks the two exact native forum-tag regressions against
+Brave references. Current site results and remaining failures are recorded in
+[`docs/ADBLOCK_POPULAR_SITES.md`](../docs/ADBLOCK_POPULAR_SITES.md).
+
 These tests compare screenshots from the V browser with checked-in screenshots
 from the upstream C++ Ladybird browser. The pages and visible resources are
 frozen locally so a site update, network failure, advertisement, or timestamp

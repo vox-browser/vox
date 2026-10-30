@@ -187,3 +187,64 @@ is killed by its guard; it supplies no pixel result. The other site's previous
 coverage failures remain open. This checkpoint contains three native fixes in
 this workstream; broad suites were not run and the broad-test baseline remains
 unchanged.
+
+### Inline radii and capture-state checkpoint
+
+`1fcc3d76` resolves inline corner radii against the complete border-box piece,
+including padding and the whole text run. Its two focused cases pass with
+default GC and `-gc none`. `e0f0440a` adds the narrow-tag native screenshot:
+its previous 112 differing pixels now match Brave exactly. Both native forum
+fixtures pass all 480,000 pixels each on the final production bundle.
+
+The final production receipt is `production-inline-radius.json`; source hashes,
+fresh-process identities, signing, startup and native captures are retained in
+the resumed evidence directory. An attempted block-style background inset was
+incorrect for inline backgrounds and was removed completely. Its patch, tests
+and failed 84-pixel captures remain evidence of the rejected experiment, not
+passing feature credit. The translucent-text diagnostic still differs at six
+pixels on this bundle.
+
+`e1710aa4` adds Stack Overflow's 56 sealed responses. Its successful main
+document followed an access check as a POST navigation. The capture now accepts
+that completed response only in the verified top frame and records the source
+method; replay remains local and never repeats the POST. Brave's live and frozen
+viewports match exactly. Nine catalog sites now have captures; Reddit retains
+its explicit guest-session HTTP 403 coverage failure.
+
+The capture workflow now waits for the requested document, fonts and page
+content, retains failure diagnostics, rejects missing active stylesheets, and
+preserves CSSOM rules from empty author style elements and the original doctype.
+Seventeen focused Node cases and nine Python archive cases pass. A real
+Brave/full-uBO capture-state regression preserves dynamic CSS, raw modern color
+syntax and quirks mode with zero differences across 786,432 pixels. Its evidence
+is `capture-state-regression/`. An initial IP-address control failed cosmetic
+agreement; the named-domain control passes. The IP-specific difference remains
+open outside this public-domain matrix.
+
+HTTPS replay now sends a TLS shutdown alert. A strict client reproduced the old
+invalid EOF on a large CSS response and passes after the fix. This does not
+establish the cause of every intermittent archived-resource reset. The original
+failed responses and the complete `final-matrix/` and `clean-tls-matrix/` runs
+are retained.
+
+The latest retained observations still give **one full passing site out of ten**:
+
+| Site | Native/reference pixels | Remaining acceptance failure |
+| --- | --- | --- |
+| Hacker News | 0 | Pass; live-to-frozen also exact |
+| Reddit | No captured page | Guest HTTP 403 network-security block |
+| Lobsters | 55, maximum channel error 1 | Live-to-frozen Brave also differs at 71 pixels |
+| Slashdot | 9,795 | Live-to-frozen differs at 598,814 pixels |
+| Stack Overflow | 9,489 | Native pixels differ; live-to-frozen exact |
+| BBC News | 76,604 | Live-to-frozen differs at 526,496 pixels; old snapshot lacks dynamic author rules |
+| CNN | No native PNG | 3 GiB guard terminates the process |
+| The Guardian | No stable reference PNG | Consecutive Brave frames differ |
+| The Verge | No native PNG | 3 GiB guard terminates the process |
+| Pikabu | 14,267 | Latest styled reference differs from the live capture at 21,603 pixels |
+
+Pikabu's latest row comes from `pikabu-style-readiness/`; earlier full-matrix
+references were unstyled and recorded a connection reset, so they are not
+rendering acceptance evidence. Fresh BBC and Slashdot captures with the corrected snapshot
+logic hit navigation connection failures, so their existing fixtures were not
+replaced. All pixel thresholds remain zero. Four native fixes belong to this
+workstream; broad suites were not run and the broad-test baseline is unchanged.
