@@ -2,6 +2,7 @@ module layout
 
 import dom
 import html
+import math
 import painting
 import platform
 
@@ -177,4 +178,43 @@ fn test_recorded_opacity_bounds_follow_scrolling_and_do_not_modify_previous_reco
 	assert scrolled.len == 1
 	assert content_bounds_clip(scrolled[0]) == LayoutRect{30, 100, 12, 14}
 	assert content_bounds_clip(initial[0]) == LayoutRect{30, 400, 12, 14}
+}
+
+fn test_effect_content_bounds_retain_pointwise_filters_and_reject_spatial_or_unknown_filters() {
+	for filter in [
+		painting.GfxFilter{operations: [painting.GfxFilterOperation{kind: 'color', first: 1, color_operation: .grayscale}]},
+		painting.GfxFilter{operations: [painting.GfxFilterOperation{kind: 'hue-rotate', first: 90}]},
+	] {
+		layer := &PaintVisualLayer{kind: .css_filter, filter: filter}
+		commands := content_bounds_group([
+			PaintCommand{kind: 'begin_css_filter_layer', visual_layer_data: layer},
+			PaintCommand{kind: 'begin_css_effect_layer'},
+			PaintCommand{kind: 'fill_rect', x: 20, y: 10000, width: 50, height: 30},
+			PaintCommand{kind: 'end_css_effect_layer'},
+			PaintCommand{kind: 'end_css_filter_layer'},
+		])
+		assert content_bounds_clip(commands[0]) == LayoutRect{20, 10000, 50, 30}
+		assert content_bounds_clip(commands[2]) == LayoutRect{20, 10000, 50, 30}
+	}
+	for filter in [
+		painting.GfxFilter{operations: [painting.GfxFilterOperation{kind: 'blur', first: 5}]},
+		painting.GfxFilter{operations: [painting.GfxFilterOperation{kind: 'drop-shadow', first: 5}]},
+		painting.GfxFilter{operations: [painting.GfxFilterOperation{kind: 'future-filter'}]},
+		painting.GfxFilter{operations: [painting.GfxFilterOperation{kind: 'color', first: math.nan()}]},
+		painting.GfxFilter{nodes: [painting.GfxFilterNode{kind: 'flood'}], root_id: 0},
+	] {
+		commands := content_bounds_group([
+			PaintCommand{kind: 'begin_css_filter_layer', visual_layer_data: &PaintVisualLayer{kind: .css_filter, filter: filter}},
+			PaintCommand{kind: 'fill_rect', x: 20, y: 10000, width: 50, height: 30},
+			PaintCommand{kind: 'end_css_filter_layer'},
+		])
+		assert !commands[0].has_clip
+	}
+	mut document := html.parse_document('<!doctype html><style>body{margin:0}div{position:absolute;left:20px;top:10000px;width:50px;height:30px;background:red;opacity:.85;filter:grayscale(1)}</style><div></div>')
+	defer { document.finalize() }
+	_ = layout_document_typed_in_viewport(document, 800, 600)
+	commands := display_list_commands(document.record_display_list() or { panic('missing paint') })
+	effects := commands.filter(it.kind == 'begin_css_effect_layer')
+	assert effects.len == 1
+	assert content_bounds_clip(effects[0]) == LayoutRect{20, 10000, 50, 30}
 }

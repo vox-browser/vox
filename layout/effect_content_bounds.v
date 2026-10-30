@@ -8,9 +8,24 @@ import math
 struct EffectContentBounds {
 mut:
 	begin   int
+	filter_depth int
 	bounded bool = true
 	has_ink bool
 	ink     LayoutRect
+}
+
+// CSS color matrices and hue rotation leave transparent input transparent
+// and do not move ink. SVG graphs, blurs and shadows need their full inputs.
+fn effect_filter_preserves_ink_bounds(command &PaintCommand) bool {
+	filter := command.visual_layer().filter or { return false }
+	if filter.nodes.len > 0 || filter.root_id != none { return false }
+	for operation in filter.operations {
+		if operation.kind !in ['color', 'hue-rotate'] { return false }
+		for value in [operation.first, operation.second, operation.third] {
+			if math.is_nan(value) || math.is_inf(value, 0) { return false }
+		}
+	}
+	return true
 }
 
 fn (mut bounds EffectContentBounds) include(rect LayoutRect) {
@@ -129,18 +144,33 @@ pub fn paint_leaf_is_outside_canvas(command &PaintCommand, page_x f64, page_y f6
 
 fn bound_visual_effect_contents(mut commands []PaintCommand) {
 	mut stack := []EffectContentBounds{}
+	mut filters := []bool{}
 	for index in 0 .. commands.len {
 		command := unsafe { &commands[index] }
+		if command.kind == 'begin_css_filter_layer' {
+			bounded := effect_filter_preserves_ink_bounds(command)
+			filters << bounded
+			if stack.len > 0 && !bounded { stack[stack.len - 1].bounded = false }
+			continue
+		}
+		if command.kind == 'end_css_filter_layer' {
+			if filters.len == 0 {
+				if stack.len > 0 { stack[stack.len - 1].bounded = false }
+			} else { filters.pop() }
+			continue
+		}
 		if command.kind == 'begin_css_effect_layer' {
 			stack << EffectContentBounds{
 				begin:   index
+				filter_depth: filters.len
 				bounded: command.visual_layer().blend_mode == .normal
 			}
 			continue
 		}
 		if stack.len == 0 { continue }
 		if command.kind == 'end_css_effect_layer' {
-			bounds := stack.pop()
+			mut bounds := stack.pop()
+			if bounds.filter_depth != filters.len { bounds.bounded = false }
 			if bounds.bounded {
 				mut begin := unsafe { &commands[bounds.begin] }
 				mut ink := bounds.ink

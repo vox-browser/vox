@@ -80,3 +80,19 @@ fn test_canvas_culling_falls_through_when_disabled_or_unknown() {
 	assert culling.depth == 0
 	assert culling.skip(leaf, 0, 0, 100, 100)
 }
+
+fn test_canvas_culling_discards_empty_effect_clips_outside_resource_inputs() {
+	for width in [0.0, 10.0] {
+		outside := layout.PaintCommand{kind: 'begin_css_effect_layer', has_clip: true,
+			clip_width: width, clip_height: 0}
+		mut culling := PaintCanvasCulling{enabled: true}
+		assert culling.skip(outside, 0, 60, 800, 660)
+		assert culling.skip(layout.PaintCommand{kind: 'begin_css_filter_layer'}, 0, 60, 800, 660)
+		assert culling.skip(layout.PaintCommand{kind: 'fill_rect', width: 100, height: 100}, 0, 60, 800, 660)
+		assert culling.skip(layout.PaintCommand{kind: 'end_css_filter_layer'}, 0, 60, 800, 660)
+		assert culling.skip(layout.PaintCommand{kind: 'end_css_effect_layer'}, 0, 60, 800, 660)
+		assert culling.depth == 0 && culling.skipped_depth == 0
+		assert !culling.skip(layout.PaintCommand{kind: 'begin_svg_mask_layer'}, 0, 60, 800, 660)
+		assert !culling.skip(outside, 0, 60, 800, 660)
+	}
+}

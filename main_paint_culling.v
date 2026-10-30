@@ -51,14 +51,17 @@ fn (mut culling PaintCanvasCulling) skip(command &layout.PaintCommand, page_x f6
 
 fn effect_clip_is_outside_canvas(command &layout.PaintCommand, page_x f64, page_y f64,
     width f64, height f64) bool {
-    if !command.has_clip || command.clip_width <= 0 || command.clip_height <= 0
-        || width <= 0 || height <= 0 { return false }
+    if !command.has_clip || width <= 0 || height <= 0 { return false }
     for value in [command.clip_x, command.clip_y, command.clip_width, command.clip_height,
         page_x, page_y, width, height]! {
         if math.is_nan(value) || math.is_inf(value, 0) || math.abs(value) > 1_000_000 {
             return false
         }
     }
+    // A bounded effect can become empty after intersecting an ancestor clip.
+    // Its native transparency surface is clipped to that empty rectangle too.
+    if command.clip_width == 0 || command.clip_height == 0 { return true }
+    if command.clip_width < 0 || command.clip_height < 0 { return false }
     // The renderer applies this clip in canvas coordinates with a two-pixel
     // fringe. Preserve another pixel for native float rounding and coverage.
     return command.clip_x + page_x > width + 3 || command.clip_y + page_y > height + 3
