@@ -7,7 +7,8 @@ export async function waitForPixelDocument(page, expectedURL, {timeoutMs=45000,p
     // Page.navigate can return before the old about:blank context is replaced.
     // Poll from the client so a destroyed context cannot lose the load waiter.
     const expression=`(${isExpectedSiteURL.toString()})(${JSON.stringify(expectedURL)},location.href)
-        && document.readyState==='complete' && document.fonts.status==='loaded'`;
+        && document.readyState==='complete' && document.fonts.status==='loaded'
+        && (document.body?.innerText.length||0)>=1000`;
     const deadline=Date.now()+timeoutMs;
     do {
         try {

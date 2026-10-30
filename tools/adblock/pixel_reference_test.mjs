@@ -16,15 +16,17 @@ test('capture waits for document load before the settle period',async()=>{
 });
 
 test('the old blank document, streaming HTML and pending fonts cannot start settling',async()=>{
-    const states=[['about:blank','complete','loaded'],['https://example.com/','loading','loaded'],
-        ['https://example.com/','complete','loading'],['https://news.example.com/','complete','loaded']];
+    const states=[['about:blank','complete','loaded',2000],['https://example.com/','loading','loaded',2000],
+        ['https://example.com/','complete','loading',2000],['https://example.com/','complete','loaded',0],
+        ['https://news.example.com/','complete','loaded',2000]];
     let checks=0;
     const page={evaluate:async expression=>{
-        const [href,readyState,status]=states[checks++];
-        return vm.runInNewContext(expression,{URL,location:{href},document:{readyState,fonts:{status}}});
+        const [href,readyState,status,length]=states[checks++];
+        return vm.runInNewContext(expression,{URL,location:{href},
+            document:{readyState,fonts:{status},body:{innerText:'x'.repeat(length)}}});
     }};
     assert.equal(await waitForPixelDocument(page,'https://example.com/',{timeoutMs:1000,pollMs:0}),true);
-    assert.equal(checks,4);
+    assert.equal(checks,5);
 });
 
 test('a replaced execution context is retried while unrelated debugger errors propagate',async()=>{
