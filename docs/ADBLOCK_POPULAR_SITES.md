@@ -361,3 +361,41 @@ result applies to its retained matching oracle frame, not every fresh capture.
 
 Six native fixes belong to this workstream. Broad suites were not run, and the
 broad-test baseline is unchanged. Live-page and remaining-site parity are open.
+
+### Automatic hyphenation checkpoint
+
+`b4ab0d65` implements inherited `hyphens:auto`, `manual`, and `none`, including
+layout invalidation and generated CSS metadata. On macOS, automatic wrapping
+uses the element's inherited language and CoreFoundation dictionary positions.
+Inserted hyphens retain zero source code units: the DOM text and subsequent
+line offsets remain unchanged. Normal and min-content layout use the same
+dictionary boundaries; max-content and nowrap retain whole words. Missing
+languages and unsupported dictionaries do not select a fallback language.
+The current automatic path handles horizontal left-to-right text on macOS;
+other platforms retain ordinary wrapping. This is not complete CSS hyphenation
+parity. Brave rejects `-webkit-hyphens`, so Vox continues to ignore that spelling.
+
+The new `stackoverflow-auto-hyphenation` reference covers dictionary wrapping,
+repeated word splits, min-content sizing, manual wrapping, and an unknown
+language. Two fresh Brave profiles produce identical references, and Vox
+matches every pixel at 800×600. All five focused native forum fixtures pass.
+Thirty focused CSS/platform/layout cases pass in both default GC and `-gc none`,
+with separate compile and 3 GiB runtime guards. Two generator-extension tests,
+production signing, and a fresh startup smoke check also pass.
+
+The final production browser reduces the sealed Stack Overflow mismatch from
+**7,022 to 3,064 pixels**. Its full-uBO request/header and cosmetic comparisons
+pass; the live-to-frozen Brave comparison remains exact. The site still fails
+strict pixel acceptance. Hacker News remains exact, including live-to-frozen
+and actual native filtering checks. No reference archive or tolerance changed.
+
+Evidence is retained under `Build/forum-news-hyphenation-20261030/`, including
+the focused build/run receipts, source hashes, executable/library identities,
+two production build receipts, final five-fixture checks, and `final-sites/`.
+Initial test-development errors are retained with their actual exit statuses.
+The first build predates removal of the unsupported alias; the final build
+contains the final source and its source snapshot remains unchanged.
+
+Seven native fixes belong to this workstream. Broad suites were not run, and
+the broad-test baseline is unchanged. The complete acceptance count remains
+**one of ten**; live-page and remaining-site parity are open.
