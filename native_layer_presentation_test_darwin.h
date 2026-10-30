@@ -49,7 +49,7 @@ static int native_test_capture_copy_preserves_pixels_and_skips_redundant_frames(
         NSGraphicsContext *previous = NSGraphicsContext.currentContext;
         CGColorSpaceRef color = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
         CGContextRef target = CGBitmapContextCreate(NULL, 4, 2, 8, 16, color,
-            kCGImageAlphaPremultipliedFirst | kCGBitmapByteOrder32Little);
+            kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
         CGColorSpaceRelease(color);
         int result = 0;
         @try {
@@ -167,8 +167,9 @@ static BOOL native_layer_test_image(CGImageRef image, size_t width, size_t heigh
     for (size_t y = 0; correct && y < height; y++) {
         for (size_t x = 0; x < width; x++) {
             const UInt8 *pixel = bytes + y * row + x * 4;
-            if (pixel[0] != 0 || pixel[1] != (x >= width / 2 ? 255 : 0)
-                || pixel[2] != (x < width / 2 ? 255 : 0) || pixel[3] != 255) {
+            if (pixel[0] != (x < width / 2 ? 255 : 0)
+                || pixel[1] != (x >= width / 2 ? 255 : 0)
+                || pixel[2] != 0 || pixel[3] != 255) {
                 correct = NO; break;
             }
         }
