@@ -4435,6 +4435,23 @@ fn uncached_text_lines_from_typed_layout(container &Node, used &UsedValues, stat
 							padding = BoxEdges{inline_used.padding_top.to_double(), inline_used.padding_right.to_double(), inline_used.padding_bottom.to_double(), inline_used.padding_left.to_double()}
 						}
 					}
+					if container.document().font_rendering_policy() == .chromium
+						&& owner_computed.has_noninitial_border_radii() {
+						if !paint_parent_pieces_ready {
+							paint_parent_pieces = compute_inline_box_pieces(container, used, state)
+							paint_parent_pieces_ready = true
+						}
+						for piece in paint_parent_pieces {
+							if piece.line_index == line_index && layout_nodes_same(piece.node, inline_owner) {
+								// Radius percentages and overlap reduction belong to the
+								// complete inline border box, including its padding.
+								radii = paintable_box_border_radii_data(owner_computed,
+									piece.border_box_rect.width, piece.border_box_rect.height)
+								radius = radii.top_left.x
+								break
+							}
+						}
+					}
 				}
 			}
 			offset := css_pixel_point_add(fragment.offset(), inline_relative_offset(fragment.layout_node_, state))
