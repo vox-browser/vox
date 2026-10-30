@@ -86,6 +86,13 @@ exact equality. A separate 269×151 diagnostic still differs by one channel
 level at 86 pixels; arbitrary fractional sampling and rounded image clips
 remain open.
 
+`percentage-transform-image` checks a minified PNG positioned with fractional
+percentage translations at 1280×800 and scale 1 against Brave 156.1.98.60.
+Transform lengths retain floating-point precision in the Chromium profile;
+rounding them to layout units displaced image samples at 838 pixels. The full
+fixture now requires exact RGBA equality. The source PNG is the V website's
+mascot, preserved in `assets/vlang-mascot.png`.
+
 `translated-image-minification` checks a synthetic RGB image drawn away from
 the viewport origin at a nonintegral minification scale. Full-source image draws
 retain natural coordinates and place their scale on the canvas, matching

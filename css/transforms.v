@@ -2491,6 +2491,14 @@ pub fn TransformationStyleValue.identity_transformation(transform_function Trans
 
 fn (style_value TransformationStyleValue) length_to_px(length Length, paintable_box ?TransformPaintableBox) !f64 {
 	if box := paintable_box {
+		if subject := box.length_resolution_context.subject_element {
+			if subject.document().font_rendering_policy() == .chromium {
+				// Transform matrices keep floating-point lengths in Blink;
+				// quantizing a percentage result to a layout unit shifts
+				// interpolated images even when their box size is unchanged.
+				return length.to_px_without_rounding(box.length_resolution_context)
+			}
+		}
 		return length.to_px(box.length_resolution_context).to_double()
 	}
 	if length.is_absolute() {
