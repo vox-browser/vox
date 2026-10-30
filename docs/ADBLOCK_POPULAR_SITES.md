@@ -304,3 +304,60 @@ memory guard this time; this is not attributed to the glyph change because
 other shared source and runtime conditions also changed. Thresholds remain
 zero. Five native fixes belong to this workstream; broad suites were not run
 and the broad-test baseline is unchanged. The ten-site task remains incomplete.
+
+### Inline multisample coverage follow-up
+
+`6ba82afb` pairs a rounded inline background with its uniform border in one
+multisampled render pass. It retains the background's complete outer border
+box; applying the block-background inset to an inline box remains incorrect.
+A native diagnostic reproduced the final rounding discrepancy with both GPU
+backends: the red edge was `248,222,225` when drawn separately and Brave's
+`248,222,224` when combined. The new `lobsters-inline-msaa-compositing` fixture
+previously differed at 16 pixels and now matches every pixel.
+
+The first implementation also paired some block backgrounds. The wider site
+run caught a Stack Overflow regression from 7,022 to 8,612 differing pixels.
+`21aed633` restricts outer-border-box pairing to inline fragments and adds a
+translucent block-border regression. Stack Overflow returns to 7,022, with its
+native PNG pixel-identical to the pre-change baseline. The correction belongs
+to this same fix and does not advance the fix counter separately.
+
+On the corrected bundle, the archived Lobsters viewport matched the full-uBO
+Brave replay at all 786,432 pixels during its focused check. Its catalog case
+still failed because the original live Brave
+PNG and the replay differ at 71 pixels. No golden or threshold was changed.
+All four focused native fixtures are exact at 800×600, scale 1. Three focused
+inline cases and eight existing rounded-border cases pass with default GC and
+`-gc none`, using separate compile/runtime guards. Signing and startup pass.
+
+Evidence is retained in `Build/forum-news-parity-continue-20261030/`:
+`inline-compositing-focused.json`, `inline-only/inline-compositing-focused.json`,
+`production-inline-msaa.json`, `production-inline-only.json`, their source and
+identity records, and `inline-only-sites/`. The initial wider run is preserved
+under `lobsters-inline-msaa/` plus `other-nine-inline-msaa/`; it includes the
+Stack Overflow regression, followed by the corrected focused page checks.
+The other catalog outcomes remain recorded there: Hacker News passes; Reddit
+has no guest fixture; Slashdot, BBC, The Verge and Pikabu have pixel/snapshot
+differences; CNN exceeds its 3 GiB guard; The Guardian lacks a stable reference.
+The complete acceptance count remains **one of ten**.
+
+A fresh live Lobsters capture through the working proxy retained 33 responses
+with full-uBO agreement. Its first replay differed at 44 native pixels and 167
+live-to-frozen pixels, so it was not promoted into the catalog. The archive and
+failure remain under `lobsters-fresh-capture/`, `fresh-fixtures/` and
+`lobsters-fresh-validation/`. A separate fresh Brave diagnostic matched that
+draft's native PNG exactly; temporary viewport resizing changed neither its
+DOM hash nor its pixels. This is diagnostic evidence, not a deterministic
+reference or a passing live-site claim. The capture policy remains unchanged.
+
+A later completed shared bundle was reused for the final checks. All four
+focused pixel fixtures pass on it. Its Lobsters and Stack Overflow native PNGs
+are pixel-identical to the corrected production run. The fresh Brave reference
+for Lobsters changed by 115 pixels, however, producing a 115-pixel comparison
+and a 44-pixel live-to-frozen difference. Stack Overflow's reference and its
+7,022-pixel mismatch are unchanged. These observations are retained under
+`latest-shared-sites/` and the `*-shared-drift.json` reports; the zero Lobsters
+result applies to its retained matching oracle frame, not every fresh capture.
+
+Six native fixes belong to this workstream. Broad suites were not run, and the
+broad-test baseline is unchanged. Live-page and remaining-site parity are open.
