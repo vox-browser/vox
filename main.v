@@ -7283,6 +7283,13 @@ fn (mut app BrowserApp) draw() {
 					continue
 				}
 			}
+			if command.kind == 'paint_outer_box_shadow' {
+				outer_end := app.draw_chromium_outer_decorations(command_index, page_y, window.height)
+				if outer_end > command_index {
+					shared_svg_end = outer_end
+					continue
+				}
+			}
 			if command.kind in ['fill_rect', 'fill_rounded_rect'] {
 				inset_end := app.draw_chromium_inset_decorations(command_index, page_y, window.height)
 				if inset_end > command_index {

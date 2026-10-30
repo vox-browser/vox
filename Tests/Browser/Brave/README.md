@@ -47,9 +47,13 @@ requires exact equality; four separately painted border sides differed at
 origin has fractional coordinates. Geometry snaps in the box's local paint
 space before rotation; the full 800×600 fixture is exact against Brave
 156.1.98.60. Transformed outer shadows retain the same local paint offset.
-The unchanged [combined shadow diagnostic](diagnostic/transformed-border-shadow-offset.html)
-and adjacent Brave reference still differ at 474 pixels, by at most two channel
-levels. That diagnostic remains open.
+`transformed-shadow-stack` also retains consecutive outer shadows and the
+border of one transparent box in a document-aligned root picture. Their shared
+coverage is pixel-exact at 800×600 and scale 1. The unchanged
+[combined shadow diagnostic](diagnostic/transformed-border-shadow-offset.html)
+and adjacent Brave PNG are now exact too; they previously differed at 474
+pixels. The recording excludes browser chrome and preserves the root tile
+origin. Unsupported recordings retain the ordinary fallback pixels.
 
 `box-shadow-blur` checks square and two rounded outer shadows. The native
 Chromium profile uses an isolated Skia 155 Metal backend for these shadows,

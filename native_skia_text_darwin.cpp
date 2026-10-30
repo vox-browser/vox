@@ -3396,9 +3396,9 @@ extern "C" int ladybird_v_skia_draw_outer_box_shadow(CGContextRef destination,
         return 1;
 
     // Record the shadow itself, rather than its rounded temporary bitmap,
-    // into an eligible isolated compositor picture. Replay replaces the whole
-    // layer only after every operation and the GPU submission have succeeded.
-    if (!s_raster_layer_is_root) {
+    // into an eligible decoration or compositor picture. Replay replaces the
+    // fallback only after every operation and the GPU submission have succeeded.
+    if (!s_raster_layer_is_root || isolated_input_recording_canvas(destination)) {
         if (auto* recording = shared_recording_canvas(destination)) {
             SkPaint paint;
             paint.setAntiAlias(true);
