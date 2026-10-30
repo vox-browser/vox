@@ -707,3 +707,47 @@ completes successfully after recording that result. Evidence is under
 `path-clips-verified/`, focused checks and the retained prototype failures.
 Broad-test baseline remains `88275919`; this is the fifth completed native fix
 since that baseline.
+
+## Transparent SVG paint and oracle variation, 30 October 2026
+
+`f5c8978e` excludes a zero-opacity SVG fill from tile-MSAA selection when no
+visible stroke remains. A retained stroke width alone does not establish a
+stroke paint: solid colors, gradient strokes and pattern strokes are checked
+separately. Nonzero fill/stroke opacity retains the conservative trigger.
+
+The extracted transparent SVG-background fixture improves from **71 differing
+pixels to zero**, with two agreeing independent Brave references. All **thirteen
+focused Brave fixtures**, three canonical SVG reftests and twenty tile-selection
+tests in both GC modes pass. The current compiler's default-GC check explicitly
+builds its bundled libgc. The latest completed shared production bundle contains
+the unchanged owned sources recorded before its build; executable, native-library
+and adblock-snapshot identities remain stable throughout native validation.
+
+The full-uBO matrix still accepts **one of ten**. Its native differences are HN
+0, Lobsters 0, Slashdot 9,773, Stack Overflow 629, BBC 76,604, CNN **107,059**,
+The Verge 315,921 and Pikabu **13,925**. Reddit remains unavailable with guest
+HTTP 403, and The Guardian's consecutive Brave captures remain unstable.
+
+Lobsters' zero does **not** establish a native improvement: its Vox PNG is
+pixel-identical to the preceding build while the Brave reference changes at
+115 pixels. The new native PNG still differs from the preceding Brave reference
+at those same 115 pixels. Live-to-frozen Brave now differs at 71 pixels, so the
+site stays unaccepted. Separate diagnostic captures also vary with Shields and
+extension presence despite reporting the same Metal renderer and Graphite
+feature status; their cause remains unresolved. These diagnostics do not replace
+the full-uBO acceptance reference.
+
+CNN's mismatch grows again and its live-to-frozen difference reaches 107,289
+pixels. Pikabu improves versus the immediately preceding shared bundle, but
+remains above the earlier 13,863-pixel result; its live-to-frozen difference is
+21,603. Both regressions and improvements are retained without attributing them
+to the transparent-paint fix. Stack Overflow remains a stable 629-pixel native
+mismatch with an exact live-to-frozen reference.
+
+All eight completed native comparisons retain matching full-uBO request/header,
+cosmetic, procedural and scriptlet evidence. The 326-file closed profile template
+is unchanged. Evidence is under `Build/forum-news-transparent-svg-20261030/`,
+including `checkpoint.json`, `verified/`, focused checks and retained failures.
+Additional oracle diagnostics are under `Build/forum-news-tile-mode-20261030/`.
+Broad-test baseline remains `88275919`; this is the sixth completed native fix
+since that baseline.
