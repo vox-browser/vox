@@ -6417,36 +6417,13 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 					radii := result.clip_radii
 					gpu_clip := app.document != unsafe { nil }
 						&& app.document.font_rendering_policy() == .chromium
-					mut image_clip_radii := []f32{}
-					mut image_clip_radii_ptr := unsafe { &f32(nil) }
-					mut gpu_clip_x := f32(clip.x)
-					mut gpu_clip_y := f32(clip.y)
-					mut gpu_clip_width := f32(clip.width)
-					mut gpu_clip_height := f32(clip.height)
-					if gpu_clip {
-						image_clip_radii = [f32(radii.top_left.horizontal), f32(radii.top_left.vertical),
-							f32(radii.top_right.horizontal), f32(radii.top_right.vertical),
-							f32(radii.bottom_right.horizontal), f32(radii.bottom_right.vertical),
-							f32(radii.bottom_left.horizontal), f32(radii.bottom_left.vertical)]
-						image_clip_radii_ptr = image_clip_radii.data
-						if gpu_image_ancestor_clip >= 0 {
-							ancestor := command.clip_list.items[gpu_image_ancestor_clip]
-							gpu_clip_x = f32(ancestor.rect.x)
-							gpu_clip_y = f32(ancestor.rect.y)
-							gpu_clip_width = f32(ancestor.rect.width)
-							gpu_clip_height = f32(ancestor.rect.height)
-							r := ancestor.corner_radii
-							image_clip_radii = [f32(r.top_left.x), f32(r.top_left.y),
-								f32(r.top_right.x), f32(r.top_right.y), f32(r.bottom_right.x),
-								f32(r.bottom_right.y), f32(r.bottom_left.x), f32(r.bottom_left.y)]
-							image_clip_radii_ptr = image_clip_radii.data
-						}
-					}
+					clip_data := replaced_image_gpu_clip_data(command, clip, radii, gpu_image_ancestor_clip)
+					image_clip_radii_ptr := if gpu_clip { unsafe { &clip_data[4] } } else { unsafe { &f32(nil) } }
 					C.native_begin_clip()
 					if !gpu_clip || gpu_image_ancestor_clip >= 0 {
 						C.native_add_corner_rounded_clip(f32(clip.x), f32(clip.y), f32(clip.width), f32(clip.height), f32(radii.top_left.horizontal), f32(radii.top_left.vertical), f32(radii.top_right.horizontal), f32(radii.top_right.vertical), f32(radii.bottom_right.horizontal), f32(radii.bottom_right.vertical), f32(radii.bottom_left.horizontal), f32(radii.bottom_left.vertical), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height))
 					}
-					C.native_draw_image_part_transformed(image, f32(destination.x), f32(destination.y), f32(destination.width), f32(destination.height), 0, 0, f32(image.width), f32(image.height), gpu_clip_x, gpu_clip_y, gpu_clip_width, gpu_clip_height, f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), f32(command.opacity), if result.bitmap.scaling == .nearest_neighbor {
+					C.native_draw_image_part_transformed(image, f32(destination.x), f32(destination.y), f32(destination.width), f32(destination.height), 0, 0, f32(image.width), f32(image.height), clip_data[0], clip_data[1], clip_data[2], clip_data[3], f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), f32(command.opacity), if result.bitmap.scaling == .nearest_neighbor {
 						1
 					} else {
 						0
@@ -6559,6 +6536,10 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 				if app.ctx.native_rendering {
 					clip := result.clip_rect
 					radii := result.clip_radii
+					gpu_clip := app.document != unsafe { nil }
+						&& app.document.font_rendering_policy() == .chromium
+					clip_data := replaced_image_gpu_clip_data(command, clip, radii, gpu_image_ancestor_clip)
+					image_clip_radii_ptr := if gpu_clip { unsafe { &clip_data[4] } } else { unsafe { &f32(nil) } }
 					video_image := &gg.Image{
 						width: bitmap.width
 						height: bitmap.height
@@ -6567,12 +6548,14 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 						data: bitmap.data.data
 					}
 					C.native_begin_clip()
-					C.native_add_corner_rounded_clip(f32(clip.x), f32(clip.y), f32(clip.width), f32(clip.height), f32(radii.top_left.horizontal), f32(radii.top_left.vertical), f32(radii.top_right.horizontal), f32(radii.top_right.vertical), f32(radii.bottom_right.horizontal), f32(radii.bottom_right.vertical), f32(radii.bottom_left.horizontal), f32(radii.bottom_left.vertical), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height))
-					C.native_draw_image_part_transformed(video_image, f32(destination.x), f32(destination.y), f32(destination.width), f32(destination.height), 0, 0, f32(bitmap.width), f32(bitmap.height), f32(clip.x), f32(clip.y), f32(clip.width), f32(clip.height), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), f32(command.opacity), if scaling == .nearest_neighbor {
+					if !gpu_clip || gpu_image_ancestor_clip >= 0 {
+						C.native_add_corner_rounded_clip(f32(clip.x), f32(clip.y), f32(clip.width), f32(clip.height), f32(radii.top_left.horizontal), f32(radii.top_left.vertical), f32(radii.top_right.horizontal), f32(radii.top_right.vertical), f32(radii.bottom_right.horizontal), f32(radii.bottom_right.vertical), f32(radii.bottom_left.horizontal), f32(radii.bottom_left.vertical), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height))
+					}
+					C.native_draw_image_part_transformed(video_image, f32(destination.x), f32(destination.y), f32(destination.width), f32(destination.height), 0, 0, f32(bitmap.width), f32(bitmap.height), clip_data[0], clip_data[1], clip_data[2], clip_data[3], f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), f32(command.opacity), if scaling == .nearest_neighbor {
 						1
 					} else {
 						0
-					}, unsafe { nil })
+					}, image_clip_radii_ptr)
 					C.native_end_clip()
 				}
 			}

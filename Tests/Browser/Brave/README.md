@@ -71,6 +71,14 @@ fixture is pixel-exact. The unchanged elliptical case in
 still differs by one channel level at one pixel from its adjacent Brave PNG.
 That diagnostic remains open and is not an exact-parity result.
 
+`video-poster-rounded-clip` checks a video poster with its own rounded corners
+and a rectangular video inside rounded overflow at 800×600 and scale 1.
+Both use the same GPU clip representation as replaced images and are exact
+against Brave 156.1.98.60; the previous native clipping differed at 84 pixels.
+Object-fit cropping stays on the element while one compatible rounded ancestor
+moves to the GPU. Paths, masks and ancestors with different transforms retain
+their native clip order.
+
 `css-linear-gpu` checks opaque sRGB linear gradients, black alpha gradients
 over a colored background, and coincident hard stops. Eligible Chromium-policy
 gradients retain their original stops and blend through the GPU path. The

@@ -19,11 +19,43 @@ fn test_replaced_image_gpu_clip_keeps_paths_masks_and_transformed_ancestors_nati
 		clip_list: &layout.PaintClipList{items: clips}
 	}
 	assert replaced_image_gpu_ancestor_clip_index(&command) == 0
+	video := layout.PaintCommand{...command, kind: 'draw_video',
+		video_paintable: &painting.VideoPaintable{}}
+	assert replaced_image_gpu_ancestor_clip_index(&video) == 0
 	// The last eligible rounded clip moves to the image; all earlier entries
 	// remain in their original order on the native context.
 	clips << layout.PaintClip{corner_radii: radii, transform: identity}
 	last := layout.PaintCommand{...command, clip_list: &layout.PaintClipList{items: clips}}
 	assert replaced_image_gpu_ancestor_clip_index(&last) == 5
+	video_last := layout.PaintCommand{...video, clip_list: last.clip_list}
+	assert replaced_image_gpu_ancestor_clip_index(&video_last) == 5
+}
+
+fn test_video_gpu_clip_preserves_own_corners_and_ancestor_geometry() {
+	clip := layout.PaintClip{
+		rect: layout.LayoutRect{10, 20, 80, 50}
+		corner_radii: layout.BoxRadii{top_left: layout.CornerRadius{7, 9}}
+	}
+	mut command := layout.PaintCommand{
+		kind: 'draw_video'
+		has_clip: true
+		video_paintable: &painting.VideoPaintable{}
+		clip_list: &layout.PaintClipList{items: [clip]}
+	}
+	index := replaced_image_gpu_ancestor_clip_index(&command)
+	assert index == 0
+	own_rect := painting.IntRect{11, 21, 78, 48}
+	radii := painting.CornerRadii{
+		top_left: painting.CornerRadius{3, 4}
+	}
+	assert replaced_image_gpu_clip_data(&command, own_rect, radii, index) ==
+		[f32(10), 20, 80, 50, 7, 9, 0, 0, 0, 0, 0, 0]!
+	command.video_paintable = &painting.VideoPaintable{
+		border_radii: painting.BorderRadiiData{top_left: painting.BorderRadiusData{3, 4}}
+	}
+	assert replaced_image_gpu_ancestor_clip_index(&command) == -1
+	assert replaced_image_gpu_clip_data(&command, own_rect, radii, -1) ==
+		[f32(11), 21, 78, 48, 3, 4, 0, 0, 0, 0, 0, 0]!
 }
 
 fn test_replaced_image_gpu_clip_preserves_own_radii_and_rectangular_ancestors() {
