@@ -28,8 +28,8 @@ fn chromium_background_under_opaque_border(rect LayoutRect, radii BoxRadii,
 	}
 }
 
-// A uniform solid rounded border is an analytic stroked rrect in Chromium,
-// rather than four independently rasterized border paths.
+// Uniform solid rounded borders retain analytic geometry. Circular corners
+// use a stroke; elliptical corners use independently inset outer/inner rrects.
 fn append_chromium_uniform_border(mut commands []PaintCommand, border BoxEdges,
 	colors BoxColors, styles BoxBorderStyles, radii BoxRadii, rect painting.IntRect,
 	opacity f64) bool {
@@ -41,7 +41,7 @@ fn append_chromium_uniform_border(mut commands []PaintCommand, border BoxEdges,
 		return false
 	}
 	for r in [radii.top_left, radii.top_right, radii.bottom_right, radii.bottom_left] {
-		if r.x != r.y || (r.x > 0 && r.x < w / 2) { return false }
+		if (r.x > 0 && r.x < w / 2) || (r.y > 0 && r.y < w / 2) { return false }
 	}
 	commands << PaintCommand{
 		kind:         'paint_uniform_border'

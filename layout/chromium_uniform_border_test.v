@@ -3,6 +3,33 @@ module layout
 import css
 import painting
 
+fn test_chromium_uniform_elliptical_border_retains_both_radii() {
+	color := css.Color{166, 198, 244, 21}
+	colors := BoxColors{color, color, color, color}
+	radii := BoxRadii{
+		top_left: CornerRadius{301, 141}
+		top_right: CornerRadius{301, 141}
+		bottom_right: CornerRadius{301, 141}
+		bottom_left: CornerRadius{301, 141}
+	}
+	mut commands := []PaintCommand{}
+	assert append_chromium_uniform_border(mut commands, BoxEdges{1, 1, 1, 1},
+		colors, BoxBorderStyles{}, radii, painting.IntRect{80, 130, 602, 282}, 1)
+	assert commands.len == 1
+	assert commands[0].kind == 'paint_uniform_border'
+	assert commands[0].x == 80.5 && commands[0].y == 130.5
+	assert commands[0].width == 601 && commands[0].height == 281
+	assert commands[0].corner_radii.top_left == CornerRadius{300.5, 140.5}
+	assert commands[0].color == color.serialize()
+	for radius in [CornerRadius{0.25, 5}, CornerRadius{5, 0.25}] {
+		mut fallback := []PaintCommand{}
+		assert !append_chromium_uniform_border(mut fallback, BoxEdges{1, 1, 1, 1},
+			colors, BoxBorderStyles{}, BoxRadii{top_left: radius},
+			painting.IntRect{0, 0, 100, 50}, 1)
+		assert fallback.len == 0
+	}
+}
+
 fn test_chromium_uniform_border_keeps_analytic_rounded_geometry() {
 	color := css.Color{255, 136, 0, 255}
 	colors := BoxColors{color, color, color, color}

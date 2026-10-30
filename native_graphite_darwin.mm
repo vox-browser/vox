@@ -696,7 +696,7 @@ static void draw_shape_on_canvas(SkCanvas* canvas, VoxGraphiteShape const& shape
         underlay.setAntiAlias(shape.anti_alias != 0);
         underlay.setColor(SkColorSetARGB(shape.underlay_rgba[3], shape.underlay_rgba[0],
             shape.underlay_rgba[1], shape.underlay_rgba[2]));
-        if (shape.fill < 2)
+        if (shape.fill < 2 || shape.fill == 6)
             canvas->drawRRect(rounded_rect(shape.underlay_rect), underlay);
     }
     SkPaint paint;
@@ -705,7 +705,7 @@ static void draw_shape_on_canvas(SkCanvas* canvas, VoxGraphiteShape const& shape
         paint.setColor4f({shape.float_color[0], shape.float_color[1], shape.float_color[2], shape.float_color[3]});
     else
         paint.setColor(SkColorSetARGB(shape.alpha, shape.red, shape.green, shape.blue));
-    if (!shape.fill) {
+    if (!shape.fill || shape.fill == 6) {
         paint.setStyle(SkPaint::kStroke_Style);
         paint.setStrokeWidth(std::max(0.0f, shape.thickness));
     }
@@ -1117,7 +1117,7 @@ static bool small_shape_patch_bounds(VoxGraphiteShape const& shape, int width, i
         || !std::isfinite(shape.thickness) || std::abs(shape.thickness) > 4096)
         return false;
     SkPaint paint;
-    if (!shape.fill) {
+    if (!shape.fill || shape.fill == 6) {
         paint.setStyle(SkPaint::kStroke_Style);
         paint.setStrokeWidth(std::max(0.0f, shape.thickness));
     }

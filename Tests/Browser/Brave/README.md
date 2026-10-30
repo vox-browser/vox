@@ -18,6 +18,12 @@ at 800×600 and scale 1. The standalone Skia build's A8 gamma adjustment must be
 disabled to match Chromium's macOS text coverage, including distance-field
 glyphs. The fixture is pixel-exact; its original backend differed at 2,955 pixels.
 
+`elliptical-uniform-border` checks a rotated translucent elliptical CSS border
+at 800×600 and scale 1 against Brave 156.1.98.60. The border retains both
+corner radii and fills one outer/inner rounded-rectangle ring. The full fixture
+requires exact equality; four separately painted border sides differed at
+1,539 pixels, with a maximum channel error of 8.
+
 `box-shadow-blur` checks square and two rounded outer shadows. The native
 Chromium profile uses an isolated Skia 155 Metal backend for these shadows,
 including Chromium's legacy rounded clip shader and full precision arithmetic.

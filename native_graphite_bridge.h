@@ -44,7 +44,8 @@ typedef struct {
 typedef struct {
     float matrix[9], rect[12], thickness;
     uint8_t red, green, blue, alpha;
-    // fill: 0 stroke, 1 fill, 2..5 a single top/right/bottom/left border.
+    // fill: 0 stroke, 1 fill, 2..5 a single top/right/bottom/left border,
+    // 6 a uniform elliptical ring (center rectangle, border_widths[0]).
     int fill, anti_alias;
     // Multisample the render pass, as Chromium does for a raster tile once any
     // draw in it needs MSAA.

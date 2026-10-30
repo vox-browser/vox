@@ -2956,7 +2956,7 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
     else
         paint.setColor(SkColorSetARGB(alpha, red, green, blue));
     paint.setAntiAlias(anti_alias != 0);
-    if (!fill) {
+    if (!fill || fill == 6) {
         paint.setStyle(SkPaint::kStroke_Style);
         paint.setStrokeWidth(thickness);
     }
@@ -2976,7 +2976,7 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
             local_rect.offset(-s_raster_origin_x, -s_raster_origin_y);
             if (has_underlay) local_underlay.offset(-s_raster_origin_x, -s_raster_origin_y);
         }
-        if (has_underlay && fill < 2) canvas->drawRRect(local_underlay, underlay_paint);
+        if (has_underlay && (fill < 2 || fill == 6)) canvas->drawRRect(local_underlay, underlay_paint);
         if (fill >= 2)
             vox_draw_rounded_single_border(canvas, local_rect, paint, fill, border_widths,
                 has_underlay ? &underlay_paint : nullptr);
@@ -2992,7 +2992,7 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
         canvas->setMatrix(raster_matrix(matrix, group.region, group.scale_x,
             group.scale_y));
         clip_out_rects(canvas);
-        if (has_underlay && fill < 2)
+        if (has_underlay && (fill < 2 || fill == 6))
             canvas->drawRRect(underlay_rect, underlay_paint);
         if (fill >= 2)
             vox_draw_rounded_single_border(canvas, rounded_rect, paint, fill, border_widths,
@@ -3201,7 +3201,7 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
     canvas->clear(SK_ColorTRANSPARENT);
     canvas->setMatrix(raster_matrix(matrix, region, raster_scale_x, raster_scale_y));
     clip_out_rects(canvas);
-    if (has_underlay && fill < 2)
+    if (has_underlay && (fill < 2 || fill == 6))
         canvas->drawRRect(underlay_rect, underlay_paint);
     if (fill >= 2)
         vox_draw_rounded_single_border(canvas, rounded_rect, paint, fill, border_widths,

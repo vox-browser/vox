@@ -12,6 +12,19 @@
 inline void vox_draw_rounded_single_border(SkCanvas* canvas, SkRRect const& outer,
     SkPaint const& paint, int mode, float const* widths, SkPaint const* background = nullptr)
 {
+    // A uniform elliptical CSS border has independently inset radii. A
+    // stroked ellipse offsets its contour instead, producing different edges.
+    // Mode 6 receives the center rectangle and the uniform border width.
+    if (mode == 6) {
+        SkRRect outside, inside;
+        float half = widths[0] / 2;
+        outer.outset(half, half, &outside);
+        outer.inset(half, half, &inside);
+        SkPaint fill(paint);
+        fill.setStyle(SkPaint::kFill_Style);
+        canvas->drawDRRect(outside, inside, fill);
+        return;
+    }
     float top = widths[0], right = widths[1], bottom = widths[2], left = widths[3];
     SkVector radii[4];
     for (int i = 0; i < 4; ++i) {
