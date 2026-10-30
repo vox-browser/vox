@@ -1400,3 +1400,70 @@ contains the pinned identity, all regression artifacts, reference provenance,
 ten-site results and complete frame comparisons. The broad baseline remains
 **`9144d886`**, with **eight** completed native fixes after it. Full ten-site
 pixel parity remains open.
+
+## SVG ink bounds and complete header coverage, 31 October 2026
+
+`db6965c4` separates a shared SVG batch's painted bounds from its padded raster
+viewport. Previously, the border paths' one-pixel safety fringe expanded a
+56px compositor layer into a 58px cropped picture. Rounded controls then lost
+the coverage they receive on the full 64px raster tile. Debugger captures show
+identical control geometry and grid settings in the bordered and borderless
+cases, but different final render-target heights. Translating the geometry by
+the parent border offset did not change the four errors.
+
+Shared recording now derives conservative bounds from each retained path and
+stroke, including its transform and batch clip. Legacy rasterization keeps its
+padded viewport. The new 1024×768 fixture improves from **four differing pixels
+to zero** against two agreeing Brave references. The native harness accepts
+that explicit viewport while preserving its other fixtures' 800×600 size.
+AddressSanitizer checks compile and execute the actual bridge implementation,
+covering the fringe, transforms, clipping, strokes, non-scaling strokes and
+whole-batch rejection. All **26 native Brave fixtures**, three canonical SVG
+reftests, signing, startup and five catalog/harness checks pass.
+
+The guarded production build completes at **6.49 GiB** sampled peak RSS under
+the unchanged 12 GiB limit. Required implementation hashes remain stable;
+one independent CSS font-loader test changes during compilation. Captures use
+executable `48f96938d848ad630deeee8d0ba6433d505d1f30121c4c551d3c28c5db93defd`
+and native bridge `e220b085a158565e6aa2f706f9c5753674dba3d09f31d0b77fb325561b37466d`.
+
+Stack Overflow improves from **246 to 239** differing pixels against an
+unchanged reference. Exactly seven native pixels change, all becoming correct.
+The captured header is now pixel-exact; the left sidebar's 146, main column's
+two and right sidebar's 91 differences remain. Maximum channel error falls
+from 59 to 32, with the largest remaining error on the blog widget's rounded
+border at (701,378). Together with `85f1d6b9`, this removes all twelve header
+differences from the preceding 251-pixel result.
+
+The full-uBO matrix still accepts **one of ten**. Its completed native cases
+report HN 0, Lobsters 0, Slashdot 9,773, Stack Overflow 239, BBC 76,604,
+CNN 198,011 and The Verge 315,921. Reddit's guest HTTP 403 and The Guardian's
+unstable consecutive references remain failures. Lobsters still has its
+71-pixel live-to-frozen difference. Every completed native frame outside
+Stack Overflow and CNN is unchanged.
+
+CNN's frame changes alongside an independent V/font-loading edit between
+builds. A binary-only control retains every executable `__TEXT` section and
+replaces just the native bridge with its preceding version. It produces the
+same CNN native pixels and reference, with zero differences from the candidate.
+The CNN change therefore lies outside this C++ fix. The control's source,
+signature and library identities are retained; it supplies no performance
+credit.
+
+Pikabu initially exits 1 with `VERIFY(!value.might_be_saturated())` during inline
+layout. A fresh candidate retry exits zero and returns to **13,925** differing
+pixels, with a native frame identical to both the preceding feature and the
+same-executable library control. The control and retry references differ at
+66 pixels; their native frames agree. This does not establish a crash fix:
+the intermittent layout failure remains open, and the original matrix retains
+its failed Pikabu result. The eight completed native workloads across the
+matrix and retry retain matching full-uBO request/header decisions and
+validated full-uBO document references. The closed 326-file template stays
+unchanged through all controls.
+
+Evidence is under `Build/forum-news-svg-ink-bounds-20261031/`, especially
+`checkpoint.json`, `diagnosis.json`, `native/`, `verified/`, `library-control/`,
+`cnn-isolation.json`, `pikabu-isolation.json` and `pikabu-retry/`. The preceding
+origin, grid and picture probes remain in the adjacent `forum-news-border-*`
+directories. The broad baseline remains **`9144d886`**, with **nine** completed
+native fixes after it. Full ten-site parity remains open.

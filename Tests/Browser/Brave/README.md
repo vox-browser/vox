@@ -5,8 +5,17 @@ an accessibility link clipped with `inset(50%)`. Its 800×600, scale 1 reference
 comes from two agreeing Brave 156.1.98.60 captures. The fixture is pixel-exact;
 recording the invisible path-clipped content changed eight pixels. Recognize
 the collapsed path despite its nonempty reference-box bounds, and omit its
-paint before compact context flattening. The full site's remaining header
-coverage differences are tracked in [the site report](../../../docs/ADBLOCK_POPULAR_SITES.md).
+paint before compact context flattening. Full-site conformance gaps are tracked
+in [the site report](../../../docs/ADBLOCK_POPULAR_SITES.md).
+
+`stackoverflow-bordered-header` checks the same rounded controls beside unequal
+header borders and an SVG. Its 1024×768, scale 1 reference comes from two agreeing
+Brave 156.1.98.60 captures and is pixel-exact; cropping the shared picture to the
+SVG raster safety fringe changed four pixels. Shared recording now derives
+painted bounds from the paths and strokes while preserving the padded batch
+viewport for rasterization. Run `python3 tools/test_skia_svg_ink_bounds.py` for
+the focused AddressSanitizer checks. The native regression harness accepts this
+fixture's viewport explicitly and preserves the other fixtures' 800×600 size.
 
 References were captured from Brave 155.1.97.57 on macOS at device scale 1.
 `font-rasterization` covers Arial and Verdana at integer and fractional sizes,
