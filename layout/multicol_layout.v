@@ -6,9 +6,10 @@ module layout
 // them, and each line moves into its column.
 // https://drafts.csswg.org/css-multicol/#cf
 //
-// Only line boxes are fragmented, and only under the Chromium policy; LibWeb
-// does not fragment columns yet. Containers with block-level children,
-// floats, vertical writing modes or intrinsic sizing keep a single column.
+// Fragmentation is enabled under the Chromium policy; LibWeb does not fragment
+// columns yet. multicol_blocks.v also handles atomic block children, including
+// their intrinsic height at a definite inline size. Floats, vertical writing
+// modes and intrinsic width measurements keep a single column.
 
 // The initial values of orphans and widows (CSS Fragmentation 3 §5.2).
 const multicol_orphans = 2
@@ -20,7 +21,7 @@ struct MulticolColumns {
 	gap   CSSPixels
 }
 
-fn multicol_columns_for_inline_content(box &Node, box_state &UsedValues, layout_mode LayoutMode) ?MulticolColumns {
+fn multicol_columns_for_content(box &Node, box_state &UsedValues, layout_mode LayoutMode) ?MulticolColumns {
 	if layout_mode != .normal || box.computed_values().writing_mode() != .horizontal_tb
 		|| box.document().font_rendering_policy() != .chromium {
 		return none

@@ -13,6 +13,13 @@ python3 tools/check_pixel_equality.py Tests/Browser/Brave/expected/font-rasteriz
 
 This comparison requires exact RGBA equality, with no excluded pixels or tolerance.
 
+`multicol-atomic-blocks` covers balanced `break-inside:avoid` blocks with mixed
+heights, column-break margins, and two or three columns. The 800×600, scale 1
+fixture matches Brave 156.1.98.60 exactly; the previous single-column output
+differed at 152,960 pixels. Focused tests also cover RTL, list markers,
+collapsible anonymous whitespace, and balanced height contributions to ancestor
+grid rows. This slice handles auto-height horizontal columns of atomic blocks.
+
 `nested-grid-block-size` checks auto rows whose block children contain nested
 grids. Its 800×600, scale 1 reference matches Brave 156.1.98.60 exactly; the
 previous output differed at 112,672 pixels. Intrinsic height measurement must

@@ -423,7 +423,7 @@ fn layout_uncached_independent_formatting_context(mut state LayoutState, box &No
 			mut inline_block_context := BlockFormattingContext.for_root(box, layout_mode, box_state.has_definite_width())
 			inline_block_context.layout_marker_of_list_item_root(mut state, box, mut box_state)
 			// A multi-column container lays its lines out at the column width.
-			multicol := multicol_columns_for_inline_content(box, box_state, layout_mode)
+			multicol := multicol_columns_for_content(box, box_state, layout_mode)
 			container_width := box_state.content_width()
 			mut inline_available_space := available_space
 			if columns := multicol {
@@ -464,6 +464,10 @@ fn layout_uncached_independent_formatting_context(mut state LayoutState, box &No
 					automatic_height)
 			}
 		}
+	}
+	if multicol := layout_multicol_atomic_blocks(mut state, box, mut box_state, layout_mode,
+		available_space) {
+		return multicol
 	}
 	styled := box.as_node_with_style() or { return FormattingContextResult{} }
 	mut child_context := BlockFormattingContext.for_root(box, layout_mode, box_state.has_definite_width())
