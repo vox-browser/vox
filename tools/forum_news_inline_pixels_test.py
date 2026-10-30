@@ -65,6 +65,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_block_text_controls_subtract_border_box_edges_once(self):
         self.compare_fixture('stackoverflow-block-text-control-width')
 
+    def test_svg_rectangles_preserve_fractional_user_coordinates(self):
+        self.compare_fixture('forum-fractional-svg-rectangles')
+
 
 if __name__ == '__main__':
     unittest.main()

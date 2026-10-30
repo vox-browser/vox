@@ -3,9 +3,9 @@ module layout
 import css
 
 // Blink resolves SVG geometry in floating user units. CSS box dimensions
-// still use layout precision, but rounding a small ellipse radius to 1/64px
+// still use layout precision, but rounding a shape coordinate or size to 1/64px
 // changes its painted coverage after an SVG transform.
-fn svg_ellipse_length(node &Node, property_id css.PropertyID, basis f64) ?f64 {
+fn svg_geometry_length(node &Node, property_id css.PropertyID, basis f64) ?f64 {
 	computed := node.computed_values()
 	if node.document().font_rendering_policy() != .chromium {
 		return computed.length_percentage_to_px(property_id, basis)

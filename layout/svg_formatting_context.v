@@ -1259,18 +1259,18 @@ fn svg_geometry_element_model(graphics_box &Node, element &dom.Element, viewport
 		}
 		'circle' {
 			diagonal := math.sqrt((viewport_size.width().to_double() * viewport_size.width().to_double() + viewport_size.height().to_double() * viewport_size.height().to_double()) / 2.0)
-			model.attributes['cx'] = '${svg_ellipse_length(graphics_box, .cx, viewport_size.width().to_double()) or { 0.0 }}'
-			model.attributes['cy'] = '${svg_ellipse_length(graphics_box, .cy, viewport_size.height().to_double()) or { 0.0 }}'
-			model.attributes['r'] = '${svg_ellipse_length(graphics_box, .r, diagonal) or { 0.0 }}'
+			model.attributes['cx'] = '${svg_geometry_length(graphics_box, .cx, viewport_size.width().to_double()) or { 0.0 }}'
+			model.attributes['cy'] = '${svg_geometry_length(graphics_box, .cy, viewport_size.height().to_double()) or { 0.0 }}'
+			model.attributes['r'] = '${svg_geometry_length(graphics_box, .r, diagonal) or { 0.0 }}'
 			return model
 		}
 		'ellipse' {
 			rx_is_auto := computed.rx().is_auto()
 			ry_is_auto := computed.ry().is_auto()
-			mut rx := svg_ellipse_length(graphics_box, .rx, viewport_size.width().to_double()) or {
+			mut rx := svg_geometry_length(graphics_box, .rx, viewport_size.width().to_double()) or {
 				0.0
 			}
-			mut ry := svg_ellipse_length(graphics_box, .ry, viewport_size.height().to_double()) or {
+			mut ry := svg_geometry_length(graphics_box, .ry, viewport_size.height().to_double()) or {
 				0.0
 			}
 			if rx_is_auto {
@@ -1279,21 +1279,21 @@ fn svg_geometry_element_model(graphics_box &Node, element &dom.Element, viewport
 			if ry_is_auto {
 				ry = rx
 			}
-			model.attributes['cx'] = '${svg_ellipse_length(graphics_box, .cx, viewport_size.width().to_double()) or { 0.0 }}'
-			model.attributes['cy'] = '${svg_ellipse_length(graphics_box, .cy, viewport_size.height().to_double()) or { 0.0 }}'
+			model.attributes['cx'] = '${svg_geometry_length(graphics_box, .cx, viewport_size.width().to_double()) or { 0.0 }}'
+			model.attributes['cy'] = '${svg_geometry_length(graphics_box, .cy, viewport_size.height().to_double()) or { 0.0 }}'
 			model.attributes['rx'] = '${rx}'
 			model.attributes['ry'] = '${ry}'
 			return model
 		}
 		'rect' {
-			width := computed.length_percentage_to_px(.width, viewport_size.width().to_double()) or {
+			width := svg_geometry_length(graphics_box, .width, viewport_size.width().to_double()) or {
 				0.0
 			}
-			height := computed.length_percentage_to_px(.height, viewport_size.height().to_double()) or {
+			height := svg_geometry_length(graphics_box, .height, viewport_size.height().to_double()) or {
 				0.0
 			}
-			model.attributes['x'] = '${computed.length_percentage_to_px(.x, viewport_size.width().to_double()) or { 0.0 }}'
-			model.attributes['y'] = '${computed.length_percentage_to_px(.y, viewport_size.height().to_double()) or { 0.0 }}'
+			model.attributes['x'] = '${svg_geometry_length(graphics_box, .x, viewport_size.width().to_double()) or { 0.0 }}'
+			model.attributes['y'] = '${svg_geometry_length(graphics_box, .y, viewport_size.height().to_double()) or { 0.0 }}'
 			model.attributes['width'] = '${width}'
 			model.attributes['height'] = '${height}'
 			rx_is_auto := computed.rx().is_auto()
@@ -1302,16 +1302,16 @@ fn svg_geometry_element_model(graphics_box &Node, element &dom.Element, viewport
 				model.attributes.delete('rx')
 				model.attributes.delete('ry')
 			} else if !rx_is_auto && ry_is_auto {
-				used_rx := computed.length_percentage_to_px(.rx, width) or { 0.0 }
+				used_rx := svg_geometry_length(graphics_box, .rx, width) or { 0.0 }
 				model.attributes['rx'] = '${used_rx}'
 				model.attributes['ry'] = '${used_rx}'
 			} else if rx_is_auto && !ry_is_auto {
-				used_ry := computed.length_percentage_to_px(.ry, height) or { 0.0 }
+				used_ry := svg_geometry_length(graphics_box, .ry, height) or { 0.0 }
 				model.attributes['rx'] = '${used_ry}'
 				model.attributes['ry'] = '${used_ry}'
 			} else {
-				model.attributes['rx'] = '${computed.length_percentage_to_px(.rx, width) or { 0.0 }}'
-				model.attributes['ry'] = '${computed.length_percentage_to_px(.ry, height) or { 0.0 }}'
+				model.attributes['rx'] = '${svg_geometry_length(graphics_box, .rx, width) or { 0.0 }}'
+				model.attributes['ry'] = '${svg_geometry_length(graphics_box, .ry, height) or { 0.0 }}'
 			}
 			return model
 		}
