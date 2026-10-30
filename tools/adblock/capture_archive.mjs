@@ -84,7 +84,17 @@ export async function captureArchive(page, directory, expectedURL) {
         resources.push(row);
     }
     const main = resources.find(r => r.url === snapshot.url && r.type === 'Document' && !r.error);
-    if (!main) throw new Error('Missing successful main response');
+    if (!main) {
+        const {html, text, ...metadata} = snapshot;
+        await fs.writeFile(path.join(directory, 'capture-failure.json'), JSON.stringify({
+            status:'failed', reason:'Missing successful main response', ...metadata, resources,
+            document_responses:[...responses.values()].filter(entry=>entry.type==='Document')
+                .map(entry=>({url:entry.response.url,status:entry.response.status,
+                    frame_id:entry.frameId,loader_id:entry.loaderId,
+                    method:requests.get(entry.requestId)?.method,completed:completed.has(entry.requestId)})),
+        },null,2)+'\n');
+        throw new Error('Missing successful main response; see capture-failure.json');
+    }
     const document = path.join(cache, 'resources', digest(snapshot.url));
     await fs.writeFile(document, snapshot.html);
     const headers = JSON.parse(await fs.readFile(document + '.headers.json'));

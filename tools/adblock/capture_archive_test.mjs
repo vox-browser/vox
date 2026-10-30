@@ -20,6 +20,34 @@ test('empty header values survive archive serialization', () => {
         {name:'X-Empty',value:''},{name:'content-length',value:'0'}]);
 });
 
+test('failed main response bodies retain diagnostics without sealing an archive', async t => {
+    const root=await fs.mkdtemp(path.join(os.tmpdir(),'vox-archive-failure-'));
+    t.after(()=>fs.rm(root,{recursive:true,force:true}));
+    const directory=path.join(root,'capture'),url='https://example.com/';
+    const page={
+        events:[
+            {method:'Network.requestWillBeSent',params:{requestId:'main',request:{url,method:'GET'}}},
+            {method:'Network.responseReceived',params:{requestId:'main',type:'Document',frameId:'top',
+                loaderId:'document-loader',response:{url,status:200,headers:{'Content-Type':'text/html'}}}},
+            {method:'Network.loadingFinished',params:{requestId:'main'}},
+        ],
+        evaluate:async()=>({html:'<!doctype html><title>News</title>',url,base:url,
+            text:'story '.repeat(300),width:1024,height:768,scale:1}),
+        send:async method=>{
+            if(method==='Page.captureScreenshot')return {data:Buffer.from('png').toString('base64')};
+            assert.equal(method,'Network.getResponseBody');
+            throw Error('Response body was evicted');
+        },
+    };
+    await assert.rejects(captureArchive(page,directory,url),/Missing successful main response/);
+    const failure=JSON.parse(await fs.readFile(path.join(directory,'capture-failure.json'),'utf8'));
+    assert.equal(failure.status,'failed');
+    assert.equal(failure.resources[0].error,'Response body was evicted');
+    assert.deepEqual(failure.document_responses,[{url,status:200,frame_id:'top',
+        loader_id:'document-loader',method:'GET',completed:true}]);
+    await assert.rejects(fs.stat(path.join(directory,'archive.json')),{code:'ENOENT'});
+});
+
 test('archive replays encoded images and the frozen main body with original response policy', async t => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'vox-archive-test-'));
     t.after(() => fs.rm(root, {recursive:true, force:true}));
