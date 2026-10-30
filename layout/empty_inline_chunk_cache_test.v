@@ -162,7 +162,7 @@ fn test_empty_chunk_cache_matches_previous_cold_and_warm_owned_results() {
 	}
 }
 
-fn test_empty_chunk_cache_font_generation_mismatch_rebuilds_and_publishes_final_generation() {
+fn test_empty_chunk_cache_unchanged_font_generation_reuses_chunks_and_publishes_final_generation() {
 	for value in ['', 'one two'] {
 		document, _, mut text := emptycache_fixture(value, '')
 		_ = emptycache_enter(text, false)
@@ -172,7 +172,9 @@ fn test_empty_chunk_cache_font_generation_mismatch_rebuilds_and_publishes_final_
 		computer.did_load_font('SerenitySans')
 		assert computer.environment_generation() != before
 		actual := emptycache_enter(text, false)
-		assert text.cached_utf16_code_units_ != none
+		// The family was invalidated without changing its actual selected face.
+		// Reusing chunks must not invoke the UTF-16/chunk constructor again.
+		assert text.cached_utf16_code_units_ == none
 		assert text.cached_font_environment_generation_ == computer.environment_generation()
 		emptycache_assert_same(actual, emptycache_enter(text, true))
 	}

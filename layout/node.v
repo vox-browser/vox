@@ -2120,7 +2120,9 @@ pub mut:
 	retains_empty_generated_fragment_ bool
 	cached_inline_chunks_         ?[]TextNodeChunk
 	cached_font_environment_generation_ u64
-	cached_inline_font_owner_ voidptr
+	cached_inline_font_owner_ ?&css.FontCascadeList
+	cached_inline_font_style_ voidptr
+	cached_inline_font_style_revision_ u64
 	cached_utf16_code_units_      ?[]u16
 	cached_intrinsic_text_shapes_ []IntrinsicTextShapeCacheEntry
 	cached_intrinsic_shape_order_ &IntrinsicTextShapeOrder = unsafe { nil }
@@ -2230,7 +2232,9 @@ pub fn (mut n TextNode) invalidate_text_for_rendering() {
 	n.rendered_text_edits_.clear()
 	n.cached_inline_chunks_ = none
 	n.cached_font_environment_generation_ = 0
-	n.cached_inline_font_owner_ = unsafe { nil }
+	n.cached_inline_font_owner_ = none
+	n.cached_inline_font_style_ = unsafe { nil }
+	n.cached_inline_font_style_revision_ = 0
 	n.cached_utf16_code_units_ = none
 	// Replace the header: existing iterators retain the previous immutable vector.
 	n.cached_grapheme_boundaries_ = []int{}
