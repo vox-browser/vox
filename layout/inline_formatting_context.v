@@ -796,7 +796,10 @@ fn apply_block_ellipsis(containing_block &BlockContainer, mut used UsedValues,
 	available_for_content := css_pixels_max(CSSPixels.new(0), available_width.minus(ellipsis_width))
 	mut retained := line.inline_length()
 	mut displaced_at_soft_wrap := false
-	if line.inline_length().raw_value() > available_for_content.raw_value() {
+	// Legacy -webkit-line-clamp truncates at the fitting glyph boundary, even
+	// inside a word. Standard block-ellipsis keeps its soft-wrap preference.
+	if containing_block.computed_values().continue_value() != .webkit_legacy
+		&& line.inline_length().raw_value() > available_for_content.raw_value() {
 		for index := line.fragments_.len - 1; index >= 0; index-- {
 			fragment := line.fragments_[index]
 			fragment_end := fragment.inline_offset().plus(fragment.inline_length())

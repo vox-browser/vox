@@ -50,6 +50,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_automatic_hyphenation_matches_brave_exactly(self):
         self.compare_fixture('stackoverflow-auto-hyphenation')
 
+    def test_clamped_excerpts_retain_partial_words_before_the_ellipsis(self):
+        self.compare_fixture('stackoverflow-clamped-excerpts')
+
 
 if __name__ == '__main__':
     unittest.main()
