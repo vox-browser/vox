@@ -13,6 +13,14 @@ python3 tools/check_pixel_equality.py Tests/Browser/Brave/expected/font-rasteriz
 
 This comparison requires exact RGBA equality, with no excluded pixels or tolerance.
 
+`lobsters-tag-alignment` extracts the story-title and tag alignment from Lobsters.
+It covers middle-aligned bold text, nested inline-block tags, fractional line
+heights, and an empty tall inline-block control. All six lines match Brave
+156.1.98.60 exactly at 800×600 and scale 1. Run the focused native regression
+with `python3 -m unittest discover -s tools -p forum_news_inline_pixels_test.py`.
+The test uses the current production bundle in a fresh process without an
+automatic rebuild and retains its identities, memory-guard reports and diffs.
+
 `font-large-distance-field` checks colored 180px text in a shared SVG raster tile
 at 800×600 and scale 1. The standalone Skia build's A8 gamma adjustment must be
 disabled to match Chromium's macOS text coverage, including distance-field
@@ -51,11 +59,14 @@ hole and clip through Skia GPU replay. Consecutive backgrounds, inset shadows
 and a uniform border from one root-layer box share antialias coverage; an
 unsupported recording or GPU failure preserves ordinary rendering.
 
-The unchanged [rounded inset diagnostic](diagnostic/inset-rounded-box-shadow.html)
-and adjacent Brave PNG improve from 17,183 differing pixels (maximum error 77)
-to 262 (maximum error 10). Its asymmetric elliptical case is exact, while its
-circular border cases remain open. The exact square fixture does not establish
-general rounded-shadow parity.
+`inset-rounded-root` retains circular and elliptical backgrounds, inset shadows
+and borders in a complete root picture. All three cases are now pixel-exact;
+the original renderer differed at 17,183 pixels, with maximum channel error 77.
+The original [diagnostic input](diagnostic/inset-rounded-box-shadow.html) and
+Brave PNG remain unchanged. `inset-circle-root` separately checks a circular
+case without another shape requiring tile-wide multisampling. Both references
+use Brave 156.1.98.60 at 800×600 and scale 1. Elliptical border masks mark their
+owning raster tiles for MSAA; retained inset pictures keep that shared coverage.
 
 `webp-yuv-scaled` checks a lossy WebP at half size. The Chromium image path
 selects an upload size with rounded-up mip dimensions, scales each decoded

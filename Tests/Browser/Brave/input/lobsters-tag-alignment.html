@@ -1,0 +1,16 @@
+<!doctype html><meta charset="utf-8"><title>Middle-aligned story tags</title>
+<style>
+body { margin: 20px; font: 16px/1.45em "Helvetica Neue", Arial, sans-serif; }
+.line { margin-bottom: 12px; background: #eee; }
+.link { font-weight: bold; vertical-align: middle; }
+.tags { display: inline-block; vertical-align: middle; padding: 0; margin: 0 4px 0 0; }
+.tags li { display: inline-block; }
+.tag { border: 1px solid #cc9; border-radius: 5px; font-size: .66rem; margin-left: .25em; padding: 0 .4em 1px; vertical-align: middle; }
+.domain { font-style: italic; vertical-align: middle; }
+</style>
+<div id="plain" class="line">Plain story title</div>
+<div id="title" class="line"><span class="link">Story title</span></div>
+<div id="empty" class="line">Story <span class="tags" style="width:40px;height:40px;background:#99c"></span> title</div>
+<div id="small" class="line">Story <a class="tag">games</a> title</div>
+<div id="nested" class="line">Story <ul class="tags"><li><a class="tag">games</a></li></ul> title</div>
+<div id="complete" class="line"><span class="link">What the fox say?</span> <ul class="tags"><li><a class="tag">games</a></li></ul> <a class="domain">entropicthoughts.com</a></div>
