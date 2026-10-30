@@ -14,6 +14,8 @@ pub mut:
 	command_indices []int
 	// Non-composited effect groups retain the atomic native raster policy.
 	legacy_raster bool
+	// Composited scrolling contents need their own premultiplied raster.
+	scroll_contents bool
 }
 
 pub struct ChromiumRasterLayerPlan {
@@ -107,6 +109,7 @@ fn (mut plan ChromiumRasterLayerPlan) prepare(count int) {
 	for index in 0 .. plan.layer_storage.len {
 		plan.layer_storage[index].bounds = LayoutRect{}
 		plan.layer_storage[index].legacy_raster = false
+		plan.layer_storage[index].scroll_contents = false
 		plan.layer_storage[index].command_indices.clear()
 	}
 	plan.layers = []ChromiumRasterLayer{}
@@ -118,6 +121,7 @@ fn (mut plan ChromiumRasterLayerPlan) append_layer(legacy bool) {
 	index := plan.layers.len
 	if index == plan.layer_storage.len { plan.layer_storage << ChromiumRasterLayer{} }
 	plan.layer_storage[index].legacy_raster = legacy
+	plan.layer_storage[index].scroll_contents = false
 	plan.layers = unsafe { plan.layer_storage[..index + 1] }
 }
 
@@ -495,6 +499,7 @@ pub fn update_chromium_raster_layer_plan(document &dom.Document, commands []Pain
 	}
 	chromium_layerize_chunks_into(scratch.chunks, commands.len, device_scale, mut plan, mut scratch.layer_states)
 	for layer_index, state in scratch.layer_states {
+		plan.layers[layer_index].scroll_contents = state.scroll_frame > 0
 		if state.effect_scope != 0 && !state.legacy_effect {
 			// Compositor rasters enclose fractional geometry, independently of
 			// paint's nearest-pixel snapping. Round after unioning descendant ink.

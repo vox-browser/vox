@@ -13,6 +13,12 @@ python3 tools/check_pixel_equality.py Tests/Browser/Brave/expected/font-rasteriz
 
 This comparison requires exact RGBA equality, with no excluded pixels or tolerance.
 
+`scrolling-text-raster` checks colored text inside an overflowing scroll container
+and an `overflow:hidden` control. The 800×600, scale 1 fixture matches Brave
+156.1.98.60 exactly. Contiguous text-only scrolling layers retain a transparent
+premultiplied raster before blending over their parent. Direct glyph painting
+over the parent differed at 2,734 pixels, each by one channel level.
+
 `select-native-line-height` covers inherited and authored line heights on native
 menu lists, plus an `appearance:none` control that retains its authored line
 height. The 800×600, scale 1 fixture matches Brave 156.1.98.60 exactly. Resetting

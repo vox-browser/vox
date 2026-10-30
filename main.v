@@ -7233,6 +7233,7 @@ fn (mut app BrowserApp) draw() {
 			culling.enabled = app.ctx.native_rendering && !app.paint_canvas_culling_disabled
 		}
 		mut raster_layer := -1
+		mut text_scroll_layer := false
 		mut replay_scratch := app.begin_native_replay_scratch()
 		mut shared_svg_end := 0
 		mut rect_prefetch_end := 0
@@ -7254,7 +7255,9 @@ fn (mut app BrowserApp) draw() {
 					next_layer := app.chromium_raster_plan.command_layers[command_index]
 					if next_layer != raster_layer {
 						app.flush_rounded_rect_underlay(0, page_y, window.height)
+						if text_scroll_layer { end_chromium_text_scroll_layer() }
 						app.select_chromium_raster_layer(next_layer)
+						text_scroll_layer = app.begin_chromium_text_scroll_layer(next_layer)
 						raster_layer = next_layer
 					}
 				}
@@ -7327,6 +7330,7 @@ fn (mut app BrowserApp) draw() {
 				}
 			}
 		}
+		if text_scroll_layer { end_chromium_text_scroll_layer() }
 		app.flush_rounded_rect_underlay(0, page_y, window.height)
 		app.scroll_profile_mark('replay')
 		for index in app.portable_shadow_image_index .. app.portable_shadow_images.len {

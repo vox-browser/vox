@@ -116,6 +116,8 @@ fn test_raster_layers_follow_retained_scrolling_and_escaped_absolute_ancestry() 
 	assert plan.command_layers.len == commands.len
 	assert plan.command_layers[wide] > 0
 	assert plan.command_layers[overlay] > plan.command_layers[wide]
+	assert plan.layers[plan.command_layers[wide]].scroll_contents
+	assert !plan.layers[plan.command_layers[overlay]].scroll_contents
 	assert plan.layers[plan.command_layers[overlay]].bounds.y == 15
 }
 
@@ -127,6 +129,7 @@ fn test_raster_layers_hidden_overflow_does_not_create_composited_scroll_layer() 
 	commands := display_list_commands(document.record_display_list() or { panic('missing paint') })
 	plan := chromium_raster_layer_plan(document, commands, 1)
 	assert plan.layers.len == 1
+	assert !plan.layers[0].scroll_contents
 	for layer in plan.command_layers {
 		assert layer == 0
 	}
