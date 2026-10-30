@@ -2,6 +2,45 @@
 module html
 
 import dom
+import css
+
+@[heap]
+struct ParserEndLayoutProbe {
+mut:
+	calls int
+}
+
+fn parser_end_count_layout(target voidptr, _ &dom.Document, _ f64, _ f64, _ bool) voidptr {
+	mut probe := unsafe { &ParserEndLayoutProbe(target) }
+	probe.calls++
+	return unsafe { nil }
+}
+
+fn test_parser_end_avoids_fallback_layout_only_while_a_rendering_font_already_delays_load() {
+	for rendering in [false, true] {
+		mut document := parse_document('<!doctype html><p>pending load</p>')
+		defer { document.finalize() }
+		_ = WindowModel.create_top_level(document, none, 'parser-font-delay')!
+		probe := &ParserEndLayoutProbe{}
+		document.set_layout_update_hook(dom.DocumentLayoutUpdateHook{target:probe,callback:parser_end_count_layout})
+		mut fonts := css.FontFaceSet.create_for_font_computer(css.FontComputer.create_for_document(document))
+		mut face := &css.FontFaceObject{family_:'ParserPendingFont',status_:.loading}
+		if rendering { face.font_download_timer_start_ns_ = i64(1) }
+		fonts.add(face)!
+		document.set_font_face_set(fonts)
+		mut delayer := dom.DocumentLoadEventDelayer.new(mut document)
+		mut state := HTMLParserEndState.create(document, none)
+		state.phase_ = .waiting_for_load_event_delay
+		state.check_progress()
+		assert state.phase() == .waiting_for_load_event_delay
+		if rendering { assert probe.calls == 0 }
+		else { assert probe.calls > 0 }
+		delayer.finish()
+		state.check_progress()
+		assert probe.calls > 0
+		assert state.phase() == .completed
+	}
+}
 
 __global html_parser_end_executed_scripts []string
 

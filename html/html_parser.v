@@ -2,6 +2,7 @@
 module html
 
 import dom
+import css
 import encoding
 import platform
 
@@ -727,6 +728,9 @@ fn (mut state HTMLParserEndState) check_progress() {
 		state.phase_ = .waiting_for_load_event_delay
 	}
 	if state.phase_ == .waiting_for_load_event_delay {
+		if parser_end_waits_for_rendering_fonts(state.document) {
+			return
+		}
 		// Font faces are selected lazily by text shaping. Flush layout before the
 		// readiness check so a selected download can delay the load event.
 		mut mutable_document := unsafe { &dom.Document(state.document) }
@@ -736,6 +740,20 @@ fn (mut state HTMLParserEndState) check_progress() {
 		}
 		state.complete()
 	}
+}
+
+fn parser_end_waits_for_rendering_fonts(document &dom.Document) bool {
+	owner := document.existing_font_face_set() or { return false }
+	if owner.font_face_set_record() == unsafe { nil } { return false }
+	fonts := unsafe { &css.FontFaceSet(owner.font_face_set_record()) }
+	// Layout has already selected these faces. A fallback-layout probe cannot
+	// complete readiness while their existing load-event delay remains active.
+	for face in fonts.loading_fonts() {
+		if face.has_pending_rendering() {
+			return document.anything_is_delaying_the_load_event()
+		}
+	}
+	return false
 }
 
 fn (mut state HTMLParserEndState) advance_to_asap_scripts_phase() {
