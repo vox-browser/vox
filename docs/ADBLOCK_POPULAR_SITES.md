@@ -1173,3 +1173,57 @@ Evidence is under `Build/forum-news-nested-svg-isolation-20261030/`, especially
 **`9144d886`**, with **four** completed native fixes after it. The remaining
 sidebar colors, image fringes, underline behavior and site/reference failures
 remain open.
+
+
+## Fractional solid-underline colors, 30 October 2026
+
+`512e8a05` retains computed RGB precision on Chromium-policy solid underline
+commands, using the existing native float-color bridge. It resolves
+`text-decoration-color`, including `currentColor`, from the command's layout
+node and checks the serialized resolved color before publishing an immutable
+payload. Byte-exact colors retain their preceding path, including legacy
+comma-separated alpha. Synthetic color overrides and fragments without a live
+layout handle retain the existing fallback.
+
+The previously open fractional underline endpoint now improves from **one
+differing pixel to zero**, against two agreeing independent Brave references.
+The latest completed shared baseline reproduces the original blue-channel
+error at `(122,246)`. A separate debugger diagnostic on the candidate suppresses
+only the retained underline color. Its frame exactly reproduces that baseline
+and restores precisely the one differing pixel. The unmodified candidate is
+exact. This diagnostic checks causality despite concurrent shared changes;
+it does not substitute for the unmodified production screenshot checks.
+
+Four focused test files pass in both GC modes, covering current and explicit
+fractional decoration colors, modern alpha, unchanged byte colors, ancestor
+decorations, synthetic overrides and retained snapshots after a hover changes
+fractional channels without changing serialized RGB bytes. All **22 native
+Brave fixtures**, three canonical SVG reftests, signing, startup and the five
+catalog/harness unit tests pass. The initial test compiler error and corrected
+non-Chromium test expectation remain in the evidence directories; neither is
+counted as an executed passing check.
+
+No additional production build is submitted. The already-running shared
+`production-coalesced-turn2` build contains the exact helper and paint-transport
+inputs before and after compilation. It completes inside the unchanged 12 GiB
+guard at an 8.16 GiB sampled peak. The executable exports the new helper, and
+a pinned copy supplies every final native check. The shared build also records
+a concurrent change in `layout/chromium_raster_layers.v`; that edit and ongoing
+main/font/frame work are excluded from this feature commit and source-validation
+claims. Its exact compiled variant is not inferred from source timestamps.
+
+The full-uBO ten-site run still accepts **one of ten**. Native differences are
+HN 0, Lobsters 115, Slashdot 9,773, Stack Overflow **258**, BBC 76,604, CNN 64,993,
+The Verge 315,921 and Pikabu 13,925. All eight native frames are pixel-identical
+to the preceding completed baseline; the extracted color fix receives no
+full-page improvement credit. CNN's Brave reference changes at 74,528 pixels,
+accounting for its changed mismatch count without native improvement credit.
+Reddit remains unavailable with guest HTTP 403, and The Guardian's consecutive
+references remain unstable. All eight completed native cases retain matching
+full-uBO behavior evidence. The closed 326-file oracle template is unchanged.
+
+Evidence is under `Build/forum-news-underline-color-20261030/`, especially
+`checkpoint.json`, `baseline/`, `focused-current/`, `verified-shared/`,
+`same-build-color-control/` and `frame-comparison/`. The broad baseline remains
+**`9144d886`**, with **five** completed native fixes after it. Stack Overflow's
+larger skip-ink clipping error, SVG colors and image fringes remain open.
