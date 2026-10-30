@@ -48,6 +48,45 @@ test('failed main response bodies retain diagnostics without sealing an archive'
     await assert.rejects(fs.stat(path.join(directory,'archive.json')),{code:'ENOENT'});
 });
 
+test('a completed POST main navigation can be frozen only with its verified top frame',async t=>{
+    const root=await fs.mkdtemp(path.join(os.tmpdir(),'vox-archive-post-'));
+    t.after(()=>fs.rm(root,{recursive:true,force:true}));
+    const url='https://example.com/questions';
+    const entries=[{id:'main',type:'Document',frameId:'top'},
+        {id:'child',type:'Document',frameId:'child'},{id:'xhr',type:'XHR',frameId:'top'}];
+    for(const mainFrameID of [undefined,'other','top']) {
+        const directory=path.join(root,String(mainFrameID));
+        const captured=[];
+        const page={
+            events:entries.flatMap(e=>[
+                {method:'Network.requestWillBeSent',params:{requestId:e.id,request:{url,method:'POST'}}},
+                {method:'Network.responseReceived',params:{requestId:e.id,type:e.type,frameId:e.frameId,
+                    response:{url,status:200,headers:{'Content-Type':'text/html'}}}},
+                {method:'Network.loadingFinished',params:{requestId:e.id}},
+            ]),
+            evaluate:async()=>({html:'<!doctype html><title>Questions</title>',url,base:url,
+                text:'question '.repeat(300),width:1024,height:768,scale:1}),
+            send:async(method,args)=>{
+                if(method==='Page.captureScreenshot')return {data:Buffer.from('png').toString('base64')};
+                assert.equal(method,'Network.getResponseBody');
+                captured.push(args.requestId);
+                return {body:'Original successful POST navigation',base64Encoded:false};
+            },
+        };
+        if(mainFrameID!=='top') {
+            await assert.rejects(captureArchive(page,directory,url,{mainFrameID}),/Missing successful main response/);
+            assert.deepEqual(captured,[]);
+            continue;
+        }
+        await captureArchive(page,directory,url,{mainFrameID});
+        assert.deepEqual(captured,['main']);
+        const report=JSON.parse(await fs.readFile(path.join(directory,'archive.json'),'utf8'));
+        assert.equal(report.document_request_method,'POST');
+        assert.equal(report.resources.length,1);
+        assert.equal(report.resources[0].method,'POST');
+    }
+});
+
 test('archive replays encoded images and the frozen main body with original response policy', async t => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'vox-archive-test-'));
     t.after(() => fs.rm(root, {recursive:true, force:true}));

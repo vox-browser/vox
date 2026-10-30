@@ -272,7 +272,7 @@ try {
     // Retain the navigation/filter report for inaccessible sites as well. A
     // challenge must fail coverage without replacing a previously valid archive.
     const archive = options['capture-dir'] && navigation?.coverage === 'page'
-        ? await captureArchive(page, path.resolve(options['capture-dir']), options.url) : null;
+        ? await captureArchive(page, path.resolve(options['capture-dir']), options.url, {mainFrameID}) : null;
     const documentURL = navigation?.url && /^https?:/.test(navigation.url) ? navigation.url : options.url;
     const raw = await background.evaluate(`(async()=> (await import('./js/logger.js')).default.readAll('vox-parity'))()`);
     const logs = raw.map(JSON.parse).filter(entry => entry.realm === 'network' && /^https?:/.test(entry.url));

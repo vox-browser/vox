@@ -35,7 +35,7 @@ export function archiveHeaders(response, length) {
         .concat([{name: 'content-length', value: String(length)}]);
 }
 
-export async function captureArchive(page, directory, expectedURL) {
+export async function captureArchive(page, directory, expectedURL, {mainFrameID}={}) {
     await fs.mkdir(directory, {mode: 0o700}); // Never overwrite a prior workload.
     const cache = path.join(directory, 'cache');
     await fs.mkdir(path.join(cache, 'resources'), {recursive: true});
@@ -58,9 +58,13 @@ export async function captureArchive(page, directory, expectedURL) {
     const resources = [];
     for (const [id, entry] of responses) {
         const {response, type} = entry;
+        const method=requests.get(id)?.method;
+        const isMain=type==='Document' && response.url===snapshot.url
+            && mainFrameID && entry.frameId===mainFrameID;
         if (!/^https?:/.test(response.url) || response.status !== 200
-            || requests.get(id)?.method !== 'GET' || !completed.has(id)) continue;
-        const row = {url: response.url, type, status: response.status};
+            || (method!=='GET' && !(method==='POST' && isMain)) || !completed.has(id)) continue;
+        if(type==='Document' && response.url===snapshot.url && mainFrameID && !isMain) continue;
+        const row = {url: response.url, type, status: response.status, method};
         try {
             const result = await page.send('Network.getResponseBody', {requestId: id});
             const body = Buffer.from(result.body, result.base64Encoded ? 'base64' : 'utf8');
@@ -105,7 +109,7 @@ export async function captureArchive(page, directory, expectedURL) {
     await fs.writeFile(pageFile, snapshot.html);
     await fs.writeFile(pageFile + '.content-type', 'text/html;charset=utf-8');
     const {html, text, ...metadata} = snapshot;
-    const report = {...metadata, frozen_html_sha256: digest(html), resources,
+    const report = {...metadata, document_request_method:main.method, frozen_html_sha256: digest(html), resources,
         workload: 'Frozen live DOM, scripts removed, normal scripting policy, original encoded resource bodies; no saved raster or computed-style replacement.'};
     await fs.writeFile(path.join(directory, 'archive.json'), JSON.stringify(report, null, 2) + '\n');
     return {directory, url: snapshot.url, resources: resources.filter(r => !r.error).length,
