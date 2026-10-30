@@ -969,3 +969,61 @@ Evidence is under `Build/forum-news-programmatic-sticky-20261030/`, including
 The broad baseline remains **`9144d886`**; this is the first completed native fix
 after that baseline. A separate 156-pixel ordinary-text overlap mismatch remains
 open and has its own two agreeing Brave references.
+
+
+## Sticky overlap rasters and scrollbar identity, 30 October 2026
+
+`5c41bc95` preserves the raster boundary for ordinary content following an
+unclipped composited sticky element. Brave's layer trace gives the ordinary
+control an overlap layer in this case; removing the sticky element or moving
+the control earlier removes that layer and its color difference. Chromium's
+[GeometryMapper source](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/third_party/blink/renderer/platform/graphics/paint/geometry_mapper.cc)
+treats unclipped sticky movement as unbounded during overlap projection. The
+source copy under the evidence directory is a diagnostic reference from main,
+not a claim to pin the installed Brave source revision.
+
+The model now prevents reordering across that unclipped sticky boundary and
+retains compositing for the resulting overlap raster. Scrollbar commands have
+a separate property identity so they cannot merge into the final text fragment
+and prevent its transparent isolation. Clipped controls retain their bounded
+behavior, and reused plans clear the previous overlap state. Existing effect,
+resource and discontinuous-layer eligibility gates remain in place.
+
+The new fixture improves from **156 differing pixels to zero**, against two
+agreeing independent Brave references. The first candidate leaves **16**
+heading pixels different; its trace shows the heading and scrollbar in one
+raster. That failed result remains under `verified/`. The completed scrollbar
+revision passes all **nineteen native Brave fixtures**, three canonical SVG
+reftests, signing and startup smoke checks. Three focused test files pass in
+both GC modes, including the SVG compositor consumer of the shared layer flag.
+The final production build completes within the unchanged 12 GiB guard with
+stable watched inputs and one recorded executable/library/snapshot identity.
+
+The complete full-uBO site run still accepts **one of ten**. Native differences
+are HN 0, Lobsters 115, Slashdot 9,773, Stack Overflow **584**, BBC 76,604, CNN
+101,466 and The Verge 315,921. Reddit remains unavailable with guest HTTP 403;
+The Guardian's consecutive references remain unstable. Stack Overflow's Brave
+reference is unchanged and its native frame changes at exactly eight pixels,
+matching the improvement from 592 to 584. Its remaining differences are 12 in
+the header, **473 in the left sidebar**, 64 in the main content and 35 in the
+right sidebar. Lobsters' native frame is unchanged while its reference changes
+at 115 pixels; its live-to-frozen difference is 44, so no native regression or
+live acceptance is credited to that reference change.
+
+Pikabu's first native load takes about **98 seconds** and differs at **39,718**
+pixels. Its text weights visibly differ, and its replay log contains only one
+of the three native font requests seen in the baseline. A fresh same-build
+full-uBO retry takes about **22 seconds** overall and returns to **13,863**
+differing pixels. Both the retry's native and Brave frames are pixel-identical
+to the preceding baseline frames. The first outlier and retry remain retained;
+the loading variation is unresolved and receives no fix credit. Pikabu's
+first live-to-frozen difference is 21,603, and the retry's is 21,537. All eight
+completed native comparisons retain matching full-uBO behavior evidence. The
+326-file oracle template remains unchanged after the retry.
+
+Evidence is under `Build/forum-news-root-text-20261030/`, especially
+`checkpoint.json`, `focused-scrollbar/`, `focused-svg/`, `production-scrollbar/`,
+`verified-scrollbar/`, `frame-comparison/`, `pikabu-retry/` and
+`region-diagnostic/`. The broad baseline remains **`9144d886`**; this is the
+second completed native fix after that baseline. The remaining full-page
+sidebar differences and intermittent font-loading behavior remain open.
