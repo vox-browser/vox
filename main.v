@@ -4905,10 +4905,12 @@ fn (mut app BrowserApp) poll_background_resources() {
 				failed_previous_svg := previous_svg_available
 					&& (resource.error != '' || resource.body == '')
 					&& resource.url.all_before('#').all_before('?').to_lower().ends_with('.svg')
-				if app.resource_cache.len < max_cached_resources || resource.url in app.resource_cache {
-					app.resource_cache[resource.url] = resource
-					resource_pixels_changed = true
-				}
+				// A long photo feed can fill the response cache. Retain the new
+				// response (including failures), evicting an older one as navigation
+				// does; dropping it would restart its request on every paint.
+				// Decoded images have their own cache and survive response eviction.
+				app.retain_navigation_resource(resource.url, resource)
+				resource_pixels_changed = true
 				if publish_browser_svg_resource(resource) || failed_previous_svg {
 					changed_svg_resources << resource.url.all_before('#')
 				}
