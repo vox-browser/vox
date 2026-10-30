@@ -398,6 +398,29 @@ fn test_root_size_relative_font_size_keeps_the_original_computation_context() {
 	}
 }
 
+fn test_absolute_root_font_size_keywords_keep_font_refresh_and_match_the_full_cascade() {
+	$if macos {
+		for policy in [dom.FontSizeKeywordPolicy.libweb, .chromium] {
+			for size in ['xx-small', 'x-small', 'small', 'medium', 'large', 'x-large', 'xx-large', 'xxx-large'] {
+				mut document, root, subject, _ := font_input_fixture()
+				defer { document.finalize() }
+				document.set_font_size_keyword_policy(policy)
+				mut target := unsafe { &dom.Element(root) }
+				target.set_attribute_value('style', 'font-family:FontInputFixture,sans-serif;font-size:${size};line-height:normal')
+				document.update_style()
+				before := font_input_style(root, none)
+				computer := css_style_computer_for(document)
+				assert computer.can_refresh_font_inputs(dom.AbstractElement.new(root, none)), '${policy}:${size}'
+				font_input_install_real_face(document)
+				document.update_style()
+				assert voidptr(font_input_style(root, none)) == voidptr(before), '${policy}:${size}'
+				font_input_assert_full_cascade_oracle(root, none)
+				font_input_assert_full_cascade_oracle(subject, none)
+			}
+		}
+	}
+}
+
 fn test_other_family_nested_size_consumers_refresh_after_ancestor_font_metrics_change() {
 	$if macos {
 		mut document, root, outer, _ := font_input_fixture()

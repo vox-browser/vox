@@ -107,8 +107,13 @@ fn (s &StyleComputer) can_refresh_font_inputs(abstract_element dom.AbstractEleme
 				if value := computed.raw_cascaded_font_size() {
 					// The root's initial font context also governs nested calc()
 					// font-size leaves, which have no direct inheritance entry.
-					length := computed_interpolation_length_from_dom_style_value(value) or { return diagnostic_font_guard_reject(4) }
-					if !length.is_absolute() { return diagnostic_font_guard_reject(5) }
+					// Absolute-size keywords use the document's size table and do
+					// not acquire a new size when an author face finishes loading.
+					typed := style_value_logic_from_dom(.font_size, value) or { return diagnostic_font_guard_reject(4) }
+					if computed_interpolation_keyword_to_absolute_size(typed.to_keyword()) == none {
+						length := computed_interpolation_length_from_dom_style_value(value) or { return diagnostic_font_guard_reject(4) }
+						if !length.is_absolute() { return diagnostic_font_guard_reject(5) }
+					}
 				}
 			}
 		}
