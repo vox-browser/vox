@@ -1246,6 +1246,42 @@ static int draw_retained_glyph_run(CGContextRef destination,
     // masks use the sRGB transfer with zero contrast boost.
     SkSurfaceProps chromium_coverage(0, kUnknown_SkPixelGeometry, 0.0f,
         (font_smoothing & 15) == 2 ? 1.0f : 0.0f);
+    // Keep the foreground and glyph coverage in the GPU blend, as in Blink's
+    // raster tile. Even the float CPU blitter can round a covered channel one
+    // level differently. The existing glyph cache retains the complete result.
+    if (chromium && has_float_color && glyph_count <= 4096 && pixel_count <= 32768) {
+        if (auto draw = shared_picture_draw()) {
+            SkPictureRecorder recorder;
+            auto* recording = recorder.beginRecording(SkRect::MakeWH(raster_width, raster_height));
+            bool ready = true;
+            if (has_background) {
+                auto background = SkImages::RasterFromPixmapCopy(SkPixmap(image_info, pixels.data(), row_bytes));
+                ready = background != nullptr;
+                if (background) {
+                    SkPaint source;
+                    source.setBlendMode(SkBlendMode::kSrc);
+                    recording->drawImage(background, 0, 0, SkSamplingOptions(), &source);
+                }
+            }
+            recording->setMatrix(draw_matrix);
+            recording->drawTextBlob(blob, baseline_x, baseline_y, paint);
+            auto picture = recorder.finishRecordingAsPicture();
+            SkSerialProcs procs;
+            procs.fImageProc = serialize_shared_picture_image;
+            auto bytes = ready ? picture->serialize(&procs) : nullptr;
+            float identity[] {1, 0, 0, 0, 1, 0, 0, 0, 1};
+            std::vector<uint32_t> gpu_pixels(pixel_count);
+            if (bytes && bytes->size() <= 64 * 1024 * 1024
+                && draw(reinterpret_cast<uint8_t*>(gpu_pixels.data()), raster_width,
+                    raster_height, row_bytes, bytes->data(), bytes->size(), identity)) {
+                auto image = create_pixel_image(destination, std::move(gpu_pixels), raster_width, raster_height);
+                int result = composite_image(destination, image, destination_rect, has_background);
+                s_glyph_raster_cache.finish(std::move(cached), image);
+                if (image) CGImageRelease(image);
+                return result;
+            }
+        }
+    }
     // The 8888 CPU blitter quantizes a constant paint color before coverage.
     // Fractional CSS colors need a float surface until the final page blend.
     std::vector<float> float_pixels(has_float_color ? pixel_count * 4 : 0);

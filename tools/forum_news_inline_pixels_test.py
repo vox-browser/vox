@@ -41,6 +41,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_rounded_inline_backgrounds_match_brave_exactly(self):
         self.compare_fixture('lobsters-rounded-inline-background')
 
+    def test_fractional_foregrounds_match_brave_exactly(self):
+        self.compare_fixture('forum-fractional-foreground')
+
 
 if __name__ == '__main__':
     unittest.main()
