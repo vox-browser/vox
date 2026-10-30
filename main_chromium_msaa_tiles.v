@@ -332,12 +332,13 @@ fn (mut storage ChromiumMSAAStorage) update(commands []layout.PaintCommand,
 	plan layout.ChromiumRasterLayerPlan, viewport_width int, viewport_height int,
 	scroll_y f64, scale f64) {
 	storage.update_for_device_viewport(commands, plan, viewport_width, viewport_height,
-		viewport_width, viewport_height, scroll_y, scale)
+		viewport_width, viewport_height, scroll_y, scale, none)
 }
 
 fn (mut storage ChromiumMSAAStorage) update_for_device_viewport(commands []layout.PaintCommand,
 	plan layout.ChromiumRasterLayerPlan, viewport_width int, viewport_height int,
-	device_viewport_width int, device_viewport_height int, scroll_y f64, scale f64) {
+	device_viewport_width int, device_viewport_height int, scroll_y f64, scale f64,
+	root_extent ?layout.LayoutRect) {
 	tile_rows := chromium_gpu_raster_tile_rows(int(math.ceil(f64(viewport_height) * scale)))
 	storage.triggers.clear()
 	append_chromium_msaa_triggers(commands, ChromiumMSAAViewport{
@@ -366,8 +367,9 @@ fn (mut storage ChromiumMSAAStorage) update_for_device_viewport(commands []layou
 			storage.tiles[index].clear()
 			storage.tiles[index] << storage.legacy_tiles
 		} else {
-			content_width := if root { math.max(f64(viewport_width), layer.bounds.x + layer.bounds.width) } else { layer.bounds.width }
-			content_height := if root { math.max(f64(viewport_height), layer.bounds.y + layer.bounds.height) } else { layer.bounds.height }
+			root_bounds := root_extent or { layer.bounds }
+			content_width := if root { math.max(f64(viewport_width), root_bounds.x + root_bounds.width) } else { layer.bounds.width }
+			content_height := if root { math.max(f64(viewport_height), root_bounds.y + root_bounds.height) } else { layer.bounds.height }
 			update_chromium_raster_grid(selected, device_viewport_width, device_viewport_height, content_width, content_height,
 				if root { 0.0 } else { math.floor(layer.bounds.x * scale) / scale },
 				if root { -scroll_y } else { math.floor(layer.bounds.y * scale) / scale }, scale,
@@ -385,7 +387,7 @@ fn (mut app BrowserApp) set_chromium_msaa_tiles() {
 		app.chromium_msaa_storage.update_for_device_viewport(app.paint_commands, app.chromium_raster_plan,
 			app.viewport_width, app.viewport_height,
 			int(math.ceil(app.viewport_width * layout_scale)), int(math.ceil(app.viewport_height * layout_scale)),
-			app.scroll_y, scale)
+			app.scroll_y, scale, chromium_root_raster_extent(app.document))
 		count := app.chromium_raster_plan.layers.len
 		app.chromium_raster_tiles = app.chromium_msaa_storage.tiles[..count]
 		app.chromium_raster_grids = app.chromium_msaa_storage.grids[..count]
