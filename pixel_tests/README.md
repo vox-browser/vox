@@ -15,7 +15,7 @@ Build the checker with current V and the repository memory guard:
 ```sh
 python3 tools/run_memory_bounded.py --limit-gib 3 \
   --lock Build/forum-checker.lock --report Build/forum-checker.json -- \
-  ~/code/v/v -memory-limit 10G -enable-globals -o Build/adblock-check tools/adblock_check.v
+  ~/code/v/v -memory-limit 10G -nocache -enable-globals -o Build/adblock-check tools/adblock_check.v
 ```
 
 `--sites hacker-news` selects a site. `--capture --fixtures Build/new-site-fixtures`
@@ -24,6 +24,10 @@ browser/compiler children run through their own 3 GiB memory guards. The runner
 uses the installed production bundle directly and never schedules a rebuild.
 Each Vox capture launches a new process with an empty private profile, records
 the executable/native-library identities, and rejects a concurrent bundle change.
+`--audit-config FILE` selects additional native layout observations while
+diagnosing a mismatch; retain the `body` and `images` selectors in that config.
+The checker is built without temporary module-cache dependencies so it remains
+usable after compiler scratch directories are cleaned.
 
 The reference runs the full MV2 uBO version pinned in `adblock/lists/manifest.json`,
 with the identical list bytes, no custom filters and Brave Shields disabled.

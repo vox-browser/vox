@@ -183,8 +183,8 @@ def run_case(site, args):
         port = urlsplit(replay.ready['proxy']).port
         write_json(profile / 'settings.json', dict(enabled=True, host='127.0.0.1', port=str(port)))
         config = output / 'audit-config.json'
-        write_json(config, dict(selectors=[dict(name='body', selector='body', limit=1),
-                                          dict(name='images', selector='img', limit=1000)]))
+        write_json(config, read_json(args.audit_config) if args.audit_config else dict(selectors=[
+            dict(name='body', selector='body', limit=1), dict(name='images', selector='img', limit=1000)]))
         requests = output / 'vox.requests.jsonl'
         requests.touch()
         audit = output / 'vox.audit.json'
@@ -233,6 +233,7 @@ def main():
     parser.add_argument('--brave', type=Path, default=BRAVE)
     parser.add_argument('--vox', type=Path, default=VOX)
     parser.add_argument('--diff-tool', type=Path)
+    parser.add_argument('--audit-config', type=Path, help='Native capture selectors for diagnosing a mismatch; include body and images')
     parser.add_argument('--settle', type=float, default=5)
     parser.add_argument('--timeout', type=float, default=180)
     args = parser.parse_args()
@@ -246,13 +247,15 @@ def main():
         sites = [next(s for s in sites if s['id'] == key) for key in selected]
     for name in ['fixtures', 'output', 'extension', 'checker', 'brave', 'vox']:
         setattr(args, name, getattr(args, name).resolve())
+    if args.audit_config:
+        args.audit_config = args.audit_config.resolve()
     args.output.mkdir(parents=True, exist_ok=False)
     if args.diff_tool:
         args.diff_tool = args.diff_tool.resolve()
     else:
         args.diff_tool = args.output / 'pixel_diff'
         compiler = os.environ.get('V_BIN') or shutil.which('v') or str(Path.home() / 'code/v/v')
-        guarded([compiler, '-memory-limit', '10G', '-o', args.diff_tool, REPO / 'tools/pixel_diff.v'],
+        guarded([compiler, '-memory-limit', '10G', '-nocache', '-o', args.diff_tool, REPO / 'tools/pixel_diff.v'],
                 args.output / 'diff-tool', args.timeout)
     summary = dict(started_at=time.strftime('%Y-%m-%dT%H:%M:%S%z'), catalog=str(CATALOG),
                    threshold='zero differing RGBA pixels', sites=[])
