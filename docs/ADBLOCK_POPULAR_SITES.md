@@ -1227,3 +1227,69 @@ Evidence is under `Build/forum-news-underline-color-20261030/`, especially
 `same-build-color-control/` and `frame-comparison/`. The broad baseline remains
 **`9144d886`**, with **five** completed native fixes after it. Stack Overflow's
 larger skip-ink clipping error, SVG colors and image fringes remain open.
+
+
+## Variable-font ink exclusions, 30 October 2026
+
+`e70a718e` measures Chromium-policy variable-font ink intersections with the
+same registered Skia face used to paint the glyphs. The preceding portable
+TrueType path read default contours without applying the selected variation
+coordinates, so bold system text could retain the regular instance's underline
+gap. The native bridge receives bounded glyph IDs and float coordinates with
+32-bit counts, honors the replay face's variation and synthesis settings, and
+rejects invalid geometry or insufficient output capacity. Hidden glyphs are
+excluded. Unavailable bridges and non-variable faces retain the portable path.
+The change does not replace the general SVG-text outline implementation.
+
+A three-weight system-font reduction improves from **three differing pixels to
+zero**, against two agreeing independent Brave references. The new native test
+checks distinct regular/bold ink widths, position and scale changes, capacity
+canaries and invalid coordinates. Four focused V test files pass in both GC
+modes, including packing visible glyphs, malformed native results and fallback
+behavior. All **23 native Brave fixtures**, three canonical SVG reftests,
+signing, startup and the five catalog/harness tests pass. `1c3fec79` adds the
+standalone native test runner; its compile and runtime stages also pass under
+separate 12 GiB and 3 GiB guards.
+
+The complete Stack Overflow comparison improves from **258 to 257** differing
+pixels. Its Brave reference is unchanged, and the native frame changes at
+exactly the previously traced underline pixel `(24,606)`. A fresh native probe
+records the affected 23-glyph run using `.SFNS-Bold`, `wght=700`, `opsz=17`,
+11px size and the 1.625–1.725 intersection band. The probe validates its native
+library UUID, and its screenshot is pixel-identical to the unprofiled candidate.
+The earlier origin-offset hypothesis remains ruled out. An attempted breakpoint
+on the optimized V outline method yielded no captures and receives no diagnostic
+credit; the exported native bridge supplies the validated captures instead.
+
+The already-running shared `production-start-selected` build includes the
+exact helper, glyph-run hook and native bridge source hashes before and after
+compilation, so no additional production build is submitted. It completes
+inside the unchanged 12 GiB guard at a 7.73 GiB sampled peak. Its two changed
+source entries are test files; current-source focused checks validate the final
+tests separately. A pinned binary copy supplies all final captures. Subsequent
+shared startup/font/tree edits and a separate native SVG-gradient edit are
+excluded from this feature's commit and validation claims.
+
+The full-uBO ten-site matrix still accepts **one of ten**. Native differences
+are HN 0, Lobsters 0, Slashdot 9,773, Stack Overflow 257, BBC 76,604, CNN 101,466
+and The Verge 315,921. Reddit remains unavailable with guest HTTP 403, and
+The Guardian's consecutive references remain unstable. Lobsters' live-to-frozen
+difference is 71, so its frozen match still cannot count as live acceptance.
+Its native frame is unchanged while its Brave reference changes at 115 pixels.
+CNN's native frame is unchanged while its reference changes at 73,834 pixels.
+Neither reference change receives native improvement or regression credit.
+
+Pikabu's first native load again hits the previously observed inline-layout
+saturation assertion after about 92 seconds during font-loading failure. That
+failed attempt remains retained. A fresh same-build full-uBO retry completes
+with 13,925 native differences and 21,603 live-to-frozen differences; both frames
+are pixel-identical to the preceding successful baseline. The seven initial
+native completions plus the retry retain matching full-uBO behavior evidence.
+The closed 326-file oracle template remains unchanged after the retry.
+
+Evidence is under `Build/forum-news-variable-ink-20261030/`, especially
+`checkpoint.json`, `probe/`, `reduction-baseline/`, `focused/`, `native-unit/`,
+`native-runner/`, `verified-shared/`, `native-instance/`, `frame-comparison/`
+and `pikabu-retry/`. The broad baseline remains **`9144d886`**, with **six**
+completed native fixes after it. The remaining SVG/image differences, font-load
+failures and site/reference failures remain open.
