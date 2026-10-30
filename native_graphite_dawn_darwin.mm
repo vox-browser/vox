@@ -7,6 +7,7 @@
 #include "include/core/SkPicture.h"
 #include "include/core/SkPixmap.h"
 #include "include/core/SkSerialProcs.h"
+#include "native_picture_typeface_cache.h"
 #include "include/core/SkSurface.h"
 #include "include/gpu/graphite/Context.h"
 #include "include/gpu/graphite/ContextOptions.h"
@@ -28,6 +29,7 @@
 
 namespace {
 std::mutex gpu_mutex;
+VoxPictureTypefaceCache typeface_cache;
 std::unique_ptr<skgpu::graphite::Context> gpu_context;
 bool gpu_context_attempted = false;
 std::chrono::steady_clock::time_point gpu_context_last_use;
@@ -141,6 +143,11 @@ sk_sp<SkImage> decode_picture_image(void const* bytes, size_t size,
     return SkImages::RasterFromPixmapCopy(SkPixmap(info,
         static_cast<char const*>(bytes) + sizeof(dimensions), size_t(width) * 4));
 }
+
+sk_sp<SkTypeface> decode_picture_typeface(SkStream& stream, void*)
+{
+    return typeface_cache.decode_stream(stream);
+}
 }
 
 extern "C" __attribute__((visibility("default")))
@@ -153,12 +160,13 @@ int vox_graphite_draw_picture_pixels(uint8_t* pixels, int width, int height,
         return 0;
     for (int index = 0; index < 9; ++index)
         if (!std::isfinite(matrix[index])) return 0;
+    std::lock_guard lock(gpu_mutex);
     SkDeserialProcs procs;
     procs.fImageProc = decode_picture_image;
+    procs.fTypefaceStreamProc = decode_picture_typeface;
     procs.fAllowSkSL = false;
     auto picture = SkPicture::MakeFromData(bytes, size, &procs);
     if (!picture) return 0;
-    std::lock_guard lock(gpu_mutex);
     auto* gpu = context();
     if (!gpu) return 0;
     skgpu::graphite::RecorderOptions options;
@@ -213,4 +221,5 @@ void vox_graphite_picture_release_unused_graphics_memory()
     if (!pthread_main_np()) return;
     std::lock_guard lock(gpu_mutex);
     if (gpu_context) gpu_context->freeGpuResources();
+    typeface_cache.clear();
 }

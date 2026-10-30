@@ -8,6 +8,7 @@
 #include <dlfcn.h>
 #include <chrono>
 #include "native_graphite_bridge.h"
+#include "native_picture_typeface_cache.h"
 #include "native_graphite_solid_rect.h"
 #include "native_svg_path_regions.h"
 #include "native_chromium_raster_phase.h"
@@ -1268,6 +1269,7 @@ static int draw_retained_glyph_run(CGContextRef destination,
             auto picture = recorder.finishRecordingAsPicture();
             SkSerialProcs procs;
             procs.fImageProc = serialize_shared_picture_image;
+            procs.fTypefaceProc = vox_serialize_picture_typeface;
             auto bytes = ready ? picture->serialize(&procs) : nullptr;
             float identity[] {1, 0, 0, 0, 1, 0, 0, 0, 1};
             std::vector<uint32_t> gpu_pixels(pixel_count);
@@ -2117,6 +2119,7 @@ static int draw_css_image_filter(CGContextRef destination, CGImageRef source,
         auto picture = recorder.finishRecordingAsPicture();
         SkSerialProcs procs;
         procs.fImageProc = serialize_shared_picture_image;
+        procs.fTypefaceProc = vox_serialize_picture_typeface;
         auto bytes = picture->serialize(&procs);
         float identity[] {1, 0, 0, 0, 1, 0, 0, 0, 1};
         if (bytes && shared_picture_draw()(reinterpret_cast<uint8_t*>(output_pixels.data()),
@@ -2243,6 +2246,7 @@ extern "C" int ladybird_v_skia_draw_gradient_text(CGContextRef context,
     auto picture = output.finishRecordingAsPicture();
     SkSerialProcs procs;
     procs.fImageProc = serialize_shared_picture_image;
+    procs.fTypefaceProc = vox_serialize_picture_typeface;
     auto bytes = picture->serialize(&procs);
     float identity[] {1, 0, 0, 0, 1, 0, 0, 0, 1};
     if (!bytes || !shared_picture_draw()(reinterpret_cast<uint8_t*>(pixels.data()),
@@ -2297,6 +2301,7 @@ extern "C" int ladybird_v_skia_end_css_gradient_blur(CGContextRef context,
     auto picture = output.finishRecordingAsPicture();
     SkSerialProcs procs;
     procs.fImageProc = serialize_shared_picture_image;
+    procs.fTypefaceProc = vox_serialize_picture_typeface;
     auto bytes = picture->serialize(&procs);
     float identity[] {1, 0, 0, 0, 1, 0, 0, 0, 1};
     if (!bytes || !shared_picture_draw()(reinterpret_cast<uint8_t*>(pixels.data()),

@@ -240,6 +240,7 @@ void finish_shared_recording()
     auto picture = group->recorder->finishRecordingAsPicture();
     SkSerialProcs procs;
     procs.fImageProc = serialize_shared_picture_image;
+    procs.fTypefaceProc = vox_serialize_picture_typeface;
     auto bytes = picture->serialize(&procs);
     if (!bytes || bytes->size() > 64 * 1024 * 1024) return;
     if (!group->root) {
