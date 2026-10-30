@@ -3118,11 +3118,23 @@ fn run_grid_formatting_context(mut state LayoutState, container &Node, mut conta
 		}
 		if requested_height := forced_item_height {
 			clamped_height := clamp_layout_content_size(placement.item, requested_height, area_height, item_state, false)
-			item_state = layout_independent_child(mut state, placement.item, mut container_state, area_width, if container_state.has_definite_height() {
-				container_state.content_height()
+			// Row sizing already laid this subtree out at its final inline size.
+			// When stretching preserves its content height, only the percentage
+			// basis changes. Reuse that geometry when nothing depends on the new
+			// definite height, just as flex stretching does.
+			if clamped_height == item_state.content_height()
+				&& !subgridded_columns && !subgridded_rows
+				&& !placement.item.is_replaced_box() && !node_uses_button_layout(placement.item)
+				&& (item_state.has_definite_height()
+					|| !flex_subtree_depends_on_definite_height(mut state, placement.item)) {
+				item_state.set_has_definite_height(true)
 			} else {
-				none
-			}, item_state.content_width(), clamped_height)
+				item_state = layout_independent_child(mut state, placement.item, mut container_state, area_width, if container_state.has_definite_height() {
+					container_state.content_height()
+				} else {
+					none
+				}, item_state.content_width(), clamped_height)
+			}
 		} else if placement.item.is_replaced_box()
 			&& (placement.item.computed_values().size_value(.height).contains_percentage()
 			|| placement.item.computed_values().size_value(.min_height).contains_percentage()
