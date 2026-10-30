@@ -7894,7 +7894,6 @@ fn main() {
 	page_model := page.Page.create(1.0) or { panic(err) }
 	mut page_client := page_model.client()
 	page_client.set_event_recording(false)
-	page_client.set_request_frame_hook(request_browser_frame)
 	main_checkpoint = debug_timing_checkpoint('startup_page_model', main_checkpoint)
 	mut app := &BrowserApp{
 		markup: markup
@@ -7922,6 +7921,7 @@ fn main() {
 		viewport_width: options.width
 		viewport_height: initial_viewport_height
 	}
+	app.install_document_frame_request_hook()
 	main_checkpoint = debug_timing_checkpoint('startup_browser_state', main_checkpoint)
 	if !options.headless_smoke && !options.headless_layout_tree {
 		app.initialize_browser_zoom()

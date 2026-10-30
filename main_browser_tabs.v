@@ -131,7 +131,6 @@ fn (mut app BrowserApp) activate_tab_chrome(action string) {
 			owner := page.Page.create(1.0) or { return }
 			mut client := owner.client()
 			client.set_event_recording(false)
-			client.set_request_frame_hook(request_browser_frame)
 			mut tab := &BrowserApp{
 				tabs:                           app.tabs
 				zoom_levels:                    current.zoom_levels
@@ -153,6 +152,7 @@ fn (mut app BrowserApp) activate_tab_chrome(action string) {
 				navigation_results:             chan NavigationResult{cap: 4}
 				background_resource_results:    chan PreloadedResource{cap: max_cached_resources}
 			}
+			tab.install_document_frame_request_hook()
 			tab.install_chrome_widget_input_bridge()
 			app.tabs.pages << tab
 			app.select_browser_tab(app.tabs.pages.len - 1)

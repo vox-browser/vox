@@ -474,9 +474,7 @@ static void native_trace_browser_redraw(const char *point) {
 	backtrace_symbols_fd(frames, count, STDERR_FILENO);
 }
 
-static void native_request_browser_redraw(void) {
-	++native_layer_redraw_generation;
-	native_trace_browser_redraw("deliver");
+static void native_mark_browser_redraw(void) {
 	// An asynchronous resource can complete while the application has no main
 	// or key window. Keep redrawing the window that owns our retained drawable.
 	NSWindow *window = [native_browser_view() window];
@@ -506,6 +504,12 @@ static void native_request_browser_redraw(void) {
 	                                   data1:0
 	                                   data2:0];
 	[NSApp postEvent:event atStart:NO];
+}
+
+static void native_request_browser_redraw(void) {
+	++native_layer_redraw_generation;
+	native_trace_browser_redraw("deliver");
+	native_mark_browser_redraw();
 }
 
 // Documents under the Chromium policy show focus only while the window is
@@ -538,6 +542,32 @@ void native_wake_browser(void) {
 	dispatch_async(dispatch_get_main_queue(), ^{
 		__atomic_store_n(&wake_queued, false, __ATOMIC_RELEASE);
 		native_request_browser_redraw();
+	});
+}
+
+// A PageClient repaint requested while the V owner is preparing this frame
+// belongs to that frame's input. Stamp it now so a main-queue delivery delayed
+// until replay cannot invalidate pixels which already include the change.
+// Worker completions and requests after preparation retain ordinary wakes.
+void native_wake_browser_during_preparation(void) {
+	if (!NSThread.isMainThread || !native_layer_presenting
+		|| !native_layer_document_work_active || native_layer_paint_started) {
+		native_wake_browser();
+		return;
+	}
+	static bool wake_queued;
+	static uint64_t requested_generation;
+	requested_generation = ++native_layer_redraw_generation;
+	native_trace_browser_redraw("preparation request");
+	if (wake_queued) return;
+	wake_queued = true;
+	dispatch_async(dispatch_get_main_queue(), ^{
+		wake_queued = false;
+		if (native_layer_last_prepared_generation >= requested_generation) {
+			native_trace_browser_redraw("preparation consumed");
+			return;
+		}
+		native_mark_browser_redraw();
 	});
 }
 

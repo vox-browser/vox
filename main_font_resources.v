@@ -16,7 +16,8 @@ fn (app &BrowserApp) document_pixels_ready_for_frame() bool {
 		if app.ctx != unsafe { nil } && app.ctx.native_rendering
 			&& app.screenshot_path != '' && !app.screenshot_scheduled
 			&& app.document != unsafe { nil } {
-			return app.document_resources_ready_for_capture()
+			return app.background_resource_pending.len == 0
+				&& app.document_resources_ready_for_capture()
 		}
 	}
 	return true

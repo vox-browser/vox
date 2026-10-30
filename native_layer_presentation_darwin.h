@@ -24,6 +24,7 @@ static BOOL native_layer_copying_capture;
 // Main-thread redraw deliveries, distinct from merely servicing the run loop.
 static uint64_t native_layer_redraw_generation;
 static uint64_t native_layer_paint_generation;
+static uint64_t native_layer_last_prepared_generation;
 static BOOL native_layer_paint_started;
 static char native_layer_frame_generation_key;
 static char native_layer_frame_bounds_key;
@@ -170,6 +171,7 @@ static int vox_browser_has_paint_context(void) {
 // after this boundary still invalidate it.
 static void vox_browser_frame_prepared(void) {
     native_layer_paint_generation = native_layer_redraw_generation;
+    native_layer_last_prepared_generation = native_layer_redraw_generation;
     native_layer_paint_started = YES;
 }
 
