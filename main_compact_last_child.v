@@ -18,14 +18,16 @@ fn (mut binding CompactElementQueryBinding) node_state(node &dom.Node) json2.Any
 			binding.nodes[parent_key] = parent
 		}
 	}
-	return json2.Any({
+	mut state := {
 		'bridgeKey': json2.Any(key)
 		'nodeType':  json2.Any(int(node.node_type_value()))
 		'nodeName':  json2.Any(node.node_name())
 		'tagName':   json2.Any('#node')
 		'parentKey': json2.Any(parent_key)
 		'id':        json2.Any('')
-	})
+	}
+	if node.is_shadow_root() { state['isShadowRoot'] = json2.Any(true) }
+	return json2.Any(state)
 }
 
 fn (mut binding CompactElementQueryBinding) node_relation_query(root &dom.Node, relation string) string {
@@ -72,7 +74,7 @@ function __compactNodeWrapper(state){
  if(state.nodeType===9)return __compactDocumentWrapper(state);
  if(state.tagName!=="#node")return __element(state);
  if(state.__object)return state.__object;
- const node=Object.create(state.nodeType===11?DocumentFragment.prototype:Node.prototype);
+ const node=Object.create(state.isShadowRoot?ShadowRoot.prototype:state.nodeType===11?DocumentFragment.prototype:Node.prototype);
  function record(receiver){const own=__elementApply(__compactNodeGet,__compactNodeRecords,[receiver]);if(!own)throw new TypeError("Illegal Node receiver");return own;}
  function read(){return __queryElements(record(this).bridgeKey,"nodeValue","");}
  function write(receiver,value,nullable){const own=record(receiver);if(typeof value==="symbol")throw new TypeError("Cannot convert a Symbol to a string");__queryElements(own.bridgeKey,"setNodeValue",nullable&&value===null?"":String(value));__compactInvalidateContent(own);}

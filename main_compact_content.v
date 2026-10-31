@@ -146,6 +146,16 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	key := json_string_property(request, 'key') or { '' }
 	if action == 'inputValue' { return binding.input_value_query(key, selector) }
 	if action == 'templateContent' { return binding.template_content_query(key, selector) }
+	if action == 'attachShadow' { return binding.attach_shadow_query(key, selector) }
+	if key.starts_with('__created_') && action in ['shadowRoot', 'setMarkup', 'getRootNode'] {
+		if binding.node_for_key(key) == none {
+			request_state := json2.decode[map[string]json2.Any](selector)!
+			state := if action == 'shadowRoot' { json2.Any(request_state) } else {
+				request_state['state'] or { json2.Any(json2.Null{}) }
+			}
+			binding.materialize_shadow_host(key, state)!
+		}
+	}
 	if action in ['elementFromPoint', 'elementsFromPoint'] {
 		return binding.hit_test_query(action, selector)
 	}
@@ -185,6 +195,10 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	if action == 'childNodeMutation' { return binding.child_node_query(root, selector) }
 	if action == 'parentNodeMutation' { return binding.parent_node_query(root, selector) }
 	if action == 'dataset' { return compact_dataset_query(root, selector) }
+	if action in ['shadowRoot', 'shadowHost', 'shadowValue', 'shadowElementById', 'getRootNode'] {
+		return binding.shadow_query(root, action, selector)
+	}
+	if action == 'setMarkup' { return binding.set_markup_query(root, selector) }
 	if action == 'inlineStyle' { return compact_inline_style_query(root, selector, binding.runtime) }
 	if action == 'createComment' { return binding.create_comment_query(root, selector) }
 	if action in ['createText', 'createFragment', 'childNodes', 'childElements', 'nodeText', 'setNodeText', 'appendNode', 'insertNode'] {
