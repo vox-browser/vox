@@ -4,7 +4,8 @@ Pixel-perfect parity remains open. The current settled, archived comparison at
 1280 × 800 CSS pixels and scale 1 has **4 differing pixels at the top** and
 **zero at scroll Y 2400 and 6400**, and **4 at scroll Y 8000**. Other viewports
 still differ, including the Lilly preview and text. The installation Copy button
-now has Brave's single-line layout. These results do not cover
+now has Brave's single-line layout. Book-cover flex geometry and the total
+page height now agree; the bottom capture still has 360 differences. These results do not cover
 the complete live page. Earlier comparisons and validation limits are recorded below.
 
 ## Capture readiness correction
@@ -721,3 +722,57 @@ The signed executable is
 pinned with its libraries in `Vox-column-distribution-installed.app`.
 `column-distribution-installed-{before,after}.json` records unchanged installed
 identity across validation. Full-page and scale-two parity remain open.
+
+
+## Definite flex bases and cross-axis limits
+
+`8448f210` preserves a definite used flex basis in Chromium-policy documents.
+Cross-axis min/max constraints still clamp the eventual cross size, but they no
+longer feed back through the natural aspect ratio into that definite basis.
+Content-based sizing and LibWeb-policy behavior retain their translated path,
+including the existing column-canvas regression. This follows
+[Flexbox 9.2(A)](https://drafts.csswg.org/css-flexbox-1/#algo-main-item) and Blink's
+[`base_border_size` resolution](https://chromium.googlesource.com/chromium/src/+/156.0.8078.48/third_party/blink/renderer/core/layout/flex/flex_layout_algorithm.cc).
+
+The second book cover now has Brave's **60 × 88 CSS-pixel** used box instead of
+58.03125 × 87.96875. Its caption positions agree, and total document height
+matches **11,500.5 CSS pixels**. The archived Y 10400 comparison improves from
+**14,330 to 9,000 differing pixels**, and Y 10664 improves from **7,912 to 360**.
+Other checked positions retain their preceding results, including exact Y 2400
+and 6400 captures. Fresh references agree at all eleven positions. Remaining
+one-level raster differences and unrelated image sampling are not conformance.
+
+Evidence under `Build/vlang-parity-20261031/`:
+
+- `definite-flex-basis-before-v2-layout-none-{build,run}.json`: the corrected
+  isolated suite compiles, then fails with 40 instead of 100 CSS pixels. The
+  first `before` compile omitted a helper and supplies no negative-control
+  credit. `definite-flex-basis-focus-layout-{none,boehm}-{build,run}.json`
+  records all eight focused functions passing in both modes. The new test
+  covers both policies, rows and columns, and explicit versus auto flex bases.
+- `definite-flex-basis-{before,after}-browser/` and
+  `definite-flex-basis-reference-repeat.json`: the new standalone fixture
+  improves from **6,639 differences to zero**, with exact repeated references.
+- `definite-flex-basis-production-{guard,status}.json`: successful production
+  build with stable implementation input, 207.83 seconds, sampled peak aggregate
+  RSS of 8.06 GiB under the default 12 GiB budget. Only temporary test sources
+  change during compilation.
+- `definite-flex-basis-installed-page/` and `definite-flex-basis-ref-*.json`:
+  fresh archived captures, geometry audits, and reference agreement.
+- `definite-flex-basis-installed-smoke-status.json` and
+  `definite-flex-basis-installed-inline-regressions.{json,log}`: fourteen
+  screenshot/selection/invalidation/turbulence checks and all 46 inline browser
+  regressions pass. Eight image, gradient, and intrinsic-table-height golds
+  remain exact in `definite-flex-basis-installed-gradient-regressions/`.
+- `definite-flex-basis-installed-headless.guard.json` and
+  `definite-flex-basis-installed-live/status.json`: startup and live scripted
+  loading pass with loaded fonts, five completed visible image requests, and
+  zero native errors. Live loading supplies no matched pixel-comparison credit.
+
+The signed executable is
+`588e99f41112f9986419a766bf7682e66736886f809ea296a07c19325ff983be`,
+pinned with its libraries in `Vox-definite-flex-basis-installed.app`.
+`definite-flex-basis-installed-{before,after}.json` records unchanged installed
+identity across validation. The browser test method was included by a concurrent
+shared commit before the implementation commit. Full-page and scale-two parity
+remain open.
