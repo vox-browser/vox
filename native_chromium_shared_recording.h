@@ -138,7 +138,10 @@ void shared_recording_content(CGContextRef destination, SkRect bounds, float pag
     auto& group = *s_shared_root_recording;
     group.replay_bounds.push_back(bounds);
     group.page_y = page_y;
-    group.scroll_y = group.root ? s_root_raster_scroll_y : scroll_y;
+    // Browser display-list matrices already include root scrolling. The
+    // explicit bridge offset is additional scrolling, so both translations
+    // must be removed when locating a non-root tile in document coordinates.
+    group.scroll_y = s_root_raster_scroll_y + (group.root ? 0 : scroll_y);
     group.tile_width = s_msaa_grid_width;
     group.tile_height = s_msaa_grid_height;
     group.columns = s_msaa_grid_columns;

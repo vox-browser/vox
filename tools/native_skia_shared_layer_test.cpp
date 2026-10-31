@@ -43,7 +43,7 @@ static std::vector<uint32_t> reference(int scale, bool background, int alpha)
 
 // Assemble the expected viewport from independently rasterized full tiles.
 // Exercise both tile axes, border ownership, and a clipped/scrolled layer.
-static void tiled_layer(int scale, int scroll_y)
+static void tiled_layer(int scale, int scroll_y, bool projected_root_scroll = false)
 {
     constexpr int width = 704, height = 512, x = 17, y = 37;
     constexpr int layer_width = 534, layer_height = 892;
@@ -73,6 +73,7 @@ static void tiled_layer(int scale, int scroll_y)
     auto bytes = recorder.finishRecordingAsPicture()->serialize();
     int tile_width = 270 * scale, tile_height = 222 * scale;
     ladybird_v_skia_set_shared_recording(0, width, height);
+    ladybird_v_skia_set_root_raster_scroll_y(projected_root_scroll ? scroll_y : 0);
     ladybird_v_skia_set_raster_layer(x, y, 0);
     ladybird_v_skia_set_raster_layer_size(layer_width, layer_height);
     int cell = 0;
@@ -81,8 +82,10 @@ static void tiled_layer(int scale, int scroll_y)
     auto* canvas = shared_recording_canvas(destination);
     assert(canvas);
     canvas->translate(x, top); draw(canvas);
-    shared_recording_content(destination, SkRect::MakeXYWH(x, top, layer_width, layer_height), 0, scroll_y);
+    shared_recording_content(destination, SkRect::MakeXYWH(x, top, layer_width, layer_height),
+        0, projected_root_scroll ? 0 : scroll_y);
     ladybird_v_skia_finish_shared_recording();
+    ladybird_v_skia_set_root_raster_scroll_y(0);
 
     int first_y = std::max(0, -top) * scale;
     int visible_height = std::min(layer_height * scale - first_y,
@@ -480,7 +483,10 @@ int main()
     for (bool batch : {false, true}) for (bool linear : {false, true})
         gradient_layer(scale, kind, stroke, batch, linear);
     for (int scale : {1, 2}) {
-        for (int scroll : {0, 151}) tiled_layer(scale, scroll);
+        for (int scroll : {0, 151}) {
+            tiled_layer(scale, scroll);
+            tiled_layer(scale, scroll, true);
+        }
         for (int alpha : {0, 128, 255}) for (bool switch_layer : {false, true})
         for (bool backdrop_hint : {false, true})
             backdrop_layers(scale, alpha, switch_layer, backdrop_hint);
