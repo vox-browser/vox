@@ -371,6 +371,24 @@ pub fn enter_persistent() ArenaEntry {
 				base: true
 			}
 		}
+		// A retained owner can be entered from a raw thread scratch scope.
+		// Its detached arena has no parent link, while base_tail still names
+		// that temporary caller. Escape the raw scope before retaining cache
+		// metadata, without changing the caller restored by Arena.leave().
+		mut base_parent := unsafe { &PreallocBlockView(state.base_tail) }
+		if base_parent != unsafe { nil } && base_parent.is_scope {
+			for base_parent != unsafe { nil } && base_parent.is_scope {
+				base_parent = base_parent.previous
+			}
+			if base_parent != unsafe { nil } {
+				for base_parent.next != unsafe { nil } && !base_parent.next.is_scope {
+					base_parent = base_parent.next
+				}
+				remember_current_arena_tail()
+				set_current_block(base_parent)
+				return ArenaEntry{ previous: previous, thread_scope: true }
+			}
+		}
 		remember_current_arena_tail()
 		set_current_block(state.base_tail)
 		state.depth = -state.depth
