@@ -146,6 +146,7 @@ pub enum StyleInvalidationReason {
 	custom_state_set_change
 	element_set_active
 	element_set_shadow_root
+	has_pseudo_class_match_change
 	html_details_or_dialog_open_attribute_change
 	html_dialog_element_set_is_modal
 	html_iframe_element_geometry_change
@@ -181,6 +182,7 @@ pub fn style_invalidation_reason_to_string(reason StyleInvalidationReason) strin
 		.custom_state_set_change { 'CustomStateSetChange' }
 		.element_set_active { 'ElementSetActive' }
 		.element_set_shadow_root { 'ElementSetShadowRoot' }
+		.has_pseudo_class_match_change { 'HasPseudoClassMatchChange' }
 		.html_details_or_dialog_open_attribute_change { 'HTMLDetailsOrDialogOpenAttributeChange' }
 		.html_dialog_element_set_is_modal { 'HTMLDialogElementSetIsModal' }
 		.html_iframe_element_geometry_change { 'HTMLIFrameElementGeometryChange' }
@@ -1525,7 +1527,8 @@ fn reason_may_affect_has_selectors(reason StyleInvalidationReason) bool {
 	// any DOM state can't affect :has() matching, so we can skip scheduling :has() ancestor invalidation.
 	return reason !in [.base_url_changed, .css_font_loaded, .html_iframe_element_geometry_change,
 		.html_object_element_update_layout_and_child_objects, .navigable_set_viewport_size,
-		.settings_change, .style_sheet_disabled_state_change, .style_sheet_replace]
+		.settings_change, .style_sheet_disabled_state_change, .style_sheet_replace,
+		.has_pseudo_class_match_change]
 }
 
 fn schedule_has_walk_for_parent(mutated_node &Node, style_scope &StyleScope, parent &Node, reason StyleInvalidationReason) {

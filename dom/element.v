@@ -5279,7 +5279,9 @@ pub fn (mut e Element) invalidate_style_if_affected_by_has() {
 	if e.affected_by_has_pseudo_class_in_subject_position
 		|| e.affected_by_has_pseudo_class_in_non_subject_position {
 		mut node := unsafe { &Node(&e) }
-		node.invalidate_style_with_properties(.other, [InvalidationProperty{
+		// Propagating a changed match is style work, not a new DOM mutation.
+		// Whole-subtree fallback plans must not queue another :has() walk.
+		node.invalidate_style_with_properties(.has_pseudo_class_match_change, [InvalidationProperty{
 			type_: .pseudo_class
 			pseudo_class_name: 'has'
 		}], StyleInvalidationOptions{})
