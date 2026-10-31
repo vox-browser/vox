@@ -22,6 +22,9 @@ static int check_mixed_sample_tiles()
         ladybird_v_skia_set_raster_layer(0, 0, 1);
         ladybird_v_skia_set_raster_layer_size(64, 64);
         int selected = first_msaa ? 0 : 1;
+        // Only the 2D grid selects MSAA in this case; stale legacy rows must
+        // not make a missing row or column overlap check accidentally pass.
+        ladybird_v_skia_set_msaa_tiles(nullptr, 0, tile_height);
         ladybird_v_skia_set_msaa_grid(&selected, 1, tile_width, tile_height,
             (pw - 2 + tile_width - 3) / (tile_width - 2));
         float rect[] {10, 12, 40, 36, 4, 4, 4, 4, 4, 4, 4, 4};
