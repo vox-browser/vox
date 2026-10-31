@@ -13110,7 +13110,7 @@ fn (d &Document) calculate_active_element() ?&Element {
 		return none
 	}
 	retargeted_node := event_target_as_node(retargeted) or { return none }
-	if retargeted_node.root() != unsafe { &Node(d) } {
+	if voidptr(retargeted_node.root()) != voidptr(d) {
 		return none
 	}
 	if !retargeted_node.is_document() {

@@ -480,7 +480,7 @@ pub fn (shadow_root &ShadowRoot) active_element() ?&Element {
 		&EventTarget(shadow_root_as_node(shadow_root))
 	}) or { return none }
 	retargeted_node := event_target_as_node(retargeted) or { return none }
-	if retargeted_node.root() != shadow_root_as_node(shadow_root) {
+	if voidptr(retargeted_node.root()) != voidptr(shadow_root_as_node(shadow_root)) {
 		return none
 	}
 	if retargeted_node.is_document() {
