@@ -5939,7 +5939,7 @@ fn platform_generic_font_name_boundary(generic_family string, policy platform.Fo
 		'fantasy' { 'Fantasy' }
 		'cursive' { 'Cursive' }
 		'ui-rounded' { 'UiRounded' }
-		'system-ui' {
+		'system-ui', 'ui-sans-serif' {
 			if policy == .chromium && platform.system_font_matching_supported() {
 				'SystemUi'
 			} else {
