@@ -5898,13 +5898,9 @@ fn platform_symbol_font_names_boundary() []string {
 
 fn platform_typefaces_with_family_name_boundary(family_name string, policy platform.FontRenderingPolicy) []&PlatformTypeface {
 	if policy == .chromium && platform.system_font_matching_supported() {
-		// Blink treats this CSS family as a system UI alias even though it is
-		// not an installed CoreText family name.
-		resolved_family := if family_name.to_lower() == '-apple-system' {
-			'SystemUi'
-		} else {
-			family_name
-		}
+		// Missing names (including -apple-system) continue through the author's
+		// list. The platform recognizes system-ui and BlinkMacSystemFont.
+		resolved_family := family_name
 		if !platform.chromium_system_font_family_available(resolved_family) {
 			return []
 		}

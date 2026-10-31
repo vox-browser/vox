@@ -32,19 +32,20 @@ fn test_unavailable_ui_sans_serif_cascades_to_the_authored_fallback() {
 	}
 }
 
-fn test_apple_system_alias_is_selected_after_unavailable_ui_families() {
+fn test_unavailable_apple_system_continues_to_the_authored_fallback() {
+	if !platform.system_font_matching_supported() { return }
 	mut document := dom.Document.create(dom.url_about_blank())
 	defer { document.finalize() }
 	document.set_font_rendering_policy(.chromium)
 	computer := FontComputer.create_for_document(document)
 	for weight in [400, 600, 700] {
-		mut system := ComputedProperties.new()
-		system.set_property_without_modifying_flags(.font_family, &dom.StyleValue{css_text: 'system-ui'})
-		system.set_property_without_modifying_flags(.font_weight, &dom.StyleValue{css_text: weight.str()})
-		expected := system.first_available_computed_font(computer)
-		for family in ['-apple-system, sans-serif', '-apple-system-body, ui-sans-serif, -apple-system, "system-ui", "Segoe UI", Helvetica, Arial, sans-serif'] {
+		for fallback in ['sans-serif', 'Arial', 'system-ui', 'BlinkMacSystemFont'] {
+			mut expected_style := ComputedProperties.new()
+			expected_style.set_property_without_modifying_flags(.font_family, &dom.StyleValue{css_text: fallback})
+			expected_style.set_property_without_modifying_flags(.font_weight, &dom.StyleValue{css_text: weight.str()})
+			expected := expected_style.first_available_computed_font(computer)
 			mut computed := ComputedProperties.new()
-			computed.set_property_without_modifying_flags(.font_family, &dom.StyleValue{css_text: family})
+			computed.set_property_without_modifying_flags(.font_family, &dom.StyleValue{css_text: '-apple-system-body, ui-sans-serif, -apple-system, ${fallback}'})
 			computed.set_property_without_modifying_flags(.font_weight, &dom.StyleValue{css_text: weight.str()})
 			actual := computed.first_available_computed_font(computer)
 			assert actual.typeface.family_name == expected.typeface.family_name
