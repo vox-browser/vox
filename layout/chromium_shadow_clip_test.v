@@ -80,3 +80,33 @@ fn test_opaque_shadow_cutouts_keep_one_css_pixel_in_device_layout() {
 		}
 	}
 }
+
+fn test_padding_background_keeps_outer_shadows_beneath_translucent_borders() {
+	mut document := html.parse_document('<!doctype html><style>
+		body{margin:0}div{position:absolute;left:20px;top:30px;width:140px;height:80px;
+		box-sizing:border-box;border-style:solid;border-color:#0002;border-width:1px 2px 3px 4px;
+		border-radius:8px;background:white;background-clip:padding-box;box-shadow:0 0 8px #0004}
+	</style><div></div>')
+	defer { document.finalize() }
+	document.set_font_rendering_policy(.chromium)
+	for scale in [1.0, 2.0] {
+		document.set_layout_coordinate_scale(scale)
+		root := layout_document_typed_in_viewport(document, 300, 150)
+		commands := root.paint_commands()
+		mut shadow_index := -1
+		mut background_index := -1
+		for index, command in commands {
+			if command.kind == 'paint_outer_box_shadow' { shadow_index = index }
+			if command.kind == 'fill_rounded_rect' { background_index = index }
+		}
+		assert shadow_index >= 0 && background_index > shadow_index
+		shadow := commands[shadow_index]
+		clip := shadow.box_shadow().content_rect
+		assert clip.x == 21 * scale
+		assert clip.y == 31 * scale
+		assert clip.width == 138 * scale
+		assert clip.height == 78 * scale
+		assert shadow.width == 140 * scale
+		assert shadow.height == 80 * scale
+	}
+}

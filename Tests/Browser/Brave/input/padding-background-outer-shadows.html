@@ -1,0 +1,10 @@
+<!doctype html><meta charset="utf-8"><title>Outer shadows beneath translucent borders</title>
+<style>
+body{margin:0;background:#fcfcfc}
+div{position:absolute;left:40px;width:700px;height:60px;box-sizing:border-box;
+border:1px solid rgba(0,0,0,.1);background:white;background-clip:padding-box}
+.multi{top:40px;box-shadow:0 0 0 1px #0000000a,0 2px 8px #0000000a,0 4px 80px 8px #00000006}
+.asymmetric{top:160px;border-width:1px 2px 3px 4px;box-shadow:2px 4px 12px 3px #1355,0 0 0 2px #0002}
+.hard{top:280px;border-width:4px;box-shadow:4px 6px 0 3px #0004}
+.control{top:400px;background-clip:border-box;box-shadow:0 0 0 1px #0000000a,0 2px 8px #0000000a,0 4px 80px 8px #00000006}
+</style><div class="multi"></div><div class="asymmetric"></div><div class="hard"></div><div class="control"></div>

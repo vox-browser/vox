@@ -2193,7 +2193,7 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 		}
 		if box.snaps_background_rect && box.background_color.a == 255
 			&& !box.skip_background_paint && !empty_cell_hidden
-			&& box.decorations().background_color_clip == 'border-box' && box_shadows.any(!it.inset) {
+			&& box.decorations().background_color_clip in ['border-box', 'padding-box'] && box_shadows.any(!it.inset) {
 			outer_start := commands.len
 			paintable_box_paint_box_shadow(mut commands, box_shadows.filter(!it.inset),
 				box.border, effective_border_colors(box.border_colors, box.border_color),
