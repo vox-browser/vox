@@ -50,11 +50,11 @@ def main():
     for test in ['native_skia_gradient_backdrop_test', 'native_skia_gradient_tiles_test',
                  'native_skia_gradient_interpolation_test', 'native_skia_css_gradient_picture_test',
                  'native_skia_shared_layer_test', 'native_picture_image_transport_test',
-                 'native_skia_profiled_image_picture_test']:
+                 'native_skia_profiled_image_picture_test', 'native_graphite_mipped_image_test']:
         executable = output / test
         compile_command = common + [str(REPO / 'tools' / (test + '.cpp')), '-o', str(executable)]
         run_command = [str(executable)]
-        if test == 'native_skia_gradient_interpolation_test':
+        if test in ['native_skia_gradient_interpolation_test', 'native_graphite_mipped_image_test']:
             # Build the independent reference with the same pinned Chromium
             # Skia as the isolated GPU libraries, rather than LibWeb's ABI.
             source = REPO / 'Build/deps/skia-brave/source'

@@ -503,8 +503,15 @@ static void draw_prepared_image(SkCanvas* canvas, VoxGraphiteImage const* image,
     } else if (whole_source) {
         auto natural = rect(image->source);
         canvas->concat(SkMatrix::RectToRect(natural, rect(image->destination)));
-        canvas->drawImageRect(texture, source_rect, natural, sampling, &paint,
-            !image->nearest ? SkCanvas::kFast_SrcRectConstraint : SkCanvas::kStrict_SrcRectConstraint);
+        if (needs_mips && source_rect.contains(SkRect::MakeWH(texture->width(), texture->height()))) {
+            // Chromium replays a complete mipmapped source in decoded pixels.
+            // Keeping this scale inside drawImageRect changes edge sampling.
+            canvas->concat(SkMatrix::RectToRect(source_rect, natural));
+            canvas->drawImage(texture, 0, 0, sampling, &paint);
+        } else {
+            canvas->drawImageRect(texture, source_rect, natural, sampling, &paint,
+                image->nearest || needs_mips ? SkCanvas::kStrict_SrcRectConstraint : SkCanvas::kFast_SrcRectConstraint);
+        }
     } else {
         canvas->drawImageRect(texture, source_rect, rect(image->destination), sampling,
             &paint, SkCanvas::kStrict_SrcRectConstraint);
