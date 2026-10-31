@@ -910,3 +910,23 @@ The original default-synthesis case remains in
 `diagnostic/system-ui-variable-weight-synthesis.html` with its unchanged Brave
 PNG: weight 550 retains 69 differing pixels, maximum channel error 123.
 Synthetic bold at intermediate system weights remains open.
+
+
+`culled-scroll-overlap-gradient` covers a gradient grid separated from earlier
+paint by a tall gap, with an empty horizontal scroller farther down the page.
+Two independent Brave 156.1.98.60 references agree at 1280×800, scale 1 and
+scroll Y 6400. The fixture improves from 159,392 differing pixels to zero.
+Viewport paint metadata retains the empty scroll boundary and the grid's
+compositor origin; complete CSS pictures keep the gradient on that tile grid.
+Run `python3 tools/forum_news_inline_pixels_test.py
+ForumNewsInlinePixelsTests.test_culled_scroll_metadata_retains_a_complete_gradient_picture`.
+The native gradient harness also checks eight direct/pattern picture cases.
+
+`compositor-css-gradients` supplies focused layout tests and a diagnostic for
+promoted and scrolling panels with direct, repeated and radial backgrounds.
+At 1024×768 and scale 1 it improves from 33,850 differing pixels to 24, including
+four channel errors of four. It is not an exact screenshot regression. Its
+scale-two comparison retains the preceding 86,723 differences. New viewport
+metadata and CSS picture eligibility therefore remain restricted to scale 1;
+see [the vlang report](../../../docs/VLANG_BRAVE_RENDERING.md) for identities,
+controls and the remaining mixed-content image restriction.

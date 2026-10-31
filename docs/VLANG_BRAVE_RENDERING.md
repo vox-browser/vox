@@ -85,9 +85,9 @@ Replaying the observed complete layer tile grid reduces the diagnostic to
 general renderer implementation. None of these probes is installed in the
 production bundle or committed as renderer behavior.
 
-The experimental paint-chunk metadata planner also remains outside production.
-Further work needs correct chunk boundaries, scrolling overlap barriers, layer
-origins, and mixed-content replay. Keep the top reference and settled geometry
+That earlier paint-chunk metadata prototype remained outside production.
+The viewport metadata section below records the subsequently validated
+implementation and its remaining mixed-content replay limit. Keep the top reference and settled geometry
 as regression checks; reject captures whose lazy images or fonts leave a
 different document geometry. `e2f4fcfe` pins Brave's process device scale as well
 as its CDP scale so display-dependent font rasterization does not contaminate
@@ -167,10 +167,78 @@ run passes; the control with the preceding ink-bounds calculation fails the
 same bounds assertion. Receipts are `gradient-clipped-bounds-{compile,run}.json`
 and `gradient-clipped-bounds-control-{compile,run}.json`.
 
-The broader viewport metadata and complete CSS picture work is still being
-validated. Its empty-scroller overlap fixture reaches exact equality, but its
-full-page candidate loses code text at scroll Y 6400, and a separate scrolling
-gradient fixture exposes a missing scrolling-background paint. These candidates
-do not establish a vlang rendering improvement or full Brave parity. The four
-existing gradient screenshot regressions remain exact in
-`viewport-layer-gradient-regressions/status.json`.
+The first broader viewport candidate lost code text at scroll Y 6400 and
+exposed a missing scrolling-background paint. Those rejected captures remain
+in `viewport-layer-page-first/` and `compositor-css-viewport-layer/`; the
+following implementation fixes both causes.
+
+
+## Viewport paint metadata and complete CSS pictures
+
+`b931b0d7` retains empty scroll hit-test boundaries and ordinary box bounds
+when grouping paint chunks inside the root's expanded interest rect. It keeps
+culled command spans separate, preserves complete effect scopes and fixed
+content, and converts flattened viewport clips back to document coordinates
+before testing their box bounds. The native text-loss regression only appeared
+with a genuinely scrolled viewport recording; a complete recording at scroll
+zero did not exercise it.
+
+Eligible scale-one CSS gradient pictures retain their own backgrounds, text,
+SVG and supported image draws. Generated-image patterns dither once. Flat opaque
+scroll backgrounds also paint inside their contents picture; omitting that paint
+introduced a separate quantization step. Higher device scales retain the
+preceding planner and CSS picture policy because the direct-gradient phase
+still differs there.
+
+The frozen 1280×800, scale-one archive compares as follows:
+
+| Scroll Y | Earlier root-fade bundle | Viewport bundle |
+| --- | ---: | ---: |
+| 0 | 9 | 9 |
+| 6400 | 147,641 | 65,446 |
+
+At 6400, eight pixels exceed three channel levels, four exceed ten, and the
+maximum channel error remains 17. The other differences are one-level raster
+rounding. These results do not establish pixel-perfect vlang rendering. The
+whole-page picture still falls back when it reaches a rounded image with an
+embedded color profile; the atomic recorder reports one blocked image.
+`picture-image-flags-probe-page/` identifies that restriction separately from
+acceptance measurements.
+
+The new `culled-scroll-overlap-gradient` fixture improves from 159,392 differing
+pixels to zero at 1280×800 and scroll Y 6400. Two fresh Brave references agree
+exactly, and the focused native-browser regression requires exact RGBA equality.
+The layout/diagnostic fixture `compositor-css-gradients` improves from 33,850
+to 24 differences at 1024×768 and scale one. Its scale-two comparison retains
+its preceding 86,723 differences; a rejected broader policy increased that to
+168,111, so it was disabled at that scale.
+
+The accepted executable is
+`87fd6654400733b965a87a55e8553eb9c7b9a45a098bb660a572295d8bf95bd5`,
+pinned with its libraries in `Vox-viewport-accepted.app`. The implementation
+inputs remain unchanged across compilation; only unrelated binding/content
+sources change. Receipts under `Build/vlang-parity-20261031/` include:
+
+- `viewport-accepted-production-{guard,status}.json` and
+  `viewport-accepted-identity.json`: production build, source and bundle hashes.
+- `viewport-accepted-focus-{layout,main}-{none,boehm}-{build,run}.json`:
+  seven layout and 49 main-package test functions pass in both memory modes.
+- `viewport-layer-native/` and `gradient-clipped-bounds-{compile,run}.json`:
+  the five sanitized native suites and the added generated-tile bounds cases.
+- `viewport-accepted-page/`, `viewport-accepted-gradient-regressions/`,
+  `culled-scroll-overlap-reference-agreement.json`, and
+  `compositor-css-accepted-2x/`: fresh-process comparisons. All four existing
+  gradient fixtures remain exact.
+- `viewport-accepted-smoke-status.json`: fourteen screenshot checks pass,
+  including SVG image invalidation and both canonical turbulence cases;
+  the executable and library identities stay unchanged.
+- `viewport-accepted-headless.json` and `viewport-accepted-live/status.json`:
+  startup succeeds, and the live scripted page completes with loaded fonts,
+  five completed visible images and zero native errors.
+
+A broader 43-function layout check retains one existing failure in
+`test_canvas_background_keeps_distant_page_content_in_the_root_raster`.
+The preceding planner and its original record types independently produce
+that same two-layer result; `canvas-original-types-control-v3-{build,run}.json`
+retains the control. The assertion was not weakened. This failure is separate
+from the passing focused metadata checks above.
