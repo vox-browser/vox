@@ -166,6 +166,10 @@ fn run_inline_formatting_context_for_width(mut state LayoutState, containing_blo
 	}
 	mut line_builder := LineBuilder.new_with_block_context(mut state, containing_block, containing_block_used_values, available_space.width, direction, writing_mode, parent_block_context)
 	line_builder.intrinsic_width_only = width_only
+	wrap_breaks := optimized_text_wrap_breaks(containing_block, iterator, line_builder,
+		layout_mode, width_only, available_space, parent_block_context)
+	defer { $if !prealloc { unsafe { wrap_breaks.free() } } }
+	mut wrap_break_index := 0
 	mut leading_margin_from_collapsible_whitespace := CSSPixels.new(0)
 	mut leading_border_from_collapsible_whitespace := CSSPixels.new(0)
 	mut leading_padding_from_collapsible_whitespace := CSSPixels.new(0)
@@ -175,6 +179,12 @@ fn run_inline_formatting_context_for_width(mut state LayoutState, containing_blo
 
 	for {
 		mut item := iterator.next() or { break }
+		if wrap_break_index < wrap_breaks.len
+			&& iterator.next_item_index - 1 == wrap_breaks[wrap_break_index] {
+			line_builder.note_soft_wrap_opportunity()
+			line_builder.break_line(.no, none)
+			wrap_break_index++
+		}
 		can_break_after_previous_overflow_item := previous_text_item_allows_overflow_break_after
 		previous_text_item_allows_overflow_break_after = false
 		if item.is_collapsible_whitespace && (containing_block_used_values.line_boxes.len == 0
