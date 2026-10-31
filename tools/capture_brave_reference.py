@@ -128,7 +128,10 @@ def launch_command(binary, profile, proxy_server=None, windowed=False):
                 raise ValueError('Invalid SOCKS5 proxy hostname')
             command += [f'--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE {host}']
     if windowed:
-        return command + ['--no-startup-window']
+        # A background test window can be covered by another app on its display.
+        # Keep its compositor active so font/lazy-image settling and screenshot
+        # publication do not depend on which window happens to be in front.
+        return command + ['--no-startup-window', '--disable-backgrounding-occluded-windows']
     return command + ['--headless=new', 'about:blank']
 
 

@@ -106,6 +106,7 @@ class BraveReferenceTests(unittest.TestCase):
         self.assertNotIn('--headless=new', command)
         self.assertNotIn('about:blank', command)
         self.assertIn('--no-startup-window', command)
+        self.assertIn('--disable-backgrounding-occluded-windows', command)
         self.assertEqual(window_position('-1100,32'), (-1100, 32))
 
     def test_native_viewport_resize_accounts_for_browser_chrome(self):
