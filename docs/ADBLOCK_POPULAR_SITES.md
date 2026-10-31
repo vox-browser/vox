@@ -1727,3 +1727,57 @@ Evidence is under `Build/forum-news-svg-fringe-20261031/`, especially
 and both expected predecessor failures remain retained. The broad baseline
 remains **`adf10924`**, with **three** completed native fixes after it. Full
 ten-site pixel parity remains open.
+
+## Painted prefixes in resumed compositor pictures, 31 October 2026
+
+`57dcba8b` adds the `forum-resumed-scroll-raster` regression with three SVGs
+in a scrolling compositor layer. Translucent paths interrupt the parent's picture; resuming
+that picture previously erased pixels from earlier children. The fixture
+improves from **398 differing pixels to zero** against two agreeing 1024×768,
+scale 1 Brave 156.1.98.60 references. The preceding production browser fails
+the same permanent regression, with maximum channel error 255.
+
+Non-root pictures now retain a painted destination prefix before their
+fallback leaves run, including resumptions inside transparent offscreen
+parents. Empty canvases retain the original fractional layer phase; the
+explicit backdrop hint retains its preceding behavior. An initial candidate
+that snapped even empty canvases failed the existing native local-picture
+check. That failure remains retained, and the final candidate passes it.
+
+The sanitized native shared-layer suite passes its **144** local-picture
+comparisons and their blocked-content guards, **32** gradient comparisons,
+tile/clip/shadow checks, and **24** two-picture backdrop scenarios. The backdrop
+cases cover both device scales, transparent/translucent/opaque prefixes,
+explicit flushes and layer switches, with the native backdrop hint enabled
+and disabled. All **30 native Brave fixtures**, three canonical SVG reftests,
+five harness cases, signing and startup pass on the final pinned bundle.
+
+Only the changed native bridge is rebuilt, using the normal production flags
+and the shared production guard. The publication completes at **0.45 GiB**
+sampled peak RSS under the unchanged 12 GiB limit. Published bytes match the
+tested candidate, public C exports remain unchanged, and all file-backed
+executable sections retain their hashes. The Metal backend, Dawn backend and
+uBO snapshot keep their identities. Fresh captures pin executable
+`612b1fdeb5a9e0348325485a1a35e0601449654876ccde4ca520b750e8c88c3b`
+and native bridge
+`a26490174d1128794532d0db8ef2fa178f08bb2f9242b0db64fc15369b5241b7`.
+A fresh installed-bundle startup check passes.
+
+The final full-uBO matrix still accepts **one of ten**. All eight completed
+native frames and their Brave references remain pixel-identical to the
+preceding feature's frames: HN 0, Lobsters 0, Slashdot 9,773, Stack Overflow
+**230**, BBC 76,604, CNN 101,529, The Verge 315,921 and Pikabu 13,925 differing
+pixels. Stack Overflow's maximum channel error stays **2**; its remaining
+color and mask differences are unchanged. This fix receives no full-site
+pixel-improvement credit. Lobsters retains its 71-pixel live-to-frozen mismatch;
+Reddit's guest HTTP 403 and The Guardian's unstable references remain failures.
+All eight completed workloads retain matching full-uBO request/header,
+cosmetic, procedural and scriptlet evidence, and the closed 326-file oracle
+template remains unchanged. Full ten-site pixel parity remains open.
+
+Evidence is under `Build/forum-news-svg-alpha-20261031/`, especially
+`fixture-comparison.json`, `reference/`, `native-v3/`, `candidate-v3/` and
+`native-build/publication.json`. The superseded `candidate-v2` matrix was
+cancelled and supplies no acceptance credit; its outer receipt is incomplete.
+The final candidate has its own complete guarded validation. The broad
+baseline remains **`adf10924`**, with **four** completed native fixes after it.

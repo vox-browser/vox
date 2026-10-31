@@ -58,6 +58,17 @@ root and compositor layers, both device scales, fractional geometry, rounded
 clips and transparent/colored backdrops. The preceding library fails the
 same native and browser regressions. Unsupported clips retain their fallback.
 
+`forum-resumed-scroll-raster` checks three SVGs in a scrolling compositor layer,
+with translucent paths that interrupt its parent picture. Its 1024×768,
+scale 1 reference comes from two agreeing Brave 156.1.98.60 captures. Resuming
+the picture previously erased earlier children, changing 398 pixels; it now
+matches exactly. A new picture snapshots the painted prefix before fallback
+leaves run. An empty canvas retains its fractional layer origin. The native
+shared-layer test adds backdrop-hint coverage and transparent parents: 24
+two-picture scenarios cover both device scales, translucent/opaque prefixes,
+and explicit flushes/layer switches. The retained local-picture, gradient,
+shadow, clip and unsupported-content checks also pass with sanitizers.
+
 References were captured from Brave 155.1.97.57 on macOS at device scale 1.
 `font-rasterization` covers Arial and Verdana at integer and fractional sizes,
 automatic and antialiased smoothing, three foreground colors, and white and
