@@ -37,8 +37,15 @@ fn html_form_element_is_associated(form &HTMLFormElementModel, element &dom.Elem
 }
 
 fn html_form_element_is_form_control(form &HTMLFormElementModel, element &dom.Element) bool {
-	if !html_form_element_is_listed(element) || !html_form_element_is_associated(form, element) {
+	if !html_form_element_is_listed(element) {
 		return false
+	}
+	// Native form-control records are lazy in V. A live collection must discover
+	// untouched controls just as submission does, including controls inserted
+	// after the collection was saved. Preserve existing parser associations.
+	if !html_form_element_is_associated(form, element) {
+		materialize_form_associated_controls(form, element.as_node())
+		if !html_form_element_is_associated(form, element) { return false }
 	}
 	return !(element.local_name() == 'input' && form_element_input_type(element) == 'image')
 }
