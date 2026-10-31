@@ -1,11 +1,18 @@
 module main
 
 import dom
+import os
 
-// Cookie banners are blocked unless a future browser setting explicitly opts
-// out. Keeping the default here makes the policy visible at the call site and
-// easy to expose as a preference later.
+// Cookie banners are blocked in ordinary sessions. The environment override
+// below permits a consent state shared with a reference browser.
 const cookie_blocker_enabled_by_default = true
+
+// Conformance captures and launches can preserve a site's consent UI while
+// retaining the browser's default policy for ordinary sessions.
+fn apply_cookie_banner_policy(document &dom.Document) int {
+	if os.getenv('VOX_BLOCK_COOKIE_BANNERS') == '0' { return 0 }
+	return if cookie_blocker_enabled_by_default { hide_cookie_banners(document) } else { 0 }
+}
 
 const cookie_banner_container_tags = [
 	'aside',

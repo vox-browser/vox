@@ -3802,9 +3802,7 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 		static_image_loader := if app.layout_tree_only { ?&BrowserImageRequestLoader(none) } else { image_loader }
 		install_static_browser_image_fetch_hooks_with_loader(app.document, app.nonrendered_image_preloads, static_image_loader)
 	}
-	if cookie_blocker_enabled_by_default {
-		hide_cookie_banners(app.document)
-	}
+	apply_cookie_banner_policy(app.document)
 	checkpoint = debug_timing_checkpoint('cookie_blocker', checkpoint)
 	// Stylesheets that scripts inserted, and that the disk cache holds, take
 	// part in the first layout instead of a later relayout.

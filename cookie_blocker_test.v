@@ -1,6 +1,23 @@
 module main
 
 import html
+import os
+
+fn test_cookie_banner_policy_can_preserve_original_site_ui_for_conformance() {
+	previous := os.getenv_opt('VOX_BLOCK_COOKIE_BANNERS')
+	defer {
+		if value := previous { os.setenv('VOX_BLOCK_COOKIE_BANNERS', value, true) } else { os.unsetenv('VOX_BLOCK_COOKIE_BANNERS') }
+	}
+	mut document := html.parse_document('<!doctype html><div id="cookie-banner" style="position:fixed">We use cookies. <button>Accept</button></div>')
+	defer { document.finalize() }
+	os.setenv('VOX_BLOCK_COOKIE_BANNERS', '0', true)
+	assert apply_cookie_banner_policy(document) == 0
+	banner := document.get_element_by_id('cookie-banner') or { panic('missing banner') }
+	assert !banner.has_attribute('data-vox-cookie-blocked')
+	assert banner.get_attribute_value('style') == 'position:fixed'
+	os.setenv('VOX_BLOCK_COOKIE_BANNERS', '1', true)
+	assert apply_cookie_banner_policy(document) == 1
+}
 
 fn test_cookie_blocker_is_enabled_by_default() {
 	assert cookie_blocker_enabled_by_default
