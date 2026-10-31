@@ -3137,6 +3137,10 @@ fn run_document_script_sources_with_media_loader(document &dom.Document, current
 	processmetrics.instruction_checkpoint('javascript_document_bindings')
 	install_browser_adblock_scriptlets(document, runtime, mut messages)
 	processmetrics.instruction_checkpoint('javascript_adblock_scriptlets')
+	install_compact_module_host(document, mut mutable_runtime) or {
+		messages << 'JavaScript module bindings: ${err.msg()}'
+		return none
+	}
 	for source in sources {
 		if !compact_document_can_run_script(document) { continue }
 		run_compact_document_script(document, source, runtime) or {
@@ -3144,6 +3148,7 @@ fn run_document_script_sources_with_media_loader(document &dom.Document, current
 			return none
 		}
 		if element := source.external_element {
+			if source.source_type == .module { continue }
 			runtime.dispatch_external_script_load(element) or {
 				messages << 'JavaScript script completion: ${err.msg()}'
 				return none

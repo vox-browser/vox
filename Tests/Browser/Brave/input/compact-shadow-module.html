@@ -1,0 +1,24 @@
+<!doctype html>
+<meta charset="utf-8">
+<style>
+html,body{margin:0;background:white}
+.host{display:block;width:120px;height:80px;margin:20px}
+.tile{width:120px;height:80px;background:#ff0000}
+#module{position:absolute;left:160px;top:20px;width:120px;height:80px;background:#ff0000}
+#dynamic{position:absolute;left:160px;top:120px;width:120px;height:80px;background:#ff0000}
+</style>
+<div id="open-host" class="host"></div>
+<div id="closed-host" class="host"></div>
+<div id="module"></div><div id="dynamic"></div>
+<script>
+const openHost=document.getElementById("open-host"),closedHost=document.getElementById("closed-host");
+openHost.attachShadow({mode:"open"}).innerHTML='<style>.tile{width:120px;height:80px;background:#008000}</style><div class="tile"></div>';
+closedHost.attachShadow({mode:"closed"}).setHTMLUnsafe('<style>.tile{width:120px;height:80px;background:#0000ff}</style><div class="tile"></div>');
+</script>
+<script type="importmap">{"imports":{"fixture":"data:text/javascript,export%20const%20color%3D%22%23008000%22"}}</script>
+<script type="module">
+import {color} from "fixture";
+document.getElementById("module").style.backgroundColor=color;
+const imported=await import("fixture");
+document.getElementById("dynamic").style.backgroundColor=imported.color;
+</script>

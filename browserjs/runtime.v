@@ -90,6 +90,7 @@ mut:
 	document_state_wakeup_ ?fn ()
 	document_replay_effects_pending_ bool
 	scripting_settings_ ?&html.EnvironmentSettingsObject
+	module_host_ ?&ModuleHost
 }
 
 pub fn Runtime.create() &Runtime {
@@ -206,7 +207,7 @@ fn (runtime &Runtime) check_execution_support(source_type libjs.SourceType) ! {
 	if runtime.closed {
 		return error('JavaScript runtime is closed')
 	}
-	if source_type == .module {
+	if source_type == .module && runtime.module_host_ == none {
 		return error('Module execution is not yet implemented by the browser JavaScript backend')
 	}
 }
@@ -216,6 +217,14 @@ fn (runtime &Runtime) check_execution_support(source_type libjs.SourceType) ! {
 fn (runtime &Runtime) execute_source(source ScriptSource, stringify_result bool) !string {
 	runtime.check_execution_support(source.source_type)!
 	if source.starting_line < 1 { return error('Script starting line must be positive') }
+	if host := runtime.module_host_ {
+		mut mutable_host := unsafe { &ModuleHost(host) }
+		if source.source_type == .module { return mutable_host.execute(source, stringify_result) }
+		transformed := mutable_host.transform_classic(source)!
+		record := libjs.Script.create_external(source.code, runtime.realm, source.url,
+			u32(source.starting_line), voidptr(runtime))!
+		return runtime.execute_embedding_script(transformed, record, stringify_result)
+	}
 	if runtime.engine == .libjs {
 		return runtime.execute_prepared(prepare_script(source)!, stringify_result)
 	}
@@ -226,6 +235,7 @@ fn (runtime &Runtime) execute_source(source ScriptSource, stringify_result bool)
 
 fn (runtime &Runtime) execute_prepared(script &PreparedScript, stringify_result bool) !string {
 	runtime.check_execution_support(script.source.source_type)!
+	if runtime.module_host_ != none { return runtime.execute_source(script.source, stringify_result) }
 	if runtime.engine == .libjs {
 		if script.frontend.reached_recursion_limit {
 			return error('LibJS frontend recursion limit reached; this program cannot be executed by the translated runtime')

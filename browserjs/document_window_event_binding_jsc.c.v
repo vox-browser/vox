@@ -24,6 +24,15 @@ pub fn (runtime &Runtime) dispatch_document_readiness_event(name string) ! {
 	settings := runtime.scripting_settings_ or { return error('Readiness event requires actual owning settings') }
 	document := settings.responsible_document() or { return error('Readiness event requires an actual Document') }
 	if name !in ['DOMContentLoaded', 'load'] { return error('Unknown document readiness event') }
+	if mut host := runtime.module_host_ {
+		waiting := if name == 'DOMContentLoaded' {
+			host.executions.any(!it.finished && it.blocks_readiness)
+		} else { host.pending_scripts > 0 }
+		if waiting {
+			if name !in host.deferred_readiness { host.deferred_readiness << name }
+			return
+		}
+	}
 	mut owner := unsafe { &dom.Document(document) }
 	if !owner.claim_readiness_event(name) { return }
 	event := dom.Event.create(name, dom.EventInit{ bubbles: name == 'DOMContentLoaded' })

@@ -1,0 +1,439 @@
+// SPDX-License-Identifier: BSD-2-Clause
+module browserjs
+
+import dom
+import fetch
+import html
+import json2
+import platform
+
+$if darwin {
+	#flag darwin -framework Foundation
+	#flag darwin @DIR/module_loader_darwin.m
+	#include "module_loader_darwin.h"
+}
+
+fn C.vox_module_loader_install(voidptr, voidptr, voidptr) voidptr
+fn C.vox_module_loader_close(voidptr, voidptr)
+fn C.vox_module_loader_evaluate(voidptr, &char, uint, &voidptr) voidptr
+fn C.vox_module_loader_supply(voidptr, voidptr, &char, uint, &char, uint, &voidptr) voidptr
+
+pub fn (mut host ModuleHost) install(mut runtime Runtime) ! {
+	$if !darwin {
+		return error('Native module loading is currently available on macOS only')
+	}
+	$if darwin {
+		runtime.require_javascript_value_context()!
+		if runtime.module_host_ != none { return error('A module loader is already installed') }
+		host.runtime = &runtime
+		host.helper_name = '__voxModuleImport_${uint(voidptr(host))}'
+		owner := voidptr(host)
+		fetcher := runtime.make_value_host_function(fn [owner] (_ voidptr, args []voidptr) !voidptr {
+			mut host := unsafe { &ModuleHost(owner) }
+			if host.closed || args.len != 3 { return error('Invalid module fetch callback') }
+			host.load(host.runtime.binding_dom_string(args[0])!, args[1], args[2])!
+			return C.JSValueMakeUndefined(host.runtime.context)
+		})!
+		evaluated := runtime.make_value_host_function(fn [owner] (_ voidptr, args []voidptr) !voidptr {
+			mut host := unsafe { &ModuleHost(owner) }
+			if !host.closed && args.len == 2 {
+				if mut document := host.settings.responsible_document() {
+					if C.JSValueToBoolean(host.runtime.context, args[1]) {
+						host.current_scripts << BrowserModuleCurrentScript{ script: document.current_script() }
+						document.set_current_script(none)
+					} else if host.current_scripts.len > 0 {
+						document.set_current_script(host.current_scripts.pop().script)
+					}
+				}
+				if !C.JSValueToBoolean(host.runtime.context, args[1]) {
+					host.evaluated(host.runtime.binding_dom_string(args[0])!)
+				}
+			}
+			return C.JSValueMakeUndefined(host.runtime.context)
+		})!
+		host.native_loader = C.vox_module_loader_install(runtime.context, fetcher, evaluated)
+		if host.native_loader == unsafe { nil } {
+			return error('This JavaScriptCore version has no native module loader')
+		}
+		mut installed := false
+		defer {
+			if !installed {
+				C.vox_module_loader_close(runtime.context, host.native_loader)
+				host.native_loader = unsafe { nil }
+			}
+		}
+		resolver := runtime.make_value_host_function(fn [owner] (_ voidptr, args []voidptr) !voidptr {
+			mut host := unsafe { &ModuleHost(owner) }
+			if host.closed || args.len != 3 { return error('Invalid module resolution callback') }
+			specifier := host.runtime.binding_dom_string(args[0])!
+			base := host.runtime.binding_dom_string(args[1])!
+			key := host.runtime.binding_dom_string(args[2])!
+			resolved := host.resolve(specifier, base, key) or {
+				return host.runtime.event_binding_type_error(err.msg())
+			}
+			return host.runtime.binding_string(resolved)
+		})!
+		factory := runtime.evaluate_host_value(module_source_factory())!
+		host.transform = runtime.call_javascript_function(factory, C.JSValueMakeUndefined(runtime.context),
+			[resolver, runtime.binding_string(host.helper_name)])!
+		runtime.retain_javascript_value(host.transform)!
+		runtime.module_host_ = host
+		runtime.add_close_handler(fn [owner] () {
+			mut host := unsafe { &ModuleHost(owner) }
+			host.close()
+		})
+		installed = true
+	}
+}
+
+pub fn (mut host ModuleHost) close() {
+	if host.closed { return }
+	host.closed = true
+	for mut execution in host.executions { host.release_execution(mut execution) }
+	for operation in host.operations {
+		if mut controller := operation.controller { controller.stop_fetch() }
+	}
+	if mut connection := host.connection { connection.close() }
+	$if darwin {
+		if host.native_loader != unsafe { nil } {
+			C.vox_module_loader_close(host.runtime.context, host.native_loader)
+			host.native_loader = unsafe { nil }
+		}
+	}
+	host.operations = []
+	host.in_flight = {}
+	host.executions = []
+	host.sources = {}
+}
+
+fn (mut host ModuleHost) resolve(specifier string, base string, parent string) !string {
+	resolved := html.resolve_module_specifier(host.settings.universal_global_scope().import_map(),
+		dom.URL{ value: base }, specifier)!
+	key := resolved.serialize()
+	mut settings := unsafe { &html.EnvironmentSettingsObject(host.settings) }
+	as_url := html.resolve_url_like_module_specifier(specifier, dom.URL{ value: base })
+	normalized := if address := as_url { address.serialize() } else { specifier }
+	settings.add_module_to_resolved_module_set(base, normalized, as_url)
+	if key !in host.sources {
+		options := if source := host.sources[parent] {
+			html.get_descendant_script_fetch_options(source.options, resolved, host.settings)
+		} else {
+			html.default_script_fetch_options()
+		}
+		host.sources[key] = BrowserModuleSource{
+			base:     key
+			options:  options
+			referrer: fetch.Referrer{ url: dom.URL{ value: base } }
+		}
+	}
+	return key
+}
+
+fn (mut host ModuleHost) rewrite(code string, base string, key string, is_module bool) !string {
+	value := host.runtime.call_javascript_function(host.transform,
+		C.JSValueMakeUndefined(host.runtime.context), [
+			host.runtime.binding_string(code),
+			host.runtime.binding_string(base),
+			host.runtime.binding_string(key),
+			C.JSValueMakeBoolean(host.runtime.context, is_module),
+		])!
+	return host.runtime.binding_dom_string(value)
+}
+
+fn (mut host ModuleHost) transform_classic(source ScriptSource) !ScriptSource {
+	if !source.code.contains('import') { return source }
+	base := if source.url == '' { host.settings.api_base_url().serialize() } else { source.url }
+	return ScriptSource{ ...source, code: host.rewrite(source.code, base, base, false)! }
+}
+
+fn (mut host ModuleHost) execute(source ScriptSource, stringify_result bool) !string {
+	$if darwin {
+		if host.closed { return error('Module loader is closed') }
+		mut key := source.url
+		mut base := if key == '' { host.settings.api_base_url().serialize() } else { key }
+		mut options := html.default_script_fetch_options()
+		mut external := false
+		if element := source.element {
+			external = element.has_attribute('src')
+			options.cryptographic_nonce = element.get_attribute_value('nonce')
+			options.integrity_metadata = element.get_attribute_value('integrity')
+			options.referrer_policy = element.get_attribute_value('referrerpolicy')
+			options.credentials_mode = if element.get_attribute_value('crossorigin').to_lower() == 'use-credentials' {
+				.include
+			} else {
+				.same_origin
+			}
+			if !external {
+				host.next_inline++
+				base = element.document().base_url().serialize()
+				key = base.all_before('#') + '#vox-inline-${host.next_inline}'
+			}
+		}
+		if key == '' {
+			host.next_inline++
+			key = base.all_before('#') + '#vox-inline-${host.next_inline}'
+		}
+		if key !in host.sources {
+			host.sources[key] = BrowserModuleSource{
+				base:      base
+				options:   options
+				top_level: .yes
+				code:      if external { none } else { source.code }
+			}
+		}
+		mut execution := &BrowserModuleExecution{
+			key:              key
+			element:          source.external_element
+			blocks_readiness: if element := source.element {
+				!element.has_attribute('async')
+			} else {
+				false
+			}
+		}
+		if mut document := host.settings.responsible_document() {
+			execution.delayer = dom.DocumentLoadEventDelayer.new(mut document)
+			if execution.blocks_readiness { document.begin_module_readiness_delay() }
+		}
+		host.executions << execution
+		host.pending_scripts++
+		runtime := host.runtime
+		runtime.prepare_html_script()
+		defer { runtime.clean_up_html_script() }
+		mut exception := unsafe { nil }
+		promise := C.vox_module_loader_evaluate(host.runtime.context, key.str, uint(key.len), &exception)
+		if exception != unsafe { nil } {
+			host.release_execution(mut execution)
+			return error(js_exception_message(host.runtime.context, exception))
+		}
+		if promise == unsafe { nil } {
+			host.release_execution(mut execution)
+			return error('Native module evaluation failed')
+		}
+		defer { C.JSValueUnprotect(runtime.context, promise) }
+		owner := voidptr(host)
+		entry := voidptr(execution)
+		fulfilled := fn [owner, entry] (_ voidptr, _ []voidptr) !voidptr {
+			mut host := unsafe { &ModuleHost(owner) }
+			mut execution := unsafe { &BrowserModuleExecution(entry) }
+			host.finish_script(mut execution, '')
+			return C.JSValueMakeUndefined(host.runtime.context)
+		}
+		rejected := fn [owner, entry] (_ voidptr, args []voidptr) !voidptr {
+			mut host := unsafe { &ModuleHost(owner) }
+			mut execution := unsafe { &BrowserModuleExecution(entry) }
+			message := if args.len > 0 {
+				js_exception_message(host.runtime.context, args[0])
+			} else {
+				'Module evaluation failed'
+			}
+			host.finish_script(mut execution, message)
+			return C.JSValueMakeUndefined(host.runtime.context)
+		}
+		mut mutable_runtime := unsafe { &Runtime(runtime) }
+		mutable_runtime.own_closure(voidptr(fulfilled))
+		mutable_runtime.own_closure(voidptr(rejected))
+		mutable_runtime.observe_javascript_promise(promise, fulfilled, rejected)!
+		_ = stringify_result
+		return ''
+	}
+	return error('Native module execution is unavailable on this platform')
+}
+
+fn (mut host ModuleHost) release_execution(mut execution BrowserModuleExecution) {
+	if execution.finished { return }
+	execution.finished = true
+	if mut delayer := execution.delayer {
+		delayer.finish()
+		execution.delayer = none
+	}
+	if execution.blocks_readiness {
+		if mut document := host.settings.responsible_document() {
+			document.end_module_readiness_delay()
+		}
+	}
+	host.pending_scripts--
+}
+
+fn (mut host ModuleHost) evaluated(key string) {
+	for mut execution in host.executions {
+		if execution.key != key || execution.evaluated || execution.finished { continue }
+		execution.evaluated = true
+		owner := voidptr(host)
+		entry := voidptr(execution)
+		// didEvaluateModule fires when native evaluation starts, including a
+		// suspended top-level await. Readiness must not wait for that promise.
+		html.queue_a_task(.dom_manipulation, host.settings.responsible_event_loop(), host.settings.responsible_document(), fn [owner, entry] () {
+			mut host := unsafe { &ModuleHost(owner) }
+			mut execution := unsafe { &BrowserModuleExecution(entry) }
+			if !host.closed { host.finish_script(mut execution, '') }
+		})
+	}
+}
+
+fn (mut host ModuleHost) finish_script(mut execution BrowserModuleExecution, message string) {
+	if host.closed { return }
+	was_finished := execution.finished
+	host.release_execution(mut execution)
+	if message != '' {
+		host.diagnostics << message
+		host.runtime.evaluate_host('console.error(${json2.encode(message)})') or {}
+	}
+	mut runtime := unsafe { &Runtime(host.runtime) }
+	if !was_finished {
+		if element := execution.element {
+			runtime.dispatch_external_script_event(element, if message == '' || execution.evaluated {
+				'load'
+			} else {
+				'error'
+			}) or {}
+		}
+	}
+	if host.deferred_readiness.len > 0 {
+		pending := host.deferred_readiness.clone()
+		host.deferred_readiness = []
+		for name in pending {
+			if name == 'load' {
+				if document := host.settings.responsible_document() {
+					if document.anything_is_delaying_the_load_event() { continue }
+				}
+			}
+			runtime.dispatch_document_readiness_event(name) or {}
+		}
+	}
+	runtime.mark_document_state_dirty()
+}
+
+fn (mut host ModuleHost) reject(mut operation BrowserModuleOperation, message string) {
+	if operation.finished || host.closed { return }
+	operation.finished = true
+	mut runtime := unsafe { &Runtime(host.runtime) }
+	value := runtime.call_javascript_function(runtime.value_error_intrinsic_,
+		C.JSValueMakeUndefined(runtime.context), [runtime.binding_string('TypeError'),
+			runtime.binding_string(message)]) or { return }
+	runtime.call_javascript_function(operation.reject, C.JSValueMakeUndefined(runtime.context), [value]) or {}
+	runtime.release_javascript_value(operation.resolve)
+	runtime.release_javascript_value(operation.reject)
+}
+
+fn (mut host ModuleHost) supply(mut operation BrowserModuleOperation, code string, base string) {
+	if operation.finished || host.closed { return }
+	if html.can_run_script_for_settings(host.settings) != .run {
+		host.reject(mut operation, 'Module execution is disabled for its document')
+		return
+	}
+	mut runtime := unsafe { &Runtime(host.runtime) }
+	transformed := host.rewrite(code, base, operation.key, true) or {
+		host.reject(mut operation, js_exception_or_message(runtime.context, err))
+		return
+	}
+	$if darwin {
+		mut exception := unsafe { nil }
+		result := C.vox_module_loader_supply(runtime.context, operation.resolve, transformed.str, uint(transformed.len),
+			operation.key.str, uint(operation.key.len), &exception)
+		if exception != unsafe { nil } || result == unsafe { nil } {
+			host.reject(mut operation, 'Unable to supply native module ${operation.key}')
+			return
+		}
+	}
+	operation.finished = true
+	runtime.release_javascript_value(operation.resolve)
+	runtime.release_javascript_value(operation.reject)
+}
+
+fn js_exception_or_message(context voidptr, err IError) string {
+	if err is JavaScriptValueException { return js_exception_message(context, err.value) }
+	return err.msg()
+}
+
+fn (mut host ModuleHost) consume_script(mut operation BrowserModuleOperation, script ?&html.Script) {
+	mut waiters := host.in_flight[operation.key] or { [&operation] }
+	host.in_flight.delete(operation.key)
+	if source := script {
+		module_script := unsafe { &html.JavaScriptModuleScript(source) }
+		if module_script.kind == .javascript {
+			for mut waiting in waiters {
+				host.supply(mut waiting, module_script.source, (module_script.base_url or { dom.URL{ value: operation.key } }).serialize())
+			}
+			return
+		}
+	}
+	for mut waiting in waiters {
+		host.reject(mut waiting, 'Failed to fetch JavaScript module ${operation.key}')
+	}
+}
+
+fn (mut host ModuleHost) fail_load(operation &BrowserModuleOperation, message string) {
+	mut waiters := host.in_flight[operation.key] or { [operation] }
+	host.in_flight.delete(operation.key)
+	for mut waiting in waiters { host.reject(mut waiting, message) }
+}
+
+fn (mut host ModuleHost) load(key string, resolve voidptr, reject voidptr) ! {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	mut runtime := unsafe { &Runtime(host.runtime) }
+	entry := host.sources[key] or { BrowserModuleSource{ base: key, options: html.default_script_fetch_options() } }
+	mut operation := &BrowserModuleOperation{
+		key:     key
+		source:  entry
+		resolve: runtime.retain_javascript_value(resolve)!
+		reject:  runtime.retain_javascript_value(reject)!
+	}
+	host.operations << operation
+	if code := entry.code {
+		host.supply(mut operation, code, entry.base)
+		return
+	}
+	if pending := host.in_flight[key] {
+		mut waiters := pending.clone()
+		waiters << operation
+		host.in_flight[key] = waiters
+		return
+	}
+	host.in_flight[key] = [operation]
+	url := dom.URL{ value: key }
+	owner := voidptr(host)
+	op := voidptr(operation)
+	callback := fn [owner, op] (script ?&html.Script) {
+		mut host := unsafe { &ModuleHost(owner) }
+		mut operation := unsafe { &BrowserModuleOperation(op) }
+		host.consume_script(mut operation, script)
+	}
+	runtime.own_closure(voidptr(callback))
+	if host.settings.module_map().get(url, 'javascript-or-wasm') != none {
+		html.fetch_single_module_script(host.settings.realm(), url, host.settings, .script, entry.options,
+			host.settings.realm(), entry.referrer, none, entry.top_level, none, callback)
+		return
+	}
+	mut request := fetch.Request.create()
+	request.set_url(url)
+	request.set_client(host.settings)
+	request.mode = .cors
+	request.destination = .script
+	request.initiator_type = .script
+	request.referrer = entry.referrer
+	html.set_up_module_script_request(mut request, entry.options)
+	consume := fn [owner, op, callback] (response &fetch.Response, body fetch.BodyBytes) {
+		mut host := unsafe { &ModuleHost(owner) }
+		mut operation := unsafe { &BrowserModuleOperation(op) }
+		if host.closed { return }
+		if body.kind != .bytes {
+			host.fail_load(operation, 'Module response body failed')
+			return
+		}
+		mut actual := unsafe { &fetch.Response(response.unsafe_response()) }
+		actual.set_body_bytes(body.bytes)
+		provided := fn [response] (_ &fetch.Request, _ html.TopLevelModule) !&fetch.Response {
+			return response
+		}
+		mut runtime := unsafe { &Runtime(host.runtime) }
+		runtime.own_closure(voidptr(provided))
+		entry := operation.source
+		html.fetch_single_module_script(host.settings.realm(), dom.URL{ value: operation.key }, host.settings,
+			.script, entry.options, host.settings.realm(), entry.referrer, none, entry.top_level, provided, callback)
+	}
+	runtime.own_closure(voidptr(consume))
+	operation.controller = fetch.fetch(request, fetch.FetchAlgorithms.create(fetch.FetchAlgorithmsInput{
+		process_response_consume_body: consume
+	}), host.transport, .no)
+}

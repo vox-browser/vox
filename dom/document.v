@@ -5415,6 +5415,7 @@ pub mut:
 	needs_to_call_page_did_load                bool
 	cursor_blink_state                         bool
 	fired_dom_content_loaded                   bool
+	pending_module_readiness_scripts           int
 	fired_load_event                           bool
 	inside_exec_command                        bool
 	running_editing_command_action             bool
@@ -8977,6 +8978,7 @@ pub fn (d &Document) document_completely_loaded_deferred() bool {
 // their own tasks; whichever runs first claims the event and the other skips it.
 pub fn (mut d Document) claim_readiness_event(name string) bool {
 	if name == 'DOMContentLoaded' {
+		if d.pending_module_readiness_scripts > 0 { return false }
 		if d.fired_dom_content_loaded {
 			return false
 		}
