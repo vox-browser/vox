@@ -44,14 +44,23 @@ def main():
             for framework in ['CoreFoundation', 'CoreGraphics', 'CoreText', 'Foundation', 'Metal']:
                 command += ['-framework', framework]
         command += [str(REPO / 'tools' / source), '-o', str(executable)]
-        for phase, cmd, limit in [('compile', command, '12'), ('run', [str(executable)], '3')]:
+        phases = [('compile', command, '12'), ('run', [str(executable)], '3')]
+        if name == 'rounded-underlay-color':
+            phases += [('run-no-batch', [str(executable)], '3'),
+                       ('run-no-patches', [str(executable)], '3')]
+        for phase, cmd, limit in phases:
             prefix = output / (name + '-' + phase)
             guard = [sys.executable, str(REPO / 'tools/run_memory_bounded.py'),
                      '--lock', str(prefix) + '.lock', '--report', str(prefix) + '.guard.json',
                      '--limit-gib', limit, '--timeout', '300', '--', *cmd]
             Path(str(prefix) + '.command.json').write_text(json.dumps(guard, indent=2) + '\n')
+            run_environment = dict(environment)
+            if phase == 'run-no-batch':
+                run_environment['VOX_DISABLE_SHAPE_TILE_BATCH'] = '1'
+            if phase == 'run-no-patches':
+                run_environment['VOX_DISABLE_COMPOUND_SHAPE_PATCHES'] = '1'
             with Path(str(prefix) + '.log').open('x') as log:
-                code = subprocess.run(guard, cwd=REPO, env=environment,
+                code = subprocess.run(guard, cwd=REPO, env=run_environment,
                                       stdout=log, stderr=subprocess.STDOUT).returncode
             if code:
                 print(f'{name} {phase} failed; evidence: {output}')

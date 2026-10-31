@@ -3295,6 +3295,25 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
         int msaa_row_count = 0;
         for (int row = 0; row < raster_height; ++row)
             msaa_row_count += msaa_rows[row] = row_in_msaa_tile(first_row + row);
+        if (has_float_underlay_color) {
+            // A compound leaf crossing an MSAA tile keeps one established
+            // palette across the complete shape. Fully analytic leaves can
+            // retain their background components until the border is blended.
+            bool multisampled = msaa_row_count > 0;
+            if (s_msaa_grid_columns > 0) {
+                multisampled = false;
+                long first_x = std::lround((region.left - page_x - s_raster_origin_x) * destination_scale);
+                long first_y = std::lround((region.top - page_y + scroll_y - s_raster_origin_y
+                    + (s_raster_layer_is_root ? s_root_raster_scroll_y : 0)) * destination_scale);
+                vox_chromium_msaa_rects(raster_width, raster_height, first_x, first_y,
+                    s_msaa_grid_width, s_msaa_grid_height, s_msaa_grid_columns, s_msaa_grid_tiles,
+                    [&](int, int, int, int) { multisampled = true; });
+            }
+            if (!multisampled) {
+                descriptor.has_float_underlay_color = 1;
+                std::copy_n(s_underlay_float_color, 4, descriptor.underlay_float_color);
+            }
+        }
         auto draw = graphite_shape_draw();
         bool drawn = draw != nullptr;
         auto draw_region = graphite_shape_region_draw();
