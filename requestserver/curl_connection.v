@@ -15,22 +15,26 @@ mut:
 	timer_ &platform.Timer = platform.Timer.create()
 	// The embedding adapter owns the deferred IPC delivery queue; it uses the
 	// translated native EventLoopPlugin without requiring a global LibWeb plugin.
-	deferred_ &platform.EventLoopPlugin = platform.EventLoopPlugin.new()
+	deferred_     &platform.EventLoopPlugin = platform.EventLoopPlugin.new()
 	timer_due_at_ ?i64
-	sockets_ map[int]voidptr
+	sockets_      map[int]voidptr
 	socket_flags_ map[int]int
-	requests_ map[u64]&CurlRequest
-	next_id_ u64 = 1
-	closed_ bool
+	requests_     map[u64]&CurlRequest
+	next_id_      u64 = 1
+	closed_       bool
 	in_curl_call_ bool
 }
 
 pub fn CurlConnection.create() !&CurlConnection {
 	entry := platform.enter_persistent()
 	defer { platform.leave_persistent(entry) }
-	if C.curl_global_init(C.CURL_GLOBAL_ALL) != C.CURLE_OK { return error('Failed to initialize libcurl') }
+	if C.curl_global_init(C.CURL_GLOBAL_ALL) != C.CURLE_OK {
+		return error('Failed to initialize libcurl')
+	}
 	mut connection := &CurlConnection{ multi_: C.curl_multi_init() }
-	if connection.multi_ == unsafe { nil } { return error('Failed to initialize curl multi handle') }
+	if connection.multi_ == unsafe { nil } {
+		return error('Failed to initialize curl multi handle')
+	}
 	check_curl_result(C.vox_curl_multi_setopt_socket(connection.multi_, curl_socket_callback), C.CURLM_OK)
 	check_curl_result(C.vox_curl_multi_setopt_pointer(connection.multi_, C.CURLMOPT_SOCKETDATA, connection), C.CURLM_OK)
 	check_curl_result(C.vox_curl_multi_setopt_timer(connection.multi_, curl_timeout_callback), C.CURLM_OK)
@@ -49,9 +53,11 @@ pub fn CurlConnection.create() !&CurlConnection {
 	return connection
 }
 
-fn clamp_curl_interval(value i64) int { return if value > 2147483647 { 2147483647 } else { int(value) } }
+fn clamp_curl_interval(value i64) int {
+	return if value > 2147483647 { 2147483647 } else { int(value) }
+}
 
-fn curl_timeout_callback(_ voidptr, timeout_ms i64, owner voidptr) int {
+fn curl_timeout_callback(_ voidptr, timeout_ms i64, owner voidptr) i32 {
 	mut connection := unsafe { &CurlConnection(owner) }
 	if connection.closed_ { return 0 }
 	if timeout_ms == -1 {
@@ -65,7 +71,11 @@ fn curl_timeout_callback(_ voidptr, timeout_ms i64, owner voidptr) int {
 	return 0
 }
 
-fn curl_socket_callback(_ voidptr, socket int, what int, owner voidptr, _ voidptr) int {
+fn curl_socket_callback(_ voidptr, native_socket i32, native_what i32, owner voidptr, _ voidptr) i32 {
+	// Native int arguments occupy 32 bits even when V int is 64 bits. Narrow
+	// at the callback boundary before these values become map keys or flags.
+	socket := int(native_socket)
+	what := int(native_what)
 	entry := platform.enter_persistent()
 	defer { platform.leave_persistent(entry) }
 	mut connection := unsafe { &CurlConnection(owner) }
@@ -77,23 +87,25 @@ fn curl_socket_callback(_ voidptr, socket int, what int, owner voidptr, _ voidpt
 			return 0
 		}
 		descriptor := connection.sockets_[socket] or {
-			created := C.vox_curl_socket_create(connection, socket, curl_socket_activate)
+			created := C.vox_curl_socket_create(connection, i32(socket), curl_socket_activate)
 			connection.sockets_[socket] = created
 			created
 		}
 		flags := what & (C.CURL_POLL_IN | C.CURL_POLL_OUT)
 		connection.socket_flags_[socket] = flags
-		C.vox_curl_socket_set_enabled(descriptor, flags)
+		C.vox_curl_socket_set_enabled(descriptor, i32(flags))
 	}
 	return 0
 }
 
-fn curl_socket_activate(owner voidptr, socket int, flags int) {
+fn curl_socket_activate(owner voidptr, native_socket i32, native_flags i32) {
+	socket := int(native_socket)
+	flags := int(native_flags)
 	mut connection := unsafe { &CurlConnection(owner) }
 	connection.socket_action(socket, flags)
 	$if darwin || linux {
 		if descriptor := connection.sockets_[socket] {
-			C.vox_curl_socket_set_enabled(descriptor, connection.socket_flags_[socket])
+			C.vox_curl_socket_set_enabled(descriptor, i32(connection.socket_flags_[socket]))
 		}
 	}
 }
@@ -102,16 +114,16 @@ fn (mut connection CurlConnection) socket_action(socket int, flags int) {
 	entry := platform.enter_persistent()
 	defer { platform.leave_persistent(entry) }
 	if connection.closed_ { return }
-	mut running := 0
+	mut running := i32(0)
 	connection.in_curl_call_ = true
-	check_curl_result(C.curl_multi_socket_action(connection.multi_, socket, flags, &running), C.CURLM_OK)
+	check_curl_result(C.curl_multi_socket_action(connection.multi_, i32(socket), i32(flags), &running), C.CURLM_OK)
 	connection.in_curl_call_ = false
 	for {
-		mut result := 0
+		mut result := i32(0)
 		pointer := C.vox_curl_next_completion(connection.multi_, &result)
 		if pointer == unsafe { nil } { break }
 		mut request := unsafe { &CurlRequest(pointer) }
-		request.notify_fetch_complete(result)
+		request.notify_fetch_complete(int(result))
 	}
 }
 
