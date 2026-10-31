@@ -28,6 +28,7 @@
 #include "include/core/SkColorFilter.h"
 #include "include/core/SkColorSpace.h"
 #include "native_skia_image_color_space.h"
+#include "native_picture_image_transport.h"
 #include "include/core/SkData.h"
 #include "include/core/SkFont.h"
 #include "include/core/SkFontArguments.h"

@@ -151,15 +151,7 @@ void shared_recording_content(CGContextRef destination, SkRect bounds, float pag
 
 sk_sp<SkData> serialize_shared_picture_image(SkImage* image, void*)
 {
-    int dimensions[] {image->width(), image->height()};
-    size_t pitch = size_t(dimensions[0]) * 4;
-    auto bytes = SkData::MakeUninitialized(sizeof(dimensions) + pitch * dimensions[1]);
-    auto* data = static_cast<uint8_t*>(bytes->writable_data());
-    std::memcpy(data, dimensions, sizeof(dimensions));
-    auto info = SkImageInfo::Make(dimensions[0], dimensions[1], kRGBA_8888_SkColorType,
-        kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
-    if (!image->readPixels(nullptr, info, data + sizeof(dimensions), pitch, 0, 0)) return nullptr;
-    return bytes;
+    return vox_encode_picture_image(image);
 }
 
 void shared_recording_image(CGContextRef destination, SkMatrix const& matrix,
@@ -177,15 +169,15 @@ void shared_recording_image(CGContextRef destination, SkMatrix const& matrix,
         border.outset(image.border_width / 2, image.border_width / 2);
         target.join(border);
     }
-    if ((image.flags & (4 | 64 | 128)) || image.has_color_profile || image.has_background_color
+    if ((image.flags & (4 | 64 | 128)) || image.has_background_color
         || image.border_width > 0
-        || size_t(image.width) * image.height > 8 * 1024 * 1024
-        || std::any_of(image.clip + 4, image.clip + 12, [](float radius) { return radius != 0; })) {
+        || size_t(image.width) * image.height > 8 * 1024 * 1024) {
         shared_recording_block(matrix.mapRect(target));
         return;
     }
     auto info = SkImageInfo::Make(image.width, image.height, kRGBA_8888_SkColorType,
-        (image.flags & 1) ? kPremul_SkAlphaType : kUnpremul_SkAlphaType, SkColorSpace::MakeSRGB());
+        (image.flags & 1) ? kPremul_SkAlphaType : kUnpremul_SkAlphaType,
+        vox_image_color_space_from_profile(image.has_color_profile ? image.color_profile : nullptr));
     SkPixmap source(info, image.pixels, image.pitch);
     std::vector<uint8_t> premultiplied;
     if (!(image.flags & 1)) {
@@ -199,8 +191,11 @@ void shared_recording_image(CGContextRef destination, SkMatrix const& matrix,
     }
     int upload_width = image.width, upload_height = image.height;
     float scale = s_shared_root_recording->scale;
-    float target_width = std::ceil(target.width() * std::hypot(matrix.getScaleX(), matrix.getSkewY()) * scale);
-    float target_height = std::ceil(target.height() * std::hypot(matrix.getSkewX(), matrix.getScaleY()) * scale);
+    float scale_x = std::hypot(matrix.getScaleX() * scale, matrix.getSkewY() * scale)
+        * image.destination[2] / image.source[2];
+    float scale_y = std::hypot(matrix.getSkewX() * scale, matrix.getScaleY() * scale)
+        * image.destination[3] / image.source[3];
+    float target_width = image.width * scale_x, target_height = image.height * scale_y;
     bool complete_source = image.source[0] == 0 && image.source[1] == 0
         && image.source[2] == image.width && image.source[3] == image.height;
     if (!image.nearest && complete_source) {
@@ -208,7 +203,7 @@ void shared_recording_image(CGContextRef destination, SkMatrix const& matrix,
             int divisor = 1 << level;
             int width = (image.width + divisor - 1) / divisor;
             int height = (image.height + divisor - 1) / divisor;
-            if (width < target_width || height < target_height) break;
+            if (width < std::ceil(target_width) || height < std::ceil(target_height)) break;
             upload_width = width;
             upload_height = height;
             if (width == 1 && height == 1) break;
@@ -238,11 +233,28 @@ void shared_recording_image(CGContextRef destination, SkMatrix const& matrix,
     canvas->save();
     shared_recording_clip(destination, canvas);
     canvas->setMatrix(matrix);
-    if (clip != target) canvas->clipRect(clip, true);
-    canvas->drawImageRect(bitmap, source_rect, target,
-        SkSamplingOptions(image.nearest ? SkFilterMode::kNearest : SkFilterMode::kLinear,
-            mips ? SkMipmapMode::kLinear : SkMipmapMode::kNone),
-        &paint, SkCanvas::kStrict_SrcRectConstraint);
+    bool rounded = std::any_of(image.clip + 4, image.clip + 12, [](float radius) { return radius != 0; });
+    if (rounded) {
+        SkVector radii[] {{image.clip[4], image.clip[5]}, {image.clip[6], image.clip[7]},
+            {image.clip[8], image.clip[9]}, {image.clip[10], image.clip[11]}};
+        SkRRect shape;
+        shape.setRectRadii(clip, radii);
+        canvas->clipRRect(shape, SkClipOp::kIntersect, true);
+    } else if (clip != target) canvas->clipRect(clip, true);
+    auto sampling = SkSamplingOptions(image.nearest ? SkFilterMode::kNearest : SkFilterMode::kLinear,
+        mips ? SkMipmapMode::kLinear : SkMipmapMode::kNone);
+    if (complete_source) {
+        // Blink keeps full images in natural coordinates and scales the
+        // canvas. Folding that scale into the destination changes fractional
+        // sampling even when the outer bounds and upload are identical.
+        auto natural = SkRect::MakeXYWH(image.source[0], image.source[1],
+            image.source[2], image.source[3]);
+        canvas->concat(SkMatrix::RectToRect(natural, target));
+        canvas->drawImageRect(bitmap, source_rect, natural, sampling, &paint,
+            image.nearest ? SkCanvas::kStrict_SrcRectConstraint : SkCanvas::kFast_SrcRectConstraint);
+    } else {
+        canvas->drawImageRect(bitmap, source_rect, target, sampling, &paint, SkCanvas::kStrict_SrcRectConstraint);
+    }
     canvas->restore();
 }
 

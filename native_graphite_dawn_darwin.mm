@@ -8,6 +8,7 @@
 #include "include/core/SkPixmap.h"
 #include "include/core/SkSerialProcs.h"
 #include "native_picture_typeface_cache.h"
+#include "native_picture_image_transport.h"
 #include "include/core/SkSurface.h"
 #include "include/gpu/graphite/Context.h"
 #include "include/gpu/graphite/ContextOptions.h"
@@ -125,23 +126,20 @@ class PictureImageProvider final : public skgpu::graphite::ImageProvider {
     sk_sp<SkImage> findOrCreate(skgpu::graphite::Recorder* recorder, SkImage const* image,
         SkImage::RequiredProperties properties) override
     {
-        return SkImages::TextureFromImage(recorder, image, properties);
+        auto texture = SkImages::TextureFromImage(recorder, image, properties);
+        // Chromium converts a tagged upload to an eight-bit sRGB texture on
+        // the GPU before sampling it. CPU conversion and conversion during
+        // the final image draw both change the filtered texels.
+        if (texture && image->colorSpace() && !image->colorSpace()->isSRGB())
+            texture = texture->makeColorSpace(recorder, SkColorSpace::MakeSRGB(), properties);
+        return texture;
     }
 };
 
 sk_sp<SkImage> decode_picture_image(void const* bytes, size_t size,
     std::optional<SkAlphaType>, void*)
 {
-    int dimensions[2];
-    if (size < sizeof(dimensions)) return nullptr;
-    std::memcpy(dimensions, bytes, sizeof(dimensions));
-    int width = dimensions[0], height = dimensions[1];
-    if (width <= 0 || height <= 0 || width > 16384 || height > 16384
-        || size != sizeof(dimensions) + size_t(width) * height * 4) return nullptr;
-    auto info = SkImageInfo::Make(width, height, kRGBA_8888_SkColorType,
-        kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
-    return SkImages::RasterFromPixmapCopy(SkPixmap(info,
-        static_cast<char const*>(bytes) + sizeof(dimensions), size_t(width) * 4));
+    return vox_decode_picture_image(bytes, size);
 }
 
 sk_sp<SkTypeface> decode_picture_typeface(SkStream& stream, void*)
