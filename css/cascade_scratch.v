@@ -73,7 +73,11 @@ fn (mut lease CascadeScratchLease) finish() {
 	}
 	// Keep the map's hash reservation. V's map.clear() resets its hash size,
 	// causing new hash slabs on each element even when dense capacity is kept.
-	for property_id, _ in properties.entry_heads_ { properties.entry_heads_[property_id] = -1 }
+	// Inactive heads already contain the reset value from an earlier lease.
+	// Avoid hashing and writing them again when this lease used fewer properties.
+	for property_id, head in properties.entry_heads_ {
+		if head != -1 { properties.entry_heads_[property_id] = -1 }
+	}
 	for index in 0 .. properties.contained_properties_cache_.len {
 		properties.contained_properties_cache_[index] = 0
 	}

@@ -12347,11 +12347,43 @@ pub fn (s &StyleComputer) should_reject_with_ancestor_filter(selector Selector) 
 	return false
 }
 
-fn custom_property_initial_style_value(document &dom.Document, name string) &dom.StyleValue {
-	if initial_value := document.custom_property_initial_value(name) {
-		return parse_custom_property_value(initial_value)
+enum ComputedCustomPropertyValueKind {
+	existing
+	substituted
+	guaranteed_invalid
+}
+
+// Substitution produces owned tokens before an element decides whether its
+// value differs from its parent's. Delay the DOM boxes and CSS serialization
+// until that value actually needs to be retained or returned to a caller.
+struct ComputedCustomPropertyValue {
+	kind           ComputedCustomPropertyValueKind
+	existing_value &dom.StyleValue = unsafe { nil }
+	tokens         []ComponentValue
+}
+
+fn (value ComputedCustomPropertyValue) materialize() &dom.StyleValue {
+	return match value.kind {
+		.existing { value.existing_value }
+		.substituted {
+			dom_style_value_from_value_logic(StyleValue(UnresolvedStyleValue.create_with_presence(
+				value.tokens, SubstitutionFunctionsPresence{}, none)))
+		}
+		.guaranteed_invalid {
+			dom_style_value_from_value_logic(StyleValue(GuaranteedInvalidStyleValue.create()))
+		}
 	}
-	return dom_style_value_from_value_logic(StyleValue(GuaranteedInvalidStyleValue.create()))
+}
+
+fn initial_computed_custom_property_value(document &dom.Document, name string) ComputedCustomPropertyValue {
+	if initial_value := document.custom_property_initial_value(name) {
+		return ComputedCustomPropertyValue{existing_value: parse_custom_property_value(initial_value)}
+	}
+	return ComputedCustomPropertyValue{kind: .guaranteed_invalid}
+}
+
+fn custom_property_initial_style_value(document &dom.Document, name string) &dom.StyleValue {
+	return initial_computed_custom_property_value(document, name).materialize()
 }
 
 fn dom_style_value_from_custom_property_bridge(value &dom.CSSStyleValue_) ?&dom.StyleValue {
@@ -12361,36 +12393,37 @@ fn dom_style_value_from_custom_property_bridge(value &dom.CSSStyleValue_) ?&dom.
 	return unsafe { &dom.StyleValue(value.css_value_handle) }
 }
 
-fn compute_value_of_custom_property_with_guarded_contexts(abstract_element dom.AbstractElement, custom_property string, mut guarded_contexts GuardedSubstitutionContexts) &dom.StyleValue {
+fn resolve_computed_custom_property_value(abstract_element dom.AbstractElement, custom_property string, mut guarded_contexts GuardedSubstitutionContexts) ComputedCustomPropertyValue {
 	bridged_value := abstract_element.get_custom_property(custom_property) or {
-		return custom_property_initial_style_value(abstract_element.document(), custom_property)
+		return initial_computed_custom_property_value(abstract_element.document(), custom_property)
 	}
 	if bridged_value.guaranteed_invalid {
-		return custom_property_initial_style_value(abstract_element.document(), custom_property)
+		return initial_computed_custom_property_value(abstract_element.document(), custom_property)
 	}
 	value := dom_style_value_from_custom_property_bridge(bridged_value) or {
 		parse_custom_property_value(bridged_value.css_text)
 	}
 	typed := typed_style_value_logic_from_dom(value) or {
-		return value
+		return ComputedCustomPropertyValue{existing_value: value}
 	}
 	keyword := typed.to_keyword()
 	if keyword == .initial {
-		return custom_property_initial_style_value(abstract_element.document(), custom_property)
+		return initial_computed_custom_property_value(abstract_element.document(), custom_property)
 	}
 	if keyword in [.inherit, .unset] {
 		inherit_from := abstract_element.element_to_inherit_style_from() or {
-			return custom_property_initial_style_value(abstract_element.document(), custom_property)
+			return initial_computed_custom_property_value(abstract_element.document(), custom_property)
 		}
 		inherited := inherit_from.get_custom_property(custom_property) or {
-			return custom_property_initial_style_value(abstract_element.document(), custom_property)
+			return initial_computed_custom_property_value(abstract_element.document(), custom_property)
 		}
-		return dom_style_value_from_custom_property_bridge(inherited) or {
+		inherited_value := dom_style_value_from_custom_property_bridge(inherited) or {
 			parse_custom_property_value(inherited.css_text)
 		}
+		return ComputedCustomPropertyValue{existing_value: inherited_value}
 	}
 	if typed !is UnresolvedStyleValue || !typed.substitution_functions_presence.has_any() {
-		return value
+		return ComputedCustomPropertyValue{existing_value: value}
 	}
 
 	result := substitute_arbitrary_substitution_functions_for_element(abstract_element, mut guarded_contexts, typed.tokens, SubstitutionContext{
@@ -12398,9 +12431,14 @@ fn compute_value_of_custom_property_with_guarded_contexts(abstract_element dom.A
 		first: custom_property
 	})
 	if contains_guaranteed_invalid_value(result) {
-		return dom_style_value_from_value_logic(StyleValue(GuaranteedInvalidStyleValue.create()))
+		return ComputedCustomPropertyValue{kind: .guaranteed_invalid}
 	}
-	return dom_style_value_from_value_logic(StyleValue(UnresolvedStyleValue.create_with_presence(result, SubstitutionFunctionsPresence{}, none)))
+	return ComputedCustomPropertyValue{kind: .substituted, tokens: result}
+}
+
+fn compute_value_of_custom_property_with_guarded_contexts(abstract_element dom.AbstractElement, custom_property string, mut guarded_contexts GuardedSubstitutionContexts) &dom.StyleValue {
+	return resolve_computed_custom_property_value(abstract_element, custom_property,
+		mut guarded_contexts).materialize()
 }
 
 pub fn StyleComputer.compute_value_of_custom_property(abstract_element dom.AbstractElement, custom_property string) &dom.StyleValue {
@@ -13721,6 +13759,35 @@ fn custom_property_bridge_values_equal(left &dom.CSSStyleValue_, right &dom.CSSS
 		return voidptr(left_value) == voidptr(right_value)
 	}
 	return left.guaranteed_invalid == right.guaranteed_invalid && left.css_text == right.css_text
+}
+
+// A bridge without a typed handle must keep the CSS-text comparison above.
+// All typed cases can be compared before allocating a temporary DOM bridge.
+fn (value ComputedCustomPropertyValue) equals_typed_bridge(other &dom.CSSStyleValue_) ?bool {
+	if other.css_value_handle == unsafe { nil } {
+		return none
+	}
+	other_value := unsafe { &dom.StyleValue(other.css_value_handle) }
+	if value.kind == .existing && voidptr(other_value) == voidptr(value.existing_value) {
+		return true
+	}
+	other_typed := typed_style_value_logic_from_dom(other_value) or { return false }
+	return match value.kind {
+		.existing {
+			typed := typed_style_value_logic_from_dom(value.existing_value) or { return false }
+			other_typed.equals(typed)
+		}
+		.substituted {
+			if other_typed is UnresolvedStyleValue {
+				// This is precisely UnresolvedStyleValue.equals(), including token
+				// payloads, source positions, nested values and attribute taint.
+				other_typed.tokens == value.tokens
+			} else {
+				false
+			}
+		}
+		.guaranteed_invalid { other_typed is GuaranteedInvalidStyleValue }
+	}
 }
 
 fn custom_property_bridge_values_identical(left &dom.CSSStyleValue_, right &dom.CSSStyleValue_) bool {
@@ -15338,14 +15405,27 @@ pub fn (s &StyleComputer) compute_custom_properties(mut computed_properties Comp
 	}
 	mut resolved_own := map[string]dom.CSSCustomProperty_{}
 	for name, property in data.own_values {
-		computed_value := StyleComputer.compute_value_of_custom_property(abstract_element, name)
-		resolved_value := custom_property_bridge_value(computed_value)
+		mut guarded_contexts := GuardedSubstitutionContexts{}
+		computed_value := resolve_computed_custom_property_value(abstract_element, name,
+			mut guarded_contexts)
+		mut serialized_value := ?&dom.CSSStyleValue_(none)
 		if parent := parent_data {
 			if parent_property := parent.get_property(name) {
-				if custom_property_bridge_values_equal(parent_property.value, resolved_value) {
-					continue
+				if equal := computed_value.equals_typed_bridge(parent_property.value) {
+					if equal { continue }
+				} else {
+					// Hand-authored DOM bridges need the original text/invalidity
+					// fallback. Retain this bridge if comparison does not discard it.
+					resolved_value := custom_property_bridge_value(computed_value.materialize())
+					if custom_property_bridge_values_equal(parent_property.value, resolved_value) {
+						continue
+					}
+					serialized_value = resolved_value
 				}
 			}
+		}
+		resolved_value := serialized_value or {
+			custom_property_bridge_value(computed_value.materialize())
 		}
 		resolved_own[name] = dom.CSSCustomProperty_{
 			important: property.important

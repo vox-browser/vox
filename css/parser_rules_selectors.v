@@ -4046,8 +4046,9 @@ fn mark_as_attr_tainted(values []ComponentValue) []ComponentValue {
 	return tainted
 }
 
-// ValueParsing.cpp: Parser::parse_declaration_value.
-fn parse_declaration_value(mut tokens ParserTokenStream, end_token_type ?TokenType) ?[]ComponentValue {
+// Shared declaration-value validation. The returned span is borrowed and may
+// only be consumed synchronously by private read-only callers.
+fn parse_declaration_value_span(mut tokens ParserTokenStream, end_token_type ?TokenType) ?[]ComponentValue {
 	start_index := tokens.index
 	for tokens.has_next_token() {
 		peek := tokens.next_token()
@@ -4094,9 +4095,14 @@ fn parse_declaration_value(mut tokens ParserTokenStream, end_token_type ?TokenTy
 		tokens.index = start_index
 		return none
 	}
-	// Validation consumes a contiguous span. Copy it once, retaining the
-	// independent result buffer without growing an array one token at a time.
-	return tokens.tokens_since(start_index).clone()
+	return tokens.tokens_since(start_index)
+}
+
+// ValueParsing.cpp: Parser::parse_declaration_value.
+fn parse_declaration_value(mut tokens ParserTokenStream, end_token_type ?TokenType) ?[]ComponentValue {
+	span := parse_declaration_value_span(mut tokens, end_token_type) or { return none }
+	// Existing grammar callers retain an independently mutable result buffer.
+	return span.clone()
 }
 
 fn nested_declaration_value_contents_are_valid(values []ComponentValue) bool {
@@ -4154,6 +4160,33 @@ fn parse_declaration_value_then_optional_declaration_value(mut tokens ParserToke
 	second_argument := parse_declaration_value(mut tokens, none) or { []ComponentValue{} }
 	return DeclarationValueList{
 		values: [first_argument, second_argument]
+	}
+}
+
+// Borrowed argument spans for immediate var()/inherit() replacement only.
+// Public argument grammar continues to return independently owned arrays.
+struct SubstitutionNameArgumentSpans {
+	first_argument  []ComponentValue
+	second_argument ?[]ComponentValue
+}
+
+fn parse_substitution_name_argument_spans(values []ComponentValue) ?SubstitutionNameArgumentSpans {
+	mut tokens := ParserTokenStream.from_values(values)
+	first_argument := parse_declaration_value_span(mut tokens, .comma) or { return none }
+	if !tokens.has_next_token() {
+		return SubstitutionNameArgumentSpans{first_argument: first_argument}
+	}
+	if !tokens.next_token().is(.comma) {
+		return none
+	}
+	tokens.discard_a_token()
+	second_argument := parse_declaration_value_span(mut tokens, none) or { []ComponentValue{} }
+	if tokens.has_next_token() {
+		return none
+	}
+	return SubstitutionNameArgumentSpans{
+		first_argument: first_argument
+		second_argument: second_argument
 	}
 }
 
@@ -4608,17 +4641,26 @@ fn custom_property_tokens_from_element_for_substitution(abstract_element dom.Abs
 }
 
 fn computed_custom_property_tokens_for_substitution(abstract_element dom.AbstractElement, custom_property_name string, mut guarded_contexts GuardedSubstitutionContexts) ?[]ComponentValue {
-	local_resolution := resolve_custom_property_for_function_scope(abstract_element,
-		custom_property_name, mut guarded_contexts)
-	if local_resolution.kind == .resolved {
-		return local_resolution.tokens
+	if function_local_scope_index_for_property(guarded_contexts, custom_property_name) >= 0 {
+		local_resolution := resolve_custom_property_for_function_scope(abstract_element,
+			custom_property_name, mut guarded_contexts)
+		if local_resolution.kind == .resolved {
+			return local_resolution.tokens
+		}
+		if local_resolution.kind == .invalid {
+			return arbitrary_substitution_guaranteed_invalid_value()
+		}
 	}
-	if local_resolution.kind == .invalid {
+	computed := resolve_computed_custom_property_value(abstract_element, custom_property_name,
+		mut guarded_contexts)
+	if computed.kind == .substituted {
+		return computed.tokens
+	}
+	if computed.kind == .guaranteed_invalid {
 		return arbitrary_substitution_guaranteed_invalid_value()
 	}
-	computed_value := compute_value_of_custom_property_with_guarded_contexts(abstract_element, custom_property_name, mut guarded_contexts)
-	typed := typed_style_value_logic_from_dom(computed_value) or {
-		return parse_component_values_for_value_logic(computed_value.css_text)
+	typed := typed_style_value_logic_from_dom(computed.existing_value) or {
+		return parse_component_values_for_value_logic(computed.existing_value.css_text)
 	}
 	if typed is GuaranteedInvalidStyleValue {
 		return arbitrary_substitution_guaranteed_invalid_value()
@@ -4631,10 +4673,19 @@ fn replace_an_inherit_function(element ?dom.AbstractElement, mut guarded_context
 	declaration_value_list := arbitrary_arguments_as_declaration_value_list(arguments) or {
 		return arbitrary_substitution_guaranteed_invalid_value()
 	}
-	first_argument := declaration_value_list.first()
-	second_argument := declaration_value_list.get(1)
+	return replace_an_inherit_function_from_spans(element, mut guarded_contexts,
+		declaration_value_list.first(), declaration_value_list.get(1))
+}
 
-	substituted_first_argument := substitute_arbitrary_substitution_functions_with_optional_element(element, mut guarded_contexts, first_argument, none)
+fn replace_an_inherit_function_from_spans(element ?dom.AbstractElement, mut guarded_contexts GuardedSubstitutionContexts, first_argument []ComponentValue, second_argument ?[]ComponentValue) []ComponentValue {
+	// The name parser only advances its cursor. A leaf argument has no work for
+	// substitution and can be borrowed without publishing a mutable result.
+	substituted_first_argument := if substitution_values_have_nested_values(first_argument) {
+		substitute_arbitrary_substitution_functions_with_optional_element(element,
+			mut guarded_contexts, first_argument, none)
+	} else {
+		first_argument
+	}
 	mut first_argument_tokens := ParserTokenStream.from_values(substituted_first_argument)
 	first_argument_tokens.discard_whitespace()
 	name_token := first_argument_tokens.consume_a_token()
@@ -4673,10 +4724,17 @@ fn replace_a_var_function(element ?dom.AbstractElement, mut guarded_contexts Gua
 	declaration_value_list := arbitrary_arguments_as_declaration_value_list(arguments) or {
 		return arbitrary_substitution_guaranteed_invalid_value()
 	}
-	first_argument := declaration_value_list.first()
-	second_argument := declaration_value_list.get(1)
+	return replace_a_var_function_from_spans(element, mut guarded_contexts,
+		declaration_value_list.first(), declaration_value_list.get(1))
+}
 
-	substituted_first_argument := substitute_arbitrary_substitution_functions_with_optional_element(element, mut guarded_contexts, first_argument, none)
+fn replace_a_var_function_from_spans(element ?dom.AbstractElement, mut guarded_contexts GuardedSubstitutionContexts, first_argument []ComponentValue, second_argument ?[]ComponentValue) []ComponentValue {
+	substituted_first_argument := if substitution_values_have_nested_values(first_argument) {
+		substitute_arbitrary_substitution_functions_with_optional_element(element,
+			mut guarded_contexts, first_argument, none)
+	} else {
+		first_argument
+	}
 	mut name_tokens := ParserTokenStream.from_values(substituted_first_argument)
 	name_tokens.discard_whitespace()
 	name_token := name_tokens.consume_a_token()
@@ -4714,24 +4772,23 @@ pub fn replace_an_arbitrary_substitution_function(element ?dom.AbstractElement, 
 	}
 }
 
-fn substitute_arbitrary_substitution_functions_step_2(element ?dom.AbstractElement, mut guarded_contexts GuardedSubstitutionContexts, source []ComponentValue) ?[]ComponentValue {
-	mut has_nested_values := false
+fn substitution_values_have_nested_values(source []ComponentValue) bool {
 	for value in source {
 		if value.is_function() || value.is_block() {
-			has_nested_values = true
-			break
+			return true
 		}
 	}
-	if !has_nested_values {
-		// Leaf tokens cannot contain substitutions. Keep the result independently
-		// mutable, including its taint flags, with one bulk copy of live elements.
-		// Array.clone() also copies spare capacity, so bound the source view first.
-		return source[..source.len].clone()
+	return false
+}
+
+// Flatten substitution results into the caller's fresh output buffer. Ordinary
+// functions and blocks still receive their own independently mutable children.
+// Failure propagates to the outer wrapper, which discards the partial output.
+fn substitute_arbitrary_substitution_functions_step_2_into(element ?dom.AbstractElement, mut guarded_contexts GuardedSubstitutionContexts, source []ComponentValue, mut dest []ComponentValue) bool {
+	if !substitution_values_have_nested_values(source) {
+		dest << source
+		return true
 	}
-	// A substitution can reject an oversized remainder before producing output.
-	// Do not reserve an unbounded source-sized buffer before that limit check.
-	capacity := if source.len > 16384 { 16384 } else { source.len }
-	mut dest := []ComponentValue{cap: capacity}
 	for index, value in source {
 		if value.is_function() {
 			source_function := value.function()
@@ -4741,12 +4798,15 @@ fn substitute_arbitrary_substitution_functions_step_2(element ?dom.AbstractEleme
 				if contains_guaranteed_invalid_value(result) {
 					dest << ComponentValue.from_guaranteed_invalid(GuaranteedInvalidValue{})
 				} else {
-					result_after_processing := substitute_arbitrary_substitution_functions_step_2(element,
-						mut guarded_contexts, result) or { return none }
-					if source.len - index - 1 + result_after_processing.len > 16384 {
-						return none
+					result_start := dest.len
+					if !substitute_arbitrary_substitution_functions_step_2_into(element,
+						mut guarded_contexts, result, mut dest) {
+						return false
 					}
-					dest << result_after_processing
+					result_length := dest.len - result_start
+					if source.len - index - 1 + result_length > 16384 {
+						return false
+					}
 				}
 				continue
 			}
@@ -4758,28 +4818,50 @@ fn substitute_arbitrary_substitution_functions_step_2(element ?dom.AbstractEleme
 					continue
 				}
 
-				call_arguments := parse_according_to_argument_grammar(maybe_function_id, early_result) or {
-					dest << ComponentValue.from_guaranteed_invalid(GuaranteedInvalidValue{})
-					continue
+				result := if maybe_function_id == .var_ || maybe_function_id == .inherit {
+					// The arguments are only read during this immediate call. Keep
+					// public grammar results owned, but avoid private span clones.
+					arguments := parse_substitution_name_argument_spans(early_result) or {
+						dest << ComponentValue.from_guaranteed_invalid(GuaranteedInvalidValue{})
+						continue
+					}
+					if maybe_function_id == .var_ {
+						replace_a_var_function_from_spans(element, mut guarded_contexts,
+							arguments.first_argument, arguments.second_argument)
+					} else {
+						replace_an_inherit_function_from_spans(element, mut guarded_contexts,
+							arguments.first_argument, arguments.second_argument)
+					}
+				} else {
+					call_arguments := parse_according_to_argument_grammar(maybe_function_id, early_result) or {
+						dest << ComponentValue.from_guaranteed_invalid(GuaranteedInvalidValue{})
+						continue
+					}
+					replace_an_arbitrary_substitution_function(element, mut guarded_contexts, maybe_function_id, call_arguments)
 				}
-				result := replace_an_arbitrary_substitution_function(element, mut guarded_contexts, maybe_function_id, call_arguments)
 
 				if contains_guaranteed_invalid_value(result) {
 					dest << ComponentValue.from_guaranteed_invalid(GuaranteedInvalidValue{})
 				} else {
-					result_after_processing := substitute_arbitrary_substitution_functions_step_2(element, mut guarded_contexts, result) or { return none }
+					result_start := dest.len
+					if !substitute_arbitrary_substitution_functions_step_2_into(element,
+						mut guarded_contexts, result, mut dest) {
+						return false
+					}
+					result_length := dest.len - result_start
 
 					// NB: Protect against the billion-laughs attack by limiting to an arbitrary large number of tokens.
 					// https://drafts.csswg.org/css-values-5/#long-substitution
-					if source.len - index - 1 + result_after_processing.len > 16384 {
-						return none
+					// Match the original per-substitution check; an earlier output
+					// prefix is not part of this substitution's expansion length.
+					if source.len - index - 1 + result_length > 16384 {
+						return false
 					}
-					dest << result_after_processing
 				}
 				continue
 			}
 
-			function_values := substitute_arbitrary_substitution_functions_step_2(element, mut guarded_contexts, source_function.value) or { return none }
+			function_values := substitute_arbitrary_substitution_functions_step_2(element, mut guarded_contexts, source_function.value) or { return false }
 			mut function := source_function
 			function.value = function_values
 			dest << ComponentValue.from_function(function)
@@ -4788,7 +4870,7 @@ fn substitute_arbitrary_substitution_functions_step_2(element ?dom.AbstractEleme
 
 		if value.is_block() {
 			source_block := value.block()
-			block_values := substitute_arbitrary_substitution_functions_step_2(element, mut guarded_contexts, source_block.value) or { return none }
+			block_values := substitute_arbitrary_substitution_functions_step_2(element, mut guarded_contexts, source_block.value) or { return false }
 			mut block := source_block
 			block.value = block_values
 			dest << ComponentValue.from_block(block)
@@ -4796,6 +4878,23 @@ fn substitute_arbitrary_substitution_functions_step_2(element ?dom.AbstractEleme
 		}
 
 		dest << value
+	}
+	return true
+}
+
+fn substitute_arbitrary_substitution_functions_step_2(element ?dom.AbstractElement, mut guarded_contexts GuardedSubstitutionContexts, source []ComponentValue) ?[]ComponentValue {
+	if !substitution_values_have_nested_values(source) {
+		// Public output and ordinary nested children remain independent. Bound
+		// the source view so cloning does not copy unused retained capacity.
+		return source[..source.len].clone()
+	}
+	// A substitution can reject an oversized remainder before producing output.
+	// Do not reserve an unbounded source-sized buffer before that limit check.
+	capacity := if source.len > 16384 { 16384 } else { source.len }
+	mut dest := []ComponentValue{cap: capacity}
+	if !substitute_arbitrary_substitution_functions_step_2_into(element,
+		mut guarded_contexts, source, mut dest) {
+		return none
 	}
 	return dest
 }
