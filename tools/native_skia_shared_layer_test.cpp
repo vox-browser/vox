@@ -222,7 +222,7 @@ static void shadow_overflow(int scale, bool switch_layer)
 
 // Split compositor pictures must sample the parent before fallback painting,
 // then round each picture's SrcOver independently, including translucent parents.
-static void backdrop_layers(int scale, int alpha, bool switch_layer)
+static void backdrop_layers(int scale, int alpha, bool switch_layer, bool backdrop_hint)
 {
     constexpr int width = 96, height = 80;
     const int pixel_width = width * scale, pixel_height = height * scale;
@@ -241,7 +241,9 @@ static void backdrop_layers(int scale, int alpha, bool switch_layer)
     assert(destination);
     CGContextScaleCTM(destination, scale, scale);
     ladybird_v_skia_set_shared_recording(0, width, height);
-    ladybird_v_skia_set_shared_layer_backdrop(1);
+    // Offscreen parents resume after child effects with this hint disabled.
+    // Their already-painted prefix must survive the following picture too.
+    ladybird_v_skia_set_shared_layer_backdrop(backdrop_hint);
     for (int layer = 0; layer < 2; ++layer) {
         ladybird_v_skia_set_raster_layer(8 + layer * 4, 8 + layer * 4, 0);
         ladybird_v_skia_set_raster_layer_size(72, 56);
@@ -283,7 +285,8 @@ static void backdrop_layers(int scale, int alpha, bool switch_layer)
     CGContextFlush(destination);
     if (actual != expected) {
         std::cerr << "Backdrop layers differ: scale=" << scale
-            << " alpha=" << alpha << " switch=" << switch_layer << '\n';
+            << " alpha=" << alpha << " switch=" << switch_layer
+            << " backdrop_hint=" << backdrop_hint << '\n';
         size_t count = 0;
         for (size_t i = 0; i < actual.size(); ++i) {
             if (actual[i] == expected[i]) continue;
@@ -478,8 +481,9 @@ int main()
         gradient_layer(scale, kind, stroke, batch, linear);
     for (int scale : {1, 2}) {
         for (int scroll : {0, 151}) tiled_layer(scale, scroll);
-        for (int alpha : {128, 255}) for (bool switch_layer : {false, true})
-            backdrop_layers(scale, alpha, switch_layer);
+        for (int alpha : {0, 128, 255}) for (bool switch_layer : {false, true})
+        for (bool backdrop_hint : {false, true})
+            backdrop_layers(scale, alpha, switch_layer, backdrop_hint);
         root_background(scale);
         clipped_layer(scale, false);
         clipped_layer(scale, true);

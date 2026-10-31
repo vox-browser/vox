@@ -104,6 +104,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_resolved_svg_viewport_coverage_is_not_clipped_twice(self):
         self.compare_fixture('forum-svg-viewport-fringe', width=1024, height=768)
 
+    def test_scroll_pictures_preserve_earlier_children_after_opacity_groups(self):
+        self.compare_fixture('forum-resumed-scroll-raster', width=1024, height=768)
+
     def test_programmatically_scrollable_sticky_text_keeps_its_compositor_raster(self):
         self.compare_fixture('stackoverflow-programmatic-sticky-text')
 

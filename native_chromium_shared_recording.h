@@ -70,14 +70,25 @@ SkCanvas* shared_recording_canvas(CGContextRef destination)
         group->layer_height = s_raster_layer_height;
         group->viewport_width = s_shared_viewport_width;
         group->viewport_height = s_shared_viewport_height;
-        if (!group->root && s_shared_layer_backdrop) {
+        if (!group->root) {
+            // A child effect flushes its parent's picture, then paints into
+            // that parent's bitmap. The next picture must retain this prefix
+            // even when the parent is itself a transparent compositor layer.
+            // Snapshot before recording fallback leaves so they blend once.
             int pixel_width = CGBitmapContextGetWidth(destination);
             int pixel_height = CGBitmapContextGetHeight(destination);
             if (size_t(pixel_width) * pixel_height > 8 * 1024 * 1024) return nullptr;
-            group->backdrop.resize(size_t(pixel_width) * pixel_height);
-            if (!copy_backdrop(destination, {}, scale, pixel_width, pixel_height, group->backdrop))
-                return nullptr;
-            group->backdrop_width = pixel_width;
+            auto prefix = read_backdrop(destination, {}, scale, pixel_width, pixel_height);
+            if (!prefix.pixels) return nullptr;
+            int left, top, right, bottom;
+            // An empty canvas still uses the layer's fractional local origin.
+            // A painted prefix already belongs to the destination's pixel grid.
+            if (s_shared_layer_backdrop || native_opacity_layer_ink_bounds(prefix.pixels, prefix.pitch, 0, 0,
+                    pixel_width, pixel_height, &left, &top, &right, &bottom)) {
+                group->backdrop.resize(size_t(pixel_width) * pixel_height);
+                copy_backdrop_pixels(prefix, pixel_width, pixel_height, group->backdrop);
+                group->backdrop_width = pixel_width;
+            }
         }
         group->recorder = std::make_unique<SkPictureRecorder>();
         group->recorder->beginRecording(SkRect::MakeWH(width, height));
