@@ -263,18 +263,26 @@ fn flex_base_size_after_cross_constraints(item &Node, item_state &UsedValues, ba
 	return flex_main_size_through_aspect_ratio(item, item_state, base, row_axis)
 }
 
+fn flex_base_size_for_definite_basis(item &Node, item_state &UsedValues, base CSSPixels, row_axis bool) CSSPixels {
+	// Flexbox 9.2(A): a definite used basis is already the flex base size.
+	// Blink applies cross-axis constraints when laying out the item, without
+	// feeding them back through its natural ratio into this definite basis.
+	if item.document().font_rendering_policy() == .chromium { return base }
+	return flex_base_size_after_cross_constraints(item, item_state, base, row_axis)
+}
+
 fn flex_base_width(mut state LayoutState, item &Node, container_width CSSPixels, item_state &UsedValues) CSSPixels {
 	computed := item.computed_values()
 	basis := computed.flex_basis()
 	if !basis.is_content && !basis.size.is_auto() {
 		if value := resolve_layout_content_size(item, basis.size, container_width, item_state, true) {
-			return flex_base_size_after_cross_constraints(item, item_state, value, true)
+			return flex_base_size_for_definite_basis(item, item_state, value, true)
 		}
 	}
 	if basis.size.is_auto() {
 		width := computed.size_value(.width)
 		if value := resolve_layout_content_size(item, width, container_width, item_state, true) {
-			return flex_base_size_after_cross_constraints(item, item_state, value, true)
+			return flex_base_size_for_definite_basis(item, item_state, value, true)
 		}
 	}
 	if box := item.as_box() {
@@ -306,11 +314,11 @@ fn flex_base_height(mut state LayoutState, item &Node, container_height ?CSSPixe
 	if !basis.is_content && !basis.size.is_auto() {
 		if height := container_height {
 			if value := resolve_layout_content_size(item, basis.size, height, item_state, false) {
-				return flex_base_size_after_cross_constraints(item, item_state, value, false)
+				return flex_base_size_for_definite_basis(item, item_state, value, false)
 			}
 		} else if !basis.size.contains_percentage() {
 			if value := resolve_layout_content_size(item, basis.size, CSSPixels.new(0), item_state, false) {
-				return flex_base_size_after_cross_constraints(item, item_state, value, false)
+				return flex_base_size_for_definite_basis(item, item_state, value, false)
 			}
 		}
 	}
@@ -318,11 +326,11 @@ fn flex_base_height(mut state LayoutState, item &Node, container_height ?CSSPixe
 		height_size := computed.size_value(.height)
 		if height := container_height {
 			if value := resolve_layout_content_size(item, height_size, height, item_state, false) {
-				return flex_base_size_after_cross_constraints(item, item_state, value, false)
+				return flex_base_size_for_definite_basis(item, item_state, value, false)
 			}
 		} else if !height_size.contains_percentage() {
 			if value := resolve_layout_content_size(item, height_size, CSSPixels.new(0), item_state, false) {
-				return flex_base_size_after_cross_constraints(item, item_state, value, false)
+				return flex_base_size_for_definite_basis(item, item_state, value, false)
 			}
 		}
 	}
