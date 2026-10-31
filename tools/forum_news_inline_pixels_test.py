@@ -37,6 +37,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
         write_json(output / 'pixels.json', verdict)
         self.assertTrue(verdict['exact'], verdict['metrics'] + '\nArtifacts: ' + str(output))
 
+    def test_automatic_table_columns_match_chromium_surplus_rounding(self):
+        self.compare_fixture('automatic-table-column-surplus')
+
     def test_collapsed_table_borders_retain_fractional_shares_and_placement(self):
         self.compare_fixture('collapsed-table-fractional-shares')
 

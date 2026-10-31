@@ -1083,6 +1083,43 @@ fn distribute_table_excess_width_by_percentage(mut widths []CSSPixels, eligible 
 	return true
 }
 
+// Chromium's above-max-content auto-column distribution uses LayoutUnit
+// MulDiv, then assigns every remaining raw unit to the last automatic column.
+// Keep mixed, constrained, percentage, and fixed-layout tracks on the existing
+// distribution path until their corresponding Chromium branches are handled.
+fn chromium_automatic_table_column_widths(table &Node, max_widths []CSSPixels,
+	constrained []bool, percentages []bool, originating []bool, width CSSPixels,
+	spacing CSSPixels, fixed bool) ?[]CSSPixels {
+	if fixed || table.document().font_rendering_policy() != .chromium
+		|| max_widths.len == 0 || constrained.len != max_widths.len
+		|| percentages.len != max_widths.len || originating.len != max_widths.len {
+		return none
+	}
+	mut total := i64(0)
+	for index, maximum in max_widths {
+		if constrained[index] || percentages[index] || !originating[index]
+			|| maximum.raw_value() <= 0 {
+			return none
+		}
+		total += i64(maximum.raw_value())
+		if total > i64(CSSPixels.max().raw_value()) { return none }
+	}
+	available := width.minus(spacing.scaled(f64(max_widths.len + 1)))
+	excess := i64(available.raw_value()) - total
+	if excess <= 0 { return none }
+	mut remaining := excess
+	mut widths := max_widths.clone()
+	for index, maximum in max_widths {
+		// Each operand fits a signed LayoutUnit, so the fused product fits i64.
+		delta := excess * i64(maximum.raw_value()) / total
+		widths[index] = maximum.plus(CSSPixels.from_raw(int(delta)))
+		remaining -= delta
+	}
+	last := widths.len - 1
+	widths[last] = widths[last].plus(CSSPixels.from_raw(int(remaining)))
+	return widths
+}
+
 // TableFormattingContext::distribute_width_to_columns() and
 // distribute_excess_width_to_columns().
 fn distribute_table_width_to_columns(min_widths []CSSPixels, max_widths []CSSPixels, constrained_columns []bool, intrinsic_percentages []f64, has_intrinsic_percentage []bool, percentage_offsets []CSSPixels, has_originating_cells []bool, table_width CSSPixels, spacing CSSPixels, fixed_mode bool) []CSSPixels {
@@ -2176,7 +2213,12 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 		mut wrapper_state := unsafe { &UsedValues(wrapper_values) }
 		wrapper_state.set_content_width(table_state.border_box_width())
 	}
-	mut column_widths := distribute_table_width_to_columns(intrinsic_widths.column_min_widths, intrinsic_widths.column_max_widths, intrinsic_widths.constrained_columns, intrinsic_widths.intrinsic_percentages, intrinsic_widths.has_intrinsic_percentage, intrinsic_widths.percentage_offsets, intrinsic_widths.has_originating_cells, table_state.content_width(), horizontal_spacing, fixed_mode)
+	mut column_widths := chromium_automatic_table_column_widths(table,
+		intrinsic_widths.column_max_widths, intrinsic_widths.constrained_columns,
+		intrinsic_widths.has_intrinsic_percentage, intrinsic_widths.has_originating_cells,
+		table_state.content_width(), horizontal_spacing, fixed_mode) or {
+		distribute_table_width_to_columns(intrinsic_widths.column_min_widths, intrinsic_widths.column_max_widths, intrinsic_widths.constrained_columns, intrinsic_widths.intrinsic_percentages, intrinsic_widths.has_intrinsic_percentage, intrinsic_widths.percentage_offsets, intrinsic_widths.has_originating_cells, table_state.content_width(), horizontal_spacing, fixed_mode)
+	}
 	mut removed_column_width := CSSPixels.new(0)
 	for index in 0 .. column_widths.len {
 		if index < intrinsic_widths.collapsed_columns.len
