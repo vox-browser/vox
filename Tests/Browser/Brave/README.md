@@ -81,6 +81,16 @@ and row padding. All 288 mapping guards pass; the preceding library and browser
 fail the new checks. The native mask-scope harness also covers nested opacity
 depth in its 56 cases, in optimized and sanitized modes.
 
+`forum-svg-mask-group-opacity` checks half-opacity and neighboring 0.4-opacity
+black cutouts inside luminance masks. Its 800×600, scale 1 reference comes from
+two agreeing Brave 156.1.98.60 captures. It improves from 1,600 one-level
+differences to exact RGBA equality. Color-mask groups use isolated pooled
+bitmaps and the float opacity compositor; nested groups keep distinct contexts
+and restore their parent. The mask-scope harness adds 24 independent complete
+GPU comparisons across two device scales and six opacity values, plus depth,
+legacy-painter and empty-clip fallbacks. Optimized and sanitized checks pass
+with the pool enabled and disabled; the existing 56 mask cases remain passing.
+
 References were captured from Brave 155.1.97.57 on macOS at device scale 1.
 `font-rasterization` covers Arial and Verdana at integer and fractional sizes,
 automatic and antialiased smoothing, three foreground colors, and white and

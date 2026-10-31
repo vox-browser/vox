@@ -1851,3 +1851,60 @@ Evidence is under `Build/forum-news-mask-backdrop-20261031/`, especially
 and `frame-comparison.json`. The broad baseline remains **`adf10924`**, with
 **five** completed native fixes after it. Full ten-site pixel parity remains
 open.
+
+## SVG mask group opacity, 31 October 2026
+
+`77eb247c` retains float opacity while compositing groups inside color SVG
+masks. A Quartz transparency layer previously rounded half-opacity black over
+white down to 127 before luminance conversion; the final masked black pixel
+became 128 instead of Brave's 127. Eligible groups now own isolated, pooled
+RGBA bitmaps and blend their completed pixels with the existing float compositor.
+Nested paths can read that group's actual bitmap backdrop. The parent clip is
+applied once at publication, and its context, transform and clip are restored.
+Alpha-only masks, legacy painting, empty clips, unsupported bitmaps and groups
+beyond the bounded 64-level bitmap stack retain Quartz scopes.
+
+The new `forum-svg-mask-group-opacity` fixture improves from **1,600 differing
+pixels to zero**, using two agreeing 800×600, scale 1 Brave 156.1.98.60 references.
+The preceding production browser fails at exactly those 1,600 one-level pixels.
+The native mask-scope driver adds **24** exact comparisons with independent
+complete GPU float-opacity images, spanning both device scales, nested groups
+and six opacity values. All **56** existing scope/pixel cases and both-scale
+context-ownership/depth/legacy/empty-clip fallbacks pass in optimized and
+AddressSanitizer/UndefinedBehaviorSanitizer modes, with the canvas pool enabled
+and disabled. The pool's **2,304** existing exact comparisons also pass in both
+modes. The **96** translated-mask comparisons, **288** mapping checks, **96**
+SVG publication comparisons and **107** clip guards remain passing. All **32
+native Brave fixtures**, three canonical SVG reftests, five harness cases,
+signing and startup pass on the pinned production browser.
+
+The required complete production build finishes with stable watched inputs at
+**6.89 GiB** sampled peak RSS under the unchanged 12 GiB guard and 10 GiB
+compiler limit. Fresh processes pin executable
+`233fbd2fac67f2695d49435fb6ea84f91c7fe958bfb83b24ac93a89fe125de86`.
+The native bridge remains
+`5cc7e85c69584f5004288148105d7908cfbcdafbf7b2ef21e90b702c7c2ebcdb`;
+the Metal/Dawn backends and uBO snapshot also keep their identities. The
+installed bundle matches the tested candidate and passes a fresh startup check.
+An initial regression batch loses its shared temporary volume and records 14
+compiler errors. Its complete rerun uses a private checkout-local temporary
+directory and passes all 32 cases; both attempts remain retained.
+
+The full-uBO matrix still accepts **one of ten**. All eight completed native
+frames and their Brave references are pixel-identical to the preceding feature:
+HN 0, Lobsters 115, Slashdot 9,773, Stack Overflow **170**, BBC 76,604,
+CNN 101,529, The Verge 315,921 and Pikabu 13,925 differing pixels. Stack
+Overflow's maximum error remains **2**. This fix receives no full-site pixel
+improvement credit. Pikabu completes on its first attempt in this matrix.
+Reddit's guest HTTP 403 and The Guardian's unstable references remain failures.
+Lobsters retains its 44-pixel live-to-frozen mismatch. All eight completed
+workloads retain matching full-uBO request/header, cosmetic, procedural and
+scriptlet evidence; the closed 326-file oracle template stays unchanged.
+
+Evidence is under `Build/forum-news-mask-opacity-20261031/`, especially
+`production-resume/`, `native-final/`, `native-no-pool/`, `pool-checks/`,
+`svg-guards/`, `reference-final/`, `baseline/fixture.log`, `candidate-resume/`,
+`final-matrix.json` and `frame-comparison.json`. The interrupted initial build
+and debugger jobs retain their incomplete receipts and receive no validation
+credit. The broad baseline remains **`adf10924`**, with **six** completed native
+fixes after it. Full ten-site pixel parity remains open.
