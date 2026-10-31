@@ -34,36 +34,160 @@ static long long vox_curl_queue_time(void* handle) {
 }
 #ifdef __APPLE__
 #include <CoreFoundation/CoreFoundation.h>
+#include <dispatch/dispatch.h>
+#include <pthread.h>
+#include <unistd.h>
+#include <fcntl.h>
+// Dispatch sources keep delivering readiness while curl advances a partial
+// SOCKS/TLS record. Suspend each delivered source until curl updates interest,
+// and process its notification on the owning CF loop, never a dispatch worker.
 typedef struct {
     void* owner;
     int socket;
+    int watched_socket;
     void (*activate)(void*, int, int);
+    CFRunLoopRef loop;
+    CFRunLoopSourceRef source;
+    dispatch_source_t read_source;
+    dispatch_source_t write_source;
+    pthread_mutex_t mutex;
+    unsigned references;
+    int interest;
+    int pending;
+    bool valid;
+    bool read_suspended;
+    bool write_suspended;
 } VoxCurlSocketContext;
-static void vox_curl_socket_release(const void* context) { free((void*)context); }
-static void vox_curl_socket_callback(CFFileDescriptorRef descriptor, CFOptionFlags flags, void* context) {
-    VoxCurlSocketContext state = *(VoxCurlSocketContext*)context;
-    CFRetain(descriptor);
-    state.activate(state.owner, state.socket, (int)flags);
-    CFRelease(descriptor);
+static void vox_curl_socket_retain(VoxCurlSocketContext* state) {
+    pthread_mutex_lock(&state->mutex);
+    ++state->references;
+    pthread_mutex_unlock(&state->mutex);
 }
-static void* vox_curl_socket_create(void* owner, int socket, void (*activate)(void*, int, int)) {
-    VoxCurlSocketContext* state = malloc(sizeof(*state));
-    if (!state) abort();
-    *state = (VoxCurlSocketContext){ owner, socket, activate };
-    CFFileDescriptorContext context = { 0, state, NULL, vox_curl_socket_release, NULL };
-    CFFileDescriptorRef descriptor = CFFileDescriptorCreate(NULL, socket, false, vox_curl_socket_callback, &context);
-    if (!descriptor) abort();
-    CFRunLoopSourceRef source = CFFileDescriptorCreateRunLoopSource(NULL, descriptor, 0);
-    CFRunLoopAddSource(CFRunLoopGetCurrent(), source, kCFRunLoopCommonModes);
+static void vox_curl_socket_release(VoxCurlSocketContext* state) {
+    pthread_mutex_lock(&state->mutex);
+    bool dispose = --state->references == 0;
+    pthread_mutex_unlock(&state->mutex);
+    if (!dispose) return;
+#if !__has_feature(objc_arc)
+    dispatch_release(state->read_source);
+    dispatch_release(state->write_source);
+#endif
+    state->read_source = NULL;
+    state->write_source = NULL;
+    close(state->watched_socket);
+    CFRelease(state->loop);
+    pthread_mutex_destroy(&state->mutex);
+    free(state);
+}
+static const void* vox_curl_source_retain(const void* context) {
+    vox_curl_socket_retain((VoxCurlSocketContext*)context);
+    return context;
+}
+static void vox_curl_source_release(const void* context) {
+    vox_curl_socket_release((VoxCurlSocketContext*)context);
+}
+static void vox_curl_socket_deliver(void* context) {
+    VoxCurlSocketContext* state = context;
+    vox_curl_socket_retain(state);
+    pthread_mutex_lock(&state->mutex);
+    int flags = state->pending & state->interest;
+    state->pending = 0;
+    bool valid = state->valid;
+    pthread_mutex_unlock(&state->mutex);
+    if (valid && flags) state->activate(state->owner, state->socket, flags);
+    vox_curl_socket_release(state);
+}
+static void vox_curl_socket_notify(VoxCurlSocketContext* state, int flag) {
+    pthread_mutex_lock(&state->mutex);
+    if (!state->valid || !(state->interest & flag)) {
+        pthread_mutex_unlock(&state->mutex);
+        return;
+    }
+    if (flag == CURL_POLL_IN && !state->read_suspended) {
+        dispatch_suspend(state->read_source);
+        state->read_suspended = true;
+    }
+    if (flag == CURL_POLL_OUT && !state->write_suspended) {
+        dispatch_suspend(state->write_source);
+        state->write_suspended = true;
+    }
+    state->pending |= flag;
+    CFRunLoopSourceRef source = (CFRunLoopSourceRef)CFRetain(state->source);
+    pthread_mutex_unlock(&state->mutex);
+    CFRunLoopSourceSignal(source);
+    CFRunLoopWakeUp(state->loop);
     CFRelease(source);
-    return (void*)descriptor;
+}
+static void vox_curl_socket_read(void* context) { vox_curl_socket_notify(context, CURL_POLL_IN); }
+static void vox_curl_socket_write(void* context) { vox_curl_socket_notify(context, CURL_POLL_OUT); }
+static void vox_curl_socket_cancelled(void* context) { vox_curl_socket_release(context); }
+static void* vox_curl_socket_create(void* owner, int socket, void (*activate)(void*, int, int)) {
+    VoxCurlSocketContext* state = calloc(1, sizeof(*state));
+    if (!state) abort();
+    state->owner = owner;
+    state->socket = socket;
+    // Own a duplicate until both dispatch cancellation handlers finish. curl
+    // can close and reuse its original descriptor before cancellation arrives.
+    state->watched_socket = fcntl(socket, F_DUPFD_CLOEXEC, 0);
+    if (state->watched_socket < 0) abort();
+    state->activate = activate;
+    state->loop = (CFRunLoopRef)CFRetain(CFRunLoopGetCurrent());
+    pthread_mutex_init(&state->mutex, NULL);
+    state->references = 3; // Owner and the two dispatch cancellation handlers.
+    state->valid = true;
+    state->read_suspended = state->write_suspended = true;
+    dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
+    state->read_source = dispatch_source_create(DISPATCH_SOURCE_TYPE_READ, state->watched_socket, 0, queue);
+    state->write_source = dispatch_source_create(DISPATCH_SOURCE_TYPE_WRITE, state->watched_socket, 0, queue);
+    if (!state->read_source || !state->write_source) abort();
+    dispatch_set_context(state->read_source, state);
+    dispatch_set_context(state->write_source, state);
+    dispatch_source_set_event_handler_f(state->read_source, vox_curl_socket_read);
+    dispatch_source_set_event_handler_f(state->write_source, vox_curl_socket_write);
+    dispatch_source_set_cancel_handler_f(state->read_source, vox_curl_socket_cancelled);
+    dispatch_source_set_cancel_handler_f(state->write_source, vox_curl_socket_cancelled);
+    CFRunLoopSourceContext context = { 0, state, vox_curl_source_retain, vox_curl_source_release,
+        NULL, NULL, NULL, NULL, NULL, vox_curl_socket_deliver };
+    state->source = CFRunLoopSourceCreate(NULL, 0, &context);
+    if (!state->source) abort();
+    CFRunLoopAddSource(state->loop, state->source, kCFRunLoopCommonModes);
+    return state;
 }
 static void vox_curl_socket_set_enabled(void* value, int flags) {
-    CFFileDescriptorRef descriptor = value;
-    CFFileDescriptorDisableCallBacks(descriptor, kCFFileDescriptorReadCallBack | kCFFileDescriptorWriteCallBack);
-    if (flags) CFFileDescriptorEnableCallBacks(descriptor, flags);
+    VoxCurlSocketContext* state = value;
+    pthread_mutex_lock(&state->mutex);
+    if (state->valid) {
+        state->interest = flags;
+        state->pending &= flags;
+        bool read_suspended = !(flags & CURL_POLL_IN);
+        bool write_suspended = !(flags & CURL_POLL_OUT);
+        if (read_suspended != state->read_suspended) {
+            if (read_suspended) dispatch_suspend(state->read_source); else dispatch_resume(state->read_source);
+            state->read_suspended = read_suspended;
+        }
+        if (write_suspended != state->write_suspended) {
+            if (write_suspended) dispatch_suspend(state->write_source); else dispatch_resume(state->write_source);
+            state->write_suspended = write_suspended;
+        }
+    }
+    pthread_mutex_unlock(&state->mutex);
 }
-static void vox_curl_socket_destroy(void* descriptor) { CFFileDescriptorInvalidate(descriptor); CFRelease(descriptor); }
+static void vox_curl_socket_destroy(void* value) {
+    VoxCurlSocketContext* state = value;
+    pthread_mutex_lock(&state->mutex);
+    state->valid = false;
+    state->interest = state->pending = 0;
+    CFRunLoopSourceRef source = state->source;
+    state->source = NULL;
+    if (state->read_suspended) { dispatch_resume(state->read_source); state->read_suspended = false; }
+    if (state->write_suspended) { dispatch_resume(state->write_source); state->write_suspended = false; }
+    dispatch_source_cancel(state->read_source);
+    dispatch_source_cancel(state->write_source);
+    pthread_mutex_unlock(&state->mutex);
+    CFRunLoopSourceInvalidate(source);
+    CFRelease(source);
+    vox_curl_socket_release(state);
+}
 #elif defined(__linux__)
 #include <glib-unix.h>
 #include "../platform/linux_event_context.h"
