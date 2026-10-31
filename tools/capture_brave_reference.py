@@ -219,6 +219,10 @@ def main() -> None:
 
     with tempfile.TemporaryDirectory(prefix="brave-reference-") as profile:
         command = launch_command(args.binary, profile, args.proxy_server, args.windowed)
+        if not args.native_scale:
+            # CDP's viewport override alone leaves font rasterization dependent
+            # on the window's display scale. Pin both for emulated references.
+            command.append(f'--force-device-scale-factor={args.scale}')
         process = subprocess.Popen(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                                    start_new_session=True)
         browser = cdp = None

@@ -7,10 +7,30 @@ from pathlib import Path
 import unittest
 from unittest.mock import Mock, call, patch
 
-from capture_brave_reference import BRAVE, imported_cookies, launch_command, resize_native_viewport, scroll_viewport, window_position
+from capture_brave_reference import BRAVE, imported_cookies, launch_command, main, resize_native_viewport, scroll_viewport, window_position
 
 
 class BraveReferenceTests(unittest.TestCase):
+    def test_emulated_references_pin_process_scale_while_native_captures_use_the_display(self):
+        for scale, native in [(1, False), (2, False), (2, True)]:
+            with self.subTest(scale=scale, native=native):
+                arguments = ['capture_brave_reference.py', '--url', 'about:blank',
+                             '--out', 'unused.png', '--scale', str(scale),
+                             '--windowed', '--window-position', '20,20']
+                if native:
+                    arguments.append('--native-scale')
+                # Stop at process creation: exercise the actual CLI launch path
+                # without opening a window or needing a particular display.
+                with patch.object(sys, 'argv', arguments), \
+                        patch('capture_brave_reference.subprocess.Popen',
+                              side_effect=RuntimeError('launch observed')) as launch:
+                    with self.assertRaisesRegex(RuntimeError, 'launch observed'):
+                        main()
+                flags = [x for x in launch.call_args.args[0]
+                         if x.startswith('--force-device-scale-factor=')]
+                self.assertEqual(flags, [] if native else
+                                 [f'--force-device-scale-factor={float(scale)}'])
+
     @unittest.skipUnless(Path(BRAVE).is_file(), 'Brave is required for navigation')
     def test_failed_navigation_cannot_write_a_reference_image_or_fixture(self):
         tool = Path(__file__).with_name('capture_brave_reference.py')
