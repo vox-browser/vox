@@ -23,7 +23,7 @@ fn optimized_text_wrap_breaks(container &BlockContainer, iterator &InlineLevelIt
 		|| !iterator.is_unidirectional_left_to_right
 		|| builder.text_indent.raw_value() != 0 || style.text_align() == .justify
 		|| style.text_overflow() == .ellipsis || style.white_space_collapse() != .collapse
-		|| style.word_break() != .normal || style.overflow_wrap() != .normal
+		|| style.word_break() != .normal || style.overflow_wrap() !in [.normal, .break_word]
 		|| style.hyphens() == .auto_ {
 		return []int{}
 	}

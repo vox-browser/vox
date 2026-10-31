@@ -44,6 +44,8 @@ fn test_balance_heading_uses_native_advances_and_keeps_alignment_width() {
 	declaration := 'font:600 16px/24px ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;text-wrap:balance'
 	lines, _ := wrap_copy_lines(text, declaration, 220, .normal)
 	assert lines == ['Get responses', 'tailored to you']
+	break_word_lines, _ := wrap_copy_lines(text, '${declaration};overflow-wrap:break-word', 220, .normal)
+	assert break_word_lines == lines
 	centered, offsets := wrap_copy_lines(text, '${declaration};text-align:center', 220, .normal)
 	assert centered == lines
 	assert offsets[0] > 50 && offsets[0] < 60
@@ -79,4 +81,13 @@ fn test_unsupported_and_intrinsic_wrapping_keeps_existing_breaker() {
 	intrinsic, _ := wrap_copy_lines(text, '${base}text-wrap:balance', 220, .intrinsic_sizing)
 	ordinary, _ := wrap_copy_lines(text, '${base}text-wrap:wrap', 220, .intrinsic_sizing)
 	assert intrinsic == ordinary
+}
+
+fn test_overflow_word_breaking_still_handles_words_wider_than_the_available_line() {
+	$if !macos { return }
+	text := 'a verylongwordthatmustbreakatthenarrowline follows'
+	base := 'overflow-wrap:break-word;'
+	balanced, _ := wrap_copy_lines(text, base+'text-wrap:balance', 50, .normal)
+	ordinary, _ := wrap_copy_lines(text, base+'text-wrap:wrap', 50, .normal)
+	assert balanced == ordinary
 }
