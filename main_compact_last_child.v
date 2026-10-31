@@ -74,7 +74,7 @@ function __compactNodeWrapper(state){
  if(state.nodeType===9)return __compactDocumentWrapper(state);
  if(state.tagName!=="#node")return __element(state);
  if(state.__object)return state.__object;
- const node=Object.create(state.isShadowRoot?ShadowRoot.prototype:state.nodeType===11?DocumentFragment.prototype:Node.prototype);
+ const node=Object.create(state.isShadowRoot?ShadowRoot.prototype:state.nodeType===11?DocumentFragment.prototype:(__compactCharacterPrototype(state.nodeType)||Node.prototype));
  function record(receiver){const own=__elementApply(__compactNodeGet,__compactNodeRecords,[receiver]);if(!own)throw new TypeError("Illegal Node receiver");return own;}
  function read(){return __queryElements(record(this).bridgeKey,"nodeValue","");}
  function write(receiver,value,nullable){const own=record(receiver);if(typeof value==="symbol")throw new TypeError("Cannot convert a Symbol to a string");__queryElements(own.bridgeKey,"setNodeValue",nullable&&value===null?"":String(value));__compactInvalidateContent(own);}

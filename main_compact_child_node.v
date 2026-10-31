@@ -40,6 +40,7 @@ fn (mut binding CompactElementQueryBinding) child_node_query(root &dom.Node, inp
 	// Native algorithms retain viable siblings when an argument moves this
 	// node or its neighbours, and perform adoption and fragment insertion.
 	match action {
+		'remove' { node.remove(false) }
 		'before' { node.before(nodes)! }
 		'after' { node.after(nodes)! }
 		'replaceWith' { node.replace_with(nodes)! }
