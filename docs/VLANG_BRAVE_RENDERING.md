@@ -2,8 +2,9 @@
 
 Pixel-perfect parity remains open. The current settled, archived comparison at
 1280 × 800 CSS pixels and scale 1 has **4 differing pixels at the top** and
-**zero at scroll Y 6400**. These results cover those two viewports, not the
-complete live page. Earlier comparisons and validation limits are recorded below.
+**zero at scroll Y 6400**, and **4 at scroll Y 8000**. Other viewports
+still differ, including the Lilly preview and text. These results do not cover
+the complete live page. Earlier comparisons and validation limits are recorded below.
 
 ## Capture readiness correction
 
@@ -477,3 +478,72 @@ recorded in `all-vlang-installed-after.json`. Page-coordinate rounded-rectangle
 and inset-color probes did not change the fourteen corner errors. Endpoint
 padding and transparent-stop probes did not remove the remaining four top
 pixels. These diagnostic changes remain only under `Build/`.
+
+
+## Source cropping before decoded image replay
+
+`d1f6cbe0` applies Chromium's replaced-image content crop to the source and
+snapped destination before native replay. Ancestor clips remain separate.
+Source offsets and sizes use `gfx::MapRect`'s relative, float arithmetic;
+transforming document-space edges first loses precision far down the page.
+The native image leaf and retained picture recorder select the decoded upload
+from the complete image at that draw scale, matching
+[`DrawImageRectOp::Serialize`](https://chromium.googlesource.com/chromium/src/+/156.0.8078.48/cc/paint/paint_op.cc).
+The final cropped draw retains its strict source constraint.
+
+The new `replaced-image-source-crops` fixture exercises top and centered cover
+images at scroll Y 9000. It improves from **359 differing pixels to zero** at
+800 × 600 and scale 1. Two fresh Brave references agree exactly. The earlier
+fixture with a generated-gradient backdrop has one remaining background pixel;
+the committed fixture isolates image sampling with a solid backdrop. A mixed
+image-size/color-space diagnostic remains non-exact and is retained only under
+`Build/`; it does not supply conformance credit.
+
+On the settled vlang archive, scroll Y 8000 improves from **13,070 to 4 differing
+pixels**. The Gitly preview there is exact. At Y 8800, the GUI preview is exact
+and the full viewport improves from **21,886 to 20,196**. The remaining mismatch
+mostly covers Lilly. A full-resolution private probe matches Lilly but changes
+other previews; decode/cache coordination remains under investigation. Fresh
+Brave references agree exactly with the preceding references at all four
+checked positions: 0, 6400, 8000, and 8800. The top remains at four differences
+and Y 6400 remains exact.
+
+Evidence under `Build/vlang-parity-20261031/`:
+
+- `cropped-image-focus-main-{none,boehm}-{build,run}.json`: eight crop and
+  retained-clip test functions pass in both memory modes.
+- `cropped-image-picture-control-{compile,run}.json`: the preceding picture
+  recorder fails the new cropped/minified source comparison.
+- `cropped-metal-image-{test-compile,control-run}.json`: the preceding Metal
+  leaf fails the first cropped case by 70,194 pixels.
+- `cropped-image-native-accepted/`: all eight native suites pass, including
+  200 independent color-managed image-picture scenes, 32 Metal/Dawn image
+  comparisons, and 16 generated-gradient pattern cases. The earlier
+  `cropped-image-native-checks/` run exposes an incorrect test expectation:
+  halving an odd height of 2483 requires 1242, not 1241. Its failure is retained;
+  the corrected fixed-size expectation passes every case.
+- `cropped-image-production-{guard,status}.json`: production build succeeds,
+  with all implementation inputs stable, in 208.46 seconds and a sampled peak
+  aggregate RSS of 7.75 GiB under the default 12 GiB guard.
+- `cropped-image-cover-{final,control-final,reference-repeat}/` and
+  `cropped-image-cover-reference-agreement.json`: new browser fixture,
+  negative control, and reference repeat.
+- `cropped-image-installed-page/`, `cropped-image-page-ref-*.json`, and
+  `cropped-image-installed-{before,after}.json`: fresh frozen-page captures,
+  reference agreement, and stable installed executable/library identities.
+- `cropped-image-installed-smoke-status.json`: all fourteen screenshot,
+  selection, image-invalidation and turbulence checks pass.
+- `cropped-image-installed-inline-regressions.json`: all 42 inline browser
+  regressions pass. `cropped-image-installed-gradient-regressions/status.json`
+  retains seven exact image and generated-gradient golds.
+- `cropped-image-installed-headless.json` and
+  `cropped-image-installed-live/status.json`: fresh headless startup and live
+  scripted navigation pass; fonts and five visible image requests load with
+  zero native errors. Live navigation remains a loading check.
+
+The installed executable is
+`e0176c5cbe01aedcd17c99cdbff62e8d1d987ffc7409a36805e4f0a141eaa85c`,
+pinned with its signed libraries in `Vox-cropped-image-installed.app`.
+The broader page sweep in `all-vlang-page-sweep/` remains non-exact and includes
+a wrapping Copy button, table/text differences, and other raster discrepancies.
+Full-page and scale-two parity remain open.
