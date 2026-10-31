@@ -107,6 +107,17 @@ bitmap rounding. Matching ownership, unit transforms and rectangular opening
 clips are required; other scopes keep their existing replay. Selector and clip
 guards pass in both collector modes. The source display list stays balanced.
 
+`forum-fractional-rounded-underlay` places HSL card backgrounds and borders
+in the same complete raster tile as a curved SVG. Two agreeing 1024×768,
+scale 1 Brave 156.1.98.60 references improve from eight differing pixels to
+zero. Shared recordings retain the background components through the border;
+standalone fallback leaves keep their existing palette. The native driver
+checks 120 shared/fallback color and reset cases and 12 direct GPU descriptors
+against independent complete pictures, including both device scales. Cache
+keys include optional underlay components. The earlier four-pixel standalone
+reduction remains an open diagnostic; this fixture establishes shared-raster
+precision only.
+
 References were captured from Brave 155.1.97.57 on macOS at device scale 1.
 `font-rasterization` covers Arial and Verdana at integer and fractional sizes,
 automatic and antialiased smoothing, three foreground colors, and white and

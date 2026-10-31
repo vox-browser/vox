@@ -2022,3 +2022,73 @@ Evidence is under `Build/forum-news-svg-opacity-fold-20261031/`, especially
 separately. The `adf10924` broad baseline remains; this is the eighth completed
 SVG/native fix in this conformance series after that checkpoint. Full ten-site
 pixel parity remains open.
+
+
+## Shared rounded-background colors, 31 October 2026
+
+`f918ff2d` retains fractional background components when a rounded background
+and its border enter a shared raster recording. The serialized-color guard
+rejects stale metadata, opacity is applied once, and null/replaced underlays
+and failed draws clear pending components. Typed GPU shape descriptors can
+also carry those components, and their cache keys distinguish every channel.
+Standalone browser leaves retain their existing byte palette.
+
+The new `forum-fractional-rounded-underlay` fixture places the gray HSL rounded
+card inside a complete raster tile containing a curved SVG. Two agreeing
+1024×768, scale 1 Brave 156.1.98.60 references show **eight differing pixels
+before the fix and zero afterward**. All **35 native Brave fixtures**, three
+canonical SVG mutation reftests, five harness checks, signing and startup pass.
+The final sanitized native driver passes 120 shared/fallback color and reset
+cases, 12 direct GPU descriptor comparisons, the existing 96 clipped SVG
+comparisons with 107 guards, 96 translated-mask comparisons with 288 guards,
+and 24 SVG color comparisons. Optimized and sanitized cache checks pass.
+The retained-color V guard executes successfully with the default collector.
+Two no-GC attempts have no test-body credit: concurrent module work first fails
+V parsing and later fails Objective-C ARC checks before the test can execute.
+
+The initial unrestricted precision change makes a separate four-pixel
+standalone reduction exact but regresses Stack Overflow from **108 to 116**
+differing pixels. It receives no acceptance credit. Restricting the browser
+change to shared recordings restores the complete Stack Overflow frame to its
+prior, byte-identical **108** differences. The original standalone reduction
+still has four differences; adjacent-SVG and translucent diagnostics remain
+open too. Earlier failed native references omitted MSAA or used the wrong
+conservative stroke bounds; their results remain retained without pass credit.
+The final native references match the raster surface and publication endpoint.
+
+A full production build completes in 263 seconds at **8.87 GiB** sampled peak
+RSS under the unchanged 12 GiB guard and 10 GiB compiler limit, with all watched
+inputs stable. The final recording-only adjustment rebuilds the native bridge
+in 6.6 seconds. It reuses the completed executable code and Metal ABI; the
+recorded executable prefix before its embedded signature is unchanged.
+Re-signing changes the final executable hash to
+`35489bab3b1adbcda4bfc057b91bc336724e1d3f237b5b31509ff92bf3436466`.
+The bridge is
+`8fb1aeab2ebaba2a1388ac9e2b6dc7ac1d48e70bcfb67293fae88985400af523`,
+Metal is
+`8dacafe0fd8906e593f99843ff70ce0f12b699a2c5d3ec383ccb3c64a0bfcf12`,
+and Dawn and the uBO snapshot retain the preceding checkpoint's identities.
+The installed bundle matches the final pinned candidate and passes a fresh
+startup check. The native-only update avoids rebuilding unrelated in-progress
+module sources. Shared history advances before the feature commit; its four
+main replay changes are verified against the compiled drawing function.
+
+The final matrix accepts **one of ten**: HN 0, Lobsters 0, Slashdot 9,773,
+Stack Overflow 108, BBC 76,604, CNN 101,529, The Verge 313,982 and Pikabu 13,925
+differing pixels. All eight native page images are byte-identical to the prior
+checkpoint, so this change earns no whole-site improvement. Lobsters' reference
+changes at 115 pixels and CNN's at 31,766, accounting for their changed counts.
+Lobsters remains open with 71 live-to-frozen differences; CNN has 101,696.
+Reddit's HTTP 403 and The Guardian's unstable references remain coverage
+failures. All eight completed full-uBO request/header, cosmetic, procedural and
+scriptlet audits match, and the closed 326-file oracle template stays unchanged.
+
+Evidence is under `Build/forum-news-underlay-colors-20261031/`, including
+`shared-scenes/`, `reference-shared/`, `fixture-comparison.json`, `native-final/`,
+`cache/`, `cache-sanitized/`, `focused/`, `focused-no-gc/`, `production/`,
+`native-update/`, `candidate-accepted/`, `install/`, `frame-comparison.json`,
+`filter-audit-summary.json` and `checkpoint.json`. The rejected unrestricted
+candidate and the original standalone reduction remain in the same directory.
+The `adf10924` broad baseline remains; this is the ninth completed SVG/native
+fix in this conformance series after that checkpoint. Full ten-site pixel
+parity remains open.
