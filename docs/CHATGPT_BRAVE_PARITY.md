@@ -1,8 +1,14 @@
 # ChatGPT rendering and startup against Brave
 
-ChatGPT support and pixel-exact parity are **not complete**. The changes below
-fix specific failures reproduced on the logged-out homepage. They do not make
-ChatGPT's module-based application executable, or establish that chatting works.
+The macOS production browser now starts the archived logged-out ChatGPT
+application. Pixel-exact parity and an actual conversation are **not complete**.
+The full-page comparison still has rendering differences; focused fixtures and
+a successful application startup are not a substitute for that comparison.
+
+The latest unchanged-original-archive capture differs in **7,169 of 786,432
+pixels (0.9116%, MAE 0.0110)**. Startup, native typing and Enter are validated;
+a completed chat reply remains unverified. The recorded 60-second idle check
+peaks at 1.82 GB rather than continuing toward the 12 GiB guard.
 
 ## Captured workload
 
@@ -56,8 +62,9 @@ live-to-frozen parity is claimed.
   `item()`, iteration and out-of-range behavior. `childNodes` remains live.
   This removes ChatGPT's startup failure when it calls `list.item(list.length-1)`.
 - `dd340a2a`: The Chromium font policy continues past unavailable
-  `ui-sans-serif` and recognizes the later `-apple-system` family alias.
-  Brave's platform-font probe identifies `.SF NS` for the homepage heading.
+  `ui-sans-serif`. Brave's platform-font probe identifies `.SF NS` for the
+  homepage heading. This commit also assumed -apple-system was an alias;
+  `97efe424` corrects that assumption using a disambiguating Arial fallback.
   A standalone unavailable UI family still falls through to the author's
   ordinary sans-serif fallback. The LibWeb fixture policy is preserved.
 - `3ee2380c`: Compact elements implement `toggleAttribute()`, including
@@ -67,8 +74,9 @@ live-to-frozen parity is claimed.
 
 The initial `bde4c36a` mapping selected system UI directly for `ui-sans-serif`.
 The unchanged Brave reference rejected it with 9,347 differing pixels.
-`dd340a2a` corrects that assumption rather than changing the reference or
-relaxing the comparison. The failed test and platform-font probes are retained.
+`dd340a2a` corrects that generic-family assumption rather than changing the
+reference or relaxing the comparison. Its separate -apple-system alias
+assumption is corrected in the continuation below. The failed test and platform-font probes are retained.
 
 The focused V tests execute twelve cases in each of Boehm and no-GC modes,
 24 executions total. Compilations use the 12 GiB guard and a 10G V compiler
@@ -81,7 +89,7 @@ differing pixels. Both font comparisons also pass with zero differing pixels,
 using the original `ui-sans-system-font` reference and the added
 `apple-system-font-stack` reference.
 
-## Final native validation
+## Earlier native validation
 
 The shared production build completed successfully and its recorded tracked
 inputs stayed stable. Its receipt is
@@ -127,29 +135,80 @@ Images, diffs, commands and actual guard results are in `frozen-acceptance/`,
 
 ## Remaining gates
 
-The JavaScript backend explicitly rejects module execution in
-`browserjs/runtime.v`. ChatGPT's entry point uses `type="module"` and an import
-map, so constructor and collection fixes alone cannot start the application.
-Original-script replay is diagnostic, not an interaction or conversation test.
-The completed replay with the additional polyfill still reports an absent
-`ShadowRoot` interface as well as module rejection. The previous constructor,
-`NodeList.item()` and `toggleAttribute()` startup errors no longer occur.
-Complete original-script startup checks use the default 12 GiB aggregate
-browser budget, separately from the 3 GiB focused unit tests. The first nested
-3 GiB startup attempt failed during guard cleanup and receives no validation
-credit. A later 12 GiB run completed at 3,047,276,544 sampled bytes, exposing
-the missing `toggleAttribute()` call and the uncaptured fallback script;
-those diagnostics motivated the follow-up work above.
+The macOS host now executes real JavaScriptCore module graphs, with import-map
+resolution, cycles, live bindings, dynamic imports and top-level await. The
+standalone runtime without that host, and the Linux backend, still reject
+module execution. Native module support alone does not establish that the
+complete ChatGPT application starts.
 
-Vox also deliberately hides matching cookie banners by default through
-`cookie_blocker.v`. This adds `display: none !important` to ChatGPT's consent
-dialog, while the captured Brave homepage displays it. This is an existing
-browser policy difference, not a missing dialog layout box. Full-page parity
-cannot be claimed while those consent states differ.
+The original-script replay passes the app's `data-octane-home-behavior-ready="1"`
+gate in a fresh production window, with no native reported script errors.
+The unmodified native startup probe also settles with 284 module sources,
+no pending module requests, and no host errors. Brave reaches the same marker
+from the same non-forwarding archive.
+
+Vox hides matching cookie banners by default through `cookie_blocker.v`.
+Conformance launches set `VOX_BLOCK_COOKIE_BANNERS=0` so both browsers display
+the site's unchanged consent UI. Screenshot mode otherwise reports an inactive
+window; `VOX_CAPTURE_DOCUMENT_ACTIVE=1` matches the focus emulation used in the
+Brave reference. These policies are recorded explicitly and do not alter site
+HTML, scripts, stylesheet rules, expected pixels, or comparison regions.
 
 No screenshot tolerance or reference region is relaxed for ChatGPT. Startup
 failures, incomplete captures, changed executable identities and memory-guard
 failures do not count as successful validation.
+
+## Native modules and live DOM follow-up
+
+Private evidence for this continuation is under
+`Build/chatgpt-shadow-modules-20261031/`. It reuses the sealed original archive
+and the captured fallback response; ChatGPT has not been downloaded again.
+
+- `4c870df8` and `aaba271e`: declarative shadow attachment clears the existing
+  children, and compact ShadowRoot wrappers operate on native trees, including
+  attachment, markup replacement, queries and root lookup.
+- `bbc8921b` and `77ce4dbb`: parser-created import maps reach the owning Window,
+  and the macOS host loads native JavaScriptCore module graphs through Fetch.
+  Dynamic import rewriting uses the pinned es-module-lexer parser. Focused
+  tests retain native module identity, cycles, live bindings and top-level await.
+- `9ad0eff1`: asynchronous module supply enters the owning HTML realm.
+- `1ca19806`: linked stylesheets expose their native CSSStyleSheet and live
+  rule lists. Real link owners preserve style order, duplicate URLs each get
+  completion events, and cross-origin rules retain their SecurityError gate.
+  The pre-existing compact style-element sheet approximation is still separate.
+- `0cb1ea9f`: input and textarea value/defaultValue access uses the real control
+  models, including clean/dirty values, textarea newlines, reset and insertion.
+  This fixes the captured app's `defaultValue.replace` startup exception.
+- `f2afb17b`: macOS socket readiness survives partial SOCKS/TLS handshakes.
+  Dispatch sources signal the owning CF loop; V callbacks stay on that loop.
+  Duplicated descriptors remain owned until asynchronous cancellation finishes.
+- `de4e64ac`: native socket callbacks and output pointers use 32-bit C integers.
+  A Darwin arm64 ABI regression test deliberately leaves upper argument-register
+  bits nonzero: the old callback created descriptor key 20014547599363 for
+  descriptor 3; the corrected callback registers and removes descriptor 3.
+- `b776b6b6`: the native module fixture covers 130 concurrent 256 KiB HTTPS
+  responses through the local SOCKS replay. Failed module loads identify the
+  requested URL. Both Boehm and no-GC executions pass.
+
+The socket adapter passed twenty fresh-process HTTPS/SOCKS module trials.
+Certificate tests still reject incorrect hostnames and unrelated certificate
+chains. Native transport, large concurrent HTTP modules and scratch-lifetime
+checks pass in Boehm and no-GC modes. Link/control tests additionally pass in
+production allocator mode. Detailed compile and execution receipts, including
+failed diagnostic attempts, remain in the private evidence directory.
+
+The completed `production-control-styles-network` bundle includes the linked
+stylesheets, text controls and dispatch socket adapter. Its executable SHA256 is
+`2a3659dbae38badde55abe985f87b58f1c340ea1cfd7a42c134ae4d4db805f2d`.
+Its build completed with stable recorded sources. It predates the integer ABI
+fix and subsequent layout work, so it cannot validate those changes.
+
+The unchanged original-script replay at 1024×768 still differs from its matched
+normal-window Brave reference at 125,454 / 786,432 pixels (15.9523%, MAE 2.6107).
+Both captures retain an identical native executable/library identity across
+the check. `original-production-gcd-acceptance/` retains the images, complete
+unmasked diff, readiness audit, proxy requests and build identity. This original
+script workload is distinct from the earlier frozen-DOM comparison above.
 
 ## Focused screenshot checks
 
@@ -164,3 +223,187 @@ Each test pins the executable and native-library identity, launches a fresh
 process with a private profile, and requires exact RGBA equality with its
 Brave reference. The HTML inputs and reference PNGs are in
 `Tests/Browser/Brave/{input,expected}/`.
+
+## Native startup continuation
+
+The original HTML response remains
+`1f72b297f96be72d20c6392e53c5fc63b05fcb022e70c8bb1449afdd20c13903`.
+No further ChatGPT download was made. Every replay uses the local SOCKS/TLS
+archive with private, process-local trust; it does not forward misses.
+
+- `547b107f` binds native document visibility; `96b9a8fa` reflects HTML language.
+- `3bfd24c3` drains already-ready native completions within the event pump's
+  existing budget. This lets the actual HTTPS module fan-out complete.
+- `53906747` discovers lazy native controls in form collections; `5a560998`
+  exposes live native form/radio collections and form-control owners.
+- `873efb07` binds document focus queries to the actual navigable.
+- `c5ffb62b` exposes native client rectangles and mutable DOMRect values.
+  Native client rectangles currently describe one border box per element;
+  fragmented inline geometry is not established by this slice.
+- `dbd88037` keeps persistent allocations outside scratch around nested owners.
+- `e4d17315` queues native mutation records and tracks removed subtree
+  registrations through notification, re-observation and disconnect.
+- `bfc8ad41` delivers MutationObserver/MutationRecord wrappers from native DOM
+  records, with filtering, old values, static NodeLists, takeRecords and callback
+  exceptions. During JavaScript, notifications share its protected Promise
+  carrier; native-origin changes enter through the owning HTML checkpoint.
+  Complete interleaving parity between the embedding's HTML and JSC queues
+  is not established.
+- `487a6830` exposes CSS.supports and CSS.escape through the existing CSS engine.
+- `a1618b65` gives parsed and constructed Text/Comment nodes their native
+  interface identities and CharacterData/Text mutation operations.
+- `3e70411d` completes initial style preloads on their actual link owners,
+  allowing load listeners to promote them to stylesheets using the fetched
+  bytes. Failure, duplicated-link identity and request-scratch ownership are
+  covered. Dynamic preloads of every destination are outside this slice.
+- `717307f5` balances short text and avoids orphan words using native advances;
+  `d15bc3ae` retains this behavior with overflow-wrap:break-word when whole words
+  fit. Long-word fallback remains with the existing breaker.
+- `c62c4f32` and `52317945` make consent and capture focus policies explicit.
+
+Evidence is under `Build/chatgpt-shadow-modules-20261031/`. The 23-case API batch
+passes in Boehm, no-GC and preallocated modes, including arena poisoning in the
+last mode (`api-batch-results.json`, source hashes in `api-batch-sources.json`).
+The 12-case stylesheet/preload regression batch passes in all three modes
+(`style-preload-final-results.json`); the four wrap cases do too
+(`wrap-breakword-final-results.json`). Compile and execution receipts are
+separate. Failed diagnostic attempts remain available.
+
+The focused persistent-allocation poison reproducer and native observer lifetime
+checks pass. The allocator regression diagnostic also retains the original
+unmodified failures: several string buffers were not inside the asserted owner,
+and subsequent tests inherited the unfinished scopes. A separate 20-case harness
+that explicitly clones the input buffers passes with poisoning. That adjusted
+harness is diagnostic evidence, not an unmodified broad-suite pass.
+
+The first completed continuation production build is pinned in
+`production-frontend-complete/{result,guard,identity-after}.json`: executable
+`50678667e6408574074c5f7472ea601a61208ff038ff91d4fd6773a8daa91740`.
+All recorded source inputs were stable. Its fresh full-page capture reaches the
+application marker with zero native errors, but differs from Brave in 371,812
+of 786,432 pixels (47.2783%, MAE 3.7186). This exposed the missing promotion of
+the secondary stylesheet and the unmatched screenshot focus policy. It used
+visible consent UI and cannot be compared as a performance or regression result
+with the earlier hidden-banner capture. Artifacts are in
+`frontend-production-acceptance/`.
+
+That same executable passes the default 11 screenshot cases, all 10 required SVG
+mutation guards, the shadow/module fixture, the original wrapping fixture and
+headless startup (`candidate-validation/results.json`). Brave's 5-second and
+20-second original-archive control captures are pixel-identical. The additional
+break-word fixture also leaves Brave's existing reference pixel-identical.
+
+The next production comparison includes preload promotion, matched focus and
+break-word wrapping. The executable is
+`8fc9c4297469ca52c766697319c56d31d722f189bd2fdec0d6dfbe154f9bae37`
+(`production-preload-focus-wrap/`). Its required implementation sources were
+stable, although two unrelated native renderer test/header files changed during
+the shared build, so the complete checkout was not stable. The unchanged
+original archive reaches the application marker, activates both stylesheets and
+reports zero native or JavaScript errors after 20 seconds. At 1024×768, scale 1,
+with visible consent UI and explicitly active capture focus, it differs in
+9,495 of 786,432 pixels (1.2074%, MAE 0.1889). No mask or pixel tolerance is used.
+Artifacts are in `frontend-preload-focused-acceptance/`.
+
+That executable passes both wrapping fixtures, the shadow/module fixture,
+headless startup, the default 11 screenshot cases and the 10 SVG mutation
+checks (`candidate-validation-preload-focused/results.json`). Native typing
+then exposed missing active-element getters and legacy input events; commits
+`984b07da` and `72f02cc7` provide those bindings. A later shared executable's
+longer typing diagnostic exceeded the default 12 GiB memory guard after input,
+so that diagnostic supplies no acceptance result. A separate small native
+textarea fixture reproduces the first-character loss without React: its first
+input listener's `.value` read resets a still-clean model. The dirty flag now
+precedes input dispatch, including reentrant `defaultValue` access. This is an
+intentional ordering correction to the current upstream translation.
+
+Cached sentinel and conversation preparation POSTs return 404 in this archive;
+no conversation has been sent or verified. Full pixel equality and sustained
+interactive memory behavior remain open.
+
+
+## Native editing, caret and idle-memory continuation
+
+`ecde0df9` integrates `origin/master` at `b5af1a2e`, preserving the existing
+shared commits. No textual merge conflicts occurred. The incoming 63 Python
+checks and 26 CSS checks pass; the CSS checks run in all three allocator modes.
+The integration receipts are in `Build/chatgpt-master-integration-20261031/`.
+
+The following focused changes are committed separately:
+
+- `1b90a77e` marks textarea edits dirty before input listeners can read the value.
+- `144829e2`, `1ce246dc`, `a48ace48` and `bbe70152` provide cap metrics,
+  cross-node kerning, nested-inline wrapping and horizontal text-box trimming.
+  Trimming supports the implemented Latin edges; ideographic edges, vertical
+  propagation and the complete shorthand are not claimed.
+- `fbc807eb` routes clicks through the native event path without duplicate
+  delivery. `21c21bba` exposes native KeyboardEvent data and listeners;
+  `9cb5058e` dispatches keydown/keypress before editing default actions. Native
+  Enter reaches JavaScript and cancellation prevents the editing action.
+  This is not complete platform-key coverage: the shell's printable-character
+  path and keyup delivery still have separate implementation limits.
+- `4a1d9636` holds the caret visible during explicitly focused deterministic
+  captures, without changing ordinary interactive blinking.
+- `e844a956` distinguishes :has() match propagation from a fresh DOM mutation
+  and drains whole-subtree fanout in the same style pass. Nested :is()/:where()
+  selectors previously lagged a state change and continually scheduled work.
+  Eighteen related CSS cases pass in all three allocator modes, including
+  shadow trees, sibling selectors, later mutations and the existing result cache.
+- `d59473cb` paints opaque padding-box outer shadows before the background,
+  using the existing one-CSS-pixel overlap. The isolated Brave fixture is exact
+  with single, multiple, asymmetric and hard shadows. The rejected wider-border
+  overlap attempt and its failed comparison remain under Build/.
+- `643b27e7` creates a focused textarea's native editor before layout, paints
+  its caret above the placeholder, and uses integer CSS-pixel font metrics for
+  Chromium caret height. The existing focused-control preparation, selection
+  and layout-retention regressions and the new empty-control case pass in
+  Boehm, no-GC and preallocated modes.
+- `97efe424` corrects the earlier -apple-system alias assumption. Brave's
+  platform-font probe selects ArialMT for `-apple-system, Arial`; the family is
+  unavailable and must fall through. Explicit system-ui and BlinkMacSystemFont
+  continue to select the system face. The original stack reference remains
+  unchanged; the new disambiguating fixture is also exact.
+
+The final validated production executable is
+`c088a9024bdf363d2b05d519bf4cd6c50f3109630aa384de10119e6fac74cce4`.
+Its native-library identities and build receipts are in
+`production-caret-font-fallback/` under
+`Build/chatgpt-shadow-modules-20261031/`. Required implementation inputs stayed
+stable. An unrelated flex-layout source changed during the shared build, so
+this is not a stable-whole-checkout build claim. Every acceptance capture and
+screenshot group pins an unchanged executable/library identity and starts fresh
+processes on the test display.
+
+`candidate-validation-caret-font/results.json` records ten exact focused Brave
+fixtures, successful headless startup, all eleven default screenshot passes
+(eight exact and three within existing allowances), and ten exact SVG mutation
+guards. The broader Page regression compilation exceeded the 12 GiB guard;
+those attempts supply no broad-suite test credit. The twelve native editing
+cases and native Enter regression execute successfully in all three modes.
+
+`frontend-caret-font-acceptance/` retains the unchanged-original-archive capture,
+matched normal-window Brave reference, complete diff, native readiness audit,
+proxy log, PID and identity. Both original stylesheets load, the actual frontend
+reaches its home-ready marker, and native/JavaScript error counts are zero.
+At 1024×768, scale 1, visible consent UI and explicitly active document focus,
+7,169 pixels differ (0.9116%, maximum channel error 60, MAE 0.0110). There are
+454 pixels above channel error 3 and seven above 25. No region is masked and
+no tolerance is applied to this whole-page result. SVG edges, rounded controls
+and shadow/compositing rounding remain open.
+
+The matched 20-second original-archive captures record peak aggregate RSS of
+9,051,865,088 bytes before the :has() correction and 1,822,883,840 bytes after it.
+The separate pinned diagnostic `native-idle-has-settle-60s/` completes in 61.34
+seconds with peak RSS 1,824,686,080 bytes and zero script/native errors. Its
+symbolized mmap stacks contain no :has() invalidation allocations after the
+first ten seconds. These are memory/eligibility observations, not frame-rate
+or scrolling-performance claims; the shared builds include independent changes.
+The final full-page capture peaks at 1,826,340,864 bytes.
+
+`native-editor-enter-caret-font/` records the latest native input check. A probe
+sends actual AppKit mouse and keyboard events to the content view, types Vox,
+and presses Enter. The composer retains all three characters; Enter reaches
+the frontend without adding an editing newline. Archive-only sentinel and
+conversation preparation requests remain 404, so neither that check nor the
+startup marker establishes a completed chat response. All these checks reuse
+the original saved download through the non-forwarding local SOCKS replay.
