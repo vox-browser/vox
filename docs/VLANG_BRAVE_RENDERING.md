@@ -599,3 +599,73 @@ The signed executable is
 pinned with its libraries in `Vox-trailing-fallback-installed.app`.
 `trailing-fallback-installed-{before,after}.json` records unchanged bundle
 identity across validation. Full-page and scale-two parity remain open.
+
+
+## Fractional collapsed borders and table placement
+
+`2b365f5c` keeps collapsed border halves at 1/64 CSS-pixel precision in
+Chromium-policy layout and painting. LibWeb-policy documents retain the
+translated whole-pixel split. Cell intrinsic measurements and final content
+offsets use the same policy, including temporary height measurements.
+[`TableBorders::GetCellBorders`](https://chromium.googlesource.com/chromium/src/+/156.0.8078.48/third_party/blink/renderer/core/layout/table/table_borders.cc)
+divides both sides in LayoutUnits before pixel snapping.
+
+Normal-flow table placement also retains the border edge actually used before
+conflict resolution. An earlier intrinsic pass can already install collapsed
+borders; subtracting the unsplit authored border again shifted tables with
+explicit borders. The new regression covers both policies, repeated layout,
+three odd border widths, and the resulting horizontal origin. Painting tests
+cover scales 1 and 2 and odd raw LayoutUnit widths.
+
+The `collapsed-table-fractional-shares` browser fixture improves from **978
+differing pixels to zero** at 800 × 600 and scale 1. Two fresh Brave references
+agree exactly. It covers translucent cell backgrounds behind horizontal border
+halves and an explicitly bordered table's placement. Explicit cell minimums
+keep empty-row height distribution out of this regression. A separate
+intersection probe improves from 1,189 to 45 pixels; its remaining alpha
+intersections are not accepted as conformance and remain only under `Build/`.
+
+On vlang, the first table grid line now matches Brave at document coordinates
+**680.5, 2821.75**, instead of 681, 2822.25. The table viewport still has **649
+text differences**. Its first and last column widths differ by one raw
+LayoutUnit; proportional surplus rounding remains a separate investigation.
+The checked top, Y 6400, and Y 8000 retain 4, 0, and 4 differing pixels.
+
+Evidence under `Build/vlang-parity-20261031/`:
+
+- `fractional-table-origin-checked-{layout,painting}-{none,boehm}-{build,run}.json`:
+  all 13 layout and ten painting functions pass in both memory modes.
+- `fractional-table-halves-sized-{before,after}/` and
+  `fractional-table-reference-repeat.json`: isolated negative control,
+  exact candidate, and reference agreement.
+- `fractional-table-production-reuse.json` and
+  `fractional-table-reused-build-validation.json`: a running shared build
+  already contained the initial border-half changes and supplied intermediate
+  browser evidence. The nonblocking duplicate attempt returned 125; no second
+  build ran while its lock was busy. That intermediate executable predates
+  the subsequent placement fix.
+- `fractional-table-origin-production-{guard,status}.json`: the final build
+  succeeds in 217.08 seconds, with sampled peak aggregate RSS of 7.15 GiB.
+  The supervisor then rejects whole-file stability because another session
+  removes an unrelated shadow cutout in `paint_transport.v`. The other four
+  implementation files remain stable. `fractional-table-origin-function-stability.json`
+  verifies the complete table paint function is unchanged: reconstructing the
+  preceding file differs only at that unrelated cutout and matches its recorded
+  full-file hash. Both source versions are retained as
+  `fractional-table-transport-{before,after}.v`; the raw rejection is preserved.
+- `fractional-table-origin-installed-page/`: fresh frozen-page comparisons and
+  geometry audits. `fractional-table-origin-installed-smoke-status.json` and
+  `fractional-table-origin-installed-inline-regressions.{json,log}` record
+  fourteen passing screenshot cases and all 44 inline browser regressions.
+- `fractional-table-origin-installed-gradient-regressions/status.json`: seven
+  image/gradient golds plus the existing intrinsic-table-height gold are exact.
+- `fractional-table-origin-installed-headless.guard.json` and
+  `fractional-table-origin-installed-live/status.json`: startup and live
+  scripted loading pass with fonts loaded, five visible image requests complete,
+  and zero native errors. Live loading supplies no pixel comparison credit.
+
+The accepted signed executable is
+`ad0fc19e7d258f157f9de1864b9950d3ea2d0d057a88c233d33126222049aa63`,
+pinned with its libraries in `Vox-fractional-table-origin-installed.app`.
+`fractional-table-origin-installed-{before,after}.json` records unchanged
+installed identity across validation. Full-page and scale-two parity remain open.
