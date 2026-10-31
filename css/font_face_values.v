@@ -5898,17 +5898,24 @@ fn platform_symbol_font_names_boundary() []string {
 
 fn platform_typefaces_with_family_name_boundary(family_name string, policy platform.FontRenderingPolicy) []&PlatformTypeface {
 	if policy == .chromium && platform.system_font_matching_supported() {
-		if !platform.chromium_system_font_family_available(family_name) {
+		// Blink treats this CSS family as a system UI alias even though it is
+		// not an installed CoreText family name.
+		resolved_family := if family_name.to_lower() == '-apple-system' {
+			'SystemUi'
+		} else {
+			family_name
+		}
+		if !platform.chromium_system_font_family_available(resolved_family) {
 			return []
 		}
 		// The platform resolves the installed face for the requested weight.
 		return [
 			&PlatformTypeface{
-				family_name: family_name.clone()
+				family_name: resolved_family.clone()
 				weight_: 400
 			},
 			&PlatformTypeface{
-				family_name: family_name.clone()
+				family_name: resolved_family.clone()
 				weight_: 700
 			},
 		]
@@ -5939,7 +5946,17 @@ fn platform_generic_font_name_boundary(generic_family string, policy platform.Fo
 		'fantasy' { 'Fantasy' }
 		'cursive' { 'Cursive' }
 		'ui-rounded' { 'UiRounded' }
-		'system-ui', 'ui-sans-serif' {
+		'ui-sans-serif' {
+			// Chromium on macOS leaves this family unavailable. Keep looking
+			// through the author's list instead of selecting ordinary sans or
+			// system UI and hiding a later explicit family.
+			if policy == .chromium && platform.system_font_matching_supported() {
+				'ui-sans-serif'
+			} else {
+				'SansSerif'
+			}
+		}
+		'system-ui' {
 			if policy == .chromium && platform.system_font_matching_supported() {
 				'SystemUi'
 			} else {
