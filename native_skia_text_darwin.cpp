@@ -4566,7 +4566,16 @@ static int draw_svg_gradient_path(CGContextRef destination, float const* data,
         transform_b, transform_d, page_y - scroll_y + transform_f,
         0.0f, 0.0f, 1.0f);
     if (auto* canvas = shared_recording_canvas(destination)) {
-        shared_recording_content(destination, matrix.mapRect(local_bounds), page_y, scroll_y);
+        auto ink = matrix.mapRect(local_bounds);
+        if (clip && !ink.intersect(matrix.mapRect(SkRect::MakeXYWH(clip[0], clip[1], clip[2], clip[3]))))
+            ink.setEmpty();
+        if (ancestor_clip && !ink.intersect(matrix.mapRect(SkRect::MakeXYWH(
+                ancestor_clip[0], ancestor_clip[1], ancestor_clip[2], ancestor_clip[3]))))
+            ink.setEmpty();
+        // A repeated generated-image tile can lie completely outside its
+        // background clip. Its unpainted bounds must not enlarge the layer
+        // target or disable replay through the original compositor tile grid.
+        if (!ink.isEmpty()) shared_recording_content(destination, ink, page_y, scroll_y);
         canvas->save();
         shared_recording_clip(destination, canvas);
         canvas->setMatrix(matrix);

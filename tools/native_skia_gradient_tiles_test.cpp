@@ -23,6 +23,51 @@ static int fake_draw(uint8_t* bytes, int width, int height, int pitch,
     return 1;
 }
 
+static void clipped_generated_tile_bounds(int scale, bool pattern)
+{
+    constexpr int size = 256;
+    constexpr float x = 10.25f, y = 20.5f, w = 183.5f, h = 157.25f;
+    std::vector<uint8_t> pixels(size * size * scale * scale * 4);
+    auto space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+    auto destination = CGBitmapContextCreate(pixels.data(), size * scale, size * scale,
+        8, size * scale * 4, space,
+        CGBitmapInfo(kCGImageAlphaPremultipliedLast) | kCGBitmapByteOrder32Big);
+    CGColorSpaceRelease(space);
+    assert(destination && shared_picture_draw());
+    CGContextScaleCTM(destination, scale, scale);
+    float segments[] {
+        0,x,y,0,0,0,0,0,0,0,0,0,
+        1,x+w,y,0,0,0,0,0,0,0,0,0,
+        1,x+w,y+h,0,0,0,0,0,0,0,0,0,
+        1,x,y+h,0,0,0,0,0,0,0,0,0,
+        5,0,0,0,0,0,0,0,0,0,0,0,
+    };
+    float stops[] {1,0,0,1,0, 0,0,1,1,1};
+    float clip[] {x,y,w,h,7,7,7,7,7,7,7,7};
+    float ancestor[] {x+4,y+5,w-8,h-10,0,0,0,0,0,0,0,0};
+    ladybird_v_skia_set_chromium_painting(1);
+    ladybird_v_skia_set_shared_recording(0,size,size);
+    ladybird_v_skia_set_raster_layer(0,0,0);
+    ladybird_v_skia_set_raster_layer_size(size,size);
+    int cell = 0;
+    ladybird_v_skia_set_msaa_grid(&cell,1,258*scale,258*scale,1);
+    ladybird_v_skia_set_layer_shared_recording(1);
+    for (int tile=0;tile<2;++tile) {
+        assert(ladybird_v_skia_draw_clipped_svg_linear_gradient_path(destination,segments,5,0,
+            1,0,0,1,0,0,0,0,0,size,size,0,0,0,0,4,
+            0,0,w,h,1,0,0,1,x+tile*(w+1),y,pattern?3:4,0,stops,2,1,0,clip,ancestor));
+        assert(s_shared_root_recording && s_shared_root_recording->replay_bounds.size()==1);
+        auto bounds = s_shared_root_recording->replay_bounds.front();
+        assert(bounds==SkRect::MakeXYWH(ancestor[0],ancestor[1],ancestor[2],ancestor[3]));
+        // The next generated tile lies beyond the background's clip.
+        for (int index=0;index<4;++index) segments[index*12+1] += w+1;
+    }
+    ladybird_v_skia_finish_shared_recording();
+    ladybird_v_skia_set_layer_shared_recording(0);
+    ladybird_v_skia_set_chromium_painting(0);
+    CGContextRelease(destination);
+}
+
 int main()
 {
     ladybird_v_skia_set_msaa_tiles(nullptr, 0, 256);
@@ -72,5 +117,7 @@ int main()
     ladybird_v_skia_set_msaa_tiles(nullptr, 0, 416);
     assert(chromium_raster_tile_for_row(414) == 0);
     assert(chromium_raster_tile_for_row(415) == 1);
+    for (int scale : {1,2}) for (bool pattern : {false,true})
+        clipped_generated_tile_bounds(scale,pattern);
     std::puts("PASS: native gradient tile ownership, coordinates, backdrop and fallback gates");
 }
