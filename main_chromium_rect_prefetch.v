@@ -6,24 +6,26 @@ import layout
 
 @[typedef]
 struct C.VoxGraphiteShape {
-	matrix          [9]f32
-	rect            [12]f32
-	thickness       f32
-	red             u8
-	green           u8
-	blue            u8
-	alpha           u8
-	fill            int
-	anti_alias      int
-	force_msaa      int
-	clip_outs       &f32
-	clip_out_count  int
-	has_underlay    int
-	underlay_rect   [12]f32
-	underlay_rgba   [4]u8
-	has_float_color int
-	float_color     [4]f32
-	border_widths   [4]f32
+	matrix                   [9]f32
+	rect                     [12]f32
+	thickness                f32
+	red                      u8
+	green                    u8
+	blue                     u8
+	alpha                    u8
+	fill                     int
+	anti_alias               int
+	force_msaa               int
+	clip_outs                &f32
+	clip_out_count           int
+	has_underlay             int
+	underlay_rect            [12]f32
+	underlay_rgba            [4]u8
+	has_float_color          int
+	float_color              [4]f32
+	border_widths            [4]f32
+	has_float_underlay_color int
+	underlay_float_color     [4]f32
 }
 
 fn C.native_prefetch_plain_rects(&C.VoxGraphiteShape, int, f32, f32, f32, f32)

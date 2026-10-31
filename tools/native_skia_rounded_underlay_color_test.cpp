@@ -1,0 +1,134 @@
+// Compare the actual deferred underlay with an independently painted GPU picture.
+#include "../native_skia_text_darwin.cpp"
+#include <cassert>
+#include <cstdio>
+
+int main()
+{
+    constexpr int width = 64, height = 64;
+    int cases = 0, typed_cases = 0;
+    for (int scale : {1, 2}) for (float alpha : {.4f, .59f, 1.f})
+    for (bool opaque : {false, true}) for (bool recording : {false, true}) for (int state = 0; state < 5; ++state) {
+        int pw = width * scale, ph = height * scale;
+        std::vector<uint8_t> actual(size_t(pw) * ph * 4, opaque ? 255 : 0);
+        auto space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+        auto context = CGBitmapContextCreate(actual.data(), pw, ph, 8, pw * 4, space,
+            CGBitmapInfo(kCGImageAlphaPremultipliedLast) | kCGBitmapByteOrder32Big);
+        CGColorSpaceRelease(space); assert(context);
+        CGContextScaleCTM(context, scale, scale);
+        ladybird_v_skia_set_chromium_painting(1);
+        ladybird_v_skia_set_shared_recording(recording, width, height);
+        ladybird_v_skia_set_raster_layer_size(width, height);
+        ladybird_v_skia_set_raster_layer(0, 0, 1);
+        int tile = 0;
+        ladybird_v_skia_set_msaa_grid(&tile, 1, width * scale, height * scale, 1);
+        if (recording) {
+            auto* canvas = shared_recording_canvas(context); assert(canvas);
+            canvas->clear(opaque ? SK_ColorWHITE : SK_ColorTRANSPARENT);
+            SkPath curve; curve.moveTo(0, 0); curve.cubicTo(.01f, .001f, 0, .01f, .01f, .01f);
+            curve.lineTo(.005f, .002f); curve.close();
+            SkPaint noop; noop.setAntiAlias(true); noop.setShader(SkShaders::Color(SK_ColorTRANSPARENT));
+            canvas->drawPath(curve, noop);
+            shared_recording_content(context, SkRect::MakeWH(width, height), 0, 0);
+        }
+        float rect[] {10, 12, 40, 36, 4, 4, 4, 4, 4, 4, 4, 4};
+        float background[] {.9634f, .96506f, .9966f, alpha};
+        float border[] {.3335f, .35715f, .8065f, .73f};
+        auto draw = [&](CGContextRef destination) {
+            return ladybird_v_skia_draw_rounded_rect(destination,
+                10.5, 12.5, 39, 35, 3.5, 3.5, 3.5, 3.5, 3.5, 3.5, 3.5, 3.5,
+                1, 0, 0, 1, 0, 0, 0, 0, 0, width, height,
+                85, 91, 206, 186, 0, 1, 1, opaque);
+        };
+        ladybird_v_skia_set_rounded_rect_underlay(rect, 246, 246, 254, 255);
+        ladybird_v_skia_set_rounded_rect_underlay_color(background);
+        // Metadata is optional and belongs only to the next complete draw.
+        if (state == 1) ladybird_v_skia_set_rounded_rect_underlay_color(nullptr);
+        if (state == 2) ladybird_v_skia_set_rounded_rect_underlay(rect, 246, 246, 254, 255);
+        if (state == 3) {
+            assert(!draw(nullptr));
+            ladybird_v_skia_set_rounded_rect_underlay(rect, 246, 246, 254, 255);
+        }
+        if (state == 4) {
+            ladybird_v_skia_set_rounded_rect_underlay(nullptr, 0, 0, 0, 0);
+        }
+        ladybird_v_skia_set_unrounded_paint_color(border);
+        assert(draw(context));
+        if (recording) ladybird_v_skia_finish_shared_recording();
+        CGContextFlush(context);
+        // Opaque draws use the root tile. Transparent leaf fallback uses its
+        // 2px-padded conservative stroke bounds (6,8)-(54,52); surface extent affects coverage.
+        int left = (recording || opaque) ? 0 : 6 * scale, top = (recording || opaque) ? 0 : 8 * scale;
+        int rw = (recording || opaque) ? pw : 48 * scale, rh = (recording || opaque) ? ph : 44 * scale;
+        SkPictureRecorder recorder;
+        auto* canvas = recorder.beginRecording(SkRect::MakeWH(rw, rh));
+        canvas->clear(opaque ? SK_ColorWHITE : SK_ColorTRANSPARENT);
+        // The production tile explicitly uses MSAA; an independent harmless
+        // curved path selects that pass for this complete-picture reference.
+        SkPath curve; curve.moveTo(0, 0); curve.cubicTo(.01f, .001f, 0, .01f, .01f, .01f);
+        curve.lineTo(.005f, .002f); curve.close();
+        SkPaint noop; noop.setAntiAlias(true); noop.setShader(SkShaders::Color(SK_ColorTRANSPARENT));
+        canvas->drawPath(curve, noop);
+        canvas->scale(scale, scale);
+        if (!recording && !opaque) canvas->translate(-6, -8);
+        SkPaint paint; paint.setAntiAlias(true);
+        if (recording && !state) paint.setColor4f({background[0], background[1], background[2], background[3]});
+        else paint.setColor(SkColorSetARGB(255, 246, 246, 254));
+        if (state != 4)
+            canvas->drawRRect(SkRRect::MakeRectXY(SkRect::MakeXYWH(10, 12, 40, 36), 4, 4), paint);
+        paint.setColor4f({border[0], border[1], border[2], border[3]});
+        paint.setStyle(SkPaint::kStroke_Style); paint.setStrokeWidth(1);
+        canvas->drawRRect(SkRRect::MakeRectXY(SkRect::MakeXYWH(10.5, 12.5, 39, 35), 3.5, 3.5), paint);
+        auto bytes = recorder.finishRecordingAsPicture()->serialize();
+        std::vector<uint8_t> expected(size_t(rw) * rh * 4);
+        float identity[] {1, 0, 0, 0, 1, 0, 0, 0, 1};
+        assert(shared_picture_draw()(expected.data(), rw, rh, rw * 4,
+            bytes->data(), bytes->size(), identity));
+        if (recording && !state) {
+            // The typed native backend also retains optional components in
+            // its public descriptor, independently of the leaf fallback.
+            VoxGraphiteShape shape {};
+            shape.matrix[0] = shape.matrix[4] = scale; shape.matrix[8] = 1;
+            float stroke_rect[] {10.5, 12.5, 39, 35, 3.5, 3.5, 3.5, 3.5, 3.5, 3.5, 3.5, 3.5};
+            std::copy_n(stroke_rect, 12, shape.rect);
+            shape.thickness = 1; shape.anti_alias = shape.force_msaa = 1;
+            shape.has_float_color = shape.has_underlay = shape.has_float_underlay_color = 1;
+            std::copy_n(border, 4, shape.float_color);
+            std::copy_n(rect, 12, shape.underlay_rect);
+            std::copy_n(background, 4, shape.underlay_float_color);
+            std::vector<uint8_t> typed(expected.size(), opaque ? 255 : 0);
+            assert(graphite_shape_draw()(typed.data(), pw, ph, pw * 4, opaque, &shape));
+            assert(typed == expected); ++typed_cases;
+        }
+        if (!recording && !opaque) {
+            // Publish the independently painted leaf through Quartz too: its
+            // premultiplied-alpha conversion is part of the native endpoint.
+            std::vector<uint8_t> published(actual.size());
+            auto color_space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+            auto control = CGBitmapContextCreate(published.data(), pw, ph, 8, pw * 4,
+                color_space, CGBitmapInfo(kCGImageAlphaPremultipliedLast) | kCGBitmapByteOrder32Big);
+            CGColorSpaceRelease(color_space); assert(control);
+            CGContextScaleCTM(control, scale, scale);
+            std::vector<uint32_t> patch(size_t(rw) * rh);
+            std::memcpy(patch.data(), expected.data(), expected.size());
+            assert(composite_pixels(control, std::move(patch), rw, rh, 6, height - 52, 48, 44));
+            CGContextFlush(control); CGContextRelease(control);
+            expected.resize(actual.size());
+            swap_red_blue_pixels(expected.data(), published.data(), size_t(pw) * ph);
+            left = top = 0; rw = pw; rh = ph;
+        }
+        int differences = 0;
+        for (int y = 0; y < ph; ++y) for (int x = 0; x < pw; ++x)
+            for (int c = 0; c < 4; ++c) {
+                bool inside = x >= left && x < left + rw && y >= top && y < top + rh;
+                uint8_t target = inside ? expected[(size_t(y - top) * rw + x - left) * 4
+                    + (c == 0 ? 2 : c == 2 ? 0 : c)] : 0;
+                differences += actual[(size_t(y) * pw + x) * 4 + c] != target;
+            }
+        if (differences) std::fprintf(stderr,
+            "scale=%d alpha=%g opaque=%d recording=%d state=%d different bytes=%d\n", scale, alpha, opaque, recording, state, differences);
+        assert(!differences);
+        CGContextRelease(context); ++cases;
+    }
+    std::printf("PASS: %d shared/fallback underlay and reset cases; %d typed GPU colors match complete pictures\n", cases, typed_cases);
+}

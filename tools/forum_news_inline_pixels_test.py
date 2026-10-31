@@ -116,6 +116,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_svg_solid_paints_retain_fractional_rgb_channels(self):
         self.compare_fixture('forum-svg-fractional-paint', width=1024, height=768)
 
+    def test_rounded_backgrounds_retain_fractional_color_under_the_border(self):
+        self.compare_fixture('forum-fractional-rounded-underlay', width=1024, height=768)
+
     def test_svg_mask_groups_retain_float_opacity(self):
         self.compare_fixture('forum-svg-mask-group-opacity')
 

@@ -2677,11 +2677,20 @@ extern "C" void ladybird_v_skia_set_rounded_border_widths(float const* widths)
 }
 static float s_rounded_rect_underlay[12];
 static uint8_t s_rounded_rect_underlay_rgba[4];
+static bool s_has_float_underlay_color = false;
+static float s_underlay_float_color[4];
+
+extern "C" void ladybird_v_skia_set_rounded_rect_underlay_color(float const* color)
+{
+    s_has_float_underlay_color = color != nullptr;
+    if (color) std::copy_n(color, 4, s_underlay_float_color);
+}
 
 extern "C" void ladybird_v_skia_set_rounded_rect_underlay(float const* rect, uint8_t red,
     uint8_t green, uint8_t blue, uint8_t alpha)
 {
     s_has_rounded_rect_underlay = rect != nullptr;
+    s_has_float_underlay_color = false;
     if (rect)
         std::copy(rect, rect + 12, s_rounded_rect_underlay);
     s_rounded_rect_underlay_rgba[0] = red;
@@ -3106,6 +3115,8 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
     std::fill_n(s_rounded_border_widths, 4, 0.f);
     bool const has_underlay = s_has_rounded_rect_underlay;
     s_has_rounded_rect_underlay = false;
+    bool const has_float_underlay_color = has_underlay && s_has_float_underlay_color;
+    s_has_float_underlay_color = false;
     bool const has_float_color = s_has_unrounded_paint_color;
     s_has_unrounded_paint_color = false;
     if (!destination || rect_width <= 0 || rect_height <= 0 || canvas_width <= 0
@@ -3159,10 +3170,16 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
             local_rect.offset(-s_raster_origin_x, -s_raster_origin_y);
             if (has_underlay) local_underlay.offset(-s_raster_origin_x, -s_raster_origin_y);
         }
-        if (has_underlay && (fill < 2 || fill == 6)) canvas->drawRRect(local_underlay, underlay_paint);
+        // Retain precision until the complete raster resolves. Standalone
+        // fallback leaves keep their existing byte palette and child blending.
+        auto recorded_underlay = underlay_paint;
+        if (has_float_underlay_color)
+            recorded_underlay.setColor4f({s_underlay_float_color[0], s_underlay_float_color[1],
+                s_underlay_float_color[2], s_underlay_float_color[3]});
+        if (has_underlay && (fill < 2 || fill == 6)) canvas->drawRRect(local_underlay, recorded_underlay);
         if (fill >= 2)
             vox_draw_rounded_single_border(canvas, local_rect, paint, fill, border_widths,
-                has_underlay ? &underlay_paint : nullptr);
+                has_underlay ? &recorded_underlay : nullptr);
         else
             canvas->drawRRect(local_rect, paint);
         canvas->restore();

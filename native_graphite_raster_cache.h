@@ -149,7 +149,10 @@ class VoxGraphiteRasterCache {
             && (!a.has_float_color || !std::memcmp(a.float_color, b.float_color, sizeof(a.float_color)))
             && a.has_underlay == b.has_underlay
             && (!a.has_underlay || (!std::memcmp(a.underlay_rect, b.underlay_rect, sizeof(a.underlay_rect))
-                && !std::memcmp(a.underlay_rgba, b.underlay_rgba, sizeof(a.underlay_rgba))));
+                && !std::memcmp(a.underlay_rgba, b.underlay_rgba, sizeof(a.underlay_rgba))
+                && a.has_float_underlay_color == b.has_float_underlay_color
+                && (!a.has_float_underlay_color || !std::memcmp(a.underlay_float_color,
+                    b.underlay_float_color, sizeof(a.underlay_float_color)))));
     }
     static bool same_shadow(VoxGraphiteShadow const& a, VoxGraphiteShadow const& b)
     {

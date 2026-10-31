@@ -64,6 +64,8 @@ typedef struct {
     float float_color[4];
     // Used by modes 2..5, including geometrically present transparent sides.
     float border_widths[4];
+    int has_float_underlay_color;
+    float underlay_float_color[4];
 } VoxGraphiteShape;
 
 // An SVG path in the browser's serialized segment format: twelve floats per

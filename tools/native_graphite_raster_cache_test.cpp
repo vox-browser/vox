@@ -134,6 +134,11 @@ int main()
     shape.clip_outs = clips;
     shape.clip_out_count = 1;
     shape.has_underlay = 1;
+    shape.has_float_underlay_color = 1;
+    shape.underlay_float_color[0] = .9634f;
+    shape.underlay_float_color[1] = .96506f;
+    shape.underlay_float_color[2] = .9966f;
+    shape.underlay_float_color[3] = 1;
     shape.has_float_color = 1;
     shape.float_color[0] = .0602f;
     shape.float_color[1] = .06608f;
@@ -176,11 +181,13 @@ int main()
         }
     }
     value = shape; value.has_underlay = 0; shape_misses(value);
+    value = shape; value.has_float_underlay_color = 0; shape_misses(value);
     value = shape; value.has_float_color = 0; shape_misses(value);
     value = shape; value.clip_out_count = 0; shape_misses(value);
     for (int i = 0; i < 4; ++i) {
         value = shape; value.underlay_rgba[i]++; shape_misses(value);
         value = shape; value.float_color[i] += .001f; shape_misses(value);
+        value = shape; value.underlay_float_color[i] += .001f; shape_misses(value);
         clips[i]++; shape_misses(shape); clips[i]--;
     }
     assert(!cache.prepare(shape, 2, 2, 8, true, pixels.data()).hit);

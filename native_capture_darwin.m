@@ -52,6 +52,7 @@ extern void ladybird_v_skia_set_raster_layer(double origin_x, double origin_y, i
 extern void ladybird_v_skia_set_msaa_tiles(const int *tiles, int count, int tile_rows);
 extern void ladybird_v_skia_set_rect_clip_outs(const float *rects, int count);
 extern void ladybird_v_skia_set_rounded_rect_underlay(const float *rect, uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha);
+extern void ladybird_v_skia_set_rounded_rect_underlay_color(const float *color);
 extern void ladybird_v_skia_set_image_background(uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha);
 extern void ladybird_v_skia_set_image_border(float const* rect, float width, uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha);
 extern void ladybird_v_skia_set_shared_recording(int, int, int);
@@ -2693,6 +2694,14 @@ void native_set_rounded_rect_underlay(const float *rect, gg__Color color) {
 	ladybird_v_skia_set_rounded_rect_underlay(rect, color.r, color.g, color.b, color.a);
 #else
 	(void)rect; (void)color;
+#endif
+}
+
+void native_set_rounded_rect_underlay_color(const float *color) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	ladybird_v_skia_set_rounded_rect_underlay_color(color);
+#else
+	(void)color;
 #endif
 }
 
