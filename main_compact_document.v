@@ -79,6 +79,7 @@ fn (mut binding CompactElementQueryBinding) document_query(root &dom.Node, actio
 	}
 	if action == 'documentValue' {
 		if value == 'hidden' { return json2.encode(document.hidden()) }
+		if value == 'hasFocus' { return json2.encode(document.has_focus_for_bindings()) }
 		return json2.encode(match value {
 			'title' { document.title() }
 			'URL', 'documentURI' { document.url.serialize() }
@@ -151,6 +152,7 @@ for(const [constructor,parent,name] of [[Document,Node,"Document"],[HTMLDocument
 }
 function __compactDocumentState(receiver){const state=__elementApply(__compactNodeGet,__compactDocuments,[receiver]);if(!state)throw new TypeError("Illegal Document receiver");return state;}
 function __compactDocumentString(value){if(typeof value==="symbol")throw new TypeError("Cannot convert a Symbol to a string");return String(value);}
+Object.defineProperty(Document.prototype,"hasFocus",{value:function hasFocus(){return __queryElements(__compactDocumentState(this).bridgeKey,"documentValue","hasFocus");},writable:true,enumerable:true,configurable:true});
 Object.defineProperty(Document.prototype,"implementation",{get:function(){
  __compactDocumentState(this);let implementation=__elementApply(__compactNodeGet,__compactImplementations,[this]);
  if(!implementation){implementation=Object.create(DOMImplementation.prototype);__elementApply(__elementRecordSet,__compactImplementations,[this,implementation]);__elementApply(__elementRecordSet,__compactImplementationOwners,[implementation,this]);}return implementation;

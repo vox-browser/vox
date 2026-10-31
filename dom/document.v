@@ -9246,7 +9246,7 @@ pub fn (d &Document) has_focus() bool {
 	// 3. While true:
 	for {
 		// 3.1. If candidate is target, then return true.
-		if candidate == d {
+		if voidptr(candidate) == voidptr(d) {
 			return true
 		}
 		// 3.2. If the focused area of candidate is a navigable container with a non-null content navigable,
