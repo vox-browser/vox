@@ -1,0 +1,20 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Disjoint SVG and rounded control in a resumed root raster</title>
+<style>
+body { margin: 0; background: white; min-height: 3343px; }
+.composited {
+    position: absolute; will-change: transform;
+    top: 10px; left: 700px; width: 20px; height: 20px; background: gray;
+}
+.button {
+    position: absolute; left: 573px; top: 80px; width: 103px; height: 38px;
+    border-radius: 6px; background: hsl(210, 77%, 46%);
+}
+svg { position: absolute; left: 615px; top: 149px; width: 18px; height: 18px; }
+</style>
+<div class="composited"></div>
+<div class="button"></div>
+<svg viewBox="0 0 18 18">
+    <path d="M2 4h14v2H2zM4 8h10v2H4zM12 12H6v2h6z" fill="#1b75d0"/>
+</svg>

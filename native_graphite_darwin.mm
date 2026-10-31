@@ -283,17 +283,18 @@ static sk_sp<SkColorSpace> vox_image_color_space(VoxGraphiteImage const* image)
     return vox_image_color_space_from_profile(image->has_color_profile ? image->color_profile : nullptr);
 }
 
-static void force_msaa_render_pass(SkCanvas* canvas, int width, int height)
+static void force_msaa_render_pass(SkCanvas* canvas, int, int)
 {
-    // Graphite multisamples a render pass that contains a path. A
-    // transparent one changes no pixel.
+    // A path selects a multisampled pass. Even a transparent tile-sized path
+    // changes subsequent rrect coverage. Keep its bounds below a sample,
+    // selecting 4x MSAA without covering a sample or changing the backdrop.
     SkPaint noop;
     noop.setAntiAlias(true);
     noop.setShader(SkShaders::Color(SK_ColorTRANSPARENT));
     SkPathBuilder path;
     path.moveTo(0, 0);
-    path.cubicTo(width, height * 0.1f, 0, height, width, height);
-    path.lineTo(width * 0.5f, height * 0.2f);
+    path.cubicTo(.01f, .001f, 0, .01f, .01f, .01f);
+    path.lineTo(.005f, .002f);
     path.close();
     canvas->drawPath(path.detach(), noop);
 }
