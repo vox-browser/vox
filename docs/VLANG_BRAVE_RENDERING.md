@@ -2,7 +2,7 @@
 
 Pixel-perfect parity remains open. The current settled, archived comparison at
 1280 × 800 CSS pixels and scale 1 has **9 differing pixels at the top** and
-**242 at scroll Y 6400** after the image and underline paint-order fixes. These
+**14 at scroll Y 6400** after the image sampling and underline fixes. These
 numbers describe those viewports, not the complete live page. Earlier build
 comparisons and validation limits are recorded below.
 
@@ -351,3 +351,56 @@ The remaining image investigation independently compares the actual embedded
 ICC profile across both Skia versions: all 17 transported values agree exactly
 in `image-profile-{old,new}-abi-run.log`. Profile parsing is not established as
 a cause of those residual pixels. Full page and Retina parity remain open.
+
+
+## Complete mipmapped image replay
+
+`12668630` follows Chromium's [complete-source mipmapped image helper](https://chromium.googlesource.com/chromium/src/+/156.0.8078.48/cc/paint/paint_op.cc):
+apply the decoded source scale to the canvas, then draw the uploaded image in
+its own pixel coordinates. Keeping that scale inside `drawImageRect` changed
+228 thumbnail pixels. The containment check retains the strict rectangle draw
+when floating-point source adjustment falls below the image boundary.
+
+The frozen 1280×800, scale-one comparison is now **9 differing pixels at the
+top and 14 at scroll Y 6400**. The thumbnail is exact. All fourteen lower
+residuals differ by one channel level at rounded card corners. This does not
+establish complete-page, live scripted, or Retina pixel parity.
+
+The native image regression now checks 200 independent GPU scenes. Large odd
+source sizes reproduce the old mismatch; both 2482-to-621 and 2483-to-621 height
+adjustments test the float containment boundary at scale two. Smaller scenes
+retain the color-space, transparency, clipping, crop and sampling matrix at
+both scales. Evidence under `Build/vlang-parity-20261031/` includes:
+
+- `mipped-image-negative-control-v3-{compile,run}.json`: the preceding recorder
+  fails the new large-source comparison by 1,968 channels.
+- `mipped-image-native-final/`: all seven sanitized native suites pass, including
+  all 200 image scenes. An initial independent reference rounded its expected
+  source height to 621; retaining Chromium's float multiplication corrects that
+  reference and adds the opposite rounding boundary as a separate case.
+- `mipped-image-build-v2{,-inputs}.json`, `mipped-image-install-v2.json`, and
+  `mipped-image-installed-{before,after}.json`: native-only build, stable source
+  inputs and installation under the shared production lock. The first install
+  attempt found the lock busy and made no changes. Private candidate validation
+  continued before a later attempt acquired the now-free lock. No V or graphics
+  dependency rebuild was needed.
+- `mipped-image-final-page/` and `mipped-image-installed-page/`: independently
+  launched candidate and installed-bundle comparisons both produce 9/14.
+- `mipped-image-regressions/status.json`: all seven existing image/gradient
+  references remain exact. `mipped-image-candidate-smoke-status.json` and
+  `mipped-image-installed-smoke-status.json` retain fourteen passing screenshot
+  checks for each bundle. The candidate uses copies of the capture scripts with
+  only the binary path and repository root changed; their diffs are retained.
+- `mipped-image-installed-headless.json` and
+  `mipped-image-installed-live/status.json`: startup and live scripted navigation
+  pass with fonts loaded, five completed visible image requests and zero native
+  errors. Live loading is not matched pixel comparison credit.
+
+The installed executable is
+`6fdaa9be28a89efd95965f8579bd306088e73cebf98e26330df6ae09db37eabe`,
+pinned with the native libraries in `Vox-mipped-image-installed.app`.
+The reduced-precision experiment remains rejected under `dawn-f16-probe-*`:
+it increased the top/lower mismatches to 3,653/7,005 and changed 2,602 pixels in
+`fractional-gradient-pattern`. It was never installed. A separate tiny-image
+first-use/cache diagnostic still differs at 2,026 pixels; neither that fixture
+nor unsupported image combinations receives exact-parity credit from this fix.

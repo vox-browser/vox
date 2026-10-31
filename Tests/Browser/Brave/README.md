@@ -938,7 +938,7 @@ picture. Capture at 1280×800, scale 1 and scroll Y 6400. Two fresh Brave
 156.1.98.60 references agree exactly; the preceding recorder differs at 65,187
 pixels and the current recorder is exact. Run
 `python3 tools/forum_news_inline_pixels_test.py ForumNewsInlinePixelsTests.test_rounded_color_managed_images_retain_the_complete_gradient_picture`.
-The native gradient harness also runs 96 independent image scenes and payload
+The native gradient harness also runs 200 independent image scenes and payload
 validation. Full vlang.io parity and Retina page raster differences remain open.
 
 
