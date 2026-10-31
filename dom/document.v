@@ -5414,6 +5414,7 @@ pub mut:
 	design_mode_enabled                        bool
 	needs_to_call_page_did_load                bool
 	cursor_blink_state                         bool
+	cursor_blink_suppressed_                   bool
 	fired_dom_content_loaded                   bool
 	pending_module_readiness_scripts           int
 	fired_load_event                           bool
@@ -5998,6 +5999,7 @@ pub fn (mut d Document) finalize() {
 
 fn document_cursor_blink_callback(document_pointer voidptr) {
 	mut document := unsafe { &Document(document_pointer) }
+	if document.cursor_blink_suppressed_ { return }
 	position := document.cursor_position() or { return }
 	navigable := document.navigable() or { return }
 	if !navigable.is_focused() {
@@ -11519,8 +11521,30 @@ pub fn (d &Document) cursor_position() ?&Position {
 pub fn (mut d Document) reset_cursor_blink_cycle() {
 	d.cursor_blink_state = true
 	// Would restart the cursor blink timer
-	if d.cursor_blink_timer != unsafe { nil } {
+	if d.cursor_blink_timer != unsafe { nil } && !d.cursor_blink_suppressed_ {
 		d.cursor_blink_timer.restart()
+	}
+}
+
+// Deterministic rendering clients can hold a focused caret visible. This is
+// independent of focus ownership and survives edits resetting the blink cycle.
+pub fn (mut d Document) set_cursor_blink_suppressed(suppressed bool) {
+	if d.cursor_blink_suppressed_ == suppressed { return }
+	d.cursor_blink_suppressed_ = suppressed
+	if suppressed {
+		was_visible := d.cursor_blink_state
+		d.cursor_blink_state = true
+		if d.cursor_blink_timer != unsafe { nil } { d.cursor_blink_timer.stop() }
+		if !was_visible {
+			if position := d.cursor_position() {
+				if node := position.node() {
+					mut mutable_node := unsafe { &Node(node) }
+					mutable_node.set_needs_repaint(.paint_commands)
+				}
+			}
+		}
+	} else {
+		d.reset_cursor_blink_cycle()
 	}
 }
 

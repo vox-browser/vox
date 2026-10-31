@@ -15,9 +15,14 @@ fn test_explicit_capture_focus_matches_a_focused_reference_without_changing_the_
 	os.setenv('VOX_CAPTURE_DOCUMENT_ACTIVE','1',true)
 	app.sync_window_activity()
 	assert document.shows_focus_state()
+	assert document.get_cursor_blink_state()
+	assert !document.cursor_blink_timer.is_active()
+	document.reset_cursor_blink_cycle()
+	assert !document.cursor_blink_timer.is_active()
 	os.setenv('VOX_CAPTURE_DOCUMENT_ACTIVE','0',true)
 	app.sync_window_activity()
 	assert !document.shows_focus_state()
+	assert document.cursor_blink_timer.is_active()
 }
 
 // Screenshot runs capture Chromium-policy documents like headless Chromium,

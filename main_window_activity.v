@@ -23,5 +23,6 @@ fn (mut app BrowserApp) sync_window_activity() {
 		}
 	}
 	mut document := unsafe { &dom.Document(app.document) }
+	document.set_cursor_blink_suppressed(force_capture_focus)
 	document.set_embedder_window_active(active)
 }
