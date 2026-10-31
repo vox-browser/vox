@@ -66,11 +66,11 @@ static void image_picture(int scale, int profile_kind, bool rounded, bool croppe
     auto image_info=SkImageInfo::Make(source_width,source_height,kRGBA_8888_SkColorType,
         kPremul_SkAlphaType,color_space);
     SkPixmap original(image_info,source.data(),source_pitch);
-    bool mips=minified && !nearest && !cropped;
-    // The selected decode levels are 8x6 at scale one and 16x12 at scale
-    // two. These fixed expectations independently cover odd source sizes.
-    int upload_width=mips?(large_source?326*scale:8*scale):source_width;
-    int upload_height=mips?(large_source?(scale==1?311:621):6*scale):source_height;
+    bool mips=minified && !nearest;
+    // Complete sources decode to 8x6 / 16x12, and cropped sources to 16x12 /
+    // 31x23. These fixed expectations independently cover odd source sizes.
+    int upload_width=mips?(large_source?326*scale:cropped?(scale==1?16:31):8*scale):source_width;
+    int upload_height=mips?(large_source?(scale==1?311:621):cropped?(scale==1?12:23):6*scale):source_height;
     std::vector<uint8_t> resized(size_t(upload_width)*upload_height*4);
     SkPixmap upload(image_info.makeWH(upload_width,upload_height),resized.data(),upload_width*4);
     if(mips) assert(original.scalePixels(upload,
@@ -89,7 +89,8 @@ static void image_picture(int scale, int profile_kind, bool rounded, bool croppe
     auto sampling=SkSamplingOptions(nearest?SkFilterMode::kNearest:SkFilterMode::kLinear,
         mips?SkMipmapMode::kLinear:SkMipmapMode::kNone);
     if(cropped) {
-        canvas->drawImageRect(image,SkRect::MakeXYWH(3,2,25,18),SkRect::MakeXYWH(x,y,w,h),
+        float sx=float(upload_width)/source_width,sy=float(upload_height)/source_height;
+        canvas->drawImageRect(image,SkRect::MakeXYWH(3*sx,2*sy,25*sx,18*sy),SkRect::MakeXYWH(x,y,w,h),
             sampling,&paint,SkCanvas::kStrict_SrcRectConstraint);
     } else {
         auto natural=SkRect::MakeWH(source_width,source_height);

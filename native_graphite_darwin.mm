@@ -327,7 +327,7 @@ static void plan_image_draw(VoxGraphiteImage const* image, PreparedImageDraw& pr
         * image->destination[2] / image->source[2];
     float sy = std::hypot(image->matrix[1], image->matrix[4])
         * image->destination[3] / image->source[3];
-    if (!image->nearest && whole_source) {
+    if (!image->nearest) {
         int target_width = std::max(1, static_cast<int>(std::ceil(image->width * sx)));
         int target_height = std::max(1, static_cast<int>(std::ceil(image->height * sy)));
         for (int level = 1; level < 31; ++level) {
@@ -342,8 +342,10 @@ static void plan_image_draw(VoxGraphiteImage const* image, PreparedImageDraw& pr
     }
     // Chromium generates mips when the draw is smaller than its decoded
     // upload in both axes. Exact mip-sized and nearest-neighbor draws do not
-    // need them. Cropped draws retain strict source bounds below.
-    bool needs_mips = !image->nearest && whole_source
+    // need them. Chromium serializes the decode request with the complete
+    // image bounds, including when the eventual draw crops the source.
+    // Cropped draws retain strict source bounds below.
+    bool needs_mips = !image->nearest
         && image->width * sx < upload_width && image->height * sy < upload_height;
     prepared.upload_width = upload_width;
     prepared.upload_height = upload_height;

@@ -160,6 +160,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_gradient_repetitions_stop_at_the_unobscured_background_destination(self):
         self.compare_fixture('gradient-obscured-border-destination', width=1280, height=800, scroll_y=6400)
 
+    def test_replaced_images_crop_the_source_before_decode_and_sampling(self):
+        self.compare_fixture('replaced-image-source-crops', scroll_y=9000)
+
 
 if __name__ == '__main__':
     unittest.main()

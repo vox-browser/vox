@@ -15,10 +15,12 @@ static decltype(&vox_graphite_draw_image_pixels) image_draw;
 static decltype(&vox_graphite_draw_picture_pixels) picture_draw;
 static decltype(&vox_graphite_release_unused_graphics_memory) clear_images;
 
-static void compare_image(int scale, bool alternate_height, bool rounded, bool alpha)
+static void compare_image(int scale, bool alternate_height, bool rounded, bool alpha, bool cropped=false)
 {
     constexpr int width=1280,height=800,sw=2606;
-    int sh=alternate_height?2483:2482,uw=326*scale,uh=scale==1?311:621;
+    int sh=alternate_height?2483:2482;
+    int uw=cropped?(scale==1?652:1303):326*scale;
+    int uh=cropped?(scale==1?621:(alternate_height?1242:1241)):(scale==1?311:621);
     std::vector<uint8_t> source(size_t(sw)*sh*4);
     for(int y=0;y<sh;++y) for(int x=0;x<sw;++x) {
         auto* p=source.data()+(size_t(y)*sw+x)*4;
@@ -30,7 +32,8 @@ static void compare_image(int scale, bool alternate_height, bool rounded, bool a
     image.width=sw;image.height=sh;image.pitch=sw*4;image.pixels=source.data();
     image.flags=1;image.opacity=.625f;
     image.matrix[0]=image.matrix[4]=scale;image.matrix[8]=1;
-    image.source[2]=sw;image.source[3]=sh;
+    image.source[0]=cropped?17:0;image.source[1]=cropped?23:0;
+    image.source[2]=cropped?2000:sw;image.source[3]=cropped?1900:sh;
     image.destination[0]=image.clip[0]=804;image.destination[1]=image.clip[1]=4;
     image.destination[2]=image.clip[2]=273;image.destination[3]=image.clip[3]=260;
     if(rounded)std::fill(image.clip+4,image.clip+12,5);
@@ -52,16 +55,22 @@ static void compare_image(int scale, bool alternate_height, bool rounded, bool a
     canvas->clear(SkColorSetRGB(9,11,15));
     auto destination=SkRect::MakeXYWH(804,4,273,260);
     if(rounded)canvas->clipRRect(SkRRect::MakeRectXY(destination,5,5),true);
-    auto natural=SkRect::MakeWH(sw,sh);
-    canvas->concat(SkMatrix::RectToRect(natural,destination));
-    auto adjusted=SkRect::MakeWH(sw*(float(uw)/sw),sh*(float(uh)/sh));
     SkPaint paint;paint.setAntiAlias(true);paint.setAlphaf(.625f);
     SkSamplingOptions sampling(SkFilterMode::kLinear,SkMipmapMode::kLinear);
-    if(adjusted.contains(SkRect::MakeWH(uw,uh))) {
-        canvas->concat(SkMatrix::RectToRect(adjusted,natural));
-        canvas->drawImage(raster,0,0,sampling,&paint);
+    if(cropped) {
+        float sx=float(uw)/sw,sy=float(uh)/sh;
+        canvas->drawImageRect(raster,SkRect::MakeXYWH(17*sx,23*sy,2000*sx,1900*sy),
+            destination,sampling,&paint,SkCanvas::kStrict_SrcRectConstraint);
     } else {
-        canvas->drawImageRect(raster,adjusted,natural,sampling,&paint,SkCanvas::kStrict_SrcRectConstraint);
+        auto natural=SkRect::MakeWH(sw,sh);
+        canvas->concat(SkMatrix::RectToRect(natural,destination));
+        auto adjusted=SkRect::MakeWH(sw*(float(uw)/sw),sh*(float(uh)/sh));
+        if(adjusted.contains(SkRect::MakeWH(uw,uh))) {
+            canvas->concat(SkMatrix::RectToRect(adjusted,natural));
+            canvas->drawImage(raster,0,0,sampling,&paint);
+        } else {
+            canvas->drawImageRect(raster,adjusted,natural,sampling,&paint,SkCanvas::kStrict_SrcRectConstraint);
+        }
     }
     SkSerialProcs procs;
     procs.fImageProc=[](SkImage* value,void*) -> sk_sp<SkData const> {return vox_encode_picture_image(value);};
@@ -72,8 +81,8 @@ static void compare_image(int scale, bool alternate_height, bool rounded, bool a
         width*scale*4,bytes->data(),bytes->size(),matrix));
     if(actual!=expected) {
         size_t different=0;for(size_t i=0;i<actual.size();++i)different+=actual[i]!=expected[i];
-        std::fprintf(stderr,"Mipped leaf mismatch scale=%d alternate=%d rounded=%d alpha=%d pixels=%zu\n",
-            scale,alternate_height,rounded,alpha,different);
+        std::fprintf(stderr,"Mipped leaf mismatch scale=%d alternate=%d rounded=%d alpha=%d cropped=%d pixels=%zu\n",
+            scale,alternate_height,rounded,alpha,cropped,different);
     }
     assert(actual==expected);
 }
@@ -88,6 +97,7 @@ int main(int argc,char**argv)
     clear_images=reinterpret_cast<decltype(clear_images)>(dlsym(metal,"vox_graphite_release_unused_graphics_memory"));
     assert(image_draw&&picture_draw&&clear_images);
     for(int scale:{1,2}) for(bool alternate:{false,true}) for(bool rounded:{false,true})
-        for(bool alpha:{false,true})compare_image(scale,alternate,rounded,alpha);
-    std::puts("16 mipmapped image leaves match independent complete GPU pictures");
+        for(bool alpha:{false,true}) for(bool cropped:{false,true})
+            compare_image(scale,alternate,rounded,alpha,cropped);
+    std::puts("32 mipmapped image leaves match independent complete GPU pictures");
 }

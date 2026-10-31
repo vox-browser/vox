@@ -6502,13 +6502,16 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 					radii := result.clip_radii
 					gpu_clip := app.document != unsafe { nil }
 						&& app.document.font_rendering_policy() == .chromium
+					replay := replaced_image_replay_rects(destination, clip, image.width, image.height, gpu_clip) or { return }
+					draw_rect := replay.destination
+					source_rect := replay.source
 					clip_data := replaced_image_gpu_clip_data(command, clip, radii, gpu_image_ancestor_clip)
 					image_clip_radii_ptr := if gpu_clip { unsafe { &clip_data[4] } } else { unsafe { &f32(nil) } }
 					C.native_begin_clip()
 					if !gpu_clip || gpu_image_ancestor_clip >= 0 {
 						C.native_add_corner_rounded_clip(f32(clip.x), f32(clip.y), f32(clip.width), f32(clip.height), f32(radii.top_left.horizontal), f32(radii.top_left.vertical), f32(radii.top_right.horizontal), f32(radii.top_right.vertical), f32(radii.bottom_right.horizontal), f32(radii.bottom_right.vertical), f32(radii.bottom_left.horizontal), f32(radii.bottom_left.vertical), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height))
 					}
-					C.native_draw_image_part_transformed(image, f32(destination.x), f32(destination.y), f32(destination.width), f32(destination.height), 0, 0, f32(image.width), f32(image.height), clip_data[0], clip_data[1], clip_data[2], clip_data[3], f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), f32(command.opacity), if result.bitmap.scaling == .nearest_neighbor {
+					C.native_draw_image_part_transformed(image, f32(draw_rect.x), f32(draw_rect.y), f32(draw_rect.width), f32(draw_rect.height), source_rect[0], source_rect[1], source_rect[2], source_rect[3], clip_data[0], clip_data[1], clip_data[2], clip_data[3], f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), f32(command.opacity), if result.bitmap.scaling == .nearest_neighbor {
 						1
 					} else {
 						0

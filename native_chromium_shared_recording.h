@@ -198,7 +198,9 @@ void shared_recording_image(CGContextRef destination, SkMatrix const& matrix,
     float target_width = image.width * scale_x, target_height = image.height * scale_y;
     bool complete_source = image.source[0] == 0 && image.source[1] == 0
         && image.source[2] == image.width && image.source[3] == image.height;
-    if (!image.nearest && complete_source) {
+    // DrawImageRectOp::Serialize requests the full image at the draw's scale;
+    // the strict source crop is applied after the decoded upload is selected.
+    if (!image.nearest) {
         for (int level = 1; level < 31; ++level) {
             int divisor = 1 << level;
             int width = (image.width + divisor - 1) / divisor;
@@ -225,7 +227,7 @@ void shared_recording_image(CGContextRef destination, SkMatrix const& matrix,
     auto source_rect = SkRect::MakeXYWH(image.source[0] * sx, image.source[1] * sy,
         image.source[2] * sx, image.source[3] * sy);
     auto clip = SkRect::MakeXYWH(image.clip[0], image.clip[1], image.clip[2], image.clip[3]);
-    bool mips = !image.nearest && complete_source
+    bool mips = !image.nearest
         && target_width < upload_width && target_height < upload_height;
     SkPaint paint;
     paint.setAntiAlias(true);
