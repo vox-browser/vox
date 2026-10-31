@@ -29,5 +29,5 @@ function __compactElementPrototype(state){
  const interfaces={iframe:HTMLIFrameElement,input:HTMLInputElement,template:HTMLTemplateElement,link:HTMLLinkElement,script:HTMLScriptElement,button:HTMLButtonElement,form:HTMLFormElement,dialog:HTMLDialogElement,textarea:HTMLTextAreaElement};
  return Object.prototype.hasOwnProperty.call(interfaces,local)?interfaces[local].prototype:HTMLElement.prototype;
 }
-' + compact_template_bootstrap() + compact_toggle_attribute_bootstrap()
+' + compact_template_bootstrap() + compact_toggle_attribute_bootstrap() + compact_html_language_bootstrap()
 }
