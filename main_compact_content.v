@@ -164,6 +164,9 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	if action == 'linkSheet' { return binding.link_sheet_query(key) }
 	if action == 'inputValue' { return binding.input_value_query(key, selector) }
 	if action == 'formControls' { return binding.form_controls_query(key, selector) }
+	if action == 'geometry' && selector.starts_with('{') {
+		return binding.client_rects_query(key, selector)
+	}
 	if action == 'templateContent' { return binding.template_content_query(key, selector) }
 	if action == 'attachShadow' { return binding.attach_shadow_query(key, selector) }
 	if key.starts_with('__created_') && action in ['shadowRoot', 'setMarkup', 'getRootNode'] {

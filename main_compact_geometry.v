@@ -5,6 +5,14 @@ import html
 import math
 import x.json2
 
+fn (mut binding CompactElementQueryBinding) client_rects_query(key string, source string) !string {
+	query := json2.decode[map[string]json2.Any](source)!
+	node := binding.node_for_key(key) or {
+		binding.materialize_shadow_host(key, query['state'] or { json2.Any(json2.Null{}) })!
+	}
+	return compact_element_geometry_query(node, 'clientRects')
+}
+
 fn compact_image_dimension(image &dom.HTMLImageElement, width bool) u32 {
 	// Flush pending layout through the translated getter, retaining its attribute
 	// and intrinsic-size fallback for images without a rendered box. Blink rounds
@@ -51,6 +59,13 @@ fn compact_element_geometry_query(root &dom.Node, name string) !string {
 			'bottom': rect.y + rect.height
 		})
 	}
+	if name == 'clientRects' {
+		mut result := []map[string]f64{}
+		for rect in element.get_client_rects_for_bindings() {
+			result << {'x': rect.x_, 'y': rect.y_, 'width': rect.width_, 'height': rect.height_}
+		}
+		return json2.encode(result)
+	}
 	if name == 'clientTop' { return element.client_top().str() }
 	if name == 'clientLeft' { return element.client_left().str() }
 	if name == 'clientWidth' { return element.client_width().str() }
@@ -76,6 +91,31 @@ fn compact_element_geometry_query(root &dom.Node, name string) !string {
 
 fn compact_element_geometry_bootstrap() string {
 	return r'
+function DOMRectList(){throw new TypeError("Illegal DOMRectList constructor");}
+Object.defineProperty(globalThis,"DOMRectList",{value:DOMRectList,writable:true,configurable:true});
+Object.defineProperty(DOMRectList,"prototype",{writable:false});
+Object.defineProperty(DOMRectList.prototype,Symbol.toStringTag,{value:"DOMRectList",configurable:true});
+const __compactRectLists=new WeakMap(),__compactRectConstructor=globalThis.DOMRect;
+function __compactRectListRead(receiver){const rects=__elementApply(__compactNodeGet,__compactRectLists,[receiver]);if(!rects)throw new TypeError("Illegal DOMRectList receiver");return rects;}
+Object.defineProperty(DOMRectList.prototype,"length",{get:function(){return __compactRectListRead(this).length;},enumerable:true,configurable:true});
+Object.defineProperty(DOMRectList.prototype,"item",{value:function item(index){const rects=__compactRectListRead(this);if(arguments.length===0)throw new TypeError("item requires an index");return rects[(+index)>>>0]||null;},writable:true,enumerable:true,configurable:true});
+Object.defineProperty(DOMRectList.prototype,Symbol.iterator,{value:function values(){return __compactRectListRead(this)[Symbol.iterator]();},writable:true,configurable:true});
+function __compactRectList(values){
+ const rects=values.map(rect=>new __compactRectConstructor(rect.x,rect.y,rect.width,rect.height)),target=Object.create(DOMRectList.prototype);
+ const indexed=key=>typeof key==="string"&&/^(0|[1-9][0-9]*)$/.test(key)&&Number(key)<4294967295;
+ const list=new Proxy(target,{
+  get(target,key,receiver){return indexed(key)?rects[Number(key)]:Reflect.get(target,key,receiver);},
+  has(target,key){return indexed(key)?Number(key)<rects.length:Reflect.has(target,key);},
+  ownKeys(target){return [...rects.keys()].map(String).concat(Reflect.ownKeys(target));},
+  getOwnPropertyDescriptor(target,key){if(indexed(key)){const rect=rects[Number(key)];return rect?{value:rect,writable:false,enumerable:true,configurable:true}:undefined;}return Reflect.getOwnPropertyDescriptor(target,key);},
+  set(target,key,value,receiver){return indexed(key)?false:Reflect.set(target,key,value,receiver);},
+  defineProperty(target,key,descriptor){return indexed(key)?false:Reflect.defineProperty(target,key,descriptor);},
+  deleteProperty(target,key){return indexed(key)?false:Reflect.deleteProperty(target,key);},
+  preventExtensions(){return false;}
+ });
+ __elementApply(__elementRecordSet,__compactRectLists,[list,rects]);return list;
+}
+Object.defineProperty(Element.prototype,"getClientRects",{value:function getClientRects(){const state=__elementApply(__elementRecordGet,__elementRecords,[this]);if(!state)throw new TypeError("Illegal Element receiver");const request={};if(state.created)request.state=state;return __compactRectList(__queryElements(state.bridgeKey,"geometry",JSON.stringify(request)));},writable:true,enumerable:true,configurable:true});
 function __compactElementGeometry(object,state){
  const read=function(receiver,name){const own=__elementApply(__elementRecordGet,__elementRecords,[receiver]);if(!own)throw new TypeError("Illegal Element receiver");return __queryElements(own.bridgeKey,"geometry",name);};
  object.getBoundingClientRect=function getBoundingClientRect(){return read(this,"rect");};

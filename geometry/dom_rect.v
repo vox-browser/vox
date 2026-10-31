@@ -139,6 +139,11 @@ pub fn DOMRect.create() &DOMRect {
 	return &DOMRect{}
 }
 
+// Typed view for IDL inheritance; writable and readonly getters share storage.
+pub fn (rect &DOMRect) as_read_only() &DOMRectReadOnly {
+	return &rect.DOMRectReadOnly
+}
+
 // https://drafts.fxtf.org/geometry/#create-a-domrect-from-the-dictionary
 pub fn DOMRect.from_rect(other DOMRectInit) &DOMRect {
 	return DOMRect.dom_rect_from_rect(other)

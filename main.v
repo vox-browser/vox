@@ -2979,6 +2979,10 @@ fn run_document_script_sources_with_media_loader(document &dom.Document, current
 		return none
 	}
 	processmetrics.instruction_checkpoint('javascript_native_bindings')
+	mutable_runtime.install_dom_rect_read_only_binding() or {
+		messages << 'JavaScript geometry bindings: ${err.msg()}'
+		return none
+	}
 	initial_state := javascript_initial_state_with_policy(document, current_url, sources.map(it.code), .roots_and_ids)
 	processmetrics.instruction_checkpoint('javascript_initial_state')
 	// The engine copies the factory source and JSON into its own strings. Keep
