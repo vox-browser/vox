@@ -1601,3 +1601,62 @@ Evidence is under `Build/forum-news-compound-layer-20261031/`, especially
 `verified-v3/frame-comparison.json`. Rejected and intermediate candidates are
 retained separately. The broad baseline remains **`adf10924`**, with **one**
 completed native fix after it. Full ten-site pixel parity remains open.
+
+## MSAA setup without covered samples, 31 October 2026
+
+`2a7f1337` changes the transparent path used to select a multisampled fallback
+render pass. A path spanning the complete tile left its colors unchanged but
+altered later rounded-corner coverage. Its replacement occupies less than a
+sample. A separate debugger check verifies that the replacement retains **4×
+MSAA** in every one of the 96 native regression cases.
+
+The new `forum-disjoint-msaa-raster` fixture reproduces the full-page problem:
+an earlier compositor layer disables shared root recording, leaving a rounded
+blue control and a neighboring SVG on the fallback path. It improves from
+**two differing pixels to zero** against two agreeing 1024×768, scale 1 Brave
+156.1.98.60 captures. The preceding production bundle fails the same fixture.
+The new native regression compares **96** real Metal draws with independent
+Dawn pictures containing a visible disjoint path. It covers 320px and 1024px
+tiles, device scales 1 and 2, fills and strokes, fractional positions,
+translucent colors, transparent and opaque backdrops, fringes and row padding.
+The sanitized driver passes; the preceding library fails. All **28 native
+Brave fixtures** pass, combining the retained 27-case run with the new focused
+case. The **72** rounded-layer comparisons, all portable raster-grid checks,
+three focused canonical SVG reftests, five harness tests, signing and startup
+also pass.
+
+The production update rebuilds only the changed Metal backend with its normal
+production script and pinned Skia dependency. The tested candidate and the
+published bundle have identical executable, library and uBO snapshot bytes.
+All file-backed executable sections remain unchanged through signing; the
+bridge, Dawn backend, public C exports and uBO snapshot retain their identities.
+Fresh captures pin executable
+`b7a549827a7e1444f51fa9c05f8a238deffd59af064bf0d6380216d2e5f70dd1`
+and Metal backend
+`6e2776d893c7711d1bc82d1686916957f0d18a9eee573ed7c0a54722761a42fd`.
+The shared production guard completes at **0.40 GiB** sampled peak RSS under
+the unchanged 12 GiB limit. A fresh installed-bundle startup check passes.
+
+Stack Overflow improves from **236 to 232** differing pixels against an
+unchanged full-uBO reference. Exactly four native pixels change, all becoming
+correct, with no new errors. The header and main column are now pixel-exact;
+the left sidebar retains **141** and the right sidebar **91** differences.
+Maximum channel error falls from **20 to 10**, with the largest remaining
+error at (94,674) in the left sidebar.
+
+The ten-site matrix still accepts **one of ten**. Completed native cases
+report HN 0, Lobsters 0, Slashdot 9,773, Stack Overflow 232, BBC 76,604,
+CNN 101,529, The Verge 315,921 and Pikabu 13,925. Every completed native frame
+outside Stack Overflow remains unchanged. CNN's reference instead changes at
+31,766 pixels; its changed total receives no renderer credit. Lobsters retains
+its 71-pixel live-to-frozen mismatch. Reddit's guest HTTP 403 and The Guardian's
+unstable consecutive references remain failures. All eight completed workloads
+retain matching full-uBO request/header decisions and validated document
+references, and the closed 326-file oracle template remains unchanged.
+
+Evidence is under `Build/forum-news-root-raster-20261031/`, especially
+`native/`, `compound/`, `reference/`, `production-pass/`, `candidate/`,
+`native-build/publication.json`, `stackoverflow-comparison.json` and
+`frame-comparison.json`. Rejected hypotheses and diagnostic failures remain
+retained separately. The broad baseline remains **`adf10924`**, with **two**
+completed native fixes after it. Full ten-site pixel parity remains open.

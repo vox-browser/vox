@@ -34,6 +34,18 @@ trailing extents. The portable grid checks preserve off-layer fringes and
 rollback failed draws. Both checks use AddressSanitizer and UndefinedBehaviorSanitizer;
 the preceding native library fails the same GPU regression.
 
+`forum-disjoint-msaa-raster` checks a rounded control beside an SVG after an
+earlier compositor layer interrupts root painting. Its 1024×768, scale 1
+reference comes from two agreeing Brave 156.1.98.60 captures. The old fallback
+changed two corner pixels despite using the correct tile dimensions and MSAA
+mode; it now matches exactly. The auxiliary transparent path used to select
+MSAA stays below sample coverage instead of spanning the tile.
+`python3 tools/test_graphite_msaa_noop.py` compares 96 filled and stroked
+controls with independent Dawn pictures containing a real disjoint path,
+including both device scales, fractional positions, translucent colors and
+transparent backdrops. The sanitized driver checks every control pixel and
+preserves all outside pixels and row padding; the preceding library fails it.
+
 References were captured from Brave 155.1.97.57 on macOS at device scale 1.
 `font-rasterization` covers Arial and Verdana at integer and fractional sizes,
 automatic and antialiased smoothing, three foreground colors, and white and
