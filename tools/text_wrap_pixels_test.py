@@ -15,6 +15,9 @@ class TextWrapPixelsTests(unittest.TestCase):
     def test_balanced_copy_with_overflow_word_breaking_matches_brave(self):
         self.compare_fixture('balanced-home-copy-break-word')
 
+    def test_balance_crosses_nested_inline_and_link_boundaries(self):
+        self.compare_fixture('balanced-inline-copy')
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -33,11 +33,25 @@ fn optimized_text_wrap_breaks(container &BlockContainer, iterator &InlineLevelIt
 			return []int{}
 		}
 	}
-	for child in unsafe { &Node(container) }.children() {
-		text := child.as_text_node() or { return []int{} }
+	if iterator.items.len > 256 { return []int{} }
+	// Flattened inline text can cross spans and links without introducing a
+	// new width. Keep descendant whitespace and break policies compatible;
+	// the scorer separately rejects atomic content and inline box edges.
+	for item in iterator.items {
+		if item.type_ != .text { return []int{} }
+		node := item.node or { return []int{} }
+		text := node.as_text_node() or { return []int{} }
+		child_style := node.computed_values()
+		if child_style.white_space_collapse() != style.white_space_collapse()
+			|| child_style.text_wrap_mode() != style.text_wrap_mode()
+			|| child_style.word_break() != style.word_break()
+			|| child_style.overflow_wrap() != style.overflow_wrap()
+			|| child_style.hyphens() != style.hyphens()
+			|| child_style.direction() != .ltr || child_style.writing_mode() != .horizontal_tb {
+			return []int{}
+		}
 		if text.text_for_rendering().contains('\u00ad') { return []int{} }
 	}
-	if iterator.items.len > 256 { return []int{} }
 	scratch := platform.begin_thread_scratch('text wrap scores')
 	defer { scratch.finish() }
 	plan := score_text_wrap_items(iterator.items, space.width.to_px_or_zero().to_double(),
