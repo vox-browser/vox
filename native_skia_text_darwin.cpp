@@ -4279,6 +4279,18 @@ static bool css_gradient_spread(int spread_method)
     return spread_method == 3 || spread_method == 4;
 }
 
+// The generated image retains its original tile even when the painted
+// destination is trimmed behind opaque borders. Copy this per-draw metadata.
+static bool s_has_css_gradient_tile_bounds = false;
+static SkRect s_css_gradient_tile_bounds;
+extern "C" void ladybird_v_skia_set_css_gradient_tile_bounds(float const* bounds)
+{
+    s_has_css_gradient_tile_bounds = bounds && bounds[2] > 0 && bounds[3] > 0
+        && std::all_of(bounds,bounds+4,[](float value){return std::isfinite(value);});
+    if (s_has_css_gradient_tile_bounds)
+        s_css_gradient_tile_bounds = SkRect::MakeXYWH(bounds[0],bounds[1],bounds[2],bounds[3]);
+}
+
 static bool css_gradient_uses_premul(int spread_method)
 {
     // Isolated leaves retain their established compatibility rounding. A
@@ -4538,20 +4550,21 @@ static int draw_svg_gradient_path(CGContextRef destination, float const* data,
     bool picture_pattern = spread_method == 3 && clip && gradient_kind == 1 && !stroke
         && local_bounds.width() > 0 && local_bounds.height() > 0;
     if (picture_pattern) {
+        auto pattern_bounds = s_has_css_gradient_tile_bounds ? s_css_gradient_tile_bounds : local_bounds;
         constexpr double maximum_pattern_pixels = 8 * 1024 * 1024;
-        if (double(local_bounds.width()) * local_bounds.height() > maximum_pattern_pixels)
+        if (double(pattern_bounds.width()) * pattern_bounds.height() > maximum_pattern_pixels)
             return 0;
         SkPictureRecorder recorder;
-        auto bounds = SkRect::MakeWH(local_bounds.width(), local_bounds.height());
+        auto bounds = SkRect::MakeWH(pattern_bounds.width(), pattern_bounds.height());
         auto* canvas = recorder.beginRecording(bounds);
-        canvas->translate(-local_bounds.x(), -local_bounds.y());
+        canvas->translate(-pattern_bounds.x(), -pattern_bounds.y());
         SkPaint inner;
         inner.setAntiAlias(true);
         inner.setDither(true);
         inner.setShader(shader);
-        canvas->drawRect(local_bounds, inner);
+        canvas->drawRect(pattern_bounds, inner);
         auto picture = recorder.finishRecordingAsPicture();
-        auto placement = SkMatrix::Translate(local_bounds.x(), local_bounds.y());
+        auto placement = SkMatrix::Translate(pattern_bounds.x(), pattern_bounds.y());
         shader = picture->makeShader(SkTileMode::kRepeat, SkTileMode::kRepeat,
             SkFilterMode::kLinear, &placement, &bounds);
         if (!shader) return 0;

@@ -236,6 +236,7 @@ fn C.native_draw_clipped_svg_radial_gradient_path(data &f32, segment_count i32, 
 
 fn C.native_draw_svg_radial_gradient_path(data &f32, segment_count int, even_odd int, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_height f32, stroke int, stroke_width f32, line_cap int, line_join int, miter_limit f32, start_x f32, start_y f32, start_radius f32, end_x f32, end_y f32, end_radius f32, gradient_a f32, gradient_b f32, gradient_c f32, gradient_d f32, gradient_e f32, gradient_f f32, spread_method int, linear_color_space int, stop_data &f32, stop_count int, opacity f32)
 
+fn C.native_set_css_gradient_tile_bounds(bounds &f32)
 fn C.native_draw_css_gradient_path(data &f32, segment_count int, even_odd int, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_height f32, kind int, tile_x f32, tile_y f32, tile_width f32, tile_height f32, x1 f32, y1 f32, x2 f32, y2 f32, center_x f32, center_y f32, radius_x f32, radius_y f32, start_degrees f32, stop_data &f32, stop_count int) int
 
 fn C.native_begin_svg_clip_mask(cache_key u64, canvas_width f32, canvas_height f32, area_x f32, area_y f32, area_width f32, area_height f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32)
@@ -4600,9 +4601,11 @@ fn native_gradient_clip_path_into(command layout.PaintCommand, tile painting.Rec
 			append_native_gradient_path_point(mut data, if index == 0 { f32(0) } else { f32(1) }, command.points[index], command.points[index + 1])
 		}
 	} else {
+		paint_tile := layout.background_gradient_tile_paint_rect(command, tile)
+		if paint_tile.is_empty() { return }
 		for corner in 0 .. 4 {
-			x := if corner == 0 || corner == 3 { tile.x } else { tile.right() }
-			y := if corner < 2 { tile.y } else { tile.bottom() }
+			x := if corner == 0 || corner == 3 { paint_tile.x } else { paint_tile.right() }
+			y := if corner < 2 { paint_tile.y } else { paint_tile.bottom() }
 			append_native_gradient_path_point(mut data, if corner == 0 { f32(0) } else { f32(1) }, x, y)
 		}
 	}
@@ -4645,6 +4648,9 @@ fn draw_native_css_gradient_tile(command &layout.PaintCommand, gradient layout.L
 		if path_data.len < layout.compatibility_clip_path_segment_stride {
 			return false
 		}
+		tile_bounds := [f32(tile.x), f32(tile.y), f32(tile.width), f32(tile.height)]!
+		C.native_set_css_gradient_tile_bounds(&tile_bounds[0])
+		defer { C.native_set_css_gradient_tile_bounds(unsafe { nil }) }
 		if chromium && (gradient.kind == 'radial' || gradient.radial)
 			&& chromium_gradient_has_gpu_geometry(gradient)
 			&& chromium_gradient_stop_data_into(gradient, command.opacity, mut gpu_stops) {

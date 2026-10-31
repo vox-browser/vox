@@ -1,5 +1,7 @@
 module layout
 
+import painting
+
 // BackgroundImageGeometry trims image destinations behind opaque, continuous
 // border edges. This is separate from the half-border rounded bleed clip.
 fn chromium_background_image_destination(rect LayoutRect, border BoxEdges,
@@ -68,4 +70,17 @@ pub fn background_image_border_can_share_pass(image_command PaintCommand, border
 	image := image_command.image()
 	return image.background_blend_mode == .normal && image.image_attachment != 'fixed'
 		&& image.background_svg_document == none && image.background_static_svg_resource == none
+}
+
+// Obscured border edges constrain the ink, while the original tile still
+// supplies gradient coordinates. The half-border rounded clip can extend
+// beyond this destination and must not admit another gradient repetition.
+pub fn background_gradient_tile_paint_rect(command PaintCommand, tile painting.Rect) painting.Rect {
+	if command.gradient_background_layer && command.image_data != unsafe { nil } {
+		if destination := command.image_data.background_image_destination {
+			return tile.intersection(painting.Rect{destination.x, destination.y,
+				destination.width, destination.height})
+		}
+	}
+	return tile
 }

@@ -157,6 +157,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_translucent_underlines_paint_beneath_glyph_edges(self):
         self.compare_fixture('translucent-underline-paint-order')
 
+    def test_gradient_repetitions_stop_at_the_unobscured_background_destination(self):
+        self.compare_fixture('gradient-obscured-border-destination', width=1280, height=800, scroll_y=6400)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -1358,6 +1358,7 @@ fn background_layer_command(layer BackgroundImageLayer, origin LayoutRect, clip 
 			force_dark_role: .background
 			force_dark_role_set: true
 			image_data: &PaintImageData{
+				background_image_destination: image_destination
 				image_clip_x: clip.x
 				image_clip_y: clip.y
 				image_clip_width: clip.width
@@ -4631,7 +4632,12 @@ pub fn resolved_background_gradient_tiles(command PaintCommand) []painting.Rect 
 		background_positioning_area: painting.Rect{command.x, command.y, command.width, command.height}
 		resolution_context: background_data.resolution_context
 	}) or { return []painting.Rect{} }
-	return painting.background_tiles_limited(resolved, painting.Point{command.image_scroll_offset_x, command.image_scroll_offset_y}, painting.Rect{image_data.image_clip_x, image_data.image_clip_y, image_data.image_clip_width, image_data.image_clip_height}, 4096)
+	paint_clip := background_gradient_tile_paint_rect(command, painting.Rect{
+		image_data.image_clip_x, image_data.image_clip_y, image_data.image_clip_width,
+		image_data.image_clip_height})
+	if paint_clip.is_empty() { return []painting.Rect{} }
+	return painting.background_tiles_limited(resolved, painting.Point{command.image_scroll_offset_x,
+		command.image_scroll_offset_y}, paint_clip, 4096)
 }
 
 fn stable_sort_box_references_by_z(items []&BlockBox) []&BlockBox {

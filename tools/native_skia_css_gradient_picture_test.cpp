@@ -3,7 +3,7 @@
 #include <cassert>
 #include <cstdio>
 
-static void css_gradient_picture(int scale, bool pattern, bool background)
+static void css_gradient_picture(int scale, bool pattern, bool background, bool trimmed)
 {
     constexpr int width = 256, height = 256;
     constexpr float x = 10.25f, y = 20.5f, w = 183.5f, h = 157.25f;
@@ -26,6 +26,14 @@ static void css_gradient_picture(int scale, bool pattern, bool background)
         1,x,y+h,0,0,0,0,0,0,0,0,0,
         5,0,0,0,0,0,0,0,0,0,0,0,
     };
+    float tile_bounds[] {x,y,w,h};
+    if(trimmed) {
+        // Trim ink without resizing or moving the generated image.
+        segments[1]+=11.25f;segments[2]+=7.5f;
+        segments[13]-=9.75f;segments[14]+=7.5f;
+        segments[25]-=9.75f;segments[26]-=8.25f;
+        segments[37]+=11.25f;segments[38]-=8.25f;
+    }
     float stops[] {186.f/255,213.f/255,246.f/255,160.f/255,0,
                    186.f/255,213.f/255,246.f/255,0,1};
     float clip[] {x,y,w,h,7,7,7,7,7,7,7,7};
@@ -37,9 +45,11 @@ static void css_gradient_picture(int scale, bool pattern, bool background)
     ladybird_v_skia_set_layer_shared_recording(1);
     if (background)
         ladybird_v_skia_record_rect(destination,0,0,width,height,9,11,15,255);
+    ladybird_v_skia_set_css_gradient_tile_bounds(tile_bounds);
     assert(ladybird_v_skia_draw_clipped_svg_linear_gradient_path(destination, segments, 5, 0,
         1,0,0,1,0,0,0,0,0,width,height,0,0,0,0,4,
         0,0,w,h,1,0,0,1,x,y,pattern ? 3 : 4,0,stops,2,1,0,clip,nullptr));
+    ladybird_v_skia_set_css_gradient_tile_bounds(nullptr);
     assert(s_shared_root_recording);
     float outside[5 * 12];
     std::copy_n(segments,5 * 12,outside);
@@ -84,7 +94,8 @@ static void css_gradient_picture(int scale, bool pattern, bool background)
     paint.setAntiAlias(true);
     paint.setDither(!pattern);
     paint.setShader(std::move(shader));
-    canvas->drawRect(SkRect::MakeXYWH(x,y,w,h),paint);
+    canvas->drawRect(trimmed?SkRect::MakeLTRB(x+11.25f,y+7.5f,x+w-9.75f,y+h-8.25f)
+        :SkRect::MakeXYWH(x,y,w,h),paint);
     auto bytes = recorder.finishRecordingAsPicture()->serialize();
     std::vector<uint32_t> pixels(size_t(width) * height * scale * scale);
     float matrix[] {float(scale),0,0,0,float(scale),0,0,0,1};
@@ -96,8 +107,8 @@ static void css_gradient_picture(int scale, bool pattern, bool background)
     if (actual != expected) {
         size_t differences = 0;
         for (size_t index=0;index<actual.size();++index) differences += actual[index]!=expected[index];
-        std::fprintf(stderr,"CSS picture mismatch scale=%d pattern=%d background=%d channels=%zu\n",
-            scale,pattern,background,differences);
+        std::fprintf(stderr,"CSS picture mismatch scale=%d pattern=%d background=%d trimmed=%d channels=%zu\n",
+            scale,pattern,background,trimmed,differences);
     }
     assert(actual == expected);
     CGContextRelease(destination);
@@ -108,8 +119,9 @@ int main()
 {
     assert(shared_picture_draw());
     ladybird_v_skia_set_chromium_painting(1);
-    for (int scale : {1,2}) for (bool pattern : {false,true}) for (bool background : {false,true})
-        css_gradient_picture(scale,pattern,background);
+    for (bool trimmed:{false,true}) for (int scale : {1,2})
+        for (bool pattern : {false,true}) for (bool background : {false,true})
+            css_gradient_picture(scale,pattern,background,trimmed);
     ladybird_v_skia_set_chromium_painting(0);
-    std::puts("8 CSS direct/pattern compositor pictures match independent complete GPU pictures");
+    std::puts("16 CSS direct/pattern compositor pictures match independent complete GPU pictures");
 }

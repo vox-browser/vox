@@ -47,6 +47,7 @@ extern void ladybird_v_skia_release_unused_graphics_memory(void);
 extern int ladybird_v_skia_release_idle_graphics_memory(void);
 extern int ladybird_v_skia_configure_font(const char *path, int slot);
 extern void ladybird_v_skia_set_image_color_profile(const float *profile);
+extern void ladybird_v_skia_set_css_gradient_tile_bounds(const float *bounds);
 extern void ladybird_v_skia_set_root_raster_scroll_y(double scroll_y);
 extern void ladybird_v_skia_set_raster_layer(double origin_x, double origin_y, int root);
 extern void ladybird_v_skia_set_msaa_tiles(const int *tiles, int count, int tile_rows);
@@ -2745,6 +2746,12 @@ void native_set_rect_clip_outs(const double *rects, int count) {
 	free(values);
 #else
 	(void)rects; (void)count;
+#endif
+}
+
+void native_set_css_gradient_tile_bounds(const float *bounds) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+    ladybird_v_skia_set_css_gradient_tile_bounds(bounds);
 #endif
 }
 
