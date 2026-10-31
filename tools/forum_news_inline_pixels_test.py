@@ -37,6 +37,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
         write_json(output / 'pixels.json', verdict)
         self.assertTrue(verdict['exact'], verdict['metrics'] + '\nArtifacts: ' + str(output))
 
+    def test_trailing_fallback_spaces_preserve_intrinsic_button_width(self):
+        self.compare_fixture('fallback-space-intrinsic-button')
+
     def test_middle_aligned_story_tags_match_brave_exactly(self):
         self.compare_fixture('lobsters-tag-alignment')
 

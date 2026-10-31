@@ -686,10 +686,11 @@ fn (mut line LineBox) calculate_or_trim_trailing_whitespace(should_remove Remove
 		if !last_fragment.is_justifiable_whitespace() {
 			break
 		}
-		whitespace_width = whitespace_width.plus(last_fragment.inline_length_)
-		trailing_whitespace_width = trailing_whitespace_width.plus(last_fragment.inline_length_)
+		removed_advance := last_fragment.trailing_whitespace_fragment_advance()
+		whitespace_width = whitespace_width.plus(removed_advance)
+		trailing_whitespace_width = trailing_whitespace_width.plus(removed_advance)
 		if should_remove == .yes {
-			line.inline_length_ = line.inline_length_.minus(last_fragment.inline_length_)
+			line.inline_length_ = line.inline_length_.minus(removed_advance)
 			line.fragments_.delete(fragment_index)
 			line.clamp_static_position_markers_to_inline_length()
 		}
@@ -752,6 +753,23 @@ fn (mut line LineBox) calculate_or_trim_trailing_whitespace(should_remove Remove
 		last_fragment.has_trailing_whitespace_ = trailing_whitespace_width.raw_value() > 0
 	}
 	return whitespace_width
+}
+
+// A fallback-font boundary can begin a fragment at the nearest LayoutUnit
+// while the preceding fragment ends at the upward-snapped item advance.
+// Remove the whitespace's contribution to that item, preserving the previous
+// visible end. Subtracting its overlapping fragment box undersizes intrinsic
+// widths and can wrap a button's label on the subsequent definite-width pass.
+fn (fragment &LineBoxFragment) trailing_whitespace_fragment_advance() CSSPixels {
+	if fragment.chains_item_ {
+		if run := fragment.glyph_run_ {
+			if run.font().font_rendering_policy == .chromium {
+				return inline_advance_to_css_pixels(fragment.item_prefix_ + fragment.item_width_,
+					run.font()).minus(inline_advance_to_css_pixels(fragment.item_prefix_, run.font()))
+			}
+		}
+	}
+	return fragment.inline_length_
 }
 
 // The unsnapped advance of the glyphs that shape the fragment's trailing
