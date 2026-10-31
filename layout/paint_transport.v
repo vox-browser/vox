@@ -2735,8 +2735,10 @@ fn (b &BlockBox) collect_compatibility_stacking_context_members(mut members Comp
 }
 
 fn (b &BlockBox) collect_compatibility_descendant_paint_steps(phase CompatibilityDescendantPaintPhase, mut steps []CompatibilityPaintStep) {
+	placeholder_first := phase == .foreground && b.chromium_placeholder_paints_before_editor()
 	for child_index := 0; child_index < b.children.len; child_index++ {
-		child := unsafe { &b.children[child_index] }
+		paint_index := if placeholder_first { b.children.len - 1 - child_index } else { child_index }
+		child := unsafe { &b.children[paint_index] }
 		if child.stacking_context {
 			continue
 		}
@@ -3790,13 +3792,13 @@ fn paint_cursor(box &BlockBox, opacity f64) ?PaintCommand {
 		fragment_layout_node := unsafe { &Node(fragment.layout_handle) }
 		caret_color = fragment_layout_node.computed_values().caret_color()
 		fragment_rect := fragment.paintable_fragment.range_rect(.start_and_end, position.offset(), position.offset())
-		rect = LayoutRect{fragment_rect.x, fragment_rect.y, fragment_rect.width, fragment_rect.height}
+		rect = caret_rect_for_rendering(LayoutRect{fragment_rect.x, fragment_rect.y, fragment_rect.width, fragment_rect.height}, fragment_layout_node)
 	} else if position_node := position.node() {
 		if boundary := text_child_boundary_caret(box, position_node, position.offset()) {
 			fragment_layout_node := unsafe { &Node(boundary.fragment.layout_handle) }
 			caret_color = fragment_layout_node.computed_values().caret_color()
 			fragment_rect := boundary.fragment.paintable_fragment.range_rect(.start_and_end, boundary.text_offset, boundary.text_offset)
-			rect = LayoutRect{fragment_rect.x, fragment_rect.y, fragment_rect.width, fragment_rect.height}
+			rect = caret_rect_for_rendering(LayoutRect{fragment_rect.x, fragment_rect.y, fragment_rect.width, fragment_rect.height}, fragment_layout_node)
 		} else {
 			return paint_empty_cursor(box, layout_node, dom_node, position_node, opacity)
 		}
@@ -3848,7 +3850,7 @@ fn paint_empty_cursor(box &BlockBox, layout_node &Node, dom_node &dom.Node,
 	if caret_color.a == 0 {
 		return none
 	}
-	rounded := rounded_text_span_rect(caret_rect_for_empty_line(caret_layout_node, caret_x, caret_y))
+	rounded := rounded_text_span_rect(caret_rect_for_rendering(caret_rect_for_empty_line(caret_layout_node, caret_x, caret_y), caret_layout_node))
 	return PaintCommand{
 		kind: 'fill_rect'
 		x: rounded.x

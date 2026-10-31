@@ -356,7 +356,8 @@ fn materialize_text_control_model(document &dom.Document, element &dom.Element) 
 	if element.local_name() == 'input' {
 		_ = html.HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(element) })
 	} else if element.local_name() == 'textarea' {
-		_ = html.html_text_area_element_model_for_dom_element(unsafe { &dom.HTMLTextAreaElement(element) })
+		mut model := html.html_text_area_element_model_for_dom_element(unsafe { &dom.HTMLTextAreaElement(element) })
+		model.create_shadow_tree_if_needed()
 	}
 }
 
