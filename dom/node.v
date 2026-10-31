@@ -569,6 +569,8 @@ pub mut:
 pub struct MutationObserver {
 pub mut:
 	callback_    ?&CallbackType
+	delivery_queue_ ?&MutationObserverDeliveryQueue
+	transient_nodes_ []&Node
 	node_list_   []&Node
 	record_queue []&MutationRecord
 }
@@ -2690,6 +2692,8 @@ pub fn (mut n Node) remove(suppress_observers bool) {
 			if registered.options().subtree {
 				transient_observer := TransientRegisteredObserver.create(registered.observer(), registered.options(), registered)
 				n.add_registered_observer(unsafe { &RegisteredObserver(transient_observer) })
+				mut observer := unsafe { &MutationObserver(registered.observer()) }
+				observer.add_transient_registered_node(&n)
 			}
 		}
 		ancestor = inclusive_ancestor.parent()
@@ -4441,7 +4445,15 @@ pub fn (mut n Node) queue_mutation_record(type_ MutationType, attribute_name ?st
 		return
 	}
 
+	// Deferred records and observer queues must survive a transient native call.
+	mut storage := target.document().native_storage()
+	mut allocation_scope := platform.RetainedArenaScope{}
+	if storage != unsafe { nil } { allocation_scope = storage.enter_nested() }
+	persistent := platform.enter_persistent_if(storage == unsafe { nil } && platform.transient_arena_entered())
+	defer { platform.leave_persistent(persistent); allocation_scope.finish() }
+
 	// 4. For each observer -> mappedOldValue of interestedObservers:
+	mut delivery_queues := []&MutationObserverDeliveryQueue{}
 	for i, observer in interested_observers {
 		// 1. Let record be a new MutationRecord object with its type set to type, target set to target, attributeName set to name, attributeNamespace set to namespace, oldValue set to mappedOldValue,
 		//    addedNodes set to addedNodes, removedNodes set to removedNodes, previousSibling set to previousSibling, and nextSibling set to nextSibling.
@@ -4452,10 +4464,19 @@ pub fn (mut n Node) queue_mutation_record(type_ MutationType, attribute_name ?st
 		mutable_observer.enqueue_record(record)
 
 		// 3. Append observer to the surrounding agent's pending mutation observers.
-		if document != unsafe { nil } {
+		if queue := observer.delivery_queue_ {
+			mut owned_queue := unsafe { &MutationObserverDeliveryQueue(queue) }
+			owned_queue.add_pending(observer)
+			mut present := false
+			for existing in delivery_queues { if voidptr(existing) == voidptr(queue) { present = true; break } }
+			if !present { delivery_queues << queue }
+		} else if document != unsafe { nil } {
 			document.pending_mutation_observers << observer
 		}
 	}
+	// Schedule only after every interested observer has its record. Native host
+	// entry can service an existing JavaScript job queue while enqueueing a job.
+	for mut queue in delivery_queues { queue.ensure_microtask() }
 
 	// 5. Queue a mutation observer microtask.
 	if document != unsafe { nil } {

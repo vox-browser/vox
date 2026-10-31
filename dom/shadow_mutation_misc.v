@@ -63,9 +63,9 @@ pub fn MutationRecord.create(type_ string, target &Node, added_nodes []&Node, re
 		removed_nodes:       if removed_nodes.len == 0 { []&Node{} } else { removed_nodes.clone() }
 		previous_sibling:    previous_sibling or { unsafe { nil } }
 		next_sibling:        next_sibling or { unsafe { nil } }
-		attribute_name:      attribute_name
-		attribute_namespace: attribute_namespace
-		old_value:           old_value
+		attribute_name:      if value := attribute_name { ?string(value.clone()) } else { none }
+		attribute_namespace: if value := attribute_namespace { ?string(value.clone()) } else { none }
+		old_value:           if value := old_value { ?string(value.clone()) } else { none }
 	}
 }
 
@@ -145,6 +145,7 @@ pub fn (mut observer MutationObserver) visit_edges(mut visitor CellVisitor) {
 	for node in observer.node_list_ {
 		visitor.visit(node)
 	}
+	for node in observer.transient_nodes_ { visitor.visit(node) }
 }
 
 // https://dom.spec.whatwg.org/#dom-mutationobserver-observe
@@ -187,22 +188,8 @@ pub fn (mut observer MutationObserver) observe(target &Node, mut options Mutatio
 
 	// 7. For each registered of target's registered observer list, if registered's observer is this:
 	for registered_observer in target.registered_observers() {
-		if registered_observer.observer_ == &observer {
-			// 1. For each node of this's node list, remove all transient registered observers whose source is registered
-			// from node's registered observer list.
-			for node in observer.node_list_ {
-				mut mutable_node := unsafe { &Node(node) }
-				for i := mutable_node.registered_observers().len - 1; i >= 0; i-- {
-					transient_observer := mutable_node.registered_observers()[i]
-					if transient_observer.is_transient() {
-						if source := transient_observer.source() {
-							if source == registered_observer {
-								mutable_node.remove_registered_observer_at(i)
-							}
-						}
-					}
-				}
-			}
+		if voidptr(registered_observer.observer_) == voidptr(&observer) {
+			observer.remove_transient_registered_observers(registered_observer)
 			// 2. Set registered's options to options.
 			mut mutable_registered_observer := unsafe { &RegisteredObserver(registered_observer) }
 			mutable_registered_observer.set_options(options)
@@ -222,11 +209,12 @@ pub fn (mut observer MutationObserver) disconnect() {
 	for node in observer.node_list_ {
 		mut mutable_node := unsafe { &Node(node) }
 		for i := mutable_node.registered_observers().len - 1; i >= 0; i-- {
-			if mutable_node.registered_observers()[i].observer_ == &observer {
+			if voidptr(mutable_node.registered_observers()[i].observer_) == voidptr(&observer) {
 				mutable_node.remove_registered_observer_at(i)
 			}
 		}
 	}
+	observer.remove_transient_registered_observers(none)
 	// 2. Empty this's record queue.
 	observer.record_queue.clear()
 }
@@ -1206,38 +1194,7 @@ pub fn (mut document Document) notify_mutation_observers() {
 	document.signal_slots.clear()
 
 	// 6. For each mo of notifySet:
-	for mutation_observer in notify_set {
-		// 1. Let records be a clone of mo's record queue.
-		// 2. Empty mo's record queue.
-		mut mutable_observer := unsafe { &MutationObserver(mutation_observer) }
-		records := mutable_observer.take_records()
-
-		// 3. For each node of mo's node list, remove all transient registered observers whose observer is mo from
-		//    node's registered observer list.
-		for node in mutation_observer.node_list_ {
-			if node == unsafe { nil } {
-				continue
-			}
-			mut mutable_node := unsafe { &Node(node) }
-			for i := mutable_node.registered_observers().len - 1; i >= 0; i-- {
-				registered_observer := mutable_node.registered_observers()[i]
-				if registered_observer.is_transient()
-					&& voidptr(registered_observer.observer()) == voidptr(mutation_observer) {
-					mutable_node.remove_registered_observer_at(i)
-				}
-			}
-		}
-
-		// 4. If records is not empty, then invoke mo's callback with << records, mo >> and "report", and with
-		//    callback this value mo.
-		if records.len != 0 {
-			if callback := mutation_observer.callback_ {
-				if mutation_callback := callback.mutation_callback {
-					mutation_callback(records, mutation_observer)
-				}
-			}
-		}
-	}
+	for observer in notify_set { notify_one_mutation_observer(observer) }
 
 	// 7. For each slot of signalSet, fire an event named slotchange, with its bubbles attribute set to true, at slot.
 	for slot in signal_set {
@@ -4561,4 +4518,49 @@ pub fn (mut document XMLDocument) initialize() {}
 
 pub fn (document &XMLDocument) as_document() &Document {
 	return unsafe { &Document(document) }
+}
+
+fn notify_one_mutation_observer(mutation_observer &MutationObserver) {
+	// 1. Let records be a clone of mo's record queue.
+	// 2. Empty mo's record queue.
+	mut mutable_observer := unsafe { &MutationObserver(mutation_observer) }
+	records := mutable_observer.take_records()
+
+	mutable_observer.remove_transient_registered_observers(none)
+
+	// 4. If records is not empty, then invoke mo's callback with << records, mo >> and "report", and with
+	//    callback this value mo.
+	if records.len != 0 {
+		if callback := mutation_observer.callback_ {
+			if mutation_callback := callback.mutation_callback {
+				mutation_callback(records, mutation_observer)
+			}
+		}
+	}
+}
+
+// Track removed roots separately: they are no longer in the observed ancestor's
+// tree when notification, re-observation, or disconnect removes transients.
+fn (mut observer MutationObserver) add_transient_registered_node(node &Node) {
+	for existing in observer.transient_nodes_ {
+		if voidptr(existing) == voidptr(node) { return }
+	}
+	observer.transient_nodes_ << node
+}
+
+fn (mut observer MutationObserver) remove_transient_registered_observers(source ?&RegisteredObserver) {
+	mut retained := []&Node{}
+	for mut node in observer.transient_nodes_ {
+		mut has_transient := false
+		for index := node.registered_observers().len - 1; index >= 0; index-- {
+			registered := node.registered_observers()[index]
+			if !registered.is_transient() || voidptr(registered.observer()) != voidptr(&observer) { continue }
+			matches := if requested := source {
+				if actual := registered.source() { voidptr(actual) == voidptr(requested) } else { false }
+			} else { true }
+			if matches { node.remove_registered_observer_at(index) } else { has_transient = true }
+		}
+		if has_transient { retained << node }
+	}
+	observer.transient_nodes_ = retained
 }
