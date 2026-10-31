@@ -154,6 +154,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_rounded_color_managed_images_retain_the_complete_gradient_picture(self):
         self.compare_fixture('compositor-rounded-profiled-images', width=1280, height=800, scroll_y=6400)
 
+    def test_translucent_underlines_paint_beneath_glyph_edges(self):
+        self.compare_fixture('translucent-underline-paint-order')
+
 
 if __name__ == '__main__':
     unittest.main()

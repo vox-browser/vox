@@ -2,7 +2,8 @@ module layout
 
 // Decorations accumulate through inline ancestors. Their colors remain those
 // of their decorating boxes, even when a nested link changes currentColor.
-fn chromium_ancestor_text_decoration_commands(fragment TextFragment, opacity f64) []PaintCommand {
+fn chromium_ancestor_text_decoration_commands(fragment TextFragment, opacity f64,
+	phase TextDecorationPaintPhase) []PaintCommand {
 	if !fragment.chromium_decorations || fragment.layout_handle == unsafe { nil } {
 		return []PaintCommand{}
 	}
@@ -32,7 +33,7 @@ fn chromium_ancestor_text_decoration_commands(fragment TextFragment, opacity f64
 	}
 	mut commands := []PaintCommand{}
 	for i := decorations.len - 1; i >= 0; i-- {
-		commands << paint_text_decoration(decorations[i], opacity)
+		commands << paint_text_decoration_for_phase(decorations[i], opacity, phase)
 	}
 	return commands
 }

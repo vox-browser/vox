@@ -3289,9 +3289,12 @@ fn append_unselected_text_fragment_commands(mut commands []PaintCommand,
 				text_command.text += hyphen.str()
 			}
 		}
+		for k := i; k < j; k++ {
+			commands << text_decorations_before_glyphs(fragments[k], opacity)
+		}
 		commands << text_command
 		for k := i; k < j; k++ {
-			commands << decoration_commands(fragments[k], opacity)
+			commands << text_decorations_after_glyphs(fragments[k], opacity)
 		}
 		i = j
 	}
@@ -3590,7 +3593,6 @@ fn paint_text_fragment(mut commands []PaintCommand, fragment TextFragment,
 	if !full_fragment {
 		text_command.recording_clip = rounded_text_span_rect(span_rect)
 	}
-	commands << text_command
 	decoration_rect := if full_fragment {
 		LayoutRect{fragment.x, fragment.y, fragment.width, fragment.height}
 	} else {
@@ -3617,7 +3619,9 @@ fn paint_text_fragment(mut commands []PaintCommand, fragment TextFragment,
 			height: decoration_rect.height
 		}
 	}
-	commands << decoration_commands(decoration_fragment, opacity)
+	commands << text_decorations_before_glyphs(decoration_fragment, opacity)
+	commands << text_command
+	commands << text_decorations_after_glyphs(decoration_fragment, opacity)
 }
 
 // PaintableWithLines::paint(Foreground): selection backgrounds for all spans,
@@ -4367,6 +4371,11 @@ fn text_decoration_skip_ink_segments(fragment TextFragment, line string, start_x
 
 // Direct translation of PaintableWithLines.cpp::paint_text_decoration().
 fn paint_text_decoration(fragment TextFragment, opacity f64) []PaintCommand {
+	return paint_text_decoration_for_phase(fragment, opacity, .all_)
+}
+
+fn paint_text_decoration_for_phase(fragment TextFragment, opacity f64,
+	phase TextDecorationPaintPhase) []PaintCommand {
 	if fragment.decoration == '' || fragment.decoration == 'none' {
 		return []PaintCommand{}
 	}
@@ -4400,8 +4409,9 @@ fn paint_text_decoration(fragment TextFragment, opacity f64) []PaintCommand {
 	} else {
 		math.max(glyph_height * 0.1, 1.0)
 	}
-	mut commands := chromium_ancestor_text_decoration_commands(fragment, opacity)
+	mut commands := chromium_ancestor_text_decoration_commands(fragment, opacity, phase)
 	for input_line in fragment.decoration.fields() {
+		if !phase.includes(input_line) { continue }
 		mut line := input_line
 		mut color := base_color
 		mut line_thickness := css_thickness
