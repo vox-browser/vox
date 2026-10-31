@@ -18,6 +18,9 @@ mut:
 	nodes    map[string]&dom.Node
 	keys     map[voidptr]string
 	materialized map[string]bool
+	style_sheets map[string]&css.CSSStyleSheet
+	css_rules map[string]&css.CSSRule
+	css_rule_lists map[string]&css.CSSRuleList
 	next_key int
 }
 
@@ -144,6 +147,8 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	}
 	action := json_string_property(request, 'action') or { return error('Invalid selector action') }
 	key := json_string_property(request, 'key') or { '' }
+	if action == 'cssSheet' { return binding.css_sheet_query(selector) }
+	if action == 'linkSheet' { return binding.link_sheet_query(key) }
 	if action == 'inputValue' { return binding.input_value_query(key, selector) }
 	if action == 'templateContent' { return binding.template_content_query(key, selector) }
 	if action == 'attachShadow' { return binding.attach_shadow_query(key, selector) }

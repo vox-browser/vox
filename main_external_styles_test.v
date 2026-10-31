@@ -5,7 +5,7 @@ import dom
 import html
 
 fn external_styles_test_document(markup string) &dom.Document {
-	address := dom.URL{value: 'https://styles.test/board/'}
+	address := dom.URL{ value: 'https://styles.test/board/' }
 	mut document := html.parse_navigation_document(markup, address, address.origin(), none) or {
 		panic(err)
 	}
@@ -28,7 +28,7 @@ fn external_styles_test_resources(names []string) map[string]PreloadedResource {
 	return resources
 }
 
-// Each inlined sheet records its response URL; untouched author styles do not.
+// Resource sheets retain their real link owner and do not add author nodes.
 fn external_styles_test_order(document &dom.Document) []string {
 	mut order := []string{}
 	for element in css.query_selector_all(unsafe { &dom.Node(document) }, 'link, style') {
@@ -63,11 +63,11 @@ fn test_alternate_link_stylesheets_apply_only_for_the_preferred_set() {
 	messages := install_external_styles(document, document.base_url().serialize(),
 		external_styles_test_resources(['main', 'dark', 'chosen', 'untitled', 'disabled', 'plain']))
 	assert messages == []
-	assert external_styles_test_order(document) == ['link:switch', 'main.css', 'link:Main',
-		'link:Dark', 'link:switch', 'chosen.css', 'link:', 'link:', 'link:', 'plain.css']
+	assert external_styles_test_order(document) == ['link:switch', 'link:Main', 'link:Dark',
+		'link:switch', 'link:', 'link:', 'link:']
 }
 
-fn test_inlined_link_stylesheets_keep_tree_order_before_later_author_styles() {
+fn test_link_stylesheets_keep_native_owners_and_tree_order_before_later_author_styles() {
 	mut document := external_styles_test_document('<!doctype html><head>' +
 		'<link rel="stylesheet" href="//cdn.styles.test/site.css">' +
 		'<style>.site { color: green }</style></head><body>' +
@@ -76,8 +76,17 @@ fn test_inlined_link_stylesheets_keep_tree_order_before_later_author_styles() {
 	messages := install_external_styles(document, document.base_url().serialize(),
 		external_styles_test_resources(['site', 'late']))
 	assert messages == []
-	assert external_styles_test_order(document) == ['link:', 'site.css', 'author', 'link:',
-		'late.css']
+	assert external_styles_test_order(document) == ['link:', 'author', 'link:']
+	links := css.query_selector_all(document.as_node(), 'link')
+	for link in links {
+		sheet := css.style_sheet_for_owner_node(document, link) or { panic('missing native link sheet') }
+		assert voidptr(sheet.base.owner_node?) == voidptr(link)
+		assert sheet.css_rules().length() == 1
+		assert sheet.href()? == link.get_attribute_value('href').replace('//', 'https://')
+		model := html.html_link_element_model_for_dom_element(unsafe { &dom.HTMLLinkElement(link) })
+		assert model.event_count('load') == 1
+		assert !sheet.base.origin_clean
+	}
 }
 
 fn test_titled_author_style_names_the_preferred_set_before_later_links() {

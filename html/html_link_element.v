@@ -27,6 +27,7 @@ pub:
 	content_type string
 	body         []u8
 	url          ?dom.URL
+	origin_clean bool = true
 }
 
 // V counterparts of HTMLLinkElement::LinkProcessingOptions and the Fetch
@@ -722,6 +723,7 @@ pub fn (mut link HTMLLinkElementModel) process_stylesheet_resource(request_succe
 			}
 			mut sheet := css.install_link_style_sheet(element, response.body.bytestr(),
 				location.serialize(), link.has_relation('alternate') && !link.explicitly_enabled_)
+			sheet.base.origin_clean = response.origin_clean
 			mut dom_link := unsafe { &dom.HTMLLinkElement(element) }
 			dom_link.linked_style_sheet_from_resource_ = true
 			if link.explicitly_enabled_ {

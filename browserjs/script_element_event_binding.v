@@ -1,4 +1,4 @@
-// HTMLScriptElement completion uses ordinary native DOM EventTarget operations.
+// Script and link completion use ordinary native DOM EventTarget operations.
 module browserjs
 
 fn script_element_event_binding_factory() string {

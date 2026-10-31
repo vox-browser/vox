@@ -4,6 +4,7 @@ import adblock
 import browsernet
 import css
 import dom
+import html
 import os
 import url
 
@@ -11,13 +12,12 @@ fn load_browser_imported_style_sheet(document &dom.Document, address string) ?cs
 	resource := fetch_browser_resource(address, document.base_url().serialize(),
 		document.url.serialize(), 'stylesheet') or { return none }
 	return css.ImportedStyleSheetSource{
-		css_text: resource.body
+		css_text:     resource.body
 		response_url: resource.final_url
 	}
 }
 
-// Remote link stylesheets are inlined as <style> elements, which have no
-// alternate flag. Resolve the CSSOM preferred style sheet set here instead:
+// Resolve the CSSOM preferred style sheet set before fetching resources:
 // its name is the title of the first enabled, non-alternate titled sheet in
 // tree order. A titled stylesheet, alternate or not, applies only when its
 // title names that set; untitled alternates never apply.
@@ -67,7 +67,7 @@ fn install_external_styles(document &dom.Document, base_url string, preloaded ma
 		}
 		href := link.get_attribute_value('href')
 		resolved_url := resolve_document_reference(href, base_url)
-		_ := browsernet.filter(adblock.Request{url: resolved_url, source_url: document.url.serialize(), request_type: 'stylesheet'}) or {
+		_ := browsernet.filter(adblock.Request{ url: resolved_url, source_url: document.url.serialize(), request_type: 'stylesheet' }) or {
 			messages << 'Stylesheet ${href}: ${err.msg()}'
 			continue
 		}
@@ -78,30 +78,43 @@ fn install_external_styles(document &dom.Document, base_url string, preloaded ma
 				continue
 			}
 		}
-		stylesheet := if resource := preloaded[resolved_url] {
+		resource := if resource := preloaded[resolved_url] {
 			filtered_resource := filter_preloaded_resource(resource, document.url.serialize(), 'stylesheet') or {
 				messages << 'Stylesheet ${href}: ${err.msg()}'
 				continue
 			}
-			filtered_resource.body
+			filtered_resource
 		} else {
-			fetch_text_resource_for_request(href, base_url, document.url.serialize(), 'stylesheet') or {
+			fetch_browser_resource(resolved_url, '', document.url.serialize(), 'stylesheet') or {
 				messages << 'Stylesheet ${href}: ${err.msg()}'
 				continue
 			}
 		}
-		mut style := document.create_element('style') or { continue }
-		style.set_attribute_value('data-libweb-v-source-url', resolved_url)
-		style.set_attribute_value('media', link.get_attribute_value('media'))
-		mut style_node := unsafe { &dom.Node(style) }
-		style_node.set_text_content(stylesheet) or { continue }
-		// Cascade order follows tree order, so the inlined sheet takes its link's
-		// place ahead of later <style> elements and links.
-		link_node := link.as_node()
-		mut parent := link_node.parent_node() or { continue }
-		parent.pre_insert(style.as_node(), link_node.next_sibling()) or { continue }
+		complete_browser_link_stylesheet(link, resource)
 	}
 	return messages
+}
+
+// Install the actual link-owned CSSOM sheet before dispatching its completion
+// event. An adjacent synthetic <style> cannot supply LinkStyle.sheet or retain
+// CSSOM edits on the link, and makes late load listeners wait forever.
+fn complete_browser_link_stylesheet(link &dom.Element, resource PreloadedResource) {
+	mut allocations := link.document().enter_native_storage()
+	defer { allocations.finish() }
+	mut content_type := ''
+	for header in resource.response_headers {
+		if header.name.to_lower() == 'content-type' { content_type = header.value }
+	}
+	address := if resource.final_url == '' { resource.url } else { resource.final_url }
+	html.html_link_element_process_stylesheet_resource(unsafe { &dom.HTMLLinkElement(link) },
+		resource.error == '', html.LinkResourceResponse{
+			content_type: content_type
+			body:         resource.body.bytes()
+			url:          dom.URL{ value: address }
+			// The browser adapter does not establish a CORS response. Opaque
+			// sheets may style the page, but their rules must remain private.
+			origin_clean: dom.URL{ value: address }.origin().is_same_origin(link.document().origin())
+		})
 }
 
 // Scripts can insert stylesheet links after the initial resources; 4chan's
@@ -131,15 +144,28 @@ fn (mut app BrowserApp) request_script_inserted_stylesheets() bool {
 		resolved_url := css.link_style_sheet_url(link.get_attribute_value('href'), base_url) or {
 			continue
 		}
-		if (!resolved_url.starts_with('http://') && !resolved_url.starts_with('https://'))
-			|| resolved_url in app.script_stylesheet_requests
-			|| css.has_remote_link_style_sheet(resolved_url) || link_stylesheet_is_inlined(link, resolved_url) {
+		if !resolved_url.starts_with('http://') && !resolved_url.starts_with('https://') {
 			continue
 		}
+		identity := link.as_node().unique_id()
+		if app.script_stylesheet_links[identity] == resolved_url { continue }
+		app.script_stylesheet_links[identity] = resolved_url
+		native_link := unsafe { &dom.HTMLLinkElement(link) }
+		if native_link.linked_style_sheet_from_resource_ {
+			continue
+		}
+		if resource := app.script_stylesheet_responses[resolved_url] {
+			complete_browser_link_stylesheet(link, resource)
+			installed = true
+			continue
+		}
+		if resolved_url in app.script_stylesheet_requests { continue }
 		app.script_stylesheet_requests[resolved_url] = true
 		// The navigation already requested the parser's sheets. One that
 		// failed is not requested again when the page is installed.
-		if resolved_url in app.navigation_preloaded_resources {
+		if resource := app.navigation_preloaded_resources[resolved_url] {
+			complete_browser_link_stylesheet(link, resource)
+			installed = true
 			continue
 		}
 		if cached := disk_cached_browser_resource(resolved_url, source_url, 'stylesheet') {
@@ -151,14 +177,6 @@ fn (mut app BrowserApp) request_script_inserted_stylesheets() bool {
 		spawn fetch_stylesheet_in_background(resolved_url, source_url, app.background_resource_results)
 	}
 	return installed
-}
-
-// A parsed link's remote stylesheet is inlined as the <style> after it.
-fn link_stylesheet_is_inlined(link &dom.Element, resolved_url string) bool {
-	next := link.as_node().next_sibling() or { return false }
-	style := next.as_element() or { return false }
-	return style.local_name() == 'style'
-		&& style.get_attribute_value('data-libweb-v-source-url') == resolved_url
 }
 
 fn fetch_stylesheet_in_background(resource_url string, source_url string, results chan PreloadedResource) {
@@ -175,10 +193,32 @@ fn (mut app BrowserApp) install_script_inserted_stylesheet(resource PreloadedRes
 		|| app.document == unsafe { nil } {
 		return false
 	}
+	mut allocations := app.document.enter_native_storage()
+	defer { allocations.finish() }
 	filtered := filter_preloaded_resource(resource, app.document.url.serialize(), 'stylesheet') or {
 		app.js_messages << 'Stylesheet ${resource.url}: ${err.msg()}'
-		return false
+		PreloadedResource{ ...resource, body: '', error: err.msg() }
 	}
-	css.set_remote_link_style_sheet(resource.url, filtered.body)
-	return true
+	retained := PreloadedResource{
+		...filtered
+		url:              filtered.url.clone()
+		body:             filtered.body.clone()
+		error:            filtered.error.clone()
+		final_url:        filtered.final_url.clone()
+		response_headers: filtered.response_headers.map(adblock.ResponseHeader{ name: it.name.clone(), value: it.value.clone() })
+	}
+	app.script_stylesheet_responses[resource.url.clone()] = retained
+	if retained.error == '' { css.set_remote_link_style_sheet(resource.url, retained.body) }
+	mut installed := false
+	for link in css.query_selector_all(app.document.as_node(), 'link[rel][href]') {
+		if !link_stylesheet_applies(link, preferred_style_sheet_set_name(app.document.as_node())) {
+			continue
+		}
+		resolved := css.link_style_sheet_url(link.get_attribute_value('href'), app.document.base_url().serialize()) or { continue }
+		if resolved != resource.url { continue }
+		complete_browser_link_stylesheet(link, retained)
+		app.script_stylesheet_links[link.as_node().unique_id()] = resolved
+		installed = true
+	}
+	return installed
 }

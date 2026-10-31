@@ -699,13 +699,18 @@ pub fn install_link_style_sheet(owner &dom.HTMLLinkElement, css_text string, loc
 	mut scope := css_style_scope_for_scope_node(scope_node)
 	mut list := scope.style_sheet_list()
 	mut sheet := parse_css_style_sheet_for_owner_node(element.document(), css_text, location)
+	// Cache-only synchronization has no CORS response to approve. A Fetch
+	// completion can replace this flag with its response's origin-clean state.
+	origin_clean := if dom.URL{ value: location }.origin().is_same_origin(element.document().origin()) {
+		StyleSheetListOriginClean.yes
+	} else { StyleSheetListOriginClean.no }
 	title := if element.as_node().in_a_document_tree() {
 		element.get_attribute_value('title')
 	} else {
 		''
 	}
 	list.initialize_a_css_style_sheet(mut sheet, element, element.get_attribute_value('media'),
-		title, if alternate { .yes } else { .no }, .yes, none, none)
+		title, if alternate { .yes } else { .no }, origin_clean, none, none)
 	link.linked_style_sheet_ = voidptr(sheet)
 	link.linked_style_sheet_scope_ = scope_node
 	link.linked_style_sheet_from_resource_ = false
