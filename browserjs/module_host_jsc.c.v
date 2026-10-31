@@ -317,6 +317,11 @@ fn (mut host ModuleHost) reject(mut operation BrowserModuleOperation, message st
 
 fn (mut host ModuleHost) supply(mut operation BrowserModuleOperation, code string, base string) {
 	if operation.finished || host.closed { return }
+	// An asynchronous Fetch task can enter the backend without an outer
+	// evaluate() call. Module bodies and the jobs drained by this API entry
+	// still need their owning HTML realm on the execution-context stack.
+	host.runtime.prepare_html_script()
+	defer { host.runtime.clean_up_html_script() }
 	if html.can_run_script_for_settings(host.settings) != .run {
 		host.reject(mut operation, 'Module execution is disabled for its document')
 		return

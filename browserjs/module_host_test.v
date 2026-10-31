@@ -60,6 +60,12 @@ fn test_native_modules_link_cycles_live_exports_import_maps_and_top_level_await(
 	}
 	settings := unsafe { &html.EnvironmentSettingsObject(document.relevant_settings_object()) }
 	runtime.bind_scripting_environment(settings)!
+	owner := voidptr(runtime)
+	runtime.define_value_host_function('__moduleHasOwner', fn [settings, owner] (_ voidptr, _ []voidptr) !voidptr {
+		runtime := unsafe { &Runtime(owner) }
+		active := settings.realm().script_execution_depth > 0 && runtime.libjs_vm().has_running_execution_context()
+		return C.JSValueMakeBoolean(runtime.context, active)
+	})!
 	mut scope := settings.universal_global_scope()
 	map_ := html.parse_import_map_string('{"imports":{"counter":"/lib/counter.js","cycle":"/lib/cycle.js"}}', document.url)!
 	scope.set_import_map(&map_)
@@ -75,14 +81,14 @@ fn test_native_modules_link_cycles_live_exports_import_maps_and_top_level_await(
 		url:         'https://modules.test/main.js'
 		code:        r'
 import {count,increment,read} from "counter";
-increment();await Promise.resolve();globalThis.answer=count;globalThis.cycleValue=read();globalThis.metaURL=import.meta.url;
+increment();globalThis.moduleOwnerBound=__moduleHasOwner();await Promise.resolve();globalThis.answer=count;globalThis.cycleValue=read();globalThis.metaURL=import.meta.url;
 globalThis.imported=await import("counter");globalThis.metaResolved=import.meta.resolve("counter");globalThis.moduleDone=true;
 '
 	}])
 	assert errors == []
 	module_test_until(host, runtime, 'globalThis.moduleDone===true||globalThis.moduleError!==undefined')
 	assert host.errors() == []string{}
-	assert runtime.evaluate_host('answer===42&&cycleValue===42&&imported.count===42&&metaURL==="https://modules.test/main.js"&&metaResolved==="https://modules.test/lib/counter.js"&&counterRuns===1')! == 'true'
+	assert runtime.evaluate_host('answer===42&&cycleValue===42&&imported.count===42&&metaURL==="https://modules.test/main.js"&&metaResolved==="https://modules.test/lib/counter.js"&&counterRuns===1&&moduleOwnerBound')! == 'true'
 	assert seen.urls.len == 2
 	assert !runtime.has_pending_module_scripts()
 	// Importing the same native module again must not re-evaluate its body.
