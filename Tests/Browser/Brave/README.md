@@ -46,6 +46,18 @@ including both device scales, fractional positions, translucent colors and
 transparent backdrops. The sanitized driver checks every control pixel and
 preserves all outside pixels and row padding; the preceding library fails it.
 
+`forum-svg-viewport-fringe` places a vector image at a fractional CSS position.
+Its curved path selects multisampling, and a later mask keeps its prefix on
+ordinary SVG replay. The 1024×768, scale 1 reference comes from two agreeing
+Brave 156.1.98.60 captures. The fixture improves from two differing pixels to
+zero. Supported clips are applied in the GPU recording before publication,
+preserving resolved coverage at the image viewport edge. Run
+`python3 tools/test_skia_svg_clip.py` for 96 independent complete-raster
+comparisons and 107 clip eligibility checks with sanitizers. The cases cover
+root and compositor layers, both device scales, fractional geometry, rounded
+clips and transparent/colored backdrops. The preceding library fails the
+same native and browser regressions. Unsupported clips retain their fallback.
+
 References were captured from Brave 155.1.97.57 on macOS at device scale 1.
 `font-rasterization` covers Arial and Verdana at integer and fractional sizes,
 automatic and antialiased smoothing, three foreground colors, and white and

@@ -1660,3 +1660,70 @@ Evidence is under `Build/forum-news-root-raster-20261031/`, especially
 `frame-comparison.json`. Rejected hypotheses and diagnostic failures remain
 retained separately. The broad baseline remains **`adf10924`**, with **two**
 completed native fixes after it. Full ten-site pixel parity remains open.
+
+## SVG clip coverage during publication, 31 October 2026
+
+`4cba0e2f` preserves the resolved coverage of a clipped SVG batch when it is
+published to the native destination. The GPU now applies the tracked clips;
+Quartz's clip is temporarily reset for that completed raster and restored
+after publication. This path requires a readable bitmap with matching canvas
+dimensions and CTM, supported clip metadata, and matching native/tracked clip
+bounds. Implicit rectangular crops, transformed contexts, unsupported masks,
+skewed clips and empty clips retain their preceding path. Opaque root draws
+retain their original backdrop inside the GPU picture.
+
+The new `forum-svg-viewport-fringe` fixture reproduces two faint yellow pixels
+above a fractional-positioned image, with a curved SVG path and a later mask.
+It improves from **two differing pixels to zero** against two agreeing
+1024×768, scale 1 Brave 156.1.98.60 references. Expanding the viewport clip in
+a debugger first removed those same differences; the implementation instead
+preserves the clip inside the GPU raster. The preceding browser and native
+library fail the new regressions.
+
+The sanitized native check compares **96** batches with independently clipped
+complete Dawn rasters. It covers root and compositor layers, scales 1 and 2,
+fractional geometry, rectangular and rounded clips, and transparent, white and
+colored backdrops. All **107** clip eligibility checks pass, including a
+narrower implicit clip, unsupported state, CTM/dimension mismatches and scope
+restoration. All **29 native Brave fixtures** pass, combining the retained
+28-case run with the new focused case. Three focused canonical SVG reftests,
+five harness cases, signing and startup also pass. The production update
+rebuilds only the changed native bridge with the normal production flags;
+the shared guard completes at **0.45 GiB** sampled peak RSS under the unchanged
+12 GiB limit. Published bytes match the tested candidate, public C exports
+remain unchanged, and all file-backed executable sections retain their hashes.
+The Metal backend, Dawn backend and uBO snapshot keep their identities.
+Fresh captures pin executable
+`0d5b6e047ed949250592cc2d92fa66d5dfa7d46af1f942341c4a0a69f6198830`
+and native bridge
+`d5633caff5984aef9527bc693a7497b7f435a3aaf78360a47088bca4dcea9420`.
+A fresh installed-bundle startup check passes.
+
+Stack Overflow improves from **232 to 230** differing pixels against an
+unchanged full-uBO reference. Exactly two native pixels change, both becoming
+correct. The header and main column remain exact; the left sidebar retains
+**139** differences and the right sidebar **91**. Maximum channel error falls
+from **10 to 2**. The original complex image still has 63 one-level differences
+inside its mask, and the separate reduced inline-SVG diagnostic retains its
+two fringe errors on ordinary leaf replay. Those diagnostics remain open.
+
+The ten-site matrix still accepts **one of ten**. Completed native cases
+report HN 0, Lobsters 0, Slashdot 9,773, Stack Overflow 230, BBC 76,604,
+CNN 101,529, The Verge 315,921 and Pikabu 13,925. Every completed reference
+is unchanged from the preceding feature. All native frames outside Stack
+Overflow and Slashdot remain unchanged. Slashdot changes two already
+incorrect pixels: maximum channel error at (70,44) improves from 14 to 12,
+while (78,44) worsens from 3 to 4. Its differing-pixel count stays 9,773, and
+this change supplies no Slashdot parity credit. Lobsters retains its 71-pixel
+live-to-frozen mismatch. Reddit's guest HTTP 403 and The Guardian's unstable
+consecutive references remain failures. All eight completed workloads retain
+matching full-uBO request/header decisions and validated document references;
+the closed 326-file oracle template remains unchanged.
+
+Evidence is under `Build/forum-news-svg-fringe-20261031/`, especially
+`native-rounded/`, `reference/`, `clip-probe/`, `candidate/`,
+`native-build/publication.json`, `stackoverflow-comparison.json`,
+`slashdot-comparison.json` and `frame-comparison.json`. Intermediate reductions
+and both expected predecessor failures remain retained. The broad baseline
+remains **`adf10924`**, with **three** completed native fixes after it. Full
+ten-site pixel parity remains open.
