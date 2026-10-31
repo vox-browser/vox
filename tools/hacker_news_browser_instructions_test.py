@@ -29,6 +29,44 @@ class HackerNewsInstructionGateTests(unittest.TestCase):
         self.assertFalse(evaluate_pairs(self.pairs(vox=901))['passed'])
         self.assertTrue(evaluate_pairs(self.pairs(vox=100))['passed'])
 
+    def test_twenty_percent_target_uses_exact_integer_bounds(self):
+        self.assertTrue(evaluate_pairs(self.pairs(vox=800), .8)['passed'])
+        self.assertFalse(evaluate_pairs(self.pairs(vox=801), .8)['passed'])
+        pairs = self.pairs(vox=790)
+        pairs[0]['vox'] = observation(790, 801)
+        self.assertFalse(evaluate_pairs(pairs, .8)['passed'])
+        # Large hardware counts must not lose a one-instruction failure to
+        # floating-point multiplication or rounded printed percentages.
+        self.assertFalse(evaluate_pairs(self.pairs(vox=8 * 10**17 + 1,
+                                                  brave=10**18), .8)['passed'])
+
+    def test_home_archive_retains_original_scripts_and_all_stories_without_refetching(self):
+        from hacker_news_browser_instructions import REPO
+        from page_archive import load_archive
+        archive = REPO / 'Tests/Browser/Brave/hn-home-instructions'
+        manifest = load_archive(archive)
+        document = archive / 'bodies' / manifest['responses'][manifest['url']]['sha256']
+        self.assertEqual(manifest['url'], 'https://news.ycombinator.com/')
+        self.assertEqual(len(document_comments(document, 'athing')), 30)
+        self.assertIn('<script', document.read_text())
+        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+        with tempfile.TemporaryDirectory() as directory:
+            with fixture_server(document, Path(directory), archive) as url:
+                for original, entry in manifest['responses'].items():
+                    route = original.removeprefix(manifest['url'])
+                    with opener.open(url + route) as response:
+                        self.assertEqual(response.read(), (archive / 'bodies' / entry['sha256']).read_bytes())
+                with self.assertRaises(HTTPError):
+                    opener.open(url + 'not-in-archive')
+        ids = document_comments(document, 'athing')
+        audit = dict(url='http://fixture/', ready='complete', viewport_width=WIDTH,
+                     viewport_height=HEIGHT, selections=[dict(name='stories', count=30,
+                     elements=[dict(attributes=dict(id=value)) for value in ids])])
+        check_content(audit, 'http://fixture/', ids, 'stories')
+        audit['selections'][0]['elements'].reverse()
+        with self.assertRaisesRegex(RuntimeError, 'story rows'):
+            check_content(audit, 'http://fixture/', ids, 'stories')
+
     def test_uses_vox_upper_and_brave_lower_across_all_trials(self):
         pairs = self.pairs()
         pairs[0]['vox'] = observation(890, 910)

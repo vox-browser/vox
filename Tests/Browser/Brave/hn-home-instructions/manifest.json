@@ -1,0 +1,446 @@
+{
+  "version": 1,
+  "url": "https://news.ycombinator.com/",
+  "captured_unix": 1793416754.831914,
+  "proxy_used_for_capture": null,
+  "author_scripts": "original bytes retained",
+  "imported_cache": null,
+  "imported_archive": null,
+  "responses": {
+    "https://news.ycombinator.com/": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "server",
+          "value": "nginx"
+        },
+        {
+          "name": "date",
+          "value": "Sat, 31 Oct 2026 03:19:19 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/html; charset=utf-8"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "cache-control",
+          "value": "private; max-age=0"
+        },
+        {
+          "name": "x-frame-options",
+          "value": "DENY"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "x-xss-protection",
+          "value": "1; mode=block"
+        },
+        {
+          "name": "referrer-policy",
+          "value": "origin"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=31556900"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/ https://cdnjs.cloudflare.com/; frame-src 'self' https://www.google.com/recaptcha/; style-src 'self' 'unsafe-inline'; img-src 'self' https://account.ycombinator.com; frame-ancestors 'self'"
+        },
+        {
+          "name": "content-encoding",
+          "value": "gzip"
+        }
+      ],
+      "sha256": "d5e63157ceadf74ed71d03dcce668588521fb18cf7479acf27c6c74344b2fc53",
+      "bytes": 34803,
+      "provenance": {
+        "source": "curl",
+        "captured_unix": 1793416757.399582,
+        "command": [
+          "curl",
+          "--silent",
+          "--show-error",
+          "--compressed",
+          "--location",
+          "--max-time",
+          "45",
+          "--proto",
+          "=http,https",
+          "--proto-redir",
+          "=http,https",
+          "--dump-header",
+          "/Users/alex/code/vox2/Build/hn-home-instructions-20261031/archive/download.headers",
+          "--output",
+          "/Users/alex/code/vox2/Build/hn-home-instructions-20261031/archive/download.body",
+          "--write-out",
+          "%{http_code}",
+          "https://news.ycombinator.com/"
+        ]
+      }
+    },
+    "https://news.ycombinator.com/hn.js?Z6eHuL4AiZDrSCqdz7DG": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "server",
+          "value": "nginx"
+        },
+        {
+          "name": "date",
+          "value": "Sat, 31 Oct 2026 03:19:21 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript; charset=utf-8"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 11 Sep 2026 03:56:15 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6aa37bdf-1461\""
+        },
+        {
+          "name": "expires",
+          "value": "Mon, 08 Sep 2036 03:56:15 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=311042214"
+        },
+        {
+          "name": "cache-control",
+          "value": "public"
+        },
+        {
+          "name": "content-encoding",
+          "value": "gzip"
+        }
+      ],
+      "sha256": "2e38ff883bd36dc4cc26f129f19169b0357cf32059988c926a4f73e5bfaa37f0",
+      "bytes": 5217,
+      "provenance": {
+        "source": "curl",
+        "captured_unix": 1793416758.6117508,
+        "command": [
+          "curl",
+          "--silent",
+          "--show-error",
+          "--compressed",
+          "--location",
+          "--max-time",
+          "45",
+          "--proto",
+          "=http,https",
+          "--proto-redir",
+          "=http,https",
+          "--dump-header",
+          "/Users/alex/code/vox2/Build/hn-home-instructions-20261031/archive/download.headers",
+          "--output",
+          "/Users/alex/code/vox2/Build/hn-home-instructions-20261031/archive/download.body",
+          "--write-out",
+          "%{http_code}",
+          "https://news.ycombinator.com/hn.js?Z6eHuL4AiZDrSCqdz7DG"
+        ]
+      }
+    },
+    "https://news.ycombinator.com/news.css?Z6eHuL4AiZDrSCqdz7DG": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "server",
+          "value": "nginx"
+        },
+        {
+          "name": "date",
+          "value": "Sat, 31 Oct 2026 03:19:22 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/css; charset=utf-8"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 04 Sep 2026 21:22:29 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6a9b3695-1cfa\""
+        },
+        {
+          "name": "expires",
+          "value": "Mon, 01 Sep 2036 21:22:29 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=310500187"
+        },
+        {
+          "name": "cache-control",
+          "value": "public"
+        },
+        {
+          "name": "content-encoding",
+          "value": "gzip"
+        }
+      ],
+      "sha256": "de4722818cb6e7859a4287ba956bf04973a63ca97318f6d4c4f44d55e7d454b5",
+      "bytes": 7418,
+      "provenance": {
+        "source": "curl",
+        "captured_unix": 1793416759.548984,
+        "command": [
+          "curl",
+          "--silent",
+          "--show-error",
+          "--compressed",
+          "--location",
+          "--max-time",
+          "45",
+          "--proto",
+          "=http,https",
+          "--proto-redir",
+          "=http,https",
+          "--dump-header",
+          "/Users/alex/code/vox2/Build/hn-home-instructions-20261031/archive/download.headers",
+          "--output",
+          "/Users/alex/code/vox2/Build/hn-home-instructions-20261031/archive/download.body",
+          "--write-out",
+          "%{http_code}",
+          "https://news.ycombinator.com/news.css?Z6eHuL4AiZDrSCqdz7DG"
+        ]
+      }
+    },
+    "https://news.ycombinator.com/s.gif": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "server",
+          "value": "nginx"
+        },
+        {
+          "name": "date",
+          "value": "Sat, 31 Oct 2026 03:19:22 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/gif"
+        },
+        {
+          "name": "content-length",
+          "value": "43"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 28 Jul 2022 21:14:48 GMT"
+        },
+        {
+          "name": "etag",
+          "value": "\"62e2fc48-2b\""
+        },
+        {
+          "name": "expires",
+          "value": "Sun, 25 Jul 2032 21:14:48 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=180986126"
+        },
+        {
+          "name": "cache-control",
+          "value": "public"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        }
+      ],
+      "sha256": "2dfe28cbdb83f01c940de6a88ab86200154fd772d568035ac568664e52068363",
+      "bytes": 43,
+      "provenance": {
+        "source": "curl",
+        "captured_unix": 1793416760.892616,
+        "command": [
+          "curl",
+          "--silent",
+          "--show-error",
+          "--compressed",
+          "--location",
+          "--max-time",
+          "45",
+          "--proto",
+          "=http,https",
+          "--proto-redir",
+          "=http,https",
+          "--dump-header",
+          "/Users/alex/code/vox2/Build/hn-home-instructions-20261031/archive/download.headers",
+          "--output",
+          "/Users/alex/code/vox2/Build/hn-home-instructions-20261031/archive/download.body",
+          "--write-out",
+          "%{http_code}",
+          "https://news.ycombinator.com/s.gif"
+        ]
+      }
+    },
+    "https://news.ycombinator.com/triangle.svg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "server",
+          "value": "nginx"
+        },
+        {
+          "name": "date",
+          "value": "Sat, 31 Oct 2026 03:19:24 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "content-length",
+          "value": "131"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 18 Dec 2023 06:35:34 GMT"
+        },
+        {
+          "name": "etag",
+          "value": "\"657fe836-83\""
+        },
+        {
+          "name": "expires",
+          "value": "Thu, 15 Dec 2033 06:35:34 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=224824570"
+        },
+        {
+          "name": "cache-control",
+          "value": "public"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        }
+      ],
+      "sha256": "3e155f895282e786a1a3c540eba727b4f04865eccbdad5dac17b3c2e184a5bd8",
+      "bytes": 131,
+      "provenance": {
+        "source": "curl",
+        "captured_unix": 1793416762.107502,
+        "command": [
+          "curl",
+          "--silent",
+          "--show-error",
+          "--compressed",
+          "--location",
+          "--max-time",
+          "45",
+          "--proto",
+          "=http,https",
+          "--proto-redir",
+          "=http,https",
+          "--dump-header",
+          "/Users/alex/code/vox2/Build/hn-home-instructions-20261031/archive/download.headers",
+          "--output",
+          "/Users/alex/code/vox2/Build/hn-home-instructions-20261031/archive/download.body",
+          "--write-out",
+          "%{http_code}",
+          "https://news.ycombinator.com/triangle.svg"
+        ]
+      }
+    },
+    "https://news.ycombinator.com/y18.svg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "server",
+          "value": "nginx"
+        },
+        {
+          "name": "date",
+          "value": "Sat, 31 Oct 2026 03:19:25 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "content-length",
+          "value": "315"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 25 Dec 2023 20:22:48 GMT"
+        },
+        {
+          "name": "etag",
+          "value": "\"6589e498-13b\""
+        },
+        {
+          "name": "expires",
+          "value": "Thu, 22 Dec 2033 20:22:48 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=225479003"
+        },
+        {
+          "name": "cache-control",
+          "value": "public"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        }
+      ],
+      "sha256": "e1b6622b6ea15f1f48dfda6e720265cd426981d2a7ae1f9d7ddeb8409897c6ff",
+      "bytes": 315,
+      "provenance": {
+        "source": "curl",
+        "captured_unix": 1793416763.437102,
+        "command": [
+          "curl",
+          "--silent",
+          "--show-error",
+          "--compressed",
+          "--location",
+          "--max-time",
+          "45",
+          "--proto",
+          "=http,https",
+          "--proto-redir",
+          "=http,https",
+          "--dump-header",
+          "/Users/alex/code/vox2/Build/hn-home-instructions-20261031/archive/download.headers",
+          "--output",
+          "/Users/alex/code/vox2/Build/hn-home-instructions-20261031/archive/download.body",
+          "--write-out",
+          "%{http_code}",
+          "https://news.ycombinator.com/y18.svg"
+        ]
+      }
+    }
+  },
+  "sealed_unix": 1793416763.437761
+}

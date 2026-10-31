@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Require frozen HN navigation/capture CPU work to be 10% less than Brave.
+"""Compare cached Hacker News navigation/capture CPU work with Brave.
 
 Run under tools/run_memory_bounded.py on macOS. Exclusive resource coalitions
 include live and exited browser helpers and coalition-owned Metal compiler
@@ -17,7 +17,9 @@ import gzip
 from html.parser import HTMLParser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
+import math
 import mimetypes
+from fractions import Fraction
 import os
 from pathlib import Path
 import plistlib
@@ -42,6 +44,7 @@ from measure_sealed_github_instructions import (
 )
 from pikabu_browser_instructions import clone_file
 from process_instruction_counts import CounterSampler, MacCounters
+from page_archive import load_archive
 
 REPO = Path(__file__).resolve().parents[1]
 NAME = 'hacker-news-item-50231722-complete'
@@ -54,14 +57,14 @@ TARGET = .90
 METAL_COMPILER = Path('/System/Library/Frameworks/Metal.framework/Versions/A/'
                       'XPCServices/MTLCompilerService.xpc/Contents/MacOS/MTLCompilerService')
 SCOPE = ('Navigation request to encoded document PNG availability, fresh process/profile/cache, '
-         '1024x768 CSS pixels, recorded device scale, frozen script-free fixture replayed over loopback HTTP. Vox native markers '
+         '1024x768 CSS pixels, recorded device scale, cached fixture replayed over loopback HTTP. Vox native markers '
          'exclude PNG file write; Brave CDP response includes base64/IPC delivery and readiness '
          'polling. Vox requests its initial navigation before presenting its first native window frame; '
          'Brave creates and resizes an about:blank window before the measured navigation request. '
          'Both browsers use inactive native windows on the display away from the pointer. Exclusive resource coalitions '
          'include exited helpers and coalition-owned Metal compiler services; GPU execution '
          'and services outside the coalition are excluded. '
-         'Full comment-row identity is checked after the measured PNG endpoint. '
+         'Full story/comment-row identity is checked after the measured PNG endpoint. '
          'This is a capture workflow comparison, not identical internal rendering endpoints.')
 
 
@@ -104,46 +107,59 @@ def test_display():
                           int(screen.origin.y + 30)])
 
 
-def document_comments(document):
+def document_comments(document, row_class='comtr'):
     class Comments(HTMLParser):
         def handle_starttag(self, tag, attributes):
             attributes = dict(attributes)
-            if tag == 'tr' and 'comtr' in attributes.get('class', '').split():
+            if tag == 'tr' and row_class in attributes.get('class', '').split():
                 ids.append(attributes.get('id'))
 
     ids = []
     Comments().feed(document.read_text(encoding='utf-8'))
     require(0 < len(ids) <= 1000 and all(ids) and len(set(ids)) == len(ids),
-            'Fixture must have unique, nonempty comment-row IDs')
+            'Fixture must have unique, nonempty row IDs')
     return ids
 
 
-def check_content(audit, url, expected_comments):
+def check_content(audit, url, expected_comments, row_name='comments'):
     require(audit.get('url') == url and audit.get('ready') == 'complete'
             and [audit.get('viewport_width'), audit.get('viewport_height')] == [WIDTH, HEIGHT],
             'Captured document identity, readiness, or viewport differs')
     selection = next((row for row in audit.get('selections', [])
-                      if row.get('name') == 'comments'), {})
+                      if row.get('name') == row_name), {})
     ids = [row.get('attributes', {}).get('id') for row in selection.get('elements', [])]
+    row_kind = 'story' if row_name == 'stories' else 'comment'
     require(selection.get('count') == len(expected_comments) and ids == expected_comments,
-            'Captured document omitted or changed comment rows')
+            f'Captured document omitted or changed {row_kind} rows')
 
 
 @contextmanager
-def fixture_server(document, folder):
+def fixture_server(document, folder, archive=None):
     """Use the real navigation path in both browsers, with only pinned files."""
     files = {document, *(path for path in (document.parent / ASSETS).rglob('*') if path.is_file())}
     routes = {'/' + path.relative_to(document.parent).as_posix(): path for path in files}
+    archived = {}
+    if archive:
+        manifest = load_archive(archive)
+        origin = urlsplit(manifest['url']).netloc
+        for url, entry in manifest['responses'].items():
+            parsed = urlsplit(url)
+            require(parsed.netloc == origin, 'Loopback replay requires a same-origin archive')
+            route = parsed.path + ('?' + parsed.query if parsed.query else '')
+            archived[route] = entry
     with (folder / 'replay-requests.jsonl').open('w') as log:
         class Handler(BaseHTTPRequestHandler):
             def do_GET(self):
-                path = routes.get(unquote(urlsplit(self.path).path))
-                if path is None:
+                entry = archived.get(self.path) if archive else None
+                path = archive / 'bodies' / entry['sha256'] if entry else routes.get(unquote(urlsplit(self.path).path))
+                if path is None or (archive and entry is None):
                     self.send_error(404)
                     return
                 data = path.read_bytes()
-                self.send_response(200)
-                self.send_header('Content-Type', mimetypes.guess_type(path.name)[0] or 'application/octet-stream')
+                self.send_response(entry['status'] if entry else 200)
+                content_type = next((h['value'] for h in entry['headers']
+                                     if h['name'].lower() == 'content-type'), 'application/octet-stream') if entry else mimetypes.guess_type(path.name)[0] or 'application/octet-stream'
+                self.send_header('Content-Type', content_type)
                 self.send_header('Content-Length', str(len(data)))
                 self.send_header('Cache-Control', 'no-store')
                 self.end_headers()
@@ -157,14 +173,15 @@ def fixture_server(document, folder):
         worker = threading.Thread(target=server.serve_forever, daemon=True)
         worker.start()
         try:
-            yield f'http://127.0.0.1:{server.server_port}/' + quote(document.name)
+            target = urlsplit(manifest['url']).path if archive else '/' + quote(document.name)
+            yield f'http://127.0.0.1:{server.server_port}' + target
         finally:
             server.shutdown()
             server.server_close()
             worker.join()
 
 
-def evaluate_pairs(pairs):
+def evaluate_pairs(pairs, target=TARGET):
     """Require every observation and use the least favorable cross-run ratio."""
     require(len(pairs) >= 2, 'At least two complete alternating pairs are required')
     for pair in pairs:
@@ -172,17 +189,19 @@ def evaluate_pairs(pairs):
         for row in pair.values():
             require(type(row.get('exit')) is int and row['exit'] == 0
                     and row.get('pixels_exact') is True and row.get('content_exact') is True,
-                    'Every observation must exit successfully and match pixels and full comment identity')
+                    'Every observation must exit successfully and match pixels and full row identity')
             lo, hi = row['instruction_interval']['lower'], row['instruction_interval']['upper']
             require(type(lo) is int and type(hi) is int and 0 < lo <= hi,
                     'Invalid or unavailable instruction interval')
     vox = [pair['vox']['instruction_interval']['upper'] for pair in pairs]
     brave = [pair['brave']['instruction_interval']['lower'] for pair in pairs]
     ratio = max(vox) / min(brave)
-    return dict(target_vox_fraction=TARGET, worst_vox_over_best_brave=ratio,
+    fraction = Fraction(str(target))
+    require(0 < fraction <= 1, 'Target fraction must be in (0, 1]')
+    return dict(target_vox_fraction=float(fraction), worst_vox_over_best_brave=ratio,
                 vox_median_instructions=statistics.median(vox),
                 brave_median_lower_bound_instructions=statistics.median(brave),
-                passed=max(vox) * 10 <= min(brave) * 9, pairs=len(pairs))
+                passed=max(vox) * fraction.denominator <= min(brave) * fraction.numerator, pairs=len(pairs))
 
 
 def wait_until(predicate, deadline, description):
@@ -430,10 +449,14 @@ def run_browser(engine, app, folder, args):
                 (start_before, start_after, end_before, end_after)]
             png.write_bytes(base64.b64decode(image['data'], validate=True))
             # This semantic collection is deliberately outside the measured interval.
-            audit = client.call('Runtime.evaluate', dict(expression='''({url:location.href,
+            row_name = getattr(args, 'row_name', 'comments')
+            selector = getattr(args, 'row_selector', 'tr.comtr')
+            expression = '''({url:location.href,
                 ready:document.readyState,viewport_width:innerWidth,viewport_height:innerHeight,
-                selections:[{name:'comments',count:document.querySelectorAll('tr.comtr').length,
-                elements:[...document.querySelectorAll('tr.comtr')].map(e=>({attributes:{id:e.id}}))}]})''',
+                selections:[{name:ROW_NAME,count:document.querySelectorAll(ROW_SELECTOR).length,
+                elements:[...document.querySelectorAll(ROW_SELECTOR)].map(e=>({attributes:{id:e.id}}))}]})'''
+            expression = expression.replace('ROW_NAME', json.dumps(row_name)).replace('ROW_SELECTOR', json.dumps(selector))
+            audit = client.call('Runtime.evaluate', dict(expression=expression,
                 returnByValue=True))['result']['value']
             write_json(folder / 'audit.json', audit)
             result['membership_after'] = membership(api, cid, app, root['pid'], deadline,
@@ -441,7 +464,7 @@ def run_browser(engine, app, folder, args):
             browser.call('Browser.close')
             result['kernel_exit_status'] = await_exit(queue, deadline)
             require(result['kernel_exit_status'] == 0, 'Brave exited unsuccessfully')
-        check_content(audit, args.url, args.expected_comments)
+        check_content(audit, args.url, args.expected_comments, getattr(args, 'row_name', 'comments'))
         result.update(content_exact=True, comment_rows=len(args.expected_comments))
         verdict = compare(args.expected, png, folder / 'document.diff.png', args.diff_tool)
         result.update(pixels_exact=verdict['exact'], pixel_comparison=verdict, png_sha256=sha(png))
@@ -484,22 +507,41 @@ def main():
     parser.add_argument('--brave-app', type=Path, default=Path('/Applications/Brave Browser.app'))
     parser.add_argument('--diff-tool', type=Path, default=REPO / 'Build/hacker-news-pixels/pixel_diff')
     parser.add_argument('--document', type=Path, default=DOCUMENT)
-    parser.add_argument('--expected', type=Path, default=EXPECTED)
+    parser.add_argument('--expected', type=Path)
+    parser.add_argument('--home-archive', type=Path,
+                        help='Sealed original home-page resources; replayed locally without downloads')
+    parser.add_argument('--target-vox-fraction', type=float,
+                        help='Maximum Vox/Brave instruction ratio (home: .8, discussion: .9)')
     parser.add_argument('--scale', type=int, choices=[1, 2], default=2)
     parser.add_argument('--repeat', type=int, default=3)
     parser.add_argument('--timeout', type=float, default=120)
     parser.add_argument('--settle-seconds', type=float, default=2)
     args = parser.parse_args()
-    if args.repeat < 2 or args.timeout <= 0 or not 0 <= args.settle_seconds < args.timeout:
+    if args.target_vox_fraction is None:
+        args.target_vox_fraction = .8 if args.home_archive else TARGET
+    if args.expected is None:
+        args.expected = FIXTURES / 'expected/hacker-news-home-instructions.png' if args.home_archive else EXPECTED
+    if (args.repeat < 2 or not math.isfinite(args.timeout) or args.timeout <= 0
+            or not 0 <= args.settle_seconds < args.timeout
+            or not 0 < args.target_vox_fraction <= 1):
         parser.error('Need at least two pairs, a positive watchdog, and a bounded nonnegative settle')
     args.output = args.output.resolve()
     args.output.mkdir(parents=True, exist_ok=False)
     args.diff_tool = args.diff_tool.resolve()
     args.document = args.document.resolve()
     args.expected = args.expected.resolve()
-    args.expected_comments = document_comments(args.document)
+    args.row_name, args.row_selector = 'comments', 'tr.comtr'
+    if args.home_archive:
+        args.home_archive = args.home_archive.resolve()
+        manifest = load_archive(args.home_archive)
+        require(manifest['url'] == 'https://news.ycombinator.com/', 'Expected the Hacker News home page')
+        args.document = args.home_archive / 'bodies' / manifest['responses'][manifest['url']]['sha256']
+        args.row_name, args.row_selector = 'stories', 'tr.athing'
+    args.expected_comments = document_comments(args.document, 'athing' if args.home_archive else 'comtr')
+    if args.home_archive:
+        require(len(args.expected_comments) == 30, 'Home-page fixture must contain all 30 stories')
     args.audit_config = args.output / 'audit-config.json'
-    write_json(args.audit_config, dict(selectors=[dict(name='comments', selector='tr.comtr',
+    write_json(args.audit_config, dict(selectors=[dict(name=args.row_name, selector=args.row_selector,
                limit=len(args.expected_comments), attributes=['id'], layout_depth=0)]))
     apps = {}
     for engine, source in [('vox', args.vox_app), ('brave', args.brave_app)]:
@@ -513,19 +555,24 @@ def main():
         'coalition_instruction_counts.py', 'measure_browser_instructions.py',
         'capture_brave_reference.py',
         'measure_sealed_github_instructions.py', 'pikabu_browser_instructions.py',
-        'process_instruction_counts.py'))
+        'process_instruction_counts.py', 'page_archive.py'))
     paths.update(path for path in (args.document.parent / ASSETS).rglob('*') if path.is_file())
+    if args.home_archive:
+        paths.update(path for path in args.home_archive.rglob('*') if path.is_file())
     for app in apps.values():
         paths.update(path for path in app.rglob('*') if path.is_file())
     paths.update(native_dependencies(apps['vox'] / 'Contents/MacOS/Vox'))
     pinned = fingerprint(paths)
     write_json(args.output / 'inputs.json', dict(files=pinned, scope=SCOPE,
-               settle_seconds=args.settle_seconds, target_vox_fraction=TARGET,
+               settle_seconds=args.settle_seconds, target_vox_fraction=args.target_vox_fraction,
                comment_ids=args.expected_comments,
+               row_selector=args.row_selector,
+               host=dict(cpu_count=os.cpu_count(), load_average=os.getloadavg()),
+               original_scripts_retained=bool(args.home_archive),
                device_scale=args.scale, viewport_css_pixels=[WIDTH, HEIGHT],
                system=subprocess.check_output(['sw_vers'], text=True)))
     pairs = []
-    with fixture_server(args.document, args.output) as args.url:
+    with fixture_server(args.document, args.output, args.home_archive) as args.url:
         write_json(args.output / 'replay.json', dict(url=args.url, document=str(args.document),
                    network_policy='Loopback replay only; fresh caches; Cache-Control: no-store'))
         for index in range(args.repeat):
@@ -539,7 +586,7 @@ def main():
             pairs.append(pair)
             write_json(args.output / 'pairs.json', pairs)
     try:
-        summary = evaluate_pairs(pairs)
+        summary = evaluate_pairs(pairs, args.target_vox_fraction)
     except RuntimeError as error:
         summary = dict(passed=False, error=str(error))
     write_json(args.output / 'summary.json', summary)
