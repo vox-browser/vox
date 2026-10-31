@@ -173,6 +173,15 @@ function __compactDocumentWrapper(state){
  Object.defineProperty(state,"__object",{value:object});return object;
 }
 Object.setPrototypeOf(document,HTMLDocument.prototype);
+const __compactDocumentLegacyAdd=document.addEventListener;
+document.addEventListener=function(name,callback,options){
+ name=String(name);if(name==="click")return EventTarget.prototype.addEventListener.call(this,name,callback,options);
+ return __compactDocumentLegacyAdd.call(this,name,callback,options);
+};
+document.removeEventListener=function(name,callback,options){
+ name=String(name);if(name==="click")return EventTarget.prototype.removeEventListener.call(this,name,callback,options);
+ const key=__listenerKey(null,name);__listeners[key]=(__listeners[key]||[]).filter(listener=>listener!==callback);
+};
 __elementApply(__elementRecordSet,__compactDocuments,[document,{bridgeKey:"",nodeType:9}]);
 for(const name of ["documentElement","head","body","doctype","activeElement"]){Object.defineProperty(Document.prototype,name,{get:function(){return __queryElements(__compactDocumentState(this).bridgeKey,"documentNode",name);},enumerable:true,configurable:true});}
 for(const name of ["title","URL","documentURI","baseURI","contentType","compatMode","characterSet","readyState","referrer","hidden","visibilityState"]){Object.defineProperty(Document.prototype,name,{get:function(){return __queryElements(__compactDocumentState(this).bridgeKey,"documentValue",name);},set:name==="title"?function(value){const state=__compactDocumentState(this);__queryElements(state.bridgeKey,"setDocumentTitle",__compactDocumentString(value));for(const title of __queryElements(state.bridgeKey,"querySelectorAll","title"))__compactInvalidateContent(__compactNodeState(title));}:undefined,enumerable:true,configurable:true});}

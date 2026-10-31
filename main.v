@@ -3250,8 +3250,12 @@ fn javascript_default_prevented(encoded string) bool {
 fn (mut app BrowserApp) media_click_replay_state(element &dom.Element) !map[string]json2.Any {
 	target := unsafe { &dom.EventTarget(element) }
 	mut processed := false
+	mut native_dispatched := false
+	mut native_prevented := false
 	if app.page_model != unsafe { nil } {
 		if event := app.page_model.event_handler.take_last_click_event() {
+			native_dispatched = true
+			native_prevented = event.default_prevented()
 			processed = event.did_process_click_handler(target)
 		}
 	}
@@ -3279,6 +3283,8 @@ fn (mut app BrowserApp) media_click_replay_state(element &dom.Element) !map[stri
 	return {
 		'key': json2.Any(key)
 		'raw': json2.Any(raw)
+		'nativeDispatched': json2.Any(native_dispatched)
+		'nativeDefaultPrevented': json2.Any(native_prevented)
 	}
 }
 
@@ -3299,6 +3305,19 @@ fn (mut app BrowserApp) dispatch_javascript_event(name string, element &dom.Elem
 	if media_replay == '' {
 		if key := app.js_runtime.canvas_element_key_for_binding(element) {
 			media_replay = ', ' + json2.encode({'key': json2.Any(key)})
+		}
+	}
+	if name == 'click' && media_replay != '' && element.local_name() !in ['audio','video']
+		&& app.page_model != unsafe { nil } {
+		if event := app.page_model.event_handler.take_last_click_event() {
+			if target := event.target() {
+				if voidptr(target) == voidptr(element) {
+					mut replay := json2.decode[map[string]json2.Any](media_replay[2..]) or { map[string]json2.Any{} }
+					replay['nativeDispatched'] = true
+					replay['nativeDefaultPrevented'] = event.default_prevented()
+					media_replay = ', ' + json2.encode(replay)
+				}
+			}
 		}
 	}
 	if id == '' && media_replay == '' { return false }

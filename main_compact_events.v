@@ -24,8 +24,13 @@ window.__ladybirdDispatch = function (name, id, replay) {
   }
   path.push(null);
  }
+ let nativePrevented=false;
+ if(name==="click"){
+  if(replay&&replay.nativeDispatched)nativePrevented=!!replay.nativeDefaultPrevented;
+  else nativePrevented=!EventTarget.prototype.dispatchEvent.call(target,new MouseEvent("click",{bubbles:true,cancelable:true,view:window}));
+ }
  const event = {type:name, target:target, currentTarget:null, bubbles:bubbles,
-  cancelable:name !== "input" && name !== "change", defaultPrevented:false, button:0, which:1,
+  cancelable:name !== "input" && name !== "change", defaultPrevented:nativePrevented, button:0, which:1,
   preventDefault(){if(this.cancelable)this.defaultPrevented = true;},
   stopPropagation(){this.cancelBubble = true;},
   stopImmediatePropagation(){this.cancelBubble = true; this.immediateStopped = true;}};
@@ -56,7 +61,7 @@ window.__ladybirdDispatch = function (name, id, replay) {
   if (event.cancelBubble) break;
  }
  event.currentTarget = null;
- __state.defaultPrevented = event.defaultPrevented;
+ __state.defaultPrevented = event.defaultPrevented && !(replay && replay.nativeDispatched && nativePrevented);
  return window.__ladybirdFinalize();
 };'
 }

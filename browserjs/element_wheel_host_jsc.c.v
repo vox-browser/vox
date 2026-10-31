@@ -194,13 +194,13 @@ const element_wheel_host_bootstrap = r'(function(bind,type,setResolver,getHandle
   define(o,"addEventListener",{value:function addEventListener(name,callback){
    if(arguments.length<2)return apply(nativeAdd,this,arguments);
    const converted=apply(type,undefined,[this,name]);
-   if(converted==="wheel"||converted==="input"||converted==="change")return apply(nativeAdd,this,[converted,callback,arguments[2]]);
+   if(converted==="wheel"||converted==="input"||converted==="change"||converted==="click")return apply(nativeAdd,this,[converted,callback,arguments[2]]);
    return apply(legacyAdd,this,[converted,callback,arguments[2]]);
   },writable:true,enumerable:true,configurable:true});
   define(o,"removeEventListener",{value:function removeEventListener(name,callback){
    if(arguments.length<2)return apply(nativeRemove,this,arguments);
    const converted=apply(type,undefined,[this,name]);
-   if(converted==="wheel"||converted==="input"||converted==="change")return apply(nativeRemove,this,[converted,callback,arguments[2]]);
+   if(converted==="wheel"||converted==="input"||converted==="change"||converted==="click")return apply(nativeRemove,this,[converted,callback,arguments[2]]);
    return apply(legacyRemove,this,[converted,callback,arguments[2]]);
   },writable:true,enumerable:true,configurable:true});
   define(o,"dispatchEvent",{value:function dispatchEvent(event){
