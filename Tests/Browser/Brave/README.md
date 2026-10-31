@@ -929,4 +929,14 @@ four channel errors of four. It is not an exact screenshot regression. Its
 scale-two comparison retains the preceding 86,723 differences. New viewport
 metadata and CSS picture eligibility therefore remain restricted to scale 1;
 see [the vlang report](../../../docs/VLANG_BRAVE_RENDERING.md) for identities,
-controls and the remaining mixed-content image restriction.
+controls and remaining page differences.
+
+
+`compositor-rounded-profiled-images` checks rounded Display P3 and untagged
+images at natural and enlarged sizes inside a complete scrolled CSS gradient
+picture. Capture at 1280×800, scale 1 and scroll Y 6400. Two fresh Brave
+156.1.98.60 references agree exactly; the preceding recorder differs at 65,187
+pixels and the current recorder is exact. Run
+`python3 tools/forum_news_inline_pixels_test.py ForumNewsInlinePixelsTests.test_rounded_color_managed_images_retain_the_complete_gradient_picture`.
+The native gradient harness also runs 96 independent image scenes and payload
+validation. Full vlang.io parity and Retina page raster differences remain open.

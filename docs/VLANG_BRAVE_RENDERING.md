@@ -2,8 +2,9 @@
 
 Pixel-perfect parity remains open. The current settled, archived comparison at
 1280 × 800 CSS pixels and scale 1 has **9 differing pixels at the top** and
-**147,641 at scroll Y 6400**. Two fresh warm-cache captures at 6400 produce the
-same result. These numbers describe those viewports, not the complete live page.
+**251 at scroll Y 6400** after the rounded color-managed image fix. These
+numbers describe those viewports, not the complete live page. Earlier build
+comparisons and validation limits are recorded below.
 
 ## Capture readiness correction
 
@@ -242,3 +243,66 @@ The preceding planner and its original record types independently produce
 that same two-layer result; `canvas-original-types-control-v3-{build,run}.json`
 retains the control. The assertion was not weakened. This failure is separate
 from the passing focused metadata checks above.
+
+
+## Rounded color-managed images in complete pictures
+
+`ad869c6c` removes the remaining image restriction that aborted the Vlang
+feature-grid picture. Rounded clips stay in the recorded canvas. Image payloads
+carry premultiplied source pixels and numerical transfer/gamut values across
+the independently linked Skia versions; ordinary sRGB payloads keep their
+original format. The receiving GPU converts tagged uploads to eight-bit sRGB
+before filtering. Converting on the CPU or during the final draw changes the
+sampled pixels. Complete images also retain natural-coordinate drawing, and
+mipmap eligibility uses the unrounded device size.
+
+The frozen 1280×800, scale-one comparison improves from **65,446 to 251 differing
+pixels at scroll Y 6400**. The top remains at **9**. Of the 251 lower differences,
+228 are inside the color-managed screenshot and 23 are outside it. Most differ
+by one channel level; eight underline pixels exceed three levels, with a
+maximum of 17. These residuals and other viewports remain open.
+
+`compositor-rounded-profiled-images` exercises rounded Display P3 and untagged
+images at natural and enlarged sizes in a scrolled gradient picture. It improves
+from 65,187 differing pixels to zero at 1280×800, scroll Y 6400. Two fresh Brave
+references agree exactly. An earlier absolute-positioned diagnostic did not
+engage the intended complete-picture path: both old and new bundles retained
+38,306 differences. It supplies no acceptance credit. The final in-flow fixture
+and native tests verify the intended path separately.
+
+Evidence under `Build/vlang-parity-20261031/` includes:
+
+- `profiled-picture-native-checks/`: all seven native suites pass under
+  AddressSanitizer, including 96 complete image scenes across scales 1 and 2,
+  three color spaces, square/rounded clips, cropped/full sources, nearest/linear
+  sampling, and opaque/translucent texels. The preceding recorder fails the
+  independent scene comparison in `profiled-image-negative-control-*.json`.
+- `picture-image-transport-{old,new}-abi-{compile,run}.json`: both Skia versions
+  pass the payload tests with AddressSanitizer and UndefinedBehaviorSanitizer.
+  Five source color spaces preserve their bytes and profile, while truncated,
+  oversized, non-finite and malformed payloads are rejected.
+- `profiled-image-scroll-gradient-{flow,repeat,baseline}/` and
+  `profiled-image-scroll-reference-agreement.json`: the matched browser fixture
+  comparisons and independently repeated Brave reference.
+- `profiled-picture-regressions/status.json`: the four existing gradient
+  fixtures, PNG ICC sampling/matrix fixtures and mip-first-use fixture all
+  remain exact.
+- `profiled-picture-browser-test.json`, `profiled-picture-smoke-status.json`,
+  `profiled-picture-headless.json` and `profiled-picture-live/status.json`:
+  the new automated browser regression, fourteen screenshot checks, startup,
+  and live scripted navigation pass. Live fonts and all five visible image
+  requests complete with zero native errors. That live check is not a matched
+  pixel comparison.
+- `profiled-picture-installed-page/` and
+  `profiled-picture-installed-identity.json`: fresh-process full-page captures
+  and the latest completed production identity. The shared production build
+  already included this native change, so no additional build or bundle
+  replacement was needed. It is pinned in `Vox-profiled-installed.app`.
+
+The installed executable is
+`50678667e6408574074c5f7472ea601a61208ff038ff91d4fd6773a8daa91740`;
+its native-library hashes are recorded alongside it. The private candidate's
+native inputs remain unchanged during its guarded build. All runtime checks
+use the 3 GiB memory guard and fresh processes. The earlier Retina CSS-picture
+policy restriction remains in place; passing native scale-two scenes does not
+establish Retina page parity.
