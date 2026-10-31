@@ -2168,6 +2168,8 @@ pub fn (mut e Element) attach_a_shadow_root_with_registry(mode ShadowRootMode, c
 				return error('NotSupportedError: Element already is a shadow host')
 			}
 			// Remove all children and set declarative to false
+			mut shadow_node := sr.as_node()
+			shadow_node.remove_all_children(false)
 			unsafe {
 				sr.declarative = false
 			}
