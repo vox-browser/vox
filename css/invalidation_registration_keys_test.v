@@ -49,9 +49,11 @@ fn test_invalidation_registration_keeps_flags_keys_and_ordered_plan_merges() {
 	}
 	assert actual.invalidation_plans.len == 7
 	assert '$' !in actual.invalidation_plans && '*' !in actual.invalidation_plans
+	// Identical registrations coalesce into one rule of each kind through the
+	// existing append_or_merge helpers.
 	for _, retained in actual.invalidation_plans {
-		assert retained.descendant_rules.len == 2
-		assert retained.sibling_rules.len == 2
+		assert retained.descendant_rules.len == 1
+		assert retained.sibling_rules.len == 1
 		assert !retained.invalidate_whole_subtree
 	}
 	whole := make_invalidate_whole_subtree_invalidation()

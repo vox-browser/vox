@@ -96,8 +96,12 @@ fn invalidation_plans_equal(a &InvalidationPlan, b &InvalidationPlan) bool {
 fn union_invalidation_match_sets(a InvalidationSet, b InvalidationSet) InvalidationSet {
 	// Existing rules may share the stylesheet's map header. Give a merged set
 	// its own storage so adding a property cannot mutate either input plan.
-	mut result := InvalidationSet{}
-	result.include_all_from(a)
+	// Clone the existing table once instead of rebuilding it property by
+	// property on every merge of another rule into a growing match set.
+	mut result := a
+	if properties := a.additional_properties_ {
+		result.additional_properties_ = properties.clone()
+	}
 	result.include_all_from(b)
 	return result
 }

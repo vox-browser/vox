@@ -304,5 +304,107 @@ class VoxLaunchArgumentTests(unittest.TestCase):
             self.assertEqual(Path(result['screenshot']).read_bytes(), b'cropped viewport')
 
 
+class LinuxCaptureTests(unittest.TestCase):
+    def args(self):
+        return SimpleNamespace(binary=Path('/test/vox'), timeout=5, width=3, height=4,
+                               url='http://127.0.0.1:49171/questions', counter_backend='callgrind',
+                               scratch_dir=None, settle_seconds=2, expect_title='Questions',
+                               expected_png=None, capture_audit_config=None)
+
+    def audit(self, args):
+        return dict(url=args.url, ready='complete', fully_active=True, title='Questions',
+                    viewport_width=args.width, viewport_height=args.height, paint_commands=10)
+
+    def test_linux_crop_removes_verified_sixty_pixel_chrome_and_checks_every_color_channel(self):
+        from PIL import Image
+        with tempfile.TemporaryDirectory() as directory:
+            window = Path(directory) / 'window.png'
+            viewport = Path(directory) / 'viewport.png'
+            expected = Path(directory) / 'expected.png'
+            image = Image.new('RGBA', (3, 88), 'red')
+            image.paste((10, 20, 30, 255), (0, 60, 3, 64))
+            image.save(window)
+            with patch.object(measurement.platform, 'system', return_value='Linux'), \
+                    patch.object(measurement.subprocess, 'run') as sips:
+                measurement.crop_document_viewport(window, viewport, 3, 4)
+            sips.assert_not_called()
+            Image.new('RGBA', (3, 4), (10, 20, 30, 255)).save(expected)
+            self.assertTrue(measurement.validate_screenshot(viewport, expected, 3, 4)['exact'])
+            # Opaque alpha must not hide an RGB mismatch in Image.getbbox().
+            Image.new('RGBA', (3, 4), (11, 20, 30, 255)).save(expected)
+            with self.assertRaisesRegex(RuntimeError, 'pixels differ'):
+                measurement.validate_screenshot(viewport, expected, 3, 4)
+
+    def test_capture_audit_rejects_wrong_document_incomplete_readiness_and_viewport(self):
+        args = self.args()
+        measurement.validate_capture_audit(self.audit(args), args)
+        for changes in ({'url': 'about:blank'}, {'ready': 'loading'}, {'fully_active': False},
+                        {'viewport_height': 3}, {'title': 'Network error'}, {'paint_commands': 0}):
+            with self.subTest(changes=changes), self.assertRaises(RuntimeError):
+                measurement.validate_capture_audit({**self.audit(args), **changes}, args)
+
+    def test_linux_launch_pins_viewport_and_keeps_literal_arguments(self):
+        args = self.args()
+        args.vox_arg = ['--enable-javascript', 'literal $(text)']
+        command = measurement.vox_launch_command(args, args.binary, '/out.png')
+        self.assertEqual(command[:3], ['/test/vox', '--screenshot-viewport-height', '4'])
+        self.assertEqual(command[3:5], args.vox_arg)
+        self.assertEqual(command[command.index('--window-height') + 1], '88')
+        self.assertEqual(command[-1], args.url)
+
+    def test_linux_capture_isolated_inputs_and_explicit_metric_survive_validation(self):
+        from PIL import Image
+        for backend in ('callgrind', 'cachegrind'):
+            with self.subTest(backend=backend), tempfile.TemporaryDirectory() as directory:
+                args = self.args()
+                args.counter_backend = backend
+                prefix = Path(directory) / 'capture'
+                def execute(command, **kwargs):
+                    Path(kwargs['log_path']).write_text('')
+                    self.assertNotIn('VOX_PROFILE_INSTRUCTIONS', kwargs['env'])
+                    self.assertEqual(kwargs['env']['SCREENSHOT_SETTLE_SECONDS'], '2')
+                    self.assertTrue(Path(kwargs['env']['VOX_PROFILE_DIR']).is_dir())
+                    self.assertTrue(Path(kwargs['env']['LADYBIRD_CACHE_DIR']).is_dir())
+                    Image.new('RGB', (3, 88), 'green').save(command[command.index('--screenshot') + 1])
+                    Path(kwargs['env']['VOX_CAPTURE_AUDIT_PATH']).write_text(json.dumps(self.audit(args)))
+                    return {'instructions': 123, 'hardware_retired': False,
+                            'instruction_metric': backend + '_guest_instruction_references'}
+                with patch.object(measurement, 'run_' + backend + '_command', side_effect=execute), \
+                        patch.object(measurement, 'run_perf_command') as perf, \
+                        patch.object(measurement.platform, 'system', return_value='Linux'):
+                    report = measurement.run_vox_linux(args, prefix)
+                perf.assert_not_called()
+                self.assertFalse(report['hardware_retired'])
+                self.assertEqual(report['instruction_metric'], backend + '_guest_instruction_references')
+                self.assertEqual(report['document_audit']['title'], 'Questions')
+                self.assertEqual(report['cache_policy'], 'fresh empty cache')
+                self.assertTrue(Path(report['screenshot']).is_file())
+
+    def test_renderer_errors_fail_even_when_process_exit_and_document_are_valid(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'native.log'
+            path.write_text('sokol.memory.slog | const_tag: sapp, level: 2, item_id: 50, '
+                            'message: LINUX_X11_QUERY_SYSTEM_DPI_FAILED\n')
+            measurement.validate_linux_renderer_log(path)
+            for error in ['SAMPLER_POOL_EXHAUSTED', 'VALIDATE_ABND_FS_EXPECTED_SAMPLER_BINDING']:
+                path.write_text('sokol.memory.slog | const_tag: sg, level: 1, item_id: 97, '
+                                f'message: {error}\n')
+                with self.subTest(error=error), self.assertRaisesRegex(RuntimeError, error):
+                    measurement.validate_linux_renderer_log(path)
+
+    def test_a_previous_screenshot_and_audit_cannot_validate_an_empty_new_run(self):
+        with tempfile.TemporaryDirectory() as directory:
+            prefix = Path(directory) / 'capture'
+            Path(str(prefix) + '.window.png').write_bytes(b'stale PNG')
+            original = json.dumps(self.audit(self.args()))
+            Path(str(prefix) + '.audit.json').write_text(original)
+            with patch.object(measurement, 'run_callgrind_command') as run, \
+                    self.assertRaisesRegex(RuntimeError, 'evidence already exists'):
+                measurement.run_vox_linux(self.args(), prefix)
+            run.assert_not_called()
+            self.assertEqual(Path(str(prefix) + '.window.png').read_bytes(), b'stale PNG')
+            self.assertEqual(Path(str(prefix) + '.audit.json').read_text(), original)
+
+
 if __name__ == '__main__':
     unittest.main()

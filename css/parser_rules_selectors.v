@@ -4049,25 +4049,24 @@ fn mark_as_attr_tainted(values []ComponentValue) []ComponentValue {
 // ValueParsing.cpp: Parser::parse_declaration_value.
 fn parse_declaration_value(mut tokens ParserTokenStream, end_token_type ?TokenType) ?[]ComponentValue {
 	start_index := tokens.index
-	mut declaration_value := []ComponentValue{}
 	for tokens.has_next_token() {
 		peek := tokens.next_token()
 		if peek.is_block() {
 			if !nested_declaration_value_contents_are_valid(peek.block().value) {
 				break
 			}
-			declaration_value << tokens.consume_a_token()
+			tokens.discard_a_token()
 			continue
 		}
 		if peek.is_function() {
 			if !nested_declaration_value_contents_are_valid(peek.function().value) {
 				break
 			}
-			declaration_value << tokens.consume_a_token()
+			tokens.discard_a_token()
 			continue
 		}
 		if !peek.is_token() {
-			declaration_value << tokens.consume_a_token()
+			tokens.discard_a_token()
 			continue
 		}
 
@@ -4088,14 +4087,16 @@ fn parse_declaration_value(mut tokens ParserTokenStream, end_token_type ?TokenTy
 		if !valid {
 			break
 		}
-		declaration_value << tokens.consume_a_token()
+		tokens.discard_a_token()
 	}
 
-	if declaration_value.len == 0 {
+	if tokens.index == start_index {
 		tokens.index = start_index
 		return none
 	}
-	return declaration_value
+	// Validation consumes a contiguous span. Copy it once, retaining the
+	// independent result buffer without growing an array one token at a time.
+	return tokens.tokens_since(start_index).clone()
 }
 
 fn nested_declaration_value_contents_are_valid(values []ComponentValue) bool {
@@ -4714,7 +4715,23 @@ pub fn replace_an_arbitrary_substitution_function(element ?dom.AbstractElement, 
 }
 
 fn substitute_arbitrary_substitution_functions_step_2(element ?dom.AbstractElement, mut guarded_contexts GuardedSubstitutionContexts, source []ComponentValue) ?[]ComponentValue {
-	mut dest := []ComponentValue{}
+	mut has_nested_values := false
+	for value in source {
+		if value.is_function() || value.is_block() {
+			has_nested_values = true
+			break
+		}
+	}
+	if !has_nested_values {
+		// Leaf tokens cannot contain substitutions. Keep the result independently
+		// mutable, including its taint flags, with one bulk copy of live elements.
+		// Array.clone() also copies spare capacity, so bound the source view first.
+		return source[..source.len].clone()
+	}
+	// A substitution can reject an oversized remainder before producing output.
+	// Do not reserve an unbounded source-sized buffer before that limit check.
+	capacity := if source.len > 16384 { 16384 } else { source.len }
+	mut dest := []ComponentValue{cap: capacity}
 	for index, value in source {
 		if value.is_function() {
 			source_function := value.function()

@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-"""Measure browser CPU instructions through a rendered document capture.
+"""Measure browser instructions through a rendered document capture.
 
 Vox additionally reports exact in-process installation/first-frame intervals.
 Chrome uses an isolated profile and includes observed renderer/GPU/utility tasks.
 Elapsed time is used only as a watchdog, never as the reported work metric.
+Linux supports perf hardware counters and explicitly selected Callgrind Ir;
+software instruction references are never reported as hardware-retired work.
 """
 import argparse
 import base64
@@ -26,6 +28,7 @@ import urllib.parse
 import urllib.request
 
 from process_instruction_counts import MacCounters, ProcessTreeCounter, CounterSampler
+from linux_instruction_counts import run_perf_command, run_callgrind_command, run_cachegrind_command
 
 REPO = Path(__file__).resolve().parents[1]
 VOX_TOOLBAR_HEIGHT = 60
@@ -250,6 +253,17 @@ def crop_document_viewport(window, screenshot, width, height):
     scale = pixels_wide // width
     if scale < 1 or pixels_wide % width or (VOX_TOOLBAR_HEIGHT + height) * scale > pixels_high:
         raise RuntimeError("Native capture does not contain the requested document viewport")
+    if platform.system() == "Linux":
+        from PIL import Image
+        with Image.open(window) as captured:
+            captured.load()
+            viewport = captured.convert("RGBA").crop(
+                (0, VOX_TOOLBAR_HEIGHT * scale, width * scale,
+                 (VOX_TOOLBAR_HEIGHT + height) * scale))
+            if scale != 1:
+                viewport = viewport.resize((width, height), Image.Resampling.LANCZOS)
+            viewport.save(screenshot)
+        return
     subprocess.run(["sips", "--cropToHeightWidth", str(height * scale), str(width * scale),
                     "--cropOffset", str(VOX_TOOLBAR_HEIGHT * scale), "0", str(window), "--out", str(screenshot)],
                    check=True, stdout=subprocess.DEVNULL)
@@ -275,12 +289,127 @@ def fresh_vox_cache(template, scratch_dir=None):
 
 
 def vox_launch_command(args, binary, window_screenshot):
-    return [str(binary), *getattr(args, "vox_arg", []),
+    command = [str(binary), *getattr(args, "vox_arg", []),
             "--window-width", str(args.width), "--window-height", str(args.height + VOX_CHROME_HEIGHT),
             "--screenshot", str(window_screenshot), args.url]
+    if getattr(args, "counter_backend", None) in ("linux-perf", "callgrind", "cachegrind"):
+        # Pin layout geometry as well as the X11 drawable's outer dimensions.
+        command[1:1] = ["--screenshot-viewport-height", str(args.height)]
+    return command
+
+
+def validate_capture_audit(audit, args):
+    if audit.get("url") != args.url:
+        raise RuntimeError(f"Captured document URL {audit.get('url')!r} differs from {args.url!r}")
+    if audit.get("ready") != "complete" or not audit.get("fully_active"):
+        raise RuntimeError("Captured document is not complete and fully active")
+    if (audit.get("viewport_width"), audit.get("viewport_height")) != (args.width, args.height):
+        raise RuntimeError("Captured document viewport differs from requested geometry")
+    if audit.get("paint_commands", 0) <= 0:
+        raise RuntimeError("Captured document has no paint commands")
+    title = getattr(args, "expect_title", None)
+    if title is not None and audit.get("title") != title:
+        raise RuntimeError(f"Captured document title differs from expected {title!r}")
+
+
+def validate_screenshot(path, expected, width, height):
+    from PIL import Image
+    with Image.open(path) as raw:
+        raw.load()
+        actual = raw.convert("RGBA")
+    if actual.size != (width, height):
+        raise RuntimeError("Decoded screenshot dimensions differ from requested viewport")
+    result = {"width": width, "height": height,
+              "decoded_rgba_sha256": hashlib.sha256(actual.tobytes()).hexdigest()}
+    if expected is not None:
+        with Image.open(expected) as raw:
+            raw.load()
+            reference = raw.convert("RGBA")
+        if reference.size != actual.size or actual.tobytes() != reference.tobytes():
+            raise RuntimeError(f"Rendered pixels differ from {expected}")
+        result.update(expected=str(expected), exact=True,
+                      expected_file_sha256=hashlib.sha256(Path(expected).read_bytes()).hexdigest())
+    return result
+
+
+def validate_linux_renderer_log(path):
+    errors = []
+    count = 0
+    with Path(path).open(encoding="utf-8", errors="replace") as log:
+        for line in log:
+            # Sokol levels are panic=0, error=1, warning=2, info=3. A missing
+            # X11 DPI property is merely a warning; invalid image/sampler
+            # bindings can silently omit content despite a successful PNG.
+            if re.search(r"const_tag: (?:sg|sapp), level: [01],", line):
+                count += 1
+                if len(errors) < 3:
+                    errors.append(line.partition("message: ")[2].strip() or line.strip())
+    if count:
+        raise RuntimeError(f"Linux renderer reported {count} Sokol errors: "
+                           + "; ".join(errors) + f"; see {path}")
+
+
+def run_vox_linux(args, prefix, cache_dir=None):
+    binary = args.binary or REPO / "Build/linux/vox"
+    screenshot = Path(str(prefix) + ".png")
+    window = Path(str(prefix) + ".window.png")
+    audit_path = Path(str(prefix) + ".audit.json")
+    log_path = Path(str(prefix) + ".log")
+    # Reject before touching anything: completed and failed observations are
+    # evidence, and an old PNG/audit must never validate a new empty capture.
+    if list(prefix.parent.glob(prefix.name + ".*")):
+        raise RuntimeError("Capture evidence already exists for this prefix; use a new output prefix")
+    command = vox_launch_command(args, binary, window)
+    with tempfile.TemporaryDirectory(prefix="vox-linux-profile-", dir=getattr(args, "scratch_dir", None)) as temporary:
+        profile = Path(temporary) / "profile"
+        profile.mkdir()
+        cache = cache_dir or Path(temporary) / "cache"
+        cache.mkdir(exist_ok=True)
+        env = dict(os.environ, VOX_PROFILE_DIR=str(profile), LADYBIRD_CACHE_DIR=str(cache),
+                   VOX_CAPTURE_AUDIT_PATH=str(audit_path), VOX_CAPTURE_DOCUMENT_ONLY="0",
+                   SCREENSHOT_SETTLE_SECONDS=str(getattr(args, "settle_seconds", 2.0)))
+        for name in ("VOX_PROFILE_INSTRUCTIONS", "LADYBIRD_DEBUG_TIMING", "GC_PRINT_STATS",
+                     "VOX_CAPTURE_AUDIT_CONFIG"):
+            env.pop(name, None)
+        config = getattr(args, "capture_audit_config", None)
+        if config is not None:
+            env["VOX_CAPTURE_AUDIT_CONFIG"] = str(config)
+        if args.counter_backend == "linux-perf":
+            report = run_perf_command(command, cwd=REPO, env=env, log_path=log_path,
+                                      timeout=args.timeout)
+        else:
+            runner = run_cachegrind_command if args.counter_backend == "cachegrind" else run_callgrind_command
+            report = runner(command, cwd=REPO, env=env, log_path=log_path,
+                            timeout=args.timeout, prefix=prefix,
+                            valgrind=getattr(args, "valgrind", "valgrind"))
+    if not window.is_file() or not audit_path.is_file():
+        raise RuntimeError(f"Linux capture omitted its screenshot or document audit; see {log_path}")
+    audit = json.loads(audit_path.read_text())
+    validate_capture_audit(audit, args)
+    crop_document_viewport(window, screenshot, args.width, args.height)
+    validate_linux_renderer_log(log_path)
+    pixels = validate_screenshot(screenshot, getattr(args, "expected_png", None), args.width, args.height)
+    report.update(engine="vox", binary=str(binary), url=args.url, viewport=[args.width, args.height],
+                  endpoint="program exec through process exit after native document capture",
+                  endpoint_note="includes startup, window work, readiness, settle, PNG capture, and teardown; excludes external X server",
+                  screenshot=str(screenshot), native_window_screenshot=str(window),
+                  document_audit=audit, screenshot_validation=pixels,
+                  settle_seconds=getattr(args, "settle_seconds", 2.0),
+                  profile_policy="fresh private profile for each observation",
+                  cache_policy="fresh copy of supplied cache" if cache_dir is not None else "fresh empty cache",
+                  rendering_environment={name: env.get(name) for name in (
+                      "GC_MARKERS", "JSC_useJIT", "LIBGL_ALWAYS_SOFTWARE", "DISPLAY",
+                      "LP_NUM_THREADS", "GALLIUM_DRIVER",
+                      "MESA_GL_VERSION_OVERRIDE", "LD_LIBRARY_PATH", "VALGRIND_LIB")},
+                  native={"phases": [], "scopes": {}, "unavailable": ["Native in-process instruction scopes are not implemented on Linux"]})
+    if config is not None:
+        report["capture_audit_config_sha256"] = hashlib.sha256(Path(config).read_bytes()).hexdigest()
+    return report
 
 
 def run_vox(args, prefix, api, cache_dir=None):
+    if getattr(args, "counter_backend", None) in ("linux-perf", "callgrind", "cachegrind"):
+        return run_vox_linux(args, prefix, cache_dir)
     binary = args.binary or REPO / "Build/v/Vox.app/Contents/MacOS/Vox"
     screenshot = Path(str(prefix) + ".png")
     window_screenshot = Path(str(prefix) + ".window.png")
@@ -446,6 +575,16 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--engine", choices=["vox", "chrome"], default="vox")
     parser.add_argument("--binary", type=Path)
+    parser.add_argument("--counter-backend", choices=["auto", "macos", "linux-perf", "callgrind", "cachegrind"], default="auto",
+                        help="auto selects the native hardware backend; Callgrind and Cachegrind Ir are separate explicit software metrics")
+    parser.add_argument("--valgrind", default="valgrind", help="Valgrind executable for either explicit software backend")
+    parser.add_argument("--settle-seconds", type=float, default=2.0,
+                        help="Linux only: native settle period after capture readiness")
+    parser.add_argument("--expect-title", help="Linux only: require this exact document title")
+    parser.add_argument("--capture-audit-config", type=Path,
+                        help="Linux only: additional native capture audit selectors")
+    parser.add_argument("--expected-png", type=Path,
+                        help="Linux only: require exact decoded pixels against this reference viewport")
     parser.add_argument("--vox-arg", action="append", default=[],
                         help="Vox only: repeat to pass literal launch arguments before capture options/URL; use --vox-arg=--enable-javascript for option values")
     parser.add_argument("--url", default="https://github.com/vlang/v")
@@ -472,7 +611,7 @@ def main():
     parser.add_argument("--cache-template", type=Path,
                         help="Vox only: start every run with a fresh copy of this page/resource cache")
     args = parser.parse_args()
-    if args.repeat < 1 or args.timeout <= 0 or args.width < 1 or args.height < 1 or args.sample_interval <= 0:
+    if args.repeat < 1 or args.timeout <= 0 or args.width < 1 or args.height < 1 or args.sample_interval <= 0 or args.settle_seconds < 0:
         parser.error("repeat, dimensions, and watchdog must be positive")
     if args.vox_arg and args.engine != "vox":
         parser.error("--vox-arg requires engine vox")
@@ -483,6 +622,18 @@ def main():
             parser.error("direct launch requires engine chrome and a positive --chrome-outer-window-height")
     elif args.chrome_outer_window_height is not None:
         parser.error("--chrome-outer-window-height requires --chrome-launch-mode direct")
+    if args.counter_backend == "auto":
+        args.counter_backend = "macos" if platform.system() == "Darwin" else "linux-perf"
+    if args.counter_backend != "macos" and (platform.system() != "Linux" or args.engine != "vox"):
+        parser.error("linux-perf, callgrind, and cachegrind require Linux and engine vox")
+    if args.counter_backend == "macos" and (args.expect_title or args.capture_audit_config or args.expected_png):
+        parser.error("capture audit/title/pixel guards currently require a Linux backend")
+    for option in ("capture_audit_config", "expected_png"):
+        value = getattr(args, option)
+        if value is not None:
+            if not value.is_file():
+                parser.error(f"{option.replace('_', '-')} requires an existing file")
+            setattr(args, option, value.resolve())
     if args.binary:
         args.binary = args.binary.resolve()
     if args.cache_template:
@@ -494,19 +645,30 @@ def main():
         args.url = local.resolve().as_uri()
     args.output = args.output.resolve()
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    api = MacCounters()
+    api = MacCounters() if args.counter_backend == "macos" else None
     runs = []
     for index in range(args.repeat):
         prefix = Path(str(args.output) + f".run-{index + 1}")
-        binary = args.binary or (REPO / "Build/v/Vox.app/Contents/MacOS/Vox" if args.engine == "vox"
+        binary = args.binary or (REPO / ("Build/linux/vox" if args.counter_backend != "macos" else "Build/v/Vox.app/Contents/MacOS/Vox") if args.engine == "vox"
                                  else Path("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"))
         binary_before = hashlib.sha256(binary.read_bytes()).hexdigest()
         runtime_before = fingerprint_files(args.runtime_library)
-        with fresh_vox_cache(args.cache_template, args.scratch_dir) as (cache, template_hash):
-            result = (run_vox(args, prefix, api, cache) if args.engine == "vox"
-                      else run_chrome(args, prefix, api))
-            if template_hash is not None:
-                result["cache_template_sha256"] = template_hash
+        try:
+            with fresh_vox_cache(args.cache_template, args.scratch_dir) as (cache, template_hash):
+                result = (run_vox(args, prefix, api, cache) if args.engine == "vox"
+                          else run_chrome(args, prefix, api))
+                if template_hash is not None:
+                    result["cache_template_sha256"] = template_hash
+        except Exception as error:
+            failure = Path(str(prefix) + ".failure.json")
+            if failure.exists():
+                failure = Path(str(prefix) + f".failure-{time.time_ns()}.json")
+            with failure.open("x") as destination:
+                destination.write(json.dumps({
+                "valid": False, "counter_backend": args.counter_backend, "error": str(error),
+                "binary": str(binary), "binary_sha256": binary_before,
+                "url": args.url, "viewport": [args.width, args.height]}, indent=2) + "\n")
+            raise
         result["binary_sha256"] = hashlib.sha256(Path(result["binary"]).read_bytes()).hexdigest()
         if result["binary_sha256"] != binary_before:
             raise RuntimeError("Measured executable changed during capture")
@@ -515,23 +677,34 @@ def main():
             raise RuntimeError("Measured runtime library changed during capture")
         result["measurement_driver_sha256"] = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
         result["counter_module_sha256"] = hashlib.sha256((REPO / "tools/process_instruction_counts.py").read_bytes()).hexdigest()
+        if args.counter_backend != "macos":
+            result["linux_counter_module_sha256"] = hashlib.sha256((REPO / "tools/linux_instruction_counts.py").read_bytes()).hexdigest()
         result["sample_interval_seconds"] = args.sample_interval
         result["screenshot_sha256"] = hashlib.sha256(Path(result["screenshot"]).read_bytes()).hexdigest()
         Path(str(prefix) + ".json").write_text(json.dumps(result, indent=2) + "\n")
         runs.append(result)
-        print(json.dumps({"run": index + 1, "engine": args.engine,
-                          "observed_process_tree_instructions": result["instructions"],
+        progress = {"run": index + 1, "engine": args.engine,
+                          "instruction_metric": result.get("instruction_metric", "hardware_retired_instructions"),
+                          "instructions": result["instructions"],
                           "aggregate_is_lower_bound": result["aggregate_is_lower_bound"],
                           "root_instructions": result["root_instructions"],
                           "root_final_exit_sample": result["root_final_exit_sample"],
                           "root_lifetime_max_phys_footprint": result["root_lifetime_max_phys_footprint"],
                           "missing_final_sample_count": result["missing_final_sample_count"],
                           "native_scopes": result.get("native", {}).get("scopes"),
-                          "navigation_to_screenshot_instructions": result.get("navigation_to_screenshot", {}).get("instructions")}), flush=True)
+                          "navigation_to_screenshot_instructions": result.get("navigation_to_screenshot", {}).get("instructions")}
+        if args.counter_backend == "macos":
+            progress["observed_process_tree_instructions"] = result["instructions"]
+        print(json.dumps(progress), flush=True)
     summary = {"machine": platform.machine(), "kernel": platform.release(), "engine": args.engine,
-               "aggregate_is_lower_bound": True,
-               "median_observed_process_tree_instructions": statistics.median(r["instructions"] for r in runs),
-               "median_root_instructions": statistics.median(r["root_instructions"] for r in runs), "runs": runs}
+               "counter_backend": args.counter_backend,
+               "instruction_metric": runs[0].get("instruction_metric", "hardware_retired_instructions"),
+               "aggregate_is_lower_bound": any(r["aggregate_is_lower_bound"] for r in runs),
+               "median_instructions": statistics.median(r["instructions"] for r in runs),
+               "median_root_instructions": (statistics.median(r["root_instructions"] for r in runs)
+                   if all(r["root_instructions"] is not None for r in runs) else None), "runs": runs}
+    if args.counter_backend == "macos":
+        summary["median_observed_process_tree_instructions"] = summary["median_instructions"]
     Path(str(args.output) + ".json").write_text(json.dumps(summary, indent=2) + "\n")
 
 

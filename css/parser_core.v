@@ -310,6 +310,12 @@ pub fn (token Token) delim() u32 {
 	if token.value.len == 0 {
 		return 0
 	}
+	// CSS punctuation is normally one ASCII byte. Reading that byte avoids a
+	// temporary rune array on every delimiter probe; keep the existing decoder
+	// for non-ASCII and manually constructed multi-code-point token values.
+	if token.value.len == 1 && token.value[0] < 0x80 {
+		return u32(token.value[0])
+	}
 	return u32(token.value.runes()[0])
 }
 

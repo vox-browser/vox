@@ -1,0 +1,1739 @@
+{
+  "schema_version": 1,
+  "recorded_utc": "2026-10-31T11:56:55.055120+00:00",
+  "repository": "vlang/vox2",
+  "benchmark": "Frozen Stack Overflow questions page, Linux desktop renderer",
+  "result_status": "passed",
+  "instruction_target_met": true,
+  "measurement": {
+    "backend": "cachegrind",
+    "instruction_metric": "cachegrind_guest_instruction_references",
+    "counter": "Valgrind Cachegrind/Ir",
+    "hardware_retired": false,
+    "includes": "instrumented user-space guest instructions in the main process, all threads",
+    "excludes": "other processes, kernel, hypervisor, GPU execution, and Valgrind observer code",
+    "counter_scope": "main process only; child instruction totals are not added",
+    "endpoint": "program exec through process exit after native document capture",
+    "endpoint_detail": "Includes initialization, native rendering, PNG and capture audit generation, and process teardown. Counts only the successful root process; threads aggregate, child processes excluded.",
+    "required_reduction_percent": 15,
+    "paired_observations": 3,
+    "total_observations": 6,
+    "sequence": [
+      "baseline",
+      "candidate",
+      "candidate",
+      "baseline",
+      "baseline",
+      "candidate"
+    ],
+    "cache_simulation": false,
+    "branch_simulation": false,
+    "instrumentation_from_program_start": true,
+    "profiler_queries_or_dumps_during_cohort": false,
+    "failed_or_excluded_observations_in_acceptance_cohort": 0,
+    "hardware_counter_probe": {
+      "available": false,
+      "error": "perf_event_open hardware instructions unavailable: errno=2 (No such file or directory). Use a host with an accessible PMU, or explicitly select --counter-backend=callgrind for a different software metric.",
+      "receipt": {
+        "path": "Build/linux-counter-backend-probe/perf.json",
+        "sha256": "c111315d9926b3145bd96e109c4e8319fde9bd0c5e1dd03a7dbaf837a3ac6569"
+      }
+    },
+    "native_latency_claim": false
+  },
+  "results": {
+    "pairs": [
+      {
+        "pair": 1,
+        "baseline_instructions": 186811868651,
+        "candidate_instructions": 153675088126,
+        "instructions_saved": 33136780525,
+        "reduction_percent": 17.73804885325878
+      },
+      {
+        "pair": 2,
+        "baseline_instructions": 189897538450,
+        "candidate_instructions": 154712392833,
+        "instructions_saved": 35185145617,
+        "reduction_percent": 18.528489576111195
+      },
+      {
+        "pair": 3,
+        "baseline_instructions": 186201592590,
+        "candidate_instructions": 154094669772,
+        "instructions_saved": 32106922818,
+        "reduction_percent": 17.243097855074044
+      }
+    ],
+    "baseline_counts": [
+      186811868651,
+      189897538450,
+      186201592590
+    ],
+    "candidate_counts": [
+      153675088126,
+      154712392833,
+      154094669772
+    ],
+    "baseline_median": 186811868651,
+    "candidate_median": 154094669772,
+    "median_count_reduction_percent": 17.51344768148641,
+    "median_paired_reduction_percent": 17.73804885325878,
+    "conservative_reduction_percent": 16.911348243049954,
+    "conservative_gate": {
+      "expression": "20 * max(candidate_counts) <= 17 * min(baseline_counts)",
+      "max_candidate": 154712392833,
+      "min_baseline": 186201592590,
+      "left_integer": 3094247856660,
+      "right_integer": 3165427074030,
+      "passed": true
+    },
+    "regressing_pairs": 0
+  },
+  "observations": [
+    {
+      "order": 1,
+      "pair": 1,
+      "variant": "baseline",
+      "instructions": 186811868651,
+      "valid": true,
+      "process_exit_code": 0,
+      "root_pid": 255478,
+      "raw_profile": {
+        "path": "Build/stackoverflow-cachegrind-candidate-02-pairs/pair-01-baseline/capture.run-1.cachegrind.255478",
+        "sha256": "3b089249e2db037c1202865ecd8e5ab3f077d1c9c22130f4979122c8236885c7"
+      },
+      "report": {
+        "path": "Build/stackoverflow-cachegrind-candidate-02-pairs/pair-01-baseline/capture.run-1.json",
+        "sha256": "bff73729e846af8da903ec3a05f9f17b0d1b5257283dc718cc8aea21ee5c9bfd"
+      },
+      "viewport_png": {
+        "path": "Build/stackoverflow-cachegrind-candidate-02-pairs/pair-01-baseline/capture.run-1.png",
+        "sha256": "a4d0b5e1befd0af36ac5a532882e8e4ac2ad7c3f51dad6abd2b1ee965206df04"
+      },
+      "decoded_rgba_sha256": "d4934504491a1ca82aa1983e744cee0c26f0021e27a761b35eaae4315e036698",
+      "document_audit": {
+        "path": "Build/stackoverflow-cachegrind-candidate-02-pairs/pair-01-baseline/capture.run-1.audit.json",
+        "sha256": "db1a631501a6dee5535b4f2a51a52dc307091c6bdbf4f8afaf45ff12fc128752"
+      },
+      "content_validation": {
+        "path": "Build/stackoverflow-cachegrind-candidate-02-pairs/pair-01-baseline/content-validation.json",
+        "sha256": "7f92886db9761547c8c01b556f5166d77c485ca344e9d735333b44e71a8b0f46"
+      },
+      "replay_validation": {
+        "path": "Build/stackoverflow-cachegrind-candidate-02-pairs/pair-01-baseline/replay-validation.json",
+        "sha256": "d41bdef08ec3a68f6a9a7fd2ab4796431216d871fe3b63d56b7b1ad69cc63ffe"
+      }
+    },
+    {
+      "order": 2,
+      "pair": 1,
+      "variant": "candidate",
+      "instructions": 153675088126,
+      "valid": true,
+      "process_exit_code": 0,
+      "root_pid": 262041,
+      "raw_profile": {
+        "path": "Build/stackoverflow-cachegrind-candidate-02-pairs/pair-01-candidate/capture.run-1.cachegrind.262041",
+        "sha256": "2541269b98711e0ee4c11429ad220623802b93ed64b47170e45fc5f0ffae52c2"
+      },
+      "report": {
+        "path": "Build/stackoverflow-cachegrind-candidate-02-pairs/pair-01-candidate/capture.run-1.json",
+        "sha256": "a6e4e975af1aa01f04ef610c2c4999d74f4531748fa4e33ca74d2930ae7ff441"
+      },
+      "viewport_png": {
+        "path": "Build/stackoverflow-cachegrind-candidate-02-pairs/pair-01-candidate/capture.run-1.png",
+        "sha256": "a4d0b5e1befd0af36ac5a532882e8e4ac2ad7c3f51dad6abd2b1ee965206df04"
+      },
+      "decoded_rgba_sha256": "d4934504491a1ca82aa1983e744cee0c26f0021e27a761b35eaae4315e036698",
+      "document_audit": {
+        "path": "Build/stackoverflow-cachegrind-candidate-02-pairs/pair-01-candidate/capture.run-1.audit.json",
+        "sha256": "db1a631501a6dee5535b4f2a51a52dc307091c6bdbf4f8afaf45ff12fc128752"
+      },
+      "content_validation": {
+        "path": "Build/stackoverflow-cachegrind-candidate-02-pairs/pair-01-candidate/content-validation.json",
+        "sha256": "7f92886db9761547c8c01b556f5166d77c485ca344e9d735333b44e71a8b0f46"
+      },
+      "replay_validation": {
+        "path": "Build/stackoverflow-cachegrind-candidate-02-pairs/pair-01-candidate/replay-validation.json",
+        "sha256": "00a4985f784f2b0127c8cf877a09540cc1f431c10ec85c3301f85df04e75f7b5"
+      }
+    },
+    {
+      "order": 3,
+      "pair": 2,
+      "variant": "candidate",
+      "instructions": 154712392833,
+      "valid": true,
+      "process_exit_code": 0,
+      "root_pid": 267416,
+      "raw_profile": {
+        "path": "Build/stackoverflow-cachegrind-candidate-02-pairs/pair-02-candidate/capture.run-1.cachegrind.267416",
+        "sha256": "7eaa3d93c2ae9e8de51a058b9a743981a5a2bbd569c5a24fbf0536d8dbcc1ead"
+      },
+      "report": {
+        "path": "Build/stackoverflow-cachegrind-candidate-02-pairs/pair-02-candidate/capture.run-1.json",
+        "sha256": "cf9219923d60939cba87be7f1f54d38180878642e37fc5c331af8acdee13fa1f"
+      },
+      "viewport_png": {
+        "path": "Build/stackoverflow-cachegrind-candidate-02-pairs/pair-02-candidate/capture.run-1.png",
+        "sha256": "a4d0b5e1befd0af36ac5a532882e8e4ac2ad7c3f51dad6abd2b1ee965206df04"
+      },
+      "decoded_rgba_sha256": "d4934504491a1ca82aa1983e744cee0c26f0021e27a761b35eaae4315e036698",
+      "document_audit": {
+        "path": "Build/stackoverflow-cachegrind-candidate-02-pairs/pair-02-candidate/capture.run-1.audit.json",
+        "sha256": "db1a631501a6dee5535b4f2a51a52dc307091c6bdbf4f8afaf45ff12fc128752"
+      },
+      "content_validation": {
+        "path": "Build/stackoverflow-cachegrind-candidate-02-pairs/pair-02-candidate/content-validation.json",
+        "sha256": "7f92886db9761547c8c01b556f5166d77c485ca344e9d735333b44e71a8b0f46"
+      },
+      "replay_validation": {
+        "path": "Build/stackoverflow-cachegrind-candidate-02-pairs/pair-02-candidate/replay-validation.json",
+        "sha256": "146a005753852077793114e5890de4ef625455c4e4b8bdd77cef97a050430e6f"
+      }
+    },
+    {
+      "order": 4,
+      "pair": 2,
+      "variant": "baseline",
+      "instructions": 189897538450,
+      "valid": true,
+      "process_exit_code": 0,
+      "root_pid": 273018,
+      "raw_profile": {
+        "path": "Build/stackoverflow-cachegrind-candidate-02-pairs/pair-02-baseline/capture.run-1.cachegrind.273018",
+        "sha256": "2b862395e8cb687b9f17a10120e9994012c4d417327c1548af6d9a9f392f0e21"
+      },
+      "report": {
+        "path": "Build/stackoverflow-cachegrind-candidate-02-pairs/pair-02-baseline/capture.run-1.json",
+        "sha256": "fda201729c8a3657094c63cab4100bccebb860a5640cf220146e33ca961944c4"
+      },
+      "viewport_png": {
+        "path": "Build/stackoverflow-cachegrind-candidate-02-pairs/pair-02-baseline/capture.run-1.png",
+        "sha256": "a4d0b5e1befd0af36ac5a532882e8e4ac2ad7c3f51dad6abd2b1ee965206df04"
+      },
+      "decoded_rgba_sha256": "d4934504491a1ca82aa1983e744cee0c26f0021e27a761b35eaae4315e036698",
+      "document_audit": {
+        "path": "Build/stackoverflow-cachegrind-candidate-02-pairs/pair-02-baseline/capture.run-1.audit.json",
+        "sha256": "db1a631501a6dee5535b4f2a51a52dc307091c6bdbf4f8afaf45ff12fc128752"
+      },
+      "content_validation": {
+        "path": "Build/stackoverflow-cachegrind-candidate-02-pairs/pair-02-baseline/content-validation.json",
+        "sha256": "7f92886db9761547c8c01b556f5166d77c485ca344e9d735333b44e71a8b0f46"
+      },
+      "replay_validation": {
+        "path": "Build/stackoverflow-cachegrind-candidate-02-pairs/pair-02-baseline/replay-validation.json",
+        "sha256": "8ccd095ee610391bc30ed6e7b99c7dee182bc5ae70e005824a7b33cdbde0f03b"
+      }
+    },
+    {
+      "order": 5,
+      "pair": 3,
+      "variant": "baseline",
+      "instructions": 186201592590,
+      "valid": true,
+      "process_exit_code": 0,
+      "root_pid": 279137,
+      "raw_profile": {
+        "path": "Build/stackoverflow-cachegrind-candidate-02-pairs/pair-03-baseline/capture.run-1.cachegrind.279137",
+        "sha256": "af8977bc0cf011e6610cdeb92a4e1a736f89cb62173422a127400a1ffd6e9c05"
+      },
+      "report": {
+        "path": "Build/stackoverflow-cachegrind-candidate-02-pairs/pair-03-baseline/capture.run-1.json",
+        "sha256": "69fbe0633f947a7b86905c21110800de10393975cb2d35131c46336fe15711df"
+      },
+      "viewport_png": {
+        "path": "Build/stackoverflow-cachegrind-candidate-02-pairs/pair-03-baseline/capture.run-1.png",
+        "sha256": "a4d0b5e1befd0af36ac5a532882e8e4ac2ad7c3f51dad6abd2b1ee965206df04"
+      },
+      "decoded_rgba_sha256": "d4934504491a1ca82aa1983e744cee0c26f0021e27a761b35eaae4315e036698",
+      "document_audit": {
+        "path": "Build/stackoverflow-cachegrind-candidate-02-pairs/pair-03-baseline/capture.run-1.audit.json",
+        "sha256": "db1a631501a6dee5535b4f2a51a52dc307091c6bdbf4f8afaf45ff12fc128752"
+      },
+      "content_validation": {
+        "path": "Build/stackoverflow-cachegrind-candidate-02-pairs/pair-03-baseline/content-validation.json",
+        "sha256": "7f92886db9761547c8c01b556f5166d77c485ca344e9d735333b44e71a8b0f46"
+      },
+      "replay_validation": {
+        "path": "Build/stackoverflow-cachegrind-candidate-02-pairs/pair-03-baseline/replay-validation.json",
+        "sha256": "2504dc2ea5046faf9981ccceecc0ca363f1700d56773e8c1ddcd335c75d63ea4"
+      }
+    },
+    {
+      "order": 6,
+      "pair": 3,
+      "variant": "candidate",
+      "instructions": 154094669772,
+      "valid": true,
+      "process_exit_code": 0,
+      "root_pid": 285352,
+      "raw_profile": {
+        "path": "Build/stackoverflow-cachegrind-candidate-02-pairs/pair-03-candidate/capture.run-1.cachegrind.285352",
+        "sha256": "6c6c97405d14fac9640a10f7eb5bc01f2516003f6d0eaaf1fa665751564ccf0f"
+      },
+      "report": {
+        "path": "Build/stackoverflow-cachegrind-candidate-02-pairs/pair-03-candidate/capture.run-1.json",
+        "sha256": "f3b7c55924878a37bc5e9c651f9e17878791617a86dc5159f4985a75a986e8a9"
+      },
+      "viewport_png": {
+        "path": "Build/stackoverflow-cachegrind-candidate-02-pairs/pair-03-candidate/capture.run-1.png",
+        "sha256": "a4d0b5e1befd0af36ac5a532882e8e4ac2ad7c3f51dad6abd2b1ee965206df04"
+      },
+      "decoded_rgba_sha256": "d4934504491a1ca82aa1983e744cee0c26f0021e27a761b35eaae4315e036698",
+      "document_audit": {
+        "path": "Build/stackoverflow-cachegrind-candidate-02-pairs/pair-03-candidate/capture.run-1.audit.json",
+        "sha256": "db1a631501a6dee5535b4f2a51a52dc307091c6bdbf4f8afaf45ff12fc128752"
+      },
+      "content_validation": {
+        "path": "Build/stackoverflow-cachegrind-candidate-02-pairs/pair-03-candidate/content-validation.json",
+        "sha256": "7f92886db9761547c8c01b556f5166d77c485ca344e9d735333b44e71a8b0f46"
+      },
+      "replay_validation": {
+        "path": "Build/stackoverflow-cachegrind-candidate-02-pairs/pair-03-candidate/replay-validation.json",
+        "sha256": "e33cf6b8e09865f4e5a13c5fad5190216bf9318ab488229c2fbab3ae1161ebb9"
+      }
+    }
+  ],
+  "correctness": {
+    "all_six_capture_gates_passed": true,
+    "all_six_exact_pixels_equal_first_control": true,
+    "all_six_exact_pixels_equal_uninstrumented_optimized_control": true,
+    "all_six_content_validation_objects_equal": true,
+    "viewport": [
+      1024,
+      768
+    ],
+    "decoded_rgba_sha256": "d4934504491a1ca82aa1983e744cee0c26f0021e27a761b35eaae4315e036698",
+    "viewport_png_sha256": "a4d0b5e1befd0af36ac5a532882e8e4ac2ad7c3f51dad6abd2b1ee965206df04",
+    "native_reference": {
+      "path": "Build/stackoverflow-optimized-control-smoke/capture.png",
+      "sha256": "a4d0b5e1befd0af36ac5a532882e8e4ac2ad7c3f51dad6abd2b1ee965206df04"
+    },
+    "candidate_native_comparison": {
+      "path": "Build/stackoverflow-candidate-02-smoke/reference-comparison.json",
+      "sha256": "ccd9db4fe3c39d56aa47553445338a8b5e8217d1e616fb09abe6651e399c55e7"
+    },
+    "document_ready": "complete",
+    "fully_active": true,
+    "title": "Newest Questions - Stack Overflow",
+    "url": "https://stackoverflow.com/questions",
+    "paint_commands": 759,
+    "selector_counts": {
+      "body": 1,
+      "[id^=\"question-summary-\"]": 15,
+      "img": 18,
+      "*": 3198
+    },
+    "question_ids": [
+      "question-summary-80013545",
+      "question-summary-80013538",
+      "question-summary-80013525",
+      "question-summary-80013523",
+      "question-summary-80013504",
+      "question-summary-80013502",
+      "question-summary-80013499",
+      "question-summary-80013497",
+      "question-summary-80013496",
+      "question-summary-80013493",
+      "question-summary-80013490",
+      "question-summary-80013489",
+      "question-summary-80013484",
+      "question-summary-80013479",
+      "question-summary-80013473"
+    ],
+    "body_utf8_bytes": 50138,
+    "body_sha256": "bad7d041cd4ea2ff3023e9c6f31aac08b2a0451ced7c9ef3edf1a79adcdce016",
+    "visible_images_decoded": 5,
+    "fonts_status": "loaded",
+    "allowed_unavailable_local_font_fallbacks": [
+      {
+        "family": "Segoe UI Adjusted",
+        "declared_sources": [
+          "Segoe UI"
+        ],
+        "style": "auto",
+        "weight": "auto"
+      },
+      {
+        "family": "Segoe UI Adjusted",
+        "declared_sources": [
+          "Segoe UI Italic"
+        ],
+        "style": "italic",
+        "weight": "auto"
+      },
+      {
+        "family": "Segoe UI Adjusted",
+        "declared_sources": [
+          "Segoe UI Semibold"
+        ],
+        "style": "auto",
+        "weight": "600"
+      },
+      {
+        "family": "Segoe UI Adjusted",
+        "declared_sources": [
+          "Segoe UI Semibold Italic"
+        ],
+        "style": "italic",
+        "weight": "600"
+      },
+      {
+        "family": "Segoe UI Adjusted",
+        "declared_sources": [
+          "Segoe UI Bold"
+        ],
+        "style": "auto",
+        "weight": "700"
+      },
+      {
+        "family": "Segoe UI Adjusted",
+        "declared_sources": [
+          "Segoe UI Bold Italic"
+        ],
+        "style": "italic",
+        "weight": "700"
+      },
+      {
+        "family": "Segoe UI Adjusted",
+        "declared_sources": [
+          "Segoe UI Black"
+        ],
+        "style": "auto",
+        "weight": "800"
+      },
+      {
+        "family": "Segoe UI Adjusted",
+        "declared_sources": [
+          "Segoe UI Black Italic"
+        ],
+        "style": "italic",
+        "weight": "800"
+      }
+    ],
+    "local_font_rule": "Only literal local()-only faces derived from the sealed CSS may fall back. URL-backed or ambiguous failures are rejected; font identities must match.",
+    "native_reported_error_count": 0,
+    "replay_request_count": 156,
+    "replay_request_count_per_observation": [
+      26,
+      26,
+      26,
+      26,
+      26,
+      26
+    ],
+    "live_forwarding": false,
+    "missing_required_urls": [],
+    "transport_errors": [],
+    "optional_unarchived_requests": [
+      {
+        "url": "https://stackoverflow.com/favicon.ico",
+        "status": 404,
+        "occurrences": 6
+      }
+    ],
+    "supplemental_validation": {
+      "path": "Build/stackoverflow-cachegrind-candidate-02-pairs/final-validation.json",
+      "sha256": "37c00b97243144086f4e01d36562967e71a8b6376b914512a629c371931038d6"
+    },
+    "native_font_file_identity_pin": false
+  },
+  "build_identity": {
+    "original_runtime_commit": "53906747f004c12f57b4888cc1f215bac5aa5634",
+    "baseline_runtime_description": "original runtime + shared Linux sampler-capacity correctness fix; no delimiter optimization",
+    "candidate_runtime_commit": "b42a833a9631fb4cf214c83b2922190be28a33f4",
+    "candidate_runtime_sources_sha256": {
+      "css/invalidation_plan_union.v": "b3d5f9226ffc572a1b8daff30b92d8ec9f5e6e748054ef51f0e43060f674ccbc",
+      "css/parser_core.v": "f5237c2f3c21485584928632a7a4c815deca0c86ac96695748d7228c63a80d02",
+      "css/parser_rules_selectors.v": "3aa54483e2160d82444a75ef8f68c5b155d63803664911565a935b28fec98a41"
+    },
+    "candidate_runtime_patch_sha256": "b2b6fbbcd2c27cf39ff52c94ac27d6284216ea751bcfc9a15ab08f666063f2cd",
+    "shared_linux_adapter": {
+      "source_sha256": "8ecddc07051b443acde66444c37f2a498c9a2150cc882280d867e0e451b0c25d",
+      "staged_gg_sha256": "b2611a2cb69d2ffc12282291eb34fda0d4eaabe11f3ccd4b0a21eb741ba091a5"
+    },
+    "baseline_binary": {
+      "path": "Build/linux/vox-control",
+      "sha256": "d2be3ee812560ea03132059d3975776d409e2523c65433ddc239331b3134f0fc",
+      "bytes": 52501984
+    },
+    "candidate_binary": {
+      "path": "Build/linux/vox-candidate-02",
+      "sha256": "0e9b05767b4312cac23ab21ca39ffc53828d6d2f6212d39f3fd56d7fa33020fd",
+      "bytes": 52498288
+    },
+    "baseline_generated_c_sha256": "2816b296550c986f12244ef86f8fc7dea85816c4468a5bf87f0f04e3ca830ed7",
+    "candidate_generated_c_sha256": "188872845f658f06a7a02bc9bbf4e844c3949f9d2d9cf49f703e4ba84a42aee8",
+    "common_native_inputs": {
+      "flags_sha256": "8decc61cc0c1c19b7116a502f9b278712d3157cb08e4632f34671de543eaa663",
+      "optimization_flags": [
+        "-O2",
+        "-gline-tables-only"
+      ],
+      "frontend_gc": "boehm, dynamic system libgc",
+      "helper_inputs_sha256": {
+        "/tmp/v_0/v3_thirdparty_objs/gc_boehm_helpers_o_3ea9fdc76ee0df6f.o": "a2a2f5a29d22bc889b3cd4906f619a3b3e9f25982785ff390d9d1a0b054506be",
+        "/tmp/v_0/v3_thirdparty_objs/segfault_handler_nix_o_6d9273ec35cd4aba.o": "a1bd6995bb88fcc9405a11e56638ad2b871a69b987d0488253e662cc6c772da0",
+        "/tmp/v_0/v3_thirdparty_objs/execute_capture_nix_o_71288a7db08ec743.o": "951581adce51c3551bb095cc3d827d3e63cdeedd28d2c48b27b25bc42bccb5b6",
+        "/tmp/v_0/v3_thirdparty_objs/thread_helper_o_cb22bf2a30178d08.o": "ad86c9238c173045d758a8c099e77c966fbd1cda76276bc3cc77260729c0ad28",
+        "/workspace/scratch/d5de53cf8754/v-compiler/vlib/fontstash/fontstash_impl.c": "cb0952ee6ed78bb7f9712ef7b499a71124a16aaebbcb1cea1018deadfd7fc512"
+      },
+      "static_archives_sha256": {
+        "Build/linux/native/platform.a": "a7c09d8c2d0270acb8026b0878a28cebfd6c5a87ed9bda14e37c4c0848ce6f99",
+        "Build/linux/native/gfxfont.a": "bd3cb2c966c040a91987b9e9e19280e01092fb4b86beaff4ce4603d0bfc5f624",
+        "Build/linux/native/skia.a": "2ecf357de3ff7cdde76bd81d12c406f7ac712cd553aeb1c533245a08a3ed6e07",
+        "Build/linux/native/stbi.a": "fa09960835cddc4d152d29501bdc4196e68a7b857338c3049db89fa0405d3884",
+        "Build/libregex/linux/libregex_native.a": "be7b8fe7a65ac4afbaed9aacbbe12dd3a0fb98b0ab895e274c2539d9851847b0",
+        "Build/deps/skia/out/Release/libskia.a": "192cd257814b01169db1a4c3731564c3104785596ab7f47542e0e55a3da34950",
+        "Build/deps/skia/out/Release/libskcms.a": "34335cb50531ab591a795e746fe37db5fe34fa769a11db0e9d72e908d47e1b79"
+      },
+      "dynamic_libraries_sha256": {
+        "/usr/lib/x86_64-linux-gnu/libgc.so.1.5.3": "1e3eab1378bd6be4e1e383f50e42dc7bb6d03c9fe5cd7dd35f046cef9cebbbee",
+        "/usr/lib/x86_64-linux-gnu/libicuuc.so.74.2": "7560aadde38e5f4237a47a1ddd5891f9b36768a77a60faae30beee003ac01901",
+        "/usr/lib/x86_64-linux-gnu/libjavascriptcoregtk-4.1.so.0.10.11": "713befb6ed6dfe8672a44604cfce6c7899f4b81ee57c33983233c4c781295e83",
+        "/usr/lib/x86_64-linux-gnu/libgobject-2.0.so.0.8000.0": "99bf0727e0ca4faf12ab09b753b3d03294562c29c559b970c4dad435f9ec2bc6",
+        "/usr/lib/x86_64-linux-gnu/libglib-2.0.so.0.8000.0": "42467d0dbcc0a6c9e0a31f05a5944095504ce98f093c3fe0825f0a1533fa8207",
+        "/usr/lib/x86_64-linux-gnu/libz.so.1.3": "9b64150b28505a33d6bc3ecf709c279f6de97a1c184dbda65d06ee4537f6d286",
+        "/usr/lib/x86_64-linux-gnu/libXrandr.so.2.2.0": "bc6120a734d52e7f5e3611334e9f3cff0b3ce1b129bb20b6412ce8f0f62c049d",
+        "/usr/lib/x86_64-linux-gnu/libm.so.6": "e9c4b28d340e415b8137480ec442662f981e1399386c5931dae0e886e3639e91",
+        "/usr/lib/x86_64-linux-gnu/libfontconfig.so.1.12.1": "a94b4059b27766f563894c8f7e61762b6f6b2e25c59ef36b730164d4b75c6c98",
+        "/usr/lib/x86_64-linux-gnu/libfreetype.so.6.20.1": "c14c53c5baff12afafb610c6312fb879e9bb77e80dd42e27504d52d6d8bcd059",
+        "/usr/lib/x86_64-linux-gnu/libharfbuzz.so.0.60830.0": "4562cfcfd18935324ba3ac74a944898b867ab87a56e925ab3e351ba773f1513e",
+        "/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.33": "1fd75fe70354a416d75aef22bcae68c47bd25d20e2d0568c30b1a9838cf62f11",
+        "/usr/lib/x86_64-linux-gnu/libicui18n.so.74.2": "3550b194eb2cf2e6f798f033eb9ca279d498c21296b4a18790ce158d2023e47b",
+        "/usr/lib/x86_64-linux-gnu/libicudata.so.74.2": "ddbb3718b8bd9cbd780e5ab08b4503c30a6c4fa0706ebe5d074ed6b596c1714e",
+        "/usr/lib/x86_64-linux-gnu/libcurl.so.4.8.0": "eac8f2e9aa13017db58f59ea8608fef7564d7421bd1bab35a7ce5c41ba326b45",
+        "/usr/lib/x86_64-linux-gnu/libEGL.so.1.1.0": "875ecbb2a07d60e32216c9f102965abc1e9cc1da7789558e2e9b8b9c107e231d",
+        "/usr/lib/x86_64-linux-gnu/libGLESv2.so.2.1.0": "4d410c7e883b6e4bab42fafae7ebad6ae5702883bfce07a5e6ffdf4c3fec433b",
+        "/usr/lib/x86_64-linux-gnu/libssl.so.3": "8e49cebd373d90b55f3626da71dd97fe8e95c68dc4c064d8962b27907690736e",
+        "/usr/lib/x86_64-linux-gnu/libcrypto.so.3": "6a66c3ba6b3749aacc9497973fff00f6ba61c703ba7015d0d7ab3fd9510974b6",
+        "/usr/lib/x86_64-linux-gnu/libwoff2dec.so.1.0.2": "8079e4fd739be1012ea096233d9d1198994e77dbdcb9145af3f6d777042b1ce8",
+        "/usr/lib/x86_64-linux-gnu/libwoff2common.so.1.0.2": "a33d24cab3be64d29777d2d8217a3f6b0aa82a648df410f018e7452b0ef0c1f0",
+        "/usr/lib/x86_64-linux-gnu/libbrotlidec.so.1.1.0": "64d8a5019d4c294b89fde1193343ea324bbd8603652554e5545f0a01595fa2c5",
+        "/usr/lib/x86_64-linux-gnu/libbrotlicommon.so.1.1.0": "a91ead095d2c80520c55a89057bbe10b031a075340442e63f44b310f93883a1b",
+        "/usr/lib/x86_64-linux-gnu/libpng16.so.16.43.0": "eac265b3506df0d9110dd9143e1d0503e2daabafe1d98b23fac8ca17b71d1f6b",
+        "/usr/lib/x86_64-linux-gnu/libjpeg.so.8.2.2": "ac09f2cd6f8a3b8e3cb123999ce275f9bcbe31c6cf9e20212c8f297772591d15",
+        "/usr/lib/x86_64-linux-gnu/libwebp.so.7.1.8": "9664db51ec65209078abbb8bc7b699888a43ecc2f3c74ce8dd4e497175aa5bf0",
+        "/usr/lib/x86_64-linux-gnu/libwebpdemux.so.2.0.14": "f31bf01638c352533e18720676db66fcb190a622db5bf617558a49bc445d0b83",
+        "/usr/lib/x86_64-linux-gnu/libX11.so.6.4.0": "c5b5d782bd9cab3420a62df88f5c991507edf3331a89f98464ddbc538c37b879",
+        "/usr/lib/x86_64-linux-gnu/libXi.so.6.1.0": "a51348c921ce1a35123fa7c99dc59bfd3e815be6829874fe15ae55172901d3e4",
+        "/usr/lib/x86_64-linux-gnu/libXcursor.so.1.0.2": "09bd5941a53ee7fb06898fa066709cf098df8e33a45042e065d2f8461d92672c",
+        "/usr/lib/x86_64-linux-gnu/libGL.so.1.7.0": "67f471213576d225d38347a0b6d2a08a231980685301ff6461bd74d3994e5027",
+        "/usr/lib/x86_64-linux-gnu/libgcc_s.so.1": "d93224d2b0dab4247598be683adca02f5cf00586f99c187579cd7e92058fb7cb",
+        "/usr/lib/x86_64-linux-gnu/libc.so.6": "8db37cf3f2169f59a0f07ef1fea308c35656668c64c8ff294e1860f4121eb161",
+        "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2": "cd4df4f3c7b83673d61189bf2eaebd33ca4f2853ab9772b8a25e025ef99b1e81",
+        "/usr/lib/x86_64-linux-gnu/libatomic.so.1.2.0": "9d8a34468e614a71a6427dbabb0ac24eb8cb1e324dc6aa3bf95eb6f59201f000",
+        "/usr/lib/x86_64-linux-gnu/libgio-2.0.so.0.8000.0": "d8c4cf698e9b8790584cc5ede813a86ec4f041c0d58daa452b72431572685a87",
+        "/usr/lib/x86_64-linux-gnu/libsystemd.so.0.38.0": "bdf59c828b547bcdbe7b3576c0810d9d9d2e982d8b61b365812542da6a4c4a99",
+        "/usr/lib/x86_64-linux-gnu/libffi.so.8.1.4": "00f593fe192f2851b8ce23b25cec2488d769beb5a8f63e8c9e563071e1075153",
+        "/usr/lib/x86_64-linux-gnu/libpcre2-8.so.0.11.2": "e00576d71d81d3ba0cfa4903c835a44a8723aac96f72f79ff75200b4cff9071b",
+        "/usr/lib/x86_64-linux-gnu/libXext.so.6.4.0": "2907e6a996465de5b32a0dd10534d4416b87f1dee5670aaa7b19301a1fc93f44",
+        "/usr/lib/x86_64-linux-gnu/libXrender.so.1.3.0": "250977e0e004b6c0556144c3e683487063b4582dc83d205196ec3aa65d54e2c6",
+        "/usr/lib/x86_64-linux-gnu/libexpat.so.1.9.1": "7ae38be4b2f909d25c5ca3107ed04bc3128a8a24ea7adfe30102c3f04089c9c3",
+        "/usr/lib/x86_64-linux-gnu/libbz2.so.1.0.4": "218c4abdabce31161f3c2778762986d1fe06633705c7eb004a740946a5ccdfff",
+        "/usr/lib/x86_64-linux-gnu/libgraphite2.so.3.2.1": "fcfaf843b25b58b88319ced52f826fc8213a661f3693c916f88641eddffe05b8",
+        "/usr/lib/x86_64-linux-gnu/libnghttp2.so.14.26.0": "398c6d2025210279f4c7413ebdb7f4c63bc5afda5ec3b1ccc58885a65acc2b78",
+        "/usr/lib/x86_64-linux-gnu/libidn2.so.0.4.0": "6e632fd9a3125db60bbc623719bbc17b0470330321c5b1c57f1ff7190e5551ad",
+        "/usr/lib/x86_64-linux-gnu/librtmp.so.1": "15a2a75e8c437b9c99971b5ee10278ab110beef1a56d1d9e5d6759ea140e98ac",
+        "/usr/lib/x86_64-linux-gnu/libssh.so.4.9.6": "ad1513debc90c2662c2c63b587cd815b118b03b3a983f7fdbd89968354674d63",
+        "/usr/lib/x86_64-linux-gnu/libpsl.so.5.3.4": "ae6c5a9aecc249fc66e03c16ec6c4385d09d7e12e0ea7694bb831ab4fee8133c",
+        "/usr/lib/x86_64-linux-gnu/libgssapi_krb5.so.2.2": "b9a20df712d206654477c079f03b568276933e91cbe237e62af791f0f3ab8d8b",
+        "/usr/lib/x86_64-linux-gnu/libldap.so.2.0.200": "4a0664ab6a8a66c685e78d5604b79df330f5710f0c5e2c382536a8325dc4c2a4",
+        "/usr/lib/x86_64-linux-gnu/liblber.so.2.0.200": "6f6935b26c962d5b51ef2011332472cfd96ff244a4edc9d47120be6faa70e602",
+        "/usr/lib/x86_64-linux-gnu/libzstd.so.1.5.5": "0a2128bc10841fb29e76d08d945864dfb0b6a66da5df6df5d8299197439e54bb",
+        "/usr/lib/x86_64-linux-gnu/libGLdispatch.so.0.0.0": "ca01a91104c8887b3d8e59499b58cbb8f604cc285666b50d9ec888eb0c915182",
+        "/usr/lib/x86_64-linux-gnu/libsharpyuv.so.0.0.1": "b2e62799e5dbd783a0671d53be99f7c6489567a5332a1e8f471e6bb250f294dc",
+        "/usr/lib/x86_64-linux-gnu/libxcb.so.1.1.0": "7958a0136b121bdc4c708968569ad152a9ed208ab026e2537b1005dde64ca440",
+        "/usr/lib/x86_64-linux-gnu/libXfixes.so.3.1.0": "89e5897f438456013d2297850a7558cd28c9ad1f6978447197568949fb6a0fd9",
+        "/usr/lib/x86_64-linux-gnu/libGLX.so.0.0.0": "16fc8a37eea9210dc83c57eeff5aedc10ab4c6673f2f97e8bb6ee103df657b40",
+        "/usr/lib/x86_64-linux-gnu/libgmodule-2.0.so.0.8000.0": "f8445c01952fd3ff0bb4f17f73be821af3e4b9b61546ff517392e9baeb8f2126",
+        "/usr/lib/x86_64-linux-gnu/libmount.so.1.1.0": "43831ab1f85948e5599c5c0295d87ad6d03e3d58b801534abdf4cd5d266388de",
+        "/usr/lib/x86_64-linux-gnu/libselinux.so.1": "0ec0843463f90e227b0e138e1f379774f50b5514bd7f5dbd4c8a87aca0aa6670",
+        "/usr/lib/x86_64-linux-gnu/libcap.so.2.66": "0e62ac3921a103914968b82c8c8514f34a056f4c9ac3d1ab927ca35de383ae02",
+        "/usr/lib/x86_64-linux-gnu/libgcrypt.so.20.4.3": "f207cbaa2f5ad2acb0a0991f79c2329808493af500ca8cf25dfc386e6639bf1b",
+        "/usr/lib/x86_64-linux-gnu/liblz4.so.1.9.4": "40bffd0a098387368b16b992abd5f7cf43c0fa2f05cabe5a6d483719554adfda",
+        "/usr/lib/x86_64-linux-gnu/liblzma.so.5.4.5": "a9793942a8a5f6f4d0f523ef9e0a5be4f0033f2c6c28520cd2b4e706d53c6e17",
+        "/usr/lib/x86_64-linux-gnu/libunistring.so.5.0.0": "7bcf825cd449892db5105ad2aed91dcf94a27b796426600c765720c584c54dd1",
+        "/usr/lib/x86_64-linux-gnu/libgnutls.so.30.37.1": "96137275400f39510c9a533c6ad8a921e94266e664e7e09c9ad6ea9f23277c23",
+        "/usr/lib/x86_64-linux-gnu/libhogweed.so.6.8": "c3c606139d4f7776efa4dbd4a6b62e30c916b07a0cafd8c3ef173d6f093607e3",
+        "/usr/lib/x86_64-linux-gnu/libnettle.so.8.8": "a245ed916229583d6fe0b07657b3ed945bc148c28cc08b5266295f620d2b91cc",
+        "/usr/lib/x86_64-linux-gnu/libgmp.so.10.5.0": "0ccdfb6d6f5c039465f6d002cf7e4c072d48ac6a2cffc8dd6c748dec31592804",
+        "/usr/lib/x86_64-linux-gnu/libkrb5.so.3.3": "52c143c9c77a223a4dac5449eac41fd2490e37c8a30430f1559c1421f4f8ed73",
+        "/usr/lib/x86_64-linux-gnu/libk5crypto.so.3.1": "8394027f2be7c2cc7b2da4797476a8b688a21f75ee231941fa2df8d00ba79d08",
+        "/usr/lib/x86_64-linux-gnu/libcom_err.so.2.1": "022943b3b11c860b049bce41342f1c2594941b7b401d95dfdf235521099fee08",
+        "/usr/lib/x86_64-linux-gnu/libkrb5support.so.0.1": "8e1ef5a40f7b0d5b0fbcd6e4f28dd50b263650338a2bb72503be34632f3629d6",
+        "/usr/lib/x86_64-linux-gnu/libsasl2.so.2.0.25": "a0f410ad093236856eee59c4ff2838dc04d932ea0993400f23ed77d67d85af34",
+        "/usr/lib/x86_64-linux-gnu/libXau.so.6.0.0": "8040da3f8516c1acfe39f04ff022480cdb273705ba5e7a4ca70bbdb1527cd67a",
+        "/usr/lib/x86_64-linux-gnu/libXdmcp.so.6.0.0": "667d97d6da16016400ab10de9f83ef4ab209ceb6adf68ff9650225ec13e723b0",
+        "/usr/lib/x86_64-linux-gnu/libblkid.so.1.1.0": "f3d6283f6b58de134f0f13094deac9c3af6764923c62e85f08a5780ad4ebe039",
+        "/usr/lib/x86_64-linux-gnu/libgpg-error.so.0.34.0": "6cb18a007bfcb623029f4528a36b46578fea7dc34c2b505b8e6e0d99e6348cd1",
+        "/usr/lib/x86_64-linux-gnu/libp11-kit.so.0.3.1": "c6b469a006685ebf2075e200180c3b21f41b88ad722c5697d736ea558cfe3ea1",
+        "/usr/lib/x86_64-linux-gnu/libtasn1.so.6.6.3": "7c9c7830afbaac7b07ec21ddaa6b4d606423432c264efd2636e8ca9734b4d7b6",
+        "/usr/lib/x86_64-linux-gnu/libkeyutils.so.1.10": "f48214417757f18793ed6e180cc14ee1d6f04252a518fc7270e8ca1d0b4260fe",
+        "/usr/lib/x86_64-linux-gnu/libresolv.so.2": "4086b12d3b95ef6f02373b30b88444e7d79fb8693ed1cfeaa5162e6959878912",
+        "/usr/lib/x86_64-linux-gnu/libbsd.so.0.12.1": "e86cd4f0019f42c2ba5e60602e0edc8694d2948377d98c3654d0f6bddb5254bb",
+        "/usr/lib/x86_64-linux-gnu/libmd.so.0.1.0": "423e18586b6ea740f4465afd64f7a9a4cb7264ed979c8e7256f9085af5345fef"
+      },
+      "dynamic_library_count": 85,
+      "baseline_candidate_input_equality": {
+        "helper_inputs_equal": true,
+        "native_archives_equal": true,
+        "native_flags_equal": true,
+        "compiler_equal": true,
+        "tested_runtime_sources_equal": {
+          "boehm-03": true,
+          "none-02": true
+        }
+      },
+      "input_equality_receipt": {
+        "path": "Build/linux/candidate-02-build-input-comparison.json",
+        "sha256": "e89fc7f2451bce12f644c9d5d36bc04e5f7bb4404ca3d6550e021055aed41a0c"
+      }
+    },
+    "toolchain": {
+      "v_commit": "92cf0f51a5b5f1c6004084aad5bc6b17151f18e6",
+      "versions": {
+        "v": "V 0.5.2 92cf0f5",
+        "clang": "Ubuntu clang version 18.1.3 (1ubuntu1)\nTarget: x86_64-pc-linux-gnu\nThread model: posix\nInstalledDir: /usr/bin",
+        "rust": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+        "valgrind": "valgrind-3.22.0"
+      },
+      "cxx": "c++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+      "pkg_config_versions": {
+        "javascriptcoregtk-4.1": "2.52.3",
+        "glib-2.0": "2.80.0",
+        "fontconfig": "2.15.0",
+        "harfbuzz": "8.3.0",
+        "icu-uc": "74.2",
+        "icu-i18n": "74.2",
+        "egl": "1.5",
+        "glesv2": "3.2",
+        "skia": "144"
+      },
+      "build_versions_match_post_build_receipt": true
+    },
+    "receipts": [
+      {
+        "path": "Build/linux/control-build-provenance.json",
+        "sha256": "5120558c40dc5d974c6399cb3ed3a3a462092c3130fdd881e176a6150cf84545"
+      },
+      {
+        "path": "Build/linux/candidate-02-generation-result.json",
+        "sha256": "a809722b160a10af6fdc3587ef66dbed9e373e1ac958540f11c63c10145d742a"
+      },
+      {
+        "path": "Build/linux/candidate-02-native-result.json",
+        "sha256": "3ab353c87afb198db6ba8316256d907d791aa73220fc5df8633b957dd19315d8"
+      },
+      {
+        "path": "Build/linux/host-toolchain-summary.json",
+        "sha256": "f8f66aac14c49540ef7f9fcc159801ff64c51602507e1b7a127f6e43e0a2c92f"
+      }
+    ]
+  },
+  "fixture": {
+    "archive": "Tests/Browser/Brave/sites/stackoverflow",
+    "url": "https://stackoverflow.com/questions",
+    "title": "Newest Questions - Stack Overflow",
+    "manifest_sha256": "86a9d1fc61aeebf0c382e15105a0aaec5926ddef0a4841ca6c8be077622d55e6",
+    "html_sha256": "592d214f1f87bc26c3aa98ca70bb609dd03e0dad76b5558828e967d7ada7a8e1",
+    "html_bytes": 282540,
+    "workload": "Frozen guest DOM; scripts removed; original resource bytes",
+    "source_document_request_method": "POST",
+    "replay_document_request_method": "GET",
+    "question_ids": [
+      "question-summary-80013545",
+      "question-summary-80013538",
+      "question-summary-80013525",
+      "question-summary-80013523",
+      "question-summary-80013504",
+      "question-summary-80013502",
+      "question-summary-80013499",
+      "question-summary-80013497",
+      "question-summary-80013496",
+      "question-summary-80013493",
+      "question-summary-80013490",
+      "question-summary-80013489",
+      "question-summary-80013484",
+      "question-summary-80013479",
+      "question-summary-80013473"
+    ],
+    "required_stylesheets": [
+      "https://accounts.google.com/gsi/style",
+      "https://stackoverflow.com/Content/Shared/Channels/channels.css?v=d431b1be5a03",
+      "https://stackoverflow.com/Content/Shared/stacks.css?v=b2264ccf0463",
+      "https://stackoverflow.com/Content/Sites/stackoverflow/primary.css?v=d25e8336a53c"
+    ],
+    "local_font_fallback_sources": {
+      "segoe ui adjusted": [
+        "Segoe UI",
+        "Segoe UI Black",
+        "Segoe UI Black Italic",
+        "Segoe UI Bold",
+        "Segoe UI Bold Italic",
+        "Segoe UI Italic",
+        "Segoe UI Semibold",
+        "Segoe UI Semibold Italic"
+      ]
+    },
+    "archived_response_count": 56,
+    "viewport": [
+      1024,
+      768
+    ],
+    "manifest_path": "Tests/Browser/Brave/sites/stackoverflow/manifest.json",
+    "capture_report": {
+      "path": "Tests/Browser/Brave/sites/stackoverflow/capture.json",
+      "sha256": "33ee4a511c18c0a54d5062e38750c6987f5f5fda08241acf627e539dfa52b18b"
+    },
+    "archived_reference_png": {
+      "path": "Tests/Browser/Brave/sites/stackoverflow/live.png",
+      "sha256": "90b378d7cbb9e884fb8d17b91ef6bf3b9eb5c69f5d8629deb9c5d279897175f4"
+    }
+  },
+  "observer": {
+    "tooling_commit": "bf6c5c75a1d60af4abe39fc5f93115389e720c98",
+    "documentation_commit_at_measurement": "79fcd5a7d10970154f5534151cfc485c90dd9d11",
+    "sources_sha256": {
+      "stackoverflow_browser_instructions.py": "65b2199167b6e9b7a5bfcfc4596c684e1ea374ce94b2d5ed4211cc676aa7002e",
+      "measure_browser_instructions.py": "2827e5b94c68fe6ce72e7e8492e8c989ab1ee79387da4b0d5390281eb5b8609c",
+      "linux_instruction_counts.py": "7fdb36fccc8043cb2ddc0ec3bb190970c93fc4bfd6e9bef0811b5b1db3f19227",
+      "process_instruction_counts.py": "bd127f0c07d179d372f5929a726f568e3061fa4afa6c3213d2f26b4e11aa770c",
+      "page_archive.py": "1479f66d90d39e36c25a1587fa6b8da6a364ee199ba900f223000ac80f537a9e"
+    },
+    "source_hashes_unchanged_after_cohort": true,
+    "valgrind": {
+      "path": "/usr/bin/valgrind",
+      "sha256": "4652774bd116cb49951ef74115ad4237cad5021b2bd4d80002f09d986ec438b9",
+      "version": "valgrind-3.22.0",
+      "runtime_files_sha256": {
+        "/usr/bin/valgrind": "4652774bd116cb49951ef74115ad4237cad5021b2bd4d80002f09d986ec438b9",
+        "/usr/bin/valgrind.bin": "def5fdcf6ae64a4d3e6af3786b622978d8313e0734ecf3f6cbe71d8be9e274c8",
+        "/usr/libexec/valgrind/cachegrind-amd64-linux": "38093b3bf8e9ffecb559a333c896a2fd2a2343bb79c3295f31c36475914deebf",
+        "/usr/libexec/valgrind/vgpreload_core-amd64-linux.so": "87edd6ad90b12bb5fe58f2ea2235db5b6a3d637657488f3e06d07e482354a8c5"
+      }
+    },
+    "backend_real_probe": {
+      "cachegrind_true_ir": 194953,
+      "callgrind_true_ir": 192578,
+      "signal_terminated_profile_rejected": true,
+      "credit_toward_render_target": false,
+      "receipt": {
+        "path": "Build/linux-cachegrind-backend-probes/result.json",
+        "sha256": "d3f477539f93b0cb6522bc3e9133d03073342d88c910103800f96808b4d21009"
+      }
+    }
+  },
+  "host": {
+    "host_toolchain_snapshot": {
+      "recorded_utc": "2026-10-31T10:53:58.025424+00:00",
+      "uname": {
+        "system": "Linux",
+        "node": "6b86abc2b827",
+        "release": "6.18.57",
+        "version": "#1 SMP Tue Oct 20 21:56:04 UTC 2026",
+        "machine": "x86_64",
+        "processor": "x86_64"
+      },
+      "os_release": {
+        "PRETTY_NAME": "Ubuntu 24.04.3 LTS",
+        "NAME": "Ubuntu",
+        "VERSION_ID": "24.04",
+        "VERSION": "24.04.3 LTS (Noble Numbat)",
+        "VERSION_CODENAME": "noble",
+        "ID": "ubuntu",
+        "ID_LIKE": "debian",
+        "HOME_URL": "https://www.ubuntu.com/",
+        "SUPPORT_URL": "https://help.ubuntu.com/",
+        "BUG_REPORT_URL": "https://bugs.launchpad.net/ubuntu/",
+        "PRIVACY_POLICY_URL": "https://www.ubuntu.com/legal/terms-and-policies/privacy-policy",
+        "UBUNTU_CODENAME": "noble",
+        "LOGO": "ubuntu-logo"
+      },
+      "logical_cpu_count": 9,
+      "affinity_cpu_count": 9,
+      "cpu_quota": "800000 100000",
+      "memory_limit_bytes": 8589934592,
+      "versions": {
+        "v": "V 0.5.2 92cf0f5",
+        "clang": "Ubuntu clang version 18.1.3 (1ubuntu1)\nTarget: x86_64-pc-linux-gnu\nThread model: posix\nInstalledDir: /usr/bin",
+        "rust": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+        "valgrind": "valgrind-3.22.0"
+      },
+      "v_commit": "92cf0f51a5b5f1c6004084aad5bc6b17151f18e6",
+      "pkg_config_versions_at_native_build": {
+        "javascriptcoregtk-4.1": "2.52.3",
+        "glib-2.0": "2.80.0",
+        "fontconfig": "2.15.0",
+        "harfbuzz": "8.3.0",
+        "icu-uc": "74.2",
+        "icu-i18n": "74.2",
+        "egl": "1.5",
+        "glesv2": "3.2",
+        "skia": "144"
+      },
+      "native_optimization_flags": [
+        "-O2",
+        "-gline-tables-only"
+      ],
+      "frontend_gc": "boehm, dynamic system libgc",
+      "current_versions_match_native_build_receipt": true
+    },
+    "cohort_context": {
+      "launch": {
+        "recorded_at_unix": 1793444093.8640242,
+        "recorded_at_utc": "2026-10-31T10:54:53.864024+00:00",
+        "cgroup_current_bytes": 2715594752,
+        "cgroup_limit_bytes": 8589934592,
+        "cpu_and_loadavg_at_launch": null,
+        "note": "CPU/load were not sampled at launch; later measurements are labelled by their actual observation time"
+      },
+      "snapshots": [
+        {
+          "observed_at_unix": 1793444907.3637006,
+          "observed_at_utc": "2026-10-31T11:08:27.363701+00:00",
+          "phase": "during cohort after first control; not a launch-time CPU/load snapshot",
+          "cohort_elapsed_seconds": 813.4996764659882,
+          "logical_cpu_count": 9,
+          "affinity_cpu_count": 9,
+          "affinity_cpu_ids": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ],
+          "loadavg_1_5_15": [
+            1.20947265625,
+            1.1357421875,
+            1.33203125
+          ],
+          "machine": "x86_64",
+          "kernel_release": "6.18.57",
+          "cpu_max": "800000 100000",
+          "cpuset_effective": "0-8",
+          "memory_current_bytes": 4372832256,
+          "memory_max_bytes": 8589934592
+        },
+        {
+          "observed_at_unix": 1793447607.6831403,
+          "observed_at_utc": "2026-10-31T11:53:27.683140+00:00",
+          "phase": "after completed cohort and outer guard exit",
+          "cohort_elapsed_seconds": 3513.81911611557,
+          "logical_cpu_count": 9,
+          "affinity_cpu_count": 9,
+          "affinity_cpu_ids": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ],
+          "loadavg_1_5_15": [
+            0.79638671875,
+            0.974609375,
+            1.04248046875
+          ],
+          "machine": "x86_64",
+          "kernel_release": "6.18.57",
+          "cpu_max": "800000 100000",
+          "cpuset_effective": "0-8",
+          "memory_current_bytes": 2813960192,
+          "memory_max_bytes": 8589934592
+        }
+      ],
+      "native_latency_claim": false,
+      "measurement_control": "No profiler queries, dumps, collection toggles or source edits",
+      "completed_guard": {
+        "path": "Build/stackoverflow-cachegrind-candidate-02-pairs-guard.json",
+        "reason": "completed",
+        "child_exit_code": 0,
+        "elapsed_seconds": 3485.400101168001,
+        "observed_peak_rss_bytes": 2264420352
+      },
+      "activity_note": "No heavy build, test suite, or other browser/profile work overlapped this acceptance cohort. Lightweight existing-log status reads and two completed-profile streaming reads (~0.56 s total) occurred; no running profiler was queried."
+    }
+  },
+  "run_configuration": {
+    "command": [
+      "python3",
+      "tools/stackoverflow_browser_instructions.py",
+      "--binary",
+      "Build/linux/vox-control",
+      "--candidate",
+      "Build/linux/vox-candidate-02",
+      "--counter-backend",
+      "cachegrind",
+      "--pairs",
+      "3",
+      "--required-reduction",
+      "0.15",
+      "--output",
+      "Build/stackoverflow-cachegrind-candidate-02-pairs",
+      "--timeout",
+      "1800"
+    ],
+    "environment": {
+      "PATH": "/root/.codex/tmp/arg0-linux/codex-arg0rrGgBQ:/opt/codex/codex-path:/opt/codex/runtimes/codex-primary-runtime/dependencies/bin/override:/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin:/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin:/opt/codex/runtimes/codex-primary-runtime/dependencies/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/codex/runtimes/codex-primary-runtime/dependencies/bin/fallback",
+      "HOME": "/root",
+      "LANG": "C.UTF-8",
+      "LC_ALL": "C.UTF-8",
+      "VOX_PROXY": "socks5h://127.0.0.1:34765",
+      "SSL_CERT_FILE": "Build/stackoverflow-cachegrind-candidate-02-pairs/replay/cert.pem",
+      "NO_PROXY": "",
+      "no_proxy": "",
+      "GC_MARKERS": "1",
+      "LIBGL_ALWAYS_SOFTWARE": "1",
+      "LP_NUM_THREADS": "1",
+      "GALLIUM_DRIVER": "llvmpipe",
+      "MESA_SHADER_CACHE_DISABLE": "true",
+      "LADYBIRD_ENABLE_SNAPSHOT_CACHE": "0",
+      "VOX_COOKIE_FILE": ""
+    },
+    "fresh_xvfb_each_observation": true,
+    "xvfb_screen": "1280x1024x24",
+    "fresh_profile_and_cache_each_observation": true,
+    "viewport": [
+      1024,
+      768
+    ],
+    "native_window_chrome_pixels": 84,
+    "settle_seconds": 0,
+    "per_observation_timeout_seconds": 1800,
+    "outer_guard": {
+      "command": [
+        "python3",
+        "tools/stackoverflow_browser_instructions.py",
+        "--binary",
+        "Build/linux/vox-control",
+        "--candidate",
+        "Build/linux/vox-candidate-02",
+        "--counter-backend",
+        "cachegrind",
+        "--pairs",
+        "3",
+        "--required-reduction",
+        "0.15",
+        "--output",
+        "Build/stackoverflow-cachegrind-candidate-02-pairs",
+        "--timeout",
+        "1800"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 2264420352,
+      "elapsed_seconds": 3485.400101168001,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "cleanup": {
+      "observed_at_utc": "2026-10-31T11:53:27.684475+00:00",
+      "remaining_matching_processes": [],
+      "clean": true,
+      "outer_guard_exit_code": 0
+    }
+  },
+  "tests": {
+    "tooling": {
+      "status": "passed",
+      "total": 78,
+      "passed": 76,
+      "skipped": 2,
+      "skip_reason": "Existing macOS integration tests are unavailable on Linux",
+      "child_exit_code": 0,
+      "observed_unittest_summary": "Ran 78 tests; OK (skipped=2)",
+      "guard_receipt": {
+        "path": "Build/linux-cachegrind-full-tests.json",
+        "sha256": "5ec95834be384900b19eb41a7f7531a49bf463a0853990f23690c370b37b576d"
+      }
+    },
+    "focused_runtime": {
+      "status": "passed",
+      "modes": [
+        {
+          "gc": "boehm",
+          "test_functions_passed": 17,
+          "generated_c_sha256": "94f13320f692512a751aea93f54fa3e490d0771e67212868136779f762e6f2ea",
+          "binary_sha256": "e5bf66543694d0df2d053f913f0d42779405b5572fa1d7b14891d75b7e97b0cf",
+          "generate_exit": 0,
+          "native_compile_exit": 0,
+          "run_exit": 0,
+          "buffer_codegen_checks": {
+            "leaf_slices_live_span_before_clone": true,
+            "nested_capacity_bounded_at_16384": true,
+            "destination_uses_bounded_capacity": true
+          }
+        },
+        {
+          "gc": "none",
+          "test_functions_passed": 17,
+          "generated_c_sha256": "70c59331190baf74f21a55f0f89aa7b9d9aebeb9e1b812e460aaff538a559987",
+          "binary_sha256": "ceeab99576b5d25c9a41c5ecd6cb1e05338fcd3a2d79184be50cf37692dedb20",
+          "generate_exit": 0,
+          "native_compile_exit": 0,
+          "run_exit": 0,
+          "buffer_codegen_checks": {
+            "leaf_slices_live_span_before_clone": true,
+            "nested_capacity_bounded_at_16384": true,
+            "destination_uses_bounded_capacity": true
+          }
+        }
+      ],
+      "receipt": {
+        "path": "Build/linux/focused-css-test-results-candidate-02.json",
+        "sha256": "b1a90a3383bd6d59b4fb951b6b3b45d3c4ab7aba384ceb2a556a15047d63c165"
+      }
+    },
+    "broader_runtime": {
+      "status": "passed",
+      "receipt": {
+        "path": "Build/linux/broader-css-regression-results.json",
+        "sha256": "5eea8f0392a3cf38a9c326b85b7dc265ca517f3660d4c47fa93ea20c0a8aa0f2"
+      },
+      "test_files": 36,
+      "additional_distinct_test_functions_per_gc_mode": 162,
+      "retained_focused_distinct_test_functions_per_gc_mode": 17,
+      "combined_selected_distinct_test_functions_per_gc_mode": 179,
+      "gc_modes": [
+        "boehm",
+        "none"
+      ],
+      "mode_results": {
+        "boehm": {
+          "status": "passed",
+          "new_groups": {
+            "parser_substitution_tokens": 121,
+            "invalidation": 41
+          },
+          "new_broad_functions": 162,
+          "retained_focused_functions": 17,
+          "combined_distinct_functions": 179,
+          "sorted_function_names_sha256": "5728dbc1dab6b4c3ce8b0d0104865f2a1b2bf2734712af98d5dac882315ecdce"
+        },
+        "none": {
+          "status": "passed",
+          "new_groups": {
+            "parser_substitution_tokens": 121,
+            "invalidation": 41
+          },
+          "new_broad_functions": 162,
+          "retained_focused_functions": 17,
+          "combined_distinct_functions": 179,
+          "sorted_function_names_sha256": "5728dbc1dab6b4c3ce8b0d0104865f2a1b2bf2734712af98d5dac882315ecdce"
+        }
+      },
+      "accepted_generate_compile_execute_phases": 12,
+      "all_accepted_phase_exit_codes_zero": true,
+      "accepted_groups": [
+        {
+          "gc": "boehm",
+          "group": "parser_substitution_tokens",
+          "directory": "Build/linux/tests/broad-parser_substitution_tokens-boehm-02",
+          "test_file_count": 25,
+          "test_function_count": 121,
+          "every_expected_function_called_once_in_generated_main": true,
+          "failure_exit_guard": "return __test_failures > 0;",
+          "generated_c_sha256": "9cdd86fe86607e0f9fcb74aa917f24251231a620cf17b57043889f8e921d82e0",
+          "binary_sha256": "0deab5583cd8bebf273581ec9319dbcad28e703e3c6f61e9694b44d634c22f1a",
+          "harness": {
+            "path": "Build/linux/tests/broad-parser_substitution_tokens-boehm-02/harness-verification.json",
+            "sha256": "ed65529a482dabe5ff336e9d998c3e3689b8a1062e5660bfd3971d4dde72976f"
+          },
+          "manifest_snapshot": {
+            "path": "Build/linux/tests/broad-parser_substitution_tokens-boehm-02/broader-css-regressions-manifest.json",
+            "sha256": "2df61f35298c7d29d07d86f1adc65a24b62566c3b0c84cd8e03a863a5e9cbf01"
+          },
+          "native_flags": {
+            "path": "Build/linux/tests/broad-parser_substitution_tokens-boehm-02/tests.cflags",
+            "sha256": "6e0d6cc7a8a73a35b2b62857a80c1b203a4d761b751db8c949cd42fa3eac9251"
+          },
+          "legacy_boehm_alias_flag_present": false,
+          "lifetime_header_absent_from_retained_parser_harness": true,
+          "stages": {
+            "generate": {
+              "reason": "completed",
+              "child_exit_code": 0,
+              "driver_exit_code": 0,
+              "limit_bytes": 12884901888,
+              "observed_peak_rss_bytes": 2761711616,
+              "guard": {
+                "path": "Build/linux/tests/broad-parser_substitution_tokens-boehm-02/generate.json",
+                "sha256": "7323ff3cc2db59cfc8c0766f8cad7e3e1195b55893bea9d353d3c52c2e0f3f33"
+              },
+              "full_output": {
+                "path": "Build/linux/tests/broad-parser_substitution_tokens-boehm-02/generate.log",
+                "sha256": "5ddabc72b0245272df768546e684a4c2109bdb4f857dcb529ebf2b509c48f26b"
+              }
+            },
+            "native": {
+              "reason": "completed",
+              "child_exit_code": 0,
+              "driver_exit_code": 0,
+              "limit_bytes": 12884901888,
+              "observed_peak_rss_bytes": 1183080448,
+              "guard": {
+                "path": "Build/linux/tests/broad-parser_substitution_tokens-boehm-02/native.json",
+                "sha256": "a3d24e5d42c7c5de627cc8448a009b9f07406781f648ffe07d89e51213245a23"
+              },
+              "full_output": {
+                "path": "Build/linux/tests/broad-parser_substitution_tokens-boehm-02/native.log",
+                "sha256": "22372acd41e2828575db89e33dd9b86e6cd77a6b295ceb2467e8d6bf60bf9337"
+              }
+            },
+            "run": {
+              "reason": "completed",
+              "child_exit_code": 0,
+              "driver_exit_code": 0,
+              "limit_bytes": 3221225472,
+              "observed_peak_rss_bytes": 50307072,
+              "guard": {
+                "path": "Build/linux/tests/broad-parser_substitution_tokens-boehm-02/run.json",
+                "sha256": "adb67883773a5a0f09f6b1a678e88460fbb87175e91c59de3bad3956239a18c6"
+              },
+              "full_output": {
+                "path": "Build/linux/tests/broad-parser_substitution_tokens-boehm-02/run.log",
+                "sha256": "733dbf60fdb8d2c4a00b05c47271edefddf4832b3ba1f8d8d85b5f95df17df97"
+              }
+            }
+          }
+        },
+        {
+          "gc": "none",
+          "group": "parser_substitution_tokens",
+          "directory": "Build/linux/tests/broad-parser_substitution_tokens-none-01",
+          "test_file_count": 25,
+          "test_function_count": 121,
+          "every_expected_function_called_once_in_generated_main": true,
+          "failure_exit_guard": "return __test_failures > 0;",
+          "generated_c_sha256": "61cd7a308fc8bf99fb4ed643cc8ca7347e19ffead3c5108c8d7453ac6a9d42f8",
+          "binary_sha256": "2719e84252ffcef9d5f253cd7dba6da81ec88c1c24e7376c4ee0ab7466cced6e",
+          "harness": {
+            "path": "Build/linux/tests/broad-parser_substitution_tokens-none-01/harness-verification.json",
+            "sha256": "505b347a2525adfb7b87baab490d40a77c92fef9f2160cf6ab0426012ea4835e"
+          },
+          "manifest_snapshot": {
+            "path": "Build/linux/tests/broad-parser_substitution_tokens-none-01/broader-css-regressions-manifest.json",
+            "sha256": "2df61f35298c7d29d07d86f1adc65a24b62566c3b0c84cd8e03a863a5e9cbf01"
+          },
+          "native_flags": {
+            "path": "Build/linux/tests/broad-parser_substitution_tokens-none-01/tests.cflags",
+            "sha256": "ba32ba349f7ea39115327561c7b00e26e5a74bbef4386e2999e36b0ebb4c4a3e"
+          },
+          "legacy_boehm_alias_flag_present": false,
+          "lifetime_header_absent_from_retained_parser_harness": true,
+          "stages": {
+            "generate": {
+              "reason": "completed",
+              "child_exit_code": 0,
+              "driver_exit_code": 0,
+              "limit_bytes": 12884901888,
+              "observed_peak_rss_bytes": 2810306560,
+              "guard": {
+                "path": "Build/linux/tests/broad-parser_substitution_tokens-none-01/generate.json",
+                "sha256": "7b9dfddcd0e1201c8aa3e6b62c66918149ecb7a017edca41409c931aa5848429"
+              },
+              "full_output": {
+                "path": "Build/linux/tests/broad-parser_substitution_tokens-none-01/generate.log",
+                "sha256": "8046fc9225209f253c0fed1cb6a1497dd4eb6048940564e1333f051a44e734c3"
+              }
+            },
+            "native": {
+              "reason": "completed",
+              "child_exit_code": 0,
+              "driver_exit_code": 0,
+              "limit_bytes": 12884901888,
+              "observed_peak_rss_bytes": 1182322688,
+              "guard": {
+                "path": "Build/linux/tests/broad-parser_substitution_tokens-none-01/native.json",
+                "sha256": "13697c0faf3fa73ba7052569db78fb0ce4c1b40f7cf298d4f56d8e70922a066a"
+              },
+              "full_output": {
+                "path": "Build/linux/tests/broad-parser_substitution_tokens-none-01/native.log",
+                "sha256": "770a30c058e0808d9fa278f461dfebcc244a7cd3b797962cdfb4476c2ed58a55"
+              }
+            },
+            "run": {
+              "reason": "completed",
+              "child_exit_code": 0,
+              "driver_exit_code": 0,
+              "limit_bytes": 3221225472,
+              "observed_peak_rss_bytes": 57401344,
+              "guard": {
+                "path": "Build/linux/tests/broad-parser_substitution_tokens-none-01/run.json",
+                "sha256": "1d9c7be9c8f39dd7f797efd5d375b39ac4af8f0e96f2159ba9605e0eb88c7d34"
+              },
+              "full_output": {
+                "path": "Build/linux/tests/broad-parser_substitution_tokens-none-01/run.log",
+                "sha256": "79d8e8dc55777643b26d1ab5cec03cc3597cdb48138eb04919baa51286b266bf"
+              }
+            }
+          }
+        },
+        {
+          "gc": "boehm",
+          "group": "invalidation",
+          "directory": "Build/linux/tests/broad-invalidation-boehm-03",
+          "test_file_count": 11,
+          "test_function_count": 41,
+          "every_expected_function_called_once_in_generated_main": true,
+          "failure_exit_guard": "return __test_failures > 0;",
+          "generated_c_sha256": "7a4c1b71e0c0762b3e30b8d8d5e2b1add5ba713262c6e7bf55d63dbcfcbcfd85",
+          "binary_sha256": "ca08b54b7287e8ffe898eedfa787206b38bb4cb100059bb2a97d8b7213299927",
+          "harness": {
+            "path": "Build/linux/tests/broad-invalidation-boehm-03/harness-verification.json",
+            "sha256": "b01e2e3e35851763eef708858eb82e5b7bbd664a6d839be2b9fca7af7c004f9e"
+          },
+          "manifest_snapshot": {
+            "path": "Build/linux/tests/broad-invalidation-boehm-03/broader-css-regressions-manifest.json",
+            "sha256": "30dac9f40f0bff65296555607973b188c8aff92cf298f1fa0004d5ecec5e89e3"
+          },
+          "native_flags": {
+            "path": "Build/linux/tests/broad-invalidation-boehm-03/tests.cflags",
+            "sha256": "6e0d6cc7a8a73a35b2b62857a80c1b203a4d761b751db8c949cd42fa3eac9251"
+          },
+          "legacy_boehm_alias_flag_present": false,
+          "lifetime_header_absent_from_retained_parser_harness": null,
+          "stages": {
+            "generate": {
+              "reason": "completed",
+              "child_exit_code": 0,
+              "driver_exit_code": 0,
+              "limit_bytes": 12884901888,
+              "observed_peak_rss_bytes": 2817589248,
+              "guard": {
+                "path": "Build/linux/tests/broad-invalidation-boehm-03/generate.json",
+                "sha256": "de4b220ec3851b2433b5239088bd69ef8a74ac950c9f470f1c6de68b67b75436"
+              },
+              "full_output": {
+                "path": "Build/linux/tests/broad-invalidation-boehm-03/generate.log",
+                "sha256": "dbfea907586d9347c9189be21d5d509a4a3f8e12709a5b57942dfa1cc6479cda"
+              }
+            },
+            "native": {
+              "reason": "completed",
+              "child_exit_code": 0,
+              "driver_exit_code": 0,
+              "limit_bytes": 12884901888,
+              "observed_peak_rss_bytes": 1142673408,
+              "guard": {
+                "path": "Build/linux/tests/broad-invalidation-boehm-03/native.json",
+                "sha256": "d33d0f7de61ab4ad2532ead5b71347e171bbed3befaeadd1eecb1b381af2d0d2"
+              },
+              "full_output": {
+                "path": "Build/linux/tests/broad-invalidation-boehm-03/native.log",
+                "sha256": "b8a6760a4bb2f3529cbdf8d4a8d4c160a48e1a8ef6a8b7a6c812ca7144337a25"
+              }
+            },
+            "run": {
+              "reason": "completed",
+              "child_exit_code": 0,
+              "driver_exit_code": 0,
+              "limit_bytes": 3221225472,
+              "observed_peak_rss_bytes": 26624000,
+              "guard": {
+                "path": "Build/linux/tests/broad-invalidation-boehm-03/run.json",
+                "sha256": "bb04da335f6a8ab723c574ee375994f346e147842abf46c4c512283bc9da1e3f"
+              },
+              "full_output": {
+                "path": "Build/linux/tests/broad-invalidation-boehm-03/run.log",
+                "sha256": "eb231d6cc4d852885ae952acf87b849bb1aab649842e554743f1edfe329f75e3"
+              }
+            }
+          }
+        },
+        {
+          "gc": "none",
+          "group": "invalidation",
+          "directory": "Build/linux/tests/broad-invalidation-none-02",
+          "test_file_count": 11,
+          "test_function_count": 41,
+          "every_expected_function_called_once_in_generated_main": true,
+          "failure_exit_guard": "return __test_failures > 0;",
+          "generated_c_sha256": "d866242a1f1d4e98d8348bd8dd5c9c10ae3e51fb06252495449cc8b34821e0f8",
+          "binary_sha256": "95d3b5fa47edc407ffcbd51dafa716eeba3da86e9f3d0157a5770081d91b6f05",
+          "harness": {
+            "path": "Build/linux/tests/broad-invalidation-none-02/harness-verification.json",
+            "sha256": "66efe8a09f57e53467e7146698c4cca57e5cbdbb9d3b41ce3b536b7927a6ad54"
+          },
+          "manifest_snapshot": {
+            "path": "Build/linux/tests/broad-invalidation-none-02/broader-css-regressions-manifest.json",
+            "sha256": "30dac9f40f0bff65296555607973b188c8aff92cf298f1fa0004d5ecec5e89e3"
+          },
+          "native_flags": {
+            "path": "Build/linux/tests/broad-invalidation-none-02/tests.cflags",
+            "sha256": "ba32ba349f7ea39115327561c7b00e26e5a74bbef4386e2999e36b0ebb4c4a3e"
+          },
+          "legacy_boehm_alias_flag_present": false,
+          "lifetime_header_absent_from_retained_parser_harness": null,
+          "stages": {
+            "generate": {
+              "reason": "completed",
+              "child_exit_code": 0,
+              "driver_exit_code": 0,
+              "limit_bytes": 12884901888,
+              "observed_peak_rss_bytes": 2765500416,
+              "guard": {
+                "path": "Build/linux/tests/broad-invalidation-none-02/generate.json",
+                "sha256": "b7c7494198149d8e53692d5f5667237e1b9966f560c4a458f605d5612b356ac7"
+              },
+              "full_output": {
+                "path": "Build/linux/tests/broad-invalidation-none-02/generate.log",
+                "sha256": "be74c0aef2b78c4e309e8105d3432bea0b521731818aaf2777008b068bc77899"
+              }
+            },
+            "native": {
+              "reason": "completed",
+              "child_exit_code": 0,
+              "driver_exit_code": 0,
+              "limit_bytes": 12884901888,
+              "observed_peak_rss_bytes": 1141694464,
+              "guard": {
+                "path": "Build/linux/tests/broad-invalidation-none-02/native.json",
+                "sha256": "64c5b21987e85527f9311644485cdf63b4e61ca19086cf138a05656a45bcaf59"
+              },
+              "full_output": {
+                "path": "Build/linux/tests/broad-invalidation-none-02/native.log",
+                "sha256": "3d2a4401c34f6d284d98293e3fe6f62deb65041dcff6d0cba2ec878f636ebbe2"
+              }
+            },
+            "run": {
+              "reason": "completed",
+              "child_exit_code": 0,
+              "driver_exit_code": 0,
+              "limit_bytes": 3221225472,
+              "observed_peak_rss_bytes": 1441792,
+              "guard": {
+                "path": "Build/linux/tests/broad-invalidation-none-02/run.json",
+                "sha256": "9a6a02e941765ddbb9e1d525a76fc510aba6fbfd87410648b9c8d46576d38efe"
+              },
+              "full_output": {
+                "path": "Build/linux/tests/broad-invalidation-none-02/run.log",
+                "sha256": "5358b741bb044853f4c49a0ea1e7629384a9c02aa9a34b7097694850c2ce70c7"
+              }
+            }
+          }
+        }
+      ],
+      "manifest": {
+        "path": "Build/linux/broader-css-regressions-manifest.json",
+        "sha256": "30dac9f40f0bff65296555607973b188c8aff92cf298f1fa0004d5ecec5e89e3"
+      },
+      "preparation_receipt": {
+        "path": "Build/linux/broader-css-driver-preparation-check.json",
+        "sha256": "818aadc76ac7b98eca4e41ff9f3cc35ee6b929bf81b81230c9a3997ba62219c0"
+      },
+      "runtime_matches_measured_candidate": true,
+      "all_original_control_source_restorations_verified": true,
+      "coverage_notes": [
+        "Only the failed invalidation groups were rerun after the approved test-only repairs; successful parser and focused groups were retained.",
+        "Each accepted generated harness contains every expected test function exactly once and returns nonzero on assertions; generation used explicit -skip-running. Counts are distinct test functions, not assertions or total invocations across failed/control attempts.",
+        "Existing prealloc-only memory checks remain conditional and were not exercised. test_repeated_component_span_parses_do_not_retain_an_input_sized_copy returns outside prealloc.",
+        "GC-specific collection/lifetime checks execute in Boehm. The final helper header supports CUSTOM_DEFINE_gcboehm directly; final accepted native commands use no temporary legacy macro alias.",
+        "The lifetime header is absent from the retained parser harnesses, so its subsequent test-only repair does not invalidate their passed results.",
+        "Broad generation/native phases used 12 GiB guards and executions used 3 GiB. The retained earlier focused passes used tighter 6 GiB generation, 4 GiB native and 3 GiB execution guards, recorded without rerunning them.",
+        "All broad compilation/execution was sequential and occurred after the isolated final performance cohort had completed. No browser runtime source changed during the test compatibility repair."
+      ]
+    },
+    "broader_runtime_history": {
+      "initial_invalidation_failure_count_per_gc": 2,
+      "both_failures_reproduced_with_original_runtime_in_both_gc_modes": true,
+      "original_control_comparison": {
+        "path": "Build/linux/invalidation-original-control-comparison.json",
+        "sha256": "4df08b835c1b620e1471c3ea203da092b0bca62cbed301af5728934605906774"
+      },
+      "comparison_details": {
+        "status": "Both original-runtime controls reproduced the same two candidate test failures; candidate sources restored. No test repair has been applied at this receipt.",
+        "base_commit": "53906747f004c12f57b4888cc1f215bac5aa5634",
+        "cases": [
+          {
+            "gc": "boehm",
+            "candidate_directory": "Build/linux/tests/broad-invalidation-boehm-02",
+            "original_directory": "Build/linux/tests/broad-invalidation-original-boehm-01",
+            "candidate_run_log_sha256": "5873cebb3ef62b24cfb9531ea835c86d5af0cb147bc32005e35d90ee076498ab",
+            "original_run_log_sha256": "acb1c11efef09405b82b7a72dbf9084b85abc1192691a6a72f63b87f77d78101",
+            "identical_failure_text": "css/invalidation_inline_storage_test.v:238: fn test_invalidation_property_callback_replacement_keeps_legacy_iteration_entry_snapshot\n   > assert legacy_collector.names == ['.old-first', '#old-tail']\n     Left value (len: 26): `['.old-first', 'new-tail']`\n    Right value (len: 27): `['.old-first', '#old-tail']`\n\ncss/invalidation_registration_keys_test.v:53: fn test_invalidation_registration_keeps_flags_keys_and_ordered_plan_merges\n   > assert retained.descendant_rules.len == 2\n     Left value (len: 1): `1`\n    Right value (len: 1): `2`",
+            "failed_functions": [
+              "test_invalidation_property_callback_replacement_keeps_legacy_iteration_entry_snapshot",
+              "test_invalidation_registration_keeps_flags_keys_and_ordered_plan_merges"
+            ],
+            "native_flags_byte_identical": true,
+            "original_control_provenance": "Build/linux/tests/broad-invalidation-original-boehm-01/control-generation-provenance.json",
+            "restoration_receipt": "Build/linux/tests/broad-invalidation-original-boehm-01-source-preparation/candidate-restoration.json",
+            "native_exits": [
+              0,
+              0
+            ],
+            "execution_exits": [
+              1,
+              1
+            ]
+          },
+          {
+            "gc": "none",
+            "candidate_directory": "Build/linux/tests/broad-invalidation-none-01",
+            "original_directory": "Build/linux/tests/broad-invalidation-original-none-01",
+            "candidate_run_log_sha256": "facf5744e40f8863cff22a9d1ccedf79df6fdda23478e4ade80047b9436f4fb4",
+            "original_run_log_sha256": "24a745595d43cce7740cb502fc246950af59431cbfe1386866a5915db217d8d0",
+            "identical_failure_text": "css/invalidation_inline_storage_test.v:238: fn test_invalidation_property_callback_replacement_keeps_legacy_iteration_entry_snapshot\n   > assert legacy_collector.names == ['.old-first', '#old-tail']\n     Left value (len: 26): `['.old-first', 'new-tail']`\n    Right value (len: 27): `['.old-first', '#old-tail']`\n\ncss/invalidation_registration_keys_test.v:53: fn test_invalidation_registration_keeps_flags_keys_and_ordered_plan_merges\n   > assert retained.descendant_rules.len == 2\n     Left value (len: 1): `1`\n    Right value (len: 1): `2`",
+            "failed_functions": [
+              "test_invalidation_property_callback_replacement_keeps_legacy_iteration_entry_snapshot",
+              "test_invalidation_registration_keeps_flags_keys_and_ordered_plan_merges"
+            ],
+            "native_flags_byte_identical": true,
+            "original_control_provenance": "Build/linux/tests/broad-invalidation-original-none-01/control-generation-provenance.json",
+            "restoration_receipt": "Build/linux/tests/broad-invalidation-original-none-01-source-preparation/candidate-restoration.json",
+            "native_exits": [
+              0,
+              0
+            ],
+            "execution_exits": [
+              1,
+              1
+            ]
+          }
+        ],
+        "candidate_runtime_source_sha256": {
+          "css/invalidation_plan_union.v": "b3d5f9226ffc572a1b8daff30b92d8ec9f5e6e748054ef51f0e43060f674ccbc",
+          "css/parser_core.v": "f5237c2f3c21485584928632a7a4c815deca0c86ac96695748d7228c63a80d02",
+          "css/parser_rules_selectors.v": "3aa54483e2160d82444a75ef8f68c5b155d63803664911565a935b28fec98a41"
+        },
+        "runtime_restored": true,
+        "original_test_inputs": "Build/linux/invalidation-test-compatibility/original-inputs.json"
+      },
+      "test_only_compatibility_repairs": {
+        "status": "passed in repaired 41-function invalidation groups, both GC modes",
+        "files": [
+          {
+            "path": "css/invalidation_inline_storage_test.v",
+            "base_blob": "75d075fb1509eebfbb629e3d1b1f0d0fd1b1008d",
+            "base_sha256": "6a256e8783f9428e837dabc79e900103a8560c7024f4ce3649fd1513f909ae6b",
+            "approved_working_blob": "83d7687a1026f97edcd64d21d7e3c0b517b4ef98",
+            "sha256": "9e52089f138dd3ff170937b7b18df60b0787d8a4dd995545c6cbb3b9c1cee3b6",
+            "reason": "Bind the independent oracle map header before callback replacement, retaining every strict snapshot assertion."
+          },
+          {
+            "path": "css/invalidation_registration_keys_test.v",
+            "base_blob": "01545364328eccc625092722ce76853dac7529b2",
+            "base_sha256": "0bba2cfa0c9ce756862e4062cad506387d7ac1632eca870b132f7f9ab9dd38c0",
+            "approved_working_blob": "02affa431081e9e2677b1b54773a597c18d0531b",
+            "sha256": "6f813d5bf6d8c2f1d8423541d2c0aba0a868b1deb44883ea50a7af9b7be4ddb9",
+            "reason": "Expect exactly one descendant and sibling rule after identical registrations, matching the original append-or-merge implementation."
+          },
+          {
+            "path": "css/invalidation_lifetime_test.h",
+            "base_blob": "555e3e3f2591d1af0ed00d507e8b21deaa65e850",
+            "base_sha256": "8dc27afd55d35208ff4f2cb4aa54da2738fef4916cc8aa5bb48c8f1f59975f7c",
+            "approved_working_blob": "2a48a85a054f03a3b7ee200192b071b705c53e91",
+            "sha256": "6478b1e6df0a80cf368f5927950cf3e02e0821476c8a5e89efd58da595ce78f5",
+            "reason": "Enable unchanged Boehm lifetime helpers with either the legacy or current compiler macro; no command-line alias is needed."
+          }
+        ],
+        "runtime_changed": false,
+        "test_function_names_unchanged": true,
+        "temporary_legacy_macro_flag_removed": true,
+        "approved_repair_receipt": {
+          "path": "Build/linux/invalidation-test-compatibility/approved-repair.json",
+          "sha256": "e6e1d8aac5079f27e58bf8597b0013dba312c2aa3301b47a9913b12edb31c603"
+        },
+        "patch": {
+          "path": "Build/linux/invalidation-test-compatibility/approved-test-compatibility.patch",
+          "sha256": "397c7b37d01d7a2af33467cd688a12486953694ab635327b7ebac587fecb1947",
+          "unified_diff": "diff --git a/css/invalidation_inline_storage_test.v b/css/invalidation_inline_storage_test.v\nindex 75d075f..83d7687 100644\n--- a/css/invalidation_inline_storage_test.v\n+++ b/css/invalidation_inline_storage_test.v\n@@ -169,15 +169,16 @@ fn test_inline_invalidation_value_copies_and_registration_keep_independent_heade\n \tassert copy.to_string() == '$, .inline, #copy-only'\n }\n \n-// Keep the previous field-map traversal as an independent entry-snapshot\n-// oracle. Replacing the whole record leaves its original iteration header live.\n+// Model entry-snapshot traversal with an explicit local map header. Replacing\n+// the whole record in a callback must leave the original iteration entries live.\n struct LegacyInlineInvalidationIteration {\n mut:\n  properties_ map[string]InvalidationProperty\n }\n \n fn (set &LegacyInlineInvalidationIteration) for_each_property(callback fn (InvalidationProperty) bool) {\n- for _, property in set.properties_ {\n+ properties := set.properties_\n+ for _, property in properties {\n   if !callback(property) {\n    return\n   }\ndiff --git a/css/invalidation_lifetime_test.h b/css/invalidation_lifetime_test.h\nindex 555e3e3..2a48a85 100644\n--- a/css/invalidation_lifetime_test.h\n+++ b/css/invalidation_lifetime_test.h\n@@ -1,6 +1,6 @@\n #ifndef VOX_CSS_INVALIDATION_LIFETIME_TEST_H\n #define VOX_CSS_INVALIDATION_LIFETIME_TEST_H\n-#ifdef _VGCBOEHM\n+#if defined(_VGCBOEHM) || defined(CUSTOM_DEFINE_gcboehm)\n #include <assert.h>\n #include <stdint.h>\n #include <gc/gc.h>\ndiff --git a/css/invalidation_registration_keys_test.v b/css/invalidation_registration_keys_test.v\nindex 0154536..02affa4 100644\n--- a/css/invalidation_registration_keys_test.v\n+++ b/css/invalidation_registration_keys_test.v\n@@ -49,9 +49,11 @@ fn test_invalidation_registration_keeps_flags_keys_and_ordered_plan_merges() {\n \t}\n \tassert actual.invalidation_plans.len == 7\n \tassert '$' !in actual.invalidation_plans && '*' !in actual.invalidation_plans\n+\t// Identical registrations coalesce into one rule of each kind through the\n+\t// existing append_or_merge helpers.\n \tfor _, retained in actual.invalidation_plans {\n-\t\tassert retained.descendant_rules.len == 2\n-\t\tassert retained.sibling_rules.len == 2\n+\t\tassert retained.descendant_rules.len == 1\n+\t\tassert retained.sibling_rules.len == 1\n \t\tassert !retained.invalidate_whole_subtree\n \t}\n \twhole := make_invalidate_whole_subtree_invalidation()\n"
+        },
+        "commit": "03b79b4ff645757f22434d3583b60a6ec0390eae",
+        "final_results_receipt": {
+          "path": "Build/linux/broader-css-regression-results.json",
+          "sha256": "5eea8f0392a3cf38a9c326b85b7dc265ca517f3660d4c47fa93ea20c0a8aa0f2"
+        }
+      },
+      "prior_attempt_summary": [
+        {
+          "directory": "Build/linux/tests/broad-parser_substitution_tokens-boehm-01",
+          "reason": "Initial generation omitted a cross-test helper; two exact-base dependency files were then added, increasing new coverage from 153 to 162 functions.",
+          "phases": {
+            "generate": {
+              "child_exit_code": 1,
+              "driver_exit_code": 1,
+              "guard": {
+                "path": "Build/linux/tests/broad-parser_substitution_tokens-boehm-01/generate.json",
+                "sha256": "d66be83e9b8313d6f255d0a51c063b7db31693e28663689268d55164fd23d336"
+              },
+              "full_output": {
+                "path": "Build/linux/tests/broad-parser_substitution_tokens-boehm-01/generate.log",
+                "sha256": "f4e6a631cbd271f26926b244ea01a38b15d03f8663a713f71ecf63e555b697a7"
+              }
+            }
+          }
+        },
+        {
+          "directory": "Build/linux/tests/broad-invalidation-boehm-01",
+          "reason": "Native compilation failed because the original lifetime header required the legacy macro. No tests ran.",
+          "phases": {
+            "generate": {
+              "child_exit_code": 0,
+              "driver_exit_code": 0,
+              "guard": {
+                "path": "Build/linux/tests/broad-invalidation-boehm-01/generate.json",
+                "sha256": "176d8ea87c80d304fc0bc87e182c8a872b5578b553086c610e9d1264b24d3496"
+              },
+              "full_output": {
+                "path": "Build/linux/tests/broad-invalidation-boehm-01/generate.log",
+                "sha256": "99595af4fe884da3a7950f6dedf43559788adb6018760ee91ea718e8ed55e515"
+              }
+            },
+            "native": {
+              "child_exit_code": 1,
+              "driver_exit_code": 1,
+              "guard": {
+                "path": "Build/linux/tests/broad-invalidation-boehm-01/native.json",
+                "sha256": "d11fec3624b2ea15b4d2253cf331d13b2e4551cb8c94fef4db4fdad88f52de37"
+              },
+              "full_output": {
+                "path": "Build/linux/tests/broad-invalidation-boehm-01/native.log",
+                "sha256": "405abe5e3d7bceef3074c5af931267ae21c0301184a32af0330335cf621cb666"
+              }
+            }
+          }
+        },
+        {
+          "directory": "Build/linux/tests/broad-invalidation-boehm-02",
+          "reason": "Both inherited assertion failures reproduced under Boehm; temporary legacy header macro alias enabled existing lifetime helpers.",
+          "phases": {
+            "generate": {
+              "child_exit_code": 0,
+              "driver_exit_code": 0,
+              "guard": {
+                "path": "Build/linux/tests/broad-invalidation-boehm-02/generate.json",
+                "sha256": "c48acd9e3c5f2cb00beecae02bd1989e6ee1af22c884317537b9bbedaac063e8"
+              },
+              "full_output": {
+                "path": "Build/linux/tests/broad-invalidation-boehm-02/generate.log",
+                "sha256": "61dc9f429ba7ddfaa325fe2e05c21c275a09dfdd6eeb1d8b0ece13c10922b782"
+              }
+            },
+            "native": {
+              "child_exit_code": 0,
+              "driver_exit_code": 0,
+              "guard": {
+                "path": "Build/linux/tests/broad-invalidation-boehm-02/native.json",
+                "sha256": "c316a9829e4a58707630bf5310540e539886b411fc7fea66bef51f0cef3f328f"
+              },
+              "full_output": {
+                "path": "Build/linux/tests/broad-invalidation-boehm-02/native.log",
+                "sha256": "ee4fd97d0a49fd906c26d408dcf878eb9d14df7e930b6b07d1c33f3e3afd368b"
+              }
+            },
+            "run": {
+              "child_exit_code": 1,
+              "driver_exit_code": 1,
+              "guard": {
+                "path": "Build/linux/tests/broad-invalidation-boehm-02/run.json",
+                "sha256": "93e2ee3736a39515380943760641e23a9d709a826cdb3a6e113657d1b601b22f"
+              },
+              "full_output": {
+                "path": "Build/linux/tests/broad-invalidation-boehm-02/run.log",
+                "sha256": "5873cebb3ef62b24cfb9531ea835c86d5af0cb147bc32005e35d90ee076498ab"
+              }
+            }
+          }
+        },
+        {
+          "directory": "Build/linux/tests/broad-invalidation-none-01",
+          "reason": "The same two inherited assertions failed under no-GC.",
+          "phases": {
+            "generate": {
+              "child_exit_code": 0,
+              "driver_exit_code": 0,
+              "guard": {
+                "path": "Build/linux/tests/broad-invalidation-none-01/generate.json",
+                "sha256": "49ff920ac1f24c5fa00af9ecf6e000dcaa907fe0ed77b5e0a42351b9eecc51b8"
+              },
+              "full_output": {
+                "path": "Build/linux/tests/broad-invalidation-none-01/generate.log",
+                "sha256": "5380f74f481b631db6a8e340c02f6af020c1478b91ecc33dcef4d8d5062fa8a6"
+              }
+            },
+            "native": {
+              "child_exit_code": 0,
+              "driver_exit_code": 0,
+              "guard": {
+                "path": "Build/linux/tests/broad-invalidation-none-01/native.json",
+                "sha256": "e0c488c75c81239c536b32acc4abc18b6c243878dcc30e506b3683240abc907c"
+              },
+              "full_output": {
+                "path": "Build/linux/tests/broad-invalidation-none-01/native.log",
+                "sha256": "ac509c0995f3847a87dc367d847081b2d4433b05d0696263c24b6a3416da3476"
+              }
+            },
+            "run": {
+              "child_exit_code": 1,
+              "driver_exit_code": 1,
+              "guard": {
+                "path": "Build/linux/tests/broad-invalidation-none-01/run.json",
+                "sha256": "302186572cb04a2c3bed5b3231d3b47546eac7bd2c983b7b89d40e2aed73d70d"
+              },
+              "full_output": {
+                "path": "Build/linux/tests/broad-invalidation-none-01/run.log",
+                "sha256": "facf5744e40f8863cff22a9d1ccedf79df6fdda23478e4ade80047b9436f4fb4"
+              }
+            }
+          }
+        },
+        {
+          "directory": "Build/linux/tests/broad-invalidation-original-boehm-01",
+          "reason": "Exact original runtime reproduced both Boehm failures with identical test/native flags.",
+          "phases": {
+            "generate": {
+              "child_exit_code": 0,
+              "driver_exit_code": 0,
+              "guard": {
+                "path": "Build/linux/tests/broad-invalidation-original-boehm-01/generate.json",
+                "sha256": "46ee33f44c55d1c6e951ada058b3c774727e8672f8dcb58edc3fd88eb9307283"
+              },
+              "full_output": {
+                "path": "Build/linux/tests/broad-invalidation-original-boehm-01/generate.log",
+                "sha256": "09b1fc64f6d63b1e9bbbdb95c47f5cb2ecfc0ada13716c500cf38d74b8d2d5df"
+              }
+            },
+            "native": {
+              "child_exit_code": 0,
+              "driver_exit_code": 0,
+              "guard": {
+                "path": "Build/linux/tests/broad-invalidation-original-boehm-01/native.json",
+                "sha256": "02ab801d37f16afe50eca7b7c88216192c8da92e2233651ad06e97873452897a"
+              },
+              "full_output": {
+                "path": "Build/linux/tests/broad-invalidation-original-boehm-01/native.log",
+                "sha256": "9459fc0a54db286965598b9684ca9af1e7ec9f1006ffdb045ff0d37eb66b0bb8"
+              }
+            },
+            "run": {
+              "child_exit_code": 1,
+              "driver_exit_code": 1,
+              "guard": {
+                "path": "Build/linux/tests/broad-invalidation-original-boehm-01/run.json",
+                "sha256": "eff5d3ad10fee1c74e427915edbbe82777edf797cf84d7aa208c4e663282773a"
+              },
+              "full_output": {
+                "path": "Build/linux/tests/broad-invalidation-original-boehm-01/run.log",
+                "sha256": "acb1c11efef09405b82b7a72dbf9084b85abc1192691a6a72f63b87f77d78101"
+              }
+            }
+          }
+        },
+        {
+          "directory": "Build/linux/tests/broad-invalidation-original-none-01",
+          "reason": "Exact original runtime reproduced both no-GC failures with identical test/native flags.",
+          "phases": {
+            "generate": {
+              "child_exit_code": 0,
+              "driver_exit_code": 0,
+              "guard": {
+                "path": "Build/linux/tests/broad-invalidation-original-none-01/generate.json",
+                "sha256": "fb66f20b61e87ba04737e3c4b1bef7cd062984b794abafb4af10dca58363cff6"
+              },
+              "full_output": {
+                "path": "Build/linux/tests/broad-invalidation-original-none-01/generate.log",
+                "sha256": "1c086dcc1bd363584477265ca466744b80731c276e9aa5cd4cb12aa38d6ab85c"
+              }
+            },
+            "native": {
+              "child_exit_code": 0,
+              "driver_exit_code": 0,
+              "guard": {
+                "path": "Build/linux/tests/broad-invalidation-original-none-01/native.json",
+                "sha256": "aebc59e4a95f15cc8af9ab157b49a081cbb7700cc502c838921246745c7b0241"
+              },
+              "full_output": {
+                "path": "Build/linux/tests/broad-invalidation-original-none-01/native.log",
+                "sha256": "2c56cd84e24e8ba99ecbe13b3d98ed7b3bf642e1c89acba674aa494377d1fa40"
+              }
+            },
+            "run": {
+              "child_exit_code": 1,
+              "driver_exit_code": 1,
+              "guard": {
+                "path": "Build/linux/tests/broad-invalidation-original-none-01/run.json",
+                "sha256": "b6d34b46e077d5287b7c3d1e745b515489557e1228b6cdd2ba68dc28b4ef5581"
+              },
+              "full_output": {
+                "path": "Build/linux/tests/broad-invalidation-original-none-01/run.log",
+                "sha256": "24a745595d43cce7740cb502fc246950af59431cbfe1386866a5915db217d8d0"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "independent_audit": {
+    "status": "passed",
+    "valid": true,
+    "receipt": {
+      "path": "Build/linux/final-instruction-evidence-audit.json",
+      "sha256": "686353d14a9dfe1781e85f3586f55cb6a6e6e076886f181be876e75af47c3b5c"
+    },
+    "audited_at_utc": "2026-10-31T11:58:04.698525+00:00",
+    "method": "Standalone streaming Cachegrind flat-row parser, SHA256 file checks, Pillow RGBA decode, exact integer acceptance arithmetic; no measurement parser imported and no browser or test rerun.",
+    "audit_script_sha256": "6f3c58af0f5eebf48c43bd2cc82f9ab3c200aa78960cd950caa0c6848fc12aba",
+    "six_flat_row_sums_equal_footer_stderr_and_reported_counts": true,
+    "binaries_libraries_valgrind_observers_and_runtime_identities_match": true,
+    "fixture_response_bodies_verified": 56,
+    "observation_order_verified": {
+      "expected": [
+        "01-baseline",
+        "01-candidate",
+        "02-candidate",
+        "02-baseline",
+        "03-baseline",
+        "03-candidate"
+      ],
+      "summary_order_matches": true,
+      "nonoverlapping_replay_timestamp_ranges_match": true,
+      "profile_completion_mtimes_match": true
+    },
+    "exact_integer_target_verified": true,
+    "fixture_content_and_css_fontface_audit_verified": true
+  },
+  "evidence": {
+    "summary": {
+      "path": "Build/stackoverflow-cachegrind-candidate-02-pairs/summary.json",
+      "sha256": "eabb7ad333dd5b32d8854678d0369c65c372430140b17e2669aeb2119cd363b6"
+    },
+    "outer_guard": {
+      "path": "Build/stackoverflow-cachegrind-candidate-02-pairs-guard.json",
+      "sha256": "5d4f35affa678c97e457a6887b11d8b9726b637a415004de30a615db0eb82ec4"
+    },
+    "host_context": {
+      "path": "Build/stackoverflow-cachegrind-candidate-02-pairs/host-context.json",
+      "sha256": "3419fee535f9fc09516c01e5c1e456325af79fd4d9eeee28688cecea7512eb0b"
+    },
+    "cleanup": {
+      "path": "Build/stackoverflow-cachegrind-candidate-02-pairs/cleanup-validation.json",
+      "sha256": "71d24079e53211667e51dd119a931cf3e7757e23faa80049d5d4a2ee8dacf0fa"
+    },
+    "supplemental_validation": {
+      "path": "Build/stackoverflow-cachegrind-candidate-02-pairs/final-validation.json",
+      "sha256": "37c00b97243144086f4e01d36562967e71a8b6376b914512a629c371931038d6"
+    }
+  },
+  "limitations": [
+    "This is software-instrumented Cachegrind guest Ir on one frozen, script-free guest DOM fixture; it is not a claim about hardware-retired instructions or native elapsed latency.",
+    "The shared Linux sampler-capacity correctness adapter is present in both binaries and receives no optimization credit.",
+    "The local Segoe UI font fallbacks and preexisting SVG rendering limitations are identical across accepted captures; pixel equality establishes no regression against this renderer baseline, not equivalence to another browser.",
+    "A completed preliminary Callgrind profile was rejected for inconsistent summary/totals and is not included in these counts.",
+    "Build/raw-profile receipt paths refer to preserved local evidence; this ledger embeds key counts, hashes, pins and correctness outcomes so the committed result remains reviewable without those files.",
+    "CSS FontFace declarations and statuses are audited and decoded pixels match exactly; resolved native font file identities are not pinned."
+  ],
+  "updated_utc": "2026-10-31T12:19:56.867152+00:00"
+}

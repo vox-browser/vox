@@ -173,3 +173,80 @@ fn test_merged_match_sets_invalidate_every_matching_dom_branch() {
 	assert target.needs_style_update()
 	assert !bystander.needs_style_update()
 }
+
+fn test_match_set_union_preserves_growing_map_order_flags_and_duplicate_payloads() {
+	mut first := InvalidationSet{}
+	first.set_needs_invalidate_self()
+	first.set_needs_invalidate_class('inline')
+	for index in 0 .. 256 {
+		first.add_property(InvalidationProperty{
+			type_: .class
+			value: 'shared-${index}'
+			pseudo_class: .hover
+		})
+	}
+	mut second := InvalidationSet{}
+	second.set_needs_invalidate_whole_subtree()
+	second.add_property(InvalidationProperty{
+		type_: .class
+		value: 'shared-0'
+		pseudo_class: .checked
+	})
+	second.set_needs_invalidate_id('second')
+	mut result := union_invalidation_match_sets(first, second)
+	assert result.needs_invalidate_self() && result.needs_invalidate_whole_subtree()
+	properties := result.properties()
+	assert properties.len == 258
+	assert properties[0].name() == 'inline'
+	for index in 0 .. 256 {
+		assert properties[index + 1].name() == 'shared-${index}'
+		assert properties[index + 1].pseudo_class == .hover
+	}
+	assert properties[properties.len - 1].type_ == .id
+	assert properties[properties.len - 1].name() == 'second'
+
+	// A merge owns its map even after a long sequence of growing unions.
+	// Later writes on either source and the result must stay independent.
+	first.set_needs_invalidate_attribute('first-only')
+	second.set_needs_invalidate_attribute('second-only')
+	result.set_needs_invalidate_attribute('result-only')
+	gc_collect()
+	assert first.property_count() == 258
+	assert second.property_count() == 3
+	assert result.property_count() == 259
+	assert !invalidation_set_has_stored_key(&result, '[first-only]')
+	assert !invalidation_set_has_stored_key(&result, '[second-only]')
+	assert !invalidation_set_has_stored_key(&first, '[result-only]')
+	assert !invalidation_set_has_stored_key(&second, '[result-only]')
+	first.clear_properties()
+	second.clear_properties()
+	gc_collect()
+	assert result.property_count() == 259
+	remaining_properties := result.properties()
+	assert remaining_properties[remaining_properties.len - 1].name() == 'result-only'
+}
+
+fn test_match_set_union_keeps_empty_inline_and_self_inputs_independent() {
+	mut single := InvalidationSet{}
+	single.set_needs_invalidate_self()
+	single.set_needs_invalidate_class('only')
+	mut from_empty := union_invalidation_match_sets(InvalidationSet{}, single)
+	mut with_empty := union_invalidation_match_sets(single, InvalidationSet{})
+	assert from_empty.to_string() == '$, .only'
+	assert with_empty.to_string() == '$, .only'
+	assert from_empty.additional_properties_ == none
+	assert with_empty.additional_properties_ == none
+	from_empty.set_needs_invalidate_id('left')
+	with_empty.set_needs_invalidate_id('right')
+	assert single.to_string() == '$, .only'
+	assert from_empty.to_string() == '$, .only, #left'
+	assert with_empty.to_string() == '$, .only, #right'
+
+	mut self_union := union_invalidation_match_sets(from_empty, from_empty)
+	assert self_union.to_string() == '$, .only, #left'
+	self_union.set_needs_invalidate_attribute('union-only')
+	from_empty.set_needs_invalidate_attribute('source-only')
+	gc_collect()
+	assert self_union.to_string() == '$, .only, #left, [union-only]'
+	assert from_empty.to_string() == '$, .only, #left, [source-only]'
+}

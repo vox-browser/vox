@@ -169,15 +169,16 @@ fn test_inline_invalidation_value_copies_and_registration_keep_independent_heade
 	assert copy.to_string() == '$, .inline, #copy-only'
 }
 
-// Keep the previous field-map traversal as an independent entry-snapshot
-// oracle. Replacing the whole record leaves its original iteration header live.
+// Model entry-snapshot traversal with an explicit local map header. Replacing
+// the whole record in a callback must leave the original iteration entries live.
 struct LegacyInlineInvalidationIteration {
 mut:
  properties_ map[string]InvalidationProperty
 }
 
 fn (set &LegacyInlineInvalidationIteration) for_each_property(callback fn (InvalidationProperty) bool) {
- for _, property in set.properties_ {
+ properties := set.properties_
+ for _, property in properties {
   if !callback(property) {
    return
   }

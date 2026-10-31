@@ -29,6 +29,15 @@ def patch_module(package, source):
         source = re.sub(r'u64\(usize\((voidptr\([^()]*\))\)\)', r'u64(\1)', source)
         source = re.sub(r'\busize\(', 'uint(', source)
     if package == "gg":
+        # GG allocates a sampler for every image. Sokol's default sampler pool
+        # (64) is smaller than sapp's image pool (1000), so image-heavy pages
+        # otherwise exhaust it and render with invalid texture bindings.
+        source = source.replace(
+            "\tdesc := sapp.create_desc()\n",
+            "\tmut desc := sapp.create_desc()\n"
+            "\tif desc.sampler_pool_size < desc.image_pool_size {\n"
+            "\t\tdesc.sampler_pool_size = desc.image_pool_size\n"
+            "\t}\n")
         source = remove_unused_private_helper(source, "gg_fail_fn")
         source = condition_private_helpers(source, ["gg_poison_gfx_render_owner"],
                                            "gg_multiwindow ? || test")

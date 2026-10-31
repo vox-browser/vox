@@ -6,6 +6,28 @@ from prepare_linux_modules import patch_module, stage_module
 
 
 class LinuxModuleStagingTest(unittest.TestCase):
+    def test_graphics_sampler_capacity_tracks_the_image_pool(self):
+        original = """module gg
+fn gg_init_sokol_window(user_data voidptr) {
+\tdesc := sapp.create_desc()
+\tgfx.setup(&desc)
+}
+"""
+        with tempfile.TemporaryDirectory() as directory:
+            source, target = Path(directory) / 'compiler/gg', Path(directory) / 'staged'
+            source.mkdir(parents=True)
+            (source / 'gg.c.v').write_text(original)
+            stage_module(source, target, 'gg')
+            patched = (target / 'gg.c.v').read_text()
+            self.assertIn(
+                '\tmut desc := sapp.create_desc()\n'
+                '\tif desc.sampler_pool_size < desc.image_pool_size {\n'
+                '\t\tdesc.sampler_pool_size = desc.image_pool_size\n'
+                '\t}\n\tgfx.setup(&desc)', patched)
+            self.assertEqual(patch_module('gg', patched), patched)
+            self.assertEqual((source / 'gg.c.v').read_text(), original)
+            self.assertEqual(patch_module('net/openssl', original), original)
+
     def test_optional_graphics_helpers_follow_their_callers(self):
         source = """module gg
 const err_multiwindow_render_nil_callback = 'nil callback'
