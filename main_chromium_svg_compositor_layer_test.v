@@ -193,3 +193,67 @@ fn test_fixed_svg_layer_plan_retains_its_compositor_identity_with_a_background()
 		assert chromium_svg_compositor_layer_supported(commands, plan, svg_layer)
 	}
 }
+
+fn test_single_svg_opacity_folding_preserves_layer_ownership_and_normalized_alpha() {
+	commands := svg_opacity_compositor_test_commands()
+	plan := svg_opacity_compositor_test_plan()
+	assert chromium_svg_folded_opacity(commands, plan.command_layers, 2)? == 0.4
+	assert chromium_svg_folded_opacity(commands, [], 2)? == 0.4
+	for start in [-1, 0, 3, commands.len] {
+		assert chromium_svg_folded_opacity(commands, plan.command_layers, start) == none
+	}
+	mut ownership := plan.command_layers.clone()
+	ownership[3] = 0
+	assert chromium_svg_folded_opacity(commands, ownership, 2) == none
+	assert chromium_svg_folded_opacity(commands, [1], 2) == none
+	mut changed := commands.clone()
+	changed[3] = layout.PaintCommand{ ...commands[3], opacity: 1 }
+	assert chromium_svg_folded_opacity(changed, [], 2) == none
+}
+
+fn test_single_svg_opacity_folding_keeps_narrower_and_complex_opening_clips_isolated() {
+	commands := svg_opacity_compositor_test_commands()
+	mut clipped := commands.clone()
+	clipped[2] = layout.PaintCommand{
+		...commands[2]
+		has_clip:    true
+		clip_x:      0
+		clip_y:      0
+		clip_width:  40
+		clip_height: 40
+	}
+	clipped[3] = layout.PaintCommand{
+		...commands[3]
+		has_clip:    true
+		clip_x:      0
+		clip_y:      0
+		clip_width:  40
+		clip_height: 40
+	}
+	assert chromium_svg_folded_opacity(clipped, [], 2)? == 0.4
+	clipped[2] = layout.PaintCommand{ ...clipped[2], clip_width: 20 }
+	assert chromium_svg_folded_opacity(clipped, [], 2) == none
+    for clip in [layout.PaintClip{is_path:true},
+        layout.PaintClip{corner_radii:layout.BoxRadii{top_left:layout.CornerRadius{2,2}}},
+        layout.PaintClip{transform:[f64(1), .5, 0, 1, 0, 0]!}] {
+        clipped[2] = layout.PaintCommand{...commands[2], has_clip:true,
+            clip_width:40, clip_height:40,
+            clip_list:&layout.PaintClipList{items:[clip]}}
+        assert chromium_svg_folded_opacity(clipped, [], 2) == none
+    }
+    clipped[2] = layout.PaintCommand{...commands[2], clip_outs:[f64(0),0,10,10]}
+    assert chromium_svg_folded_opacity(clipped, [], 2) == none
+
+}
+
+fn test_single_svg_opacity_folding_keeps_scaled_and_rotated_geometry_on_existing_replay() {
+	commands := svg_opacity_compositor_test_commands()
+	for matrix in [[f64(2), 0, 0, 2, 0, 0]!, [f64(0), 1, -1, 0, 0, 0]!] {
+		mut changed := commands.clone()
+		changed[3] = layout.PaintCommand{
+			...commands[3]
+			svg_data: &layout.PaintSVGPathData{ ...commands[3].svg_data, path_transform: matrix }
+		}
+		assert chromium_svg_folded_opacity(changed, [], 2) == none
+	}
+}

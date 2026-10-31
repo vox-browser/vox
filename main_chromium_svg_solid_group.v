@@ -94,12 +94,60 @@ fn chromium_svg_solid_paint_alpha(command &layout.PaintCommand, stroke bool, byt
 
 fn (mut app BrowserApp) draw_chromium_svg_solid_group(commands []layout.PaintCommand,
 	layers []int, start int, page_x f32, page_y f32) int {
+	end := chromium_svg_solid_run_end(commands, layers, start)
+	return app.draw_chromium_svg_solid_run(commands, start, end, page_x, page_y, 1)
+}
+
+// One paint can carry the scope's opacity without quantizing an intermediate image.
+fn chromium_svg_folded_opacity(commands []layout.PaintCommand, layers []int, start int) ?f64 {
+	end := chromium_svg_opacity_group_end(commands, start)
+	if end == start || (layers.len != 0 && (layers.len != commands.len
+		|| layers[start] != layers[start + 1] || layers[start] != layers[start + 2])) {
+		return none
+	}
+	inner := &commands[start + 1]
+	opening := &commands[start]
+	if f32(inner.opacity) != f32(inner.group_opacity)
+		|| !chromium_shared_recording_clips_supported(opening) {
+		return none
+	}
+	matrix := multiply_paint_transforms(inner.transform, inner.svg_data.path_transform)
+	if matrix[0] != 1 || matrix[1] != 0 || matrix[2] != 0 || matrix[3] != 1 {
+		return none
+	}
+	if opening.clip_outs.len != 0 || opening.recording_clip != none { return none }
+	if opening.clip_list != unsafe { nil } {
+		for clip in opening.clip_list.items {
+			clip_matrix := normalized_paint_transform(clip.transform)
+			if clip.corner_radii != layout.BoxRadii{} || clip_matrix[1] != 0 || clip_matrix[2] != 0 {
+				return none
+			}
+		}
+	}
+	// Preserve the opening scope's ancestor bounds as well as the path clip.
+	if opening.has_clip && (!inner.has_clip || opening.clip_x > inner.clip_x
+		|| opening.clip_y > inner.clip_y || opening.clip_x + opening.clip_width < inner.clip_x + inner.clip_width
+		|| opening.clip_y + opening.clip_height < inner.clip_y + inner.clip_height) {
+		return none
+	}
+	return opening.visual_layer().opacity
+}
+
+fn (mut app BrowserApp) draw_chromium_svg_opacity_group(commands []layout.PaintCommand,
+	layers []int, start int, page_x f32, page_y f32) int {
+	opacity := chromium_svg_folded_opacity(commands, layers, start) or { return start }
+	drawn := app.draw_chromium_svg_solid_run(commands, start + 1, start + 2,
+		page_x, page_y, opacity)
+	return if drawn == start + 2 { start + 3 } else { start }
+}
+
+fn (mut app BrowserApp) draw_chromium_svg_solid_run(commands []layout.PaintCommand,
+	start int, end int, page_x f32, page_y f32, opacity f64) int {
 	$if macos {
 		if !app.ctx.native_rendering || app.page_zoom != 1 || app.document == unsafe { nil }
 			|| app.document.font_rendering_policy() != .chromium {
 			return start
 		}
-		end := chromium_svg_solid_run_end(commands, layers, start)
 		if end == start { return start }
 		mut paths := []C.VoxGraphitePath{cap: end - start}
 		mut left := math.inf(1)
@@ -155,7 +203,7 @@ fn (mut app BrowserApp) draw_chromium_svg_solid_group(commands []layout.PaintCom
 					data.stroke_opacity
 				} else {
 					data.fill_opacity
-				})
+				} * opacity)
 			}
 		}
 		first := &commands[start]
@@ -185,6 +233,8 @@ fn (mut app BrowserApp) draw_nested_svg_commands(commands []layout.PaintCommand,
 	for index, command in mapped {
 		if index < end { continue }
 		end = app.draw_chromium_svg_rectangular_mask(mapped, [], index, page_x, page_y)
+		if end > index { continue }
+		end = app.draw_chromium_svg_opacity_group(mapped, [], index, page_x, page_y)
 		if end > index { continue }
 		end = app.draw_chromium_svg_solid_group(mapped, [], index, page_x, page_y)
 		if end > index { continue }

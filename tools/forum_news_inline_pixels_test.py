@@ -110,6 +110,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_svg_mask_paths_blend_with_the_translated_mask_backdrop(self):
         self.compare_fixture('forum-svg-mask-backdrop')
 
+    def test_single_svg_opacity_keeps_fractional_color_until_painting(self):
+        self.compare_fixture('forum-svg-single-paint-opacity', width=1024, height=768)
+
     def test_svg_solid_paints_retain_fractional_rgb_channels(self):
         self.compare_fixture('forum-svg-fractional-paint', width=1024, height=768)
 
