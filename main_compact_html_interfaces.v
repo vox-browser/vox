@@ -8,8 +8,14 @@ function HTMLElement(){throw new TypeError("Illegal HTMLElement constructor");}
 function HTMLIFrameElement(){throw new TypeError("Illegal HTMLIFrameElement constructor");}
 function HTMLInputElement(){throw new TypeError("Illegal HTMLInputElement constructor");}
 function HTMLTemplateElement(){throw new TypeError("Illegal HTMLTemplateElement constructor");}
+function HTMLLinkElement(){throw new TypeError("Illegal HTMLLinkElement constructor");}
+function HTMLScriptElement(){throw new TypeError("Illegal HTMLScriptElement constructor");}
+function HTMLButtonElement(){throw new TypeError("Illegal HTMLButtonElement constructor");}
+function HTMLFormElement(){throw new TypeError("Illegal HTMLFormElement constructor");}
+function HTMLDialogElement(){throw new TypeError("Illegal HTMLDialogElement constructor");}
+function HTMLTextAreaElement(){throw new TypeError("Illegal HTMLTextAreaElement constructor");}
 function SVGElement(){throw new TypeError("Illegal SVGElement constructor");}
-for(const [constructor,parent,name] of [[HTMLElement,Element,"HTMLElement"],[HTMLIFrameElement,HTMLElement,"HTMLIFrameElement"],[HTMLInputElement,HTMLElement,"HTMLInputElement"],[HTMLTemplateElement,HTMLElement,"HTMLTemplateElement"],[SVGElement,Element,"SVGElement"]]){
+for(const [constructor,parent,name] of [[HTMLElement,Element,"HTMLElement"],[HTMLIFrameElement,HTMLElement,"HTMLIFrameElement"],[HTMLInputElement,HTMLElement,"HTMLInputElement"],[HTMLTemplateElement,HTMLElement,"HTMLTemplateElement"],[HTMLLinkElement,HTMLElement,"HTMLLinkElement"],[HTMLScriptElement,HTMLElement,"HTMLScriptElement"],[HTMLButtonElement,HTMLElement,"HTMLButtonElement"],[HTMLFormElement,HTMLElement,"HTMLFormElement"],[HTMLDialogElement,HTMLElement,"HTMLDialogElement"],[HTMLTextAreaElement,HTMLElement,"HTMLTextAreaElement"],[SVGElement,Element,"SVGElement"]]){
  Object.setPrototypeOf(constructor,parent);
  Object.setPrototypeOf(constructor.prototype,parent.prototype);
  Object.defineProperty(constructor,"prototype",{writable:false});
@@ -20,7 +26,8 @@ function __compactElementPrototype(state){
  if(state.namespaceURI==="http://www.w3.org/2000/svg")return SVGElement.prototype;
  if(state.namespaceURI!=="http://www.w3.org/1999/xhtml")return Element.prototype;
  const name=String(state.tagName),local=name.slice(name.indexOf(":")+1);
- return local==="iframe"?HTMLIFrameElement.prototype:local==="input"?HTMLInputElement.prototype:local==="template"?HTMLTemplateElement.prototype:HTMLElement.prototype;
+ const interfaces={iframe:HTMLIFrameElement,input:HTMLInputElement,template:HTMLTemplateElement,link:HTMLLinkElement,script:HTMLScriptElement,button:HTMLButtonElement,form:HTMLFormElement,dialog:HTMLDialogElement,textarea:HTMLTextAreaElement};
+ return Object.prototype.hasOwnProperty.call(interfaces,local)?interfaces[local].prototype:HTMLElement.prototype;
 }
 ' + compact_template_bootstrap()
 }

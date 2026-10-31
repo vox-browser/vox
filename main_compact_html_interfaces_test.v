@@ -27,3 +27,27 @@ while(focused instanceof owner.HTMLIFrameElement)throw new Error("ordinary eleme
 '], runtime, mut messages)
 	assert messages == []string{}
 }
+
+fn test_compact_startup_interfaces_preserve_type_checks_and_html_namespaces() {
+	mut document := html.parse_document('<!doctype html><link id="sheet" rel="stylesheet"><script id="bootstrap" type="application/json">{}</script><button id="button"></button><form id="form"></form><dialog id="dialog"></dialog><textarea id="editor"></textarea>')
+	mut runtime := browserjs.Runtime.create()
+	defer {
+		runtime.close()
+		document.finalize()
+	}
+	mut messages := []string{}
+	run_document_javascript(document, 'about:blank', [r'
+for(const [tag,name,id] of [["link","HTMLLinkElement","sheet"],["script","HTMLScriptElement","bootstrap"],["button","HTMLButtonElement","button"],["form","HTMLFormElement","form"],["dialog","HTMLDialogElement","dialog"],["textarea","HTMLTextAreaElement","editor"]]){
+ const Constructor=globalThis[name],parsed=document.getElementById(id),created=document.createElement(tag);
+ if(!(parsed instanceof Constructor)||!(created instanceof Constructor)||!(parsed instanceof HTMLElement)||!(parsed instanceof Element)||!(parsed instanceof Node))throw new Error(name+" identity");
+ if(Object.getPrototypeOf(Constructor)!==HTMLElement||Object.getPrototypeOf(Constructor.prototype)!==HTMLElement.prototype)throw new Error(name+" inheritance");
+ if(Object.prototype.toString.call(parsed)!=="[object "+name+"]"||Constructor.prototype.constructor!==Constructor)throw new Error(name+" prototype");
+ if(document.createElementNS("http://www.w3.org/2000/svg",tag) instanceof Constructor||document.createElementNS("urn:test",tag) instanceof Constructor)throw new Error(name+" namespace");
+ if(document.createElement("div") instanceof Constructor)throw new Error(name+" unrelated element");
+ let illegal=false;try{new Constructor()}catch(error){illegal=error instanceof TypeError;}
+ if(!illegal)throw new Error(name+" constructor");
+}
+if(sheet.rel!=="stylesheet"||bootstrap.type!=="application/json")throw new Error("reflected startup attributes");
+'], runtime, mut messages)
+	assert messages == []string{}
+}
