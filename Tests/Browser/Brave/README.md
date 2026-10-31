@@ -69,6 +69,18 @@ two-picture scenarios cover both device scales, translucent/opaque prefixes,
 and explicit flushes/layer switches. The retained local-picture, gradient,
 shadow, clip and unsupported-content checks also pass with sanitizers.
 
+`forum-svg-mask-backdrop` checks inline and external SVG luminance masks with
+black cutout paths over white, plus translucent opacity groups inside alpha
+masks. Its 800×600, scale 1 reference comes from two agreeing Brave
+156.1.98.60 captures. It improves from 62 differing pixels to zero. Color-mask
+paths blend with the translated mask bitmap on the GPU; active Quartz opacity
+layers retain their isolated replay. `python3 tools/test_skia_svg_clip.py`
+now also compares 96 translated mask draws with complete independent GPU masks,
+including fills, strokes, both device scales, colored/translucent backdrops
+and row padding. All 288 mapping guards pass; the preceding library and browser
+fail the new checks. The native mask-scope harness also covers nested opacity
+depth in its 56 cases, in optimized and sanitized modes.
+
 References were captured from Brave 155.1.97.57 on macOS at device scale 1.
 `font-rasterization` covers Arial and Verdana at integer and fractional sizes,
 automatic and antialiased smoothing, three foreground colors, and white and

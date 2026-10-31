@@ -1781,3 +1781,73 @@ Evidence is under `Build/forum-news-svg-alpha-20261031/`, especially
 cancelled and supplies no acceptance credit; its outer receipt is incomplete.
 The final candidate has its own complete guarded validation. The broad
 baseline remains **`adf10924`**, with **four** completed native fixes after it.
+
+## SVG mask bitmap backdrops, 31 October 2026
+
+`ba04c31b` blends solid mask paths with the mask bitmap's existing pixels on
+the GPU. Previously, rendering each path on transparency and compositing its
+quantized image through Quartz changed antialiased black/white boundaries by
+one level. The bridge maps page coordinates into the translated bitmap and
+requires readable premultiplied RGBA, uniform scale, aligned device pixels and
+in-bounds raster dimensions. Active Quartz opacity groups retain their
+isolated replay; their depth is tracked independently of the page's effects.
+
+The new `forum-svg-mask-backdrop` fixture checks inline and external luminance
+masks plus translucent opacity groups in alpha masks. It improves from **62
+differing pixels to zero** against two agreeing 800×600, scale 1 Brave
+156.1.98.60 references. Both the preceding browser and native library fail
+the new checks. The native regression compares **96** translated mask draws
+with independent complete GPU masks, covering fills, strokes, both device
+scales, fractional geometry, transparent/colored backdrops and protected row
+padding. All **288** mapping checks pass. The existing **96** SVG publication
+comparisons and **107** clip checks also pass. These drivers use AddressSanitizer
+and UndefinedBehaviorSanitizer. The **56** mask-scope cases pass in optimized
+and sanitized modes, including nested opacity depth. All **31 native Brave
+fixtures**, three canonical SVG reftests, five harness cases, signing and
+startup pass on the final pinned bundle.
+
+The native application caller changes, so a complete production build is
+required. It completes with stable inputs at **7.43 GiB** sampled peak RSS under
+the unchanged 12 GiB guard and 10 GiB compiler limit. A subsequent comment-only
+bridge compilation reproduces identical unsigned bytes. The installed bundle
+matches the tested candidate; public bridge exports, the Metal/Dawn backends
+and the uBO snapshot retain their identities. Fresh checks pin executable
+`1428a2f2ac8f734aae44170ddfb2a25715059c69ea5c2c4fd40cb4bdbbb0ef3b`
+and native bridge
+`5cc7e85c69584f5004288148105d7908cfbcdafbf7b2ef21e90b702c7c2ebcdb`.
+A fresh installed-bundle startup check passes.
+
+Stack Overflow improves from **230 to 170** differing pixels against an
+unchanged full-uBO reference. Exactly **60** native pixels change, all becoming
+correct; no new pixel becomes incorrect. The header and main column remain
+exact, the left sidebar falls from **139 to 79**, and the right sidebar remains
+at **91**. Maximum channel error stays **2**, with the existing gray icon
+differences unchanged. The illustration reduction improves from **63 to three**
+one-level differences. A separate half-opacity mask diagnostic retains **1,600**
+one-level differences and is pixel-identical before and after this fix. Its
+source and both images remain under `reduced/`; that gap remains open.
+
+The ten-site matrix still accepts **one of ten**. Completed native comparisons
+report HN 0, Lobsters 115, Slashdot 9,773, Stack Overflow 170, BBC 76,604,
+CNN 101,529, The Verge 315,921 and Pikabu 13,925. All completed native frames
+outside Stack Overflow remain unchanged. Lobsters' reference changes at 115
+pixels, accounting for its new count without renderer regression credit;
+its live-to-frozen mismatch is now 44. Every other completed reference is
+unchanged. Reddit's guest HTTP 403 and The Guardian's unstable references
+remain failures.
+
+The initial Pikabu capture hits the previously documented inline-iterator
+saturation assertion during font-failure handling after about 92 seconds.
+That failed run remains retained. A fresh same-build retry completes with
+13,925 native differing pixels and 21,603 live-to-frozen pixels; its native
+frame and reference both match the preceding feature. The eight completed
+workloads, including the retry, retain matching full-uBO request/header,
+cosmetic, procedural and scriptlet evidence. The closed 326-file oracle
+template remains unchanged through both the matrix and the retry.
+
+Evidence is under `Build/forum-news-mask-backdrop-20261031/`, especially
+`production/`, `native-padded/`, `mask-scope-v2/`, `reference/`, `original/`,
+`candidate/`, `pikabu-retry/`, `final-matrix.json`, `fixture-comparison.json`
+and `frame-comparison.json`. The broad baseline remains **`adf10924`**, with
+**five** completed native fixes after it. Full ten-site pixel parity remains
+open.
