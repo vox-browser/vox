@@ -45,6 +45,7 @@ mut:
 	event_constructor  voidptr
 	ui_event_constructor voidptr
 	ui_event_prototype voidptr
+	keyboard_event_prototype voidptr
 	mouse_event_prototype voidptr
 	mouse_event_constructor voidptr
 	pointer_event_prototype voidptr
@@ -91,6 +92,9 @@ pub fn (mut runtime Runtime) install_event_target_binding() ! {
 		if binding.mouse_event_prototype == unsafe { nil } && binding.ui_event_prototype != unsafe { nil } {
 			runtime.install_mouse_event_binding()!
 		}
+		if binding.keyboard_event_prototype == unsafe { nil } && binding.ui_event_prototype != unsafe { nil } {
+			runtime.install_keyboard_event_binding()!
+		}
 		if binding.pointer_event_prototype == unsafe { nil } && binding.mouse_event_prototype != unsafe { nil } {
 			runtime.install_pointer_event_binding()!
 		}
@@ -128,6 +132,7 @@ pub fn (mut runtime Runtime) install_event_target_binding() ! {
 	if settings := runtime.scripting_settings_ {
 		if settings.global_object().data.kind == .window {
 			runtime.install_ui_event_binding()!
+			runtime.install_keyboard_event_binding()!
 			runtime.install_mouse_event_binding()!
 			runtime.install_pointer_event_binding()!
 			runtime.install_wheel_event_binding()!
@@ -280,6 +285,8 @@ pub fn (mut runtime Runtime) javascript_event(event &dom.Event) !voidptr {
 		prototype = binding.track_event_prototype
 	} else if binding.mouse_event_prototype != unsafe { nil } && native_event_is_mouse_event(event) {
 		prototype = binding.mouse_event_prototype
+	} else if binding.keyboard_event_prototype != unsafe { nil } && event.interface_ == .keyboard_event {
+		prototype = binding.keyboard_event_prototype
 	} else if binding.ui_event_prototype != unsafe { nil } && native_event_is_ui_event(event) {
 		prototype = binding.ui_event_prototype
 	}
