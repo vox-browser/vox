@@ -91,6 +91,7 @@ pub struct FontPixelMetrics {
 pub:
 	size                  f32
 	x_height              f32
+	cap_height            f32
 	advance_of_ascii_zero f32
 	ascent                f32
 	descent               f32
@@ -241,6 +242,7 @@ fn (font &Font) system_face_pixel_metrics(face SystemFontFace) FontPixelMetrics 
 	return FontPixelMetrics{
 		size:                  font.point_size
 		x_height:              f32(face.metrics.x_height)
+		cap_height:            f32(face.metrics.cap_height)
 		// Blink's `ch` is the unrounded advance of the zero glyph.
 		advance_of_ascii_zero: font.glyph_width(u32(`0`))
 		ascent:                f32(face.metrics.ascent)
@@ -257,6 +259,7 @@ fn (font &Font) pixel_metrics_uncached() FontPixelMetrics {
 		return FontPixelMetrics{
 			size:                  font.point_size
 			x_height:              font.point_size * 0.5
+			cap_height:            font.point_size * 0.8
 			advance_of_ascii_zero: f32(math.round(f64(font.glyph_width(u32(`0`)))))
 			ascent:                font.point_size * 0.8
 			descent:               font.point_size * 0.2
@@ -284,6 +287,8 @@ fn (font &Font) decoded_face_pixel_metrics(face &ttf.TTF_File, zero_advance f32)
 	}
 	mut x_height_units := i16(face.units_per_em / 2)
 	mut has_os2_x_height := false
+	mut cap_height_units := ascent_units
+	mut has_os2_cap_height := false
 	if os2 := font_table_offset(face.buf, 'OS/2') {
 		version := font_u16_at(face.buf, os2) or { 0 }
 		selection := font_u16_at(face.buf, os2 + 62) or { 0 }
@@ -296,8 +301,15 @@ fn (font &Font) decoded_face_pixel_metrics(face &ttf.TTF_File, zero_advance f32)
 		if version >= 2 {
 			x_height_units = font_i16_at(face.buf, os2 + 86) or { x_height_units }
 			has_os2_x_height = true
+			if cap := font_i16_at(face.buf, os2 + 88) {
+				if cap > 0 {
+					cap_height_units = cap
+					has_os2_cap_height = true
+				}
+			}
 		}
 	}
+	if !has_os2_cap_height { cap_height_units = ascent_units }
 	if !has_os2_x_height && font_face_has_truetype_outlines(face) {
 		mut mutable_face := unsafe { &ttf.TTF_File(face) }
 		x_glyph := font_cmap_glyph(face.buf, u32(`x`))
@@ -305,6 +317,12 @@ fn (font &Font) decoded_face_pixel_metrics(face &ttf.TTF_File, zero_advance f32)
 		if x_max_y > 0 {
 			x_height_units = i16(x_max_y)
 		}
+	}
+	if !has_os2_cap_height && font_face_has_truetype_outlines(face) {
+		mut mutable_face := unsafe { &ttf.TTF_File(face) }
+		cap_glyph := font_cmap_glyph(face.buf, u32(`H`))
+		_, _, _, cap_max_y := mutable_face.read_glyph_dim(cap_glyph)
+		if cap_max_y > 0 { cap_height_units = i16(cap_max_y) }
 	}
 	// SkFont preserves the typeface's one-pixel metrics when constructed with a
 	// zero text size, even though glyph advances are zero. Gfx::Font copies
@@ -324,6 +342,7 @@ fn (font &Font) decoded_face_pixel_metrics(face &ttf.TTF_File, zero_advance f32)
 	return FontPixelMetrics{
 		size:                  font.point_size
 		x_height:              f32(x_height_units) * scale
+		cap_height:            f32(cap_height_units) * scale
 		advance_of_ascii_zero: f32(math.round(f64(zero_advance)))
 		// Ladybird's CoreText generic-serif cascade exposes typographic metrics
 		// with a 3:1 ascent/descent split while retaining the concrete Times New
