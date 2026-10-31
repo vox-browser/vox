@@ -920,7 +920,7 @@ Viewport paint metadata retains the empty scroll boundary and the grid's
 compositor origin; complete CSS pictures keep the gradient on that tile grid.
 Run `python3 tools/forum_news_inline_pixels_test.py
 ForumNewsInlinePixelsTests.test_culled_scroll_metadata_retains_a_complete_gradient_picture`.
-The native gradient harness also checks eight direct/pattern picture cases.
+The native gradient harness also checks sixteen direct/pattern picture cases.
 
 `compositor-css-gradients` supplies focused layout tests and a diagnostic for
 promoted and scrolling panels with direct, repeated and radial backgrounds.
@@ -950,3 +950,14 @@ and overlines precede glyphs; line-through follows them. Run
 `python3 tools/forum_news_inline_pixels_test.py ForumNewsInlinePixelsTests.test_translucent_underlines_paint_beneath_glyph_edges`.
 Focused layout checks also cover selected spans, ancestor decorations and the
 translated LibWeb profile's existing order.
+
+
+`gradient-obscured-border-destination` checks repeated linear gradients beneath
+opaque rounded borders, including an inset shadow and a fractional-height
+pattern tile. Capture at 1280×800, scale 1 and scroll Y 6400. Two fresh Brave
+references agree exactly. Trimming ink to the computed background destination
+removes all fourteen preceding one-level corner errors while preserving the
+original generated-image tile. Run
+`python3 tools/forum_news_inline_pixels_test.py ForumNewsInlinePixelsTests.test_gradient_repetitions_stop_at_the_unobscured_background_destination`.
+The native harness also compares sixteen Metal image leaves against independent
+Dawn pictures, including odd decoded sizes and the float containment boundary.

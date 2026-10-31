@@ -1,10 +1,9 @@
 # vlang.io rendering against Brave
 
 Pixel-perfect parity remains open. The current settled, archived comparison at
-1280 × 800 CSS pixels and scale 1 has **9 differing pixels at the top** and
-**14 at scroll Y 6400** after the image sampling and underline fixes. These
-numbers describe those viewports, not the complete live page. Earlier build
-comparisons and validation limits are recorded below.
+1280 × 800 CSS pixels and scale 1 has **4 differing pixels at the top** and
+**zero at scroll Y 6400**. These results cover those two viewports, not the
+complete live page. Earlier comparisons and validation limits are recorded below.
 
 ## Capture readiness correction
 
@@ -404,3 +403,77 @@ it increased the top/lower mismatches to 3,653/7,005 and changed 2,602 pixels in
 `fractional-gradient-pattern`. It was never installed. A separate tiny-image
 first-use/cache diagnostic still differs at 2,026 pixels; neither that fixture
 nor unsupported image combinations receives exact-parity credit from this fix.
+
+
+## Gradient destinations and Metal image leaves
+
+`e4ed5e42` transports the computed background destination for generated
+gradients as well as ordinary images. Opaque border edges trim the painted
+bounds while the original image tile still determines shader coordinates.
+The half-border rounded bleed clip previously admitted a sliver of another
+repeat; that extra paint caused the fourteen lower corner differences.
+A per-draw native bounds record preserves the complete generated-image picture
+when its visible paint is trimmed. It is copied immediately and cleared after
+the draw. The independent trimmed-pattern test fails against the old behavior
+by 19,758 channels.
+
+The new `gradient-obscured-border-destination` fixture reproduces all fourteen
+errors and now matches Brave exactly at 1280×800, scale 1 and scroll Y 6400.
+Two fresh references agree. Seven layout and eleven main-package geometry tests
+pass with no collector and Boehm, including translucent-border and translated
+LibWeb controls. Native CSS picture coverage increases to sixteen cases.
+
+`b58db23a` applies Chromium's decoded-pixel image transform to the ordinary
+Metal image path too. That removes the five JPEG differences in the top
+viewport. A new independent Metal/Dawn comparison covers sixteen combinations
+of scale, odd source dimensions, rounded clips and transparency. The preceding
+Metal library fails by 2,106 pixels; the candidate is exact. The float source
+containment check also preserves the strict-rectangle fallback.
+
+The installed archived captures now have **4 differing pixels at the top** and
+**zero at scroll Y 6400**. The four top errors are one-level blue-channel
+rounding inside the compilation panel's gradient. Full-page, live scripted and
+Retina parity remain open.
+
+Evidence under `Build/vlang-parity-20261031/` includes:
+
+- `gradient-destination-before-{layout,main}-none-{build,run}.json`:
+  both new V regressions fail against the preceding implementation.
+- `gradient-destination-focus-{layout,main}-{none,boehm}-{build,run}.json`:
+  focused geometry checks pass in both memory modes.
+- `gradient-destination-pattern-before-{compile,run}.json` and
+  `gradient-destination-native-checks/`: the independent cropped-pattern
+  control fails, and all seven updated native suites pass.
+- `gradient-destination-production-{guard,status}.json`: the production build
+  passes with all required V/native inputs stable. Unrelated CSS/font/text
+  sources and the later Metal image implementation change during compilation.
+  The Metal library is built and installed separately afterward; the V build
+  alone does not validate that later native change.
+- `metal-mipped-image-test-v2-{before,candidate}.json`,
+  `metal-mipped-image-final-{build,inputs}.json`, and
+  `metal-mipped-image-install.json`: independent GPU controls, native-only
+  build/source hashes and installation under the shared production lock.
+- `all-rendering-native-accepted/`: all eight sanitized native suites pass,
+  including 200 image pictures, sixteen CSS gradient pictures and sixteen
+  Metal image comparisons. The preceding `all-rendering-native-final/` run
+  overlapped replacement of its input library and failed its identity guard;
+  that run is excluded from acceptance. The accepted rerun uses pinned modules.
+- `gradient-destination-{baseline,candidate}/` and
+  `gradient-destination-reference-agreement.json`: exact new browser fixture.
+- `all-vlang-installed-page/`, `all-vlang-installed-smoke-status.json`,
+  `all-vlang-installed-inline-regressions.json`, and
+  `all-vlang-installed-gradient-regressions/status.json`: fresh installed
+  captures, fourteen screenshot checks, all forty-one inline browser tests and
+  seven exact image/gradient references pass without an identity change.
+- `all-vlang-installed-headless.json` and
+  `all-vlang-installed-live/status.json`: startup and live scripted navigation
+  pass with fonts loaded, five completed visible image requests and zero
+  native errors. Live loading does not supply matched pixel comparison credit.
+
+The installed executable is
+`f7bad678c22005f7a109e416c03d2ff61ffbdff349c7f21ad54a7dc422bab17f`,
+pinned in `Vox-all-vlang-installed.app`; its libraries and source inputs are
+recorded in `all-vlang-installed-after.json`. Page-coordinate rounded-rectangle
+and inset-color probes did not change the fourteen corner errors. Endpoint
+padding and transparent-stop probes did not remove the remaining four top
+pixels. These diagnostic changes remain only under `Build/`.
