@@ -147,3 +147,30 @@ from master and the final production bundle. A separate reference-tool fix,
 `f9b865f4`, keeps windowed Brave captures rendering while occluded. A fresh
 scroll-6400 reference using that option agrees exactly with the settled
 reference above.
+
+
+## Scrolled pictures and clipped generated tiles
+
+`659d8d05` retains the root scroll translation when locating a non-root
+picture in its compositor tile grid. The native regression exercises explicit
+bridge scrolling and scrolling already projected into the display-list matrix,
+at device scales 1 and 2. The preceding implementation fails the projected
+scroll case. `root-scrolled-compositor-verification.json` and
+`shared-layer-before-scroll-{compile,run}.json` retain the controls under
+`Build/vlang-parity-20261031/`.
+
+`72a80bd2` intersects a generated gradient tile's recorded ink with its own
+background clip and ancestor clip. Fully clipped repetitions no longer enlarge
+the picture target or disable its tile grid. Four added native cases cover
+direct and picture-pattern gradients at both device scales. The AddressSanitizer
+run passes; the control with the preceding ink-bounds calculation fails the
+same bounds assertion. Receipts are `gradient-clipped-bounds-{compile,run}.json`
+and `gradient-clipped-bounds-control-{compile,run}.json`.
+
+The broader viewport metadata and complete CSS picture work is still being
+validated. Its empty-scroller overlap fixture reaches exact equality, but its
+full-page candidate loses code text at scroll Y 6400, and a separate scrolling
+gradient fixture exposes a missing scrolling-background paint. These candidates
+do not establish a vlang rendering improvement or full Brave parity. The four
+existing gradient screenshot regressions remain exact in
+`viewport-layer-gradient-regressions/status.json`.
