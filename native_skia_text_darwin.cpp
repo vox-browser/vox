@@ -3760,6 +3760,37 @@ static bool record_chromium_svg_path_batch(SkCanvas* canvas,
     return true;
 }
 
+// Publish an already clipped SVG raster without repeating Quartz's clip only
+// when every destination clip is represented in the GPU recording. In
+// particular, an integer viewport clip must not discard Skia's resolved fringe.
+static bool svg_batch_has_complete_raster_clips(CGContextRef destination,
+    float canvas_width, float canvas_height, float scale)
+{
+    auto found = s_shared_clips.find(destination);
+    if (found == s_shared_clips.end() || found->second.unsupported
+        || found->second.clips.empty() || !(scale > 0)
+        || !CGBitmapContextGetData(destination)) return false;
+    auto ctm = CGContextGetCTM(destination);
+    if (ctm.a != scale || ctm.d != scale || ctm.b != 0 || ctm.c != 0
+        || ctm.tx != 0 || ctm.ty != 0
+        || CGBitmapContextGetWidth(destination) != canvas_width * scale
+        || CGBitmapContextGetHeight(destination) != canvas_height * scale) return false;
+    auto bounds = SkRect::MakeWH(canvas_width, canvas_height);
+    for (auto const& clip : found->second.clips) {
+        // A rotated clip's Quartz bounding box can include an additional
+        // implicit intersection that this rectangular comparison cannot prove.
+        if (clip.matrix.getSkewX() != 0 || clip.matrix.getSkewY() != 0
+            || !bounds.intersect(clip.matrix.mapRect(clip.rect.rect()))) return false;
+    }
+    auto native = CGContextGetClipBoundingBox(destination);
+    double edges[] {native.origin.x, canvas_height - CGRectGetMaxY(native),
+        CGRectGetMaxX(native), canvas_height - native.origin.y};
+    float tracked[] {bounds.left(), bounds.top(), bounds.right(), bounds.bottom()};
+    for (int i = 0; i < 4; ++i)
+        if (!std::isfinite(edges[i]) || std::abs(edges[i] - tracked[i]) > .001) return false;
+    return true;
+}
+
 extern "C" int ladybird_v_skia_draw_svg_path_batch(CGContextRef destination,
     VoxGraphitePath const* paths, int count, float const* outer, float x, float y,
     float width, float height, float page_x, float page_y, float scroll_y,
@@ -3797,6 +3828,9 @@ extern "C" int ladybird_v_skia_draw_svg_path_batch(CGContextRef destination,
     std::vector<uint32_t> pixels(static_cast<size_t>(raster_width) * raster_height);
     bool has_background = s_raster_layer_is_root && opaque_backdrop && copy_backdrop(destination, region,
         scale, raster_width, raster_height, pixels);
+    bool gpu_clips = shared_picture_draw() && svg_batch_has_complete_raster_clips(destination,
+        canvas_width, canvas_height, scale);
+    bool all_draws_clipped = gpu_clips;
     auto image_to_raster = raster_matrix(matrix, region, sx, sy);
     float viewport[] {x, y, width, height};
     auto draw_in_raster = [&](std::vector<uint32_t>& target, int target_width,
@@ -3805,18 +3839,37 @@ extern "C" int ladybird_v_skia_draw_svg_path_batch(CGContextRef destination,
         parent.postTranslate(offset_x, offset_y);
         float parent_values[9];
         parent.get9(parent_values);
-        if (!s_raster_layer_is_root && !has_background && shared_picture_draw()) {
+        if (gpu_clips || (!s_raster_layer_is_root && !has_background && shared_picture_draw())) {
             SkPictureRecorder recorder;
             auto* canvas = recorder.beginRecording(SkRect::MakeWH(target_width, target_height));
+            if (has_background) {
+                auto info = SkImageInfo::Make(target_width, target_height, kBGRA_8888_SkColorType,
+                    kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
+                auto backdrop = SkImages::RasterFromPixmapCopy(
+                    SkPixmap(info, target.data(), size_t(target_width) * 4));
+                if (!backdrop) return false;
+                canvas->drawImage(backdrop, 0, 0);
+            }
+            if (gpu_clips) {
+                for (auto const& clip : s_shared_clips.find(destination)->second.clips) {
+                    auto transform = raster_matrix(clip.matrix, region, sx, sy);
+                    transform.postTranslate(offset_x, offset_y);
+                    canvas->setMatrix(transform);
+                    canvas->clipRRect(clip.rect, true);
+                }
+            }
             bool recorded = record_chromium_svg_path_batch(canvas, paths, count, parent,
                 SkRect::MakeXYWH(x, y, width, height), rounded_clip);
             auto picture = recorder.finishRecordingAsPicture();
-            auto bytes = picture->serialize();
+            SkSerialProcs procs;
+            procs.fImageProc = serialize_shared_picture_image;
+            auto bytes = picture->serialize(&procs);
             float identity[] {1, 0, 0, 0, 1, 0, 0, 0, 1};
             if (recorded && bytes && shared_picture_draw()(reinterpret_cast<uint8_t*>(target.data()),
                     target_width, target_height, target_width * 4,
                     bytes->data(), bytes->size(), identity)) return true;
         }
+        all_draws_clipped = false;
         return draw(reinterpret_cast<uint8_t*>(target.data()), target_width,
             target_height, target_width * 4, has_background, paths, count,
             parent_values, viewport, rounded_clip) != 0;
@@ -3878,8 +3931,14 @@ extern "C" int ladybird_v_skia_draw_svg_path_batch(CGContextRef destination,
         }
     }
     if (!drawn && !draw_in_raster(pixels, raster_width, raster_height, 0, 0)) return 0;
-    return composite_pixels(destination, std::move(pixels), raster_width, raster_height,
+    if (all_draws_clipped) {
+        CGContextSaveGState(destination);
+        CGContextResetClip(destination);
+    }
+    auto result = composite_pixels(destination, std::move(pixels), raster_width, raster_height,
         region.left, canvas_height - region.bottom, region.width(), region.height(), has_background);
+    if (all_draws_clipped) CGContextRestoreGState(destination);
+    return result;
 }
 
 // CSS partial borders consist of narrow contours around a large empty box.

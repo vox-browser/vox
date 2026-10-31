@@ -101,6 +101,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_disjoint_svg_does_not_change_rounded_fallback_coverage(self):
         self.compare_fixture('forum-disjoint-msaa-raster', width=1024, height=768)
 
+    def test_resolved_svg_viewport_coverage_is_not_clipped_twice(self):
+        self.compare_fixture('forum-svg-viewport-fringe', width=1024, height=768)
+
     def test_programmatically_scrollable_sticky_text_keeps_its_compositor_raster(self):
         self.compare_fixture('stackoverflow-programmatic-sticky-text')
 
