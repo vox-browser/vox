@@ -2536,6 +2536,38 @@ static bool draw_chromium_layer_raster_grid(std::vector<uint32_t>& pixels,
         });
 }
 
+template<typename Draw>
+static bool draw_chromium_clipped_layer_raster_grid(std::vector<uint32_t>& pixels,
+    int width, int height, RasterRegion const& region, float page_x,
+    float page_y, float scroll_y, float scale, SkRect const& paint_bounds, Draw draw)
+{
+    if (s_raster_layer_is_root || s_msaa_grid_columns <= 0 || !(scale > 0)
+        || !std::isfinite(scale) || !paint_bounds.isFinite()
+        || !(s_raster_layer_width > 0 && s_raster_layer_height > 0)
+        || !std::isfinite(s_raster_layer_width) || !std::isfinite(s_raster_layer_height)) return false;
+    double left = page_x + s_raster_origin_x;
+    double top = page_y - scroll_y + s_raster_origin_y;
+    if (paint_bounds.left() < left || paint_bounds.top() < top) return false;
+    // The layer origin was floored separately from its size. Include snapped
+    // paint that reaches the next pixel at a fractional trailing box edge.
+    double content_width = std::ceil(std::max(s_raster_layer_width,
+        double(paint_bounds.right()) - left) * scale);
+    double content_height = std::ceil(std::max(s_raster_layer_height,
+        double(paint_bounds.bottom()) - top) * scale);
+    if (content_width > INT32_MAX || content_height > INT32_MAX) return false;
+    long first_x = std::lround((region.left - page_x - s_raster_origin_x) * scale);
+    long first_y = std::lround((region.top - page_y + scroll_y - s_raster_origin_y) * scale);
+    int rows = int(std::max(1.0, std::ceil((s_raster_layer_height * scale - 2)
+        / (s_msaa_grid_height - 2))));
+    VoxChromiumRasterGrid grid{s_msaa_grid_width, s_msaa_grid_height, s_msaa_grid_columns, rows};
+    return vox_draw_chromium_raster_grid_clipped(pixels, width, height, first_x, first_y, grid,
+        int(content_width), int(content_height),
+        [&](auto& tile, long offset_x, long offset_y, int cell) {
+            bool msaa = std::binary_search(s_msaa_grid_tiles.begin(), s_msaa_grid_tiles.end(), cell);
+            return draw(tile, offset_x, offset_y, msaa);
+        });
+}
+
 template<bool Compact = false, typename Draw>
 static bool draw_chromium_root_raster_grid(std::vector<uint32_t>& pixels,
     int width, int height, RasterRegion const& region, float page_x,
@@ -3273,6 +3305,23 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
                 return draw(reinterpret_cast<uint8_t*>(target.data()), s_msaa_grid_width,
                     s_msaa_grid_height, s_msaa_grid_width * 4, 1, &shape) != 0;
             });
+        if (!tiled && drawn && has_background && (has_underlay || !rounded_rect.isRect())) {
+            auto ink = rounded_rect.rect();
+            if (paint.getStyle() == SkPaint::kStroke_Style)
+                ink.outset(thickness / 2, thickness / 2);
+            if (has_underlay) ink.join(underlay_rect.rect());
+            tiled = draw_chromium_clipped_layer_raster_grid(pixels,
+                raster_width, raster_height, region, page_x, page_y, scroll_y,
+                destination_scale, matrix.mapRect(ink),
+                [&](auto& target, long offset_x, long offset_y, bool msaa) {
+                    auto shape = descriptor;
+                    shape.matrix[2] += offset_x;
+                    shape.matrix[5] += offset_y;
+                    shape.force_msaa = msaa;
+                    return draw(reinterpret_cast<uint8_t*>(target.data()), s_msaa_grid_width,
+                        s_msaa_grid_height, s_msaa_grid_width * 4, 1, &shape) != 0;
+                });
+        }
         if (tiled) {
             drawn = true;
         } else if (drawn

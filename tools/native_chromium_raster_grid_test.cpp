@@ -91,10 +91,68 @@ static void check_msaa_grid_compositing()
 }
 
 
+static void check_clipped_raster_grid()
+{
+    VoxChromiumRasterGrid grid {6, 5, 3, 3};
+    size_t comparisons = 0;
+    for (int content_width : {9, 14}) for (int content_height : {8, 11})
+    for (long first_x : {std::numeric_limits<long>::min(), -19L, -4L, -1L, 0L, 3L, 10L, 13L,
+             std::numeric_limits<long>::max()})
+    for (long first_y : {std::numeric_limits<long>::min(), -17L, -3L, -1L, 0L, 2L, 8L, 10L,
+             std::numeric_limits<long>::max()}) {
+        constexpr int width = 8, height = 7;
+        std::vector<uint32_t> pixels(width * height);
+        for (size_t i = 0; i < pixels.size(); ++i) pixels[i] = uint32_t(i + 100);
+        auto backdrop = pixels;
+        bool outside = first_x <= -width || first_y <= -height
+            || first_x >= content_width || first_y >= content_height;
+        int calls = 0;
+        assert(vox_draw_chromium_raster_grid_clipped(pixels, width, height, first_x, first_y, grid,
+            content_width, content_height,
+            [&](auto& tile, long offset_x, long offset_y, int cell) {
+                ++calls;
+                for (int y = 0; y < grid.height; ++y) for (int x = 0; x < grid.width; ++x) {
+                    long sx = x - offset_x, sy = y - offset_y;
+                    auto expected = sx >= 0 && sx < width && sy >= 0 && sy < height
+                        && first_x + sx >= 0 && first_x + sx < content_width
+                        && first_y + sy >= 0 && first_y + sy < content_height
+                        ? backdrop[size_t(sy) * width + sx] : 0;
+                    assert(tile[size_t(y) * grid.width + x] == expected);
+                    tile[size_t(y) * grid.width + x] = uint32_t(cell + 1);
+                }
+                return true;
+            }));
+        assert((calls == 0) == outside);
+        if (outside) assert(pixels == backdrop);
+        else for (int y = 0; y < height; ++y) for (int x = 0; x < width; ++x) {
+            long gx = first_x + x, gy = first_y + y;
+            auto expected = backdrop[size_t(y) * width + x];
+            if (gx >= 0 && gx < content_width && gy >= 0 && gy < content_height) {
+                int col = gx <= 4 ? 0 : gx <= 8 ? 1 : 2;
+                int row = gy <= 3 ? 0 : gy <= 6 ? 1 : 2;
+                expected = uint32_t(row * 3 + col + 1);
+            }
+            assert(pixels[size_t(y) * width + x] == expected);
+            ++comparisons;
+        }
+        if (!outside) {
+            pixels = backdrop;
+            assert(!vox_draw_chromium_raster_grid_clipped(pixels, width, height,
+                first_x, first_y, grid, content_width, content_height, [](auto& tile, long, long, int) {
+                    std::fill(tile.begin(), tile.end(), 0xDEADBEEFU);
+                    return false;
+                }));
+            assert(pixels == backdrop);
+        }
+    }
+    std::printf("Clipped raster grid: %zu fringe/ownership/backdrop comparisons passed\n", comparisons);
+}
+
 int main()
 {
     check_msaa_masks();
     check_msaa_grid_compositing();
+    check_clipped_raster_grid();
     size_t comparisons = 0;
     for (long first_y : {0L, 2L, 3L, 4L, 5L})
     for (long first_x : {0L, 3L, 4L, 5L, 6L})
