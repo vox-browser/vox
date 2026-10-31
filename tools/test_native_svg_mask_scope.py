@@ -44,6 +44,8 @@ def main():
     parser.add_argument("--output", type=Path)
     parser.add_argument("--implementation", type=Path,
                         help="Optional historical source for a regression sensitivity check")
+    parser.add_argument("--graphite-dir", type=Path,
+                        default=Path(__file__).resolve().parent.parent / "Build/v/Vox.app/Contents/MacOS")
     args = parser.parse_args()
     source = Path(__file__).resolve().parent.parent
     output = args.output.resolve() if args.output else Path(tempfile.mkdtemp(prefix="vox-mask-scope-"))
@@ -61,6 +63,7 @@ def main():
     inputs = [implementation, extracted, compiler, Path(__file__).resolve(), fixture,
               source / "native_skia_text_darwin.cpp", skia / "lib/libskia.dylib"]
     inputs += list(source.glob("native*.h"))
+    inputs += [args.graphite_dir / "libVoxGraphiteDawn.dylib"]
     pins = {str(path): sha256(path) for path in inputs}
     result = {"pins": pins, "source_copies": 0, "jobs": []}
     for mode, flags in (("o2", ["-O2"]),
@@ -71,7 +74,8 @@ def main():
                    "-I", str(skia / "include"), str(fixture), "-L", str(skia / "lib"), "-lskia"]
         for framework in ("Cocoa", "CoreFoundation", "CoreGraphics", "CoreText", "Foundation", "Metal"):
             command += ["-framework", framework]
-        command += ["-Wl,-rpath," + str(skia / "lib"), "-o", str(binary)]
+        command += ["-Wl,-rpath," + str(skia / "lib"),
+                    "-Wl,-rpath," + str(args.graphite_dir.resolve()), "-o", str(binary)]
         row = {"mode": mode, "command": command}
         with binary.with_suffix(".log").open("x") as log:
             row["compile_exit_code"] = subprocess.run(command, stdout=log, stderr=subprocess.STDOUT).returncode

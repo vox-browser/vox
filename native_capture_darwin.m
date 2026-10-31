@@ -35,6 +35,7 @@ static void native_capture_instruction_checkpoint(const char *label) {
 #include "native_opacity_group_darwin.h"
 #include "native_opacity_canvas_pool_darwin.h"
 #include "native_bitmap_snapshot_darwin.h"
+#include "native_svg_mask_opacity_darwin.h"
 
 int native_prefers_overlay_scrollbars(void) {
 	return [NSScroller preferredScrollerStyle] == NSScrollerStyleOverlay;
@@ -2344,6 +2345,8 @@ static float native_svg_clip_canvas_width;
 static int native_svg_clip_build_is_color;
 static int native_svg_clip_build_is_luminance;
 static int native_svg_clip_build_opacity_depth;
+static int native_svg_clip_build_quartz_opacity_depth;
+static VoxSVGMaskOpacityBitmap native_svg_clip_opacity_bitmaps[VOX_SVG_MASK_OPACITY_BITMAP_DEPTH];
 
 static uint64_t native_svg_clip_hash_float(uint64_t hash, float value) {
 	uint32_t bits;
@@ -2371,6 +2374,7 @@ static int native_prepare_svg_mask(unsigned long long input_key, int content_mas
 	float scroll_y) {
 	native_svg_clip_canvas_width = canvas_width;
 	native_svg_clip_build_opacity_depth = 0;
+	native_svg_clip_build_quartz_opacity_depth = 0;
 	native_svg_clip_cache_clock++;
 	uint64_t key = native_svg_mask_cache_key(input_key, content_mask, canvas_width,
 		canvas_height, page_x, page_y, scroll_y);
@@ -4462,19 +4466,40 @@ void native_begin_svg_mask_opacity(float opacity) {
 	if (native_svg_clip_image != NULL || native_svg_clip_build_context == NULL) {
 		return;
 	}
+	int depth = native_svg_clip_build_opacity_depth;
+	if (native_font_compositing_context != NULL && native_svg_clip_build_is_color
+		&& native_svg_clip_build_quartz_opacity_depth == 0
+		&& depth < VOX_SVG_MASK_OPACITY_BITMAP_DEPTH
+		&& native_begin_svg_mask_bitmap_opacity(&native_svg_clip_opacity_bitmaps[depth],
+			native_svg_clip_build_context, opacity)) {
+		native_svg_clip_build_context = native_svg_clip_opacity_bitmaps[depth].canvas.context;
+		native_svg_clip_build_opacity_depth++;
+		return;
+	}
 	CGContextSaveGState(native_svg_clip_build_context);
 	native_svg_clip_build_opacity_depth++;
+	native_svg_clip_build_quartz_opacity_depth++;
 	CGContextSetAlpha(native_svg_clip_build_context, fminf(fmaxf(opacity, 0.0f), 1.0f));
 	native_begin_tracked_transparency_layer(native_svg_clip_build_context, NULL);
 }
 
 void native_end_svg_mask_opacity(void) {
-	if (native_svg_clip_image != NULL || native_svg_clip_build_context == NULL) {
+	if (native_svg_clip_image != NULL || native_svg_clip_build_context == NULL
+		|| native_svg_clip_build_opacity_depth == 0) {
+		return;
+	}
+	native_svg_clip_build_opacity_depth--;
+	int depth = native_svg_clip_build_opacity_depth;
+	if (depth < VOX_SVG_MASK_OPACITY_BITMAP_DEPTH
+		&& native_svg_clip_opacity_bitmaps[depth].canvas.context != NULL) {
+		CGContextRef parent = native_svg_clip_opacity_bitmaps[depth].parent;
+		native_end_svg_mask_bitmap_opacity(&native_svg_clip_opacity_bitmaps[depth]);
+		native_svg_clip_build_context = parent;
 		return;
 	}
 	native_end_tracked_transparency_layer(native_svg_clip_build_context);
 	CGContextRestoreGState(native_svg_clip_build_context);
-	if (native_svg_clip_build_opacity_depth > 0) native_svg_clip_build_opacity_depth--;
+	native_svg_clip_build_quartz_opacity_depth--;
 }
 
 static void native_draw_svg_mask_path_part(CGContextRef context, CGPathRef path,
@@ -4514,7 +4539,7 @@ void native_add_svg_content_mask_path(const float *data, int segment_count,
 			color.r, color.g, color.b, color.a, draw_stroke ? 0 : 1,
 			color.r, color.g, color.b, color.a, draw_stroke ? 1 : 0,
 			stroke_width, line_cap, line_join, miter_limit, 0, NULL, 0, 0.0,
-			native_svg_clip_build_is_color && native_svg_clip_build_opacity_depth == 0)) {
+			native_svg_clip_build_is_color && native_svg_clip_build_quartz_opacity_depth == 0)) {
 			used_skia = 0;
 			break;
 		}

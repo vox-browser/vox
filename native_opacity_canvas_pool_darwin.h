@@ -62,7 +62,7 @@ static VoxOpacityCanvas native_acquire_opacity_canvas(size_t width, size_t heigh
         }
     }
     if (!canvas.context) {
-        canvas.pixels = calloc(height, width * 4);
+        canvas.pixels = (uint8_t *)calloc(height, width * 4);
         if (!canvas.pixels) return canvas;
         canvas.context = CGBitmapContextCreate(canvas.pixels, width, height, 8, width * 4,
             color_space, kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);

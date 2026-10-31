@@ -110,6 +110,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_svg_mask_paths_blend_with_the_translated_mask_backdrop(self):
         self.compare_fixture('forum-svg-mask-backdrop')
 
+    def test_svg_mask_groups_retain_float_opacity(self):
+        self.compare_fixture('forum-svg-mask-group-opacity')
+
     def test_programmatically_scrollable_sticky_text_keeps_its_compositor_raster(self):
         self.compare_fixture('stackoverflow-programmatic-sticky-text')
 
