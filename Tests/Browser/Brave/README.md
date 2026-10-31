@@ -26,6 +26,14 @@ checks cover resizing, both device scales, overflow and nested compositor and
 scroll surfaces. The full Stack Overflow page still has separate fallback
 renderer differences; see the site report above.
 
+The native fallback for rounded compositor-layer content is checked with
+`python3 tools/test_skia_layer_compound.py`. It compares 72 real bridge draws
+with independently assembled complete GPU tiles at scales 1 and 2, covering
+background/border pairs, filled controls, transparent backdrops and fractional
+trailing extents. The portable grid checks preserve off-layer fringes and
+rollback failed draws. Both checks use AddressSanitizer and UndefinedBehaviorSanitizer;
+the preceding native library fails the same GPU regression.
+
 References were captured from Brave 155.1.97.57 on macOS at device scale 1.
 `font-rasterization` covers Arial and Verdana at integer and fractional sizes,
 automatic and antialiased smoothing, three foreground colors, and white and

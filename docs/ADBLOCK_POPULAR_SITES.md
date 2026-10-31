@@ -1541,3 +1541,63 @@ Evidence is under `Build/forum-news-blog-border-20261031/`, especially
 `candidate-v2/verified/`, `candidate-v2/actual-compiler.json`, `broad/` and
 `full-page-trace/`. The original full-container candidate and its failed native
 fixture remain retained. Full ten-site parity remains open.
+
+## Complete tiles for rounded layer fallbacks, 31 October 2026
+
+`7186b286` replays rounded fallback draws in complete compositor tiles instead
+of cropped leaf-sized targets. This includes both a background/border pair and
+an ordinary rounded fill. Each tile retains its original backdrop, coordinates
+and multisampling mode. A clipped staging buffer preserves the conservative
+fringe outside the layer, and failed draws leave the caller's pixels unchanged.
+The finite content bounds also include snapped paint reaching the next pixel
+after a fractional trailing box edge; simply clipping to the raw layer width
+lost a column of paint in an intermediate candidate.
+
+The new native regression compiles the actual bridge and compares **72 GPU
+draws** with independently assembled complete tiles at scales 1 and 2. It
+covers transparent and opaque backdrops, translucent underlays, mixed tile
+multisampling, ordinary filled controls and fractional extents. The preceding
+native library fails this regression. AddressSanitizer and UndefinedBehaviorSanitizer
+checks also pass all existing portable grid cases plus **5,600** clipped-fringe
+ownership comparisons, including extreme origins and failed-draw rollback.
+All **27 native Brave fixtures**, three focused canonical SVG reftests,
+signing and startup pass.
+
+The production update rebuilds only the changed native bridge with the normal
+production flags, reusing the latest completed bundle. All file-backed Mach-O
+sections of its executable remain identical through signing, the bridge's C
+exports remain unchanged, and the Graphite libraries and uBO snapshot retain their
+identities. Fresh processes use the final pinned bundle under
+`Build/forum-news-compound-layer-20261031/verified-v3/`. The unchanged executable
+sections isolate this native change from independent V compiler work.
+Captures pin executable
+`d915142a1c5c2cfef928f7b34726c2404e4af0d55b7b6dcb987a223a8d332f72`
+and bridge
+`1e5171e5b686734ea89e2f7083f2b01de23ed0f5d4b017fd47f4b583d9cdcfe7`.
+
+Stack Overflow improves from **239 to 236** differing pixels against an
+unchanged Brave reference. Exactly five native pixels change, all becoming
+closer to that reference: three left-sidebar pixels become exact, while the
+blog border's two large errors fall to one-channel rounding differences. No
+previously correct pixel becomes incorrect. The header remains exact; the
+left sidebar now has **143**, main column **two**, and right sidebar **91**
+differences. Maximum channel error falls from **32 to 20**, with the largest
+remaining error on the main-column control at (674,115).
+
+The full-uBO matrix still accepts **one of ten**. Completed native cases report
+HN 0, Lobsters 0, Slashdot 9,773, Stack Overflow 236, BBC 76,604, CNN 107,122,
+The Verge 315,921 and Pikabu 13,925. Every completed native frame outside Stack
+Overflow remains identical to the preceding feature's frame. Lobsters, CNN
+and Pikabu instead change at 115, 31,766 and 66 reference pixels respectively;
+their changed totals receive no renderer credit. Lobsters retains its 71-pixel
+live-to-frozen mismatch. Reddit's guest HTTP 403 and The Guardian's unstable
+references remain failures. All eight completed workloads retain matching
+full-uBO request/header decisions and validated document references, and the
+closed 326-file oracle template stays unchanged.
+
+Evidence is under `Build/forum-news-compound-layer-20261031/`, especially
+`checkpoint.json`, `native-extent/`, `old-library-extent-control.*`,
+`native-build-v3/`, `verified-v3/stackoverflow-comparison.json` and
+`verified-v3/frame-comparison.json`. Rejected and intermediate candidates are
+retained separately. The broad baseline remains **`adf10924`**, with **one**
+completed native fix after it. Full ten-site pixel parity remains open.
