@@ -6,6 +6,25 @@ import painting
 import html
 import platform
 
+fn test_css_gradient_modes_preserve_premultiplied_interpolation() {
+	assert chromium_gradient_native_spread(&layout.PaintCommand{}) == chromium_gradient_css_spread
+	assert chromium_gradient_native_spread(&layout.PaintCommand{
+		image_data: &layout.PaintImageData{}
+	}) == chromium_gradient_css_spread
+	for pattern in [false, true] {
+		command := layout.PaintCommand{
+			image_data: &layout.PaintImageData{
+				background_layer_data: &layout.PaintBackgroundLayerData{gradient_pattern: pattern}
+			}
+		}
+		assert chromium_gradient_native_spread(&command) == if pattern {
+			chromium_gradient_pattern_spread
+		} else {
+			chromium_gradient_css_spread
+		}
+	}
+}
+
 fn test_chromium_linear_gradient_keeps_original_alpha_and_hard_stops() {
 	gradient := layout.LinearGradient{
 		y2:    1

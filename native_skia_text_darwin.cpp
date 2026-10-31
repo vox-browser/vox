@@ -3738,6 +3738,8 @@ static sk_sp<SkShader> chromium_svg_gradient_shader(VoxGraphitePath const& sourc
     SkMatrix matrix;
     matrix.set9(source.gradient_matrix);
     SkGradientShader::Interpolation interpolation;
+    if (source.gradient_premul)
+        interpolation.fInPremul = SkGradientShader::Interpolation::InPremul::kYes;
     auto tile_mode = static_cast<SkTileMode>(source.tile_mode);
     auto* points = source.gradient_points;
     if (source.gradient == 1) {
@@ -4269,6 +4271,22 @@ static SkTileMode svg_gradient_tile_mode(int spread_method)
     }
 }
 
+static bool css_gradient_spread(int spread_method)
+{
+    // 0..2 are SVG pad/repeat/reflect; 3 is a CSS picture pattern and 4 a
+    // direct CSS gradient. Both request the CSS root interpolation policy.
+    return spread_method == 3 || spread_method == 4;
+}
+
+static bool css_gradient_uses_premul(int spread_method)
+{
+    // Isolated CSS leaves still use the SVG compatibility raster grid. Keep
+    // their established rounding until complete CSS compositor pictures can
+    // retain the layer's grid; switching their interpolation alone regresses
+    // gradient-compositor-backdrop. Root CSS draws use premultiplied colors.
+    return s_raster_layer_is_root && css_gradient_spread(spread_method);
+}
+
 // The first tile owns rows [0, spacing], subsequent tiles exclude their
 // first border texel. This is also the tile whose device coordinates seed
 // gradient dithering at each visible row.
@@ -4598,6 +4616,7 @@ static int draw_svg_gradient_path(CGContextRef destination, float const* data,
                 gradient_points[3], gradient_points[4], gradient_points[5]},
             .gradient_matrix = {}, .opacity = opacity, .stops = stops.data()
         };
+        descriptor.gradient_premul = css_gradient_uses_premul(spread_method);
         if (clip) {
             descriptor.has_clip = 1;
             std::copy_n(clip, 12, descriptor.clip);
@@ -4733,6 +4752,8 @@ static int draw_svg_linear_gradient_path_with_clip(
             SkMatrix const& gradient_matrix) {
             SkPoint points[] { { start_x, start_y }, { end_x, end_y } };
             SkGradientShader::Interpolation interpolation;
+            if (css_gradient_uses_premul(spread_method))
+                interpolation.fInPremul = SkGradientShader::Interpolation::InPremul::kYes;
             return SkGradientShader::MakeLinear(points, colors.data(), nullptr,
                 positions.data(), static_cast<int>(colors.size()), tile_mode,
                 interpolation, &gradient_matrix);
@@ -4802,6 +4823,8 @@ static int draw_svg_radial_gradient_path_with_clip(
             std::vector<SkScalar> const& positions, SkTileMode tile_mode,
             SkMatrix const& gradient_matrix) {
             SkGradientShader::Interpolation interpolation;
+            if (css_gradient_uses_premul(spread_method))
+                interpolation.fInPremul = SkGradientShader::Interpolation::InPremul::kYes;
             return SkGradientShader::MakeTwoPointConical(
                 SkPoint::Make(start_x, start_y), std::max(start_radius, 0.0f),
                 SkPoint::Make(end_x, end_y), std::max(end_radius, 0.0f),

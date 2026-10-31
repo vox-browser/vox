@@ -4651,7 +4651,7 @@ fn draw_native_css_gradient_tile(command &layout.PaintCommand, gradient layout.L
 				f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), canvas_height,
 				0, 0, 0, 0, 4, radial_data[0], radial_data[1], radial_data[2], radial_data[3], radial_data[4],
 				radial_data[5], radial_data[6], radial_data[7], radial_data[8], radial_data[9], radial_data[10],
-				radial_data[11], 0, 0,
+				radial_data[11], i32(chromium_gradient_css_spread), 0,
 				gpu_stops.data, i32(gpu_stops.len / 5), 1, clip_pointer, ancestor_pointer) }
 			if drawn != 0 { return true }
 			// The caller transferred these clips to the GPU draw. Restore them
@@ -4713,7 +4713,7 @@ fn draw_native_css_gradient_tile(command &layout.PaintCommand, gradient layout.L
 						0, 0, 0, 0, 4, points[0], points[1], points[2], points[3],
 						1, 0, 0, 1,
 						if gradient.css_angle_degrees != none { f32(tile.x) } else { f32(0) },
-						if gradient.css_angle_degrees != none { f32(tile.y) } else { f32(0) }, 0, 0,
+						if gradient.css_angle_degrees != none { f32(tile.y) } else { f32(0) }, chromium_gradient_css_spread, 0,
 						gpu_stops.data, gpu_stops.len / 5, 1)
 				}
 				if command.gradient_background_layer { C.native_end_clip() }

@@ -93,6 +93,8 @@ typedef struct {
     float ancestor_clip[12];
     int has_float_color;
     float float_color[4];
+    // CSS interpolates premultiplied colors; SVG retains straight components.
+    int gradient_premul;
 } VoxGraphitePath;
 
 #ifdef __cplusplus

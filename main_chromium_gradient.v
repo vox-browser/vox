@@ -8,14 +8,16 @@ import platform
 
 fn C.tanf(f32) f32
 
-// The native bridge reserves 0..2 for SVG pad/reflect/repeat. This mode
-// retains a repeated CSS generated-image tile before compositing it.
+// The native bridge reserves 0..2 for SVG pad/repeat/reflect. CSS modes request
+// premultiplied root interpolation; the pattern mode also retains a repeated
+// generated-image tile. Isolated leaves keep their existing compatibility path.
 const chromium_gradient_pattern_spread = 3
+const chromium_gradient_css_spread = 4
 
 fn chromium_gradient_native_spread(command &layout.PaintCommand) i32 {
-	if command.image_data == unsafe { nil } { return 0 }
-	data := command.image_data.background_layer_data or { return 0 }
-	return if data.gradient_pattern { i32(chromium_gradient_pattern_spread) } else { i32(0) }
+	if command.image_data == unsafe { nil } { return i32(chromium_gradient_css_spread) }
+	data := command.image_data.background_layer_data or { return i32(chromium_gradient_css_spread) }
+	return if data.gradient_pattern { i32(chromium_gradient_pattern_spread) } else { i32(chromium_gradient_css_spread) }
 }
 
 // Blink's EndPointsFromAngle retains float intermediates. Keep the original
@@ -65,10 +67,9 @@ fn chromium_linear_gradient_points(gradient layout.LinearGradient, tile painting
 		f32(tile.x + gradient.x2 * tile.width), f32(tile.y + gradient.y2 * tile.height)]!
 }
 
-// The SVG GPU shader's straight-component interpolation is also the CSS
-// premultiplied result when alpha is constant or all visible RGB components
-// are constant (invisible RGB is normalized below). Preserve original stops for these sRGB gradients rather
-// than quantizing an intermediate set of samples to eight bits.
+// Preserve original stops for these sRGB gradients rather than quantizing an
+// intermediate set of samples to eight bits. The native root CSS mode uses
+// premultiplied colors, including when only alpha varies.
 $if test {
 	fn chromium_linear_gradient_stop_data(gradient layout.LinearGradient, opacity f64) ?[]f32 {
 		mut data := []f32{}

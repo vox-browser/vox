@@ -178,6 +178,7 @@ class VoxGraphiteRasterCache {
             && !std::memcmp(&a.miter_limit, &b.miter_limit, sizeof(a.miter_limit))
             && a.gradient == b.gradient && a.tile_mode == b.tile_mode
             && a.linear_color_space == b.linear_color_space && a.stop_count == b.stop_count
+            && a.gradient_premul == b.gradient_premul
             && !std::memcmp(a.gradient_points, b.gradient_points, sizeof(a.gradient_points))
             && !std::memcmp(a.gradient_matrix, b.gradient_matrix, sizeof(a.gradient_matrix))
             && !std::memcmp(&a.opacity, &b.opacity, sizeof(a.opacity))

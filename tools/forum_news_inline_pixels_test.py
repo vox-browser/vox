@@ -143,6 +143,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_variable_font_underlines_skip_the_instantiated_glyph_ink(self):
         self.compare_fixture('stackoverflow-variable-font-skip-ink')
 
+    def test_css_fades_interpolate_premultiplied_colors(self):
+        self.compare_fixture('css-premultiplied-fades', width=1024, height=768)
+
 
 if __name__ == '__main__':
     unittest.main()

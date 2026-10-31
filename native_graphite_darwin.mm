@@ -1330,8 +1330,11 @@ static bool draw_path_on_canvas(SkCanvas* canvas, VoxGraphitePath const* path,
         }
         SkMatrix local;
         local.set9(path->gradient_matrix);
+        SkGradient::Interpolation interpolation;
+        if (path->gradient_premul)
+            interpolation.fInPremul = SkGradient::Interpolation::InPremul::kYes;
         SkGradient gradient(SkGradient::Colors(SkSpan<const SkColor4f>(colors),
-            SkSpan<const float>(positions), static_cast<SkTileMode>(path->tile_mode)), {});
+            SkSpan<const float>(positions), static_cast<SkTileMode>(path->tile_mode)), interpolation);
         auto const* points = path->gradient_points;
         sk_sp<SkShader> shader;
         if (path->gradient == 1) {

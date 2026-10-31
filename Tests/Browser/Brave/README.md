@@ -873,6 +873,19 @@ scopes share path sample coverage. Both scales require exact RGBA equality.
 Capture commands, source hashes and fresh-process identities are retained in
 `Build/pikabu-rectangular-mask-1793128123792884000/visual-results.json`.
 
+`css-premultiplied-fades` checks linear and radial fades over a dark root
+background at 1024×768 and scale 1. Two agreeing Brave 156.1.98.60 captures
+provide its reference. It improves from two one-level differences to exact
+RGBA equality. CSS root gradients carry an explicit premultiplied interpolation
+flag through direct and picture replay; SVG retains straight interpolation.
+The raster cache includes this flag. `python3 tools/test_skia_gradient_backdrop.py`
+adds four exact Metal/Dawn comparisons for both gradient kinds and modes;
+the preceding backend fails the radial CSS case. The isolated compositor
+compatibility path retains its existing interpolation because switching that
+path alone regresses `gradient-compositor-backdrop` by one pixel. The new
+fixture's scale-two diagnostic retains a separate raster mismatch; this is
+not a claim of complete Retina or vlang.io parity.
+
 `css-radial-gradient` covers sRGB elliptical and circular fades, layered
 backgrounds, hard stops, and a rounded descendant clip at 800×600 and scale 1.
 Its Brave 156.1.98.60 reference is pixel-exact. Eligible radial gradients retain

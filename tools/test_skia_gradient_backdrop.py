@@ -27,12 +27,15 @@ def main():
     output.mkdir(parents=True, exist_ok=False)
     native = output / 'native'
     native.mkdir()
-    module = args.native_dir / 'libVoxGraphite.dylib'
-    before = hashlib.sha256(module.read_bytes()).hexdigest()
-    shutil.copyfile(module, native / module.name)
-    assert before == hashlib.sha256(module.read_bytes()).hexdigest()
-    assert before == hashlib.sha256((native / module.name).read_bytes()).hexdigest()
-    (output / 'module-identity.json').write_text(json.dumps({'source': str(module), 'sha256': before}))
+    modules = [args.native_dir / name for name in
+               ['libVoxGraphite.dylib', 'libVoxGraphiteDawn.dylib']]
+    identity = lambda: {str(path): hashlib.sha256(path.read_bytes()).hexdigest() for path in modules}
+    before = identity()
+    for module in modules:
+        shutil.copyfile(module, native / module.name)
+        assert before[str(module)] == hashlib.sha256((native / module.name).read_bytes()).hexdigest()
+    assert before == identity()
+    (output / 'module-identity.json').write_text(json.dumps(before, indent=2))
     upstream = Path(os.environ.get('LADYBIRD_SOURCE_DIR', REPO.parent / '3rd/ladybird'))
     triplet = os.environ.get('LADYBIRD_VCPKG_TRIPLET',
                             'arm64-osx-dynamic' if platform.machine() == 'arm64' else 'x64-osx-dynamic')
@@ -44,11 +47,26 @@ def main():
               '-Wl,-rpath,' + str(native)]
     for framework in ['CoreFoundation', 'CoreGraphics', 'CoreText', 'Foundation', 'Metal']:
         common += ['-framework', framework]
-    for test in ['native_skia_gradient_backdrop_test', 'native_skia_gradient_tiles_test']:
+    for test in ['native_skia_gradient_backdrop_test', 'native_skia_gradient_tiles_test',
+                 'native_skia_gradient_interpolation_test']:
         executable = output / test
+        compile_command = common + [str(REPO / 'tools' / (test + '.cpp')), '-o', str(executable)]
+        run_command = [str(executable)]
+        if test == 'native_skia_gradient_interpolation_test':
+            # Build the independent reference with the same pinned Chromium
+            # Skia as the isolated GPU libraries, rather than LibWeb's ABI.
+            source = REPO / 'Build/deps/skia-brave/source'
+            compile_command = ['clang++', '-std=c++20', '-O1', '-g', '-fno-rtti',
+                               '-fsanitize=address', '-fno-omit-frame-pointer',
+                               '-I' + str(source), str(REPO / 'tools' / (test + '.cpp')),
+                               str(source / 'out/Release/libskia.a'),
+                               str(source / 'out/Release/libskcms.a'), '-o', str(executable)]
+            for framework in ['Metal', 'CoreGraphics', 'Foundation', 'ImageIO', 'CoreText']:
+                compile_command += ['-framework', framework]
+            run_command += [str(native / module.name) for module in modules]
         for phase, command, limit in [
-            ('compile', common + [str(REPO / 'tools' / (test + '.cpp')), '-o', str(executable)], '12'),
-            ('runtime', [str(executable)], '3'),
+            ('compile', compile_command, '12'),
+            ('runtime', run_command, '3'),
         ]:
             name = test + '-' + phase
             with (output / (name + '.log')).open('x') as log:
@@ -61,6 +79,7 @@ def main():
             if code:
                 print(f'{name} failed; evidence: {output}')
                 return code
+    assert before == identity()
     print(f'Native gradient checks passed; evidence: {output}')
     return 0
 
