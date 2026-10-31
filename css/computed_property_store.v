@@ -14,6 +14,7 @@ mut:
 	// Published pages share immutable values. A replacement invalidates this
 	// conservative density-projection mask before the page can be read again.
 	device_layout_candidates_ u64
+	device_layout_generation_ u64 = 1
 }
 
 // Record copies share this owner, preserving the raw array's existing aliases.

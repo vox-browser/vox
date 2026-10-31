@@ -10857,6 +10857,7 @@ pub struct StyleComputer {
 pub mut:
 	document_                                            &dom.Document = unsafe { nil }
 	computed_property_page_interner_ &ComputedPropertyPageInterner = unsafe { nil }
+	device_layout_property_pages_ &DeviceLayoutPropertyPages = unsafe { nil }
 	computed_property_page_arena_ &platform.Arena = unsafe { nil }
 	computed_property_page_batch_depth_ int
 	computed_property_page_recycling_ &ComputedPropertyPageRecycling = unsafe { nil }

@@ -227,7 +227,8 @@ pub fn computed_style_in_layout_coordinates(source &ComputedProperties,
 		platform.leave_persistent(persistent)
 	}
 	mut original := unsafe { &ComputedProperties(source) }
-	computer := css_style_computer_for(document).font_computer()
+	style_computer := css_style_computer_for(document)
+	computer := style_computer.font_computer()
 	fonts := original.computed_font_list(computer)
 	_ = original.first_available_computed_font(computer)
 	previous := original.device_layout_projection_
@@ -286,6 +287,13 @@ pub fn computed_style_in_layout_coordinates(source &ComputedProperties,
 			source.property_store_.pages[page_index].device_layout_candidates()
 		} else { u16(0xffff) }
 		if mask == 0 { continue }
+		if use_page_candidates {
+			if page := style_computer.device_layout_page(source.property_store_.pages[page_index], page_index, factor) {
+				target.property_store_.pages[page_index] = page
+				target.property_store_.writable &= ~(u32(1) << page_index)
+				continue
+			}
+		}
 		for slot in 0 .. computed_property_page_size {
 			if mask & (u16(1) << slot) == 0 { continue }
 			index := page_index * computed_property_page_size + slot
@@ -337,6 +345,10 @@ pub fn computed_style_in_layout_coordinates(source &ComputedProperties,
 			if !scaled.equals(typed) {
 				target.set_property_without_modifying_flags(property_id, dom_style_value_from_value_logic(scaled))
 			}
+		}
+		if use_page_candidates {
+			style_computer.retain_device_layout_page(source.property_store_.pages[page_index],
+				mut target.property_store_, page_index, factor, mask)
 		}
 	}
 	target.ensure_computed_layout_cache().layout_coordinate_scale_ = scale
