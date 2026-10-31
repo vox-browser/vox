@@ -80,10 +80,7 @@ Object.defineProperty(NodeList.prototype,"forEach",{value:function forEach(callb
 function __compactNodeState(node){if(node===document)return{bridgeKey:"",nodeType:9};const state=__elementApply(__elementRecordGet,__elementRecords,[node])||__elementApply(__compactNodeGet,__compactNodeRecords,[node]);if(!state)throw new TypeError("Expected a Node");return state;}
 function __compactInvalidateContent(state){for(let current=state;current;current=current.parentKey&&__state.elements[current.parentKey]){if(!current.textContentDirty)delete current.textContent;if(!current.innerHTMLDirty)delete current.innerHTML;current.nativeContent=true;}}
 function __compactInsertNode(parent,child,reference,insert){const own=__compactNodeState(parent),target=__compactNodeState(child),ref=reference==null?null:__compactNodeState(reference),moving=target.nodeType===11?__queryElements(target.bridgeKey,"childNodes",""):[child],oldParents=moving.map(node=>__state.elements[__compactNodeState(node).parentKey]).filter(Boolean);try{__queryElements(own.bridgeKey,insert?"insertNode":"appendNode",JSON.stringify({child:target.bridgeKey,reference:ref?ref.bridgeKey:"",state:target}));}catch(error){const match=/^(HierarchyRequestError|NotFoundError|NotSupportedError):\s*(.*)/.exec(String(error.message));if(match)throw new DOMException(match[2],match[1]);throw error;}for(const state of oldParents)__compactInvalidateContent(state);for(const node of moving){const state=__compactNodeState(node);state.parentKey=own.bridgeKey;state.nativeParent=true;state.removed=false;}__compactInvalidateContent(own);return child;}
-function __compactChildNodes(receiver,state){
- const cached=__elementApply(__compactNodeGet,__compactChildLists,[receiver]);if(cached)return cached;
- let version=-1,nodes=[];
- const read=()=>{const current=__childTreeVersion();if(current>=0&&current===version&&__state.operations.length===0&&__dirtyElementStates.size===0)return nodes;nodes=__queryElements(state.bridgeKey,"childNodes","");version=__childTreeVersion();return nodes;};
+function __compactNodeList(read){
  const indexed=key=>typeof key==="string"&&/^(0|[1-9][0-9]*)$/.test(key)&&Number(key)<4294967295;
  const target=Object.create(NodeList.prototype);
  const list=new Proxy(target,{
@@ -96,10 +93,22 @@ function __compactChildNodes(receiver,state){
   deleteProperty(target,key){return indexed(key)?false:Reflect.deleteProperty(target,key);},
   preventExtensions(){return false;}
  });
- __elementApply(__elementRecordSet,__compactChildLists,[receiver,list]);
  __elementApply(__elementRecordSet,__compactChildReaders,[list,read]);
  return list;
 }
+function __compactChildNodes(receiver,state){
+ const cached=__elementApply(__compactNodeGet,__compactChildLists,[receiver]);if(cached)return cached;
+ let version=-1,nodes=[];
+ const read=()=>{const current=__childTreeVersion();if(current>=0&&current===version&&__state.operations.length===0&&__dirtyElementStates.size===0)return nodes;nodes=__queryElements(state.bridgeKey,"childNodes","");version=__childTreeVersion();return nodes;};
+ const list=__compactNodeList(read);
+ __elementApply(__elementRecordSet,__compactChildLists,[receiver,list]);
+ return list;
+}
+const __compactArrayQuery=__queryElements;
+__queryElements=function(key,action,selector){
+ const result=__compactArrayQuery(key,action,selector);
+ return action==="querySelectorAll"?__compactNodeList(()=>result):result;
+};
 Object.defineProperty(Element.prototype,"childNodes",{get:function(){return __compactChildNodes(this,__compactNodeState(this));},enumerable:true,configurable:true});
 Object.defineProperty(document,"childNodes",{get:function(){if(this!==document)throw new TypeError("Illegal Document receiver");return __compactChildNodes(this,{bridgeKey:""});},enumerable:true,configurable:true});
 document.createDocumentFragment=function createDocumentFragment(){return __queryElements("","createFragment","");};
