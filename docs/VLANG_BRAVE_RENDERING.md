@@ -2,7 +2,7 @@
 
 Pixel-perfect parity remains open. The current settled, archived comparison at
 1280 × 800 CSS pixels and scale 1 has **4 differing pixels at the top** and
-**zero at scroll Y 6400**, and **4 at scroll Y 8000**. Other viewports
+**zero at scroll Y 2400 and 6400**, and **4 at scroll Y 8000**. Other viewports
 still differ, including the Lilly preview and text. The installation Copy button
 now has Brave's single-line layout. These results do not cover
 the complete live page. Earlier comparisons and validation limits are recorded below.
@@ -669,3 +669,55 @@ The accepted signed executable is
 pinned with its libraries in `Vox-fractional-table-origin-installed.app`.
 `fractional-table-origin-installed-{before,after}.json` records unchanged
 installed identity across validation. Full-page and scale-two parity remain open.
+
+
+## Automatic table column surplus rounding
+
+`d62cee6f` matches Chromium's surplus distribution when every table column is
+an unconstrained automatic column with positive max-content width. It computes
+each proportional increment with one integer product and division, then gives
+the remaining raw LayoutUnits to the last column. Blink uses the same
+[`DistributeInlineSizeToComputedInlineSizeAuto`](https://chromium.googlesource.com/chromium/src/+/156.0.8078.48/third_party/blink/renderer/core/layout/table/table_layout_utils.cc)
+branch and truncating
+[`LayoutUnit::MulDiv`](https://chromium.googlesource.com/chromium/src/+/156.0.8078.48/third_party/blink/renderer/platform/geometry/layout_unit.h).
+Fixed layout, percentage, constrained, mixed, zero-width, and LibWeb-policy
+cases retain the existing path; this does not establish complete Chromium
+table-sizing parity.
+
+The vlang table viewport at scroll Y 2400 improves from **649 differing pixels
+to zero**. The standalone `automatic-table-column-surplus` fixture improves
+from **210 differences to zero**. Fresh Brave references agree exactly with
+the preceding captures. Other checked vlang positions retain 4, 0, 4, and
+20,196 differences at Y 0, 6400, 8000, and 8800 respectively.
+
+Evidence under `Build/vlang-parity-20261031/`:
+
+- `column-distribution-before-layout-none-{build,run}.json`: the original
+  regression compiles and fails against the preceding distribution.
+  `column-distribution-expanded-layout-{none,boehm}-{build,run}.json` records
+  fourteen passing focused functions in each mode. The new test covers both
+  policies, surplus and exact-fit widths, border spacing, and both directions
+  across sixteen scenarios.
+- `column-distribution-production-{guard,status}.json`: successful production
+  build with stable implementation input, 219.18 seconds, sampled peak aggregate
+  RSS of 6.19 GiB under the default 12 GiB guard. Only test inputs change during
+  compilation.
+- `column-distribution-installed-page/`, `column-distribution-ref-*.json`, and
+  `column-distribution-reference-repeat.json`: fresh archived comparisons,
+  geometry audits, and repeated reference agreement.
+- `column-distribution-installed-smoke-status.json` and
+  `column-distribution-installed-inline-regressions.{json,log}`: fourteen
+  screenshot/selection/invalidation/turbulence checks and all 45 inline browser
+  regressions pass.
+- `column-distribution-installed-gradient-regressions/status.json`: all eight
+  image, gradient, and intrinsic-table-height golds remain exact.
+- `column-distribution-installed-headless.guard.json` and
+  `column-distribution-installed-live/status.json`: startup and live scripted
+  loading pass, fonts load, all five visible image requests complete, and native
+  errors remain zero. Live loading supplies no matched pixel-comparison credit.
+
+The signed executable is
+`397cc65cf55ae3e4f2acc56492bed208949ea1e09471461a22bee6f3ccf38127`,
+pinned with its libraries in `Vox-column-distribution-installed.app`.
+`column-distribution-installed-{before,after}.json` records unchanged installed
+identity across validation. Full-page and scale-two parity remain open.
