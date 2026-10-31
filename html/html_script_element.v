@@ -399,7 +399,16 @@ pub fn (mut script HTMLScriptElementModel) execute_script() {
 	}
 	if script.script_type_ == .import_map {
 		mut result := script.import_map_result_ or { return }
-		result.register_import_map(mut script.registered_import_map_, [], fn (_ string) {}) or {
+		mut target := &script.registered_import_map_
+		mut resolved := []ResolvedModuleRecord{}
+		if document := script.preparation_time_document_ {
+			if document.relevant_settings_object() != unsafe { nil } {
+				settings := unsafe { &EnvironmentSettingsObject(document.relevant_settings_object()) }
+				target = unsafe { &ImportMap(settings.universal_global_scope().import_map()) }
+				resolved = settings.resolved_module_set()
+			}
+		}
+		result.register_import_map(mut target, resolved, fn (_ string) {}) or {
 			script.failed_to_load_ = true
 			script.fire_event('error')
 			return
@@ -446,6 +455,12 @@ pub fn (mut script HTMLScriptElementModel) unmark_as_parser_inserted() {
 }
 
 pub fn (script &HTMLScriptElementModel) registered_import_map() &ImportMap {
+	if document := script.preparation_time_document_ {
+		if document.relevant_settings_object() != unsafe { nil } {
+			settings := unsafe { &EnvironmentSettingsObject(document.relevant_settings_object()) }
+			return settings.universal_global_scope().import_map()
+		}
+	}
 	return &script.registered_import_map_
 }
 
