@@ -407,3 +407,18 @@ the frontend without adding an editing newline. Archive-only sentinel and
 conversation preparation requests remain 404, so neither that check nor the
 startup marker establishes a completed chat response. All these checks reuse
 the original saved download through the non-forwarding local SOCKS replay.
+
+
+The latest shared bundle subsequently replaced that executable with
+`588e99f41112f9986419a766bf7682e66736886f809ea296a07c19325ff983be`.
+Its `Build/vlang-parity-20261031/definite-flex-basis-production-inputs-{before,after}.json`
+receipts match all fourteen required implementation hashes
+(`installed-shared-source-validation.json`). It is reused without another build.
+`candidate-validation-installed-shared/results.json` repeats every focused,
+headless, screenshot and SVG group successfully with stable identity.
+`native-installed-shared-acceptance/` records a fresh original-archive native
+capture compared against the unchanged, matched Brave reference identified in
+`reference.json`: the same 7,169 differing pixels, zero script/native errors,
+and peak RSS 1,826,275,328 bytes. The native typing/Enter check above also uses
+this latest shared executable. Pixel-perfect rendering and a completed chat
+reply remain unverified.
