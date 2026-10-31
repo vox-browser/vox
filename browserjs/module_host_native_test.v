@@ -7,7 +7,7 @@ import net
 import os
 import time
 
-fn serve_parallel_module_requests(mut listener net.TcpListener) []string {
+fn serve_parallel_module_requests(mut listener net.TcpListener, padding int) []string {
 	mut paths := []string{}
 	for _ in 0 .. 2 {
 		mut socket := listener.accept() or { return paths }
@@ -19,7 +19,7 @@ fn serve_parallel_module_requests(mut listener net.TcpListener) []string {
 		}
 		path := input[..length].bytestr().split(' ')[1]
 		paths << path
-		body := if path == '/a.js' { 'export const value=41;' } else { 'export const value=1;' }
+		body := (if path == '/a.js' { 'export const value=41;' } else { 'export const value=1;' }) + '/*' + 'x'.repeat(padding) + '*/'
 		socket.write_string('HTTP/1.1 200 OK\r\nContent-Type: text/javascript\r\nContent-Length: ${body.len}\r\nConnection: close\r\n\r\n${body}') or {
 			socket.close() or {}
 			return paths
@@ -30,6 +30,14 @@ fn serve_parallel_module_requests(mut listener net.TcpListener) []string {
 }
 
 fn test_native_module_transport_completes_concurrent_classic_and_module_imports() {
+	check_native_module_transport(0)!
+}
+
+fn test_native_module_transport_consumes_large_concurrent_script_bodies() {
+	check_native_module_transport(256 * 1024)!
+}
+
+fn check_native_module_transport(padding int) ! {
 	$if !darwin {
 		return
 	}
@@ -43,7 +51,7 @@ fn test_native_module_transport_completes_concurrent_classic_and_module_imports(
 	mut listener := net.listen_tcp(.ip, '127.0.0.1:0')!
 	defer { listener.close() or {} }
 	listener.set_accept_timeout(3 * time.second)
-	server := spawn serve_parallel_module_requests(mut listener)
+	server := spawn serve_parallel_module_requests(mut listener, padding)
 	address := dom.URL{ value: 'http://${listener.addr()!}/owner' }
 	mut document := html.create_navigation_document(address, address.origin(), none)!
 	mut runtime := Runtime.create()
