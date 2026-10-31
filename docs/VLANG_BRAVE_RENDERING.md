@@ -50,7 +50,7 @@ Artifacts are under `Build/vlang-parity-20261031/`:
   visible image requests complete. Its top capture was visually inspected.
   Carousel and media timing make this a loading check, not a pixel comparison.
 
-The validated executable is
+The readiness-fix executable is
 `29de8747966bd8ba46f8e6b7d4b720aad40f04d58c66e80c903290668f8dfe27`,
 also pinned in `Vox-readiness.app`. Native library and resource hashes are in
 the browser and smoke identity receipts. Browser runs use fresh processes and
@@ -78,9 +78,12 @@ A transparent gradient leaf with the observed layer origin reduces the selected
 general layer implementation. Changing constant-alpha interpolation to premul
 on an ABI-stable probe leaves that result unchanged. Moving the origin by one
 pixel regresses it; direct Dawn leaf replay also regresses it to 193,477.
-The separate GPU-compositing probe loses opacity and is invalid for acceptance.
-None of these probes is installed in the production bundle or committed as
-renderer behavior.
+The first GPU-compositing probe lost opacity and is invalid for acceptance.
+A corrected injection preserves opacity but leaves the same 75,224 differences.
+Replaying the observed complete layer tile grid reduces the diagnostic to
+12,488 differences. That probe hardcodes measured geometry and is not a
+general renderer implementation. None of these probes is installed in the
+production bundle or committed as renderer behavior.
 
 The experimental paint-chunk metadata planner also remains outside production.
 Further work needs correct chunk boundaries, scrolling overlap barriers, layer
@@ -89,3 +92,58 @@ as regression checks; reject captures whose lazy images or fonts leave a
 different document geometry. `e2f4fcfe` pins Brave's process device scale as well
 as its CDP scale so display-dependent font rasterization does not contaminate
 the comparison.
+
+## Root CSS fade interpolation
+
+`7a3bb534` gives CSS root gradients an explicit premultiplied interpolation
+mode while preserving SVG's straight interpolation. The flag reaches Metal
+and retained picture shaders and belongs to the raster cache key. An
+alternating SVG/CSS GPU comparison caught a missing cache-key field during
+implementation; the corrected backend passes all four independent Metal/Dawn
+comparisons, and the preceding backend fails the radial CSS case.
+
+The new `css-premultiplied-fades` fixture improves from two one-level
+differences to zero at 1024 × 768 and scale 1. Two fresh Brave references agree
+exactly. The existing `css-radial-gradient`, `fractional-gradient-pattern`,
+`scrolling-gradient-raster`, and `gradient-compositor-backdrop` fixtures remain
+exact. Applying the interpolation switch to the isolated compositor fallback
+regresses the last fixture by one pixel, so that path retains its established
+behavior pending complete CSS compositor pictures. The new fixture's scale-two
+diagnostic improves from 280,090 to 280,084 differing pixels; its separate
+raster mismatch remains open.
+
+The settled vlang archive remains at **9 differing pixels at the top** and
+**147,641 at scroll Y 6400** after this fix. A live scripted navigation again
+loads its fonts and five visible images with zero native errors. The twelve
+default and SVG image-invalidation screenshot checks pass; ten focused V test
+functions pass with both no collector and Boehm. Native backdrop/tile checks
+pass under AddressSanitizer, and the cache checks also pass with
+UndefinedBehaviorSanitizer.
+
+The final executable is
+`cbda325e3c98a292d39966eec59c08f597dcc8ad698c4df00537b3dec05d9de2`,
+pinned with its libraries in `Vox-css-premul-root.app`. Evidence under the
+same `Build/vlang-parity-20261031/` directory includes:
+
+- `css-premul-focus-{none,boehm}-{build,run}.json` and
+  `css-premul-native-v6/`: focused compilation/runtime guards and GPU checks.
+- `css-premul-cache-test-{build,run}.json`: cache mutation checks with both
+  sanitizers.
+- `css-premul-production-{guard,status}.json`: the production build succeeds.
+  Unrelated HTTP sources and the cache header change during compilation. The
+  final cache library and root-only native policy are rebuilt separately under
+  the shared production lock; `css-premul-root-policy-status.json` records the
+  final source/library identities. The bundle copy is verified by file
+  basename and SHA-256; an earlier whole-map assertion compared different
+  absolute paths and failed after an otherwise successful copy.
+- `root-fades-root-final/`, `css-premul-root-gradient-regressions/`,
+  `css-premul-root-page-final/`, `css-premul-root-smoke-status.json`, and
+  `css-premul-root-live/`: final fresh-process browser checks.
+
+The broader CSS compositor eligibility experiment was rejected after its
+1024 × 768 fixture regressed from 33,850 to 176,261 differing pixels. Its patch,
+test, and fixture remain deferred under `Build/`; those changes are absent
+from master and the final production bundle. A separate reference-tool fix,
+`f9b865f4`, keeps windowed Brave captures rendering while occluded. A fresh
+scroll-6400 reference using that option agrees exactly with the settled
+reference above.
