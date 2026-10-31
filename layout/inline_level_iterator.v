@@ -343,6 +343,7 @@ fn new_inline_iterator_with_item_storage(mut state LayoutState, containing_block
 	iterator.is_unidirectional_left_to_right = iterator.compute_is_unidirectional_left_to_right()
 	iterator.skip_to_next()
 	iterator.generate_all_items()
+	iterator.shape_across_compatible_inline_nodes()
 	return iterator
 }
 
