@@ -938,14 +938,27 @@ pub fn (mut animation CSSAnimation) sample_at(timeline_time f64) ?f64 {
 			return progress
 		}
 	}
+	// Scroll progress has its own clock. In particular, a scroll timeline
+	// without a resolved source is inactive, rather than a zero-duration
+	// document animation that can publish its forwards-filled end values.
+	mut sample_time := timeline_time
+	if timeline := animation.timeline_ {
+		if timeline.kind == .scroll {
+			sample_time = timeline.current_time_ms() or {
+				effect.set_output_progress(none)
+				effect.current_phase = .idle
+				return none
+			}
+		}
+	}
 	if animation.play_state_ == .running && animation.paused_progress_ != none {
 		// play() temporarily stores the old origin as (pause time - origin).
-		animation.start_time_ = timeline_time - animation.start_time_
+		animation.start_time_ = sample_time - animation.start_time_
 		animation.paused_progress_ = none
 	}
-	animation.last_sample_time_ = timeline_time
+	animation.last_sample_time_ = sample_time
 	duration := effect.specified_iteration_duration
-	active_time := timeline_time - animation.start_time_ - effect.specified_start_delay
+	active_time := sample_time - animation.start_time_ - effect.specified_start_delay
 	active_duration := if math.is_inf(effect.iteration_count, 0) {
 		math.inf(1)
 	} else {

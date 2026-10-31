@@ -1,0 +1,20 @@
+<!doctype html>
+<meta charset="utf-8">
+<style>
+html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; }
+@keyframes sidebar { from { width: 260px; } to { width: 56px; } }
+@keyframes content { from { left: 260px; width: calc(100vw - 260px); }
+  to { left: 56px; width: calc(100vw - 56px); } }
+.scroll { animation-duration: auto; animation-fill-mode: both;
+  animation-timeline: scroll(root inline); }
+#sidebar { position: fixed; left: 0; top: 0; width: 260px; height: 280px;
+  background: green; animation-name: sidebar; }
+#content { position: fixed; left: 260px; top: 0;
+  width: calc(100vw - 260px); height: 280px; background: blue;
+  animation-name: content; }
+#document { position: fixed; left: 0; top: 300px; width: 260px;
+  height: 280px; background: red; animation: sidebar 0s both; }
+</style>
+<div id="sidebar" class="scroll"></div>
+<div id="content" class="scroll"></div>
+<div id="document"></div>
