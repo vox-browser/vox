@@ -4,6 +4,7 @@ import browserjs
 import dom
 import css
 import html
+import platform
 import strconv
 import x.json2
 
@@ -21,6 +22,7 @@ mut:
 	style_sheets map[string]&css.CSSStyleSheet
 	css_rules map[string]&css.CSSRule
 	css_rule_lists map[string]&css.CSSRuleList
+	radio_lists map[string]&html.RadioNodeList
 	next_key int
 }
 
@@ -120,6 +122,17 @@ fn (mut binding CompactElementQueryBinding) element_state(element &dom.Element) 
 }
 
 fn (mut binding CompactElementQueryBinding) query(input string) !string {
+	// Replaying pending mutations and lazily creating DOM metadata can both
+	// publish records that outlive this host call. Own the complete query,
+	// including replay, rather than just its final operation.
+	mut storage := binding.document.native_storage()
+	mut allocation_scope := platform.RetainedArenaScope{}
+	if storage != unsafe { nil } { allocation_scope = storage.enter_nested() }
+	persistent := platform.enter_persistent_if(storage == unsafe { nil } && platform.transient_arena_entered())
+	defer {
+		platform.leave_persistent(persistent)
+		allocation_scope.finish()
+	}
 	request := json2.decode[map[string]json2.Any](input)!
 	if snapshot := json_string_property(request, 'snapshot') {
 		mut messages := []string{}
@@ -150,6 +163,7 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	if action == 'cssSheet' { return binding.css_sheet_query(selector) }
 	if action == 'linkSheet' { return binding.link_sheet_query(key) }
 	if action == 'inputValue' { return binding.input_value_query(key, selector) }
+	if action == 'formControls' { return binding.form_controls_query(key, selector) }
 	if action == 'templateContent' { return binding.template_content_query(key, selector) }
 	if action == 'attachShadow' { return binding.attach_shadow_query(key, selector) }
 	if key.starts_with('__created_') && action in ['shadowRoot', 'setMarkup', 'getRootNode'] {
@@ -347,9 +361,10 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 // second JavaScript tree or escaping class names into a selector.
 fn compact_class_collection_bootstrap() string {
 	return r'
-function __classCollection(key, classNames, reader) {
+function __classCollection(key, classNames, reader, namedReader) {
  const read=reader||(()=>__queryElements(key,"getElementsByClassName",classNames));
  function named(elements,name) {
+  if(namedReader)return namedReader(name);
   if(name==="")return null;
   for(const element of elements){
    const state=__elementApply(__elementRecordGet,__elementRecords,[element]);
@@ -363,6 +378,7 @@ function __classCollection(key, classNames, reader) {
   namedItem(name){if(arguments.length===0)throw new TypeError("namedItem requires a name");if(typeof name==="symbol")throw new TypeError("Cannot convert a Symbol to a string");name=String(name);return named(read(),name);},
   *[Symbol.iterator](){let index=0;for(;;){const elements=read();if(index>=elements.length)return;yield elements[index++];}}
  };
+ Object.setPrototypeOf(target,HTMLCollection.prototype);
  for(const method of ["item","namedItem",Symbol.iterator])Object.defineProperty(target,method,{enumerable:false});
  Object.defineProperty(target,Symbol.toStringTag,{value:"HTMLCollection",configurable:true});
  return new Proxy(target,{
@@ -440,5 +456,5 @@ document.getElementsByClassName=function getElementsByClassName(classNames){
  if(typeof classNames==="symbol")throw new TypeError("Cannot convert a Symbol to a string");
  return __classCollection("",String(classNames));
 };
-'
+' + compact_form_controls_bootstrap()
 }
