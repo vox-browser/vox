@@ -3779,10 +3779,10 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 				svg_stroke_rgba = stroke_color
 			}
 		}
-		svg_solid_color_data = retained_svg_solid_color_data_with_alpha(svg_fill_color, svg_fill_rgba,
+		svg_solid_color_data = retained_svg_solid_color_data_with_srgb(svg_fill_color, svg_fill_rgba,
 			svg_stroke_color, svg_stroke_rgba,
-			chromium_svg_paint_alpha(node, .fill, svg_fill_rgba),
-			chromium_svg_paint_alpha(node, .stroke, svg_stroke_rgba))
+			chromium_svg_paint_components(node, .fill, svg_fill_rgba),
+			chromium_svg_paint_components(node, .stroke, svg_stroke_rgba))
 		percentage_basis := viewport_percentage_basis(node, state)
 		svg_stroke_width = computed.length_percentage_to_px(.stroke_width, percentage_basis) or { 1.0 }
 		svg_stroke_dasharray = resolved_svg_stroke_dasharray(computed, percentage_basis)

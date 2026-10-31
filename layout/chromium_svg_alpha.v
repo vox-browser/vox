@@ -3,9 +3,9 @@ module layout
 import css
 import math
 
-// Keep modern RGB paint alpha before SVGPaint resolves its byte color. RGB
-// channels and legacy alpha continue through the existing color conversion.
-fn chromium_svg_paint_alpha(node &Node, property css.PropertyID, resolved ?css.Color) ?f64 {
+// Preserve fractional solid paint channels before SVGPaint resolves its byte
+// color. The common exact-byte case needs no additional retained allocation.
+fn chromium_svg_paint_components(node &Node, property css.PropertyID, resolved ?css.Color) ?[4]f64 {
 	color := resolved or { return none }
 	if node.document().font_rendering_policy() != .chromium { return none }
 	computed := unsafe { &css.ComputedProperties(node.computed_values()) }
@@ -14,6 +14,11 @@ fn chromium_svg_paint_alpha(node &Node, property css.PropertyID, resolved ?css.C
 		value = computed.typed_property_value(.color) or { return none }
 	}
 	components := value.srgb_paint_components() or { return none }
-	if math.abs(components[3] * 255 - f64(color.a)) <= 1e-6 { return none }
-	return components[3]
+	bytes := [color.r, color.g, color.b, color.a]!
+	for index in 0 .. 4 {
+		if math.abs(components[index] * 255 - f64(bytes[index])) > 1e-6 {
+			return components
+		}
+	}
+	return none
 }

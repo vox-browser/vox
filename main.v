@@ -227,7 +227,7 @@ fn C.native_add_corner_rounded_clip(x f32, y f32, width f32, height f32, top_lef
 
 fn C.native_add_path_clip(data &f32, segment_count int, even_odd int, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_height f32)
 
-fn C.native_draw_svg_path_srgb(data &f32, segment_count int, even_odd int, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32, fill_color gg.Color, has_fill int, stroke_color gg.Color, has_stroke int, stroke_width f32, line_cap int, line_join int, miter_limit f32, non_scaling_stroke int, dash_data &f64, dash_count int, dash_offset f64)
+fn C.native_draw_svg_path_srgb(data &f32, segment_count int, even_odd int, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32, fill_color gg.Color, has_fill int, stroke_color gg.Color, has_stroke int, stroke_width f32, line_cap int, line_join int, miter_limit f32, non_scaling_stroke int, dash_data &f64, dash_count int, dash_offset f64, fill_components &f32, stroke_components &f32)
 
 fn C.native_draw_svg_linear_gradient_path(data &f32, segment_count int, even_odd int, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_height f32, stroke int, stroke_width f32, line_cap int, line_join int, miter_limit f32, start_x f32, start_y f32, end_x f32, end_y f32, gradient_a f32, gradient_b f32, gradient_c f32, gradient_d f32, gradient_e f32, gradient_f f32, spread_method int, linear_color_space int, stop_data &f32, stop_count int, opacity f32)
 fn C.native_draw_clipped_svg_linear_gradient_path(data &f32, segment_count i32, even_odd i32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_height f32, stroke i32, stroke_width f32, line_cap i32, line_join i32, miter_limit f32, start_x f32, start_y f32, end_x f32, end_y f32, gradient_a f32, gradient_b f32, gradient_c f32, gradient_d f32, gradient_e f32, gradient_f f32, spread_method i32, linear_color_space i32, stop_data &f32, stop_count i32, opacity f32, clip &f32, ancestor_clip &f32) i32
@@ -6948,6 +6948,13 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 						command.retained_svg_fill_color())
 					stroke := app.paint_colors.color_with_retained(command.stroke_color, command.opacity * svg_data.stroke_opacity,
 						command.retained_svg_stroke_color())
+					precise_fill := chromium_svg_precise_paint(command, false, command.opacity * svg_data.fill_opacity)
+					precise_stroke := chromium_svg_precise_paint(command, true, command.opacity * svg_data.stroke_opacity)
+					fill_values := precise_fill or { [f32(0), 0, 0, 0]! }
+					stroke_values := precise_stroke or { [f32(0), 0, 0, 0]! }
+					fill_components := if precise_fill != none { unsafe { &fill_values[0] } } else { unsafe { nil } }
+					stroke_components := if precise_stroke != none { unsafe { &stroke_values[0] } } else { unsafe { nil } }
+
 					if svg_data.svg_gradient_data == none && svg_data.fill_pattern == none
 						&& svg_data.stroke_pattern == none && !svg_data.stroke_first {
 						unsafe {
@@ -6967,7 +6974,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 								1
 							} else {
 								0
-							}, &dash_data[0], svg_data.stroke_dasharray.len, svg_data.stroke_dashoffset)
+							}, &dash_data[0], svg_data.stroke_dasharray.len, svg_data.stroke_dashoffset, fill_components, stroke_components)
 						}
 						return
 					}
@@ -6986,7 +6993,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 										1
 									} else {
 										0
-									}, f32(path_matrix[0]), f32(path_matrix[1]), f32(path_matrix[2]), f32(path_matrix[3]), f32(path_matrix[4]), f32(path_matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), fill, 1, stroke, 0, f32(command.stroke_width), svg_data.stroke_linecap, svg_data.stroke_linejoin, f32(svg_data.stroke_miterlimit), 0, &dash_data[0], svg_data.stroke_dasharray.len, svg_data.stroke_dashoffset)
+									}, f32(path_matrix[0]), f32(path_matrix[1]), f32(path_matrix[2]), f32(path_matrix[3]), f32(path_matrix[4]), f32(path_matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), fill, 1, stroke, 0, f32(command.stroke_width), svg_data.stroke_linecap, svg_data.stroke_linejoin, f32(svg_data.stroke_miterlimit), 0, &dash_data[0], svg_data.stroke_dasharray.len, svg_data.stroke_dashoffset, fill_components, stroke_components)
 								}
 							}
 						} else if command.stroke_width > 0 {
@@ -7006,7 +7013,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 										1
 									} else {
 										0
-									}, &dash_data[0], svg_data.stroke_dasharray.len, svg_data.stroke_dashoffset)
+									}, &dash_data[0], svg_data.stroke_dasharray.len, svg_data.stroke_dashoffset, fill_components, stroke_components)
 								}
 							}
 						}

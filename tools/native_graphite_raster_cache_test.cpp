@@ -281,7 +281,8 @@ int main()
     };
     for (auto field : {&VoxGraphitePath::even_odd, &VoxGraphitePath::stroke,
         &VoxGraphitePath::line_cap, &VoxGraphitePath::line_join, &VoxGraphitePath::non_scaling_stroke, &VoxGraphitePath::gradient,
-        &VoxGraphitePath::tile_mode, &VoxGraphitePath::linear_color_space, &VoxGraphitePath::has_float_alpha}) {
+        &VoxGraphitePath::tile_mode, &VoxGraphitePath::linear_color_space, &VoxGraphitePath::has_float_alpha,
+        &VoxGraphitePath::has_float_color}) {
         auto v = path; ++(v.*field); path_misses(v);
     }
     for (auto field : {&VoxGraphitePath::red, &VoxGraphitePath::green,
@@ -298,6 +299,19 @@ int main()
         else if (i < 18) v.gradient_matrix[i - 9] += .25f;
         else v.gradient_points[i - 18] += .25f;
         path_misses(v);
+    }
+    for (int i = 0; i < 4; ++i) {
+        auto precise = path; precise.has_float_color = 1;
+        std::fill(pixels.begin(), pixels.end(), 19);
+        auto item = cache.prepare(precise, 2, 2, 8, true, pixels.data());
+        std::fill(pixels.begin(), pixels.end(), 71);
+        cache.finish(std::move(item), pixels.data(), 8);
+        precise.float_color[i] = .2501f; path_misses(precise);
+        cache.clear();
+        std::fill(pixels.begin(), pixels.end(), 19);
+        item = cache.prepare(path, 2, 2, 8, true, pixels.data());
+        std::fill(pixels.begin(), pixels.end(), 71);
+        cache.finish(std::move(item), pixels.data(), 8);
     }
     for (int i = 0; i < 12; ++i) {
         auto clipped = path; clipped.has_clip = 1;

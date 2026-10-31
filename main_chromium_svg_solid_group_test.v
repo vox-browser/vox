@@ -94,15 +94,15 @@ fn test_single_svg_color_alpha_selects_the_float_recording() {
 	serialized := 'rgba(236, 174, 99, 0.5882352941)'
 	fill := layout.PaintCommand{
 		...base
-		color: serialized
+		color:    serialized
 		svg_data: &layout.PaintSVGPathData{
 			...base.svg_data
 			svg_solid_color_data: &layout.PaintSVGSolidColorData{
 				fill_serialized: serialized
-				fill: css.Color{236, 174, 99, 150}
-				has_fill: true
-				fill_alpha: 0.59
-				has_fill_alpha: true
+				fill:            css.Color{236, 174, 99, 150}
+				has_fill:        true
+				fill_alpha:      0.59
+				has_fill_alpha:  true
 			}
 		}
 	}
@@ -111,7 +111,8 @@ fn test_single_svg_color_alpha_selects_the_float_recording() {
 	changed := layout.PaintCommand{ ...fill, color: 'red' }
 	assert chromium_svg_solid_run_end([changed], [], 0) == 0
 	assert chromium_svg_solid_paint_alpha(&changed, false, 255) == 1
-	assert chromium_svg_solid_run_end([fill, layout.PaintCommand{kind:'end_svg_mask_layer'}, base], [], 0) == 1
+	assert chromium_svg_solid_run_end([fill, layout.PaintCommand{ kind: 'end_svg_mask_layer' },
+		base], [], 0) == 1
 	assert chromium_svg_solid_run_end([fill, base], [0, 1], 0) == 1
 }
 
@@ -184,10 +185,13 @@ fn test_solid_svg_runs_share_translucent_resize_grip_strokes() {
 		layout.PaintCommand{ ...dark, stroke_width: -1 },
 		layout.PaintCommand{
 			...dark
-			svg_data: &layout.PaintSVGPathData{ ...dark.svg_data, stroke_dasharray: [
-				2.0,
-				1.0,
-			] }
+			svg_data: &layout.PaintSVGPathData{
+				...dark.svg_data
+				stroke_dasharray: [
+					2.0,
+					1.0,
+				]
+			}
 		},
 		layout.PaintCommand{
 			...dark
@@ -216,4 +220,36 @@ fn test_solid_svg_runs_preserve_root_raster_layers() {
 	assert chromium_svg_solid_run_end([fill, fill, fill], [0, 0, 1], 0) == 2
 	assert chromium_svg_solid_run_end([fill, fill], [0, 1], 0) == 0
 	assert chromium_svg_solid_run_end([fill, fill], [0], 0) == 0
+}
+
+fn test_precise_svg_leaf_paints_keep_channels_and_combine_opacity_once() {
+	base := svg_solid_group_test_command()
+	command := layout.PaintCommand{
+		...base
+		color:        'gray'
+		stroke_color: 'blue'
+		svg_data:     &layout.PaintSVGPathData{
+			...base.svg_data
+			svg_solid_color_data: &layout.PaintSVGSolidColorData{
+				fill_serialized:   'gray'
+				stroke_serialized: 'blue'
+				fill_srgb:         &layout.PaintSRGBColor{'gray', [f64(.23), .25, .27, 1]!}
+				stroke_srgb:       &layout.PaintSRGBColor{'blue', [f64(20.25 / 255), 40.5 / 255,
+					60.75 / 255, .5]!}
+				has_fill:          true
+				has_stroke:        true
+			}
+		}
+	}
+	assert chromium_svg_precise_paint(&command, false, .4)? == [f32(.23), .25, .27, .4]!
+	assert chromium_svg_precise_paint(&command, true, .6)? == [f32(20.25 / 255), f32(40.5 / 255),
+		f32(60.75 / 255), .3]!
+	mut changed := command
+	changed.color = 'red'
+	assert chromium_svg_precise_paint(&changed, false, .4) == none
+	assert chromium_svg_precise_paint(&changed, true, .6) == chromium_svg_precise_paint(&command, true, .6)
+	// RGB precision alone must keep an isolated opaque leaf on its existing
+	// geometry path, including scaled SVG viewports.
+	leaf := layout.PaintCommand{ ...command, stroke_color: '' }
+	assert chromium_svg_solid_run_end([leaf], [], 0) == 0
 }

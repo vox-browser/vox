@@ -41,12 +41,12 @@ fn test_svg_solid_color_keys_invalidate_each_changed_channel_and_force_dark_copy
 	fill := css.Color{0, 0, 0, 255}
 	stroke := css.Color{255, 255, 255, 128}
 	command := PaintCommand{
-		kind:                 'draw_svg_path'
-		color:                fill.serialize()
-		stroke_color:         stroke.serialize()
-		force_dark_role:      .svg
-		force_dark_role_set:  true
-		svg_data: &PaintSVGPathData{
+		kind:                'draw_svg_path'
+		color:               fill.serialize()
+		stroke_color:        stroke.serialize()
+		force_dark_role:     .svg
+		force_dark_role_set: true
+		svg_data:            &PaintSVGPathData{
 			svg_solid_color_data: retained_svg_solid_color_data(fill.serialize(), fill,
 				stroke.serialize(), stroke)
 		}
@@ -133,7 +133,9 @@ fn test_svg_alpha_snapshots_follow_currentcolor_mutations_and_preserve_old_recor
 	path.set_attribute_value('fill', 'rgb(51 91 131 / 31%)')
 	_ = layout_document_typed_in_viewport(document, 80, 60)
 	second := solid_svg_recording(mut document)
-	$if gcboehm ? { C.GC_gcollect() }
+	$if gcboehm ? {
+		C.GC_gcollect()
+	}
 	assert first.retained_svg_solid_alpha(false)? == 0.59
 	assert second.retained_svg_solid_alpha(false)? == 0.31
 	path.set_attribute_value('fill', 'rgb(51 91 131 / .3101)')
@@ -156,4 +158,64 @@ fn test_legacy_svg_alpha_and_exact_byte_values_keep_the_existing_color_path() {
 		command := solid_svg_recording(mut document)
 		assert command.retained_svg_solid_alpha(false) == none
 	}
+}
+
+fn test_chromium_svg_solids_retain_fractional_rgb_for_both_paints() {
+	for chromium in [false, true] {
+		mut document := html.parse_document('<!doctype html><svg width="40" height="30"><path d="M0 0L30 0L30 20Z" fill="hsl(210 8% 25%)" stroke="rgba(10.5,20.25,30.75,.59)"/></svg>')
+		defer { document.finalize() }
+		if chromium { document.set_font_rendering_policy(.chromium) }
+		_ = layout_document_typed_in_viewport(document, 80, 60)
+		command := solid_svg_recording(mut document)
+		if chromium {
+			assert command.retained_svg_solid_components(false)? == [0.23, 0.25, 0.27, 1.0]!
+			assert command.retained_svg_solid_components(true)? == [10.5 / 255, 20.25 / 255,
+				30.75 / 255, 150.0 / 255]!
+			assert command.retained_svg_solid_alpha(false) == none
+			assert command.retained_svg_solid_alpha(true) == none
+		} else {
+			assert command.retained_svg_solid_components(false) == none
+			assert command.retained_svg_solid_components(true) == none
+		}
+	}
+}
+
+fn test_svg_fractional_rgb_snapshots_survive_same_byte_currentcolor_mutations() {
+	mut document := html.parse_document('<!doctype html><svg width="40" height="30"><path id="rgb-path" d="M0 0L30 0L30 20Z" fill="currentColor" style="color:rgb(51.1 91 131)"/></svg>')
+	defer { document.finalize() }
+	document.set_font_rendering_policy(.chromium)
+	_ = layout_document_typed_in_viewport(document, 80, 60)
+	first := solid_svg_recording(mut document)
+	mut path := document.get_element_by_id('rgb-path') or { panic('missing RGB path') }
+	path.set_attribute_value('style', 'color:rgb(51.2 91 131)')
+	_ = layout_document_typed_in_viewport(document, 80, 60)
+	second := solid_svg_recording(mut document)
+	assert first.color == second.color
+	$if gcboehm ? {
+		C.GC_gcollect()
+	}
+	assert first.retained_svg_solid_components(false)?[0] == 51.1 / 255
+	assert second.retained_svg_solid_components(false)?[0] == 51.2 / 255
+	assert voidptr(first.svg().svg_solid_color_data) != voidptr(second.svg().svg_solid_color_data)
+	mut changed := second
+	changed.color = 'red'
+	assert changed.retained_svg_solid_components(false) == none
+	assert first.retained_svg_solid_components(false)?[0] == 51.1 / 255
+}
+
+fn test_svg_precise_rgb_keys_reject_only_the_changed_paint() {
+	mut document := html.parse_document('<!doctype html><svg width="40" height="30"><path d="M0 0L30 0L30 20Z" fill="rgb(10.5 20.25 30.75)" stroke="rgb(90.5 80.25 70.75)"/></svg>')
+	defer { document.finalize() }
+	document.set_font_rendering_policy(.chromium)
+	_ = layout_document_typed_in_viewport(document, 80, 60)
+	command := solid_svg_recording(mut document)
+	mut changed := command
+	changed.stroke_color = 'red'
+	assert changed.retained_svg_solid_components(true) == none
+	assert changed.retained_svg_solid_components(false) == command.retained_svg_solid_components(false)
+	changed = command
+	changed.color = 'blue'
+	assert changed.retained_svg_solid_components(false) == none
+	assert changed.retained_svg_solid_components(true) == command.retained_svg_solid_components(true)
+	assert (PaintCommand{ kind: 'draw_text' }).retained_svg_solid_components(false) == none
 }

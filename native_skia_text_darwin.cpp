@@ -3744,6 +3744,8 @@ static bool record_chromium_svg_path_batch(SkCanvas* canvas,
         SkPaint paint;
         paint.setAntiAlias(true);
         paint.setColor(SkColorSetARGB(source.alpha, source.red, source.green, source.blue));
+        if (source.has_float_color)
+            paint.setColor4f({source.float_color[0], source.float_color[1], source.float_color[2], source.float_color[3]});
         if (source.has_float_alpha) paint.setAlphaf(source.opacity);
         if (shaders[index]) {
             paint.setShader(shaders[index]);
@@ -4012,7 +4014,7 @@ static bool draw_sparse_svg_path(CGContextRef destination, VoxGraphitePath const
     return true;
 }
 
-extern "C" int ladybird_v_skia_draw_svg_path(CGContextRef destination,
+extern "C" int ladybird_v_skia_draw_svg_path_with_colors(CGContextRef destination,
     float const* data, int segment_count, int even_odd,
     float transform_a, float transform_b, float transform_c, float transform_d,
     float transform_e, float transform_f, float page_x, float page_y,
@@ -4021,7 +4023,7 @@ extern "C" int ladybird_v_skia_draw_svg_path(CGContextRef destination,
     int has_fill, uint8_t stroke_red, uint8_t stroke_green, uint8_t stroke_blue,
 	uint8_t stroke_alpha, int has_stroke, float stroke_width, int line_cap,
 	int line_join, float miter_limit, int non_scaling_stroke,
-	double const* dash_data, int dash_count, double dash_offset, int opaque_backdrop)
+	double const* dash_data, int dash_count, double dash_offset, int opaque_backdrop, float const* fill_components, float const* stroke_components)
 {
     if (!destination || !data || segment_count <= 0 || (!has_fill && !has_stroke)
         || canvas_width <= 0 || canvas_height <= 0)
@@ -4045,6 +4047,7 @@ extern "C" int ladybird_v_skia_draw_svg_path(CGContextRef destination,
 			SkPaint paint;
 			paint.setAntiAlias(true);
 			paint.setColor(SkColorSetARGB(fill_alpha, fill_red, fill_green, fill_blue));
+			if (fill_components) paint.setColor4f({fill_components[0], fill_components[1], fill_components[2], fill_components[3]});
 			canvas->drawPath(path, paint);
 		}
 		if (has_stroke && stroke_width > 0.0f) {
@@ -4055,6 +4058,7 @@ extern "C" int ladybird_v_skia_draw_svg_path(CGContextRef destination,
 			paint.setStyle(SkPaint::kStroke_Style);
 			paint.setStrokeWidth(stroke_width);
 			paint.setColor(SkColorSetARGB(stroke_alpha, stroke_red, stroke_green, stroke_blue));
+			if (stroke_components) paint.setColor4f({stroke_components[0], stroke_components[1], stroke_components[2], stroke_components[3]});
 			paint.setStrokeCap(line_cap == 1 ? SkPaint::kRound_Cap
 				: line_cap == 2 ? SkPaint::kSquare_Cap : SkPaint::kButt_Cap);
 			paint.setStrokeJoin(line_join == 1 ? SkPaint::kRound_Join
@@ -4127,6 +4131,8 @@ extern "C" int ladybird_v_skia_draw_svg_path(CGContextRef destination,
         descriptor.even_odd = even_odd;
         descriptor.red = fill_red; descriptor.green = fill_green;
         descriptor.blue = fill_blue; descriptor.alpha = fill_alpha;
+        descriptor.has_float_color = fill_components != nullptr;
+        if (fill_components) std::copy(fill_components, fill_components + 4, descriptor.float_color);
         raster_matrix(matrix, region, raster_scale_x, raster_scale_y).get9(descriptor.matrix);
         if (draw_sparse_svg_path(destination, descriptor, region, raster_width, raster_height,
                 destination_scale, canvas_height, opaque_backdrop)) return 1;
@@ -4155,6 +4161,8 @@ extern "C" int ladybird_v_skia_draw_svg_path(CGContextRef destination,
             descriptor.green = fill_green;
             descriptor.blue = fill_blue;
             descriptor.alpha = fill_alpha;
+            descriptor.has_float_color = fill_components != nullptr;
+            if (fill_components) std::copy(fill_components, fill_components + 4, descriptor.float_color);
             drawn = draw(reinterpret_cast<uint8_t*>(pixels.data()), raster_width, raster_height,
                 raster_width * 4, has_background, &descriptor);
         }
@@ -4164,6 +4172,8 @@ extern "C" int ladybird_v_skia_draw_svg_path(CGContextRef destination,
             descriptor.green = stroke_green;
             descriptor.blue = stroke_blue;
             descriptor.alpha = stroke_alpha;
+            descriptor.has_float_color = stroke_components != nullptr;
+            if (stroke_components) std::copy(stroke_components, stroke_components + 4, descriptor.float_color);
             drawn = draw(reinterpret_cast<uint8_t*>(pixels.data()), raster_width, raster_height,
                 raster_width * 4, has_background || has_fill, &descriptor);
         }
@@ -4189,6 +4199,26 @@ extern "C" int ladybird_v_skia_draw_svg_path(CGContextRef destination,
     return composite_pixels(destination, std::move(pixels), raster_width, raster_height,
         static_cast<float>(region.left), canvas_height - static_cast<float>(region.bottom),
         static_cast<float>(region.width()), static_cast<float>(region.height()));
+}
+
+extern "C" int ladybird_v_skia_draw_svg_path(CGContextRef destination,
+    float const* data, int segment_count, int even_odd,
+    float transform_a, float transform_b, float transform_c, float transform_d,
+    float transform_e, float transform_f, float page_x, float page_y,
+    float scroll_y, float canvas_width, float canvas_height,
+    uint8_t fill_red, uint8_t fill_green, uint8_t fill_blue, uint8_t fill_alpha,
+    int has_fill, uint8_t stroke_red, uint8_t stroke_green, uint8_t stroke_blue,
+	uint8_t stroke_alpha, int has_stroke, float stroke_width, int line_cap,
+	int line_join, float miter_limit, int non_scaling_stroke,
+	double const* dash_data, int dash_count, double dash_offset, int opaque_backdrop)
+{
+    return ladybird_v_skia_draw_svg_path_with_colors(destination, data, segment_count, even_odd,
+        transform_a, transform_b, transform_c, transform_d, transform_e, transform_f,
+        page_x, page_y, scroll_y, canvas_width, canvas_height,
+        fill_red, fill_green, fill_blue, fill_alpha, has_fill,
+        stroke_red, stroke_green, stroke_blue, stroke_alpha, has_stroke,
+        stroke_width, line_cap, line_join, miter_limit, non_scaling_stroke,
+        dash_data, dash_count, dash_offset, opaque_backdrop, nullptr, nullptr);
 }
 
 static SkTileMode svg_gradient_tile_mode(int spread_method)

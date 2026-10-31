@@ -30,11 +30,12 @@ def main():
                    if not k.startswith(('VOX_', 'LADYBIRD_', 'DYLD_', 'GC_'))}
     environment['ASAN_OPTIONS'] = 'detect_leaks=0'
     for name, source in [('svg-clip', 'native_skia_svg_clip_test.cpp'),
-                         ('svg-mask-backdrop', 'native_skia_svg_mask_backdrop_test.cpp')]:
+                         ('svg-mask-backdrop', 'native_skia_svg_mask_backdrop_test.cpp'),
+                         ('svg-color', 'native_skia_svg_color_test.cpp')]:
         executable = output / name
         command = ['clang++', '-std=c++20', '-O1', '-g', '-fsanitize=address,undefined',
                    '-fno-omit-frame-pointer']
-        if name in ('svg-clip', 'svg-mask-backdrop'):
+        if name in ('svg-clip', 'svg-mask-backdrop', 'svg-color'):
             command += ['-x', 'objective-c++', '-I' + str(skia / 'include/skia'),
                         '-I' + str(skia / 'include'), '-L' + str(skia / 'lib'), '-lskia',
                         '-Wl,-rpath,' + str(skia / 'lib'),

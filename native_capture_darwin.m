@@ -138,6 +138,16 @@ extern int ladybird_v_skia_draw_svg_path(CGContextRef destination,
 	uint8_t stroke_alpha, int has_stroke, float stroke_width, int line_cap,
 	int line_join, float miter_limit, int non_scaling_stroke,
 	const double *dash_data, int dash_count, double dash_offset, int opaque_backdrop);
+extern int ladybird_v_skia_draw_svg_path_with_colors(CGContextRef destination,
+	const float *data, int segment_count, int even_odd,
+	float transform_a, float transform_b, float transform_c, float transform_d,
+	float transform_e, float transform_f, float page_x, float page_y,
+	float scroll_y, float canvas_width, float canvas_height,
+	uint8_t fill_red, uint8_t fill_green, uint8_t fill_blue, uint8_t fill_alpha,
+	int has_fill, uint8_t stroke_red, uint8_t stroke_green, uint8_t stroke_blue,
+	uint8_t stroke_alpha, int has_stroke, float stroke_width, int line_cap,
+	int line_join, float miter_limit, int non_scaling_stroke,
+	const double *dash_data, int dash_count, double dash_offset, int opaque_backdrop, const float *fill_components, const float *stroke_components);
 extern int ladybird_v_skia_draw_svg_linear_gradient_path(
 	CGContextRef destination, const float *data, int segment_count, int even_odd,
 	float transform_a, float transform_b, float transform_c, float transform_d,
@@ -1710,13 +1720,23 @@ int native_draw_svg_path_batch_with_rounded_ancestor(const VoxGraphitePath *path
 #endif
 }
 
+static CGColorRef native_svg_srgb_color(gg__Color color, const float *precise) {
+    if (!precise) return native_srgb_color(color);
+    CGColorSpaceRef space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+    CGFloat components[] = {precise[0], precise[1], precise[2], precise[3]};
+    CGColorRef result = CGColorCreate(space, components);
+    CGColorSpaceRelease(space);
+    return result;
+}
+
 void native_draw_svg_path_srgb(const float *data, int segment_count, int even_odd,
 	float transform_a, float transform_b, float transform_c, float transform_d,
 	float transform_e, float transform_f, float page_x, float page_y,
 	float scroll_y, float canvas_width, float canvas_height, gg__Color fill_color, int has_fill,
 	gg__Color stroke_color, int has_stroke, float stroke_width, int line_cap,
 	int line_join, float miter_limit, int non_scaling_stroke,
-	const double *dash_data, int dash_count, double dash_offset) {
+	const double *dash_data, int dash_count, double dash_offset,
+	const float *fill_components, const float *stroke_components) {
 	if (data == NULL || segment_count <= 0 || (!has_fill && !has_stroke)) {
 		return;
 	}
@@ -1733,7 +1753,7 @@ void native_draw_svg_path_srgb(const float *data, int segment_count, int even_od
 	float resolved_stroke_width = non_scaling_stroke && native_font_compositing_context == NULL
 		? stroke_width / host_scale + 2.0f / 512.0f : stroke_width;
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
-	if (ladybird_v_skia_draw_svg_path(context, data, segment_count, even_odd,
+	if (ladybird_v_skia_draw_svg_path_with_colors(context, data, segment_count, even_odd,
 		transform_a, transform_b, transform_c, transform_d, transform_e,
 		transform_f, page_x, page_y, scroll_y, canvas_width, canvas_height,
 		fill_color.r, fill_color.g, fill_color.b, fill_color.a, has_fill,
@@ -1741,7 +1761,7 @@ void native_draw_svg_path_srgb(const float *data, int segment_count, int even_od
 		resolved_stroke_width, line_cap, line_join, miter_limit, non_scaling_stroke,
 		dash_data, dash_count, dash_offset,
 		context == native_font_compositing_context
-			&& native_font_compositing_transparency_depth == 0)) {
+			&& native_font_compositing_transparency_depth == 0, fill_components, stroke_components)) {
 		return;
 	}
 #endif
@@ -1751,7 +1771,7 @@ void native_draw_svg_path_srgb(const float *data, int segment_count, int even_od
 		canvas_height - page_y + scroll_y - transform_f);
 	if (non_scaling_stroke && has_stroke) {
 		if (has_fill) {
-			CGColorRef fill = native_srgb_color(fill_color);
+			CGColorRef fill = native_svg_srgb_color(fill_color, fill_components);
 			CGContextSaveGState(context);
 			CGContextConcatCTM(context, to_canvas);
 			CGContextAddPath(context, path);
@@ -1761,7 +1781,7 @@ void native_draw_svg_path_srgb(const float *data, int segment_count, int even_od
 			CGColorRelease(fill);
 		}
 		CGPathRef transformed_path = CGPathCreateCopyByTransformingPath(path, &to_canvas);
-		CGColorRef stroke = native_srgb_color(stroke_color);
+		CGColorRef stroke = native_svg_srgb_color(stroke_color, stroke_components);
 		CGContextSaveGState(context);
 		CGContextAddPath(context, transformed_path);
 		CGContextSetStrokeColorWithColor(context, stroke);
@@ -1786,11 +1806,11 @@ void native_draw_svg_path_srgb(const float *data, int segment_count, int even_od
 	CGColorRef fill = NULL;
 	CGColorRef stroke = NULL;
 	if (has_fill) {
-		fill = native_srgb_color(fill_color);
+		fill = native_svg_srgb_color(fill_color, fill_components);
 		CGContextSetFillColorWithColor(context, fill);
 	}
 	if (has_stroke) {
-		stroke = native_srgb_color(stroke_color);
+		stroke = native_svg_srgb_color(stroke_color, stroke_components);
 		CGContextSetStrokeColorWithColor(context, stroke);
 		CGContextSetLineWidth(context, MAX(stroke_width, 0.0));
 		CGContextSetLineCap(context, line_cap == 1 ? kCGLineCapRound

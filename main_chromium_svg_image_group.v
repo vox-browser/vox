@@ -34,6 +34,8 @@ struct C.VoxGraphitePath {
 	clip               [12]f32
 	has_ancestor_clip  int
 	ancestor_clip      [12]f32
+	has_float_color    int
+	float_color        [4]f32
 }
 
 fn C.native_draw_svg_path_batch(&C.VoxGraphitePath, int, &f32, f32, f32, f32, f32, f32, f32, f32, f32, f32, &f32) int
@@ -93,6 +95,9 @@ fn (mut app BrowserApp) draw_chromium_svg_image_group(command layout.PaintComman
 					app.paint_colors.color_with_retained(path.stroke_color, 1,
 						path.retained_svg_stroke_color())
 				}
+				precise := path.retained_svg_solid_components(part != 0)
+				components := precise or { [f64(color.r) / 255, f64(color.g) / 255,
+					f64(color.b) / 255, f64(color.a) / 255]! }
 				paths << C.VoxGraphitePath{
 					matrix:             [f32(matrix[0]), f32(matrix[2]), f32(matrix[4]),
 						f32(matrix[1]), f32(matrix[3]), f32(matrix[5]), f32(0), f32(0), f32(1)]!
@@ -110,6 +115,8 @@ fn (mut app BrowserApp) draw_chromium_svg_image_group(command layout.PaintComman
 					stroke_width:       f32(path.stroke_width * if svg.non_scaling_stroke { app.document.layout_coordinate_scale() } else { 1.0 })
 					miter_limit:        f32(svg.stroke_miterlimit)
 					has_float_alpha:    1
+					has_float_color:    int(precise != none)
+					float_color:        [f32(components[0]), f32(components[1]), f32(components[2]), f32(components[3])]!
 					opacity: f32(chromium_svg_solid_paint_alpha(&path, part != 0, color.a) *
 						if part == 0 { svg.fill_opacity } else { svg.stroke_opacity })
 				}

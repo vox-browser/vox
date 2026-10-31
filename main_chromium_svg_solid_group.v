@@ -75,9 +75,17 @@ fn chromium_svg_solid_run_end(commands []layout.PaintCommand, layers []int, star
 	}
 	// The leaf SVG bridge rounds paint opacity into its byte alpha. Use the
 	// recording's float alpha for a single translucent paint as well.
-	alpha := if first.color == '' { first.svg_data.stroke_opacity } else { first.svg_data.fill_opacity }
+	alpha := if first.color == '' {
+		first.svg_data.stroke_opacity
+	} else {
+		first.svg_data.fill_opacity
+	}
 	return if end - start >= 2 || alpha != 1
-		|| first.retained_svg_solid_alpha(first.color == '') != none { end } else { start }
+		|| first.retained_svg_solid_alpha(first.color == '') != none {
+		end
+	} else {
+		start
+	}
 }
 
 fn chromium_svg_solid_paint_alpha(command &layout.PaintCommand, stroke bool, byte_alpha u8) f64 {
@@ -115,6 +123,10 @@ fn (mut app BrowserApp) draw_chromium_svg_solid_group(commands []layout.PaintCom
 				app.paint_colors.color_with_retained(command.color, 1,
 					command.retained_svg_fill_color())
 			}
+			precise := command.retained_svg_solid_components(stroke)
+			components := precise or {
+				[f64(color.r) / 255, f64(color.g) / 255, f64(color.b) / 255, f64(color.a) / 255]!
+			}
 			paths << C.VoxGraphitePath{
 				matrix:             [f32(matrix[0]), f32(matrix[2]), f32(matrix[4]), f32(matrix[1]),
 					f32(matrix[3]), f32(matrix[5]), f32(0), f32(0), f32(1)]!
@@ -136,6 +148,9 @@ fn (mut app BrowserApp) draw_chromium_svg_solid_group(commands []layout.PaintCom
 				})
 				miter_limit:        f32(data.stroke_miterlimit)
 				has_float_alpha:    1
+				has_float_color:    int(precise != none)
+				float_color:        [f32(components[0]), f32(components[1]), f32(components[2]),
+					f32(components[3])]!
 				opacity:            f32(chromium_svg_solid_paint_alpha(command, stroke, color.a) * if stroke {
 					data.stroke_opacity
 				} else {
@@ -175,4 +190,10 @@ fn (mut app BrowserApp) draw_nested_svg_commands(commands []layout.PaintCommand,
 		if end > index { continue }
 		app.draw_command(command, page_x, page_y, window_height)
 	}
+}
+
+// Leaf replay uses the same retained solid paint as batched SVG recordings.
+fn chromium_svg_precise_paint(command &layout.PaintCommand, stroke bool, opacity f64) ?[4]f32 {
+	components := command.retained_svg_solid_components(stroke) or { return none }
+	return [f32(components[0]), f32(components[1]), f32(components[2]), f32(components[3] * opacity)]!
 }

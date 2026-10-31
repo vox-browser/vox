@@ -89,6 +89,8 @@ typedef struct {
     float clip[12];
     int has_ancestor_clip;
     float ancestor_clip[12];
+    int has_float_color;
+    float float_color[4];
 } VoxGraphitePath;
 
 #ifdef __cplusplus

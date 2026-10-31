@@ -1313,6 +1313,8 @@ static bool draw_path_on_canvas(SkCanvas* canvas, VoxGraphitePath const* path,
     SkPaint paint;
     paint.setAntiAlias(true);
     paint.setColor(SkColorSetARGB(path->alpha, path->red, path->green, path->blue));
+    if (path->has_float_color)
+        paint.setColor4f({path->float_color[0], path->float_color[1], path->float_color[2], path->float_color[3]});
     if (path->has_float_alpha) paint.setAlphaf(path->opacity);
     std::vector<SkColor4f> colors;
     std::vector<float> positions;
