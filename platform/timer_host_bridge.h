@@ -56,7 +56,14 @@ static void libweb_v_unregister_timer(void* timer)
 
 static void libweb_v_pump_native_events(double wait_seconds)
 {
-    CFRunLoopRunInMode(kCFRunLoopDefaultMode, wait_seconds, true);
+    CFAbsoluteTime deadline = CFAbsoluteTimeGetCurrent() + wait_seconds;
+    CFRunLoopRunResult result = CFRunLoopRunInMode(kCFRunLoopDefaultMode, wait_seconds, true);
+    // A completion can make another native source runnable. Drain ready work
+    // before handing control back to an expensive HTML turn, without waiting
+    // again once the queue is empty. Keep both time and turn bounds.
+    for (unsigned turn = 1; turn < 256 && result == kCFRunLoopRunHandledSource
+        && CFAbsoluteTimeGetCurrent() < deadline; ++turn)
+        result = CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0, true);
 }
 #elif defined(__linux__)
 #include "linux_event_context.h"
