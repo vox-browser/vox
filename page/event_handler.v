@@ -554,13 +554,15 @@ pub fn (mut handler EventHandler) handle_mousewheel(target ?InputTarget) EventRe
 }
 
 pub fn (mut handler EventHandler) handle_keydown(key int, code_point u32, modifiers u32, repeat bool, cancelled bool) EventResult {
-	_ = repeat
 	if !handler.active_document {
 		return .dropped
 	}
 	target := handler.focused_target()
 	handler.log('keydown', target)
 	if cancelled {
+		return .cancelled
+	}
+	if !handler.dispatch_keyboard_event('keydown',target,key,code_point,modifiers,repeat) {
 		return .cancelled
 	}
 	if key == 27 && handler.middle_button_scroll_handler_ != none {
@@ -596,6 +598,9 @@ pub fn (mut handler EventHandler) handle_keydown(key int, code_point u32, modifi
 	if produces_character_value(key, code_point)
 		|| is_enter_key_or_interoperable_enter_key_combo(key, modifiers) {
 		handler.log('keypress', target)
+		if !handler.dispatch_keyboard_event('keypress',target,key,code_point,modifiers,repeat) {
+			return .cancelled
+		}
 	}
 	// Tab traversal is performed by the document-backed caller in upstream.
 	if key == 9 && modifiers & dom.modifier_ctrl == 0 {
