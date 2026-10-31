@@ -2087,6 +2087,11 @@ pub enum Keyword {
 	zoom_out
 	manual
 	oblique_only
+	cap
+	ex
+	trim_start
+	trim_end
+	trim_both
 }
 
 pub fn (keyword Keyword) is_css_wide_keyword() bool {
@@ -2115,6 +2120,11 @@ pub fn is_valid_custom_ident(ident string, blacklist []string) bool {
 
 pub fn string_from_keyword(keyword Keyword) string {
 	return match keyword {
+		.cap { 'cap' }
+		.ex { 'ex' }
+		.trim_start { 'trim-start' }
+		.trim_end { 'trim-end' }
+		.trim_both { 'trim-both' }
 		.oblique_only { 'oblique-only' }
 		.invalid { '' }
 		.negative_infinity { '-infinity' }
@@ -2994,6 +3004,11 @@ pub fn string_from_keyword(keyword Keyword) string {
 
 pub fn keyword_from_string(input string) ?Keyword {
 	name := to_ascii_lowercase(input)
+	if name == 'cap' { return .cap }
+	if name == 'ex' { return .ex }
+	if name == 'trim-start' { return .trim_start }
+	if name == 'trim-end' { return .trim_end }
+	if name == 'trim-both' { return .trim_both }
 	if name == 'oblique-only' { return .oblique_only }
 	if name == 'manual' { return .manual }
 	// Keep bucket selection scalar; wrap the result once after a full match.

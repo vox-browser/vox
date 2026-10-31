@@ -449,6 +449,8 @@ pub enum PropertyID {
 	font_synthesis_style
 	font_synthesis_small_caps
 	font_synthesis_position
+	text_box_trim
+	text_box_edge
 	webkit_font_smoothing
 	// Shorthands (not longhands; excluded from the longhand index/count).
 	overflow

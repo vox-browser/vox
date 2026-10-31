@@ -26,9 +26,23 @@ PROPERTIES = {
         'requires-computation': 'never',
         'valid-identifiers': ['none', 'manual', 'auto'],
     },
+    'text-box-trim': {
+        'animation-type': 'discrete',
+        'initial': 'none',
+        'inherited': False,
+        'requires-computation': 'never',
+        'valid-identifiers': ['none', 'trim-start', 'trim-end', 'trim-both'],
+    },
+    'text-box-edge': {
+        'animation-type': 'discrete',
+        'initial': 'auto',
+        'inherited': True,
+        'requires-computation': 'never',
+        'valid-types': ['string'],
+    },
 }
 
-KEYWORDS = ['manual', 'oblique-only']
+KEYWORDS = ['manual', 'oblique-only', 'cap', 'ex', 'trim-start', 'trim-end', 'trim-both']
 
 
 def extend_properties(properties):

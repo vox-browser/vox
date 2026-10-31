@@ -20,7 +20,7 @@ fn test_break_property_metadata() {
 	assert property_affects_layout(.break_inside)
 	assert generated_shorthands_for_longhand(.break_after) == [PropertyID.all]
 	assert PropertyID.break_inside in generated_expanded_longhands_for_shorthand(.all)
-	assert number_of_longhand_properties == 360
+	assert number_of_longhand_properties == 362
 	assert last_longhand_property_id() == .webkit_font_smoothing
 }
 

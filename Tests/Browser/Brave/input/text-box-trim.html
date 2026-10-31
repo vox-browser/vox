@@ -1,0 +1,16 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Font metric text box trimming</title>
+<style>
+html { font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: white; color: #111; }
+body { margin: 0; }
+p { margin: 20px; width: 764px; padding: 8px 0; font-size: 12px; line-height: 16px; letter-spacing: -.1px; text-align: center; text-wrap: balance; background: #eee; text-box-edge: cap alphabetic; }
+.both { text-box-trim: trim-both; }
+.start { text-box-trim: trim-start; }
+.end { text-box-trim: trim-end; }
+.ex { text-box-edge: ex alphabetic; }
+</style>
+<p class="both"><span>ChatGPT is AI. By using it, you agree to our <a>Terms</a> &amp; <a>Privacy Policy</a><span>. Chats may be reviewed and used to improve our AI models. </span><a>Learn more</a></span></p>
+<p class="start">Capital text<br>Second line</p>
+<p class="end">Capital text<br>Second line</p>
+<p class="both ex">x height<br>Second line</p>

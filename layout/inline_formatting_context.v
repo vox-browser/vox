@@ -424,6 +424,10 @@ fn run_inline_formatting_context_for_width(mut state LayoutState, containing_blo
 	containing_block_used_values.set_inline_end_static_position_rect(calculate_inline_end_static_position_rect(containing_block,
 		containing_block_used_values))
 	apply_line_clamp(containing_block, mut containing_block_used_values, mut state, layout_mode, available_space, parent_block_context)
+	if apply_text_box_trim(containing_block, mut containing_block_used_values) {
+		containing_block_used_values.set_inline_end_static_position_rect(calculate_inline_end_static_position_rect(containing_block,
+			containing_block_used_values))
+	}
 	if containing_block.computed_values().text_align() == .justify {
 		line_count := containing_block_used_values.line_boxes.len
 		for index in 0 .. line_count {

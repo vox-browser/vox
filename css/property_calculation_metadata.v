@@ -183,6 +183,8 @@ fn canonical_property_name_from_metadata(name string) string {
 }
 
 fn property_id_from_canonical_name(name string) ?PropertyID {
+	if name == 'text-box-trim' { return .text_box_trim }
+	if name == 'text-box-edge' { return .text_box_edge }
 	if name == 'font-synthesis' { return .font_synthesis }
 	if name == 'font-synthesis-weight' { return .font_synthesis_weight }
 	if name == 'font-synthesis-style' { return .font_synthesis_style }
@@ -3196,6 +3198,8 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 
 pub fn string_from_property_id(property_id PropertyID) string {
 	return match property_id {
+		.text_box_trim { 'text-box-trim' }
+		.text_box_edge { 'text-box-edge' }
 		.font_synthesis { 'font-synthesis' }
 		.font_synthesis_weight { 'font-synthesis-weight' }
 		.font_synthesis_style { 'font-synthesis-style' }
@@ -3673,6 +3677,7 @@ pub fn property_has_quirk(property_id PropertyID, quirk PropertyQuirk) bool {
 
 pub fn is_inherited_property(property_id PropertyID) bool {
 	return match property_id {
+		.text_box_edge { true }
 		.font_synthesis_weight, .font_synthesis_style, .font_synthesis_small_caps, .font_synthesis_position { true }
 		.hyphens { true }
 		.block_ellipsis { true }
@@ -3685,6 +3690,8 @@ pub fn is_inherited_property(property_id PropertyID) bool {
 
 pub fn property_initial_value_string(property_id PropertyID) string {
 	return match property_id {
+		.text_box_trim { 'none' }
+		.text_box_edge { 'auto' }
 		.font_synthesis { 'weight style small-caps position' }
 		.font_synthesis_weight { 'auto' }
 		.font_synthesis_style { 'auto' }
@@ -4120,6 +4127,9 @@ pub fn property_initial_value_string(property_id PropertyID) string {
 
 fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 	return match property_id {
+		.text_box_trim, .text_box_edge {
+			AnimationType.discrete
+		}
 		.font_synthesis_weight, .font_synthesis_style, .font_synthesis_small_caps, .font_synthesis_position {
 			AnimationType.discrete
 		}
@@ -4164,6 +4174,7 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 
 pub fn is_animatable_property(property_id PropertyID) bool {
 	return match property_id {
+		.text_box_trim, .text_box_edge { true }
 		.font_synthesis, .font_synthesis_weight, .font_synthesis_style, .font_synthesis_small_caps, .font_synthesis_position { true }
 		.hyphens { true }
 		.backface_visibility { true }
@@ -4208,6 +4219,7 @@ pub fn property_multiplicity(property_id PropertyID) PropertyMultiplicity {
 
 pub fn property_affects_layout(property_id PropertyID) bool {
 	return match property_id {
+		.text_box_trim, .text_box_edge { true }
 		.font_synthesis, .font_synthesis_weight, .font_synthesis_style, .font_synthesis_small_caps, .font_synthesis_position { true }
 		.hyphens { true }
 		.scroll_padding, .scroll_padding_block, .scroll_padding_block_end, .scroll_padding_block_start, .scroll_padding_bottom, .scroll_padding_inline, .scroll_padding_inline_end, .scroll_padding_inline_start, .scroll_padding_left, .scroll_padding_right, .scroll_padding_top {
@@ -4359,6 +4371,9 @@ pub fn property_resolves_percentages_relative_to(property_id PropertyID) ?ValueT
 
 pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool {
 	return match property_id {
+		.text_box_edge {
+			value_type == .string
+		}
 		.font_synthesis {
 			value_type == .string
 		}
@@ -4540,6 +4555,9 @@ fn property_custom_ident_blacklist(property_id PropertyID) []string {
 fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 	lowercase_value := to_ascii_lowercase(value)
 	return match property_id {
+		.text_box_trim {
+			lowercase_value in ['none', 'trim-start', 'trim-end', 'trim-both']
+		}
 		.font_synthesis_weight, .font_synthesis_small_caps, .font_synthesis_position {
 			lowercase_value in ['auto', 'none']
 		}

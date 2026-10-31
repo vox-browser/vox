@@ -18,6 +18,9 @@ class TextWrapPixelsTests(unittest.TestCase):
     def test_balance_crosses_nested_inline_and_link_boundaries(self):
         self.compare_fixture('balanced-inline-copy')
 
+    def test_text_box_trimming_uses_the_selected_font_edges(self):
+        self.compare_fixture('text-box-trim')
+
 
 if __name__ == '__main__':
     unittest.main()

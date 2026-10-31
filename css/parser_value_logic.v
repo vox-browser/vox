@@ -1764,6 +1764,12 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.text_wrap_style {
 			return parser.parse_text_wrap_style_value(mut tokens)
 		}
+		.text_box_trim {
+			return parse_property_keyword_value(mut tokens, ['none', 'trim-start', 'trim-end', 'trim-both'])
+		}
+		.text_box_edge {
+			return parser.parse_text_box_edge(mut tokens)
+		}
 		.transform {
 			return parser.parse_transform_value(mut tokens)
 		}

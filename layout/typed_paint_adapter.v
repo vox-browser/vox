@@ -4461,7 +4461,7 @@ fn uncached_text_lines_from_typed_layout(container &Node, used &UsedValues, stat
 			offset := css_pixel_point_add(fragment.offset(), inline_relative_offset(fragment.layout_node_, state))
 			absolute_x := container_position.x().plus(offset.x()).to_double()
 			absolute_y := container_position.y().plus(offset.y()).to_double()
-			mut paint_line_top := container_position.y().to_double() + line_box.bottom().to_double() - line_box.height().to_double()
+			mut paint_line_top := container_position.y().to_double() + line_box.bottom().to_double() - line_box.height().to_double() - line_box.trimmed_block_start_.to_double()
 			if container.document().font_rendering_policy() == .chromium {
 				mut parent := fragment.layout_node_.parent()
 				for parent != none {

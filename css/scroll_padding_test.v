@@ -8,7 +8,7 @@ fn scroll_padding_serialization(property_id PropertyID, text string) ?string {
 }
 
 fn test_scroll_padding_metadata_and_parsing() {
-	assert number_of_longhand_properties == 360
+	assert number_of_longhand_properties == 362
 	assert last_longhand_property_id() == .webkit_font_smoothing
 	assert property_id_from_string('scroll-padding')? == .scroll_padding
 	assert property_id_from_string('SCROLL-PADDING-INLINE-END')? == .scroll_padding_inline_end
