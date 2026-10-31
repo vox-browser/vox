@@ -1308,7 +1308,7 @@ fn document_preload_resource_urls(document &dom.Document, base_url string) []str
 	preload_remote_images := !base_url.starts_with('file://')
 	preferred_set_name := preferred_style_sheet_set_name(root)
 	for link in css.query_selector_all(root, 'link[rel][href]') {
-		if !link_stylesheet_applies(link, preferred_set_name) {
+		if !link_stylesheet_applies(link, preferred_set_name) && !link_is_style_preload(link) {
 			continue
 		}
 		resource_url := resolve_document_reference(link.get_attribute_value('href'), base_url)
@@ -3782,6 +3782,7 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 	}
 	app.install_browser_new_tab_image_fetch_hooks()
 	image_loader.finish_initialization(app.js_runtime != unsafe { nil })
+	app.queue_initial_style_preload_completions(preloaded_resources)
 	if debug_timing_enabled() {
 		mut source_bytes := 0
 		for source in sources { source_bytes += source.code.len }

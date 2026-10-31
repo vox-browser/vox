@@ -10,7 +10,8 @@ fn document_preload_resource_types(document &dom.Document, base_url string) map[
 	root := unsafe { &dom.Node(document) }
 	mut types := map[string]string{}
 	for element in css.query_selector_all(root, 'link[rel][href]') {
-		if element.get_attribute_value('rel').to_lower().split(' ').any(it == 'stylesheet') {
+		if element.get_attribute_value('rel').to_lower().split(' ').any(it == 'stylesheet')
+			|| link_is_style_preload(element) {
 			types[resolve_document_reference(element.get_attribute_value('href'), base_url)] = 'stylesheet'
 		}
 	}

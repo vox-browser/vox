@@ -43,6 +43,12 @@ fn link_relations(link &dom.Element) []string {
 	return link.get_attribute_value('rel').to_lower().fields()
 }
 
+fn link_is_style_preload(link &dom.Element) bool {
+	return 'preload' in link_relations(link)
+		&& link.get_attribute_value('as').to_lower() == 'style'
+		&& link.get_attribute_value('type').split(';')[0].trim_space().to_lower() in ['', 'text/css']
+}
+
 fn link_stylesheet_applies(link &dom.Element, preferred_set_name string) bool {
 	relations := link_relations(link)
 	if 'stylesheet' !in relations || link.has_attribute('disabled') {
@@ -106,6 +112,8 @@ fn complete_browser_link_stylesheet(link &dom.Element, resource PreloadedResourc
 		if header.name.to_lower() == 'content-type' { content_type = header.value }
 	}
 	address := if resource.final_url == '' { resource.url } else { resource.final_url }
+	mut model := html.html_link_element_model_for_dom_element(unsafe { &dom.HTMLLinkElement(link) })
+	model.set_external_stylesheet_fetcher(true)
 	html.html_link_element_process_stylesheet_resource(unsafe { &dom.HTMLLinkElement(link) },
 		resource.error == '', html.LinkResourceResponse{
 			content_type: content_type
@@ -205,6 +213,8 @@ fn (mut app BrowserApp) install_script_inserted_stylesheet(resource PreloadedRes
 		body:             filtered.body.clone()
 		error:            filtered.error.clone()
 		final_url:        filtered.final_url.clone()
+		source_url:       filtered.source_url.clone()
+		request_type:     filtered.request_type.clone()
 		response_headers: filtered.response_headers.map(adblock.ResponseHeader{ name: it.name.clone(), value: it.value.clone() })
 	}
 	app.script_stylesheet_responses[resource.url.clone()] = retained

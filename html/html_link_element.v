@@ -98,6 +98,7 @@ mut:
 	connected_                    bool = true
 	crossorigin_                  CORSSettingAttribute
 	fetch_hook_                   ?LinkResourceFetchHook
+	external_stylesheet_fetcher_  bool
 	dns_prefetch_hook_            ?LinkConnectionHook
 	preconnect_hook_              ?LinkConnectionHook
 	loaded_icon_                  ?[]u8
@@ -448,6 +449,9 @@ pub fn (mut link HTMLLinkElementModel) default_fetch_and_process_linked_resource
 	}
 	request.initiator = if link.has_relation('stylesheet') { 'css' } else { 'link' }
 	fetch_resource := link.fetch_hook_ or {
+		// Browser adapters with asynchronous stylesheet transport complete the
+		// same model later; absence of a synchronous hook is not a failure.
+		if link.external_stylesheet_fetcher_ && request.kind == .stylesheet { return }
 		link.process_linked_resource(false, request.url, LinkResourceResponse{})
 		return
 	}
@@ -457,6 +461,10 @@ pub fn (mut link HTMLLinkElementModel) default_fetch_and_process_linked_resource
 	}
 	success := response.status >= 200 && response.status < 300
 	link.process_linked_resource(success, request.url, response)
+}
+
+pub fn (mut link HTMLLinkElementModel) set_external_stylesheet_fetcher(enabled bool) {
+	link.external_stylesheet_fetcher_ = enabled
 }
 
 pub fn (mut link HTMLLinkElementModel) fetch_and_process_linked_dns_prefetch_resource() {
@@ -669,6 +677,11 @@ pub fn (mut link HTMLLinkElementModel) preload(mut options LinkProcessingOptions
 		link.fire_event('error')
 		return
 	}
+	link.complete_preload_response(mut entry, true, response)
+}
+
+fn (mut link HTMLLinkElementModel) complete_preload_response(mut entry PreloadEntry, succeeded bool, response LinkResourceResponse) {
+	if !succeeded { link.fire_event('error'); return }
 	entry.set_response(response)
 	if response.status < 200 || response.status >= 300 {
 		link.fire_event('error')
@@ -676,6 +689,22 @@ pub fn (mut link HTMLLinkElementModel) preload(mut options LinkProcessingOptions
 	}
 	link.preloaded_response_ = response
 	link.fire_event('load')
+}
+
+// A browser transport can supply a preload without installing a stylesheet.
+// Its completion still populates the native preload map and fires on its link.
+pub fn (mut link HTMLLinkElementModel) process_preload_response(succeeded bool, response LinkResourceResponse) {
+	mut options := link.create_link_options()
+	destination := translate_a_preload_destination(link.as_) or { return }
+	options.destination = destination
+	if !media_attribute_matches_environment(link.resource_document(), link.media_) { return }
+	if !link_type_matches_destination(options.type_, options.destination) || options.href == '' { return }
+	request := link.create_link_request(options) or { return }
+	potential := create_potential_cors_request(request.url, request_destination_from_preload_destination(options.destination), options.crossorigin, .no)
+	key := create_a_preload_key(potential)
+	mut entry := &PreloadEntry{integrity_metadata:options.integrity}
+	if document := options.document { store_preloaded_resource(document, key, entry) }
+	link.complete_preload_response(mut entry, succeeded, response)
 }
 
 pub fn (mut link HTMLLinkElementModel) process_linked_resource(success bool, url dom.URL, response LinkResourceResponse) {
