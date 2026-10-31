@@ -3,6 +3,7 @@ module main
 import dom
 import encoding.base64
 import html
+import os
 
 const lazy_native_png = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII='
 const lazy_native_wide_png = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAABCAYAAAD0In+KAAAADklEQVR4nGP4z8AAQv8BD/kD/YURmXYAAAAASUVORK5CYII='
@@ -77,9 +78,11 @@ fn test_native_lazy_image_source_replacement_discards_the_old_completion() {
 	loader := app.image_request_loader?
 	assert loader.deferred_lazy_images.len == 2
 	app.relayout(320,284)
+	assert !app.has_resumable_lazy_image_requests()
 	assert !app.resume_deferred_lazy_image_requests()
 	assert loader.deferred_lazy_images.len == 1
 	app.set_scroll_y(4000,284)
+	assert app.has_resumable_lazy_image_requests()
 	assert app.resume_deferred_lazy_image_requests()
 	model := lazy_native_test_model(app,'image')
 	assert model.complete() && model.natural_width() == 1
@@ -98,6 +101,7 @@ fn test_native_lazy_images_keep_eager_loading_without_scripting_and_cancel_clean
 	loader.cancel()
 	assert loader.deferred_lazy_images.len == 0
 	lazy.relayout(320,284)
+	assert !lazy.has_resumable_lazy_image_requests()
 	assert !lazy.resume_deferred_lazy_image_requests()
 	assert lazy_native_test_model(lazy,'image').event_count('load') == 0
 	assert lazy_native_test_model(lazy,'image').event_count('error') == 0
@@ -134,4 +138,54 @@ fn test_capture_waits_for_started_lazy_request_but_not_distant_deferred_images()
 	assert lazy_native_test_model(app,'image').complete()
 	assert loader.pending.len == 0 && loader.deferred_lazy_images.len == 1
 	assert app.document_resources_ready_for_capture()
+}
+
+fn test_capture_keeps_nearby_lazy_images_at_the_initial_viewport_after_a_cache_hit() {
+	previous := os.getenv_opt('VOX_CAPTURE_INITIAL_VIEWPORT')
+	os.setenv('VOX_CAPTURE_INITIAL_VIEWPORT', '1', true)
+	defer {
+		if value := previous { os.setenv('VOX_CAPTURE_INITIAL_VIEWPORT', value, true) }
+		else { os.unsetenv('VOX_CAPTURE_INITIAL_VIEWPORT') }
+	}
+	mut app := lazy_native_test_app('<div style="display:flex;gap:10px">' +
+		'<img id="first" loading="lazy" src="${lazy_native_png}">' +
+		'<img id="second" loading="lazy" src="${lazy_native_wide_png}">' +
+		'<img id="third" loading="lazy" src="${lazy_native_png}"></div>' +
+		'<div style="height:5000px"></div><img id="far" loading="lazy" src="${lazy_native_wide_png}">', true)
+	defer { if mut owner := app.image_request_loader { owner.cancel() }; app.document.finalize() }
+	app.screenshot_path = 'capture.png'
+	app.screenshot_scroll_y = 3200
+	app.relayout(320, 284)
+	assert app.resume_deferred_lazy_image_requests()
+	// A synchronous response changes intrinsic geometry. The remaining images
+	// stay deferred until that layout has completed, despite no network job.
+	loader := app.image_request_loader?
+	assert lazy_native_test_model(app, 'first').complete()
+	assert !lazy_native_test_model(app, 'second').complete()
+	assert loader.pending.len == 0
+	app.relayout(320, 284)
+	app.document.update_readiness(.complete)
+	loop := html.main_thread_event_loop()
+	loop.update_font_face_sets_pending_on_the_environment([app.document])
+	assert app.font_resources_ready_for_capture()
+	assert !app.document_resources_ready_for_capture()
+	assert capture_retry_needs_frame(voidptr(app)) == 1
+	assert capture_scroll_retry_needs_frame(voidptr(app)) == 1
+	app.note_screenshot_initial_viewport(true)
+	app.apply_screenshot_scroll_if_ready(284)
+	assert app.scroll_y == 0 && !app.screenshot_initial_viewport_ready
+	// Each ordinary frame can service another synchronous response and layout.
+	for _ in 0 .. 3 {
+		app.begin_frame_preparation()
+		app.finish_frame_preparation()
+		loop.update_font_face_sets_pending_on_the_environment([app.document])
+	}
+	assert lazy_native_test_model(app, 'second').complete()
+	assert lazy_native_test_model(app, 'third').complete()
+	assert !lazy_native_test_model(app, 'far').complete()
+	assert loader.deferred_lazy_images.len == 1
+	assert app.document_resources_ready_for_capture()
+	app.note_screenshot_initial_viewport(true)
+	app.apply_screenshot_scroll_if_ready(284)
+	assert app.scroll_y == 3200 && app.screenshot_initial_viewport_ready
 }

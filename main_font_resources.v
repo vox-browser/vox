@@ -35,7 +35,8 @@ fn capture_retry_needs_frame(target voidptr) int {
 	if app.initial_layout_waits_for_fonts() { return 0 }
 	if app.paint_commands_pending || app.document.needs_style_update_after_layout()
 		|| !app.document.layout_is_up_to_date() || app.javascript_tasks_have_unadopted_paint()
-		|| (app.js_runtime != unsafe { nil } && app.js_runtime.has_pending_document_state()) {
+		|| (app.js_runtime != unsafe { nil } && app.js_runtime.has_pending_document_state())
+		|| app.has_resumable_lazy_image_requests() {
 		return 1
 	}
 	return if app.document_resources_ready_for_capture() { 1 } else { 0 }
@@ -88,6 +89,10 @@ fn (app &BrowserApp) document_resources_ready_for_capture() bool {
 			return false
 		}
 	}
+	// A synchronous cache hit can invalidate layout midway through a lazy-image
+	// batch. After layout settles, another frame must resume its nearby tail
+	// before capture can latch this viewport or scroll those images away.
+	if app.has_resumable_lazy_image_requests() { return false }
 	// Font and load-event delayers can settle before the queued load task
 	// advances an interactive document to complete. Capture after that task.
 	return app.font_resources_ready_for_capture()

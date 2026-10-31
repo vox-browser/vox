@@ -48,6 +48,22 @@ fn (loader &BrowserImageRequestLoader) lazy_static_callback() html.HTMLImageMode
 	}
 }
 
+fn (app &BrowserApp) has_resumable_lazy_image_requests() bool {
+	loader := app.image_request_loader or { return false }
+	if loader.cancelled || voidptr(loader.document) != voidptr(app.document)
+		|| !app.document.layout_is_up_to_date()
+		|| app.document.needs_style_update_after_layout() {
+		return false
+	}
+	for request in loader.deferred_lazy_images {
+		if request.is_current_for(loader.document)
+			&& !browser_lazy_image_needs_deferral(request.image) {
+			return true
+		}
+	}
+	return false
+}
+
 fn (mut app BrowserApp) resume_deferred_lazy_image_requests() bool {
 	mut loader := app.image_request_loader or { return false }
 	if loader.cancelled || voidptr(loader.document) != voidptr(app.document)
