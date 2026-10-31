@@ -1210,12 +1210,12 @@ fn distribute_table_width_to_columns(min_widths []CSSPixels, max_widths []CSSPix
 
 fn table_cell_measurement_inline_edges(values UsedValues, collapsed bool) CSSPixels {
 	left_border := if collapsed {
-		collapsed_border_part_after_line(values.border_left)
+		values.collapsed_border_part_after_line(values.border_left)
 	} else {
 		values.border_left
 	}
 	right_border := if collapsed {
-		collapsed_border_part_before_line(values.border_right)
+		values.collapsed_border_part_before_line(values.border_right)
 	} else {
 		values.border_right
 	}
@@ -1224,12 +1224,12 @@ fn table_cell_measurement_inline_edges(values UsedValues, collapsed bool) CSSPix
 
 fn table_cell_measurement_block_edges(values UsedValues, collapsed bool) CSSPixels {
 	top_border := if collapsed {
-		collapsed_border_part_after_line(values.border_top)
+		values.collapsed_border_part_after_line(values.border_top)
 	} else {
 		values.border_top
 	}
 	bottom_border := if collapsed {
-		collapsed_border_part_before_line(values.border_bottom)
+		values.collapsed_border_part_before_line(values.border_bottom)
 	} else {
 		values.border_bottom
 	}
@@ -1242,7 +1242,7 @@ fn table_cell_measurement_outer_height(values UsedValues, collapsed bool) CSSPix
 
 fn table_cell_content_offset_left(values UsedValues, collapsed bool) CSSPixels {
 	border := if collapsed {
-		collapsed_border_part_after_line(values.border_left)
+		values.collapsed_border_part_after_line(values.border_left)
 	} else {
 		values.border_left
 	}
@@ -1251,7 +1251,7 @@ fn table_cell_content_offset_left(values UsedValues, collapsed bool) CSSPixels {
 
 fn table_cell_content_offset_top(values UsedValues, collapsed bool) CSSPixels {
 	border := if collapsed {
-		collapsed_border_part_after_line(values.border_top)
+		values.collapsed_border_part_after_line(values.border_top)
 	} else {
 		values.border_top
 	}
@@ -1554,7 +1554,7 @@ fn table_cell_intrinsic_height_measures(mut state LayoutState, cell &Node, colla
 	box := cell.as_box() or { return TableCellIntrinsicHeightMeasures{} }
 	styled := cell.as_node_with_style() or { return TableCellIntrinsicHeightMeasures{} }
 	computed := cell.computed_values()
-	mut measurement := UsedValues{}
+	mut measurement := UsedValues{node_: styled}
 	resolve_box_model_edges(computed, mut measurement, containing_block_height.to_double())
 	if collapsed {
 		cell_state := state.get(styled)

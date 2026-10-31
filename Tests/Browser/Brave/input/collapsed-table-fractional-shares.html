@@ -1,0 +1,9 @@
+<!doctype html><meta charset="utf-8"><title>Collapsed table border halves and intrinsic placement</title>
+<style>
+body { margin:0; background:white }
+table { margin:30.75px; width:303px; height:93px; table-layout:fixed; border-collapse:collapse }
+td { height:40px; padding:0; background:#5af; border-style:solid; border-color:#1118 }
+.horizontal td { border-width:3px 0 5px }
+.vertical, .vertical td { border-style:solid; border-color:#1118; border-width:0 5px 0 3px }
+</style><table class="horizontal"><tr><td></td></tr></table>
+<table class="vertical"><tr><td></td></tr></table>

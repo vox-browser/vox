@@ -71,18 +71,25 @@ fn column_index_for_element_kind(index int, element_kind ConflictingElementKind)
 	}
 }
 
-fn collapsed_border_part_after_line(width f64) f64 {
+fn collapsed_border_part_after_line(width f64, fractional bool) f64 {
 	if width <= 0 {
 		return 0
+	}
+	if fractional {
+		// LayoutUnit halves truncate to 1/64 CSS pixel before device snapping.
+		return math.floor(width * 32.0) / 64.0
 	}
 	return math.floor(width / 2.0)
 }
 
-fn collapsed_border_part_before_line(width f64) f64 {
+fn collapsed_border_part_before_line(width f64, fractional bool) f64 {
 	if width <= 0 {
 		return 0
 	}
-	return width - collapsed_border_part_after_line(width)
+	if fractional {
+		return collapsed_border_part_after_line(width, true)
+	}
+	return width - collapsed_border_part_after_line(width, false)
 }
 
 fn device_rect_from_css_edges(left f64, top f64, right f64, bottom f64, converter DevicePixelConverter) IntRect {
@@ -96,14 +103,14 @@ fn device_rect_from_css_edges(left f64, top f64, right f64, bottom f64, converte
 	}
 }
 
-fn make_right_cell_edge(right_cell_rect Rect, cell_rect Rect, borders_data BordersDataWithElementKind, coordinates TableCellCoordinates, converter DevicePixelConverter) BorderEdgePaintingInfo {
+fn make_right_cell_edge(right_cell_rect Rect, cell_rect Rect, borders_data BordersDataWithElementKind, coordinates TableCellCoordinates, converter DevicePixelConverter, fractional bool) BorderEdgePaintingInfo {
 	grid_line := right_cell_rect.x
 	return BorderEdgePaintingInfo{
 		rect: device_rect_from_css_edges(
-			grid_line - collapsed_border_part_before_line(borders_data.right.border_data.width),
-			cell_rect.y - collapsed_border_part_before_line(borders_data.top.border_data.width),
-			grid_line + collapsed_border_part_after_line(borders_data.right.border_data.width),
-			math.max(cell_rect.bottom(), right_cell_rect.bottom()) + collapsed_border_part_after_line(borders_data.bottom.border_data.width),
+			grid_line - collapsed_border_part_before_line(borders_data.right.border_data.width, fractional),
+			cell_rect.y - collapsed_border_part_before_line(borders_data.top.border_data.width, fractional),
+			grid_line + collapsed_border_part_after_line(borders_data.right.border_data.width, fractional),
+			math.max(cell_rect.bottom(), right_cell_rect.bottom()) + collapsed_border_part_after_line(borders_data.bottom.border_data.width, fractional),
 			converter)
 		border_data_with_element_kind: borders_data.right
 		direction: .vertical
@@ -112,14 +119,14 @@ fn make_right_cell_edge(right_cell_rect Rect, cell_rect Rect, borders_data Borde
 	}
 }
 
-fn make_down_cell_edge(down_cell_rect Rect, cell_rect Rect, borders_data BordersDataWithElementKind, coordinates TableCellCoordinates, converter DevicePixelConverter) BorderEdgePaintingInfo {
+fn make_down_cell_edge(down_cell_rect Rect, cell_rect Rect, borders_data BordersDataWithElementKind, coordinates TableCellCoordinates, converter DevicePixelConverter, fractional bool) BorderEdgePaintingInfo {
 	grid_line := down_cell_rect.y
 	return BorderEdgePaintingInfo{
 		rect: device_rect_from_css_edges(
-			cell_rect.x - collapsed_border_part_before_line(borders_data.left.border_data.width),
-			grid_line - collapsed_border_part_before_line(borders_data.bottom.border_data.width),
-			math.max(cell_rect.right(), down_cell_rect.right()) + collapsed_border_part_after_line(borders_data.right.border_data.width),
-			grid_line + collapsed_border_part_after_line(borders_data.bottom.border_data.width),
+			cell_rect.x - collapsed_border_part_before_line(borders_data.left.border_data.width, fractional),
+			grid_line - collapsed_border_part_before_line(borders_data.bottom.border_data.width, fractional),
+			math.max(cell_rect.right(), down_cell_rect.right()) + collapsed_border_part_after_line(borders_data.right.border_data.width, fractional),
+			grid_line + collapsed_border_part_after_line(borders_data.bottom.border_data.width, fractional),
 			converter)
 		border_data_with_element_kind: borders_data.bottom
 		direction: .horizontal
@@ -128,14 +135,14 @@ fn make_down_cell_edge(down_cell_rect Rect, cell_rect Rect, borders_data Borders
 	}
 }
 
-fn make_first_row_top_cell_edge(cell_rect Rect, borders_data BordersDataWithElementKind, coordinates TableCellCoordinates, converter DevicePixelConverter) BorderEdgePaintingInfo {
+fn make_first_row_top_cell_edge(cell_rect Rect, borders_data BordersDataWithElementKind, coordinates TableCellCoordinates, converter DevicePixelConverter, fractional bool) BorderEdgePaintingInfo {
 	grid_line := cell_rect.y
 	return BorderEdgePaintingInfo{
 		rect: device_rect_from_css_edges(
-			cell_rect.x - collapsed_border_part_before_line(borders_data.left.border_data.width),
-			grid_line - collapsed_border_part_before_line(borders_data.top.border_data.width),
-			cell_rect.right() + collapsed_border_part_after_line(borders_data.right.border_data.width),
-			grid_line + collapsed_border_part_after_line(borders_data.top.border_data.width),
+			cell_rect.x - collapsed_border_part_before_line(borders_data.left.border_data.width, fractional),
+			grid_line - collapsed_border_part_before_line(borders_data.top.border_data.width, fractional),
+			cell_rect.right() + collapsed_border_part_after_line(borders_data.right.border_data.width, fractional),
+			grid_line + collapsed_border_part_after_line(borders_data.top.border_data.width, fractional),
 			converter)
 		border_data_with_element_kind: borders_data.top
 		direction: .horizontal
@@ -144,14 +151,14 @@ fn make_first_row_top_cell_edge(cell_rect Rect, borders_data BordersDataWithElem
 	}
 }
 
-fn make_last_row_bottom_cell_edge(cell_rect Rect, borders_data BordersDataWithElementKind, coordinates TableCellCoordinates, converter DevicePixelConverter) BorderEdgePaintingInfo {
+fn make_last_row_bottom_cell_edge(cell_rect Rect, borders_data BordersDataWithElementKind, coordinates TableCellCoordinates, converter DevicePixelConverter, fractional bool) BorderEdgePaintingInfo {
 	grid_line := cell_rect.bottom()
 	return BorderEdgePaintingInfo{
 		rect: device_rect_from_css_edges(
-			cell_rect.x - collapsed_border_part_before_line(borders_data.left.border_data.width),
-			grid_line - collapsed_border_part_before_line(borders_data.bottom.border_data.width),
-			cell_rect.right() + collapsed_border_part_after_line(borders_data.right.border_data.width),
-			grid_line + collapsed_border_part_after_line(borders_data.bottom.border_data.width),
+			cell_rect.x - collapsed_border_part_before_line(borders_data.left.border_data.width, fractional),
+			grid_line - collapsed_border_part_before_line(borders_data.bottom.border_data.width, fractional),
+			cell_rect.right() + collapsed_border_part_after_line(borders_data.right.border_data.width, fractional),
+			grid_line + collapsed_border_part_after_line(borders_data.bottom.border_data.width, fractional),
 			converter)
 		border_data_with_element_kind: borders_data.bottom
 		direction: .horizontal
@@ -160,14 +167,14 @@ fn make_last_row_bottom_cell_edge(cell_rect Rect, borders_data BordersDataWithEl
 	}
 }
 
-fn make_first_column_left_cell_edge(cell_rect Rect, borders_data BordersDataWithElementKind, coordinates TableCellCoordinates, converter DevicePixelConverter) BorderEdgePaintingInfo {
+fn make_first_column_left_cell_edge(cell_rect Rect, borders_data BordersDataWithElementKind, coordinates TableCellCoordinates, converter DevicePixelConverter, fractional bool) BorderEdgePaintingInfo {
 	grid_line := cell_rect.x
 	return BorderEdgePaintingInfo{
 		rect: device_rect_from_css_edges(
-			grid_line - collapsed_border_part_before_line(borders_data.left.border_data.width),
-			cell_rect.y - collapsed_border_part_before_line(borders_data.top.border_data.width),
-			grid_line + collapsed_border_part_after_line(borders_data.left.border_data.width),
-			cell_rect.bottom() + collapsed_border_part_after_line(borders_data.bottom.border_data.width),
+			grid_line - collapsed_border_part_before_line(borders_data.left.border_data.width, fractional),
+			cell_rect.y - collapsed_border_part_before_line(borders_data.top.border_data.width, fractional),
+			grid_line + collapsed_border_part_after_line(borders_data.left.border_data.width, fractional),
+			cell_rect.bottom() + collapsed_border_part_after_line(borders_data.bottom.border_data.width, fractional),
 			converter)
 		border_data_with_element_kind: borders_data.left
 		direction: .vertical
@@ -176,14 +183,14 @@ fn make_first_column_left_cell_edge(cell_rect Rect, borders_data BordersDataWith
 	}
 }
 
-fn make_last_column_right_cell_edge(cell_rect Rect, borders_data BordersDataWithElementKind, coordinates TableCellCoordinates, converter DevicePixelConverter) BorderEdgePaintingInfo {
+fn make_last_column_right_cell_edge(cell_rect Rect, borders_data BordersDataWithElementKind, coordinates TableCellCoordinates, converter DevicePixelConverter, fractional bool) BorderEdgePaintingInfo {
 	grid_line := cell_rect.right()
 	return BorderEdgePaintingInfo{
 		rect: device_rect_from_css_edges(
-			grid_line - collapsed_border_part_before_line(borders_data.right.border_data.width),
-			cell_rect.y - collapsed_border_part_before_line(borders_data.top.border_data.width),
-			grid_line + collapsed_border_part_after_line(borders_data.right.border_data.width),
-			cell_rect.bottom() + collapsed_border_part_after_line(borders_data.bottom.border_data.width),
+			grid_line - collapsed_border_part_before_line(borders_data.right.border_data.width, fractional),
+			cell_rect.y - collapsed_border_part_before_line(borders_data.top.border_data.width, fractional),
+			grid_line + collapsed_border_part_after_line(borders_data.right.border_data.width, fractional),
+			cell_rect.bottom() + collapsed_border_part_after_line(borders_data.bottom.border_data.width, fractional),
 			converter)
 		border_data_with_element_kind: borders_data.right
 		direction: .vertical
@@ -325,6 +332,12 @@ fn paint_collected_edges(mut edges []BorderEdgePaintingInfo) []DisplayListComman
 // the shared snapped grid; collapsed borders collect each shared edge once,
 // sort it, and paint it in the same device-pixel geometry as Ladybird.
 pub fn paint_table_borders(cells []TableCellPaintData, border_collapse bool, converter DevicePixelConverter) []DisplayListCommand {
+	return paint_table_borders_with_fractional_shares(cells, border_collapse, converter, false)
+}
+
+// Chromium retains half-pixel collapsed borders until the final edge snap.
+// The translated LibWeb entry point above preserves whole-pixel splitting.
+pub fn paint_table_borders_with_fractional_shares(cells []TableCellPaintData, border_collapse bool, converter DevicePixelConverter, fractional bool) []DisplayListCommand {
 	if cells.len == 0 {
 		return []DisplayListCommand{}
 	}
@@ -360,7 +373,7 @@ pub fn paint_table_borders(cells []TableCellPaintData, border_collapse bool, con
 		}
 		if right_cell_rect := cell_rects_css[cell_coordinates_key(right_coordinates.row_index, right_coordinates.column_index)] {
 			edges << make_right_cell_edge(right_cell_rect, cell_rect, borders, right_coordinates,
-				converter)
+				converter, fractional)
 		}
 		down_coordinates := TableCellCoordinates{
 			row_index: coordinates.row_index + coordinates.row_span
@@ -368,31 +381,31 @@ pub fn paint_table_borders(cells []TableCellPaintData, border_collapse bool, con
 		}
 		if down_cell_rect := cell_rects_css[cell_coordinates_key(down_coordinates.row_index, down_coordinates.column_index)] {
 			edges << make_down_cell_edge(down_cell_rect, cell_rect, borders, down_coordinates,
-				converter)
+				converter, fractional)
 		}
 		if coordinates.row_index == 0 {
 			edges << make_first_row_top_cell_edge(cell_rect, borders, TableCellCoordinates{
 				row_index: 0
 				column_index: coordinates.column_index
-			}, converter)
+			}, converter, fractional)
 		}
 		if coordinates.row_index + coordinates.row_span == row_count {
 			edges << make_last_row_bottom_cell_edge(cell_rect, borders, TableCellCoordinates{
 				row_index: row_count - 1
 				column_index: coordinates.column_index
-			}, converter)
+			}, converter, fractional)
 		}
 		if coordinates.column_index == 0 {
 			edges << make_first_column_left_cell_edge(cell_rect, borders, TableCellCoordinates{
 				row_index: coordinates.row_index
 				column_index: 0
-			}, converter)
+			}, converter, fractional)
 		}
 		if coordinates.column_index + coordinates.column_span == column_count {
 			edges << make_last_column_right_cell_edge(cell_rect, borders, TableCellCoordinates{
 				row_index: coordinates.row_index
 				column_index: column_count - 1
-			}, converter)
+			}, converter, fractional)
 		}
 	}
 	mut commands := paint_collected_edges(mut edges)

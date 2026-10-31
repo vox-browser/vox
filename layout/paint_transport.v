@@ -2054,7 +2054,7 @@ fn (b &BlockBox) append_table_border_commands(mut commands []PaintCommand, opaci
 	converter := painting.new_device_pixel_converter(1.0) or { return }
 	mut rounded_clip := ?painting.AddRoundedRectClip(none)
 	start := commands.len
-	for display_command in painting.paint_table_borders(cells, b.uses_collapsed_borders, converter) {
+	for display_command in painting.paint_table_borders_with_fractional_shares(cells, b.uses_collapsed_borders, converter, b.snaps_background_rect) {
 		match display_command {
 			painting.Save {
 				rounded_clip = none

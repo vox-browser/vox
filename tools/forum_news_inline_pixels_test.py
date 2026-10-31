@@ -12,7 +12,7 @@ from forum_news_pixels import REPO, VOX, executable_identity, guarded, write_jso
 
 @unittest.skipUnless(sys.platform == 'darwin', 'The reference uses native macOS fonts')
 class ForumNewsInlinePixelsTests(unittest.TestCase):
-    def compare_fixture(self, name, width=800, height=600, scroll_y=0):
+    def compare_fixture(self, name, width=800, height=600, scroll_y=0, document_active=False):
         output = Path(tempfile.mkdtemp(prefix='forum-news-inline-', dir=REPO / 'Build'))
         fixture = REPO / 'Tests/Browser/Brave/input' / (name + '.html')
         reference = REPO / 'Tests/Browser/Brave/expected' / (name + '.png')
@@ -22,6 +22,8 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
         environment.update(VOX_PROFILE_DIR=str(output / 'profile'), VOX_TEST_WINDOW='1',
             VOX_CAPTURE_DOCUMENT_ONLY='1', LADYBIRD_SCREENSHOT_SCALE='1',
             LADYBIRD_SCREENSHOT_DELAY_SECONDS='0')
+        if document_active:
+            environment['VOX_CAPTURE_DOCUMENT_ACTIVE'] = '1'
         identity = executable_identity(VOX)
         write_json(output / 'identity.json', identity)
         command = [VOX, '--window-width', str(width), '--window-height', str(height + 84)]
@@ -36,6 +38,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
         verdict = compare(reference, actual, output / 'diff.png', tool)
         write_json(output / 'pixels.json', verdict)
         self.assertTrue(verdict['exact'], verdict['metrics'] + '\nArtifacts: ' + str(output))
+
+    def test_collapsed_table_borders_retain_fractional_shares_and_placement(self):
+        self.compare_fixture('collapsed-table-fractional-shares')
 
     def test_trailing_fallback_spaces_preserve_intrinsic_button_width(self):
         self.compare_fixture('fallback-space-intrinsic-button')

@@ -704,9 +704,10 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 	}
 
 	// The table context resolves its vertical origin together with captions.
-	// Horizontal placement precedes conflict resolution, so retain its
-	// authored border for the final inline-axis rebase.
-	pre_run_table_border_box_left := box_state.border_left.plus(box_state.padding_left)
+	// Horizontal placement may already use collapsed borders installed by an
+	// intrinsic probe. Rebase from the edge used for that placement, rather
+	// than counting the authored, unsplit border again.
+	pre_run_table_border_box_left := box_state.border_box_left()
 	mut content_height_from_children := 0.0
 	if box_as_node.is_replaced_box() && !box_as_node.is_replaced_box_with_children() {
 		content_height_from_children = box_state.content_height().to_double()

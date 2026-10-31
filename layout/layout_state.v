@@ -803,11 +803,32 @@ fn collapsed_border_part_before_line(width CSSPixels) CSSPixels {
 	return width.minus(collapsed_border_part_after_line(width))
 }
 
+// Blink divides each winning collapsed border in LayoutUnit precision on
+// both sides. LibWeb gives the whole-pixel remainder to the preceding side.
+fn (u &UsedValues) uses_fractional_collapsed_border_shares() bool {
+	return u.node_ != unsafe { nil }
+		&& unsafe { &Node(u.node_) }.document().font_rendering_policy() == .chromium
+}
+
+fn (u &UsedValues) collapsed_border_part_after_line(width CSSPixels) CSSPixels {
+	if u.uses_fractional_collapsed_border_shares() {
+		return CSSPixels.from_raw(width.raw_value() / 2)
+	}
+	return collapsed_border_part_after_line(width)
+}
+
+fn (u &UsedValues) collapsed_border_part_before_line(width CSSPixels) CSSPixels {
+	if u.uses_fractional_collapsed_border_shares() {
+		return CSSPixels.from_raw(width.raw_value() / 2)
+	}
+	return collapsed_border_part_before_line(width)
+}
+
 fn (u &UsedValues) collapsed_border_share(width CSSPixels, start_edge bool) CSSPixels {
 	return if start_edge != u.is_collapsed_borders_table_box() {
-		collapsed_border_part_after_line(width)
+		u.collapsed_border_part_after_line(width)
 	} else {
-		collapsed_border_part_before_line(width)
+		u.collapsed_border_part_before_line(width)
 	}
 }
 
