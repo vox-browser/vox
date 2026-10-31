@@ -2,7 +2,7 @@
 
 Pixel-perfect parity remains open. The current settled, archived comparison at
 1280 × 800 CSS pixels and scale 1 has **4 differing pixels at the top** and
-**zero at scroll Y 2400 and 6400**, and **4 at scroll Y 8000**. Other viewports
+**zero at scroll Y 2400, 4000, 4800, 5600, and 6400**, and **4 at scroll Y 8000**. Other viewports
 still differ, including the Lilly preview and text. The installation Copy button
 now has Brave's single-line layout. Book-cover flex geometry and the total
 page height now agree; the bottom capture still has 360 differences. These results do not cover
@@ -776,3 +776,75 @@ pinned with its libraries in `Vox-definite-flex-basis-installed.app`.
 identity across validation. The browser test method was included by a concurrent
 shared commit before the implementation commit. Full-page and scale-two parity
 remain open.
+
+
+## Letter spacing and optional ligatures
+
+`a0b9d9ff` disables the optional HarfBuzz `liga`, `clig`, and `calt` features
+for nonzero letter spacing in Chromium-policy text. Both signs of spacing use
+this rule; zero letter spacing, word spacing alone, and LibWeb policy retain
+their previous shaping. Required script features remain HarfBuzz defaults.
+This follows Blink's
+[`FontFeatureRanges::FromFontDescription`](https://chromium.googlesource.com/chromium/src/+/156.0.8078.48/third_party/blink/renderer/platform/fonts/shaping/font_features.cc).
+General CSS font-feature settings are still not passed through this platform
+font record; this fix does not establish support for those overrides.
+
+The Times fixture improves from **2,560 differing pixels to zero**. The archived
+profiler viewport at Y 4800 improves from **208 to zero**, and Y 8800 improves
+from **20,196 to 20,163**. Fresh Brave references agree exactly at all eleven
+positions shared with the preceding sweep. The complete current sampled results
+at scale 1 are:
+
+| Scroll Y | Differing pixels |
+| --- | ---: |
+| 0 | 4 |
+| 800 | 1,463 |
+| 1600 | 22,821 |
+| 2400 | 0 |
+| 4000 | 0 |
+| 4800 | 0 |
+| 5600 | 0 |
+| 6400 | 0 |
+| 8000 | 4 |
+| 8800 | 20,163 |
+| 9600 | 2,982 |
+| 10400 | 9,000 |
+| 10664 | 360 |
+
+Evidence under `Build/vlang-parity-20261031/`:
+
+- `spaced-ligatures-before-v2-platform-none-{build,run}.json`: the corrected
+  regression compiles, then fails against the preceding shaping with one
+  glyph instead of two for spaced Chromium text. The first negative control
+  assumed the wrong LibWeb fallback face and supplies no acceptance evidence.
+  `spaced-ligatures-focus-platform-{none,boehm}-{build,run}.json` records eight
+  focused functions passing in both memory modes, including repeated cache
+  use, UTF-16 glyph spans, advance truncation, and CoreText hyphens.
+- `spaced-ligatures-{before,after}-browser/` and
+  `spaced-ligatures-reference-repeat.json`: standalone comparisons with exact
+  repeated Brave references.
+- `spaced-ligatures-production-{guard,status}.json`: successful production
+  build with all implementation inputs stable, 188.60 seconds, sampled peak
+  aggregate RSS of 8.11 GiB under the default 12 GiB guard.
+- `spaced-ligatures-installed-page/` and
+  `spaced-ligatures-reference-repeat-page.json`: fresh archived comparisons,
+  geometry audits, bundle identities, and repeated reference agreement.
+- `spaced-ligatures-installed-smoke-status.json` and
+  `spaced-ligatures-installed-inline-regressions.{json,log}`: all fourteen
+  screenshot/selection/invalidation/turbulence checks and 47 inline browser
+  regressions pass. All eight image, gradient, and intrinsic-table-height golds
+  remain exact in `spaced-ligatures-installed-gradient-regressions/`.
+- `spaced-ligatures-installed-headless.guard.json` and
+  `spaced-ligatures-installed-live/status.json`: startup and live scripted
+  loading pass with loaded fonts, five completed visible image requests, and
+  zero native errors. Live loading supplies no matched pixel-comparison credit.
+
+The signed executable is
+`a3a038e28e57a3648d8c72071cfa01c87e863e9be8ed68091358c4fc736f5120`,
+pinned with its libraries in `Vox-spaced-ligatures-installed.app`.
+`spaced-ligatures-installed-{before,after,final}.json` records unchanged
+installed identity throughout validation. Private probes that route byte-color
+text through GPU replay or replace a constant backdrop image with a solid fill
+leave the Y 10400 and 10664 comparisons unchanged. They remain diagnostic
+artifacts under `Build/`, with no production renderer change. Full-page and
+scale-two parity remain open.
