@@ -250,8 +250,16 @@ void shared_recording_image(CGContextRef destination, SkMatrix const& matrix,
         auto natural = SkRect::MakeXYWH(image.source[0], image.source[1],
             image.source[2], image.source[3]);
         canvas->concat(SkMatrix::RectToRect(natural, target));
-        canvas->drawImageRect(bitmap, source_rect, natural, sampling, &paint,
-            image.nearest ? SkCanvas::kStrict_SrcRectConstraint : SkCanvas::kFast_SrcRectConstraint);
+        if (mips && source_rect.contains(SkRect::MakeWH(upload_width, upload_height))) {
+            // cc::DrawImageRect replays a complete mipmapped source as a
+            // natural image after applying its decode scale to the canvas.
+            // Keeping that scale inside drawImageRect changes filtered texels.
+            canvas->concat(SkMatrix::RectToRect(source_rect, natural));
+            canvas->drawImage(bitmap, 0, 0, sampling, &paint);
+        } else {
+            canvas->drawImageRect(bitmap, source_rect, natural, sampling, &paint,
+                image.nearest || mips ? SkCanvas::kStrict_SrcRectConstraint : SkCanvas::kFast_SrcRectConstraint);
+        }
     } else {
         canvas->drawImageRect(bitmap, source_rect, target, sampling, &paint, SkCanvas::kStrict_SrcRectConstraint);
     }
