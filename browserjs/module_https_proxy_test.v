@@ -73,4 +73,21 @@ fn test_native_module_transport_completes_https_socks_responses() {
 	})
 	assert host.errors() == []string{}
 	assert runtime.evaluate_host('globalThis.firstValue===41&&globalThis.secondValue===1')! == 'true'
+	assert runtime.run_document_scripts_collect_errors([
+		ScriptSource{ url: address.serialize(), code: 'Promise.all(Array.from({length:130},(_,i)=>import("./fanout-"+i+".js"))).then(a=>globalThis.fanoutSum=a.reduce((n,m)=>n+m.value,0));' },
+	]) == []
+	fanout_deadline := time.sys_mono_now() + 20 * time.second
+	loop.spin_until(fn [runtime, fanout_deadline] () bool {
+		return (runtime.evaluate_host('globalThis.fanoutSum===8385') or { 'false' }) == 'true' || time.sys_mono_now() >= fanout_deadline
+	})
+	assert host.errors() == []string{}
+	assert runtime.evaluate_host('globalThis.fanoutSum===8385')! == 'true'
+	assert runtime.run_document_scripts_collect_errors([
+		ScriptSource{ url: address.serialize(), code: 'import("https://unarchived.invalid/missing.js").catch(e=>globalThis.importFailure=String(e));' },
+	]) == []
+	failure_deadline := time.sys_mono_now() + 5 * time.second
+	loop.spin_until(fn [runtime, failure_deadline] () bool {
+		return (runtime.evaluate_host('typeof importFailure==="string"') or { 'false' }) == 'true' || time.sys_mono_now() >= failure_deadline
+	})
+	assert runtime.evaluate_host('importFailure.includes("https://unarchived.invalid/missing.js")')! == 'true'
 }

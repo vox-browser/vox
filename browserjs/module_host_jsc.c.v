@@ -423,7 +423,8 @@ fn (mut host ModuleHost) load(key string, resolve voidptr, reject voidptr) ! {
 		mut operation := unsafe { &BrowserModuleOperation(op) }
 		if host.closed { return }
 		if body.kind != .bytes {
-			host.fail_load(operation, 'Module response body failed')
+			reason := response.unsafe_response().network_error_message or { 'Module response body failed' }
+			host.fail_load(operation, '${operation.key}: ${reason}')
 			return
 		}
 		mut actual := unsafe { &fetch.Response(response.unsafe_response()) }

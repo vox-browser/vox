@@ -12,7 +12,8 @@ def main():
     archive = output / 'archive'
     (archive / 'bodies').mkdir(parents=True)
     responses = {}
-    for name, value in [('a', 41), ('b', 1)]:
+    entries = [('a', 41), ('b', 1)] + [(f'fanout-{i}', i) for i in range(130)]
+    for name, value in entries:
         body = (f'export const value={value};/*' + 'x' * (256 * 1024) + '*/').encode()
         sha = digest(body)
         (archive / 'bodies' / sha).write_bytes(body)
