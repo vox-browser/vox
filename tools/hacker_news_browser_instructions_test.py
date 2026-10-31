@@ -8,7 +8,7 @@ from urllib.error import HTTPError
 import urllib.request
 
 from hacker_news_browser_instructions import (
-    ASSETS, WIDTH, HEIGHT, METAL_COMPILER, accepted_coalition_executable,
+    ASSETS, WIDTH, HEIGHT, METAL_COMPILER, SET_STORE_UPDATER, accepted_coalition_executable,
     check_content, code_sign_clone_identity, document_comments, evaluate_pairs,
     exact_coalition_membership, fixture_server, membership,
 )
@@ -94,13 +94,39 @@ class HackerNewsInstructionGateTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, 'instruction interval'):
                 evaluate_pairs(pairs)
 
-    def test_only_private_browser_and_exact_metal_service_paths_are_accepted(self):
+    def test_only_private_browser_and_exact_system_service_paths_are_accepted(self):
         app = Path('/private/fixture/Brave.app')
         self.assertTrue(accepted_coalition_executable(app / 'Contents/MacOS/Brave', app))
         self.assertTrue(accepted_coalition_executable(METAL_COMPILER, app))
+        self.assertTrue(accepted_coalition_executable(SET_STORE_UPDATER, app))
         for path in [Path('/Applications/Brave.app/Contents/MacOS/Brave'),
-                     app / 'Contents/../../other', Path(str(METAL_COMPILER) + '-other')]:
+                     app / 'Contents/../../other', Path(str(METAL_COMPILER) + '-other'),
+                     Path(str(SET_STORE_UPDATER) + '-other')]:
             self.assertFalse(accepted_coalition_executable(path, app))
+
+    def test_cascadesets_service_is_counted_in_exact_live_coalition_membership(self):
+        import os
+        import time
+        @dataclass
+        class Reading:
+            tasks_started: int = 2
+            tasks_exited: int = 0
+            instructions: int = 12345
+        api = Mock()
+        api.read.return_value = Reading()
+        api.resource_coalition.return_value = 10
+        app = Path('/private/fixture/Brave.app')
+        paths = {1: str(app / 'Contents/MacOS/Brave'), 2: str(SET_STORE_UPDATER)}
+        process_api = Mock()
+        process_api.path.side_effect = lambda pid: paths[pid]
+        rows = [dict(pid=pid, uid=os.getuid(), command=path) for pid, path in paths.items()]
+        with patch('hacker_news_browser_instructions.processes', return_value=rows):
+            scan = exact_coalition_membership(api, process_api, 10, app, 1, time.monotonic(), [])
+            self.assertEqual(len(scan['members']), 2)
+            self.assertEqual(scan['after_snapshot']['instructions'], 12345)
+            paths[2] += '-other'
+            with self.assertRaisesRegex(RuntimeError, 'exclusive coalition'):
+                exact_coalition_membership(api, process_api, 10, app, 1, time.monotonic(), [])
 
     def test_coalition_scan_keeps_metal_tasks_and_rejects_unaccounted_tasks(self):
         import os

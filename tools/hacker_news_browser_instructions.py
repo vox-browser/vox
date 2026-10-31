@@ -2,8 +2,8 @@
 """Compare cached Hacker News navigation/capture CPU work with Brave.
 
 Run under tools/run_memory_bounded.py on macOS. Exclusive resource coalitions
-include live and exited browser helpers and coalition-owned Metal compiler
-services. GPU execution and services outside the coalition are excluded.
+include live and exited browser helpers and the explicitly named coalition-owned
+system services. GPU execution and services outside the coalition are excluded.
 Both captures must match the original Brave pixels exactly.
 """
 from __future__ import annotations
@@ -56,13 +56,16 @@ WIDTH, HEIGHT = 1024, 768
 TARGET = .90
 METAL_COMPILER = Path('/System/Library/Frameworks/Metal.framework/Versions/A/'
                       'XPCServices/MTLCompilerService.xpc/Contents/MacOS/MTLCompilerService')
+SET_STORE_UPDATER = Path('/System/Library/PrivateFrameworks/CascadeSets.framework/Versions/A/'
+                         'XPCServices/SetStoreUpdateService.xpc/Contents/MacOS/SetStoreUpdateService')
+COALITION_SERVICES = (METAL_COMPILER, SET_STORE_UPDATER)
 SCOPE = ('Navigation request to encoded document PNG availability, fresh process/profile/cache, '
          '1024x768 CSS pixels, recorded device scale, cached fixture replayed over loopback HTTP. Vox native markers '
          'exclude PNG file write; Brave CDP response includes base64/IPC delivery and readiness '
          'polling. Vox requests its initial navigation before presenting its first native window frame; '
          'Brave creates and resizes an about:blank window before the measured navigation request. '
          'Both browsers use inactive native windows on the display away from the pointer. Exclusive resource coalitions '
-         'include exited helpers and coalition-owned Metal compiler services; GPU execution '
+         'include exited helpers and coalition-owned Metal compiler and CascadeSets update services; GPU execution '
          'and services outside the coalition are excluded. '
          'Full story/comment-row identity is checked after the measured PNG endpoint. '
          'This is a capture workflow comparison, not identical internal rendering endpoints.')
@@ -257,7 +260,8 @@ def await_exit(queue, deadline):
 
 def accepted_coalition_executable(path, app):
     path = Path(path).resolve()
-    return path.is_relative_to((app / 'Contents').resolve()) or path == METAL_COMPILER.resolve()
+    return path.is_relative_to((app / 'Contents').resolve()) or any(
+        path == service.resolve() for service in COALITION_SERVICES)
 
 
 def code_sign_clone_identity(path, app, command):
@@ -549,7 +553,8 @@ def main():
         app.parent.mkdir()
         shutil.copytree(source.resolve(), app, copy_function=clone_file, symlinks=True)
         apps[engine] = app
-    paths = {args.document, args.expected, args.diff_tool, args.audit_config, METAL_COMPILER}
+    paths = {args.document, args.expected, args.diff_tool, args.audit_config}
+    paths.update(path for path in COALITION_SERVICES if path.is_file())
     paths.update(Path(__file__).resolve().parent / name for name in (
         'hacker_news_browser_instructions.py', 'check_pixel_equality.py',
         'coalition_instruction_counts.py', 'measure_browser_instructions.py',
