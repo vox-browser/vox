@@ -2,7 +2,7 @@
 
 Pixel-perfect parity remains open. The current settled, archived comparison at
 1280 × 800 CSS pixels and scale 1 has **9 differing pixels at the top** and
-**251 at scroll Y 6400** after the rounded color-managed image fix. These
+**242 at scroll Y 6400** after the image and underline paint-order fixes. These
 numbers describe those viewports, not the complete live page. Earlier build
 comparisons and validation limits are recorded below.
 
@@ -306,3 +306,48 @@ native inputs remain unchanged during its guarded build. All runtime checks
 use the 3 GiB memory guard and fresh processes. The earlier Retina CSS-picture
 policy restriction remains in place; passing native scale-two scenes does not
 establish Retina page parity.
+
+
+## Underline paint order
+
+`1ae4227d` paints Chromium-profile underlines and overlines before glyphs,
+and line-through afterward, including selected spans and ancestor decorations.
+This follows [CSS Text Decoration painting order](https://www.w3.org/TR/css-text-decor-3/#painting-order)
+and the captured Brave picture. Previously a translucent underline blended over
+the descenders of the Veb link even though the skip-ink stripe correctly found
+no intersection. The translated LibWeb profile retains its existing order.
+
+The lower frozen viewport improves from **251 to 242 differing pixels**. All
+242 now differ by one channel level: 228 are inside the color-managed image
+and 14 are at rounded card corners. The top remains at 9 differences.
+`translucent-underline-paint-order` improves from 114 differences to zero at
+800×600 and scale 1. Two fresh Brave references agree exactly.
+
+Evidence in `Build/vlang-parity-20261031/` includes:
+
+- `decoration-order-before-{build,run}.json`: three new ordering assertions fail
+  against the preceding implementation; the LibWeb control passes.
+- `decoration-order-focus-layout-{none,boehm}-{build,run}.json`: eight focused
+  functions pass in both memory modes.
+- `decoration-order-production-{guard,status}.json`: the production build passes
+  under the default 12 GiB guard, with the required implementation inputs stable.
+  Unrelated stylesheet/preload implementation and test files change during the
+  build. `decoration-order-production-identity.json` records the completed
+  executable and libraries, pinned in `Vox-decoration-order.app`.
+- `underline-order-{narrow-baseline,candidate,repeat}/` and
+  `underline-order-reference-agreement.json`: exact browser regression and
+  repeated reference. The earlier larger-font diagnostic also exposed separate
+  underline geometry differences and is not the accepted fixture.
+- `decoration-order-page/`, `decoration-order-smoke-status.json`,
+  `decoration-order-inline-regressions.json`, `decoration-order-headless.json`,
+  and `decoration-order-live/status.json`: fresh page comparisons, fourteen
+  screenshot checks, all forty inline browser regressions, startup and live
+  scripted navigation pass. Live fonts and five visible image requests finish
+  with zero native errors; this is a loading check, not pixel comparison credit.
+
+The accepted executable is
+`cf6d98ef8f239316a488dadc2d304e65edd99f8b37dbda2742903f0c8609e994`.
+The remaining image investigation independently compares the actual embedded
+ICC profile across both Skia versions: all 17 transported values agree exactly
+in `image-profile-{old,new}-abi-run.log`. Profile parsing is not established as
+a cause of those residual pixels. Full page and Retina parity remain open.

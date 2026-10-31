@@ -940,3 +940,13 @@ pixels and the current recorder is exact. Run
 `python3 tools/forum_news_inline_pixels_test.py ForumNewsInlinePixelsTests.test_rounded_color_managed_images_retain_the_complete_gradient_picture`.
 The native gradient harness also runs 96 independent image scenes and payload
 validation. Full vlang.io parity and Retina page raster differences remain open.
+
+
+`translucent-underline-paint-order` checks translucent underlines crossing
+antialiased descenders at integer and fractional line origins. Capture at
+800×600 and scale 1. The preceding glyph-first order differs at 114 pixels;
+the current order matches two independent Brave references exactly. Underlines
+and overlines precede glyphs; line-through follows them. Run
+`python3 tools/forum_news_inline_pixels_test.py ForumNewsInlinePixelsTests.test_translucent_underlines_paint_beneath_glyph_edges`.
+Focused layout checks also cover selected spans, ancestor decorations and the
+translated LibWeb profile's existing order.
