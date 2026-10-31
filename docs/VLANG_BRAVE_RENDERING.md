@@ -3,7 +3,8 @@
 Pixel-perfect parity remains open. The current settled, archived comparison at
 1280 × 800 CSS pixels and scale 1 has **4 differing pixels at the top** and
 **zero at scroll Y 6400**, and **4 at scroll Y 8000**. Other viewports
-still differ, including the Lilly preview and text. These results do not cover
+still differ, including the Lilly preview and text. The installation Copy button
+now has Brave's single-line layout. These results do not cover
 the complete live page. Earlier comparisons and validation limits are recorded below.
 
 ## Capture readiness correction
@@ -547,3 +548,54 @@ pinned with its signed libraries in `Vox-cropped-image-installed.app`.
 The broader page sweep in `all-vlang-page-sweep/` remains non-exact and includes
 a wrapping Copy button, table/text differences, and other raster discrepancies.
 Full-page and scale-two parity remain open.
+
+
+## Trailing fallback spaces and intrinsic button width
+
+`450d02ad` preserves the visible text-item advance when removing a trailing
+whitespace fragment after a font fallback. Chained fragments start at a nearest
+LayoutUnit offset, while their ends use an upward-rounded item advance.
+Subtracting the entire whitespace fragment box removed an overlapping 1/64
+pixel from the preceding visible content. Intrinsic sizing then gave the
+button too little room for its final definite-width layout.
+
+The installed Copy button now matches Brave at **47.96875 × 26.5 CSS pixels**,
+instead of 47.953125 × 43. Its surrounding region at scroll Y 800 is exact.
+The complete viewport improves from **1,753 to 1,463 differing pixels**; the
+remaining differences are outside that button. The new Arial/native-fallback
+fixture improves from **332 differences to zero**, and two fresh Brave references
+agree exactly. It needs no bundled font.
+
+Evidence under `Build/vlang-parity-20261031/`:
+
+- `trailing-fallback-before-{build,run}.json`: the new scalar regression
+  compiles, then fails against the preceding implementation (1047 instead of
+  1048 raw LayoutUnits). `trailing-fallback-focus-layout-{none,boehm}-{build,run}.json`
+  records seven passing focused functions in both memory modes.
+- `copy-button-native-fallback-{before,after}/` and
+  `trailing-fallback-reference-repeat.json`: isolated negative control,
+  pixel-exact candidate, and reference agreement.
+- `trailing-fallback-resumed-production-{guard,status}.json`: successful
+  production build, stable implementation inputs, 216.47 seconds, and a sampled
+  peak aggregate RSS of 6.80 GiB under the default 12 GiB budget. The preceding
+  `trailing-fallback-production` attempt was interrupted before completion and
+  supplies no validation credit.
+- `trailing-fallback-installed-page/`, `trailing-fallback-copy-region.json`, and
+  `trailing-fallback-ref-*.json`: the Copy region is exact; top, Y 2400, Y 6400,
+  and Y 8000 retain 4, 649, 0, and 4 differences respectively. Every fresh Brave
+  reference agrees with its preceding reference.
+- `trailing-fallback-installed-smoke-status.json` and
+  `trailing-fallback-installed-inline-regressions.{json,log}`: fourteen
+  screenshot/selection/invalidation/turbulence cases and all 43 inline browser
+  regressions pass. Seven image/gradient golds remain exact in
+  `trailing-fallback-installed-gradient-regressions/status.json`.
+- `trailing-fallback-installed-headless.guard.json` and
+  `trailing-fallback-installed-live/status.json`: startup and live scripted
+  loading pass, with fonts loaded, five visible image requests complete, and
+  zero native errors. Live loading remains separate from pixel comparison.
+
+The signed executable is
+`d76d7b939717bdfd35efb784bafb7713f68ae24a8cd7a581eec1c86e9153e180`,
+pinned with its libraries in `Vox-trailing-fallback-installed.app`.
+`trailing-fallback-installed-{before,after}.json` records unchanged bundle
+identity across validation. Full-page and scale-two parity remain open.
