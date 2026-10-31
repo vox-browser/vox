@@ -107,6 +107,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_scroll_pictures_preserve_earlier_children_after_opacity_groups(self):
         self.compare_fixture('forum-resumed-scroll-raster', width=1024, height=768)
 
+    def test_svg_mask_paths_blend_with_the_translated_mask_backdrop(self):
+        self.compare_fixture('forum-svg-mask-backdrop')
+
     def test_programmatically_scrollable_sticky_text_keeps_its_compositor_raster(self):
         self.compare_fixture('stackoverflow-programmatic-sticky-text')
 

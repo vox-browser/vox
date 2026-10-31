@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check SVG raster clipping and publication with sanitizers."""
+"""Check SVG clipping, translated mask backdrops and publication with sanitizers."""
 import argparse
 import json
 import os
@@ -29,11 +29,12 @@ def main():
     environment = {k: v for k, v in os.environ.items()
                    if not k.startswith(('VOX_', 'LADYBIRD_', 'DYLD_', 'GC_'))}
     environment['ASAN_OPTIONS'] = 'detect_leaks=0'
-    for name, source in [('svg-clip', 'native_skia_svg_clip_test.cpp')]:
+    for name, source in [('svg-clip', 'native_skia_svg_clip_test.cpp'),
+                         ('svg-mask-backdrop', 'native_skia_svg_mask_backdrop_test.cpp')]:
         executable = output / name
         command = ['clang++', '-std=c++20', '-O1', '-g', '-fsanitize=address,undefined',
                    '-fno-omit-frame-pointer']
-        if name == 'svg-clip':
+        if name in ('svg-clip', 'svg-mask-backdrop'):
             command += ['-x', 'objective-c++', '-I' + str(skia / 'include/skia'),
                         '-I' + str(skia / 'include'), '-L' + str(skia / 'lib'), '-lskia',
                         '-Wl,-rpath,' + str(skia / 'lib'),

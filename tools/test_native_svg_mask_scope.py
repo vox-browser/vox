@@ -24,10 +24,12 @@ def entry_points(text):
     declarations = text[text.index("#define NATIVE_SVG_CLIP_CACHE_SIZE"):
                         text.index("static CGFloat native_window_backing_scale(")]
     return declarations + "\n" + "\n".join(function(signature) for signature in (
+        "static void native_begin_tracked_transparency_layer(",
         "static void native_end_tracked_transparency_layer(",
         "void native_begin_clip(", "void native_end_clip(",
         "static CGRect native_svg_mask_canvas_rect(",
         "void native_begin_svg_clip_mask(", "void native_begin_svg_content_mask(",
+        "void native_begin_svg_mask_opacity(", "void native_end_svg_mask_opacity(",
         "static CGImageRef native_finalize_svg_mask_cache(",
         "void native_finish_svg_mask_cache(", "void native_finish_svg_clip_mask(",
         "void native_begin_svg_mask_layer(", "void native_end_svg_mask_layer(")) + "\n"

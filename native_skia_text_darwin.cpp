@@ -662,6 +662,32 @@ bool copy_backdrop(CGContextRef destination, RasterRegion const& region,
     return source.pixels != nullptr;
 }
 
+// SVG mask canvases retain page coordinates in a translated, smaller bitmap.
+// Read its actual device pixels before blending a path instead of quantizing
+// the path on transparency and letting Quartz blend that intermediate image.
+static bool copy_svg_path_backdrop(CGContextRef destination, RasterRegion const& region,
+    float scale, float canvas_height, int width, int height, std::vector<uint32_t>& pixels)
+{
+    if (!rgba_bitmap(destination) || !(scale > 0) || !std::isfinite(canvas_height)) return false;
+    auto ctm = CGContextGetCTM(destination);
+    if (ctm.a != scale || ctm.d != scale || ctm.b != 0 || ctm.c != 0
+        || !std::isfinite(ctm.tx) || !std::isfinite(ctm.ty)) return false;
+    auto source_width = CGBitmapContextGetWidth(destination);
+    auto source_height = CGBitmapContextGetHeight(destination);
+    double x = region.left * double(scale) + ctm.tx;
+    double y = double(source_height) - (canvas_height - region.top) * double(scale) - ctm.ty;
+    if (!std::isfinite(x) || !std::isfinite(y) || x < 0 || y < 0
+        || std::abs(x - std::round(x)) > .001 || std::abs(y - std::round(y)) > .001
+        || x + width > source_width || y + height > source_height) return false;
+    CGContextFlush(destination);
+    auto* data = static_cast<uint8_t const*>(CGBitmapContextGetData(destination));
+    if (!data) return false;
+    auto pitch = CGBitmapContextGetBytesPerRow(destination);
+    copy_backdrop_pixels({data + size_t(std::lround(y)) * pitch + size_t(std::lround(x)) * 4,
+        pitch}, width, height, pixels);
+    return true;
+}
+
 // Reject fully clipped leaf surfaces while retaining intersecting surfaces at
 // their original origin and dimensions. Shadow and filter inputs stay intact.
 bool leaf_raster_region_intersects_destination_clip(CGContextRef destination,
@@ -4110,10 +4136,10 @@ extern "C" int ladybird_v_skia_draw_svg_path(CGContextRef destination,
         && !(strokes && dash_data && dash_count > 0)) {
         // Chromium draws SVG paths with its GPU rasterizer. The stroke draws
         // over the fill's result, as both would on Chromium's canvas. Inside a
-        // clip or opacity layer the destination bitmap lacks the layer's
-        // pixels, so only a top-level opaque page is blended on the GPU.
-        bool has_background = opaque_backdrop && copy_backdrop(destination, region,
-            destination_scale, raster_width, raster_height, pixels);
+        // transparency layer the destination bitmap lacks the layer's pixels.
+        // Callers expose a backdrop only for directly readable bitmap content.
+        bool has_background = opaque_backdrop && copy_svg_path_backdrop(destination, region,
+            destination_scale, canvas_height, raster_width, raster_height, pixels);
         VoxGraphitePath descriptor {
             .matrix = {}, .segments = data, .segment_count = segment_count,
             .even_odd = even_odd, .line_cap = line_cap, .line_join = line_join,

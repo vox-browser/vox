@@ -49,6 +49,14 @@ static void prepare(unsigned long long key, int kind, bool cached, CGRect ink)
             8, 8, 32, 40, 1, 0, 0, 1, 0, 0, 0, 0, 0);
     assert(bool(native_svg_clip_build_context) != cached);
     if (auto context = native_svg_clip_build_context) {
+        assert(native_svg_clip_build_opacity_depth == 0);
+        native_begin_svg_mask_opacity(.5);
+        native_begin_svg_mask_opacity(.75);
+        assert(native_svg_clip_build_opacity_depth == 2);
+        native_end_svg_mask_opacity();
+        assert(native_svg_clip_build_opacity_depth == 1);
+        native_end_svg_mask_opacity();
+        assert(native_svg_clip_build_opacity_depth == 0);
         if (kind) CGContextSetRGBFillColor(context, 1, 1, 1, 1);
         CGContextFillRect(context, ink);
     }
