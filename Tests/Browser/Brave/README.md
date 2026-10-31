@@ -91,6 +91,22 @@ GPU comparisons across two device scales and six opacity values, plus depth,
 legacy-painter and empty-clip fallbacks. Optimized and sanitized checks pass
 with the pool enabled and disabled; the existing 56 mask cases remain passing.
 
+`forum-svg-fractional-paint` checks translucent HSL fills and scaled individual
+fills/strokes. Its two agreeing 1024×768, scale 1 Brave 156.1.98.60 references
+improve from 128 differing pixels to zero. Retained solid paints carry fractional
+sRGB channels through leaf and batch replay, key native caches by those values,
+and preserve modern/legacy alpha and serialized-paint override checks. The SVG
+native driver adds 24 complete-GPU comparisons across both device scales,
+fill/stroke replay, and three alpha values.
+
+`forum-svg-single-paint-opacity` uses the exact three sidebar icons and positions
+from the Stack Overflow fixture. Two agreeing 1024×768, scale 1 Brave
+156.1.98.60 references improve from 60 differing pixels to zero. An eligible
+single paint carries the scope opacity in its GPU alpha, avoiding intermediate
+bitmap rounding. Matching ownership, unit transforms and rectangular opening
+clips are required; other scopes keep their existing replay. Selector and clip
+guards pass in both collector modes. The source display list stays balanced.
+
 References were captured from Brave 155.1.97.57 on macOS at device scale 1.
 `font-rasterization` covers Arial and Verdana at integer and fractional sizes,
 automatic and antialiased smoothing, three foreground colors, and white and

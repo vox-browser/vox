@@ -1908,3 +1908,117 @@ Evidence is under `Build/forum-news-mask-opacity-20261031/`, especially
 and debugger jobs retain their incomplete receipts and receive no validation
 credit. The broad baseline remains **`adf10924`**, with **six** completed native
 fixes after it. Full ten-site pixel parity remains open.
+
+## Fractional SVG solid paint channels, 31 October 2026
+
+`38e7fa20` retains fractional sRGB fill/stroke channels through both ordinary
+SVG path replay and batched recordings. Previously, HSL and fractional RGB
+colors reached those paths only as rounded bytes. Retained snapshots keep the
+serialized paint key, so live changes that share the same rounded color remain
+distinct and a caller's color override cannot reuse stale components. Modern
+and legacy alpha keep their existing conversions. The optional float color is
+part of the native path-cache key; the previous byte-only bridge entry remains
+available. An isolated opaque path keeps its existing geometry route.
+
+The new `forum-svg-fractional-paint` reference checks translucent HSL fills plus
+scaled individual fills and strokes. Two agreeing 1024×768, scale 1 Brave
+156.1.98.60 captures establish exact RGBA equality. The preceding production
+browser differs at **128** one-level pixels; the new browser differs at **zero**.
+Focused retained-paint/replay checks pass with both collectors. The optimized
+and sanitized native path-cache tests pass, and **24** sanitized leaf/batch
+comparisons match independent complete GPU pictures at both device scales.
+The retained **96** SVG clip comparisons, **107** eligibility checks, **96**
+translated-mask comparisons and **288** mapping guards pass. All **33 browser
+fixtures**, three canonical SVG mutation reftests, signing, startup and five
+harness cases pass on the pinned candidate.
+
+Initial production validations pin executable
+`ce9cb3f87f033215f91e6504da849c92eb9993026d12b01a3368f98f95caaaf1`
+and native bridge
+`86c937726c80ea6cec0d7d59f5fae2bde8c8424227709a245d3bf2f43686c4c2`.
+The Metal backend changes; the Dawn picture backend and uBO snapshot retain
+their identities. Both completed builds compile successfully, but their wider
+source audits record concurrent changes in other sessions. Every SVG feature
+input stays fixed. The initial source-audit failures and later replacement of
+the installed bundle remain retained; they supply no whole-tree stable-build
+credit. The next slice reuses a completed shared build with a stable full
+source audit and includes this RGB implementation.
+
+This RGB slice receives no full-site pixel credit: all eight completed native
+frames are unchanged. The final matrix accepts **one of ten**: HN 0, Lobsters 0,
+Slashdot 9,773, Stack Overflow **170**, BBC 76,604, CNN 59,463, The Verge 315,921
+and Pikabu 13,925 differing pixels. Lobsters' Brave reference changes at 115
+pixels, and CNN's at 42,068; these reference changes account for their new
+counts. Lobsters still has a 71-pixel live-to-frozen mismatch. Reddit's guest
+HTTP 403 and The Guardian's unstable reference remain failures. All eight
+completed full-uBO audits match, and the closed 326-file template is unchanged.
+The separate exact-position opacity-group reduction remains **60** pixels away
+from Brave; changing paint alpha instead of group alpha isolates that next gap.
+
+Evidence: `Build/forum-news-svg-color-20261031/`, especially `focused-v2/`,
+`cache/`, `cache-sanitized/`, `native/`, `reference/`, `production-local-lock/`,
+`production-final/`, `candidate-final/`, `fixture-comparison.json`,
+`frame-comparison.json` and `filter-audit-summary.json`. The existing
+`adf10924` broad baseline remains; this is the seventh completed SVG/native
+fix in this conformance series after that checkpoint.
+
+## Single-paint SVG opacity, 31 October 2026
+
+`6a8784e2` applies an eligible SVG scope's opacity in the single GPU paint,
+retaining its fractional color and coverage until the parent raster resolves.
+The previous isolated bitmap quantized those values before applying opacity.
+The immutable display list keeps its balanced scopes and ownership; replay
+folds only one supported solid fill or stroke in a matching scope. Filters,
+multiple paints, mismatched layers, scaled/rotated geometry, narrower opening
+clips, rounded/skewed opening clips, clip-outs and recorded clips retain their
+existing replay paths. Root and nested SVG replay use the same selection.
+
+The new `forum-svg-single-paint-opacity` fixture uses the exact Tags and
+DocumentAlt SVGs at their captured positions. Two agreeing 1024×768, scale 1
+Brave 156.1.98.60 references match the corresponding full-page icons. It
+improves from **60 differing pixels to zero**. Focused selector and replay
+checks pass with Boehm and `-gc none`, including the stronger nonempty opening
+clip cases. All **34 native Brave fixtures**, three canonical SVG mutation
+reftests, signing and startup pass on the final pinned bundle. The native
+libraries are byte-identical to the RGB slice's tested libraries, retaining
+its sanitized GPU and cache checks without rerunning unchanged native code.
+
+The initial windowed checks reuse another session's completed production build
+`64f4498ae17abfe161d2d41a2c07fec3c79a058e3b63ad59cc313a5f4e8158fb`.
+Its recorded input hashes match the initial folding implementation, and its
+whole-tree source audit passes. A matching rebuild is then necessary for the
+final rounded/skewed opening-clip guards. It completes at **6.78 GiB** sampled
+peak RSS under the unchanged 12 GiB guard and 10 GiB compiler limit, with every
+watched source unchanged. Final captures pin executable
+`7a940e79d2d2105d721e201664d17885863b9010680510d8a3266cbfb3627306`.
+The installed bundle matches that candidate and passes a fresh startup check.
+This completed stable build carries both SVG fixes from this continuation.
+
+Stack Overflow improves from **170 to 108** differing pixels against an
+unchanged full-uBO reference. Of **71** native pixels that change, **62** become
+correct and none becomes newly incorrect. The left sidebar falls from **79 to
+19**, the right from **91 to 89**, and the header and main column stay exact.
+Maximum channel error falls from **2 to 1**. Nine changed pixels retain an
+existing mismatch. The remaining rounded borders, translucent icons and
+illustration differences remain open.
+
+The full matrix still accepts **one of ten**. It reports HN 0, Lobsters 115,
+Slashdot 9,773, Stack Overflow 108, BBC 76,604, CNN 107,122, The Verge 313,982
+and Pikabu 13,925 differing pixels. Outside Stack Overflow and The Verge, all
+native frames are unchanged from the RGB candidate. The Verge changes at
+2,776 native pixels while concurrent font fixes are also present; its lower
+count receives no attribution to this SVG change. Lobsters' reference changes
+at 115 pixels and CNN's at 73,834; their native frames remain unchanged. Their
+live-to-frozen counts are 44 and 107,289. Reddit's HTTP 403 and The Guardian's
+unstable references remain failures. Pikabu completes without a retry. All
+eight completed full-uBO request/header, cosmetic, procedural and scriptlet
+audits match, and the closed 326-file template remains unchanged.
+
+Evidence is under `Build/forum-news-svg-opacity-fold-20261031/`, especially
+`focused-v2/`, `focused-v3/`, `reference/`, `production-reuse-initial.json`,
+`production-final-guard/`, `candidate-final/`, `fixture-comparison.json`,
+`stackoverflow-comparison.json`, `frame-comparison.json` and
+`filter-audit-summary.json`. The initial reused-build results remain retained
+separately. The `adf10924` broad baseline remains; this is the eighth completed
+SVG/native fix in this conformance series after that checkpoint. Full ten-site
+pixel parity remains open.
