@@ -261,9 +261,11 @@ pub fn (mut model HTMLTextAreaElementModel) form_associated_element_attribute_ch
 pub fn (mut model HTMLTextAreaElementModel) did_edit_text_node(input_type string, data ?string) {
 	text_node := model.text_node_ or { return }
 	model.set_raw_value(text_node.data())
-	model.dispatch_input_event(input_type, data)
+	// The first edit is already dirty when listeners run. Reentrant value or
+	// defaultValue access must not replace that edit with the default text.
 	model.dirty_value = true
 	model.text.dirty_value_flag = true
+	model.dispatch_input_event(input_type, data)
 	model.user_validity = true
 	model.update_placeholder_visibility()
 	model.update_validity()
