@@ -32,6 +32,7 @@ fn install_compact_element_content_binding_with_policy(document &dom.Document, m
 		document: document
 		runtime:  &runtime
 	}
+	install_compact_mutation_observer_binding(mut binding, mut runtime)!
 	install_compact_document_binding(binding, mut runtime)!
 	for index, element in elements {
 		key := '__element_${index}'
