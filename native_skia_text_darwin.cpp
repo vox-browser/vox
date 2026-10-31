@@ -4280,11 +4280,10 @@ static bool css_gradient_spread(int spread_method)
 
 static bool css_gradient_uses_premul(int spread_method)
 {
-    // Isolated CSS leaves still use the SVG compatibility raster grid. Keep
-    // their established rounding until complete CSS compositor pictures can
-    // retain the layer's grid; switching their interpolation alone regresses
-    // gradient-compositor-backdrop. Root CSS draws use premultiplied colors.
-    return s_raster_layer_is_root && css_gradient_spread(spread_method);
+    // Isolated leaves retain their established compatibility rounding. A
+    // complete CSS compositor picture has its own grid and uses CSS colors.
+    return (s_raster_layer_is_root || s_shared_layer_enabled)
+        && css_gradient_spread(spread_method);
 }
 
 // The first tile owns rows [0, spacing], subsequent tiles exclude their
@@ -4583,7 +4582,9 @@ static int draw_svg_gradient_path(CGContextRef destination, float const* data,
         if (ancestor_clip)
             canvas->clipRRect(rounded_rect_from_data(ancestor_clip), SkClipOp::kIntersect, true);
         auto recorded_paint = paint;
-        recorded_paint.setDither(true);
+        // Generated-image pictures already dither their inner gradient.
+        // Dithering the outer pattern again changes the retained colors.
+        recorded_paint.setDither(!picture_pattern);
         canvas->drawPath(path, recorded_paint);
         canvas->restore();
     }

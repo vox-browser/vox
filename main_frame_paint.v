@@ -112,8 +112,9 @@ fn (mut app BrowserApp) record_document_paint_commands() {
 		$if macos {
 			raster_scale = C.native_display_device_pixel_ratio()
 		}
-		layout.update_chromium_raster_layer_plan(document, app.paint_commands,
-			raster_scale, mut app.chromium_raster_plan)
+		layout.update_chromium_raster_layer_plan_for_viewport(document, app.paint_commands,
+			raster_scale, layout.LayoutRect{0, app.scroll_y, app.viewport_width, app.viewport_height},
+			mut app.chromium_raster_plan)
 	} else {
 		app.chromium_raster_plan = layout.ChromiumRasterLayerPlan{}
 	}

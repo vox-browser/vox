@@ -7251,6 +7251,7 @@ fn (mut app BrowserApp) draw() {
 		$if macos {
 			if app.ctx.native_rendering && app.document != unsafe { nil }
 				&& app.document.font_rendering_policy() == .chromium {
+				app.update_chromium_viewport_raster_plan()
 				C.native_set_chromium_shared_recording(i32(app.page_zoom == 1 && chromium_shared_recording_supported(app.paint_commands, app.chromium_raster_plan)), i32(app.viewport_width), i32(app.viewport_height))
 				C.native_begin_font_compositing_layer(f32(app.ctx.width), f32(app.ctx.height))
 				app.set_chromium_msaa_tiles()
@@ -7292,6 +7293,10 @@ fn (mut app BrowserApp) draw() {
 		mut rect_prefetch_end := 0
 		for command_index in 0 .. app.paint_commands.len {
 			if command_index < shared_svg_end { continue }
+			$if macos {
+				if app.ctx.native_rendering && command_index < app.chromium_raster_plan.command_layers.len
+					&& app.chromium_raster_plan.command_layers[command_index] < 0 { continue }
+			}
 			platform.cooperative_work_checkpoint()
 			mut command := unsafe { &app.paint_commands[command_index] }
 			if app.page_zoom != 1 {

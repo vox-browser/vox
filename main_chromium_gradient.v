@@ -173,6 +173,31 @@ fn chromium_gradient_uses_gpu_clip(command layout.PaintCommand, gradient layout.
 		&& chromium_gradient_stop_analysis(gradient) != none
 }
 
+// A compositor picture must be complete: gradients that use a fallback color
+// sampler or an unrepresented background blend cannot join its recording.
+fn chromium_compositor_css_gradient_supported(command &layout.PaintCommand) bool {
+	if command.kind != 'fill_gradient' || command.image_data == unsafe { nil }
+		|| command.image_data.background_blend_mode != .normal
+		|| command.width <= 0 || command.height <= 0 || command.blur != 0
+		|| command.outer_shadow || command.clip_outs.len > 0
+		|| !chromium_shared_recording_clips_supported(command) { return false }
+	gradient := command.gradient or { return false }
+	if !chromium_gradient_uses_gpu_clip(*command, gradient) { return false }
+	clip := chromium_gradient_clip_data(*command)
+	if clip[2] <= 0 || clip[3] <= 0 { return false }
+	for index, value in clip {
+		if math.is_nan(value) || math.is_inf(value,0) || (index >= 4 && value < 0) { return false }
+	}
+	for value in [gradient.x1,gradient.y1,gradient.x2,gradient.y2,
+		gradient.radius_x,gradient.radius_y,command.width,command.height] {
+		if math.is_nan(value) || math.is_inf(value,0) { return false }
+	}
+	if angle := gradient.css_angle_degrees {
+		if math.is_nan(angle) || math.is_inf(angle,0) { return false }
+	}
+	return true
+}
+
 fn chromium_gradient_has_gpu_geometry(gradient layout.LinearGradient) bool {
 	if gradient.kind == 'radial' || gradient.radial {
 		return gradient.radius_x > 0 && gradient.radius_y > 0

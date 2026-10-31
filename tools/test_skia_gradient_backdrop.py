@@ -48,7 +48,8 @@ def main():
     for framework in ['CoreFoundation', 'CoreGraphics', 'CoreText', 'Foundation', 'Metal']:
         common += ['-framework', framework]
     for test in ['native_skia_gradient_backdrop_test', 'native_skia_gradient_tiles_test',
-                 'native_skia_gradient_interpolation_test']:
+                 'native_skia_gradient_interpolation_test', 'native_skia_css_gradient_picture_test',
+                 'native_skia_shared_layer_test']:
         executable = output / test
         compile_command = common + [str(REPO / 'tools' / (test + '.cpp')), '-o', str(executable)]
         run_command = [str(executable)]

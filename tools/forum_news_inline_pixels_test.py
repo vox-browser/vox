@@ -12,7 +12,7 @@ from forum_news_pixels import REPO, VOX, executable_identity, guarded, write_jso
 
 @unittest.skipUnless(sys.platform == 'darwin', 'The reference uses native macOS fonts')
 class ForumNewsInlinePixelsTests(unittest.TestCase):
-    def compare_fixture(self, name, width=800, height=600):
+    def compare_fixture(self, name, width=800, height=600, scroll_y=0):
         output = Path(tempfile.mkdtemp(prefix='forum-news-inline-', dir=REPO / 'Build'))
         fixture = REPO / 'Tests/Browser/Brave/input' / (name + '.html')
         reference = REPO / 'Tests/Browser/Brave/expected' / (name + '.png')
@@ -24,8 +24,10 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
             LADYBIRD_SCREENSHOT_DELAY_SECONDS='0')
         identity = executable_identity(VOX)
         write_json(output / 'identity.json', identity)
-        guarded([VOX, '--window-width', str(width), '--window-height', str(height + 84),
-                 '--screenshot', actual, fixture], output / 'capture', 60, environment)
+        command = [VOX, '--window-width', str(width), '--window-height', str(height + 84)]
+        if scroll_y:
+            command += ['--screenshot-scroll-y', str(scroll_y)]
+        guarded(command + ['--screenshot', actual, fixture], output / 'capture', 60, environment)
         self.assertEqual(executable_identity(VOX), identity, 'Production bundle changed during capture')
         compiler = os.environ.get('V_BIN') or shutil.which('v') or str(Path.home() / 'code/v/v')
         tool = output / 'pixel_diff'
@@ -145,6 +147,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
 
     def test_css_fades_interpolate_premultiplied_colors(self):
         self.compare_fixture('css-premultiplied-fades', width=1024, height=768)
+
+    def test_culled_scroll_metadata_retains_a_complete_gradient_picture(self):
+        self.compare_fixture('culled-scroll-overlap-gradient', width=1280, height=800, scroll_y=6400)
 
 
 if __name__ == '__main__':

@@ -18,6 +18,9 @@ pub mut:
 	scroll_contents bool
 	// Fixed, sticky and hinted contents likewise rasterize before compositing.
 	composited_contents bool
+	// An opaque, flat scrolling background also paints inside the contents
+	// picture. Its ordinary border-box paint remains in the parent layer.
+	scroll_background_command int = -1
 mut:
 	unbounded_sticky_overlap bool
 }
@@ -26,9 +29,13 @@ pub struct ChromiumRasterLayerPlan {
 pub mut:
 	layers         []ChromiumRasterLayer
 	command_layers []int
+	has_paint_metadata bool
 mut:
 	// Keep inactive slots too: their command vectors are reused if layers return.
 	layer_storage []ChromiumRasterLayer
+	paint_cull_rect ?LayoutRect
+	paint_cull_viewport_size [2]f64
+	paint_cull_contents LayoutRect
 }
 
 struct ChromiumRasterPropertyState {
@@ -40,6 +47,7 @@ mut:
 	fixed_to_viewport    bool
 	requires_root_raster bool
 	scrollbar            bool
+	scroll_hit_test      int
 }
 
 struct ChromiumRasterChunk {
@@ -65,6 +73,13 @@ mut:
 	fixed_bounds       map[u64]LayoutRect
 	compositor_bounds  map[u64]LayoutRect
 	compositor_scopes  []u64
+	paint_metadata []ChromiumPaintMetadata
+	paint_phase_firsts []int
+	paint_chunks []ChromiumRasterChunk
+	command_chunk_groups []int
+	paint_chunk_layers []int
+	paint_chunk_context int = -1
+	paint_visible_effects map[u64]bool
 }
 
 __global chromium_raster_plan_scratch_ = ChromiumRasterPlanScratch{}
@@ -120,6 +135,7 @@ fn (mut plan ChromiumRasterLayerPlan) prepare(count int) {
 		plan.layer_storage[index].legacy_raster = false
 		plan.layer_storage[index].scroll_contents = false
 		plan.layer_storage[index].composited_contents = false
+		plan.layer_storage[index].scroll_background_command = -1
 		plan.layer_storage[index].unbounded_sticky_overlap = false
 		plan.layer_storage[index].command_indices.clear()
 	}
@@ -284,6 +300,11 @@ fn chromium_sticky_needs_compositing(box &BlockBox, boxes_by_layout map[u64]&Blo
 }
 
 fn chromium_raster_chunk_bounds(box &BlockBox, command &PaintCommand) LayoutRect {
+	return chromium_raster_chunk_bounds_with_root_scroll(box, command, 0)
+}
+
+fn chromium_raster_chunk_bounds_with_root_scroll(box &BlockBox, command &PaintCommand,
+	root_scroll_y f64) LayoutRect {
 	if command.has_clip && (command.clip_width <= 0 || command.clip_height <= 0) {
 		return LayoutRect{}
 	}
@@ -330,18 +351,22 @@ fn chromium_raster_chunk_bounds(box &BlockBox, command &PaintCommand) LayoutRect
 	}
 	mut mapped := compatibility_affine_map_rect(box.paint_transform, rect)
 	if command.has_clip {
-		// Clips are recorded in page coordinates. Offscreen SVG geometry must
+		// Flattened clips include the live root scroll, while retained box
+		// geometry remains in document space. Restore that translation before
+		// intersecting them; fixed content already uses viewport coordinates.
+		clip_y := command.clip_y + if command.fixed_to_viewport { 0.0 } else { root_scroll_y }
+		// Offscreen SVG geometry must
 		// not inflate a chunk's visible extent and split its enclosing picture
 		// at the sparsity threshold, especially under a rotated overflow clip.
 		x := math.max(mapped.x, command.clip_x)
-		y := math.max(mapped.y, command.clip_y)
+		y := math.max(mapped.y, clip_y)
 		mapped = LayoutRect{
 			x:      x
 			y:      y
 			width:  math.max(0.0, math.min(mapped.x + mapped.width,
 				command.clip_x + command.clip_width) - x)
 			height: math.max(0.0, math.min(mapped.y + mapped.height,
-				command.clip_y + command.clip_height) - y)
+				clip_y + command.clip_height) - y)
 		}
 	}
 	return mapped
@@ -359,6 +384,13 @@ pub fn chromium_raster_layer_plan(document &dom.Document, commands []PaintComman
 // Reuse a shell-owned plan after its previous replay has finished.
 pub fn update_chromium_raster_layer_plan(document &dom.Document, commands []PaintCommand,
 	device_scale f64, mut plan ChromiumRasterLayerPlan) {
+	plan.paint_cull_rect = none
+	update_chromium_raster_layer_plan_with_cull(document, commands, device_scale, none, mut plan)
+}
+
+fn update_chromium_raster_layer_plan_with_cull(document &dom.Document, commands []PaintCommand,
+	device_scale f64, cull ?LayoutRect, mut plan ChromiumRasterLayerPlan) {
+	plan.has_paint_metadata = false
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
 	result := document_layout_result(document) or {
@@ -433,6 +465,7 @@ pub fn update_chromium_raster_layer_plan(document &dom.Document, commands []Pain
 		}
 	}
 	mut index := 0
+	root_scroll_y := if cull != none { document.viewport_rect().y } else { 0.0 }
 	for index < commands.len {
 		first := index
 		mut end := index + 1
@@ -579,7 +612,8 @@ pub fn update_chromium_raster_layer_plan(document &dom.Document, commands []Pain
 			if state.sticky_frame > 0 && !state.legacy_effect && !command.has_clip {
 				unbounded_sticky_overlap = true
 			}
-			bounds = chromium_layer_bounds_union(bounds, chromium_raster_chunk_bounds(box, command))
+			bounds = chromium_layer_bounds_union(bounds,
+				chromium_raster_chunk_bounds_with_root_scroll(box, command, root_scroll_y))
 			// A fixed container establishes its compositor layer even when only
 			// a small descendant paints. Keep the container's empty space in the
 			// raster extent; tightening it to that descendant changes GPU coverage.
@@ -610,7 +644,11 @@ pub fn update_chromium_raster_layer_plan(document &dom.Document, commands []Pain
 		chromium_root_raster_plan_into(commands.len, mut plan)
 		return
 	}
-	chromium_layerize_chunks_into(scratch.chunks, commands.len, device_scale, mut plan, mut scratch.layer_states)
+	if rect := cull {
+		chromium_layerize_visible_paint_chunks(result, commands, rect, device_scale, mut scratch, mut plan)
+	} else {
+		chromium_layerize_chunks_into(scratch.chunks, commands.len, device_scale, mut plan, mut scratch.layer_states)
+	}
 	for layer_index, state in scratch.layer_states {
 		plan.layers[layer_index].scroll_contents = state.scroll_frame > 0
 		plan.layers[layer_index].composited_contents = !state.legacy_effect

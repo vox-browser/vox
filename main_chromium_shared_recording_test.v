@@ -34,6 +34,21 @@ fn test_shared_recording_requires_supported_contiguous_root_drawing_with_vectors
 	})
 }
 
+fn test_culled_commands_do_not_interrupt_the_supported_root_picture() {
+	base := shared_recording_test_commands()
+	commands := [layout.PaintCommand{kind: 'unrepresented_offscreen_draw'}, base[0],
+		layout.PaintCommand{kind: 'unrepresented_offscreen_draw'}, base[1]]
+	plan := layout.ChromiumRasterLayerPlan{
+		layers: [layout.ChromiumRasterLayer{command_indices: [1, 3]}]
+		command_layers: [-1, 0, -1, 0]
+	}
+	assert chromium_shared_recording_supported(commands, plan)
+	assert !chromium_shared_recording_supported(commands, layout.ChromiumRasterLayerPlan{
+		...plan
+		command_layers: [0, 0, -1, 0]
+	})
+}
+
 fn test_shared_recording_keeps_clips_effects_and_unrepresented_draws_on_the_leaf_path() {
 	base := shared_recording_test_commands()
 	plan := layout.ChromiumRasterLayerPlan{

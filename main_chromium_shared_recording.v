@@ -19,6 +19,7 @@ fn chromium_shared_recording_supported(commands []layout.PaintCommand,
 	mut has_vectors := false
 	mut svg_end := 0
 	for index in 0 .. commands.len {
+		if plan.command_layers[index] < 0 { continue }
 		command := unsafe { &commands[index] }
 		if plan.command_layers[index] != 0 {
 			left_root = true
@@ -303,6 +304,10 @@ fn chromium_shared_recording_layer_supported(commands []layout.PaintCommand,
 				|| command.clip_list != unsafe { nil } || command.clip_outs.len > 0 {
 				return false
 			}
+			has_shared_content = true
+			continue
+		}
+		if plan.has_paint_metadata && chromium_compositor_css_gradient_supported(command) {
 			has_shared_content = true
 			continue
 		}

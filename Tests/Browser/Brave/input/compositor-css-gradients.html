@@ -1,0 +1,20 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>CSS gradients share their compositor raster</title>
+<style>
+* { box-sizing: border-box }
+html, body { margin: 0; background: #090b0f }
+.panel { position: absolute; top: 16px; width: 480px; height: 736px; overflow: hidden; background: #0e131a }
+.promoted { left: 16px; transform: translate3d(0, 0, 0) }
+.scroll { left: 528px; overflow: auto; scrollbar-width: none }
+.content { height: 1120px; padding: 20px }
+.card { height: 300px; margin-bottom: 20px; border: 1px solid #2b394c; border-radius: 10px; box-shadow: inset 0 1px #ffffff05; background: linear-gradient(135deg, #121b288f, #10151e8f) }
+.picture { height: 300.1875px }
+.radial { background: radial-gradient(ellipse at 27% 31%, #bad5f6a0, #bad5f600 83%) }
+</style>
+<div class="panel promoted"><div class="content">
+  <div class="card"></div><div class="card picture"></div><div class="card radial"></div>
+</div></div>
+<div class="panel scroll"><div class="content">
+  <div class="card"></div><div class="card picture"></div><div class="card radial"></div>
+</div></div>

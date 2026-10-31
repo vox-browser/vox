@@ -1,0 +1,12 @@
+<!doctype html><meta charset="utf-8"><title>Viewport culling and empty scrolling paint chunks</title><style>
+body{margin:0;background:#090b0f}
+.earlier{display:grid;height:200px}.earlier>div{background:#273c59}
+.gap{height:6000px}.cards{display:grid;grid-template-columns:1fr 1fr;margin:0 48px;gap:20px}
+.card{height:450px;background:linear-gradient(135deg,#121b288f,#10151e8f)}
+.before-scroll{height:2300px}.scroll{height:100px;margin:0 48px;overflow:auto;scrollbar-width:none}
+.wide{width:2400px;height:80px}.after-scroll{height:1700px;margin:0 48px}
+footer{height:100px;margin:0 48px;border-top:1px solid #273c59}
+</style><div class="earlier"><div></div></div><div class="gap"></div>
+<div class="cards"><div class="card"></div><div class="card"></div></div>
+<div class="before-scroll"></div><div class="scroll"><div class="wide"></div></div>
+<div class="after-scroll"></div><footer></footer>

@@ -3,6 +3,7 @@ module main
 import layout
 import math
 import painting
+import os
 
 fn C.native_set_chromium_raster_layer_size(f64, f64)
 
@@ -409,8 +410,31 @@ fn (mut storage ChromiumMSAAStorage) update_for_device_viewport(commands []layou
 	}
 }
 
+fn (mut app BrowserApp) update_chromium_viewport_raster_plan() {
+	$if macos {
+		if app.page_zoom != 1 || app.document == unsafe { nil } { return }
+		scale := C.native_display_device_pixel_ratio()
+		viewport := layout.LayoutRect{0, app.scroll_y, app.viewport_width, app.viewport_height}
+		if !layout.chromium_raster_cull_changed(app.document, viewport, scale, &app.chromium_raster_plan) {
+			return
+		}
+		layout.update_chromium_raster_layer_plan_for_viewport(app.document, app.paint_commands,
+			scale, viewport, mut app.chromium_raster_plan)
+		// A changed interest rect can change compositor grouping and dither
+		// origins. Pixels retained under the preceding plan cannot be reused.
+		C.native_discard_scroll_raster()
+	}
+}
+
 fn (mut app BrowserApp) set_chromium_msaa_tiles() {
 	$if macos {
+		if os.getenv('VOX_DIAGNOSTIC_PAINT_LAYER') != '' {
+			for index, command in app.paint_commands {
+				owner := app.chromium_raster_plan.command_layers[index]
+				if owner >= 0 && (command.y + command.height < app.scroll_y || command.y > app.scroll_y + app.viewport_height) { continue }
+				eprintln('VOX_PAINT_COMMAND index=${index} kind=${command.kind} owner=${owner} xywh=${command.x},${command.y},${command.width},${command.height}')
+			}
+		}
 		scale := C.native_display_device_pixel_ratio()
 		layout_scale := if app.document != unsafe { nil } { app.document.layout_coordinate_scale() } else { 1.0 }
 		app.chromium_msaa_storage.update_for_device_viewport(app.paint_commands, app.chromium_raster_plan,

@@ -42,7 +42,9 @@ fn (mut app BrowserApp) begin_chromium_text_scroll_layer(index int) bool {
 		if !app.ctx.native_rendering || app.page_zoom != 1 || app.document == unsafe { nil }
 			|| app.document.font_rendering_policy() != .chromium
 			|| (!chromium_text_scroll_layer_supported(app.paint_commands, app.chromium_raster_plan, index)
-				&& !chromium_svg_compositor_layer_supported(app.paint_commands, app.chromium_raster_plan, index)) {
+				&& !chromium_svg_compositor_layer_supported_for_viewport(app.paint_commands,
+					app.chromium_raster_plan, index,
+					layout.LayoutRect{0, app.scroll_y, app.viewport_width, app.viewport_height})) {
 			return false
 		}
 		// Install a transparent destination before enabling picture recording;
@@ -50,6 +52,11 @@ fn (mut app BrowserApp) begin_chromium_text_scroll_layer(index int) bool {
 		C.native_set_chromium_layer_shared_recording(0)
 		C.native_begin_css_effect_layer(1, 0)
 		C.native_set_chromium_layer_shared_recording(1)
+		background := app.chromium_raster_plan.layers[index].scroll_background_command
+		if background >= 0 && background < app.paint_commands.len
+			&& app.chromium_raster_plan.layers[index].command_indices.any(app.paint_commands[it].kind == 'fill_gradient') {
+			app.draw_command(app.paint_commands[background], 0, app.page_top(), app.ctx.height)
+		}
 		return true
 	}
 	return false
