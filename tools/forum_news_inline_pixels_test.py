@@ -39,6 +39,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
         write_json(output / 'pixels.json', verdict)
         self.assertTrue(verdict['exact'], verdict['metrics'] + '\nArtifacts: ' + str(output))
 
+    def test_letter_spacing_disables_optional_ligatures(self):
+        self.compare_fixture('spaced-optional-ligatures')
+
     def test_definite_flex_basis_survives_cross_axis_limits(self):
         self.compare_fixture('definite-flex-basis-cross-limit')
 

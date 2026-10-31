@@ -54,6 +54,13 @@ struct C.hb_glyph_position_t {
 	var_      u32
 }
 
+struct C.hb_feature_t {
+	tag   u32
+	value u32
+	start u32
+	end   u32
+}
+
 struct HarfBuzzScaledFont {
 mut:
 	face             voidptr
@@ -907,7 +914,17 @@ fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, word_spacing f32,
 		}
 		C.hb_buffer_guess_segment_properties(buffer)
 	}
-	C.hb_shape(hb_font, buffer, unsafe { nil }, 0)
+	mut features := [3]C.hb_feature_t{}
+	mut feature_count := u32(0)
+	if font.font_rendering_policy == .chromium && letter_spacing != 0 {
+		// Blink disables optional common/contextual ligatures for either sign
+		// of letter spacing. Required script features remain HarfBuzz defaults.
+		for index, tag in [u32(0x6c696761), 0x636c6967, 0x63616c74] {
+			features[index] = C.hb_feature_t{tag:tag, value:0, start:0, end:0xffffffff}
+		}
+		feature_count = 3
+	}
+	C.hb_shape(hb_font, buffer, &features[0], feature_count)
 	mut glyph_count := u32(0)
 	infos := C.hb_buffer_get_glyph_infos(buffer, &glyph_count)
 	positions := C.hb_buffer_get_glyph_positions(buffer, &glyph_count)
