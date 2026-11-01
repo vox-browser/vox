@@ -2,11 +2,12 @@
 
 **The requested 10% advantage remains open. BBC does not qualify for
 `OPTIMIZED_SITES.md`.** The latest complete seven-pair cohort has a Vox median
-of **46,582,465,131** retired instructions and a Brave lower-bound median of
-**15,619,372,290**. Its conservative ratio is **3.3740750674717432**, above the
-required 0.9. All Vox/control observations pass content, pixels and browser exits.
-All 21 observations pass their original per-engine pixel references. The instruction
-gate fails. Brave pairs 1 and 4 exceed 30 billion instructions and remain included.
+of **44,005,434,509** retired instructions and a Brave lower-bound median of
+**15,397,702,164**. Its conservative ratio is **3.037884119847623**, above the
+required 0.9. Every Vox/control observation passes content and original pixels.
+All native browser exits are zero, but Brave pair 4 differs from its unchanged
+photo reference and its audit result fails. This cohort is invalid for
+acceptance; every observation remains included.
 
 The machine-readable [evidence](benchmark-results/bbc-brave-instructions-2026-11-01.json)
 retains exact counts for every recorded attempt, including failures and first
@@ -69,6 +70,7 @@ capture marker. An invalid cohort is retained for diagnosis, not acceptance.
 | Retained-command direct reads | 44,466,503,621 | 15,579,542,542 | 3.565802776525631 | Gate fails; Brave pair 4 photo differs |
 | Retained ordinary flow items in grid/flex | 44,521,001,422 | 15,591,881,320 | 3.681015720678472 | All observations valid; gate fails |
 | Selected-face display/failure invalidation | 46,582,465,131 | 15,619,372,290 | 3.3740750674717432 | All observations valid; gate fails; median regresses against control |
+| Numeric-ratio, font-style and duration reuse | 44,005,434,509 | 15,397,702,164 | 3.037884119847623 | Gate fails; Brave pair 4 photo differs |
 
 The grid block-height cohort alternates an older control, candidate and Brave;
 control/candidate medians are 101,567,929,247 and 90,700,737,334 (10.70% observed
@@ -182,6 +184,8 @@ The selected backend has no observed LibJS fallback. These instrumented runs
 receive no hardware-counter performance credit.
 
 The newest measured executable is SHA256
+`ff3538d5a0654b97080b251d36576120f1a9c353de0855696e9ab25f004c8be6`.
+The preceding font-display candidate is
 `5aae83a4408e023380d51e4430003b519ec427bcd96b3701b634930eeda62952`.
 The JIT-only candidate is
 `ea63463d5d1e7c6d28c320fbf2060eead45490e549a2ac45f607ccdff8e65c89`.
@@ -218,7 +222,7 @@ open.
 
 All 45 allocator checks pass in normal, no-GC and preallocated modes, including
 a preallocated run with scope jumps disabled. Nine selector checks pass in
-normal and no-GC modes. The benchmark tools pass 176 Python checks. The RGB cache passes 19 focused
+normal and no-GC modes. The benchmark tools pass 177 Python checks. The RGB cache passes 19 focused
 checks in normal, no-GC, preallocated and diagnostic modes. Two real Mach-O
 loader checks verify bundled-library selection and reject a missing fallback.
 The newest pinned browser passes headless startup, all 11 screenshot smoke
@@ -273,8 +277,59 @@ remain included. The integer Brave gate fails:
 521,875,603,630 > 139,204,977,327. A preceding command failed argument validation
 before launching any browser and remains recorded separately.
 
-The next investigation uses separate CSS instruction diagnostics to locate the
-remaining costs. The first diagnostic build attempt encountered the shared
-production lock and did not queue another build. The site catalog must
-wait for a qualifying cohort. Startup counts establish neither isolated
-rendering time nor scrolling FPS.
+Separate CSS diagnostics use a private build from captured production C and
+pinned native objects, with only diagnostic counter bodies enabled. The
+production candidate keeps those counter bodies empty. Both builds retain
+complete compiler commands, source hashes and memory-guard receipts. The
+first private compile used a relative C path from the wrong working directory;
+that failure and the corrected successful compile remain recorded.
+
+The final cumulative diagnostic scopes report 10,835,972,177 instructions in
+rule collection and 9,517,382,464 in computed-property construction. The latter
+includes 7,653,319,585 in 6,709 longhand loops. These are instrumented
+**per-process, overlapping inclusive scopes**, with counter overhead; they are
+not coalition acceptance counts and cannot be added or credited as savings.
+All diagnostic captures match the original Vox reference exactly.
+
+A separate cache-capacity probe compares the existing 256-entry limit with a
+4,096-entry diagnostic limit. Both peak at 204 entries with zero capacity
+rejections, so the production limit remains unchanged. Another probe counts
+2,556 first ineligible declarations: numeric aspect ratios account for 1,031,
+explicit font styles for 382, and transition durations for 98. These probes
+receive no instruction credit.
+
+Commit `0cf79695` adds typed snapshots and hashes for numeric ratios, font
+styles without an angle and time values. Calculated ratios and angled font
+styles retain their ordinary computation path. Font snapshots also preserve
+angle presence, unit and numeric payload: `normal` and `oblique 0deg` serialize
+identically, so text alone cannot guard mutations. All 27 cache checks pass in
+normal, no-GC and preallocated modes, with enabled and disabled controls. The
+first compile failed on an invalid concrete-type name accessor; corrected
+checks and all attempts are retained. The broader run enters all 397 cases in
+both GC modes, with the same sole input-baseline failure. The benchmark tools
+pass 177 checks. The production candidate passes headless startup, all 11
+smoke cases and all eight SVG cases with stable executable/library identities.
+
+Fresh BBC diagnostics observe a restored ratio only on the enabled path, with
+2,013/2,427 JavaScriptCore evaluations in candidate/control. Both captures
+retain complete content audits and match the original Vox reference exactly.
+The site catalog must wait for a qualifying cohort. Startup counts establish
+neither isolated rendering time nor scrolling FPS.
+
+The unprofiled constant-longhand cohort uses the same executable for control
+and candidate, with only `VOX_DISABLE_CONSTANT_LONGHAND_REUSE` set in controls.
+Control median 44,338,719,862 versus candidate 44,005,434,509 is a 0.7517%
+point reduction; pairs 3 and 7 regress. The conservative matched-control ratio
+is 1.1304975685237806, so no accepted improvement is credited. All 21 semantic
+audits and native exits pass, and all 14 Vox/control pixel checks are exact.
+Brave pair 4 differs in 304,064 photo pixels (maximum channel error 18) and
+remains included with its failed audit exit. No Brave trial exceeded 30 billion
+instructions in this cohort. The integer target fails:
+465,554,457,010 > 137,924,619,498. The guard adopts 69 process identities,
+reports no adoption error and peaks at 1,478,508,544 bytes over 130.48 seconds.
+The initial production build attempt found the shared guard busy; after that
+separate C-capture job completed without an installed candidate, the required
+production build completed in 255.44 seconds, peaking at 8,791,277,568 bytes.
+Its cache implementation inputs were stable throughout the build. A separate
+layout-counter diagnostic is the next investigation; it supplies no acceptance
+or engine instruction credit.
