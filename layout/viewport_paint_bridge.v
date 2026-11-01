@@ -2577,6 +2577,8 @@ mut:
 	plan              []CompatibilityCachedVisualReplayStep
 	// Per paint-order entry, whether a viewport recording paints it.
 	visible_entries []bool
+	// Local ink survives viewport translation; transforms are resolved afresh.
+	viewport_ink_cache ViewportEntryInkCache
 	// Per paint-order entry, current over recorded cumulative opacity; empty
 	// when no entry's opacity changed since its commands were recorded.
 	entry_opacity_scales []f64
@@ -3225,6 +3227,7 @@ fn viewport_build_stacking_context_tree(target voidptr) {
 	paint_order, paint_steps := result.paint_tree.compatibility_paint_plan()
 	viewport_reconcile_retained_paint_cache(mut result, paint_order)
 	result.paint_order = paint_order
+	result.record_scratch.viewport_ink_cache.valid = false
 	result.paint_steps = paint_steps
 	result.stacking_context_tree_is_valid = true
 	viewport_build_hit_test_display_list(target)

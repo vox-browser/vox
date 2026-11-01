@@ -1,0 +1,114 @@
+module layout
+
+import math
+import os
+import platform
+
+const disable_viewport_ink_cache = os.getenv('VOX_DISABLE_VIEWPORT_INK_CACHE') != ''
+
+struct ViewportCachedEntryInk {
+	first int
+	count int
+	bounded bool
+}
+
+// Private recording workspace. Rectangles contain no paint-tree or glyph roots.
+// Keep each component separately: ink above and below a viewport must not turn
+// into one visible union across the empty space between them.
+struct ViewportEntryInkCache {
+mut:
+	valid bool
+	revision u64
+	order voidptr
+	entries []ViewportCachedEntryInk
+	rects []LayoutRect
+}
+
+fn (mut cache ViewportEntryInkCache) invalidate() {
+	cache.valid = false
+	cache.order = unsafe { nil }
+	cache.entries.clear()
+	cache.rects.clear()
+}
+
+fn refresh_viewport_entry_ink_cache(mut result DocumentLayoutResult) {
+	revision := result.document.paint_content_revision()
+	if result.record_scratch.viewport_ink_cache.valid
+		&& result.record_scratch.viewport_ink_cache.revision == revision
+		&& result.record_scratch.viewport_ink_cache.order == result.paint_order.data
+		&& result.record_scratch.viewport_ink_cache.entries.len == result.paint_order.len { return }
+	// Like the recording plan, this storage outlives the temporary visibility
+	// arena and is transferred to the replacement result on relayout.
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	mut cache := &result.record_scratch.viewport_ink_cache
+	cache.invalidate()
+	for entry in result.paint_order {
+		first := cache.rects.len
+		bounded := append_viewport_entry_ink(entry.box, mut cache.rects)
+		cache.entries << ViewportCachedEntryInk{first, cache.rects.len - first, bounded}
+	}
+	cache.revision = revision
+	cache.order = result.paint_order.data
+	cache.valid = true
+}
+
+fn append_viewport_entry_ink(box &BlockBox, mut rects []LayoutRect) bool {
+	if !viewport_entry_has_bounded_ink(box) { return false }
+	border := box.border_box()
+	outset := math.max(f64(0), box.decorations().outline_width + math.abs(box.decorations().outline_offset)) + 2
+	rects << LayoutRect{border.x - outset, border.y - outset,
+		border.width + outset * 2, border.height + outset * 2}
+	if box.canvas().paints_canvas_background {
+		rects << LayoutRect{box.canvas().canvas_x, box.canvas().canvas_y,
+			box.canvas().canvas_width, box.canvas().canvas_height}
+	}
+	for line in box.lines {
+		for index in 0 .. line.fragments.len {
+			if !append_viewport_fragment_ink(unsafe { &line.fragments[index] }, mut rects) { return false }
+		}
+		for index in 0 .. line.box_decorations.len {
+			if !append_viewport_fragment_ink(unsafe { &line.box_decorations[index] }, mut rects) { return false }
+		}
+	}
+	return true
+}
+
+fn append_viewport_fragment_ink(fragment &TextFragment, mut rects []LayoutRect) bool {
+	if fragment.shadow != none || fragment.shadows.len > 0 || fragment.text_shadows.len > 0
+		|| fragment.selection_style.text_shadows.len > 0 || fragment.background_images.len > 0
+		|| fragment.paintable_fragment.orientation != .horizontal
+		|| (fragment.text != '' && !fragment.baseline_set) { return false }
+	mut outset := math.max(f64(0), fragment.outline_width + math.abs(fragment.outline_offset)) + 2
+	if fragment.decoration != 'none' || fragment.selection_style.decoration_set {
+		if !fragment.font_metrics_set { return false }
+		outset += math.abs(fragment.baseline) + math.abs(fragment.font_ascent)
+			+ math.abs(fragment.font_descent) + math.abs(fragment.glyph_height)
+			+ math.abs(fragment.font_size) + math.abs(fragment.text_underline_offset)
+			+ 4 * math.max(f64(1), math.abs(fragment.decoration_thickness))
+	}
+	left := fragment.x - fragment.padding.left - fragment.border.left - outset
+	top := fragment.y - fragment.padding.top - fragment.border.top - outset
+	right := fragment.x + fragment.width + fragment.padding.right + fragment.border.right + outset
+	bottom := fragment.y + fragment.height + fragment.padding.bottom + fragment.border.bottom + outset
+	rects << LayoutRect{left, top, right - left, bottom - top}
+	if fragment.text == '' { return true }
+	run := fragment.paintable_fragment.glyph_run or { return false }
+	translation_y := text_fragment_paint_top(*fragment) + fragment.baseline
+	if math.abs(fragment.x) > 1_000_000 || math.abs(translation_y) > 1_000_000 { return false }
+	ink := run.bounding_box()
+	rects << LayoutRect{fragment.x + f64(ink.x), translation_y + f64(ink.y),
+		f64(ink.width), f64(ink.height)}
+	return true
+}
+
+fn viewport_cached_entry_ink_is_outside(cache &ViewportEntryInkCache, index int,
+	transform [6]f64, width f64, height f64, mut ink_probe PaintCommand) bool {
+	entry := cache.entries[index]
+	if !entry.bounded { return false }
+	for offset in 0 .. entry.count {
+		if !viewport_rect_is_outside(cache.rects[entry.first + offset], transform,
+			width, height, mut ink_probe) { return false }
+	}
+	return true
+}

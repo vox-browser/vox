@@ -14,6 +14,7 @@ __global viewport_visible_entries_scratch_ = &platform.Arena(unsafe { nil })
 // screen: a filter or mask can move or generate visible pixels from them.
 // The selection reuses the result's recording scratch until the next one.
 fn viewport_visible_paint_entries(mut result DocumentLayoutResult) []bool {
+	if !disable_viewport_ink_cache { refresh_viewport_entry_ink_cache(mut result) }
 	count := result.paint_order.len
 	mut selected := unsafe { result.record_scratch.visible_entries }
 	if selected.cap < count {
@@ -53,13 +54,21 @@ fn mark_viewport_invisible_entries(result &DocumentLayoutResult, mut selected []
 	mut ink_probe := PaintCommand{}
 	for index, entry in result.paint_order {
 		box := entry.box
-		if !viewport_entry_has_bounded_ink(box) { continue }
+		if !disable_viewport_ink_cache {
+			if !result.record_scratch.viewport_ink_cache.entries[index].bounded { continue }
+		} else if !viewport_entry_has_bounded_ink(box) { continue }
 		if box.paintable_with_lines && box.accumulated_visual_context_index
 			!= box.accumulated_visual_context_for_descendants_idx { continue }
 		slot := contexts.resolve(box.accumulated_visual_context_index)
 		context := unsafe { &contexts.contexts[slot] }
 		if context.layer_list != unsafe { nil } { continue }
-		if viewport_box_ink_is_outside(box, context.transform, width, height, mut ink_probe) {
+		outside := if disable_viewport_ink_cache {
+			viewport_box_ink_is_outside(box, context.transform, width, height, mut ink_probe)
+		} else {
+			viewport_cached_entry_ink_is_outside(&result.record_scratch.viewport_ink_cache,
+				index, context.transform, width, height, mut ink_probe)
+		}
+		if outside {
 			selected[index] = false
 		}
 	}

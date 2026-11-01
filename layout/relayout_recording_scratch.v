@@ -19,5 +19,6 @@ fn take_document_recording_scratch(document &dom.Document) CompatibilityRecordSc
 		context = CompatibilityFlattenedVisualContext{}
 	}
 	scratch.memo_contexts.clear()
+	scratch.viewport_ink_cache.invalidate()
 	return scratch
 }
