@@ -5863,6 +5863,16 @@ pub fn (c &ComputedProperties) cached_computed_font_list() ?&FontCascadeList {
 	return c.cached_computed_font_list_
 }
 
+// Geometry recorded at `generation` can survive unrelated font completions
+// only when its original cascade is still live. A newly computed replacement
+// cannot establish what fonts the older geometry used, even if it is current.
+pub fn (c &ComputedProperties) cached_font_inputs_are_unchanged_since(computer &FontComputer, generation u64) bool {
+	list := c.cached_computed_font_list_ or { return false }
+	return list.pending_faces.len == 0
+		&& list.computed_cache_created_generation_ <= generation
+		&& computer.cached_cascade_is_current(list)
+}
+
 pub fn (mut c ComputedProperties) clear_computed_font_list_cache() {
 	c.cached_computed_font_list_ = none
 	c.cached_computed_font_list_generation_ = 0

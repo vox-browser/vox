@@ -1712,8 +1712,14 @@ pub fn (mut n Box) cached_intrinsic_sizes() &IntrinsicSizes {
 	// A loaded face can replace fallback advances without changing this box's
 	// computed style or dirty bit. Width and height probes must use one font epoch.
 	generation := css.css_style_computer_for(n.document()).font_computer().environment_generation()
-	if cached := n.cached_intrinsic_sizes_ {
+	if mut cached := n.cached_intrinsic_sizes_ {
 		if cached.font_generation_ == generation { return cached }
+		if !disable_intrinsic_font_reuse
+			&& intrinsic_fonts_are_unchanged_since(unsafe { &Node(n) }, cached.font_generation_) {
+			cached.font_generation_ = generation
+			report_intrinsic_font_reuse()
+			return cached
+		}
 	}
 	persistent := platform.enter_persistent_if(platform.transient_arena_entered())
 	new_cache := &IntrinsicSizes{font_generation_: generation}

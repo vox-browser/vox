@@ -3638,6 +3638,7 @@ mut:
 	computed_cache_owner_ &FontComputer = unsafe { nil }
 	computed_cache_policy_ platform.FontRenderingPolicy
 	computed_cache_current_ bool
+	computed_cache_created_generation_ u64
 }
 
 fn (computer &FontComputer) cached_cascade_is_current(list &FontCascadeList) bool {
@@ -4660,6 +4661,7 @@ fn (mut computer FontComputer) compute_font_for_style_values_with_synthesis(font
 	value.computed_cache_owner_ = &computer
 	value.computed_cache_policy_ = policy
 	value.computed_cache_current_ = true
+	value.computed_cache_created_generation_ = computer.environment_generation()
 	computer.computed_font_cache[owned_key] = value
 	return value
 }
