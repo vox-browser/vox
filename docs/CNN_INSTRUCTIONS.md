@@ -63,6 +63,33 @@ regressions pass in each GC mode. This change receives no CPU credit; a narrower
 font-size dependency refinement is being checked. Raw evidence is under
 `Build/cnn-home-font-matched-20261101-0703/`, with exact counts in the receipt.
 
+The hidden-animation change (`6af8fd37`) stops CSS frame requests for targets
+inside `display:none` subtrees, matching the existing animated-style consumer.
+Display animations which can reveal a target remain eligible, as do transparent,
+`visibility:hidden` and `display:contents` targets. Clocks/effects remain intact.
+The diagnostic exercises hidden CNN ad-slot pseudo-elements and consent targets,
+prepares **11** frames instead of the earlier **605**, and retains exact pixels.
+
+Seven uninstrumented triplets retain all attempts and the same-binary control.
+Every Vox candidate/control capture is exact, and every candidate uses fewer
+instructions than its control (individual reductions 11.94%–28.04%). Median
+Vox is **34,271,255,313** versus control **39,309,676,666** and
+Brave **31,315,549,327**. This is still above Brave; the exact
+10% gate fails: `10 * 34,582,950,864 > 9 * 30,835,969,151`. Brave pair 7 also differs
+at **31,766 pixels**, matching the previously observed cross-process image
+sampling variation. That trial remains included, so the cohort has no acceptance
+credit. The independent Vox/control evidence establishes the redraw saving,
+not the requested site goal. Raw evidence is
+`Build/cnn-home-hidden-animation-matched-20261101-0728/`.
+
+The feature passes 32 CSS cases per GC mode plus the screenshot smoke set,
+eight SVG guards, and 100 AST fixtures. All 32 shell cases pass per mode when
+their test process selects CSS-pixel coordinates; two initial failures per mode
+used Retina device units and remain in the receipts. A fresh live load reaches
+the CNN title and complete readiness (90 headlines, 85 images), but author
+scripts report frame/consent bridge errors. Live script and visual parity remain
+open; no live performance acceptance is claimed.
+
 The following sections describe the earlier archive, tools and 15% target.
 
 The CNN target remains open. The accepted result requires seven fresh-process
