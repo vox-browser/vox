@@ -175,6 +175,8 @@ def run_trial(engine, app, folder, args):
                 args.vox_environment['VOX_DISABLE_CONSTANT_LONGHAND_REUSE'] = '1'
             if getattr(args, 'control_disable_live_pending_text_reuse', False):
                 args.vox_environment['VOX_DISABLE_LIVE_PENDING_TEXT_REUSE'] = '1'
+            if getattr(args, 'control_disable_inactive_conditional_sheet_skip', False):
+                args.vox_environment['VOX_DISABLE_INACTIVE_CONDITIONAL_SHEET_SKIP'] = '1'
             if getattr(args, 'control_disable_conditional_sheet_invalidation', False):
                 args.vox_environment['VOX_DISABLE_CONDITIONAL_SHEET_INVALIDATION'] = '1'
             if getattr(args, 'control_disable_positioned_image_ratio_reuse', False):
@@ -225,6 +227,8 @@ def parse_args(argv=None):
                         help='Disable numeric-ratio, angle-free font-style and time value reuse in the pinned Vox control')
     parser.add_argument('--control-disable-live-pending-text-reuse', action='store_true',
                         help='Discard text shapes after unrelated pending-font changes in the pinned Vox control')
+    parser.add_argument('--control-disable-inactive-conditional-sheet-skip', action='store_true',
+                        help='disable skipping inactive conditional style rules in the matched control')
     parser.add_argument('--control-disable-conditional-sheet-invalidation', action='store_true',
                         help='Invalidate the whole document after conditional group insertion in the pinned Vox control')
     parser.add_argument('--control-disable-positioned-image-ratio-reuse', action='store_true',
@@ -261,7 +265,7 @@ def parse_args(argv=None):
             args.control_disable_live_pending_text_reuse,
             args.control_disable_live_pending_font_refresh,
             args.control_disable_positioned_image_ratio_reuse,
-            args.control_disable_conditional_sheet_invalidation)) and not args.control_vox_app:
+            args.control_disable_conditional_sheet_invalidation or args.control_disable_inactive_conditional_sheet_skip)) and not args.control_vox_app:
         parser.error('Disabling the control optimization needs --control-vox-app')
     if not args.capture_reference and (args.repeat < 7 or not args.expected_vox or not args.expected_brave):
         parser.error('Acceptance needs seven pairs and both existing pixel references')
@@ -355,6 +359,7 @@ def main():
         control_disable_live_pending_font_refresh=args.control_disable_live_pending_font_refresh,
         control_disable_positioned_image_ratio_reuse=args.control_disable_positioned_image_ratio_reuse,
         control_disable_conditional_sheet_invalidation=args.control_disable_conditional_sheet_invalidation,
+        control_disable_inactive_conditional_sheet_skip=args.control_disable_inactive_conditional_sheet_skip,
         brave_post_readiness_expression=args.post_readiness_expression,
         readiness_correction='Await visible image decode before the original settlement; no engine credit',
         system=subprocess.check_output(['sw_vers'], text=True)))
