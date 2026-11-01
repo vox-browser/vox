@@ -171,3 +171,7 @@ needs its recorded `--cache-template`. Wikipedia instead uses its recorded
 `VOX_PROXY`, private `SSL_CERT_FILE`, and `--script-policy disabled`, without
 `--allow-fixture-navigation`. Keep the native scale, input schedule, fixture
 hashes and network/cache policy fixed when comparing new browser builds.
+
+Subsequent [vlang.io scrolling work](VLANG_SCROLLING.md) bounds decoration
+backdrops and records new frozen/live trials. Those results remain separate
+from the pinned catalog cohort above; the live 60 FPS target is still open.
