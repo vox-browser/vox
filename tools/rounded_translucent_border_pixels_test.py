@@ -12,6 +12,9 @@ class RoundedTranslucentBorderPixelsTests(unittest.TestCase):
     def test_rounded_translucent_border_background_clip_layer(self):
         self.compare_fixture('rounded-translucent-border-clip-layer')
 
+    def test_transparent_border_clips_the_background_without_an_extra_layer(self):
+        self.compare_fixture('rounded-transparent-border-background', width=1024, height=768)
+
 
 if __name__ == '__main__':
     unittest.main()

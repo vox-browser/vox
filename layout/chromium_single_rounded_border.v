@@ -69,7 +69,7 @@ fn chromium_pair_rounded_border_background(mut commands []PaintCommand, backgrou
 	mut background_index := background_start
 	if commands[background_index].kind == 'paint_outer_box_shadow' {
 		color := css.parse_color_string(border.color) or { return }
-		if border.kind != 'paint_uniform_border' || color.a == 0 || color.a == 255 { return }
+		if border.kind != 'paint_uniform_border' || color.a == 255 { return }
 		// Opaque backgrounds paint after the outer shadows. The range starts
 		// before those shadows, rather than at the solid background itself.
 		for background_index < border_start && background_index - background_start < 8

@@ -29,6 +29,14 @@ inline void vox_draw_rounded_single_border(SkCanvas* canvas, SkRRect const& oute
         if (mode == 7 && background) {
             canvas->save();
             canvas->clipRRect(outside, SkClipOp::kIntersect, paint.isAntiAlias());
+            // With an invisible border Blink only clips the background. A
+            // drawRRect, or an unnecessary saveLayer, resolves its edge with
+            // different GPU coverage and premultiplied rounding.
+            if (paint.getAlphaf() == 0) {
+                canvas->drawRect(outside.rect(), *background);
+                canvas->restore();
+                return;
+            }
             canvas->saveLayer(nullptr, nullptr);
             canvas->drawRect(outside.rect(), *background);
             SkPathBuilder builder;

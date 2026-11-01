@@ -53,3 +53,28 @@ fn test_uniform_border_outer_clip_requires_matching_circular_geometry() {
 	assert !chromium_uniform_border_shares_outer_clip(&border,
 		&layout.PaintCommand{...background,radius:0})
 }
+
+fn test_invisible_uniform_border_clips_only_the_matching_outer_background() {
+	for shadow in ['none', '0 2px 8px #0001'] {
+		for clip in ['border-box', 'padding-box', 'content-box'] {
+			mut document := html.parse_document('<!doctype html><style>
+				body{margin:0}div{position:fixed;left:20px;top:40px;width:220px;height:44px;
+				box-sizing:border-box;border:1px solid transparent;border-radius:999px;
+				background:#f3f3f3;background-clip:${clip};padding:3px;box-shadow:${shadow}}
+			</style><div></div>')
+			document.set_font_rendering_policy(.chromium)
+			root := layout.layout_document_typed_in_viewport(document, 1024, 768)
+			commands := root.paint_commands()
+			borders := commands.filter(it.kind == 'paint_uniform_border')
+			backgrounds := commands.filter(it.kind == 'fill_rect' && it.radius > 0)
+			assert borders.len == 1 && backgrounds.len == 1
+			border := borders[0]
+			background := backgrounds[0]
+			assert background.underlays_next == (clip == 'border-box')
+			assert chromium_uniform_border_uses_clip_layer(&border, &background) == (clip == 'border-box')
+			assert !chromium_uniform_border_uses_clip_layer(
+				&layout.PaintCommand{...border, color:'#000'}, &background)
+			document.finalize()
+		}
+	}
+}

@@ -9,7 +9,7 @@ fn chromium_uniform_border_uses_clip_layer(border &layout.PaintCommand,
 	if border.has_clip && (border.clip_width <= 0 || border.clip_height <= 0
 		|| chromium_msaa_clip_list_has_empty_clip(border.clip_list)) { return false }
 	color := css.parse_color_string(border.color) or { return false }
-	return color.a > 0 && color.a < 255
+	return color.a < 255
 		&& chromium_uniform_border_shares_outer_clip(border, background)
 }
 
