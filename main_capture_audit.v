@@ -34,27 +34,41 @@ fn (mut app BrowserApp) schedule_native_observation() bool {
 // Error descriptions opt into JavaScript string conversion; ordinary captures
 // only count errors. Selectors and output paths belong to the test caller.
 struct CaptureAuditSelector {
-	name       string
-	selector   string
-	limit      int = 100
-	attributes []string
+	name         string
+	selector     string
+	limit        int = 100
+	attributes   []string
 	layout_depth int
 }
 
 struct CaptureAuditConfig {
-	selectors []CaptureAuditSelector
-	describe_native_errors bool
+	selectors               []CaptureAuditSelector
+	describe_native_errors  bool
+	describe_paint_geometry bool
+}
+
+struct CaptureAuditPaintGeometry {
+	index         int
+	kind          string
+	x             f64
+	y             f64
+	width         f64
+	height        f64
+	transform     [6]f64
+	svg_transform [6]f64
+	path_sha256   string
+	path_segments int
 }
 
 struct CaptureAuditImage {
-	model_present bool
-	complete      bool
-	current_src   string
-	natural_width u32
+	model_present  bool
+	complete       bool
+	current_src    string
+	natural_width  u32
 	natural_height u32
-	paint_decoded bool
-	paint_width   int
-	paint_height  int
+	paint_decoded  bool
+	paint_width    int
+	paint_height   int
 }
 
 struct CaptureAuditElement {
@@ -70,16 +84,16 @@ struct CaptureAuditElement {
 }
 
 struct CaptureAuditMedia {
-	current_src string
-	current_time f64
-	duration f64
-	paused bool
-	ready_state string
+	current_src   string
+	current_time  f64
+	duration      f64
+	paused        bool
+	ready_state   string
 	network_state string
 	error_message string
-	frame_width u32
-	frame_height u32
-	frame_sha256 string
+	frame_width   u32
+	frame_height  u32
+	frame_sha256  string
 }
 
 fn (app &BrowserApp) capture_audit_media(element &dom.Element) ?CaptureAuditMedia {
@@ -95,16 +109,16 @@ fn (app &BrowserApp) capture_audit_media(element &dom.Element) ?CaptureAuditMedi
 			}
 			media := player.media
 			return CaptureAuditMedia{
-				current_src: media.current_src()
-				current_time: media.current_time()
-				duration: media.duration()
-				paused: media.paused()
-				ready_state: media.ready_state().str()
+				current_src:   media.current_src()
+				current_time:  media.current_time()
+				duration:      media.duration()
+				paused:        media.paused()
+				ready_state:   media.ready_state().str()
 				network_state: media.network_state().str()
 				error_message: if error_ := media.error() { error_.message() } else { '' }
-				frame_width: width
-				frame_height: height
-				frame_sha256: frame_hash
+				frame_width:   width
+				frame_height:  height
+				frame_sha256:  frame_hash
 			}
 		}
 	}
@@ -140,12 +154,13 @@ struct CaptureAudit {
 	fonts_status           string
 	font_faces             []CaptureAuditFontFace
 	paint_commands         int
+	paint_geometry         []CaptureAuditPaintGeometry
 	javascript_diagnostics []string
 	// Native HTML timer/event exceptions bypass the compact bridge log.
 	native_reported_error_count int
-	native_reported_errors []string
-	selections             []CaptureAuditSelection
-	note                   string = 'Retained DOM/layout/image snapshot. Document-only captures collect after PNG encoding; other captures collect when scheduled. Collection is included in process-exit instruction totals.'
+	native_reported_errors      []string
+	selections                  []CaptureAuditSelection
+	note                        string = 'Retained DOM/layout/image snapshot. Document-only captures collect after PNG encoding; other captures collect when scheduled. Collection is included in process-exit instruction totals.'
 }
 
 fn (app &BrowserApp) capture_audit_image(element &dom.Element) ?CaptureAuditImage {
@@ -179,8 +194,7 @@ fn (app &BrowserApp) capture_audit_image(element &dom.Element) ?CaptureAuditImag
 			}
 		}
 	}
-	return CaptureAuditImage{model_present, complete, current_src, natural_width, natural_height,
-		paint_decoded, paint_width, paint_height}
+	return CaptureAuditImage{model_present, complete, current_src, natural_width, natural_height, paint_decoded, paint_width, paint_height}
 }
 
 fn (app &BrowserApp) collect_capture_audit(config CaptureAuditConfig) !CaptureAudit {
@@ -203,15 +217,15 @@ fn (app &BrowserApp) collect_capture_audit(config CaptureAuditConfig) !CaptureAu
 				if value := element.get_attribute(name) { attributes[name] = value }
 			}
 			elements << CaptureAuditElement{
-				tag: element.local_name()
-				text: text
+				tag:             element.local_name()
+				text:            text
 				text_utf8_bytes: text.len
-				text_sha256: sha256.hexhash(text)
-				rect: element.bounding_client_rect_assuming_layout_clean()
-				attributes: attributes
-				image: app.capture_audit_image(element)
-				media: app.capture_audit_media(element)
-				layout: app.capture_audit_layout(element, query.layout_depth)
+				text_sha256:     sha256.hexhash(text)
+				rect:            element.bounding_client_rect_assuming_layout_clean()
+				attributes:      attributes
+				image:           app.capture_audit_image(element)
+				media:           app.capture_audit_media(element)
+				layout:          app.capture_audit_layout(element, query.layout_depth)
 			}
 		}
 		selections << CaptureAuditSelection{query.name, query.selector, list.length(), elements}
@@ -227,13 +241,13 @@ fn (app &BrowserApp) collect_capture_audit(config CaptureAuditConfig) !CaptureAu
 			for face in fonts.set_entries() {
 				parsed := face.parsed_font != unsafe { nil }
 				font_faces << CaptureAuditFontFace{
-					family: face.family()
-					style: face.style()
-					weight: face.weight()
-					status: face.status().str()
+					family:              face.family()
+					style:               face.style()
+					weight:              face.weight()
+					status:              face.status().str()
 					parsed_font_present: parsed
-					source_path: if parsed { face.parsed_font.source_path } else { '' }
-					declared_sources: face.urls.map(it.value)
+					source_path:         if parsed { face.parsed_font.source_path } else { '' }
+					declared_sources:    face.urls.map(it.value)
 				}
 			}
 		}
@@ -252,22 +266,43 @@ fn (app &BrowserApp) collect_capture_audit(config CaptureAuditConfig) !CaptureAu
 			}
 		}
 	}
+	mut paint_geometry := []CaptureAuditPaintGeometry{}
+	if config.describe_paint_geometry {
+		for index, command in app.paint_commands {
+			if paint_geometry.len >= 256 { break }
+			if command.kind != 'draw_svg_path' { continue }
+			svg := command.svg()
+			paint_geometry << CaptureAuditPaintGeometry{
+				index:         index
+				kind:          command.kind
+				x:             command.x
+				y:             command.y
+				width:         command.width
+				height:        command.height
+				transform:     command.transform
+				svg_transform: svg.path_transform
+				path_sha256:   sha256.hexhash(svg.path)
+				path_segments: svg.path_data.len / 12
+			}
+		}
+	}
 	return CaptureAudit{
-		url: app.document.url.serialize()
-		title: app.document.title()
-		ready: app.document.readiness().str()
-		visibility: app.document.visibility_state()
-		fully_active: app.document.is_fully_active()
-		viewport_width: app.viewport_width
-		viewport_height: app.viewport_height
-		font_set_present: font_set_present
-		fonts_status: fonts_status
-		font_faces: font_faces
-		paint_commands: app.paint_commands.len
-		javascript_diagnostics: app.js_messages.clone()
+		url:                         app.document.url.serialize()
+		title:                       app.document.title()
+		ready:                       app.document.readiness().str()
+		visibility:                  app.document.visibility_state()
+		fully_active:                app.document.is_fully_active()
+		viewport_width:              app.viewport_width
+		viewport_height:             app.viewport_height
+		font_set_present:            font_set_present
+		fonts_status:                fonts_status
+		font_faces:                  font_faces
+		paint_commands:              app.paint_commands.len
+		paint_geometry:              paint_geometry
+		javascript_diagnostics:      app.js_messages.clone()
 		native_reported_error_count: native_reported_error_count
-		native_reported_errors: native_reported_errors
-		selections: selections
+		native_reported_errors:      native_reported_errors
+		selections:                  selections
 	}
 }
 
@@ -284,7 +319,9 @@ fn (app &BrowserApp) write_capture_audit_if_requested() {
 			eprintln('Vox capture audit: ${err.msg()}')
 			return
 		}
-	} else { CaptureAuditConfig{} }
+	} else {
+		CaptureAuditConfig{}
+	}
 	audit := app.collect_capture_audit(config) or {
 		eprintln('Vox capture audit: ${err.msg()}')
 		return
