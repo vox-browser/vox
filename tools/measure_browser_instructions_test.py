@@ -1,6 +1,7 @@
 import base64
 import json
 import io
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -234,12 +235,16 @@ class ChromeDirectLaunchTests(unittest.TestCase):
         self.assertEqual(result.returncode, 2)
         self.assertIn('positive --chrome-outer-window-height', result.stderr)
 
-    def assert_full_capture(self, direct):
+    def assert_full_capture(self, direct, settle_seconds=0, custom_readiness=False):
         with tempfile.TemporaryDirectory() as directory:
             args = self.args(directory, direct=direct)
+            args.settle_seconds = settle_seconds
+            if custom_readiness:
+                args.chrome_readiness_expression = 'custom readiness'
             state = dict(ready='complete', textLength=2022, sprites=21,
                          width=1024, height=768, scale=1)
             methods = []
+            readiness = []
             class Client:
                 sock = Mock()
                 def call(self, method, params=None):
@@ -248,6 +253,10 @@ class ChromeDirectLaunchTests(unittest.TestCase):
                         expression = params['expression']
                         if 'document.fonts.ready' in expression:
                             return {'result': {'value': True}}
+                        if expression == 'custom readiness':
+                            readiness.append(True)
+                            return {'result': {'value': json.dumps(dict(state,
+                                captureReady=len(readiness) > 1))}}
                         return {'result': {'value': json.dumps(state)}}
                     if method == 'Page.captureScreenshot':
                         return {'data': base64.b64encode(b'PNG payload').decode()}
@@ -280,7 +289,8 @@ class ChromeDirectLaunchTests(unittest.TestCase):
                     patch.object(measurement, 'CounterSampler', return_value=sampler), \
                     patch.object(measurement, 'CDP', return_value=client), \
                     patch.object(measurement.urllib.request, 'build_opener', return_value=opener), \
-                    patch.object(measurement, 'stop_process'):
+                    patch.object(measurement, 'stop_process'), \
+                    patch.object(measurement.time, 'sleep', side_effect=lambda seconds: methods.append(('settle', seconds))):
                 result = measurement.run_chrome(args, Path(directory) / 'capture', None)
             if direct:
                 for forbidden in ['Page.navigate', 'Emulation.setDeviceMetricsOverride',
@@ -295,6 +305,14 @@ class ChromeDirectLaunchTests(unittest.TestCase):
                 self.assertEqual(result['navigation_to_screenshot']['instructions'], 300)
                 self.assertEqual(counter.report.call_count, 2)
             self.assertEqual(result['instructions'], 1000, 'Primary counts must include startup')
+            self.assertEqual(result['settle_seconds'], settle_seconds)
+            if custom_readiness:
+                self.assertEqual(len(readiness), 2)
+                self.assertTrue(result['document']['captureReady'])
+                self.assertEqual(methods.count('Page.captureScreenshot'), 1)
+            if settle_seconds:
+                self.assertLess(methods.index('Runtime.evaluate'), methods.index(('settle', settle_seconds)))
+                self.assertLess(methods.index(('settle', settle_seconds)), methods.index('Page.captureScreenshot'))
             self.assertEqual(result['exit'], 0)
             self.assertFalse(result['shutdown_forced'])
             self.assertEqual(result['chrome_launch_mode'], 'direct' if direct else 'blank')
@@ -305,6 +323,35 @@ class ChromeDirectLaunchTests(unittest.TestCase):
 
     def test_blank_capture_keeps_startup_in_primary_totals_and_navigation_separate(self):
         self.assert_full_capture(direct=False)
+
+    def test_settlement_precedes_png_and_remains_in_launch_counts(self):
+        self.assert_full_capture(direct=False, settle_seconds=2)
+
+    def test_custom_content_readiness_must_succeed_before_capture(self):
+        self.assert_full_capture(direct=False, custom_readiness=True)
+
+
+class CaptureEnvironmentTests(unittest.TestCase):
+    def test_uninstrumented_run_removes_even_empty_native_getenv_controls(self):
+        args = SimpleNamespace(timeout=90, settle_seconds=2, native_instruction_markers=False)
+        for marker in ('', '1'):
+            with patch.dict(os.environ, dict(VOX_PROFILE_INSTRUCTIONS=marker,
+                    LADYBIRD_DEBUG_TIMING='1', GC_PRINT_STATS='1')):
+                env = measurement.native_capture_environment(args)
+            for key in ('VOX_PROFILE_INSTRUCTIONS', 'LADYBIRD_DEBUG_TIMING', 'GC_PRINT_STATS'):
+                self.assertNotIn(key, env)
+            self.assertEqual(env['LADYBIRD_SCREENSHOT_DELAY_SECONDS'], '2.0')
+
+    def test_legacy_callers_keep_explicit_native_diagnostic_markers(self):
+        env = measurement.native_capture_environment(SimpleNamespace(timeout=90))
+        self.assertEqual(env['VOX_PROFILE_INSTRUCTIONS'], '1')
+        self.assertEqual(env['LADYBIRD_SCREENSHOT_DELAY_SECONDS'], '0.0')
+
+    def test_settlement_rejects_invalid_or_unbounded_values_before_launch(self):
+        for seconds in (-1, 90, float('nan'), float('inf')):
+            args = SimpleNamespace(timeout=90, settle_seconds=seconds)
+            with self.subTest(seconds=seconds), self.assertRaises(ValueError):
+                measurement.native_capture_environment(args)
 
 
 class VoxLaunchArgumentTests(unittest.TestCase):
@@ -337,6 +384,8 @@ class VoxLaunchArgumentTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             args = self.args()
             args.vox_arg = ['--enable-javascript', '--js-engine=javascriptcore']
+            args.native_instruction_markers = False
+            args.settle_seconds = 2
             prefix = Path(directory) / 'capture'
             process = Mock(pid=1)
             events = []
@@ -349,6 +398,8 @@ class VoxLaunchArgumentTests(unittest.TestCase):
                 self.assertEqual(command[1:3], args.vox_arg)
                 self.assertEqual(command[-1], args.url)
                 self.assertEqual(kwargs['cwd'], measurement.REPO)
+                self.assertNotIn('VOX_PROFILE_INSTRUCTIONS', kwargs['env'])
+                self.assertEqual(kwargs['env']['LADYBIRD_SCREENSHOT_DELAY_SECONDS'], '2.0')
                 return process
             def crop(source, target, width, height):
                 self.assertEqual((width, height), (1024, 768))

@@ -12,6 +12,7 @@ import base64
 from contextlib import contextmanager
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import platform
@@ -360,6 +361,27 @@ def validate_screenshot(path, expected, width, height):
     return result
 
 
+def capture_settle_seconds(args):
+    seconds = float(getattr(args, 'settle_seconds', 0))
+    if not math.isfinite(seconds) or not 0 <= seconds < args.timeout:
+        raise ValueError('Capture settlement must be finite, nonnegative and below the watchdog')
+    return seconds
+
+
+def native_capture_environment(args, cache_dir=None):
+    env = dict(os.environ, LADYBIRD_SCREENSHOT_DELAY_SECONDS=str(capture_settle_seconds(args)))
+    if getattr(args, 'native_instruction_markers', True):
+        env['VOX_PROFILE_INSTRUCTIONS'] = '1'
+    else:
+        # Empty values still enable native getenv() checks. Remove the key.
+        env.pop('VOX_PROFILE_INSTRUCTIONS', None)
+    if cache_dir is not None:
+        env['LADYBIRD_CACHE_DIR'] = str(cache_dir)
+    env.pop('LADYBIRD_DEBUG_TIMING', None)
+    env.pop('GC_PRINT_STATS', None)
+    return env
+
+
 def validate_linux_renderer_log(path):
     errors = []
     count = 0
@@ -443,11 +465,7 @@ def run_vox(args, prefix, api, cache_dir=None):
     window_screenshot = Path(str(prefix) + ".window.png")
     window_screenshot.unlink(missing_ok=True)
     log_path = Path(str(prefix) + ".log")
-    env = dict(os.environ, VOX_PROFILE_INSTRUCTIONS="1", LADYBIRD_SCREENSHOT_DELAY_SECONDS="0")
-    if cache_dir is not None:
-        env["LADYBIRD_CACHE_DIR"] = str(cache_dir)
-    env.pop("LADYBIRD_DEBUG_TIMING", None)
-    env.pop("GC_PRINT_STATS", None)
+    env = native_capture_environment(args, cache_dir)
     command = vox_launch_command(args, binary, window_screenshot)
     with log_path.open("w") as log:
         launched_at = time.monotonic()
@@ -479,12 +497,15 @@ def run_vox(args, prefix, api, cache_dir=None):
                   command=command,
                   process_launch_to_capture_observed_ms=(endpoint_at - launched_at) * 1000,
                   endpoint_note="includes native capture and process teardown; counters are read from the unreaped root zombie",
+                  native_instruction_markers=getattr(args, 'native_instruction_markers', True),
+                  settle_seconds=capture_settle_seconds(args),
                   native=parse_native_counters(log_path.read_text()), screenshot=str(screenshot),
                   native_window_screenshot=str(window_screenshot))
     return report
 
 
 def run_chrome(args, prefix, api, client_factory=None):
+    settle_seconds = capture_settle_seconds(args)
     binary = args.binary or Path("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome")
     screenshot = Path(str(prefix) + ".png")
     log_path = Path(str(prefix) + ".log")
@@ -527,12 +548,14 @@ def run_chrome(args, prefix, api, client_factory=None):
                             focused:document.hasFocus(),activeTag:document.activeElement?.tagName})'''
                         if urllib.parse.urlparse(args.url).hostname == "github.com":
                             expression = expression[:-2] + r''',fileLinks:[...document.querySelectorAll('a')].filter(a=>/\/vlang\/v\/(blob|tree)\//.test(a.href)).length})'''
+                    expression = getattr(args, 'chrome_readiness_expression', None) or expression
                     while True:
                         evaluated = client.call("Runtime.evaluate", {"expression": expression, "returnByValue": True})
                         value = evaluated.get("result", {}).get("value")
                         document = json.loads(value) if value else {}
                         github = urllib.parse.urlparse(args.url).hostname == "github.com" and "/vlang/v" in args.url
                         if (document.get("ready") == "complete" and document.get("textLength", 0) > 0
+                                and document.get('captureReady', True) is True
                                 and (not github or document.get("fileLinks", 0) > 0)
                                 and (getattr(args, "expect_sprites", None) is None
                                      or document.get("sprites") == args.expect_sprites)
@@ -546,6 +569,8 @@ def run_chrome(args, prefix, api, client_factory=None):
                         time.sleep(getattr(args, "sample_interval", .02) if direct else .02)
                     client.call("Runtime.evaluate", {"expression": "document.fonts.ready.then(()=>true)",
                                                      "awaitPromise": True, "returnByValue": True})
+                    if settle_seconds:
+                        time.sleep(settle_seconds)
                     data = client.call("Page.captureScreenshot", {"format": "png", "captureBeyondViewport": False})["data"]
                     endpoint_at = time.monotonic()
                     # Use only a complete polling pass BEFORE this response.
@@ -576,6 +601,7 @@ def run_chrome(args, prefix, api, client_factory=None):
                                   url=args.url, viewport=[args.width, args.height],
                                   command=command,
                                   chrome_launch_mode="direct" if direct else "blank",
+                                  settle_seconds=settle_seconds,
                                   author_javascript_enabled=not getattr(args, "chrome_disable_javascript", False),
                                   author_javascript_policy=("disabled by CDP before Page.navigate; observer Runtime.evaluate remains enabled"
                                       if getattr(args, "chrome_disable_javascript", False) else "browser default"),
@@ -604,7 +630,7 @@ def main():
                         help="auto selects the native hardware backend; Callgrind and Cachegrind Ir are separate explicit software metrics")
     parser.add_argument("--valgrind", default="valgrind", help="Valgrind executable for either explicit software backend")
     parser.add_argument("--settle-seconds", type=float, default=2.0,
-                        help="Linux only: native settle period after capture readiness")
+                        help="Seconds to settle after document readiness before native/CDP capture")
     parser.add_argument("--expect-title", help="Linux only: require this exact document title")
     parser.add_argument("--capture-audit-config", type=Path,
                         help="Linux only: additional native capture audit selectors")
