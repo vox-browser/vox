@@ -1,18 +1,20 @@
 # BBC homepage instruction comparison
 
 **The requested 10% advantage remains open. BBC does not qualify for
-`OPTIMIZED_SITES.md`.** The latest attempted seven-pair cohort has a Vox median
-of **39,333,822,066** retired instructions and a Brave lower-bound median of
-**15,621,067,131**. Its conservative ratio is **3.1776463343078**, above the
-required 0.9. Brave trial 6 differs from its unchanged pixel reference, so the
-cohort is also invalid for acceptance. Every content audit and native exit
-passes; all observations, including the highest Vox count of 49,379,394,572,
-remain included. The enabled median regresses 0.7760% against the matched
-control's 39,030,928,805; no improvement is credited.
+`OPTIMIZED_SITES.md`.** The latest attempted seven-pair cohort has a Vox
+median of **37,396,821,455** retired instructions and a Brave lower-bound
+median of **15,731,322,435**. The conservative ratio is **2.514265550853879**,
+above the required 0.9: `392834797060 > 140618128914` fails the integer gate.
+Brave trial 3 differs from its unchanged pixel reference, so this cohort is
+also invalid for acceptance. All 21 content audits and native exits pass;
+20/21 captures match their pixel references. Every observation is retained.
 
-The latest valid cohort remains the preceding text-cache cohort: Vox median
-40,577,716,115 versus Brave lower-bound median 15,788,336,728. It also fails
-the requested threshold.
+The latest valid cohort is the preceding helper-signing comparison: Vox median
+37,990,584,359 versus Brave lower-bound median 15,546,241,164. It also fails
+the threshold and regresses against its matched control. The latest inactive
+conditional-rule cohort improves the median by 0.8015% against its control
+37,698,968,829, but its conservative control ratio is 1.1054906544208132.
+Neither comparison establishes accepted instruction savings.
 
 The machine-readable [evidence](benchmark-results/bbc-brave-instructions-2026-11-01.json)
 retains exact counts for every recorded attempt, including failures and first
@@ -81,6 +83,9 @@ capture marker. An invalid cohort is retained for diagnosis, not acceptance.
 | Original live pending-font intrinsic reuse | 40,329,352,824 | 15,970,908,247 | 2.8081095382756427 | All observations valid; Brave and matched-control gates fail |
 | Text chunks and shapes with original live pending fonts | 40,577,716,115 | 15,788,336,728 | 2.6331015373715503 | All observations valid; Brave and matched-control gates fail |
 | Original pending-font snapshots during style refresh | 39,333,822,066 | 15,621,067,131 | 3.1776463343078 | Gate fails; Brave pair 6 differs; median regresses against control |
+| Selective style-only conditional-rule insertion | 38,669,617,935 | 15,723,338,132 | 2.5598256625689984 | All observations valid; Brave and matched-control gates fail |
+| Filtering helper JIT entitlement | 37,990,584,359 | 15,546,241,164 | 3.0270279597468543 | All observations valid; median regresses against control; both gates fail |
+| Skip inactive conditional-rule insertion | 37,396,821,455 | 15,731,322,435 | 2.514265550853879 | Brave pair 3 differs; Brave and matched-control gates fail |
 
 The grid block-height cohort alternates an older control, candidate and Brave;
 control/candidate medians are 101,567,929,247 and 90,700,737,334 (10.70% observed
@@ -194,7 +199,7 @@ The selected backend has no observed LibJS fallback. These instrumented runs
 receive no hardware-counter performance credit.
 
 The newest measured executable is SHA256
-`ff3538d5a0654b97080b251d36576120f1a9c353de0855696e9ab25f004c8be6`.
+`8dbdebed953798880953a47e3aa3b77b4532361efadeba2e629733ecb24611a1`.
 The preceding font-display candidate is
 `5aae83a4408e023380d51e4430003b519ec427bcd96b3701b634930eeda62952`.
 The JIT-only candidate is
@@ -562,3 +567,164 @@ Completed cache payloads now share immutable bytes by SHA256 through their
 original paths: 22,639 files, 1,379,255,411 logical bytes and 82 unique payloads.
 The full metadata manifest and verification receipt remain under the evidence
 root; no measured result or browser application was changed by this storage work.
+
+
+### Positioned image replacement diagnostic
+
+Commit `693b1206` can repaint an absolutely positioned image when its specified
+width is definite, its natural aspect ratio is unchanged, and its min/max
+constraints cannot introduce an intrinsic-size dependency. Ratio changes,
+in-flow images, intrinsic constraints, missing dimensions and SVG documents
+retain ordinary layout. Attribute-selector changes still run style and layout.
+The retained paint data receives the new URL, bitmap and intrinsic dimensions;
+previously published commands keep their original image data.
+
+All 18 focused compile/runtime/control jobs pass across normal, no-GC and
+preallocation modes. The broader checks enter 415 cases in each of normal and
+no-GC modes: 414 pass, with only the existing 13.5-versus-13 text-control
+baseline failure. The production build completes in 357.4893 seconds, sampled
+peak RSS 8,797,224,960 bytes, with these engine sources stable. Its executable
+SHA256 is `047cf60c6eedaa84ea9b7be91faf81e3d5bbe866c6a9739a979e74fec936c1fe`;
+the preserved generated C is
+`f5afeb551c9081445ca0a2d19b410e8e8d81415593dbb282df1789d80def0a3f`.
+Headless startup, all 11 smoke comparisons and eight SVG mutation comparisons
+pass with exact pixels. The BBC control tooling passes 160 browser-instruction
+checks and is committed separately as `415c2718`.
+
+The original BBC fixture passes its complete content audit and fixed pixel
+reference in both enabled and disabled diagnostics, with 2,404/2,408
+JavaScriptCore evaluations and one context/group in each. Neither run observes
+the successful image-reuse trace. This optimization therefore earns **no BBC
+instruction credit**, and no acceptance cohort is justified by this inactive
+path. The instrumented observations are 51,945,881,058 and 50,732,497,985
+instructions; their difference is not a production saving. The raw attempts,
+checks, build witness and inactive-path assessment are retained under
+`positioned-image-ratio-*` in the evidence root. The target remains open and
+BBC remains absent from `OPTIMIZED_SITES.md`.
+
+
+### Full style passes and conditional rule insertion
+
+Separate O2 diagnostics built from the pinned positioned-image production C
+identify 12 actual layout passes and six full-document style passes. A guarded
+outer-layout probe performs 690 counter reads with balanced nesting; its
+reason totals overlap other work and receive no production instruction credit.
+The full-style trace attributes subsequent document-wide invalidations to
+`CSSStyleSheet.insert_rule`. Its 14 style passes include 15,466 element
+recomputations caused by full passes. The only missing-style query is the
+initial connected `html` root: the general selective missing-style bootstrap
+in `c9e8680a` does not execute on this BBC workload and earns no BBC credit.
+Its nine focused normal/no-GC/preallocation compile/runtime/control jobs pass;
+the two broad modes each enter 415 tests, with only the known text-control
+baseline failure.
+
+Commit `becf4f52` extends the existing selector-subject invalidation plan to
+inserted `@media` and `@supports` trees containing only style rules and those
+conditional groups. Global registrations and unknown rule kinds retain full
+invalidation. Changed existing media-query matches also retain the full path;
+inactive conditions are conservatively included in the selector union. This
+change passes nine focused jobs and both 415-case broad modes with the same
+single preexisting baseline failure. The completed production build takes
+221.3809 seconds, peak sampled RSS 8,977,956,864 bytes. Its executable SHA256 is
+`aa1a84e71452debb6d14861c02e9033d972f6bb00184a19a82d22e6b12c984d9`;
+the generated-C witness is
+`97261941be9118b14a917588e78c3fd8bbcc9f9b7c742ec2322102033da6cf9f`.
+Headless startup, 11 smoke comparisons and eight SVG mutation comparisons pass
+with exact pixels. The separately committed control tooling (`59f37d09`)
+passes 161 browser-instruction tests.
+
+Enabled and disabled BBC diagnostics both pass content, native exit and the
+original pixel reference, with 2,009/1,943 actual JavaScriptCore evaluations.
+The conditional invalidation trace occurs only in the enabled run. The
+subsequent uninstrumented seven alternating control/Vox/Brave triples produce
+the latest results above. All 21 observations are retained and valid. The
+memory guard adopts 71 processes without errors, observes peak RSS
+1,385,938,944 bytes, and completes in 126.0775 seconds with controller exit 1
+because the instruction gate fails. The separate sampled profile also matches
+the fixed reference and earns no instruction credit. Its artifact prefix is
+`conditional-sheet-*`; earlier full-style/layout reason probes and unsuccessful
+test attempts remain in the evidence root. BBC remains outside the site catalog.
+
+
+### Filtering helper signing
+
+The separate production `VoxAdblockWorker` lacked the main browser's JIT
+entitlement. Commit `9ae714ed` signs it with the existing entitlement plist.
+A private candidate re-signs the helper and containing app only; every
+file-backed Mach-O section in both executables and all other bundle files
+remain identical to the conditional-sheet production build. The source and
+candidate helper SHA256 values are
+`fe28615b27bd0dceb41c5d52c52aaa24c717d027b8038af5f98e0aedead135b5` and
+`4d37c67692ec3bbb2dff263dad68a92a35db4ffb8c5f25c6be3306177e35a679`.
+The re-signed main executable is
+`840e7d39c615af6259e8bec1cb30e28f61941274a8d524901a094738bb9c2454`.
+
+Separate helper-process samples positively observe JSC JIT/DFG compilation
+only with the entitlement. Both sampled BBC captures match the unchanged
+reference and pass content/native exits. Both helpers pass actual full-engine
+network/cosmetic checks and release their isolated worker normally. Headless
+startup, all 11 smoke comparisons and eight SVG mutation comparisons also
+pass with exact pixels. Signing and sampling evidence is under `worker-jit-*`.
+
+The uninstrumented seven-pair cohort retains every first-launch outlier and
+passes all 21 content, pixel and native-exit checks. Vox median 37,990,584,359
+**regresses 0.9765%** against control 37,623,209,920; the conservative control
+ratio is 1.2748969881501748. Brave lower median is 15,546,241,164. The integer
+gate `464835422110 > 138205489167` fails (worst ratio 3.0270279597468543).
+The guard adopts 66 processes without errors, peak RSS 1,361,756,160 bytes,
+and finishes in 115.1980 seconds with exit 1 for the failed instruction gate.
+This change earns no BBC performance credit.
+
+
+### Inactive inserted conditional rules
+
+The inserted-rule diagnostic preserves the fixed BBC pixels and records 695
+insertions: 378 style rules, 315 media rules and two keyframe rules. Its only
+new transition from clean style to a full cascade is a media rule below 599px,
+which cannot match the benchmark's 1024px viewport. This diagnostic has four
+full style passes and 12 partial passes; instrumentation and O2 compilation
+earn no instruction credit.
+
+Commit `0a195fac` omits currently inactive media/supports branches from a
+style-only insertion's invalidation union after evaluating media matches.
+Changed existing matches still fall back to full invalidation. The ordinary
+media-change path makes previously skipped rules effective after a resize.
+Twelve focused compile/runtime/control jobs pass across normal, no-GC and
+preallocated modes, including resize in both directions with nested media and
+supports groups. The first test attempt expected a universal rule to override
+a class rule; the corrected fixture gives the new target rule equal
+specificity. That failed attempt remains retained. Both broader modes enter
+415 cases; only the unchanged 13.5-versus-13 text-control baseline fails.
+
+The production build completes in 188.1680 seconds, peak sampled RSS
+8,904,687,616 bytes, with these engine sources stable. Its executable SHA256
+is `8dbdebed953798880953a47e3aa3b77b4532361efadeba2e629733ecb24611a1`;
+the preserved generated C is
+`81c731ae23d58b7106a942876f3d70d14fd9cd745ab6776bae1aefcf84f3e2a2`.
+Headless startup, 11 smoke comparisons and eight SVG mutation comparisons pass
+with exact pixels. Control tooling `21f768e2` passes 162 browser-instruction
+tests. Enabled and disabled BBC diagnostics pass content, original pixels and
+native exits, with 1,911/2,040 JavaScriptCore evaluations respectively. Only
+the enabled diagnostic logs the inactive-group skip. Evidence uses the prefix
+`inactive-sheet-*`.
+
+
+The uninstrumented seven alternating triples preserve all counts and outliers:
+control median 37,698,968,829, candidate 37,396,821,455 (0.8015% point
+reduction), Brave lower median 15,731,322,435. The conservative control ratio
+1.1054906544208132 fails. The Brave integer gate and pixel invalidity are
+reported above; the first Brave image mismatch remains retained. The guard
+adopts 70 processes without errors, peak RSS 1,351,057,408 bytes, and completes
+in 110.6187 seconds with controller exit 1 for failed acceptance.
+
+A further separate O2 diagnostic wraps six workflow scopes with 30,980 process
+counter reads, ending at depth zero with no counter errors. Its final inclusive
+CSS-update total is 7,074,836,504 instructions across 16 calls. Layout has six
+calls, inclusive 4,782,319,728 and 3,525,312,075 after subtracting instrumented
+nested scopes. JS function calls have 12,310 calls, inclusive 13,033,608,146
+and 9,422,956,992 after that subtraction. Stylesheet insertion and font
+synchronization have inclusive totals 586,764,304 and 108,166,379. These are
+**diagnostic process counts**, including background work and probe/logging
+overhead, with nested scope overlap. They are not production percentages or
+optimization credit. The original pixels, full content and native exit pass;
+`workflow-scope-*` retains the exact inputs, compiler receipts, logs and values.
