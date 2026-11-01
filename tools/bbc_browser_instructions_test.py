@@ -21,6 +21,24 @@ def document():
 
 
 class BBCInstructionTests(unittest.TestCase):
+    def test_stationary_copy_control_is_isolated_and_restored_on_failure(self):
+        environment = {'VOX_PROXY': 'socks5h://fixture'}
+        args = SimpleNamespace(vox_environment=environment, control_disable_grid_width_only=False,
+                               control_copy_stationary_raster_commands=True)
+        seen = []
+        def observe(engine, app, folder, options):
+            seen.append((engine, dict(options.vox_environment)))
+            return {'exit': 0}
+        with patch('bbc_browser_instructions.browser.run_browser', side_effect=observe):
+            for engine in ['control', 'vox', 'brave']:
+                run_trial(engine, 'same-app', engine, args)
+        self.assertEqual(seen, [('vox', dict(environment, VOX_COPY_STATIONARY_RASTER_COMMANDS='1')),
+                                ('vox', environment), ('brave', environment)])
+        with patch('bbc_browser_instructions.browser.run_browser', side_effect=RuntimeError('failed')):
+            with self.assertRaises(RuntimeError):
+                run_trial('control', 'same-app', 'control', args)
+        self.assertIs(args.vox_environment, environment)
+
     def test_color_control_keeps_other_extensions_enabled_and_restores_on_failure(self):
         environment = {'VOX_PROXY': 'socks5h://fixture'}
         args = SimpleNamespace(vox_environment=environment, control_disable_grid_width_only=False,
@@ -142,7 +160,8 @@ class BBCInstructionTests(unittest.TestCase):
                      '--control-disable-client-geometry-index',
                      '--control-disable-tracked-persistent-shortcut',
                      '--control-disable-attribute-case-buckets', '--control-disable-persistent-scope-jumps',
-                     '--control-disable-extended-longhand-reuse', '--control-disable-color-longhand-reuse']:
+                     '--control-disable-extended-longhand-reuse', '--control-disable-color-longhand-reuse',
+                     '--control-copy-stationary-raster-commands']:
             with self.subTest(flag=flag):
                 with self.assertRaises(SystemExit):
                     parse_args(args + [flag])
