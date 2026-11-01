@@ -4,6 +4,22 @@ import layout
 import math
 import css
 
+fn test_backdrop_output_culling_uses_its_native_clip_and_retains_the_fringe() {
+	viewport := layout.LayoutRect{0,0,1024,768}
+	backdrop := layout.PaintCommand{kind: 'apply_backdrop_filter', y: 4000, width: 100, height: 20}
+	assert chromium_compositor_leaf_is_culled(&backdrop, viewport)
+	for y in [f64(700),768,771] {
+		near := layout.PaintCommand{...backdrop, y: y}
+		assert !chromium_compositor_leaf_is_culled(&near, viewport)
+	}
+	for changed in [layout.PaintCommand{...backdrop, transform: [f64(1),0,0,1,0,-4000]!},
+		layout.PaintCommand{...backdrop, transform: [f64(1),0,0,1,0,1e8]!},
+		layout.PaintCommand{...backdrop, y: math.nan()},
+		layout.PaintCommand{...backdrop, kind: 'begin_css_filter_layer'}] {
+		assert !chromium_compositor_leaf_is_culled(&changed, viewport)
+	}
+}
+
 fn test_compositor_shadow_rejection_includes_the_native_blur_margin_and_fringe() {
 	viewport := layout.LayoutRect{0, 0, 1024, 768}
 	shadow := layout.PaintCommand{ kind: 'paint_outer_box_shadow', x: 688, y: 3749, width: 304, height: 171, blur: 20 }

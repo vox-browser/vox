@@ -5,6 +5,97 @@ import css
 import html
 import os
 import platform
+import painting
+
+fn test_disjoint_parent_spans_can_surround_a_complete_bounded_svg_mask() {
+	base := compositor_gap_test_commands()
+	mask := &layout.PaintVisualLayer{kind: .svg_mask, scope_id: 47}
+	commands := [base[0], base[1],
+		layout.PaintCommand{kind: 'begin_svg_mask_layer', visual_layer_data: mask},
+		base[2],
+		layout.PaintCommand{kind: 'end_svg_mask_layer', visual_layer_data: mask},
+		base[3], base[4]]
+	plan := layout.ChromiumRasterLayerPlan{
+		has_paint_metadata: true
+		layers: [layout.ChromiumRasterLayer{},
+			layout.ChromiumRasterLayer{composited_contents: true, command_indices: [1,5]},
+			layout.ChromiumRasterLayer{legacy_raster: true, command_indices: [2,3,4]}]
+		command_layers: [0,1,2,2,2,1,0]
+	}
+	viewport := layout.LayoutRect{0,0,200,120}
+	assert chromium_compositor_gap_can_flush_parent(commands, plan, 1, 2, 5, viewport)
+	assert chromium_svg_compositor_layer_supported_for_viewport(commands, plan, 1, viewport)
+	mut offscreen_backdrop := commands.clone()
+	offscreen_backdrop[3] = layout.PaintCommand{kind: 'apply_backdrop_filter',
+		x: 0, y: 4000, width: 100, height: 20}
+	assert chromium_compositor_gap_can_flush_parent(offscreen_backdrop, plan, 1, 2, 5, viewport)
+	for replacement in [layout.PaintCommand{...base[2], y: 79},
+		layout.PaintCommand{kind: 'apply_backdrop_filter', y: 35, width: 100, height: 10},
+		layout.PaintCommand{kind: 'draw_text', text: 'unbounded mask content'},
+		layout.PaintCommand{...base[2], fixed_to_viewport: true}] {
+		mut changed := commands.clone()
+		changed[3] = replacement
+		assert !chromium_compositor_gap_can_flush_parent(changed, plan, 1, 2, 5, viewport)
+	}
+	mut foreign := layout.ChromiumRasterLayerPlan{...plan,
+		layers: plan.layers.clone(), command_layers: plan.command_layers.clone()}
+	foreign.command_layers[3] = 0
+	assert !chromium_compositor_gap_can_flush_parent(commands, foreign, 1, 2, 5, viewport)
+	mut unbalanced := commands.clone()
+	unbalanced[4] = layout.PaintCommand{kind: 'end_svg_mask_layer',
+		visual_layer_data: &layout.PaintVisualLayer{kind: .svg_mask, scope_id: 48}}
+	assert !chromium_compositor_gap_can_flush_parent(unbalanced, plan, 1, 2, 5, viewport)
+	assert !chromium_compositor_gap_can_flush_parent(commands, plan, 1, 2, 4, viewport)
+	for invalid in [layout.PaintVisualLayer{...*mask, opacity: .5},
+		layout.PaintVisualLayer{...*mask, blend_mode: .screen},
+		layout.PaintVisualLayer{...*mask, kind: .css_effect},
+		layout.PaintVisualLayer{...*mask, scope_id: 0}] {
+		mut changed := commands.clone()
+		changed[2] = layout.PaintCommand{...commands[2], visual_layer_data: &invalid}
+		changed[4] = layout.PaintCommand{...commands[4], visual_layer_data: &invalid}
+		assert !chromium_compositor_gap_can_flush_parent(changed, plan, 1, 2, 5, viewport)
+	}
+}
+
+fn test_compositor_parent_can_resume_after_disjoint_bounded_root_leaves() {
+	base := compositor_gap_test_commands()
+	mut plan := compositor_gap_test_plan()
+	plan.command_layers[2] = 0
+	// Root layer bounds describe the whole document, not this intervening leaf.
+	plan.layers[0].bounds = layout.LayoutRect{0, 0, 200, 20000}
+	viewport := layout.LayoutRect{0, 0, 200, 120}
+	for root in [base[2], layout.PaintCommand{
+		kind: 'draw_video'
+		// The retained clip, rather than these stale compatibility bounds,
+		// constrains every video/poster representation and object-fit mode.
+		x: 0
+		y: 0
+		width: 200
+		height: 20000
+		video_paintable: &painting.VideoPaintable{
+			video_rect: painting.Rect{0, 35, 100, 10}
+			object_fit: .cover
+		}
+	}] {
+		mut commands := base.clone()
+		commands[2] = root
+		assert chromium_compositor_gap_can_flush_parent(commands, plan, 1, 2, 3, viewport)
+		assert chromium_svg_compositor_layer_supported_for_viewport(commands, plan, 1, viewport)
+	}
+	for root in [layout.PaintCommand{kind: 'draw_video'},
+		layout.PaintCommand{kind: 'draw_text', text: 'unbounded'},
+		layout.PaintCommand{kind: 'begin_css_effect_layer'},
+		layout.PaintCommand{...base[2], y: 79},
+		layout.PaintCommand{...base[2], fixed_to_viewport: true},
+		layout.PaintCommand{kind: 'draw_video', video_paintable: &painting.VideoPaintable{
+			video_rect: painting.Rect{0, 73, 100, 10}
+		}},
+		layout.PaintCommand{...base[2], transform: [f64(1), 0, 0, 1, 1e7, 0]}] {
+		mut commands := base.clone()
+		commands[2] = root
+		assert !chromium_compositor_gap_can_flush_parent(commands, plan, 1, 2, 3, viewport)
+	}
+}
 
 fn compositor_gap_test_commands() []layout.PaintCommand {
 	gradient := layout.PaintCommand{

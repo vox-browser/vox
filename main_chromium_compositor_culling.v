@@ -38,6 +38,13 @@ fn chromium_compositor_leaf_is_culled(command &layout.PaintCommand,
 		return false
 	}
 	if command.has_clip && (command.clip_width <= 0 || command.clip_height <= 0) { return true }
+	if command.kind == 'apply_backdrop_filter' {
+		// The native backdrop pass clips its output to this transformed
+		// rectangle, even when the filter samples beyond it. Match replay's
+		// rejection before letting an offscreen pass interrupt a picture.
+		output := layout.PaintCommand{...*command, kind: 'fill_rect'}
+		return layout.paint_leaf_is_outside_canvas(&output, 0, 0, viewport.width, viewport.height)
+	}
 	if layout.paint_leaf_is_outside_canvas(command, 0, 0, viewport.width, viewport.height) {
 		return true
 	}

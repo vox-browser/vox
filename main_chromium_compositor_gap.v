@@ -20,6 +20,23 @@ fn chromium_compositor_ink_overlaps(a layout.LayoutRect, b layout.LayoutRect) bo
 // rings. Bound their actual supported geometry here, without widening culling
 // eligibility elsewhere in the player.
 fn chromium_compositor_gap_ink(command &layout.PaintCommand) ?layout.LayoutRect {
+	if command.kind == 'draw_video' {
+		// Frames and posters are clipped to the retained video's viewport,
+		// independently of their fitted destination or current frame. Keep a
+		// pixel for the device-rectangle rounding performed by VideoPaintable.
+		video := command.video_paintable or { return none }
+		if command.outer_shadow || command.blur != 0 { return none }
+		rect := video.video_rect
+		normalized := layout.PaintCommand{
+			...*command
+			kind: 'fill_rect'
+			x: rect.x - 1
+			y: rect.y - 1
+			width: rect.width + 2
+			height: rect.height + 2
+		}
+		return layout.paint_leaf_native_ink_bounds(&normalized)
+	}
 	if command.kind == 'paint_inner_box_shadow' {
 		data := command.box_shadow_data
 		if data == unsafe { nil } || math.is_nan(command.blur) || math.is_inf(command.blur, 0) {
@@ -49,8 +66,8 @@ fn chromium_compositor_gap_ink(command &layout.PaintCommand) ?layout.LayoutRect 
 	return layout.paint_svg_path_native_ink_bounds(command)
 }
 
-// Native replay flushes an isolated parent before an independently scrolling
-// child and creates a fresh surface when the parent resumes. This is equivalent
+// Native replay flushes an isolated parent before intervening contents and
+// creates a fresh surface when the parent resumes. This is equivalent
 // to one parent picture only when its two spans cannot blend with each other,
 // and the resumed span cannot cover the child that Chromium paints above it.
 fn chromium_compositor_gap_can_flush_parent(commands []layout.PaintCommand,
@@ -122,24 +139,53 @@ fn chromium_compositor_gap_can_flush_parent(commands []layout.PaintCommand,
 		}
 	}
 
+	mut masks := []u64{}
+	mut mask_owners := []int{}
 	for index in start .. end {
 		owner := plan.command_layers[index]
 		if owner < 0 { continue }
 		if owner == parent || owner >= plan.layers.len { return false }
 		child := plan.layers[owner]
 		command := unsafe { &commands[index] }
+		if command.fixed_to_viewport { return false }
+		if command.kind in ['begin_svg_mask_layer', 'end_svg_mask_layer'] {
+			// A complete SVG mask only removes its children's pixels. Their
+			// bounded ink can prove separation without treating a resource or
+			// filter scope as an independently drawable leaf.
+			mask := command.visual_layer_data or { return false }
+			if !child.legacy_raster || mask.kind != .svg_mask || mask.scope_id == 0
+				|| mask.opacity != 1 || mask.blend_mode != .normal || mask.filter != none {
+				return false
+			}
+			if command.kind == 'begin_svg_mask_layer' {
+				if mask_owners.len > 0 && mask_owners.last() != owner { return false }
+				masks << u64(mask.scope_id)
+				mask_owners << owner
+			} else {
+				if masks.len == 0 || masks.last() != u64(mask.scope_id)
+					|| mask_owners.last() != owner { return false }
+				masks.delete_last()
+				mask_owners.delete_last()
+			}
+			continue
+		}
+		masked := mask_owners.len > 0 && mask_owners.last() == owner
+		if mask_owners.len > 0 && !masked { return false }
+		if chromium_compositor_leaf_is_culled(command, viewport) { continue }
 		scrollbar := command.scrollbar_axis != '' && command.kind in [
 			'fill_rounded_rect',
 			'stroke_rounded_rect',
 		]
-		if (!child.scroll_contents && !scrollbar) || child.legacy_raster || command.fixed_to_viewport
+		if (owner != 0 && !child.scroll_contents && !scrollbar && !masked)
+			|| (child.legacy_raster && !masked)
 			|| command.visual_layer_data != none || command.kind.starts_with('begin_')
 			|| command.kind.starts_with('end_') {
 			return chromium_svg_compositor_layer_declined(parent, index, 'gap child properties', command.kind)
 		}
-		// A scrollbar's layer can aggregate distant scrollports. Its individual
-		// rounded leaf owns the ink at this gap, rather than that union.
-		bounds := if scrollbar {
+		// Root leaves and scrollbars can belong to a layer spanning the whole
+		// page. Check their actual bounded ink instead of that union. A mask's
+		// output likewise cannot extend beyond its bounded children.
+		bounds := if owner == 0 || scrollbar || masked {
 			chromium_compositor_gap_ink(command) or { return false }
 		} else {
 			layout.LayoutRect{child.bounds.x - viewport.x, child.bounds.y - viewport.y, child.bounds.width, child.bounds.height}
@@ -152,5 +198,5 @@ fn chromium_compositor_gap_can_flush_parent(commands []layout.PaintCommand,
 			return chromium_svg_compositor_layer_declined(parent, index, 'gap child overlaps resumed parent', command.kind)
 		}
 	}
-	return true
+	return masks.len == 0
 }
