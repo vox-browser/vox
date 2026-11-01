@@ -137,6 +137,21 @@ fn chromium_metadata_state(box &BlockBox, result &DocumentLayoutResult,
 	return context, state
 }
 
+fn chromium_hit_test_border_rect(box &BlockBox) LayoutRect {
+	rect := box.border_box()
+	own := normalized_affine(box.own_paint_transform)
+	transform := normalized_affine(box.paint_transform)
+	// A non-translation transform resolves its paint offset in a separate
+	// property space. Keep those bounds until that offset has been applied.
+	if !box.snaps_background_rect || own[0] != 1 || own[1] != 0
+		|| own[2] != 0 || own[3] != 1
+		|| transform[0] != 1 || transform[1] != 0
+		|| transform[2] != 0 || transform[3] != 1 {
+		return rect
+	}
+	return pixel_snapped_layout_rect(rect)
+}
+
 fn chromium_collect_paint_metadata(result &DocumentLayoutResult, commands []PaintCommand,
 	cull LayoutRect, mut scratch ChromiumRasterPlanScratch) bool {
 	scratch.paint_metadata.clear()
@@ -165,7 +180,10 @@ fn chromium_collect_paint_metadata(result &DocumentLayoutResult, commands []Pain
 		if step.phase != .border { continue }
 		box := result.paint_order[step.entry_index].box
 		if !box.visible { continue }
-		bounds := compatibility_affine_map_rect(box.paint_transform, box.border_box())
+		// BoxFragmentPainter records hit-test data from ToPixelSnappedRect,
+		// before mapping it through the paint property's transform.
+		rect := chromium_hit_test_border_rect(box)
+		bounds := compatibility_affine_map_rect(box.paint_transform, rect)
 		context, state := chromium_metadata_state(box, result, &scratch)
 		if context < 0 || state.requires_root_raster { continue }
 		if !state.fixed_to_viewport && state.sticky_frame == 0
