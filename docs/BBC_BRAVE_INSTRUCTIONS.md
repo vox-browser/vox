@@ -1,13 +1,18 @@
 # BBC homepage instruction comparison
 
 **The requested 10% advantage remains open. BBC does not qualify for
-`OPTIMIZED_SITES.md`.** The latest valid seven-pair cohort has a Vox median
-of **40,577,716,115** retired instructions and a Brave lower-bound median of
-**15,788,336,728**. Its conservative ratio is **2.6331015373715503**, above the
-required 0.9. All 21 observations pass content, original pixels and native exits.
-The enabled median improves 3.1308% against its disabled control, but the
-conservative control ratio is 1.0304606563820868; no accepted improvement is
-credited. Every observation remains included.
+`OPTIMIZED_SITES.md`.** The latest attempted seven-pair cohort has a Vox median
+of **39,333,822,066** retired instructions and a Brave lower-bound median of
+**15,621,067,131**. Its conservative ratio is **3.1776463343078**, above the
+required 0.9. Brave trial 6 differs from its unchanged pixel reference, so the
+cohort is also invalid for acceptance. Every content audit and native exit
+passes; all observations, including the highest Vox count of 49,379,394,572,
+remain included. The enabled median regresses 0.7760% against the matched
+control's 39,030,928,805; no improvement is credited.
+
+The latest valid cohort remains the preceding text-cache cohort: Vox median
+40,577,716,115 versus Brave lower-bound median 15,788,336,728. It also fails
+the requested threshold.
 
 The machine-readable [evidence](benchmark-results/bbc-brave-instructions-2026-11-01.json)
 retains exact counts for every recorded attempt, including failures and first
@@ -75,6 +80,7 @@ capture marker. An invalid cohort is retained for diagnosis, not acceptance.
 | Intrinsic sizes across unrelated font completions | 43,359,803,356 | 15,823,854,730 | 3.368777312785835 | Gate fails; control pair 5 and Brave pairs 4/7 differ; median regresses against control |
 | Original live pending-font intrinsic reuse | 40,329,352,824 | 15,970,908,247 | 2.8081095382756427 | All observations valid; Brave and matched-control gates fail |
 | Text chunks and shapes with original live pending fonts | 40,577,716,115 | 15,788,336,728 | 2.6331015373715503 | All observations valid; Brave and matched-control gates fail |
+| Original pending-font snapshots during style refresh | 39,333,822,066 | 15,621,067,131 | 3.1776463343078 | Gate fails; Brave pair 6 differs; median regresses against control |
 
 The grid block-height cohort alternates an older control, candidate and Brave;
 control/candidate medians are 101,567,929,247 and 90,700,737,334 (10.70% observed
@@ -507,3 +513,52 @@ Historical Brave copies with identical complete file-content manifests now
 share one immutable historical application tree through their original paths;
 the current candidate and measurement copies were excluded. The manifest and
 replacement receipt preserve each original path and file hash.
+
+## Original pending-font snapshots during refresh
+
+Commit `c0a2176e` lets a font-only style refresh preserve geometry when its
+original pending cascade remains live and root/line metrics stay unchanged.
+The style retains the original refresh snapshot even when a synchronous query
+has already materialized a new cascade. Selected completion, failure and
+block-to-swap changes still invalidate geometry. The initial broad attempt
+caught a selected descriptor-change regression; its logs remain retained.
+The corrected implementation passes all 18 focused compile/runtime/control
+jobs in normal, no-GC and preallocation modes. Both broad modes enter 408
+cases and pass 407, with only the unchanged 13.5-versus-13 control baseline.
+
+The production build completes in 206.0163 seconds, sampled peak RSS
+8,790,589,440 bytes, with the feature's source inputs stable. Its executable
+SHA256 is `e5d16ddcacfe7ae6e57964b97c8bc31a1a2d64759edeb38ff0f26267709edd6b`;
+the preserved generated C is
+`022ee0d1ecb2ae0ba4ce2e999e1bc14a508bc6b84d0a2f7d430987694db02664`.
+Startup, all 11 smoke and eight SVG mutation comparisons pass against this
+private bundle. An earlier validation launcher lacked executable permission;
+that attempt and the corrected launcher's receipts are retained.
+Separate BBC diagnostics pass the complete audit and original pixels, observe
+the new branch once enabled and zero times disabled, and prove 1,949/1,947
+JavaScriptCore evaluations with one context/group in each run.
+
+`live-pending-refresh-cohort` alternates seven control/Vox/Brave triples using
+the same executable, differing only in `VOX_DISABLE_LIVE_PENDING_FONT_REFRESH`.
+The conservative control ratio is 1.2910009286517528. The Brave integer gate is
+`493793945720 > 139856517810`, so it fails independently of Brave trial 6's
+pixel mismatch. The guard adopts 66 processes without an adoption error,
+completes in 121.3829 seconds at 1,367,490,560 bytes sampled peak RSS, and exits
+1 for the failed gate. Every native browser exits 0. The cohort earns no
+instruction credit.
+
+The corrected outer-scope diagnostic ignores the partial interval that reuses
+the selector-collection start. It reports zero nesting imbalance, 122,784 CSS
+counter reads and 1,322 DOM counter reads, with original pixels unchanged.
+Its layout/style intervals overlap and include diagnostic overhead; they are
+leads, not production instruction shares. A preceding launch rejected ambient
+`NO_PROXY` before measurement; that failure remains retained.
+A separate script-disabled diagnostic observes 21,568,974,999 instructions but
+changes 443,486 reference pixels. Its author-script policy differs and runtime
+initialization was not independently probed, so it supplies no optimization
+credit. This suggests investigating the additional layout/resource work
+triggered by scripting while preserving author behavior in acceptance runs.
+Completed cache payloads now share immutable bytes by SHA256 through their
+original paths: 22,639 files, 1,379,255,411 logical bytes and 82 unique payloads.
+The full metadata manifest and verification receipt remain under the evidence
+root; no measured result or browser application was changed by this storage work.
