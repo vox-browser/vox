@@ -1,5 +1,12 @@
 module platform
 
+// Current V folds small literal repeat() calls into static strings. Ownership
+// checks need an allocation made while the selected arena is actually entered.
+@[noinline]
+fn retained_redirect_runtime_string(value string, count int) string {
+	return value.repeat(count)
+}
+
 fn retained_bytes_match(text string, byte u8) bool {
 	return text.len > 0 && text[0] == byte && text[text.len - 1] == byte
 }
@@ -9,7 +16,7 @@ fn test_retained_redirects_survive_nested_scratch_and_document_block_growth() {
 	mut nested := new_arena('retained redirect nested')
 	mut owner := new_retained_arena('retained redirect document')
 	mut document := owner.enter()
-	first := 'a'.repeat(1024)
+	first := retained_redirect_runtime_string('a', 1024)
 	entry := scratch.enter()
 	_ = 'x'.repeat(1024 * 1024)
 	mut retained := enter_retained_allocations()
@@ -76,7 +83,7 @@ fn test_retained_redirect_from_persistent_preserves_both_latest_allocation_tails
 fn test_retained_redirect_does_not_replace_a_thread_scratch_parent_tail() {
 	mut owner := new_retained_arena('thread redirect document')
 	mut document := owner.enter()
-	before := 'k'.repeat(1024)
+	before := retained_redirect_runtime_string('k', 1024)
 	mut scratch := begin_thread_scratch('untracked scope around retained allocation')
 	_ = 'l'.repeat(1024 * 1024)
 	persistent := enter_persistent()

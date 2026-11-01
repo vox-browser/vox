@@ -1,10 +1,15 @@
 module platform
 
+@[noinline]
+fn nested_owner_runtime_string(value string, count int) string {
+	return value.repeat(count)
+}
+
 fn test_embedded_owner_restores_host_workspace_and_retained_allocation_target() {
 	mut host := new_retained_arena('nested host')
 	mut child := new_retained_arena('nested child')
 	mut scope := host.enter()
-	parent_before := 'a'.repeat(1024)
+	parent_before := nested_owner_runtime_string('a', 1024)
 	mut work := new_arena('host frame around child')
 	entry := work.enter()
 	mut nested := child.enter_nested()
