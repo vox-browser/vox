@@ -12,6 +12,8 @@ from hacker_news_browser_instructions import (
     check_content, code_sign_clone_identity, document_comments, evaluate_pairs,
     exact_coalition_membership, fixture_server, membership, launch_instruction_interval,
     parse_args, progress_record, finish_capture_readiness,
+    prepare_browser_profile,
+    configure_brave_viewport,
 )
 
 
@@ -22,6 +24,41 @@ def observation(lower, upper=None, **changes):
 
 
 class HackerNewsInstructionGateTests(unittest.TestCase):
+    def test_explicit_emulated_capture_scale_does_not_change_native_viewport_default(self):
+        from types import SimpleNamespace
+        browser, client = Mock(), Mock()
+        args = SimpleNamespace(scale=1, brave_emulated_viewport=True)
+        result = configure_brave_viewport(browser, client, 'target', args)
+        self.assertTrue(result['emulated'])
+        client.call.assert_called_once_with('Emulation.setDeviceMetricsOverride',
+            dict(width=1024, height=768, deviceScaleFactor=1, mobile=False))
+        with patch('hacker_news_browser_instructions.resize_native_viewport', return_value={'scale': 2}) as resize:
+            self.assertEqual(configure_brave_viewport(browser, client, 'target', SimpleNamespace(scale=2)), {'scale': 2})
+            resize.assert_called_once_with(browser, client, 'target', 1024, 768, 2)
+
+    def test_private_templates_preserve_inputs_and_omit_stale_browser_locks(self):
+        from types import SimpleNamespace
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source, profile, cache, encoded = [root / name for name in
+                                               ('source', 'profile', 'cache', 'encoded')]
+            for folder in (source, profile, cache, encoded):
+                folder.mkdir()
+            (source / 'Preferences').write_text('prepared filters')
+            (source / 'DevToolsActivePort').write_text('stale endpoint')
+            (source / 'SingletonLock').symlink_to('missing lock')
+            (source / 'RunningChromeVersion').symlink_to('156.1.98.60')
+            (encoded / 'response').write_bytes(b'original encoded response')
+            args = SimpleNamespace(brave_profile_template=source, brave_cache_template=encoded)
+            prepare_browser_profile('brave', profile, cache, args)
+            self.assertEqual((cache / 'response').read_bytes(), (encoded / 'response').read_bytes())
+            self.assertFalse((profile / 'DevToolsActivePort').exists())
+            self.assertFalse((profile / 'SingletonLock').is_symlink())
+            self.assertTrue((profile / 'RunningChromeVersion').is_symlink())
+            (profile / 'Preferences').write_text('private change')
+            self.assertEqual((source / 'Preferences').read_text(), 'prepared filters')
+            prepare_browser_profile('vox', profile, cache, SimpleNamespace())
+
     def test_asynchronous_readiness_is_optional_and_rejects_decode_failures(self):
         from types import SimpleNamespace
         client = Mock()

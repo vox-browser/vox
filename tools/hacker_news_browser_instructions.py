@@ -272,6 +272,24 @@ def finish_capture_readiness(client, args):
             'Brave asynchronous capture readiness failed: ' + repr(result))
 
 
+def prepare_browser_profile(engine, profile, cache, args):
+    """Copy closed, pinned templates; never launch against the source profile."""
+    for destination, source in ((profile, getattr(args, engine + '_profile_template', None)),
+                                (cache, getattr(args, engine + '_cache_template', None))):
+        if source is not None:
+            shutil.copytree(source, destination, dirs_exist_ok=True, copy_function=clone_file,
+                            symlinks=True,
+                            ignore=shutil.ignore_patterns('Singleton*', 'DevToolsActivePort'))
+
+
+def configure_brave_viewport(browser, client, target, args):
+    if getattr(args, 'brave_emulated_viewport', False):
+        client.call('Emulation.setDeviceMetricsOverride', dict(width=WIDTH, height=HEIGHT,
+                    deviceScaleFactor=args.scale, mobile=False))
+        return dict(width=WIDTH, height=HEIGHT, scale=args.scale, emulated=True)
+    return resize_native_viewport(browser, client, target, WIDTH, HEIGHT, args.scale)
+
+
 def launch(app, arguments, folder, environment):
     """LaunchServices gives this fresh app its own resource coalition."""
     require(not any(row['command'].startswith(str(app) + '/Contents/') for row in processes()),
@@ -425,6 +443,7 @@ def run_browser(engine, app, folder, args):
         profile, cache = folder / 'profile', folder / 'cache'
         profile.mkdir()
         cache.mkdir()
+        prepare_browser_profile(engine, profile, cache, args)
         api = MacCoalitionCounters()
         if engine == 'vox':
             environment = dict(VOX_PROFILE_INSTRUCTIONS='1', VOX_TEST_WINDOW='1',
@@ -452,6 +471,9 @@ def run_browser(engine, app, folder, args):
                 '--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1',
                 '--remote-debugging-port=0', '--user-data-dir=' + str(profile)]
             arguments += getattr(args, 'brave_arguments', [])
+            if getattr(args, 'brave_initial_page', False):
+                arguments.remove('--no-startup-window')
+                arguments.append('about:blank')
             result['command'] = launch(app, arguments, folder, {})
             endpoint = wait_until(lambda: chrome_debugger_endpoint(profile / 'DevToolsActivePort'),
                                   deadline, 'Brave debugger')
@@ -459,6 +481,9 @@ def run_browser(engine, app, folder, args):
             port, browser_path = endpoint
             browser = CDP(f'ws://127.0.0.1:{port}{browser_path}')
             result['version'] = browser.call('Browser.getVersion')
+            setup = getattr(args, 'brave_setup', None)
+            if setup:
+                result['brave_setup'] = setup(browser, port, deadline)
         result['root'] = root
         root_start = MacCounters().read(root['pid']).start
         result['root_start_ticks'] = root_start
@@ -486,13 +511,17 @@ def run_browser(engine, app, folder, args):
         else:
             display = test_display()
             result['test_display'] = display
-            target = browser.call('Target.createTarget', dict(url='about:blank', newWindow=True,
-                background=True, left=display['position'][0], top=display['position'][1],
-                width=WIDTH + 80, height=HEIGHT + 140))['targetId']
+            if getattr(args, 'brave_initial_page', False):
+                target = wait_until(lambda: next((row['targetId'] for row in
+                    browser.call('Target.getTargets')['targetInfos'] if row['type'] == 'page'), None),
+                    deadline, 'Brave initial page')
+            else:
+                target = browser.call('Target.createTarget', dict(url='about:blank', newWindow=True,
+                    background=True, left=display['position'][0], top=display['position'][1],
+                    width=WIDTH + 80, height=HEIGHT + 140))['targetId']
             client = CDP(f'ws://127.0.0.1:{port}/devtools/page/{target}')
             client.call('Page.enable')
-            result['native_viewport'] = resize_native_viewport(browser, client, target,
-                                                              WIDTH, HEIGHT, args.scale)
+            result['native_viewport'] = configure_brave_viewport(browser, client, target, args)
             client.call('Emulation.setFocusEmulationEnabled', dict(enabled=True))
             counter = CoalitionCounter(api, cid)
             sampler = CounterSampler(counter, .002)
