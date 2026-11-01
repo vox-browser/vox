@@ -317,7 +317,9 @@ else
 fi
 
 if command -v codesign >/dev/null 2>&1; then
-    codesign --force --sign - "$bundle_dir" >/dev/null
+    # Current macOS JavaScriptCore requires this entitlement for its JIT,
+    # including when the embedding app is ad-hoc signed.
+    codesign --force --sign - --entitlements "$repo_dir/packaging/Vox.entitlements.plist" "$bundle_dir" >/dev/null
 fi
 rm -rf "$compile_dir"
 
