@@ -51,6 +51,32 @@ fn chromium_svg_opacity_group_end(commands []layout.PaintCommand, start int) int
 // backgrounds; reading the parent directly loses premultiplied edge rounding.
 // Complex CSS scopes and layers interrupted by other drawing retain their
 // existing replay path; culled gaps contain no drawing to reorder.
+fn chromium_svg_identity_scope_end(commands []layout.PaintCommand, layers []int, start int) int {
+	if start < 0 || start >= commands.len || layers.len != commands.len { return start }
+	opening := &commands[start]
+	data := opening.visual_layer_data or { return start }
+	if opening.kind != 'begin_css_effect_layer' || data.kind != .css_effect
+		|| data.opacity != 1 || data.blend_mode != .normal || data.filter != none
+		|| data.scope_id == 0 || opening.has_clip || opening.clip_list != unsafe { nil }
+		|| opening.clip_outs.len != 0 || opening.recording_clip != none { return start }
+	mut scopes := []u64{}
+	for index in start .. commands.len {
+		command := &commands[index]
+		if command.kind !in ['begin_css_effect_layer','end_css_effect_layer'] { continue }
+		boundary := command.visual_layer_data or { return start }
+		if boundary.kind != .css_effect || boundary.scope_id == 0 { return start }
+		if command.kind == 'begin_css_effect_layer' { scopes << u64(boundary.scope_id); continue }
+		if scopes.len == 0 || scopes.last() != u64(boundary.scope_id) { return start }
+		scopes.delete_last()
+		if scopes.len != 0 { continue }
+		if layers[index] != layers[start] || boundary.opacity != 1 || boundary.blend_mode != .normal
+			|| boundary.filter != none || command.has_clip || command.clip_list != unsafe { nil }
+			|| command.clip_outs.len != 0 || command.recording_clip != none { return start }
+		return index+1
+	}
+	return start
+}
+
 fn chromium_svg_compositor_layer_supported(commands []layout.PaintCommand,
 	plan layout.ChromiumRasterLayerPlan, index int) bool {
 	return chromium_svg_compositor_layer_supported_for_viewport(commands, plan, index, none)
@@ -81,6 +107,7 @@ fn chromium_svg_compositor_layer_supported_for_viewport(commands []layout.PaintC
 	}
 	mut has_svg := false
 	mut opacity_end := -1
+	mut identity_scope_ends := []int{}
 	for position, command_index in layer.command_indices {
 		if command_index < first || command_index > last
 			|| plan.command_layers[command_index] != index {
@@ -144,12 +171,18 @@ fn chromium_svg_compositor_layer_supported_for_viewport(commands []layout.PaintC
 				if !supported { return false }
 			}
 			'begin_css_effect_layer' {
+				identity_end := chromium_svg_identity_scope_end(commands,plan.command_layers,command_index)
+				if identity_end > command_index { identity_scope_ends << identity_end-1; continue }
 				opacity_end = chromium_svg_opacity_group_end(commands, command_index)
 				if opacity_end <= command_index || opacity_end > last + 1 { return false }
 				has_svg = true
 			}
+			'end_css_effect_layer' {
+				if identity_scope_ends.len == 0 || identity_scope_ends.last() != command_index { return false }
+				identity_scope_ends.delete_last()
+			}
 			'draw_svg_path' {
-				if !chromium_svg_solid_path_supported(command) {
+				if !chromium_svg_compositor_path_supported(command) {
 					return chromium_svg_compositor_layer_declined(index, command_index, 'SVG path', command.kind)
 				}
 				has_svg = true
@@ -169,5 +202,5 @@ fn chromium_svg_compositor_layer_supported_for_viewport(commands []layout.PaintC
 			else { return chromium_svg_compositor_layer_declined(index, command_index, 'unsupported leaf', command.kind) }
 		}
 	}
-	return has_svg
+	return has_svg && identity_scope_ends.len == 0
 }

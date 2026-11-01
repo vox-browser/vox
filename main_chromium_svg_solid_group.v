@@ -11,6 +11,18 @@ $if macos {
 // strokes such as the native textarea grip, until their shared MSAA resolve.
 // The surrounding command stream retains ownership of masks and effects.
 fn chromium_svg_solid_path_supported(command &layout.PaintCommand) bool {
+	return chromium_svg_solid_path_supported_with_clips(command,false)
+}
+
+// Whole compositor recordings retain each native rounded clip. Scalar SVG
+// batches carry only their intersected rectangular viewport.
+fn chromium_svg_compositor_path_supported(command &layout.PaintCommand) bool {
+	return chromium_shared_recording_clips_supported(command)
+		&& chromium_svg_solid_path_supported_with_clips(command,true)
+}
+
+fn chromium_svg_solid_path_supported_with_clips(command &layout.PaintCommand,
+	rounded_clips bool) bool {
 	has_fill := command.color != ''
 	has_stroke := command.stroke_color != '' && command.stroke_width > 0
 	if command.kind != 'draw_svg_path' || command.opacity != 1 || command.group_opacity != 1
@@ -46,7 +58,8 @@ fn chromium_svg_solid_path_supported(command &layout.PaintCommand) bool {
 		for clip in command.clip_list.items {
 			matrix := normalized_paint_transform(clip.transform)
 			if clip.is_path || clip.is_svg_mask || clip.is_svg_content_mask
-				|| clip.corner_radii != layout.BoxRadii{} || matrix[1] != 0 || matrix[2] != 0 {
+				|| (!rounded_clips && clip.corner_radii != layout.BoxRadii{})
+				|| matrix[1] != 0 || matrix[2] != 0 {
 				return false
 			}
 		}

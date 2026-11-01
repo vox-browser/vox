@@ -43,6 +43,15 @@ extern "C" int ladybird_v_skia_draw_contoured_box(CGContextRef destination,
     auto background = has_background_fill ? rounded_rect_from_data(s_rounded_rect_underlay) : SkRRect{};
     auto bounds = outside.rect();
     if (mode == 2) bounds.outset(std::max(amount,0.f)*2+2,std::max(amount,0.f)*2+2);
+    // The fallback bitmap keeps a conservative blur margin. Picture overflow
+    // uses Chromium's three-sigma extent (CSS blur is twice sigma), matching
+    // the compositor layer's bounds. Keep these bounds in document space;
+    // the draw paths below are shifted to the layer's local raster origin.
+    auto recording_bounds=outside.rect();
+    if (mode == 2) {
+        float extent=std::ceil(std::max(amount,0.f)*1.5f);
+        recording_bounds.outset(extent,extent);
+    }
     SkPaint paint; paint.setAntiAlias(true); paint.setColor(SkColorSetARGB(alpha,red,green,blue));
     if (precise) paint.setColor4f({s_unrounded_paint_color[0],s_unrounded_paint_color[1],
         s_unrounded_paint_color[2],s_unrounded_paint_color[3]});
@@ -123,7 +132,7 @@ extern "C" int ladybird_v_skia_draw_contoured_box(CGContextRef destination,
     };
     if (auto* canvas=shared_recording_canvas(destination)) {
         canvas->save();shared_recording_clip(destination,canvas);draw(canvas,matrix);canvas->restore();
-        shared_recording_content(destination,matrix.mapRect(bounds),page_y,scroll_y);
+        shared_recording_content(destination,matrix.mapRect(recording_bounds),page_y,scroll_y);
     }
     RasterRegion region;
     if (!clipped_raster_region(matrix.mapRect(bounds),canvas_width,canvas_height,2,region)) return 1;
