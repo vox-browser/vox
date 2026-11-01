@@ -14,7 +14,7 @@ fn font_environment_fixture() (&dom.Document, &css.FontFaceSet, &html.EventLoop)
 	_ = html.WindowModel.create_top_level(document, none, 'font-environment') or { panic(err) }
 	document.set_cached_navigable(&dom.Navigable{ active_document_: document })
 	layout.install_document_layout_hook(document)
-	_ = layout.run_document_layout(document, 100, 100) or { panic(err) }
+	_ = layout.run_document_layout(document, 100, 100) or { panic("missing font environment layout") }
 	return document, css.css_style_computer_for(document).font_face_set_, html.EventLoop.create(.window)
 }
 
@@ -42,7 +42,7 @@ fn test_source_font_environment_checkpoint_gates_loading_stylesheets_imports_and
 	assert !document.layout_is_up_to_date()
 	event_loop.update_font_face_sets_pending_on_the_environment([document])
 	assert fonts.is_pending_on_the_environment
-	_ = layout.run_document_layout(document, 100, 100) or { panic(err) }
+	_ = layout.run_document_layout(document, 100, 100) or { panic("missing font environment layout") }
 	event_loop.update_font_face_sets_pending_on_the_environment([document])
 	assert !fonts.is_pending_on_the_environment
 	assert ready.state == .fulfilled
@@ -60,7 +60,7 @@ fn test_ready_flush_starts_new_style_font_load_and_loaded_transition_waits_for_i
 	mut document, mut fonts, event_loop := font_environment_fixture()
 	css.add_document_author_style_sheet(document,
 		'@font-face {font-family: ReadyFlush;src:url("pending.ttf")}')
-	_ = layout.run_document_layout(document, 100, 100) or { panic(err) }
+	_ = layout.run_document_layout(document, 100, 100) or { panic("missing font environment layout") }
 	document.update_readiness(.complete)
 	event_loop.update_font_face_sets_pending_on_the_environment([document])
 	initial := fonts.ready()
