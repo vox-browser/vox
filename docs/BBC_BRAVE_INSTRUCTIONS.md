@@ -2,22 +2,20 @@
 
 **The requested 10% advantage remains open. BBC does not qualify for
 `OPTIMIZED_SITES.md`.** The latest seven-pair cohort has a Vox median of
-**36,123,754,014** retired instructions and a Brave lower-bound median of
-**15,806,323,773**. All 21 content audits, fixed pixel comparisons and native
-exits pass. The conservative ratio is **2.3259499042136356**, above 0.9:
-`365942955350 > 141597486351` fails the integer gate. Every observation,
+**36,673,262,472** retired instructions and a Brave lower-bound median of
+**16,116,361,443**. All 21 content audits, fixed pixel comparisons and native
+exits pass. The conservative ratio is **2.3992396531867937**, above 0.9:
+`381236402140 > 143008957638` fails the integer gate. Every observation,
 including first launches, remains included.
 
-The same-binary Node-property control has median 35,968,844,096. Sharing those
-properties regresses the observed median by 0.4307%; the conservative control
-ratio is 1.0468228361421543. The preceding geometry-accessor cohort observes a
-3.2035% median reduction, but its conservative control gate also fails. Neither
-result establishes accepted savings. All earlier invalid observations remain
-retained.
+The same-binary attribute-bucket control has median 37,003,319,838. The observed
+median reduction is 0.8920%, with conservative control ratio 1.080487412955897.
+Both gates fail; this does not establish accepted BBC savings. Earlier failing
+and invalid observations remain retained.
 
 The machine-readable [evidence](benchmark-results/bbc-brave-instructions-2026-11-01.json)
-retains 670 attempts and 27 cohorts, including failures and first launches;
-553 complete cohort raw results were independently checked against the recorded
+retains 697 attempts and 28 cohorts, including failures and first launches;
+574 complete cohort raw results were independently checked against the recorded
 vectors, medians and integer gates. It also retains ownership audits, commands and artifact hashes. Raw archives, logs,
 PNGs, executable copies, PID registries, compiler output and guard receipts are
 under `Build/bbc-home-instructions-20261101-054807/` in the canonical checkout.
@@ -89,6 +87,10 @@ capture marker. An invalid cohort is retained for diagnosis, not acceptance.
 | Classic-script import identifier filter | 37,463,386,894 | 15,655,612,802 | 2.4762586430968168 | All observations valid; median regresses against control; both gates fail |
 | Viewport, grid-placement and radius longhand reuse | 37,314,150,142 | 15,652,929,710 | 2.510631500286319 | All observations valid; median regresses against control; both gates fail |
 | Check own eligibility before inherited hashing | 36,574,920,629 | 15,732,111,035 | 2.43280501847826 | Brave pair 6 differs; median regresses against control; both gates fail |
+| Indexed JavaScript roots | 36,723,883,384 | 15,720,570,525 | 2.4371307290010487 | All observations valid; median regresses against control; both gates fail |
+| Shared geometry accessors, recovered production build | 34,949,303,465 | 15,879,294,537 | 2.31320003135991 | All observations valid; Brave and matched-control gates fail |
+| Shared compact Node properties | 36,123,754,014 | 15,806,323,773 | 2.3259499042136356 | All observations valid; median regresses against control; both gates fail |
+| Required attribute buckets before tag buckets | 36,673,262,472 | 16,116,361,443 | 2.3992396531867937 | All observations valid; Brave and matched-control gates fail |
 
 The grid block-height cohort alternates an older control, candidate and Brave;
 control/candidate medians are 101,567,929,247 and 90,700,737,334 (10.70% observed
@@ -1040,3 +1042,68 @@ instrumented counts include observer/background work and possible audit/teardown
 inclusive values overlap and cannot be added. They support investigating rule
 matching rather than removing font safety guards or the whole longhand cache.
 Raw prefix: `css-coarse-*`.
+
+
+### Required attribute buckets before tag buckets
+
+The sampled matching diagnostic records 2,458,037 selector checks, but sorting
+only 52,782 matched rules: 79,768 sorts, maximum size ten and 31,361 comparisons.
+Its 583,644 hardware reads add substantial overhead. Partial sampled intervals
+are not full function costs and receive no optimization credit. A second probe
+uses event counts without per-match hardware reads. Its 2,461,469 checks show
+cosmetic-filter selectors such as `div[id^="…"]` reaching every `div`. Both
+probes preserve the original pixels, content and native exits, with one JSC
+context and 1,985/2,019 evaluations. Evidence prefixes are `css-matching-*` and
+`css-selector-events-*`.
+
+Commit `2a9d410e` prefers a required unprefixed attribute bucket over a tag
+bucket, retaining the class/ID choices and namespace-dependent fallback. Full
+selector matching still checks values, tags, namespaces and pseudo-elements.
+Fourteen focused cases across six files pass in nine compile/runtime/control
+jobs in normal, no-GC and preallocated modes. The first run retained an error
+in the new pseudo-element test oracle; the corrected oracle also checks the
+queried pseudo target. All 830 broad cases execute, with only the unchanged
+13.5-versus-13 text-control baseline failure. Tooling commit `d66a1d56` passes
+37 BBC driver tests.
+
+Production build exit is zero, duration 197.0384 seconds and peak sampled RSS
+9,047,392,256 bytes. Feature sources remain stable. Executable SHA256 is
+`d52e041b57a4f08b9674ae33f49222587155e6c61a759f8ca1b56e9b43b76395`;
+generated C is
+`22e3ba5150c648cb5dc670406f4ab9f1940ee2c02cbaacb69c4b38883f4245cc`.
+Fresh headless startup, eleven smoke comparisons at unchanged tolerances and
+eight exact SVG mutation comparisons pass. Separate BBC diagnostics preserve
+original pixels, content and native exits, with one JSC context and 2,032/2,031
+evaluations. The enabled diagnostic logs 6,976 attribute-first rule placements;
+the disabled control logs zero. These logs are absent from acceptance.
+
+Every trial in seven alternating control/Vox/Brave triples passes the content,
+pixel and native-exit checks. Vox/control medians are 36,673,262,472 and
+37,003,319,838, a 0.8920% observed reduction. The conservative control ratio
+1.080487412955897 fails. Brave lower median is 16,116,361,443 and the target
+gate also fails: `381236402140 > 143008957638`. The guard adopts 67 processes
+without errors, peaks at 1,387,708,416 bytes and completes in 113.5228 seconds;
+controller exit 1 records failed acceptance. No BBC improvement is credited.
+Evidence prefix: `attribute-tag-buckets-*`.
+
+A subsequent event-only diagnostic records 10,140 recomputations caused by a
+full style update, 3,216 directly dirty elements, 1,178 successful font-input
+refreshes and eight guard fallbacks. Counters are cumulative snapshots and must
+not be summed across log lines. Original pixels/content/native exit pass. This
+supports tracing the transitions into full style updates before changing font
+safety or stylesheet invalidation. Prefix: `style-causes-*`.
+
+A follow-up false-to-true transition trace of full-style invalidation used the
+same candidate's generated source in a separate O2 diagnostic executable. The
+archived BBC capture retained exact original pixels, its semantic audit passed,
+the native process exited zero, and JavaScriptCore recorded one context and
+2,023 evaluations. Sixteen balanced style callbacks included four full updates
+on the active document. The traced transitions identify the initial document
+font policy, a CSSOM insertion, replacement of the adblock user stylesheet, and
+a CSSOM deletion. The preload discovery document was marked dirty but did not
+enter these style callbacks. This narrows the next investigation to stylesheet
+change invalidation; it does not establish redundant or removable work, and
+receives no unprofiled instruction credit. Raw stacks, generated-source and
+build identities, guard receipts, and the fixed-reference comparison are in
+`full-pass-trace-probe-build/` and
+`full-pass-trace-diagnostic-validation.json` under the evidence root.
