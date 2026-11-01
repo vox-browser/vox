@@ -25,6 +25,8 @@ $if linux {
 } $else {
 	#flag @DIR/canvas_raster.o
 }
+// Older cached skia.pc files omit this direct dependency of the static library.
+#flag linux -lm
 #include "canvas_raster.h"
 
 pub struct Path {

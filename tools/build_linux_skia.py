@@ -68,7 +68,7 @@ def main():
     pkgconfig.mkdir(parents=True, exist_ok=True)
     (pkgconfig / "skia.pc").write_text(
         f"prefix={source}\nName: skia\nDescription: Vox CPU Skia\nVersion: 144\n"
-        "Libs: -L${prefix}/out/Release -lskia -lskcms -lstdc++ -ldl -lpthread\n"
+        "Libs: -L${prefix}/out/Release -lskia -lskcms -lstdc++ -ldl -lpthread -lm\n"
         "Requires: freetype2 fontconfig libpng libjpeg libwebp libwebpdemux zlib\n"
         "Cflags: -I${prefix} -DSK_HIDE_PATH_EDIT_METHODS -DSK_R32_SHIFT=16\n")
     print(f"Built Skia {REVISION}; run sh build-prod-browser.sh")

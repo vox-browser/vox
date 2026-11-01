@@ -35,15 +35,26 @@ Build/linux/vox https://example.com
 
 The build selects Linux or macOS automatically. `build-linux-browser.sh` can
 also be called directly. Both builds use the current V compiler without falling
-back to the compatibility compiler. Linux uses the distribution's threaded Boehm
+back to the compatibility compiler. The shell entrypoint prepares the native
+archives, exports the local Skia package path, and stages the compiler modules
+needed by the browser. Linux uses the distribution's threaded Boehm
 collector; `LADYBIRD_V_GC=none` remains available for ownership diagnostics. Native
 bridges and image-codec archives stay under `Build/linux/native`, separate from macOS
 objects. The browser embeds its adblock assets and needs no Ladybird checkout.
 The default build optimizes with `-O2`; use `VOX_LINUX_CFLAGS=-O0` for a faster
 diagnostic build. Allow at least 8 GB of RAM or additional swap for the large
 single-file C compilation.
+
+Clang is the default C compiler. Set `CC=gcc` to build with GCC instead:
+
+```sh
+CC=gcc sh build-prod-browser.sh
+```
+
 The Skia bootstrap verifies its archive checksum and uses system codec/font
-libraries. A compatible system `skia.pc` can be supplied through `PKG_CONFIG_PATH`
+libraries. Rerun it after updating the checkout to refresh the generated
+`skia.pc` link dependencies; unchanged compiled libraries are reused.
+A compatible system `skia.pc` can be supplied through `PKG_CONFIG_PATH`
 instead. Skia's [build documentation](https://skia.org/docs/user/build/) describes
 its GN/Ninja build and dependency options.
 
@@ -77,6 +88,14 @@ For focused V tests after building native dependencies:
 ```sh
 python3 tools/test_linux_native.py
 python3 tools/test_linux_native.py --gc none
+```
+
+The native test runner also honors `CC`. To check the CSS color interpolation,
+DOM range extraction, and WOFF2 font decoding regressions with GCC:
+
+```sh
+CC=gcc python3 tools/test_linux_native.py \
+    css/color_interpolation_test.v dom/range_mutation_order_test.v gfxfont/woff_test.v
 ```
 
 The port was checked on Ubuntu 24.04 ARM64: fourteen focused files passed with

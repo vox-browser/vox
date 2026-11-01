@@ -1,5 +1,8 @@
 module gfxfont
 
+// GNU ld resolves archive dependencies from left to right with --as-needed.
+#flag linux @DIR/../Build/linux/native/gfxfont.a
+
 $if darwin {
 	$if arm64 {
 		#flag -I @DIR/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include
@@ -18,10 +21,7 @@ $if darwin {
 #flag -lwoff2common
 #flag -lbrotlidec
 #flag -lbrotlicommon
-#flag linux -lm
-$if linux {
-	#flag @DIR/../Build/linux/native/gfxfont.a
-} $else {
+$if !linux {
 	#flag @DIR/woff2.o
 }
 #include "woff2.h"

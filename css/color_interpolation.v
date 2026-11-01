@@ -856,7 +856,11 @@ fn resolve_color_interpolation_policy(from StyleValue, to StyleValue, method ?Co
 }
 
 fn convert_to_interpolation_space(from StyleValue, mut from_color PreparedInterpolationColor, to StyleValue, mut to_color PreparedInterpolationColor, method ColorInterpolationMethod, context ColorResolutionContext) ColorInterpolationSpaceState {
-	mut state := ColorInterpolationSpaceState{}
+	// Initialize the fixed-array default separately so V emits a portable C copy.
+	target_categories := ColorComponentCategories{}
+	mut state := ColorInterpolationSpaceState{
+		polar_target_categories: target_categories
+	}
 	match method {
 		RectangularColorSpace {
 			state.rectangular_color_space = method

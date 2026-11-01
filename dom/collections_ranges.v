@@ -2780,8 +2780,12 @@ pub fn (mut r Range) extract() !&DocumentFragment {
 	mut new_offset := original_start_offset
 	if !original_start_node.is_inclusive_ancestor_of(original_end_node) {
 		mut reference_node := unsafe { &Node(original_start_node) }
-		for reference_node.parent_node() != none && !(reference_node.parent_node() or { break }).is_inclusive_ancestor_of(original_end_node) {
-			reference_node = reference_node.parent_node() or { break }
+		for {
+			parent := reference_node.parent_node() or { break }
+			if parent.is_inclusive_ancestor_of(original_end_node) {
+				break
+			}
+			reference_node = unsafe { &Node(parent) }
 		}
 		new_node = reference_node.parent_node() or { new_node }
 		new_offset = reference_node.index() + 1

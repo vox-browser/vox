@@ -10,6 +10,7 @@ import sys
 import tempfile
 
 CASES = [
+    "css/color_interpolation_test.v", "dom/range_mutation_order_test.v",
     "platform/gc_keepalive_linux_test.v",
     "libjs/stack_info_test.v",
     "platform/native_timer_test.v", "platform/native_deferred_test.v",
