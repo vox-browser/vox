@@ -1,6 +1,54 @@
 # CNN rendering and instruction comparison
 
-Latest compiler follow-up: the pinned `-O3` build uses a median
+Latest seven-pair observation: **28,245,018,755** median Vox instructions versus
+**33,567,535,217** for Brave's median lower bound: **15.86% fewer**. The highest
+Vox upper bound / lowest Brave lower bound is **0.8538703729** (**14.61% fewer**),
+so the observed count condition passes:
+`10 * 28,382,830,681 <= 9 * 33,240,210,201`.
+
+**Strict acceptance remains blocked.** All fourteen Vox candidate/control images
+are exact. Six Brave images are exact; pair 2 differs at one pixel, `(588,754)`,
+whose green channel is 227 instead of 226. Its content audit and actual browser
+exit pass. That attempt remains in every statistic, with the original image and
+unchanged oracle. The driver correctly rejects the cohort; this is not a
+qualifying `OPTIMIZED_SITES.md` result. Raw evidence is
+`Build/cnn-home-pending-layout-seven-20261101-1050/`, with exact counts, identities,
+loads, exits, guards and scope in the [durable receipt](benchmark-results/cnn-home-instructions-2026-11-01.json)
+under `latest_observation`.
+
+This is the same frozen **script-free CNN startup/rendering workload**, from
+fresh exclusive coalition creation through encoded document PNG availability,
+including full-uBO setup, readiness and five seconds of settlement. It is not
+live CNN author-JavaScript performance. The result is conditional on the pinned
+production build, declared private cache/profile copies and retained OS caches;
+earlier failing cohorts remain below. All 21 actual browser exits are zero,
+all content/filter audits pass, and memory-guard process adoption succeeds.
+One-minute host load rises from about 7 to 10.7 on 18 logical CPUs.
+
+Pending-font layout reuse (`c21f361c`) now accepts an original cascade only while
+its font-computer entry and recorded metrics remain current. Loads and descriptor
+changes affecting the selected face expire the cache. Separate diagnostics
+confirm both this path and the shared pending-font style-refresh fix
+(`c0a2176e`) execute on CNN. The pending-layout slice alone receives no CPU
+credit: its candidate median is 2.31% higher than the same-binary control, with
+mixed paired results and retained service variation.
+
+The current source passes 72 focused runtimes across normal, no-GC and staged
+prealloc modes, plus 78 broader HTML/layout runtimes in both GC modes. The old
+control fails the new positive regression as expected. The pinned normal bundle
+passes headless startup, all eleven default screenshot cases, eight SVG mutation
+guards and 100 exact upstream AST fixtures. All 35 measurement-tool tests pass.
+Receipts are under `Build/cnn-pending-font-layout-20261101/`; the observed savings
+cadence resets after this broader verification, with zero additional measured
+savings carried forward.
+
+A separate Brave diagnostic keeps the first measured image and takes two more
+captures after the endpoint and audit. Its first process retains the same four
+pixel differences in all three captures; the other two processes remain exact.
+Additional settling does not fix that process's mismatch. No trial is retried
+or excluded to obtain acceptance, and no reference or tolerance changes.
+
+Earlier compiler follow-up: the pinned `-O3` build uses a median
 **32,256,937,280** instructions, versus **34,091,298,943** for its matched
 `-O2` control and **30,504,929,341** for Brave across seven triplets. Every Vox
 candidate/control capture is pixel exact and every candidate beats its matched
@@ -75,8 +123,8 @@ incident in the durable receipt.
 ## November 1: current 10% request, sealed homepage cohort
 
 The current target is **10% fewer instructions than Brave**, superseding the
-older 15% request in the historical sections below. The completed seven-pair
-cohort does **not** meet it: Vox's median is **41,186,019,148** instructions and
+older 15% request in the historical sections below. The first completed seven-pair
+cohort did **not** meet it: Vox's median is **41,186,019,148** instructions and
 Brave's median lower bound is **31,496,128,055**. The conservative maximum-Vox /
 minimum-Brave ratio is **1.3486672674**. The exact gate fails:
 `10 * 41,535,524,696 > 9 * 30,797,458,870`.
