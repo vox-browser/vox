@@ -64,8 +64,8 @@ class FrozenResponseTests(unittest.TestCase):
                     patch.object(benchmark, 'digest', return_value='hash'):
                 paths = benchmark.pinned_inputs(args)
             self.assertIn(str(framework.resolve()), paths)
-            self.assertIn(str(dependency), paths)
-            self.assertIn(str(helper), paths)
+            self.assertIn(str(dependency.resolve()), paths)
+            self.assertIn(str(helper.resolve()), paths)
             self.assertIn(str(benchmark.REPO / 'tools/process_instruction_counts.py'), paths)
 
 
