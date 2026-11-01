@@ -114,6 +114,16 @@ if [ -n "$rust_cargo" ]; then
     extra_cflags="$extra_cflags -DLADYBIRD_V_HAS_RUST_YUV"
     extra_ldflags="$extra_ldflags -L$rust_target_dir/release -lladybird_v_yuv"
 fi
+jpegxl_library=""
+if [ -n "$rust_cargo" ]; then
+    jpegxl_target_dir="$build_dir/rust-jpegxl"
+    PATH="$(dirname "$rust_cargo"):$PATH" CARGO_TARGET_DIR="$jpegxl_target_dir" \
+        "$rust_cargo" build --quiet --release --locked \
+        --manifest-path "$repo_dir/native_jpegxl_rust/Cargo.toml"
+    jpegxl_library="$build_dir/libVoxJPEGXL.dylib"
+    cp "$jpegxl_target_dir/release/libvox_jpegxl.dylib" "$jpegxl_library"
+    install_name_tool -id @rpath/libVoxJPEGXL.dylib "$jpegxl_library"
+fi
 bridge_library=""
 graphite_library=""
 dawn_library=""
@@ -280,6 +290,18 @@ if command -v codesign >/dev/null 2>&1; then
     codesign --force --sign - "$helper_tmp" >/dev/null
 fi
 mv -f "$helper_tmp" "$binary_dir/VoxAdblockWorker"
+
+if [ -n "${jpegxl_library:-}" ]; then
+    jpegxl_resource_tmp=$(mktemp "$binary_dir/.jpegxl.XXXXXX")
+    cp "$jpegxl_library" "$jpegxl_resource_tmp"
+    chmod 755 "$jpegxl_resource_tmp"
+    mv -f "$jpegxl_resource_tmp" "$binary_dir/libVoxJPEGXL.dylib"
+    if command -v codesign >/dev/null 2>&1; then
+        codesign --force --sign - "$binary_dir/libVoxJPEGXL.dylib" >/dev/null
+    fi
+else
+    rm -f "$binary_dir/libVoxJPEGXL.dylib"
+fi
 
 if [ -n "$bridge_library" ]; then
     bridge_resource_tmp=$(mktemp "$binary_dir/.skia-bridge.XXXXXX")

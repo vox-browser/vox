@@ -47,6 +47,11 @@ for dependency in javascriptcoregtk-4.1 glib-2.0 fontconfig harfbuzz icu-uc icu-
     fi
 done
 mkdir -p "$build_dir"
+if command -v cargo >/dev/null 2>&1; then
+    CARGO_TARGET_DIR="$build_dir/rust-jpegxl" cargo build --quiet --release --locked \
+        --manifest-path "$repo_dir/native_jpegxl_rust/Cargo.toml"
+    cp "$build_dir/rust-jpegxl/release/libvox_jpegxl.so" "$build_dir/libVoxJPEGXL.so"
+fi
 python3 "$repo_dir/tools/build_regex_backend.py"
 python3 "$repo_dir/tools/build_linux_native.py"
 http_modules=$(python3 "$repo_dir/tools/prepare_http_compat.py" "$v_compiler")

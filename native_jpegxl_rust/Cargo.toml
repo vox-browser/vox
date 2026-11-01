@@ -1,0 +1,11 @@
+[package]
+name = "vox_jpegxl"
+version = "0.1.0"
+edition = "2024"
+license = "BSD-2-Clause"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+jxl = "=0.7.0"

@@ -60,6 +60,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_guardian_late_font_updates_the_editions_intrinsic_width(self):
         self.compare_fixture('guardian-intrinsic-font-width')
 
+    def test_jpegxl_request_pixels_and_css_backgrounds_share_the_decoder(self):
+        self.compare_fixture('jpegxl-image-paths')
+
     def test_screen_blending_preserves_floating_point_group_opacity(self):
         self.compare_fixture('screen-opacity-composite')
 

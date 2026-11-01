@@ -1577,6 +1577,7 @@ fn browser_decode_raster_image_bytes(bytes []u8) !&dom.Bitmap_ {
 		return error('Empty image resource')
 	}
 	if image_bytes_are_ico(bytes) { return browser_decode_ico_image_bytes(bytes) }
+	if image_bytes_are_jpegxl(bytes) { return browser_decode_jpegxl_image_bytes(bytes) }
 	$if macos {
 		if image_bytes_are_webp(bytes) {
 			mut width := 0
@@ -4858,6 +4859,7 @@ fn image_bytes_are_webp(bytes []u8) bool {
 
 fn (mut app BrowserApp) create_image_from_resource_bytes(image_url string, bytes []u8) !gg.Image {
 	if image_bytes_are_ico(bytes) { return app.create_ico_resource_image(bytes) }
+	if image_bytes_are_jpegxl(bytes) { return app.create_jpegxl_resource_image(bytes) }
 	$if macos {
 		if image_bytes_are_webp(bytes) {
 			// Share the document decoder's pixels with native image and background

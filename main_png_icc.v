@@ -1,6 +1,7 @@
 module main
 
 import gg
+import os
 import dom
 
 // PNG iCCP metadata is a zlib stream, decoded by the native PNG profile bridge.
@@ -20,6 +21,12 @@ fn native_png_channel_marker(bitmap &dom.Bitmap_, bytes []u8, chromium bool) int
 }
 
 fn (mut app BrowserApp) create_local_image_with_profile(image_url string, path string) !gg.Image {
+	mut file := os.open(path) or { return app.ctx.create_image(path) }
+	prefix := file.read_bytes(12)
+	file.close()
+	if image_bytes_are_jpegxl(prefix) {
+		return app.create_jpegxl_resource_image(app.background_image_bytes(image_url)!)
+	}
 	$if macos {
 		if app.ctx.native_rendering && path.to_lower().ends_with('.png')
 			&& app.document != unsafe { nil }
