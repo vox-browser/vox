@@ -3,12 +3,30 @@ from pathlib import Path
 import tempfile
 from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
 
-from forum_news_pixels import CATALOG, check_filters, check_native, oracle_command, seal_capture, write_json
+from forum_news_pixels import (CATALOG, check_filters, check_native, native_capture_environment,
+                               oracle_command, seal_capture, write_json)
 from page_archive import digest, load_archive
 
 
 class ForumNewsPixelTests(unittest.TestCase):
+    def test_native_capture_preserves_reference_consent_ui_in_an_isolated_environment(self):
+        with patch.dict('os.environ', {'PATH': '/tools', 'VOX_BLOCK_COOKIE_BANNERS': '1',
+                                      'VOX_PROFILE_DIR': '/personal-profile',
+                                      'HTTPS_PROXY': 'http://unrelated.invalid',
+                                      'DYLD_INSERT_LIBRARIES': '/unrelated.dylib'}, clear=True):
+            environment = native_capture_environment(Path('/capture/profile'), Path('/capture/ca.pem'),
+                Path('/capture/cache'), Path('/capture/audit.json'), Path('/capture/config.json'),
+                Path('/capture/requests.jsonl'), 5)
+        self.assertEqual(environment['VOX_BLOCK_COOKIE_BANNERS'], '0')
+        self.assertEqual(environment['VOX_PROFILE_DIR'], '/capture/profile')
+        self.assertEqual(environment['SSL_CERT_FILE'], '/capture/ca.pem')
+        self.assertEqual(environment['VOX_ADBLOCK_LOG'], '/capture/requests.jsonl')
+        self.assertEqual(environment['PATH'], '/tools')
+        self.assertNotIn('HTTPS_PROXY', environment)
+        self.assertNotIn('DYLD_INSERT_LIBRARIES', environment)
+
     def test_closed_oracle_template_is_forwarded_without_changing_filter_inputs(self):
         args = SimpleNamespace(extension=Path('/extension'), checker=Path('/checker'),
                                brave=Path('/brave'), settle=5, profile_template=None)

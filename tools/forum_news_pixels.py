@@ -110,6 +110,20 @@ def executable_identity(binary):
     return {str(p.resolve()): digest(p.read_bytes()) for p in paths}
 
 
+def native_capture_environment(profile, certificate, cache, audit, config, requests, settle):
+    environment = {k: v for k, v in os.environ.items()
+                   if not k.lower().endswith('_proxy') and not k.startswith(('VOX_', 'LADYBIRD_', 'DYLD_', 'GC_'))}
+    # Compare the same full-uBO policy: Vox's additional banner blocker would
+    # otherwise mutate the frozen guest DOM without an equivalent Brave rule.
+    environment.update(VOX_PROFILE_DIR=str(profile), SSL_CERT_FILE=str(certificate),
+        LADYBIRD_CACHE_DIR=str(cache), LADYBIRD_SCREENSHOT_SCALE='1',
+        LADYBIRD_SCREENSHOT_DELAY_SECONDS=str(settle), VOX_CAPTURE_DOCUMENT_ONLY='1',
+        VOX_TEST_WINDOW='1', VOX_CAPTURE_AUDIT_PATH=str(audit),
+        VOX_CAPTURE_AUDIT_CONFIG=str(config), VOX_ADBLOCK_LOG=str(requests),
+        VOX_BLOCK_COOKIE_BANNERS='0')
+    return environment
+
+
 def check_native(audit, reference):
     if (audit.get('url') != reference['url'] or audit.get('title') != reference['title']
             or audit.get('ready') != 'complete'
@@ -197,13 +211,8 @@ def run_case(site, args):
         requests.touch()
         audit = output / 'vox.audit.json'
         actual = output / 'vox.png'
-        environment = {k: v for k, v in os.environ.items()
-                       if not k.lower().endswith('_proxy') and not k.startswith(('VOX_', 'LADYBIRD_', 'DYLD_', 'GC_'))}
-        environment.update(VOX_PROFILE_DIR=str(profile), SSL_CERT_FILE=replay.ready['ca'],
-            LADYBIRD_CACHE_DIR=str(output / 'vox-cache'), LADYBIRD_SCREENSHOT_SCALE='1',
-            LADYBIRD_SCREENSHOT_DELAY_SECONDS=str(args.settle), VOX_CAPTURE_DOCUMENT_ONLY='1',
-            VOX_TEST_WINDOW='1', VOX_CAPTURE_AUDIT_PATH=str(audit), VOX_CAPTURE_AUDIT_CONFIG=str(config),
-            VOX_ADBLOCK_LOG=str(requests))
+        environment = native_capture_environment(profile, replay.ready['ca'], output / 'vox-cache',
+            audit, config, requests, args.settle)
         before = executable_identity(args.vox)
         write_json(output / 'identity.json', before)
         guarded([args.vox, '--window-width', '1024', '--window-height', '852',
