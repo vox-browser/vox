@@ -10912,6 +10912,8 @@ pub mut:
 	viewport_rect_                                       CSSPixelRect
 	ancestor_filter_                                     CountingBloomFilter = CountingBloomFilter.new()
 	has_result_cache_                                    &HasResultCache = &HasResultCache{}
+	deferred_hidden_styles_ map[u64]bool
+	materializing_hidden_styles_ bool
 	matching_rule_candidates_                            &MatchingRuleCandidateScratch = unsafe { nil }
 	matching_rule_sets_ &MatchingRuleSetWorkspacePool = unsafe { nil }
 	initial_layout_snapshots_ &InitialLayoutSnapshotPool = unsafe { nil }
@@ -11102,6 +11104,7 @@ pub fn (s &StyleComputer) compute_style_tracking_custom_property_changes(abstrac
 }
 
 pub fn (mut s StyleComputer) compute_style_with_seeded_ancestors(abstract_element dom.AbstractElement) &ComputedProperties {
+	s.materialize_hidden_styles_for_query(abstract_element.element())
 	mut ancestors := []&dom.Element{}
 	mut parent := abstract_element.parent_element()
 	for {

@@ -28,6 +28,7 @@ pub fn discard_native_document_computed_styles(document &dom.Document) bool {
 		computer.computed_property_page_interner_ = unsafe { nil }
 		computer.has_result_cache_ = &HasResultCache{}
 		computer.matching_rule_candidates_ = unsafe { nil }
+		computer.deferred_hidden_styles_ = map[u64]bool{}
 	}
 	return true
 }

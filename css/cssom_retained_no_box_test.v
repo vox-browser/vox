@@ -20,6 +20,9 @@ fn cssom_no_box_fixture(parent_style string, target_style string) (&dom.Document
 	parentnode.append_child(target.as_node()) or { panic(err) }
 	_ = css_style_computer_for(document)
 	document.update_style()
+	// These cache tests deliberately start with a completed record, including
+	// when the ordinary rendering update deferred this hidden descendant.
+	_ = up_to_date_computed_properties_for_element(target)
 	return document, parent, target, CSSStyleProperties.create_resolved_style(dom.AbstractElement.new(target,
 		none))
 }
@@ -125,7 +128,7 @@ fn test_cssom_synthetic_pseudo_ignores_retained_record_without_refresh() {
 	assert declaration.get_property_value('color') == 'rgb(12, 34, 56)'
 	assert (computed_properties_from_dom(owner.computed_properties() or { panic('bridge') }) or {
 		panic('record')
-	}).property(.color, .yes)!.css_text == 'blue'
+	}).property(.color, .yes)?.css_text == 'blue'
 }
 
 @[heap]
@@ -161,7 +164,7 @@ fn test_cssom_postflush_redirty_uses_fresh_fallback_instead_of_stale_record() {
 	assert state.calls == 1
 	assert state.was_dirty
 	retained := computed_properties_for_element(target) or { panic('record') }
-	assert retained.property(.font_size, .yes)!.css_text == '33px'
+	assert retained.property(.font_size, .yes)?.css_text == '33px'
 }
 
 fn test_cssom_unboxed_animation_flush_reads_current_animated_value() {
@@ -204,7 +207,7 @@ fn test_cssom_unboxed_animation_flush_reads_current_animated_value() {
 	computer.set_animation_time_ms(100)
 	assert declaration.get_property_value('opacity') == '0.8'
 	assert target.el_layout_node() == none
-	assert (computed_properties_for_element(target) or { panic('record') }).property(.opacity, .no)!.css_text == '1'
+	assert (computed_properties_for_element(target) or { panic('record') }).property(.opacity, .no)?.css_text == '1'
 }
 
 fn test_cssom_hidden_font_load_refreshes_retained_relative_lengths() {

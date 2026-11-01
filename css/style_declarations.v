@@ -917,6 +917,13 @@ pub fn (properties &CSSStyleProperties) get_property(property_id PropertyID) ?St
 }
 
 fn computed_custom_property_for_cssom(owner dom.AbstractElement, name string) ?&dom.CSSStyleValue_ {
+	element := owner.element()
+	if element.as_node().is_connected() && owner.document().get_browsing_context() != none {
+		mut document := unsafe { &dom.Document(owner.document()) }
+		mut computer := css_style_computer_for(document)
+		if document.element_needs_style_update(element) { document.update_style() }
+		computer.materialize_hidden_styles_for_query(element)
+	}
 	if value := owner.get_custom_property(name) {
 		return value
 	}
@@ -1348,6 +1355,7 @@ pub fn (properties &CSSStyleProperties) get_direct_property(property PropertyNam
 			if document.element_needs_style_update(element) {
 				document.update_style()
 			}
+			style_computer.materialize_hidden_styles_for_query(element)
 			return properties.custom_property(property.name())
 		}
 
@@ -1364,6 +1372,7 @@ pub fn (properties &CSSStyleProperties) get_direct_property(property PropertyNam
 			document.update_style()
 		}
 
+		style_computer.materialize_hidden_styles_for_query(element)
 		layout_node_with_style := owner.layout_node() or {
 			// Ordinary elements retain their completed style even without a box.
 			// A flush callback can dirty that record again, and synthetic pseudos

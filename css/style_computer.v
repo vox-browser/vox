@@ -1694,7 +1694,7 @@ fn style_computer_update_animated_style_callback(target voidptr) {
 			if custom_properties_changed || (full_refresh && installs_inherited_values) {
 				invalidation = required_invalidation_after_style_change_or(invalidation,
 					update_style_recursively(mut style_computer, current, false, true, false,
-						full_refresh))
+						full_refresh, false))
 			} else {
 				invalidation = required_invalidation_after_style_change_or(invalidation,
 					style_computer.recompute_inherited_style_for_animated_descendants(current))
@@ -1807,6 +1807,7 @@ pub fn recompute_style_for_subtree(mut style_computer StyleComputer, node &dom.N
 	defer { style_computer.end_computed_property_page_batch() }
 	element_opt := node.as_element()
 	if element := element_opt {
+		style_computer.deferred_hidden_styles_.delete(u64(node.unique_id().value()))
 		style_computer.push_ancestor(element)
 		mut abstract_element := dom.AbstractElement.new(element, none)
 		style_computer.recompute_style(mut abstract_element)
@@ -1834,7 +1835,7 @@ pub fn recompute_style_for_subtree(mut style_computer StyleComputer, node &dom.N
 	mutable_node.set_entire_subtree_needs_style_update(false)
 }
 
-fn update_style_recursively(mut style_computer StyleComputer, node &dom.Node, needs_inherited_style_update bool, recompute_elements_depending_on_custom_properties bool, parent_display_changed bool, ancestor_needs_descendant_style_recompute bool) RequiredInvalidationAfterStyleChange {
+fn update_style_recursively(mut style_computer StyleComputer, node &dom.Node, needs_inherited_style_update bool, recompute_elements_depending_on_custom_properties bool, parent_display_changed bool, ancestor_needs_descendant_style_recompute bool, ancestor_is_display_none bool) RequiredInvalidationAfterStyleChange {
 	needs_full_style_update := node.document().needs_full_style_update()
 	mut invalidation := RequiredInvalidationAfterStyleChange{}
 	element_opt := node.as_element()
@@ -1927,12 +1928,16 @@ fn update_style_recursively(mut style_computer StyleComputer, node &dom.Node, ne
 		recompute_custom_property_dependents = true
 	}
 	children_need_inherited_style_update := !invalidation.is_none()
-	children_need_full_style_recompute := node_invalidation.needs_layout_tree_rebuild()
 	descendant_style_recompute_needed := ancestor_needs_descendant_style_recompute
 		|| node_invalidation.recompute_descendant_styles
-	if needs_full_style_update || node.child_needs_style_update()
+	descendants_need_update := needs_full_style_update || node.child_needs_style_update()
 		|| children_need_inherited_style_update || recompute_custom_property_dependents
-		|| children_need_full_style_recompute || descendant_style_recompute_needed {
+		|| node_invalidation.needs_layout_tree_rebuild() || descendant_style_recompute_needed
+	hidden := ancestor_is_display_none || is_display_none
+	deferred, needs_deferred_refresh := style_computer.prepare_hidden_child_style_update(node,
+		hidden, descendants_need_update)
+	children_need_full_style_recompute := node_invalidation.needs_layout_tree_rebuild() || needs_deferred_refresh
+	if !deferred && (descendants_need_update || needs_deferred_refresh) {
 		if element := element_opt {
 			if shadow_root := element.shadow_root() {
 				shadow_node := unsafe { &dom.Node(shadow_root) }
@@ -1940,7 +1945,7 @@ fn update_style_recursively(mut style_computer StyleComputer, node &dom.Node, ne
 					|| shadow_node.child_needs_style_update() || children_need_inherited_style_update
 					|| recompute_custom_property_dependents || children_need_full_style_recompute
 					|| descendant_style_recompute_needed {
-					subtree_invalidation := update_style_recursively(mut style_computer, shadow_node, children_need_inherited_style_update, recompute_custom_property_dependents, children_need_full_style_recompute, descendant_style_recompute_needed)
+					subtree_invalidation := update_style_recursively(mut style_computer, shadow_node, children_need_inherited_style_update, recompute_custom_property_dependents, children_need_full_style_recompute, descendant_style_recompute_needed, hidden)
 					if !is_display_none {
 						invalidation = required_invalidation_after_style_change_or(invalidation, subtree_invalidation)
 					}
@@ -1955,7 +1960,7 @@ fn update_style_recursively(mut style_computer StyleComputer, node &dom.Node, ne
 				|| children_need_inherited_style_update || current.child_needs_style_update()
 				|| recompute_custom_property_dependents || children_need_full_style_recompute
 				|| descendant_style_recompute_needed {
-				subtree_invalidation := update_style_recursively(mut style_computer, current, children_need_inherited_style_update, recompute_custom_property_dependents, children_need_full_style_recompute, descendant_style_recompute_needed)
+				subtree_invalidation := update_style_recursively(mut style_computer, current, children_need_inherited_style_update, recompute_custom_property_dependents, children_need_full_style_recompute, descendant_style_recompute_needed, hidden)
 				if !is_display_none {
 					invalidation = required_invalidation_after_style_change_or(invalidation, subtree_invalidation)
 				}
@@ -2010,7 +2015,7 @@ fn update_style_for_document_from_upstream(document &dom.Document) RequiredInval
 	style_computer.reset_has_result_cache()
 	style_computer.reset_ancestor_filter()
 	mutable_document.build_registered_properties_cache()
-	return update_style_recursively(mut style_computer, unsafe { &dom.Node(document) }, false, false, false, false)
+	return update_style_recursively(mut style_computer, unsafe { &dom.Node(document) }, false, false, false, false, false)
 }
 
 // The computed value of `property_id` for `element`, serialized from the retained StyleComputer result.
@@ -2028,7 +2033,7 @@ pub fn computed_value_for(element &dom.Element, property_id PropertyID) ?string 
 // by the resolved-value algorithms (Editing's resolved_value(), for example).
 pub fn up_to_date_computed_properties_for_element(element &dom.Element) &ComputedProperties {
 	mut document := element.as_node().document()
-	css_style_computer_for(document)
+	mut computer := css_style_computer_for(document)
 
 	abstract_element := dom.AbstractElement.new(element, none)
 	// Bootstrap missing styles, then let the document retain the scope of later
@@ -2038,6 +2043,7 @@ pub fn up_to_date_computed_properties_for_element(element &dom.Element) &Compute
 	} else if document.element_needs_style_update(element) {
 		document.update_style()
 	}
+	computer.materialize_hidden_styles_for_query(element)
 
 	return if dom_computed := abstract_element.computed_properties() {
 		computed_properties_from_dom(dom_computed) or {
@@ -2071,6 +2077,7 @@ pub fn computed_styles_with_and_without_inline(element &dom.Element) ?ComputedSt
 	}
 
 	mut style_computer := css_style_computer_for(document)
+	style_computer.materialize_hidden_styles_for_query(element)
 	with_inline := if dom_computed := abstract_element.computed_properties() {
 		computed_properties_from_dom(dom_computed) or {
 			style_computer.compute_style_with_seeded_ancestors(abstract_element)
