@@ -3329,16 +3329,26 @@ fn collect_svg_mask_paint_operations(node &Node, state &LayoutState,
 				if image_url != '' && used.content_width().to_double() > 0
 					&& used.content_height().to_double() > 0 {
 					position := paint_cumulative_offset(node, state, used)
+					page_delta_x := position.x().to_double() - used.offset.x().to_double()
+					page_delta_y := position.y().to_double() - used.offset.y().to_double()
+					mut to_page := svg.AffineTransform{}.translated(page_delta_x, page_delta_y).multiply(used.svg_viewbox_transform()).multiply(resource_transform).multiply(used.svg_transform())
+					if object_bounding_box_units {
+						to_page = outer_svg_viewport_transform_in_page_space(node, state).multiply(to_page)
+					}
 					object_position := computed.object_position()
 					image_rect := painting.Rect{
-						x: position.x().to_double()
-						y: position.y().to_double()
+						x: used.offset.x().to_double()
+						y: used.offset.y().to_double()
 						width: used.content_width().to_double()
 						height: used.content_height().to_double()
 					}
+					// Images use the same resource/viewBox/use mapping as paths.
+					// Keep the source rectangle local so normalization applies once,
+					// including when a decoded SVG expands into vector operations.
+					mut image_collection := SVGMaskPaintCollection{}
 					if !collect_svg_vector_image_paint_operations(node, image_url, image_rect,
-						image_color_scheme(element.document(), computed), mut collection) {
-						collection.operations << painting.SVGMaskPaintOperation{
+						image_color_scheme(element.document(), computed), mut image_collection) {
+						image_collection.operations << painting.SVGMaskPaintOperation{
 							kind: .image
 							image_url: image_url
 							image_rect: image_rect
@@ -3355,6 +3365,8 @@ fn collect_svg_mask_paint_operations(node &Node, state &LayoutState,
 							}
 						}
 					}
+					collection.operations << transform_svg_mask_paint_operations(image_collection.operations,
+						painting_affine_from_svg(to_page))
 				}
 			}
 		} else if svg_path := used.computed_svg_path() {
