@@ -2,6 +2,21 @@ module css
 
 import dom
 import math
+import os
+
+__global (
+	computed_longhand_extension_mode int
+	computed_longhand_extension_diagnostics bool
+	computed_longhand_extension_reported bool
+)
+
+fn computed_longhand_extensions_enabled() bool {
+	if computed_longhand_extension_mode == 0 {
+		computed_longhand_extension_mode = if os.getenv('VOX_DISABLE_EXTENDED_LONGHAND_REUSE') == '' { 1 } else { 2 }
+		computed_longhand_extension_diagnostics = os.getenv('VOX_EXTENDED_LONGHAND_REUSE_DIAGNOSTICS') != ''
+	}
+	return computed_longhand_extension_mode == 1
+}
 
 // Reuse only the longhand computation loop, before custom properties,
 // animations, box transformations and element-specific adjustments. Every hit
@@ -22,6 +37,7 @@ enum ComputedLonghandReuseValueKind as u8 {
 	string_
 	custom_ident
 	list
+	border_image_slice
 }
 
 struct ComputedLonghandReuseValue {
@@ -106,6 +122,18 @@ fn computed_longhand_reuse_typed_snapshot(value &StyleValue) ComputedLonghandReu
 			}
 			ComputedLonghandReuseValue{ kind: .list, children: children, separator: value.separator_, collapsible: value.collapsible_ }
 		}
+		BorderImageSliceStyleValue {
+			if value.top_.len != 1 || value.right_.len != 1 || value.bottom_.len != 1 || value.left_.len != 1 {
+				ComputedLonghandReuseValue{}
+			} else {
+				ComputedLonghandReuseValue{ kind: .border_image_slice, integer: if value.fill_ { 1 } else { 0 }, children: [
+					computed_longhand_reuse_typed_snapshot(&value.top_[0]),
+					computed_longhand_reuse_typed_snapshot(&value.right_[0]),
+					computed_longhand_reuse_typed_snapshot(&value.bottom_[0]),
+					computed_longhand_reuse_typed_snapshot(&value.left_[0]),
+				] }
+			}
+		}
 		else {
 			ComputedLonghandReuseValue{ text: value.serialize(.normal), value_type: value.type_name() }
 		}
@@ -147,6 +175,15 @@ fn computed_longhand_reuse_typed_snapshot_matches(snapshot &ComputedLonghandReus
 			}
 			true
 		}
+		BorderImageSliceStyleValue {
+			snapshot.kind == .border_image_slice && snapshot.children.len == 4
+				&& snapshot.integer == if value.fill_ { 1 } else { 0 }
+				&& value.top_.len == 1 && value.right_.len == 1 && value.bottom_.len == 1 && value.left_.len == 1
+				&& computed_longhand_reuse_typed_snapshot_matches(&snapshot.children[0], &value.top_[0])
+				&& computed_longhand_reuse_typed_snapshot_matches(&snapshot.children[1], &value.right_[0])
+				&& computed_longhand_reuse_typed_snapshot_matches(&snapshot.children[2], &value.bottom_[0])
+				&& computed_longhand_reuse_typed_snapshot_matches(&snapshot.children[3], &value.left_[0])
+		}
 		else {
 			snapshot.kind == .unsupported && snapshot.value_type == value.type_name() && snapshot.text == value.serialize(.normal)
 		}
@@ -160,6 +197,21 @@ fn computed_longhand_reuse_value_is_simple(value &dom.StyleValue) bool {
 	if value.css_value_handle == unsafe { nil } { return false }
 	typed := unsafe { &TypedStyleValueBox(value.css_value_handle) }
 	return computed_longhand_reuse_typed_value_is_simple(&typed.value)
+}
+
+// CSS-wide initial/unset values use the same defaults as an absent declaration.
+// Explicit inheritance is safe only for properties whose parent inputs the key
+// already snapshots. Non-inherited parent values deliberately remain excluded.
+fn computed_longhand_reuse_property_is_simple(id PropertyID, value &dom.StyleValue) bool {
+	if computed_longhand_extensions_enabled() && value.css_value_handle != unsafe { nil } {
+		typed := unsafe { &TypedStyleValueBox(value.css_value_handle) }
+		if typed.value is KeywordStyleValue {
+			keyword := typed.value.keyword_
+			if keyword in [.initial, .unset] { return true }
+			if keyword == .inherit { return computed_interpolation_is_inherited_property(id) }
+		}
+	}
+	return computed_longhand_reuse_value_is_simple(value)
 }
 
 fn computed_longhand_reuse_typed_value_is_simple(value &StyleValue) bool {
@@ -180,6 +232,14 @@ fn computed_longhand_reuse_typed_value_is_simple(value &StyleValue) bool {
 				}
 			}
 			return true
+		}
+		BorderImageSliceStyleValue {
+			return computed_longhand_extensions_enabled()
+				&& value.top_.len == 1 && value.right_.len == 1 && value.bottom_.len == 1 && value.left_.len == 1
+				&& computed_longhand_reuse_typed_value_is_simple(&value.top_[0])
+				&& computed_longhand_reuse_typed_value_is_simple(&value.right_[0])
+				&& computed_longhand_reuse_typed_value_is_simple(&value.bottom_[0])
+				&& computed_longhand_reuse_typed_value_is_simple(&value.left_[0])
 		}
 		else { return false }
 	}
@@ -236,6 +296,16 @@ fn computed_longhand_reuse_typed_hash(value &StyleValue) ?u64 {
 			}
 			hash
 		}
+		BorderImageSliceStyleValue {
+			if value.top_.len != 1 || value.right_.len != 1 || value.bottom_.len != 1 || value.left_.len != 1 {
+				return none
+			}
+			mut hash := u64(11) ^ if value.fill_ { u64(0x100000001b3) } else { u64(0) }
+			hash = (hash ^ computed_longhand_reuse_typed_hash(&value.top_[0])?) * u64(0x100000001b3)
+			hash = (hash ^ computed_longhand_reuse_typed_hash(&value.right_[0])?) * u64(0x100000001b3)
+			hash = (hash ^ computed_longhand_reuse_typed_hash(&value.bottom_[0])?) * u64(0x100000001b3)
+			(hash ^ computed_longhand_reuse_typed_hash(&value.left_[0])?) * u64(0x100000001b3)
+		}
 		else { return none }
 	}
 }
@@ -281,7 +351,7 @@ fn (s &StyleComputer) computed_longhand_reuse_key(element dom.AbstractElement,
 		if !computed_interpolation_is_longhand_property(id) { continue }
 		property := cascaded.style_property(id) or { continue }
 		count++
-		if !computed_longhand_reuse_value_is_simple(property.value) {
+		if !computed_longhand_reuse_property_is_simple(id, property.value) {
 			record_diagnostic_longhand_rejection(id, property.value)
 			return none
 		}
@@ -328,12 +398,17 @@ fn (s &StyleComputer) restore_computed_longhands(key &ComputedLonghandReuseKey,
 	if !computed_longhand_reuse_keys_equal(key, &entry.key) { return false }
 	for input_index in 0 .. entry.parent_inputs.len {
 		input := &entry.parent_inputs[input_index]
+		// A computed composite can retain arrays from its original specified
+		// value. A later equal, independently boxed input must not revive that
+		// entry after the retained original was mutated in place.
+		if !computed_longhand_reuse_input_matches(input, input.value) { return false }
 		index := int(input.id) - int(first_longhand_property_id())
 		value := key.parent.raw_property_at_index(index)
 		if !computed_longhand_reuse_input_matches(input, value) { return false }
 	}
 	for input_index in 0 .. entry.inputs.len {
 		input := &entry.inputs[input_index]
+		if !computed_longhand_reuse_input_matches(input, input.value) { return false }
 		property := cascaded.style_property(input.id) or { return false }
 		if !computed_longhand_reuse_input_matches(input, property.value)
 			|| property.important != input.important {
@@ -350,6 +425,17 @@ fn (s &StyleComputer) restore_computed_longhands(key &ComputedLonghandReuseKey,
 	properties.font_metrics_depend_on_viewport_metrics_ = cached.font_metrics_depend_on_viewport_metrics_
 	properties.font_input_refresh_safe_ = cached.font_input_refresh_safe_
 	properties.font_input_depends_on_font_size_ = cached.font_input_depends_on_font_size_
+	if computed_longhand_extension_diagnostics && !computed_longhand_extension_reported {
+		for input in entry.inputs {
+			typed := unsafe { &TypedStyleValueBox(input.value.css_value_handle) }
+			if typed.value is BorderImageSliceStyleValue
+				|| (typed.value is KeywordStyleValue && typed.value.keyword_ in [.initial, .unset, .inherit]) {
+				computed_longhand_extension_reported = true
+				eprintln('Vox extended longhand reuse: restored')
+				break
+			}
+		}
+	}
 	return true
 }
 

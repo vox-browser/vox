@@ -46,6 +46,130 @@ fn longhand_reuse_assert_oracle(actual &ComputedProperties, computer &StyleCompu
 	assert actual.font_metrics_depend_on_viewport_metrics_ == oracle.font_metrics_depend_on_viewport_metrics_
 }
 
+fn test_longhand_reuse_accepts_explicit_inheritance_of_guarded_parent_properties() {
+	computer, parent, element, parent_style := longhand_reuse_fixture()
+	other := parent.document().create_element('span') or { panic(err) }
+	mut parent_node := parent.as_node()
+	parent_node.append_child(other.as_node()) or { panic(err) }
+	mut cascaded := longhand_reuse_cascade(parse_css_value(ParsingParams{}, '70px', .width) or {
+		panic('width')
+	})
+	for id in [PropertyID.font_family, .color, .font_size, .line_height] {
+		cascaded.set_property(id, dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.inherit))),
+			.no, .author, none, unsafe { nil }, none)
+	}
+	computer.begin_computed_property_page_batch()
+	defer { computer.end_computed_property_page_batch() }
+	_ = computer.compute_properties(dom.AbstractElement.new(element, none), mut cascaded)
+	key := computer.computed_longhand_reuse_key(dom.AbstractElement.new(other, none), cascaded,
+		parent_style, false) or { panic('inherited declarations must be eligible') }
+	mut probe := computed_properties_with_initial_values()
+	assert computer.restore_computed_longhands(key, cascaded, mut probe)
+	actual := computer.compute_properties(dom.AbstractElement.new(other, none), mut cascaded)
+	longhand_reuse_assert_oracle(actual, computer, other, mut cascaded)
+	// A forced hash collision still checks the inherited payload, even though
+	// both declarations continue to contain the same `inherit` keyword.
+	color := parent_style.property(.color, .no) or { panic('color') }
+	mut box := unsafe { &TypedStyleValueBox(color.css_value_handle) }
+	box.value = StyleValue(ColorStyleValue.create(Color.rgba(7, 8, 9, 255)))
+	assert !computer.restore_computed_longhands(key, cascaded, mut probe)
+	updated := computer.compute_properties(dom.AbstractElement.new(other, none), mut cascaded)
+	longhand_reuse_assert_oracle(updated, computer, other, mut cascaded)
+}
+
+fn test_longhand_reuse_wide_defaults_match_uncached_values_and_flags() {
+	computer, _, element, parent_style := longhand_reuse_fixture()
+	computer.begin_computed_property_page_batch()
+	defer { computer.end_computed_property_page_batch() }
+	for keyword in [Keyword.initial, .unset] {
+		mut cascaded := CascadedProperties.new()
+		for id in [PropertyID.width, .font_family, .color, .line_height] {
+			cascaded.set_property(id, dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(keyword))),
+				.yes, .author, none, unsafe { nil }, none)
+		}
+		_ = computer.compute_properties(dom.AbstractElement.new(element, none), mut cascaded)
+		key := computer.computed_longhand_reuse_key(dom.AbstractElement.new(element, none), cascaded,
+			parent_style, false) or { panic('wide defaults must be eligible') }
+		mut probe := computed_properties_with_initial_values()
+		assert computer.restore_computed_longhands(key, cascaded, mut probe)
+		actual := computer.compute_properties(dom.AbstractElement.new(element, none), mut cascaded)
+		longhand_reuse_assert_oracle(actual, computer, element, mut cascaded)
+	}
+	mut inherited_width := longhand_reuse_cascade(dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.inherit))))
+	assert computer.computed_longhand_reuse_key(dom.AbstractElement.new(element, none),
+		inherited_width, parent_style, false) == none
+}
+
+fn test_longhand_reuse_border_slices_match_oracle_and_guard_all_mutable_sides() {
+	computer, _, element, parent_style := longhand_reuse_fixture()
+	computer.begin_computed_property_page_batch()
+	defer { computer.end_computed_property_page_batch() }
+	for side in 0 .. 5 {
+		mut cascaded := longhand_reuse_cascade(parse_css_value(ParsingParams{}, '70px', .width) or {
+			panic('width')
+		})
+		slice := parse_css_value(ParsingParams{}, '10 20% 30 40% fill', .border_image_slice) or {
+			panic('slice')
+		}
+		cascaded.set_property(.border_image_slice, slice, .no, .author, none, unsafe { nil }, none)
+		_ = computer.compute_properties(dom.AbstractElement.new(element, none), mut cascaded)
+		key := computer.computed_longhand_reuse_key(dom.AbstractElement.new(element, none), cascaded,
+			parent_style, false) or { panic('numeric border slices must be eligible') }
+		mut probe := computed_properties_with_initial_values()
+		assert computer.restore_computed_longhands(key, cascaded, mut probe)
+		actual := computer.compute_properties(dom.AbstractElement.new(element, none), mut cascaded)
+		longhand_reuse_assert_oracle(actual, computer, element, mut cascaded)
+		mut box := unsafe { &TypedStyleValueBox(slice.css_value_handle) }
+		if mut box.value is BorderImageSliceStyleValue {
+			match side {
+				0 { box.value.top_[0] = StyleValue(NumberStyleValue.create(19)) }
+				1 { box.value.right_[0] = StyleValue(PercentageStyleValue.create(Percentage.new(29))) }
+				2 { box.value.bottom_[0] = StyleValue(NumberStyleValue.create(39)) }
+				3 { box.value.left_[0] = StyleValue(PercentageStyleValue.create(Percentage.new(49))) }
+				else { box.value.fill_ = false }
+			}
+		} else { panic('wrong slice type') }
+		assert !computer.restore_computed_longhands(key, cascaded, mut probe)
+		updated := computer.compute_properties(dom.AbstractElement.new(element, none), mut cascaded)
+		longhand_reuse_assert_oracle(updated, computer, element, mut cascaded)
+	}
+}
+
+fn test_longhand_reuse_border_slice_snapshots_keep_types_and_reject_incomplete_sides() {
+	value := StyleValue(BorderImageSliceStyleValue.create(StyleValue(NumberStyleValue.create(10)),
+		StyleValue(NumberStyleValue.create(20)), StyleValue(NumberStyleValue.create(30)),
+		StyleValue(NumberStyleValue.create(40)), false))
+	snapshot := computed_longhand_reuse_typed_snapshot(&value)
+	mut changed := value
+	if mut changed is BorderImageSliceStyleValue {
+		changed.top_ = [StyleValue(PercentageStyleValue.create(Percentage.new(10)))]
+	}
+	assert !computed_longhand_reuse_typed_snapshot_matches(snapshot, &changed)
+	if mut changed is BorderImageSliceStyleValue { changed.top_ = []StyleValue{} }
+	assert !computed_longhand_reuse_typed_value_is_simple(&changed)
+	assert computed_longhand_reuse_typed_hash(&changed) == none
+	assert !computed_longhand_reuse_typed_snapshot_matches(snapshot, &changed)
+	if mut changed is BorderImageSliceStyleValue {
+		changed.top_ = [StyleValue(LengthStyleValue.create(Length.new(2, .em)))]
+	}
+	assert !computed_longhand_reuse_typed_value_is_simple(&changed)
+}
+
+fn test_longhand_reuse_control_keeps_original_keyword_and_composite_eligibility() {
+	previous := computed_longhand_extension_mode
+	computed_longhand_extension_mode = 2
+	defer { computed_longhand_extension_mode = previous }
+	for keyword in [Keyword.inherit, .initial, .unset] {
+		value := dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(keyword)))
+		assert !computed_longhand_reuse_property_is_simple(.font_family, value)
+	}
+	value := StyleValue(BorderImageSliceStyleValue.create(StyleValue(NumberStyleValue.create(10)),
+		StyleValue(NumberStyleValue.create(20)), StyleValue(NumberStyleValue.create(30)),
+		StyleValue(NumberStyleValue.create(40)), false))
+	assert !computed_longhand_reuse_typed_value_is_simple(&value)
+	assert computed_longhand_reuse_typed_value_is_simple(&StyleValue(NumberStyleValue.create(10)))
+}
+
 fn test_longhand_reuse_matches_full_computation_and_keeps_sibling_ownership() {
 	computer, parent, first_element, _ := longhand_reuse_fixture()
 	second_element := parent.document().create_element('span') or { panic(err) }
