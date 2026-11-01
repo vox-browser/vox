@@ -42,6 +42,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
         write_json(output / 'pixels.json', verdict)
         self.assertTrue(verdict['exact'], verdict['metrics'] + '\nArtifacts: ' + str(output))
 
+    def test_screen_blending_preserves_floating_point_group_opacity(self):
+        self.compare_fixture('screen-opacity-composite')
+
     def test_image_decode_reuse_follows_resource_identity(self):
         self.compare_fixture('image-decode-resource-reuse')
 

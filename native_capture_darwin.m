@@ -907,6 +907,8 @@ void native_end_background_blend_mode(void) {
 	}
 }
 
+#include "native_chromium_screen_blend.h"
+
 static CGBlendMode native_compositing_operator(int mode) {
 	switch (mode) {
 	case 1: return kCGBlendModeDestinationIn;
@@ -931,7 +933,7 @@ static CGBlendMode native_compositing_operator(int mode) {
 	}
 }
 
-// A Chromium-profile opacity group with normal blending paints into its own
+// A Chromium-profile opacity group with normal or screen blending paints into its own
 // bitmap, which shares the compositing canvas's format and device space. Its
 // leaves therefore keep their exact Skia compositing, and the group is drawn
 // over the backdrop with Chromium's floating-point layer composite.
@@ -942,6 +944,7 @@ typedef struct {
 	CGContextRef context;
 	uint8_t *pixels;
 	float opacity;
+	int blend_mode;
 	int left, top, right, bottom;
 } NativeOpacityGroup;
 
@@ -963,7 +966,7 @@ static int native_compositing_canvas_is_readable(CGContextRef context) {
 }
 
 static int native_begin_offscreen_opacity_group(NativeOpacityGroup *group, CGContextRef parent,
-	float opacity) {
+	float opacity, int blend_mode) {
 	if (!native_compositing_canvas_is_readable(parent)) {
 		return 0;
 	}
@@ -998,6 +1001,7 @@ static int native_begin_offscreen_opacity_group(NativeOpacityGroup *group, CGCon
 	*group = (NativeOpacityGroup){
 		.offscreen = 1, .parent = parent, .context = context, .pixels = canvas.pixels,
 		.opacity = MIN(MAX(opacity, 0.0f), 1.0f),
+		.blend_mode = blend_mode,
 		.left = left, .top = top, .right = right, .bottom = bottom,
 	};
 	native_font_compositing_context = context;
@@ -1025,7 +1029,11 @@ static void native_end_offscreen_opacity_group(NativeOpacityGroup *group) {
 		uint8_t *result = result_context == NULL ? NULL : CGBitmapContextGetData(result_context);
 		if (result != NULL) {
 			for (size_t row = 0; row < ink_height; ++row) {
-				native_composite_opacity_pixels(
+				if (group->blend_mode == 3) native_composite_screen_pixels(
+					group->pixels + (top + row) * layer_pitch + (size_t)left * 4,
+					backdrop + (top + row) * parent_pitch + (size_t)left * 4,
+					result + row * ink_width * 4, ink_width, group->opacity);
+				else native_composite_opacity_pixels(
 					group->pixels + (top + row) * layer_pitch + (size_t)left * 4,
 					backdrop + (top + row) * parent_pitch + (size_t)left * 4,
 					result + row * ink_width * 4, ink_width, group->opacity);
@@ -1072,7 +1080,8 @@ void native_begin_css_effect_layer(float opacity, int blend_mode) {
 		}
 		ladybird_v_skia_set_shared_layer_backdrop(0);
 #endif
-		if (blend_mode == 0 && native_begin_offscreen_opacity_group(group, context, opacity)) {
+		if ((blend_mode == 0 || blend_mode == 3)
+			&& native_begin_offscreen_opacity_group(group, context, opacity, blend_mode)) {
 			return;
 		}
 
