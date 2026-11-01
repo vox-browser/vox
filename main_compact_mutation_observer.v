@@ -126,7 +126,10 @@ for(const constructor of [MutationObserver,MutationRecord]){
  Object.defineProperty(globalThis,constructor.name,{value:constructor,writable:true,configurable:true});
 }
 const __mutationSetAttribute=__setAttribute,__mutationRemoveAttribute=__removeAttribute;
-__setAttribute=function(){const result=__elementApply(__mutationSetAttribute,undefined,arguments);__compactMutationFlush(false);return result;};
-__removeAttribute=function(){const result=__elementApply(__mutationRemoveAttribute,undefined,arguments);__compactMutationFlush(false);return result;};
+// Activation and form submission inspect native disabledness immediately after
+// listeners return. Publish both attribute and reflected-property writes even
+// when no observer is installed; a later frame is too late for that default.
+__setAttribute=function(state,name,value){name=__attributeName(state,name);const result=__elementApply(__mutationSetAttribute,undefined,[state,name,value]);__compactMutationFlush(name==="disabled");return result;};
+__removeAttribute=function(state,name){name=__attributeName(state,name);const result=__elementApply(__mutationRemoveAttribute,undefined,[state,name]);__compactMutationFlush(name==="disabled");return result;};
 '
 }
