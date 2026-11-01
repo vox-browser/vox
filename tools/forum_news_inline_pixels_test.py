@@ -12,6 +12,9 @@ from forum_news_pixels import REPO, VOX, executable_identity, guarded, write_jso
 
 @unittest.skipUnless(sys.platform == 'darwin', 'The reference uses native macOS fonts')
 class ForumNewsInlinePixelsTests(unittest.TestCase):
+    def test_css_shadows_follow_the_effect_rotation_before_descendant_svg_transforms(self):
+        self.compare_fixture('verge-transformed-drop-shadow', width=1024, height=768)
+
     def compare_fixture(self, name, width=800, height=600, scroll_y=0, document_active=False,
                         initial_viewport=False):
         output = Path(tempfile.mkdtemp(prefix='forum-news-inline-', dir=REPO / 'Build'))

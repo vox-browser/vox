@@ -781,7 +781,12 @@ fn assign_compatibility_visual_contexts_with_coordinate_root(mut box BlockBox, v
 	}
 	box.own_effects_visual_context_idx = 0
 	box.own_transform_visual_context_idx = 0
-	gfx_filter := box.filters().filter.to_gfx_filter(1.0)
+	mut gfx_filter := box.filters().filter.to_gfx_filter(1.0)
+	if filter := gfx_filter {
+		// Replay filters an already transformed source. Use the target box's
+		// CSS space, before any descendant SVG viewport or transform.
+		gfx_filter = compatibility_transformed_css_filter(filter, box.paint_transform)
+	}
 	isolated_surface := box.chromium_compositor_surface
 	if box.opacity < 1.0 || box.mix_blend_mode != .normal || gfx_filter != none || isolated_surface {
 		own_state = tree.append(painting.EffectsVisualData{

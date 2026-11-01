@@ -1,0 +1,13 @@
+<!doctype html><meta charset="utf-8"><title>CSS filter space before descendant SVG transforms</title>
+<style>
+html,body{margin:0;background:#59768a}
+.shape{position:absolute;background:white;width:40px;height:20px;filter:drop-shadow(8px 12px 0 #ea294c)}
+.rotate{left:100px;top:120px;transform:rotate(-90deg)}
+.scale{left:300px;top:120px;transform:scale(2) rotate(90deg)}
+svg{position:absolute;left:500px;top:120px;width:160px;height:80px;fill:white;transform:rotate(-90deg);filter:drop-shadow(0 20px 0 #ea294c)}
+.outer{position:absolute;left:150px;top:350px;filter:drop-shadow(30px 10px 0 #32dd91)}
+.child{background:white;width:80px;height:40px;transform:rotate(90deg)}
+</style>
+<div class="shape rotate"></div><div class="shape scale"></div>
+<svg viewBox="0 0 40 20"><g transform="scale(.5)"><path d="M0 0H80V40H0Z"/></g></svg>
+<div class="outer"><div class="child"></div></div>
