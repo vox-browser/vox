@@ -253,6 +253,7 @@ else
         -o "$compile_dir/Vox" "$repo_dir"
 fi
 mv -f "$compile_dir/Vox" "$binary_dir/Vox"
+python3 "$repo_dir/tools/localize_bundle_rpaths.py" "$binary_dir/Vox" "$build_dir"
 
 # Keep the filter worker's entry point independent of browser/UI initialization.
 # It uses the same engine, snapshot resource and private transport as self-exec.
