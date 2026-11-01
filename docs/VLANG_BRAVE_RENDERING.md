@@ -1,6 +1,8 @@
 # vlang.io rendering against Brave
 
-Pixel-perfect parity remains open. The current settled, archived comparison at
+Pixel-perfect parity remains open. The latest calculated-length fix removes
+the News card positioning error, but its shared production build also contains
+a paint-client layerization regression described below. The preceding settled, archived comparison at
 1280 × 800 CSS pixels and scale 1 has **4 differing pixels at the top** and
 **zero at every sampled 800-pixel scroll position from Y 2400 through 7200**,
 with **4 at Y 8000**. The news/reviews viewport at Y 9600 has **137** differences,
@@ -1485,3 +1487,87 @@ The initial shared production attempt fails after compilation because its build
 script changes during execution; that private candidate supplies diagnostic
 evidence only. The final promoted-text build supplies the checks above.
 Full live-page and scale-two parity remain open.
+
+
+## Calculated used lengths and exact card boundaries
+
+`0ef88058` converts calculated used lengths to float before their final fixed-point
+conversion when the document selects the Chromium rendering policy. The default
+translated LibWeb resolver retains its double precision. Raw transform resolution
+and plain percentage lengths retain their existing paths. This implements the
+final conversion boundary used by Blink's
+[calculated length resolver](https://chromium.googlesource.com/chromium/src/+/refs/tags/156.0.8078.48/third_party/blink/renderer/platform/geometry/length_functions.cc)
+and [float calculation value](https://chromium.googlesource.com/chromium/src/+/refs/tags/156.0.8078.48/third_party/blink/renderer/platform/geometry/calculation_value.h);
+it does not reproduce every internal arithmetic operation in Blink.
+
+For the News cards, `calc((100% - 32px) / 3)` at an 1184-pixel basis previously
+resolved just below 384 in double precision. Truncation produced 383.984375,
+placing subsequent cards at 447.984375 and 847.96875 instead of Brave's 448
+and 848. The final float conversion produces three exact 384-pixel cards.
+The 1280×600 `calc-flex-card-boundaries` fixture, with a fixed-width control
+row, improves from **161 differing pixels to zero**. Two independent Brave
+captures have byte-identical references; the same-build feature veto restores
+all 161 differences. The reference is committed unchanged.
+
+Six CSS precision tests and two real-layout tests pass in both no-GC and Boehm
+modes. The layout tests check flex basis, width, minimum and maximum width,
+and preserve the default LibWeb result. Three existing fractional-transform
+tests also execute successfully. The initial layout tests fail before the
+implementation, with the expected 383.984375 width. Startup, fourteen screenshot
+smoke cases under their existing bounds, eight exact image/gradient/table golds,
+and live scripted loading pass. The new fixture passes in the strict suite.
+
+The complete strict suite passes **60 of 65** and exits one. Its failures are
+`culled-scroll-overlap-gradient` (159,392),
+`gradient-obscured-border-destination` (222,353), `guardian-carousel-fade` (149),
+`guardian-carousel-paint-clients` (3,264), and
+`compositor-rounded-profiled-images` (145,828). Every failed fixture produces
+byte-identical native RGBA with this calculated-length conversion disabled in
+the same executable. No references or tolerances are changed for these failures.
+
+The fixed-reference sixteen-viewport page sweep has counts
+4 / 1,463 / 452 / 0 / 0 / 0 / 0 / 0 / 147,441 / 1,429 / 89,614 /
+137,777 / 2,674 / 9,038 / 13,171 / 13,355 at the previously recorded positions.
+All document, font, error and visible-image audits pass. These counts include
+the shared build's separate raster regression and cannot replace the preceding
+passing viewports with a parity claim. At Y 9600, the calculated-length negative
+control has 2,811 differences: the fix removes **137**, introduces none and
+worsens none. All seven other newly regressed viewports produce identical pixels
+with this fix disabled.
+
+A separate same-build diagnostic removes only the in-flight paint-client
+restrictions on adjacent chunk merging. It restores **zero at Y 6400 and 9600**,
+14,681 at 8800, 160 at 10400 and 97 at 10701. This isolates the lower-page
+regression from calculated geometry. It is a private diagnostic, not a shipped
+fix or production acceptance. A double-endpoint gradient eligibility veto and
+a mixed-bundle control using the preceding raster libraries leave the errors
+unchanged. The shared paint-client sources change during compilation; those
+other edits remain outside this feature commit.
+
+Evidence in `Build/vlang-calc-20261101/` includes:
+
+- `card-boundaries-{square-before,after}/`, `negative-calc-flex-card-boundaries/`,
+  and [reference identity](../Build/vlang-calc-20261101/calculated-card-reference.json).
+- `geometry-before-v2-*`, `precision-{none,boehm}-*`,
+  `geometry-{none,boehm}-*`, and `transform-guard-*` retain compile and runtime exits.
+- [Page audit](../Build/vlang-calc-20261101/page-regression-audit.json),
+  [pixel movement](../Build/vlang-calc-20261101/news-pixel-movement.json),
+  `calculated-length-{full,negative}-page/`,
+  [feature veto](../Build/vlang-calc-20261101/calculated-length-negative-control.json),
+  and `paint-client-control-page/` retain the unchanged-reference comparisons.
+- [Validation exits](../Build/vlang-calc-20261101/validation-status.json) and
+  [unchanged failures](../Build/vlang-calc-20261101/unchanged-browser-failures.json)
+  retain the failed aggregate verdict. Live loading passes with loaded fonts,
+  five complete visible images and zero native errors; it is not a pixel comparison.
+- [Build receipt](../Build/vlang-calc-20261101/calculated-length-production-status.json)
+  and [compiled source witness](../Build/vlang-calc-20261101/production-source-witness.json)
+  pin all four implementation inputs through the 249.31-second production build.
+  Peak sampled RSS is 7.97 GiB under the default 12 GiB guard. Other shared inputs
+  change, so the complete checkout is not frozen.
+
+The validated executable is
+`5aae83a4408e023380d51e4430003b519ec427bcd96b3701b634930eeda62952`,
+preserved in `Vox-calculated-length-installed.app`. Its native text library is
+`d6485fcea4d88ae3e5b921fc089bd77337223f53115e8b9efa712c33dc8e33fb`.
+Full live-page and scale-two equality remain open, as does production validation
+without the shared layerization regression.
