@@ -203,8 +203,6 @@ def run_trial(engine, app, folder, args):
                 args.vox_environment['VOX_DISABLE_DELETED_STYLE_RULE_INVALIDATION'] = '1'
             if getattr(args, 'control_disable_attribute_tag_buckets', False):
                 args.vox_environment['VOX_DISABLE_ATTRIBUTE_TAG_BUCKETS'] = '1'
-            if getattr(args, 'control_disable_compact_query_fields', False):
-                args.vox_environment['VOX_DISABLE_COMPACT_QUERY_FIELDS'] = '1'
             if getattr(args, 'control_disable_shared_node_properties', False):
                 args.vox_environment['VOX_DISABLE_SHARED_NODE_PROPERTIES'] = '1'
             if getattr(args, 'control_disable_shared_element_geometry', False):
@@ -285,8 +283,6 @@ def parse_args(argv=None):
                         help='Prefer tag buckets over required attributes in the pinned Vox control')
     parser.add_argument('--retain-incremental-webp-paint-policy', action='store_true',
                         help='Reproduce the historical WebP paint policy in both Vox arms; no decoder optimization credit')
-    parser.add_argument('--control-disable-compact-query-fields', action='store_true',
-                        help='Use the JSON request envelope only in matched Vox control trials')
     parser.add_argument('--control-disable-shared-node-properties', action='store_true',
                         help='Create separate text/comment/fragment property accessors in the pinned Vox control')
     parser.add_argument('--control-disable-shared-element-geometry', action='store_true',
@@ -337,7 +333,7 @@ def parse_args(argv=None):
             args.control_disable_live_pending_text_reuse,
             args.control_disable_live_pending_font_refresh,
             args.control_disable_positioned_image_ratio_reuse,
-            args.control_disable_conditional_sheet_invalidation or args.control_disable_inactive_conditional_sheet_skip or args.control_disable_classic_import_word_scan or args.control_disable_longhand_shape_reuse or args.control_disable_longhand_eligibility_first or args.control_disable_protected_value_index or args.control_disable_shared_element_geometry or args.control_disable_shared_node_properties or args.control_disable_compact_query_fields or args.control_disable_attribute_tag_buckets or args.control_disable_deleted_style_rule_invalidation or args.control_disable_targeted_user_style_changes or args.control_disable_static_user_style_filter or args.control_disable_document_filter_memo or args.control_disable_retained_grid_layout or args.control_disable_intrinsic_seed_visits)) and not args.control_vox_app:
+            args.control_disable_conditional_sheet_invalidation or args.control_disable_inactive_conditional_sheet_skip or args.control_disable_classic_import_word_scan or args.control_disable_longhand_shape_reuse or args.control_disable_longhand_eligibility_first or args.control_disable_protected_value_index or args.control_disable_shared_element_geometry or args.control_disable_shared_node_properties or args.control_disable_attribute_tag_buckets or args.control_disable_deleted_style_rule_invalidation or args.control_disable_targeted_user_style_changes or args.control_disable_static_user_style_filter or args.control_disable_document_filter_memo or args.control_disable_retained_grid_layout or args.control_disable_intrinsic_seed_visits)) and not args.control_vox_app:
         parser.error('Disabling the control optimization needs --control-vox-app')
     if not args.capture_reference and (args.repeat < 7 or not args.expected_vox or not args.expected_brave):
         parser.error('Acceptance needs seven pairs and both existing pixel references')
@@ -441,7 +437,6 @@ def main():
         control_disable_protected_value_index=args.control_disable_protected_value_index,
         control_disable_shared_element_geometry=args.control_disable_shared_element_geometry,
         control_disable_shared_node_properties=args.control_disable_shared_node_properties,
-        control_disable_compact_query_fields=args.control_disable_compact_query_fields,
         control_disable_attribute_tag_buckets=args.control_disable_attribute_tag_buckets,
         control_disable_deleted_style_rule_invalidation=args.control_disable_deleted_style_rule_invalidation,
         control_disable_targeted_user_style_changes=args.control_disable_targeted_user_style_changes,
