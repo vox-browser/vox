@@ -1,6 +1,6 @@
 # vlang.io scrolling
 
-The live **60 FPS target remains unmet**. After correcting animation-driven selector loss, one complete native trial on the correctly styled live page measured **8.54 scroll-changing publications/s**; the next trial crashed before input. There is no complete two-trial acceptance cohort. The historical **32.96–33.73 FPS** result used malformed SVG sizing and cannot establish correct live-page performance. These are completed Cocoa layer publications; physical display scanout is unmeasured. Work continues.
+The live **60 FPS target remains unmet**. The latest completed production build measures **6.50 and 9.00 scroll-changing publications/s** in two fresh, correctly styled live-page trials. Every measured interval exceeds 16.67 ms. Earlier startup crashes remain retained and unresolved. The historical **32.96–33.73 FPS** result used malformed SVG sizing; the near-60 outlier also lacked page resources. Neither establishes correct live-page performance. These are completed Cocoa layer publications; physical display scanout is unmeasured. Work continues.
 
 The [compositor milestone receipt](benchmark-results/vlang-scroll-20261101-compositor-milestone.json) and [compressed raw records](benchmark-results/vlang-scroll-20261101-compositor-milestone-raw.json.gz) retain 64 completed measurements and 1,657 raw text artifacts through this checkpoint, including diagnostic runs, failures, commands, input/publication timestamps, source and executable identities, host load, guard exits and rejected patches. Full artifacts remain in `Build/vlang-scroll-compositor-20261101-111741/`. That milestone is historical; later accepted cohorts are retained below.
 
@@ -313,3 +313,21 @@ The [fix checkpoint](benchmark-results/vlang-scroll-20261101-animation-ancestor-
 Focused custom-property, forced-arena-rotation and shadow-host tests pass under preallocation; the two non-arena cases pass with the collector. Disabling the fix reproduces the failures, including SVG width reverting to `auto`. Four existing animation/filter test files pass serially, and four frozen-page image pairs remain exact at both scales and offsets. Fresh startup and a normally active live window pass: GitHub is 20×20, social icons are 24×24, the document is complete and fonts loaded, with zero native script errors and browser exit zero.
 
 One complete unprofiled live trial with the standard 600-event schedule measures **8.54 FPS**. Its read-only pre-input audit confirms correct sizing and the JavaScript-mutated macOS download icon. The next trial exits 139 in `chromium_text_srgb_color` while recording early text paint, before input, and is invalid. Both attempts remain retained. Separate native sampling during actual input is diagnostic only: gradients, outer shadows, rounded boxes, images, glyphs and shared-picture publication dominate. The short layer dump has insufficient moving publications for FPS, and supplies only paint-command evidence. No timing from malformed rendering, profiling, or incomplete content earns optimization credit.
+
+
+## Direct gradient-blur backdrops
+
+The [blur checkpoint](benchmark-results/vlang-scroll-20261102-gradient-blur.json) and [compressed raw delta](benchmark-results/vlang-scroll-20261102-gradient-blur-raw.json.gz) retain 208 trial summaries, all failed attempts, source/build identities, resource audits, host load and actual exits. Commit `02b4b21e` uploads opaque regional blur backdrops directly through the existing transactional Dawn API. It avoids a background image inside the serialized picture while keeping the original target, blur coordinates and crop. Unsupported or failed transfers retain ordinary replay.
+
+The focused test makes 48 exact comparisons in each normal and sanitizer run, for both prototype and final source. It covers two scales, linear/radial inputs, padded rows, translucent fallback and forced partial-write rollback. Four frozen-page pairs remain exact at scales 1/2 and offsets 0/240. Separate actual-input diagnostics confirm 41 prototype and 39 final direct calls; loading counts are separate.
+
+| Cohort | Control FPS | Candidate FPS | Qualification |
+| --- | ---: | ---: | --- |
+| Prototype pair 1 | 10.297 | 10.656 | Complete, matching content audits |
+| Prototype pair 2 | 10.361 | 10.445 | Complete, small gain |
+| Final pair 1 | Invalid | 9.573 | Control crashes in CSS decoding before input |
+| Final pair 2 | 8.489 | 8.998 | Mean improves; median 101.70→106.98 ms and p95 120.72→140.56 ms regress |
+
+The final cohort is incomplete, so it supplies no complete optimization acceptance. The source change has exact correctness checks and reduces intermediate transport; these results do not establish smooth scrolling. No attempt is excluded or retried to pass.
+
+A newer shared Pikabu production build already contained the final blur source and animation-selector correction. Its required task inputs are stable; unrelated form/event files changed during compilation and remain recorded. It was reused, signed/verified and smoke-checked without another production build or native install. Two fresh live processes on this installed identity complete with correct icon sizes, the JavaScript-mutated macOS icon, matching cached author CSS, complete readiness, loaded fonts and zero native script errors. They measure **6.502 / 8.998 FPS**, with median **128.85 / 109.69 ms** and p95 **170.39 / 125.39 ms**. Whole-build and host variation cannot be attributed entirely to the blur change. The earlier paint/CSS/TLS crashes remain unresolved. No retired-instruction savings or broad-suite carry is claimed.
