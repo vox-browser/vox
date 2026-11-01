@@ -1,9 +1,11 @@
 # Popular-site adblock verification
 
-The latest BBC, CNN and Guardian rendering checkpoints are recorded at the end
+The latest BBC, CNN, Guardian and Verge rendering checkpoints are recorded at the end
 of this document. Guardian passes the registered viewport comparison with cold
-and complete-response caches. BBC and CNN complete-response cache captures are
-pixel-exact; cold BBC and CNN's saved-live/frozen-reference acceptance remain open.
+and complete-response caches. BBC, CNN and Verge complete-response cache captures
+are pixel-exact; cold BBC/Verge and CNN's saved-live/frozen-reference acceptance
+remain open. The latest bundle's additional Guardian full-page recheck timed out;
+its earlier accepted checkpoint is retained below.
 
 The matrix exercises guest pages on 13 representative news, video, social,
 shopping, reference, and developer sites. It compares Vox's native filtering
@@ -2297,3 +2299,52 @@ scripting, video playback, logged-in behavior or every scrolling position.
 There is no CPU-instruction or scrolling-performance claim, and the existing
 broad-verification baseline is unchanged. The other catalog sites retain their
 individual acceptance status.
+
+
+## Verge archived viewport reaches zero pixels with complete caches, 2 November 2026
+
+The Verge passes the registered Brave/full-uBO comparison at **zero differing
+RGBA pixels** across the complete 1024×768 document viewport, scale 1, with
+complete encoded-response caches and fresh browser processes. Its saved live
+Brave frame also matches the frozen replay exactly. The final same-bundle
+control has 17,112 differing pixels when the new SVG replay is disabled.
+No pixel tolerance or excluded region was changed.
+
+The archive was refreshed after clicking the real “Dismiss privacy notice”
+button in a private windowed Brave profile. Its 164 sealed responses contain
+9,123,281 bytes. The live full-uBO capture checks 625 request/header decisions,
+including 37 blocks, with zero native/full-uBO disagreements; cosmetic CSS,
+procedural filters and scriptlet lists agree. Earlier archives and the failed
+memory-bounded live capture remain in the evidence.
+
+Separate renderer commits map spatial filters through their owning transform
+(`1f561e8f`), rebuild filter mappings after sampled transform animation
+(`6c406097`), and replay eligible SVG vectors inside local filter coordinates
+on the complete owning root raster tiles (`755929b0`). The last fix retains
+SkScalar rectangle edges and includes roots whose positioned ink is shorter
+than the viewport. Unsupported input retains the bitmap fallback. The refreshed
+reference is independently committed as `5c3459c2`.
+
+The final SVG geometry/eligibility tests pass in default and no-GC modes.
+Eight native pixel regressions pass, including the new Verge case, related
+Guardian/CNN cases, compositor continuation and blending. Fresh headless startup
+passes, and CNN's unchanged archived viewport remains pixel-exact. A separate
+Guardian full-page preservation capture timed out at 120 seconds without a PNG.
+A 35-second diagnostic with the new SVG replay disabled also timed out; its
+sample shows the main event loop idle. Neither run supplies full-site
+preservation credit or identifies the cause of that capture stall.
+
+**Cold-cache acceptance remains open.** The retained parent-bundle cold trial
+has 105,761 differing pixels in the lead WebP photograph (maximum channel error
+58), while saved-live/frozen Brave equality remains zero. The existing streamed
+RGB versus complete-body YUV generator policy is a suspected cause; that
+per-image decoder choice has not yet been independently instrumented. This
+renderer change does not claim to fix cold image decoding.
+
+The result covers the frozen guest viewport with initialized DOM/CSS and author
+scripts removed. Complete live Vox scripting, video, logged-in behavior and all
+scroll positions remain unqualified. There is no CPU-instruction or scrolling
+performance claim. Exact commands, executable/library hashes, full-uBO list
+hashes, build source concurrency, failed experiments and guard exits are in the
+[durable Verge receipt](benchmark-results/verge-brave-pixels-2026-11-02.json).
+Raw artifacts are under `Build/verge-parity-20261101/`.
