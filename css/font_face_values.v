@@ -3394,6 +3394,7 @@ pub fn (mut set FontFaceSet) switch_to_loaded() {
 		set.is_stuck_on_the_environment = true
 		return
 	}
+	if set.wait_for_pending_document_rendering() { return }
 
 	if computer := set.font_computer_ {
 		if document := computer.document_ {
