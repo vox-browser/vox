@@ -2392,6 +2392,39 @@ behavior and all scroll positions remain unqualified. There is no instruction
 count or scrolling-performance claim.
 
 
+## Pikabu compositor isolation; full-page gate remains open, 2 November 2026
+
+A fresh capture with the pinned completed browser reproduces **79,769**
+differing pixels. Brave's layer-tree and paint-record diagnostics put the lead
+photograph in a 578×436 layer promoted for overlap; Vox assigns that image to
+the root raster. A controlled Brave-only `z-index:auto` override preserves the
+image's DOM rectangle and makes its interior match Vox exactly, improving that
+rectangle from **68,723 to zero** differing pixels. The unmodified Brave capture
+still matches the original frozen reference over the entire viewport. These
+mutations are diagnostic evidence and have not changed Vox's author styles or
+the reference. Changing native origins, grids, clipping, decoding, mipmaps or
+GPU backends alone has not established a renderer fix.
+
+A later private prototype rasterizes the photo at a uniform intermediate
+scale before compositing it at its CSS size. This reduces the full-viewport
+count to **17,057**, and the measured photo interior to **6,483** pixels with a
+maximum error of two. The opposite scale-selection control retains 79,154
+full-viewport differences. This narrows the next implementation work to direct
+image compositing, its eligibility, raster tiles and final sampling. The
+prototype selects this diagnostic image by dimensions and is unsuitable for
+production; it was not committed as a renderer fix. The exact remaining
+sampling, other page differences and the three saved-live/frozen reference
+pixels remain open.
+
+The checks exposed a cleanup race in the memory guard. Commit `0f1e11993`
+reaps an identity-verified root already signalled with `SIGKILL` before handling
+a process-group permission error. Surviving owned processes still fail the
+check, and the memory limit is unchanged. All ten guard tests pass; a later
+windowed browser attempt correctly retains its memory-limit failure receipt.
+Commands, hashes, layer reasons, controlled mutations and rejected probes are
+retained in the [compositor isolation receipt](benchmark-results/pikabu-compositor-isolation-2026-11-02.json).
+No new site parity or performance acceptance is claimed.
+
 ## Pikabu sizing and SVG patterns improve; full-page gate remains open, 2 November 2026
 
 Four separately committed fixes correct constrained replaced-element heights
