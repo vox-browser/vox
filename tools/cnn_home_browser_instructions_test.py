@@ -15,7 +15,7 @@ class CNNHomeInstructionTests(unittest.TestCase):
         self.assertEqual(benchmark.trial_order(1, True), ['brave', 'vox', 'control'])
 
     def test_separate_control_app_does_not_disable_any_engine_optimization(self):
-        names = ['control_block_images', 'control_relative_flow_layout', 'control_pending_font_layout', 'control_font_refresh_cascades', 'control_live_font_geometry', 'control_lazy_image_batches', 'control_geometry_snapshot_keys', 'control_live_font_cascades', 'control_hidden_animations', 'control_font_completion',
+        names = ['control_font_completion_rendering', 'control_block_images', 'control_relative_flow_layout', 'control_pending_font_layout', 'control_font_refresh_cascades', 'control_live_font_geometry', 'control_lazy_image_batches', 'control_geometry_snapshot_keys', 'control_live_font_cascades', 'control_hidden_animations', 'control_font_completion',
                  'control_lazy_images', 'control_static_media']
         args = SimpleNamespace(control_vox_app=None, **dict.fromkeys(names, False))
         self.assertEqual(benchmark.control_environment(args), {})
