@@ -30,7 +30,8 @@ fn test_chromium_inline_block_propagates_a_nested_block_flex_first_baseline() {
 	result := run_document_layout(document, 1024, 768) or { panic('layout failed') }
 	inline := chromium_inline_baseline_node(result.root, 'inline') or { panic('missing inline') }
 	column := chromium_inline_baseline_node(result.root, 'column') or { panic('missing column') }
-	inline_state := result.state.try_get(inline.as_node_with_style()?) or { panic('missing inline state') }
+	inline_styled := inline.as_node_with_style() or { panic('inline has no style') }
+	inline_state := result.state.try_get(inline_styled) or { panic('missing inline state') }
 	// Brave's inline-block is 64px tall, starts 13px below the containing
 	// line's top, and exports the label's 12px baseline through both wrappers.
 	assert inline_state.content_height().to_double() == 64
