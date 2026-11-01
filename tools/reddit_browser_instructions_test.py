@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 import tempfile
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
@@ -44,6 +45,28 @@ class FrozenResponseTests(unittest.TestCase):
             self.assertIsNone(benchmark.frozen_response(root,url,'Image'))
             self.put(root,url,final='https://redirect.test/image')
             self.assertIsNone(benchmark.frozen_response(root,url,'Image'))
+
+    def test_runtime_pins_cover_brave_framework_and_vox_transitive_dependencies(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            vox = root / 'Vox.app/Contents/MacOS/Vox'
+            brave = root / 'Brave.app/Contents/MacOS/Brave Browser'
+            framework = brave.parent.parent / 'Frameworks/Brave Browser Framework.framework/Versions/1/Brave Browser Framework'
+            framework.parent.mkdir(parents=True)
+            framework.write_bytes(b'framework code')
+            dependency = root / 'transitive-native.dylib'
+            helper = vox.with_name('VoxAdblockWorker')
+            helper.parent.mkdir(parents=True)
+            helper.write_bytes(b'helper')
+            args = SimpleNamespace(vox=vox, brave=brave, html=root/'page.html',
+                                   expected=root/'expected.png', network_deny=root/'deny.dylib')
+            with patch('measure_sealed_github_instructions.native_dependencies', return_value=[dependency]), \
+                    patch.object(benchmark, 'digest', return_value='hash'):
+                paths = benchmark.pinned_inputs(args)
+            self.assertIn(str(framework.resolve()), paths)
+            self.assertIn(str(dependency), paths)
+            self.assertIn(str(helper), paths)
+            self.assertIn(str(benchmark.REPO / 'tools/process_instruction_counts.py'), paths)
 
 
 class InstructionGateTests(unittest.TestCase):
@@ -93,6 +116,34 @@ class InstructionGateTests(unittest.TestCase):
                     self.assertNotIn('LADYBIRD_ENABLE_SNAPSHOT_CACHE',os.environ)
                     raise RuntimeError('capture failed')
             self.assertEqual(dict(os.environ),original)
+
+    def test_private_profiles_are_empty_distinct_and_removed_after_each_observation(self):
+        with tempfile.TemporaryDirectory() as directory:
+            profiles = []
+            for _ in range(2):
+                with benchmark.private_measurement_environment(Path('/offline.dylib'), directory) as profile:
+                    self.assertEqual(list(profile.iterdir()), [])
+                    self.assertEqual(os.environ['VOX_PROFILE_DIR'], str(profile))
+                    self.assertEqual(os.environ['LADYBIRD_SCREENSHOT_SCALE'], '1')
+                    self.assertEqual(os.environ['DYLD_INSERT_LIBRARIES'], '/offline.dylib')
+                    (profile / 'settings.json').write_text('saved proxy and bookmark settings')
+                    profiles.append(profile)
+                self.assertFalse(profile.exists())
+            self.assertNotEqual(*profiles)
+
+    def test_private_environment_sanitizes_both_engines_and_restores_after_failure(self):
+        original = dict(PATH='/bin', VOX_PROFILE_DIR='/user/profile', VOX_CAPTURE_DOCUMENT_ONLY='1',
+                        HTTPS_PROXY='ambient proxy', LADYBIRD_ENABLE_SNAPSHOT_CACHE='1',
+                        DYLD_INSERT_LIBRARIES='/ambient.dylib', GC_INITIAL_HEAP_SIZE='1G',
+                        JSC_useJIT='false')
+        with patch.dict(os.environ, original, clear=True):
+            with self.assertRaisesRegex(RuntimeError, 'capture failed'):
+                with benchmark.private_measurement_environment() as profile:
+                    self.assertNotEqual(str(profile), '/user/profile')
+                    for key in original.keys() - {'PATH', 'VOX_PROFILE_DIR'}:
+                        self.assertNotIn(key, os.environ)
+                    raise RuntimeError('capture failed')
+            self.assertEqual(dict(os.environ), original)
 
 
 if __name__=='__main__':unittest.main()

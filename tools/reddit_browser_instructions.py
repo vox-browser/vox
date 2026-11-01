@@ -14,6 +14,7 @@ import os
 from pathlib import Path
 import statistics
 import sys
+import tempfile
 from fractions import Fraction
 from types import SimpleNamespace
 
@@ -97,6 +98,27 @@ def native_environment(network_deny):
                 os.environ[key] = value
 
 
+@contextmanager
+def private_measurement_environment(network_deny=None, scratch_dir=None):
+    """Keep saved Vox settings and ambient controls out of either engine's run."""
+    saved = dict(os.environ)
+    try:
+        clean = {key: value for key, value in saved.items()
+                 if 'proxy' not in key.lower()
+                 and not key.startswith(('VOX_', 'LADYBIRD_', 'DYLD_', 'GC_', 'JSC_'))}
+        with tempfile.TemporaryDirectory(prefix='reddit-instruction-profile-', dir=scratch_dir) as profile:
+            clean.update(VOX_PROFILE_DIR=profile, VOX_TEST_WINDOW='1', VOX_COOKIE_FILE='',
+                         LADYBIRD_SCREENSHOT_SCALE='1')
+            if network_deny:
+                clean['DYLD_INSERT_LIBRARIES'] = str(network_deny)
+            os.environ.clear()
+            os.environ.update(clean)
+            yield Path(profile)
+    finally:
+        os.environ.clear()
+        os.environ.update(saved)
+
+
 def evaluate_pairs(pairs, required_reduction=.15):
     if not pairs or any(set(pair) != {'vox', 'brave'} for pair in pairs):
         raise ValueError('Every measured pair must include Vox and Brave')
@@ -122,6 +144,24 @@ def evaluate_pairs(pairs, required_reduction=.15):
                 passed=max(vox) * target.denominator <= target.numerator * min(brave))
 
 
+def pinned_inputs(args):
+    from measure_sealed_github_instructions import native_dependencies
+    paths = {args.html, args.expected, args.vox, args.brave, args.network_deny,
+             REPO / 'Build/pixel-equality/pixel_diff', *native_dependencies(args.vox),
+             *args.vox.parent.glob('*.dylib')}
+    for path in (args.vox.with_name('VoxAdblockWorker'),
+                 args.vox.parent.parent / 'Resources/adblock.snapshot.bin'):
+        if path.is_file():
+            paths.add(path)
+    frameworks = args.brave.parent.parent / 'Frameworks/Brave Browser Framework.framework/Versions'
+    paths.update(path.resolve() for path in frameworks.glob('*/Brave Browser Framework'))
+    paths.update(REPO / 'tools' / name for name in (
+        'reddit_browser_instructions.py', 'measure_browser_instructions.py',
+        'process_instruction_counts.py', 'probe_frozen_github_chrome.py',
+        'check_pixel_equality.py', 'measure_sealed_github_instructions.py'))
+    return {str(path.resolve()): digest(path) for path in paths}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--html', type=Path, required=True)
@@ -141,8 +181,7 @@ def main():
     if not args.network_deny.is_file():
         parser.error('Build the process-local network deny dylib first')
     args.output.mkdir(parents=True, exist_ok=False, mode=0o700)
-    pinned = {str(p): digest(p) for p in [args.html, args.expected, args.vox, args.brave,
-              args.network_deny, *sorted(args.vox.parent.glob('*.dylib'))]}
+    pinned = pinned_inputs(args)
     cache_hash = fingerprint_tree(args.cache)
     api = MacCounters()
     pairs = []
@@ -156,26 +195,32 @@ def main():
                 vox_arg=['--enable-javascript'], chrome_launch_mode='blank',
                 chrome_disable_javascript=False,
                 chrome_extra_arg=['--no-proxy-server', '--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost'])
-            if engine == 'vox':
-                with native_environment(args.network_deny), measurement.fresh_vox_cache(args.cache, args.output) as (cache, _):
-                    report = measurement.run_vox(config, prefix, api, cache)
-            else:
-                report = measurement.run_chrome(config, prefix, api,
-                    client_factory=lambda url: FrozenAssetsCDP(url, args.cache))
+            with private_measurement_environment(args.network_deny if engine == 'vox' else None, args.output):
+                if engine == 'vox':
+                    with measurement.fresh_vox_cache(args.cache, args.output) as (cache, _):
+                        report = measurement.run_vox(config, prefix, api, cache)
+                else:
+                    report = measurement.run_chrome(config, prefix, api,
+                        client_factory=lambda url: FrozenAssetsCDP(url, args.cache))
+            report.update(profile_policy='fresh empty private profile per observation', screenshot_scale=1)
+            report_path = Path(str(prefix)+'.json')
+            report_path.write_text(json.dumps(report, indent=2)+'\n')
             verdict = compare(args.expected, Path(report['screenshot']),
                               Path(str(prefix)+'.diff.png'), REPO/'Build/pixel-equality/pixel_diff')
             report['pixels_exact'] = verdict['exact']
             report['pixel_comparison'] = verdict
             if report['unreadable_pids']:
                 raise RuntimeError('Unreadable browser process counters')
-            Path(str(prefix)+'.json').write_text(json.dumps(report, indent=2)+'\n')
+            report_path.write_text(json.dumps(report, indent=2)+'\n')
             pair[engine] = report
             print(json.dumps(dict(pair=index+1,engine=engine,instructions=report['instructions'],
                                  pixels_exact=verdict['exact'])),flush=True)
             if not verdict['exact']:
                 raise RuntimeError('Rendered viewport differs; this sample receives no performance credit')
+            if pinned != pinned_inputs(args) or cache_hash != fingerprint_tree(args.cache):
+                raise RuntimeError('Pinned runtime or benchmark input changed during measurement')
         pairs.append(pair)
-    if pinned != {name: digest(Path(name)) for name in pinned} or cache_hash != fingerprint_tree(args.cache):
+    if pinned != pinned_inputs(args) or cache_hash != fingerprint_tree(args.cache):
         raise RuntimeError('Pinned executable, runtime or benchmark input changed')
     summary = evaluate_pairs(pairs, args.required_reduction)
     summary.update(pairs=pairs, pinned_sha256=pinned, cache_sha256=cache_hash,
