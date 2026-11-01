@@ -221,7 +221,10 @@ if [ "$gc_mode" = prealloc ]; then
     # Avoid retaining the imported-module cache graph and declaration-notice
     # analysis alongside the complete prealloc browser under the 10 GiB budget.
     set -- "$@" -w -n -nocache -prealloc -gc none
-    extra_cflags="$extra_cflags -O2"
+    # Optimize the generated engine translation unit without changing V's
+    # runtime checks or floating-point semantics. Matched CNN controls retain
+    # the same native inputs; -O3 removes additional layout/cascade overhead.
+    extra_cflags="$extra_cflags -O3"
 elif [ "$gc_mode" != none ]; then
     set -- "$@" -gc "$gc_mode"
     if [ "$(uname -m)" = arm64 ] && [ "$(getconf PAGESIZE)" = 16384 ]; then
