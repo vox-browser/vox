@@ -10,6 +10,8 @@ fn test_retained_flow_keeps_old_paint_and_rewraps_text_after_parent_width_change
 	previous_handle := text.as_node().unsafe_layout_node()?.real_layout_handle()
 	previous_height := text.get_bounding_client_rect().height
 	previous_paint := document.record_display_list()?
+	previous_scene := retain_display_list_scene(previous_paint)
+	defer { release_display_list_scene(previous_scene) }
 	previous_dump := previous_paint.dump()
 	mut left := document.get_element_by_id('left')?
 	left.set_attribute_value('style', 'width:80px;color:blue')
