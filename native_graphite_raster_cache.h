@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include <cstdio>
 #include <list>
 #include <memory>
 #include <vector>
@@ -241,6 +242,11 @@ public:
     Request prepare_region(VoxGraphiteImage const& image, int surface_width,
         int surface_height, VoxGraphitePixelRegion const& region, bool has_background)
     {
+        if (surface_width <= 0 || surface_height <= 0 || region.x < 0 || region.y < 0
+            || region.width <= 0 || region.height <= 0
+            || region.width > surface_width || region.height > surface_height
+            || region.x > surface_width - region.width
+            || region.y > surface_height - region.height) return {};
         Entry parameters;
         parameters.image = image;
         parameters.surface_width = surface_width;
@@ -392,21 +398,49 @@ private:
             ? opaque_image_interior(parameters.image, width, height) : VoxRasterSnapshot::Rect{};
         for (auto it = entries.begin(); it != entries.end(); ++it) {
             auto const& entry = **it;
-            if (entry.width != width || entry.height != height
+            bool exact_region = entry.width == width && entry.height == height
+                && entry.region_x == parameters.region_x && entry.region_y == parameters.region_y;
+            bool contained_region = false;
+#ifndef VOX_DISABLE_IMAGE_REGION_SUBVIEWS
+            // An image draw blends each destination pixel independently. A
+            // smaller view may reuse those exact pixels from a larger cached
+            // view of the same original GPU surface; no geometry is rebased.
+            contained_region = is_image && parameters.surface_width > 0
+                && parameters.tiles.empty() && entry.region_x <= parameters.region_x
+                && entry.region_y <= parameters.region_y
+                && parameters.region_x - entry.region_x <= entry.width
+                && parameters.region_y - entry.region_y <= entry.height
+                && width <= entry.width - (parameters.region_x - entry.region_x)
+                && height <= entry.height - (parameters.region_y - entry.region_y);
+#endif
+            if ((!exact_region && !contained_region)
                 || entry.has_background != has_background || entry.is_shape != parameters.is_shape
                 || entry.is_path != parameters.is_path
                 || entry.is_shadow != parameters.is_shadow
                 || entry.surface_width != parameters.surface_width || entry.surface_height != parameters.surface_height
-                || entry.region_x != parameters.region_x || entry.region_y != parameters.region_y
                 || entry.tiles.size() != parameters.tiles.size()
                 || !std::equal(entry.tiles.begin(), entry.tiles.end(), parameters.tiles.begin(), same_image)
                 || (entry.is_shape ? !same_shape(entry.shape, parameters.shape)
                     : entry.is_path ? !same_path(entry.path, parameters.path)
                     : entry.is_shadow ? !same_shadow(entry.shadow, parameters.shadow)
                                     : !same_image(entry.image, parameters.image))
-                || (has_background && !backdrop.equal(entry.background, opaque))
-                || !extra.equal(entry.extra) || !source.equal(*entry.source)) continue;
-            entry.output.copy_to(pixels, backdrop.bytes, backdrop.pitch, backdrop.height);
+                || !extra.equal(entry.extra)) continue;
+            if (exact_region) {
+                if ((has_background && !backdrop.equal(entry.background, opaque))
+                    || !source.equal(*entry.source)) continue;
+                entry.output.copy_to(pixels, backdrop.bytes, backdrop.pitch, backdrop.height);
+            } else {
+                size_t x = parameters.region_x - entry.region_x, y = parameters.region_y - entry.region_y;
+                VoxRasterSnapshot::Rect region {x, y, x + size_t(width), y + size_t(height)};
+                if ((has_background && !entry.background.equal_region(pixels,
+                        entry.width, entry.height, pitch, region))
+                    || !source.equal(*entry.source)) continue;
+                if (!entry.output.copy_region_to(pixels, entry.width, entry.height, pitch, region)) continue;
+#ifdef VOX_IMAGE_REGION_KEY_DIAGNOSTICS
+                std::fprintf(stderr, "VOX_IMAGE_SUBVIEW_HIT width=%d height=%d from=%dx%d\n",
+                    width, height, entry.width, entry.height);
+#endif
+            }
             entries.splice(entries.begin(), entries, it);
             request.hit = true;
             return request;

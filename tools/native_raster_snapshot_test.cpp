@@ -141,5 +141,34 @@ int main()
     VoxRasterSnapshot empty;
     assert(empty.equal(nullptr, 0, 0, 0));
     assert(empty.copy_to(nullptr, 0, 0, 0));
+    // Arbitrary subviews must preserve padding and compare every selected
+    // byte, including runs and literals crossing the view's row boundaries.
+    for (bool packed : {false, true}) for (size_t width : {1, 7, 67, 257}) {
+        constexpr size_t height = 37;
+        std::vector<uint8_t> bytes(width * height * 4, 47);
+        for (size_t i = 0; i < bytes.size(); ++i)
+            if (!packed || i % 511 < 17) bytes[i] = uint8_t(random());
+        auto owned = bytes;
+        VoxRasterSnapshot snapshot(std::move(owned));
+        for (size_t trial = 0; trial < 127; ++trial) {
+            size_t x = random() % width, y = random() % height;
+            size_t w = 1 + random() % (width - x), h = 1 + random() % (height - y), pitch = w * 4 + 7;
+            VoxRasterSnapshot::Rect region {x, y, x + w, y + h};
+            std::vector<uint8_t> view(1 + pitch * h, 91);
+            assert(snapshot.copy_region_to(view.data() + 1, width, height, pitch, region));
+            for (size_t row = 0; row < h; ++row) {
+                assert(!std::memcmp(view.data() + 1 + row * pitch,
+                    bytes.data() + ((y + row) * width + x) * 4, w * 4));
+                for (size_t p = w * 4; p < pitch; ++p) assert(view[1 + row * pitch + p] == 91);
+            }
+            assert(view[0] == 91);
+            assert(snapshot.equal_region(view.data() + 1, width, height, pitch, region));
+            size_t changed = 1 + (random() % h) * pitch + random() % (w * 4);
+            view[changed] ^= 1;
+            assert(!snapshot.equal_region(view.data() + 1, width, height, pitch, region));
+            assert(!snapshot.equal_region(view.data(), width, height, pitch, {0, 0, width + 1, height}));
+            assert(!snapshot.copy_region_to(view.data(), width, height, pitch, {0, 0, width, height + 1}));
+        }
+    }
     std::cout << "Raster snapshots: exact runs/literals, unaligned rows, padding, mutation and raw fallback passed\n";
 }

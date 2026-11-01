@@ -40,6 +40,17 @@ static void check_cache()
     ++pixels.back(); assert(!hit()); --pixels.back();
     auto replacement = source; image.pixels = replacement.data();
     assert(hit());
+    std::vector<uint8_t> subview(7 * 3 * 4, 31);
+    VoxGraphitePixelRegion smaller {14, 15, 7, 3, 7 * 4, subview.data()};
+    assert(cache.prepare_region(image, 544, 256, smaller, true).hit);
+    assert(subview == std::vector<uint8_t>(subview.size(), 123));
+    std::fill(subview.begin(), subview.end(), 31); subview.back() ^= 1;
+    assert(!cache.prepare_region(image, 544, 256, smaller, true).hit);
+    std::fill(subview.begin(), subview.end(), 31);
+    smaller.x = 10; assert(!cache.prepare_region(image, 544, 256, smaller, true).hit);
+    smaller.x = 14;
+    ++replacement.back(); assert(!cache.prepare_region(image, 544, 256, smaller, true).hit);
+    --replacement.back();
     cache.clear(); pixels = backdrop; assert(!hit());
 }
 
@@ -55,9 +66,11 @@ int main(int argc, char** argv)
         dlsym(control, "vox_graphite_draw_image_pixels"));
     auto draw = reinterpret_cast<decltype(&vox_graphite_draw_image_region_pixels)>(
         dlsym(candidate, "vox_graphite_draw_image_region_pixels"));
+    auto reference_region = reinterpret_cast<decltype(&vox_graphite_draw_image_region_pixels)>(
+        dlsym(control, "vox_graphite_draw_image_region_pixels"));
     auto clear = reinterpret_cast<decltype(&vox_graphite_release_unused_graphics_memory)>(
         dlsym(candidate, "vox_graphite_release_unused_graphics_memory"));
-    assert(full && draw && clear);
+    assert(full && draw && reference_region && clear);
     constexpr int width = 544, height = 256;
     constexpr int crops[][4] {{0, 0, width, height}, {1, 1, 17, 3},
         {57, 23, 81, 37}, {512, 220, 32, 36}};
@@ -118,6 +131,37 @@ int main(int argc, char** argv)
                 }
                 assert(actual[0] == 0xA9); ++comparisons;
             }
+        }
+        clear();
+    }
+    // Populate a larger view, then request every edge and interior subview.
+    // Retain identical GPU coordinates, source bytes and cropped backgrounds.
+    for (int msaa : {0, 1}) for (int background : {0, 1}) for (int pass : {0, 1, 2}) {
+        std::vector<uint8_t> source(37 * 29 * 4, 79);
+        auto image = descriptor(source.data());
+        image.flags = msaa ? VOX_GRAPHITE_IMAGE_FORCE_MSAA : 0;
+        image.matrix[2] = -.375f; image.matrix[5] = .25f;
+        std::vector<uint8_t> original(240 * 120 * 4);
+        for (size_t i = 0; i < original.size(); ++i) original[i] = uint8_t(i * 31 + i / 7);
+        for (size_t i = 3; i < original.size(); i += 4) original[i] = 255;
+        auto large = original;
+        VoxGraphitePixelRegion parent {11, 13, 240, 120, 240 * 4, large.data()};
+        assert(draw(&parent, width, height, background, &image));
+        if (pass == 1) source.back() ^= 3;
+        if (pass == 2) image.opacity = .35f;
+        for (int x : {0, 1, 127, 223}) for (int y : {0, 1, 71, 117}) {
+            int w = 240 - x, h = 120 - y, pitch = w * 4 + 7;
+            std::vector<uint8_t> expected(size_t(pitch) * h, 0xA9);
+            for (int row = 0; row < h; ++row)
+                std::memcpy(expected.data() + size_t(row) * pitch,
+                    original.data() + (size_t(row + y) * 240 + x) * 4, size_t(w) * 4);
+            if (pass == 2) expected[0] ^= 17;
+            auto actual = expected;
+            VoxGraphitePixelRegion before {11 + x, 13 + y, w, h, pitch, expected.data()};
+            VoxGraphitePixelRegion after {11 + x, 13 + y, w, h, pitch, actual.data()};
+            assert(reference_region(&before, width, height, background, &image));
+            assert(draw(&after, width, height, background, &image));
+            assert(expected == actual); ++comparisons;
         }
         clear();
     }

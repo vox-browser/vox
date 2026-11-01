@@ -177,5 +177,66 @@ public:
     {
         return replay<false>(nullptr, pixels, row_bytes, pitch, height, Rect{});
     }
+private:
+    template<bool Compare>
+    bool replay_region(uint8_t const* input, uint8_t* output, size_t width,
+        size_t height, size_t pitch, Rect region) const
+    {
+        if (region.left > region.right || region.right > width
+            || region.top > region.bottom || region.bottom > height
+            || width > SIZE_MAX / 4 || (height && width * 4 > SIZE_MAX / height)
+            || width * 4 * height != logical_bytes_
+            || pitch < (region.right - region.left) * 4) return false;
+        if (region.left == region.right || region.top == region.bottom) return true;
+        auto span = [&](uint8_t const* bytes, size_t count, size_t x, size_t y,
+            bool repeated, uint32_t value) {
+            if (y < region.top || y >= region.bottom) return true;
+            size_t first = std::max(x, region.left), end = std::min(x + count, region.right);
+            if (first >= end) return true;
+            size_t offset = (y - region.top) * pitch + (first - region.left) * 4;
+            if constexpr (Compare) {
+                return repeated ? equal_run(input + offset, end - first, value)
+                    : !std::memcmp(input + offset, bytes + (first - x) * 4, (end - first) * 4);
+            } else {
+                if (repeated) copy_run(output + offset, end - first, value);
+                else std::memcpy(output + offset, bytes + (first - x) * 4, (end - first) * 4);
+                return true;
+            }
+        };
+        if (packed_.empty()) {
+            for (size_t y = region.top; y < region.bottom; ++y)
+                if (!span(raw_.data() + y * width * 4, width, 0, y, false, 0)) return false;
+            return true;
+        }
+        size_t at = 0, x = 0, y = 0;
+        while (at < packed_.size() && y < region.bottom) {
+            uint32_t tag = packed_[at++];
+            size_t remaining = tag >> 1;
+            bool repeated = tag & 1;
+            uint32_t value = repeated ? packed_[at++] : 0;
+            while (remaining) {
+                size_t count = std::min(remaining, width - x);
+                if (!span(reinterpret_cast<uint8_t const*>(packed_.data() + at),
+                        count, x, y, repeated, value)) return false;
+                if (!repeated) at += count;
+                x += count; remaining -= count;
+                if (x == width) { x = 0; ++y; }
+            }
+        }
+        return true;
+    }
+public:
+    // Subviews keep the original raster's dimensions and exact owned bytes.
+    // Caller rows contain only the requested rectangle, with arbitrary padding.
+    bool equal_region(uint8_t const* pixels, size_t width, size_t height,
+        size_t pitch, Rect region) const
+    {
+        return replay_region<true>(pixels, nullptr, width, height, pitch, region);
+    }
+    bool copy_region_to(uint8_t* pixels, size_t width, size_t height,
+        size_t pitch, Rect region) const
+    {
+        return replay_region<false>(nullptr, pixels, width, height, pitch, region);
+    }
 };
 #endif
