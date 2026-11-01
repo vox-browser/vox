@@ -83,7 +83,13 @@ scripting, interactions and authentication parity are outside that record.
 
 [Pikabu](docs/PIKABU_INSTRUCTIONS.md) has a small, variable observed median lead
 that does not establish a repeatable advantage. [CNN](docs/CNN_INSTRUCTIONS.md) and
-[Stack Overflow on macOS](docs/STACKOVERFLOW_MACOS_PR_COMPARISON.md) have not
-established lower instruction counts than Brave. Stack Overflow's
+[Stack Overflow on macOS](docs/STACKOVERFLOW_BRAVE_INSTRUCTIONS.md) have not
+established lower instruction counts than Brave. The fresh seven-pair Stack
+Overflow comparison records median observed counts of **27,723,596,574 for Vox**
+and **10,379,419,729 for Brave**: Vox uses **2.67× as many instructions** on the
+frozen questions page. All captures match their fixed per-engine references;
+2,061 pixels differ across engines. The earlier
+[PR diagnostic](docs/STACKOVERFLOW_MACOS_PR_COMPARISON.md) remains separate.
+Stack Overflow's
 [Linux optimization](docs/STACKOVERFLOW_LINUX_PERFORMANCE.md) compares two Vox
 versions using Cachegrind instruction references, rather than Vox against Brave.
