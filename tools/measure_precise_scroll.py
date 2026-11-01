@@ -216,6 +216,7 @@ def main():
                VOX_PRECISE_INPUTS=str(args.inputs), VOX_PRECISE_REVERSE=str(args.reverse_every),
                VOX_PRECISE_HZ=str(args.input_hz), VOX_PRECISE_DELTA=str(args.delta),
                VOX_PRECISE_SETTLE=str(args.settle_seconds),
+               VOX_PRECISE_FAILURE_CAPTURE=str(output / "navigation-error.png"),
                VOX_PRECISE_REQUIRED_TITLE=args.require_title)
     pinned = [binary, *sorted(binary.parent.glob("*.dylib")),
               Path(__file__).resolve(), source, probe, *libraries]

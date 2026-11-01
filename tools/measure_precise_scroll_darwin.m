@@ -150,6 +150,18 @@ static void begin(void) {
             dispatch_get_main_queue(), ^{ begin(); });
         return;
     }
+    if ([page_view.window.title isEqualToString:@"Navigation error"] ||
+        [page_view.window.title isEqualToString:@"Navigation error — vox"]) {
+        fprintf(stderr, "SCROLL_ERROR navigation failed before input\n");
+        const char *path = getenv("VOX_PRECISE_FAILURE_CAPTURE");
+        if (path) {
+            NSBitmapImageRep *bitmap = [page_view bitmapImageRepForCachingDisplayInRect:page_view.bounds];
+            [page_view cacheDisplayInRect:page_view.bounds toBitmapImageRep:bitmap];
+            [[bitmap representationUsingType:NSBitmapImageFileTypePNG properties:@{}]
+                writeToFile:[NSString stringWithUTF8String:path] atomically:YES];
+        }
+        exit(2);
+    }
     if (required_title && *required_title) {
         double now = CACurrentMediaTime();
         if (!title_matches()) ready_since = -1;
