@@ -152,7 +152,12 @@ def summarize(pairs, diagnostic=False):
     browser.require(all(pair.get('vox', {}).get('filter_gate', {}).get('passed') is True
                         and pair.get('brave', {}).get('brave_setup') for pair in pairs),
                     'Every pair needs verified full-uBO filtering')
-    result = browser.evaluate_pairs(pairs, .9, 'launch')
+    result = browser.evaluate_pairs([dict(vox=pair['vox'], brave=pair['brave']) for pair in pairs], .9, 'launch')
+    if any('control' in pair for pair in pairs):
+        browser.require(all('control' in pair and pair['control'].get('filter_gate', {}).get('passed')
+                            for pair in pairs), 'Every control needs verified content and filters')
+        result['matched_control'] = browser.evaluate_pairs(
+            [dict(vox=pair['vox'], brave=pair['control']) for pair in pairs], 1, 'launch')
     result['acceptance'] = result['passed']
     return result
 
@@ -172,6 +177,8 @@ def parse_args(argv=None):
     p.add_argument('--diff-tool', type=Path, required=True)
     p.add_argument('--diagnostic', action='store_true')
     p.add_argument('--diagnostic-engine', choices=['vox', 'brave', 'both'], default='both')
+    p.add_argument('--control-static-media', action='store_true',
+                   help='Alternate the same Vox binary with static-media raster reuse disabled')
     p.add_argument('--repeat', type=int, default=7)
     p.add_argument('--settle-seconds', type=float, default=5)
     p.add_argument('--timeout', type=float, default=180)
@@ -186,6 +193,11 @@ def parse_args(argv=None):
         if isinstance(value, Path):
             setattr(args, key, value.resolve())
     return args
+
+
+def trial_order(index, control=False):
+    order = ['control', 'vox', 'brave'] if control else ['vox', 'brave']
+    return order if index % 2 == 0 else order[::-1]
 
 
 def audit_native_filters(args, folder):
@@ -229,7 +241,10 @@ def main():
     # changes Chromium's image decode sizing and is a different raster workload.
     args.post_readiness_expression = 'new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(()=>r(true))))'
     apps = {}
-    for engine, source in [('vox', args.vox_app), ('brave', args.brave_app)]:
+    sources = [('vox', args.vox_app), ('brave', args.brave_app)]
+    if args.control_static_media:
+        sources.append(('control', args.vox_app))
+    for engine, source in sources:
         target = args.output / engine / source.name
         target.parent.mkdir()
         shutil.copytree(source, target, symlinks=True, copy_function=browser.clone_file)
@@ -270,16 +285,18 @@ def main():
                                '--load-extension=' + str(args.extension), '--headless=new']
         for index in range(args.repeat):
             pair = {}
-            order = ['vox', 'brave'] if index % 2 == 0 else ['brave', 'vox']
+            order = trial_order(index, args.control_static_media)
             if args.diagnostic_engine != 'both':
                 order = [args.diagnostic_engine]
             for engine in order:
                 folder = args.output / f'pair-{index+1}-{engine}'
                 args.vox_environment = dict(VOX_PROXY=replay.ready['proxy'], SSL_CERT_FILE=replay.ready['ca'],
                     VOX_BLOCK_COOKIE_BANNERS='0', VOX_ADBLOCK_LOG=str(folder / 'requests.jsonl'))
-                row = browser.run_browser(engine, apps[engine], folder, args)
+                if engine == 'control':
+                    args.vox_environment['VOX_DISABLE_STATIC_MEDIA_RASTER_REUSE'] = '1'
+                row = browser.run_browser('vox' if engine == 'control' else engine, apps[engine], folder, args)
                 row['scope'] = SCOPE
-                if engine == 'vox' and row['exit'] == 0:
+                if engine in ('vox', 'control') and row['exit'] == 0:
                     try:
                         row['filter_gate'] = audit_native_filters(args, folder)
                     except Exception as error:

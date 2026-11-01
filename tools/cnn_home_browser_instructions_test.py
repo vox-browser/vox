@@ -8,6 +8,12 @@ import cnn_home_browser_instructions as benchmark
 
 
 class CNNHomeInstructionTests(unittest.TestCase):
+    def test_controls_alternate_with_the_candidate_and_brave(self):
+        self.assertEqual(benchmark.trial_order(0), ['vox', 'brave'])
+        self.assertEqual(benchmark.trial_order(1), ['brave', 'vox'])
+        self.assertEqual(benchmark.trial_order(0, True), ['control', 'vox', 'brave'])
+        self.assertEqual(benchmark.trial_order(1, True), ['brave', 'vox', 'control'])
+
     def expected(self):
         return dict(title='Latest | CNN', headlines=['first', 'second'], image_sources=['photo.jpg'])
 
@@ -79,6 +85,18 @@ class CNNHomeInstructionTests(unittest.TestCase):
         pairs = self.pairs()
         pairs[0]['vox']['filter_gate']['passed'] = False
         with self.assertRaisesRegex(RuntimeError, 'full-uBO'):
+            benchmark.summarize(pairs)
+
+    def test_control_statistics_require_complete_verified_controls(self):
+        pairs = self.pairs()
+        for pair in pairs:
+            pair['control'] = copy.deepcopy(pair['vox'])
+            pair['control']['launch_instruction_interval'] = dict(lower=950, upper=950)
+        summary = benchmark.summarize(pairs)
+        self.assertTrue(summary['acceptance'])
+        self.assertTrue(summary['matched_control']['passed'])
+        pairs[0]['control']['pixels_exact'] = False
+        with self.assertRaises(RuntimeError):
             benchmark.summarize(pairs)
 
     def test_cli_rejects_short_acceptance_and_retains_explicit_diagnostics(self):
