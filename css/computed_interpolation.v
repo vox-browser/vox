@@ -11889,8 +11889,7 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 			mut computed_value := unsafe { style_value }
 			if requires_computation {
 				context_scope_start := begin_diagnostic_instruction_scope()
-				mut computation_context := s.computation_context_for_value(property_id, style_value,
-					properties, abstract_element)
+				mut computation_context := s.get_computation_context_for_property(property_id, properties, abstract_element)
 				computation_context.reset_viewport_metric_dependency_tracking()
 				record_diagnostic_instruction_scope(16, context_scope_start)
 				value_scope_start := begin_diagnostic_instruction_scope()
