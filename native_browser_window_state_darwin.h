@@ -1,169 +1,77 @@
 #pragma once
 #import <Cocoa/Cocoa.h>
-#include <math.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-
-// Keep this separate from proxy settings: resizing must not turn an inherited
-// proxy configuration into an explicit direct-connection preference.
-static NSString *native_browser_window_state_path;
-
-static BOOL native_browser_window_frame_valid(NSRect frame) {
-    return isfinite(frame.origin.x) && isfinite(frame.origin.y)
-        && isfinite(frame.size.width) && isfinite(frame.size.height)
-        && frame.size.width >= 100 && frame.size.height >= 100
-        && frame.size.width <= 100000 && frame.size.height <= 100000;
-}
-
-static NSRect native_browser_window_visible_frame(NSRect frame, NSArray<NSScreen *> *screens,
-    NSScreen *fallback, NSSize minimum, BOOL test_window) {
-    NSScreen *selected = fallback;
-    CGFloat largest = 0;
-    if (!test_window) {
-        for (NSScreen *screen in screens) {
-            NSRect overlap = NSIntersectionRect(frame, screen.visibleFrame);
-            CGFloat area = overlap.size.width * overlap.size.height;
-            if (area > largest) { largest = area; selected = screen; }
-        }
-    }
-    if (!selected) return frame;
-    NSRect visible = selected.visibleFrame;
-    frame.size.width = MIN(MAX(frame.size.width, minimum.width), visible.size.width);
-    frame.size.height = MIN(MAX(frame.size.height, minimum.height), visible.size.height);
-    frame.origin.x = test_window ? NSMaxX(visible) - frame.size.width
-        : MAX(NSMinX(visible), MIN(frame.origin.x, NSMaxX(visible) - frame.size.width));
-    frame.origin.y = test_window ? NSMaxY(visible) - frame.size.height
-        : MAX(NSMinY(visible), MIN(frame.origin.y, NSMaxY(visible) - frame.size.height));
-    return frame;
-}
-
-@interface VoxBrowserWindowState : NSObject
-@property(nonatomic, assign) NSWindow *window;
-@property(nonatomic, copy) NSString *path;
-@property(nonatomic) NSRect normalFrame;
-@property(nonatomic) BOOL maximized;
-@property(nonatomic) BOOL fullscreen;
-@property(nonatomic) BOOL transitioning;
-@property(nonatomic) BOOL restoring;
-- (void)save;
-@end
-
-@implementation VoxBrowserWindowState
-- (void)save {
-    if (self.restoring || self.transitioning || !self.window) return;
-    // Miniaturization is deliberately transient; retain the last usable frame.
-    if (!self.window.miniaturized && !self.fullscreen) {
-        self.maximized = self.window.zoomed;
-        if (!self.maximized) self.normalFrame = self.window.frame;
-    }
-    if (!native_browser_window_frame_valid(self.normalFrame)) return;
-    NSDictionary *state = @{@"version": @1, @"normalFrame": NSStringFromRect(self.normalFrame),
-        @"maximized": @(self.maximized), @"fullscreen": @(self.fullscreen)};
-    NSError *error = nil;
-    NSFileManager *files = NSFileManager.defaultManager;
-    if (![files createDirectoryAtPath:self.path.stringByDeletingLastPathComponent
-        withIntermediateDirectories:YES attributes:nil error:&error]
-        || ![state writeToFile:self.path atomically:YES]) {
-        NSLog(@"Vox: could not save window state to %@%@", self.path,
-            error ? [@": " stringByAppendingString:error.localizedDescription] : @"");
-    }
-}
-- (void)changed:(NSNotification *)notification {
-    (void)notification;
-    [self save];
-}
-- (void)willEnterFullscreen:(NSNotification *)notification {
-    (void)notification;
-    [self save];
-    self.transitioning = YES;
-}
-- (void)didEnterFullscreen:(NSNotification *)notification {
-    (void)notification;
-    self.fullscreen = YES;
-    self.transitioning = NO;
-    [self save];
-}
-- (void)willExitFullscreen:(NSNotification *)notification {
-    (void)notification;
-    self.transitioning = YES;
-}
-- (void)didExitFullscreen:(NSNotification *)notification {
-    (void)notification;
-    self.fullscreen = NO;
-    self.transitioning = NO;
-    [self save];
-}
-- (void)closed:(NSNotification *)notification {
-    (void)notification;
-    [self save];
-    self.window = nil;
-}
-- (void)dealloc {
-    [NSNotificationCenter.defaultCenter removeObserver:self];
-#if !__has_feature(objc_arc)
-    [_path release];
-    [super dealloc];
-#endif
-}
-@end
-
-static VoxBrowserWindowState *native_browser_window_state;
-
-static void native_finish_browser_window_state(void) {
-    [native_browser_window_state save];
-    if (native_browser_window_state)
-        [NSNotificationCenter.defaultCenter removeObserver:native_browser_window_state];
-#if !__has_feature(objc_arc)
-    [native_browser_window_state release];
-    [native_browser_window_state_path release];
-#endif
-    native_browser_window_state = nil;
-    native_browser_window_state_path = nil;
-}
-
-static void native_prepare_browser_window_state(const char *path) {
-    native_finish_browser_window_state();
-    if (path && path[0]) native_browser_window_state_path = [[NSString alloc] initWithUTF8String:path];
-}
-
-static void native_restore_browser_window_state(void *handle) {
+// OS operations only. Validation, placement, persistence schema and transitions are V.
+typedef void (*VoxWindowEvent)(void *, int32_t, double *, int32_t *);
+static NSMutableArray *vox_window_observers;
+static void native_window_snapshot(void *handle, double *values, int32_t *flags) {
     NSWindow *window = (__bridge NSWindow *)handle;
-    if (!window || !native_browser_window_state_path || native_browser_window_state) return;
-    VoxBrowserWindowState *state = [VoxBrowserWindowState new];
-    native_browser_window_state = state;
-    state.path = native_browser_window_state_path;
-    state.window = window;
-    state.normalFrame = window.frame;
-    state.restoring = YES;
-    NSDictionary *saved = [NSDictionary dictionaryWithContentsOfFile:state.path];
-    id version = saved[@"version"], frame = saved[@"normalFrame"];
-    id maximized = saved[@"maximized"], fullscreen = saved[@"fullscreen"];
-    BOOL valid = [version isKindOfClass:NSNumber.class] && [version integerValue] == 1
-        && [frame isKindOfClass:NSString.class]
-        && [maximized isKindOfClass:NSNumber.class] && [fullscreen isKindOfClass:NSNumber.class];
-    NSRect normal = valid ? NSRectFromString(frame) : NSZeroRect;
-    if (valid && native_browser_window_frame_valid(normal)) {
-        BOOL test_window = getenv("VOX_TEST_WINDOW") && strcmp(getenv("VOX_TEST_WINDOW"), "1") == 0;
-        normal = native_browser_window_visible_frame(normal, NSScreen.screens,
-            window.screen ?: NSScreen.mainScreen, window.minSize, test_window);
-        [window setFrame:normal display:NO];
-        state.normalFrame = window.frame;
-        if ([maximized boolValue]) [window zoom:nil];
-        state.maximized = window.zoomed;
-    } else {
-        valid = NO;
+    NSRect frame = window.frame;
+    values[0]=frame.origin.x; values[1]=frame.origin.y; values[2]=frame.size.width; values[3]=frame.size.height;
+    values[4]=window.minSize.width; values[5]=window.minSize.height;
+    flags[0]=window.zoomed; flags[1]=(window.styleMask & NSWindowStyleMaskFullScreen)!=0; flags[2]=window.miniaturized;
+}
+static int32_t native_window_screens(double *rows, int32_t capacity) {
+    int32_t count=0;
+    for (NSScreen *screen in NSScreen.screens) {
+        if (count>=capacity) break;
+        NSRect rect=screen.visibleFrame;
+        rows[count*4]=rect.origin.x; rows[count*4+1]=rect.origin.y;
+        rows[count*4+2]=rect.size.width; rows[count*4+3]=rect.size.height;
+        ++count;
     }
-    NSNotificationCenter *notifications = NSNotificationCenter.defaultCenter;
-    for (NSString *name in @[NSWindowDidResizeNotification, NSWindowDidMoveNotification,
-        NSWindowDidEndLiveResizeNotification, NSWindowDidDeminiaturizeNotification]) {
-        [notifications addObserver:state selector:@selector(changed:) name:name object:window];
+    return count;
+}
+static int32_t native_window_screen_index(void *handle) {
+    NSUInteger index=[NSScreen.screens indexOfObject:[(__bridge NSWindow *)handle screen]];
+    return index==NSNotFound ? 0 : (int32_t)index;
+}
+static void native_window_set_frame(void *handle, double x, double y, double width, double height) {
+    [(__bridge NSWindow *)handle setFrame:NSMakeRect(x,y,width,height) display:NO];
+}
+static void native_window_action(void *handle, int32_t action) {
+    NSWindow *window=(__bridge NSWindow *)handle;
+    if (action==0) [window zoom:nil]; else [window toggleFullScreen:nil];
+}
+static char *native_host_read_plist(const char *path) {
+    @autoreleasepool {
+        NSDictionary *value=[NSDictionary dictionaryWithContentsOfFile:[NSString stringWithUTF8String:path]];
+        if (!value || ![NSJSONSerialization isValidJSONObject:value]) return NULL;
+        NSData *data=[NSJSONSerialization dataWithJSONObject:value options:0 error:NULL];
+        if (!data) return NULL;
+        return strndup(data.bytes,data.length);
     }
-    [notifications addObserver:state selector:@selector(closed:) name:NSWindowWillCloseNotification object:window];
-    [notifications addObserver:state selector:@selector(changed:) name:NSApplicationWillTerminateNotification object:NSApp];
-    [notifications addObserver:state selector:@selector(willEnterFullscreen:) name:NSWindowWillEnterFullScreenNotification object:window];
-    [notifications addObserver:state selector:@selector(didEnterFullscreen:) name:NSWindowDidEnterFullScreenNotification object:window];
-    [notifications addObserver:state selector:@selector(willExitFullscreen:) name:NSWindowWillExitFullScreenNotification object:window];
-    [notifications addObserver:state selector:@selector(didExitFullscreen:) name:NSWindowDidExitFullScreenNotification object:window];
-    state.restoring = NO;
-    if (valid && [fullscreen boolValue]) [window toggleFullScreen:nil];
+}
+static int32_t native_host_write_plist(const char *path, const unsigned char *json, int32_t length) {
+    @autoreleasepool {
+        NSData *data=[NSData dataWithBytes:json length:length];
+        id value=[NSJSONSerialization JSONObjectWithData:data options:0 error:NULL];
+        return [value isKindOfClass:NSDictionary.class] && [value writeToFile:[NSString stringWithUTF8String:path] atomically:YES];
+    }
+}
+static void native_window_stop_observing(void) {
+    for (id observer in vox_window_observers) [NSNotificationCenter.defaultCenter removeObserver:observer];
+    vox_window_observers=nil;
+}
+static void native_window_observe(void *handle, void *owner, VoxWindowEvent callback) {
+    native_window_stop_observing();
+    NSWindow *window=(__bridge NSWindow *)handle;
+    vox_window_observers=[NSMutableArray new];
+    NSArray *names=@[NSWindowDidResizeNotification,NSWindowWillEnterFullScreenNotification,
+        NSWindowDidEnterFullScreenNotification,NSWindowWillExitFullScreenNotification,
+        NSWindowDidExitFullScreenNotification,NSWindowWillCloseNotification,NSWindowDidMoveNotification,
+        NSWindowDidEndLiveResizeNotification,NSWindowDidDeminiaturizeNotification];
+    for (NSUInteger i=0;i<names.count;++i) {
+        int32_t kind=i<6 ? (int32_t)i : 0;
+        id observer=[NSNotificationCenter.defaultCenter addObserverForName:names[i] object:window queue:nil usingBlock:^(NSNotification *note) {
+            (void)note; double values[6]; int32_t flags[3]; native_window_snapshot(handle,values,flags); callback(owner,kind,values,flags);
+        }];
+        [vox_window_observers addObject:observer];
+    }
+    id observer=[NSNotificationCenter.defaultCenter addObserverForName:NSApplicationWillTerminateNotification object:NSApp queue:nil usingBlock:^(NSNotification *note) {
+        (void)note; double values[6]; int32_t flags[3]; native_window_snapshot(handle,values,flags); callback(owner,5,values,flags);
+    }];
+    [vox_window_observers addObject:observer];
 }

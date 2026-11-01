@@ -13,19 +13,13 @@ static bool native_open_tab_window(const char *executable, const char *session) 
 }
 static double native_tab_drop_x(void) { return NSEvent.mouseLocation.x; }
 static double native_tab_drop_y(void) { return NSEvent.mouseLocation.y; }
-static void native_position_detached_tab(double x, double y) {
-	if (getenv("VOX_TEST_WINDOW")) return;
+static void native_position_detached_frame(double x, double top) {
 	NSWindow *window = NSApp.keyWindow ?: NSApp.mainWindow;
-	if (!window) return;
-	NSPoint topLeft = NSMakePoint(x - 100, y + 48);
-	for (NSScreen *screen in NSScreen.screens) {
-		if (!NSPointInRect(NSMakePoint(x, y), screen.frame)) continue;
-		NSRect visible = screen.visibleFrame;
-		topLeft.x = MAX(NSMinX(visible), MIN(topLeft.x, NSMaxX(visible) - window.frame.size.width));
-		topLeft.y = MIN(NSMaxY(visible), MAX(topLeft.y, NSMinY(visible) + window.frame.size.height));
-		break;
-	}
-	[window setFrameTopLeftPoint:topLeft];
+	[window setFrameTopLeftPoint:NSMakePoint(x,top)];
 	[window makeKeyAndOrderFront:nil];
 	[NSApp activateIgnoringOtherApps:YES];
+}
+static void native_detached_window_size(double *width, double *height) {
+	NSWindow *window = NSApp.keyWindow ?: NSApp.mainWindow;
+	*width=window.frame.size.width; *height=window.frame.size.height;
 }

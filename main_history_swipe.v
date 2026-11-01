@@ -1,12 +1,15 @@
 module main
 
 import page
+import browserui
 
 $if macos {
 	#include "native_history_swipe_darwin.m"
 	fn C.native_history_swipe_install(window voidptr, owner voidptr,
 		begin fn (voidptr, i32, f64, f64, f64, f64, &voidptr) i32,
-		commit fn (voidptr, voidptr, i32))
+		filter fn (voidptr, i32, i32, i32, i32, u32, f64, f64) i32,
+		capture fn (voidptr, u64) u64,
+		progress fn (voidptr, voidptr, u64, f64, i32, i32, i32) i32)
 	fn C.native_history_swipe_remove()
 }
 
@@ -51,4 +54,31 @@ fn commit_browser_history_swipe(owner voidptr, document_token voidptr, delta i32
 		return
 	}
 	app.activate_browser_chrome(if delta < 0 { 'back' } else { 'forward' })
+}
+
+fn install_browser_history_swipe(window voidptr, owner voidptr) {
+	$if macos {
+		C.native_history_swipe_install(window, owner, begin_browser_history_swipe, filter_browser_history_swipe, capture_browser_history_swipe, progress_browser_history_swipe)
+	}
+}
+
+fn filter_browser_history_swipe(owner voidptr, phase i32, momentum i32, precise i32, enabled i32, modifiers u32, x f64, y f64) i32 {
+	mut app := unsafe { &BrowserApp(owner) }
+	mut state := app.browser_ui()
+	return i32(state.swipe.filter(browserui.SwipeInput{ phase: int(phase), momentum: momentum != 0, precise: precise != 0, enabled: enabled != 0, modifiers: modifiers, x: x, y: y }))
+}
+
+fn capture_browser_history_swipe(owner voidptr, expected u64) u64 {
+	mut app := unsafe { &BrowserApp(owner) }
+	mut state := app.browser_ui()
+	if expected == 0 { return state.swipe.candidate }
+	return state.swipe.capture_candidate(expected)
+}
+
+fn progress_browser_history_swipe(owner voidptr, document voidptr, generation u64, amount f64, phase i32, complete i32, delta i32) i32 {
+	mut app := unsafe { &BrowserApp(owner) }
+	mut state := app.browser_ui()
+	decision := state.swipe.progress(generation, amount, int(phase), complete != 0, int(delta))
+	if decision == 1 { commit_browser_history_swipe(owner, document, delta) }
+	return i32(decision != 0)
 }

@@ -251,7 +251,7 @@ fn (mut app BrowserApp) finish_detached_tab_restore() {
 	if app.restore_tab_path == '' { return }
 	session := read_detached_tab_session(app.restore_tab_path) or { exit(1) }
 	$if macos {
-		C.native_position_detached_tab(session.drop_x, session.drop_y)
+		position_detached_browser_window(session.drop_x, session.drop_y)
 	}
 	// Called only after the first frame, so the source stays open through startup.
 	// A parent that cancelled or timed out removes this directory. Do not leave

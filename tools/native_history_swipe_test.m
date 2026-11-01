@@ -30,23 +30,25 @@
 }
 @end
 
-typedef struct { int begins, commits, result, delta; double x, y; } Observation;
+typedef struct { int begins, commits, result, decision, phases, delta; double x, y; uint64_t generation; } Observation;
 static int document;
-static int begin(void *owner, int delta, double x, double y, double dx, double dy,
-    void **token) {
-    Observation *observation = owner;
-    observation->begins++;
-    observation->delta = delta;
-    observation->x = x;
-    observation->y = y;
-    assert(dx != 0 && fabs(dx) > 2 * fabs(dy));
-    *token = &document;
-    return observation->result;
+static int32_t begin(void *owner, int32_t delta, double x, double y, double dx, double dy, void **token) {
+    Observation *observation=owner;
+    assert(dx==12 && dy==0);
+    observation->begins++; observation->delta=delta; observation->x=x; observation->y=y;
+    *token=&document; return observation->result;
 }
-static void commit(void *owner, void *token, int delta) {
-    Observation *observation = owner;
-    assert(token == &document && delta == observation->delta);
-    observation->commits++;
+static int32_t classify(void *owner, int32_t phase, int32_t momentum, int32_t precise, int32_t enabled,
+    uint32_t modifiers, double x, double y) {
+    Observation *observation=owner;
+    assert(phase==1 && !momentum && precise && enabled && modifiers==0 && x==12 && y==0);
+    observation->phases++; return observation->decision;
+}
+static uint64_t capture(void *owner, uint64_t expected) { assert(expected==0 || expected==42); return ((Observation *)owner)->generation; }
+static int32_t complete(void *owner, void *token, uint64_t generation, double amount, int32_t phase, int32_t done, int32_t delta) {
+    Observation *observation=owner;
+    assert(token==&document && generation==42 && amount==1 && phase==3 && done && delta==-1);
+    observation->commits++; return 1;
 }
 static VoxHistorySwipeTestEvent *wheel(NSWindow *window, CGFloat dx, CGFloat dy,
     NSEventPhase phase) {
@@ -60,116 +62,28 @@ static VoxHistorySwipeTestEvent *wheel(NSWindow *window, CGFloat dx, CGFloat dy,
     event.locationInWindow = NSMakePoint(100, 350);
     return event;
 }
-static NSEvent *filter(VoxHistorySwipe *state, VoxHistorySwipeTestEvent *event) {
-    return native_history_swipe_filter(state, (NSEvent *)event, YES);
-}
-static BOOL progress(VoxHistorySwipeTestEvent *event, CGFloat amount,
-    NSEventPhase phase, BOOL complete) {
-    assert(event.handler);
-    BOOL stop = NO;
-    event.handler(amount, phase, complete, &stop);
-    return stop;
-}
-
-int main(void) {
-    @autoreleasepool {
-        [NSApplication sharedApplication];
-        // The test window is never ordered on screen.
-        NSWindow *window = [[NSWindow alloc] initWithContentRect:NSMakeRect(0, 0, 800, 600)
-            styleMask:NSWindowStyleMaskBorderless backing:NSBackingStoreBuffered defer:NO];
-        Observation observation = {.result = 2};
-        native_history_swipe_install((__bridge void *)window, &observation, begin, commit);
-        VoxHistorySwipe *state = vox_history_swipe;
-        assert(state.installed && state.monitor);
-
-        VoxHistorySwipeTestEvent *back = wheel(window, 12, 1, NSEventPhaseBegan);
-        assert(filter(state, back) == nil && observation.begins == 1);
-        assert(observation.delta == -1 && observation.x == 100 && observation.y == 250);
-        assert(back.minimum == 0 && back.maximum == 1);
-        assert(back.options & NSEventSwipeTrackingLockDirection);
-        assert(back.options & NSEventSwipeTrackingClampGestureAmount);
-        VoxHistorySwipeTestEvent *changed = wheel(window, 20, 0, NSEventPhaseChanged);
-        assert(filter(state, changed) == (NSEvent *)changed); // AppKit keeps tracking.
-        progress(back, 0.3, NSEventPhaseChanged, NO);
-        progress(back, 0.8, NSEventPhaseEnded, NO);
-        assert(observation.commits == 0);
-        progress(back, 1, NSEventPhaseNone, YES);
-        assert(observation.commits == 1);
-        assert(progress(back, 1, NSEventPhaseNone, YES));
-        changed.momentumPhase = NSEventPhaseChanged;
-        assert(filter(state, changed) == nil && observation.begins == 1);
-        VoxHistorySwipeTestEvent *mouse = wheel(window, 0, 12, NSEventPhaseNone);
-        mouse.hasPreciseScrollingDeltas = NO;
-        assert(filter(state, mouse) == (NSEvent *)mouse);
-
-        VoxHistorySwipeTestEvent *forward = wheel(window, -12, 0, NSEventPhaseBegan);
-        assert(filter(state, forward) == nil && observation.delta == 1);
-        assert(forward.minimum == -1 && forward.maximum == 0);
-        progress(forward, -1, NSEventPhaseNone, YES);
-        assert(observation.commits == 2);
-
-        VoxHistorySwipeTestEvent *cancelled = wheel(window, 12, 0, NSEventPhaseBegan);
-        filter(state, cancelled);
-        assert(progress(cancelled, 0.8, NSEventPhaseCancelled, NO));
-        progress(cancelled, 1, NSEventPhaseNone, YES);
-        VoxHistorySwipeTestEvent *short_swipe = wheel(window, 12, 0, NSEventPhaseBegan);
-        filter(state, short_swipe);
-        progress(short_swipe, 0, NSEventPhaseNone, YES);
-        VoxHistorySwipeTestEvent *reversed = wheel(window, 12, 0, NSEventPhaseBegan);
-        filter(state, reversed);
-        progress(reversed, -1, NSEventPhaseNone, YES);
-        assert(observation.commits == 2);
-
-        int begins = observation.begins;
-        for (int kind = 0; kind < 7; ++kind) {
-            VoxHistorySwipeTestEvent *ordinary = wheel(window, 12, 0, NSEventPhaseBegan);
-            if (kind == 0) ordinary.hasPreciseScrollingDeltas = NO;
-            if (kind == 1) ordinary.phase = NSEventPhaseNone;
-            if (kind == 2) ordinary.momentumPhase = NSEventPhaseChanged;
-            if (kind == 3) ordinary.modifierFlags = NSEventModifierFlagShift;
-            if (kind == 4) ordinary.window = nil;
-            if (kind == 5) ordinary.type = NSEventTypeMouseMoved;
-            NSEvent *result = native_history_swipe_filter(state, (NSEvent *)ordinary, kind != 6);
-            assert(result == (NSEvent *)ordinary);
-        }
-        assert(observation.begins == begins);
-        VoxHistorySwipeTestEvent *vertical = wheel(window, 1, 12, NSEventPhaseBegan);
-        assert(filter(state, vertical) == (NSEvent *)vertical);
-        changed.momentumPhase = NSEventPhaseNone;
-        assert(filter(state, changed) == (NSEvent *)changed && observation.begins == begins);
-        VoxHistorySwipeTestEvent *diagonal = wheel(window, 12, 10, NSEventPhaseBegan);
-        assert(filter(state, diagonal) == (NSEvent *)diagonal);
-
-        // A zero-delta begin is normal on a real trackpad.
-        VoxHistorySwipeTestEvent *zero = wheel(window, 0, 0, NSEventPhaseBegan);
-        assert(filter(state, zero) == (NSEvent *)zero);
-        assert(filter(state, changed) == nil && changed.handler);
-        VoxHistorySwipeTestEvent *next = wheel(window, -12, 0, NSEventPhaseBegan);
-        filter(state, next);
-        assert(progress(changed, 1, NSEventPhaseNone, YES)); // Superseded tracker.
-        assert(observation.commits == 2);
-        progress(next, -1, NSEventPhaseNone, YES);
-        assert(observation.commits == 3);
-
-        observation.result = 1; // Wheel cancelled or consumed by page content.
-        VoxHistorySwipeTestEvent *handled = wheel(window, 12, 0, NSEventPhaseBegan);
-        assert(filter(state, handled) == nil && !handled.handler);
-        changed.handler = nil;
-        assert(filter(state, changed) == (NSEvent *)changed);
-        observation.result = 0; // No history, chrome, or a busy browser.
-        VoxHistorySwipeTestEvent *unavailable = wheel(window, 12, 0, NSEventPhaseBegan);
-        assert(filter(state, unavailable) == (NSEvent *)unavailable && !unavailable.handler);
-
-        observation.result = 2;
-        VoxHistorySwipeTestEvent *closing = wheel(window, 12, 0, NSEventPhaseBegan);
-        filter(state, closing);
-        native_history_swipe_remove();
-        assert(!vox_history_swipe && !state.installed && !state.monitor);
-        assert(progress(closing, 1, NSEventPhaseNone, YES));
-        assert(observation.commits == 3);
-        assert(filter(state, closing) == (NSEvent *)closing);
-        native_history_swipe_remove();
-        puts("PASS native two-finger history swipes, cancellation, scrolling and teardown");
-    }
-    return 0;
-}
+int main(void) { @autoreleasepool {
+    [NSApplication sharedApplication];
+    NSWindow *window=[[NSWindow alloc] initWithContentRect:NSMakeRect(0,0,800,600)
+        styleMask:NSWindowStyleMaskBorderless backing:NSBackingStoreBuffered defer:NO];
+    window.releasedWhenClosed=NO;
+    Observation observation={.result=2,.decision=-2,.generation=42};
+    native_history_swipe_install((__bridge void *)window,&observation,begin,classify,capture,complete);
+    VoxHistorySwipe *state=vox_history_swipe;
+    assert(state.installed && state.monitor);
+    VoxHistorySwipeTestEvent *event=wheel(window,12,0,NSEventPhaseBegan);
+    assert(native_history_swipe_deliver(state,(NSEvent *)event,YES,begin,classify,capture,complete)==nil);
+    assert(observation.begins==1 && observation.phases==1 && observation.delta==-1);
+    assert(observation.x==100 && observation.y==250 && event.handler);
+    BOOL stop=NO;
+    event.handler(1,NSEventPhaseEnded,YES,&stop);
+    assert(stop && observation.commits==1);
+    native_history_swipe_remove();
+    assert(!state.installed && !state.monitor && !vox_history_swipe);
+    stop=NO; event.handler(1,NSEventPhaseEnded,YES,&stop);
+    assert(stop && observation.commits==1);
+    assert(native_history_swipe_deliver(state,(NSEvent *)event,YES,begin,classify,capture,complete)==(NSEvent *)event);
+    native_history_swipe_remove();
+    [window close];
+    puts("PASS native gesture normalization, callback routing and teardown; V policy tested in browserui");
+} return 0; }
