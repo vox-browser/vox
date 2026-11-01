@@ -644,7 +644,8 @@ class BBCInstructionTests(unittest.TestCase):
     def test_optimization_controls_require_a_control_app(self):
         args = ['--archive', 'archive', '--output', 'output', '--memory-guard-registry', 'pids.json',
                 '--capture-reference']
-        for flag in ['--control-disable-grid-width-only', '--control-disable-stationary-raster',
+        for flag in ['--control-disable-inline-measurement-reuse',
+                     '--control-disable-grid-width-only', '--control-disable-stationary-raster',
                      '--control-disable-client-geometry-index',
                      '--control-disable-tracked-persistent-shortcut',
                      '--control-disable-attribute-case-buckets', '--control-disable-persistent-scope-jumps',
@@ -671,6 +672,25 @@ class BBCInstructionTests(unittest.TestCase):
                 run_trial(engine, 'same-app', engine, args)
         self.assertEqual(seen, [('vox', dict(environment, VOX_DISABLE_STATIONARY_RASTER_REUSE='1')),
                                 ('vox', environment), ('brave', environment)])
+        self.assertIs(args.vox_environment, environment)
+
+    def test_inline_measurement_control_is_isolated_and_restored_after_failure(self):
+        environment = {'VOX_PROXY': 'socks5h://fixture'}
+        args = SimpleNamespace(vox_environment=environment, control_disable_grid_width_only=False,
+                               control_disable_inline_measurement_reuse=True)
+        seen = []
+        def observe(engine, app, folder, options):
+            seen.append((engine, dict(options.vox_environment)))
+            return {'exit': 0}
+        with patch('bbc_browser_instructions.browser.run_browser', side_effect=observe):
+            for engine in ['control', 'vox', 'brave']:
+                run_trial(engine, 'same-app', engine, args)
+        self.assertEqual(seen, [('vox', dict(environment, VOX_DISABLE_INLINE_MEASUREMENT_REUSE='1')),
+                               ('vox', environment), ('brave', environment)])
+        self.assertIs(args.vox_environment, environment)
+        with patch('bbc_browser_instructions.browser.run_browser', side_effect=RuntimeError('failed')):
+            with self.assertRaises(RuntimeError):
+                run_trial('control', 'same-app', 'control', args)
         self.assertIs(args.vox_environment, environment)
 
     def test_same_binary_control_disables_only_its_grid_width_optimization(self):
