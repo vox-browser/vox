@@ -73,6 +73,8 @@ def summarize(log, expected_inputs, target_hz=60, required_title=""):
     if required_title and required_title not in title:
         raise ValueError("Requested document title was not present when input started")
     inputs, frames = records(log, "SCROLL_INPUT"), records(log, "SCROLL_PUBLISH")
+    if any(row.get("modifiers", 0) != 0 or row.get("delta_x", 0) != 0 for row in inputs):
+        raise ValueError("Modified or horizontal input invalidates a vertical scroll trial")
     counts = dict(re.findall(r"(inputs|publications)=(\d+)", ends[0]))
     if len(inputs) != expected_inputs or counts != {
             "inputs": str(expected_inputs), "publications": str(len(frames))}:

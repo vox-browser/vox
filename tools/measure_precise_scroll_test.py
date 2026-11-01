@@ -117,6 +117,37 @@ class PreciseScrollTests(unittest.TestCase):
             result = subprocess.run([str(helper)], env=env, capture_output=True, text=True)
             self.assertEqual(result.returncode, 0, result.stderr)
 
+    @unittest.skipUnless(sys.platform == "darwin", "macOS precise wheel semantics")
+    def test_wheel_event_clears_physical_keyboard_modifiers(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / "wheel.m"
+            observer = Path(measure_precise_scroll.__file__).with_name("measure_precise_scroll_darwin.m")
+            source.write_text('#include "' + str(observer) + '"\n' + r'''int main(void) {
+                @autoreleasepool {
+                    CGEventRef cg = CGEventCreateScrollWheelEvent(NULL, kCGScrollEventUnitPixel, 1, -2);
+                    if (!cg) return 1;
+                    CGEventSetFlags(cg, kCGEventFlagMaskShift | kCGEventFlagMaskCommand);
+                    NSEvent *event = unmodified_wheel_event(cg);
+                    int valid = event.modifierFlags == 0 && event.hasPreciseScrollingDeltas
+                        && event.scrollingDeltaX == 0 && event.scrollingDeltaY == -2;
+                    CFRelease(cg);
+                    return valid ? 0 : 2;
+                }
+            }
+            ''')
+            binary = root / "wheel"
+            subprocess.run(["clang", "-O2", "-fobjc-arc", str(source),
+                            "-framework", "Cocoa", "-framework", "QuartzCore",
+                            "-Wl,-undefined,dynamic_lookup", "-o", str(binary)], check=True)
+            env = {k: v for k, v in os.environ.items() if not k.startswith("VOX_PRECISE_")}
+            subprocess.run([str(binary)], env=env, check=True)
+
+    def test_rejects_keyboard_modified_or_horizontal_wheel_samples(self):
+        for field in ("modifiers=131072", "delta_x=2"):
+            with self.subTest(field=field), self.assertRaisesRegex(ValueError, "Modified or horizontal"):
+                summarize(log_for().replace("wheel_us=100", "wheel_us=100 " + field), 12)
+
     def test_uses_in_process_publication_timestamps_and_reports_actual_input_rate(self):
         result = summarize(log_for(), 12)
         self.assertEqual(result["mean_publication_fps"], 100)

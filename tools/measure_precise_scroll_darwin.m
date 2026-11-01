@@ -34,7 +34,7 @@ __attribute__((used)) static struct { const void *replacement, *original; } scro
     __attribute__((section("__DATA,__interpose"))) = {
         (const void *)track_scroll, (const void *)ladybird_v_skia_set_root_raster_scroll_y };
 
-typedef struct { double time, elapsed; } Input;
+typedef struct { double time, elapsed, delta_x, delta_y; unsigned long long modifiers; } Input;
 typedef struct { double time, elapsed, age, scroll; unsigned inputs; } Frame;
 static Input *input_samples;
 static Frame *frame_samples;
@@ -81,8 +81,9 @@ static void finish(void) {
     active = NO;
     double finished = CACurrentMediaTime();
     for (unsigned i = 0; i < inputs; ++i)
-        fprintf(stderr, "SCROLL_INPUT %u t_us=%.3f wheel_us=%.3f\n", i,
-            input_samples[i].time*1e6, input_samples[i].elapsed*1e6);
+        fprintf(stderr, "SCROLL_INPUT %u t_us=%.3f wheel_us=%.3f delta_x=%g delta_y=%g modifiers=%llu\n", i,
+            input_samples[i].time*1e6, input_samples[i].elapsed*1e6,
+            input_samples[i].delta_x, input_samples[i].delta_y, input_samples[i].modifiers);
     for (unsigned i = 0; i < publications; ++i) {
         Frame f = frame_samples[i];
         fprintf(stderr, "SCROLL_PUBLISH %u t_us=%.3f frame_us=%.3f input_age_us=%.3f inputs=%u scroll_y=%.9f\n",
@@ -92,6 +93,13 @@ static void finish(void) {
         inputs, publications, (finished-started)*1e6);
     fflush(stderr);
     exit(0);
+}
+
+static NSEvent *unmodified_wheel_event(CGEventRef event) {
+    // A NULL event source inherits physical keyboard state. A user holding
+    // Shift must not turn this measured vertical gesture into horizontal input.
+    CGEventSetFlags(event, 0);
+    return [NSEvent eventWithCGEvent:event];
 }
 
 static void tick(void) {
@@ -105,7 +113,7 @@ static void tick(void) {
         [input_view convertPoint:center toView:nil]];
     CGEventSetLocation(cg, CGPointMake(screen.x, NSMaxY(NSScreen.screens[0].frame)-screen.y));
     VoxPositionedWheel *positioned = [VoxPositionedWheel alloc];
-    positioned.backing = [NSEvent eventWithCGEvent:cg];
+    positioned.backing = unmodified_wheel_event(cg);
     positioned.point = [input_view convertPoint:center toView:nil];
     positioned.windowNumber = input_view.window.windowNumber;
     CFRelease(cg);
@@ -127,6 +135,9 @@ static void tick(void) {
     unsigned index = inputs++;
     last_input = CACurrentMediaTime();
     input_samples[index].time = last_input-started;
+    input_samples[index].delta_x = positioned.backing.scrollingDeltaX;
+    input_samples[index].delta_y = positioned.backing.scrollingDeltaY;
+    input_samples[index].modifiers = positioned.backing.modifierFlags;
     [input_view scrollWheel:(NSEvent *)positioned];
     input_samples[index].elapsed = CACurrentMediaTime()-last_input;
     if (inputs == input_limit) {
