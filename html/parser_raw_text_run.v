@@ -1,5 +1,12 @@
 module html
 
+import os
+
+const disable_compact_text_run_positions = os.getenv('VOX_DISABLE_COMPACT_TEXT_RUN_POSITIONS') != ''
+const compact_text_run_position_diagnostics = os.getenv('VOX_COMPACT_TEXT_RUN_POSITION_DIAGNOSTICS') != ''
+
+__global compact_text_run_positions_reported bool
+
 // In Text mode, and in the guarded In Body case below, ordinary characters
 // share one stable insertion location. Keep delimiters, newline normalization and script
 // escape transitions in the ordinary tokenizer, and bound each batch so the
@@ -25,7 +32,26 @@ fn (mut t HTMLTokenizer) consume_parser_text_run(stop StopAtInsertionPoint) ?[]r
 		t.source_positions.clear()
 		t.source_positions << last
 	}
-	t.skip(end - start)
+	if disable_compact_text_run_positions {
+		t.skip(end - start)
+	} else {
+		// This guarded run is committed as text, without token backtracking.
+		// The next token only needs its final position as its history origin.
+		if t.source_positions.len > 0 {
+			mut position := t.source_positions[0]
+			for code_point in t.decoded_input[start..end] {
+				if code_point == `\n` { position.line++; position.column = 0 }
+				else { position.column++ }
+			}
+			t.source_positions[0] = position
+		}
+		t.prev_offset = end - 1
+		t.current_offset = end
+		if compact_text_run_position_diagnostics && !compact_text_run_positions_reported {
+			compact_text_run_positions_reported = true
+			eprintln('Vox HTML text runs: retained final committed source position')
+		}
+	}
 	return t.decoded_input[start..end]
 }
 

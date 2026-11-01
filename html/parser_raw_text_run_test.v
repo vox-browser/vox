@@ -53,6 +53,24 @@ fn test_parser_text_runs_stop_at_document_write_and_stream_boundaries() {
 	assert tokenizer.consume_parser_text_run(.no) == none
 }
 
+fn test_committed_text_runs_keep_cursor_and_final_position_across_bounded_chunks() {
+	for state in [State.data, .rawtext, .script_data] {
+		input := ('first\n日本語😀tail'.repeat(1000)) + '<b>after</b>'
+		mut actual := HTMLTokenizer.new(input)
+		mut expected := HTMLTokenizer.new(input)
+		actual.state = state
+		expected.state = state
+		for {
+			run := actual.consume_parser_text_run(.no) or { break }
+			expected.skip(run.len)
+			assert actual.current_offset == expected.current_offset
+			assert actual.prev_offset == expected.prev_offset
+			assert actual.nth_last_position(0) == expected.nth_last_position(0)
+		}
+		assert actual.next_token() == expected.next_token()
+	}
+}
+
 fn test_large_raw_text_parsing_preserves_dom_normalization_and_end_tag_boundaries() {
 	content := 'p{color:red}\n'.repeat(1000) + '</stylish>日本語\r\n\u0000tail'
 	mut document := dom.Document.create(dom.url_about_blank())
