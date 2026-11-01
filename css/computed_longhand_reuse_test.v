@@ -159,7 +159,8 @@ fn longhand_reuse_cascade(value &dom.StyleValue) &CascadedProperties {
 // Assert individual values so a failure never formats a DOM owner graph.
 fn longhand_reuse_assert_oracle(actual &ComputedProperties, computer &StyleComputer,
 	element &dom.Element, mut cascaded CascadedProperties) {
-	oracle_computer := StyleComputer.new(computer.document_)
+	mut oracle_computer := StyleComputer.new(computer.document_)
+	oracle_computer.viewport_rect_ = computer.viewport_rect_
 	oracle := oracle_computer.compute_properties(dom.AbstractElement.new(element, none), mut cascaded)
 	for index in 0 .. number_of_longhand_properties {
 		id := unsafe { PropertyID(index + int(first_longhand_property_id())) }
@@ -787,4 +788,107 @@ fn test_constant_font_parent_guards_distinct_values_with_equal_serialization() {
 	assert !computer.restore_computed_longhands(key, cascaded, mut probe)
 	updated := computer.compute_properties(dom.AbstractElement.new(element, none), mut cascaded)
 	longhand_reuse_assert_oracle(updated, computer, element, mut cascaded)
+}
+
+fn shape_reuse_test_value(index int) (PropertyID, StyleValue) {
+	return match index {
+		0 { PropertyID.width, StyleValue(LengthStyleValue.create(Length.new(50, .vw))) }
+		1 { PropertyID.grid_auto_flow, StyleValue(GridAutoFlowStyleValue.create(.column, .yes)) }
+		2 { PropertyID.grid_column_start, StyleValue(GridTrackPlacementStyleValue.create(GridTrackPlacement.make_auto())) }
+		3 { PropertyID.grid_column_start, StyleValue(GridTrackPlacementStyleValue.create(GridTrackPlacement.make_line(StyleValue(IntegerStyleValue.create(-2)), 'edge'))) }
+		4 { PropertyID.grid_column_start, StyleValue(GridTrackPlacementStyleValue.create(GridTrackPlacement.make_span(StyleValue(IntegerStyleValue.create(2)), none))) }
+		else { PropertyID.border_top_left_radius, StyleValue(BorderRadiusStyleValue.create(StyleValue(PercentageStyleValue.create(Percentage.new(50))), StyleValue(LengthStyleValue.create(Length.new(8, .px))))) }
+	}
+}
+
+fn test_longhand_shape_snapshots_keep_independent_payloads_and_detect_mutation() {
+	for index in 1 .. 6 {
+		_, value := shape_reuse_test_value(index)
+		_, mut independent := shape_reuse_test_value(index)
+		assert computed_longhand_reuse_typed_value_is_simple(&value) == !disable_longhand_shape_reuse
+		if disable_longhand_shape_reuse { continue }
+		snapshot := computed_longhand_reuse_typed_snapshot(&value)
+		assert computed_longhand_reuse_typed_snapshot_matches(snapshot, &independent)
+		assert (computed_longhand_reuse_typed_hash(&value) or { panic('first shape hash') }) == (computed_longhand_reuse_typed_hash(&independent) or { panic('independent shape hash') })
+		if mut independent is GridAutoFlowStyleValue {
+			independent.dense_ = !independent.dense_
+		} else if mut independent is BorderRadiusStyleValue {
+			independent.horizontal_radius[0] = StyleValue(PercentageStyleValue.create(Percentage.new(49)))
+		} else if mut independent is GridTrackPlacementStyleValue {
+			independent.grid_track_placement_[0] = GridTrackPlacement.make_line(StyleValue(IntegerStyleValue.create(4)), 'changed')
+		}
+		assert !computed_longhand_reuse_typed_snapshot_matches(snapshot, &independent)
+	}
+}
+
+fn test_longhand_shape_cache_matches_uncached_results_and_rejects_retained_mutations() {
+	for index in 0 .. 6 {
+		computer, _, element, parent_style := longhand_reuse_fixture()
+		computer.begin_computed_property_page_batch()
+		defer { computer.end_computed_property_page_batch() }
+		id, value := shape_reuse_test_value(index)
+		original := dom_style_value_from_value_logic(value)
+		mut first := CascadedProperties.new()
+		first.set_property(id, original, .no, .author, none, unsafe { nil }, none)
+		_ = computer.compute_properties(dom.AbstractElement.new(element, none), mut first)
+		_, independent := shape_reuse_test_value(index)
+		mut second := CascadedProperties.new()
+		second.set_property(id, dom_style_value_from_value_logic(independent), .no, .author, none, unsafe { nil }, none)
+		mut probe := computed_properties_with_initial_values()
+		if key := computer.computed_longhand_reuse_key(dom.AbstractElement.new(element, none), second, parent_style, false) {
+			assert !disable_longhand_shape_reuse
+			assert computer.restore_computed_longhands(key, second, mut probe)
+			actual := computer.compute_properties(dom.AbstractElement.new(element, none), mut second)
+			longhand_reuse_assert_oracle(actual, computer, element, mut second)
+			mut box := unsafe { &TypedStyleValueBox(original.css_value_handle) }
+			if mut box.value is BorderRadiusStyleValue {
+				box.value.vertical_radius[0] = StyleValue(LengthStyleValue.create(Length.new(9, .px)))
+			} else {
+				box.value = StyleValue(KeywordStyleValue.create(.initial))
+			}
+			assert !computer.restore_computed_longhands(key, second, mut probe)
+		} else {
+			assert disable_longhand_shape_reuse
+			actual := computer.compute_properties(dom.AbstractElement.new(element, none), mut second)
+			longhand_reuse_assert_oracle(actual, computer, element, mut second)
+		}
+	}
+}
+
+fn test_longhand_viewport_reuse_retains_dependency_flags_and_expires_after_resize() {
+	if disable_longhand_shape_reuse { return }
+	mut computer, _, element, parent_style := longhand_reuse_fixture()
+	computer.viewport_rect_ = CSSPixelRect.new(0, 0, 800, 600)
+	computer.begin_computed_property_page_batch()
+	defer { computer.end_computed_property_page_batch() }
+	mut cascade := CascadedProperties.new()
+	cascade.set_property(.width, dom_style_value_from_value_logic(StyleValue(LengthStyleValue.create(Length.new(50, .vw)))), .no, .author, none, unsafe { nil }, none)
+	_ = computer.compute_properties(dom.AbstractElement.new(element, none), mut cascade)
+	key := computer.computed_longhand_reuse_key(dom.AbstractElement.new(element, none), cascade, parent_style, false) or { panic('viewport key') }
+	mut probe := computed_properties_with_initial_values()
+	assert computer.restore_computed_longhands(key, cascade, mut probe)
+	assert probe.depends_on_viewport_metrics_
+	computer.viewport_rect_ = CSSPixelRect.new(0, 0, 640, 600)
+	changed := computer.computed_longhand_reuse_key(dom.AbstractElement.new(element, none), cascade, parent_style, false) or { panic('resized viewport key') }
+	assert !computer.restore_computed_longhands(changed, cascade, mut probe)
+	actual := computer.compute_properties(dom.AbstractElement.new(element, none), mut cascade)
+	longhand_reuse_assert_oracle(actual, computer, element, mut cascade)
+	assert (actual.property(.width, .no) or { panic('width') }).css_text == '320px'
+}
+
+fn test_longhand_shapes_keep_context_dependent_and_malformed_inputs_uncached() {
+	for unit in [LengthUnit.em, .rem, .ch, .cqw, .cqh, .lh] {
+		value := StyleValue(LengthStyleValue.create(Length.new(1, unit)))
+		assert !computed_longhand_reuse_typed_value_is_simple(&value)
+		radius := StyleValue(BorderRadiusStyleValue.create(value, StyleValue(PercentageStyleValue.create(Percentage.new(50)))))
+		assert !computed_longhand_reuse_typed_value_is_simple(&radius)
+	}
+	for count in [0, 2] {
+		mut placement := GridTrackPlacementStyleValue.create(GridTrackPlacement.make_auto())
+		placement.grid_track_placement_ = []GridTrackPlacement{len: count}
+		assert !computed_longhand_reuse_typed_value_is_simple(&StyleValue(placement))
+		mut radius := BorderRadiusStyleValue.create_zero()
+		radius.vertical_radius = []StyleValue{len: count, init: StyleValue(KeywordStyleValue.create(.auto))}
+		assert !computed_longhand_reuse_typed_value_is_simple(&StyleValue(radius))
+	}
 }

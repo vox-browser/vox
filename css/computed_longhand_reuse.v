@@ -63,6 +63,11 @@ enum ComputedLonghandReuseValueKind as u8 {
 	font_style
 	time
 	angle
+	grid_auto_flow
+	grid_auto
+	grid_line
+	grid_span
+	border_radius
 }
 
 struct ComputedLonghandReuseValue {
@@ -201,7 +206,7 @@ fn computed_longhand_reuse_typed_snapshot(value &StyleValue) ComputedLonghandReu
 			ComputedLonghandReuseValue{ kind: .angle, number: value.angle_.value_, integer: i64(value.angle_.unit_) }
 		}
 		else {
-			ComputedLonghandReuseValue{ text: value.serialize(.normal), value_type: value.type_name() }
+			longhand_shape_snapshot(value) or { ComputedLonghandReuseValue{ text: value.serialize(.normal), value_type: value.type_name() } }
 		}
 	}
 }
@@ -286,7 +291,7 @@ fn computed_longhand_reuse_typed_snapshot_matches(snapshot &ComputedLonghandReus
 				&& snapshot.integer == i64(value.angle_.unit_)
 		}
 		else {
-			snapshot.kind == .unsupported && snapshot.value_type == value.type_name() && snapshot.text == value.serialize(.normal)
+			longhand_shape_snapshot_matches(snapshot, value) || (snapshot.kind == .unsupported && snapshot.value_type == value.type_name() && snapshot.text == value.serialize(.normal))
 		}
 	}
 }
@@ -321,7 +326,7 @@ fn computed_longhand_reuse_typed_value_is_simple(value &StyleValue) bool {
 			return value.keyword() !in [.initial, .inherit, .unset, .revert, .revert_layer, .larger,
 				.smaller, .bolder, .lighter, .math]
 		}
-		LengthStyleValue { return value.length().is_absolute() }
+		LengthStyleValue { return value.length().is_absolute() || longhand_shape_length_is_viewport(value.length_) }
 		RatioStyleValue {
 			// Numeric components require no resolution context. Calculated ratios
 			// can depend on fonts or containers and keep the ordinary path.
@@ -359,7 +364,7 @@ fn computed_longhand_reuse_typed_value_is_simple(value &StyleValue) bool {
 				&& computed_longhand_reuse_color_component_is_simple(&value.b_[0])
 				&& computed_longhand_reuse_color_component_is_simple(&value.alpha_[0])
 		}
-		else { return false }
+		else { return longhand_shape_is_simple(value) }
 	}
 }
 
@@ -459,7 +464,7 @@ fn computed_longhand_reuse_typed_hash(value &StyleValue) ?u64 {
 			u64(15) ^ computed_longhand_reuse_number_hash(value.time_.value_)
 				^ (u64(value.time_.unit_) * u64(0x100000001b3))
 		}
-		else { return none }
+		else { return longhand_shape_hash(value) }
 	}
 }
 
@@ -578,6 +583,7 @@ fn (s &StyleComputer) restore_computed_longhands(key &ComputedLonghandReuseKey,
 	properties.font_metrics_depend_on_viewport_metrics_ = cached.font_metrics_depend_on_viewport_metrics_
 	properties.font_input_refresh_safe_ = cached.font_input_refresh_safe_
 	properties.font_input_depends_on_font_size_ = cached.font_input_depends_on_font_size_
+	report_longhand_shape_restore(entry.inputs)
 	if computed_longhand_constant_diagnostics && !computed_longhand_constant_reported
 		&& computed_longhand_constants_enabled() {
 		for input in entry.inputs {
