@@ -1,21 +1,22 @@
 # BBC homepage instruction comparison
 
 **The requested 10% advantage remains open. BBC does not qualify for
-`OPTIMIZED_SITES.md`.** The latest seven-pair cohort (31) has a Vox median of
-**36,606,121,582** retired instructions and a Brave lower-bound median of
-**16,121,151,447**. All 21 content audits, unchanged pixel comparisons and native
-exits pass. Its conservative ratio is **2.3956684098670245**, above 0.9:
-`382388358030 > 143654906835` fails the integer gate. Every observation,
+`OPTIMIZED_SITES.md`.** The latest seven-pair cohort (32) has a Vox median of
+**36,057,458,625** retired instructions and a Brave lower-bound median of
+**16,480,599,153**. All content audits and native exits pass; Brave pair 1
+fails its unchanged photo pixels, invalidating acceptance. Its conservative
+ratio is **2.3630417159732398**, above 0.9:
+`378064667690 > 143991618354` fails the integer gate. Every observation,
 including first launches, remains included.
 
-The same-binary static-subject-filter control has median 35,858,765,278. The
-candidate median regresses 2.0842%, with conservative control ratio
-1.1037537986880996; neither gate passes. Earlier failing and invalid observations
+The same-binary cosmetic-filter-memo control has median 36,035,722,350. The
+candidate median regresses 0.0603%, with conservative control ratio
+1.099450822344032; neither gate passes. Earlier failing and invalid observations
 remain retained; no accepted BBC savings are claimed here.
 
 The machine-readable [evidence](benchmark-results/bbc-brave-instructions-2026-11-01.json)
-retains 766 attempts and 31 cohorts, including failures and first launches;
-637 complete cohort raw results were independently checked against the recorded
+retains 789 attempts and 32 cohorts, including failures and first launches;
+658 complete cohort raw results were independently checked against the recorded
 vectors, medians and integer gates. It also retains ownership audits, commands and artifact hashes. Raw archives, logs,
 PNGs, executable copies, PID registries, compiler output and guard receipts are
 under `Build/bbc-home-instructions-20261101-054807/` in the canonical checkout.
@@ -94,6 +95,7 @@ capture marker. An invalid cohort is retained for diagnosis, not acceptance.
 | Selective ordinary style-rule deletion | 36,552,719,392 | 16,368,303,379 | 2.3885773998393387 | Brave pair 7 photo differs; median regresses against control; both gates fail |
 | Plain user stylesheet subject invalidation | 36,606,121,582 | 16,121,151,447 | 2.3956684098670245 | All observations valid; median regresses against control; both gates fail |
 | Necessary static predicates for user-style subjects | 36,606,121,582 | 16,121,151,447 | 2.3956684098670245 | All observations valid; median regresses against control; both gates fail |
+| Repeated default cosmetic-filter queries | 36,057,458,625 | 16,480,599,153 | 2.3630417159732398 | Gate fails; Brave pair 1 photo differs; median regresses against control |
 
 The grid block-height cohort alternates an older control, candidate and Brave;
 control/candidate medians are 101,567,929,247 and 90,700,737,334 (10.70% observed
@@ -1237,3 +1239,56 @@ Receipts are `static-user-style-filter-v2-cohort/`, its derived JSON,
 `static-user-style-filter-checks*/`, `static-user-style-filter-build/`,
 `static-user-style-filter-compiled-witness/`, `static-user-style-filter-validation/`
 and the enabled/disabled diagnostic validations under the retained evidence root.
+
+
+## Repeated cosmetic-filter queries (cohort 32)
+
+Commit `6de6d161` retains successful encoded default cosmetic-filter results
+under the exact URL and surveyed token sequence. The immutable bundled filter
+set determines these results. Custom engines retain independent contexts;
+disabled filtering still returns empty results, and procedural selectors still
+execute against the live document. Each caller decodes independent arrays.
+Retention is limited to 16 entries and 2 MiB of encoded keys/results; errors
+are not retained, and hits do not revive an idle filtering VM. Tooling commit
+`02f92973` adds `--control-disable-document-filter-memo`; all 41 driver tests pass.
+
+Focused checks pass 33 cases in the direct-engine selection and 23 in the
+worker selection, each in default, no-GC and preallocated caller modes. These
+include seven cache cases exercised on both backends: 168 test executions,
+all twelve compile/runtime jobs exit zero. The worker helper is compiled
+separately with the required memory limit; it uses Boehm independently of the
+caller's mode. The initial combined selection failed in the existing automatic
+helper builder because current V rejects its `-bug-report-url` option, before
+entering tests. A later worker run exposed an old release-test assumption that
+cached queries always recreate a helper. Both failures remain retained; release
+tests now explicitly evaluate the engine before checking a live context's
+release.
+
+The latest completed shared bundle lacked the feature flag, so it could not
+validate this code. After that shared build completed, the new production build
+exits zero in 190.50573975 seconds, sampled peak 9,117,220,864 bytes. All five
+owned source inputs remain stable. Executable SHA256 is
+`4215befae96a8b944510ab6f63af65616b6632ea5d5cfaa0967b3203bf4aa498`;
+generated C is `e43d7f92a541e79c232295879af30da583ac2d1a03194637cf5ab959cf647e76`.
+Fresh headless startup, eleven screenshot smoke comparisons with unchanged
+bounds and eight exact SVG mutation comparisons pass. Separate BBC diagnostics
+record twelve cache hits and four evaluations, versus twelve evaluations and
+zero hits in the control. They preserve the original pixels and content and
+normal native exits. JavaScriptCore executes one context with 2,056 candidate
+and 2,150 control evaluations; these diagnostic counts earn no instruction credit.
+
+All fourteen Vox captures match their original reference. Brave pair 1 differs
+by 64,177 pixels in a photo region (maximum channel error 15); all other captures
+match. Its benchmark result is exit 1 for that mismatch, while its native kernel
+exit is zero. Every content audit and native exit passes. No observation is
+retried or omitted. The candidate median regresses 0.0603186881863671% against
+its control, so no positive marginal credit or broad-suite cadence reset is
+taken. The guard adopts 67 processes without error, records 1,576,173,568 peak
+sampled bytes over 111.43879375 seconds, and returns the benchmark's failing
+exit 1. The requested Brave gate remains open and no catalog entry is added.
+
+Receipts are `document-filter-memo-cohort/`, its derived JSON,
+`document-filter-memo-checks*/`, `document-filter-memo-worker-checks*/`,
+`document-filter-memo-worker-helpers/`, `document-filter-memo-build/`,
+`document-filter-memo-compiled-witness/`, `document-filter-memo-validation/`
+and both diagnostic validations under the retained evidence root.
