@@ -1,22 +1,21 @@
 # BBC homepage instruction comparison
 
 **The requested 10% advantage remains open. BBC does not qualify for
-`OPTIMIZED_SITES.md`.** The latest seven-pair cohort (32) has a Vox median of
-**36,057,458,625** retired instructions and a Brave lower-bound median of
-**16,480,599,153**. All content audits and native exits pass; Brave pair 1
-fails its unchanged photo pixels, invalidating acceptance. Its conservative
-ratio is **2.3630417159732398**, above 0.9:
-`378064667690 > 143991618354` fails the integer gate. Every observation,
-including first launches, remains included.
+`OPTIMIZED_SITES.md`.** The latest seven-pair cohort (33) has a Vox median of
+**35,400,964,816** retired instructions and a Brave lower-bound median of
+**16,625,613,691**. All 21 captures pass their unchanged content, pixels and
+native-exit audits. Its conservative ratio is **2.839621547749952**, above 0.9:
+`458364766710 > 145275799293` fails the integer gate. Every observation,
+including the 45,836,476,671-instruction candidate outlier, remains included.
 
-The same-binary cosmetic-filter-memo control has median 36,035,722,350. The
-candidate median regresses 0.0603%, with conservative control ratio
-1.099450822344032; neither gate passes. Earlier failing and invalid observations
-remain retained; no accepted BBC savings are claimed here.
+The same-binary grid-reuse control has median 36,443,294,804. The candidate
+median falls 2.8601420195563554%, but its conservative control ratio is
+1.3202111637189726; both conservative gates fail. Earlier failing and invalid
+observations remain retained; no accepted BBC savings are claimed here.
 
 The machine-readable [evidence](benchmark-results/bbc-brave-instructions-2026-11-01.json)
-retains 789 attempts and 32 cohorts, including failures and first launches;
-658 complete cohort raw results were independently checked against the recorded
+retains 815 attempts and 33 cohorts, including failures and first launches;
+679 complete cohort raw results were independently checked against the recorded
 vectors, medians and integer gates. It also retains ownership audits, commands and artifact hashes. Raw archives, logs,
 PNGs, executable copies, PID registries, compiler output and guard receipts are
 under `Build/bbc-home-instructions-20261101-054807/` in the canonical checkout.
@@ -96,6 +95,7 @@ capture marker. An invalid cohort is retained for diagnosis, not acceptance.
 | Plain user stylesheet subject invalidation | 36,606,121,582 | 16,121,151,447 | 2.3956684098670245 | All observations valid; median regresses against control; both gates fail |
 | Necessary static predicates for user-style subjects | 36,606,121,582 | 16,121,151,447 | 2.3956684098670245 | All observations valid; median regresses against control; both gates fail |
 | Repeated default cosmetic-filter queries | 36,057,458,625 | 16,480,599,153 | 2.3630417159732398 | Gate fails; Brave pair 1 photo differs; median regresses against control |
+| Retained ordinary grid geometry | 35,400,964,816 | 16,625,613,691 | 2.839621547749952 | All observations valid; median falls 2.8601% against control; both conservative gates fail |
 
 The grid block-height cohort alternates an older control, candidate and Brave;
 control/candidate medians are 101,567,929,247 and 90,700,737,334 (10.70% observed
@@ -1292,3 +1292,86 @@ Receipts are `document-filter-memo-cohort/`, its derived JSON,
 `document-filter-memo-worker-helpers/`, `document-filter-memo-build/`,
 `document-filter-memo-compiled-witness/`, `document-filter-memo-validation/`
 and both diagnostic validations under the retained evidence root.
+
+
+## Retained ordinary grid geometry (cohort 33)
+
+Commit `7d4cca37` extends the existing independent-context retention to ordinary
+grids. It retains descendant geometry and the container's own used track sizes,
+line names and content baselines. Restoring the container clones its rare data,
+so exposed track vectors cannot mutate the retained cache or an older layout.
+Subgrids keep the complete layout path, as do positioned, floating and other
+unsupported descendants. Exact available space, used input dimensions,
+constraints, style environment, node/style revisions, child order, text and
+font dependencies still guard reuse. Tooling commit `6264069d` adds the isolated
+same-binary control; all 42 driver tests pass.
+
+Focused checks pass 17 cases in four files, with enabled and disabled retention
+in default, no-GC and preallocated modes: 102 test executions and all nine jobs
+exit zero. These cover track/line/baseline restoration, width and percentage
+changes, content/order/span/font mutations, nesting, subgrid fallback and
+ownership of exposed track vectors against a complete layout/display-list oracle.
+The first harness selected a nonexistent file before compilation. A second run
+passed the new grid cases, then exposed a legacy assertion that ordinary grids
+must remain ineligible. That exclusion now uses subgrid; all original failures
+remain retained.
+
+The latest completed bundle lacked this path. The production build exits zero
+in 214.054415458 seconds, sampled peak 9,102,753,792 bytes; all five owned source
+inputs remain stable. Executable SHA256 is
+`a19c6c32099b9317f45be7da69e7a78c45f19a88c39cf80898053ad726dd6067`;
+generated C is `bf5bed9753d4da7d438e0d491951bc7b61da4e5c44d5df8ca8c95198761f9e26`.
+Fresh headless startup, eleven smoke comparisons with unchanged bounds and
+eight exact SVG mutation comparisons pass. The separate BBC diagnostics prove
+that retained grid geometry executes only in the enabled path. Both captures
+preserve the original pixels, complete content audits and native exit zero.
+JavaScriptCore executes one context with 1,969 candidate / 2,059 control
+evaluations; these diagnostic counts supply no instruction credit.
+
+All seven triples pass their content, original pixels and native-exit audits.
+The median reduction is 1,042,329,988 instructions, but the candidate's high
+outlier makes its conservative control and Brave gates fail. The guard adopts
+72 processes without error, records 1,726,791,680 peak sampled bytes over
+119.730474167 seconds, and preserves the benchmark's failing exit 1. No
+observation is retried or omitted. Broad verification enters all 432 cases in both default and no-GC modes,
+including all 17 focused cases. In each mode 431 pass; only the unchanged
+text-control baseline fails (13.5 versus expected 13). Both compiler exits are
+zero, default-all and no-GC batch 2 exit 1, and the other 86 no-GC batches exit
+zero. This is not a whole-suite pass or a broad cadence reset. The requested
+10% Brave advantage and catalog entry remain open.
+
+A separate pinned O2 raster/layout diagnostic selects this investigation:
+12 viewport-layout calls account for 10,000,009,046 inclusive process
+instructions, while 130 chrome updates account for only 96,573,935. Its exact
+BBC capture and balanced scope stack pass. These process counters include
+background work, instrumentation overhead and only subtract instrumented child
+scopes; its timing and callback schedule differ from acceptance. It supplies no
+optimization credit. Generated compiler sources were losslessly compressed:
+36 files, 2,011,239,345 decoded bytes become 331,393,405 gzip bytes. Each decoded
+hash was verified before removing its uncompressed copy; original receipts and
+logical source identities remain intact.
+
+Receipts are `retained-grid-layout-cohort/`, its derived JSON,
+`retained-grid-layout-checks*/`, `retained-grid-layout-build/`,
+`retained-grid-layout-compiled-witness/`, `retained-grid-layout-validation/`,
+`broad-retained-grid-layout/`, both grid diagnostic validations,
+`raster-layout-workflow-assessment.json` and
+`generated-source-compression-v2-receipt.json` under the retained evidence root.
+
+
+The subsequent pinned O2 frame-preparation diagnostic also keeps the original
+BBC pixels, complete content and native exit zero. Its final 9,004 reads have
+balanced nesting and zero diagnostic errors. Resource/script polling accounts
+for 12,670,409,011 inclusive process instructions, viewport layout for
+7,492,160,478 and style updates for 5,814,436,057. These overlapping scopes are
+not additive. Fresh sampled stacks on the uninstrumented grid candidate still
+show significant grid/inline layout and selected-font completion work. Sample
+weights measure time, not instructions; neither diagnostic supplies performance
+credit. See `frame-preparation-workflow-assessment.json` and
+`post-grid-workload-profile-validation.json`.
+
+A second lossless storage receipt preserves 66 completed focused-test binaries:
+989,780,992 original bytes become 383,131,212 gzip bytes. Every decoded SHA256
+was checked before unlinking the executable, and the receipt retains its mode,
+mtime and restorable path. Active browser bundles and the current focused-test
+binaries remain executable. See `completed-check-binary-compression-receipt.json`.
