@@ -53,6 +53,16 @@ retains exact counts, binary/native dependency hashes, fixture/reference pins,
 host load, exits and memory-guard adoption. Raw commands, logs, PNGs, counter
 membership and attempts are under `Build/cnn-home-acceptance-20261101-0653/`.
 `tools/cnn_home_browser_instructions.py` is the current seven-pair driver.
+A second seven-pair cohort adds the same-binary family-wide font-completion
+control. All 21 captures remain pixel exact, but the selected-face candidate's
+median is **40,624,138,961** instructions, against **31,867,698,094** for Brave
+and **38,227,636,924** for the Vox control. Its conservative ratio against Brave
+is **1.3336654651**; it meets neither the site goal nor the matched control gate.
+Separate diagnostics verify selected-face invalidation executes, and 67 font
+regressions pass in each GC mode. This change receives no CPU credit; a narrower
+font-size dependency refinement is being checked. Raw evidence is under
+`Build/cnn-home-font-matched-20261101-0703/`, with exact counts in the receipt.
+
 The following sections describe the earlier archive, tools and 15% target.
 
 The CNN target remains open. The accepted result requires seven fresh-process
