@@ -40,10 +40,24 @@ fn test_solid_svg_backgrounds_share_their_owning_picture_without_weakening_fallb
 	}
 }
 
-fn test_repeated_and_effectful_svg_backgrounds_keep_the_existing_recording_fallback() {
+fn test_repeated_solid_svg_backgrounds_inspect_each_visible_tile() {
+	for repeat in ['repeat', 'repeat-x', 'repeat-y', 'space', 'round'] {
+		command, mut document := svg_background_recording_test_command('<svg xmlns="http://www.w3.org/2000/svg" width="20" height="12"><circle cx="10" cy="6" r="4" fill="#c00"/></svg>', repeat)
+		defer { document.finalize() }
+		assert chromium_svg_background_can_share_recording(&command)
+		supported, vectors := chromium_shared_recording_leaf_supported(&command)
+		assert supported && vectors
+		too_many := layout.PaintCommand{...command,
+			width: 2000, height: 2000,
+			image_data:&layout.PaintImageData{...command.image_data, image_clip_width:2000, image_clip_height:2000}}
+		if repeat == 'repeat' { assert !chromium_svg_background_can_share_recording(&too_many) }
+	}
+}
+
+fn test_effectful_svg_backgrounds_keep_the_existing_recording_fallback() {
 	for input in [
-		['<svg xmlns="http://www.w3.org/2000/svg" width="20" height="12"><circle cx="10" cy="6" r="4"/></svg>', 'repeat'],
 		['<svg xmlns="http://www.w3.org/2000/svg" width="20" height="12"><g opacity=".5"><circle cx="10" cy="6" r="4"/></g></svg>', 'no-repeat'],
+		['<svg xmlns="http://www.w3.org/2000/svg" width="20" height="12"><defs><linearGradient id="g"><stop stop-color="red"/><stop offset="1" stop-color="blue"/></linearGradient></defs><circle cx="10" cy="6" r="4" fill="url(#g)"/></svg>', 'repeat'],
 	] {
 		command, mut document := svg_background_recording_test_command(input[0], input[1])
 		defer { document.finalize() }

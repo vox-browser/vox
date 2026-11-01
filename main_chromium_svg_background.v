@@ -62,7 +62,8 @@ struct ChromiumSVGBackgroundReplay {
 
 // Native replay keeps these paths in the current picture. Inspect the actual
 // resolved SVG rather than treating every vector background as a bitmap barrier.
-// Repeats, effects and rounded image clips retain the ordinary fallback.
+// Inspect every visible tile with the same rounded viewport as native replay.
+// Effects and rounded image clips retain the ordinary fallback.
 fn chromium_svg_background_can_share_recording(command &layout.PaintCommand) bool {
 	if command.kind != 'draw_background_image' || command.image_data == unsafe { nil }
 		|| command.opacity != 1 || command.group_opacity != 1 {
@@ -81,14 +82,26 @@ fn chromium_svg_background_can_share_recording(command &layout.PaintCommand) boo
 	if clip.width <= 0 || clip.height <= 0 { return false }
 	plan := painting.background_tile_plan(layer,
 		painting.Point{command.image_scroll_offset_x, command.image_scroll_offset_y}, clip)
-	if plan.repeat_x || plan.repeat_y { return false }
-	replay := chromium_svg_background_replay(plan.first_tile, normalized_paint_transform(command.transform))
-	commands := svg_background_paint_commands(image, replay.viewport_width, replay.viewport_height) or { return false }
-	if commands.len == 0 || commands.len > 32768 { return false }
-	for index in 0 .. commands.len {
-		if !chromium_svg_solid_path_supported(&commands[index]) { return false }
+	converter := painting.new_device_pixel_converter(1.0) or { return false }
+	mut tiles := painting.background_tile_iterator(plan, clip, 4097)
+	mut count := 0
+	for {
+		tile := tiles.next() or { break }
+		count++
+		if count > 4096 { return false }
+		destination := converter.rounded_device_rect(tile)
+		replay := if !plan.repeat_x && !plan.repeat_y {
+			chromium_svg_background_replay(tile, normalized_paint_transform(command.transform))
+		} else {
+			ChromiumSVGBackgroundReplay{math.max(1, destination.width), math.max(1, destination.height), command.transform}
+		}
+		commands := svg_background_paint_commands(image, replay.viewport_width, replay.viewport_height) or { return false }
+		if commands.len == 0 || commands.len > 32768 { return false }
+		for index in 0 .. commands.len {
+			if !chromium_svg_solid_path_supported(&commands[index]) { return false }
+		}
 	}
-	return true
+	return count > 0
 }
 
 // Non-repeating SVG backgrounds lay out in an independently rounded container.
