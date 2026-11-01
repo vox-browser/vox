@@ -2,11 +2,11 @@
 
 **The requested 10% advantage remains open. BBC does not qualify for
 `OPTIMIZED_SITES.md`.** The latest valid seven-pair cohort has a Vox median
-of **40,329,352,824** retired instructions and a Brave lower-bound median of
-**15,970,908,247**. Its conservative ratio is **2.8081095382756427**, above the
+of **40,577,716,115** retired instructions and a Brave lower-bound median of
+**15,788,336,728**. Its conservative ratio is **2.6331015373715503**, above the
 required 0.9. All 21 observations pass content, original pixels and native exits.
-The enabled median improves 3.1608% against its disabled control, but the
-conservative control ratio is 1.1059377404151833; no accepted improvement is
+The enabled median improves 3.1308% against its disabled control, but the
+conservative control ratio is 1.0304606563820868; no accepted improvement is
 credited. Every observation remains included.
 
 The machine-readable [evidence](benchmark-results/bbc-brave-instructions-2026-11-01.json)
@@ -74,6 +74,7 @@ capture marker. An invalid cohort is retained for diagnosis, not acceptance.
 | Completed shared O3 production build | 42,995,770,723 | 15,723,370,671 | 3.110810439568189 | All observations valid; gate fails; no isolated compiler attribution |
 | Intrinsic sizes across unrelated font completions | 43,359,803,356 | 15,823,854,730 | 3.368777312785835 | Gate fails; control pair 5 and Brave pairs 4/7 differ; median regresses against control |
 | Original live pending-font intrinsic reuse | 40,329,352,824 | 15,970,908,247 | 2.8081095382756427 | All observations valid; Brave and matched-control gates fail |
+| Text chunks and shapes with original live pending fonts | 40,577,716,115 | 15,788,336,728 | 2.6331015373715503 | All observations valid; Brave and matched-control gates fail |
 
 The grid block-height cohort alternates an older control, candidate and Brave;
 control/candidate medians are 101,567,929,247 and 90,700,737,334 (10.70% observed
@@ -455,3 +456,54 @@ and Brave trials above 31 billion remain included. The integer Brave gate
 fails: 439,854,987,830 > 140,973,663,474. The guard adopts 65 identities without
 error, peaks at 1,478,033,408 bytes and completes in 144.66 seconds. The requested
 10% advantage remains open.
+
+Commit `0cdb8d6c` retains inline text chunks and intrinsic shape owners across
+unrelated font epochs only when style identity/revision and the original live
+pending cascade are unchanged. Selected completions, changed matching inputs,
+expired cascades and style changes retain recomputation. All 16 focused checks
+pass in normal, no-GC and preallocated modes, with disabled controls. Two prior
+attempts expose test assumptions: an unused face has no font-display timeline
+to transition, and completion can synchronously run layout through
+FontFaceSet.ready. The final check changes the selected Unicode range and
+allows a fresh cache after synchronous layout. Both failed attempts remain
+retained. Matched-control tooling `809068ef` passes 181 instruction-tool checks.
+
+Both broad modes enter all 408 cases and pass 407, with the same sole baseline
+failure. Disk exhaustion interrupts the first no-GC compile; the unchanged
+composed test source subsequently compiles and enters all cases in 82 fresh
+batches. Compression receipts retain logical SHA256 values and exact contents
+for generated sources and completed standalone test executables. Historical
+Vox copies have lossless archives with file metadata, links and attributes.
+An attempted browser-copy archival consumes space instead of recovering it;
+verified Brave clones are restored, and only redundant or incomplete archives
+are removed. The failed compression jobs and recovery receipts remain retained.
+Current candidates, page archives and PNG references are unchanged.
+
+The production build completes in 323.35 seconds, peaking at 7,346,438,144 bytes.
+Its text-cache implementation stays unchanged; only the test fixture changes
+during the build. Captured compiler input witnesses the final implementation,
+and the final fixture passes separately. Executable SHA256 is
+`5e5a95dcbc9be81238f6b529fb55e157a0556db77dbc1f5609c39e546b11cdd7`.
+Startup, all 11 smoke and eight SVG cases pass with stable identities. BBC
+diagnostics match the original pixels and full content, observe the path only
+when enabled, and witness 1,971/2,431 JavaScriptCore evaluations in
+candidate/control.
+
+The uninstrumented text-cache cohort changes only
+`VOX_DISABLE_LIVE_PENDING_TEXT_REUSE`. Control median 41,889,164,118 versus
+candidate 40,577,716,115 is a 3.1308% point reduction. Pairs 1, 2 and 7 regress;
+the conservative control ratio 1.0304606563820868 fails, so no accepted saving
+is credited. All 21 content, original-reference and native exit checks pass.
+The Brave gate fails: 414,081,075,020 > 141,533,838,414. The guard adopts 68
+identities without error and peaks at 1,438,023,680 bytes over 131.69 seconds.
+BBC remains outside the optimized-site catalog.
+
+A later outer-scope diagnostic is invalid: it treated the partial CSS candidate
+bucket interval and its containing interval as two independent exits. The
+counter nesting became unbalanced, and the capture counter JSON was truncated.
+No numerical attribution or instruction saving is taken from that attempt.
+Its raw run and `outer-scope-diagnostic-assessment.json` remain retained.
+Historical Brave copies with identical complete file-content manifests now
+share one immutable historical application tree through their original paths;
+the current candidate and measurement copies were excluded. The manifest and
+replacement receipt preserve each original path and file hash.
