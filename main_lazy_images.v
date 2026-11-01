@@ -8,6 +8,8 @@ import painting
 import platform
 
 const disable_lazy_image_probe_cache = os.getenv('VOX_DISABLE_LAZY_IMAGE_PROBE_CACHE') != ''
+const disable_lazy_image_batches = os.getenv('VOX_DISABLE_LAZY_IMAGE_BATCHES') != ''
+const lazy_image_batch_diagnostics = os.getenv('VOX_LAZY_IMAGE_BATCH_DIAGNOSTICS') != ''
 const lazy_image_probe_diagnostics = os.getenv('VOX_LAZY_IMAGE_PROBE_DIAGNOSTICS') != ''
 
 struct DeferredLazyImageProbe {
@@ -163,10 +165,26 @@ fn (mut app BrowserApp) resume_deferred_lazy_image_requests() bool {
 	// Detach the current batch: a load handler can replace a source, append an
 	// image, or navigate and cancel this loader while a request completes.
 	requests := loader.deferred_lazy_images
+	// Intersection notifications describe one committed geometry snapshot.
+	// Select the whole nearby batch before a synchronous cached completion can
+	// invalidate layout or move a sibling. Recheck request ownership below.
+	mut eligible := []bool{}
+	if !disable_lazy_image_batches {
+		eligible = []bool{len: requests.len}
+		mut count := 0
+		for index, request in requests {
+			eligible[index] = request.is_current_for(loader.document)
+				&& !browser_lazy_image_needs_deferral(request.image)
+			if eligible[index] { count++ }
+		}
+		if lazy_image_batch_diagnostics {
+			eprintln('Vox lazy image batch: eligible=${count} queued=${requests.len}')
+		}
+	}
 	loader.deferred_lazy_images = []DeferredBrowserLazyImage{}
 	loader.lazy_image_queue_revision++
 	mut resumed := false
-	for request in requests {
+	for index, request in requests {
 		if loader.cancelled {
 			// Cancellation discards callbacks, like ordinary in-flight requests.
 			platform.release_closure(voidptr(request.complete))
@@ -176,7 +194,10 @@ fn (mut app BrowserApp) resume_deferred_lazy_image_requests() bool {
 			finish_browser_image_request(request.complete, none)
 			continue
 		}
-		if browser_lazy_image_needs_deferral(request.image) {
+		deferred := if disable_lazy_image_batches {
+			browser_lazy_image_needs_deferral(request.image)
+		} else { !eligible[index] }
+		if deferred {
 			loader.deferred_lazy_images << request
 			continue
 		}

@@ -212,29 +212,22 @@ fn test_capture_keeps_nearby_lazy_images_at_the_initial_viewport_after_a_cache_h
 	app.screenshot_scroll_y = 3200
 	app.relayout(320, 284)
 	assert app.resume_deferred_lazy_image_requests()
-	// A synchronous response changes intrinsic geometry. The remaining images
-	// stay deferred until that layout has completed, despite no network job.
+	// All nearby requests observed this committed viewport before any cached
+	// response changed intrinsic geometry. Distant requests still stay deferred.
 	loader := app.image_request_loader?
 	assert lazy_native_test_model(app, 'first').complete()
-	assert !lazy_native_test_model(app, 'second').complete()
+	assert lazy_native_test_model(app, 'second').complete()
+	assert lazy_native_test_model(app, 'third').complete()
 	assert loader.pending.len == 0
+	assert !app.document.layout_is_up_to_date()
+	assert !app.document_resources_ready_for_capture()
+	app.apply_screenshot_scroll_if_ready(284)
+	assert app.scroll_y == 0 && !app.screenshot_initial_viewport_ready
 	app.relayout(320, 284)
 	app.document.update_readiness(.complete)
 	loop := html.main_thread_event_loop()
 	loop.update_font_face_sets_pending_on_the_environment([app.document])
 	assert app.font_resources_ready_for_capture()
-	assert !app.document_resources_ready_for_capture()
-	assert capture_retry_needs_frame(voidptr(app)) == 1
-	assert capture_scroll_retry_needs_frame(voidptr(app)) == 1
-	app.note_screenshot_initial_viewport(true)
-	app.apply_screenshot_scroll_if_ready(284)
-	assert app.scroll_y == 0 && !app.screenshot_initial_viewport_ready
-	// Each ordinary frame can service another synchronous response and layout.
-	for _ in 0 .. 3 {
-		app.begin_frame_preparation()
-		app.finish_frame_preparation()
-		loop.update_font_face_sets_pending_on_the_environment([app.document])
-	}
 	assert lazy_native_test_model(app, 'second').complete()
 	assert lazy_native_test_model(app, 'third').complete()
 	assert !lazy_native_test_model(app, 'far').complete()
@@ -243,4 +236,76 @@ fn test_capture_keeps_nearby_lazy_images_at_the_initial_viewport_after_a_cache_h
 	app.note_screenshot_initial_viewport(true)
 	app.apply_screenshot_scroll_if_ready(284)
 	assert app.scroll_y == 3200 && app.screenshot_initial_viewport_ready
+}
+
+fn test_lazy_image_batch_observes_nearby_moving_target_before_completions() {
+	mut app := lazy_native_test_app('<img id="first" loading="lazy" style="display:block;width:5000px;height:0" src="${lazy_native_png}">' +
+		'<img id="second" loading="lazy" style="display:block;width:40px" src="${lazy_native_wide_png}">' +
+		'<div style="height:10000px"></div><img id="far" loading="lazy" src="${lazy_native_png}">', true)
+	defer { if mut owner := app.image_request_loader { owner.cancel() }; app.document.finalize() }
+	mut loader := app.image_request_loader?
+	first_request := loader.deferred_lazy_images[0]
+	original := first_request.complete
+	first := app.document.get_element_by_id('first')?
+	loader.deferred_lazy_images[0] = DeferredBrowserLazyImage{...first_request, complete: fn [original, first] (decoded ?html.DecodedImageData) {
+		finish_browser_image_request(original, decoded)
+		mut element := unsafe { &dom.Element(first) }
+		element.set_attribute_value('style', 'display:block;width:5000px')
+	}}
+	app.relayout(320, 284)
+	second := app.document.get_element_by_id('second')?
+	assert !browser_lazy_image_needs_deferral(unsafe { &dom.HTMLImageElement(second) })
+	assert app.resume_deferred_lazy_image_requests()
+	assert lazy_native_test_model(app, 'first').complete()
+	assert lazy_native_test_model(app, 'second').complete()
+	assert !lazy_native_test_model(app, 'far').complete()
+	assert loader.deferred_lazy_images.len == 1
+	app.relayout(320, 284)
+	assert second.get_bounding_client_rect().y >= 5000
+}
+
+fn test_lazy_image_batch_rechecks_source_ownership_after_a_reentrant_completion() {
+	mut app := lazy_native_test_app('<img id="first" loading="lazy" src="${lazy_native_png}">' +
+		'<img id="second" loading="lazy" src="${lazy_native_wide_png}">', true)
+	defer { if mut owner := app.image_request_loader { owner.cancel() }; app.document.finalize() }
+	mut loader := app.image_request_loader?
+	first_request := loader.deferred_lazy_images[0]
+	original := first_request.complete
+	second := app.document.get_element_by_id('second')?
+	loader.deferred_lazy_images[0] = DeferredBrowserLazyImage{...first_request, complete: fn [original, second] (decoded ?html.DecodedImageData) {
+		finish_browser_image_request(original, decoded)
+		mut mutable_second := unsafe { &dom.Element(second) }
+		mutable_second.set_attribute_value('src', lazy_native_png)
+		html.html_image_element_form_associated_element_attribute_changed(
+			unsafe { &dom.HTMLImageElement(second) }, 'src', lazy_native_wide_png, lazy_native_png, none)
+	}}
+	app.relayout(320, 284)
+	assert app.resume_deferred_lazy_image_requests()
+	assert lazy_native_test_model(app, 'first').complete()
+	assert !lazy_native_test_model(app, 'second').complete()
+	assert loader.deferred_lazy_images.len == 1
+	app.relayout(320, 284)
+	assert app.resume_deferred_lazy_image_requests()
+	assert lazy_native_test_model(app, 'second').natural_width() == 1
+	assert lazy_native_test_model(app, 'second').event_count('load') == 1
+}
+
+fn test_lazy_image_batch_discards_remaining_callbacks_after_reentrant_cancellation() {
+	mut app := lazy_native_test_app('<img id="first" loading="lazy" src="${lazy_native_png}">' +
+		'<img id="second" loading="lazy" src="${lazy_native_wide_png}">', true)
+	defer { app.document.finalize() }
+	mut loader := app.image_request_loader?
+	first_request := loader.deferred_lazy_images[0]
+	original := first_request.complete
+	loader.deferred_lazy_images[0] = DeferredBrowserLazyImage{...first_request, complete: fn [original, loader] (decoded ?html.DecodedImageData) {
+		finish_browser_image_request(original, decoded)
+		mut owner := unsafe { &BrowserImageRequestLoader(loader) }
+		owner.cancel()
+	}}
+	app.relayout(320, 284)
+	assert app.resume_deferred_lazy_image_requests()
+	assert loader.cancelled && loader.deferred_lazy_images.len == 0
+	assert lazy_native_test_model(app, 'first').complete()
+	assert !lazy_native_test_model(app, 'second').complete()
+	assert lazy_native_test_model(app, 'second').event_count('load') == 0
 }
