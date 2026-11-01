@@ -1,12 +1,16 @@
 # Brave rendering fixtures
 
-`cnn-svg-background-header` checks the CNN logo beside a small solid SVG
-background in an opaque compositor header. Two agreeing Brave 156.1.98.60
-references at 1024×768, scale 1, reproduce 120 differing pixels in the previous
-browser; the new capture is exact. Solid non-repeating SVG backgrounds can
-share their owning picture after their resolved paths are checked. Repeated
-images, effects and rounded image clips keep their fallback. The registered
-full CNN page remains open; see the [site report](../../../docs/ADBLOCK_POPULAR_SITES.md).
+The registered CNN archive is pixel-exact against Brave with full uBO at
+1024×768, scale 1, when both browsers start fresh after complete encoded-response
+cache warmups. The separate saved-live/frozen-reference gate remains open.
+See the [CNN report](../../../docs/CNN_BRAVE_PARITY.md) for scope and evidence.
+
+Five focused CNN fixtures cover the solid and repeated SVG header backgrounds,
+the rounded header with a captured mask, fractional SVG background pictures,
+and a ticker fade beside an unsupported offscreen SVG background. They are
+registered in `tools/forum_news_inline_pixels_test.py`. The ticker regression
+improves from 63 pixels to zero against two agreeing Brave references. Native
+picture-shader checks run with `python3 tools/test_graphite_svg_pattern.py`.
 
 The registered `bbc` guest-page archive now retains the live author CSSOM
 rules, original encoded images and the consent-rejected document. At 1024×768,

@@ -1,8 +1,8 @@
 # Popular-site adblock verification
 
 The latest BBC and CNN rendering checkpoints are recorded at the end of this
-document. BBC's complete-response cache captures are pixel-exact; cold BBC and
-full CNN acceptance remain open.
+document. BBC and CNN complete-response cache captures are pixel-exact; cold
+BBC and CNN's saved-live/frozen-reference acceptance remain open.
 
 The matrix exercises guest pages on 13 representative news, video, social,
 shopping, reference, and developer sites. It compares Vox's native filtering
@@ -2230,3 +2230,21 @@ receipts, `candidate/identity.json`, `candidate/receipt.json`, `fresh/`,
 `fresh-socks/`, `settle15/`, and `consented/`. Diagnostic extraction errors,
 an invalid injected trace and incomplete browser exits are retained separately
 and supply no acceptance credit. The existing broad baseline is unchanged.
+
+
+## CNN archived viewport reaches zero pixels, 1 November 2026
+
+The unchanged CNN archive now matches Brave/full uBO at **zero differing RGBA
+pixels** across the full 1024×768 viewport, scale 1, with complete encoded
+response caches and fresh capture processes. The preceding control has 67
+differences; the earlier matched-cache baseline has 224. The header, generated
+play icon, ticker fade and photo corners all match. The registered full-uBO
+comparison reports zero filter disagreements, and seven focused native pixel
+cases pass. Each completed renderer fix has its own commit with focused tests.
+
+The full site status remains `live-to-frozen-mismatch`: its unchanged saved
+live image differs from the frozen Brave replay by 101,696 pixels. The runner
+retains exit 1 for that gate. Cold decoding and unstable live recaptures remain
+unqualified. See [CNN rendering evidence](CNN_BRAVE_PARITY.md) and its
+[durable receipt](benchmark-results/cnn-brave-pixels-2026-11-01.json) for exact
+scope, bundle identities, commands, guard results and retained failed attempts.
