@@ -2584,21 +2584,53 @@ extern "C" int ladybird_v_skia_end_css_gradient_blur(CGContextRef context,
     int width = raster_dimension(canvas_width, scale);
     int height = raster_dimension(canvas_height, scale);
     if (width > 16384 || height > 16384 || size_t(width) * height > 8 * 1024 * 1024) return 0;
-    std::vector<uint32_t> pixels(size_t(width) * height);
-    RasterRegion region {0, 0, static_cast<int>(std::ceil(canvas_width)),
-        static_cast<int>(std::ceil(canvas_height))};
-    bool has_background = copy_backdrop(destination, region, scale, width, height, pixels);
-    if (!has_background) return 0;
-    auto info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
+    auto filter = SkImageFilters::Blur(sigma, sigma, SkTileMode::kDecal, nullptr);
+    if (!filter) return 0;
+    int left = 0, top = 0, output_width = width, output_height = height;
+    auto draw_region = picture_region_draw();
+    auto original = read_backdrop(destination, {}, scale, width, height);
+    if (!original.pixels) return 0;
+    bool regional = draw_region && !std::getenv("VOX_DISABLE_PICTURE_REGIONS")
+        && !std::getenv("VOX_DISABLE_BLUR_PICTURE_REGIONS")
+        && recording->bounds.isFinite() && std::isfinite(sigma)
+        && canvas_width * scale == width && canvas_height * scale == height;
+    // Full-target backdrop replay can quantize translucent premultiplied
+    // colors. Keep that behavior unless pixels outside the blur are opaque.
+    if (regional) {
+        for (int y = 0; y < height && regional; ++y)
+            for (int x = 0; x < width; ++x)
+                if (original.pixels[size_t(y) * original.pitch + size_t(x) * 4 + 3] != 255) {
+                    regional = false;
+                    break;
+                }
+    }
+    if (regional) {
+        auto ink = filter->computeFastBounds(recording->bounds).makeOutset(2, 2);
+        if (!ink.isFinite()) return 0;
+        left = int(std::clamp(std::floor(double(ink.left()) * scale), 0.0, double(width)));
+        top = int(std::clamp(std::floor(double(ink.top()) * scale), 0.0, double(height)));
+        int right = int(std::clamp(std::ceil(double(ink.right()) * scale), 0.0, double(width)));
+        int bottom = int(std::clamp(std::ceil(double(ink.bottom()) * scale), 0.0, double(height)));
+        output_width = right - left;
+        output_height = bottom - top;
+        if (output_width <= 0 || output_height <= 0) return 1;
+    }
+    std::vector<uint32_t> pixels(size_t(output_width) * output_height);
+    Backdrop cropped {original.pixels + size_t(top) * original.pitch + size_t(left) * 4,
+        original.pitch};
+    copy_backdrop_pixels(cropped, output_width, output_height, pixels);
+    auto info = SkImageInfo::Make(output_width, output_height, kBGRA_8888_SkColorType,
         kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
-    auto backdrop = SkImages::RasterFromPixmapCopy(SkPixmap(info, pixels.data(), size_t(width) * 4));
+    auto backdrop = SkImages::RasterFromPixmapCopy(SkPixmap(info, pixels.data(), size_t(output_width) * 4));
     if (!backdrop) return 0;
     SkPictureRecorder output;
+    // Preserve the original target, layer bounds and filter coordinates.
+    // Cropping the GPU surface changes blur rounding and downsample phases.
     auto* canvas = output.beginRecording(SkRect::MakeWH(width, height));
-    canvas->drawImage(backdrop, 0, 0);
+    canvas->drawImage(backdrop, left, top);
     canvas->scale(scale, scale);
     SkPaint paint;
-    paint.setImageFilter(SkImageFilters::Blur(sigma, sigma, SkTileMode::kDecal, nullptr));
+    paint.setImageFilter(filter);
     canvas->saveLayer(recording->bounds, &paint);
     canvas->drawPicture(input);
     canvas->restore();
@@ -2608,10 +2640,23 @@ extern "C" int ladybird_v_skia_end_css_gradient_blur(CGContextRef context,
     procs.fTypefaceProc = vox_serialize_picture_typeface;
     auto bytes = picture->serialize(&procs);
     float identity[] {1, 0, 0, 0, 1, 0, 0, 0, 1};
-    if (!bytes || !shared_picture_draw()(reinterpret_cast<uint8_t*>(pixels.data()),
-            width, height, width * 4, bytes->data(), bytes->size(), identity)) return 0;
-    return composite_pixels(destination, std::move(pixels), width, height,
-        0, 0, canvas_width, canvas_height, true);
+    if (!bytes) return 0;
+    auto* target = reinterpret_cast<uint8_t*>(pixels.data());
+    int rendered = regional
+        ? draw_region(target, width, height, output_width * 4, left, top,
+            output_width, output_height, bytes->data(), bytes->size(), identity)
+        : shared_picture_draw()(target, width, height, width * 4,
+            bytes->data(), bytes->size(), identity);
+    if (!rendered) return 0;
+    if (regional && std::getenv("VOX_PICTURE_REGION_DIAGNOSTICS"))
+        std::fprintf(stderr, "VOX_PICTURE_REGION blur target=%dx%d region=%d,%d,%d,%d\n",
+            width, height, left, top, output_width, output_height);
+    return regional
+        ? composite_pixels(destination, std::move(pixels), output_width, output_height,
+            left / scale, canvas_height - (top + output_height) / scale,
+            output_width / scale, output_height / scale, true)
+        : composite_pixels(destination, std::move(pixels), width, height,
+            0, 0, canvas_width, canvas_height, true);
 }
 
 extern "C" int ladybird_v_skia_draw_drop_shadow(CGContextRef destination,
