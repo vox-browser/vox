@@ -1,5 +1,60 @@
 # CNN rendering and instruction comparison
 
+## November 1: current 10% request, sealed homepage cohort
+
+The current target is **10% fewer instructions than Brave**, superseding the
+older 15% request in the historical sections below. The completed seven-pair
+cohort does **not** meet it: Vox's median is **41,186,019,148** instructions and
+Brave's median lower bound is **31,496,128,055**. The conservative maximum-Vox /
+minimum-Brave ratio is **1.3486672674**. The exact gate fails:
+`10 * 41,535,524,696 > 9 * 30,797,458,870`.
+
+Every one of these fourteen captures is pixel exact against the same unchanged
+1024×768 reference. Each has all 82 ordered headlines, 80 image sources, eight
+visible decoded images, real loaded CNN fonts, and the expected document body.
+Every Vox traffic audit has 74 requests, 70 allowed, four blocked, and zero
+full-uBO disagreements. No first-launch result or slower trial is excluded.
+
+The counter backend is the exclusive LaunchServices resource coalition in both
+engines, including exited helpers and explicitly allowed owned system services.
+The scope starts at coalition creation and ends at encoded document PNG
+availability: startup, window/target setup, full-uBO startup, readiness, and a
+five-second settle are included. Vox ends before file writing; Brave's endpoint
+includes delivery of the encoded PNG through CDP. Audits and teardown follow the
+counted endpoint. GPU instructions, observer/replay and services outside the
+exclusive coalition are excluded. Brave uses its initial headless target at
+scale 1; Vox uses an inactive native window and scale-1 document capture.
+OS filesystem and shader caches remain warm. Load averages span the retained
+host receipts (18 logical CPUs); unrelated builds were active on this shared host.
+
+This uses the newer 85-response archive at `Tests/Browser/Brave/sites/cnn`, with
+original-origin sealed HTTPS replay, normal scripting policy, inline handlers
+and uBO scriptlets, and author script elements removed. Fresh processes receive
+private copies of the declared closed full-uBO profile and encoded response
+cache. It measures the frozen rendering/startup workflow, **not live CNN author
+JavaScript or isolated rendering time**. A separate diagnostic verifies that
+JavaScriptCore initializes and executes the bootstrap/scriptlet/handler path;
+`--enable-javascript` alone supplies no such evidence. Live-page parity remains
+open.
+
+Two engine changes are committed: stationary raster reuse now accepts immutable
+nested snapshots and empty videos while rejecting live media, and unchanged
+negative lazy-image geometry probes can be reused while still cancelling
+superseded requests. Separate diagnostics verify both paths execute on CNN.
+Earlier matched controls are retained, including noisy results and pixel
+failures; they do not establish a repeatable final percentage saving. The pinned
+candidate passes the screenshot smoke set, eight SVG mutation guards, 100 exact
+upstream AST cases, and focused/broader tests in both GC modes. Four asynchronous
+poster fixtures were repaired to wait for their actual completion events; their
+original failures remain in the evidence.
+
+The durable [cohort receipt](benchmark-results/cnn-home-instructions-2026-11-01.json)
+retains exact counts, binary/native dependency hashes, fixture/reference pins,
+host load, exits and memory-guard adoption. Raw commands, logs, PNGs, counter
+membership and attempts are under `Build/cnn-home-acceptance-20261101-0653/`.
+`tools/cnn_home_browser_instructions.py` is the current seven-pair driver.
+The following sections describe the earlier archive, tools and 15% target.
+
 The CNN target remains open. The accepted result requires seven fresh-process
 pairs with **zero differing RGBA pixels** and `max(Vox) <= 0.85 * min(Brave)`.
 The preliminary instruction counts do not meet that target and receive no
