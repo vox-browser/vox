@@ -189,8 +189,6 @@ def run_trial(engine, app, folder, args):
                 args.vox_environment['VOX_DISABLE_CONSTANT_LONGHAND_REUSE'] = '1'
             if getattr(args, 'control_disable_live_pending_text_reuse', False):
                 args.vox_environment['VOX_DISABLE_LIVE_PENDING_TEXT_REUSE'] = '1'
-            if getattr(args, 'control_disable_retained_font_validation', False):
-                args.vox_environment['VOX_DISABLE_RETAINED_FONT_VALIDATION'] = '1'
             if getattr(args, 'control_disable_intrinsic_seed_visits', False):
                 args.vox_environment['VOX_DISABLE_INTRINSIC_SEED_VISITS'] = '1'
             if getattr(args, 'control_disable_retained_grid_layout', False):
@@ -269,8 +267,6 @@ def parse_args(argv=None):
                         help='Disable numeric-ratio, angle-free font-style and time value reuse in the pinned Vox control')
     parser.add_argument('--control-disable-live-pending-text-reuse', action='store_true',
                         help='Discard text shapes after unrelated pending-font changes in the pinned Vox control')
-    parser.add_argument('--control-disable-retained-font-validation', action='store_true',
-                        help='Recheck retained font inputs on every cache hit in the pinned Vox control')
     parser.add_argument('--control-disable-intrinsic-seed-visits', action='store_true',
                         help='Use per-probe hash visitation for external containing-block seeds in the pinned Vox control')
     parser.add_argument('--control-disable-retained-grid-layout', action='store_true',
@@ -335,7 +331,7 @@ def parse_args(argv=None):
             args.control_disable_live_pending_text_reuse,
             args.control_disable_live_pending_font_refresh,
             args.control_disable_positioned_image_ratio_reuse,
-            args.control_disable_conditional_sheet_invalidation or args.control_disable_inactive_conditional_sheet_skip or args.control_disable_classic_import_word_scan or args.control_disable_longhand_shape_reuse or args.control_disable_longhand_eligibility_first or args.control_disable_protected_value_index or args.control_disable_shared_element_geometry or args.control_disable_shared_node_properties or args.control_disable_attribute_tag_buckets or args.control_disable_deleted_style_rule_invalidation or args.control_disable_targeted_user_style_changes or args.control_disable_static_user_style_filter or args.control_disable_document_filter_memo or args.control_disable_retained_grid_layout or args.control_disable_intrinsic_seed_visits or args.control_disable_retained_font_validation)) and not args.control_vox_app:
+            args.control_disable_conditional_sheet_invalidation or args.control_disable_inactive_conditional_sheet_skip or args.control_disable_classic_import_word_scan or args.control_disable_longhand_shape_reuse or args.control_disable_longhand_eligibility_first or args.control_disable_protected_value_index or args.control_disable_shared_element_geometry or args.control_disable_shared_node_properties or args.control_disable_attribute_tag_buckets or args.control_disable_deleted_style_rule_invalidation or args.control_disable_targeted_user_style_changes or args.control_disable_static_user_style_filter or args.control_disable_document_filter_memo or args.control_disable_retained_grid_layout or args.control_disable_intrinsic_seed_visits)) and not args.control_vox_app:
         parser.error('Disabling the control optimization needs --control-vox-app')
     if not args.capture_reference and (args.repeat < 7 or not args.expected_vox or not args.expected_brave):
         parser.error('Acceptance needs seven pairs and both existing pixel references')
@@ -442,7 +438,6 @@ def main():
         control_disable_targeted_user_style_changes=args.control_disable_targeted_user_style_changes,
         control_disable_static_user_style_filter=args.control_disable_static_user_style_filter,
         control_disable_document_filter_memo=args.control_disable_document_filter_memo,
-        control_disable_retained_font_validation=args.control_disable_retained_font_validation,
         control_disable_intrinsic_seed_visits=args.control_disable_intrinsic_seed_visits,
         control_disable_retained_grid_layout=args.control_disable_retained_grid_layout,
         brave_post_readiness_expression=args.post_readiness_expression,
