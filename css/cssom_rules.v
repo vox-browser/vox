@@ -2030,8 +2030,14 @@ pub fn (mut sheet CSSStyleSheet) delete_rule(index u32) ! {
 
 	// 3. Remove a CSS rule in the CSS rules at index.
 	previous_sheet_effects := determine_shadow_root_style_sheet_effects_for_style_sheet(sheet)
+	// Project before removal clears the rule's stylesheet/namespace context.
+	deleted_style_invalidation := invalidation_for_deleted_style_rule(sheet, index)
 	sheet.rules.remove_a_css_rule(index)!
-	sheet.invalidate_owners_with_previous_effects(.style_sheet_delete_rule, previous_sheet_effects)
+	if invalidation := deleted_style_invalidation {
+		invalidate_owners_for_deleted_style_rule(mut sheet, invalidation, previous_sheet_effects)
+	} else {
+		sheet.invalidate_owners_with_previous_effects(.style_sheet_delete_rule, previous_sheet_effects)
+	}
 	sheet.synchronize_fonts_after_rule_change()
 }
 
