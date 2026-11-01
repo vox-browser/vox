@@ -7,22 +7,24 @@ Results apply to the frozen page and pinned build in each linked report.
 
 | Site | Recorded date | Trials per browser | Statistic | Vox instructions | Brave observed instructions | Fewer instructions | Vox scroll FPS | Brave scroll FPS | Evidence |
 | --- | --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | --- |
-| Old Reddit /r/programming/ | 2026-11-01 | 7 | Median | 4,954,400,539 | 9,248,675,091 | **46.43%** | — | — | [Comparison](docs/OLD_REDDIT_PROGRAMMING_INSTRUCTIONS.md) |
-| Hacker News homepage | 2026-11-01 | 7 | Median | 4,877,590,820 | 8,554,149,229 | **42.98%** | — | — | [Comparison](docs/HACKER_NEWS_BRAVE_INSTRUCTIONS.md) |
-| Wikipedia homepage | 2026-11-01 | 7 | Median | 6,686,475,010 | 9,702,898,348 | **31.09%** | — | — | [Audit](docs/OPTIMIZED_SITES_AUDIT.md), [comparison](docs/WIKIPEDIA_BRAVE_INSTRUCTIONS.md) |
-| vlang.io (CLI protocol) | 2026-11-01 | 7 | Mean | 8.630 billion | 10.500 billion | **17.81%** | — | — | [Audit](docs/OPTIMIZED_SITES_AUDIT.md), [comparison](docs/VLANG_RENDERING_INSTRUCTIONS.md) |
+| Old Reddit /r/programming/ | 2026-11-01 | 7 | Median | 4,954,400,539 | 9,248,675,091 | **46.43%** | 39.2–53.0 | — | [Comparison](docs/OLD_REDDIT_PROGRAMMING_INSTRUCTIONS.md) |
+| Hacker News homepage | 2026-11-01 | 7 | Median | 4,877,590,820 | 8,554,149,229 | **42.98%** | 46.1–51.5 | — | [Comparison](docs/HACKER_NEWS_BRAVE_INSTRUCTIONS.md) |
+| Wikipedia homepage | 2026-11-01 | 7 | Median | 6,686,475,010 | 9,702,898,348 | **31.09%** | 3.1–3.6 | — | [Audit](docs/OPTIMIZED_SITES_AUDIT.md), [comparison](docs/WIKIPEDIA_BRAVE_INSTRUCTIONS.md) |
+| vlang.io (CLI protocol) | 2026-11-01 | 7 | Mean | 8.630 billion | 10.500 billion | **17.81%** | 0.8–0.9 | — | [Audit](docs/OPTIMIZED_SITES_AUDIT.md), [comparison](docs/VLANG_RENDERING_INSTRUCTIONS.md) |
 
-**— means unmeasured for the listed page/build, not zero FPS.** These instruction
-capture cohorts do not measure scrolling frame rate. FPS requires its own linked
-real-input measurement with a stated endpoint; startup time, callback timing and
-synthetic completion cadence cannot supply these values. The older
-[Reddit scrolling results](docs/OLD_REDDIT_SCROLLING.md) use a different subreddit
-and synthetic callbacks; the [Wikipedia profile](docs/WIKIPEDIA_SCROLLING.md)
-reports callback work. Neither establishes scroll FPS for these rows.
+FPS ranges span **two completed native-publication trials** per pinned page/build;
+the trial counts and mean/median labels above refer to instructions. The
+[scrolling report and raw evidence](docs/OPTIMIZED_SITES_SCROLL_FPS.md) record
+600 precise wheel inputs, actual input cadence, full-window throughput, frame
+intervals and deadline misses. Scrolling uses a 1024×768 document viewport at
+native scale 2. Publication is not physical display scanout, and these results
+do not establish smooth 60 FPS. **— means unmeasured, not zero FPS.** Brave's
+native observer could not load; external capture/input permissions were also
+unavailable. Its FPS comparison remains open.
 
 Percentages compare the two browser summaries in the same row. Means and
-medians are labeled separately; the vlang.io means are rounded. All workloads
-use a 1024×768 CSS-pixel viewport. Hacker News uses native capture scale 2;
+medians are labeled separately; the vlang.io means are rounded. Instruction
+captures use a 1024×768 CSS-pixel viewport. Hacker News uses native capture scale 2;
 the other workloads use scale 1. Old Reddit, Wikipedia and vlang.io use process-tree counters:
 Vox includes capture and teardown, while Brave ends before shutdown. Both sums
 are observed lower bounds because short-lived unsampled children can be missed.

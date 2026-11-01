@@ -225,6 +225,14 @@ completed production bundle by default, following the shared-build rules above.
   network policy, settle period, input schedule, and actual input timestamps.
   Use an empty private `VOX_PROFILE_DIR` for each trial, as the tool does, so
   saved proxy settings and bookmark-bar visibility cannot change the workload.
+  File/loopback fixtures blocked by the optimized-site allowlist can use
+  `--allow-fixture-navigation`; it seeds only `allow_any_site=true` in that
+  private profile. This settings file disables profile proxying, so the tool
+  rejects combining it with `VOX_PROXY`. Original-origin replay of an allowed
+  site should keep the profile empty and use its explicit replay proxy.
+  Verify the observed document viewport, excluding native toolbar/status
+  overlays. The tool checks it against `--width`/`--height`; use
+  `--chrome-height 84` for older bundles and `112` for default bookmark bars.
   Keep these conditions identical in before/after comparisons. A frozen cached
   page isolates a change; also validate the installed bundle on the live URL
   before claiming the user's live scrolling problem is fixed.
