@@ -6,16 +6,47 @@ open. The exact acceptance condition is
 alternating pairs and unchanged content and pixel checks. Earlier cohorts below
 retain their original scope, counts and failures.
 
-The latest two diagnostic triplets use the pinned production bundle in
-`Build/cnn-unchanged-has-installed-20261101-2016/`. Vox records
-**40,979,187,493** and **22,073,501,309** instructions; Brave's lower bounds are
-**30,773,531,330** and **30,987,978,520**. The first Vox result includes a large
-owned-service outlier and remains in the statistics. Both Vox images are exact;
-the second Brave image differs from the fixed reference. These are diagnostic
-observations, not seven-pair acceptance. The second Vox observation is about
-28.3% below the lowest Brave lower bound, but cannot replace the required gate.
-Exact counts, identities, scope, host load, exits, and failures are retained in
-[the 30% follow-up receipt](benchmark-results/cnn-home-thirty-percent-2026-11-01.json).
+The completed seven alternating pairs use production executable
+`61311dd49feb6829e837180131fb32afee09a8769b834c3106603ea0870a7a77`.
+Vox's median is **21,805,542,771** instructions; Brave's median lower bound is
+**32,665,051,523**: **33.245% fewer**. Every actual browser exit is zero, all
+content/filter audits pass, and all seven Vox images are exact.
+
+**The strict 30% goal remains open.** The highest Vox count is **36,373,350,927**
+and the lowest Brave lower bound is **32,154,975,008**. Their ratio is
+**1.1311889037**, so `10 * 36,373,350,927 > 7 * 32,154,975,008`.
+Vox's second and third trials include about **13.86 / 15.71 billion** instructions
+outside its main process, versus about **1.15 billion** in the other five. These
+costs remain in the selected coalition scope and every statistic. Brave pair 4
+also differs at **13,565 pixels**, within one image at `(32,414)`; maximum channel
+error is 7. Its content audit passes, but the unchanged pixel oracle rejects it.
+No trials, references or tolerances are changed to obtain acceptance.
+
+| Pair | Vox instructions | Brave lower bound | Brave pixels exact |
+| --- | ---: | ---: | :---: |
+| 1 | 21,794,930,508 | 33,301,330,688 | yes |
+| 2 | 34,699,718,677 | 32,825,863,077 | yes |
+| 3 | 36,373,350,927 | 34,276,260,674 | yes |
+| 4 | 20,958,540,946 | 32,459,060,467 | no |
+| 5 | 21,756,115,427 | 32,475,152,155 | yes |
+| 6 | 22,443,492,589 | 32,665,051,523 | yes |
+| 7 | 21,805,542,771 | 32,154,975,008 | yes |
+
+The guard adopts 90 browser/helper process identities, reports no adoption error,
+and observes peak aggregate RSS of 2,298,249,216 bytes. One-minute host load ranges
+from 3.73 to 6.48 on 18 logical CPUs. Raw evidence is in
+`Build/cnn-final-launch-20261101-2100/`, including all commands, identities,
+counters, PNGs, audits and actual exits. The
+[durable 30% follow-up receipt](benchmark-results/cnn-home-thirty-percent-2026-11-01.json)
+retains this cohort and all earlier diagnostic, failing and rejected attempts.
+This is not a qualifying `OPTIMIZED_SITES.md` result.
+
+A separate instrumented helper diagnostic observes **19,129,205,317** instructions
+in an owned `MTLCompilerService` process, versus 913,424,204 in the adblock worker
+and 240,652,086 in `SetStoreUpdateService`. These are per-process sampled lower
+bounds from that diagnostic, not a decomposition of the unprofiled trials.
+The unchanged full-coalition gate remains authoritative. The diagnostic's image
+and content pass; its observer work and counters receive no optimization credit.
 
 The changes avoid repeated selector parsing and matching, remember failed
 geometry-cache eligibility probes within one layout pass, defer styles in
@@ -39,15 +70,15 @@ Two initial font scheduling experiments were removed after matched measurements
 showed regressions or no repeatable gain. Their binaries and failures remain
 under `Build/cnn-scripted-font-wait-20261101-1545/` and
 `Build/cnn-font-completion-rendering-20261101-1621/`. A fresh initial-layout
-experiment after the `:has()` fix is in progress, with the earlier regression
-retained as evidence.
+experiment after the `:has()` fix also regresses in both matched trials and is
+removed. All 48 focused runtime checks pass; the rejected sources, control flag,
+counts and original compiler-path failures remain in its evidence directory.
 
 Focused tests exercise normal, no-GC and staged prealloc modes. The final
 `:has()` implementation passes 69 focused runtimes and 138 broader CSS runtimes.
-Its production pin passes headless startup, eight SVG mutation guards and 100
-exact upstream AST fixtures. The visual smoke run stops once when a capture
-produces no screenshot; all remaining cases pass in a separately retained
-recovery run. No image reference or tolerance changes. The memory-bound input
+The final production pin passes headless startup, all eleven default screenshot
+cases, eight SVG mutation guards, and 100 exact upstream AST fixtures. An earlier
+pin has a retained failed capture and a successful recovery run. No image reference or tolerance changes. The memory-bound input
 parser regression initially exposes a pre-existing unconditional input clone;
 controls reproduce it and the corrected parser passes the unchanged bound.
 
