@@ -589,6 +589,9 @@ mut:
 	// coordinates and visual-context rebuilds share one lazily built index.
 	boxes_by_layout_cache       map[u64]&BlockBox
 	boxes_by_layout_cache_valid bool
+	// Client geometry follows the first transport box in tree order. Other
+	// consumers of boxes_by_layout_cache retain their existing last-box rule.
+	visual_boxes_by_layout_cache map[u64]&BlockBox
 	// Private recording storage plus command vectors returned by the shell.
 	record_scratch CompatibilityRecordScratch
 	paintable_bindings []&dom.Paintable

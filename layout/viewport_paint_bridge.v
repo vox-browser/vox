@@ -356,7 +356,9 @@ fn compatibility_live_scroll_offset(result &DocumentLayoutResult, frame &paintin
 fn (mut result DocumentLayoutResult) ensure_boxes_by_layout_cache() {
 	if result.boxes_by_layout_cache_valid { return }
 	result.boxes_by_layout_cache = map[u64]&BlockBox{}
-	collect_compatibility_boxes(mut result.paint_tree, mut result.boxes_by_layout_cache)
+	result.visual_boxes_by_layout_cache = map[u64]&BlockBox{}
+	collect_compatibility_box_indices(mut result.paint_tree, mut result.boxes_by_layout_cache,
+		mut result.visual_boxes_by_layout_cache)
 	// The renderer transport omits the typed Viewport itself and puts its
 	// mandatory scroll frame on the root box. Keep its real layout identity in
 	// the lookup too: absolute descendants can have that Viewport, rather than
@@ -368,6 +370,19 @@ fn (mut result DocumentLayoutResult) ensure_boxes_by_layout_cache() {
 fn (mut result DocumentLayoutResult) invalidate_boxes_by_layout_cache() {
 	result.boxes_by_layout_cache_valid = false
 	result.boxes_by_layout_cache = map[u64]&BlockBox{}
+	result.visual_boxes_by_layout_cache = map[u64]&BlockBox{}
+}
+
+fn collect_compatibility_box_indices(mut box BlockBox, mut last map[u64]&BlockBox,
+	mut first map[u64]&BlockBox) {
+	if box.layout_handle != unsafe { nil } {
+		key := u64(box.layout_handle)
+		last[key] = unsafe { &box }
+		if key !in first { first[key] = unsafe { &box } }
+	}
+	for index in 0 .. box.children.len {
+		collect_compatibility_box_indices(mut box.children[index], mut last, mut first)
+	}
 }
 
 // Retained paint box for a box-generating layout node. The Viewport has no box
@@ -1194,6 +1209,18 @@ fn visual_context_index_for_layout_handle(box &BlockBox, layout_handle voidptr) 
 	return none
 }
 
+fn (mut result DocumentLayoutResult) indexed_visual_context_for_layout_handle(layout_handle voidptr) ?int {
+	if os.getenv('VOX_DISABLE_VISUAL_CONTEXT_INDEX') != '' {
+		return visual_context_index_for_layout_handle(result.paint_tree, layout_handle)
+	}
+	result.ensure_boxes_by_layout_cache()
+	box := result.visual_boxes_by_layout_cache[u64(layout_handle)] or { return none }
+	if os.getenv('VOX_VISUAL_CONTEXT_INDEX_DIAGNOSTICS') != '' {
+		eprintln('Vox client geometry: indexed visual context')
+	}
+	return box.accumulated_visual_context_index
+}
+
 fn viewport_transform_client_rects(target voidptr, node &dom.Node,
 	rects []dom.CSSPixelRect_) []dom.CSSPixelRect_ {
 	mut result := viewport_layout_result(target)
@@ -1205,7 +1232,7 @@ fn viewport_transform_client_rects(target voidptr, node &dom.Node,
 	if result.paint_projection_incomplete && result.retained_box_for_layout(layout_handle) == none {
 		restore_complete_paint_projection(mut result)
 	}
-	context_index := visual_context_index_for_layout_handle(result.paint_tree, layout_handle) or {
+	context_index := result.indexed_visual_context_for_layout_handle(layout_handle) or {
 		return rects.clone()
 	}
 	mut transformed_rects := []dom.CSSPixelRect_{cap: rects.len}
