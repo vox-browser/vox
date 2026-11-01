@@ -81,10 +81,10 @@ fn test_retained_flex_layout_rechecks_order_alignment_and_descendant_text_change
 	retained_flex_assert_full_layout(mut document)
 }
 
-fn test_retained_flex_layout_keeps_positioned_grid_and_floating_descendants_uncached() {
+fn test_retained_flex_layout_keeps_positioned_subgrid_and_floating_descendants_uncached() {
 	for contents in ['<div style="position:absolute;top:10%">absolute</div>',
 		'<div style="position:sticky;top:0">sticky</div>',
-		'<div style="display:grid"><span>grid item</span></div>',
+		'<div style="display:grid;grid-template-columns:subgrid"><span>grid item</span></div>',
 		'<div><span style="float:left">float</span> after</div>'] {
 		mut document := html.parse_document('<!doctype html><section id="stable" style="display:flex;width:180px">${contents}</section>')
 		defer { document.finalize() }

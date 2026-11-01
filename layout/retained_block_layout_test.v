@@ -77,7 +77,7 @@ fn test_retained_independent_flow_leaves_specialized_layout_and_float_dependenci
 		'<p>Text <span style="position:relative;top:3px">shifted</span></p>',
 		'<ol><li>Marker</li></ol>',
 		'<p style="max-lines:1;continue:discard">Text that may be clamped to one line.</p>',
-		'<div style="display:grid"><p>Grid</p></div>',
+		'<div style="display:grid;grid-template-columns:subgrid"><p>Subgrid</p></div>',
 	] {
 		mut document := html.parse_document('<!doctype html><div id="changed"></div><section id="stable" style="overflow:hidden;width:180px">' + contents + '</section>')
 		defer { document.finalize() }

@@ -40,6 +40,7 @@ struct RetainedBlockLayout {
 	style_environment u64
 	lines             []LineBox
 	inline_end        ?StaticPositionRect
+	grid_container_rare ?&UsedValuesRareData
 	result            FormattingContextResult
 mut:
 	paint_lines_ map[u64]&RetainedBlockPaintLines
@@ -73,7 +74,8 @@ fn collect_retained_block_inputs(node &Node, mut inputs []RetainedInlineInput,
 		|| computed.establishes_multi_column_container()
 		|| computed.continue_value() in [.collapse, .discard]
 		|| (!node.is_text_node() && !node.display().is_flow_inside()
-			&& !node.display().is_flow_root_inside() && !retained_context_allows_flex(node)) {
+			&& !node.display().is_flow_root_inside() && !retained_context_allows_flex(node)
+			&& !retained_context_allows_grid(node)) {
 		return false
 	}
 	container_type := computed.container_type()
@@ -122,9 +124,11 @@ fn run_retaining_independent_formatting_context(mut state LayoutState, box &Node
 	if mode != .normal || state.subtree_root != none || !space.width.is_definite()
 		|| box.document().in_quirks_mode()
 		|| box.is_viewport() || box.is_root_element()
-		|| (box.as_block_container() == none && !retained_context_allows_flex(box))
+		|| (box.as_block_container() == none && !retained_context_allows_flex(box)
+			&& !retained_context_allows_grid(box))
 		|| box.display().is_inline_outside()
-		|| (!creates_block_formatting_context(styled) && !retained_context_allows_flex(box)) {
+		|| (!creates_block_formatting_context(styled) && !retained_context_allows_flex(box)
+			&& !retained_context_allows_grid(box)) {
 		return layout_uncached_independent_formatting_context(mut state, box, mut used, mode, space)
 	}
 	key := u64(voidptr(box))
@@ -143,12 +147,20 @@ fn run_retaining_independent_formatting_context(mut state LayoutState, box &Node
 				|| retained_layout_fonts_are_current(cached.inputs)) {
 			report_retained_block_image_reuse(cached.inputs)
 			report_retained_flex_layout(cached.inputs)
+			report_retained_grid_layout(cached.inputs)
 			report_relative_flow_layout_reuse(cached.inputs)
 			if cached.font_generation != font_generation && processmetrics.instructions_enabled() {
 				eprintln('Vox retained block font generation: ${cached.font_generation} -> ${font_generation}, ${cached.inputs.len} inputs')
 			}
 			used.borrow_retained_line_boxes(cached.lines)
 			if end := cached.inline_end { used.set_inline_end_static_position_rect(end) }
+			// The root is omitted from descendant snapshots: its outer geometry
+			// belongs to the caller. A grid also publishes its own track sizes,
+			// line names and content baselines, which must survive this replay.
+			if rare := cached.grid_container_rare {
+				used.rare_ = rare.clone()
+				used.rare_is_shared_ = false
+			}
 			for index in 0 .. cached.values.len {
 				entry := unsafe { &cached.values[index] }
 				mut containing_values := ?&UsedValues(none)
@@ -207,6 +219,9 @@ fn run_retaining_independent_formatting_context(mut state LayoutState, box &Node
 		style_environment: box.document().style_environment_version()
 		lines: copy_retained_inline_lines(used.line_boxes)
 		inline_end: used.inline_end_static_position_rect()
+		grid_container_rare: if box.display().is_grid_inside() {
+			if rare := used.rare_ { ?&UsedValuesRareData(rare.clone()) } else { none }
+		} else { none }
 		result: result
 	}
 	return result
