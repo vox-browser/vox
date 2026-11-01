@@ -63,6 +63,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_odd_image_upload_keeps_chromium_pixels_in_retained_pictures(self):
         self.compare_fixture('odd-image-picture-upload')
 
+    def test_cropped_images_honor_conservative_html_decoding_hints(self):
+        self.compare_fixture('cropped-image-decoding-modes')
+
     def test_image_decode_reuse_follows_resource_identity(self):
         self.compare_fixture('image-decode-resource-reuse')
 

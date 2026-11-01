@@ -5,10 +5,12 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
+#include <cmath>
 #include <iterator>
 #include <list>
 #include <string>
 #include <utility>
+#include <unordered_map>
 #include <vector>
 
 // Carry one decode choice through leaf and complete-picture replay without
@@ -36,6 +38,38 @@ inline int vox_image_decode_axis(int size, int level)
     int64_t divisor = int64_t(1) << level;
     return std::max(1, int((int64_t(size) + divisor - 1) / divisor));
 }
+
+// TileManager gathers decode modes before rasterizing any image. A sync use
+// wins over async uses of the same resource, regardless of their paint order.
+class VoxChromiumImageDecodingHints {
+    std::unordered_map<std::string, bool> asynchronous;
+public:
+    void clear() { asynchronous.clear(); }
+    void add(std::string const& identity, bool async)
+    {
+        if (identity.empty() || identity.size() > 16384) return;
+        auto [it, inserted] = asynchronous.emplace(identity, async);
+        if (!inserted) it->second &= async;
+    }
+
+    bool requires_source_decode(std::string const& identity, VoxGraphiteImage const& image) const
+    {
+        auto mode = asynchronous.find(identity);
+        if (mode == asynchronous.end() || image.width <= 0 || image.height <= 0) return false;
+        for (float value : image.source) if (!std::isfinite(value)) return false;
+        if (image.source[2] <= 0 || image.source[3] <= 0) return false;
+        // DiscardableImageMap rounds the source out before asking the decode
+        // cache for its task. A fractional trim can still cover the full image.
+        double left = std::floor(image.source[0]), top = std::floor(image.source[1]);
+        double right = std::ceil(image.source[0] + image.source[2]);
+        double bottom = std::ceil(image.source[1] + image.source[3]);
+        if (left == 0 && top == 0 && right == image.width && bottom == image.height) return false;
+        // GpuImageDecodeCache disables clipped-image scaling for these sync
+        // tasks. Async checkering asks for complete bounds instead, but is
+        // vetoed below LayerTreeSettings' default 1 MiB source-area threshold.
+        return !mode->second || (right - left) * (bottom - top) * 4 < 1024 * 1024;
+    }
+};
 
 // Chromium retains a compatible larger decode for subsequent smaller draws.
 // Resource identity matters: equal pixels from two URLs are separate decodes.

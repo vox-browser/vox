@@ -52,7 +52,8 @@ def main():
                  'native_skia_shared_layer_test', 'native_picture_image_transport_test',
                  'native_chromium_image_resize_test',
                  'native_skia_profiled_image_picture_test', 'native_graphite_mipped_image_test',
-                 'native_skia_scrolled_image_grid_test', 'native_skia_image_root_rows_test']:
+                 'native_skia_scrolled_image_grid_test', 'native_skia_image_root_rows_test',
+                 'native_skia_image_decoding_hints_test']:
         executable = output / test
         compile_command = common + [str(REPO / 'tools' / (test + '.cpp')), '-o', str(executable)]
         run_command = [str(executable)]

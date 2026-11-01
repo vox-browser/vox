@@ -1959,6 +1959,7 @@ extern "C" int ladybird_v_skia_draw_rgba_image_tiles(CGContextRef destination,
 }
 
 static VoxChromiumImageDecodeCache s_image_decode_cache;
+static VoxChromiumImageDecodingHints s_image_decoding_hints;
 static std::string s_image_resource_identity;
 static uint64_t s_image_decode_scope;
 static void const* s_image_decode_document;
@@ -1976,6 +1977,13 @@ extern "C" void ladybird_v_skia_begin_image_decode_frame(void const* document,
     s_image_decode_navigation = navigation;
     s_image_decode_scope = 0;
     s_image_resource_identity.clear();
+    s_image_decoding_hints.clear();
+}
+
+extern "C" void ladybird_v_skia_add_image_decoding_hint(char const* value, int length, int async)
+{
+    if (value && length > 0 && length <= 16384)
+        s_image_decoding_hints.add(std::string(value, size_t(length)), async != 0);
 }
 
 extern "C" void ladybird_v_skia_set_image_decode_scope(uint64_t scope)
@@ -2009,8 +2017,11 @@ static void retain_compatible_image_decode(VoxGraphiteImage& image,
             if (w == 1 && h == 1) break;
         }
     }
+    bool source_decode = s_image_decoding_hints.requires_source_decode(s_image_resource_identity, image);
+    if (source_decode) requested = 0;
     int selected = s_image_decode_cache.select(s_image_resource_identity, image, requested,
         s_image_decode_scope);
+    if (selected < 0 && source_decode) selected = 0;
     if (selected >= 0) image.flags = vox_image_with_decode_level(image.flags, selected);
 }
 

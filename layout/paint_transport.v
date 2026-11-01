@@ -830,6 +830,8 @@ pub:
 pub struct PaintImageData {
 pub:
 	image_url                   string
+	// Live HTML decoding hints are read by the browser before raster planning.
+	image_element_id            i64
 	background_svg_document     ?&dom.Document = ?&dom.Document(none)
 	background_static_svg_resource ?&StaticSVGBackgroundResource = ?&StaticSVGBackgroundResource(none)
 	background_svg_color_scheme css.PreferredColorScheme = .auto_
@@ -2382,6 +2384,7 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 				opacity: opacity
 				image_data: &PaintImageData{
 					image_url: box.media().replaced_image_url
+					image_element_id: box.node_id
 					image_repeat_x: 'no-repeat'
 					image_repeat_y: 'no-repeat'
 					image_size: box.media().replaced_image_size

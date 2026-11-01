@@ -50,6 +50,7 @@ extern int ladybird_v_skia_release_idle_graphics_memory(void);
 extern int ladybird_v_skia_configure_font(const char *path, int slot);
 extern void ladybird_v_skia_set_image_color_profile(const float *profile);
 extern void ladybird_v_skia_set_image_resource_identity(const char *value, int length);
+extern void ladybird_v_skia_add_image_decoding_hint(const char *, int, int);
 extern void ladybird_v_skia_begin_image_decode_frame(const void *, uint64_t, uint64_t);
 extern void ladybird_v_skia_set_image_decode_scope(uint64_t);
 extern void ladybird_v_skia_set_css_gradient_tile_bounds(const float *bounds);
@@ -5675,6 +5676,12 @@ void native_draw_image_part(gg__Image *image, float destination_x, float destina
 void native_set_image_resource_identity(const char *value, int length) {
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
     ladybird_v_skia_set_image_resource_identity(value, length);
+#endif
+}
+
+void native_add_image_decoding_hint(const char *value, int length, int async) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+    ladybird_v_skia_add_image_decoding_hint(value, length, async);
 #endif
 }
 

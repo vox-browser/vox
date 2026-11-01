@@ -24,6 +24,48 @@ using Cache = VoxChromiumImageDecodeCache;
 
 int main()
 {
+    VoxGraphiteImage crop {};
+    crop.width = 1024; crop.height = 768;
+    crop.source[2] = 1024; crop.source[3] = 768;
+    VoxChromiumImageDecodingHints modes;
+    modes.add("sync", false); modes.add("async", true);
+    for (auto name : {"sync", "async", "unknown"})
+        check(!modes.requires_source_decode(name, crop), "whole images keep ordinary decode sizing");
+    crop.source[3] = 300;
+    check(modes.requires_source_decode("sync", crop), "sync cropped task decodes the source");
+    check(!modes.requires_source_decode("async", crop), "large async cropped task keeps scaled complete decode");
+    check(!modes.requires_source_decode("unknown", crop), "untracked image callers keep their preceding path");
+    crop.source[3] = 255.5f;
+    check(!modes.requires_source_decode("async", crop), "outward rounding reaches the 1 MiB checker threshold");
+    crop.source[3] = 255;
+    check(modes.requires_source_decode("async", crop), "small async image is decoded synchronously");
+    crop.source[0] = .1f; crop.source[1] = .1f;
+    crop.source[2] = 1023.9f; crop.source[3] = 767.9f;
+    check(!modes.requires_source_decode("sync", crop), "float source edge addition precedes outward rounding");
+    crop.source[0] = 1.1f; crop.source[2] = 1022.9f;
+    check(modes.requires_source_decode("sync", crop), "trim beyond the first source pixel requires a full decode");
+    crop.source[0] = 0; crop.source[2] = 1024; crop.source[1] = 0; crop.source[3] = 300;
+    for (bool reverse : {false, true}) {
+        modes.add(reverse ? "mixed-reverse" : "mixed", reverse);
+        modes.add(reverse ? "mixed-reverse" : "mixed", !reverse);
+        check(modes.requires_source_decode(reverse ? "mixed-reverse" : "mixed", crop),
+            "a synchronous use wins regardless of image paint order");
+    }
+    modes.add("", false); modes.add(std::string(16385, 'x'), false);
+    check(!modes.requires_source_decode("", crop), "empty resource hint is ignored");
+    check(!modes.requires_source_decode(std::string(16385, 'x'), crop), "oversized resource hint is ignored");
+    crop.source[2] = std::numeric_limits<float>::infinity();
+    check(!modes.requires_source_decode("sync", crop), "infinite source bounds are rejected");
+    crop.source[2] = std::numeric_limits<float>::quiet_NaN();
+    check(!modes.requires_source_decode("sync", crop), "NaN source bounds are rejected");
+    crop.source[2] = 0;
+    check(!modes.requires_source_decode("sync", crop), "empty source bounds are rejected");
+    crop.source[2] = 1024; crop.width = 0;
+    check(!modes.requires_source_decode("sync", crop), "invalid image size is rejected");
+    crop.width = 1024;
+    modes.clear();
+    check(!modes.requires_source_decode("sync", crop), "frame boundary drops preceding mode hints");
+
     std::vector<uint8_t> pixels(16 * 16 * 4, 127);
     VoxGraphiteImage image {};
     image.width = image.height = 16; image.pitch = 64; image.pixels = pixels.data();
