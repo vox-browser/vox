@@ -21,6 +21,21 @@ def document():
 
 
 class BBCInstructionTests(unittest.TestCase):
+    def test_stationary_control_flag_never_reaches_candidate_or_brave(self):
+        environment = {'VOX_PROXY': 'socks5h://fixture'}
+        args = SimpleNamespace(vox_environment=environment, control_disable_grid_width_only=False,
+                               control_disable_stationary_raster=True)
+        seen = []
+        def observe(engine, app, folder, options):
+            seen.append((engine, dict(options.vox_environment)))
+            return {'exit': 0}
+        with patch('bbc_browser_instructions.browser.run_browser', side_effect=observe):
+            for engine in ['control', 'vox', 'brave']:
+                run_trial(engine, 'same-app', engine, args)
+        self.assertEqual(seen, [('vox', dict(environment, VOX_DISABLE_STATIONARY_RASTER_REUSE='1')),
+                                ('vox', environment), ('brave', environment)])
+        self.assertIs(args.vox_environment, environment)
+
     def test_same_binary_control_disables_only_its_grid_width_optimization(self):
         environment = {'VOX_PROXY': 'socks5h://fixture'}
         args = SimpleNamespace(vox_environment=environment, control_disable_grid_width_only=True)

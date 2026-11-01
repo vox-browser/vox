@@ -149,8 +149,12 @@ def trial_order(index, control=False):
 def run_trial(engine, app, folder, args):
     environment = args.vox_environment
     try:
-        if engine == 'control' and args.control_disable_grid_width_only:
-            args.vox_environment = dict(environment, VOX_DISABLE_GRID_WIDTH_ONLY='1')
+        if engine == 'control':
+            args.vox_environment = dict(environment)
+            if args.control_disable_grid_width_only:
+                args.vox_environment['VOX_DISABLE_GRID_WIDTH_ONLY'] = '1'
+            if getattr(args, 'control_disable_stationary_raster', False):
+                args.vox_environment['VOX_DISABLE_STATIONARY_RASTER_REUSE'] = '1'
         return browser.run_browser('vox' if engine == 'control' else engine, app, folder, args)
     finally:
         args.vox_environment = environment
@@ -165,6 +169,8 @@ def parse_args(argv=None):
     parser.add_argument('--control-vox-app', type=Path, help='Also run a pinned Vox control before each candidate/Brave pair')
     parser.add_argument('--control-disable-grid-width-only', action='store_true',
                         help='Disable only grid width-probe reuse in the pinned Vox control')
+    parser.add_argument('--control-disable-stationary-raster', action='store_true',
+                        help='Disable stationary document pixel reuse in the pinned Vox control')
     parser.add_argument('--brave-app', type=Path, default=Path('/Applications/Brave Browser.app'))
     parser.add_argument('--diff-tool', type=Path, default=REPO / 'Build/hn-home-instructions-20261031/pixel_diff')
     parser.add_argument('--expected-vox', type=Path)
@@ -176,7 +182,7 @@ def parse_args(argv=None):
     parser.add_argument('--timeout', type=float, default=180)
     parser.add_argument('--settle-seconds', type=float, default=2)
     args = parser.parse_args(argv)
-    if args.control_disable_grid_width_only and not args.control_vox_app:
+    if (args.control_disable_grid_width_only or args.control_disable_stationary_raster) and not args.control_vox_app:
         parser.error('Disabling the control optimization needs --control-vox-app')
     if not args.capture_reference and (args.repeat < 7 or not args.expected_vox or not args.expected_brave):
         parser.error('Acceptance needs seven pairs and both existing pixel references')
@@ -239,6 +245,7 @@ def main():
         viewport=[1024, 768], scale=args.scale, settle_seconds=args.settle_seconds,
         javascript_backends=dict(vox='javascriptcore', brave='v8'),
         control_disable_grid_width_only=args.control_disable_grid_width_only,
+        control_disable_stationary_raster=args.control_disable_stationary_raster,
         brave_post_readiness_expression=args.post_readiness_expression,
         readiness_correction='Await visible image decode before the original settlement; no engine credit',
         system=subprocess.check_output(['sw_vers'], text=True)))
