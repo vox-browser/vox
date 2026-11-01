@@ -1,5 +1,13 @@
 # Brave rendering fixtures
 
+`cnn-svg-background-header` checks the CNN logo beside a small solid SVG
+background in an opaque compositor header. Two agreeing Brave 156.1.98.60
+references at 1024×768, scale 1, reproduce 120 differing pixels in the previous
+browser; the new capture is exact. Solid non-repeating SVG backgrounds can
+share their owning picture after their resolved paths are checked. Repeated
+images, effects and rounded image clips keep their fallback. The registered
+full CNN page remains open; see the [site report](../../../docs/ADBLOCK_POPULAR_SITES.md).
+
 The registered `bbc` guest-page archive now retains the live author CSSOM
 rules, original encoded images and the consent-rejected document. At 1024×768,
 scale 1, it matches Brave with full uBO exactly when both browsers start with

@@ -1,8 +1,8 @@
 # Popular-site adblock verification
 
-The latest BBC rendering checkpoint is recorded at the end of this document.
-It supersedes the earlier BBC archive counts: complete-response cache captures
-are pixel-exact; cold-load parity remains open.
+The latest BBC and CNN rendering checkpoints are recorded at the end of this
+document. BBC's complete-response cache captures are pixel-exact; cold BBC and
+full CNN acceptance remain open.
 
 The matrix exercises guest pages on 13 representative news, video, social,
 shopping, reference, and developer sites. It compares Vox's native filtering
@@ -2169,3 +2169,64 @@ residuals, and `fixture-integrity.json` the
 sealed-body validation. `registered-bbc/`, `registered-repeat/` and
 `registered-complete/` retain the incidental native hover, cold Brave decoder
 variation and remaining-child guard failure; none supplies acceptance credit.
+
+## CNN SVG background eligibility, 1 November 2026
+
+The next site after BBC is CNN. Its registered archive validates all 85 sealed
+responses (14,846,886 bytes), provenance and full-uBO evidence. An explicit
+complete-response cache trial gives 224 native/replay differences, each no
+greater than one color level. The saved live reference also differs from that
+replay at 101,696 pixels, so this is a failing full-site comparison. These cache
+conditions differ from the earlier cold checkpoints; the smaller count is not
+credited as a renderer improvement.
+
+Commit `22cac16b` fixes one reproducible painting case. A solid SVG background
+previously prevented its entire compositor picture from sharing its painted
+background with neighboring paths. The isolated CNN logo was already exact;
+adding the small SVG background exposed the extra intermediate rounding.
+The new `cnn-svg-background-header` regression improves from **120 differing
+pixels to zero**, against two agreeing Brave 156.1.98.60 references at 1024×768,
+scale 1. The fixture is registered in the native pixel suite.
+
+Eligibility inspects the SVG's actual resolved picture and requires supported
+solid paths, normal blending and one non-repeating tile without effects or
+rounded image clips. Unsupported pictures retain their fallback. Two focused
+V tests pass with both default GC and `-gc none`; the 20 existing shared-picture
+tests also pass. The registered Python pixel test and eight related visual
+fixtures are exact. `compositor-shared-recording` retains its existing 12-pixel
+reference mismatch, with identical decoded pixels in control and candidate.
+No reference, tolerance or excluded region was changed.
+
+A same-binary diagnostic changes only the background to repeat. Its logo is
+identical in Brave, while Vox's existing fallback retains 112 logo differences
+(120 over the complete fixture). The non-repeating case remains exact. This
+checks that the new eligibility path executes and accounts for the focused
+change despite other sessions' independent changes in the shared browser.
+
+The reused production executable is
+`f65b14337cb44141f9b1b301632d9bf925746a62e4c84770fbba3c35e2ff179b`,
+with native bridge
+`19069788d4c21921473e3589a47beaf73272a3dda3618f620cf39510223fd7f7`.
+It contains the exact V fix and passes fresh headless startup. The shared build
+receipt records an independent native C++ edit during compilation; the V
+inputs for this fix stay unchanged, and executable/library identities are
+pinned for the captures. An attempted separate build returned a busy guard
+immediately and queued nothing; the shared build was reused instead.
+
+The full registered CNN frame remains at **224 differing pixels** and is
+pixel-identical to the preceding control. This fix earns no full-site gain.
+Fresh capture through the HTTP route fails document readiness. The SOCKS route
+loads the live page but its frozen replay changes between consecutive Brave
+captures at both five- and fifteen-second settle periods. A private profile
+then rejects optional cookies using “Essential Cookies Only”; its subsequent
+full-uBO capture matches all 321 request/header observations, but the frozen
+reference remains unstable. Those attempts remain failures. The registered
+archive was not replaced with unstable content, and CNN parity remains open.
+
+Evidence is under `Build/cnn-parity-20261101/`: `baseline/`, `candidate-site/`,
+`reduced/`, `candidate-reduced/`, `eligibility-control/`, `registered-test.log`,
+`related-valid/`, `related-control-matched/`, the focused compile/run guard
+receipts, `candidate/identity.json`, `candidate/receipt.json`, `fresh/`,
+`fresh-socks/`, `settle15/`, and `consented/`. Diagnostic extraction errors,
+an invalid injected trace and incomplete browser exits are retained separately
+and supply no acceptance credit. The existing broad baseline is unchanged.
