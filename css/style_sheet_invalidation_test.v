@@ -231,6 +231,13 @@ fn test_has_descendant_fanout_ignores_rules_for_other_anchors() {
 	container_node.append_child(another_watched.as_node()) or { panic(err) }
 	assert scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.len > 0
 	scope.invalidate_style_of_elements_affected_by_has()
+	// A second match preserves :has() truth. Losing the final match must
+	// still schedule the original descendant fanout.
+	assert invalidator.pending_invalidations.len == 0
+	container_node.remove_child(watched.as_node()) or { panic(err) }
+	container_node.remove_child(another_watched.as_node()) or { panic(err) }
+	assert scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.len > 0
+	scope.invalidate_style_of_elements_affected_by_has()
 	assert invalidator.pending_invalidations.len > 0
 }
 

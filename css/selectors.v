@@ -25,6 +25,9 @@ pub struct HasResultCache {
 pub mut:
 	results map[string]HasMatchResult
 	attempted_pseudo_classes map[string]PseudoClassBitmap
+mut:
+	observed_arguments_ map[u64]ObservedHasAnchor
+	rechecking_arguments_ bool
 }
 
 pub struct MatchContext {
@@ -3525,6 +3528,8 @@ fn matches_has_pseudo_class(selector Selector, anchor &dom.Element, shadow_host 
 	cache_key := has_result_cache_key(selector, anchor)
 	if cached := context.has_result_cache.results[cache_key] {
 		context.attempted_pseudo_class_matches.merge(context.has_result_cache.attempted_pseudo_classes[cache_key])
+		record_has_argument_for_invalidation(selector,anchor,shadow_host,context,scope,cached == .matched,
+			context.has_result_cache.attempted_pseudo_classes[cache_key])
 		return cached == .matched
 	}
 
@@ -3541,6 +3546,8 @@ fn matches_has_pseudo_class(selector Selector, anchor &dom.Element, shadow_host 
 	} else {
 		HasMatchResult.not_matched
 	}
+	record_has_argument_for_invalidation(selector,anchor,shadow_host,context,scope,result,
+		context.has_result_cache.attempted_pseudo_classes[cache_key])
 	return result
 }
 

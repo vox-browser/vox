@@ -1679,8 +1679,10 @@ pub fn (mut scope StyleScope) invalidate_style_of_elements_affected_by_has() {
 			}
 			if should_invalidate_element {
 				elements_already_invalidated_for_has[element_id] = true
-				mut mutable_element := unsafe { &dom.Element(element) }
-				mutable_element.invalidate_style_if_affected_by_has()
+				if !has_argument_results_unchanged(element) {
+					mut mutable_element := unsafe { &dom.Element(element) }
+					mutable_element.invalidate_style_if_affected_by_has()
+				}
 			} else {
 				elements_skipped_by_has_feature_filter[element_id] = true
 			}
@@ -1710,8 +1712,10 @@ pub fn (mut scope StyleScope) invalidate_style_of_elements_affected_by_has() {
 						continue
 					}
 					elements_already_invalidated_for_has[sibling_id] = true
-					mut mutable_sibling := unsafe { &dom.Element(ancestor_sibling_element) }
-					mutable_sibling.invalidate_style_if_affected_by_has()
+					if !has_argument_results_unchanged(ancestor_sibling_element) {
+						mut mutable_sibling := unsafe { &dom.Element(ancestor_sibling_element) }
+						mutable_sibling.invalidate_style_if_affected_by_has()
+					}
 				}
 			}
 		}
