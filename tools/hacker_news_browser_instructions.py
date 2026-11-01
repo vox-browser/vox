@@ -45,6 +45,7 @@ from measure_sealed_github_instructions import (
 from pikabu_browser_instructions import clone_file
 from process_instruction_counts import CounterSampler, MacCounters
 from page_archive import load_archive
+from run_memory_bounded import publish_adopted_processes
 
 REPO = Path(__file__).resolve().parents[1]
 NAME = 'hacker-news-item-50231722-complete'
@@ -434,12 +435,19 @@ def run_browser(engine, app, folder, args):
         result['root'] = root
         root_start = MacCounters().read(root['pid']).start
         result['root_start_ticks'] = root_start
+        registry = getattr(args, 'memory_guard_registry', None)
+        if registry:
+            publish_adopted_processes(registry, [root['pid']])
         queue = exit_watch(root['pid'])
         cid = api.resource_coalition(root['pid'])
         require(cid != api.resource_coalition(os.getpid()), 'Browser inherited observer coalition')
         result['resource_coalition'] = cid
         result['membership_before'] = membership(api, cid, app, root['pid'], deadline,
                                                  result['membership_attempts'], browser)
+        if registry:
+            publish_adopted_processes(registry,
+                [row['pid'] for row in result['membership_before']['members']
+                 if row['executable'].startswith(str(app) + '/Contents/')])
         if engine == 'vox':
             result['kernel_exit_status'] = await_exit(queue, deadline)
             require(result['kernel_exit_status'] == 0, 'Vox exited unsuccessfully')
@@ -501,6 +509,10 @@ def run_browser(engine, app, folder, args):
             write_json(folder / 'audit.json', audit)
             result['membership_after'] = membership(api, cid, app, root['pid'], deadline,
                                                     result['membership_attempts'], browser)
+            if registry:
+                publish_adopted_processes(registry,
+                    [row['pid'] for row in result['membership_after']['members']
+                     if row['executable'].startswith(str(app) + '/Contents/')])
             browser.call('Browser.close')
             result['kernel_exit_status'] = await_exit(queue, deadline)
             require(result['kernel_exit_status'] == 0, 'Brave exited unsuccessfully')
@@ -548,6 +560,8 @@ def run_browser(engine, app, folder, args):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path, required=True, help='New evidence directory')
+    parser.add_argument('--memory-guard-registry', type=Path,
+                        help='Same private file passed to run_memory_bounded --adopt-pids-from')
     parser.add_argument('--vox-app', type=Path, default=REPO / 'Build/v/Vox.app')
     parser.add_argument('--brave-app', type=Path, default=Path('/Applications/Brave Browser.app'))
     parser.add_argument('--diff-tool', type=Path, default=REPO / 'Build/hacker-news-pixels/pixel_diff')
@@ -603,7 +617,7 @@ def main():
         'coalition_instruction_counts.py', 'measure_browser_instructions.py',
         'capture_brave_reference.py',
         'measure_sealed_github_instructions.py', 'pikabu_browser_instructions.py',
-        'process_instruction_counts.py', 'page_archive.py'))
+        'process_instruction_counts.py', 'page_archive.py', 'run_memory_bounded.py'))
     paths.update(path for path in (args.document.parent / ASSETS).rglob('*') if path.is_file())
     if args.home_archive:
         paths.update(path for path in args.home_archive.rglob('*') if path.is_file())
