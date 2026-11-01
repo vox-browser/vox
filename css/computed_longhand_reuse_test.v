@@ -3,6 +3,137 @@ module css
 import dom
 import math
 
+fn longhand_reuse_rgb_value() StyleValue {
+	return StyleValue(RGBColorStyleValue.create(StyleValue(NumberStyleValue.create(10)),
+		StyleValue(NumberStyleValue.create(20)), StyleValue(NumberStyleValue.create(30)),
+		StyleValue(NumberStyleValue.create(0.5)), .modern, none))
+}
+
+fn test_longhand_reuse_rgb_snapshots_guard_components_syntax_and_optional_name() {
+	original := longhand_reuse_rgb_value()
+	snapshot := computed_longhand_reuse_typed_snapshot(&original)
+	for field in 0 .. 7 {
+		// Each fixture owns distinct channel arrays.
+		mut changed := longhand_reuse_rgb_value()
+		assert computed_longhand_reuse_typed_snapshot_matches(snapshot, &changed)
+		if mut changed is RGBColorStyleValue {
+			match field {
+				0 { changed.r_[0] = StyleValue(NumberStyleValue.create(11)) }
+				1 { changed.g_[0] = StyleValue(NumberStyleValue.create(21)) }
+				2 { changed.b_[0] = StyleValue(NumberStyleValue.create(31)) }
+				3 { changed.alpha_[0] = StyleValue(NumberStyleValue.create(0.6)) }
+				4 { changed.color_syntax_ = .legacy }
+				5 { changed.name_ = 'named' }
+				else { changed.name_ = '' }
+			}
+		}
+		assert !computed_longhand_reuse_typed_snapshot_matches(snapshot, &changed)
+	}
+}
+
+fn test_longhand_reuse_rgb_hashes_equal_independent_values_without_losing_channel_types() {
+	first := StyleValue(RGBColorStyleValue.create(StyleValue(NumberStyleValue.create(255)),
+		StyleValue(NumberStyleValue.create(0)), StyleValue(NumberStyleValue.create(0)), none, .modern, none))
+	second := StyleValue(RGBColorStyleValue.create(StyleValue(NumberStyleValue.create(255)),
+		StyleValue(NumberStyleValue.create(0)), StyleValue(NumberStyleValue.create(0)), none, .modern, none))
+	percentage := StyleValue(RGBColorStyleValue.create(StyleValue(PercentageStyleValue.create(Percentage.new(100))),
+		StyleValue(NumberStyleValue.create(0)), StyleValue(NumberStyleValue.create(0)), none, .modern, none))
+	snapshot := computed_longhand_reuse_typed_snapshot(&first)
+	first_hash := computed_longhand_reuse_typed_hash(&first) or { panic('first RGB hash') }
+	second_hash := computed_longhand_reuse_typed_hash(&second) or { panic('second RGB hash') }
+	assert first_hash == second_hash
+	assert computed_longhand_reuse_typed_snapshot_matches(snapshot, &second)
+	assert first.serialize(.normal) == percentage.serialize(.normal)
+	assert !computed_longhand_reuse_typed_snapshot_matches(snapshot, &percentage)
+	assert !computed_longhand_reuse_typed_snapshot_matches(snapshot,
+		StyleValue(ColorStyleValue.create(Color.rgba(255, 0, 0, 255))))
+}
+
+fn test_longhand_reuse_rgb_matches_uncached_computation_and_rejects_mutated_retained_input() {
+	computer, _, element, parent_style := longhand_reuse_fixture()
+	computer.begin_computed_property_page_batch()
+	defer { computer.end_computed_property_page_batch() }
+	mut first := CascadedProperties.new()
+	color := dom_style_value_from_value_logic(longhand_reuse_rgb_value())
+	first.set_property(.background_color, color, .yes, .author, none, unsafe { nil }, none)
+	_ = computer.compute_properties(dom.AbstractElement.new(element, none), mut first)
+	mut second := CascadedProperties.new()
+	second.set_property(.background_color, dom_style_value_from_value_logic(longhand_reuse_rgb_value()),
+		.yes, .author, none, unsafe { nil }, none)
+	key := computer.computed_longhand_reuse_key(dom.AbstractElement.new(element, none), second,
+		parent_style, false) or { panic('independent RGB inputs must be eligible') }
+	mut probe := computed_properties_with_initial_values()
+	assert computer.restore_computed_longhands(key, second, mut probe)
+	actual := computer.compute_properties(dom.AbstractElement.new(element, none), mut second)
+	longhand_reuse_assert_oracle(actual, computer, element, mut second)
+	mut box := unsafe { &TypedStyleValueBox(color.css_value_handle) }
+	if mut box.value is RGBColorStyleValue {
+		box.value.r_[0] = StyleValue(NumberStyleValue.create(99))
+	} else { panic('RGB expected') }
+	assert !computer.restore_computed_longhands(key, second, mut probe)
+	updated := computer.compute_properties(dom.AbstractElement.new(element, none), mut first)
+	longhand_reuse_assert_oracle(updated, computer, element, mut first)
+}
+
+fn test_longhand_reuse_rgb_parent_payload_mutations_are_checked_even_after_hash_collision() {
+	computer, _, element, parent_style := longhand_reuse_fixture()
+	mut parent := unsafe { parent_style }
+	color := dom_style_value_from_value_logic(longhand_reuse_rgb_value())
+	parent.set_property(.color, color, .no, .no)
+	mut cascaded := longhand_reuse_cascade(parse_css_value(ParsingParams{}, '70px', .width) or { panic('width') })
+	computer.begin_computed_property_page_batch()
+	defer { computer.end_computed_property_page_batch() }
+	_ = computer.compute_properties(dom.AbstractElement.new(element, none), mut cascaded)
+	key := computer.computed_longhand_reuse_key(dom.AbstractElement.new(element, none), cascaded,
+		parent, false) or { panic('RGB parent') }
+	mut probe := computed_properties_with_initial_values()
+	assert computer.restore_computed_longhands(key, cascaded, mut probe)
+	mut box := unsafe { &TypedStyleValueBox(color.css_value_handle) }
+	if mut box.value is RGBColorStyleValue {
+		box.value.alpha_[0] = StyleValue(NumberStyleValue.create(0.25))
+	} else { panic('RGB expected') }
+	assert !computer.restore_computed_longhands(key, cascaded, mut probe)
+	actual := computer.compute_properties(dom.AbstractElement.new(element, none), mut cascaded)
+	longhand_reuse_assert_oracle(actual, computer, element, mut cascaded)
+}
+
+fn test_longhand_reuse_rgb_excludes_context_dependent_and_malformed_channels() {
+	for count in [0, 2] {
+		mut malformed := longhand_reuse_rgb_value()
+		if mut malformed is RGBColorStyleValue {
+			malformed.r_ = []StyleValue{len: count, init: StyleValue(NumberStyleValue.create(10))}
+		}
+		assert !computed_longhand_reuse_typed_value_is_simple(&malformed)
+		assert computed_longhand_reuse_typed_hash(&malformed) == none
+		assert !computed_longhand_reuse_typed_snapshot_matches(computed_longhand_reuse_typed_snapshot(&malformed), &malformed)
+	}
+	mut relative := longhand_reuse_rgb_value()
+	if mut relative is RGBColorStyleValue {
+		relative.r_[0] = StyleValue(LengthStyleValue.create(Length.new(1, .em)))
+	}
+	assert !computed_longhand_reuse_typed_value_is_simple(&relative)
+	assert computed_longhand_reuse_typed_hash(&relative) == none
+	calculated := parse_css_value(ParsingParams{}, 'calc(1em + 1px)', .width) or { panic('calculation') }
+	if mut relative is RGBColorStyleValue {
+		relative.r_[0] = typed_style_value_logic_from_dom(calculated) or { panic('typed calculation') }
+	}
+	assert !computed_longhand_reuse_typed_value_is_simple(&relative)
+	assert computed_longhand_reuse_typed_hash(&relative) == none
+}
+
+fn test_longhand_reuse_color_control_preserves_original_parent_identity_and_border_eligibility() {
+	previous := computed_longhand_color_mode
+	computed_longhand_color_mode = 2
+	defer { computed_longhand_color_mode = previous }
+	value := longhand_reuse_rgb_value()
+	assert !computed_longhand_reuse_typed_value_is_simple(&value)
+	assert computed_longhand_reuse_typed_hash(&value) == none
+	border := StyleValue(BorderImageSliceStyleValue.create(StyleValue(NumberStyleValue.create(10)),
+		StyleValue(NumberStyleValue.create(20)), StyleValue(NumberStyleValue.create(30)),
+		StyleValue(NumberStyleValue.create(40)), false))
+	assert computed_longhand_reuse_typed_value_is_simple(&border)
+}
+
 fn longhand_reuse_fixture() (&StyleComputer, &dom.Element, &dom.Element, &ComputedProperties) {
 	mut document := dom.Document.create(dom.url_about_blank())
 	document.set_document_type(.html)
@@ -338,8 +469,7 @@ fn test_longhand_reuse_guards_absent_inherited_inputs_even_with_a_hash_collision
 
 fn test_longhand_reuse_accepts_equal_payloads_in_distinct_parent_and_cascade_boxes() {
 	computer, parent, element, parent_style := longhand_reuse_fixture()
-	// Use the resolved scalar color: parsed rgb() retains a composite payload,
-	// whose identity guard deliberately excludes independent boxes from reuse.
+	// Keep this scalar fixture distinct from the parsed RGB channel tests.
 	mut scalar_parent := unsafe { parent_style }
 	scalar_parent.set_property(.color, dom_style_value_from_value_logic(
 		StyleValue(ColorStyleValue.create(Color.rgba(255, 0, 0, 255)))), .no, .no)

@@ -8,6 +8,8 @@ __global (
 	computed_longhand_extension_mode int
 	computed_longhand_extension_diagnostics bool
 	computed_longhand_extension_reported bool
+	computed_longhand_color_mode int
+	computed_longhand_color_reported bool
 )
 
 fn computed_longhand_extensions_enabled() bool {
@@ -16,6 +18,13 @@ fn computed_longhand_extensions_enabled() bool {
 		computed_longhand_extension_diagnostics = os.getenv('VOX_EXTENDED_LONGHAND_REUSE_DIAGNOSTICS') != ''
 	}
 	return computed_longhand_extension_mode == 1
+}
+
+fn computed_longhand_colors_enabled() bool {
+	if computed_longhand_color_mode == 0 {
+		computed_longhand_color_mode = if os.getenv('VOX_DISABLE_COLOR_LONGHAND_REUSE') == '' { 1 } else { 2 }
+	}
+	return computed_longhand_extensions_enabled() && computed_longhand_color_mode == 1
 }
 
 // Reuse only the longhand computation loop, before custom properties,
@@ -38,6 +47,7 @@ enum ComputedLonghandReuseValueKind as u8 {
 	custom_ident
 	list
 	border_image_slice
+	rgb
 }
 
 struct ComputedLonghandReuseValue {
@@ -53,6 +63,8 @@ struct ComputedLonghandReuseValue {
 	children    []ComputedLonghandReuseValue
 	separator   StyleValueListSeparator
 	collapsible StyleValueListCollapsible
+	color_syntax ColorSyntax
+	has_name bool
 }
 
 struct ComputedLonghandReuseInput {
@@ -134,6 +146,19 @@ fn computed_longhand_reuse_typed_snapshot(value &StyleValue) ComputedLonghandReu
 				] }
 			}
 		}
+		RGBColorStyleValue {
+			if value.r_.len != 1 || value.g_.len != 1 || value.b_.len != 1 || value.alpha_.len != 1 {
+				ComputedLonghandReuseValue{}
+			} else {
+				ComputedLonghandReuseValue{ kind: .rgb, color_syntax: value.color_syntax_,
+					has_name: value.name_ != none, text: value.name_ or { '' }, children: [
+					computed_longhand_reuse_typed_snapshot(&value.r_[0]),
+					computed_longhand_reuse_typed_snapshot(&value.g_[0]),
+					computed_longhand_reuse_typed_snapshot(&value.b_[0]),
+					computed_longhand_reuse_typed_snapshot(&value.alpha_[0]),
+				] }
+			}
+		}
 		else {
 			ComputedLonghandReuseValue{ text: value.serialize(.normal), value_type: value.type_name() }
 		}
@@ -184,6 +209,16 @@ fn computed_longhand_reuse_typed_snapshot_matches(snapshot &ComputedLonghandReus
 				&& computed_longhand_reuse_typed_snapshot_matches(&snapshot.children[2], &value.bottom_[0])
 				&& computed_longhand_reuse_typed_snapshot_matches(&snapshot.children[3], &value.left_[0])
 		}
+		RGBColorStyleValue {
+			snapshot.kind == .rgb && snapshot.children.len == 4
+				&& snapshot.color_syntax == value.color_syntax_
+				&& snapshot.has_name == (value.name_ != none) && snapshot.text == (value.name_ or { '' })
+				&& value.r_.len == 1 && value.g_.len == 1 && value.b_.len == 1 && value.alpha_.len == 1
+				&& computed_longhand_reuse_typed_snapshot_matches(&snapshot.children[0], &value.r_[0])
+				&& computed_longhand_reuse_typed_snapshot_matches(&snapshot.children[1], &value.g_[0])
+				&& computed_longhand_reuse_typed_snapshot_matches(&snapshot.children[2], &value.b_[0])
+				&& computed_longhand_reuse_typed_snapshot_matches(&snapshot.children[3], &value.alpha_[0])
+		}
 		else {
 			snapshot.kind == .unsupported && snapshot.value_type == value.type_name() && snapshot.text == value.serialize(.normal)
 		}
@@ -191,7 +226,7 @@ fn computed_longhand_reuse_typed_snapshot_matches(snapshot &ComputedLonghandReus
 }
 
 // Deliberately exclude functions, substitutions, attr(), URLs, font-relative
-// lengths and composites other than lists of context-independent values.
+// lengths and composites other than the explicitly snapshotted values.
 // Such computations retain the ordinary path.
 fn computed_longhand_reuse_value_is_simple(value &dom.StyleValue) bool {
 	if value.css_value_handle == unsafe { nil } { return false }
@@ -241,7 +276,23 @@ fn computed_longhand_reuse_typed_value_is_simple(value &StyleValue) bool {
 				&& computed_longhand_reuse_typed_value_is_simple(&value.bottom_[0])
 				&& computed_longhand_reuse_typed_value_is_simple(&value.left_[0])
 		}
+		RGBColorStyleValue {
+			return computed_longhand_colors_enabled()
+				&& value.r_.len == 1 && value.g_.len == 1 && value.b_.len == 1 && value.alpha_.len == 1
+				&& computed_longhand_reuse_color_component_is_simple(&value.r_[0])
+				&& computed_longhand_reuse_color_component_is_simple(&value.g_[0])
+				&& computed_longhand_reuse_color_component_is_simple(&value.b_[0])
+				&& computed_longhand_reuse_color_component_is_simple(&value.alpha_[0])
+		}
 		else { return false }
+	}
+}
+
+fn computed_longhand_reuse_color_component_is_simple(value &StyleValue) bool {
+	return match value {
+		NumberStyleValue, PercentageStyleValue { true }
+		KeywordStyleValue { value.keyword_ == .none_ }
+		else { false }
 	}
 }
 
@@ -305,6 +356,18 @@ fn computed_longhand_reuse_typed_hash(value &StyleValue) ?u64 {
 			hash = (hash ^ computed_longhand_reuse_typed_hash(&value.right_[0])?) * u64(0x100000001b3)
 			hash = (hash ^ computed_longhand_reuse_typed_hash(&value.bottom_[0])?) * u64(0x100000001b3)
 			(hash ^ computed_longhand_reuse_typed_hash(&value.left_[0])?) * u64(0x100000001b3)
+		}
+		RGBColorStyleValue {
+			// The control retains identity hashing for inherited parsed colors too.
+			if !computed_longhand_colors_enabled() || !computed_longhand_reuse_typed_value_is_simple(value) {
+				return none
+			}
+			mut hash := (u64(12) ^ u64(value.color_syntax_) ^ if value.name_ != none { u64(256) } else { u64(0) }) * u64(0x100000001b3)
+			hash = (hash ^ u64((value.name_ or { '' }).hash())) * u64(0x100000001b3)
+			hash = (hash ^ computed_longhand_reuse_typed_hash(&value.r_[0])?) * u64(0x100000001b3)
+			hash = (hash ^ computed_longhand_reuse_typed_hash(&value.g_[0])?) * u64(0x100000001b3)
+			hash = (hash ^ computed_longhand_reuse_typed_hash(&value.b_[0])?) * u64(0x100000001b3)
+			(hash ^ computed_longhand_reuse_typed_hash(&value.alpha_[0])?) * u64(0x100000001b3)
 		}
 		else { return none }
 	}
@@ -434,6 +497,20 @@ fn (s &StyleComputer) restore_computed_longhands(key &ComputedLonghandReuseKey,
 				eprintln('Vox extended longhand reuse: restored')
 				break
 			}
+		}
+	}
+	if computed_longhand_extension_diagnostics && !computed_longhand_color_reported && computed_longhand_colors_enabled() {
+		for inputs in [entry.inputs, entry.parent_inputs] {
+			for input in inputs {
+				if input.value == unsafe { nil } || input.value.css_value_handle == unsafe { nil } { continue }
+				typed := unsafe { &TypedStyleValueBox(input.value.css_value_handle) }
+				if typed.value is RGBColorStyleValue {
+					computed_longhand_color_reported = true
+					eprintln('Vox color longhand reuse: restored')
+					break
+				}
+			}
+			if computed_longhand_color_reported { break }
 		}
 	}
 	return true
