@@ -182,6 +182,8 @@ def parse_args(argv=None):
                    help='Alternate the same Vox binary with static-media raster reuse disabled')
     control.add_argument('--control-lazy-images', action='store_true',
                    help='Alternate the same Vox binary with negative lazy-image probes uncached')
+    control.add_argument('--control-font-completion', action='store_true',
+                   help='Alternate the same Vox binary with family-wide font completion invalidation')
     p.add_argument('--repeat', type=int, default=7)
     p.add_argument('--settle-seconds', type=float, default=5)
     p.add_argument('--timeout', type=float, default=180)
@@ -245,7 +247,8 @@ def main():
     args.post_readiness_expression = 'new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(()=>r(true))))'
     apps = {}
     sources = [('vox', args.vox_app), ('brave', args.brave_app)]
-    if args.control_static_media or args.control_lazy_images:
+    has_control = args.control_static_media or args.control_lazy_images or args.control_font_completion
+    if has_control:
         sources.append(('control', args.vox_app))
     for engine, source in sources:
         target = args.output / engine / source.name
@@ -288,7 +291,7 @@ def main():
                                '--load-extension=' + str(args.extension), '--headless=new']
         for index in range(args.repeat):
             pair = {}
-            order = trial_order(index, args.control_static_media or args.control_lazy_images)
+            order = trial_order(index, has_control)
             if args.diagnostic_engine != 'both':
                 order = [args.diagnostic_engine]
             for engine in order:
@@ -296,7 +299,8 @@ def main():
                 args.vox_environment = dict(VOX_PROXY=replay.ready['proxy'], SSL_CERT_FILE=replay.ready['ca'],
                     VOX_BLOCK_COOKIE_BANNERS='0', VOX_ADBLOCK_LOG=str(folder / 'requests.jsonl'))
                 if engine == 'control':
-                    key = ('VOX_DISABLE_LAZY_IMAGE_PROBE_CACHE' if args.control_lazy_images
+                    key = ('VOX_DISABLE_FACE_SPECIFIC_FONT_COMPLETION' if args.control_font_completion
+                           else 'VOX_DISABLE_LAZY_IMAGE_PROBE_CACHE' if args.control_lazy_images
                            else 'VOX_DISABLE_STATIC_MEDIA_RASTER_REUSE')
                     args.vox_environment[key] = '1'
                 row = browser.run_browser('vox' if engine == 'control' else engine, apps[engine], folder, args)

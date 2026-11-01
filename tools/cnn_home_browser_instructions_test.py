@@ -109,6 +109,9 @@ class CNNHomeInstructionTests(unittest.TestCase):
         with self.assertRaises(SystemExit):
             benchmark.parse_args(arguments + ['--repeat', '1'])
         self.assertTrue(benchmark.parse_args(arguments + ['--diagnostic', '--repeat', '1']).diagnostic)
+        self.assertTrue(benchmark.parse_args(arguments + ['--control-font-completion']).control_font_completion)
+        with self.assertRaises(SystemExit):
+            benchmark.parse_args(arguments + ['--control-font-completion', '--control-lazy-images'])
 
     def test_full_extension_bootstrap_precedes_settings_and_rejects_changed_filters(self):
         connection, background = Mock(), Mock()
