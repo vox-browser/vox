@@ -1,20 +1,18 @@
 # BBC homepage instruction comparison
 
 **The requested 10% advantage remains open. BBC does not qualify for
-`OPTIMIZED_SITES.md`.** The latest attempted seven-pair cohort has a Vox
-median of **37,396,821,455** retired instructions and a Brave lower-bound
-median of **15,731,322,435**. The conservative ratio is **2.514265550853879**,
-above the required 0.9: `392834797060 > 140618128914` fails the integer gate.
-Brave trial 3 differs from its unchanged pixel reference, so this cohort is
-also invalid for acceptance. All 21 content audits and native exits pass;
-20/21 captures match their pixel references. Every observation is retained.
+`OPTIMIZED_SITES.md`.** The latest valid seven-pair cohort has a Vox median
+of **37,463,386,894** retired instructions and a Brave lower-bound median of
+**15,655,612,802**. Its conservative ratio is **2.4762586430968168**, above
+0.9: `385560003150 > 140132374218` fails the integer gate. All 21 content,
+unchanged pixel-reference and native-exit checks pass. Every observation is
+retained, including first launches and high counts.
 
-The latest valid cohort is the preceding helper-signing comparison: Vox median
-37,990,584,359 versus Brave lower-bound median 15,546,241,164. It also fails
-the threshold and regresses against its matched control. The latest inactive
-conditional-rule cohort improves the median by 0.8015% against its control
-37,698,968,829, but its conservative control ratio is 1.1054906544208132.
-Neither comparison establishes accepted instruction savings.
+The same-binary import-filter control has median 37,366,488,853; enabling the
+filter regresses the median by 0.2593%. Its conservative matched-control ratio
+is 1.0559372113230752. No instruction improvement is credited. The preceding
+inactive-stylesheet cohort remains retained with its Brave trial 3 pixel
+mismatch; its reported counts have not been excluded or replaced.
 
 The machine-readable [evidence](benchmark-results/bbc-brave-instructions-2026-11-01.json)
 retains exact counts for every recorded attempt, including failures and first
@@ -86,6 +84,7 @@ capture marker. An invalid cohort is retained for diagnosis, not acceptance.
 | Selective style-only conditional-rule insertion | 38,669,617,935 | 15,723,338,132 | 2.5598256625689984 | All observations valid; Brave and matched-control gates fail |
 | Filtering helper JIT entitlement | 37,990,584,359 | 15,546,241,164 | 3.0270279597468543 | All observations valid; median regresses against control; both gates fail |
 | Skip inactive conditional-rule insertion | 37,396,821,455 | 15,731,322,435 | 2.514265550853879 | Brave pair 3 differs; Brave and matched-control gates fail |
+| Classic-script import identifier filter | 37,463,386,894 | 15,655,612,802 | 2.4762586430968168 | All observations valid; median regresses against control; both gates fail |
 
 The grid block-height cohort alternates an older control, candidate and Brave;
 control/candidate medians are 101,567,929,247 and 90,700,737,334 (10.70% observed
@@ -199,7 +198,7 @@ The selected backend has no observed LibJS fallback. These instrumented runs
 receive no hardware-counter performance credit.
 
 The newest measured executable is SHA256
-`8dbdebed953798880953a47e3aa3b77b4532361efadeba2e629733ecb24611a1`.
+`46196ed8f47f6fdff9f8564daba9b90eca87933804f41144e07281a714b3721d`.
 The preceding font-display candidate is
 `5aae83a4408e023380d51e4430003b519ec427bcd96b3701b634930eeda62952`.
 The JIT-only candidate is
@@ -728,3 +727,52 @@ synchronization have inclusive totals 586,764,304 and 108,166,379. These are
 overhead, with nested scope overlap. They are not production percentages or
 optimization credit. The original pixels, full content and native exit pass;
 `workflow-scope-*` retains the exact inputs, compiler receipts, logs and values.
+
+
+### Classic-script import scan
+
+A separate O2 diagnostic categorizes JavaScript API calls by cached function
+source prefixes. It records 130 labels with no metadata errors or overflow,
+passes the original BBC pixels, complete content and native exit, and observes
+actual JavaScriptCore execution. Function string conversion, extra GC roots,
+logging and process-wide counters can alter behavior and timing; this probe
+earns no instruction credit. React's scheduler callback has inclusive total
+8,807,093,258 and 6,137,354,555 after subtracting instrumented nested scopes;
+another React callback has 1,679,173,598 after that subtraction. The import
+rewriter has 35 calls and 803,233,728 diagnostic instructions. All categories
+and compiled inputs remain under `js-target-*`.
+
+An offline inventory of the 75 archived JavaScript resources finds 35 with
+`import` substrings, but only six with a possible standalone word. The other
+29 contain 1,419,281 bytes. Commit `309aa5f5` rejects classic-script sources
+whose matches all adjoin ASCII identifier characters, such as `important` or
+`importer`. Other boundaries, Unicode, comments and escapes remain conservative
+lexer candidates. Module scripts retain their existing transformation path.
+
+The nine focused compile/runtime/control checks pass across normal, no-GC and
+preallocated modes, including actual dynamic imports and HTTPS/proxy loading.
+Both broader modes enter all 415 cases with only the known text-control
+baseline failure. The first composition attempt accidentally treated a raw
+JavaScript import as a V import; the next compile exposed the current V
+optional return from `index_after`. Both failures are retained. A subsequent
+CLI continuation interrupted a build and the unfinished test modes, leaving
+empty guard receipts and unknown exits. Those attempts are retained explicitly;
+completed default-mode tests were reused and only unfinished modes rerun.
+
+The completed production build takes 199.4478 seconds, peak sampled RSS
+8,801,058,816 bytes. Its executable is
+`46196ed8f47f6fdff9f8564daba9b90eca87933804f41144e07281a714b3721d`;
+the preserved generated C is
+`c7f879b27b7b8dfbba330a4660425b1beb19fc94585b1c34ceda91f30174ca2a`.
+Headless startup, 11 smoke comparisons and eight SVG mutation comparisons pass
+with exact pixels. Control tooling `9010cb3b` passes 163 browser-instruction
+checks. Separate enabled/disabled BBC diagnostics preserve content, native
+exits and original pixels with 1,985/1,995 JavaScriptCore evaluations. Only the
+enabled run logs the successful import-scan bypass.
+
+The following uninstrumented seven alternating triples produce the latest
+results above. All 21 captures pass every content, pixel and native-exit check,
+but both instruction gates fail and the median regresses against its control.
+The guard adopts 66 processes without errors, peak RSS 1,352,007,680 bytes,
+and completes in 109.8753 seconds with controller exit 1 for failed acceptance.
+The raw prefix is `classic-import-*`. BBC remains outside the site catalog.
