@@ -1,6 +1,7 @@
 module main
 
 import browserjs
+import css
 import html
 
 fn test_compact_initial_state_omits_unread_subtree_content() {
@@ -43,7 +44,9 @@ fn test_compact_content_getters_preserve_reads_pending_writes_and_cssom() {
 		result := document.get_element_by_id('result') or { panic('missing result') }
 		assert (result.as_node().text_content() or { '' }) == 'one two'
 		style := document.get_element_by_id('sheet') or { panic('missing sheet') }
-		assert (style.as_node().text_content() or { '' }).contains('color: blue')
+		// CSSOM edits update the live sheet without rewriting authored markup.
+		assert (style.as_node().text_content() or { '' }) == '#result { color:red }'
+		assert css.style_sheet_for_owner_node(document, style)?.css_rules().item(0)?.style()?.get_property_value('color') == 'blue'
 		// Initial bridge indexes continue to identify their native nodes after
 		// a new element changes document tree order.
 		body := document.body() or { panic('missing body') }

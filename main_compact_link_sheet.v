@@ -60,7 +60,8 @@ fn (mut binding CompactElementQueryBinding) link_sheet_query(key string) !string
 	defer { allocations.finish() }
 	node := binding.node_for_key(key) or { return 'null' }
 	element := node.as_element() or { return 'null' }
-	if !element.is_html_element() || element.local_name() != 'link' { return 'null' }
+	if !element.is_style_element_base()
+		&& (!element.is_html_element() || element.local_name() != 'link') { return 'null' }
 	sheet := css.style_sheet_for_owner_node(element.document(), element) or { return 'null' }
 	return json2.encode(binding.sheet_key(sheet))
 }
@@ -85,7 +86,12 @@ fn (mut binding CompactElementQueryBinding) css_sheet_query(source string) !stri
 		}
 		match request.op {
 			'href' {
-				if href := sheet.href() { result = href }
+				// Inline sheets keep a parsing location for relative URLs in this
+				// port, but LinkStyle's script-visible href is still null.
+				inline_owner := if owner := sheet.base.owner_node { owner.is_style_element_base() } else { false }
+				if !inline_owner {
+					if href := sheet.href() { result = href }
+				}
 			}
 			'title' {
 				if title := sheet.base.title_for_bindings() { result = title }

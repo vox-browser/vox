@@ -12,6 +12,32 @@ fn compact_sheet_test_document(markup string) &dom.Document {
 	return html.parse_navigation_document(markup, address, address.origin(), none) or { panic(err) }
 }
 
+fn test_compact_style_sheet_rehydrates_server_rules_into_an_empty_native_sheet() {
+	mut document := compact_sheet_test_document('<!doctype html><style id="server">#target { width: 42px } @media screen { #target { height: 23px } }</style><p id="target">text</p>')
+	mut runtime := browserjs.Runtime.create()
+	defer { runtime.close(); document.finalize() }
+	mut messages := []string{}
+	run_document_javascript(document, document.url.serialize(), [r'
+const server=document.getElementById("server"),original=server.sheet;
+if(!(original instanceof CSSStyleSheet)||original.ownerNode!==server||original.cssRules.length!==2)throw new Error("server CSSOM");
+const style=document.createElement("style");style.setAttribute("data-styled","active");document.head.appendChild(style);
+const sheet=style.sheet,rules=sheet.cssRules;
+if(!(sheet instanceof CSSStyleSheet)||sheet!==style.sheet||sheet.ownerNode!==style||rules.length!==0||sheet.href!==null)throw new Error("empty style sheet "+JSON.stringify([sheet instanceof CSSStyleSheet,sheet===style.sheet,sheet.ownerNode===style,rules.length,sheet.href]));
+for(const rule of original.cssRules)sheet.insertRule(rule.cssText,sheet.cssRules.length);
+server.remove();
+if(server.sheet!==null||style.sheet!==sheet||rules.length!==2||style.textContent!=="")throw new Error("CSSOM rehydration");
+if(getComputedStyle(target).width!=="42px"||getComputedStyle(target).height!=="23px")throw new Error("rehydrated layout styles");
+rules[0].style.width="51px";
+if(getComputedStyle(target).width!=="51px"||style.textContent!=="")throw new Error("live native declaration");
+sheet.deleteRule(0);if(rules.length!==1||getComputedStyle(target).width==="51px")throw new Error("native deletion");
+style.textContent="#target { width: 67px }";
+if(style.sheet===sheet||style.sheet.cssRules.length!==1||getComputedStyle(target).width!=="67px")throw new Error("style text replaces associated sheet");
+const detached=document.createElement("style");if(detached.sheet!==null)throw new Error("disconnected sheet");
+console.log("style rehydration passed");
+'], runtime, mut messages)
+	assert messages == ['style rehydration passed']
+}
+
 fn test_compact_link_sheet_exposes_the_live_native_cssom_and_preserves_mutations() {
 	mut document := compact_sheet_test_document('<!doctype html><link id="theme" rel="stylesheet" href="theme.css"><p id="target">text</p>')
 	mut runtime := browserjs.Runtime.create()
