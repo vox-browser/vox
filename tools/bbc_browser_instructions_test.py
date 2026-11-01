@@ -21,6 +21,44 @@ def document():
 
 
 class BBCInstructionTests(unittest.TestCase):
+    def test_geometry_and_allocator_controls_are_isolated_and_restored(self):
+        environment = {'VOX_PROXY': 'socks5h://fixture'}
+        for geometry, allocator in [(True, False), (False, True), (True, True)]:
+            args = SimpleNamespace(vox_environment=environment, control_disable_grid_width_only=False,
+                control_disable_client_geometry_index=geometry,
+                control_disable_tracked_persistent_shortcut=allocator)
+            expected = dict(environment)
+            if geometry:
+                expected['VOX_DISABLE_VISUAL_CONTEXT_INDEX'] = '1'
+            if allocator:
+                expected['VOX_DISABLE_TRACKED_PERSISTENT_SHORTCUT'] = '1'
+            seen = []
+            def observe(engine, app, folder, options):
+                seen.append((engine, dict(options.vox_environment)))
+                return {'exit': 0}
+            with self.subTest(geometry=geometry, allocator=allocator):
+                with patch('bbc_browser_instructions.browser.run_browser', side_effect=observe):
+                    for engine in ['control', 'vox', 'brave']:
+                        run_trial(engine, 'same-app', engine, args)
+                self.assertEqual(seen, [('vox', expected), ('vox', environment), ('brave', environment)])
+                self.assertIs(args.vox_environment, environment)
+                with patch('bbc_browser_instructions.browser.run_browser', side_effect=RuntimeError('failed')):
+                    with self.assertRaises(RuntimeError):
+                        run_trial('control', 'same-app', 'control', args)
+                self.assertIs(args.vox_environment, environment)
+
+    def test_optimization_controls_require_a_control_app(self):
+        args = ['--archive', 'archive', '--output', 'output', '--memory-guard-registry', 'pids.json',
+                '--capture-reference']
+        for flag in ['--control-disable-grid-width-only', '--control-disable-stationary-raster',
+                     '--control-disable-client-geometry-index',
+                     '--control-disable-tracked-persistent-shortcut']:
+            with self.subTest(flag=flag):
+                with self.assertRaises(SystemExit):
+                    parse_args(args + [flag])
+                self.assertTrue(getattr(parse_args(args + [flag, '--control-vox-app', 'Vox.app']),
+                                        flag[2:].replace('-', '_')))
+
     def test_stationary_control_flag_never_reaches_candidate_or_brave(self):
         environment = {'VOX_PROXY': 'socks5h://fixture'}
         args = SimpleNamespace(vox_environment=environment, control_disable_grid_width_only=False,
