@@ -3487,6 +3487,18 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
         }
         copy_backdrop_pixels(backdrop, raster_width, raster_height, pixels, covered);
     }
+    if (has_background && !has_underlay && paint.getAlphaf() == 0) {
+        // A source-over transparent shape leaves every raster texel unchanged.
+        // Keep the original image footprint, clip and Quartz alpha handling;
+        // only the otherwise redundant complete GPU tile replay is omitted.
+#ifdef VOX_TRANSPARENT_SHAPE_DIAGNOSTICS
+        std::fprintf(stderr, "VOX_TRANSPARENT_SHAPE_REPLAY scroll=%g root=%d size=%dx%d\n",
+            s_root_raster_scroll_y, s_raster_layer_is_root, raster_width, raster_height);
+#endif
+        return composite_pixels(destination, std::move(pixels), raster_width,
+            raster_height, region.left, canvas_height - region.bottom,
+            region.width(), region.height(), true);
+    }
     if (s_chromium_painting && fill == 7 && has_underlay && shared_picture_draw()) {
         // ClipLayer backgrounds need the same premultiplied resolve as Blink's
         // Dawn picture raster. The scalar Metal shape bridge rounds the layer
