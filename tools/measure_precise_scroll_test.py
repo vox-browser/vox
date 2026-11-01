@@ -17,7 +17,7 @@ from measure_precise_scroll import summarize
 def log_for(times=None, positions=None):
     times = times or [i * 10000 + 5000 for i in range(12)]
     positions = positions or [i * 8.4 for i in range(12)]
-    lines = ["SCROLL_START precise=1 scale=2 input_hz=60 title=fixture"]
+    lines = ["SCROLL_START precise=1 document_width=1024 document_height=764 scale=2 input_hz=60 title=fixture"]
     for i in range(12):
         lines.append(f"SCROLL_INPUT {i} t_us={i * 10000} wheel_us=100")
     for i, (time, y) in enumerate(zip(times, positions)):
@@ -28,7 +28,21 @@ def log_for(times=None, positions=None):
 
 
 class PreciseScrollTests(unittest.TestCase):
+    def test_rejects_wrong_or_missing_document_viewport(self):
+        summarize(log_for(), 12, expected_viewport=(1024, 764))
+        for log in [log_for().replace("document_height=764", "document_height=880"),
+                    log_for().replace("document_height=764", "document_height=NaN"),
+                    log_for().replace("document_width=1024 ", "")]:
+            with self.subTest(log=log), self.assertRaisesRegex(ValueError, "viewport"):
+                summarize(log, 12, expected_viewport=(1024, 764))
+
     def test_launch_isolates_saved_proxy_and_bookmarks_from_user_profile(self):
+        self.check_isolated_launch(False)
+
+    def test_fixture_navigation_seeds_only_allow_any_site(self):
+        self.check_isolated_launch(True)
+
+    def check_isolated_launch(self, allow_fixture_navigation):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve()
             binary = root / "Vox"
@@ -49,7 +63,11 @@ class PreciseScrollTests(unittest.TestCase):
             def launch(command, **kwargs):
                 env = kwargs["env"]
                 self.assertEqual(Path(env["VOX_PROFILE_DIR"]), output / "profile")
-                self.assertEqual(list((output / "profile").iterdir()), [])
+                profile_files = list((output / "profile").iterdir())
+                self.assertEqual([p.name for p in profile_files],
+                                 ["settings.json"] if allow_fixture_navigation else [])
+                if allow_fixture_navigation:
+                    self.assertEqual(json.loads(profile_files[0].read_text()), {"allow_any_site": True})
                 self.assertEqual(command[command.index("--window-height") + 1], "876")
                 self.assertNotIn("--enable-javascript", command)
                 self.assertNotIn("--disable-javascript", command)
@@ -66,6 +84,8 @@ class PreciseScrollTests(unittest.TestCase):
                          "--require-title", "fixture",
                          "--script-policy", "automatic",
                          "--env", f"VOX_PROFILE_DIR={user_profile}"]
+            if allow_fixture_navigation:
+                arguments.append("--allow-fixture-navigation")
             with mock.patch.object(measure_precise_scroll.sys, "platform", "darwin"), \
                     mock.patch.object(measure_precise_scroll.sys, "argv", arguments), \
                     mock.patch.dict(measure_precise_scroll.os.environ,
@@ -83,6 +103,7 @@ class PreciseScrollTests(unittest.TestCase):
                 measure_precise_scroll.main()
             evidence = json.loads((output / "run.json").read_text())
             self.assertTrue(evidence["valid"])
+            self.assertEqual("seeded only" in evidence["initial_profile"], allow_fixture_navigation)
             self.assertEqual(evidence["script_policy"], "automatic")
             self.assertEqual(evidence["host"], {"cpu_count": 18,
                              "load_average_before": [1, 2, 3],

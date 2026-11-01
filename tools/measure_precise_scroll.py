@@ -58,7 +58,7 @@ def intervals(rows):
     return values
 
 
-def summarize(log, expected_inputs, target_hz=60, required_title=""):
+def summarize(log, expected_inputs, target_hz=60, required_title="", expected_viewport=None):
     if "SCROLL_ERROR" in log:
         raise ValueError("Native probe reported an error")
     starts = [line for line in log.splitlines() if line.startswith("SCROLL_START ")]
@@ -72,6 +72,11 @@ def summarize(log, expected_inputs, target_hz=60, required_title=""):
         raise ValueError("Navigation error page cannot supply scrolling acceptance")
     if required_title and required_title not in title:
         raise ValueError("Requested document title was not present when input started")
+    if expected_viewport is not None:
+        dimensions = dict(re.findall(r"(document_width|document_height)=([\d.]+)", starts[0]))
+        if any(float(dimensions.get(key, "nan")) != expected for key, expected in
+               zip(("document_width", "document_height"), expected_viewport)):
+            raise ValueError("Observed document viewport differs from requested viewport")
     inputs, frames = records(log, "SCROLL_INPUT"), records(log, "SCROLL_PUBLISH")
     if any(row.get("modifiers", 0) != 0 or row.get("delta_x", 0) != 0 for row in inputs):
         raise ValueError("Modified or horizontal input invalidates a vertical scroll trial")
@@ -140,6 +145,8 @@ def main():
     parser.add_argument("--url", default="https://pikabu.ru")
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--cache-template", type=Path)
+    parser.add_argument("--allow-fixture-navigation", action="store_true",
+                        help="Seed only allow_any_site in the private profile for file/loopback fixtures")
     parser.add_argument("--network-policy", required=True,
                         help="Describe live access or supplied network-blocking interposer; recorded verbatim")
     parser.add_argument("--insert-library", action="append", type=Path, default=[])
@@ -195,6 +202,8 @@ def main():
     # override the requested route. Never read or update the user's profile.
     profile = output / "profile"
     profile.mkdir()
+    if args.allow_fixture_navigation:
+        (profile / "settings.json").write_text('{"allow_any_site":true}\n')
     digest = hashlib.sha256()
     for path in sorted(cache.rglob("*")):
         if path.is_file():
@@ -235,7 +244,10 @@ def main():
                "--window-height", str(args.height + args.chrome_height), args.url]
     evidence = dict(command=command, compile_command=compile_command,
                     source_and_binary_sha256=hashes, cache_sha256=digest.hexdigest(),
-                    initial_profile="empty private profile; default bookmark bar; no saved proxy override",
+                    initial_profile=("private profile seeded only with allow_any_site=true; "
+                                     "default bookmark bar; no saved proxy override"
+                                     if args.allow_fixture_navigation else
+                                     "empty private profile; default bookmark bar; no saved proxy override"),
                     chrome_height=args.chrome_height,
                     script_policy=args.script_policy,
                     viewport=[args.width, args.height], network_policy=args.network_policy,
@@ -265,7 +277,7 @@ def main():
         if hashes != {str(path): sha256(path) for path in pinned}:
             raise RuntimeError("Build or probe identity changed during measurement")
         summary = summarize((output / "browser.log").read_text(errors="replace"),
-                            args.inputs, args.target_hz, args.require_title)
+                            args.inputs, args.target_hz, args.require_title, (args.width, args.height))
         (output / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
         evidence["valid"] = True
         print(json.dumps({key: value for key, value in summary.items()

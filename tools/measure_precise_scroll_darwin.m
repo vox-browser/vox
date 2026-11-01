@@ -122,9 +122,21 @@ static void tick(void) {
             fprintf(stderr, "SCROLL_ERROR requested document changed before input\n"); exit(2);
         }
         NSEvent *event = (NSEvent *)positioned;
-        fprintf(stderr, "SCROLL_START precise=%d delta_y=%g view_width=%g view_height=%g scale=%g input_hz=%g title=%s\n",
+        // MyView2 covers the entire content view, including the toolbar/status
+        // overlays. Measure those native UI2 siblings rather than calling its
+        // full bounds the document viewport or trusting a requested chrome size.
+        CGFloat chrome = 0;
+        for (NSView *child in input_view.subviews) {
+            NSRect r = child.frame, bounds = input_view.bounds;
+            if ([NSStringFromClass(child.class) isEqualToString:@"UI2PointerChildView"] &&
+                fabs(r.size.width-bounds.size.width) < .01 &&
+                (fabs(NSMinY(r)-NSMinY(bounds)) < .01 ||
+                 fabs(NSMaxY(r)-NSMaxY(bounds)) < .01)) chrome += r.size.height;
+        }
+        fprintf(stderr, "SCROLL_START precise=%d delta_y=%g view_width=%g view_height=%g document_width=%g document_height=%g chrome_height=%g scale=%g input_hz=%g title=%s\n",
             event.hasPreciseScrollingDeltas, event.scrollingDeltaY,
             page_view.bounds.size.width, page_view.bounds.size.height,
+            page_view.bounds.size.width, page_view.bounds.size.height-chrome, chrome,
             page_view.window.backingScaleFactor, input_hz, page_view.window.title.UTF8String);
         fprintf(stderr, "SCROLL_POSITION window=%ld event_window=%ld x=%g y=%g\n",
             (long)input_view.window.windowNumber, (long)event.windowNumber,
