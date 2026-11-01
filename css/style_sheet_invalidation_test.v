@@ -830,3 +830,84 @@ fn test_shadow_media_list_mutation_uses_pre_mutation_host_reach() {
 	assert !document.needs_full_style_update()
 	assert sheet.did_match or { true } == false
 }
+
+fn conditional_sheet_invalidation_fixture() (&dom.Document, &CSSStyleSheet, &dom.Element, &dom.Element) {
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.set_browsing_context(&dom.BrowsingContext{active_document_: document})
+	document.set_navigable(&dom.Navigable{active_document_: document})
+	document.set_viewport_rect(dom.Rect{width: 800, height: 600})
+	mut root := style_sheet_invalidation_test_element(document, 'html')
+	style := style_sheet_invalidation_test_element(document, 'style')
+	mut target := style_sheet_invalidation_test_element(document, 'div')
+	target.set_attribute_value('class', 'target')
+	bystander := style_sheet_invalidation_test_element(document, 'aside')
+	mut document_node := document.as_node()
+	document_node.append_child(root.as_node()) or { panic(err) }
+	mut root_node := root.as_node()
+	root_node.append_child(style.as_node()) or { panic(err) }
+	root_node.append_child(target.as_node()) or { panic(err) }
+	root_node.append_child(bystander.as_node()) or { panic(err) }
+	mut sheet := parse_css_stylesheet_with_parser('.target {color:blue}', none)
+	install_inline_style_sheet_for_invalidation_test(mut sheet, style, document_node)
+	_ = css_style_computer_for(document)
+	document.update_style()
+	assert target.el_computed_properties() != none
+	assert !document.needs_full_style_update()
+	return document, sheet, target, bystander
+}
+
+fn conditional_sheet_invalidation_property(element &dom.Element, id PropertyID) string {
+	computed := computed_properties_for_element(element) or { panic('missing style') }
+	return (computed.property(id, .no) or { panic('missing property') }).css_text
+}
+
+fn test_inserted_style_only_conditionals_preserve_unrelated_styles_and_match_a_full_cascade() {
+	for text in ['@media (min-width: 1px) {.target {color:red}}',
+		'@supports (display:block) {.target {color:red}}',
+		'@media (min-width: 1px) {@supports (display:block) {.target {color:red}}}',
+		'@media (min-width: 10000px) {.target {color:red}}',
+		'@supports (unknown-property:unknown-value) {.target {color:red}}',
+		'@media (min-width: 1px) {.target {color:red; &::before {content:"new"}}}'] {
+		mut document, mut sheet, target, bystander := conditional_sheet_invalidation_fixture()
+		defer { document.finalize() }
+		previous := bystander.el_computed_properties() or { panic('missing bystander style') }
+		assert sheet.insert_rule(text, 1)! == 1
+		assert document.needs_full_style_update() == disable_conditional_sheet_invalidation, text
+		if !disable_conditional_sheet_invalidation {
+			assert target.needs_style_update(), text
+			assert !bystander.needs_style_update(), text
+		}
+		document.update_style()
+		assert (voidptr(bystander.el_computed_properties() or { panic('missing style') }) == voidptr(previous)) == !disable_conditional_sheet_invalidation
+		actual := conditional_sheet_invalidation_property(target, .color)
+		expected_red := !text.contains('10000px') && !text.contains('unknown-property')
+		assert actual == if expected_red { 'rgb(255, 0, 0)' } else { 'rgb(0, 0, 255)' }, text
+		document.set_needs_full_style_update(true)
+		document.update_style()
+		assert conditional_sheet_invalidation_property(target, .color) == actual, text
+	}
+}
+
+fn test_inserted_conditional_groups_keep_global_rule_and_universal_fallbacks() {
+	for text in ['@media all {@font-face {font-family:UnusedConditional;src:local(AbsentConditional)}}',
+		'@media all {@layer conditional-layer {.target {color:red}}}',
+		'@supports (display:block) {@property --conditional {syntax:"<color>";inherits:true;initial-value:red}}',
+		'@media all {* {color:red}}', '@media all {:has(.flag) {color:red}}'] {
+		mut document, mut sheet, _, _ := conditional_sheet_invalidation_fixture()
+		defer { document.finalize() }
+		assert sheet.insert_rule(text, 1)! == 1
+		assert document.needs_full_style_update(), text
+	}
+}
+
+fn test_inserted_conditional_group_preserves_preexisting_media_match_changes() {
+	mut document, mut sheet, target, _ := conditional_sheet_invalidation_fixture()
+	defer { document.finalize() }
+	assert sheet.insert_rule('@media (min-width: 900px) {.target {color:green}}', 1)! == 1
+	document.update_style()
+	assert conditional_sheet_invalidation_property(target, .color) == 'rgb(0, 0, 255)'
+	document.set_viewport_rect(dom.Rect{width: 1000, height: 600})
+	assert sheet.insert_rule('@media all {.absent {color:red}}', 2)! == 2
+	document.update_style()
+	assert conditional_sheet_invalidation_property(target, .color) == 'rgb(0, 128, 0)'
+}

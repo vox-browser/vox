@@ -2010,6 +2010,8 @@ pub fn (mut sheet CSSStyleSheet) insert_rule(rule string, index u32) !u32 {
 		invalidate_owners_for_inserted_keyframes_rule(mut sheet, parsed_rule)
 	} else if !sheet.constructed && owner_is_inline_style && parsed_rule.type_ == .style {
 		invalidate_owners_for_inserted_style_rule(mut sheet, parsed_rule, .style_sheet_insert_rule)
+	} else if !sheet.constructed && owner_is_inline_style && can_target_inserted_conditional_style_rule(parsed_rule) {
+		invalidate_owners_for_inserted_conditional_style_rule(mut sheet, parsed_rule)
 	} else {
 		sheet.invalidate_owners(.style_sheet_insert_rule)
 	}
