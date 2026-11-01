@@ -1,13 +1,97 @@
 # Hacker News instructions against Brave, 2026-11-01
 
-The subsequent `v -profile` investigation retains the transparent-gradient
-optimization in `215b6e4`. Its matched Vox median decreases from
-**4,268,701,477.5 to 4,237,070,157 instructions (0.741%)**. Brave's median
-lower bound is **1,384,856,453.5**. The requested 10% advantage over Brave
-remains **open**. The implementation, validation and full retained results
-are described below; the earlier measurements remain historical evidence.
+The previous headline of roughly three times Brave's instructions used
+**asymmetric startup boundaries**. Wikipedia and Old Reddit count browser
+startup; Hacker News subtracted it after Brave's window initialization but
+before Vox's window initialization. That interval cannot establish comparable
+page-only instruction costs. In the previous V-profile cohort it omitted a
+median **7,124,921,654 instructions from Brave** and **638,105,410 from Vox**.
+Those same observations already had full-startup medians of 4,873,836,713 for
+Vox and 8,520,270,605 for Brave. The 3× headline was misleading.
+
+Seven fresh alternating pairs using the **same pinned browser binaries** now
+give startup-through-capture medians of **4,877,590,820 for Vox** and
+**8,554,149,229 for Brave: 42.98% fewer instructions**. The highest Vox count
+is 41.61% below the lowest Brave count, passing the requested 10% gate. All 14
+captures match the unchanged Brave reference at every pixel and preserve all
+30 story IDs. No engine optimization is credited for correcting the boundary.
+
+## Scope correction and fresh measurements
+
+The default in `tools/hacker_news_browser_instructions.py` is now `launch`,
+with the requested 0.90 target for both home and discussion fixtures. Progress
+output previously printed navigation counts even when `launch` was selected;
+it now names the selected scope and prints both intervals separately. The
+historical `--instruction-scope navigation` remains available as an explicitly
+asymmetric diagnostic. No counters, original resources, scripts, reference
+pixels, density, viewport or settle duration changed for this audit.
+
+The selected interval uses the cumulative exclusive resource-coalition reading
+from coalition creation through encoded document PNG availability, including
+exited browser helpers and the explicitly allowed coalition-owned services.
+Vox's endpoint precedes the PNG file write; Brave's includes CDP screenshot
+delivery and its earlier target/window setup. GPU execution, outside services,
+the observer and replay server are excluded. This measures browser startup and
+capture workflows; it does not isolate parsing, layout or rendering.
+
+| Pair | Vox startup instructions | Brave startup lower bound | Brave startup upper bound |
+| --- | ---: | ---: | ---: |
+| 1 | 4,939,453,409 | 20,414,767,238 | 20,431,126,782 |
+| 2 | 4,879,036,590 | 8,540,690,999 | 8,542,775,446 |
+| 3 | 4,857,481,030 | 8,653,965,214 | 8,668,202,072 |
+| 4 | 4,873,871,013 | 8,529,961,814 | 8,559,949,963 |
+| 5 | 4,877,590,820 | 8,554,149,229 | 8,571,099,582 |
+| 6 | 4,883,764,693 | 8,459,695,225 | 8,474,754,507 |
+| 7 | 4,870,785,476 | 8,629,219,677 | 8,659,612,151 |
+
+Every observation is retained, including the first large Brave count. The
+conservative maximum-Vox/minimum-Brave ratio is **0.583880776**, below 0.90.
+All browser, benchmark and guard exit codes are zero. Fresh private browser
+profiles and caches are used for every process; operating-system filesystem
+and shader caches are not flushed. The host has 18 logical CPUs and recorded
+one-minute load averages of 8.25–9.49. The adoption-aware 12 GiB memory guard
+observes 907.53 MiB peak aggregate process-tree RSS over 58.81 seconds. No
+elapsed-time improvement is claimed.
+
+The audited Vox executable SHA-256 is
+`ac11c56baaa7d18a5ee0275c45c1e7a3f5409b81b7db3d13d87939878c39f81d`,
+with native Skia library
+`d31bb4331568cf01992c47a020f55fcddd8fc8117872afd2f62937aacb55ac65`.
+These are the earlier transparent-gradient candidate, reused to isolate the
+measurement correction from unrelated shared production changes. Brave is
+156.1.98.60 (Chromium 156.0.8078.48). Executable/library fingerprints remain
+unchanged after every observation. No production build was requested or run.
+
+This aligns the inclusion of startup with the
+[Wikipedia](WIKIPEDIA_BRAVE_INSTRUCTIONS.md) and
+[Old Reddit](OLD_REDDIT_INSTRUCTIONS.md) reports. Their process-tree counter
+backend, 1× captures and scripting policies differ from this windowed 2×,
+original-scripts-enabled workload. Cross-site instruction totals therefore
+should not be treated as identical experiments.
+
+The old candidate's first large Vox observation and its failing conservative
+startup gate remain in the V-profile result below; this later cohort does not
+erase that observation or establish a cold-system guarantee. The fresh
+cohort's asymmetric navigation diagnostic still reports medians of
+4,237,857,649 for Vox and 1,414,657,394 for Brave. Both intervals remain in
+every result. A fair warm-navigation experiment would need to start both
+browsers after equivalent window setup.
+
+All raw commands, PID identities, membership audits, PNGs, counter brackets,
+host loads and receipts are under `Build/hn-scope-audit-20261101/`. The durable
+[scope audit](benchmark-results/hacker-news-scope-audit-2026-11-01.json)
+retains all counts and artifact hashes. All 57 focused benchmark, memory-guard,
+process-counter and coalition-counter tests pass, including the default-scope
+regression. The tooling fix is `cb17c436`; no runtime savings accumulate toward
+the next broad regression checkpoint.
 
 ## V-profile continuation
+
+This historical cohort used the asymmetric navigation diagnostic. Its
+within-Vox control/candidate comparison retains the transparent-gradient
+optimization in `215b6e4`: the median decreases from 4,268,701,477.5 to
+4,237,070,157 instructions (0.741%). Its cross-browser navigation ratio is
+not a valid page-only cost comparison.
 
 The diagnostic builds the canonical checkout with current V's **`-profile`**
 for all functions, including inline functions. It produces 8,112 populated
@@ -110,7 +194,7 @@ private PID registry passed to the outer guard and benchmark.
 
 ## Initial comparison and removed experiments
 
-The requested 10% navigation instruction reduction remains **open**. Eight
+The original asymmetric navigation diagnostic failed the 10% gate. Eight
 alternating control/candidate/Brave trials retain a control Vox median of
 **4,271,112,593.5** retired instructions and a Brave median lower bound of
 **1,429,892,080.5**. Vox uses 2.987 times the instructions at this endpoint.
@@ -179,9 +263,10 @@ Two experiments were removed:
 
 The benchmark now records both instruction boundaries, each observation's
 timestamp and host load, and an explicit `--instruction-scope` selection. The
-default remains `navigation`; a successful startup statistic cannot silently
-pass its gate. All 49 focused benchmark, process-counter and coalition-counter
-tests pass. No reference, tolerance, scripting policy, or production browser
+default at that time was `navigation`; the scope correction above supersedes
+that default without replacing historical results. All 49 focused benchmark,
+process-counter and coalition-counter tests pass. No reference, tolerance,
+scripting policy, or production browser
 was changed. Broad runtime suites were not run for the removed experiments.
 
 A fresh live navigation on the pinned production executable (PID 73300) exits
@@ -206,8 +291,8 @@ The outer memory guard records its command and actual nonzero benchmark exit
 for the failed target, but its RSS excludes LaunchServices-reparented browsers.
 That RSS is **not** a browser memory bound or peak measurement. Direct native
 diagnostics and live subprocess launches are included in their guards. This
-limitation must be repaired before using LaunchServices cohorts as memory-bound
-acceptance runs. The empty system sampler graphs and crashed asynchronous LLDB
+limitation was repaired in `0f56fb13` before the V-profile cohort and scope
+audit above. The empty system sampler graphs and crashed asynchronous LLDB
 sampler earn no profiling credit; the synchronous breakpoint probes succeed.
 
 Reproduce with a fresh output directory and report filename:
@@ -220,8 +305,10 @@ env -u ALL_PROXY -u HTTP_PROXY -u HTTPS_PROXY \
     --adopt-pids-from Build/hn-repeat-pids.json -- \
   python3 tools/hacker_news_browser_instructions.py \
     --output Build/hn-repeat \
+    --vox-app Build/hn-vprofile-20261101/gradient-candidate/Vox.app \
+    --brave-app 'Build/hn-vprofile-20261101/control-cohort/brave/Brave Browser.app' \
     --memory-guard-registry Build/hn-repeat-pids.json \
     --home-archive Tests/Browser/Brave/hn-home-instructions \
-    --target-vox-fraction .9 --instruction-scope navigation \
+    --target-vox-fraction .9 --instruction-scope launch --repeat 7 \
     --diff-tool Build/hn-home-instructions-20261031/pixel_diff
 ```
