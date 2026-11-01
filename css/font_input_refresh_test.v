@@ -588,3 +588,143 @@ fn test_loaded_face_pending_ranges_and_pseudos_are_kept_in_completion_dependenci
 		font_input_assert_full_cascade_oracle(child, none)
 	}
 }
+
+fn font_display_weight_fixture() (&dom.Document, &dom.Element, &dom.Element, &dom.Element, &FontFaceObject, &FontFaceObject) {
+	mut document, root, subject, unrelated := font_input_fixture()
+	mut mutable_root := unsafe { &dom.Element(root) }
+	mutable_root.set_attribute_value('style', 'font-family:serif;font-size:20px;line-height:normal')
+	mut target := unsafe { &dom.Element(subject) }
+	target.set_attribute_value('style', 'font-family:FontInputFixture;font-weight:700;font-size:20px;width:120px')
+	mut regular := unsafe { &dom.Element(unrelated) }
+	regular.set_attribute_value('style', 'font-family:FontInputFixture;font-weight:400;font-size:20px;width:120px')
+	mut face400 := font_completion_pending_face(document, '400', 'U+0-10FFFF')
+	mut face700 := font_completion_pending_face(document, '700', 'U+0-10FFFF')
+	face400.set_font_display_time_for_testing(0)
+	face700.set_font_display_time_for_testing(0)
+	font_completion_finish(face400)
+	// Hold the other request pending without starting fixture-network I/O.
+	assert face700.begin_url_load()
+	document.update_style()
+	for element in [root, subject, unrelated] {
+		_ = resolve_computed_values_for_document(font_input_style(element, none), document)
+	}
+	return document, root, subject, unrelated, face400, face700
+}
+
+fn test_failed_font_face_expires_its_selected_cascade_and_preserves_other_weights() {
+	$if macos {
+		mut document, root, subject, unrelated, face400, face700 := font_display_weight_fixture()
+		before := font_input_style(unrelated, none).cached_computed_font_list()?
+		assert !before.depends_on_pending_face(face400)
+		assert !before.depends_on_pending_face(face700)
+		assert font_input_style(subject, none).cached_computed_font_list()?.depends_on_pending_face(face700)
+		mut failed := unsafe { &FontFaceObject(face700) }
+		assert failed.status() == .loading
+		failed.finish_loading_from_typeface(unsafe { nil })
+		assert failed.status() == .error
+		assert subject.has_pending_font_input_update()
+		assert !root.has_pending_font_input_update()
+		assert unrelated.has_pending_font_input_update() == disable_face_specific_font_display
+		document.update_style()
+		computer := css_style_computer_for(document).font_computer()
+		after := font_input_style(subject, none).computed_font_list(computer)
+		assert !after.depends_on_pending_face(face700)
+		assert !after.font_for_code_point_for_shaping(`A`).is_invisible
+		if !disable_face_specific_font_display {
+			assert voidptr(font_input_style(unrelated, none).computed_font_list(computer)) == voidptr(before)
+		}
+		for element in [root, subject, unrelated] { font_input_assert_full_cascade_oracle(element, none) }
+	}
+}
+
+fn test_font_display_swap_and_failure_refresh_visibility_without_expiring_other_weights() {
+	$if macos {
+		mut document, root, subject, unrelated, _, face700 := font_display_weight_fixture()
+		mut pending := unsafe { &FontFaceObject(face700) }
+		pending.set_display('fallback')!
+		document.update_style()
+		computer := css_style_computer_for(document).font_computer()
+		before := font_input_style(unrelated, none).computed_font_list(computer)
+		initial := font_input_style(subject, none).computed_font_list(computer)
+		assert initial.font_for_code_point_for_shaping(`A`).is_invisible
+		pending.set_font_display_time_for_testing(100)
+		assert subject.has_pending_font_input_update()
+		assert unrelated.has_pending_font_input_update() == disable_face_specific_font_display
+		document.update_style()
+		swap := font_input_style(subject, none).computed_font_list(computer)
+		assert swap.depends_on_pending_face(face700)
+		assert !swap.font_for_code_point_for_shaping(`A`).is_invisible
+		if !disable_face_specific_font_display {
+			assert voidptr(font_input_style(unrelated, none).computed_font_list(computer)) == voidptr(before)
+		}
+		pending.set_font_display_time_for_testing(3100)
+		assert subject.has_pending_font_input_update()
+		assert unrelated.has_pending_font_input_update() == disable_face_specific_font_display
+		document.update_style()
+		failed := font_input_style(subject, none).computed_font_list(computer)
+		assert !failed.depends_on_pending_face(face700)
+		assert !failed.font_for_code_point_for_shaping(`A`).is_invisible
+		for element in [root, subject, unrelated] { font_input_assert_full_cascade_oracle(element, none) }
+	}
+}
+
+fn test_unregistered_font_display_changes_keep_family_wide_invalidation() {
+	$if macos {
+		mut document, root, subject, unrelated, _, _ := font_display_weight_fixture()
+		mut computer := css_style_computer_for(document).font_computer()
+		unknown := FontFaceObject.construct_impl_for_font_computer(computer,
+			'FontInputFixture', FontFaceSource.from_string('url("unregistered.ttf")'),
+			FontFaceDescriptors{weight: '700'})
+		computer.invalidate_font_face_display(unknown)
+		assert subject.has_pending_font_input_update()
+		assert unrelated.has_pending_font_input_update()
+		assert !root.has_pending_font_input_update()
+		document.update_style()
+		for element in [root, subject, unrelated] {
+			actual := font_input_style(element, none)
+			expected := css_style_computer_for(document).compute_style(dom.AbstractElement.new(element, none))
+			for id in computed_interpolation_longhand_property_ids() {
+				assert actual.property(id, .no)?.css_text == expected.property(id, .no)?.css_text
+			}
+			left := actual.computed_font_list(computer)
+			right := expected.computed_font_list(computer)
+			assert left.fonts.len == right.fonts.len
+			for index, entry in left.fonts { assert platform_font_equals(entry.font, right.fonts[index].font) }
+			assert left.pending_faces.len == right.pending_faces.len
+			for index, pending in left.pending_faces {
+				assert voidptr(pending.font_face) == voidptr(right.pending_faces[index].font_face)
+				assert pending.font_index == right.pending_faces[index].font_index
+				assert pending.unicode_ranges == right.pending_faces[index].unicode_ranges
+			}
+		}
+	}
+}
+
+fn test_failed_font_face_preserves_root_metric_pseudo_and_shadow_invalidation() {
+	$if macos {
+		mut document, root, subject, unrelated := font_input_fixture()
+		mut target := unsafe { &dom.Element(unrelated) }
+		target.set_attribute_value('style', 'font-family:serif;font-size:20px;width:calc(2rch + 3px)')
+		mut host := unsafe { &dom.Element(subject) }
+		host.set_attribute_value('id', 'failed-font-host')
+		shadow := host.attach_shadow(dom.ShadowRootInit{mode: .open})!
+		mut child := document.create_element_ns(dom.namespace_html_uri, 'span')!
+		child.set_attribute_value('style', 'font-family:FontInputFixture;font-size:20px')
+		mut shadow_node := unsafe { &dom.Node(shadow) }
+		shadow_node.append_child(child.as_node())!
+		add_document_author_style_sheet(document, '#failed-font-host::before{content:"x";font-family:FontInputFixture;font-size:20px}')
+		mut face := font_completion_pending_face(document, '400', 'U+0-10FFFF')
+		face.set_font_display_time_for_testing(0)
+		document.update_style()
+		for element in [root, subject, unrelated, child] {
+			_ = resolve_computed_values_for_document(font_input_style(element, none), document)
+		}
+		_ = resolve_computed_values_for_document(font_input_style(subject, .before), document)
+		assert face.begin_url_load()
+		face.finish_loading_from_typeface(unsafe { nil })
+		for element in [root, subject, unrelated, child] { assert element.has_pending_font_input_update() }
+		document.update_style()
+		for element in [root, subject, unrelated, child] { font_input_assert_full_cascade_oracle(element, none) }
+		font_input_assert_full_cascade_oracle(subject, .before)
+	}
+}

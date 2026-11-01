@@ -15,6 +15,8 @@ import webidl
 
 const disable_face_specific_font_completion = os.getenv('VOX_DISABLE_FACE_SPECIFIC_FONT_COMPLETION') != ''
 const font_completion_diagnostics = os.getenv('VOX_FONT_COMPLETION_DIAGNOSTICS') != ''
+const disable_face_specific_font_display = os.getenv('VOX_DISABLE_FACE_SPECIFIC_FONT_DISPLAY') != ''
+const font_display_invalidation_diagnostics = os.getenv('VOX_FONT_DISPLAY_INVALIDATION_DIAGNOSTICS') != ''
 
 // This file ports Ladybird's LibWeb/CSS font-face, font-feature-values, and
 // font-computer logic. It uses the translated WebIDL promise, Fetch response,
@@ -2243,7 +2245,7 @@ fn (mut face FontFaceObject) resolve_for_rendering() PendingFontState {
 
 fn (mut face FontFaceObject) invalidate_font_display() {
 	if mut computer := face.font_computer() {
-		computer.did_load_font(face.family_)
+		computer.invalidate_font_face_display(face)
 	}
 }
 
@@ -4315,6 +4317,25 @@ fn (mut computer FontComputer) publish_loaded_font_face(face &FontFaceObject) {
 		computer.register_font_face(face)
 		return
 	}
+	computer.invalidate_selected_font_face_cascades(face, key.family_name, 'completion')
+}
+
+// Display-period changes and failed downloads change availability just as a
+// successful completion does. Other weights and stretches never selected this
+// pending face and keep their cascades. Unknown faces still use the family-wide
+// path, as do matching/descriptor changes through register_font_face.
+fn (mut computer FontComputer) invalidate_font_face_display(face &FontFaceObject) {
+	key := font_face_key_for_parsed_font_face(face.parsed_font_face())
+	faces := computer.font_faces[key.id()] or { []&FontFaceObject{} }
+	if disable_face_specific_font_display || !font_face_object_array_contains(faces, face) {
+		computer.did_load_font(face.family_)
+		return
+	}
+	computer.invalidate_selected_font_face_cascades(face, key.family_name, 'display invalidation')
+}
+
+fn (mut computer FontComputer) invalidate_selected_font_face_cascades(face &FontFaceObject,
+	family_name string, reason string) {
 	computer.environment_generation_++
 	mut affected := false
 	mut expired := []string{}
@@ -4325,8 +4346,9 @@ fn (mut computer FontComputer) publish_loaded_font_face(face &FontFaceObject) {
 		}
 	}
 	for cache_key in expired { computer.computed_font_cache.delete(cache_key) }
-	if font_completion_diagnostics {
-		eprintln('Vox font completion: family=${face.family_} weight=${face.weight_} expired=${expired.len} retained=${computer.computed_font_cache.len}')
+	if (reason == 'completion' && font_completion_diagnostics)
+		|| (reason == 'display invalidation' && font_display_invalidation_diagnostics) {
+		eprintln('Vox font ${reason}: family=${face.family_} weight=${face.weight_} expired=${expired.len} retained=${computer.computed_font_cache.len}')
 	}
 	if affected {
 		if document := computer.document_ {
@@ -4334,12 +4356,12 @@ fn (mut computer FontComputer) publish_loaded_font_face(face &FontFaceObject) {
 				if root := document.document_element() {
 					if bridge := root.el_computed_properties() {
 						if style := computed_properties_from_dom(bridge) {
-							eprintln('Vox font completion root: safe=${style.font_input_refresh_safe_} size_relative=${style.font_input_depends_on_font_size_} affected=${retained_style_needs_changed_font_inputs(bridge, key.family_name, face)}')
+								eprintln('Vox font completion root: safe=${style.font_input_refresh_safe_} size_relative=${style.font_input_depends_on_font_size_} affected=${retained_style_needs_changed_font_inputs(bridge, family_name, face)}')
 						}
 					}
 				}
 			}
-			mark_changed_font_inputs(document, key.family_name, face)
+			mark_changed_font_inputs(document, family_name, face)
 		}
 	}
 }
