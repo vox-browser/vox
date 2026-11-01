@@ -455,7 +455,7 @@ private:
         entry->has_background = has_background;
         entry->source = intern_source(source);
         entry->extra = extra.copy();
-        if (has_background) entry->background = VoxRasterSnapshot(backdrop.copy());
+        if (has_background) entry->background = VoxRasterSnapshot(backdrop.pixels, backdrop.bytes, backdrop.pitch, backdrop.height);
         request.pending = std::move(entry);
         return request;
     }
@@ -464,7 +464,7 @@ public:
     {
         if (!request.pending) return;
         auto& entry = *request.pending;
-        entry.output = VoxRasterSnapshot(Rows {pixels, size_t(entry.width) * 4, size_t(pitch), size_t(entry.height)}.copy());
+        entry.output = VoxRasterSnapshot(pixels, size_t(entry.width) * 4, size_t(pitch), size_t(entry.height));
         if (entry.source->size() > byte_limit
             || entry.bytes() > byte_limit - entry.source->size()) return;
         // A source may have lost its final retained entry while this request

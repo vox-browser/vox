@@ -158,6 +158,26 @@ int main()
         assert(snapshot.copy_to(decoded.data(), words * 4, words * 4, 1));
         assert(decoded == bytes);
     }
+    // Construct straight from caller rows. Both raw and packed paths own their
+    // bytes after return and never retain row padding or unaligned pointers.
+    for (bool packed : {false, true}) for (size_t width : {1, 7, 67, 257, 1024})
+    for (size_t padding : {0, 1, 7, 64}) for (size_t height : {1, 37}) {
+        size_t row_bytes = width * 4, pitch = row_bytes + padding;
+        std::vector<uint8_t> source(1 + pitch * height, 91), expected(row_bytes * height);
+        for (size_t i = 0; i < expected.size(); ++i)
+            expected[i] = packed ? uint8_t((i / 4096) % 2 ? 0xff : 0) : uint8_t(random());
+        for (size_t y = 0; y < height; ++y)
+            std::memcpy(source.data() + 1 + y * pitch, expected.data() + y * row_bytes, row_bytes);
+        auto old_input = expected;
+        VoxRasterSnapshot old(std::move(old_input));
+        VoxRasterSnapshot direct(source.data() + 1, row_bytes, pitch, height);
+        assert(direct.size() == old.size());
+        assert(direct.equal(source.data() + 1, row_bytes, pitch, height));
+        std::fill(source.begin(), source.end(), 13);
+        std::vector<uint8_t> actual(expected.size());
+        assert(direct.copy_to(actual.data(), row_bytes, row_bytes, height));
+        assert(actual == expected);
+    }
     VoxRasterSnapshot empty;
     assert(empty.equal(nullptr, 0, 0, 0));
     assert(empty.copy_to(nullptr, 0, 0, 0));

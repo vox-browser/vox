@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
 #include <utility>
 #include <vector>
@@ -50,7 +51,7 @@ private:
         if (words & 1) std::memcpy(bytes + pairs * 8, &value, 4);
     }
     template<typename Run, typename Literal>
-    static void encode(uint8_t const* bytes, size_t words, Run run, Literal literal)
+    static bool encode(uint8_t const* bytes, size_t words, Run run, Literal literal)
     {
         size_t at = 0;
         while (at < words) {
@@ -71,7 +72,7 @@ private:
 #endif
             while (end < words && word(bytes + end * 4) == value) ++end;
             if (end - at >= 3) {
-                run(end - at, value);
+                if (!run(end - at, value)) return false;
                 at = end;
                 continue;
             }
@@ -95,8 +96,9 @@ private:
                     && word(bytes + at * 4) == word(bytes + (at + 2) * 4)) break;
                 ++at;
             }
-            literal(bytes + start * 4, at - start);
+            if (!literal(bytes + start * 4, at - start)) return false;
         }
+        return true;
     }
     static bool equal_span(uint8_t const* first, uint8_t const* second,
         size_t bytes, size_t x, size_t y, Rect ignore)
@@ -165,28 +167,82 @@ public:
     explicit VoxRasterSnapshot(std::vector<uint8_t>&& bytes)
         : raw_(std::move(bytes)), logical_bytes_(raw_.size())
     {
-        // Small control rasters avoid codec overhead. Counts fit a 31-bit
-        // word length, including when this helper is used outside the cache.
-        if (raw_.size() < 4096 || raw_.size() % 4 || raw_.size() / 4 > 0x7fffffff) return;
-        size_t count = 0;
-        encode(raw_.data(), raw_.size() / 4,
-            [&](size_t, uint32_t) { count += 2; },
-            [&](uint8_t const*, size_t words) { count += words + 1; });
-        if (count * 4 >= raw_.size() - raw_.size() / 8) return;
-        packed_.resize(count);
-        size_t at = 0;
-        encode(raw_.data(), raw_.size() / 4,
-            [&](size_t words, uint32_t value) {
-                packed_[at++] = uint32_t(words * 2 + 1);
-                packed_[at++] = value;
-            },
-            [&](uint8_t const* bytes, size_t words) {
-                packed_[at++] = uint32_t(words * 2);
-                std::memcpy(packed_.data() + at, bytes, words * 4);
-                at += words;
-            });
-        std::vector<uint8_t>().swap(raw_);
+        if (pack(raw_.data(), raw_.size())) std::vector<uint8_t>().swap(raw_);
     }
+    // Cache misses usually have tightly packed rows already. Compress directly
+    // from those immutable input bytes, without allocating, clearing and copying
+    // a complete temporary bitmap first. Padded rows retain the general path.
+    VoxRasterSnapshot(uint8_t const* bytes, size_t row_bytes, size_t pitch, size_t height)
+    {
+        if (pitch < row_bytes || (height && row_bytes > SIZE_MAX / height)) return;
+        logical_bytes_ = row_bytes * height;
+        bool direct = (pitch == row_bytes || height == 1) && single_pass_enabled();
+        if (direct && pack(bytes, logical_bytes_)) return;
+        raw_.resize(logical_bytes_);
+        for (size_t y = 0; y < height; ++y)
+            std::memcpy(raw_.data() + y * row_bytes, bytes + y * pitch, row_bytes);
+        if (!direct) {
+            if (pack(raw_.data(), raw_.size())) std::vector<uint8_t>().swap(raw_);
+        }
+    }
+private:
+    static bool single_pass_enabled()
+    {
+        static bool enabled = !std::getenv("VOX_DISABLE_SINGLE_PASS_SNAPSHOTS");
+        return enabled;
+    }
+    bool pack(uint8_t const* bytes, size_t size)
+    {
+        // Counts fit a 31-bit word length. Small rasters avoid codec overhead.
+        if (size < 4096 || size % 4 || size / 4 > 0x7fffffff) return false;
+        if (!single_pass_enabled()) {
+            size_t count = 0;
+            encode(bytes, size / 4,
+                [&](size_t, uint32_t) { count += 2; return true; },
+                [&](uint8_t const*, size_t words) { count += words + 1; return true; });
+            if (count * 4 >= size - size / 8) return false;
+            packed_.resize(count);
+            size_t at = 0;
+            encode(bytes, size / 4,
+                [&](size_t words, uint32_t value) {
+                    packed_[at++] = uint32_t(words * 2 + 1);
+                    packed_[at++] = value;
+                    return true;
+                },
+                [&](uint8_t const* literal, size_t words) {
+                    packed_[at++] = uint32_t(words * 2);
+                    std::memcpy(packed_.data() + at, literal, words * 4);
+                    at += words;
+                    return true;
+                });
+            return true;
+        }
+        // A packet's cost never decreases. Stop as soon as this exact encoding
+        // cannot save one eighth, retaining the original raw bytes. Successful
+        // snapshots keep the same packets and byte budget as the old two scans.
+        size_t maximum = (size - size / 8 - 1) / 4;
+        packed_.reserve(std::min(maximum, size_t(1024)));
+        bool packed = encode(bytes, size / 4,
+            [&](size_t words, uint32_t value) {
+                if (maximum - packed_.size() < 2) return false;
+                packed_.push_back(uint32_t(words * 2 + 1));
+                packed_.push_back(value);
+                return true;
+            },
+            [&](uint8_t const* literal, size_t words) {
+                if (words >= maximum - packed_.size()) return false;
+                size_t at = packed_.size();
+                packed_.resize(at + words + 1);
+                packed_[at] = uint32_t(words * 2);
+                std::memcpy(packed_.data() + at + 1, literal, words * 4);
+                return true;
+            });
+        if (!packed) { std::vector<uint32_t>().swap(packed_); return false; }
+        // Charge only retained storage, including capacity, to cache budgets.
+        packed_.shrink_to_fit();
+        return true;
+    }
+public:
     size_t size() const { return raw_.size() + packed_.size() * 4; }
     bool equal(uint8_t const* pixels, size_t row_bytes, size_t pitch, size_t height) const
     {
