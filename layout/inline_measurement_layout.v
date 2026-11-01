@@ -6,11 +6,9 @@ import os
 import platform
 
 const disable_inline_measurement_reuse = os.getenv('VOX_DISABLE_INLINE_MEASUREMENT_REUSE') != ''
-const disable_nested_inline_measurement_reuse = os.getenv('VOX_DISABLE_NESTED_INLINE_MEASUREMENT_REUSE') != ''
 const inline_measurement_diagnostics = os.getenv('VOX_INLINE_MEASUREMENT_DIAGNOSTICS') != ''
 
 __global inline_measurement_reuse_reported bool
-__global nested_inline_measurement_reuse_reported bool
 
 struct InlineMeasurementKey {
 	mode LayoutMode
@@ -30,7 +28,6 @@ struct InlineMeasurementKey {
 struct InlineMeasurementLayout {
 	key InlineMeasurementKey
 	inputs []RetainedInlineInput
-	values []RetainedBlockValues
 	font_generation u64
 	font_policy dom.FontRenderingPolicy
 	style_environment u64
@@ -58,10 +55,8 @@ fn inline_measurement_root_is_closed(root &Node, context ?&BlockFormattingContex
 	if root.child_count() == 0 || !inline_layout_workspace_is_closed(root, true) {
 		return false
 	}
-	if disable_nested_inline_measurement_reuse {
-		for child in root.children() {
-			if !child.is_text_node() { return false }
-		}
+	for child in root.children() {
+		if !child.is_text_node() { return false }
 	}
 	if bfc := context {
 		if bfc.floating_boxes.len != 0 || bfc.has_line_clamp()
@@ -120,12 +115,6 @@ fn run_inline_formatting_context_for_width(mut state LayoutState, containing_blo
 			&& cached.style_environment == root.document().style_environment_version()
 			&& inline_measurement_inputs_are_current(cached.inputs) {
 			used.borrow_retained_line_boxes(cached.lines)
-			for index in 0 .. cached.values.len {
-				entry := unsafe { &cached.values[index] }
-				mut containing := ?&UsedValues(none)
-				if owner := entry.containing { containing = state.get(owner) }
-				_ = state.restore_retained_values(entry.node, &entry.values, containing)
-			}
 			if !width_only {
 				if position := cached.inline_end { used.set_inline_end_static_position_rect(position) }
 			}
@@ -135,11 +124,6 @@ fn run_inline_formatting_context_for_width(mut state LayoutState, containing_blo
 			if inline_measurement_diagnostics && !inline_measurement_reuse_reported {
 				inline_measurement_reuse_reported = true
 				eprintln('Vox inline measurement: reused closed text layout within pass')
-			}
-			if inline_measurement_diagnostics && cached.values.len > 0
-				&& !nested_inline_measurement_reuse_reported {
-				nested_inline_measurement_reuse_reported = true
-				eprintln('Vox inline measurement: restored nested inline geometry within pass')
 			}
 			return cached.result
 		}
@@ -161,25 +145,9 @@ fn run_inline_formatting_context_for_width(mut state LayoutState, containing_blo
 	for input in inputs {
 		owned_inputs << RetainedInlineInput{ ...input, text: input.text.clone() }
 	}
-	mut values := []RetainedBlockValues{}
-	for input in inputs[1..] {
-		styled := input.node.as_node_with_style() or { continue }
-		if source := state.try_get(styled) {
-			end := source.inline_end_static_position_rect()
-			append_retained_block_snapshot(mut values, styled, source)
-			mut snapshot := unsafe { &values[values.len - 1].values }
-			snapshot.line_boxes = own_inline_layout_lines(source.line_boxes)
-			// Measurement arenas also own scalar snapshot slots. Retain a value
-			// copy and rebind containing blocks in the consuming probe instead.
-			snapshot.inline_end_static_position_snapshot_ = unsafe { nil }
-			snapshot.inline_end_snapshot_arena_ = unsafe { nil }
-			if position := end { snapshot.set_inline_end_static_position_rect(position) }
-		}
-	}
 	cached := &InlineMeasurementLayout{
 		key: key
 		inputs: owned_inputs
-		values: values
 		font_generation: css.css_style_computer_for(root.document()).font_computer().environment_generation()
 		font_policy: root.document().font_rendering_policy()
 		style_environment: root.document().style_environment_version()
