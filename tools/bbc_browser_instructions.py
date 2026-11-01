@@ -171,6 +171,8 @@ def run_trial(engine, app, folder, args):
                 args.vox_environment['VOX_COPY_STATIONARY_RASTER_COMMANDS'] = '1'
             if getattr(args, 'control_disable_retained_flow_items', False):
                 args.vox_environment['VOX_DISABLE_RETAINED_FLOW_ITEMS'] = '1'
+            if getattr(args, 'control_disable_face_specific_font_display', False):
+                args.vox_environment['VOX_DISABLE_FACE_SPECIFIC_FONT_DISPLAY'] = '1'
         return browser.run_browser('vox' if engine == 'control' else engine, app, folder, args)
     finally:
         args.vox_environment = environment
@@ -203,6 +205,8 @@ def parse_args(argv=None):
                         help='Copy retained paint commands during raster eligibility checks in the pinned Vox control')
     parser.add_argument('--control-disable-retained-flow-items', action='store_true',
                         help='Rebuild unchanged grid/flex flow items in the pinned Vox control')
+    parser.add_argument('--control-disable-face-specific-font-display', action='store_true',
+                        help='Invalidate whole font families on display changes or failures in the pinned Vox control')
     parser.add_argument('--brave-app', type=Path, default=Path('/Applications/Brave Browser.app'))
     parser.add_argument('--diff-tool', type=Path, default=REPO / 'Build/hn-home-instructions-20261031/pixel_diff')
     parser.add_argument('--expected-vox', type=Path)
@@ -221,7 +225,8 @@ def parse_args(argv=None):
             args.control_disable_extended_longhand_reuse,
             args.control_disable_color_longhand_reuse,
             args.control_copy_stationary_raster_commands,
-            args.control_disable_retained_flow_items)) and not args.control_vox_app:
+            args.control_disable_retained_flow_items,
+            args.control_disable_face_specific_font_display)) and not args.control_vox_app:
         parser.error('Disabling the control optimization needs --control-vox-app')
     if not args.capture_reference and (args.repeat < 7 or not args.expected_vox or not args.expected_brave):
         parser.error('Acceptance needs seven pairs and both existing pixel references')
@@ -307,6 +312,7 @@ def main():
         control_disable_color_longhand_reuse=args.control_disable_color_longhand_reuse,
         control_copy_stationary_raster_commands=args.control_copy_stationary_raster_commands,
         control_disable_retained_flow_items=args.control_disable_retained_flow_items,
+        control_disable_face_specific_font_display=args.control_disable_face_specific_font_display,
         brave_post_readiness_expression=args.post_readiness_expression,
         readiness_correction='Await visible image decode before the original settlement; no engine credit',
         system=subprocess.check_output(['sw_vers'], text=True)))
