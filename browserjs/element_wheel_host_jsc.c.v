@@ -185,6 +185,7 @@ const element_wheel_host_bootstrap = r'(function(bind,type,setResolver,getHandle
  "use strict";
  const apply=Reflect.apply,define=Object.defineProperty,wrapped=new WeakSet(),has=WeakSet.prototype.has,add=WeakSet.prototype.add;
  const nativeAdd=EventTarget.prototype.addEventListener,nativeRemove=EventTarget.prototype.removeEventListener,nativeDispatch=EventTarget.prototype.dispatchEvent;
+ function nativeEvent(name){return name==="wheel"||name==="beforeinput"||name==="input"||name==="change"||name==="click"||name==="keydown"||name==="keyup"||name==="keypress"||name==="submit"||name==="reset"||name==="formdata"||name==="invalid";}
  define(globalThis,"__ladybirdElementWheelSetResolver",{value:setResolver,configurable:true});
  define(globalThis,"__ladybirdElementWheelBind",{value:function(o,key,tag,namespace){
   const exposesHandler=apply(bind,undefined,[o,key,tag,namespace]);
@@ -194,13 +195,13 @@ const element_wheel_host_bootstrap = r'(function(bind,type,setResolver,getHandle
   define(o,"addEventListener",{value:function addEventListener(name,callback){
    if(arguments.length<2)return apply(nativeAdd,this,arguments);
    const converted=apply(type,undefined,[this,name]);
-   if(converted==="wheel"||converted==="input"||converted==="change"||converted==="click"||converted==="keydown"||converted==="keyup"||converted==="keypress")return apply(nativeAdd,this,[converted,callback,arguments[2]]);
+   if(nativeEvent(converted))return apply(nativeAdd,this,[converted,callback,arguments[2]]);
    return apply(legacyAdd,this,[converted,callback,arguments[2]]);
   },writable:true,enumerable:true,configurable:true});
   define(o,"removeEventListener",{value:function removeEventListener(name,callback){
    if(arguments.length<2)return apply(nativeRemove,this,arguments);
    const converted=apply(type,undefined,[this,name]);
-   if(converted==="wheel"||converted==="input"||converted==="change"||converted==="click"||converted==="keydown"||converted==="keyup"||converted==="keypress")return apply(nativeRemove,this,[converted,callback,arguments[2]]);
+   if(nativeEvent(converted))return apply(nativeRemove,this,[converted,callback,arguments[2]]);
    return apply(legacyRemove,this,[converted,callback,arguments[2]]);
   },writable:true,enumerable:true,configurable:true});
   define(o,"dispatchEvent",{value:function dispatchEvent(event){

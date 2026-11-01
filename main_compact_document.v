@@ -174,12 +174,13 @@ function __compactDocumentWrapper(state){
 }
 Object.setPrototypeOf(document,HTMLDocument.prototype);
 const __compactDocumentLegacyAdd=document.addEventListener;
+function __compactDocumentNativeEvent(name){return name==="click"||name==="keydown"||name==="keyup"||name==="keypress"||name==="beforeinput"||name==="input"||name==="change"||name==="submit"||name==="reset"||name==="formdata"||name==="invalid";}
 document.addEventListener=function(name,callback,options){
- name=String(name);if(name==="click"||name==="keydown"||name==="keyup"||name==="keypress")return EventTarget.prototype.addEventListener.call(this,name,callback,options);
+ name=String(name);if(__compactDocumentNativeEvent(name))return EventTarget.prototype.addEventListener.call(this,name,callback,options);
  return __compactDocumentLegacyAdd.call(this,name,callback,options);
 };
 document.removeEventListener=function(name,callback,options){
- name=String(name);if(name==="click"||name==="keydown"||name==="keyup"||name==="keypress")return EventTarget.prototype.removeEventListener.call(this,name,callback,options);
+ name=String(name);if(__compactDocumentNativeEvent(name))return EventTarget.prototype.removeEventListener.call(this,name,callback,options);
  const key=__listenerKey(null,name);__listeners[key]=(__listeners[key]||[]).filter(listener=>listener!==callback);
 };
 __elementApply(__elementRecordSet,__compactDocuments,[document,{bridgeKey:"",nodeType:9}]);
