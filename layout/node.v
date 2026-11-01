@@ -1635,6 +1635,7 @@ pub mut:
 	max_content_width         ?CSSPixels
 	table_grid_width_measures ?&TableGridIntrinsicWidths
 mut:
+	font_generation_ u64
 	min_content_height_ &IntrinsicHeightCache = unsafe { nil }
 	max_content_height_ &IntrinsicHeightCache = unsafe { nil }
 }
@@ -1708,11 +1709,14 @@ pub fn (mut n Box) clear_contained_abspos_children() {
 }
 
 pub fn (mut n Box) cached_intrinsic_sizes() &IntrinsicSizes {
+	// A loaded face can replace fallback advances without changing this box's
+	// computed style or dirty bit. Width and height probes must use one font epoch.
+	generation := css.css_style_computer_for(n.document()).font_computer().environment_generation()
 	if cached := n.cached_intrinsic_sizes_ {
-		return cached
+		if cached.font_generation_ == generation { return cached }
 	}
 	persistent := platform.enter_persistent_if(platform.transient_arena_entered())
-	new_cache := &IntrinsicSizes{}
+	new_cache := &IntrinsicSizes{font_generation_: generation}
 	platform.leave_persistent(persistent)
 	n.cached_intrinsic_sizes_ = new_cache
 	return new_cache
