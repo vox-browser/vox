@@ -48,8 +48,8 @@ class FrozenResponseTests(unittest.TestCase):
 
 class InstructionGateTests(unittest.TestCase):
     def pair(self,vox,brave,exact=True):
-        return {'vox':dict(instructions=vox,pixels_exact=exact),
-                'brave':dict(instructions=brave,pixels_exact=True)}
+        return {'vox':dict(instructions=vox,pixels_exact=exact,exit=0),
+                'brave':dict(instructions=brave,pixels_exact=True,exit=0)}
 
     def test_requires_worst_vox_to_beat_best_brave_by_fifteen_percent(self):
         self.assertTrue(benchmark.evaluate_pairs([self.pair(80,100),self.pair(85,110)])['passed'])
@@ -60,6 +60,26 @@ class InstructionGateTests(unittest.TestCase):
     def test_failed_or_absent_pixel_equality_and_zero_counters_receive_no_credit(self):
         for pairs in [[],[self.pair(50,100,False)],[self.pair(0,100)]]:
             with self.assertRaises(ValueError):benchmark.evaluate_pairs(pairs)
+
+    def test_unknown_abnormal_and_non_integer_browser_exits_are_rejected(self):
+        for exit in [None, False, -11, 1]:
+            pair = self.pair(80, 100)
+            pair['brave']['exit'] = exit
+            with self.assertRaisesRegex(ValueError, 'successful exit'):
+                benchmark.evaluate_pairs([pair])
+        pair = self.pair(80, 100)
+        del pair['brave']['exit']
+        with self.assertRaisesRegex(ValueError, 'successful exit'):
+            benchmark.evaluate_pairs([pair])
+        for change in [dict(shutdown_forced=True), dict(valid=False)]:
+            pair = self.pair(80, 100)
+            pair['brave'].update(change)
+            with self.assertRaisesRegex(ValueError, 'successful exit'):
+                benchmark.evaluate_pairs([pair])
+
+    def test_large_counter_gate_keeps_a_one_instruction_failure(self):
+        self.assertTrue(benchmark.evaluate_pairs([self.pair(17 * 10**17, 20 * 10**17)])['passed'])
+        self.assertFalse(benchmark.evaluate_pairs([self.pair(17 * 10**17 + 1, 20 * 10**17)])['passed'])
 
     def test_child_environment_is_restored_even_after_failed_capture(self):
         original=dict(DYLD_INSERT_LIBRARIES='user-library',VOX_COOKIE_FILE='user-cookies',

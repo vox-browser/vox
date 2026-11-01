@@ -14,6 +14,7 @@ import os
 from pathlib import Path
 import statistics
 import sys
+from fractions import Fraction
 from types import SimpleNamespace
 
 import measure_browser_instructions as measurement
@@ -97,19 +98,28 @@ def native_environment(network_deny):
 
 
 def evaluate_pairs(pairs, required_reduction=.15):
-    if not pairs or any(not row['pixels_exact'] for pair in pairs for row in pair.values()):
+    if not pairs or any(set(pair) != {'vox', 'brave'} for pair in pairs):
+        raise ValueError('Every measured pair must include Vox and Brave')
+    if any(row.get('pixels_exact') is not True for pair in pairs for row in pair.values()):
         raise ValueError('Every measured browser capture must pass exact pixel equality')
+    if any(type(row.get('exit')) is not int or row['exit'] != 0
+           or row.get('shutdown_forced', False) is not False or row.get('valid', True) is not True
+           for pair in pairs for row in pair.values()):
+        raise ValueError('Every measured browser must have a recorded successful exit')
     vox = [p['vox']['instructions'] for p in pairs]
     brave = [p['brave']['instructions'] for p in pairs]
-    if min(vox + brave) <= 0:
+    if any(type(value) is not int or value <= 0 for value in vox + brave):
         raise ValueError('Instruction counters must be positive')
+    target = 1 - Fraction(str(required_reduction))
+    if not 0 < target <= 1:
+        raise ValueError('Required reduction must be in [0, 1)')
     ratios = [v / b for v, b in zip(vox, brave)]
     return dict(vox_median_instructions=statistics.median(vox),
                 brave_median_observed_instructions=statistics.median(brave),
                 median_paired_reduction=1 - statistics.median(ratios),
                 worst_vox_over_best_brave=max(vox) / min(brave),
                 required_reduction=required_reduction,
-                passed=max(vox) <= (1 - required_reduction) * min(brave))
+                passed=max(vox) * target.denominator <= target.numerator * min(brave))
 
 
 def main():

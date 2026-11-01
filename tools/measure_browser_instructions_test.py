@@ -36,6 +36,52 @@ class ProcessStopTests(unittest.TestCase):
         process.terminate.assert_called_once_with()
 
 
+class ChromeCaptureExitTests(unittest.TestCase):
+    def test_socket_eof_can_accompany_a_verified_clean_exit_after_capture(self):
+        client = Mock()
+        client.call.side_effect = EOFError()
+        process = Mock()
+        process.wait.return_value = 0
+        report = dict(instructions=123, endpoint='screenshot response')
+        measurement.finish_chrome_capture(client, process, report, Path('/unused/capture'))
+        self.assertEqual(report['exit'], 0)
+        self.assertFalse(report['shutdown_forced'])
+        self.assertEqual(report['instructions'], 123)
+        process.wait.assert_called_once_with(timeout=5)
+
+    def test_crash_retains_the_frozen_capture_counters_and_actual_exit(self):
+        with tempfile.TemporaryDirectory() as directory:
+            prefix = Path(directory) / 'capture'
+            process = Mock()
+            process.wait.return_value = -11
+            with self.assertRaisesRegex(RuntimeError, 'exit -11'):
+                measurement.finish_chrome_capture(Mock(), process, dict(instructions=123), prefix)
+            saved = json.loads(Path(str(prefix) + '.failure.json').read_text())
+            self.assertEqual(saved['exit'], -11)
+            self.assertEqual(saved['instructions'], 123)
+            self.assertFalse(saved['valid'])
+            self.assertFalse(saved['shutdown_forced'])
+
+    def test_timeout_forces_cleanup_and_never_overwrites_a_failure_receipt(self):
+        with tempfile.TemporaryDirectory() as directory:
+            prefix = Path(directory) / 'capture'
+            original = Path(str(prefix) + '.failure.json')
+            original.write_text('original failure')
+            process = Mock()
+            process.wait.side_effect = subprocess.TimeoutExpired('Brave', 5)
+            process.poll.return_value = -15
+            with patch.object(measurement, 'stop_process') as stop:
+                with self.assertRaisesRegex(RuntimeError, 'forced=True'):
+                    measurement.finish_chrome_capture(Mock(), process, dict(instructions=123), prefix)
+            stop.assert_called_once_with(process)
+            self.assertEqual(original.read_text(), 'original failure')
+            receipt = next(Path(directory).glob('capture.failure-*.json'))
+            saved = json.loads(receipt.read_text())
+            self.assertEqual(saved['instructions'], 123)
+            self.assertEqual(saved['exit'], -15)
+            self.assertTrue(saved['shutdown_forced'])
+
+
 class ChromeDebuggerStartupTests(unittest.TestCase):
     def counter(self, exited=False):
         counter = Mock(root_identity=(1, 100))
@@ -188,9 +234,9 @@ class ChromeDirectLaunchTests(unittest.TestCase):
         self.assertEqual(result.returncode, 2)
         self.assertIn('positive --chrome-outer-window-height', result.stderr)
 
-    def test_full_direct_capture_never_navigates_or_resizes_and_audits_after_boundary(self):
+    def assert_full_capture(self, direct):
         with tempfile.TemporaryDirectory() as directory:
-            args = self.args(directory)
+            args = self.args(directory, direct=direct)
             state = dict(ready='complete', textLength=2022, sprites=21,
                          width=1024, height=768, scale=1)
             methods = []
@@ -208,6 +254,7 @@ class ChromeDirectLaunchTests(unittest.TestCase):
                     return {'product': 'test Chrome'}
             client = Client()
             process = Mock(pid=1)
+            process.wait.return_value = 0
             def launch(command, **kwargs):
                 profile = Path(next(part.split('=', 1)[1] for part in command
                                     if part.startswith('--user-data-dir=')))
@@ -223,7 +270,8 @@ class ChromeDirectLaunchTests(unittest.TestCase):
             counter = Mock(root_identity=(1, 100))
             counter.sample.return_value = {(1, 100): Reading(1, 100, False, 100, 200)}
             counter.snapshot_before.return_value = SimpleNamespace(sampled_at=0)
-            counter.report.return_value = {'instructions': 100}
+            counter.report.side_effect = lambda baseline=None, **kwargs: {
+                'instructions': 300 if baseline is not None else 1000}
             sampler = Mock()
             sampler.__enter__ = Mock()
             sampler.__exit__ = Mock(return_value=False)
@@ -234,15 +282,29 @@ class ChromeDirectLaunchTests(unittest.TestCase):
                     patch.object(measurement.urllib.request, 'build_opener', return_value=opener), \
                     patch.object(measurement, 'stop_process'):
                 result = measurement.run_chrome(args, Path(directory) / 'capture', None)
-            for forbidden in ['Page.navigate', 'Emulation.setDeviceMetricsOverride',
-                              'Page.enable', 'Runtime.enable']:
-                self.assertNotIn(forbidden, methods)
-            self.assertGreater(methods.index('Browser.getVersion'), methods.index('Page.captureScreenshot'))
-            self.assertEqual(result['chrome_launch_mode'], 'direct')
-            self.assertNotIn('navigation_to_screenshot', result)
-            self.assertNotIn('navigation_to_capture_observed_ms', result)
+            if direct:
+                for forbidden in ['Page.navigate', 'Emulation.setDeviceMetricsOverride',
+                                  'Page.enable', 'Runtime.enable']:
+                    self.assertNotIn(forbidden, methods)
+                self.assertGreater(methods.index('Browser.getVersion'), methods.index('Page.captureScreenshot'))
+                self.assertNotIn('navigation_to_screenshot', result)
+                self.assertNotIn('navigation_to_capture_observed_ms', result)
+                counter.report.assert_called_once_with(snapshot=counter.snapshot_before.return_value)
+            else:
+                self.assertIn('Page.navigate', methods)
+                self.assertEqual(result['navigation_to_screenshot']['instructions'], 300)
+                self.assertEqual(counter.report.call_count, 2)
+            self.assertEqual(result['instructions'], 1000, 'Primary counts must include startup')
+            self.assertEqual(result['exit'], 0)
+            self.assertFalse(result['shutdown_forced'])
+            self.assertEqual(result['chrome_launch_mode'], 'direct' if direct else 'blank')
             self.assertEqual(Path(result['screenshot']).read_bytes(), b'PNG payload')
-            counter.report.assert_called_once_with(snapshot=counter.snapshot_before.return_value)
+
+    def test_full_direct_capture_never_navigates_or_resizes_and_audits_after_boundary(self):
+        self.assert_full_capture(direct=True)
+
+    def test_blank_capture_keeps_startup_in_primary_totals_and_navigation_separate(self):
+        self.assert_full_capture(direct=False)
 
 
 class VoxLaunchArgumentTests(unittest.TestCase):

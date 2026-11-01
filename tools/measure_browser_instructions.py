@@ -244,6 +244,34 @@ def stop_process(process):
             process.wait()
 
 
+def finish_chrome_capture(client, process, report, prefix, timeout=5):
+    """Verify shutdown after freezing counters at the screenshot response.
+
+    Closing the CDP socket can race a successful Browser.close. Wait for the
+    actual child instead of immediately signalling it or assuming exit zero.
+    Preserve the captured counters if a crash or forced cleanup invalidates it.
+    """
+    try:
+        client.call("Browser.close")
+    except (EOFError, OSError):
+        pass
+    report["shutdown_forced"] = False
+    try:
+        report["exit"] = process.wait(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        report["shutdown_forced"] = True
+        stop_process(process)
+        report["exit"] = process.poll()
+    if type(report["exit"]) is not int or report["exit"] != 0 or report["shutdown_forced"]:
+        failure = Path(str(prefix) + ".failure.json")
+        if failure.exists():
+            failure = Path(str(prefix) + f".failure-{time.time_ns()}.json")
+        with failure.open("x") as destination:
+            destination.write(json.dumps(dict(report, valid=False), indent=2) + "\n")
+        raise RuntimeError(f"Chrome capture shutdown failed (exit {report['exit']}, "
+                           f"forced={report['shutdown_forced']}); retained counters in {failure}")
+
+
 def crop_document_viewport(window, screenshot, width, height):
     # Match capture_screenshot.sh: 56px toolbar (diagnostics hidden), 24px status bar, Retina scale.
     header = window.read_bytes()[:24]
@@ -560,10 +588,7 @@ def run_chrome(args, prefix, api, client_factory=None):
                     if navigation_report is not None:
                         report["navigation_to_screenshot"] = navigation_report
                         report["navigation_to_capture_observed_ms"] = (endpoint_at - navigation_at) * 1000
-                    try:
-                        client.call("Browser.close")
-                    except (EOFError, OSError):
-                        pass
+                    finish_chrome_capture(client, process, report, prefix)
             finally:
                 if client:
                     client.sock.close()

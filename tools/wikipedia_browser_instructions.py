@@ -120,6 +120,9 @@ def run_engine(args, engine, prefix, api):
 
 
 def validate_report(report, args, engine):
+    if (type(report.get('exit')) is not int or report['exit'] != 0
+            or report.get('shutdown_forced', False) is not False or report.get('valid', True) is not True):
+        raise RuntimeError('Browser successful exit is missing or nonzero')
     if report['unreadable_pids'] or report['instructions'] <= 0:
         raise RuntimeError('Unreadable or nonpositive browser process counters')
     if args.archive:

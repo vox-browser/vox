@@ -19,7 +19,7 @@ class WikipediaInstructionTests(unittest.TestCase):
         return SimpleNamespace(**values)
 
     def report(self, root, **extra):
-        values = dict(instructions=80, unreadable_pids={}, root_final_exit_sample=True,
+        values = dict(instructions=80, exit=0, unreadable_pids={}, root_final_exit_sample=True,
                       screenshot=str(root/'capture.png'), document_audit=dict(
                           url=benchmark.URL, title='Wikipedia', ready='complete',
                           fully_active=True, viewport_width=1024, viewport_height=768,
@@ -69,6 +69,10 @@ class WikipediaInstructionTests(unittest.TestCase):
                     benchmark.validate_report(report, args, engine)
             for changes in (dict(instructions=0), dict(unreadable_pids={123: 1})):
                 with self.assertRaises(RuntimeError):
+                    benchmark.validate_report(self.report(root, **changes), args, engine)
+            for changes in (dict(exit=None), dict(exit=-11), dict(exit=False),
+                            dict(shutdown_forced=True), dict(valid=False)):
+                with self.assertRaisesRegex(RuntimeError, 'exit'):
                     benchmark.validate_report(self.report(root, **changes), args, engine)
         with self.assertRaisesRegex(RuntimeError, 'final root'):
             benchmark.validate_report(self.report(root, root_final_exit_sample=False), args, 'vox')
