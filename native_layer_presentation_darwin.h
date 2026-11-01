@@ -183,6 +183,27 @@ static BOOL native_layer_is_browser_view(NSView *view) {
     return browser && [view isKindOfClass:browser];
 }
 
+// UI2/AppKit controls invalidate themselves when their model changes. A
+// document-frame wake only needs the native canvas and its Sokol host tick.
+// Preserve independently dirty sibling views without redrawing every control.
+static NSUInteger native_layer_invalidate_canvases(NSView *view) {
+    if (!view) return 0;
+    NSUInteger count = 0;
+    if (native_layer_is_browser_view(view)) {
+        view.needsDisplay = YES;
+        view.superview.needsDisplay = YES;
+        count++;
+    }
+    for (NSView *child in view.subviews) count += native_layer_invalidate_canvases(child);
+    return count;
+}
+
+static NSUInteger native_layer_request_canvas_frames(NSView *root) {
+    NSUInteger count = native_layer_invalidate_canvases(root);
+    if (!count) root.needsDisplay = YES;
+    return count;
+}
+
 static BOOL native_layer_has_browser_child(NSView *view) {
     for (NSView *child in view.subviews) {
         if (native_layer_is_browser_view(child) || native_layer_has_browser_child(child))

@@ -503,16 +503,26 @@ static void native_mark_browser_redraw(void) {
 			window = [NSApp keyWindow];
 		}
 	}
-	NSMutableArray<NSView *> *views = [NSMutableArray array];
-	if ([window contentView] != nil) {
-		[views addObject:[window contentView]];
+	static int redraw_all = -1;
+	if (redraw_all < 0) {
+		const char *value = getenv("VOX_REDRAW_ALL_NATIVE_VIEWS");
+		redraw_all = value && *value;
 	}
-	while ([views count] > 0) {
-		NSView *view = [views lastObject];
-		[views removeLastObject];
-		[view setNeedsDisplay:YES];
-		[views addObjectsFromArray:[view subviews]];
+	NSUInteger count = 0;
+	if (redraw_all) {
+		NSMutableArray<NSView *> *views = [NSMutableArray array];
+		if (window.contentView) [views addObject:window.contentView];
+		while (views.count) {
+			NSView *view = views.lastObject; [views removeLastObject];
+			view.needsDisplay = YES; count++;
+			[views addObjectsFromArray:view.subviews];
+		}
+	} else {
+		count = native_layer_request_canvas_frames(window.contentView);
 	}
+	const char *diagnostics = getenv("VOX_REDRAW_SCOPE_DIAGNOSTICS");
+	if (diagnostics && *diagnostics)
+		fprintf(stderr, "VOX_REDRAW_SCOPE all=%d count=%lu\n", redraw_all, (unsigned long)count);
 	NSEvent *event = [NSEvent otherEventWithType:NSEventTypeApplicationDefined
 	                                location:NSZeroPoint
 	                           modifierFlags:0
