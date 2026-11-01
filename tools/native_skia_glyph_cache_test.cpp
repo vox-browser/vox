@@ -153,6 +153,47 @@ int main()
     std::swap(versions, cache);
     assert(cache.prepare(shared_key, 4, 4, nullptr, 0).image);
     versions.clear(); cache.clear();
+    // Lossless flat backdrops retain a working set whose raw input/output
+    // pair exceeds 64 MiB. The unchanged budget still evicts larger sets.
+    GlyphRasterCache working_set;
+    std::vector<uint8_t> background(512 * 32 * 4, 255);
+    auto run_key = [](int index) { return std::vector<uint8_t>{23, uint8_t(index), uint8_t(index >> 8)}; };
+    for (int index = 0; index < 1200; ++index) {
+        if (index == 600) for (int previous = 0; previous < 600; ++previous)
+            assert(working_set.prepare(run_key(previous), 512, 32, background.data(), 512 * 4).image);
+        auto pending = working_set.prepare(run_key(index), 512, 32, background.data(), 512 * 4);
+        assert(pending.pending && !pending.image);
+        auto output = create_pixel_image(context, std::vector<uint32_t>(512 * 32, 0xff4d3721), 512, 32);
+        assert(output);
+        working_set.finish(std::move(pending), output);
+        CGImageRelease(output);
+    }
+    assert(!working_set.prepare(run_key(0), 512, 32, background.data(), 512 * 4).image);
+    assert(working_set.prepare(run_key(1199), 512, 32, background.data(), 512 * 4).image);
+    working_set.clear();
+    // Exercise compressed and raw backgrounds across padded rows. Neither a
+    // changed pixel nor a change between absent/present input can be a hit.
+    for (bool noisy : {false, true}) {
+        int width = 64, height = 32, pitch = width * 4 + 20;
+        std::vector<uint8_t> input(pitch * height, 255);
+        if (noisy) for (size_t i = 0; i < input.size(); ++i) input[i] = uint8_t(i * 37 + i / 13);
+        auto saved = input;
+        GlyphRasterCache rows(32 * 1024);
+        auto output = create_pixel_image(context, std::vector<uint32_t>(width * height, 0xff4d3721), width, height);
+        auto pending = rows.prepare(key, width, height, input.data(), pitch);
+        assert(pending.pending && !pending.image);
+        rows.finish(std::move(pending), output);
+        assert(rows.prepare(key, width, height, input.data(), pitch).image);
+        for (int y : {0, height / 2, height - 1}) for (int x : {0, width * 2, width * 4 - 1}) {
+            input[y * pitch + x] ^= 1;
+            assert(!rows.prepare(key, width, height, input.data(), pitch).image);
+            input = saved;
+        }
+        for (int y = 0; y < height; ++y) input[y * pitch + width * 4] ^= 1;
+        assert(rows.prepare(key, width, height, input.data(), pitch).image);
+        assert(!rows.prepare(key, width, height, nullptr, 0).image);
+        CGImageRelease(output);
+    }
     ladybird_v_skia_release_unused_graphics_memory();
     CGImageRelease(image); CGContextRelease(context);
     std::cout << "Native glyph cache: " << comparisons << " exact replay comparisons passed\n";

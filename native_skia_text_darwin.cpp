@@ -4,6 +4,7 @@
 
 #include "native_allocator_policy_darwin.h"
 #include "native_raster_buffer_pool.h"
+#include "native_raster_snapshot.h"
 #include <CoreGraphics/CoreGraphics.h>
 #include <dlfcn.h>
 #include <chrono>
@@ -482,7 +483,8 @@ class GlyphRasterCache {
         uint64_t hash;
         int width, height;
         std::vector<uint8_t> key;
-        std::vector<uint8_t> background;
+        VoxRasterSnapshot background;
+        bool has_background = false;
         CGImageRef image {nullptr};
         size_t cost;
         ~Entry() { if (image) CGImageRelease(image); }
@@ -524,12 +526,8 @@ public:
             auto it = candidate->second;
             auto const& entry = **it;
             if (entry.hash != hash || entry.key != key || entry.width != width || entry.height != height
-                || entry.background.size() != (background ? pixel_bytes : 0)) continue;
-            bool equal = true;
-            if (background) for (int y = 0; equal && y < height; ++y)
-                equal = !std::memcmp(entry.background.data() + size_t(y) * row_bytes,
-                    background + size_t(y) * pitch, row_bytes);
-            if (!equal) continue;
+                || entry.has_background != (background != nullptr)
+                || (background && !entry.background.equal(background, row_bytes, pitch, height))) continue;
 #ifdef VOX_GLYPH_CACHE_DIAGNOSTICS
             ++hits;
 #endif
@@ -539,13 +537,18 @@ public:
         }
         auto entry = std::make_unique<Entry>();
         entry->hash = hash; entry->width = width; entry->height = height;
-        entry->key = std::move(key); entry->cost = cost;
+        entry->key = std::move(key);
+        entry->has_background = background != nullptr;
         if (background) {
-            entry->background.resize(pixel_bytes);
+            std::vector<uint8_t> copy(pixel_bytes);
             for (int y = 0; y < height; ++y)
-                std::memcpy(entry->background.data() + size_t(y) * row_bytes,
+                std::memcpy(copy.data() + size_t(y) * row_bytes,
                     background + size_t(y) * pitch, row_bytes);
+            // Flat page backgrounds need very little owned storage. Compare
+            // the lossless rows in place on hits; noisy rows remain raw.
+            entry->background = VoxRasterSnapshot(std::move(copy));
         }
+        entry->cost = entry->key.size() + pixel_bytes + entry->background.size();
         return {nullptr, std::move(entry)};
     }
     void finish(Request&& request, CGImageRef image)
