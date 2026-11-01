@@ -180,6 +180,8 @@ def parse_args(argv=None):
     control = p.add_mutually_exclusive_group()
     control.add_argument('--control-static-media', action='store_true',
                    help='Alternate the same Vox binary with static-media raster reuse disabled')
+    control.add_argument('--control-lazy-image-batches', action='store_true',
+                   help='Alternate the same Vox binary with per-completion lazy-image geometry checks')
     control.add_argument('--control-lazy-images', action='store_true',
                    help='Alternate the same Vox binary with negative lazy-image probes uncached')
     control.add_argument('--control-font-completion', action='store_true',
@@ -217,6 +219,7 @@ def control_environment(args):
     if args.control_vox_app:
         return {}
     for option, variable in (
+        ('control_lazy_image_batches', 'VOX_DISABLE_LAZY_IMAGE_BATCHES'),
         ('control_geometry_snapshot_keys', 'VOX_DISABLE_GEOMETRY_SNAPSHOT_KEYS'),
         ('control_live_font_cascades', 'VOX_DISABLE_LIVE_FONT_CASCADE_REUSE'),
         ('control_hidden_animations', 'VOX_DISABLE_HIDDEN_ANIMATION_THROTTLING'),
