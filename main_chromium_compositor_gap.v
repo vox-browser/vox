@@ -64,6 +64,7 @@ fn chromium_compositor_gap_can_flush_parent(commands []layout.PaintCommand,
 	for value in [viewport.x, viewport.y, viewport.width, viewport.height] {
 		if math.is_nan(value) || math.is_inf(value, 0) { return false }
 	}
+	if chromium_opaque_compositor_mask_gap(commands, plan, parent, start, end) { return true }
 	mut before := layout.LayoutRect{}
 	mut after := layout.LayoutRect{}
 	mut before_ink := []layout.LayoutRect{}

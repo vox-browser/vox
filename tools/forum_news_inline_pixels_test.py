@@ -48,6 +48,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_cnn_repeated_svg_background_keeps_the_header_in_one_picture(self):
         self.compare_fixture('cnn-repeated-svg-background-header', width=1024, height=768)
 
+    def test_cnn_opaque_header_keeps_its_mask_in_paint_order(self):
+        self.compare_fixture('cnn-opaque-header-mask', width=1024, height=768)
+
     def test_screen_blending_preserves_floating_point_group_opacity(self):
         self.compare_fixture('screen-opacity-composite')
 

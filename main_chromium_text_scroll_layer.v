@@ -37,7 +37,7 @@ fn chromium_text_scroll_layer_supported(commands []layout.PaintCommand,
 	return true
 }
 
-fn (mut app BrowserApp) begin_chromium_text_scroll_layer(index int) bool {
+fn (mut app BrowserApp) begin_chromium_text_scroll_layer(index int, command_index int) bool {
 	$if macos {
 		if !app.ctx.native_rendering || app.page_zoom != 1 || app.document == unsafe { nil }
 			|| app.document.font_rendering_policy() != .chromium
@@ -47,9 +47,11 @@ fn (mut app BrowserApp) begin_chromium_text_scroll_layer(index int) bool {
 					layout.LayoutRect{0, app.scroll_y, app.viewport_width, app.viewport_height})) {
 			return false
 		}
-		// Install a transparent destination before enabling picture recording;
-		// an ordinary full-opacity CSS picture can use the parent's backdrop.
-		C.native_set_chromium_layer_shared_recording(0)
+		// New slices start transparent. An opaque continuation can instead
+		// retain the native parent's prefix in its GPU picture.
+		resume := chromium_compositor_opaque_mask_resume(app.paint_commands,
+			app.chromium_raster_plan,index,command_index)
+		C.native_set_chromium_layer_shared_recording(i32(resume))
 		C.native_begin_css_effect_layer(1, 0)
 		C.native_set_chromium_layer_shared_recording(1)
 		background := app.chromium_raster_plan.layers[index].scroll_background_command

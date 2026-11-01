@@ -256,3 +256,27 @@ fn test_viewport_culling_keeps_unsized_generated_images_until_they_can_request_t
 	}
 	assert pending == 1
 }
+
+fn test_atomic_mask_does_not_split_its_opaque_sticky_parent_raster() {
+	mut document := html.parse_document('<!doctype html><style>body{margin:0}header{position:sticky;top:0;background:white;height:40px}header i{position:absolute;left:100px;top:10px;width:16px;height:16px;background:black;mask-image:url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'16\' height=\'16\'%3E%3Ccircle cx=\'8\' cy=\'8\' r=\'8\'/%3E%3C/svg%3E")}header span{position:absolute;right:20px;top:5px;width:70px;height:30px;background:white}.scroll{height:30px;overflow:auto}.scroll div{width:2000px}</style><header><i></i><span></span></header><div class="scroll"><div>news</div></div><div style="height:6000px"></div>')
+	defer { document.finalize() }
+	document.set_font_rendering_policy(.chromium)
+	_ = layout_document_typed_in_viewport(document, 1024, 768)
+	commands := display_list_commands(document.record_display_list() or { panic('paint') })
+	mut plan := ChromiumRasterLayerPlan{}
+	update_chromium_raster_layer_plan_for_viewport(document, commands, 1,
+		LayoutRect{0,0,1024,768}, mut plan)
+	assert plan.has_paint_metadata
+	mut header := -1
+	mut resumed := -1
+	mut masks := 0
+	for index, command in commands {
+		if command.kind == 'begin_svg_mask_layer' { masks++ }
+		if command.kind == 'fill_rect' {
+			if command.width == 1024 && command.height == 40 { header = plan.command_layers[index] }
+			if command.width == 70 && command.height == 30 { resumed = plan.command_layers[index] }
+		}
+	}
+	assert masks == 1, 'mask count=${masks}'
+	assert header > 0 && resumed == header, 'parent=${header}, resumed=${resumed}'
+}

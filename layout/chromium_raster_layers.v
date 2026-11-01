@@ -44,6 +44,7 @@ mut:
 	sticky_frame         int
 	effect_scope         u64
 	legacy_effect        bool
+	atomic_mask          bool
 	fixed_to_viewport    bool
 	requires_root_raster bool
 	scrollbar            bool
@@ -190,7 +191,8 @@ fn chromium_layerize_chunks_into(chunks []ChromiumRasterChunk, count int, device
 			// that later content can be reordered behind it during scrolling.
 			sticky_overlap := states[index].sticky_frame != chunk.state.sticky_frame
 				&& (plan.layers[index].unbounded_sticky_overlap || chunk.unbounded_sticky_overlap)
-			if sticky_overlap || chromium_layer_bounds_overlap(plan.layers[index].bounds, chunk.bounds) {
+			if !states[index].atomic_mask
+				&& (sticky_overlap || chromium_layer_bounds_overlap(plan.layers[index].bounds, chunk.bounds)) {
 				separated_by_overlap = true
 				break
 			}
@@ -603,6 +605,10 @@ fn update_chromium_raster_layer_plan_with_cull(document &dom.Document, commands 
 				state = scratch.properties[context]
 				state.effect_scope = effect_scope
 				state.legacy_effect = legacy_effect
+				// Captured SVG masks replay at this exact point in their parent
+				// raster. They are not compositor overlap barriers for that
+				// parent's subsequent metadata or decoration commands.
+				state.atomic_mask = legacy_effect && commands[first].kind == 'begin_svg_mask_layer'
 				state.fixed_to_viewport = command.fixed_to_viewport
 				// Scrollbars retain their own raster identity; appending one
 				// must not turn preceding overlap text into a mixed paint run.

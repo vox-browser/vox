@@ -18,6 +18,7 @@ struct SharedRootRecording {
     std::vector<SkRect> blocked_bounds;
     std::vector<uint32_t> backdrop;
     int backdrop_width = 0;
+    bool opaque_backdrop_recorded = false;
 };
 std::unique_ptr<SharedRootRecording> s_shared_root_recording;
 bool s_shared_root_enabled = false;
@@ -91,7 +92,30 @@ SkCanvas* shared_recording_canvas(CGContextRef destination)
             }
         }
         group->recorder = std::make_unique<SkPictureRecorder>();
-        group->recorder->beginRecording(SkRect::MakeWH(width, height));
+        auto* canvas = group->recorder->beginRecording(SkRect::MakeWH(width, height));
+        if (s_shared_layer_backdrop && !group->backdrop.empty()) {
+            auto const* bytes = reinterpret_cast<uint8_t const*>(group->backdrop.data());
+            bool opaque = true;
+            for (size_t i = 3; i < group->backdrop.size() * 4; i += 4)
+                if (bytes[i] != 255) { opaque = false; break; }
+            if (opaque) {
+                auto info = SkImageInfo::Make(group->backdrop_width,
+                    int(group->backdrop.size() / group->backdrop_width),
+                    kBGRA_8888_SkColorType, kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
+                auto image = SkImages::RasterFromPixmapCopy(SkPixmap(info, bytes, group->backdrop_width * 4));
+                if (image) {
+                    // Resume over the actual opaque prefix in the GPU picture.
+                    // Post-blending a transparent picture quantizes its curved
+                    // edges before they meet that prefix.
+                    canvas->save();
+                    canvas->scale(1 / group->scale, 1 / group->scale);
+                    canvas->drawImage(image, 0, 0);
+                    canvas->restore();
+                    group->opaque_backdrop_recorded = true;
+                    group->backdrop.clear();
+                }
+            }
+        }
         s_shared_root_recording = std::move(group);
     }
     return s_shared_root_recording->destination == destination
@@ -314,9 +338,9 @@ void finish_shared_recording()
         if (!bounds.intersect(SkRect::MakeWH(group->canvas_width, group->canvas_height))) return;
         // Retain the local raster phase when no leading overflow needs extra
         // pixels; rounding every origin also shifts existing fractional SVGs.
-        if (bounds.left() != left || !group->backdrop.empty())
+        if (bounds.left() != left || !group->backdrop.empty() || group->opaque_backdrop_recorded)
             left = std::floor(bounds.left() * group->scale) / group->scale;
-        if (bounds.top() != top || !group->backdrop.empty())
+        if (bounds.top() != top || !group->backdrop.empty() || group->opaque_backdrop_recorded)
             top = std::floor(bounds.top() * group->scale) / group->scale;
         int width = std::ceil((bounds.right() - left) * group->scale);
         int height = std::ceil((bounds.bottom() - top) * group->scale);
@@ -530,5 +554,74 @@ extern "C" void ladybird_v_skia_record_rect(CGContextRef destination, float x,
     shared_recording_clip(destination, canvas);
     canvas->drawRect(SkRect::MakeXYWH(x,
         s_shared_root_recording->canvas_height - y - height, width, height), paint);
+    canvas->restore();
+}
+
+extern "C" void ladybird_v_skia_record_caret(CGContextRef destination, float x,
+    float y, float width, float height, uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha)
+{
+    auto fallback = [&] {
+        ladybird_v_skia_record_rect(destination, x, y, width, height, red, green, blue, alpha);
+    };
+    auto* canvas = shared_recording_canvas(destination);
+    if (!canvas) return;
+    auto* group = s_shared_root_recording.get();
+    // Only a complete compositor picture can replace the ordinary leaf draw.
+    if (!group || group->root || !(group->scale > 0) || !std::isfinite(x)
+        || !std::isfinite(y) || !std::isfinite(width) || !std::isfinite(height)) {
+        fallback();
+        return;
+    }
+    float scale = group->scale;
+    float top = group->canvas_height - y - height;
+    float pixel_width = width * scale, pixel_height = height * scale;
+    if (!(pixel_width > 0 && pixel_width <= 64 && pixel_height > 0 && pixel_height <= 4096)
+        || std::abs(pixel_width - std::round(pixel_width)) > .001f
+        || std::abs(pixel_height - std::round(pixel_height)) > .001f
+        || std::abs(x * scale - std::round(x * scale)) > .001f) {
+        fallback();
+        return;
+    }
+    auto clips = s_shared_clips.find(destination);
+    if (clips != s_shared_clips.end() && clips->second.unsupported) {
+        fallback();
+        return;
+    }
+    int raster_width = std::lround(pixel_width), raster_height = std::lround(pixel_height);
+    // A solid caret layer is rasterized before its fractional translation.
+    // Transparent end rows retain linear sampling at both caps; painting an
+    // antialiased vector in the surrounding MSAA picture adds side coverage.
+    std::vector<uint32_t> pixels(size_t(raster_width) * (raster_height + 2), 0);
+    std::fill(pixels.begin() + raster_width, pixels.end() - raster_width,
+        SkPreMultiplyColor(SkColorSetARGB(alpha, red, green, blue)));
+    auto info = SkImageInfo::Make(raster_width, raster_height + 2, kBGRA_8888_SkColorType,
+        kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
+    auto image = SkImages::RasterFromPixmapCopy(SkPixmap(info, pixels.data(), size_t(raster_width) * 4));
+    if (!image) { fallback(); return; }
+    auto local = SkMatrix::MakeAll(1 / scale, 0, x, 0, 1 / scale, top - 1 / scale, 0, 0, 1);
+    SkPaint paint;
+    paint.setShader(image->makeShader(SkTileMode::kClamp, SkTileMode::kClamp,
+        SkSamplingOptions(SkFilterMode::kLinear), &local));
+    canvas->save();
+    canvas->resetMatrix();
+    if (clips != s_shared_clips.end()) for (auto const& clip : clips->second.clips) {
+        if (clip.rect.isRect() && clip.matrix.rectStaysRect()) {
+            // The caret texture already supplies edge coverage. Clip to its
+            // raster pixels rather than multiplying the fractional cap twice.
+            auto bounds = SkMatrix::Scale(scale, scale).mapRect(clip.matrix.mapRect(clip.rect.rect()));
+            SkIRect rounded;
+            bounds.roundOut(&rounded);
+            canvas->resetMatrix();
+            canvas->clipRect(SkRect::MakeLTRB(rounded.left() / scale, rounded.top() / scale,
+                rounded.right() / scale, rounded.bottom() / scale), SkClipOp::kIntersect, false);
+        } else {
+            canvas->setMatrix(clip.matrix);
+            canvas->clipRRect(clip.rect, true);
+        }
+    }
+    canvas->resetMatrix();
+    float first_row = std::floor(top * scale) / scale;
+    float last_row = std::ceil((top + height) * scale) / scale;
+    canvas->drawRect(SkRect::MakeXYWH(x, first_row, width, last_row - first_row), paint);
     canvas->restore();
 }
