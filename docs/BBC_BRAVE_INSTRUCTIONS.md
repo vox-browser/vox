@@ -2,10 +2,11 @@
 
 **The requested 10% advantage remains open. BBC does not qualify for
 `OPTIMIZED_SITES.md`.** The latest complete seven-pair cohort has a Vox median
-of **44,466,503,621** retired instructions and a Brave lower-bound median of
-**15,579,542,542**. Its conservative ratio is **3.565802776525631**, above the
+of **44,521,001,422** retired instructions and a Brave lower-bound median of
+**15,591,881,320**. Its conservative ratio is **3.681015720678472**, above the
 required 0.9. All Vox/control observations pass content, pixels and browser exits.
-The instruction gate fails, and Brave pair 4 differs from its fixed photo reference.
+All 21 observations pass their original per-engine pixel references. The instruction
+gate fails. Brave pairs 1 and 7 exceed 30 billion instructions and remain included.
 
 The machine-readable [evidence](benchmark-results/bbc-brave-instructions-2026-11-01.json)
 retains exact counts for every recorded attempt, including failures and first
@@ -66,6 +67,7 @@ capture marker. An invalid cohort is retained for diagnosis, not acceptance.
 | Guarded CSS-wide and border-slice reuse | 45,124,755,934 | 15,540,480,007 | 3.1224368328405316 | Gate fails; Brave pair 3 photo differs |
 | Guarded RGB reuse | 44,077,336,320 | 15,549,390,499 | 3.340949257394858 | Gate fails; Brave pair 4 photo differs |
 | Retained-command direct reads | 44,466,503,621 | 15,579,542,542 | 3.565802776525631 | Gate fails; Brave pair 4 photo differs |
+| Retained ordinary flow items in grid/flex | 44,521,001,422 | 15,591,881,320 | 3.681015720678472 | All observations valid; gate fails |
 
 The grid block-height cohort alternates an older control, candidate and Brave;
 control/candidate medians are 101,567,929,247 and 90,700,737,334 (10.70% observed
@@ -173,7 +175,7 @@ The selected backend has no observed LibJS fallback. These instrumented runs
 receive no hardware-counter performance credit.
 
 The newest measured executable is SHA256
-`774a3b6a18b0b87c1fd416128bb0bc3697431f2278ddb89ba4f5709135e77518`.
+`80a7a221ee75a1d163b6d0afc823c2d853cb795b8ae5598cf7e845009c7b6719`.
 The JIT-only candidate is
 `ea63463d5d1e7c6d28c320fbf2060eead45490e549a2ac45f607ccdff8e65c89`.
 Native-library identities, source snapshots, entitlement checks and generated-C
@@ -198,8 +200,8 @@ all 11 default screenshot cases (eight exact, three under existing bounds),
 and all eight required SVG mutation cases exactly. All 100 upstream LibJS AST
 fixtures match exactly.
 
-The current broader rerun enters all 394 cases in both normal and no-GC
-modes (79 fresh no-GC processes). Each mode passes 393 cases and retains one
+The current broader rerun enters all 397 cases in both normal and no-GC
+modes (80 fresh no-GC processes). Each mode passes 396 cases and retains one
 input baseline mismatch: Vox returns 13.5 where the unchanged test and an
 independent Brave content-box oracle require 13. The prior font-fingerprint
 memory failure is corrected and its previously interrupted cases now complete.
@@ -209,7 +211,7 @@ open.
 
 All 45 allocator checks pass in normal, no-GC and preallocated modes, including
 a preallocated run with scope jumps disabled. Nine selector checks pass in
-normal and no-GC modes. The benchmark tools pass 174 Python checks. The RGB cache passes 19 focused
+normal and no-GC modes. The retained-flow benchmark tools pass 175 Python checks. The RGB cache passes 19 focused
 checks in normal, no-GC, preallocated and diagnostic modes. Two real Mach-O
 loader checks verify bundled-library selection and reject a missing fallback.
 The newest pinned browser passes headless startup, all 11 screenshot smoke
@@ -223,8 +225,22 @@ modes, with the copy-based control also checked in each mode. Its production
 bundle passes headless startup, the complete smoke set and all eight SVG cases
 with stable private library identities. An initial test-wrapper attempt failed
 before screenshot launches because its copied capture script lacked execute
-permission; that failure is retained and the corrected wrapper passes. The
-next investigation concerns unchanged flow branches inside grid/flex parents;
-no performance credit is claimed for that unfinished work. The site catalog must
+permission; that failure is retained and the corrected wrapper passes.
+Retaining unchanged ordinary flow items inside grid/flex parents passes all 20
+focused flow checks in normal, no-GC and preallocated modes, with the disabled
+control also checked in each mode. An initial preallocated failure exposed
+unleased old paint scenes in test setup; the corrected checks retain the old
+scene while asserting its unchanged dump. Both attempts remain recorded.
+Fresh candidate/control diagnostics prove the path executes only when enabled,
+match the original Vox reference exactly, and record JavaScriptCore execution
+(2,023 and 2,083 evaluations). A separate sampled profile also matches exactly
+and receives no instruction credit. The unprofiled matched control median is
+45,640,904,010 versus candidate 44,521,001,422, a 2.4537% point reduction. Its
+conservative ratio is 1.3286517869182544, so no accepted gain is claimed. All
+21 content/pixel/exit checks pass; both Brave outliers remain included. The
+integer Brave gate fails: 571,440,242,190 > 139,715,843,940.
+
+The next investigation concerns display changes and failed-font invalidation.
+No performance credit is claimed for that unfinished work. The site catalog must
 wait for a qualifying cohort. Startup counts establish neither isolated
 rendering time nor scrolling FPS.
