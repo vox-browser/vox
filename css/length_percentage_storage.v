@@ -68,7 +68,12 @@ pub fn (lp LengthPercentage) calculated() CalculatedStyleValue {
 pub fn (lp LengthPercentage) to_px(context LengthResolutionContext, reference_value CSSPixels) CSSPixels {
 	if lp.is_calculated() {
 		resolved := Length.resolve_calculated_with_px(lp.calculated(), context, reference_value)
-		return CSSPixels.truncated_value_for(resolved.to_px_without_rounding(context))
+		pixels := resolved.to_px_without_rounding(context)
+		return CSSPixels.truncated_value_for(if context.use_float_calculated_lengths {
+			f64(f32(pixels))
+		} else {
+			pixels
+		})
 	}
 	return lp.resolved(context, reference_value).to_px(context)
 }

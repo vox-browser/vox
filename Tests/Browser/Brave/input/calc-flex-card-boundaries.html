@@ -1,0 +1,23 @@
+<!doctype html><meta charset="utf-8"><title>Calculated flex bases keep integral card boundaries</title>
+<style>
+html { background:#090b0f; color:#d0def0; -webkit-font-smoothing:antialiased }
+body { margin:0; font:13px/1.7 Arial }
+.row { display:flex; gap:16px; width:1184px; margin:24px 48px }
+.card { box-sizing:border-box; flex:0 0 calc((100% - 32px)/3); height:220px;
+  padding:23px; border:1px solid #28303b;
+  background:linear-gradient(125deg,#182637,#26364a) }
+.control .card { flex-basis:384px }
+p { margin:12px 0 }
+.large { font:27px/1.1 Times }
+svg { display:block; width:40px; height:40px }
+</style>
+<div class="row">
+  <div class="card"><svg viewBox="0 0 40 40"><path fill="#38bdf8" d="M.125 4.125L35.125 30.125H.125Z"/></svg><p>V 0.5.2 is out!</p><p class="large">Find your people.</p></div>
+  <div class="card"><svg viewBox="0 0 40 40"><path fill="#38bdf8" d="M.125 4.125L35.125 30.125H.125Z"/></svg><p>V 0.5.1 is out!</p><p class="large">Build things.</p></div>
+  <div class="card"><svg viewBox="0 0 40 40"><path fill="#38bdf8" d="M.125 4.125L35.125 30.125H.125Z"/></svg><p>V 0.5 is out! 3700 fixes since V 0.4.</p><p class="large">Keep the moment.</p></div>
+</div>
+<div class="row control">
+  <div class="card"><svg viewBox="0 0 40 40"><path fill="#38bdf8" d="M.125 4.125L35.125 30.125H.125Z"/></svg><p>V 0.5.2 is out!</p><p class="large">Find your people.</p></div>
+  <div class="card"><svg viewBox="0 0 40 40"><path fill="#38bdf8" d="M.125 4.125L35.125 30.125H.125Z"/></svg><p>V 0.5.1 is out!</p><p class="large">Build things.</p></div>
+  <div class="card"><svg viewBox="0 0 40 40"><path fill="#38bdf8" d="M.125 4.125L35.125 30.125H.125Z"/></svg><p>V 0.5 is out! 3700 fixes since V 0.4.</p><p class="large">Keep the moment.</p></div>
+</div>

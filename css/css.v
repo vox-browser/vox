@@ -2149,6 +2149,10 @@ pub fn LengthFontMetrics.default() LengthFontMetrics {
 
 pub struct LengthResolutionContext {
 pub mut:
+	// Blink converts a calculated used length to float before LayoutUnit.
+	// Keep the translated resolver's double precision unless the embedder
+	// selected that geometry policy.
+	use_float_calculated_lengths bool
 	// Used while projecting a CSS style into another layout coordinate space.
 	// Relative metrics in that context are already expressed in the new units.
 	absolute_length_scale f64 = 1.0

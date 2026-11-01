@@ -90,6 +90,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_letter_spacing_disables_optional_ligatures(self):
         self.compare_fixture('spaced-optional-ligatures')
 
+    def test_calculated_flex_bases_keep_integral_card_boundaries(self):
+        self.compare_fixture('calc-flex-card-boundaries', width=1280, height=600)
+
     def test_definite_flex_basis_survives_cross_axis_limits(self):
         self.compare_fixture('definite-flex-basis-cross-limit')
 
