@@ -1,24 +1,26 @@
 # BBC homepage instruction comparison
 
 **The requested 10% advantage remains open. BBC does not qualify for
-`OPTIMIZED_SITES.md`.** The latest seven-pair cohort (34) has a Vox median of
-**35,348,564,657** retired instructions and a Brave lower-bound median of
-**16,161,771,586**. All 21 captures pass their unchanged content, pixels and
-native-exit audits. Its conservative ratio is **2.8677260187784155**, above 0.9:
-`455031460390 > 142805941596` fails the integer gate. Every observation,
-including the 45,503,146,039-instruction candidate outlier, remains included.
+`OPTIMIZED_SITES.md`.** The latest seven-pair cohort (35), with verbose font
+tracing separated from instruction counting, has a Vox median of
+**34,693,898,775** and a Brave lower-bound median of **16,382,454,723**.
+The conservative ratio is **2.9155220150098202**:
+`466694242280 > 144065047662` fails the integer gate. This cohort is also
+invalid for acceptance because Brave pair 3 differs from its original pixel
+reference. All 21 content and native-exit audits pass; the other 20 pixel
+comparisons pass. The failed capture and Vox's 46,669,424,228-instruction
+outlier remain included.
 
-The same-binary visitation control has median 36,545,688,678. The candidate
-median falls 3.2756915091892935%, but its conservative control ratio is
-1.2791310365516306; both conservative gates fail. Earlier failing and invalid
-observations remain retained; no accepted BBC savings are claimed here.
-Counter-enabled observations also emit retained-font diagnostic logging. A
-corrected cohort separating that logging is pending; this protocol correction
-will receive no engine optimization credit.
+The same-binary visitation control has median 36,099,515,786; its conservative
+control ratio is 1.3679708656362242 and fails. All 14 Vox/control captures emit
+zero verbose font-generation traces. The logging change corrects the
+measurement protocol and receives no engine optimization credit. Earlier
+failing and invalid observations remain retained; no accepted BBC savings are
+claimed here.
 
 The machine-readable [evidence](benchmark-results/bbc-brave-instructions-2026-11-01.json)
-retains 838 attempts and 34 cohorts, including failures and first launches;
-700 complete cohort raw results were independently checked against the recorded
+retains 861 attempts and 35 cohorts, including failures and first launches;
+721 complete cohort raw results were independently checked against the recorded
 vectors, medians and integer gates. It also retains ownership audits, commands and artifact hashes. Raw archives, logs,
 PNGs, executable copies, PID registries, compiler output and guard receipts are
 under `Build/bbc-home-instructions-20261101-054807/` in the canonical checkout.
@@ -100,6 +102,7 @@ capture marker. An invalid cohort is retained for diagnosis, not acceptance.
 | Repeated default cosmetic-filter queries | 36,057,458,625 | 16,480,599,153 | 2.3630417159732398 | Gate fails; Brave pair 1 photo differs; median regresses against control |
 | Retained ordinary grid geometry | 35,400,964,816 | 16,625,613,691 | 2.839621547749952 | All observations valid; median falls 2.8601% against control; both conservative gates fail |
 | Dense intrinsic-seed visitation | 35,348,564,657 | 16,161,771,586 | 2.8677260187784155 | All observations valid; median falls 3.2757% against control; both conservative gates fail |
+| Quiet instruction counting (protocol correction) | 34,693,898,775 | 16,382,454,723 | 2.9155220150098202 | Brave pair 3 pixel mismatch; integer gate fails; zero engine credit |
 
 The grid block-height cohort alternates an older control, candidate and Brave;
 control/candidate medians are 101,567,929,247 and 90,700,737,334 (10.70% observed
@@ -1442,3 +1445,61 @@ Receipts are `intrinsic-seed-visits-cohort/`, its derived JSON,
 `intrinsic-seed-visits-compiled-witness/`, `intrinsic-seed-visits-validation/`,
 both diagnostic validations, `retained-app-executable-compression-receipt.json`
 and `retained-cache-payload-sharing-v2-receipt.json` under the evidence root.
+
+
+## Separate verbose font tracing from counters (cohort 35)
+
+`27a5887e` makes the three retained-layout font-generation traces explicitly
+opt-in through `VOX_RETAINED_FONT_DIAGNOSTICS`. Instruction counting previously
+enabled these per-hit messages: one retained seed-visitation trial emitted
+7,067 log lines, including 3,701 block, 2,211 inline and 670 text font traces.
+The existing cumulative phase-counter records and encoded-PNG endpoints remain
+unchanged. This corrects measurement overhead and earns no engine credit.
+`6d8905d0` makes the driver retain trace counts and reject verbose font logging
+in acceptance trials; explicit reference diagnostics remain permitted.
+
+All 26 focused cases pass with counting-only and explicit verbose environments
+in default, no-GC and preallocated modes: 156 test executions, nine jobs exiting
+zero. Counting-only runs emit zero font traces; each verbose mode emits four.
+All 47 driver tests pass, including missing-log and verbose-log rejection.
+
+The first completed bundles could not validate this correction: one lacked
+its executable flag, another failed startup after a shared favicon asset was
+removed. Both busy production-build attempts returned without queuing work.
+The next completed shared build was reused and privately pinned, with all four
+owned sources unchanged before/after/current. Its compiler and guard exit zero
+in 191.280623709 seconds, sampled peak 9,130,622,976 bytes. Only an unrelated
+tool source changed. Executable SHA256 is
+`a3090be3949360c1c114f55d511bb4ce4cb61691459449d2d32c595c0c65a6c7`;
+the captured generated-C witness is
+`a51a376f28e537f9319dee77988756e014c9a4db076c94e476ca9f93be6320b5`.
+Fresh headless startup, eleven smoke and eight SVG mutation comparisons pass.
+Both BBC diagnostics preserve the original pixels/content and native exit zero.
+JavaScriptCore executes one context with 1,973 candidate / 1,983 control
+evaluations. The dense seed-visitation path executes only in the enabled
+separate diagnostic; diagnostic logging supplies no instruction credit.
+
+The seven-triple cohort keeps the same original references, fixture, script
+policy, private caches, viewport, settlement and launch-to-encoded-PNG scope.
+Every Vox/control capture has zero verbose font traces and exact pixels.
+Brave pair 3 has 64,177 differing pixels (2.0401%), maximum channel error 15,
+within bounds `32,882 472x266`; its content and native exit still pass. Its
+failed pixel audit invalidates acceptance. No sample is retried or excluded,
+and no reference or tolerance changes. The gate also fails independently of
+that mismatch. The median point difference against control is 3.893728157830645%,
+but the conservative control gate fails and no accepted savings are claimed.
+
+The guard adopts 68 processes without error, observes 1,733,935,104 peak bytes
+over 168.53881404199998 seconds, and returns benchmark exit 1. Original
+counter-enabled historical results remain retained with their logging caveat.
+This correction changes no geometry and does not reset the broad-check cadence;
+the unchanged text-control baseline failure remains open.
+
+Receipts are `quiet-font-counter-cohort/`, its derived JSON, the two diagnostic
+validations, `quiet-font-counter-reused-build.json`,
+`quiet-font-counter-current-shared-build-witness/`,
+`quiet-font-counter-validation/` and `quiet-font-counter-checks/` under the
+evidence root. Additional lossless storage receipts retain completed check
+binaries, generated C, broad binaries and completed cache payloads. Raw vectors,
+medians and gates for all 35 cohorts and 721 complete cohort results were
+independently checked; all 861 attempts remain in the durable evidence.
