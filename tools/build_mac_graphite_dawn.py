@@ -133,6 +133,7 @@ group("tint") {{ public_configs = [":dawn_api_config"] }}
     for framework in ['CoreText', 'Metal', 'CoreGraphics', 'Foundation', 'ImageIO', 'IOSurface', 'IOKit', 'QuartzCore', 'Cocoa']:
         command += ['-framework', framework]
     command += ['-Wl,-exported_symbol,_vox_graphite_draw_picture_pixels',
+                '-Wl,-exported_symbol,_vox_graphite_draw_picture_region_pixels',
                 '-Wl,-exported_symbol,_vox_graphite_picture_release_unused_graphics_memory',
                 '-Wl,-exported_symbol,_vox_graphite_picture_release_idle_graphics_memory',
                 '-Wl,-install_name,@rpath/libVoxGraphiteDawn.dylib', '-o', str(args.output)]

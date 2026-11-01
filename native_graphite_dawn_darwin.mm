@@ -149,12 +149,17 @@ sk_sp<SkTypeface> decode_picture_typeface(SkStream& stream, void*)
 }
 
 extern "C" __attribute__((visibility("default")))
-int vox_graphite_draw_picture_pixels(uint8_t* pixels, int width, int height,
-    int pitch, void const* bytes, size_t size, float const* matrix)
+int vox_graphite_draw_picture_region_pixels(uint8_t* pixels, int width, int height,
+    int pitch, int x, int y, int region_width, int region_height,
+    void const* bytes, size_t size, float const* matrix)
 {
     if (!pixels || !bytes || !matrix || !size || size > 64 * 1024 * 1024
         || width <= 0 || height <= 0 || width > 16384 || height > 16384
-        || size_t(width) * height > 8 * 1024 * 1024 || pitch < width * 4)
+        || size_t(width) * height > 8 * 1024 * 1024
+        || x < 0 || y < 0 || region_width <= 0 || region_height <= 0
+        || region_width > width || region_height > height
+        || x > width - region_width || y > height - region_height
+        || pitch < region_width * 4)
         return 0;
     for (int index = 0; index < 9; ++index)
         if (!std::isfinite(matrix[index])) return 0;
@@ -185,18 +190,27 @@ int vox_graphite_draw_picture_pixels(uint8_t* pixels, int width, int height,
     insertion.fRecording = recording.get();
     if (gpu->insertRecording(insertion) != skgpu::graphite::InsertStatus::kSuccess) return 0;
     std::unique_ptr<const SkImage::AsyncReadResult> result;
-    gpu->asyncRescaleAndReadPixels(surface.get(), info, SkIRect::MakeWH(width, height),
+    gpu->asyncRescaleAndReadPixels(surface.get(), info.makeWH(region_width, region_height),
+        SkIRect::MakeXYWH(x, y, region_width, region_height),
         SkImage::RescaleGamma::kSrc, SkImage::RescaleMode::kNearest,
         [](void* target, std::unique_ptr<const SkImage::AsyncReadResult> data) {
             *static_cast<std::unique_ptr<const SkImage::AsyncReadResult>*>(target) = std::move(data);
         }, &result);
     if (!gpu->submit(skgpu::graphite::SubmitInfo(skgpu::graphite::SyncToCpu::kYes)) || !result)
         return 0;
-    for (int row = 0; row < height; ++row)
+    for (int row = 0; row < region_height; ++row)
         std::memcpy(pixels + size_t(row) * pitch,
             static_cast<uint8_t const*>(result->data(0)) + size_t(row) * result->rowBytes(0),
-            size_t(width) * 4);
+            size_t(region_width) * 4);
     return 1;
+}
+
+extern "C" __attribute__((visibility("default")))
+int vox_graphite_draw_picture_pixels(uint8_t* pixels, int width, int height,
+    int pitch, void const* bytes, size_t size, float const* matrix)
+{
+    return vox_graphite_draw_picture_region_pixels(pixels, width, height, pitch,
+        0, 0, width, height, bytes, size, matrix);
 }
 
 extern "C" __attribute__((visibility("default")))

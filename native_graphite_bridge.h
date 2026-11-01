@@ -112,6 +112,11 @@ void vox_graphite_finish_frame(void);
 int vox_graphite_picture_release_idle_graphics_memory(void);
 int vox_graphite_draw_picture_pixels(uint8_t *pixels, int width, int height,
     int pitch, const void *bytes, size_t size, const float *matrix);
+// Render on the original target, then transfer only the requested device-pixel
+// rectangle. Target dimensions and coordinates still determine GPU coverage.
+int vox_graphite_draw_picture_region_pixels(uint8_t *pixels, int width, int height,
+    int pitch, int x, int y, int region_width, int region_height,
+    const void *bytes, size_t size, const float *matrix);
 int vox_graphite_draw_shadow_pixels(uint8_t *pixels, int width, int height,
     int pitch, int has_background, const VoxGraphiteShadow *shadow);
 int vox_graphite_draw_image_pixels(uint8_t *pixels, int width, int height,

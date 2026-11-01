@@ -2450,6 +2450,16 @@ extern "C" void ladybird_v_skia_discard_isolated_input(void* input)
     delete static_cast<IsolatedInputRecording*>(input);
 }
 
+static auto picture_region_draw()
+{
+    static auto draw = [] {
+        void* library = dlopen("@rpath/libVoxGraphiteDawn.dylib", RTLD_LAZY | RTLD_LOCAL);
+        return library ? reinterpret_cast<decltype(&vox_graphite_draw_picture_region_pixels)>(
+            dlsym(library, "vox_graphite_draw_picture_region_pixels")) : nullptr;
+    }();
+    return draw;
+}
+
 // Consumes both inputs on success and failure; the native bitmap inputs remain
 // available for fallback when recording, backdrop access or GPU replay fails.
 extern "C" int ladybird_v_skia_draw_gradient_text(CGContextRef context,
@@ -2472,18 +2482,37 @@ extern "C" int ladybird_v_skia_draw_gradient_text(CGContextRef context,
     int pixel_height = raster_dimension(canvas_height, scale);
     if (pixel_width > 16384 || pixel_height > 16384
         || size_t(pixel_width) * pixel_height > 8 * 1024 * 1024) return 0;
-    std::vector<uint32_t> pixels(size_t(pixel_width) * pixel_height);
-    RasterRegion region {0, 0, static_cast<int>(std::ceil(canvas_width)),
-        static_cast<int>(std::ceil(canvas_height))};
-    if (!copy_backdrop(destination, region, scale, pixel_width, pixel_height, pixels)) return 0;
-    auto info = SkImageInfo::Make(pixel_width, pixel_height, kBGRA_8888_SkColorType,
+    int region_x = 0, region_y = 0, output_width = pixel_width, output_height = pixel_height;
+    auto draw_region = picture_region_draw();
+    bool regional = draw_region && !std::getenv("VOX_DISABLE_PICTURE_REGIONS")
+        && std::isfinite(x) && std::isfinite(y) && std::isfinite(width) && std::isfinite(height)
+        && canvas_width * scale == pixel_width && canvas_height * scale == pixel_height;
+    if (regional) {
+        region_x = int(std::clamp(std::floor(double(x * scale)), 0.0, double(pixel_width)));
+        region_y = int(std::clamp(double(pixel_height) - std::ceil(double((y + height) * scale)),
+            0.0, double(pixel_height)));
+        int right = int(std::clamp(std::ceil(double((x + width) * scale)),
+            0.0, double(pixel_width)));
+        int bottom = int(std::clamp(double(pixel_height) - std::floor(double(y * scale)),
+            0.0, double(pixel_height)));
+        output_width = right - region_x;
+        output_height = bottom - region_y;
+        if (output_width <= 0 || output_height <= 0) return 1;
+    }
+    std::vector<uint32_t> pixels(size_t(output_width) * output_height);
+    auto original = read_backdrop(destination, {}, scale, pixel_width, pixel_height);
+    if (!original.pixels) return 0;
+    Backdrop cropped {original.pixels + size_t(region_y) * original.pitch + size_t(region_x) * 4,
+        original.pitch};
+    copy_backdrop_pixels(cropped, output_width, output_height, pixels);
+    auto info = SkImageInfo::Make(output_width, output_height, kBGRA_8888_SkColorType,
         kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
     auto backdrop = SkImages::RasterFromPixmapCopy(
-        SkPixmap(info, pixels.data(), size_t(pixel_width) * 4));
+        SkPixmap(info, pixels.data(), size_t(output_width) * 4));
     if (!backdrop) return 0;
     SkPictureRecorder output;
     auto* canvas = output.beginRecording(SkRect::MakeWH(pixel_width, pixel_height));
-    canvas->drawImage(backdrop, 0, 0);
+    canvas->drawImage(backdrop, region_x, region_y);
     canvas->scale(scale, scale);
     auto bounds = SkRect::MakeXYWH(x, canvas_height - y - height, width, height);
     canvas->clipRect(bounds);
@@ -2501,9 +2530,18 @@ extern "C" int ladybird_v_skia_draw_gradient_text(CGContextRef context,
     procs.fTypefaceProc = vox_serialize_picture_typeface;
     auto bytes = picture->serialize(&procs);
     float identity[] {1, 0, 0, 0, 1, 0, 0, 0, 1};
-    if (!bytes || !shared_picture_draw()(reinterpret_cast<uint8_t*>(pixels.data()),
-            pixel_width, pixel_height, pixel_width * 4, bytes->data(), bytes->size(), identity))
+    if (!bytes) return 0;
+    auto* output_pixels = reinterpret_cast<uint8_t*>(pixels.data());
+    int rendered = regional
+        ? draw_region(output_pixels, pixel_width, pixel_height, output_width * 4,
+            region_x, region_y, output_width, output_height, bytes->data(), bytes->size(), identity)
+        : shared_picture_draw()(output_pixels, pixel_width, pixel_height,
+            output_width * 4, bytes->data(), bytes->size(), identity);
+    if (!rendered)
         return 0;
+    if (regional && std::getenv("VOX_PICTURE_REGION_DIAGNOSTICS"))
+        std::fprintf(stderr, "VOX_PICTURE_REGION text target=%dx%d region=%d,%d,%d,%d\n",
+            pixel_width, pixel_height, region_x, region_y, output_width, output_height);
     // Replaying the backdrop can round an existing colored glyph by one level.
     // Publish only the mask's device-aligned bounds, preserving other content.
     CGContextSaveGState(destination);
@@ -2512,8 +2550,12 @@ extern "C" int ladybird_v_skia_draw_gradient_text(CGContextRef context,
     auto right = std::ceil((x + width) * scale) / scale;
     auto top = std::ceil((y + height) * scale) / scale;
     CGContextClipToRect(destination, CGRectMake(left, bottom, right - left, top - bottom));
-    auto drawn = composite_pixels(destination, std::move(pixels), pixel_width, pixel_height,
-        0, 0, canvas_width, canvas_height, true);
+    auto drawn = regional
+        ? composite_pixels(destination, std::move(pixels), output_width, output_height,
+            region_x / scale, canvas_height - (region_y + output_height) / scale,
+            output_width / scale, output_height / scale, true)
+        : composite_pixels(destination, std::move(pixels), pixel_width, pixel_height,
+            0, 0, canvas_width, canvas_height, true);
     CGContextRestoreGState(destination);
     return drawn;
 }
