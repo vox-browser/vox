@@ -1,5 +1,11 @@
 # Old Reddit CPU instruction comparison
 
+A subsequent [cached /r/programming/ comparison](OLD_REDDIT_PROGRAMMING_INSTRUCTIONS.md)
+now records seven fresh pairs with **46.43% fewer observed instructions** and
+exact shared-reference pixels. It uses a newly frozen cache entry and the latest
+available signed build. It does not recover or retroactively validate the older
+home-page fixture documented below.
+
 The 2026-11-01 [catalog audit](OPTIMIZED_SITES_AUDIT.md) verifies the documented
 arithmetic and startup scope, but the referenced private `Build/reddit-parity/`
 fixture and process receipts are absent from this checkout. The historical

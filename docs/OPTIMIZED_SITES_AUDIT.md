@@ -1,5 +1,11 @@
 # Optimized-site instruction audit, 2026-11-01
 
+This audit precedes a subsequent [Old Reddit /r/programming/ measurement](OLD_REDDIT_PROGRAMMING_INSTRUCTIONS.md).
+That new cached workload passes seven fresh pairs with a 46.43% observed median
+lead and exact cross-browser pixels. The missing historical home-page fixture
+and receipts discussed below remain unavailable; that older cohort is not
+retroactively verified.
+
 Wikipedia and vlang.io retain their observed startup-through-capture leads in
 fresh seven-pair checks using the same pinned binaries and fixtures as their
 original reports. Their primary counters include startup in both engines;
