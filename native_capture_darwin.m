@@ -819,7 +819,9 @@ static void native_draw_solid_rect_srgb(float x, float y, float width, float hei
 	};
 	CGColorRef cgColor = CGColorCreate(colorSpace, components);
 	CGContextSetFillColorWithColor(context, cgColor);
-	CGContextFillRect(context, CGRectMake(x, y, width, height));
+	CGRect rect = CGRectMake(x, y, width, height);
+	if (!vox_initial_document_clear(&native_layer_initial_document_clear, context, rect,
+		color.r, color.g, color.b, color.a)) CGContextFillRect(context, rect);
 	CGColorRelease(cgColor);
 }
 
@@ -835,6 +837,7 @@ static CGContextRef native_font_compositing_context;
 static int native_font_compositing_transparency_depth;
 
 static void native_begin_tracked_transparency_layer(CGContextRef context, CFDictionaryRef info) {
+	vox_initial_document_clear_disarm(&native_layer_initial_document_clear, context);
 	if (context == native_font_compositing_context) {
 		native_font_compositing_transparency_depth++;
 	}
@@ -850,6 +853,7 @@ static void native_end_tracked_transparency_layer(CGContextRef context) {
 
 void native_begin_clip(void) {
 	CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
+	vox_initial_document_clear_disarm(&native_layer_initial_document_clear, context);
 	if (context == NULL) {
 		return;
 	}

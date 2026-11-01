@@ -6,6 +6,7 @@
 #include <math.h>
 #include <stdint.h>
 #include "native_document_submission_darwin.h"
+#include "native_initial_document_clear.h"
 #if defined(__aarch64__)
 #include <arm_neon.h>
 #endif
@@ -34,6 +35,7 @@ static char native_layer_frame_bounds_key;
 // and later layers retain ordinary source-over compositing.
 static CGContextRef native_layer_document_bitmap;
 static BOOL native_layer_document_bitmap_claimed;
+static VoxInitialDocumentClear native_layer_initial_document_clear;
 
 static BOOL native_layer_claim_document_bitmap(CGContextRef context) {
     if (!context || context != native_layer_document_bitmap
@@ -147,6 +149,7 @@ static BOOL native_layer_begin_document_canvas(CGContextRef context,
     CGContextSaveGState(context);
     CGContextSetShouldAntialias(context, true);
     CGContextSetInterpolationQuality(context, kCGInterpolationHigh);
+    native_layer_initial_document_clear = (VoxInitialDocumentClear){context, canvas_width, canvas_height};
     return YES;
 }
 
@@ -227,6 +230,7 @@ static CGImageRef native_layer_raster_frame_with_submission(NSView *view, CGFloa
     CGImageRef image = NULL;
     CGContextRef previous_bitmap = native_layer_document_bitmap;
     BOOL previous_claimed = native_layer_document_bitmap_claimed;
+    VoxInitialDocumentClear previous_initial_clear = native_layer_initial_document_clear;
     NativeDocumentSubmissionFrame frame = { .bitmap = bitmap,
         .token = ++native_document_submission_sequence };
     NativeDocumentSubmissionFrame *previous_submission = native_document_submission_current;
@@ -234,6 +238,7 @@ static CGImageRef native_layer_raster_frame_with_submission(NSView *view, CGFloa
         native_document_submission_current = &frame;
         native_layer_document_bitmap = bitmap;
         native_layer_document_bitmap_claimed = NO;
+        native_layer_initial_document_clear = (VoxInitialDocumentClear){0};
         NSGraphicsContext.currentContext = [NSGraphicsContext
             graphicsContextWithCGContext:bitmap flipped:view.isFlipped];
         ((void (*)(id, SEL, NSRect))draw)(view, @selector(drawRect:), bounds);
@@ -242,6 +247,7 @@ static CGImageRef native_layer_raster_frame_with_submission(NSView *view, CGFloa
         native_document_submission_current = previous_submission;
         native_layer_document_bitmap = previous_bitmap;
         native_layer_document_bitmap_claimed = previous_claimed;
+        native_layer_initial_document_clear = previous_initial_clear;
         NSGraphicsContext.currentContext = previous;
         CGContextRelease(bitmap);
     }
