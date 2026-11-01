@@ -139,12 +139,19 @@ def audit_expression():
             image:e.tagName==='IMG'?{complete:e.complete,natural_width:e.naturalWidth}:null}})}})})'''
 
 
+
+def trial_order(index, control=False):
+    order = ['control', 'vox', 'brave'] if control else ['vox', 'brave']
+    return order if index % 2 == 0 else order[::-1]
+
+
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--archive', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--memory-guard-registry', type=Path, required=True)
     parser.add_argument('--vox-app', type=Path, default=REPO / 'Build/v/Vox.app')
+    parser.add_argument('--control-vox-app', type=Path, help='Also run a pinned Vox control before each candidate/Brave pair')
     parser.add_argument('--brave-app', type=Path, default=Path('/Applications/Brave Browser.app'))
     parser.add_argument('--diff-tool', type=Path, default=REPO / 'Build/hn-home-instructions-20261031/pixel_diff')
     parser.add_argument('--expected-vox', type=Path)
@@ -185,7 +192,10 @@ def main():
         return r.width>0&&r.height>0&&r.x<1024&&r.y<768&&r.right>0&&r.bottom>0}})
         .every(i=>i.complete&&i.naturalWidth>0)'''
     apps = {}
-    for engine, source in [('vox', args.vox_app), ('brave', args.brave_app)]:
+    sources = [('vox', args.vox_app), ('brave', args.brave_app)]
+    if args.control_vox_app:
+        sources.append(('control', args.control_vox_app))
+    for engine, source in sources:
         target = args.output / engine / source.name
         target.parent.mkdir()
         shutil.copytree(source, target, symlinks=True, copy_function=browser.clone_file)
@@ -222,11 +232,12 @@ def main():
         args.brave_arguments = ['--ignore-certificate-errors-spki-list=' + spki]
         for index in range(1 if args.capture_reference else args.repeat):
             pair = {}
-            order = ['vox', 'brave'] if index % 2 == 0 else ['brave', 'vox']
+            order = trial_order(index, bool(args.control_vox_app))
             if args.capture_reference and args.reference_engine != 'both':
                 order = [args.reference_engine]
             for engine in order:
-                row = browser.run_browser(engine, apps[engine], args.output / f'pair-{index+1}-{engine}', args)
+                row = browser.run_browser('vox' if engine == 'control' else engine, apps[engine],
+                    args.output / f'pair-{index+1}-{engine}', args)
                 row['scope'] = SCOPE
                 browser.write_json(args.output / f'pair-{index+1}-{engine}/result.json', row)
                 pair[engine] = row
@@ -242,6 +253,13 @@ def main():
                 summary = browser.evaluate_pairs(pairs, .9, 'launch')
             except RuntimeError as error:
                 summary = dict(passed=False, error=str(error), pairs=len(pairs))
+            if args.control_vox_app:
+                try:
+                    summary['matched_control'] = browser.evaluate_pairs(
+                        [dict(vox=pair['vox'], brave=pair['control']) for pair in pairs], .9, 'launch')
+                except RuntimeError as error:
+                    summary['matched_control'] = dict(passed=False, error=str(error))
+                    summary['passed'] = False
             summary['cross_browser_pixels'] = browser.compare(args.expected_brave, args.expected_vox,
                 args.output / 'cross-browser.diff.png', args.diff_tool)
         browser.write_json(args.output / 'summary.json', summary)

@@ -1,6 +1,6 @@
 import unittest
 
-from bbc_browser_instructions import URL, parse_args, validate_document
+from bbc_browser_instructions import URL, parse_args, trial_order, validate_document
 from hacker_news_browser_instructions import evaluate_pairs
 
 
@@ -19,6 +19,13 @@ def document():
 
 
 class BBCInstructionTests(unittest.TestCase):
+    def test_matched_controls_alternate_with_candidate_and_brave(self):
+        self.assertEqual(trial_order(0), ['vox', 'brave'])
+        self.assertEqual(trial_order(1), ['brave', 'vox'])
+        self.assertEqual(trial_order(0, True), ['control', 'vox', 'brave'])
+        self.assertEqual(trial_order(1, True), ['brave', 'vox', 'control'])
+        self.assertEqual(trial_order(2, True), ['control', 'vox', 'brave'])
+
     def test_full_source_content_and_visible_images_are_required(self):
         audit, expected = document()
         result = validate_document(audit, expected)
