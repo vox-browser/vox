@@ -34,9 +34,13 @@ fn (app &BrowserApp) browser_bookmark_ui_state(chrome BrowserChromeState) bookma
 // request or a platform-specific image control.
 fn (app &BrowserApp) browser_bookmark_icon_path(address string, image_id int) string {
 	if image_id < 0 { return '' }
+	bytes := app.background_image_bytes(browser_bookmark_favicon_url(address)) or { return '' }
+	return app.browser_ui_icon_path(image_id, bytes)
+}
+
+fn (app &BrowserApp) browser_ui_icon_path(image_id int, bytes []u8) string {
 	mut cache := app.browser_text_cache()
 	if path := cache.bookmark_icon_paths[image_id] { return path }
-	bytes := app.background_image_bytes(browser_bookmark_favicon_url(address)) or { return '' }
 	path := browser_cache_entry_path(browser_cache_root(), 'bookmark-icons', sha256.hexhash(bytes.bytestr())) + '.png'
 	if !os.is_file(path) {
 		bitmap := browser_decode_raster_image_bytes(bytes) or { return '' }
@@ -49,18 +53,22 @@ fn (app &BrowserApp) browser_bookmark_icon_path(address string, image_id int) st
 	return path
 }
 
-$if vox_ui2 ? {
-	fn (app &BrowserApp) browser_chrome_ui_elements(chrome BrowserChromeState) []ui2.Element {
-		mut elements := browser_chrome_elements(chrome)
-		// The bar belongs to the toolbar; the overflow floats over the document.
-		bookmarks := bookmarkui.elements(app.browser_bookmark_ui_state(chrome))
-		if bookmarks.len > 0 {
-			mut toolbar := elements[0]
-			mut children := toolbar.children.clone()
-			children << bookmarks[0]
-			elements[0] = ui2.Element{ ...toolbar, children: children }
-			if bookmarks.len > 1 { elements << bookmarks[1..] }
-		}
-		return elements
+fn (app &BrowserApp) browser_chrome_ui_elements(chrome BrowserChromeState) []ui2.Element {
+	mut elements := browser_chrome_elements(chrome)
+	mut toolbar := elements[0]
+	mut toolbar_children := toolbar.children.clone()
+	toolbar_children << app.browser_tab_strip(chrome)
+	elements[0] = ui2.Element{ ...toolbar, children: toolbar_children }
+	// The bar belongs to the toolbar; the overflow floats over the document.
+	bookmarks := bookmarkui.elements(app.browser_bookmark_ui_state(chrome))
+	if bookmarks.len > 0 {
+		bar_toolbar := elements[0]
+		mut children := bar_toolbar.children.clone()
+		children << bookmarks[0]
+		elements[0] = ui2.Element{ ...bar_toolbar, children: children }
+		if bookmarks.len > 1 { elements << bookmarks[1..] }
 	}
+	elements << app.browser_settings_overlay(chrome.width, chrome.height)
+	elements << app.browser_popup_elements(chrome.width, chrome.height)
+	return elements
 }

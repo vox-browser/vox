@@ -1,34 +1,25 @@
 module main
 
-$if macos {
-	import platform
-}
+import browserui
+import platform
+import time
 
-// Keep the menu's URL independent of hover state and the address field. The
-// native menu owns a copy while AppKit runs its nested menu event loop.
 fn (mut app BrowserApp) show_link_context_menu(x f32, y f32) {
-	$if macos {
-		// The destination is reused after AppKit's nested event loop returns.
-		persistent := platform.enter_persistent()
-		destination := app.link_at_point(x, y) or {
-			platform.leave_persistent(persistent)
-			return
-		}
-		platform.leave_persistent(persistent)
-		defer {
-			$if gcboehm ? {
-				C.GC_reachable_here(destination.str)
-			}
-		}
-		if C.native_browser_link_context_menu(C.native_browser_view(), destination.str,
-			destination.len, f64(x), f64(y)) == 1 {
-			app.activate_tab_chrome('tab-open-background:${destination}')
-		}
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	destination := app.link_at_point(x, y) or { return }
+	app.dismiss_browser_popup()
+	mut state := app.browser_ui()
+	state.link = destination.clone()
+	state.version++
+	state.popup = browserui.Popup{
+		token: u64(time.sys_mono_now())
+		x:     x
+		y:     y
+		rows:  [
+			browserui.MenuRow{ id: 'link-open', text: 'Open Link in New Tab' },
+			browserui.MenuRow{ id: 'link-copy', text: 'Copy Link URL' },
+		]
 	}
-}
-
-$if macos {
-	#include "native_link_context_menu_darwin.m"
-	fn C.native_browser_view() voidptr
-	fn C.native_browser_link_context_menu(view voidptr, url &u8, length int, x f64, y f64) int
+	app.refresh_browser_ui()
 }

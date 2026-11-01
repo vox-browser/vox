@@ -82,14 +82,17 @@ pub fn (popup Popup) elements(width f64, height f64) []ui2.Element {
 				})
 			action_id:           popup.action(index)
 			enabled:             row.enabled && !row.group
-			accessibility_role: if row.group { 'group' } else { 'menu_item' }
-			tooltip: row.text
+			accessibility_role:  if row.group { 'group' } else { 'menu_item' }
+			tooltip:             row.text
 			accessibility_label: row.text
 			accessibility_value: if row.checked { 'selected' } else { '' }
 		}
 	}
-	return [ui2.view('browser-menu-overlay', ui2.rect(0, 0, width, height), ui2.BoxStyle{ transparent: true }, [
-		ui2.with_action(ui2.button('browser-menu-dismiss', '', ui2.rect(0, 0, width, height), ui2.BoxStyle{ transparent: true }, ui2.TextStyle{}), 'browser-menu:${popup.token}:dismiss'),
-		ui2.Element{...ui2.scroll('browser-menu-list', ui2.rect(x, y, panel_width, panel_height), 0xf7f7f7, children), accessibility_role: 'menu'},
-	])]
+	return [ui2.Element{
+		...ui2.view('browser-menu-overlay', ui2.rect(0, 0, width, height), ui2.BoxStyle{ transparent: true }, [
+			ui2.with_action(ui2.button('browser-menu-dismiss', '', ui2.rect(0, 0, width, height), ui2.BoxStyle{ transparent: true }, ui2.TextStyle{}), 'browser-menu:${popup.token}:dismiss'),
+			ui2.Element{ ...ui2.scroll('browser-menu-list', ui2.rect(x, y, panel_width, panel_height), 0xf7f7f7, children), accessibility_role: 'menu' },
+		])
+		key: 'browser-menu-${popup.token}'
+	}]
 }

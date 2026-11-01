@@ -2,11 +2,9 @@ module main
 
 import dom
 import html
-import x.json2
-
-$if macos {
-	import platform
-}
+import browserui
+import platform
+import time
 
 fn browser_select_picker_model(node &dom.Node) ?&html.HTMLSelectElementModel {
 	mut current := unsafe { node }
@@ -25,81 +23,86 @@ fn (mut app BrowserApp) close_browser_select_picker(node &dom.Node) {
 	if mut model := browser_select_picker_model(node) { model.set_is_open(false) }
 }
 
-// Activation has already checked trust, mutability and user activation. Present
-// after compact click listeners so their cancellation also suppresses the UI.
+// DOM eligibility remains with the select owner; UI2 only presents its rows.
 fn (mut app BrowserApp) show_browser_select_picker(node &dom.Node) {
-	$if macos {
-		mut model := browser_select_picker_model(node) or { return }
-		if !model.is_open() { return }
-		defer { model.set_is_open(false) }
-		element := unsafe { &dom.Element(model.element) }
-		if !model.is_mutable() || !element.is_connected()
-			|| voidptr(element.document()) != voidptr(app.document) {
-			return
-		}
-		// AppKit tracks menus in a nested event loop. Copy all labels to native
-		// ownership before tracking, and keep V temporaries outside frame arenas.
-		persistent := platform.enter_persistent()
-		defer { platform.leave_persistent(persistent) }
-		mut items := []map[string]json2.Any{}
-		for item in model.select_items_ {
-			match item {
-				html.SelectItemOption { items << browser_select_picker_option(item, false) }
-				html.SelectItemOptionGroup {
-					items << {
-						'label': json2.Any(item.label)
-						'group': json2.Any(true)
-					}
-					for option in item.items { items << browser_select_picker_option(option, true) }
-				}
-				html.SelectItemSeparator {
-					items << {
-						'separator': json2.Any(true)
-					}
-				}
+	mut model := browser_select_picker_model(node) or { return }
+	if !model.is_open() { return }
+	element := unsafe { &dom.Element(model.element) }
+	if !model.is_mutable() || !element.is_connected() || voidptr(element.document()) != voidptr(app.document) {
+		model.set_is_open(false)
+		return
+	}
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	app.dismiss_browser_popup()
+	model.set_is_open(true)
+	mut rows := []browserui.MenuRow{}
+	for item in model.select_items_ {
+		match item {
+			html.SelectItemOption { rows << browser_select_picker_option(item, false) }
+			html.SelectItemOptionGroup {
+				rows << browserui.MenuRow{ text: item.label.clone(), group: true }
+				for option in item.items { rows << browser_select_picker_option(option, true) }
 			}
+			html.SelectItemSeparator { rows << browserui.MenuRow{ separator: true } }
 		}
-		encoded := json2.encode(items)
-		rect := element.get_bounding_client_rect()
-		selected := C.native_browser_select_picker(C.native_browser_view(), encoded.str, encoded.len,
-			rect.x * app.page_zoom, (rect.y + rect.height) * app.page_zoom + app.page_top(),
-			rect.width * app.page_zoom)
-		if selected < 0 || voidptr(app.document) != voidptr(element.document())
-			|| !element.is_connected() || !model.is_mutable() {
-			return
-		}
-		// Bridge each queued native notification during its dispatch, preserving
-		// input/change order across the native and compact script listeners.
-		app_handle := voidptr(&app)
-		document := app.document
-		for event_name in ['input', 'change'] {
-			listener := dom.IDLEventListener.create(&dom.CallbackType{
-				handle_event: fn [app_handle, document, element, event_name] (_ &dom.Event, _ ?&dom.EventTarget) dom.JSValue {
-					mut app := unsafe { &BrowserApp(app_handle) }
-					if voidptr(app.document) == voidptr(document) {
-						_ = app.dispatch_javascript_event(event_name, element)
-					}
-					return dom.js_undefined()
+	}
+	rect := element.get_bounding_client_rect()
+	mut state := app.browser_ui()
+	state.select_node = unsafe { &dom.Node(element) }
+	state.select_document = app.document.unique_id()
+	state.version++
+	state.popup = browserui.Popup{
+		token:  u64(time.sys_mono_now())
+		x:      rect.x * app.page_zoom
+		y:      (rect.y + rect.height) * app.page_zoom + app.page_top()
+		width:  rect.width * app.page_zoom
+		active: browser_select_picker_selected(rows)
+		rows:   rows
+	}
+	app.refresh_browser_ui()
+}
+
+fn (mut app BrowserApp) complete_browser_select_picker(selected u32) {
+	state := app.browser_ui()
+	if app.document == unsafe { nil } || state.select_node == unsafe { nil }
+		|| state.select_document != app.document.unique_id() {
+		return
+	}
+	mut model := browser_select_picker_model(state.select_node) or { return }
+	element := unsafe { &dom.Element(model.element) }
+	if !element.is_connected() || !model.is_mutable() { return }
+	// Bridge each queued native notification during its dispatch, preserving
+	// input/change order across the native and compact script listeners.
+	app_handle := voidptr(&app)
+	document := app.document
+	for event_name in ['input', 'change'] {
+		listener := dom.IDLEventListener.create(&dom.CallbackType{
+			handle_event: fn [app_handle, document, element, event_name] (_ &dom.Event, _ ?&dom.EventTarget) dom.JSValue {
+				mut app := unsafe { &BrowserApp(app_handle) }
+				if voidptr(app.document) == voidptr(document) {
+					_ = app.dispatch_javascript_event(event_name, element)
 				}
-			})
-			unsafe { &dom.EventTarget(element) }.add_event_listener(event_name, listener,
-				dom.AddEventListenerOptions{ once: true })
-		}
-		model.did_select_item(u32(selected))
+				return dom.js_undefined()
+			}
+		})
+		unsafe { &dom.EventTarget(element) }.add_event_listener(event_name, listener,
+			dom.AddEventListenerOptions{ once: true })
+	}
+	model.did_select_item(u32(selected))
+}
+
+fn browser_select_picker_option(option html.SelectItemOption, grouped bool) browserui.MenuRow {
+	return browserui.MenuRow{
+		id:      'select-${option.id}'
+		text:    option.label.clone()
+		enabled: !option.disabled
+		checked: option.selected
+		indent:  if grouped { 1 } else { 0 }
 	}
 }
 
-fn browser_select_picker_option(option html.SelectItemOption, grouped bool) map[string]json2.Any {
-	return {
-		'id':       json2.Any(option.id)
-		'label':    json2.Any(option.label)
-		'selected': json2.Any(option.selected)
-		'disabled': json2.Any(option.disabled)
-		'grouped':  json2.Any(grouped)
-	}
-}
-
-$if macos {
-	#include "native_select_picker_darwin.m"
-	fn C.native_browser_select_picker(view voidptr, items &u8, length int, x f64, y f64, width f64) i64
+fn browser_select_picker_selected(rows []browserui.MenuRow) int {
+	for index, row in rows { if row.checked { return index } }
+	return -1
 }

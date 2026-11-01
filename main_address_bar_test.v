@@ -124,7 +124,6 @@ $if vox_ui2 ? {
 	fn C.native_test_chrome_resize(window voidptr, width int, height int)
 	fn C.native_test_chrome_document_hit(window voidptr, toolbar voidptr, status voidptr) int
 	fn C.native_test_chrome_unmounted(window voidptr) int
-	fn C.native_browser_chrome_sample_memory()
 
 	fn address_bar_test_insert(field voidptr, text string) {
 		C.native_test_address_insert(field, text.str, text.len)
@@ -337,7 +336,7 @@ $if vox_ui2 ? {
 		app.js_messages << 'first line\nstack line'
 		app.update_browser_chrome(1000, 700)
 		assert ui2.text('footer') == 'Console: first line'
-		C.native_browser_chrome_sample_memory()
+		app.sample_browser_memory_chrome()
 		assert ui2.text('memory').starts_with('RAM: ')
 		assert !app.memory_status.sampled
 	}

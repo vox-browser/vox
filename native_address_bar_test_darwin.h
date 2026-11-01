@@ -1,6 +1,9 @@
 #pragma once
-#include "native_address_bar_darwin.h"
-#include "native_browser_chrome_darwin.h"
+#include <stdint.h>
+typedef void (*VoxAddressShortcut)(void *, int);
+extern int32_t ui2_embedded_key_event(void *);
+#include <Cocoa/Cocoa.h>
+#include "native_test_window_darwin.h"
 
 @interface VoxAddressBarTestView : NSView
 @end
@@ -10,10 +13,12 @@
 
 static void *native_test_address_window(void) {
 	[NSApplication sharedApplication];
+	native_prepare_test_window();
 	NSWindow *window = [[NSWindow alloc] initWithContentRect:NSMakeRect(0, 0, 800, 600)
 		styleMask:NSWindowStyleMaskTitled backing:NSBackingStoreBuffered defer:NO];
 	window.releasedWhenClosed = NO;
 	window.contentView = [[VoxAddressBarTestView alloc] initWithFrame:NSMakeRect(0, 0, 800, 600)];
+	native_test_window_position(window, native_test_window_screen);
 	return (__bridge_retained void *)window;
 }
 
@@ -24,6 +29,7 @@ static void *native_test_address_parent(void *window) {
 static void native_test_address_close(void *window) {
 	[(__bridge NSWindow *)window close];
 	CFRelease(window);
+	native_finish_test_window();
 }
 
 static NSString *native_test_address_string(const unsigned char *bytes, int length) {
@@ -47,7 +53,8 @@ static int native_test_address_shortcut(void *field, void *owner, VoxAddressShor
 	NSEvent *event = [NSEvent keyEventWithType:NSEventTypeKeyDown location:NSZeroPoint
 		modifierFlags:modifiers timestamp:0 windowNumber:window.windowNumber context:nil
 		characters:@"" charactersIgnoringModifiers:@"" isARepeat:NO keyCode:key];
-	return native_address_bar_filter_key((__bridge NSTextField *)field, owner, callback, event) == nil;
+	(void)owner; (void)callback;
+	return ui2_embedded_key_event((__bridge void *)event) != 0;
 }
 
 static int native_test_address_geometry(void *field, int width) {
@@ -67,7 +74,7 @@ static int native_test_chrome_enabled(void *control) {
 static int native_test_chrome_button(void *control) {
 	return [(__bridge id)control isKindOfClass:NSButton.class]
 		&& ![(__bridge NSButton *)control isBordered]
-		&& [(__bridge NSButton *)control image] != nil;
+;
 }
 
 static int native_test_chrome_geometry(void *toolbar, void *status, int width, int height, int toolbar_height) {
@@ -93,8 +100,7 @@ static int native_test_chrome_document_hit(void *window, void *toolbar, void *st
 }
 
 static int native_test_chrome_unmounted(void *window) {
-	return [(__bridge NSWindow *)window contentView].subviews.count == 0
-		&& vox_chrome_memory_timer == nil && vox_chrome_memory_close_observer == nil;
+	return [(__bridge NSWindow *)window contentView].subviews.count == 0;
 }
 
 static unsigned long native_test_address_selection(void *field) {

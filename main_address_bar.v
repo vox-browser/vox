@@ -1,14 +1,10 @@
 module main
 
+import ui2
+
 $if vox_ui2 ? {
-	import ui2
 	import macos
 	import sokol.sapp
-
-	#include "native_address_bar_darwin.m"
-
-	fn C.native_address_bar_install_shortcuts(field voidptr, owner voidptr, callback fn (voidptr, int))
-	fn C.native_address_bar_remove_shortcuts()
 }
 
 struct AddressBarOwner {
@@ -26,24 +22,22 @@ fn (mut app BrowserApp) mount_address_bar() {
 		mut owner := unsafe { address_bar_owner }
 		owner.app = app
 		size := browser_window_size()
-		field := app.mount_ui2_chrome(voidptr(parent), size.width, size.height) or {
+		app.mount_ui2_chrome(voidptr(parent), size.width, size.height) or {
 			panic(err)
 		}
-		C.native_address_bar_install_shortcuts(field, app, address_bar_shortcut)
-		C.native_browser_settings_install(show_browser_settings)
 	}
 }
 
 fn (mut app BrowserApp) unmount_address_bar() {
+	app.stop_browser_memory_chrome()
+	if app.tabs != unsafe { nil } {
+		for mut tab in app.tabs.pages { tab.stop_browser_memory_chrome() }
+	}
 	$if vox_ui2 ? {
 		if !app.native_address_bar { return }
-		C.native_browser_settings_hide()
-		ui2.remove_embedded_settings()
-		C.native_browser_settings_remove()
-		C.native_browser_tabs_remove()
+		close_browser_settings()
+		ui2.remove_embedded_panel('settings')
 		C.native_browser_chrome_restore_window()
-		C.native_address_bar_remove_shortcuts()
-		C.native_browser_chrome_stop_memory()
 		ui2.unmount_embedded_browser()
 		mut owner := unsafe { address_bar_owner }
 		owner.app = unsafe { nil }
@@ -60,8 +54,13 @@ fn (mut app BrowserApp) resize_address_bar(width int) {
 }
 
 fn (app &BrowserApp) sync_address_bar() {
+	$if linux || ui2_custom_rendering ? {
+		if app.is_active_browser_tab() { ui2.set_text('address', app.address) }
+	}
 	$if vox_ui2 ? {
-		if app.native_address_bar && app.is_active_browser_tab() { ui2.set_text('address', app.address) }
+		if app.native_address_bar && app.is_active_browser_tab() {
+			ui2.set_text('address', app.address)
+		}
 	}
 }
 
@@ -69,12 +68,18 @@ fn (mut app BrowserApp) focus_address_bar() {
 	app.address_active = true
 	app.address_select = true
 	app.address_cursor = app.address.runes().len
+	$if linux || ui2_custom_rendering ? {
+		ui2.select_embedded_textbox()
+	}
 	$if vox_ui2 ? {
 		if app.native_address_bar { ui2.select_embedded_textbox() }
 	}
 }
 
 fn (mut app BrowserApp) blur_address_bar() {
+	$if linux || ui2_custom_rendering ? {
+		ui2.blur_embedded_textbox()
+	}
 	app.address_active = false
 	app.address_select = false
 	$if vox_ui2 ? {
@@ -86,6 +91,9 @@ fn (mut app BrowserApp) submit_address_bar() {
 	if !app.address_bar_editable() { return }
 	$if vox_ui2 ? {
 		if app.native_address_bar { app.address = ui2.text('address') }
+	}
+	$if linux || ui2_custom_rendering ? {
+		app.address = ui2.text('address')
 	}
 	destination := app.address.trim_space()
 	if destination == '' { return }
@@ -104,26 +112,7 @@ fn (mut app BrowserApp) cancel_address_bar() {
 }
 
 $if vox_ui2 ? {
-	fn address_bar_event(event string) {
-		if event.starts_with('settings-') {
-			browser_settings_event(event)
-			if address_bar_owner.app != unsafe { nil } {
-				mut app := address_bar_owner.app.active_browser_tab()
-				app.update_browser_chrome(app.browser_chrome.width, app.browser_chrome.height)
-				request_browser_frame()
-			}
-			return
-		}
-		if address_bar_owner.app == unsafe { nil } { return }
-		mut app := address_bar_owner.app.active_browser_tab()
-		match event {
-			'address-change' {
-				if app.address_bar_editable() { app.address = ui2.text('address') }
-				else { app.sync_address_bar() }
-			}
-			else { app.activate_browser_chrome(event) }
-		}
-	}
+	fn address_bar_event(event string) { browser_ui_event(event) }
 
 	fn address_bar_shortcut(owner voidptr, action int) {
 		mut shell := unsafe { &BrowserApp(owner) }

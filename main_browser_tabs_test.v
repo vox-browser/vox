@@ -424,11 +424,11 @@ $if vox_ui2 ? {
 	fn C.native_test_address_parent(window voidptr) voidptr
 	fn C.native_test_address_close(window voidptr)
 	fn C.native_test_address_shortcut(field voidptr, owner voidptr, callback fn (voidptr, int), key u16, shift int) int
-	fn C.native_test_tabs_count() int
-	fn C.native_test_tabs_click(index int, close int)
-	fn C.native_test_tabs_geometry() int
-	fn C.native_test_tabs_snapshot()
-	fn C.native_test_tabs_drag(index int, dx f64, dy f64)
+	fn C.native_test_tabs_count(control voidptr) int
+	fn C.native_test_tabs_click(control voidptr)
+	fn C.native_test_tabs_geometry(control voidptr) int
+	fn C.native_test_tabs_snapshot(control voidptr)
+	fn C.native_test_tabs_drag(control voidptr, dx f64, dy f64)
 
 	fn test_native_tab_drag_survives_chrome_refresh_and_preserves_close_actions() {
 		window := C.native_test_address_window()
@@ -446,20 +446,20 @@ $if vox_ui2 ? {
 		app.activate_tab_chrome('tab-new')
 		mut third := app.active_browser_tab()
 		third.update_browser_chrome(800, 600)
-		C.native_test_tabs_drag(0, 368, 0)
+		C.native_test_tabs_drag(ui2.embedded_browser_control('tab-0'), 368, 0)
 		assert app.tabs.selected == 2, app.tabs.pending_actions.str()
 		assert voidptr(app.active_browser_tab()) == voidptr(app)
 		assert ui2.text('address') == 'https://tabs.example/first'
-		C.native_test_tabs_drag(2, -368, 0)
+		C.native_test_tabs_drag(ui2.embedded_browser_control('tab-2'), -368, 0)
 		assert app.tabs.selected == 0
 		assert voidptr(app.tabs.pages[0]) == voidptr(app)
-		C.native_test_tabs_drag(0, 368, 25)
+		C.native_test_tabs_drag(ui2.embedded_browser_control('tab-0'), 368, 25)
 		assert app.tabs.selected == 0
 		assert voidptr(app.tabs.pages[0]) == voidptr(app)
-		C.native_test_tabs_drag(0, 2, 0)
+		C.native_test_tabs_drag(ui2.embedded_browser_control('tab-0'), 2, 0)
 		assert app.tabs.selected == 0
-		assert C.native_test_tabs_geometry() == 1
-		C.native_test_tabs_click(1, 1)
+		assert C.native_test_tabs_geometry(ui2.embedded_browser_control('tab-strip')) == 1
+		C.native_test_tabs_click(ui2.embedded_browser_control('tab-close:1'))
 		assert app.tabs.pages.len == 2
 		assert voidptr(app.active_browser_tab()) == voidptr(app)
 		assert voidptr(app.tabs.pages[1]) == voidptr(third)
@@ -467,16 +467,18 @@ $if vox_ui2 ? {
 		for _ in 0 .. 10 { app.activate_tab_chrome('tab-new') }
 		mut last := app.active_browser_tab()
 		last.update_browser_chrome(800, 600)
-		assert C.native_browser_tabs_first() == 3
+		assert ui2.embedded_browser_control('tab-3') != unsafe { nil }
+		assert ui2.embedded_browser_control('tab-2') == unsafe { nil }, 'width=${last.browser_chrome.width} count=${last.browser_chrome.tab_titles.len} selected=${last.browser_chrome.selected_tab} drag=${app.tabs.drag != none}'
 		source := app.tabs.pages[3]
-		C.native_test_tabs_drag(3, 620, 0)
+		C.native_test_tabs_drag(ui2.embedded_browser_control('tab-3'), 620, 0)
 		assert app.tabs.selected == 11
 		assert voidptr(app.tabs.pages[11]) == voidptr(source)
-		C.native_test_tabs_drag(3, 2, 0)
+		C.native_test_tabs_drag(ui2.embedded_browser_control('tab-3'), 2, 0)
 		assert app.tabs.selected == 3
-		assert C.native_browser_tabs_first() == 0
-		assert C.native_browser_tabs_end() == 9
-		assert C.native_test_tabs_geometry() == 1
+		assert ui2.embedded_browser_control('tab-0') != unsafe { nil }
+		assert ui2.embedded_browser_control('tab-8') != unsafe { nil }
+		assert ui2.embedded_browser_control('tab-9') == unsafe { nil }
+		assert C.native_test_tabs_geometry(ui2.embedded_browser_control('tab-strip')) == 1
 	}
 
 	fn test_native_tab_buttons_shortcuts_and_live_address_bar_follow_selection() {
@@ -491,14 +493,14 @@ $if vox_ui2 ? {
 			browser_tabs_test_cleanup(mut app)
 			C.native_test_address_close(window)
 		}
-		assert C.native_test_tabs_count() == 1
-		assert C.native_test_tabs_geometry() == 1
-		C.native_test_tabs_click(-1, 0)
+		assert C.native_test_tabs_count(ui2.embedded_browser_control('tab-strip')) == 1
+		assert C.native_test_tabs_geometry(ui2.embedded_browser_control('tab-strip')) == 1
+		C.native_test_tabs_click(ui2.embedded_browser_control('tab-new'))
 		assert app.tabs.pages.len == 2
 		assert app.tabs.selected == 1
 		mut second := app.active_browser_tab()
 		second.update_browser_chrome(800, 600)
-		assert C.native_test_tabs_count() == 2
+		assert C.native_test_tabs_count(ui2.embedded_browser_control('tab-strip')) == 2
 		assert ui2.text('address') == ''
 		assert ui2.focused_id() == 'address'
 		assert C.native_test_address_shortcut(field, app, address_bar_shortcut, 24, 1) == 1
@@ -507,17 +509,17 @@ $if vox_ui2 ? {
 		assert app.tabs.selected == 0
 		assert app.active_browser_tab().page_zoom == 1
 		assert ui2.text('address') == 'https://tabs.example/first'
-		C.native_test_tabs_click(1, 0)
+		C.native_test_tabs_drag(ui2.embedded_browser_control('tab-1'), 0, 0)
 		assert app.tabs.selected == 1
 		second.update_browser_chrome(800, 600)
-		C.native_test_tabs_snapshot()
+		C.native_test_tabs_snapshot(ui2.embedded_browser_control('tab-strip'))
 		C.native_test_address_shortcut(field, app, address_bar_shortcut, 13, 0)
 		assert app.tabs.pages.len == 1
 		assert voidptr(app.active_browser_tab()) == voidptr(app)
 		assert ui2.text('address') == 'https://tabs.example/first'
 		app.update_browser_chrome(640, 600)
-		assert C.native_test_tabs_count() == 1
-		assert C.native_test_tabs_geometry() == 1
+		assert C.native_test_tabs_count(ui2.embedded_browser_control('tab-strip')) == 1
+		assert C.native_test_tabs_geometry(ui2.embedded_browser_control('tab-strip')) == 1
 	}
 }
 
@@ -664,9 +666,9 @@ $if vox_ui2 ? {
 		}
 		app.activate_tab_chrome('tab-new')
 		app.active_browser_tab().update_browser_chrome(800, 600)
-		C.native_test_tabs_drag(0, 0, 25)
+		C.native_test_tabs_drag(ui2.embedded_browser_control('tab-0'), 0, 25)
 		assert app.tabs.pending_detaches.len == 0
-		C.native_test_tabs_drag(0, 0, 80)
+		C.native_test_tabs_drag(ui2.embedded_browser_control('tab-0'), 0, 80)
 		assert app.tabs.pages.len == 2 && app.tabs.pending_detaches.len == 1
 		assert voidptr(app.tabs.pending_detaches[0].page) == voidptr(app)
 		os.write_file(os.join_path(app.tabs.pending_detaches[0].folder, 'ready'), 'ready')!

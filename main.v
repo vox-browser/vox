@@ -413,6 +413,7 @@ mut:
 	browsing_history                    &browserhistory.Store = unsafe { nil }
 	browsing_history_error              string
 	bookmarks                           &browserbookmarks.Store = unsafe { nil }
+	browser_ui_                         &BrowserUIState = unsafe { nil }
 	bookmarks_error                     string
 	bookmark_overflow_open              bool
 	bookmark_bar_first                  int
@@ -3674,6 +3675,7 @@ fn document_has_window_event_handlers(document &dom.Document) bool {
 }
 
 fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history bool) {
+	app.dismiss_browser_popup()
 	if !app.allow_browser_destination(input_loaded.url) { return }
 	loaded := if is_browser_history_url(input_loaded.url) {
 		LoadedPage{...input_loaded, url: browser_history_url, markup: app.browser_history_markup(), content_type: 'text/html'}
@@ -3899,6 +3901,7 @@ fn error_markup(address string, message string) string {
 }
 
 fn (mut app BrowserApp) navigate(address string, add_history bool) {
+	app.dismiss_browser_popup()
 	// Resolution can allocate after the caller has consumed a pending request.
 	// Keep the source bytes reachable even when trim_space returns a borrowed slice.
 	defer {
@@ -7572,7 +7575,7 @@ fn (app &BrowserApp) element_at_window_point(mouse_x f32, mouse_y f32) ?&dom.Ele
 	if app.document == unsafe { nil } {
 		return none
 	}
-	if mouse_y < app.page_top() || mouse_y >= f32(browser_window_size().height - app.status_height()) {
+	if mouse_y < app.page_top() || mouse_y >= app.page_top() + f32(app.viewport_height) {
 		return none
 	}
 	document_x := f64(mouse_x) / app.page_zoom
@@ -7605,33 +7608,6 @@ fn (mut app BrowserApp) handle_click(x f32, y f32) {
 	if app.suppress_next_click_for_chrome {
 		app.suppress_next_click_for_chrome = false
 		return
-	}
-	$if !vox_ui2 ? {
-		if app.handle_portable_tab_click(x, y) { return }
-		if app.handle_portable_bookmark_click(x, y) { return }
-		if y >= tab_strip_height + 4 && y <= tab_strip_height + 26 {
-			if x >= 5 && x < 27 {
-				app.history_go(-1)
-				return
-			}
-			if x >= 27 && x < 49 {
-				app.history_go(1)
-				return
-			}
-			if x >= 49 && x < 71 {
-				app.reload()
-				return
-			}
-			window := browser_window_size()
-			if x >= f32(window.width - 34) {
-				app.open_browser_history()
-				return
-			}
-			if x >= 78 && x < f32(window.width - 40) {
-				app.focus_address_bar()
-				return
-			}
-		}
 	}
 	app.blur_address_bar()
 }
@@ -7686,7 +7662,6 @@ fn (mut app BrowserApp) handle_event(event &gg.Event) {
 	app.platform_pointer_modifiers = browser_pointer_modifiers(event.modifiers)
 	$if !vox_ui2 ? {
 		if app.handle_portable_bookmark_event(event) { return }
-		if app.handle_browser_tab_drag(event, browser_window_size().width) { return }
 	}
 	if app.navigation_work_depth > 0 {
 		if event.typ == .key_down {
@@ -7837,6 +7812,7 @@ fn (mut app BrowserApp) handle_character(code u32) {
 }
 
 fn (mut app BrowserApp) handle_key(key gg.KeyCode, modifier gg.Modifier) {
+	if app.handle_browser_popup_key(key.str()) { return }
 	if is_browser_settings_shortcut(key, modifier) {
 		show_browser_settings()
 		return

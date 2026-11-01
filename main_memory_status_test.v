@@ -1,93 +1,13 @@
 module main
 
-import browserjs
-import dom
-import gg
 import processmetrics
 
-$if macos {
-	#flag darwin -DVOX_STATIC_MEMORY_STATUS_TEST_STUB
-	#include "main_memory_status_test.h"
-
-	fn C.memory_status_test_reset(available int)
-	fn C.memory_status_test_uses() int
-	fn C.memory_status_test_disables() int
-	fn C.memory_status_test_width() f32
-	fn C.memory_status_test_y() f32
-	fn C.memory_status_test_height() f32
-}
-
-fn memory_status_test_app(scripting_enabled bool) &BrowserApp {
-	mut document := parse_browser_navigation_document_with_scripting('<!doctype html><p>retained static page</p>',
-		dom.url_about_blank(), none, none, none, 0, scripting_enabled)
-	document.update_readiness(.complete)
-	return &BrowserApp{
-		ctx:      &gg.Context{
-			native_rendering: true
-		}
-		document: document
-	}
-}
-
-fn test_memory_status_native_static_path_bypasses_v_sampling_and_painting() {
-	$if macos {
-		C.memory_status_test_reset(1)
-		mut app := memory_status_test_app(false)
-		defer {
-			mut document := app.document
-			document.finalize()
-		}
-		for _ in 0 .. 60 {
-			app.draw_memory_status(1024, 856)
-		}
-		assert C.memory_status_test_uses() == 60
-		assert C.memory_status_test_disables() == 0
-		assert C.memory_status_test_width() == 1024
-		assert C.memory_status_test_y() == 856
-		assert C.memory_status_test_height() == status_bar_height
-		assert !app.memory_status.sampled
-		assert app.memory_status.label == ''
-		assert app.memory_status.next_sample_ns == 0
-	}
-}
-
-fn test_memory_status_native_failure_selects_the_existing_v_fallback() {
-	$if macos {
-		C.memory_status_test_reset(0)
-		app := memory_status_test_app(false)
-		defer {
-			mut document := app.document
-			document.finalize()
-		}
-		assert !app.use_native_memory_status(800, 576)
-		assert C.memory_status_test_uses() == 1
-		assert C.memory_status_test_disables() == 1
-	}
-}
-
-fn test_memory_status_disables_native_label_for_scripted_and_non_native_pages() {
-	$if macos {
-		C.memory_status_test_reset(1)
-		mut scripted := memory_status_test_app(true)
-		mut non_native := memory_status_test_app(false)
-		mut with_runtime := memory_status_test_app(false)
-		mut no_context := memory_status_test_app(false)
-		non_native.ctx = &gg.Context{
-			native_rendering: false
-		}
-		with_runtime.js_runtime = browserjs.Runtime.create_with_engine(.libjs)
-		no_context.ctx = unsafe { nil }
-		for app in [scripted, non_native, with_runtime, no_context, &BrowserApp{}] {
-			assert !app.use_native_memory_status(800, 576)
-		}
-		assert C.memory_status_test_uses() == 0
-		assert C.memory_status_test_disables() == 5
-		with_runtime.js_runtime.close()
-		for app in [scripted, non_native, with_runtime, no_context] {
-			mut document := app.document
-			document.finalize()
-		}
-	}
+$if vox_ui2 ? {
+	import ui2
+	#include "native_address_bar_test_darwin.h"
+	fn C.native_test_address_window() voidptr
+	fn C.native_test_address_parent(voidptr) voidptr
+	fn C.native_test_address_close(voidptr)
 }
 
 fn test_memory_status_refreshes_once_per_second_across_idle_and_busy_frames() {
@@ -107,17 +27,39 @@ fn test_memory_status_refreshes_once_per_second_across_idle_and_busy_frames() {
 }
 
 fn test_memory_status_counts_live_worker_and_returns_to_browser_only_after_stop() {
-	browser := processmetrics.MemorySnapshot{bytes: 100_000_000, available: true}
+	browser := processmetrics.MemorySnapshot{ bytes: 100_000_000, available: true }
 	assert browser_memory_snapshot_including_worker(browser, 0, true).ram_label() == 'RAM: 100.0 MB'
 	assert browser_memory_snapshot_including_worker(browser, 25_000_000, true).ram_label() == 'RAM: 125.0 MB'
 	assert browser_memory_snapshot_including_worker(browser, 0, true) == browser
 }
 
 fn test_memory_status_does_not_hide_child_failure_or_overflow() {
-	browser := processmetrics.MemorySnapshot{bytes: 100_000_000, available: true}
+	browser := processmetrics.MemorySnapshot{ bytes: 100_000_000, available: true }
 	assert !browser_memory_snapshot_including_worker(browser, 0, false).available
 	assert !browser_memory_snapshot_including_worker(processmetrics.MemorySnapshot{}, 1, true).available
-	maximum := processmetrics.MemorySnapshot{bytes: ~u64(0), available: true}
+	maximum := processmetrics.MemorySnapshot{ bytes: ~u64(0), available: true }
 	assert browser_memory_snapshot_including_worker(maximum, 0, true) == maximum
 	assert !browser_memory_snapshot_including_worker(maximum, 1, true).available
+}
+
+fn test_ui2_memory_timer_updates_only_its_label_and_stops_on_unmount() {
+	$if vox_ui2 ? {
+		window := C.native_test_address_window()
+		mut app := &BrowserApp{}
+		app.mount_ui2_chrome(C.native_test_address_parent(window), 800, 600)!
+		timer := app.browser_ui().memory_timer
+		assert timer != unsafe { nil } && timer.is_active()
+		label := ui2.embedded_browser_control('memory')
+		generation := app.navigation_generation
+		paint_count := app.paint_commands.len
+		for _ in 0 .. 3 { app.sample_browser_memory_chrome() }
+		assert ui2.embedded_browser_control('memory') == label
+		assert ui2.text('memory').starts_with('RAM: ')
+		assert app.navigation_generation == generation && app.paint_commands.len == paint_count
+		app.unmount_address_bar()
+		assert !timer.is_active() && app.browser_ui().memory_timer == unsafe { nil }
+		app.sample_browser_memory_chrome()
+		app.unmount_address_bar()
+		C.native_test_address_close(window)
+	}
 }

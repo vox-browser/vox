@@ -1,16 +1,10 @@
 module main
 
 import adblock
-import gg
+import platform
+import ui2
 import processmetrics
 import time
-
-$if macos {
-	#include "native_memory_status_darwin.m"
-
-	fn C.native_use_static_memory_label(width f32, status_y f32, height f32) int
-	fn C.native_disable_static_memory_label()
-}
 
 struct BrowserMemoryStatus {
 mut:
@@ -30,37 +24,56 @@ fn (mut status BrowserMemoryStatus) refresh_if_due(now_ns i64) bool {
 	return true
 }
 
-fn (app &BrowserApp) use_native_memory_status(window_width int, status_y int) bool {
-	$if macos {
-		if app.uses_static_native_memory_policy()
-			&& C.native_use_static_memory_label(f32(window_width), f32(status_y), f32(status_bar_height)) != 0 {
-			return true
-		}
-		C.native_disable_static_memory_label()
-	}
-	return false
+fn (mut app BrowserApp) start_browser_memory_chrome() {
+	app.stop_browser_memory_chrome()
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	mut state := app.browser_ui()
+	owner := voidptr(&app)
+	state.memory_timer = platform.Timer.create_repeating(1000, fn [owner] () {
+		mut app := unsafe { &BrowserApp(owner) }
+		app.sample_browser_memory_chrome()
+	})
+	state.memory_timer.start()
+	app.sample_browser_memory_chrome()
 }
 
-fn (mut app BrowserApp) draw_memory_status(window_width int, status_y int) {
-	if app.use_native_memory_status(window_width, status_y) { return }
-	if app.memory_status.refresh_if_due(time.sys_mono_now()) {
-		$if macos {
-			C.native_wake_browser_after(1000)
-		}
+fn (mut app BrowserApp) stop_browser_memory_chrome() {
+	if app.browser_ui_ == unsafe { nil } { return }
+	mut state := app.browser_ui()
+	if state.memory_timer != unsafe { nil } {
+		state.memory_timer.stop()
+		state.memory_timer = unsafe { nil }
 	}
-	// Reserve an opaque area so long URLs and console messages cannot overlap
-	// the readout. GG's default-size width leaves extra room around 12px text.
-	width := app.ctx.text_width(app.memory_status.label) + 24
-	draw_srgb_rect(app.ctx, f32(window_width - width), f32(status_y), f32(width),
-		f32(status_bar_height), gg.rgb(30, 41, 59))
-	app.ctx.draw_text(window_width - 12, status_y + 4, app.memory_status.label,
-		color: gg.rgb(203, 213, 225)
-		size:  12
-		align: .right
-	)
 }
 
-// Include the live default-filter helper in both native and legacy RAM chrome.
+fn (mut app BrowserApp) sample_browser_memory_chrome() {
+	$if vox_ui2 ? {
+		if !app.native_address_bar || !ui2.embedded_control_attached('memory') {
+			app.stop_browser_memory_chrome()
+			return
+		}
+	}
+	// Formatting and native string copies stay in a disposable scratch scope.
+	// set_text updates only the UI2 label; it never invalidates the document.
+	scratch := platform.begin_thread_scratch('UI2 memory label')
+	defer { scratch.finish() }
+	label := browser_memory_snapshot().ram_label()
+	$if vox_ui2 ? {
+		if ui2.text('memory') != label { ui2.set_text('memory', label) }
+	}
+	$if linux || ui2_custom_rendering ? {
+		mut state := app.browser_ui()
+		if state.memory_label != label {
+			persistent := platform.enter_persistent()
+			state.memory_label = label.clone()
+			platform.leave_persistent(persistent)
+			request_browser_frame()
+		}
+	}
+}
+
+// Include the live default-filter helper in every UI2 backend.
 // An unavailable child sample must not silently under-report an active worker.
 fn browser_memory_snapshot() processmetrics.MemorySnapshot {
 	snapshot := processmetrics.memory_snapshot()
@@ -72,5 +85,5 @@ fn browser_memory_snapshot_including_worker(snapshot processmetrics.MemorySnapsh
 	if !snapshot.available || !worker_available || worker > ~u64(0) - snapshot.bytes {
 		return processmetrics.MemorySnapshot{}
 	}
-	return processmetrics.MemorySnapshot{bytes: snapshot.bytes + worker, available: true}
+	return processmetrics.MemorySnapshot{ bytes: snapshot.bytes + worker, available: true }
 }

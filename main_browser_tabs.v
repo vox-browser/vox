@@ -223,6 +223,8 @@ fn (mut app BrowserApp) move_browser_tab(from int, to int) {
 fn (mut app BrowserApp) select_browser_tab(index int) {
 	if app.tabs == unsafe { nil } || index < 0 || index >= app.tabs.pages.len { return }
 	mut previous := app.active_browser_tab()
+	$if linux || ui2_custom_rendering ? { previous.stop_browser_memory_chrome() }
+	previous.dismiss_browser_popup()
 	previous.blur_address_bar()
 	previous.hovered_link = ''
 	if previous.document != unsafe { nil } {
@@ -272,6 +274,8 @@ fn (mut app BrowserApp) close_browser_tab(index int) {
 }
 
 fn (mut app BrowserApp) dispose_browser_tab() {
+	$if linux || ui2_custom_rendering ? { app.stop_browser_memory_chrome() }
+	app.dismiss_browser_popup()
 	app.release_native_replay_scratch()
 	mut retiring := app.document
 	layout_handle := if retiring != unsafe { nil } {

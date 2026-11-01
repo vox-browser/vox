@@ -15,12 +15,30 @@ pub fn mount_embedded_browser(parent voidptr, elements []Element, handler EventF
 	ensure_runtime_classes()
 	st.window = macos.msg_id(parent, 'window')
 	st.root_view = parent
-	st.event_handler = handler
+	mut callbacks := embedded_callbacks()
+	callbacks.handler = handler
+	st.event_handler = embedded_browser_event
 	st.button_handler = native_new_object('UI2ButtonHandler')
 	update_embedded_browser(elements)
-	field := embedded_browser_control('address')
-	macos.msg_void_bool(field, 'setUsesSingleLineMode:', true)
-	macos.msg_void_bool(macos.msg_id(field, 'cell'), 'setScrollable:', true)
+}
+
+struct EmbeddedCallbacks {
+mut:
+	handler EventFn = unsafe { nil }
+}
+const embedded_callbacks_ = &EmbeddedCallbacks{}
+fn embedded_callbacks() &EmbeddedCallbacks { return unsafe { embedded_callbacks_ } }
+fn embedded_browser_event(event string) {
+	mut normalized := event
+	if event.starts_with('pointer:') && !macos.msg_bool(state().root_view, 'isFlipped') {
+		mut parts := event.split(':')
+		if parts.len == 5 {
+			parts[4] = (native_bounds(state().root_view).height - parts[4].f64()).str()
+			normalized = parts.join(':')
+		}
+	}
+	callbacks := embedded_callbacks()
+	if voidptr(callbacks.handler) != unsafe { nil } { callbacks.handler(normalized) }
 }
 
 pub fn update_embedded_browser(elements []Element) {
@@ -32,7 +50,7 @@ pub fn update_embedded_browser(elements []Element) {
 	// The settings window shares UI2's control registry, but owns its native
 	// root. Toolbar reconciliation must retain that separate subtree.
 	for key, _ in st.nodes {
-		if key == 'vox-settings' || key.starts_with('vox-settings/') { active[key] = true }
+		if key == 'vox-settings' || key.starts_with('vox-settings/') || key.starts_with('vox-panel/') { active[key] = true }
 	}
 	for i, element in elements {
 		frame := element.frame
@@ -46,18 +64,26 @@ pub fn update_embedded_browser(elements []Element) {
 		key := reconciliation_child_key('', i, placed)
 		render_element(st.root_view, placed, key, mut active)
 	}
-	remove_stale_embedded_registrations(active)
+	mut ids := map[string]bool{}
+	collect_embedded_control_ids(elements, mut ids)
+	remove_stale_embedded_registrations(active, ids)
 	remove_stale_nodes(active)
 }
 
 // UI2 removes native nodes separately from its control-ID registry. Dynamic
 // strips and overflow rows must disappear from both, including after a resize
 // moves a surviving ID into a different subtree.
-fn remove_stale_embedded_registrations(active map[string]bool) {
+fn collect_embedded_control_ids(elements []Element, mut ids map[string]bool) {
+	for element in elements {
+		if element.id != '' { ids[element.id] = true }
+		collect_embedded_control_ids(element.children, mut ids)
+	}
+}
+fn remove_stale_embedded_registrations(active map[string]bool, ids map[string]bool) {
 	mut st := state()
 	mut stale := []string{}
 	for id, key in st.view_keys {
-		if key !in active { stale << id }
+		if key !in active || (id !in ids && key != 'vox-settings' && !key.starts_with('vox-settings/') && !key.starts_with('vox-panel/')) { stale << id }
 	}
 	for id in stale {
 		st.views.delete(id)
@@ -91,6 +117,17 @@ pub fn embedded_browser_control(id string) voidptr {
 	return st.views[id] or { unsafe { nil } }
 }
 
+pub fn embedded_control_attached(id string) bool {
+	control := embedded_browser_control(id)
+	return !native_is_nil(control) && !native_is_nil(macos.msg_id(control, 'window'))
+}
+
+pub fn copy_embedded_text(value string) {
+	board := macos.msg_id(macos.get_class('NSPasteboard'), 'generalPasteboard')
+	macos.msg_void(board, 'clearContents')
+	macos.msg_void2(board, 'setString:forType:', macos.nsstring(value), macos.nsstring('public.utf8-plain-text'))
+}
+
 pub fn select_embedded_textbox() {
 	field := embedded_browser_control('address')
 	focus('address')
@@ -106,6 +143,7 @@ pub fn blur_embedded_textbox() {
 pub fn unmount_embedded_browser() {
 	mut st := state()
 	if native_is_nil(st.window) { return }
+	remove_embedded_keys()
 	blur_embedded_textbox()
 	remove_stale_nodes(map[string]bool{})
 	st.views.clear()

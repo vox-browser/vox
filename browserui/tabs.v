@@ -36,6 +36,7 @@ pub fn tab_strip(width f64, tabs []Tab, new_x f64) ui2.Element {
 		children << ui2.Element{
 			...ui2.view('tab-${tab.index}', ui2.rect(tab.x, 5, tab.width, 24),
 				ui2.BoxStyle{ bg: if tab.selected { u32(0xf7f7f7) } else { u32(0xd2d2d2) }, radius: 8 }, content)
+			key:                 'tab-${tab.index}'
 			action_id:           'tabdrag-${tab.index}'
 			clickable:           true
 			draggable:           true
@@ -53,7 +54,7 @@ pub fn tab_strip(width f64, tabs []Tab, new_x f64) ui2.Element {
 	return ui2.Element{
 		...ui2.view('tab-strip', ui2.rect(0, 0, width, 29), ui2.BoxStyle{ bg: 0xdbdbdb }, children)
 		accessibility_role: 'tab_list'
-		action_id: 'window-drag'
-		clickable: true
+		action_id:          'window-drag'
+		clickable:          true
 	}
 }

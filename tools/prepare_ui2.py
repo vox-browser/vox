@@ -48,6 +48,33 @@ def main():
                 "\tif macos.msg_bool_id(view, 'isKindOfClass:', macos.get_class('NSTextField')) {\n"
                 "\t\treturn view\n\t}\n",
             )
+            text = text.replace(
+                "\t\t.text_field {\n\t\t\tregister_control(native, element_action_id(el), el.submit_id, el.emit_change)",
+                "\t\t.text_field {\n\t\t\tmacos.msg_void_bool(native, 'setUsesSingleLineMode:', true)\n"
+                "\t\t\tmacos.msg_void_bool(macos.msg_id(native, 'cell'), 'setScrollable:', true)\n"
+                "\t\t\tmacos.msg_void_bool(native, 'setEditable:', !el.readonly)\n"
+                "\t\t\tmacos.msg_void_bool(native, 'setSelectable:', true)\n"
+                "\t\t\tregister_control(native, element_action_id(el), el.submit_id, el.emit_change)",
+            )
+            text = text.replace(
+                "macos.add_method(cls, 'mouseUp:', ui2_pointer_mouse_up, 'v@:@')",
+                "macos.add_method(cls, 'mouseUp:', ui2_pointer_mouse_up, 'v@:@')\n"
+                "\t\tmacos.add_method(cls, 'otherMouseDown:', ui2_embedded_pointer_other, 'v@:@')",
+            )
+            text = text.replace(
+                "macos.add_method(cls, 'mouseUp:', voidptr(ui2_pointer_mouse_up), 'v@:@')",
+                "macos.add_method(cls, 'mouseUp:', voidptr(ui2_pointer_mouse_up), 'v@:@')\n"
+                "\t\tmacos.add_method(cls, 'otherMouseDown:', voidptr(ui2_embedded_pointer_other), 'v@:@')",
+            )
+            text = text.replace(
+                "\tnative_apply_common_view_state(native, el.hidden",
+                "\tmacos.msg_void1(native, 'setIdentifier:', macos.nsstring(el.id))\n"
+                "\tnative_apply_common_view_state(native, el.hidden",
+            )
+            text = text.replace(
+                "if !(st.pointer_buttons[pointer] or { false }) || voidptr(st.event_handler) == unsafe { nil } {",
+                "if (!(st.pointer_buttons[pointer] or { false }) && !(st.pointer_draggable[pointer] or { false })) || voidptr(st.event_handler) == unsafe { nil } {",
+            )
             # A native-styled transparent button is flat at rest. Let UI2's
             # backend supply the hover/pressed bezel, without browser subclasses.
             text = text.replace(
@@ -62,6 +89,19 @@ def main():
                 "\t\tmacos.msg_void1(button_view, 'setFont:', native_font(size, bold, italic))\n"
                 "\t\tnative_control_set_attributed_title(button_view, title, text_hex, size, bold, italic, underline)\n"
                 "\t} else if native_style && box_draws_fill(box) {",
+            )
+            write_if_changed(output, text)
+        elif entry.name == "ui_macos_objc_darwin.v":
+            if output.is_symlink():
+                output.unlink()
+            text = entry.read_text().replace(
+                "\t\t'switch' { macos.nsstring('AXCheckBox') }",
+                "\t\t'switch' { macos.nsstring('AXCheckBox') }\n"
+                "\t\t'tab' { macos.nsstring('AXRadioButton') }\n"
+                "\t\t'tab_list' { macos.nsstring('AXTabGroup') }\n"
+                "\t\t'menu' { macos.nsstring('AXMenu') }\n"
+                "\t\t'menu_item' { macos.nsstring('AXMenuItem') }\n"
+                "\t\t'group' { macos.nsstring('AXGroup') }",
             )
             write_if_changed(output, text)
         else:
@@ -81,6 +121,7 @@ def main():
             text = text.replace("math.max(0, math.min(1,", "math.max(0.0, math.min(1.0,")
             text = text.replace("math.max(48, f64(", "math.max(48.0, f64(")
             text = text.replace("math.max(0, r * r", "math.max(0.0, r * r")
+            text = text.replace("if el.enabled && !el.readonly {", "if el.enabled {")
             # Transparent buttons are used as dismiss targets over documents.
             text = text.replace(
                 "\t\t\t\t} else {\n\t\t\t\t\tdraw_rect(ctx, x, y, el.frame.width, el.frame.height, el.box.bg, el.box.radius)",
@@ -122,7 +163,7 @@ def main():
     adapter.mkdir(exist_ok=True)
     # Remove the previous single-control adapter when refreshing an old stage.
     (adapter / "embedded_textbox_darwin.v").unlink(missing_ok=True)
-    for name in ("embedded_browser_darwin.v", "embedded_elements_custom.c.v"):
+    for name in ("embedded_browser_darwin.v", "embedded_elements_custom.c.v", "embedded_input_darwin.v", "embedded_input_darwin.h", "embedded_panel_darwin.v", "embedded_host_linux.v", "embedded_host_linux.h"):
         write_if_changed(adapter / name, (repo / "tools/ui2" / name).read_text())
     write_if_changed(
         target / "v.mod",

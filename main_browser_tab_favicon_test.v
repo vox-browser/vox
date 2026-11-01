@@ -7,6 +7,10 @@ import html
 import os
 import platform
 
+$if vox_ui2 ? {
+	import ui2
+}
+
 const tab_favicon_test_png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII='
 
 fn tab_favicon_test_app(address string, markup string) &BrowserApp {
@@ -100,23 +104,14 @@ fn test_tab_favicons_follow_page_owners_and_clear_after_navigation() {
 	assert first.browser_chrome_state(800, 600).tab_favicons == [-1, -1]
 }
 
-$if macos {
-	$if !vox_ui2 ? {
-		#include "native_portable_tabs_paint_test_darwin.h"
-		fn C.native_test_portable_tabs_begin(width int, height int) int
-		fn C.native_test_portable_tabs_pixel(x int, y int) u32
-		fn C.native_test_portable_tabs_end()
-
-		fn test_portable_tabs_paint_site_favicon() {
-			assert C.native_test_portable_tabs_begin(800, 600) == 1
-			defer { C.native_test_portable_tabs_end() }
-			icon := 'data:image/png;base64,${tab_favicon_test_png}'
-			mut app := tab_favicon_test_app('https://site.example/', '<link rel="icon" href="${icon}">')
-			defer { app.document.finalize() }
-			app.draw_portable_browser_tabs(800)
-			assert C.native_test_portable_tabs_pixel(82, 17) == u32(0x000000ff)
-		}
-	}
+fn test_shared_ui2_tabs_receive_the_cached_site_favicon_path() {
+    icon := 'data:image/png;base64,${tab_favicon_test_png}'
+    mut app := tab_favicon_test_app('https://site.example/', '<link rel="icon" href="${icon}">')
+    defer { app.document.finalize() }
+    strip := app.browser_tab_strip(app.browser_chrome_state(800,600))
+    image := strip.children[3].children[0]
+    assert image.id == 'tab-icon-0' && os.is_file(image.image_path)
+    assert image.frame.width == 16 && image.frame.height == 16
 }
 
 fn test_tab_favicon_ignores_unsafe_icons_and_internal_pages() {
@@ -153,8 +148,8 @@ $if vox_ui2 ? {
 	fn C.native_test_address_window() voidptr
 	fn C.native_test_address_parent(window voidptr) voidptr
 	fn C.native_test_address_close(window voidptr)
-	fn C.native_test_tabs_has_icon(index int) int
-	fn C.native_test_tabs_icon_pixel(index int, x int, y int) u32
+	fn C.native_test_tabs_has_icon(control voidptr) int
+	fn C.native_test_tabs_icon_pixel(control voidptr, x int, y int) u32
 
 	fn test_native_tabs_receive_favicon_and_paint_it_beside_the_title() {
 		window := C.native_test_address_window()
@@ -166,12 +161,12 @@ $if vox_ui2 ? {
 			app.document.finalize()
 			C.native_test_address_close(window)
 		}
-		assert C.native_test_tabs_has_icon(0) == 1
-		assert C.native_test_tabs_icon_pixel(0, 20, 12) == u32(0x000000ff)
+		assert C.native_test_tabs_has_icon(ui2.embedded_browser_control('tab-0')) == 1
+		assert C.native_test_tabs_icon_pixel(ui2.embedded_browser_control('tab-0'), 20, 12) == u32(0x000000ff)
 		mut link := unsafe { &dom.Element(app.document.get_element_by_id('icon')?) }
 		link.set_attribute_value('rel', 'stylesheet')
 		app.document.set_url(dom.url_about_blank())
 		app.update_browser_chrome(800, 600)
-		assert C.native_test_tabs_has_icon(0) == 0
+		assert C.native_test_tabs_has_icon(ui2.embedded_browser_control('tab-0')) == 0
 	}
 }

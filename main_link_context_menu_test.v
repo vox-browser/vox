@@ -7,11 +7,7 @@ $if macos {
 	#include "native_link_context_menu_test_darwin.h"
 	fn C.vox_link_test_begin() voidptr
 	fn C.vox_link_test_end(voidptr)
-	fn C.vox_link_test_count() int
-	fn C.vox_link_test_cancel()
-	fn C.vox_link_test_open_in_new_tab()
 	fn C.vox_link_test_clipboard_matches(&u8, int) int
-	fn C.vox_link_test_position_matches(voidptr, f64, f64) int
 }
 
 fn link_context_menu_test_app() &BrowserApp {
@@ -34,11 +30,23 @@ fn link_context_menu_test_point(app &BrowserApp, id string) (f32, f32) {
 fn link_context_menu_test_click(mut app BrowserApp, x f32, y f32, button gg.MouseButton) {
 	app.handle_event(&gg.Event{ typ: .mouse_down, mouse_button: button, mouse_x: x, mouse_y: y })
 	app.handle_event(&gg.Event{ typ: .mouse_up, mouse_button: button, mouse_x: x, mouse_y: y })
+	if popup := app.browser_ui().popup {
+		mut state := unsafe { link_popup_test_state }
+		state.count++
+		state.x = popup.x
+		state.y = popup.y
+		index := if state.choose == 2 { 0 } else { 1 }
+		app.browser_popup_action(if state.choose == 0 {
+			'browser-menu:${popup.token}:dismiss'
+		} else {
+			popup.action(index)
+		})
+	}
 }
 
 fn test_link_url_uses_clicked_ancestor_document_base_and_live_href() {
 	$if macos {
-		window := C.vox_link_test_begin()
+		window := link_popup_test_begin()
 		defer { C.vox_link_test_end(window) }
 		mut app := link_context_menu_test_app()
 		defer { app.dispose_browser_tab() }
@@ -59,7 +67,7 @@ fn test_link_url_uses_clicked_ancestor_document_base_and_live_href() {
 
 fn test_right_click_copies_link_url_without_navigation_and_cancel_preserves_clipboard() {
 	$if macos {
-		window := C.vox_link_test_begin()
+		window := link_popup_test_begin()
 		defer { C.vox_link_test_end(window) }
 		mut app := link_context_menu_test_app()
 		defer { app.dispose_browser_tab() }
@@ -69,24 +77,24 @@ fn test_right_click_copies_link_url_without_navigation_and_cancel_preserves_clip
 		x, y := link_context_menu_test_point(app, 'label')
 		link_context_menu_test_click(mut app, x, y, .right)
 		expected := 'https://cdn.example/download?q=one&lang=ru#part'
-		assert C.vox_link_test_count() == 1
-		assert C.vox_link_test_position_matches(window, x, y) == 1
+		assert link_popup_test_state.count == 1
+		assert link_popup_test_state.x == x && link_popup_test_state.y == y
 		assert C.vox_link_test_clipboard_matches(expected.str, expected.len) == 1
 		assert voidptr(app.document) == voidptr(document)
 		assert app.pending_native_navigation == none
 		assert app.platform_pointer_buttons == 0
 		assert app.navigation_generation == 0
-		C.vox_link_test_cancel()
+		link_popup_test_choose(0)
 		ex, ey := link_context_menu_test_point(app, 'empty')
 		link_context_menu_test_click(mut app, ex, ey, .right)
-		assert C.vox_link_test_count() == 2
+		assert link_popup_test_state.count == 2
 		assert C.vox_link_test_clipboard_matches(expected.str, expected.len) == 1
 	}
 }
 
 fn test_right_click_ignores_nonlinks_and_chrome_and_hit_tests_zoomed_links() {
 	$if macos {
-		window := C.vox_link_test_begin()
+		window := link_popup_test_begin()
 		defer { C.vox_link_test_end(window) }
 		mut app := link_context_menu_test_app()
 		defer { app.dispose_browser_tab() }
@@ -95,12 +103,12 @@ fn test_right_click_ignores_nonlinks_and_chrome_and_hit_tests_zoomed_links() {
 			link_context_menu_test_click(mut app, x, y, .right)
 		}
 		link_context_menu_test_click(mut app, 10, 10, .right)
-		assert C.vox_link_test_count() == 0
+		assert link_popup_test_state.count == 0
 		app.page_zoom = 2
 		app.relayout(800, 600)
 		x, y := link_context_menu_test_point(app, 'label')
 		link_context_menu_test_click(mut app, x, y, .right)
-		assert C.vox_link_test_count() == 1
+		assert link_popup_test_state.count == 1
 		expected := 'https://cdn.example/download?q=one&lang=ru#part'
 		assert C.vox_link_test_clipboard_matches(expected.str, expected.len) == 1
 	}
@@ -108,7 +116,7 @@ fn test_right_click_ignores_nonlinks_and_chrome_and_hit_tests_zoomed_links() {
 
 fn test_link_context_menu_opens_a_background_tab_after_navigation_work_unwinds() {
 	$if macos {
-		window := C.vox_link_test_begin()
+		window := link_popup_test_begin()
 		defer { C.vox_link_test_end(window) }
 		mut app := link_context_menu_test_app()
 		app.initialize_browser_tabs()
@@ -121,11 +129,16 @@ fn test_link_context_menu_opens_a_background_tab_after_navigation_work_unwinds()
 		link.set_attribute_value('href', 'about:home')
 		app.address = 'unfinished address edit'
 		app.hovered_link = 'https://wrong.example/hovered'
-		C.vox_link_test_open_in_new_tab()
+		link_popup_test_choose(2)
 		// Production mouse-up holds navigation work while the menu tracks.
 		app.navigation_work_depth = 1
 		app.show_link_context_menu(x, y)
-		assert C.vox_link_test_count() == 2
+		if popup := app.browser_ui().popup {
+			mut state := unsafe { link_popup_test_state }
+			state.count++
+			app.browser_popup_action(popup.action(0))
+		}
+		assert link_popup_test_state.count == 2
 		assert app.tabs.pages.len == 1
 		assert app.tabs.pending_actions == ['tab-open-background:about:home']
 		assert C.vox_link_test_clipboard_matches(copied.str, copied.len) == 1
@@ -143,10 +156,32 @@ fn test_link_context_menu_opens_a_background_tab_after_navigation_work_unwinds()
 		assert app.platform_pointer_buttons == 0
 		// The same choice also opens immediately when no work scope is active.
 		link_context_menu_test_click(mut app, x, y, .right)
-		assert C.vox_link_test_count() == 3
+		assert link_popup_test_state.count == 3
 		assert app.tabs.pages.len == 3
 		assert app.tabs.pages[2].document.url_string() == 'about:home'
 		assert voidptr(app.active_browser_tab()) == voidptr(app)
 		assert voidptr(app.document) == voidptr(document)
 	}
+}
+
+struct LinkPopupTestState {
+mut:
+	count  int
+	choose int = 1
+	x      f64
+	y      f64
+}
+
+const link_popup_test_state = &LinkPopupTestState{}
+
+fn link_popup_test_begin() voidptr {
+	mut state := unsafe { link_popup_test_state }
+	state.count = 0
+	state.choose = 1
+	return C.vox_link_test_begin()
+}
+
+fn link_popup_test_choose(choice int) {
+	mut state := unsafe { link_popup_test_state }
+	state.choose = choice
 }

@@ -38,6 +38,9 @@ def main():
                     '<script>window.processIdentity=Math.random();document.title="Process First "+window.processIdentity;</script>')
     second_page = output / 'second.html'
     second_page.write_text('<!doctype html><title>Process Second</title><body style="background:#394cad">Second process')
+    profile = output / 'profile'
+    profile.mkdir()
+    (profile / 'settings.json').write_text(json.dumps({'allow_any_site': True}) + '\n')
     env = dict(os.environ, VOX_TEST_WINDOW='1', VOX_PROFILE_DIR=str(output / 'profile'),
                LADYBIRD_CACHE_DIR=str(output / 'cache'), VOX_TAB_PROBE_DIR=str(output),
                DYLD_INSERT_LIBRARIES=str(library))
