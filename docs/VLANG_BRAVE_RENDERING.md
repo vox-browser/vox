@@ -1191,3 +1191,132 @@ preserved in `Vox-pinned-resize-installed.app`. Its native library hashes and
 unchanged final identity are recorded in `validation-final-identity.json`.
 These results correct CPU upload consistency, not the remaining Brave decode
 choice, live-page differences or scale-two raster differences.
+
+## Root scrolling and independent image grids
+
+`48e8106d` restores the root scroll offset when locating an image inside an
+independent compositor layer's raster grid. Display-list matrices already
+project that scrolling into the image's viewport region. Subtracting only the
+layer's document origin selected the wrong tile, or rejected the grid and
+fell back to a tight image surface. The root-layer calculation is unchanged.
+The resumed vlang footer exercises these coordinates, but its remaining
+97-pixel book difference is unchanged by this fix.
+
+The focused ASan/UBSan check compares 64 scenes against two independently drawn
+complete GPU tiles. It covers both display scales, adjacent tile seams, four
+MSAA selections, two root scroll offsets, browser chrome offsets and local
+scrolling. All 64 scenes match exactly. Restoring the preceding formula rejects
+32 grids and produces 352 differing pixels. A separate public-bridge comparison
+uses equivalent projected and document coordinate bases: all sixteen scenes
+match, while the old formula produces 88 differing pixels. The 42 existing root
+image-row comparisons also remain exact.
+
+Run the focused positive and negative checks with:
+
+```sh
+python3 tools/test_scrolled_image_grid.py --negative-control
+```
+
+Add `--bridge-library PATH` to exercise a completed browser's native text
+library through the same sixteen public-bridge cases. The old completed
+production library fails those cases; the candidate library and rebuilt
+production library pass. The existing image-region harness passes 1,920 GPU
+comparisons and 2,592 bridge/grid comparisons. Its non-root local-scroll cases
+now describe their coordinate basis consistently; projected root scrolling is
+covered separately by the new test. All eleven native image/gradient programs
+pass. That broad run compiled the 64-scene test before the public-bridge cases
+were added; the final focused run supplies the latter's separate coverage.
+
+The private candidate passes 55 of 56 current strict browser fixtures. The
+newly added CNN opaque-mask fixture fails with 120 one-level differences on
+both the old baseline and candidate; their native PNGs are byte-identical.
+The complete candidate suite therefore exits one, and is not a whole-suite
+pass. Its fixed-reference vlang samples stay at 4/14,681/0/97 differences for
+Y 0/8800/6400/10701. None of these results establishes full page parity.
+
+Evidence is retained under `Build/vlang-decode-policy-20261101/`:
+
+- [Focused positive/negative result](../Build/vlang-decode-policy-20261101/scrolled-grid-bridge-final/status.json)
+  accompanies source/module hashes, commands, sanitizer logs and memory guards.
+  Its `bridge-runtime.log` tests the preserved candidate native library.
+- `image-region-regressions.{json,log}` and `native-regressions/` retain the
+  existing comparison and eleven-program results.
+- `image-grid-strict.{json,log}` retains the failed 56-case candidate run;
+  [CNN baseline comparison](../Build/vlang-decode-policy-20261101/cnn-baseline-comparison.json)
+  identifies the unchanged failure without waiving it.
+- [Candidate page captures](../Build/vlang-decode-policy-20261101/image-grid-candidate-page/status.json)
+  retain the unchanged sampled page errors against fixed earlier references.
+- `image-grid-production-{guard,status}.json` records the successful production
+  build: 457.07 seconds and 8.21 GiB sampled peak RSS under the 12 GiB guard.
+  Other sessions changed shared source inputs during compilation, so whole-file
+  stability is false. `image-grid-feature-source-audit.json` separately pins
+  the unchanged grid function and the completed library's behavioral check.
+
+The rebuilt browser is preserved in `Vox-image-grid-installed.app`, executable
+`c1fac2b689de3a25e44a18519de1e4a4015432e5da021e944f075e5f30151ca1`,
+native text library
+`c6a1960392ff18ff854ec39e5904f8074dc59af06947771a9a4a287226516cfe`.
+It passes startup, all fourteen screenshot smoke checks and eight exact
+image/gradient/table golds. Its strict suite passes 55/56: the CNN fixture now
+has seven one-level differences, byte-identical to the intervening completed
+production baseline. That different baseline explains the difference from the
+private candidate's 120-pixel failure; neither reduction is attributed to this
+image-grid fix. `cnn-production-comparison.json` retains the comparison.
+
+Both its frozen vlang navigation and separate live navigation exit 139 before
+loading a document. The retained stacks locate the crash in
+`begin_stationary_document_raster()`, which this mixed build acquired during
+compilation. The nil-document guard is subsequently committed as `962b53ba`;
+the preceding binary does not contain it. Those page checks fail, and the
+aggregate validation exits one. The preserved candidate supplies separate
+page evidence, not a successful result for the crashing production executable.
+`image-grid-validation-status.json` retains every stage exit. The corrected
+public-library check in `image-grid-production-gpu-v2-status.json` also audits
+the actual production Metal and native text dylib loads; its earlier attempt
+lost DYLD variables across the protected Python exec boundary and does not
+establish GPU-library identity.
+
+The completed candidate sweep captures all sixteen earlier page positions.
+Every decoded RGBA buffer is byte-identical to the preceding pinned-resize
+bundle, including the remaining Lilly and book errors. All sixteen documents
+have complete readiness, loaded font sets, matching identities/viewports and
+zero reported native errors; all audited visible image requests complete.
+The candidate's separate live scripted navigation also completes with five
+visible image requests loaded and zero native errors. This supplies loading
+evidence only. `image-grid-candidate-{validation-status,page-audit}.json` and
+`image-grid-candidate-live/status.json` retain these results and the unchanged
+candidate executable/library identity.
+
+### Partial-response decode diagnostic
+
+A new controlled HTTP experiment reproduces the Lilly decode variation.
+Three identical, explicitly async images receive the same PNG bytes, split
+after the first 32 KiB. With no pause, Brave's crop matches Vox. Pausing for
+50 or 200 milliseconds before sending the remainder yields 14,993 and 14,995
+different crop pixels respectively. Each capture waits for complete loading
+and the same two-second settle interval. This is one diagnostic run, not a
+stability cohort or acceptance result.
+
+An independent fresh windowed page with auto, sync and async decoding hints
+likewise matches the existing reduced upload only for async: the other two
+crops each differ by 14,994 pixels. Forcing a full upload solely in a private
+Lilly-sized probe makes Y 8800 exact against the fixed full-resolution page
+reference. That dimension-specific probe remains under `Build/` and is not
+part of the implementation.
+
+Chromium's [checker-image tracker](https://chromium.googlesource.com/chromium/src/+/refs/tags/156.0.8078.48/cc/tiles/checker_image_tracker.cc)
+vetoes async checkering for partially loaded images. Its
+[GPU decode cache](https://chromium.googlesource.com/chromium/src/+/refs/tags/156.0.8078.48/cc/tiles/gpu_image_decode_cache.cc)
+also disables reduced uploads for cropped source requests unless clipped-image
+scaling is explicitly enabled. These paths offer a concrete explanation for
+the observed variant change, but the experiment does not prove which internal
+cache request won. Vox's current browser image loader publishes complete
+responses, so it cannot yet reproduce that partial-load decision sequence.
+Forcing an upload solely from the HTML decoding hint would be insufficient.
+
+`lilly-decode-modes-before/`, `lilly-progressive-response/` and
+`lilly-full-probe-page/` preserve captures, audits, identities, commands and
+guards. The partial-response directory also records the PNG hash, exact split,
+delays and per-crop counts. Plane upload, CPU versus GPU plane mip generation,
+source endpoint rounding and Metal-versus-Dawn probes leave the 97 book pixels
+unchanged. Full live-page and scale-two conformance remain open.
