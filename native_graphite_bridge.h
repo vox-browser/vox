@@ -136,6 +136,16 @@ typedef struct VoxGraphitePixelRegion {
     int x, y, width, height, pitch;
     uint8_t *pixels;
 } VoxGraphitePixelRegion;
+typedef struct VoxGraphitePictureRegion {
+    VoxGraphitePixelRegion output;
+    const void *bytes;
+    size_t size;
+    float matrix[9];
+} VoxGraphitePictureRegion;
+// Independent tiles of one picture group. Inputs remain immutable throughout
+// the call. Wait once, and publish no CPU output unless every transfer succeeds.
+int vox_graphite_draw_picture_regions_pixels(const VoxGraphitePictureRegion *regions,
+    int count, int surface_width, int surface_height);
 // Image interpolation uses the complete surface extent. Only the region has a
 // CPU backdrop; the rest is transparent. Failure leaves the region untouched.
 int vox_graphite_draw_image_region_pixels(const VoxGraphitePixelRegion *region,

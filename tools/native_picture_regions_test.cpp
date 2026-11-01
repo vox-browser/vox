@@ -2,7 +2,7 @@
 #include <cassert>
 #include <iostream>
 
-static std::vector<uint8_t> gradient_text(int scale, float phase, bool partial,
+static std::vector<uint8_t> gradient_text(float scale, float phase, bool partial,
     bool translucent, bool regional)
 {
     constexpr int w = 256, h = 192;
@@ -55,7 +55,7 @@ int main()
     auto region = picture_region_draw();
     assert(region); // A missing optional symbol must not masquerade as coverage.
     unsigned cases = 0;
-    for (int scale : {1, 2}) for (float phase : {0.f, .25f, .5f, .75f})
+    for (float scale : {1.f, 1.25f, 1.5f, 2.f, 3.f}) for (float phase : {0.f, .25f, .5f, .75f})
     for (bool partial : {false, true}) for (bool translucent : {false, true}) {
         auto expected = gradient_text(scale, phase, partial, translucent, false);
         auto actual = gradient_text(scale, phase, partial, translucent, true);
@@ -106,5 +106,61 @@ int main()
     assert(!region(untouched.data(), 320, 256, 3, 0, 0, 1, 1,
         bytes->data(), bytes->size(), identity));
     assert(untouched == saved);
+
+    auto batch = picture_regions_draw(); assert(batch);
+    SkPictureRecorder analytic;
+    auto* other = analytic.beginRecording(SkRect::MakeWH(320, 256));
+    std::vector<uint32_t> image_pixels(32 * 24);
+    for (size_t i = 0; i < image_pixels.size(); ++i) image_pixels[i] = 0xff000000 | unsigned(i * 0x172931);
+    auto image = SkImages::RasterFromPixmapCopy(SkPixmap(
+        SkImageInfo::MakeN32Premul(32, 24), image_pixels.data(), 32 * 4));
+    other->drawImage(image, 7.25f, 11.5f);
+    other->drawRoundRect(SkRect::MakeXYWH(24.5f, 19.75f, 231, 161), 17, 9, ink);
+    SkSerialProcs procs;
+    procs.fImageProc = serialize_shared_picture_image;
+    auto second = analytic.finishRecordingAsPicture()->serialize(&procs); assert(second);
+    for (int scale : {1, 2}) {
+        std::vector<std::vector<uint8_t>> storage;
+        std::vector<VoxGraphitePictureRegion> requests;
+        for (int i = 0; i < 4; ++i) {
+            int x = 3 + i * 13, y = 7 + i * 9, w = 75 + i * 17, h = 53 + i * 11;
+            int pitch = w * 4 + 13;
+            storage.emplace_back(size_t(pitch) * h + 1, 0xa9);
+            auto const& selected = i % 2 ? second : bytes;
+            requests.push_back({{x, y, w, h, pitch, storage.back().data() + 1},
+                selected->data(), selected->size(),
+                {float(scale), 0, i * 7.25f, 0, float(scale), i * -3.5f, 0, 0, 1}});
+        }
+        assert(batch(requests.data(), int(requests.size()), 320, 256));
+        for (size_t i = 0; i < requests.size(); ++i) {
+            auto const& r = requests[i];
+            std::vector<uint8_t> expected(320 * 256 * 4);
+            assert(shared_picture_draw()(expected.data(), 320, 256, 320 * 4,
+                r.bytes, r.size, r.matrix));
+            for (int y = 0; y < r.output.height; ++y) {
+                auto* row = r.output.pixels + size_t(y) * r.output.pitch;
+                assert(!std::memcmp(row, expected.data()
+                    + (size_t(r.output.y + y) * 320 + r.output.x) * 4, size_t(r.output.width) * 4));
+                for (int x = r.output.width * 4; x < r.output.pitch; ++x) assert(row[x] == 0xa9);
+            }
+            assert(storage[i].front() == 0xa9);
+            ++cases;
+        }
+        auto saved_storage = storage;
+        auto original = requests.back();
+        requests.back().output.x = 320;
+        assert(!batch(requests.data(), int(requests.size()), 320, 256));
+        assert(storage == saved_storage);
+        requests.back() = original;
+        char malformed[] = "invalid picture";
+        requests.back().bytes = malformed;
+        requests.back().size = sizeof(malformed);
+        assert(!batch(requests.data(), int(requests.size()), 320, 256));
+        assert(storage == saved_storage);
+        requests.back() = original;
+        requests.back().matrix[0] = NAN;
+        assert(!batch(requests.data(), int(requests.size()), 320, 256));
+        assert(storage == saved_storage);
+    }
     std::cout << cases << " picture-region scenes match full targets; invalid transfers leave output unchanged\n";
 }

@@ -27,6 +27,7 @@
 #include <pthread.h>
 #include <vector>
 #include <chrono>
+#include <algorithm>
 
 namespace {
 std::mutex gpu_mutex;
@@ -123,15 +124,42 @@ skgpu::graphite::Context* context()
 }
 
 class PictureImageProvider final : public skgpu::graphite::ImageProvider {
+    struct Entry {
+        sk_sp<const SkImage> source;
+        sk_sp<SkImage> texture;
+        SkImage::RequiredProperties properties;
+    };
+    std::vector<Entry> images;
+    size_t bytes = 0;
+    bool reuse_images;
+    unsigned reused = 0;
+public:
+    explicit PictureImageProvider(bool reuse = false) : reuse_images(reuse) {}
+    unsigned reuse_count() const { return reused; }
+private:
     sk_sp<SkImage> findOrCreate(skgpu::graphite::Recorder* recorder, SkImage const* image,
         SkImage::RequiredProperties properties) override
     {
+        if (reuse_images) for (auto const& entry : images)
+            if (entry.source.get() == image && entry.properties == properties) {
+                ++reused;
+                return entry.texture;
+            }
         auto texture = SkImages::TextureFromImage(recorder, image, properties);
         // Chromium converts a tagged upload to an eight-bit sRGB texture on
         // the GPU before sampling it. CPU conversion and conversion during
         // the final image draw both change the filtered texels.
         if (texture && image->colorSpace() && !image->colorSpace()->isSRGB())
             texture = texture->makeColorSpace(recorder, SkColorSpace::MakeSRGB(), properties);
+        // Retain immutable image objects only within this one recorder/batch.
+        // No source address or texture survives into another draw or context.
+        if (texture && reuse_images && images.size() < 64) {
+            size_t cost = size_t(image->width()) * image->height() * (properties.fMipmapped ? 8 : 4);
+            if (cost <= 16 * 1024 * 1024 - bytes) {
+                images.push_back({sk_ref_sp(image), texture, properties});
+                bytes += cost;
+            }
+        }
         return texture;
     }
 };
@@ -211,6 +239,107 @@ int vox_graphite_draw_picture_pixels(uint8_t* pixels, int width, int height,
 {
     return vox_graphite_draw_picture_region_pixels(pixels, width, height, pitch,
         0, 0, width, height, bytes, size, matrix);
+}
+
+extern "C" __attribute__((visibility("default")))
+int vox_graphite_draw_picture_regions_pixels(VoxGraphitePictureRegion const* regions,
+    int count, int width, int height)
+{
+    if (!regions || count <= 0 || count > 64 || width <= 0 || height <= 0
+        || width > 16384 || height > 16384
+        || size_t(width) * height * count > 8 * 1024 * 1024) return 0;
+    size_t total = 0;
+    for (int i = 0; i < count; ++i) {
+        auto const& request = regions[i];
+        auto const& out = request.output;
+        if (!out.pixels || !request.bytes || !request.size || request.size > 64 * 1024 * 1024
+            || out.x < 0 || out.y < 0 || out.width <= 0 || out.height <= 0
+            || out.width > width || out.height > height || out.pitch < out.width * 4
+            || out.x > width - out.width || out.y > height - out.height) return 0;
+        for (float value : request.matrix) if (!std::isfinite(value)) return 0;
+        total += size_t(out.width) * out.height;
+        if (total > 8 * 1024 * 1024) return 0;
+    }
+    std::lock_guard lock(gpu_mutex);
+    SkDeserialProcs procs;
+    procs.fImageProc = decode_picture_image;
+    procs.fTypefaceStreamProc = decode_picture_typeface;
+    procs.fAllowSkSL = false;
+    std::vector<sk_sp<SkPicture>> pictures(count);
+    size_t encoded_bytes = 0;
+    for (int i = 0; i < count; ++i) {
+        // One decoration group has at most its ordinary/MSAA variants. Decode
+        // each immutable payload once instead of copying its images per tile.
+        for (int prior = 0; prior < i; ++prior)
+            if (regions[prior].bytes == regions[i].bytes && regions[prior].size == regions[i].size) {
+                pictures[i] = pictures[prior]; break;
+            }
+        if (pictures[i]) continue;
+        encoded_bytes += regions[i].size;
+        if (encoded_bytes > 64 * 1024 * 1024) return 0;
+        pictures[i] = SkPicture::MakeFromData(regions[i].bytes, regions[i].size, &procs);
+        if (!pictures[i]) return 0;
+    }
+    auto* gpu = context();
+    if (!gpu) return 0;
+    skgpu::graphite::RecorderOptions options;
+    auto provider = sk_make_sp<PictureImageProvider>(
+        !std::getenv("VOX_DISABLE_BATCH_PICTURE_IMAGE_REUSE"));
+    options.fImageProvider = provider;
+    auto recorder = gpu->makeRecorder(options);
+    if (!recorder) return 0;
+    auto info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
+        kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
+    auto surface = SkSurfaces::RenderTarget(recorder.get(), info);
+    if (!surface) return 0;
+    struct Readback { std::unique_ptr<const SkImage::AsyncReadResult> result; };
+    std::vector<std::shared_ptr<Readback>> reads(count);
+    int queued = 0;
+    bool success = true;
+    for (int i = 0; i < count; ++i) {
+        auto* canvas = surface->getCanvas();
+        SkAutoCanvasRestore state(canvas, true);
+        canvas->resetMatrix();
+        canvas->clear(SK_ColorTRANSPARENT);
+        SkMatrix matrix; matrix.set9(regions[i].matrix);
+        canvas->setMatrix(matrix);
+        canvas->drawPicture(pictures[i]);
+        auto recording = recorder->snap();
+        skgpu::graphite::InsertRecordingInfo insertion;
+        insertion.fRecording = recording.get();
+        if (gpu->insertRecording(insertion) != skgpu::graphite::InsertStatus::kSuccess) {
+            success = false; break;
+        }
+        reads[i] = std::make_shared<Readback>();
+        auto* callback = new std::shared_ptr<Readback>(reads[i]);
+        auto const& out = regions[i].output;
+        gpu->asyncRescaleAndReadPixels(surface.get(), info.makeWH(out.width, out.height),
+            SkIRect::MakeXYWH(out.x, out.y, out.width, out.height),
+            SkImage::RescaleGamma::kSrc, SkImage::RescaleMode::kNearest,
+            [](void* target, std::unique_ptr<const SkImage::AsyncReadResult> result) {
+                std::unique_ptr<std::shared_ptr<Readback>> owner(
+                    static_cast<std::shared_ptr<Readback>*>(target));
+                (*owner)->result = std::move(result);
+            }, callback);
+        ++queued;
+    }
+    if (queued && !gpu->submit(skgpu::graphite::SubmitInfo(skgpu::graphite::SyncToCpu::kYes)))
+        success = false;
+    if (!success) return 0;
+    for (int i = 0; i < count; ++i)
+        if (!reads[i] || !reads[i]->result || reads[i]->result->count() != 1
+            || reads[i]->result->rowBytes(0) < size_t(regions[i].output.width) * 4) return 0;
+    for (int i = 0; i < count; ++i) {
+        auto const& out = regions[i].output;
+        auto const& result = reads[i]->result;
+        for (int y = 0; y < out.height; ++y)
+            std::memcpy(out.pixels + size_t(y) * out.pitch,
+                static_cast<uint8_t const*>(result->data(0)) + size_t(y) * result->rowBytes(0),
+                size_t(out.width) * 4);
+    }
+    if (std::getenv("VOX_PICTURE_REGION_DIAGNOSTICS"))
+        std::fprintf(stderr, "VOX_PICTURE_BATCH_GPU jobs=%d image_reuses=%u\n", count, provider->reuse_count());
+    return 1;
 }
 
 extern "C" __attribute__((visibility("default")))

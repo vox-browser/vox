@@ -30,9 +30,11 @@ static std::vector<uint8_t> render(int scale, bool msaa, int transform, int alph
     if (bounded) {
         unsetenv("VOX_DISABLE_INSET_DECORATION_BOUNDS");
         unsetenv("VOX_DISABLE_INSET_PICTURE_REGIONS");
+        setenv("VOX_DISABLE_INSET_PICTURE_BATCH", "0", 1);
     } else {
         setenv("VOX_DISABLE_INSET_DECORATION_BOUNDS", "1", 1);
         setenv("VOX_DISABLE_INSET_PICTURE_REGIONS", "1", 1);
+        setenv("VOX_DISABLE_INSET_PICTURE_BATCH", "1", 1);
     }
     assert(ladybird_v_skia_begin_inset_decorations(context,
         2, 16, 252, 174, 256, 192, 14, 0));
@@ -82,5 +84,6 @@ int main()
     }
     unsetenv("VOX_DISABLE_INSET_DECORATION_BOUNDS");
     unsetenv("VOX_DISABLE_INSET_PICTURE_REGIONS");
+    unsetenv("VOX_DISABLE_INSET_PICTURE_BATCH");
     std::cout << cases << " bounded decoration scenes match full-viewport replay exactly\n";
 }
