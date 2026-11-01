@@ -4,6 +4,10 @@ import layout
 import os
 
 const disable_static_media_raster_reuse = os.getenv('VOX_DISABLE_STATIC_MEDIA_RASTER_REUSE') != ''
+const copy_stationary_raster_commands = os.getenv('VOX_COPY_STATIONARY_RASTER_COMMANDS') != ''
+const stationary_raster_borrow_diagnostics = os.getenv('VOX_STATIONARY_RASTER_BORROW_DIAGNOSTICS') != ''
+
+__global stationary_raster_borrow_reported bool
 
 fn C.native_begin_stationary_raster(u64, u64, u64, f64, f64, f64, f64, i32) i32
 fn C.native_end_stationary_raster()
@@ -15,26 +19,44 @@ fn stationary_document_raster_eligible(commands []layout.PaintCommand) bool {
 
 fn stationary_document_raster_commands_eligible(commands []layout.PaintCommand, depth int) bool {
 	if depth > 32 { return false }
-	for command in commands {
-		match command.kind {
-			'draw_canvas', 'draw_nested_document' { return false }
-			'draw_video' {
-				// An empty video has no live source or pixels to replay. Poster
-				// and representation changes replace its retained paint facts and
-				// invalidate the document before this cache is consulted.
-				if disable_static_media_raster_reuse || command.video_frame_source != none || command.video_bitmap != none {
-					return false
-				}
-			}
-			'paint_nested_display_list' {
-				// These are retained snapshots, including SVG images. Only live
-				// media within the snapshot can change independently of its key.
-				if disable_static_media_raster_reuse || !stationary_document_raster_commands_eligible(command.nested_viewport_commands, depth + 1) {
-					return false
-				}
-			}
-			else {}
+	if copy_stationary_raster_commands {
+		// Preserve a same-binary control for the previous value-iteration path.
+		for command in commands {
+			if !stationary_document_raster_command_eligible(&command, depth) { return false }
 		}
+		return true
+	}
+	for index in 0 .. commands.len {
+		// Eligibility reads only a few fields. Value iteration copies the entire
+		// retained command (including unrelated paint payloads) on every frame.
+		if !stationary_document_raster_command_eligible(&commands[index], depth) { return false }
+	}
+	if stationary_raster_borrow_diagnostics && commands.len > 0 && !stationary_raster_borrow_reported {
+		stationary_raster_borrow_reported = true
+		eprintln('Vox stationary raster: borrowed command scan')
+	}
+	return true
+}
+
+fn stationary_document_raster_command_eligible(command &layout.PaintCommand, depth int) bool {
+	match command.kind {
+		'draw_canvas', 'draw_nested_document' { return false }
+		'draw_video' {
+			// An empty video has no live source or pixels to replay. Poster
+			// and representation changes replace its retained paint facts and
+			// invalidate the document before this cache is consulted.
+			if disable_static_media_raster_reuse || command.video_frame_source != none || command.video_bitmap != none {
+				return false
+			}
+		}
+		'paint_nested_display_list' {
+			// These are retained snapshots, including SVG images. Only live
+			// media within the snapshot can change independently of its key.
+			if disable_static_media_raster_reuse || !stationary_document_raster_commands_eligible(command.nested_viewport_commands, depth + 1) {
+				return false
+			}
+		}
+		else {}
 	}
 	return true
 }

@@ -52,3 +52,23 @@ fn test_stationary_raster_limits_nested_snapshot_depth() {
 	commands = [layout.PaintCommand{kind: 'paint_nested_display_list', nested_viewport_commands: commands}]
 	assert !stationary_document_raster_eligible(commands)
 }
+
+fn test_stationary_raster_rechecks_mutated_retained_commands() {
+	mut nested := [layout.PaintCommand{kind: 'draw_svg_path'}]
+	mut commands := [layout.PaintCommand{
+		kind: 'paint_nested_display_list'
+		nested_viewport_commands: unsafe { nested }
+	}]
+	assert stationary_document_raster_eligible(commands)
+	// The scan must read the current vector, even when its address and length
+	// stay unchanged. A cached eligibility bit would miss these live changes.
+	nested[0].kind = 'draw_canvas'
+	assert !stationary_document_raster_eligible(commands)
+	nested[0].kind = 'draw_svg_path'
+	assert stationary_document_raster_eligible(commands)
+	commands[0].kind = 'draw_video'
+	commands[0].video_bitmap = &dom.Bitmap_{}
+	assert !stationary_document_raster_eligible(commands)
+	commands[0].video_bitmap = none
+	assert stationary_document_raster_eligible(commands)
+}
