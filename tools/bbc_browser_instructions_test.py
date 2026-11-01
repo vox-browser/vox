@@ -21,6 +21,24 @@ def document():
 
 
 class BBCInstructionTests(unittest.TestCase):
+    def test_conditional_sheet_invalidation_control_is_isolated_and_restored_on_failure(self):
+        environment = {'VOX_PROXY': 'socks5h://fixture'}
+        args = SimpleNamespace(vox_environment=environment, control_disable_grid_width_only=False,
+                               control_disable_conditional_sheet_invalidation=True)
+        seen = []
+        def observe(engine, app, folder, options):
+            seen.append((engine, dict(options.vox_environment)))
+            return {'exit': 0}
+        with patch('bbc_browser_instructions.browser.run_browser', side_effect=observe):
+            for engine in ['control', 'vox', 'brave']:
+                run_trial(engine, 'same-app', engine, args)
+        self.assertEqual(seen, [('vox', dict(environment, VOX_DISABLE_CONDITIONAL_SHEET_INVALIDATION='1')),
+                                ('vox', environment), ('brave', environment)])
+        with patch('bbc_browser_instructions.browser.run_browser', side_effect=RuntimeError('failed')):
+            with self.assertRaises(RuntimeError):
+                run_trial('control', 'same-app', 'control', args)
+        self.assertIs(args.vox_environment, environment)
+
     def test_positioned_image_ratio_reuse_control_is_isolated_and_restored_on_failure(self):
         environment = {'VOX_PROXY': 'socks5h://fixture'}
         args = SimpleNamespace(vox_environment=environment, control_disable_grid_width_only=False,
@@ -307,7 +325,7 @@ class BBCInstructionTests(unittest.TestCase):
                      '--control-disable-extended-longhand-reuse', '--control-disable-color-longhand-reuse',
                      '--control-copy-stationary-raster-commands', '--control-disable-retained-flow-items',
                      '--control-disable-face-specific-font-display', '--control-disable-constant-longhand-reuse',
-                     '--control-disable-intrinsic-font-reuse', '--control-disable-pending-intrinsic-font-reuse', '--control-disable-live-pending-text-reuse', '--control-disable-live-pending-font-refresh', '--control-disable-positioned-image-ratio-reuse']:
+                     '--control-disable-intrinsic-font-reuse', '--control-disable-pending-intrinsic-font-reuse', '--control-disable-live-pending-text-reuse', '--control-disable-live-pending-font-refresh', '--control-disable-positioned-image-ratio-reuse', '--control-disable-conditional-sheet-invalidation']:
             with self.subTest(flag=flag):
                 with self.assertRaises(SystemExit):
                     parse_args(args + [flag])
