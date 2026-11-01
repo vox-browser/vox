@@ -11,7 +11,7 @@ from hacker_news_browser_instructions import (
     ASSETS, WIDTH, HEIGHT, METAL_COMPILER, SET_STORE_UPDATER, accepted_coalition_executable,
     check_content, code_sign_clone_identity, document_comments, evaluate_pairs,
     exact_coalition_membership, fixture_server, membership, launch_instruction_interval,
-    parse_args, progress_record,
+    parse_args, progress_record, finish_capture_readiness,
 )
 
 
@@ -22,6 +22,22 @@ def observation(lower, upper=None, **changes):
 
 
 class HackerNewsInstructionGateTests(unittest.TestCase):
+    def test_asynchronous_readiness_is_optional_and_rejects_decode_failures(self):
+        from types import SimpleNamespace
+        client = Mock()
+        finish_capture_readiness(client, SimpleNamespace())
+        client.call.assert_not_called()
+        args = SimpleNamespace(post_readiness_expression='decode-visible-images')
+        client.call.return_value = {'result': {'value': True}}
+        finish_capture_readiness(client, args)
+        client.call.assert_called_once_with('Runtime.evaluate', dict(
+            expression=args.post_readiness_expression, awaitPromise=True, returnByValue=True))
+        for result in [{'result': {'value': False}}, {'result': {}},
+                       {'exceptionDetails': {'text': 'decode failed'}, 'result': {'value': True}}]:
+            client.call.return_value = result
+            with self.subTest(result=result), self.assertRaises(RuntimeError):
+                finish_capture_readiness(client, args)
+
     def pairs(self, vox=900, brave=1000):
         return [dict(vox=observation(vox), brave=observation(brave)) for _ in range(2)]
 

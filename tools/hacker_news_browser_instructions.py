@@ -262,6 +262,16 @@ def wait_until(predicate, deadline, description):
         time.sleep(.01)
 
 
+def finish_capture_readiness(client, args):
+    expression = getattr(args, 'post_readiness_expression', None)
+    if not expression:
+        return
+    result = client.call('Runtime.evaluate', dict(expression=expression,
+                         awaitPromise=True, returnByValue=True))
+    require(not result.get('exceptionDetails') and result.get('result', {}).get('value') is True,
+            'Brave asynchronous capture readiness failed: ' + repr(result))
+
+
 def launch(app, arguments, folder, environment):
     """LaunchServices gives this fresh app its own resource coalition."""
     require(not any(row['command'].startswith(str(app) + '/Contents/') for row in processes()),
@@ -431,6 +441,7 @@ def run_browser(engine, app, folder, args):
             result['environment'] = environment
             arguments = ['--enable-javascript', '--window-width', str(WIDTH), '--window-height',
                          str(HEIGHT + 84), '--screenshot', str(png), args.url]
+            arguments = list(getattr(args, 'vox_arguments', [])) + arguments
             result['command'] = launch(app, arguments, folder, environment)
             root = wait_until(lambda: root_for(binary, str(png)), deadline, 'Vox launch')
         else:
@@ -497,6 +508,7 @@ def run_browser(engine, app, folder, args):
                 && [...document.images].every(i=>i.complete && i.naturalWidth>0)'''
             wait_until(lambda: client.call('Runtime.evaluate', dict(expression=expression,
                        returnByValue=True))['result'].get('value') is True, deadline, 'Brave document')
+            finish_capture_readiness(client, args)
             time.sleep(args.settle_seconds)
             image = client.call('Page.captureScreenshot', dict(format='png', captureBeyondViewport=False))
             endpoint_at = time.monotonic()

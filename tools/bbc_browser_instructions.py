@@ -136,7 +136,8 @@ def audit_expression():
           const r=e.getBoundingClientRect();return {text:e.textContent,
             attributes:Object.fromEntries(s.attributes.map(a=>[a,e.getAttribute(a)])),
             rect:{x:r.x,y:r.y,width:r.width,height:r.height},
-            image:e.tagName==='IMG'?{complete:e.complete,natural_width:e.naturalWidth}:null}})}})})'''
+            image:e.tagName==='IMG'?{complete:e.complete,natural_width:e.naturalWidth,
+              natural_height:e.naturalHeight,current_src:e.currentSrc}:null}})}})})'''
 
 
 
@@ -183,6 +184,7 @@ def main():
     browser.write_json(args.audit_config, dict(selectors=SELECTORS))
     args.expected = None
     args.instruction_scope = 'launch'
+    args.vox_arguments = ['--js-engine', 'javascriptcore']
     args.content_validator = lambda audit: validate_document(audit, expected)
     args.audit_expression = audit_expression()
     # Only viewport images are required: offscreen lazy images need not decode.
@@ -191,6 +193,11 @@ def main():
       && devicePixelRatio==={args.scale} && [...document.images].filter(i=>{{const r=i.getBoundingClientRect();
         return r.width>0&&r.height>0&&r.x<1024&&r.y<768&&r.right>0&&r.bottom>0}})
         .every(i=>i.complete&&i.naturalWidth>0)'''
+    # `complete` establishes resource availability; decode() also waits for the
+    # image decoder before the unchanged two-second raster settlement period.
+    args.post_readiness_expression = '''Promise.all([...document.images].filter(i=>{
+      const r=i.getBoundingClientRect();return r.width>0&&r.height>0&&r.x<1024&&r.y<768
+        &&r.right>0&&r.bottom>0}).map(i=>i.decode())).then(()=>true)'''
     apps = {}
     sources = [('vox', args.vox_app), ('brave', args.brave_app)]
     if args.control_vox_app:
@@ -216,6 +223,9 @@ def main():
     browser.write_json(args.output / 'inputs.json', dict(files=pinned, scope=SCOPE,
         fixture=expected, original_scripts_retained=True, author_javascript_enabled=True,
         viewport=[1024, 768], scale=args.scale, settle_seconds=args.settle_seconds,
+        javascript_backends=dict(vox='javascriptcore', brave='v8'),
+        brave_post_readiness_expression=args.post_readiness_expression,
+        readiness_correction='Await visible image decode before the original settlement; no engine credit',
         system=subprocess.check_output(['sw_vers'], text=True)))
     replay = Replay(args.archive, args.output / 'replay')
     thread = threading.Thread(target=replay.server.serve_forever, daemon=True)
