@@ -27,13 +27,13 @@ int main(int argc, char** argv)
     for (int scale : {1, 2}) for (int msaa : {0, 1}) for (int background : {0, 1})
     for (int translate : {0, -17, 31}) for (auto const& rect : rects)
     for (auto const& crop : crops) for (int color : {35}) for (int floating : {0, 1})
-    for (int fill : {0, 1}) for (float radius : {3.f, 7.f}) for (float fraction : {0.f, .25f}) {
+    for (int fill : {0, 1}) for (float radius : {0.f, 3.f, 7.f}) for (float fraction : {0.f, .25f}) {
         VoxGraphiteShape shape {};
         shape.matrix[0] = shape.matrix[4] = scale; shape.matrix[8] = 1;
         shape.matrix[2] = translate; shape.matrix[5] = -translate;
         std::copy_n(rect, 4, shape.rect);
         shape.rect[0] += fraction; shape.rect[1] -= fraction;
-        for (int corner = 4; corner < 12; ++corner) shape.rect[corner] = radius + (corner % 3);
+        for (int corner = 4; corner < 12; ++corner) shape.rect[corner] = radius == 0 ? 0 : radius + (corner % 3);
         shape.fill = fill; shape.thickness = 2.f / scale; shape.anti_alias = 1; shape.force_msaa = msaa;
         shape.red = color; shape.green = 167; shape.blue = 79; shape.alpha = 255;
         shape.has_float_color = floating;
@@ -161,6 +161,53 @@ int main(int argc, char** argv)
             }
         }
         ++comparisons;
+    }
+    // Different distant horizontal bounds leave the same straight vertical
+    // edges in this tile. Reuse must preserve even nonuniform premultiplied
+    // backdrops, and a changed owned pixel must invalidate the cached result.
+    for (int scale : {1, 2}) for (int msaa : {0, 1})
+    for (float thickness : {.25f, 1.25f, 2.5f}) for (float phase : {.1f, .5f, .99999f}) {
+        VoxGraphiteShape shape {};
+        shape.matrix[0] = shape.matrix[4] = scale; shape.matrix[8] = 1;
+        shape.rect[0] = (20 + phase) / scale; shape.rect[2] = 400.f / scale;
+        shape.thickness = thickness / scale; shape.alpha = 255;
+        shape.red = 197; shape.green = 37; shape.blue = 83;
+        shape.anti_alias = 1; shape.force_msaa = msaa;
+        constexpr int w = 12, h = height, pitch = w * 4 + 13;
+        for (int pass = 0; pass < 5; ++pass) {
+            shape.rect[1] = float(-200 - (pass % 3) * 50) / scale;
+            shape.rect[3] = float(1000 + (pass % 3) * 100) / scale;
+            constexpr float translations[] {.25f, .75f, 21.125f, 0, -53.25f};
+            shape.matrix[5] = translations[pass];
+            std::vector<uint8_t> storage[2];
+            VoxGraphitePixelRegion views[2];
+            std::vector<uint8_t> expected(size_t(width) * height * 4);
+            for (int i = 0; i < 2; ++i) {
+                storage[i].assign(size_t(pitch) * h, 0xa9);
+                views[i] = {i ? 414 : 14, 0, w, h, pitch, storage[i].data()};
+                for (int y = 0; y < h; ++y) for (int x = 0; x < w; ++x) {
+                    auto* pixel = views[i].pixels + y * pitch + x * 4;
+                    pixel[3] = uint8_t(100 + (x * 7 + y * 3) % 156);
+                    pixel[0] = pixel[3] / 2; pixel[1] = pixel[3] / 3; pixel[2] = pixel[3] / 4;
+                }
+                if (pass == 2) views[i].pixels[123 * pitch + 6 * 4] ^= 37;
+                for (int y = 0; y < h; ++y)
+                    std::memcpy(expected.data() + (size_t(y) * width + views[i].x) * 4,
+                        views[i].pixels + y * pitch, w * 4);
+            }
+            assert(full(expected.data(), width, height, width * 4, 1, &shape));
+            assert(draw(views, 2, width, height, 1, &shape));
+            for (int i = 0; i < 2; ++i) for (int y = 0; y < h; ++y) {
+                if (std::memcmp(views[i].pixels + y * pitch,
+                        expected.data() + (size_t(y) * width + views[i].x) * 4, w * 4)) {
+                    std::fprintf(stderr, "Full-height stroke differs scale=%d msaa=%d thickness=%g phase=%g pass=%d side=%d row=%d\n",
+                        scale, msaa, thickness, phase, pass, i, y);
+                    return 1;
+                }
+                for (int b = w * 4; b < pitch; ++b) assert(views[i].pixels[y * pitch + b] == 0xa9);
+            }
+            ++comparisons;
+        }
     }
     assert(comparisons >= 3300 && rejected > 0);
     std::printf("Unsupported rounded-part cases preserved: %zu\n", rejected);
