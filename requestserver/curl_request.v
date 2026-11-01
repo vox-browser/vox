@@ -61,6 +61,17 @@ pub fn (mut connection CurlConnection) start_fetch(params &fetch.FetchParams, in
 		output.resolve(fetch.Response.network_error('RequestServer is currently unavailable'))
 		return pending
 	}
+	if provider := native_response_cache_provider_ {
+		if response := provider(request) {
+			connection.deferred_.deferred_invoke(fn [connection, pending, request, response] () {
+				mut output := unsafe { &fetch.PendingResponse(pending) }
+				output.resolve(if connection.closed_ {
+					fetch.Response.network_error('RequestServer is currently unavailable')
+				} else { request.apply_adblock_response(response) })
+			})
+			return pending
+		}
+	}
 	body := fetch.Body.streaming()
 	mut native := &CurlRequest{
 		connection_: &connection

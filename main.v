@@ -7962,6 +7962,7 @@ fn (mut app BrowserApp) handle_key(key gg.KeyCode, modifier gg.Modifier) {
 }
 
 fn main() {
+	install_browser_script_resource_cache()
 	// Dispatch the signed self-helper before browser heap/font/GUI setup.
 	if status := browserjs.run_worker_process_role(os.args) { exit(status) }
 	if status := adblock.run_default_worker_role(os.args) { exit(status) }
