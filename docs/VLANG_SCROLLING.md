@@ -1,10 +1,48 @@
 # vlang.io scrolling
 
-The live **60 FPS target remains unmet**. The latest measured production snapshot publishes **5.40–5.45 scroll-changing native frames per second** on live `https://vlang.io/`, and **7.24–8.28** on the frozen page. Every measured scrolling interval still exceeds 16.67 ms. These are completed Cocoa layer publications; physical display scanout is unmeasured. Optimization work continues.
+The live **60 FPS target remains unmet**. The latest measured production snapshot publishes **6.57–7.12 scroll-changing native frames per second** on live `https://vlang.io/`, and **10.78–10.93** on the frozen page. Every measured scrolling interval still exceeds 16.67 ms. These are completed Cocoa layer publications; physical display scanout is unmeasured. Optimization work continues.
 
 The [compositor milestone receipt](benchmark-results/vlang-scroll-20261101-compositor-milestone.json) and [compressed raw records](benchmark-results/vlang-scroll-20261101-compositor-milestone-raw.json.gz) retain 64 completed measurements and 1,657 raw text artifacts through this checkpoint, including diagnostic runs, failures, commands, input/publication timestamps, source and executable identities, host load, guard exits and rejected patches. Full artifacts remain in `Build/vlang-scroll-compositor-20261101-111741/`. Later experiments are not acceptance results in this checkpoint.
 
-## Latest measured production snapshot
+## Clipped shape batches and shared picture pixels
+
+The [follow-up receipt](benchmark-results/vlang-scroll-20261101-compositor-followup.json) and [compressed raw evidence](benchmark-results/vlang-scroll-20261101-compositor-followup-raw.json.gz) retain the later cohorts, every rejected/partial experiment, commands, actual input/publication timestamps, executable/library identities, host conditions and actual exits. Previous receipts remain unchanged.
+
+- `34717a80` batches independent clipped tiles of one non-root shape. Each tile retains its original target size, immutable backdrop, coordinates, border ownership and MSAA mode. The backend also accepts bounded regions for larger shapes. Output stays transactional, with ordinary replay available after a failed batch.
+- `c1ec852d` shares immutable encoded image pixels across the two Skia libraries through scoped tokens and C callbacks. Decoder leases preserve bytes after token retirement and count toward a 64 MiB live limit. Older decoders, small payloads and capacity failures retain the copied format. No Skia or C++ object crosses the ABI.
+
+| Cohort | Control FPS (1 / 2) | Candidate FPS (1 / 2) |
+| --- | ---: | ---: |
+| Clipped shape batches | 10.92 / 10.90 | 11.17 / 11.57 |
+| Shared pixels, initial prototype | 11.16 / 10.88 | 11.67 / 11.31 |
+| Shared pixels, final default-enabled build | 11.10 / 10.94 | 11.24 / 10.96 |
+
+Each row contains two alternating unprofiled frozen-page pairs. The final shared-pixel differences are small, so its isolated FPS benefit remains uncertain. The larger initial-prototype result is retained separately. Neither row establishes smooth 60 FPS. Separate actual-input diagnostics confirm 50 clipped batches and 53 shared encode/decode pairs; startup counters are excluded.
+
+Validation passes: 30,080 exact GPU tile comparisons, 6,912 serial grid ownership/backdrop comparisons in normal and sanitizer modes, 1,728 native scene comparisons for each of normal operation and two forced rollback points, 160 blur scenes and 93 picture-region scenes. Shared-pixel ownership tests cover stale tokens, caller mutation, delayed image use after scope exit, tagged/sRGB data, malformed headers, capacity accounting and lease release. Four original HTTP page pairs at scales 1/2 and Y=0/240 remain pixel-exact for both accepted changes. No references or tolerances changed.
+
+The final native libraries were installed under the shared production guard, followed by signing, a fresh-process headless smoke check and a pinned bundle copy. A preceding busy-guard attempt remains retained; no duplicate full production build was queued. Executable SHA256 `b9105b32531ba710ff77791d97cd9456ec8ec26d5c220d4d7dfc9aa1b038e943` identifies this complete build, which also contains other sessions' work.
+
+| Trial | Scroll FPS | Actual input Hz | Inputs / completed publications | Median / p95 / max interval (ms) | Missed 16.67 ms | Leading / trailing scroll gap (ms) |
+| --- | ---: | ---: | --- | --- | ---: | --- |
+| Frozen 1 | 10.78 | 55.21 | 600 / 122 | 90.31 / 104.54 / 116.67 | 100.00% | 256.08 / 88.46 |
+| Live 1 | 6.57 | 15.55 | 600 / 257 | 151.74 / 171.82 / 461.19 | 100.00% | 329.69 / 17.92 |
+| Frozen 2 | 10.93 | 55.01 | 600 / 124 | 88.03 / 103.19 / 181.14 | 100.00% | 249.91 / 17.69 |
+| Live 2 | 7.12 | 15.13 | 600 / 287 | 142.71 / 156.18 / 428.31 | 100.00% | 240.06 / 19.25 |
+
+The protocol remains a fresh process/private profile/cache, verified title and 20-second settle, 1024×768 document viewport at backing scale 2, and 600 precise delta-2 native wheel events requested at 60 Hz and reversed every 60 events. Throughput uses the entire first-to-last actual input window. The frozen fixture, network denial, script/animation policy and references are unchanged; live runs use direct HTTPS and automatic author-script policy. These are native publications, not physical scanout. The earlier batch-only production snapshot measured 6.87/7.11 FPS live. Its results remain retained; later whole-build variation cannot establish an aggregate gain attributable to these changes.
+
+Additional rejected work remains in the follow-up evidence:
+
+- The integrated native-Metal serialized-picture path regressed all three completed pairs: 10.56→10.35, 10.85→10.73 and 10.82→10.48 FPS. A separate candidate interrupted before input has unknown process exit and receives no acceptance credit. All source changes were removed and native libraries restored.
+- Retina/promotion metadata experiments changed reference pixels, including a substantial scale-one regression. Fixed Brave captures show integer-scroll invariance, while Vox's existing Retina raster phase remains unresolved. The experimental V changes were removed; no timing credit was taken.
+- A retained-picture tile cache passed unit/native/page checks but never executed during vlang input because shadow overflow kept the picture on its untiled path. Its source was removed without an unprofiled cohort.
+- Adaptive cache admission reduced path snapshots but produced mixed pairs, 11.75→10.95 and 10.83→11.14 FPS. It was removed.
+- Large shape-region caching recorded 29 input-window hits and passed sanitizer, 40,064 GPU comparisons and page checks, but regressed both pairs, 11.77→11.46 and 11.71→11.07 FPS. It was removed.
+
+No retired-instruction reduction is claimed. The instruction-based broad-suite savings carry is unchanged. The 60 FPS target remains open.
+
+## Earlier production snapshot before clipped batches
 
 Executable SHA256 `aa1a84e71452debb6d14861c02e9033d972f6bb00184a19a82d22e6b12c984d9` identifies the pinned copy of the shared, successfully completed production bundle. It includes the first four changes below and other sessions' work. It precedes the large-raster admission change. These measurements describe the complete build and do not isolate an aggregate improvement from this session.
 
