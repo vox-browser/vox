@@ -1,5 +1,25 @@
 # CNN rendering and instruction comparison
 
+Latest compiler follow-up: the pinned `-O3` build uses a median
+**32,256,937,280** instructions, versus **34,091,298,943** for its matched
+`-O2` control and **30,504,929,341** for Brave across seven triplets. Every Vox
+candidate/control capture is pixel exact and every candidate beats its matched
+control. The site goal remains **open**: the conservative gate fails
+(`10 * 32,458,664,754 > 9 * 29,791,596,487`), and four Brave captures differ from
+the unchanged reference. All seven attempts, including those failures and the
+first-launch outlier, remain in the receipt. The two compiler variants use the
+same normal generated/preprocessed code and native dependencies; only the C
+optimization level differs. No V runtime checks or floating-point semantics
+change. The `-O3` build passes the screenshot smoke set, eight SVG mutation
+guards, headless smoke and 100 exact AST fixtures. Commit `a07e34ff` enables
+that flag for the macOS prealloc production engine translation unit. Raw data:
+`Build/cnn-home-compiler-seven-20261101-0817/`.
+
+The intervening live-font-cascade change passes 80 focused cases per GC mode
+and the same visual guards, but two exact diagnostic triplets show no repeatable
+site instruction saving. It receives no CPU credit. Those counts and compiler
+build attempts are retained in the durable receipt below.
+
 ## November 1: current 10% request, sealed homepage cohort
 
 The current target is **10% fewer instructions than Brave**, superseding the
