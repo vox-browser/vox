@@ -5,10 +5,10 @@ application. Pixel-exact parity and an actual conversation are **not complete**.
 The full-page comparison still has rendering differences; focused fixtures and
 a successful application startup are not a substitute for that comparison.
 
-The latest unchanged-original-archive capture differs in **523 of 786,432
-pixels (0.0665%, MAE 0.0005)**. Startup, native typing and Enter are validated;
+The latest unchanged-original-archive capture differs in **22 of 786,432
+pixels (0.0028%, MAE 0.000021)**. Startup, native typing and Enter are validated;
 a completed chat reply remains unverified. The recorded 60-second idle check
-peaks at 1.82 GB rather than continuing toward the 12 GiB guard.
+peaks at 1.92 GiB, within the 12 GiB guard.
 
 ## Captured workload
 
@@ -738,3 +738,87 @@ active-document identity, both stylesheet owners, the home-ready marker and
 zero native-reported JavaScript errors. The native input check types `Vox` and
 presses Enter without inserting a newline. No successful service reply is in
 the archive, so this is not evidence of a completed conversation.
+
+
+## Promoted text and rounded compositor surfaces (2026-11-01)
+
+`cebba92c` keeps solid underline rectangles and their skip-ink clips in the
+same transparent compositor raster as their glyphs. Previously, any underline
+sent an otherwise supported fixed text layer back to painting over the parent.
+It also retains a transparent surface for contiguous, fully opaque promoted
+boxes containing ordinary rounded shadows, backgrounds, borders and text.
+Those boxes keep the established individual leaf painters instead of recording
+the ordinary shadow into a different GPU picture. Unsupported resources,
+effects, ownership gaps and clips retain the existing fallback.
+
+The original-archive comparison now has **22 differing pixels**, maximum
+channel error 1 and MAE 0.0000209808349609375. They are confined to the sidebar
+sign-up button's curved edges; the visible footer and cookie-banner region are
+exact. No pixels or regions are excluded from the full-page comparison, and
+pixel-perfect parity remains open. The intermediate shared build had 84
+remaining pixels before the rounded-box surface was enabled. Different shared
+builds also contain other sessions' changes; these totals are pinned rendering
+results, not a controlled attribution of every changed pixel to this commit.
+
+The selected production build is
+`Build/cnn-home-static-media-20261101/`, reused without scheduling another
+build. Its executable SHA256 is
+`4d0a240456beb554d5dc63ebb8432c24d54c7e9024e8e8e9b87657ed98562b16`
+and painting-library SHA256 is
+`ea57efeed85f7fd70a42fdf5cbe3200c074405ac127edef143c35a092b0ec9aa`.
+All four implementation/test inputs for this feature match the build's before
+and after snapshots. The receipt also retains unrelated shared-source drift;
+it does not validate native changes made after the native library was built.
+
+Evidence under `Build/chatgpt-svg-parity-20261101/` includes:
+
+- `decorated-text-mini/`: the actual eligibility function bodies and six text
+  cases pass in default, no-GC and preallocated modes, with unchanged inputs.
+  A full-root compilation initially encountered an unrelated UI migration
+  syntax error. After that owner corrected it, the two new text tests also
+  compile and execute in the complete browser module.
+- `leaf-compositor-focused-*` and `leaf-modes/`: two rounded-surface cases pass
+  in all three modes, including an actual fixed clipped document and rejection
+  of unsupported resources, invalid clips, effects and ownership gaps.
+- `candidate-validation-promoted-layers/results.json`: all 18 groups pass with
+  stable executable/library identities. Both new reduced fixtures and the
+  existing focused pixel guards are exact. Eleven smoke comparisons pass
+  (eight exact, three with their existing bounds), as do ten exact SVG guards,
+  headless startup, original archived startup and native typing plus Enter.
+- The full-page and native-input captures are
+  `Build/chatgpt-shadow-modules-20261031/promoted-layer-20261101-acceptance/`
+  and `promoted-layer-20261101-editor/`. Both have the expected active document,
+  complete readiness, both stylesheets, the home-ready marker and zero native
+  JavaScript errors. Their guarded peaks are 2,056,192,000 and 2,265,530,368
+  bytes, respectively. A successful Enter dispatch still does not prove a reply.
+
+The full normal-window Brave reference remains byte-identical to
+`59c9c9d12efe7410712f6edf1d4f82db9d79d3d219afd2914796aec2b1366095`.
+`brave-footer-link-audit-20261101/` confirms the links use weight **400**; an
+initial reduced model's inferred weight 590 was incorrect and is retained as
+an unsuccessful diagnostic. The committed footer fixture models its visible
+last line. An exploratory expanded fixture retains 19 mismatched pixels in
+OKLCH channel conversion and skip-ink positioning, and the unoccluded first
+footer line retains an eight-pixel cross-element shaping difference. Those
+failures remain in the evidence directory without passing credit; that first
+line is covered by the banner in the unchanged full-page reference. No
+reference or tolerance in the existing conformance suites was changed.
+
+## Conversation assets captured once (2026-11-01)
+
+Typing and Enter requested six scripts absent from the initial homepage
+capture. A normal Brave window fetched those files and their 56 previously
+uncaptured static dependencies once through `socks5h://127.0.0.1:1337`.
+All 62 responses are JavaScript with HTTP 200, totaling 1,106,764 bytes. The
+original HTML and archive remain unchanged. The separate
+`original-plus-conversation-assets-archive/` has 367 responses and a closed
+static import graph; it replays from disk and forwards no missing request.
+Receipts and raw bodies are in `conversation-assets-once/` and
+`conversation-graph-assets-once/`.
+
+`Build/chatgpt-shadow-modules-20261031/conversation-assets-once-20261101-editor-diagnostic/`
+loads that extended archive, dispatches native typing and Enter, and reports
+zero native JavaScript errors with a stable executable/library identity.
+The missing-script requests disappear. Sentinel and conversation preparation
+POSTs still receive the deliberate offline 404 responses, and two favicons
+remain absent. A completed service reply remains unverified.
