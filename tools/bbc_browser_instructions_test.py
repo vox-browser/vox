@@ -1,6 +1,8 @@
 import unittest
 
-from bbc_browser_instructions import URL, parse_args, trial_order, validate_document
+from bbc_browser_instructions import URL, parse_args, trial_order, run_trial, validate_document
+from types import SimpleNamespace
+from unittest.mock import patch
 from hacker_news_browser_instructions import evaluate_pairs
 
 
@@ -19,6 +21,24 @@ def document():
 
 
 class BBCInstructionTests(unittest.TestCase):
+    def test_same_binary_control_disables_only_its_grid_width_optimization(self):
+        environment = {'VOX_PROXY': 'socks5h://fixture'}
+        args = SimpleNamespace(vox_environment=environment, control_disable_grid_width_only=True)
+        seen = []
+        def observe(engine, app, folder, options):
+            seen.append((engine, dict(options.vox_environment)))
+            return {'exit': 0}
+        with patch('bbc_browser_instructions.browser.run_browser', side_effect=observe):
+            run_trial('control', 'same-app', 'control', args)
+            run_trial('vox', 'same-app', 'candidate', args)
+        self.assertEqual(seen, [('vox', dict(environment, VOX_DISABLE_GRID_WIDTH_ONLY='1')),
+                                ('vox', environment)])
+        self.assertIs(args.vox_environment, environment)
+        with patch('bbc_browser_instructions.browser.run_browser', side_effect=RuntimeError('failed')):
+            with self.assertRaises(RuntimeError):
+                run_trial('control', 'same-app', 'control', args)
+        self.assertIs(args.vox_environment, environment)
+
     def test_matched_controls_alternate_with_candidate_and_brave(self):
         self.assertEqual(trial_order(0), ['vox', 'brave'])
         self.assertEqual(trial_order(1), ['brave', 'vox'])

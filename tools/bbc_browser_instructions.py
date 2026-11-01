@@ -146,6 +146,16 @@ def trial_order(index, control=False):
     return order if index % 2 == 0 else order[::-1]
 
 
+def run_trial(engine, app, folder, args):
+    environment = args.vox_environment
+    try:
+        if engine == 'control' and args.control_disable_grid_width_only:
+            args.vox_environment = dict(environment, VOX_DISABLE_GRID_WIDTH_ONLY='1')
+        return browser.run_browser('vox' if engine == 'control' else engine, app, folder, args)
+    finally:
+        args.vox_environment = environment
+
+
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--archive', type=Path, required=True)
@@ -153,6 +163,8 @@ def parse_args(argv=None):
     parser.add_argument('--memory-guard-registry', type=Path, required=True)
     parser.add_argument('--vox-app', type=Path, default=REPO / 'Build/v/Vox.app')
     parser.add_argument('--control-vox-app', type=Path, help='Also run a pinned Vox control before each candidate/Brave pair')
+    parser.add_argument('--control-disable-grid-width-only', action='store_true',
+                        help='Disable only grid width-probe reuse in the pinned Vox control')
     parser.add_argument('--brave-app', type=Path, default=Path('/Applications/Brave Browser.app'))
     parser.add_argument('--diff-tool', type=Path, default=REPO / 'Build/hn-home-instructions-20261031/pixel_diff')
     parser.add_argument('--expected-vox', type=Path)
@@ -164,6 +176,8 @@ def parse_args(argv=None):
     parser.add_argument('--timeout', type=float, default=180)
     parser.add_argument('--settle-seconds', type=float, default=2)
     args = parser.parse_args(argv)
+    if args.control_disable_grid_width_only and not args.control_vox_app:
+        parser.error('Disabling the control optimization needs --control-vox-app')
     if not args.capture_reference and (args.repeat < 7 or not args.expected_vox or not args.expected_brave):
         parser.error('Acceptance needs seven pairs and both existing pixel references')
     if not args.capture_reference and args.reference_engine != 'both':
@@ -224,6 +238,7 @@ def main():
         fixture=expected, original_scripts_retained=True, author_javascript_enabled=True,
         viewport=[1024, 768], scale=args.scale, settle_seconds=args.settle_seconds,
         javascript_backends=dict(vox='javascriptcore', brave='v8'),
+        control_disable_grid_width_only=args.control_disable_grid_width_only,
         brave_post_readiness_expression=args.post_readiness_expression,
         readiness_correction='Await visible image decode before the original settlement; no engine credit',
         system=subprocess.check_output(['sw_vers'], text=True)))
@@ -246,8 +261,7 @@ def main():
             if args.capture_reference and args.reference_engine != 'both':
                 order = [args.reference_engine]
             for engine in order:
-                row = browser.run_browser('vox' if engine == 'control' else engine, apps[engine],
-                    args.output / f'pair-{index+1}-{engine}', args)
+                row = run_trial(engine, apps[engine], args.output / f'pair-{index+1}-{engine}', args)
                 row['scope'] = SCOPE
                 browser.write_json(args.output / f'pair-{index+1}-{engine}/result.json', row)
                 pair[engine] = row
