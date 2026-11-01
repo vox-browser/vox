@@ -11733,13 +11733,17 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 		inherited_source_available = true
 	}
 
+	key_scope_start := begin_diagnostic_instruction_scope()
 	reuse_key := s.computed_longhand_reuse_key(abstract_element, cascaded_properties,
 		inherited_computed, recascaded_font_size != none)
 	mut reused_longhands := false
 	if key := reuse_key {
 		reused_longhands = s.restore_computed_longhands(key, cascaded_properties, mut properties)
+		record_diagnostic_longhand_lookup(reused_longhands)
 	}
+	record_diagnostic_instruction_scope(14, key_scope_start)
 	if !reused_longhands {
+		loop_scope_start := begin_diagnostic_instruction_scope()
 		for property_id in computed_interpolation_property_computation_order() {
 			property_index := int(property_id) - int(first_longhand_property_id())
 			has_cascaded_property := cascaded_properties.contained_properties_cache_[int(property_id)] != 0
@@ -11839,8 +11843,11 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 			}
 			mut computed_value := unsafe { style_value }
 			if requires_computation {
+				context_scope_start := begin_diagnostic_instruction_scope()
 				mut computation_context := s.get_computation_context_for_property(property_id, properties, abstract_element)
 				computation_context.reset_viewport_metric_dependency_tracking()
+				record_diagnostic_instruction_scope(16, context_scope_start)
+				value_scope_start := begin_diagnostic_instruction_scope()
 				if can_reuse_default_computed_value {
 					// This value is shared by all later documents. Only its calculation
 					// escapes; the element's property pages remain document-owned.
@@ -11852,6 +11859,7 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 					computed_value = compute_value_of_property_from_source(property_id, style_value, property_source,
 						computation_context, 1.0)
 				}
+				record_diagnostic_instruction_scope(17, value_scope_start)
 				if computation_context.did_resolve_font_relative_length {
 					properties.font_input_depends_on_font_size_ = true
 				}
@@ -11878,6 +11886,7 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 			}
 		}
 		if key := reuse_key { s.remember_computed_longhands(key, cascaded_properties, properties) }
+		record_diagnostic_instruction_scope(15, loop_scope_start)
 	}
 
 	// The root element establishes the root font metrics used by rem/rlh for every

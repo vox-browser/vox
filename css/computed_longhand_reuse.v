@@ -281,7 +281,10 @@ fn (s &StyleComputer) computed_longhand_reuse_key(element dom.AbstractElement,
 		if !computed_interpolation_is_longhand_property(id) { continue }
 		property := cascaded.style_property(id) or { continue }
 		count++
-		if !computed_longhand_reuse_value_is_simple(property.value) { return none }
+		if !computed_longhand_reuse_value_is_simple(property.value) {
+			record_diagnostic_longhand_rejection(id, property.value)
+			return none
+		}
 		// Commutative contribution: entry-head maps need not have equal order.
 		value_hash := computed_longhand_reuse_value_hash(property.value) or { return none }
 		hash ^= ((value_hash ^ (u64(id) * u64(0x9e3779b97f4a7c15))) * u64(0x100000001b3))
