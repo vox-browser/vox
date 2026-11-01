@@ -23,9 +23,26 @@ $if !vox_ui2 ? {
 			return
 		}
 		first, end := app.portable_bookmark_range(width)
+		icons := app.cached_browser_bookmark_favicons()
 		for index in first .. end {
-			title := address_for_display(items[index].title, 0, false, 20)
-			app.ctx.draw_text(12 + (index - first) * 164, top + 7, title,
+			x := 12 + (index - first) * 164
+			if index < icons.len && icons[index] >= 0 {
+				image := app.ctx.get_cached_image_by_idx(icons[index])
+				scale := f32(16) / f32(math.max(image.width, image.height))
+				w := f32(image.width) * scale
+				h := f32(image.height) * scale
+				$if macos {
+					if app.ctx.native_rendering {
+						C.native_draw_image_part(image, f32(x) + (16 - w) / 2, f32(top + 5) + (16 - h) / 2,
+							w, h, 0, 0, f32(image.width), f32(image.height), f32(app.ctx.height), 1)
+					} else { app.ctx.draw_image_by_id(f32(x), f32(top + 5), w, h, icons[index]) }
+				} $else { app.ctx.draw_image_by_id(f32(x), f32(top + 5), w, h, icons[index]) }
+			} else {
+				app.ctx.draw_circle_empty(f32(x + 8), f32(top + 13), 6, gg.rgb(110, 110, 110))
+				app.ctx.draw_line(x + 2, top + 13, x + 14, top + 13, gg.rgb(110, 110, 110))
+			}
+			title := address_for_display(items[index].title, 0, false, 17)
+			app.ctx.draw_text(x + 22, top + 7, title,
 				color: gg.rgb(55, 55, 55)
 				size:  12
 			)

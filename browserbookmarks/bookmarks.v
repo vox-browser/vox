@@ -68,7 +68,10 @@ pub fn (mut store Store) seed_optimized_sites() ! {
 	guard := processlock.acquire(store.path)!
 	defer { guard.release() }
 	store.reload()!
-	if store.optimized_defaults_added { return }
+	if store.optimized_defaults_added {
+		store.update_optimized_reddit()!
+		return
+	}
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
 	mut items := []Bookmark{}
@@ -86,6 +89,22 @@ pub fn (mut store Store) seed_optimized_sites() ! {
 		store.optimized_defaults_added = false
 		return err
 	}
+}
+
+fn (mut store Store) update_optimized_reddit() ! {
+	if !store.items.any(it.url == 'https://old.reddit.com/' && it.title == 'Old Reddit') { return }
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	already_present := store.items.any(it.url == optimizedsites.reddit_address)
+	mut items := []Bookmark{cap: store.items.len}
+	for item in store.items {
+		if item.url == 'https://old.reddit.com/' && item.title == 'Old Reddit' {
+			if !already_present { items << Bookmark{...item, url: optimizedsites.reddit_address} }
+		} else {
+			items << item
+		}
+	}
+	store.persist(store.visible, items)!
 }
 
 pub fn eligible_url(address string) bool {

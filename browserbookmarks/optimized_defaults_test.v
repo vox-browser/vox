@@ -31,7 +31,7 @@ fn test_fresh_defaults_and_failed_migration_preserve_unsaved_state() {
 	mut store := open('')!
 	store.seed_optimized_sites()!
 	assert store.visible && store.items.len == 3
-	assert store.items[1].url == 'https://old.reddit.com/'
+	assert store.items[1].url == 'https://old.reddit.com/r/programming/'
 	mut broken := open('')!
 	broken.path = '/dev/null/bookmarks.json'
 	broken.seed_optimized_sites() or {
@@ -40,4 +40,31 @@ fn test_fresh_defaults_and_failed_migration_preserve_unsaved_state() {
 		return
 	}
 	assert false, 'Migration through a regular file must fail'
+}
+
+fn test_existing_seeded_reddit_is_updated_without_resetting_visibility_or_custom_items() {
+	directory := os.join_path(os.temp_dir(), 'vox-reddit-migration-${os.getpid()}-${time.sys_mono_now()}')
+	os.mkdir_all(directory)!
+	defer { os.rmdir_all(directory) or {} }
+	path := os.join_path(directory, 'bookmarks.json')
+	os.write_file(path, '{"optimized_defaults_added":true,"visible":false,"items":[{"url":"https://old.reddit.com/","title":"Old Reddit"},{"url":"https://custom.test/","title":"Custom"}]}')!
+	mut store := open(path)!
+	store.seed_optimized_sites()!
+	assert store.items.len == 2 && !store.visible
+	assert store.items[0].url == 'https://old.reddit.com/r/programming/'
+	assert store.items[1].title == 'Custom'
+	version := store.version
+	store.seed_optimized_sites()!
+	assert store.version == version
+	assert open(path)!.items == store.items
+	// A separately named user bookmark is not the previously seeded default.
+	os.write_file(path, '{"optimized_defaults_added":true,"visible":true,"items":[{"url":"https://old.reddit.com/","title":"My Reddit"}]}')!
+	store = open(path)!
+	store.seed_optimized_sites()!
+	assert store.items[0].url == 'https://old.reddit.com/' && store.items[0].title == 'My Reddit'
+	// An already saved programming bookmark wins over the old generated one.
+	os.write_file(path, '{"optimized_defaults_added":true,"visible":false,"items":[{"url":"https://old.reddit.com/","title":"Old Reddit"},{"url":"https://old.reddit.com/r/programming/","title":"My programming"}]}')!
+	store = open(path)!
+	store.seed_optimized_sites()!
+	assert store.items.len == 1 && store.items[0].title == 'My programming'
 }

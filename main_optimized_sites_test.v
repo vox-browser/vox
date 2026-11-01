@@ -148,7 +148,7 @@ $if vox_ui2 ? {
 		assert ui2.text('address') == 'https://www.wikipedia.org/'
 		app.navigation_work_depth = 1
 		C.native_test_bookmark_click(1)
-		assert (app.deferred_navigation_input or { panic('bookmark did not dispatch') }).address == 'https://old.reddit.com/'
+		assert (app.deferred_navigation_input or { panic('bookmark did not dispatch') }).address == 'https://old.reddit.com/r/programming/'
 		browsersettings.save(browsersettings.Proxy{allow_any_site: true})!
 		app.update_browser_chrome(800, 600)
 		assert C.native_test_settings_address_state(field, 1) != 0

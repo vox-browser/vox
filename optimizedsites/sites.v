@@ -10,9 +10,11 @@ pub:
 }
 
 // Keep this catalog aligned with the confirmed comparisons in OPTIMIZED_SITES.md.
+pub const reddit_address = 'https://old.reddit.com/r/programming/'
+
 pub const sites = [
 	Site{'Wikipedia', 'https://www.wikipedia.org/', 'wikipedia.org'},
-	Site{'Old Reddit', 'https://old.reddit.com/', 'old.reddit.com'},
+	Site{'Old Reddit', reddit_address, 'old.reddit.com'},
 	Site{'vlang.io', 'https://vlang.io/', 'vlang.io'},
 ]
 

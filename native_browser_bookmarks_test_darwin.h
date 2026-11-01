@@ -30,3 +30,31 @@ static int native_test_bookmark_remove_overflow(int index) {
 	}
 	return 0;
 }
+
+static NSImage *native_test_bookmark_icon(int index) {
+	for (NSView *view in vox_bookmark_bar.subviews) {
+		if ([view isKindOfClass:NSButton.class] && ((NSButton *)view).tag == index
+			&& ((NSButton *)view).action == @selector(openBookmark:)) return ((NSButton *)view).image;
+	}
+	for (NSMenuItem *item in vox_bookmark_bar.overflow.itemArray) if (item.tag == index) return item.image;
+	return nil;
+}
+
+static int native_test_bookmark_has_favicon(int index) {
+	NSImage *image = native_test_bookmark_icon(index);
+	return image && !image.isTemplate && NSEqualSizes(image.size, NSMakeSize(16, 16));
+}
+
+static void *native_test_bookmark_button(int index) {
+	for (NSView *view in vox_bookmark_bar.subviews)
+		if ([view isKindOfClass:NSButton.class] && view.tag == index) return (__bridge void *)view;
+	return NULL;
+}
+
+static void native_test_bookmark_capture(const char *path) {
+	NSView *view = vox_bookmark_bar;
+	NSBitmapImageRep *bitmap = [view bitmapImageRepForCachingDisplayInRect:view.bounds];
+	[view cacheDisplayInRect:view.bounds toBitmapImageRep:bitmap];
+	[[bitmap representationUsingType:NSBitmapImageFileTypePNG properties:@{}]
+		writeToFile:[NSString stringWithUTF8String:path] atomically:YES];
+}

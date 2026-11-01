@@ -32,6 +32,7 @@ struct BrowserChromeState {
 	bookmarks_visible bool
 	bookmarks_version u64
 	bookmarks_error string
+	bookmark_favicons []int
 }
 
 fn browser_chrome_requires_update(previous BrowserChromeState, next BrowserChromeState) bool {
@@ -111,6 +112,7 @@ fn (app &BrowserApp) browser_chrome_state(width int, height int) BrowserChromeSt
 		bookmarks_visible: app.bookmark_bar_visible()
 		bookmarks_version: (if app.bookmarks != unsafe { nil } { app.bookmarks.version } else { u64(0) }) * 2 + if app.optimized_sites_only() { u64(1) } else { u64(0) }
 		bookmarks_error: app.bookmarks_error
+		bookmark_favicons: app.cached_browser_bookmark_favicons()
 	}
 }
 

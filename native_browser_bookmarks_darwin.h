@@ -8,6 +8,7 @@ typedef void (*VoxBookmarkAction)(void *, int, int);
 @property VoxBookmarkAction callback;
 @property(strong) NSMenu *overflow;
 @property CGFloat nextX;
+@property(strong) NSMutableDictionary<NSNumber *, NSData *> *iconBytes;
 - (void)openBookmark:(id)sender;
 - (void)removeBookmark:(id)sender;
 - (void)showOverflow:(NSButton *)sender;
@@ -30,6 +31,15 @@ typedef void (*VoxBookmarkAction)(void *, int, int);
 static VoxBookmarkBar *vox_bookmark_bar;
 static uint64_t vox_bookmark_version;
 static NSString *vox_bookmark_error;
+
+static NSImage *native_bookmark_default_icon(void) {
+	static NSImage *image;
+	if (!image) {
+		image = [[NSImage imageWithSystemSymbolName:@"globe" accessibilityDescription:nil] copy];
+		image.size = NSMakeSize(16, 16);
+	}
+	return image;
+}
 
 static void native_browser_bookmarks_remove(void) {
 	[vox_bookmark_bar removeFromSuperview];
@@ -56,6 +66,7 @@ static int native_browser_bookmarks_begin(void *toolbar, void *owner, VoxBookmar
 	vox_bookmark_bar.owner = owner; vox_bookmark_bar.callback = callback;
 	vox_bookmark_bar.accessibilityLabel = @"Bookmarks bar";
 	vox_bookmark_bar.nextX = 8;
+	vox_bookmark_bar.iconBytes = [NSMutableDictionary dictionary];
 	vox_bookmark_bar.overflow = [[NSMenu alloc] initWithTitle:@"More bookmarks"];
 	vox_bookmark_bar.overflow.autoenablesItems = NO;
 	vox_bookmark_version = version; vox_bookmark_error = message;
@@ -70,7 +81,7 @@ static void native_browser_bookmarks_item(int index, const unsigned char *title_
 	NSString *title = [[NSString alloc] initWithBytes:title_bytes length:title_length encoding:NSUTF8StringEncoding] ?: @"";
 	NSString *url = [[NSString alloc] initWithBytes:url_bytes length:url_length encoding:NSUTF8StringEncoding] ?: @"";
 	NSFont *font = [NSFont systemFontOfSize:12];
-	CGFloat width = MIN(180, MAX(48, ceil([title sizeWithAttributes:@{NSFontAttributeName:font}].width) + 20));
+	CGFloat width = MIN(180, MAX(66, ceil([title sizeWithAttributes:@{NSFontAttributeName:font}].width) + 40));
 	NSMenuItem *remove = [[NSMenuItem alloc] initWithTitle:@"Remove bookmark" action:@selector(removeBookmark:) keyEquivalent:@""];
 	remove.target = bar; remove.tag = index;
 	NSMenu *context = [[NSMenu alloc] initWithTitle:title]; context.autoenablesItems = NO;
@@ -78,6 +89,10 @@ static void native_browser_bookmarks_item(int index, const unsigned char *title_
 	if (bar.overflow.numberOfItems == 0 && bar.nextX + width <= bar.bounds.size.width - 34) {
 		NSButton *button = [[NSButton alloc] initWithFrame:NSMakeRect(bar.nextX, 2, width, 23)];
 		button.title = title; button.font = font; button.bordered = NO;
+		button.image = native_bookmark_default_icon();
+		button.imagePosition = NSImageLeft;
+		button.imageScaling = NSImageScaleProportionallyDown;
+		button.imageHugsTitle = YES;
 		button.alignment = NSTextAlignmentLeft;
 		button.lineBreakMode = NSLineBreakByTruncatingTail;
 		button.target = bar; button.action = @selector(openBookmark:); button.tag = index;
@@ -87,13 +102,41 @@ static void native_browser_bookmarks_item(int index, const unsigned char *title_
 	} else {
 		NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:title action:@selector(openBookmark:) keyEquivalent:@""];
 		item.target = bar; item.tag = index; item.toolTip = url;
+		item.image = native_bookmark_default_icon();
 		// A submenu keeps removal available for entries beyond the visible row.
 		NSMenu *submenu = [[NSMenu alloc] initWithTitle:title]; submenu.autoenablesItems = NO;
 		NSMenuItem *open = [[NSMenuItem alloc] initWithTitle:@"Open bookmark" action:@selector(openBookmark:) keyEquivalent:@""];
 		open.target = bar; open.tag = index;
+		open.image = item.image;
 		[submenu addItem:open]; [submenu addItem:[NSMenuItem separatorItem]];
 		[context removeItem:remove]; [submenu addItem:remove]; item.submenu = submenu;
 		[bar.overflow addItem:item];
+	}
+}
+
+// Update only an icon when an asynchronous response completes. Keep buttons,
+// focus, menus and callback indices stable across ordinary chrome refreshes.
+static void native_browser_bookmark_icon(int index, const unsigned char *bytes, int length) {
+	VoxBookmarkBar *bar = vox_bookmark_bar;
+	if (!bar) return;
+	NSNumber *key = @(index);
+	NSData *encoded = bytes && length > 0 ? [NSData dataWithBytes:bytes length:length] : nil;
+	NSData *previous = bar.iconBytes[key];
+	if ((!encoded && !previous) || [encoded isEqualToData:previous]) return;
+	NSImage *image = encoded ? [[NSImage alloc] initWithData:encoded] : nil;
+	if (image) image.size = NSMakeSize(16, 16);
+	else image = native_bookmark_default_icon();
+	if (encoded) bar.iconBytes[key] = encoded;
+	else [bar.iconBytes removeObjectForKey:key];
+	for (NSView *view in bar.subviews) {
+		if ([view isKindOfClass:NSButton.class] && ((NSButton *)view).tag == index
+			&& ((NSButton *)view).action == @selector(openBookmark:)) ((NSButton *)view).image = image;
+	}
+	for (NSMenuItem *item in bar.overflow.itemArray) {
+		if (item.tag != index) continue;
+		item.image = image;
+		for (NSMenuItem *action in item.submenu.itemArray)
+			if (action.action == @selector(openBookmark:)) action.image = image;
 	}
 }
 

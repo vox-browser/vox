@@ -21,6 +21,7 @@ mut:
 	favicon_complete    bool
 	favicon_fallback    bool
 	tab_favicons        []int
+	bookmark_favicons   []int
 }
 
 fn (app &BrowserApp) browser_text_cache() &BrowserChromeTextCache {
