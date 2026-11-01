@@ -1,0 +1,12 @@
+<!doctype html>
+<meta charset="utf-8"><title>Odd-sized image upload in a retained SVG picture</title>
+<style>
+html,body{margin:0;background:#090b0f}
+svg{position:absolute;left:430px;top:290px}
+img{display:block;position:absolute;left:475px;top:331px;width:330px;height:138px;
+    object-fit:cover;object-position:top;border-radius:5px}
+</style>
+<!-- The SVG makes its overlapping raster tiles replay the complete picture,
+     including the image's half-sized 596 by 345 CPU decode upload. -->
+<svg width="380" height="220"><path fill="#15191f" d="M0 0H380V220H0Z"/></svg>
+<img decoding="async" src="../resources/odd-image-upload.png" alt="Odd-sized generated color pattern">

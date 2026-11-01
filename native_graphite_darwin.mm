@@ -284,6 +284,25 @@ static sk_sp<SkColorSpace> vox_image_color_space(VoxGraphiteImage const* image)
     return vox_image_color_space_from_profile(image->has_color_profile ? image->color_profile : nullptr);
 }
 
+extern "C" __attribute__((visibility("default")))
+int vox_graphite_resize_rgba_pixels(VoxGraphiteImage const* image,
+    uint8_t* pixels, int width, int height, int pitch)
+{
+    if (!image || !image->pixels || !pixels || !(image->flags & 1) || (image->flags & 4)
+        || image->width <= 0 || image->height <= 0 || width <= 0 || height <= 0
+        || image->width > 16384 || image->height > 16384
+        || width > image->width || height > image->height
+        || size_t(image->width) * image->height > 8 * 1024 * 1024
+        || image->pitch < image->width * 4 || pitch < width * 4)
+        return 0;
+    auto info = SkImageInfo::Make(image->width, image->height,
+        kRGBA_8888_SkColorType, kPremul_SkAlphaType, vox_image_color_space(image));
+    SkPixmap source(info, image->pixels, image->pitch);
+    SkPixmap resized(info.makeWH(width, height), pixels, pitch);
+    return source.scalePixels(resized,
+        SkSamplingOptions(SkFilterMode::kLinear, SkMipmapMode::kNearest));
+}
+
 static void force_msaa_render_pass(SkCanvas* canvas, int, int)
 {
     // A path selects a multisampled pass. Even a transparent tile-sized path

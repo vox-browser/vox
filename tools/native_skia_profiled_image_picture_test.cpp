@@ -4,14 +4,16 @@
 #include <cstdio>
 
 static void image_picture(int scale, int profile_kind, bool rounded, bool cropped,
-    bool nearest, bool translucent, bool minified, bool large_source=false, bool short_source=false)
+    bool nearest, bool translucent, bool minified, bool large_source=false, bool short_source=false,
+    bool half_source=false)
 {
     int width=large_source?1280:192,height=large_source?800:160;
-    int source_width=large_source?2606:31,source_height=large_source?(short_source?2483:2482):23;
+    int source_width=half_source?1191:large_source?2606:31;
+    int source_height=half_source?690:large_source?(short_source?2483:2482):23;
     int source_pitch=source_width*4+8;
     float x=large_source?804:29.25f,y=large_source?4:31.5f;
-    float w=large_source?273:minified?6.5f:73.5f;
-    float h=large_source?260:minified?4.75f:55.25f;
+    float w=half_source?330:large_source?273:minified?6.5f:73.5f;
+    float h=half_source?138:large_source?260:minified?4.75f:55.25f;
     std::vector<uint8_t> source(source_pitch*source_height,0xcd);
     for(int row=0;row<source_height;++row) for(int column=0;column<source_width;++column) {
         auto* pixel=source.data()+row*source_pitch+column*4;
@@ -50,8 +52,9 @@ static void image_picture(int scale, int profile_kind, bool rounded, bool croppe
     shared_recording_content(destination,SkRect::MakeWH(width,height),0,0);
     float clip[]={x+2,y+1,w-4,h-2,5,5,5,5,5,5,5,5};
     if(!rounded)std::fill(clip+4,clip+12,0);
-    float source_x=cropped?3:0,source_y=cropped?2:0;
-    float sw=cropped?25:source_width,sh=cropped?18:source_height;
+    float source_x=cropped&&!half_source?3:0,source_y=cropped&&!half_source?2:0;
+    float sw=cropped&&!half_source?25:source_width;
+    float sh=half_source?495.9375f:cropped?18:source_height;
     float a=large_source?1:.96f,b=large_source?0:.28f,c=-b,d=a;
     float e=large_source?0:16.125f,f=large_source?0:5.25f;
     ladybird_v_skia_set_image_color_profile(profile_kind?profile:nullptr);
@@ -71,10 +74,24 @@ static void image_picture(int scale, int profile_kind, bool rounded, bool croppe
     // 31x23. These fixed expectations independently cover odd source sizes.
     int upload_width=mips?(large_source?326*scale:cropped?(scale==1?16:31):8*scale):source_width;
     int upload_height=mips?(large_source?(scale==1?311:621):cropped?(scale==1?12:23):6*scale):source_height;
+    if(half_source) {
+        upload_width=scale==1?596:1191;
+        upload_height=scale==1?345:690;
+    }
     std::vector<uint8_t> resized(size_t(upload_width)*upload_height*4);
     SkPixmap upload(image_info.makeWH(upload_width,upload_height),resized.data(),upload_width*4);
-    if(mips) assert(original.scalePixels(upload,
-        SkSamplingOptions(SkFilterMode::kLinear,SkMipmapMode::kNearest)));
+    // Geometry and GPU replay below are independent of the recorder. CPU
+    // upload pixels must come from Chromium's Skia rather than this test's
+    // Ladybird Skia; frozen resize hashes cover that separate ABI boundary.
+    if(mips) {
+        auto resize=graphite_image_resize();
+        assert(resize);
+        VoxGraphiteImage input{};
+        input.pixels=source.data();input.width=source_width;input.height=source_height;
+        input.pitch=source_pitch;input.flags=1;input.has_color_profile=profile_kind!=0;
+        if(profile_kind)std::copy_n(profile,VOX_IMAGE_COLOR_PROFILE_VALUES,input.color_profile);
+        assert(resize(&input,resized.data(),upload_width,upload_height,upload_width*4));
+    }
     else upload=original;
     auto image=SkImages::RasterFromPixmapCopy(upload);
     assert(image);
@@ -90,7 +107,7 @@ static void image_picture(int scale, int profile_kind, bool rounded, bool croppe
         mips?SkMipmapMode::kLinear:SkMipmapMode::kNone);
     if(cropped) {
         float sx=float(upload_width)/source_width,sy=float(upload_height)/source_height;
-        canvas->drawImageRect(image,SkRect::MakeXYWH(3*sx,2*sy,25*sx,18*sy),SkRect::MakeXYWH(x,y,w,h),
+        canvas->drawImageRect(image,SkRect::MakeXYWH(source_x*sx,source_y*sy,sw*sx,sh*sy),SkRect::MakeXYWH(x,y,w,h),
             sampling,&paint,SkCanvas::kStrict_SrcRectConstraint);
     } else {
         auto natural=SkRect::MakeWH(source_width,source_height);
@@ -145,6 +162,10 @@ int main()
                 image_picture(scale,profile,rounded,cropped,nearest,alpha,minified);
     for(int scale:{1,2}) for(int profile:{0,1}) for(bool short_source:{false,true})
         image_picture(scale,profile,true,false,false,true,true,true,short_source);
+    // A half-sized odd upload exercises a different CPU sampling phase from
+    // the 1/8-sized large cases above. It regresses with Ladybird's resampler.
+    for(int scale:{1,2}) for(int profile:{0,1})
+        image_picture(scale,profile,true,true,false,true,true,true,false,true);
     ladybird_v_skia_set_chromium_painting(0);
-    std::puts("200 native image pictures match independent GPU scenes across color spaces, clips and sampling modes");
+    std::puts("204 native image pictures match independent GPU scenes across color spaces, clips and sampling modes");
 }

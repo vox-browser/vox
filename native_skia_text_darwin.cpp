@@ -186,6 +186,16 @@ auto graphite_image_draw()
     return draw;
 }
 
+auto graphite_image_resize()
+{
+    static auto resize = [] {
+        void* library = dlopen("@rpath/libVoxGraphite.dylib", RTLD_LAZY | RTLD_LOCAL);
+        return library ? reinterpret_cast<decltype(&vox_graphite_resize_rgba_pixels)>(
+            dlsym(library, "vox_graphite_resize_rgba_pixels")) : nullptr;
+    }();
+    return resize;
+}
+
 auto graphite_image_region_draw()
 {
     static auto draw = [] {

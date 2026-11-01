@@ -48,6 +48,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_screen_blending_preserves_floating_point_group_opacity(self):
         self.compare_fixture('screen-opacity-composite')
 
+    def test_odd_image_upload_keeps_chromium_pixels_in_retained_pictures(self):
+        self.compare_fixture('odd-image-picture-upload')
+
     def test_image_decode_reuse_follows_resource_identity(self):
         self.compare_fixture('image-decode-resource-reuse')
 

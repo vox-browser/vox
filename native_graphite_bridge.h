@@ -118,6 +118,11 @@ int vox_graphite_draw_image_pixels(uint8_t *pixels, int width, int height,
     int pitch, int has_background, const VoxGraphiteImage *image);
 int vox_graphite_draw_image_tiles(uint8_t *pixels, int width, int height,
     int pitch, int has_background, const VoxGraphiteImage *images, int count);
+// CPU decode uploads use this backend's Chromium-pinned Skia in both leaf and
+// retained-picture draws. Input/output are premultiplied RGBA in the source
+// color space. Only downsampling is supported; row padding is left untouched.
+int vox_graphite_resize_rgba_pixels(const VoxGraphiteImage *image,
+    uint8_t *pixels, int width, int height, int pitch);
 int vox_graphite_draw_shape_pixels(uint8_t *pixels, int width, int height,
     int pitch, int has_background, const VoxGraphiteShape *shape);
 // CPU pixels for a subregion of an otherwise transparent GPU surface. The

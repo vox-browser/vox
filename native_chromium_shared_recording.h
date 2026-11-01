@@ -219,7 +219,18 @@ void shared_recording_image(CGContextRef destination, SkMatrix const& matrix,
     if (upload_width != image.width || upload_height != image.height) {
         scaled.resize(size_t(upload_width) * upload_height * 4);
         SkPixmap resized(info.makeWH(upload_width, upload_height), scaled.data(), size_t(upload_width) * 4);
-        if (!source.scalePixels(resized, SkSamplingOptions(SkFilterMode::kLinear, SkMipmapMode::kNearest))) {
+        // The recorder and GPU backend use different Skia revisions. Their CPU
+        // resamplers differ, especially for odd source sizes; serialize the
+        // same Chromium-pinned upload that a leaf draw would use.
+        auto resize = graphite_image_resize();
+        auto input = image;
+        input.pixels = static_cast<uint8_t const*>(source.addr());
+        input.pitch = int(source.rowBytes());
+        input.flags = 1;
+        bool success = resize
+            ? resize(&input, scaled.data(), upload_width, upload_height, upload_width * 4)
+            : source.scalePixels(resized, SkSamplingOptions(SkFilterMode::kLinear, SkMipmapMode::kNearest));
+        if (!success) {
             shared_recording_block(matrix.mapRect(target));
             return;
         }
