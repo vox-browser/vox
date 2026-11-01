@@ -115,6 +115,35 @@ fn wheel_routing_test_balance(runtime &browserjs.Runtime, document &dom.Document
 	assert runtime.libjs_vm().interpreter_stack().depth() == 0
 }
 
+fn test_callback_free_wheel_reuses_current_target_and_native_listeners_disable_reuse() {
+	mut owner, mut document := wheel_routing_test_document('https://wheel-input-no-runtime.example.test/')!
+	defer { document.finalize() }
+	mut app := wheel_routing_test_app(owner, document, unsafe { nil })
+	video := document.get_element_by_id('video')?
+	scroller := document.get_element_by_id('wheel-scroller')?
+	hit := app.hit_test_at_viewport_point(25.25, 20.125)?
+	target := wheel_input_target(hit)?
+	assert app.wheel_input_can_reuse_hit(target)
+	assert wheel_input_target_layout_is_current(target)
+	assert app.handle_wheel_at_viewport_point(page.PixelPoint{25.25, 20.125}, page.PixelPoint{},
+		0, 0, 0, 0, 3.75, false) == .handled
+	assert scroller.el_scroll_offset().y() == 3.75 && app.scroll_y == 0
+	callback := &dom.CallbackType{
+		handle_event: fn [scroller] (_ &dom.Event, _ ?&dom.EventTarget) dom.JSValue {
+			mut changed := unsafe { &dom.Element(scroller) }
+			changed.set_attribute_value('style', 'overflow:visible')
+			return dom.js_undefined()
+		}
+	}
+	unsafe { &dom.EventTarget(video) }.add_event_listener_without_options('wheel',
+		dom.IDLEventListener.create(callback))
+	assert !app.wheel_input_can_reuse_hit(target)
+	// A native callback without a script runtime still forces fresh hit testing.
+	assert app.handle_wheel_at_viewport_point(page.PixelPoint{25.25, 20.125}, page.PixelPoint{},
+		0, 0, 0, 0, 3.75, false) == .handled
+	assert app.scroll_y == 3.75
+}
+
 fn test_browser_wheel_hit_routes_trusted_fractional_events_and_cancels_before_inner_and_viewport_scroll() {
 	$if !darwin { return }
 	mut owner, mut document :=

@@ -4,6 +4,10 @@ module main
 
 import dom
 import page
+import os
+
+const disable_wheel_hit_reuse = os.getenv('VOX_DISABLE_WHEEL_HIT_REUSE') != ''
+const wheel_hit_reuse_diagnostics = os.getenv('VOX_WHEEL_HIT_REUSE_DIAGNOSTICS') != ''
 
 fn wheel_input_target(hit dom.HitTestResult) ?page.InputTarget {
 	node := if hit.node != unsafe { nil } {
@@ -20,6 +24,26 @@ fn (mut app BrowserApp) scroll_element_at_viewport_point(point page.PixelPoint,
 	delta_x f64, delta_y f64) bool {
 	hit := app.hit_test_at_viewport_point(point.x, point.y) or { return false }
 	target := wheel_input_target(hit) or { return false }
+	return app.scroll_element_for_wheel_target(target, delta_x, delta_y)
+}
+
+fn (app &BrowserApp) wheel_input_can_reuse_hit(target page.InputTarget) bool {
+	if disable_wheel_hit_reuse || app.js_runtime != unsafe { nil } { return false }
+	node := target.node or { return false }
+	// Includes shadow hosts, Document and Window listeners. With no callback
+	// and no compact-runtime task to apply, dispatch cannot alter the hit tree.
+	return !node.has_inclusive_ancestor_with_event_listener('wheel')
+}
+
+fn wheel_input_target_layout_is_current(target page.InputTarget) bool {
+	node := target.node or { return false }
+	current := node.layout_node() or { return false }
+	committed := target.layout_node() or { return false }
+	return voidptr(current) == voidptr(committed)
+}
+
+fn (mut app BrowserApp) scroll_element_for_wheel_target(target page.InputTarget,
+	delta_x f64, delta_y f64) bool {
 	node := target.node or { return false }
 	mut current := node.layout_node()
 	for current != none {
@@ -42,7 +66,7 @@ fn (mut app BrowserApp) scroll_element_at_viewport_point(point page.PixelPoint,
 }
 
 // Dispatch against the committed hit tree, then resolve default scrolling from
-// a new tree after native callbacks and compact DOM mutations have completed.
+// a fresh hit after callbacks; callback-free dispatch can retain its target.
 fn (mut app BrowserApp) handle_wheel_at_viewport_point(client page.PixelPoint,
 	screen page.PixelPoint, button u32, buttons u32, modifiers u32,
 	delta_x f64, delta_y f64, async_default_action bool) page.EventResult {
@@ -62,6 +86,8 @@ fn (mut app BrowserApp) handle_wheel_input(client page.PixelPoint,
 	document.update_layout(.event_handler_handle_mouse_wheel)
 	hit := app.hit_test_at_viewport_point(client.x, client.y) or { return .dropped }
 	target := wheel_input_target(hit) or { return .dropped }
+	reuse_hit := app.wheel_input_can_reuse_hit(target)
+	hit_document := voidptr(document)
 	mut handler := app.page_model.event_handler
 	handler.set_document_state(document.is_fully_active(), document.layout_node() != none)
 	result := handler.handle_mousewheel_with_parameters(target,
@@ -94,7 +120,18 @@ fn (mut app BrowserApp) handle_wheel_input(client page.PixelPoint,
 	} else {
 		delta_y
 	}
-	if app.scroll_element_at_viewport_point(client, x, y) {
+	// Reject a replaced layout node even on the callback-free path.
+	reuse_for_default := reuse_hit && voidptr(app.document) == hit_document
+		&& wheel_input_target_layout_is_current(target)
+	if wheel_hit_reuse_diagnostics {
+		eprintln('VOX_WHEEL_HIT_REUSE reused=${reuse_for_default}')
+	}
+	element_scrolled := if reuse_for_default {
+		app.scroll_element_for_wheel_target(target, x, y)
+	} else {
+		app.scroll_element_at_viewport_point(client, x, y)
+	}
+	if element_scrolled {
 		return .handled
 	}
 	before := app.scroll_y
