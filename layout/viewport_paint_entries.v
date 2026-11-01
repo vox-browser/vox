@@ -1,7 +1,10 @@
 module layout
 
 import math
+import os
 import platform
+
+const disable_direct_viewport_rect_culling = os.getenv('VOX_DISABLE_DIRECT_VIEWPORT_RECT_CULLING') != ''
 
 // Culling resolves a flattened visual context for every bounded entry on each
 // viewport recording. Those temporaries live in this arena, reset as soon as
@@ -91,6 +94,9 @@ fn viewport_entry_has_bounded_ink(box &BlockBox) bool {
 
 fn viewport_rect_is_outside(rect LayoutRect, transform [6]f64, width f64, height f64,
 	mut ink_probe PaintCommand) bool {
+	if !disable_direct_viewport_rect_culling {
+		return viewport_rect_outside_native_canvas(rect, transform, width, height)
+	}
 	ink_probe = PaintCommand{
 		kind: 'fill_rect'
 		x: rect.x
