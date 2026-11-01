@@ -1743,6 +1743,7 @@ fn invalidate_style_after_same_parent_move(node &Node, reason StyleInvalidationR
 }
 
 pub fn (mut n Node) invalidate_style(reason StyleInvalidationReason) {
+	trace_style_invalidation_source(&n, reason, 'node')
 	doc := n.document()
 	if doc == unsafe { nil } {
 		return

@@ -1302,6 +1302,7 @@ fn (mut invalidator StyleInvalidator) apply_invalidation_plan(mut element Elemen
 	mut node := unsafe { &Node(&element) }
 	mut invalidate_subtree := invalidate_entire_subtree
 	if invalidation_plan_invalidates_whole_subtree(plan) {
+		trace_style_invalidation_source(node, reason, 'pending-whole-subtree')
 		node.invalidate_style(reason)
 		invalidate_subtree = true
 		node.set_needs_style_update_internal(true)
@@ -1312,6 +1313,7 @@ fn (mut invalidator StyleInvalidator) apply_invalidation_plan(mut element Elemen
 	}
 
 	if invalidation_plan_invalidates_self(plan) {
+		trace_style_invalidation_source(node, reason, 'pending-self')
 		node.set_needs_style_update(true)
 	}
 
