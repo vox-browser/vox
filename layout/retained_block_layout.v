@@ -65,7 +65,7 @@ fn collect_retained_block_inputs(node &Node, mut inputs []RetainedInlineInput) b
 		|| computed.establishes_multi_column_container()
 		|| computed.continue_value() in [.collapse, .discard]
 		|| (!node.is_text_node() && !node.display().is_flow_inside()
-			&& !node.display().is_flow_root_inside()) {
+			&& !node.display().is_flow_root_inside() && !retained_context_allows_flex(node)) {
 		return false
 	}
 	container_type := computed.container_type()
@@ -112,8 +112,10 @@ fn run_retaining_independent_formatting_context(mut state LayoutState, box &Node
 	}
 	if mode != .normal || state.subtree_root != none || !space.width.is_definite()
 		|| box.document().in_quirks_mode()
-		|| box.is_viewport() || box.is_root_element() || box.as_block_container() == none
-		|| box.display().is_inline_outside() || !creates_block_formatting_context(styled) {
+		|| box.is_viewport() || box.is_root_element()
+		|| (box.as_block_container() == none && !retained_context_allows_flex(box))
+		|| box.display().is_inline_outside()
+		|| (!creates_block_formatting_context(styled) && !retained_context_allows_flex(box)) {
 		return layout_uncached_independent_formatting_context(mut state, box, mut used, mode, space)
 	}
 	key := u64(voidptr(box))
@@ -131,6 +133,7 @@ fn run_retaining_independent_formatting_context(mut state LayoutState, box &Node
 			&& (cached.font_generation == font_generation
 				|| retained_layout_fonts_are_current(cached.inputs)) {
 			report_retained_block_image_reuse(cached.inputs)
+			report_retained_flex_layout(cached.inputs)
 			report_relative_flow_layout_reuse(cached.inputs)
 			if cached.font_generation != font_generation && processmetrics.instructions_enabled() {
 				eprintln('Vox retained block font generation: ${cached.font_generation} -> ${font_generation}, ${cached.inputs.len} inputs')
