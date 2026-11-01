@@ -2594,6 +2594,27 @@ fn grid_intrinsic_outer_width_contribution(mut state LayoutState, item &Node, co
 }
 
 fn run_grid_formatting_context(mut state LayoutState, container &Node, mut container_state UsedValues, layout_mode LayoutMode, available_space AvailableSpace) FormattingContextResult {
+	return run_grid_formatting_context_internal(mut state, container, mut container_state,
+		layout_mode, available_space, false)
+}
+
+// Intrinsic inline-size callers discard the measurement state and consume
+// only the completed column sizes. Rows, item alignment and absolute-position
+// rectangles cannot alter that result and still run for every geometry caller.
+fn measure_grid_intrinsic_width(mut state LayoutState, container &Node,
+	mut container_state UsedValues, available_space AvailableSpace) CSSPixels {
+	if container.has_size_containment() {
+		return container.explicit_intrinsic_inner_width() or { CSSPixels.new(0) }
+	}
+	width_only := os.getenv('VOX_DISABLE_GRID_WIDTH_ONLY') != '1'
+	if width_only && os.getenv('VOX_GRID_WIDTH_ONLY_DIAGNOSTICS') == '1' {
+		eprintln('Vox grid intrinsic width: columns only')
+	}
+	return run_grid_formatting_context_internal(mut state, container, mut container_state,
+		.normal, available_space, width_only).automatic_content_width
+}
+
+fn run_grid_formatting_context_internal(mut state LayoutState, container &Node, mut container_state UsedValues, layout_mode LayoutMode, available_space AvailableSpace, width_only bool) FormattingContextResult {
 	diagnose_block_reuse := os.getenv('VOX_GRID_BLOCK_REUSE_DIAGNOSTICS') == '1'
 	enable_block_reuse := os.getenv('VOX_DISABLE_GRID_BLOCK_REUSE') != '1'
 	// A resolved block size can be reused during intrinsic measurement. An
@@ -2850,6 +2871,11 @@ fn run_grid_formatting_context(mut state LayoutState, container &Node, mut conta
 	}
 	if width_is_intrinsic {
 		container_state.set_content_width(intrinsic_container_width)
+	}
+	if width_only {
+		return FormattingContextResult{
+			automatic_content_width: intrinsic_container_width
+		}
 	}
 
 	mut rows := if data := inherited_rows {

@@ -503,6 +503,10 @@ fn calculate_content_width_with_constraint(mut source_state LayoutState, box &Bo
 		return calculate_intrinsic_flex_width(mut throwaway, box_node, constraint)
 	}
 	if box_node.display().is_grid_inside() {
+		if !box_node.is_svg_svg_box() && !box_node.is_fieldset_box() {
+			return clamp_to_max_dimension_value(measure_grid_intrinsic_width(mut throwaway,
+				box_node, mut box_state, AvailableSpace.new(available_width, available_height)))
+		}
 		result := layout_inside_independent_formatting_context(mut throwaway, box_node, mut box_state, AvailableSpace.new(available_width, available_height))
 		return clamp_to_max_dimension_value(result.automatic_content_width)
 	}
