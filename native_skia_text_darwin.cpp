@@ -1278,7 +1278,7 @@ extern "C" int ladybird_v_skia_glyph_intercepts(char const* key, int face_index,
 // the exact original geometry key.
 static bool append_cpu_mask_positions(std::vector<uint8_t>& key, SkFont const& font,
     SkMatrix const& matrix, SkRect const& bounds, float baseline_x, float baseline_y,
-    uint16_t const* glyphs, double const* positions, int count)
+    uint16_t const* glyphs, double const* positions, int count, bool document_positions = false)
 {
     if (!font.isBaselineSnap() || font.isEmbeddedBitmaps() || matrix.hasPerspective()
         || matrix.getSkewX() != 0 || matrix.getSkewY() != 0
@@ -1300,12 +1300,14 @@ static bool append_cpu_mask_positions(std::vector<uint8_t>& key, SkFont const& f
     }
     if (!known->second) return false;
     auto position_matrix = matrix;
-    position_matrix.preTranslate(baseline_x, baseline_y);
+    if (!document_positions) position_matrix.preTranslate(baseline_x, baseline_y);
     position_matrix.postTranslate(SkPackedGlyphID::kSubpixelRound, .5f);
     std::vector<int32_t> masks;
     masks.reserve(size_t(count) * 3);
     for (int i = 0; i < count; ++i) {
-        auto point = position_matrix.mapPoint(SkPoint::Make(float(positions[i * 2]), float(positions[i * 2 + 1])));
+        auto position = SkPoint::Make(float(positions[i * 2]), float(positions[i * 2 + 1]));
+        if (document_positions) position += SkPoint::Make(baseline_x, baseline_y);
+        auto point = position_matrix.mapPoint(position);
         if (!point.isFinite() || std::abs(point.x()) > 1000000 || std::abs(point.y()) > 1000000) return false;
         SkPackedGlyphID packed(glyphs[i], point, SkIPoint::Make(SkPackedGlyphID::kXYFieldMask.x(), 0));
         masks.push_back(int32_t(packed.value()));
@@ -1368,7 +1370,14 @@ static int draw_retained_glyph_run(CGContextRef destination,
         layout_test_font && *layout_test_font)
         font.setHinting(SkFontHinting::kNormal);
 
-    auto blob = s_glyph_text_blob_cache.get(font, glyphs, packed_positions, glyph_count);
+    bool const chromium = font_smoothing & 16;
+    // Keep the document origin in the glyph coordinates before a tight leaf
+    // surface subtracts its integer crop. Subtracting that crop first changes
+    // float addition at a subpixel boundary and can select a different mask.
+    auto const glyph_origin = chromium ? SkPoint::Make(baseline_x, baseline_y) : SkPoint::Make(0, 0);
+    auto blob = s_glyph_text_blob_cache.get(font, glyphs, packed_positions, glyph_count, glyph_origin);
+    float const blob_x = chromium ? 0 : baseline_x;
+    float const blob_y = chromium ? 0 : baseline_y;
     if (!blob)
         return 0;
 
@@ -1385,13 +1394,13 @@ static int draw_retained_glyph_run(CGContextRef destination,
     if (auto* canvas = shared_recording_canvas(destination)) {
         auto input = s_isolated_input_recordings.find(destination);
         if (input != s_isolated_input_recordings.end()) {
-            auto bounds = blob->bounds().makeOffset(baseline_x, baseline_y);
+            auto bounds = blob->bounds().makeOffset(blob_x, blob_y);
             input->second->bounds.join(matrix.mapRect(bounds));
         }
         canvas->save();
         shared_recording_clip(destination, canvas);
         canvas->setMatrix(matrix);
-        canvas->drawTextBlob(blob, baseline_x, baseline_y, paint);
+        canvas->drawTextBlob(blob, blob_x, blob_y, paint);
         canvas->restore();
     }
 
@@ -1401,7 +1410,7 @@ static int draw_retained_glyph_run(CGContextRef destination,
     // Skia's raster origin integer-aligned, but restrict the surface to the
     // transformed run bounds (plus an antialiasing guard pixel).
     auto local_bounds = blob->bounds();
-    local_bounds.offset(baseline_x, baseline_y);
+    local_bounds.offset(blob_x, blob_y);
     if (blur > 0) {
         SkRect filtered_bounds;
         local_bounds = paint.computeFastBounds(local_bounds, &filtered_bounds);
@@ -1420,7 +1429,6 @@ static int draw_retained_glyph_run(CGContextRef destination,
     auto raster_height = raster_dimension(region.height(), destination_scale);
     auto raster_scale_x = static_cast<float>(raster_width) / static_cast<float>(region.width());
     auto raster_scale_y = static_cast<float>(raster_height) / static_cast<float>(region.height());
-    bool chromium = font_smoothing & 16;
     size_t pixel_count = static_cast<size_t>(raster_width) * raster_height;
     // Avoid quantizing a partially covered foreground to premultiplied 8-bit
     // color before blending it over the page. The owning native bitmap frame
@@ -1443,7 +1451,7 @@ static int draw_retained_glyph_run(CGContextRef destination,
         std::vector<uint8_t> mask_positions;
         bool mask_key = chromium && !has_float_color && !emoji_face && blur == 0
             && append_cpu_mask_positions(mask_positions, font, draw_matrix, blob->bounds(),
-                baseline_x, baseline_y, glyphs, packed_positions, glyph_count);
+                baseline_x, baseline_y, glyphs, packed_positions, glyph_count, chromium);
         uint32_t key_kind = mask_key;
         append_glyph_key(key, &key_kind, 1);
         if (mask_key) {
@@ -1491,7 +1499,7 @@ static int draw_retained_glyph_run(CGContextRef destination,
                 }
             }
             recording->setMatrix(draw_matrix);
-            recording->drawTextBlob(blob, baseline_x, baseline_y, paint);
+            recording->drawTextBlob(blob, blob_x, blob_y, paint);
             auto picture = recorder.finishRecordingAsPicture();
             SkSerialProcs procs;
             procs.fImageProc = serialize_shared_picture_image;
@@ -1527,7 +1535,7 @@ static int draw_retained_glyph_run(CGContextRef destination,
     auto* canvas = surface->getCanvas();
     if (!has_background) canvas->clear(SK_ColorTRANSPARENT);
     canvas->setMatrix(draw_matrix);
-    canvas->drawTextBlob(blob, baseline_x, baseline_y, paint);
+    canvas->drawTextBlob(blob, blob_x, blob_y, paint);
     if (has_float_color && !surface->readPixels(image_info, pixels.data(), row_bytes, 0, 0))
         return 0;
     surface.reset();

@@ -35,6 +35,10 @@ class VoxGlyphTextBlobCache {
     std::unordered_multimap<uint64_t, Entries::iterator> index_;
     size_t bytes_ = 0;
     size_t byte_limit_, entry_limit_;
+    static SkScalar position_at(double const* positions, size_t index, SkPoint origin)
+    {
+        return static_cast<SkScalar>(positions[index]) + (index % 2 ? origin.y() : origin.x());
+    }
 #ifdef VOX_TEXT_BLOB_CACHE_DIAGNOSTICS
     const char* marker_ = std::getenv("VOX_TEXT_BLOB_INPUT_MARKER");
     bool input_started_ = false;
@@ -50,8 +54,10 @@ public:
     }
 #endif
 
+    // Position Chromium runs before the integer leaf crop. Include the origin
+    // in the owned blob coordinates and key; zero keeps default relative runs.
     sk_sp<SkTextBlob> get(SkFont const& font, uint16_t const* glyphs,
-        double const* positions, int count)
+        double const* positions, int count, SkPoint origin = {0, 0})
     {
         if (!glyphs || !positions || count <= 0) return nullptr;
 #ifdef VOX_TEXT_BLOB_CACHE_DIAGNOSTICS
@@ -67,7 +73,7 @@ public:
         mix(uint32_t(count));
         for (int i = 0; i < count; ++i) mix(glyphs[i]);
         for (size_t i = 0; i < size_t(count) * 2; ++i) {
-            float position = static_cast<SkScalar>(positions[i]);
+            float position = position_at(positions, i, origin);
             uint32_t bits;
             std::memcpy(&bits, &position, sizeof(bits));
             mix(bits);
@@ -80,7 +86,7 @@ public:
                 || std::memcmp(entry.glyphs.data(), glyphs, size_t(count) * sizeof(uint16_t))) continue;
             bool same = true;
             for (size_t i = 0; i < size_t(count) * 2; ++i)
-                if (entry.positions[i] != static_cast<SkScalar>(positions[i])) { same = false; break; }
+                if (entry.positions[i] != position_at(positions, i, origin)) { same = false; break; }
             if (!same) continue;
 #ifdef VOX_TEXT_BLOB_CACHE_DIAGNOSTICS
             ++hits_;
@@ -92,7 +98,7 @@ public:
         SkTextBlobBuilder builder;
         auto const& run = builder.allocRunPos(font, count);
         std::memcpy(run.glyphs, glyphs, size_t(count) * sizeof(uint16_t));
-        for (size_t i = 0; i < size_t(count) * 2; ++i) run.pos[i] = static_cast<SkScalar>(positions[i]);
+        for (size_t i = 0; i < size_t(count) * 2; ++i) run.pos[i] = position_at(positions, i, origin);
         auto blob = builder.make();
         // One run owns roughly ten bytes per glyph in Skia, plus our input
         // copies. Charge a conservative 4 KiB header/alignment allowance and
@@ -109,7 +115,7 @@ public:
         }
         Entry entry{hash, font, std::vector<uint16_t>(glyphs, glyphs + count),
             std::vector<SkScalar>(size_t(count) * 2), blob, cost};
-        for (size_t i = 0; i < size_t(count) * 2; ++i) entry.positions[i] = static_cast<SkScalar>(positions[i]);
+        for (size_t i = 0; i < size_t(count) * 2; ++i) entry.positions[i] = position_at(positions, i, origin);
         bytes_ += cost;
         entries_.push_front(std::move(entry));
         index_.emplace(hash, entries_.begin());

@@ -36,7 +36,8 @@ def main():
         libraries += ['-framework', framework]
     attempts = []
     try:
-        for name in ['native_glyph_text_blob_cache_test', 'native_skia_glyph_cache_test']:
+        for name in ['native_glyph_text_blob_cache_test', 'native_skia_glyph_origin_test',
+                     'native_skia_glyph_cache_test']:
             binary = output / name
             for command in [flags + [str(repo / 'tools' / (name + '.cpp'))]
                             + libraries + ['-o', str(binary)], [str(binary)]]:

@@ -96,6 +96,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_letter_spacing_disables_optional_ligatures(self):
         self.compare_fixture('spaced-optional-ligatures')
 
+    def test_cropped_glyph_runs_keep_the_document_subpixel_origin(self):
+        self.compare_fixture('glyph-document-origin', width=1280, height=600)
+
     def test_object_fit_compares_fixed_point_dimensions_before_switching_axes(self):
         self.compare_fixture('object-fit-fixed-point-svg', width=1280, height=600)
 
