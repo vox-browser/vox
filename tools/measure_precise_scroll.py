@@ -152,6 +152,8 @@ def main():
     parser.add_argument("--settle-seconds", type=float, default=12)
     parser.add_argument("--require-title", default="",
                         help="Wait for this case-sensitive window-title substring, then settle; reject a different start title")
+    parser.add_argument("--script-policy", choices=("automatic", "enabled", "disabled"),
+                        default="enabled", help="Use automatic to match ordinary browser navigation")
     parser.add_argument("--timeout", type=float, default=120)
     args = parser.parse_args()
     if sys.platform != "darwin":
@@ -188,6 +190,11 @@ def main():
     # override the requested route. Never read or update the user's profile.
     profile = output / "profile"
     profile.mkdir()
+    # New profiles seed a visible optimized-sites bar. Keep the requested
+    # document viewport independent of that migration and navigation UI mode.
+    (profile / "settings.json").write_text(json.dumps({"allow_any_site": True}) + "\n")
+    (profile / "bookmarks.json").write_text(json.dumps({
+        "optimized_defaults_added": True, "visible": False, "items": [], "version": 1}) + "\n")
     digest = hashlib.sha256()
     for path in sorted(cache.rglob("*")):
         if path.is_file():
@@ -218,11 +225,14 @@ def main():
         if certificate.is_file():
             pinned.append(certificate)
     hashes = {str(path): sha256(path) for path in pinned}
-    command = [str(binary), "--enable-javascript", "--window-width", str(args.width),
+    script_flags = {"automatic": [], "enabled": ["--enable-javascript"],
+                    "disabled": ["--disable-javascript"]}[args.script_policy]
+    command = [str(binary), *script_flags, "--window-width", str(args.width),
                "--window-height", str(args.height + 84), args.url]
     evidence = dict(command=command, compile_command=compile_command,
                     source_and_binary_sha256=hashes, cache_sha256=digest.hexdigest(),
-                    initial_profile="empty private profile; bookmark bar hidden; no saved proxy override",
+                    initial_profile="private profile; unrestricted navigation; bookmark bar hidden; no saved proxy override",
+                    script_policy=args.script_policy,
                     viewport=[args.width, args.height], network_policy=args.network_policy,
                     schedule=dict(inputs=args.inputs, hz=args.input_hz, delta=args.delta,
                                   reverse_every=args.reverse_every, settle_seconds=args.settle_seconds,

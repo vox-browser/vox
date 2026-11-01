@@ -23,7 +23,9 @@
 @end
 
 static double rendered_scroll;
-extern void ladybird_v_skia_set_root_raster_scroll_y(double);
+// The signed adblock helper inherits DYLD_INSERT_LIBRARIES but does not link
+// the renderer. Loading this observer must not break its startup handshake.
+extern void ladybird_v_skia_set_root_raster_scroll_y(double) __attribute__((weak_import));
 static void track_scroll(double y) {
     rendered_scroll = y;
     ladybird_v_skia_set_root_raster_scroll_y(y);
@@ -172,6 +174,7 @@ static void begin(void) {
 }
 
 __attribute__((constructor)) static void boot(void) {
+    if (!ladybird_v_skia_set_root_raster_scroll_y) return;
     const char *names[] = {"VOX_PRECISE_INPUTS", "VOX_PRECISE_REVERSE",
         "VOX_PRECISE_HZ", "VOX_PRECISE_DELTA", "VOX_PRECISE_SETTLE"};
     double values[5];

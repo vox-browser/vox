@@ -2,7 +2,10 @@ import contextlib
 import hashlib
 import io
 import json
+import os
 from pathlib import Path
+import subprocess
+import sys
 import tempfile
 import unittest
 from unittest import mock
@@ -46,7 +49,13 @@ class PreciseScrollTests(unittest.TestCase):
             def launch(command, **kwargs):
                 env = kwargs["env"]
                 self.assertEqual(Path(env["VOX_PROFILE_DIR"]), output / "profile")
-                self.assertEqual(list((output / "profile").iterdir()), [])
+                self.assertEqual(json.loads((output / "profile/settings.json").read_text()),
+                                 {"allow_any_site": True})
+                bookmarks = json.loads((output / "profile/bookmarks.json").read_text())
+                self.assertFalse(bookmarks["visible"])
+                self.assertTrue(bookmarks["optimized_defaults_added"])
+                self.assertNotIn("--enable-javascript", command)
+                self.assertNotIn("--disable-javascript", command)
                 self.assertEqual(env["VOX_PROXY"], "http://127.0.0.1:9")
                 self.assertEqual(env["SSL_CERT_FILE"], str(certificate))
                 self.assertNotIn("VOX_PROFILE_FRAMES", env)
@@ -57,6 +66,7 @@ class PreciseScrollTests(unittest.TestCase):
             arguments = ["probe", "--binary", str(binary), "--output", str(output),
                          "--inputs", "12", "--network-policy", "fixture offline route",
                          "--require-title", "fixture",
+                         "--script-policy", "automatic",
                          "--env", f"VOX_PROFILE_DIR={user_profile}"]
             with mock.patch.object(measure_precise_scroll.sys, "platform", "darwin"), \
                     mock.patch.object(measure_precise_scroll.sys, "argv", arguments), \
@@ -74,6 +84,7 @@ class PreciseScrollTests(unittest.TestCase):
                 measure_precise_scroll.main()
             evidence = json.loads((output / "run.json").read_text())
             self.assertTrue(evidence["valid"])
+            self.assertEqual(evidence["script_policy"], "automatic")
             self.assertEqual(evidence["host"], {"cpu_count": 18,
                              "load_average_before": [1, 2, 3],
                              "load_average_after": [4, 5, 6]})
@@ -87,6 +98,25 @@ class PreciseScrollTests(unittest.TestCase):
                              hashlib.sha256(certificate.read_bytes()).hexdigest())
             for name, content in saved.items():
                 self.assertEqual((user_profile / name).read_text(), content)
+
+    @unittest.skipUnless(sys.platform == "darwin", "macOS injected observer")
+    def test_observer_loads_in_helper_without_renderer_or_probe_environment(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            probe = root / "observer.dylib"
+            subprocess.run(["clang", "-O2", "-Wall", "-Wextra", "-Werror",
+                            "-dynamiclib", "-fobjc-arc",
+                            str(Path(measure_precise_scroll.__file__).with_name("measure_precise_scroll_darwin.m")),
+                            "-framework", "Cocoa", "-framework", "QuartzCore",
+                            "-Wl,-undefined,dynamic_lookup", "-o", str(probe)], check=True)
+            source = root / "helper.c"
+            source.write_text('int main(void) { return 0; }\n')
+            helper = root / "helper"
+            subprocess.run(["clang", str(source), "-o", str(helper)], check=True)
+            env = {k: v for k, v in os.environ.items() if not k.startswith("VOX_PRECISE_")}
+            env["DYLD_INSERT_LIBRARIES"] = str(probe)
+            result = subprocess.run([str(helper)], env=env, capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_uses_in_process_publication_timestamps_and_reports_actual_input_rate(self):
         result = summarize(log_for(), 12)
