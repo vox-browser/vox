@@ -68,6 +68,45 @@ class FrozenResponseTests(unittest.TestCase):
             self.assertIn(str(helper.resolve()), paths)
             self.assertIn(str(benchmark.REPO / 'tools/process_instruction_counts.py'), paths)
 
+    def test_explicit_pixel_checker_is_pinned(self):
+        from types import SimpleNamespace
+        args = SimpleNamespace(vox=Path('/Vox.app/Contents/MacOS/Vox'),
+            brave=Path('/Brave.app/Contents/MacOS/Brave Browser'),html=Path('/page.html'),
+            expected=Path('/ref.png'),network_deny=Path('/deny.dylib'),diff_tool=Path('/verified/pixel_diff'))
+        with patch('measure_sealed_github_instructions.native_dependencies', return_value=[]), \
+                patch.object(benchmark,'digest',return_value='hash'):
+            self.assertIn(str(args.diff_tool), benchmark.pinned_inputs(args))
+
+
+class DocumentIdentityTests(unittest.TestCase):
+    def test_source_title_and_post_order_are_derived_without_changing_noscript_policy(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path=Path(directory)/'page.html'
+            path.write_text('<title>Programming &amp; tools</title><div class="thing link" data-fullname="t3_a"></div>'
+                            '<div class="thing" data-fullname="t1_comment"></div>'
+                            '<div class="thing link" data-fullname="t3_b"></div>')
+            self.assertEqual(benchmark.document_identity(path),('Programming & tools',['t3_a','t3_b']))
+            path.write_text('<title>Blocked</title>no listing')
+            with self.assertRaisesRegex(ValueError,'post identities'):
+                benchmark.document_identity(path)
+
+    def test_both_engines_reject_missing_reordered_or_incomplete_posts(self):
+        posts=['t3_a','t3_b']
+        audit=dict(url='file:///frozen.html',title='programming',ready='complete',
+                   viewport_width=1024,viewport_height=768,fully_active=True,paint_commands=10,
+                   postIds=posts,selections=[dict(name='posts',count=2,elements=[
+                       dict(attributes={'data-fullname':post}) for post in posts])])
+        for engine in ['vox','brave']:
+            benchmark.validate_document(dict(document_audit=audit),audit['url'],'programming',posts,engine)
+            for changed in [dict(ready='loading'),dict(viewport_height=740),dict(title='Blocked'),
+                            dict(postIds=list(reversed(posts)),selections=[dict(name='posts',count=0)])]:
+                with self.assertRaises(RuntimeError):
+                    benchmark.validate_document(dict(document_audit=dict(audit,**changed)),audit['url'],
+                                                'programming',posts,engine)
+        with self.assertRaisesRegex(RuntimeError,'inactive'):
+            benchmark.validate_document(dict(document_audit=dict(audit,fully_active=False)),audit['url'],
+                                        'programming',posts,'vox')
+
 
 class InstructionGateTests(unittest.TestCase):
     def pair(self,vox,brave,exact=True):
