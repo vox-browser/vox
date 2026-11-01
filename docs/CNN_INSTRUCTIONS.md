@@ -1,5 +1,66 @@
 # CNN rendering and instruction comparison
 
+The current requested target is **30% fewer instructions than Brave**. It remains
+open. The exact acceptance condition is
+`10 * max(Vox upper) <= 7 * min(Brave lower)`, with at least seven complete
+alternating pairs and unchanged content and pixel checks. Earlier cohorts below
+retain their original scope, counts and failures.
+
+The latest two diagnostic triplets use the pinned production bundle in
+`Build/cnn-unchanged-has-installed-20261101-2016/`. Vox records
+**40,979,187,493** and **22,073,501,309** instructions; Brave's lower bounds are
+**30,773,531,330** and **30,987,978,520**. The first Vox result includes a large
+owned-service outlier and remains in the statistics. Both Vox images are exact;
+the second Brave image differs from the fixed reference. These are diagnostic
+observations, not seven-pair acceptance. The second Vox observation is about
+28.3% below the lowest Brave lower bound, but cannot replace the required gate.
+Exact counts, identities, scope, host load, exits, and failures are retained in
+[the 30% follow-up receipt](benchmark-results/cnn-home-thirty-percent-2026-11-01.json).
+
+The changes avoid repeated selector parsing and matching, remember failed
+geometry-cache eligibility probes within one layout pass, defer styles in
+ordinary hidden HTML branches until needed, cache launch-configured scratch
+poison policy, and avoid unnecessary CSS input copies. HTML text cursor storage
+and container-query result reuse retain focused semantic and ownership checks.
+The newest guard rechecks observed `:has()` argument results and dynamic pseudo
+class dependencies before invalidating ancestor branches. Unsupported contexts
+retain normal invalidation. A separate CNN diagnostic reduces the late dirty
+self-style count from 2,494 to 26 while preserving its image.
+
+Same-binary matched diagnostics support repeatable savings for selector reuse
+(median **897,439,616** instructions), rejected geometry probes
+(**1,131,870,809 / 1,135,397,525**), hidden HTML styles
+(**1,484,828,685 / 1,120,223,809**), and scratch-policy caching
+(**3,120,005,607 / 1,436,973,375**). Other slices have mixed results or zero CNN
+hits and receive no independent repeatable CPU credit. These numbers span
+separate pinned builds and must not be summed as a controlled end-to-end saving.
+
+Two initial font scheduling experiments were removed after matched measurements
+showed regressions or no repeatable gain. Their binaries and failures remain
+under `Build/cnn-scripted-font-wait-20261101-1545/` and
+`Build/cnn-font-completion-rendering-20261101-1621/`. A fresh initial-layout
+experiment after the `:has()` fix is in progress, with the earlier regression
+retained as evidence.
+
+Focused tests exercise normal, no-GC and staged prealloc modes. The final
+`:has()` implementation passes 69 focused runtimes and 138 broader CSS runtimes.
+Its production pin passes headless startup, eight SVG mutation guards and 100
+exact upstream AST fixtures. The visual smoke run stops once when a capture
+produces no screenshot; all remaining cases pass in a separately retained
+recovery run. No image reference or tolerance changes. The memory-bound input
+parser regression initially exposes a pre-existing unconditional input clone;
+controls reproduce it and the corrected parser passes the unchanged bound.
+
+A separate live navigation with the same pinned executable reaches CNN's
+expected title and `ready=complete`, at 1024×768, with a fresh profile/cache.
+Its audit records frame and consent-API JavaScript errors. This is a live-load
+check, not live author-script parity or a live performance comparison. The
+instruction workload remains the frozen author-script-free page with ordinary
+JavaScriptCore initialization, inline handlers and full-uBO filtering enabled.
+
+The following section retains the previous seven-pair 10% observations.
+
+
 Latest seven-pair observation: **28,245,018,755** median Vox instructions versus
 **33,567,535,217** for Brave's median lower bound: **15.86% fewer**. The highest
 Vox upper bound / lowest Brave lower bound is **0.8538703729** (**14.61% fewer**),
