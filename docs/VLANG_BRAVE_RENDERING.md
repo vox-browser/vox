@@ -2,11 +2,12 @@
 
 Pixel-perfect parity remains open. The current settled, archived comparison at
 1280 × 800 CSS pixels and scale 1 has **4 differing pixels at the top** and
-**zero at scroll Y 2400, 4000, 4800, 5600, and 6400**, and **4 at scroll Y 8000**. Other viewports
-still differ, including the Lilly preview and text. The installation Copy button
-now has Brave's single-line layout. Book-cover flex geometry and the total
-page height now agree; the bottom capture still has 360 differences. These results do not cover
-the complete live page. Earlier comparisons and validation limits are recorded below.
+**zero at every sampled 800-pixel scroll position from Y 2400 through 7200**,
+with **4 at Y 8000**. The reviews viewport at Y 9600 has **308** differences,
+and the community viewport at Y 10400 has **160**. Sponsor pixels, the Lilly
+preview, some review glyphs, and footer images still differ; the bottom has
+360 differences. Copy-button and book-cover geometry agree with Brave.
+These results do not establish full live-page or scale-two parity.
 
 ## Capture readiness correction
 
@@ -848,3 +849,99 @@ text through GPU replay or replace a constant backdrop image with a solid fill
 leave the Y 10400 and 10664 comparisons unchanged. They remain diagnostic
 artifacts under `Build/`, with no production renderer change. Full-page and
 scale-two parity remain open.
+
+## Disjoint parent compositor spans
+
+`47cafed0` preserves transparent parent-raster rounding across an independently
+scrolling child when the native ink before and after that child is disjoint.
+Native replay already closes and reopens the parent surface at those transitions;
+the new eligibility check proves that these separate surfaces cannot blend with
+each other or cover a child that Chromium composites above the parent.
+
+The proof retains a three-CSS-pixel raster fringe at both edges and the native
+float-precision guard. It checks individual leaves when their coarse unions
+overlap, preserving empty space between separated backgrounds. Serialized SVG
+bounds include Bezier and arc-generated conic controls. Ordinary TrueType runs
+can use their glyph outlines; varied, synthetic, color, and unsupported outline
+faces retain the broad font envelope. Inset shadows use their native content
+clip. Scrollbar leaves use their actual ink instead of a layer union that can
+include distant scrollports. Unknown geometry, unsupported scopes, fixed content,
+and overlapping ink retain the previous replay path. Ordinary canvas culling
+and retained glyph positions remain unchanged.
+
+The standalone `compositor-disjoint-scroll-gap` fixture improves from **9,328
+differing pixels to zero** at 800 × 600 and scale 1. Three agreeing Brave
+156.1.98.60 references support its committed gold. On the archive, Y 9600
+improves from **2,982 to 308**, and Y 10400 from **9,000 to 160**. Pixel-by-pixel
+error auditing finds **2,674** and **8,840** removed differences respectively,
+with no new or worsened pixels. All thirteen shared Brave references match the
+preceding sweep exactly. The expanded sweep is:
+
+| Scroll Y | Differing pixels |
+| --- | ---: |
+| 0 | 4 |
+| 800 | 1,463 |
+| 1600 | 22,821 |
+| 2400 | 0 |
+| 3200 | 0 |
+| 4000 | 0 |
+| 4800 | 0 |
+| 5600 | 0 |
+| 6400 | 0 |
+| 7200 | 0 |
+| 8000 | 4 |
+| 8800 | 20,163 |
+| 9600 | 308 |
+| 10400 | 160 |
+| 10664 | 360 |
+| 10701 | 360 |
+
+Y 10701 is the bottom: Brave reports that scroll offset, and Vox reports the
+body at Y -10701 with height 11500.5. Both bottom captures retain the same 360
+image differences. The remaining 308 review pixels include existing glyph
+coverage errors; reducing the count does not establish exact text rasterization.
+
+Evidence under `Build/vlang-parity-20261031/`:
+
+- `compositor-gap-v10-focus-main-{none,boehm}-{build,run}.json` records 64
+  focused functions passing in both memory modes. The corrected self-contained
+  file also passes its eleven functions independently in
+  `compositor-gap-v10-standalone-{none,boehm}-{build,run}.json`.
+  `compositor-gap-v10-before-main-none-run.json` fails against the preceding
+  viewport eligibility function.
+- `compositor-gap-v10-pinned-verified-{target,negative,fixture}/` records fresh
+  captures and exact repeated Brave references. The negative browser is a
+  private signed copy of the same executable with only the new gap helper
+  returning false; it restores both old viewport counts. Its exact byte patch
+  and hashes are in `compositor-gap-v10-negative-browser.json`.
+- `compositor-gap-v10-pixel-audit.json` records the removed differences and
+  unchanged error masks. `compositor-gap-v10-pinned-page/` retains all sixteen
+  captures, geometry audits, commands, and browser exits.
+- `compositor-gap-v10-production-{guard,status}.json` records the successful
+  production build: 258.08 seconds, sampled peak aggregate RSS of 8.06 GiB
+  under the default 12 GiB guard. All five implementation inputs for this fix
+  remain stable. Independent main/native-header and tooling changes during
+  compilation are listed in the receipt and receive no validation credit here.
+- `compositor-gap-v10-pinned-smoke-status.json` and
+  `compositor-gap-v10-pinned-inline-regressions.{json,log}` record all fourteen
+  screenshot/selection/invalidation/turbulence checks passing their existing
+  bounds and all 48 strict browser regressions matching exactly. All eight
+  image, gradient, and table golds remain exact in
+  `compositor-gap-v10-pinned-gradient-regressions/`.
+- `compositor-gap-v10-pinned-headless.guard.json` and
+  `compositor-gap-v10-pinned-live/status.json` record startup and live scripted
+  loading with loaded fonts, five completed visible image requests, and zero
+  native errors. Live loading supplies no matched pixel-comparison credit.
+- `compositor-gap-v10-pinned-all-{status,guard}.json` records the complete
+  sequential validation and actual supervisor exit zero. Its aggregate runtime
+  remains under the 3 GiB guard.
+
+The signed executable is
+`a1785ca9c26eb36849389505196e675c9206b4b180db95dcb2af185fc7c75cd2`,
+preserved with its libraries in `Vox-compositor-gap-v10-installed.app`.
+The first direct shared-bundle run is rejected because another session changed
+its identity during capture. Accepted runs use the preserved completed production
+bundle; `compositor-gap-v10-pinned-final.json` confirms its unchanged identity.
+Private harness adapters bind only the repository/browser paths while retaining
+the canonical screenshot comparisons and tolerances. Full live-page and scale-two
+parity remain open.

@@ -961,3 +961,13 @@ original generated-image tile. Run
 `python3 tools/forum_news_inline_pixels_test.py ForumNewsInlinePixelsTests.test_gradient_repetitions_stop_at_the_unobscured_background_destination`.
 The native harness also compares sixteen Metal image leaves against independent
 Dawn pictures, including odd decoded sizes and the float containment boundary.
+
+`compositor-disjoint-scroll-gap` checks a translucent gradient and Times text in
+one compositor parent around independently scrolling content and its scrollbar.
+Three agreeing Brave 156.1.98.60 captures support its 800×600, scale 1 gold.
+It improves from 9,328 differing pixels to exact RGBA equality. Parent spans
+isolate only when their native ink is disjoint, including raster fringes;
+scrollbar geometry and clipped inset shadows retain their actual bounds.
+Run `python3 tools/forum_news_inline_pixels_test.py` for the browser regression.
+See [vlang rendering](../../../docs/VLANG_BRAVE_RENDERING.md) for the matched
+viewport controls, focused checks, bundle identity, and remaining page differences.
