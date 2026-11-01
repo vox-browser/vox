@@ -69,6 +69,11 @@ SCOPE = ('Navigation request to encoded document PNG availability, fresh process
          'and services outside the coalition are excluded. '
          'Full story/comment-row identity is checked after the measured PNG endpoint. '
          'This is a capture workflow comparison, not identical internal rendering endpoints.')
+LAUNCH_SCOPE = ('Exclusive browser resource-coalition creation through encoded document PNG '
+                'availability, including browser/window startup and the navigation/capture workflow '
+                'described by navigation_scope. Brave includes CDP target/window setup. '
+                'OS filesystem and shader caches are not cleared. This is a full startup/capture '
+                'workflow, not isolated page navigation or rendering work.')
 
 
 def write_json(path, value):
@@ -184,8 +189,33 @@ def fixture_server(document, folder, archive=None):
             worker.join()
 
 
-def evaluate_pairs(pairs, target=TARGET):
+def launch_instruction_interval(engine, result):
+    """Use an actual cumulative coalition reading, including exited startup tasks.
+
+    No subtraction of a post-launch observation: that would silently omit startup.
+    Exclusivity is checked by run_browser, including ownership after Brave capture.
+    """
+    cid = result['resource_coalition']
+    if engine == 'vox':
+        end = result['native_coalition_markers']['markers'][-1]
+        require(end.get('label') == 'capture_document_encoded', 'Missing native PNG endpoint')
+        readings = [end, end]
+    elif engine == 'brave':
+        readings = result['boundary_brackets'][-2:]
+        require(len(readings) == 2, 'Missing Brave PNG boundary brackets')
+    else:
+        raise RuntimeError('Unknown browser engine')
+    require(all(reading.get('coalition_id') == cid for reading in readings),
+            'Launch endpoint coalition identity differs')
+    lower, upper = (reading.get('instructions') for reading in readings)
+    require(type(lower) is int and type(upper) is int and 0 < lower <= upper,
+            'Invalid launch instruction interval')
+    return dict(lower=lower, upper=upper)
+
+
+def evaluate_pairs(pairs, target=TARGET, instruction_scope='navigation'):
     """Require every observation and use the least favorable cross-run ratio."""
+    require(instruction_scope in ('navigation', 'launch'), 'Unknown instruction scope')
     require(len(pairs) >= 2, 'At least two complete alternating pairs are required')
     for pair in pairs:
         require(set(pair) == {'vox', 'brave'}, 'Incomplete measured pair')
@@ -193,15 +223,19 @@ def evaluate_pairs(pairs, target=TARGET):
             require(type(row.get('exit')) is int and row['exit'] == 0
                     and row.get('pixels_exact') is True and row.get('content_exact') is True,
                     'Every observation must exit successfully and match pixels and full row identity')
-            lo, hi = row['instruction_interval']['lower'], row['instruction_interval']['upper']
+            interval = (row['instruction_interval'] if instruction_scope == 'navigation'
+                        else row['launch_instruction_interval'])
+            lo, hi = interval['lower'], interval['upper']
             require(type(lo) is int and type(hi) is int and 0 < lo <= hi,
                     'Invalid or unavailable instruction interval')
-    vox = [pair['vox']['instruction_interval']['upper'] for pair in pairs]
-    brave = [pair['brave']['instruction_interval']['lower'] for pair in pairs]
+    key = 'instruction_interval' if instruction_scope == 'navigation' else 'launch_instruction_interval'
+    vox = [pair['vox'][key]['upper'] for pair in pairs]
+    brave = [pair['brave'][key]['lower'] for pair in pairs]
     ratio = max(vox) / min(brave)
     fraction = Fraction(str(target))
     require(0 < fraction <= 1, 'Target fraction must be in (0, 1]')
     return dict(target_vox_fraction=float(fraction), worst_vox_over_best_brave=ratio,
+                instruction_scope=instruction_scope,
                 vox_median_instructions=statistics.median(vox),
                 brave_median_lower_bound_instructions=statistics.median(brave),
                 passed=max(vox) * fraction.denominator <= min(brave) * fraction.numerator, pairs=len(pairs))
@@ -359,6 +393,8 @@ def run_browser(engine, app, folder, args):
     browser = client = sampler = counter = queue = None
     root = None
     root_start = None
+    result['started_unix'] = time.time()
+    result['host_before'] = dict(cpu_count=os.cpu_count(), load_average=os.getloadavg())
     try:
         deadline = time.monotonic() + args.timeout
         png = folder / 'document.png'
@@ -468,6 +504,9 @@ def run_browser(engine, app, folder, args):
             browser.call('Browser.close')
             result['kernel_exit_status'] = await_exit(queue, deadline)
             require(result['kernel_exit_status'] == 0, 'Brave exited unsuccessfully')
+        result['launch_instruction_interval'] = launch_instruction_interval(engine, result)
+        result['navigation_scope'] = SCOPE
+        result['launch_scope'] = LAUNCH_SCOPE
         check_content(audit, args.url, args.expected_comments, getattr(args, 'row_name', 'comments'))
         result.update(content_exact=True, comment_rows=len(args.expected_comments))
         verdict = compare(args.expected, png, folder / 'document.diff.png', args.diff_tool)
@@ -477,6 +516,8 @@ def run_browser(engine, app, folder, args):
     except Exception as error:
         result.update(error=str(error), traceback=traceback.format_exc())
     finally:
+        result['finished_unix'] = time.time()
+        result['host_after'] = dict(cpu_count=os.cpu_count(), load_average=os.getloadavg())
         if sampler:
             sampler.__exit__(None, None, None)
         if counter:
@@ -516,6 +557,8 @@ def main():
                         help='Sealed original home-page resources; replayed locally without downloads')
     parser.add_argument('--target-vox-fraction', type=float,
                         help='Maximum Vox/Brave instruction ratio (home: .8, discussion: .9)')
+    parser.add_argument('--instruction-scope', choices=['navigation', 'launch'], default='navigation',
+                        help='Gate navigation-to-PNG (default) or full startup-to-PNG; both are recorded')
     parser.add_argument('--scale', type=int, choices=[1, 2], default=2)
     parser.add_argument('--repeat', type=int, default=3)
     parser.add_argument('--timeout', type=float, default=120)
@@ -570,6 +613,7 @@ def main():
     pinned = fingerprint(paths)
     write_json(args.output / 'inputs.json', dict(files=pinned, scope=SCOPE,
                settle_seconds=args.settle_seconds, target_vox_fraction=args.target_vox_fraction,
+               instruction_scope=args.instruction_scope, launch_scope=LAUNCH_SCOPE,
                comment_ids=args.expected_comments,
                row_selector=args.row_selector,
                host=dict(cpu_count=os.cpu_count(), load_average=os.getloadavg()),
@@ -591,7 +635,9 @@ def main():
             pairs.append(pair)
             write_json(args.output / 'pairs.json', pairs)
     try:
-        summary = evaluate_pairs(pairs, args.target_vox_fraction)
+        summaries = {scope: evaluate_pairs(pairs, args.target_vox_fraction, scope)
+                     for scope in ('navigation', 'launch')}
+        summary = dict(summaries[args.instruction_scope], scopes=summaries)
     except RuntimeError as error:
         summary = dict(passed=False, error=str(error))
     write_json(args.output / 'summary.json', summary)

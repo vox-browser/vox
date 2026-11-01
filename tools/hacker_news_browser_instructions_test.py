@@ -10,7 +10,7 @@ import urllib.request
 from hacker_news_browser_instructions import (
     ASSETS, WIDTH, HEIGHT, METAL_COMPILER, SET_STORE_UPDATER, accepted_coalition_executable,
     check_content, code_sign_clone_identity, document_comments, evaluate_pairs,
-    exact_coalition_membership, fixture_server, membership,
+    exact_coalition_membership, fixture_server, membership, launch_instruction_interval,
 )
 
 
@@ -28,6 +28,43 @@ class HackerNewsInstructionGateTests(unittest.TestCase):
         self.assertTrue(evaluate_pairs(self.pairs())['passed'])
         self.assertFalse(evaluate_pairs(self.pairs(vox=901))['passed'])
         self.assertTrue(evaluate_pairs(self.pairs(vox=100))['passed'])
+
+    def test_launch_totals_retain_startup_and_native_capture_boundary(self):
+        result = dict(resource_coalition=17, native_coalition_markers=dict(markers=[
+            dict(label='navigation_started', coalition_id=17, instructions=200),
+            dict(label='capture_document_encoded', coalition_id=17, instructions=900)]))
+        self.assertEqual(launch_instruction_interval('vox', result), dict(lower=900, upper=900))
+        result = dict(resource_coalition=18, boundary_brackets=[
+            dict(coalition_id=18, instructions=value) for value in (300, 310, 1000, 1020)])
+        self.assertEqual(launch_instruction_interval('brave', result), dict(lower=1000, upper=1020))
+        result['boundary_brackets'][-1]['coalition_id'] = 19
+        with self.assertRaisesRegex(RuntimeError, 'coalition identity'):
+            launch_instruction_interval('brave', result)
+
+    def test_launch_totals_reject_missing_or_invalid_endpoint_readings(self):
+        for readings in [[], [dict(coalition_id=1, instructions=1)],
+                         [dict(coalition_id=1, instructions=2), dict(coalition_id=1, instructions=1)],
+                         [dict(coalition_id=1, instructions=0), dict(coalition_id=1, instructions=1)]]:
+            with self.assertRaises(RuntimeError):
+                launch_instruction_interval('brave', dict(resource_coalition=1, boundary_brackets=readings))
+        with self.assertRaisesRegex(RuntimeError, 'PNG endpoint'):
+            launch_instruction_interval('vox', dict(resource_coalition=1,
+                native_coalition_markers=dict(markers=[dict(label='navigation_started')])) )
+
+    def test_launch_and_navigation_gates_remain_independent(self):
+        pairs = self.pairs(vox=1500, brave=1000)
+        for pair in pairs:
+            pair['vox']['launch_instruction_interval'] = dict(lower=1800, upper=1800)
+            pair['brave']['launch_instruction_interval'] = dict(lower=2100, upper=2110)
+        self.assertFalse(evaluate_pairs(pairs)['passed'])
+        self.assertTrue(evaluate_pairs(pairs, instruction_scope='launch')['passed'])
+        pairs[0]['vox']['launch_instruction_interval']['upper'] = 1891
+        self.assertFalse(evaluate_pairs(pairs, instruction_scope='launch')['passed'])
+        pairs[0]['vox']['pixels_exact'] = False
+        with self.assertRaisesRegex(RuntimeError, 'Every observation'):
+            evaluate_pairs(pairs, instruction_scope='launch')
+        with self.assertRaisesRegex(RuntimeError, 'Unknown instruction scope'):
+            evaluate_pairs(pairs, instruction_scope='other')
 
     def test_twenty_percent_target_uses_exact_integer_bounds(self):
         self.assertTrue(evaluate_pairs(self.pairs(vox=800), .8)['passed'])
