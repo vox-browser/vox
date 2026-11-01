@@ -8,10 +8,19 @@ module html
 
 import dom
 
+// HTML's entry-list construction and XHR's FormData binding share one mutable
+// owner without introducing an HTML -> XHR module dependency.
+pub interface FormDataEntryList {
+	form_data_entries() []FormDataEntry
+mut:
+	replace_form_data_entries(entries []FormDataEntry)
+}
+
 @[heap]
 pub struct FormData {
 mut:
 	entries_ []FormDataEntry
+	entry_list_ ?FormDataEntryList
 }
 
 pub fn FormData.create(entries []FormDataEntry) &FormData {
@@ -21,15 +30,35 @@ pub fn FormData.create(entries []FormDataEntry) &FormData {
 }
 
 pub fn (data &FormData) entries() []FormDataEntry {
+	if owner := data.entry_list_ { return owner.form_data_entries() }
 	return data.entries_.clone()
 }
 
+pub fn (data &FormData) entry_list() ?FormDataEntryList {
+	return data.entry_list_
+}
+
+pub fn (mut data FormData) bind_entry_list(owner FormDataEntryList) {
+	data.entry_list_ = owner
+	data.entries_ = []FormDataEntry{}
+}
+
+fn (mut data FormData) replace_entries(entries []FormDataEntry) {
+	if mut owner := data.entry_list_ {
+		owner.replace_form_data_entries(entries)
+	} else {
+		data.entries_ = entries
+	}
+}
+
 pub fn (mut data FormData) append(entry FormDataEntry) {
-	data.entries_ << entry
+	mut entries := data.entries()
+	entries << entry
+	data.replace_entries(entries)
 }
 
 pub fn (mut data FormData) delete(name string) {
-	data.entries_ = data.entries_.filter(it.name != name)
+	data.replace_entries(data.entries().filter(it.name != name))
 }
 
 // XHR::FormData::set(): replace the first matching entry and remove later
@@ -37,7 +66,7 @@ pub fn (mut data FormData) delete(name string) {
 pub fn (mut data FormData) set(entry FormDataEntry) {
 	mut found := false
 	mut entries := []FormDataEntry{}
-	for old in data.entries_ {
+	for old in data.entries() {
 		if old.name == entry.name {
 			if !found {
 				entries << entry
@@ -50,7 +79,7 @@ pub fn (mut data FormData) set(entry FormDataEntry) {
 	if !found {
 		entries << entry
 	}
-	data.entries_ = entries
+	data.replace_entries(entries)
 }
 
 pub struct FormDataEventInit {

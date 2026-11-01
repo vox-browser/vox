@@ -68,6 +68,14 @@ pub fn FormData.create_from_form(form &html.HTMLFormElementModel, submitter ?&ht
 	entries := form.construct_entry_list_with_encoding(submitter, none) or {
 		return error('InvalidStateError: form entry list construction is already in progress')
 	}
+	return FormData.from_html_entries(entries)
+}
+
+pub fn FormData.from_html_entries(entries []html.FormDataEntry) &FormData {
+	return FormData.construct_impl(form_data_entries_from_html(entries))
+}
+
+fn form_data_entries_from_html(entries []html.FormDataEntry) []FormDataEntry {
 	mut converted := []FormDataEntry{cap: entries.len}
 	for entry in entries {
 		value := match entry.value {
@@ -86,7 +94,22 @@ pub fn FormData.create_from_form(form &html.HTMLFormElementModel, submitter ?&ht
 			value: value
 		}
 	}
-	return FormData.construct_impl(converted)
+	return converted
+}
+
+pub fn (data &FormData) form_data_entries() []html.FormDataEntry {
+	mut entries := []html.FormDataEntry{cap: data.entries.len}
+	for entry in data.entries {
+		entries << match entry.value {
+			string { html.create_form_data_string_entry(entry.name, entry.value) }
+			FormDataFile { html.create_form_data_native_file_entry(entry.name, entry.value.file) }
+		}
+	}
+	return entries
+}
+
+pub fn (mut data FormData) replace_form_data_entries(entries []html.FormDataEntry) {
+	data.entries = form_data_entries_from_html(entries)
 }
 
 pub fn FormData.from_query_entries(entries [][2]string) &FormData {

@@ -57,6 +57,9 @@ pub fn (mut host FormDataHost) install(mut runtime Runtime) ! {
 		host.close()
 		form_data_bindings_.delete(owner)
 	})
+	if host.settings.global_object().data.kind == .window {
+		runtime.install_form_data_event_binding()!
+	}
 }
 
 fn (mut host FormDataHost) exception(reason IError) IError {

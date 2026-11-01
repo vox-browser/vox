@@ -140,10 +140,11 @@ pub fn (form &HTMLFormElementModel) construct_entry_list_with_encoding(submitter
 		}
 	}
 	data := FormData.create(entries)
-	event := FormDataEvent.construct_impl('formdata', FormDataEventInit{
+	mut event := FormDataEvent.construct_impl('formdata', FormDataEventInit{
 		form_data: data
 		bubbles:   true
 	}) or { panic(err) }
+	event.set_is_trusted(true)
 	form.event_target_.dispatch_event(unsafe { &dom.Event(event) })
 	mutable_form.constructing_entry_list_ = false
 	return data.entries()

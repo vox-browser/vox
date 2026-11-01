@@ -53,6 +53,7 @@ mut:
 	wheel_event_prototype voidptr
 	drag_event_prototype voidptr
 	track_event_prototype voidptr
+	form_data_event_prototype voidptr
 	data_transfer_factory voidptr
 	data_transfer_prototype voidptr
 	data_transfer_constructor voidptr
@@ -283,6 +284,8 @@ pub fn (mut runtime Runtime) javascript_event(event &dom.Event) !voidptr {
 		prototype = binding.drag_event_prototype
 	} else if binding.track_event_prototype != unsafe { nil } && event.interface_ == .track_event {
 		prototype = binding.track_event_prototype
+	} else if binding.form_data_event_prototype != unsafe { nil } && event.interface_ == .form_data_event {
+		prototype = binding.form_data_event_prototype
 	} else if binding.mouse_event_prototype != unsafe { nil } && native_event_is_mouse_event(event) {
 		prototype = binding.mouse_event_prototype
 	} else if binding.keyboard_event_prototype != unsafe { nil } && event.interface_ == .keyboard_event {
