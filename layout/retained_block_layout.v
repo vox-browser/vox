@@ -53,8 +53,10 @@ mut:
 // run through the complete algorithm.
 fn collect_retained_block_inputs(node &Node, mut inputs []RetainedInlineInput) bool {
 	computed := node.computed_values()
+	image := if node.is_replaced_box() { retained_block_image_input(node) } else { none }
 	if node.is_generated_for_pseudo_element() || node.is_generated_text_node()
-		|| node.is_in_ua_internal_shadow_tree() || node.is_svg_box() || node.is_replaced_box()
+		|| node.is_in_ua_internal_shadow_tree() || node.is_svg_box()
+		|| (node.is_replaced_box() && image == none)
 		|| node.is_floating() || !retained_layout_position_is_unshifted(node) || node.is_list_item_box()
 		|| node.is_list_item_marker_box() || node.is_fieldset_box()
 		|| node.has_layout_containment() || node.has_paint_containment()
@@ -93,6 +95,7 @@ fn collect_retained_block_inputs(node &Node, mut inputs []RetainedInlineInput) b
 		line_height: line_height
 		root_font_size: computed.root_font_size_px_
 		root_line_height: computed.root_line_height_px_
+		image: image
 	}
 	for child in node.children() {
 		if !collect_retained_block_inputs(child, mut inputs) { return false }
@@ -127,6 +130,7 @@ fn run_retaining_independent_formatting_context(mut state LayoutState, box &Node
 			&& retained_inline_inputs_are_current(cached.inputs)
 			&& (cached.font_generation == font_generation
 				|| retained_layout_fonts_are_current(cached.inputs)) {
+			report_retained_block_image_reuse(cached.inputs)
 			report_relative_flow_layout_reuse(cached.inputs)
 			if cached.font_generation != font_generation && processmetrics.instructions_enabled() {
 				eprintln('Vox retained block font generation: ${cached.font_generation} -> ${font_generation}, ${cached.inputs.len} inputs')
