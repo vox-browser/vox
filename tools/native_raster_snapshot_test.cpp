@@ -138,6 +138,26 @@ int main()
         assert(snapshot.size() == (literals + 5) * 4);
         check(bytes, width * 4, height, true);
     }
+    // Every alignment of a short repeated run must terminate its neighboring
+    // literals at the same word, including tails shorter than one SIMD group.
+    for (size_t prefix = 1; prefix <= 19; ++prefix)
+    for (size_t run = 1; run <= 19; ++run) {
+        constexpr size_t words = 2051;
+        std::vector<uint8_t> bytes(words * 4);
+        for (size_t i = 0; i < words; ++i) {
+            uint32_t value = i < prefix ? uint32_t(i * 7919 + 17)
+                : i < prefix + run ? 0x1234abcd : 0xaebc3347;
+            std::memcpy(bytes.data() + i * 4, &value, 4);
+        }
+        auto owned = bytes;
+        VoxRasterSnapshot snapshot(std::move(owned));
+        size_t packed_words = run >= 3 ? prefix + 5 : prefix + run + 3;
+        assert(snapshot.size() == packed_words * 4);
+        assert(snapshot.equal(bytes.data(), words * 4, words * 4, 1));
+        std::vector<uint8_t> decoded(bytes.size());
+        assert(snapshot.copy_to(decoded.data(), words * 4, words * 4, 1));
+        assert(decoded == bytes);
+    }
     VoxRasterSnapshot empty;
     assert(empty.equal(nullptr, 0, 0, 0));
     assert(empty.copy_to(nullptr, 0, 0, 0));

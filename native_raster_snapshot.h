@@ -6,6 +6,9 @@
 #include <cstring>
 #include <utility>
 #include <vector>
+#if defined(__aarch64__) && !defined(VOX_RASTER_SNAPSHOT_SCALAR_SCAN)
+#include <arm_neon.h>
+#endif
 
 // Owned, lossless rows for CPU raster-cache inputs and results. Flat RGBA
 // regions use word runs; noisy images stay raw. A hit compares/expands directly
@@ -53,6 +56,19 @@ private:
         while (at < words) {
             size_t end = at + 1;
             uint32_t value = word(bytes + at * 4);
+#if !defined(VOX_RASTER_SNAPSHOT_SCALAR_SCAN)
+            if (end < words && word(bytes + end * 4) == value) {
+                ++end;
+                uint64_t pattern = uint64_t(value) << 32 | value;
+                while (words - end >= 4) {
+                    uint64_t first, second;
+                    std::memcpy(&first, bytes + end * 4, 8);
+                    std::memcpy(&second, bytes + end * 4 + 8, 8);
+                    if ((first ^ pattern) | (second ^ pattern)) break;
+                    end += 4;
+                }
+            }
+#endif
             while (end < words && word(bytes + end * 4) == value) ++end;
             if (end - at >= 3) {
                 run(end - at, value);
@@ -61,6 +77,19 @@ private:
             }
             size_t start = at;
             at = end;
+#if defined(__aarch64__) && !defined(VOX_RASTER_SNAPSHOT_SCALAR_SCAN)
+            // Test four possible three-word runs together. Exact packet
+            // boundaries stay unchanged; the scalar tail finds the first hit.
+            while (words - at >= 6) {
+                uint32x4_t first, second, third;
+                std::memcpy(&first, bytes + at * 4, 16);
+                std::memcpy(&second, bytes + (at + 1) * 4, 16);
+                std::memcpy(&third, bytes + (at + 2) * 4, 16);
+                auto matches = vandq_u32(vceqq_u32(first, second), vceqq_u32(first, third));
+                if (vmaxvq_u32(matches)) break;
+                at += 4;
+            }
+#endif
             while (at < words) {
                 if (at + 2 < words && word(bytes + at * 4) == word(bytes + (at + 1) * 4)
                     && word(bytes + at * 4) == word(bytes + (at + 2) * 4)) break;
