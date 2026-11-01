@@ -21,6 +21,11 @@ fn font_family_value_names_family(value StyleValue, family_name string) bool {
 }
 
 fn retained_style_needs_font_inputs(style &dom.CSSComputedProperties_, family_name string) bool {
+	return retained_style_needs_changed_font_inputs(style, family_name, unsafe { nil })
+}
+
+fn retained_style_needs_changed_font_inputs(style &dom.CSSComputedProperties_, family_name string,
+	changed_face &FontFaceObject) bool {
 	computed := computed_properties_from_dom(style) or { return false }
 	// A different selected family can still depend on an ancestor/root face
 	// through ex/ch/lh or their root-relative forms, including nested calc().
@@ -29,6 +34,14 @@ fn retained_style_needs_font_inputs(style &dom.CSSComputedProperties_, family_na
 	// nested em/rem consumers so their retained size-input checks run even
 	// when they select another family and have no direct inheritance entry.
 	if computed.font_input_depends_on_font_size_ { return true }
+	// Completion changes an already registered face's availability, rather
+	// than matching descriptors or family order. A retained cascade records
+	// precisely which pending faces its selected weight/stretch can use.
+	if changed_face != unsafe { nil } {
+		if list := computed.cached_computed_font_list() {
+			return list.depends_on_pending_face(changed_face)
+		}
+	}
 	value := computed.property(.font_family, .yes) or { return false }
 	typed := style_value_logic_from_dom(.font_family, value) or { return false }
 	return font_family_value_names_family(typed, family_name)
@@ -38,24 +51,28 @@ fn retained_style_needs_font_inputs(style &dom.CSSComputedProperties_, family_na
 // through the shadow-including tree and include the owning element whenever a
 // retained pseudo style uses the family. Ordinary selector inputs stay intact.
 fn mark_font_family_inputs_changed(document &dom.Document, family_name string) {
+	mark_changed_font_inputs(document, family_name, unsafe { nil })
+}
+
+fn mark_changed_font_inputs(document &dom.Document, family_name string, changed_face &FontFaceObject) {
 	mut root_metrics_may_change := false
 	if root := document.document_element() {
 		if style := root.el_computed_properties() {
-			root_metrics_may_change = retained_style_needs_font_inputs(style, family_name)
+			root_metrics_may_change = retained_style_needs_changed_font_inputs(style, family_name, changed_face)
 		}
 	}
-	document.visit_shadow_including_descendants(fn [family_name, root_metrics_may_change] (node &dom.Node) dom.TraversalDecision {
+	document.visit_shadow_including_descendants(fn [family_name, changed_face, root_metrics_may_change] (node &dom.Node) dom.TraversalDecision {
 		element := node.as_element() or { return .@continue }
 		mut affected := false
 		if style := element.el_computed_properties() {
 			// Refresh root scalar contexts even when a different family is
 			// selected, so deferred used-value resolution sees the new metrics.
-			affected = root_metrics_may_change || retained_style_needs_font_inputs(style, family_name)
+			affected = root_metrics_may_change || retained_style_needs_changed_font_inputs(style, family_name, changed_face)
 		}
 		for index in 0 .. int(dom.PseudoElement.known_pseudo_element_count) {
 			if affected { break }
 			if style := element.computed_properties_for_pseudo(index) {
-				affected = root_metrics_may_change || retained_style_needs_font_inputs(style, family_name)
+				affected = root_metrics_may_change || retained_style_needs_changed_font_inputs(style, family_name, changed_face)
 			}
 		}
 		if affected {

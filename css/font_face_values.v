@@ -5,12 +5,16 @@ import fetch
 import gfxfont
 import math
 import mimesniff
+import os
 import platform
 import strconv
 import strings
 import time
 import url as liburl
 import webidl
+
+const disable_face_specific_font_completion = os.getenv('VOX_DISABLE_FACE_SPECIFIC_FONT_COMPLETION') != ''
+const font_completion_diagnostics = os.getenv('VOX_FONT_COMPLETION_DIAGNOSTICS') != ''
 
 // This file ports Ladybird's LibWeb/CSS font-face, font-feature-values, and
 // font-computer logic. It uses the translated WebIDL promise, Fetch response,
@@ -2773,7 +2777,7 @@ fn (mut face FontFaceObject) finish_loading_with_error(typeface &PlatformTypefac
 		face.status_ = .loaded
 		if face.font_status_promise != unsafe { nil } { face.font_status_promise.resolve(face.binding_value()) }
 		if mut computer := face.font_computer() {
-			computer.register_font_face(face)
+			computer.publish_loaded_font_face(face)
 		}
 
 		// For each FontFaceSet font face is in:
@@ -3675,6 +3679,13 @@ pub fn (list &FontCascadeList) is_empty() bool {
 		&& list.last_resort_font == unsafe { nil }
 }
 
+fn (list &FontCascadeList) depends_on_pending_face(face &FontFaceObject) bool {
+	for pending in list.pending_faces {
+		if voidptr(pending.font_face) == voidptr(face) { return true }
+	}
+	return false
+}
+
 pub fn (mut list FontCascadeList) add_pending_face(font_face &FontFaceObject) {
 	if font_face.unicode_ranges_.len == 0 {
 		return
@@ -4286,6 +4297,42 @@ pub fn (mut computer FontComputer) clear_computed_font_cache(family_name string)
 
 pub fn (mut computer FontComputer) did_load_font(family_name string) {
 	computer.clear_computed_font_cache(family_name)
+}
+
+// The successful load of an existing face cannot change which weights,
+// stretches or unicode ranges match it. Keep the cascades which never selected
+// that pending face; descriptor and FontFaceSet changes still invalidate the
+// complete family through register_font_face/unregister_font_face.
+fn (mut computer FontComputer) publish_loaded_font_face(face &FontFaceObject) {
+	if !face.should_be_registered_with_font_computer() { return }
+	if disable_face_specific_font_completion {
+		computer.register_font_face(face)
+		return
+	}
+	key := font_face_key_for_parsed_font_face(face.parsed_font_face())
+	faces := computer.font_faces[key.id()] or { []&FontFaceObject{} }
+	if !font_face_object_array_contains(faces, face) {
+		computer.register_font_face(face)
+		return
+	}
+	computer.environment_generation_++
+	mut affected := false
+	mut expired := []string{}
+	for cache_key, list in computer.computed_font_cache {
+		if list.depends_on_pending_face(face) {
+			expired << cache_key
+			affected = true
+		}
+	}
+	for cache_key in expired { computer.computed_font_cache.delete(cache_key) }
+	if font_completion_diagnostics {
+		eprintln('Vox font completion: family=${face.family_} weight=${face.weight_} expired=${expired.len} retained=${computer.computed_font_cache.len}')
+	}
+	if affected {
+		if document := computer.document_ {
+			mark_changed_font_inputs(document, key.family_name, face)
+		}
+	}
 }
 
 pub fn (mut computer FontComputer) should_defer_initial_paint() bool {

@@ -469,3 +469,109 @@ fn test_other_family_nested_size_consumers_refresh_after_ancestor_font_metrics_c
 		font_input_assert_full_cascade_oracle(plain, .before)
 	}
 }
+
+fn font_completion_pending_face(document &dom.Document, weight string, ranges string) &FontFaceObject {
+	computer := css_style_computer_for(document).font_computer()
+	mut face := FontFaceObject.construct_impl_for_font_computer(computer,
+		'FontInputFixture', FontFaceSource.from_string('url("late-${weight}.ttf")'),
+		FontFaceDescriptors{weight: weight, unicode_range: ranges})
+	mut set := FontFaceSet.create_for_font_computer(computer)
+	set.add(face) or { panic(err) }
+	return face
+}
+
+fn font_completion_finish(face &FontFaceObject) {
+	typeface := platform_load_font_from_url_boundary('file:///System/Library/Fonts/Supplemental/Arial.ttf', 'FontInputFixture')
+	assert typeface != unsafe { nil }
+	mut mutable := unsafe { &FontFaceObject(face) }
+	assert mutable.begin_url_load()
+	mutable.finish_loading_from_typeface(typeface)
+}
+
+fn test_loaded_face_refreshes_selected_weight_without_invalidating_other_weight_cascades() {
+	$if macos {
+		mut document, root, subject, unrelated := font_input_fixture()
+		mut mutable_root := unsafe { &dom.Element(root) }
+		mutable_root.set_attribute_value('style', 'font-family:serif;font-size:20px;line-height:normal')
+		mut target := unsafe { &dom.Element(subject) }
+		target.set_attribute_value('style', 'font-family:FontInputFixture;font-weight:700;font-size:20px;width:120px')
+		mut regular := unsafe { &dom.Element(unrelated) }
+		regular.set_attribute_value('style', 'font-family:FontInputFixture;font-weight:400;font-size:20px;width:120px')
+		face400 := font_completion_pending_face(document, '400', 'U+0-10FFFF')
+		face700 := font_completion_pending_face(document, '700', 'U+0-10FFFF')
+		font_completion_finish(face400)
+		document.update_style()
+		for element in [root, subject, unrelated] {
+			_ = resolve_computed_values_for_document(font_input_style(element, none), document)
+		}
+		before := font_input_style(unrelated, none).cached_computed_font_list()?
+		assert !before.depends_on_pending_face(face700)
+		assert font_input_style(subject, none).cached_computed_font_list()?.depends_on_pending_face(face700)
+		font_completion_finish(face700)
+		assert subject.has_pending_font_input_update()
+		assert !root.has_pending_font_input_update()
+		assert !unrelated.has_pending_font_input_update()
+		computer := css_style_computer_for(document).font_computer()
+		assert computer.computed_font_cache.values().any(voidptr(it) == voidptr(before))
+		document.update_style()
+		assert voidptr(font_input_style(unrelated, none).computed_font_list(computer)) == voidptr(before)
+		for element in [root, subject, unrelated] { font_input_assert_full_cascade_oracle(element, none) }
+		// Descriptor mutations can change matching; they retain family-wide invalidation.
+		mut changed := unsafe { &FontFaceObject(face700) }
+		changed.set_weight('400')!
+		assert unrelated.has_pending_font_input_update()
+	}
+}
+
+fn test_loaded_face_preserves_root_metric_fanout_to_other_families() {
+	$if macos {
+		mut document, root, subject, unrelated := font_input_fixture()
+		face := font_completion_pending_face(document, '400', 'U+0-10FFFF')
+		mut target := unsafe { &dom.Element(unrelated) }
+		target.set_attribute_value('style', 'font-family:serif;font-size:20px;width:calc(2rch + 3px)')
+		document.update_style()
+		for element in [root, subject, unrelated] {
+			_ = resolve_computed_values_for_document(font_input_style(element, none), document)
+		}
+		assert font_input_style(root, none).cached_computed_font_list()?.depends_on_pending_face(face)
+		font_completion_finish(face)
+		for element in [root, subject, unrelated] { assert element.has_pending_font_input_update() }
+		document.update_style()
+		for element in [root, subject, unrelated] { font_input_assert_full_cascade_oracle(element, none) }
+	}
+}
+
+fn test_loaded_face_pending_ranges_and_pseudos_are_kept_in_completion_dependencies() {
+	$if macos {
+		mut document, root, subject, unrelated := font_input_fixture()
+		mut mutable_root := unsafe { &dom.Element(root) }
+		mutable_root.set_attribute_value('style', 'font-family:serif;font-size:20px;line-height:normal')
+		mut host := unsafe { &dom.Element(subject) }
+		host.set_attribute_value('id', 'completion-host')
+		host.set_attribute_value('style', 'font-family:serif;font-size:20px;width:120px')
+		shadow := host.attach_shadow(dom.ShadowRootInit{mode: .open})!
+		mut child := document.create_element_ns(dom.namespace_html_uri, 'span')!
+		child.set_attribute_value('style', 'font-family:FontInputFixture;font-size:20px')
+		mut shadow_node := unsafe { &dom.Node(shadow) }
+		shadow_node.append_child(child.as_node())!
+		add_document_author_style_sheet(document, '#completion-host::before{content:"x";font-family:FontInputFixture;font-size:20px}')
+		latin := font_completion_pending_face(document, '400', 'U+0-7F')
+		other := font_completion_pending_face(document, '400', 'U+400-4FF')
+		document.update_style()
+		for element in [root, subject, unrelated, child] {
+			_ = resolve_computed_values_for_document(font_input_style(element, none), document)
+		}
+		_ = resolve_computed_values_for_document(font_input_style(subject, .before), document)
+		assert font_input_style(subject, .before).cached_computed_font_list()?.depends_on_pending_face(latin)
+		assert font_input_style(child, none).cached_computed_font_list()?.depends_on_pending_face(other)
+		font_completion_finish(latin)
+		assert subject.has_pending_font_input_update() && child.has_pending_font_input_update()
+		assert !root.has_pending_font_input_update() && !unrelated.has_pending_font_input_update()
+		document.update_style()
+		font_completion_finish(other)
+		assert subject.has_pending_font_input_update() && child.has_pending_font_input_update()
+		document.update_style()
+		font_input_assert_full_cascade_oracle(subject, .before)
+		font_input_assert_full_cascade_oracle(child, none)
+	}
+}
