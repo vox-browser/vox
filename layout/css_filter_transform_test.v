@@ -60,3 +60,16 @@ fn test_css_filter_transform_updates_without_mutating_an_earlier_recording() {
 	assert first.operations[0].first == 5 && first.operations[0].second == 7
 	assert first.operations[0].third == 4 && second.operations[0].third == 4
 }
+
+fn test_animated_css_filter_transform_matches_a_fresh_effect_mapping() {
+	mut document := html.parse_document('<!doctype html><style>body{margin:0}@keyframes turn{from{transform:rotate(0deg)}to{transform:rotate(90deg)}}#target{width:80px;height:40px;background:blue;filter:drop-shadow(5px 7px 4px red);animation:turn 1s linear forwards}</style><div id="target"></div>')
+	defer { document.finalize() }
+	_ = layout_document_typed_in_viewport(document,400,300)
+	_ = document.record_display_list() or { panic('first paint') }
+	document.update_animations_and_send_events(500)
+	document.update_layout(.html_event_loop_rendering_update)
+	commands := display_list_commands(document.record_display_list() or { panic('sampled paint') })
+	filter := commands.filter(it.kind=='begin_css_filter_layer')[0].visual_layer().filter or { panic('sampled filter') }
+	assert math.abs(filter.operations[0].first + 2/math.sqrt(2)) < 1e-6
+	assert math.abs(filter.operations[0].second - 12/math.sqrt(2)) < 1e-6
+}

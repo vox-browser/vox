@@ -679,6 +679,7 @@ fn compatibility_box_has_own_transform_context(box &BlockBox) bool {
 // would add or remove a node, so the caller rebuilds the tree.
 fn patch_compositor_visual_contexts(mut tree painting.AccumulatedVisualContextTree,
 	boxes []&BlockBox) bool {
+	mut changes_transform := false
 	for box in boxes {
 		needs_effects := box.opacity < 1.0 || box.mix_blend_mode != .normal
 			|| box.filters().filter.to_gfx_filter(1.0) != none || box.chromium_compositor_surface
@@ -697,6 +698,24 @@ fn patch_compositor_visual_contexts(mut tree painting.AccumulatedVisualContextTr
 		if box.own_transform_visual_context_idx > 0
 			&& tree.node_at(box.own_transform_visual_context_idx).data !is painting.TransformVisualData {
 			return false
+		}
+		if box.own_transform_visual_context_idx > 0 {
+			old := tree.node_at(box.own_transform_visual_context_idx).data as painting.TransformVisualData
+			changes_transform = changes_transform || old.matrix != compatibility_painting_affine(box.own_paint_transform)
+				|| old.matrix_4x4 != box.own_paint_transform_4x4
+				|| old.uses_matrix_4x4 != box.uses_own_paint_transform_4x4
+		}
+	}
+	if changes_transform {
+		// Spatial filter payloads include the target's accumulated transform.
+		// A changed ancestor can move that space without appearing in the
+		// filtered box's own animation list. Rebuild those dependent payloads.
+		for node in tree.nodes {
+			if node.data is painting.EffectsVisualData {
+				if filter := node.data.filter {
+					if filter.operations.any(it.kind in ['blur','drop-shadow']) { return false }
+				}
+			}
 		}
 	}
 	for box in boxes {
