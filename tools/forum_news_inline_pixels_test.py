@@ -12,6 +12,9 @@ from forum_news_pixels import REPO, VOX, executable_identity, guarded, write_jso
 
 @unittest.skipUnless(sys.platform == 'darwin', 'The reference uses native macOS fonts')
 class ForumNewsInlinePixelsTests(unittest.TestCase):
+    def test_pikabu_svg_banner_samples_its_image_pattern_at_the_final_viewport(self):
+        self.compare_fixture('pikabu-svg-image-pattern')
+
     def test_svg_pattern_images_keep_use_and_resource_transforms(self):
         self.compare_fixture('pikabu-svg-pattern-image')
 

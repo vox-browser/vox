@@ -5676,6 +5676,30 @@ static void native_end_skia_image_source(NativeSkiaImageSource *source) {
 }
 #endif
 
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+extern int ladybird_v_skia_draw_svg_image_pattern(CGContextRef, const uint8_t*, int, int,
+    int, int, const float*, int, int, const float*, const float*, const float*,
+    const float*, const float*, float, float, float, float, float, float, int);
+#endif
+int native_draw_svg_image_pattern(gg__Image *image, const float *path, int count,
+    int even_odd, const float *outer, const float *inner, const float *tile,
+    const float *destination, const float *clip, float page_x, float page_y,
+    float scroll_y, float canvas_width, float canvas_height, float opacity, int nearest) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+    CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
+    NativeSkiaImageSource source = {0};
+    if (!context || !image || !image->data || !native_begin_skia_image_source(context, image, &source)) return 0;
+    int result = ladybird_v_skia_draw_svg_image_pattern(context, source.pixels,
+        image->width, image->height, source.pitch, source.flags, path, count, even_odd,
+        outer, inner, tile, destination, clip, page_x, page_y, scroll_y,
+        canvas_width, canvas_height, opacity, nearest);
+    native_end_skia_image_source(&source);
+    return result;
+#else
+    return 0;
+#endif
+}
+
 static void native_draw_image_part_in_context(CGContextRef context, gg__Image *image,
 	float destination_x, float destination_y, float destination_width,
 	float destination_height, float source_x, float source_y, float source_width,

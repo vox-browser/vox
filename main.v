@@ -4463,6 +4463,10 @@ fn (mut app BrowserApp) draw_native_svg_pattern_path(path_data []f32, even_odd b
 		if tile.width <= 0 || tile.height <= 0 {
 			return
 		}
+		if !stroke && !content_mask && app.draw_svg_image_pattern(path_data, even_odd, matrix,
+			page_x, page_y, scroll_y, canvas_height, style, opacity) {
+			return
+		}
 		// Pattern tiles are fixed-size rasters. Include the scale accumulated by
 		// the target's visual-context chain so transformed ancestors do not
 		// magnify a low-resolution tile.
