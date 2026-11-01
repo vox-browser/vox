@@ -994,6 +994,7 @@ mut:
 	intrinsic_seed_order_ &LayoutTreeOrder = unsafe { nil }
 	intrinsic_seed_stamps_ []u32
 	intrinsic_seed_epoch_ u32
+	inline_measurements_ map[u64][]&InlineMeasurementLayout
 }
 
 fn (mut pool MeasurementUsedValuesChunkPool) take() &MeasurementUsedValuesChunk {
@@ -1024,6 +1025,7 @@ fn (mut pool MeasurementUsedValuesChunkPool) release() {
 	$if !prealloc { unsafe { pool.intrinsic_seed_stamps_.free() } }
 	pool.intrinsic_seed_stamps_ = []u32{}
 	pool.intrinsic_seed_order_ = unsafe { nil }
+	pool.inline_measurements_ = map[u64][]&InlineMeasurementLayout{}
 	for chunk in pool.chunks {
 		free_measurement_allocation(chunk)
 	}

@@ -145,7 +145,7 @@ fn measure_disposable_inline_width(mut state LayoutState, containing_block &Bloc
 		.intrinsic_sizing, space, none, true).automatic_content_width
 }
 
-fn run_inline_formatting_context_for_width(mut state LayoutState, containing_block &BlockContainer,
+fn run_uncached_inline_formatting_context_for_width(mut state LayoutState, containing_block &BlockContainer,
 	mut containing_block_used_values UsedValues, layout_mode LayoutMode, available_space AvailableSpace,
 	parent_block_context ?&BlockFormattingContext, width_only bool) InlineFormattingResult {
 	containing_block_used_values.clear_line_boxes()
