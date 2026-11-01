@@ -5873,8 +5873,10 @@ pub fn (mut c ComputedProperties) clear_computed_font_list_cache() {
 fn (mut c ComputedProperties) reuse_unchanged_font_cache(previous &ComputedProperties,
 	font_computer &FontComputer) bool {
 	font_list := previous.cached_computed_font_list_ or { return false }
+	generation := font_computer.environment_generation()
 	if voidptr(previous.cached_computed_font_list_owner_) != voidptr(font_computer)
-		|| previous.cached_computed_font_list_generation_ != font_computer.environment_generation() {
+		|| (previous.cached_computed_font_list_generation_ != generation
+			&& !font_computer.cached_cascade_is_current(font_list)) {
 		return false
 	}
 	for property_id in computed_interpolation_longhand_property_ids() {
@@ -5884,7 +5886,7 @@ fn (mut c ComputedProperties) reuse_unchanged_font_cache(previous &ComputedPrope
 		}
 	}
 	c.cached_computed_font_list_ = font_list
-	c.cached_computed_font_list_generation_ = previous.cached_computed_font_list_generation_
+	c.cached_computed_font_list_generation_ = generation
 	c.cached_computed_font_list_owner_ = font_computer
 	c.cached_first_available_computed_font_ = previous.cached_first_available_computed_font_
 	return true
@@ -5893,8 +5895,13 @@ fn (mut c ComputedProperties) reuse_unchanged_font_cache(previous &ComputedPrope
 pub fn (mut c ComputedProperties) computed_font_list(font_computer &FontComputer) &FontCascadeList {
 	mut font_environment_changed := false
 	if font_list := c.cached_computed_font_list_ {
+		generation := font_computer.environment_generation()
 		if voidptr(c.cached_computed_font_list_owner_) == voidptr(font_computer)
-			&& c.cached_computed_font_list_generation_ == font_computer.environment_generation() {
+			&& (c.cached_computed_font_list_generation_ == generation
+				|| font_computer.cached_cascade_is_current(font_list)) {
+			// A different family/weight can finish without expiring this cascade.
+			// Keep its resolved inputs instead of rebuilding the same cache key.
+			c.cached_computed_font_list_generation_ = generation
 			return font_list
 		}
 		c.clear_computed_font_list_cache()

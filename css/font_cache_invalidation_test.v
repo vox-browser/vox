@@ -67,8 +67,75 @@ fn test_font_feature_mutations_clear_the_cached_cascade() {
 		_ = style.computed_font_list(computer)
 		style.set_property_without_modifying_flags(property_id,
 			&dom.StyleValue{
-			css_text: 'normal'
-		})
+				css_text: 'normal'
+			})
 		assert style.cached_computed_font_list() == none
 	}
+}
+
+fn test_unrelated_font_invalidation_preserves_live_cascade_inputs_across_style_copies() {
+	mut computer := FontComputer.create()
+	mut previous := pending_font_style()
+	list := previous.computed_font_list(computer)
+	generation := previous.cached_computed_font_list_generation_
+	computer.did_load_font('Unrelated')
+	assert computer.environment_generation() != generation
+	assert computer.cached_cascade_is_current(list)
+	mut next := pending_font_style()
+	assert next.reuse_unchanged_font_cache(previous, computer)
+	assert voidptr(next.computed_font_list(computer)) == voidptr(list)
+	assert next.cached_computed_font_list_generation_ == computer.environment_generation()
+	assert voidptr(previous.computed_font_list(computer)) == voidptr(list)
+	assert previous.cached_computed_font_list_generation_ == computer.environment_generation()
+}
+
+fn test_expired_family_cascades_cannot_be_reused_after_their_cache_entry_is_removed() {
+	mut computer := FontComputer.create()
+	mut previous := pending_font_style()
+	list := previous.computed_font_list(computer)
+	computer.clear_computed_font_cache('Pending')
+	assert !computer.cached_cascade_is_current(list)
+	mut next := pending_font_style()
+	assert !next.reuse_unchanged_font_cache(previous, computer)
+	assert voidptr(previous.computed_font_list(computer)) != voidptr(list)
+	assert computer.cached_cascade_is_current(previous.computed_font_list(computer))
+}
+
+fn test_cascade_liveness_requires_its_original_font_computer_and_rendering_policy() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	mut computer := FontComputer.create_for_document(document)
+	mut style := pending_font_style()
+	list := style.computed_font_list(computer)
+	assert computer.cached_cascade_is_current(list)
+	other := FontComputer.create()
+	assert !other.cached_cascade_is_current(list)
+	assert !computer.cached_cascade_is_current(FontCascadeList.create())
+	document.set_font_rendering_policy(.chromium)
+	assert !computer.cached_cascade_is_current(list)
+	replacement := style.computed_font_list(computer)
+	assert voidptr(replacement) != voidptr(list)
+	assert computer.cached_cascade_is_current(replacement)
+}
+
+fn test_pending_face_completion_expires_only_cascades_that_selected_that_face() {
+	mut computer := FontComputer.create()
+	mut set := FontFaceSet.create_for_font_computer(computer)
+	regular := FontFaceObject.construct_impl('Pending', FontFaceSource.from_string('url("regular.ttf")'), FontFaceDescriptors{ weight: '400' })
+	mut bold := FontFaceObject.construct_impl('Pending', FontFaceSource.from_string('url("bold.ttf")'), FontFaceDescriptors{ weight: '700' })
+	set.add(regular)!
+	set.add(bold)!
+	mut regular_style := pending_font_style()
+	mut bold_style := pending_font_style()
+	bold_style.set_property_without_modifying_flags(.font_weight, &dom.StyleValue{ css_text: '700' })
+	regular_list := regular_style.computed_font_list(computer)
+	bold_list := bold_style.computed_font_list(computer)
+	assert regular_list.depends_on_pending_face(regular)
+	assert bold_list.depends_on_pending_face(bold)
+	bold.status_ = .loaded
+	bold.parsed_font = &PlatformTypeface{ family_name: 'Pending', source_path: 'bold.ttf', weight_: 700 }
+	computer.publish_loaded_font_face(bold)
+	assert computer.cached_cascade_is_current(regular_list)
+	assert !computer.cached_cascade_is_current(bold_list)
+	assert voidptr(regular_style.computed_font_list(computer)) == voidptr(regular_list)
+	assert voidptr(bold_style.computed_font_list(computer)) != voidptr(bold_list)
 }

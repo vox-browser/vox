@@ -15,6 +15,8 @@ import webidl
 
 const disable_face_specific_font_completion = os.getenv('VOX_DISABLE_FACE_SPECIFIC_FONT_COMPLETION') != ''
 const font_completion_diagnostics = os.getenv('VOX_FONT_COMPLETION_DIAGNOSTICS') != ''
+const disable_live_font_cascade_reuse = os.getenv('VOX_DISABLE_LIVE_FONT_CASCADE_REUSE') != ''
+const live_font_cascade_reuse_diagnostics = os.getenv('VOX_FONT_CASCADE_REUSE_DIAGNOSTICS') != ''
 const disable_face_specific_font_display = os.getenv('VOX_DISABLE_FACE_SPECIFIC_FONT_DISPLAY') != ''
 const font_display_invalidation_diagnostics = os.getenv('VOX_FONT_DISPLAY_INVALIDATION_DIAGNOSTICS') != ''
 
@@ -3630,6 +3632,22 @@ pub mut:
 mut:
 	invisible_font_storage_ &FontCascadeInvisibleStorage = unsafe { nil }
 	device_layout_font_projection_ &FontCascadeList = unsafe { nil }
+	// Only the font-computer cache publishes these stamps. Retired entries
+	// remain immutable font snapshots for their readers, but cannot supply a
+	// style's inputs after another font-environment change.
+	computed_cache_owner_ &FontComputer = unsafe { nil }
+	computed_cache_policy_ platform.FontRenderingPolicy
+	computed_cache_current_ bool
+}
+
+fn (computer &FontComputer) cached_cascade_is_current(list &FontCascadeList) bool {
+	current := !disable_live_font_cascade_reuse && list.computed_cache_current_
+		&& voidptr(list.computed_cache_owner_) == voidptr(computer)
+		&& list.computed_cache_policy_ == computer.font_rendering_policy()
+	if current && live_font_cascade_reuse_diagnostics {
+		eprintln('Vox font cascade: retained across environment change')
+	}
+	return current
 }
 
 pub fn FontCascadeList.create() &FontCascadeList {
@@ -4283,6 +4301,8 @@ pub fn (mut computer FontComputer) clear_computed_font_cache(family_name string)
 	mut removed_referenced_family := false
 	for key, value in computer.computed_font_cache {
 		if computed_font_cache_key_references_family(key, family_name) {
+			mut expired := unsafe { &FontCascadeList(value) }
+			expired.computed_cache_current_ = false
 			removed_referenced_family = true
 		} else {
 			kept[key] = value
@@ -4341,6 +4361,8 @@ fn (mut computer FontComputer) invalidate_selected_font_face_cascades(face &Font
 	mut expired := []string{}
 	for cache_key, list in computer.computed_font_cache {
 		if list.depends_on_pending_face(face) {
+			mut invalidated := unsafe { &FontCascadeList(list) }
+			invalidated.computed_cache_current_ = false
 			expired << cache_key
 			affected = true
 		}
@@ -4635,6 +4657,9 @@ fn (mut computer FontComputer) compute_font_for_style_values_with_synthesis(font
 	mut value := computer.compute_font_for_style_values_impl(font_family, font_size_px, font_slope, font_weight, font_width, font_optical_sizing, font_variation_settings, font_feature_data)
 	value.set_font_rendering_policy(policy, font_size_px, font_slope)
 	value.set_font_synthesis_disabled(synthesis_disabled)
+	value.computed_cache_owner_ = &computer
+	value.computed_cache_policy_ = policy
+	value.computed_cache_current_ = true
 	computer.computed_font_cache[owned_key] = value
 	return value
 }
