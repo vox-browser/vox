@@ -63,6 +63,41 @@ std::unique_ptr<skgpu::graphite::Recorder> region_recorder;
 // Preserve the bounded GPU resource cache across large-shape cache misses.
 // Access and context teardown are serialized by gpu_mutex.
 std::unique_ptr<skgpu::graphite::Recorder> rounded_recorder;
+std::unique_ptr<skgpu::graphite::Recorder> full_draw_recorder;
+
+// Synchronous full-surface draws can share a bounded recorder resource cache.
+// A fresh surface still owns every draw's matrix, clip and pixels. The mutex
+// enclosing each public draw also serializes this lease and context teardown.
+class FullDrawRecorder {
+    std::unique_ptr<skgpu::graphite::Recorder> temporary_;
+    skgpu::graphite::Recorder* recorder_ = nullptr;
+    bool borrowed_ = false;
+public:
+    explicit FullDrawRecorder(skgpu::graphite::Context* gpu) {
+        static bool enabled = !std::getenv("VOX_DISABLE_FULL_RECORDER_REUSE");
+        if (enabled) {
+            bool reused = bool(full_draw_recorder);
+            if (!full_draw_recorder) {
+                skgpu::graphite::RecorderOptions options;
+                options.fGpuBudgetInBytes = 16 * 1024 * 1024;
+                full_draw_recorder = gpu->makeRecorder(options);
+            }
+            recorder_ = full_draw_recorder.get();
+            borrowed_ = recorder_ != nullptr;
+            if (recorder_ && std::getenv("VOX_RECORDER_DIAGNOSTICS"))
+                std::fprintf(stderr, "VOX_FULL_RECORDER reused=%d\n", reused);
+        } else {
+            temporary_ = gpu->makeRecorder();
+            recorder_ = temporary_.get();
+        }
+    }
+    ~FullDrawRecorder() {
+        // Early failures can leave unsubmitted operations. Discard them before
+        // the next draw borrows the recorder; successful readback already snaps.
+        if (borrowed_) recorder_->snap();
+    }
+    skgpu::graphite::Recorder* get() const { return recorder_; }
+};
 std::list<RegionTarget> region_targets;
 size_t region_target_bytes = 0;
 constexpr size_t region_target_limit = 4 * 1024 * 1024;
@@ -73,6 +108,7 @@ void clear_region_targets()
     region_target_bytes = 0;
     region_recorder.reset();
     rounded_recorder.reset();
+    full_draw_recorder.reset();
 }
 
 SkSurface* region_target(skgpu::graphite::Context* gpu, SkImageInfo const& info)
@@ -252,7 +288,8 @@ int vox_graphite_draw_shadow_pixels(uint8_t* pixels, int width, int height,
     if (cached.hit) return 1;
     auto* gpu = context();
     if (!gpu) return 0;
-    auto recorder = gpu->makeRecorder();
+    FullDrawRecorder recorder(gpu);
+    if (!recorder.get()) return 0;
     auto info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
         kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
     auto surface = SkSurfaces::RenderTarget(recorder.get(), info);
@@ -566,7 +603,8 @@ int vox_graphite_draw_image_pixels(uint8_t* pixels, int width, int height,
     if (cached.hit) return 1;
     auto* gpu = context();
     if (!gpu) return 0;
-    auto recorder = gpu->makeRecorder();
+    FullDrawRecorder recorder(gpu);
+    if (!recorder.get()) return 0;
     auto info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
         kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
     auto surface = SkSurfaces::RenderTarget(recorder.get(), info);
@@ -670,7 +708,8 @@ int vox_graphite_draw_image_tiles(uint8_t* pixels, int width, int height,
     if (cached.hit) return 1;
     auto* gpu = context();
     if (!gpu) return 0;
-    auto recorder = gpu->makeRecorder();
+    FullDrawRecorder recorder(gpu);
+    if (!recorder.get()) return 0;
     auto info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
         kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
     auto surface = SkSurfaces::RenderTarget(recorder.get(), info);
@@ -1324,7 +1363,8 @@ int vox_graphite_draw_shape_pixels(uint8_t* pixels, int width, int height,
     if (cached.hit) return 1;
     auto* gpu = context();
     if (!gpu) return 0;
-    auto recorder = gpu->makeRecorder();
+    FullDrawRecorder recorder(gpu);
+    if (!recorder.get()) return 0;
     auto info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
         kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
     auto surface = SkSurfaces::RenderTarget(recorder.get(), info);
@@ -1426,7 +1466,8 @@ int vox_graphite_draw_path_pixels(uint8_t* pixels, int width, int height,
     if (cached.hit) return 1;
     auto* gpu = context();
     if (!gpu) return 0;
-    auto recorder = gpu->makeRecorder();
+    FullDrawRecorder recorder(gpu);
+    if (!recorder.get()) return 0;
     auto info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
         kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
     auto surface = SkSurfaces::RenderTarget(recorder.get(), info);
@@ -1609,7 +1650,8 @@ int vox_graphite_draw_path_batch_pixels(uint8_t* pixels, int width, int height,
     std::lock_guard lock(gpu_mutex);
     auto* gpu = context();
     if (!gpu) return 0;
-    auto recorder = gpu->makeRecorder();
+    FullDrawRecorder recorder(gpu);
+    if (!recorder.get()) return 0;
     auto info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
         kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
     auto surface = SkSurfaces::RenderTarget(recorder.get(), info);
@@ -1638,7 +1680,8 @@ int vox_graphite_draw_svg_image_pixels(uint8_t* pixels, int width, int height,
     std::lock_guard lock(gpu_mutex);
     auto* gpu = context();
     if (!gpu) return 0;
-    auto recorder = gpu->makeRecorder();
+    FullDrawRecorder recorder(gpu);
+    if (!recorder.get()) return 0;
     auto info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
         kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
     auto surface = SkSurfaces::RenderTarget(recorder.get(), info);

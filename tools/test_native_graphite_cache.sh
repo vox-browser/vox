@@ -30,4 +30,8 @@ if [ "$#" -eq 2 ]; then
         "$repo_dir/tools/native_graphite_raster_replay_test.cpp" \
         -o "$output_dir/native_graphite_raster_replay_test"
     "$output_dir/native_graphite_raster_replay_test" "$1" "$2"
+    clang++ -std=c++20 -O2 -Wall -Wextra -Werror \
+        "$repo_dir/tools/native_graphite_recorder_replay_test.cpp" \
+        -o "$output_dir/native_graphite_recorder_replay_test"
+    "$output_dir/native_graphite_recorder_replay_test" "$1" "$2"
 fi
