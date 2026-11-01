@@ -5600,7 +5600,7 @@ fn replaced_image_bitmap_for_renderer(command &layout.PaintCommand, native_rende
 	return bitmap
 }
 
-fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x f32, page_y f32, window_height int) {
+fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x f32, page_y f32, window_height int) {
 	// A native border or coincident antialiased fill can consume the underlay
 	// in the same render pass, retaining fractional coverage between draws.
 	if pending := app.rounded_rect_underlay_source {
@@ -5961,7 +5961,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 		}
 		return
 	}
-	if app.draw_chromium_corner_shape(command, &source_command, matrix, page_x, page_y, scroll_y, window_height) { return }
+	if app.draw_chromium_corner_shape(command, source_command, matrix, page_x, page_y, scroll_y, window_height) { return }
 	match command.kind {
 		'paint_nested_display_list' {
 			paintable := command.nested_viewport_paintable or { return }
@@ -7193,7 +7193,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 // current nesting depth. A local copy would be moved to the heap on every call
 // by current V: the command holds an inline transform array, and V cannot tell
 // that the accessors it is passed to keep no reference to it.
-fn (mut app BrowserApp) enter_draw_command(source layout.PaintCommand) &layout.PaintCommand {
+fn (mut app BrowserApp) enter_draw_command(source &layout.PaintCommand) &layout.PaintCommand {
 	if app.draw_command_depth == app.draw_command_copies.len {
 		persistent := platform.enter_persistent()
 		app.draw_command_copies << &layout.PaintCommand{}
@@ -7202,7 +7202,7 @@ fn (mut app BrowserApp) enter_draw_command(source layout.PaintCommand) &layout.P
 	mut command := app.draw_command_copies[app.draw_command_depth]
 	app.draw_command_depth++
 	unsafe {
-		*command = source
+		*command = *source
 	}
 	return command
 }
