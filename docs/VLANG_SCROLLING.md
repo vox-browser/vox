@@ -1,8 +1,38 @@
 # vlang.io scrolling
 
-The live **60 FPS target remains unmet**. The latest measured installed production bundle publishes **28.15–28.24 scroll-changing native frames per second** on live `https://vlang.io/`, and **10.90–11.25** on the frozen page. Live median scroll intervals are 34.2–34.6 ms; every measured interval still exceeds 16.67 ms. These are completed Cocoa layer publications; physical display scanout is unmeasured. Optimization work continues.
+The live **60 FPS target remains unmet**. The latest measured installed production bundle publishes **32.96–33.73 scroll-changing native frames per second** on live `https://vlang.io/`, and **11.23–11.98** on the frozen page. Every measured live interval still exceeds 16.67 ms. These are completed Cocoa layer publications; physical display scanout is unmeasured. Optimization work continues.
 
 The [compositor milestone receipt](benchmark-results/vlang-scroll-20261101-compositor-milestone.json) and [compressed raw records](benchmark-results/vlang-scroll-20261101-compositor-milestone-raw.json.gz) retain 64 completed measurements and 1,657 raw text artifacts through this checkpoint, including diagnostic runs, failures, commands, input/publication timestamps, source and executable identities, host load, guard exits and rejected patches. Full artifacts remain in `Build/vlang-scroll-compositor-20261101-111741/`. That milestone is historical; later accepted cohorts are retained below.
+
+## Immutable bitmap inputs and empty filter bounds
+
+The [filter-input receipt](benchmark-results/vlang-scroll-20261101-filter-inputs.json) retains all later attempts, host conditions, identities, actual input/publication timestamps and exits. Its [compressed raw delta](benchmark-results/vlang-scroll-20261101-filter-inputs-raw.json.gz) applies to the preceding large-decoration raw snapshot, pinned by SHA256 in both files. Earlier receipts remain unchanged.
+
+`f7e2c53b` reads owned immutable provider bytes for the exact premultiplied sRGB RGBA format used by isolated Quartz layers, avoiding redundant bitmap decoding. Other alpha/layout/color formats keep Quartz decoding. Whole Skia-image construction is deferred to CPU fallback. A separate live diagnostic confirms 114 uses during input on 2048×1760 buffers. Ownership, source mutation, tagged fallback, unsupported layouts and row padding are covered by 144 native blur/drop-shadow scenes.
+
+`185f27c7` computes alpha bounds from the first and last nontransparent pixel in each row, with bounded block scans for transparent spans. It allocates filter output only after nonempty input is established. All 123 bitmap-filter calls during the separate live input diagnostic were empty. The new scan matches the original bounds in 4,608 normal and sanitizer cases; the 144 native filter scenes and four HTTP page pairs at 1×/2× and Y=0/240 remain exact. References, tolerances, blur settings and GPU rendering are unchanged.
+
+| Alternating unprofiled cohort | Control FPS (1 / 2) | Candidate FPS (1 / 2) |
+| --- | ---: | ---: |
+| Immutable bitmap input, frozen | 10.98 / 10.83 | 10.82 / 10.13 |
+| Immutable bitmap input, live | 26.18 / 27.24 | 28.81 / 28.95 |
+| Alpha bounds, frozen | 11.45 / 11.66 | 11.10 / 11.26 |
+| Alpha bounds, live | 29.15 / 27.98 | 32.66 / 33.10 |
+
+Both changes improve both live pairs and regress both frozen pairs; those regressions remain acceptance qualifications. Varying host load prevents a precise isolated percentage attribution. The bounds control's 422.44 ms stall is retained. Fresh production checks after immutable input measured 30.83/30.79 FPS live and 12.01/11.35 frozen; these complete builds include other sessions' changes and do not isolate the contribution of each commit.
+
+The bounds installation first encountered a busy production guard. No duplicate build was queued. Once the shared build completed, the tested native libraries were installed, signed, verified, smoke-checked in a fresh process and pinned for the four measurements below.
+
+| Installed bounds build | Scroll FPS | Actual input Hz | Inputs / completed publications | Median / p95 / max interval (ms) | Missed 16.67 ms | Leading / trailing scroll gap (ms) |
+| --- | ---: | ---: | --- | --- | ---: | --- |
+| Frozen 1 | 11.98 | 55.61 | 600 / 133 | 81.74 / 91.55 / 94.94 | 100.00% | 239.39 / 17.71 |
+| Live 1 | 33.73 | 48.33 | 600 / 433 | 29.33 / 33.53 / 76.70 | 100.00% | 75.94 / 20.92 |
+| Frozen 2 | 11.23 | 56.04 | 600 / 125 | 87.71 / 99.04 / 158.94 | 100.00% | 243.94 / 0.13 |
+| Live 2 | 32.96 | 48.63 | 600 / 419 | 29.99 / 34.17 / 71.78 | 100.00% | 77.57 / 20.04 |
+
+The native-input protocol is unchanged: fresh processes, empty private profiles/caches, matching title followed by 20 seconds of settling, a 1024×768 document viewport at backing scale 2, and 600 precise delta-2 wheel events requested at 60 Hz and reversed every 60 events. Full first-to-last actual input time supplies throughput. Live trials use direct HTTPS and automatic author scripting; the frozen fixture and its script/network policy remain unchanged. This does not establish physical scanout or JavaScript VM performance. No retired-instruction savings are claimed; the broad-suite savings carry remains unchanged.
+
+A subsequent device-space key experiment was removed without implementing a cache: exact keys change with fractional transforms and the transparent MSAA-trigger geometry. Most repeats occur near reversals or after movement stops. Flat-picture analysis and verification are later unaccepted experiments at this checkpoint and supply no timing credit here.
 
 ## Large decoration batches and direct backdrop upload
 
