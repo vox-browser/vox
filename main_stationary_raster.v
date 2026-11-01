@@ -1,16 +1,39 @@
 module main
 
 import layout
+import os
+
+const disable_static_media_raster_reuse = os.getenv('VOX_DISABLE_STATIC_MEDIA_RASTER_REUSE') != ''
 
 fn C.native_begin_stationary_raster(u64, u64, u64, f64, f64, f64, f64, i32) i32
 fn C.native_end_stationary_raster()
 fn C.native_discard_stationary_raster()
 
 fn stationary_document_raster_eligible(commands []layout.PaintCommand) bool {
+	return stationary_document_raster_commands_eligible(commands, 0)
+}
+
+fn stationary_document_raster_commands_eligible(commands []layout.PaintCommand, depth int) bool {
+	if depth > 32 { return false }
 	for command in commands {
-		if command.kind in ['draw_canvas', 'draw_video', 'draw_nested_document',
-			'paint_nested_display_list'] {
-			return false
+		match command.kind {
+			'draw_canvas', 'draw_nested_document' { return false }
+			'draw_video' {
+				// An empty video has no live source or pixels to replay. Poster
+				// and representation changes replace its retained paint facts and
+				// invalidate the document before this cache is consulted.
+				if disable_static_media_raster_reuse || command.video_frame_source != none || command.video_bitmap != none {
+					return false
+				}
+			}
+			'paint_nested_display_list' {
+				// These are retained snapshots, including SVG images. Only live
+				// media within the snapshot can change independently of its key.
+				if disable_static_media_raster_reuse || !stationary_document_raster_commands_eligible(command.nested_viewport_commands, depth + 1) {
+					return false
+				}
+			}
+			else {}
 		}
 	}
 	return true
