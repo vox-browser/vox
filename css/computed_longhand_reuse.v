@@ -10,7 +10,18 @@ __global (
 	computed_longhand_extension_reported bool
 	computed_longhand_color_mode int
 	computed_longhand_color_reported bool
+	computed_longhand_constant_mode int
+	computed_longhand_constant_diagnostics bool
+	computed_longhand_constant_reported bool
 )
+
+fn computed_longhand_constants_enabled() bool {
+	if computed_longhand_constant_mode == 0 {
+		computed_longhand_constant_mode = if os.getenv('VOX_DISABLE_CONSTANT_LONGHAND_REUSE') == '' { 1 } else { 2 }
+		computed_longhand_constant_diagnostics = os.getenv('VOX_CONSTANT_LONGHAND_REUSE_DIAGNOSTICS') != ''
+	}
+	return computed_longhand_constant_mode == 1
+}
 
 fn computed_longhand_extensions_enabled() bool {
 	if computed_longhand_extension_mode == 0 {
@@ -48,6 +59,10 @@ enum ComputedLonghandReuseValueKind as u8 {
 	list
 	border_image_slice
 	rgb
+	ratio
+	font_style
+	time
+	angle
 }
 
 struct ComputedLonghandReuseValue {
@@ -159,6 +174,32 @@ fn computed_longhand_reuse_typed_snapshot(value &StyleValue) ComputedLonghandReu
 				] }
 			}
 		}
+		RatioStyleValue {
+			if value.numerator_.len != 1 || value.denominator_.len != 1 {
+				ComputedLonghandReuseValue{}
+			} else {
+				ComputedLonghandReuseValue{ kind: .ratio, children: [
+					computed_longhand_reuse_typed_snapshot(&value.numerator_[0]),
+					computed_longhand_reuse_typed_snapshot(&value.denominator_[0]),
+				] }
+			}
+		}
+		FontStyleStyleValue {
+			mut children := []ComputedLonghandReuseValue{}
+			if angles := value.angle_value_ {
+				for index in 0 .. angles.len {
+					children << computed_longhand_reuse_typed_snapshot(&angles[index])
+				}
+			}
+			ComputedLonghandReuseValue{ kind: .font_style, integer: i64(value.font_style_),
+				has_name: value.angle_value_ != none, children: children }
+		}
+		TimeStyleValue {
+			ComputedLonghandReuseValue{ kind: .time, number: value.time_.value_, integer: i64(value.time_.unit_) }
+		}
+		AngleStyleValue {
+			ComputedLonghandReuseValue{ kind: .angle, number: value.angle_.value_, integer: i64(value.angle_.unit_) }
+		}
 		else {
 			ComputedLonghandReuseValue{ text: value.serialize(.normal), value_type: value.type_name() }
 		}
@@ -219,6 +260,31 @@ fn computed_longhand_reuse_typed_snapshot_matches(snapshot &ComputedLonghandReus
 				&& computed_longhand_reuse_typed_snapshot_matches(&snapshot.children[2], &value.b_[0])
 				&& computed_longhand_reuse_typed_snapshot_matches(&snapshot.children[3], &value.alpha_[0])
 		}
+		RatioStyleValue {
+			snapshot.kind == .ratio && snapshot.children.len == 2
+				&& value.numerator_.len == 1 && value.denominator_.len == 1
+				&& computed_longhand_reuse_typed_snapshot_matches(&snapshot.children[0], &value.numerator_[0])
+				&& computed_longhand_reuse_typed_snapshot_matches(&snapshot.children[1], &value.denominator_[0])
+		}
+		FontStyleStyleValue {
+			if snapshot.kind != .font_style || snapshot.integer != i64(value.font_style_)
+				|| snapshot.has_name != (value.angle_value_ != none) {
+				false
+			} else if angles := value.angle_value_ {
+				angles.len == 1 && snapshot.children.len == 1
+					&& computed_longhand_reuse_typed_snapshot_matches(&snapshot.children[0], &angles[0])
+			} else {
+				snapshot.children.len == 0
+			}
+		}
+		TimeStyleValue {
+			snapshot.kind == .time && snapshot.number == value.time_.value_
+				&& snapshot.integer == i64(value.time_.unit_)
+		}
+		AngleStyleValue {
+			snapshot.kind == .angle && snapshot.number == value.angle_.value_
+				&& snapshot.integer == i64(value.angle_.unit_)
+		}
 		else {
 			snapshot.kind == .unsupported && snapshot.value_type == value.type_name() && snapshot.text == value.serialize(.normal)
 		}
@@ -256,6 +322,15 @@ fn computed_longhand_reuse_typed_value_is_simple(value &StyleValue) bool {
 				.smaller, .bolder, .lighter, .math]
 		}
 		LengthStyleValue { return value.length().is_absolute() }
+		RatioStyleValue {
+			// Numeric components require no resolution context. Calculated ratios
+			// can depend on fonts or containers and keep the ordinary path.
+			return computed_longhand_constants_enabled()
+				&& value.numerator_.len == 1 && value.denominator_.len == 1
+				&& value.numerator_[0] is NumberStyleValue && value.denominator_[0] is NumberStyleValue
+		}
+		FontStyleStyleValue { return computed_longhand_constants_enabled() && value.angle_value_ == none }
+		TimeStyleValue { return computed_longhand_constants_enabled() }
 		ColorStyleValue, NumberStyleValue, IntegerStyleValue, PercentageStyleValue,
 		DisplayStyleValue, StringStyleValue, CustomIdentStyleValue {
 			return true
@@ -368,6 +443,21 @@ fn computed_longhand_reuse_typed_hash(value &StyleValue) ?u64 {
 			hash = (hash ^ computed_longhand_reuse_typed_hash(&value.g_[0])?) * u64(0x100000001b3)
 			hash = (hash ^ computed_longhand_reuse_typed_hash(&value.b_[0])?) * u64(0x100000001b3)
 			(hash ^ computed_longhand_reuse_typed_hash(&value.alpha_[0])?) * u64(0x100000001b3)
+		}
+		RatioStyleValue {
+			if !computed_longhand_reuse_typed_value_is_simple(value) { return none }
+			mut hash := u64(13)
+			hash = (hash ^ computed_longhand_reuse_typed_hash(&value.numerator_[0])?) * u64(0x100000001b3)
+			(hash ^ computed_longhand_reuse_typed_hash(&value.denominator_[0])?) * u64(0x100000001b3)
+		}
+		FontStyleStyleValue {
+			if !computed_longhand_reuse_typed_value_is_simple(value) { return none }
+			u64(14) ^ (u64(value.font_style_) * u64(0x100000001b3))
+		}
+		TimeStyleValue {
+			if !computed_longhand_constants_enabled() { return none }
+			u64(15) ^ computed_longhand_reuse_number_hash(value.time_.value_)
+				^ (u64(value.time_.unit_) * u64(0x100000001b3))
 		}
 		else { return none }
 	}
@@ -488,6 +578,16 @@ fn (s &StyleComputer) restore_computed_longhands(key &ComputedLonghandReuseKey,
 	properties.font_metrics_depend_on_viewport_metrics_ = cached.font_metrics_depend_on_viewport_metrics_
 	properties.font_input_refresh_safe_ = cached.font_input_refresh_safe_
 	properties.font_input_depends_on_font_size_ = cached.font_input_depends_on_font_size_
+	if computed_longhand_constant_diagnostics && !computed_longhand_constant_reported
+		&& computed_longhand_constants_enabled() {
+		for input in entry.inputs {
+			if input.snapshot.kind in [.ratio, .font_style, .time] {
+				computed_longhand_constant_reported = true
+				eprintln('Vox constant longhand reuse: restored ${input.snapshot.kind}')
+				break
+			}
+		}
+	}
 	if computed_longhand_extension_diagnostics && !computed_longhand_extension_reported {
 		for input in entry.inputs {
 			typed := unsafe { &TypedStyleValueBox(input.value.css_value_handle) }

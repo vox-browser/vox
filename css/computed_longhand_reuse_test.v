@@ -594,3 +594,197 @@ fn test_longhand_reuse_scalar_snapshots_freeze_every_supported_payload() {
 	assert !computed_longhand_reuse_typed_snapshot_matches(&snapshot,
 		StyleValue(IntegerStyleValue.create(0)))
 }
+
+fn constant_longhand_value(id PropertyID) StyleValue {
+	return match id {
+		.aspect_ratio { StyleValue(RatioStyleValue.create(Ratio.new(16, 9))) }
+		.font_style { StyleValue(FontStyleStyleValue.create(.normal, none)) }
+		else { StyleValue(TimeStyleValue.create(Time.new(0.5, .s))) }
+	}
+}
+
+fn mutate_constant_longhand_value(mut value StyleValue) {
+	match mut value {
+		RatioStyleValue { value.numerator_[0] = StyleValue(NumberStyleValue.create(17)) }
+		FontStyleStyleValue { value.font_style_ = .italic }
+		TimeStyleValue { value.time_.value_ = 0.75 }
+		else { panic('expected constant longhand') }
+	}
+}
+
+fn test_constant_longhands_reuse_independent_values_and_reject_retained_mutations() {
+	previous := computed_longhand_constant_mode
+	computed_longhand_constant_mode = 1
+	defer { computed_longhand_constant_mode = previous }
+	for id in [PropertyID.aspect_ratio, .font_style, .transition_duration] {
+		computer, _, element, parent_style := longhand_reuse_fixture()
+		computer.begin_computed_property_page_batch()
+		mut first := CascadedProperties.new()
+		original := dom_style_value_from_value_logic(constant_longhand_value(id))
+		first.set_property(id, original, .yes, .author, none, unsafe { nil }, none)
+		_ = computer.compute_properties(dom.AbstractElement.new(element, none), mut first)
+		mut second := CascadedProperties.new()
+		second.set_property(id, dom_style_value_from_value_logic(constant_longhand_value(id)),
+			.yes, .author, none, unsafe { nil }, none)
+		key := computer.computed_longhand_reuse_key(dom.AbstractElement.new(element, none), second,
+			parent_style, false) or { panic('constant input must be eligible') }
+		mut probe := computed_properties_with_initial_values()
+		assert computer.restore_computed_longhands(key, second, mut probe), string_from_property_id(id)
+		actual := computer.compute_properties(dom.AbstractElement.new(element, none), mut second)
+		longhand_reuse_assert_oracle(actual, computer, element, mut second)
+		mut box := unsafe { &TypedStyleValueBox(original.css_value_handle) }
+		mutate_constant_longhand_value(mut box.value)
+		assert !computer.restore_computed_longhands(key, second, mut probe), string_from_property_id(id)
+		updated := computer.compute_properties(dom.AbstractElement.new(element, none), mut first)
+		longhand_reuse_assert_oracle(updated, computer, element, mut first)
+		computer.end_computed_property_page_batch()
+	}
+}
+
+fn test_constant_longhand_snapshots_keep_ratio_components_and_time_units_distinct() {
+	ratio := StyleValue(RatioStyleValue.create(Ratio.new(16, 9)))
+	ratio_snapshot := computed_longhand_reuse_typed_snapshot(&ratio)
+	assert computed_longhand_reuse_typed_snapshot_matches(ratio_snapshot,
+		StyleValue(RatioStyleValue.create(Ratio.new(16, 9)) ))
+	for changed in [
+		StyleValue(RatioStyleValue.create(Ratio.new(32, 18))),
+		StyleValue(RatioStyleValue.create(Ratio.new(16, 10))),
+		StyleValue(RatioStyleValue.create_from_style_values(StyleValue(IntegerStyleValue.create(16)),
+			StyleValue(NumberStyleValue.create(9)))),
+	] {
+		assert !computed_longhand_reuse_typed_snapshot_matches(ratio_snapshot, &changed)
+	}
+	time := StyleValue(TimeStyleValue.create(Time.new(0.5, .s)))
+	time_snapshot := computed_longhand_reuse_typed_snapshot(&time)
+	assert computed_longhand_reuse_typed_snapshot_matches(time_snapshot,
+		StyleValue(TimeStyleValue.create(Time.new(0.5, .s))))
+	for changed in [StyleValue(TimeStyleValue.create(Time.new(0.5, .ms))),
+		StyleValue(TimeStyleValue.create(Time.new(500, .ms))), StyleValue(NumberStyleValue.create(0.5))] {
+		assert !computed_longhand_reuse_typed_snapshot_matches(time_snapshot, &changed)
+	}
+}
+
+fn test_constant_longhand_snapshots_distinguish_font_angle_presence_from_serialization() {
+	normal := StyleValue(FontStyleStyleValue.create(.normal, none))
+	snapshot := computed_longhand_reuse_typed_snapshot(&normal)
+	oblique := StyleValue(FontStyleStyleValue.create(.oblique,
+		StyleValue(AngleStyleValue.create(Angle.new(0, .deg)))))
+	assert normal.serialize(.normal) == oblique.serialize(.normal)
+	assert !computed_longhand_reuse_typed_snapshot_matches(snapshot, &oblique)
+	assert !computed_longhand_reuse_typed_value_is_simple(&oblique)
+	assert computed_longhand_reuse_typed_hash(&oblique) == none
+	for style in [FontStyleKeyword.italic, .oblique] {
+		assert !computed_longhand_reuse_typed_snapshot_matches(snapshot,
+			StyleValue(FontStyleStyleValue.create(style, none)))
+	}
+}
+
+fn test_constant_longhands_reject_calculated_ratios_and_malformed_component_arrays() {
+	previous := computed_longhand_constant_mode
+	computed_longhand_constant_mode = 1
+	defer { computed_longhand_constant_mode = previous }
+	calculated := parse_css_value(ParsingParams{}, 'calc(1em + 1px)', .width) or { panic('calculation') }
+	value := typed_style_value_logic_from_dom(calculated) or { panic('typed calculation') }
+	ratio := StyleValue(RatioStyleValue.create_from_style_values(value,
+		StyleValue(NumberStyleValue.create(9))))
+	assert !computed_longhand_reuse_typed_value_is_simple(&ratio)
+	assert computed_longhand_reuse_typed_hash(&ratio) == none
+	for component in 0 .. 2 {
+		for count in [0, 2] {
+			mut malformed := constant_longhand_value(.aspect_ratio)
+			if mut malformed is RatioStyleValue {
+				if component == 0 {
+					malformed.numerator_ = []StyleValue{len: count, init: StyleValue(NumberStyleValue.create(16))}
+				} else {
+					malformed.denominator_ = []StyleValue{len: count, init: StyleValue(NumberStyleValue.create(9))}
+				}
+			}
+			assert !computed_longhand_reuse_typed_value_is_simple(&malformed)
+			assert computed_longhand_reuse_typed_hash(&malformed) == none
+			assert !computed_longhand_reuse_typed_snapshot_matches(computed_longhand_reuse_typed_snapshot(&malformed), &malformed)
+		}
+	}
+}
+
+fn test_constant_font_parent_payload_is_guarded_after_an_in_place_mutation() {
+	previous := computed_longhand_constant_mode
+	computed_longhand_constant_mode = 1
+	defer { computed_longhand_constant_mode = previous }
+	computer, _, element, parent_style := longhand_reuse_fixture()
+	mut parent := unsafe { parent_style }
+	font_style := dom_style_value_from_value_logic(constant_longhand_value(.font_style))
+	parent.set_property(.font_style, font_style, .no, .no)
+	mut cascaded := longhand_reuse_cascade(parse_css_value(ParsingParams{}, '70px', .width) or { panic('width') })
+	computer.begin_computed_property_page_batch()
+	defer { computer.end_computed_property_page_batch() }
+	_ = computer.compute_properties(dom.AbstractElement.new(element, none), mut cascaded)
+	key := computer.computed_longhand_reuse_key(dom.AbstractElement.new(element, none), cascaded,
+		parent, false) or { panic('constant font parent') }
+	mut probe := computed_properties_with_initial_values()
+	assert computer.restore_computed_longhands(key, cascaded, mut probe)
+	mut box := unsafe { &TypedStyleValueBox(font_style.css_value_handle) }
+	mutate_constant_longhand_value(mut box.value)
+	assert !computer.restore_computed_longhands(key, cascaded, mut probe)
+	updated := computer.compute_properties(dom.AbstractElement.new(element, none), mut cascaded)
+	longhand_reuse_assert_oracle(updated, computer, element, mut cascaded)
+}
+
+fn test_constant_longhand_control_keeps_new_types_ineligible_including_lists() {
+	previous := computed_longhand_constant_mode
+	computed_longhand_constant_mode = 2
+	defer { computed_longhand_constant_mode = previous }
+	for id in [PropertyID.aspect_ratio, .font_style, .transition_duration] {
+		value := constant_longhand_value(id)
+		assert !computed_longhand_reuse_typed_value_is_simple(&value)
+		assert computed_longhand_reuse_typed_hash(&value) == none
+		list := StyleValue(StyleValueList.create([value], .comma, .yes))
+		assert !computed_longhand_reuse_typed_value_is_simple(&list)
+		assert computed_longhand_reuse_typed_hash(&list) == none
+	}
+}
+
+fn test_constant_font_snapshots_guard_angles_and_reject_malformed_storage() {
+	for field in 0 .. 4 {
+		original := StyleValue(FontStyleStyleValue.create(.oblique,
+			StyleValue(AngleStyleValue.create(Angle.new(14, .deg)))))
+		snapshot := computed_longhand_reuse_typed_snapshot(&original)
+		assert computed_longhand_reuse_typed_snapshot_matches(snapshot, &original)
+		mut changed := StyleValue(FontStyleStyleValue.create(.oblique,
+			StyleValue(AngleStyleValue.create(Angle.new(14, .deg)))))
+		if mut changed is FontStyleStyleValue {
+			changed.angle_value_ = match field {
+				0 { [StyleValue(AngleStyleValue.create(Angle.new(15, .deg)))] }
+				1 { [StyleValue(AngleStyleValue.create(Angle.new(14, .rad)))] }
+				2 { []StyleValue{} }
+				else { [StyleValue(AngleStyleValue.create(Angle.new(14, .deg))),
+					StyleValue(AngleStyleValue.create(Angle.new(14, .deg)))] }
+			}
+		}
+		assert !computed_longhand_reuse_typed_snapshot_matches(snapshot, &changed)
+		assert !computed_longhand_reuse_typed_value_is_simple(&changed)
+		assert computed_longhand_reuse_typed_hash(&changed) == none
+	}
+}
+
+fn test_constant_font_parent_guards_distinct_values_with_equal_serialization() {
+	computer, _, element, parent_style := longhand_reuse_fixture()
+	mut parent := unsafe { parent_style }
+	font_style := dom_style_value_from_value_logic(StyleValue(FontStyleStyleValue.create(.oblique,
+		StyleValue(AngleStyleValue.create(Angle.new(0, .deg))))))
+	parent.set_property(.font_style, font_style, .no, .no)
+	mut cascaded := longhand_reuse_cascade(parse_css_value(ParsingParams{}, '70px', .width) or { panic('width') })
+	computer.begin_computed_property_page_batch()
+	defer { computer.end_computed_property_page_batch() }
+	_ = computer.compute_properties(dom.AbstractElement.new(element, none), mut cascaded)
+	key := computer.computed_longhand_reuse_key(dom.AbstractElement.new(element, none), cascaded,
+		parent, false) or { panic('angled font parent') }
+	mut probe := computed_properties_with_initial_values()
+	assert computer.restore_computed_longhands(key, cascaded, mut probe)
+	mut box := unsafe { &TypedStyleValueBox(font_style.css_value_handle) }
+	normal := constant_longhand_value(.font_style)
+	assert box.value.serialize(.normal) == normal.serialize(.normal)
+	box.value = normal
+	assert !computer.restore_computed_longhands(key, cascaded, mut probe)
+	updated := computer.compute_properties(dom.AbstractElement.new(element, none), mut cascaded)
+	longhand_reuse_assert_oracle(updated, computer, element, mut cascaded)
+}
