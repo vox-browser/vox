@@ -478,6 +478,28 @@ fn computed_longhand_reuse_input_matches(input &ComputedLonghandReuseInput, valu
 	return computed_longhand_reuse_snapshot_matches(&input.snapshot, value)
 }
 
+struct ComputedLonghandCascadeKey {
+	count int
+	hash u64
+}
+
+fn computed_longhand_cascade_key(cascaded &CascadedProperties) ?ComputedLonghandCascadeKey {
+	mut count := 0
+	mut hash := u64(0)
+	for id, _ in cascaded.entry_heads_ {
+		if !computed_interpolation_is_longhand_property(id) { continue }
+		property := cascaded.style_property(id) or { continue }
+		count++
+		if !computed_longhand_reuse_property_is_simple(id, property.value) {
+			record_diagnostic_longhand_rejection(id, property.value)
+			return none
+		}
+		value_hash := computed_longhand_reuse_value_hash(property.value) or { return none }
+		hash ^= ((value_hash ^ (u64(id) * u64(0x9e3779b97f4a7c15))) * u64(0x100000001b3))
+	}
+	return ComputedLonghandCascadeKey{count:count, hash:hash}
+}
+
 fn (s &StyleComputer) computed_longhand_reuse_key(element dom.AbstractElement,
 	cascaded &CascadedProperties, inherited ?&ComputedProperties, recascaded_font bool) ?ComputedLonghandReuseKey {
 	if s.computed_property_page_batch_depth_ == 0 || recascaded_font
@@ -488,6 +510,13 @@ fn (s &StyleComputer) computed_longhand_reuse_key(element dom.AbstractElement,
 	parent := inherited or { return none }
 	if parent.property_store_ == unsafe { nil } || parent.has_animated_properties() {
 		return none
+	}
+	mut cascade_key := ComputedLonghandCascadeKey{}
+	if !disable_longhand_eligibility_first {
+		cascade_key = computed_longhand_cascade_key(cascaded) or {
+			report_longhand_eligibility_rejection()
+			return none
+		}
 	}
 	mut hash := u64(0x9e3779b97f4a7c15)
 	// Eligible cascades cannot explicitly inherit a non-inherited property or
@@ -504,19 +533,11 @@ fn (s &StyleComputer) computed_longhand_reuse_key(element dom.AbstractElement,
 		}
 		hash = (hash ^ value_hash) * u64(0x100000001b3)
 	}
-	mut count := 0
-	for id, _ in cascaded.entry_heads_ {
-		if !computed_interpolation_is_longhand_property(id) { continue }
-		property := cascaded.style_property(id) or { continue }
-		count++
-		if !computed_longhand_reuse_property_is_simple(id, property.value) {
-			record_diagnostic_longhand_rejection(id, property.value)
-			return none
-		}
-		// Commutative contribution: entry-head maps need not have equal order.
-		value_hash := computed_longhand_reuse_value_hash(property.value) or { return none }
-		hash ^= ((value_hash ^ (u64(id) * u64(0x9e3779b97f4a7c15))) * u64(0x100000001b3))
+	if disable_longhand_eligibility_first {
+		cascade_key = computed_longhand_cascade_key(cascaded) or { return none }
 	}
+	// Own contributions are XOR-combined, preserving the original key exactly.
+	hash ^= cascade_key.hash
 	for page in computed_initial_property_store.pages {
 		hash = (hash ^ u64(voidptr(page))) * u64(0x100000001b3)
 	}
@@ -528,7 +549,7 @@ fn (s &StyleComputer) computed_longhand_reuse_key(element dom.AbstractElement,
 		root_font_size:       s.root_element_font_metrics.font_size.to_double()
 		root_line_height:     s.root_element_font_metrics.line_height.to_double()
 		root_font_viewport:   s.root_element_font_metrics_depend_on_viewport_metrics
-		count:                count
+		count:                cascade_key.count
 		hash:                 hash
 	}
 }
