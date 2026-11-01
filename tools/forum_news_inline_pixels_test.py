@@ -54,6 +54,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_cnn_fractional_svg_background_uses_an_independent_picture(self):
         self.compare_fixture('cnn-fractional-svg-background', width=1024, height=768)
 
+    def test_cnn_ticker_keeps_its_picture_beside_an_offscreen_svg_background(self):
+        self.compare_fixture('cnn-ticker-offscreen-background', width=1024, height=768)
+
     def test_screen_blending_preserves_floating_point_group_opacity(self):
         self.compare_fixture('screen-opacity-composite')
 

@@ -29,8 +29,8 @@ fn chromium_compositor_gap_has_balanced_scopes(commands []layout.PaintCommand,
 	return scopes.len == 0
 }
 
-// Mirror draw_command's vertical shadow rejection before asking whether the
-// leaf can join a complete picture. No filter or resource scope is skipped.
+// Match ordinary native leaf culling and draw_command's shadow rejection
+// before requiring picture support. Resource and filter scopes stay intact.
 fn chromium_compositor_leaf_is_culled(command &layout.PaintCommand,
 	viewport layout.LayoutRect) bool {
 	if command.visual_layer_data != none || command.kind.starts_with('begin_')
@@ -38,6 +38,9 @@ fn chromium_compositor_leaf_is_culled(command &layout.PaintCommand,
 		return false
 	}
 	if command.has_clip && (command.clip_width <= 0 || command.clip_height <= 0) { return true }
+	if layout.paint_leaf_is_outside_canvas(command, 0, 0, viewport.width, viewport.height) {
+		return true
+	}
 	if command.kind !in ['paint_outer_box_shadow', 'paint_inner_box_shadow', 'draw_text_shadow'] {
 		return false
 	}

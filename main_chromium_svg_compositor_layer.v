@@ -166,12 +166,12 @@ fn chromium_svg_compositor_layer_supported_for_viewport(commands []layout.PaintC
 			}
 			'paint_outer_box_shadow' {
 				supported,_ := chromium_shared_recording_leaf_supported(command)
-				if !supported { return false }
+				if !supported { return chromium_svg_compositor_layer_declined(index,command_index,'unrecorded leaf',command.kind) }
 				has_svg = true
 			}
 			'paint_inner_box_shadow' {
 				supported, _ := chromium_shared_recording_leaf_supported(command)
-				if !supported { return false }
+				if !supported { return chromium_svg_compositor_layer_declined(index,command_index,'unrecorded leaf',command.kind) }
 			}
 			'begin_css_effect_layer' {
 				identity_end := chromium_svg_identity_scope_end(commands,plan.command_layers,command_index)
@@ -181,7 +181,7 @@ fn chromium_svg_compositor_layer_supported_for_viewport(commands []layout.PaintC
 				has_svg = true
 			}
 			'end_css_effect_layer' {
-				if identity_scope_ends.len == 0 || identity_scope_ends.last() != command_index { return false }
+				if identity_scope_ends.len == 0 || identity_scope_ends.last() != command_index { return chromium_svg_compositor_layer_declined(index,command_index,'unbalanced effect',command.kind) }
 				identity_scope_ends.delete_last()
 			}
 			'draw_svg_path' {
@@ -196,7 +196,7 @@ fn chromium_svg_compositor_layer_supported_for_viewport(commands []layout.PaintC
 			}
 			'draw_replaced_image', 'draw_svg_image', 'draw_background_image' {
 				supported, _ := chromium_shared_recording_leaf_supported(command)
-				if !supported { return false }
+				if !supported { return chromium_svg_compositor_layer_declined(index,command_index,'unrecorded leaf',command.kind) }
 			}
 			'fill_rect', 'fill_rounded_rect', 'paint_uniform_border' {
 				has_svg = has_svg || chromium_contoured_box_supported(command)

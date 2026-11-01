@@ -2,6 +2,7 @@ module main
 
 import layout
 import math
+import css
 
 fn test_compositor_shadow_rejection_includes_the_native_blur_margin_and_fringe() {
 	viewport := layout.LayoutRect{0, 0, 1024, 768}
@@ -61,4 +62,50 @@ fn test_completed_parent_prefix_keeps_unknown_child_filters_in_their_original_or
 	changed = commands.clone()
 	changed[4] = layout.PaintCommand{ kind: 'end_svg_mask_layer', visual_layer_data: filter }
 	assert !chromium_compositor_gap_can_flush_parent(changed, plan, 1, 2, 5, viewport)
+}
+
+fn test_culled_unsupported_background_does_not_disable_visible_gradient_picture() {
+	gradient := layout.PaintCommand{
+		kind:                      'fill_gradient'
+		width:                     56
+		height:                    23
+		gradient_background_layer: true
+		image_data:                &layout.PaintImageData{ image_clip_width: 56, image_clip_height: 23 }
+		gradient:                  &layout.LinearGradient{
+			kind:  'linear'
+			x2:    1
+			stops: [
+				layout.GradientStop{css.Color{255, 255, 255, 255}, 0},
+				layout.GradientStop{css.Color{255, 255, 255, 0}, 1},
+			]
+		}
+	}
+	background := layout.PaintCommand{
+		kind:       'draw_background_image'
+		y:          4000
+		width:      100
+		height:     20
+		image_data: &layout.PaintImageData{
+			image_url:         'https://example.test/unloaded.svg'
+			image_clip_y:      4000
+			image_clip_width:  100
+			image_clip_height: 20
+		}
+	}
+	commands := [gradient, background]
+	plan := layout.ChromiumRasterLayerPlan{
+		has_paint_metadata: true
+		layers:             [layout.ChromiumRasterLayer{}, layout.ChromiumRasterLayer{
+			composited_contents: true
+			command_indices:     [0, 1]
+		}]
+		command_layers:     [1, 1]
+	}
+	viewport := layout.LayoutRect{0, 0, 1024, 768}
+	assert !chromium_svg_compositor_layer_supported(commands, plan, 1)
+	assert chromium_compositor_leaf_is_culled(&background, viewport)
+	assert chromium_svg_compositor_layer_supported_for_viewport(commands, plan, 1, viewport)
+	moved := layout.PaintCommand{ ...background, transform: [f64(1), 0, 0, 1, 0, -4000]! }
+	assert !chromium_compositor_leaf_is_culled(&moved, viewport)
+	assert !chromium_svg_compositor_layer_supported_for_viewport([gradient, moved], plan, 1, viewport)
 }
