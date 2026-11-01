@@ -198,6 +198,11 @@ pub fn (mut cache RuleCache) add_rule(matching_rule &MatchingRule, pseudo_elemen
 		return
 	}
 	last_compound_selector := compound_selectors[compound_selectors.len - 1]
+	if attribute_name := style_scope_attribute_before_tag_bucket(last_compound_selector) {
+		style_scope_push_rule(mut cache.rules_by_attribute_name, attribute_name, matching_rule)
+		record_attribute_before_tag_bucket(matching_rule.selector)
+		return
+	}
 
 	// NOTE: We traverse the simple selectors in reverse order to make sure that
 	// class/ID buckets are preferred over tag buckets in the common case of
