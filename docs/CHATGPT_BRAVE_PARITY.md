@@ -2,12 +2,15 @@
 
 The macOS production browser starts the archived logged-out ChatGPT
 application and matches the unchanged Brave reference **pixel for pixel at
-1024×768, scale 1**. An actual conversation and current live-site parity remain
-unverified; the downloaded document's signed conversation token has expired.
+1024×768, scale 1**. The approved refreshed frontend also matches that reference
+exactly. Both Send and Enter receive the real reply “Vox ready.” in native Vox
+without native or module-script errors. Pixel equality of the live conversation
+remains open; the original document's expired token is retained separately.
 
 The latest unchanged-original-archive capture has **zero differing pixels out
-of 786,432**, maximum channel error 0 and MAE 0. Startup, native typing and Enter
-are validated. The recorded 60-second idle check peaks at 2,054,422,528 bytes,
+of 786,432**, maximum channel error 0 and MAE 0. Startup and native typing
+are validated; keyboard dispatch alone does not establish submission. The
+recorded 60-second idle check peaks at 2,054,422,528 bytes,
 within the 12 GiB guard. This result is specific to the pinned production build
 and archived page described below.
 
@@ -854,11 +857,10 @@ to Vox's native transport. Evidence is
 `Build/chatgpt-shadow-modules-20261031/live-api-20261101-editor-diagnostic/`;
 the guarded peak is 2,387,869,696 bytes and the browser/guard exit zero.
 
-A fresh homepage response is required to obtain a current signed document
-affinity before a real service reply can be validated. That requires an
-explicit exception to this task's download-once constraint. Original archive
-rendering and engine checks can continue without replacing its HTML or
-changing its pixel reference.
+At that checkpoint a fresh homepage response required an explicit exception
+to this task's download-once constraint. The user subsequently authorized
+“Fetch fresh session once”; the continuation below records that single fetch.
+The original HTML and its pixel reference remain unchanged.
 
 
 ## Rounded backgrounds beneath invisible borders (2026-11-01)
@@ -940,3 +942,202 @@ The earlier `rounded-background-20261101-probe/` interposition experiment exits
 before startup with a dynamic-linker symbol error. It supplies no rendering
 credit. The successful native-library diagnostic and the final complete
 production captures remain distinct from that failed launch.
+
+
+## Approved fresh session and native form events (2026-11-02 local time)
+
+Private evidence is in `Build/chatgpt-fresh-session-20261101/`. The three
+download ledgers record **one** fresh homepage GET through
+`socks5h://127.0.0.1:1337`, and 228 new asset attempts with no repeated static
+URLs. The refreshed HTML SHA256 is
+`d0b3728cb686e0b8daa56463be1e5a5da96551073f3e0af585953779cf402547`.
+Every later homepage navigation uses these cached bytes. The initial 129-asset
+limit left modules missing; the next capture completed startup but blocked a
+connectivity probe. Both failed attempts remain retained.
+
+`brave-fresh-connectivity/` subsequently reaches `homeReady=1`, submits
+“Reply with exactly: Vox ready.” and displays the real response “Vox ready.”
+at a conversation URL. Its conversation updates return HTTP 200. This uses
+the cached refreshed frontend with live backend requests through Brave's
+native TLS and SOCKS. Cookies belong to its fresh private guest profile;
+cookie and signed-token values remain outside Git.
+
+The initial `fresh-live-archive/` lacks two attempted response bodies:
+`conversation-source-dil.worker-jdREWLSm.js` and
+`dil-catalog-names-D8rdU_EF.js`. Both were subsequently recovered from the
+original private Brave HTTP cache, validating its SimpleCache CRC32 and
+decoding Brotli locally. `http-cache-recovery.json` records zero network
+fetches. `fresh-recovered-archive/` now has 598 hash-verified responses; the
+earlier archive and its missing-body ledger remain intact. This recovery
+does not establish a closed live resource graph.
+`fresh-session-summary.json` preserves both the download totals and recovery.
+Native checks seed the available response cache, replay the sole homepage
+locally, and tunnel later ChatGPT connections through SOCKS without terminating
+their upstream TLS. Encrypted connection counters do not establish which
+uncached subresources were downloaded.
+
+The refreshed frontend exposed three engine defects:
+
+- `ca3a0862` exposes `compareDocumentPosition` on `Node.prototype` and resolves
+  its receiver and argument to their actual DOM nodes. The absent method
+  previously stopped module startup. Live ordering, containment, reparenting,
+  detached nodes, interface branding and invalid calls pass six focused test
+  executions across default, no-GC and preallocated modes. The new native
+  pixel fixture changes from all-red to exact green. The pinned executable
+  SHA256 is `a3090be3949360c1c114f55d511bb4ce4cb61691459449d2d32c595c0c65a6c7`;
+  `node-position-validation-owned-build/results.json` records nine passing
+  groups, including the unchanged original homepage at zero differing pixels,
+  eleven screenshot smoke cases and ten exact SVG mutation guards.
+- `dcfd6116` publishes disabled-attribute changes before native activation
+  reads them. Without an active mutation observer, reflected-property and
+  attribute writes previously waited for a later frame. Native click defaults
+  now see enabling and disabling performed by the click listener. Three
+  focused functions pass in all three memory modes, nine executions total,
+  with stable inputs in `disabled-checks-3/`. The original failing assertion
+  remains in `disabled-baseline/`.
+- `91a7b133` routes editing and form listeners on compact elements and the
+  document through native EventTarget dispatch. Form-level submit handlers
+  previously stayed in the legacy callback list and missed native submission.
+  Capture, cancellation, removal, once listeners, non-bubbling invalid events
+  and an actual button-triggered submission pass six focused executions across
+  the three memory modes, with stable inputs in `form-event-checks-2/`.
+
+The production build containing both form fixes is pinned in
+`form-events-production/Vox.app`, executable SHA256
+`540e7144a515c0b5d576fc2fd11d4d853bb2241f5ae477e821dec85e1648946b`.
+Its before/after source snapshots are identical and its 12 GiB guard exits zero,
+with a sampled peak of 9,118,695,424 bytes. Earlier diagnostic pages added
+observers and are retained separately; they do not supply unmodified-page
+rendering or conversation acceptance.
+
+`form-events-validation/results.json` records nine passing groups on that
+stable pinned bundle: the Node fixture, eleven screenshot smoke cases, ten
+exact SVG mutation guards, compact modules, decorated text, focused controls,
+headless startup, the original full-page capture and its zero-pixel assessment.
+The smoke cases retain their existing eight exact results and three allowances.
+Screenshot drivers use the pinned executable directly, so another session can
+replace the canonical bundle without changing these captures.
+
+The unmodified refreshed homepage in `vox-fresh-homepage-form-events/` also
+starts without native script errors. Its first comparison against the earlier
+live Brave capture differs at 12,425 pixels (maximum 227, MAE 0.563493).
+That Brave launcher omitted `--force-device-scale-factor=1`: a CDP viewport
+override leaves rasterization dependent on native display scale. This is an
+unmatched capture, retained without engine-regression or optimization credit.
+
+`brave-fresh-replay-audit/` and `brave-fresh-replay-reference/` repeat the
+refreshed frontend at matched 1024×768 and scale 1, with the native scale pinned
+as well. Both Brave captures match each other and Vox at **zero differing
+pixels**, maximum channel error 0 and MAE 0. The reference has complete
+readiness, `homeReady=1` and loaded fonts; its PNG SHA256 is again
+`59c9c9d12efe7410712f6edf1d4f82db9d79d3d219afd2914796aec2b1366095`,
+identical to the unchanged original reference. No rendering implementation,
+expected pixels, regions or tolerances changed to obtain this matched result.
+The original live capture remains separate. This is a downloaded-frontend
+comparison; live API behavior is validated independently.
+
+Submitting on the unmodified page with both form fixes reaches its submit
+handlers and clears the draft, but the application then displays an error.
+`vox-form-events-live-click/` retains this failure without conversation credit.
+`vox-submit-stack-diagnostic/` opens the site's own error panel and identifies
+the absent `parentNode.replaceChild()` used for the page transition. A separate
+native reported `e.set` error is retained too.
+
+`ebe2053c` binds `Node.prototype.replaceChild()` to the native replacement
+algorithm. Return identity, sibling moves, empty and populated fragments,
+live collections, detached parents, cross-document adoption, branding and
+hierarchy failures pass nine focused executions in the three memory modes,
+with stable inputs in `replace-child-checks-2/`. The query dispatch was
+incorporated in the intervening shared `7cdf5fdd` commit; existing history is
+preserved. `replace-child-validation/results.json` records the nine passing
+production groups, including the unchanged original homepage at zero pixels.
+
+## Live native Send and remaining conversation parity
+
+Further fresh-session fixes are committed separately:
+
+- `f1ace039` exposes the native `FormDataEvent.formData` entry list to page
+  scripts. This resolves the submit handler's `e.set` failure and preserves
+  mutations and native File identity. Six focused executions and 34 adjacent
+  HTML, XHR and JavaScript binding executions pass in
+  `form-data-event-checks-2/` and `form-data-event-boundaries/`.
+- `0a2f92c71` exposes native `ErrorEvent` constructors and payloads, including
+  dictionary conversion, UTF-16 strings, native branding and error identity.
+  Nine focused and 24 adjacent event-handler executions pass in
+  `error-event-checks-4/` and `error-event-boundaries-final/`. The missing
+  constructor previously obscured module-loading failures.
+- `801af00ae` lets native Fetch transports reuse existing public, immutable,
+  fresh script-cache responses. Module loading previously bypassed the seeded
+  browser resource cache and could fail a new TLS fetch for an already saved
+  module. Responses still pass through Fetch/CORS policy; authorization,
+  private responses, unsupported variants and non-script/API destinations are
+  excluded. Nine focused and ten transport-boundary executions pass in
+  `script-cache-checks-3/` and `script-cache-boundaries/`.
+
+The latest selected completed production is pinned in
+`script-cache-selected-production/Vox.app`, executable SHA256
+`4e6ade6f94b27fac5b2a51561742a7025a8beaa2ab699c99704785f58ace3cb3`.
+It reuses the successful shared inline-measurement build, with matching
+before/after hashes for the script-cache implementation and a verified
+initializer in the executable. Two own build requests encountered the busy
+production guard and did not queue. `script-cache-validation/results.json`
+records all nine production groups passing, preserving the original homepage,
+eleven smoke cases with existing allowances and ten exact SVG mutation checks.
+
+`vox-script-cache-live-click/` uses the unmodified refreshed homepage, a fresh
+private Vox process/profile and imported guest cookies. Only static resources
+are seeded; backend responses are excluded. Native AppKit input types
+“Reply with exactly: Vox ready.” and activates Send. The page navigates to a
+real conversation and displays “Vox ready.” Both `native_reported_errors` and
+`javascript_diagnostics` are empty, and executable/library identities remain
+stable. Backend traffic uses native TLS through SOCKS, rather than replaying
+the captured conversation response.
+
+The matched-scale live Brave capture in
+`brave-conversation-live-cached-workers/` also displays the exact prompt and
+reply, using the saved frontend, the original private worker HTTP cache and
+live backend requests. No additional parent-target static download is allowed.
+This live comparison differs at 1,520 pixels, maximum channel error 239 and
+MAE 0.162840. Native Vox renders a different reply DOM with default paragraph
+margins, shifting its text by 12 pixels and its actions by 24 pixels. Rendering
+Brave's saved conversation DOM in Vox instead matches the unchanged live Brave
+PNG at **zero differing pixels** in `conversation-frozen-layout-2/`. The
+separate Brave replay of that frozen DOM differs from its live capture at 27
+user-bubble edge pixels; that discrepancy is retained. Neither frozen result
+supplies acceptance for the live application's different DOM.
+
+`vox-script-cache-live-enter/` retains the earlier failed Enter case: the full
+draft remains in the editor, no messages appear, and both error collections
+are empty. `982077b92` connects the missing JavaScript
+`HTMLFormElement.requestSubmit()` to native form validation and submission.
+It also synchronizes button form-attribute changes and initializes an inserted
+submitter's absent owner. Native cancellation, constraint validation,
+`formnovalidate`, receiver and submitter branding, ownership exceptions,
+reassociation, created buttons and image submitters pass nine focused
+executions across the three memory modes in `request-submit-checks-5/`.
+
+The resulting production is pinned in `request-submit-production/Vox.app`,
+executable SHA256
+`9e4ea3c77ca40c7713b8f19b67c40e8bb0671f3eb571cb19dec182ab8fcf9bd5`.
+Its owned implementation hashes are stable before and after the successful
+12 GiB build; unrelated shared inputs changed and are listed in its receipt.
+The sampled peak RSS is 9,150,840,832 bytes.
+`vox-request-submit-live-enter/conversation-assessment.json` verifies the
+unmodified refreshed page: native AppKit input types the full prompt and
+presses Enter, a real conversation receives “Vox ready.”, and both error
+collections remain empty. Backend responses are excluded from the seeded
+cache, the homepage hash is unchanged, and executable/library identities
+remain stable. The live conversation still differs at 1,520 pixels from the
+same Brave reference. `request-submit-validation/results.json` records all
+ten groups passing: the live Enter reply, the retained Node fixture, eleven
+smoke cases with unchanged allowances, ten exact SVG mutations, compact
+modules, decorated text, focused controls, headless startup, the original
+homepage and its zero-pixel assessment. Every group retains its command,
+actual exits and stable executable/library identity.
+
+The worker runtime explicitly rejects module workers, but a late observer in
+`vox-worker-diagnostic-hidden/` sees no worker creation before the fallback.
+That observer is diagnostic only and does not establish the fallback's cause.
+The earlier style-based observer crashed and is retained without acceptance
+credit in `vox-worker-diagnostic/`. Request-path differences are being checked;
+no full live-conversation parity claim is made yet.
