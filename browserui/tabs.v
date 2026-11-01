@@ -8,8 +8,61 @@ pub:
 	title    string
 	icon     string
 	x        f64
-	width    f64
+	width    f64 // distance between tab origins; shoulders overlap by 10px
 	selected bool
+	dragging bool
+}
+
+fn tab_cubic(mut points []ui2.VectorPoint, c1 ui2.VectorPoint, c2 ui2.VectorPoint, end ui2.VectorPoint) {
+	start := points.last()
+	for i in 1 .. 17 {
+		t := f64(i) / 16
+		u := 1 - t
+		points << ui2.VectorPoint{
+			x: u * u * u * start.x + 3 * u * u * t * c1.x + 3 * u * t * t * c2.x + t * t * t * end.x
+			y: u * u * u * start.y + 3 * u * u * t * c1.y + 3 * u * t * t * c2.y + t * t * t * end.y
+		}
+	}
+}
+
+// The previous silhouette, with smooth shoulder tangents and a half-pixel
+// inset for its 1px outline. The same contour reaches both UI2 backends.
+fn classic_tab_outline(width f64) []ui2.VectorPoint {
+	mut points := [ui2.VectorPoint{ x: 0.5, y: 23.5 }]
+	tab_cubic(mut points, ui2.VectorPoint{ x: 5.5, y: 23.5 }, ui2.VectorPoint{ x: 10.5, y: 7.5 }, ui2.VectorPoint{ x: 11.5, y: 4.5 })
+	tab_cubic(mut points, ui2.VectorPoint{ x: 12.5, y: 1.5 }, ui2.VectorPoint{ x: 13.5, y: 0.5 }, ui2.VectorPoint{ x: 16.5, y: 0.5 })
+	points << ui2.VectorPoint{ x: width - 16.5, y: 0.5 }
+	tab_cubic(mut points, ui2.VectorPoint{ x: width - 13.5, y: 0.5 }, ui2.VectorPoint{ x: width - 12.5, y: 1.5 }, ui2.VectorPoint{ x: width - 11.5, y: 4.5 })
+	tab_cubic(mut points, ui2.VectorPoint{ x: width - 10.5, y: 7.5 }, ui2.VectorPoint{ x: width - 5.5, y: 23.5 }, ui2.VectorPoint{ x: width - 0.5, y: 23.5 })
+	return points
+}
+
+fn tab_fallback_icon(tab Tab) ui2.Element {
+	if tab.title == 'Apps' {
+		mut squares := []ui2.Element{}
+		for row in 0 .. 3 {
+			for col in 0 .. 3 {
+				squares << ui2.view('tab-app-square-${tab.index}-${row}-${col}', ui2.rect(2 + col * 4, 3 + row * 4, 3, 3), ui2.BoxStyle{
+					bg: [
+						u32(0xe85447),
+						0xf5b838,
+						0x47a873,
+					][(row + col) % 3]
+				}, [])
+			}
+		}
+		return ui2.view('tab-icon-${tab.index}', ui2.rect(12, 4, 16, 16), ui2.BoxStyle{ transparent: true }, squares)
+	}
+	return ui2.Element{
+		...ui2.view('tab-icon-${tab.index}', ui2.rect(14, 7, 9, 11), ui2.BoxStyle{ transparent: true }, [])
+		vector: ui2.VectorPath{
+			points:       [ui2.VectorPoint{ x: 0.5, y: 0.5 }, ui2.VectorPoint{ x: 8.5, y: 0.5 },
+				ui2.VectorPoint{ x: 8.5, y: 10.5 }, ui2.VectorPoint{ x: 0.5, y: 10.5 }]
+			fill_enabled: false
+			stroke:       0x808080
+			stroke_width: 1
+		}
+	}
 }
 
 pub fn tab_strip(width f64, tabs []Tab, new_x f64) ui2.Element {
@@ -22,20 +75,38 @@ pub fn tab_strip(width f64, tabs []Tab, new_x f64) ui2.Element {
 			accessibility_label: '${action} window'
 		}
 	}
+	mut inactive := []ui2.Element{}
+	mut selected := []ui2.Element{}
+	mut dragged := []ui2.Element{}
 	for tab in tabs {
+		paint_width := tab.width + 10
 		mut content := []ui2.Element{}
-		if tab.icon != '' {
-			content << ui2.image('tab-icon-${tab.index}', tab.icon, ui2.rect(10, 4, 16, 16))
+		content << if tab.icon != '' {
+			ui2.image('tab-icon-${tab.index}', tab.icon, ui2.rect(12, 4, 16, 16))
+		} else {
+			tab_fallback_icon(tab)
 		}
-		content << ui2.label('tab-title-${tab.index}', tab.title, ui2.rect(30, 2, tab.width - 56, 22), ui2.TextStyle{ size: 11 })
+		content << ui2.label('tab-title-${tab.index}', tab.title, ui2.rect(30, 3, paint_width - 56, 18), ui2.TextStyle{ size: 11, color: 0x383838, valign: .top })
 		content << ui2.Element{
-			...ui2.button('tab-close:${tab.index}', '×', ui2.rect(tab.width - 26, 3, 20, 20), ui2.BoxStyle{ transparent: true }, ui2.TextStyle{ size: 14 })
+			...ui2.button('tab-close:${tab.index}', '×', ui2.rect(tab.width - 16, 3, 16, 16), ui2.BoxStyle{ transparent: true }, ui2.TextStyle{ size: 11, color: 0x666666 })
 			tooltip:             'Close ${tab.title}'
 			accessibility_label: 'Close ${tab.title}'
 		}
-		children << ui2.Element{
-			...ui2.view('tab-${tab.index}', ui2.rect(tab.x, 5, tab.width, 24),
-				ui2.BoxStyle{ bg: if tab.selected { u32(0xf7f7f7) } else { u32(0xd2d2d2) }, radius: 8 }, content)
+		if tab.selected {
+			content << ui2.view('tab-seam-${tab.index}', ui2.rect(1, 23, paint_width - 2, 1), ui2.BoxStyle{ bg: 0xf7f7f7 }, [])
+		}
+		element := ui2.Element{
+			...ui2.view('tab-${tab.index}', ui2.rect(tab.x, 5, paint_width, 24), ui2.BoxStyle{ transparent: true }, content)
+			vector:              ui2.VectorPath{
+				points:       classic_tab_outline(paint_width)
+				fill:         if tab.selected {
+					u32(0xf7f7f7)
+				} else {
+					u32(0xd4d4d4)
+				}
+				stroke:       0xadadad
+				stroke_width: 1
+			}
 			key:                 'tab-${tab.index}'
 			action_id:           'tabdrag-${tab.index}'
 			clickable:           true
@@ -45,14 +116,33 @@ pub fn tab_strip(width f64, tabs []Tab, new_x f64) ui2.Element {
 			accessibility_label: tab.title
 			accessibility_value: if tab.selected { 'selected' } else { '' }
 		}
+		if tab.dragging {
+			dragged << element
+		} else if tab.selected {
+			selected << element
+		} else {
+			inactive << element
+		}
 	}
+	// Earlier inactive tabs overlap later ones. The selected tab, and then a
+	// dragged tab, paint above their neighbors rather than becoming pill buttons.
+	children << inactive.reverse()
+	children << selected
+	children << dragged
 	children << ui2.Element{
-		...ui2.button('tab-new', '+', ui2.rect(new_x, 7, 28, 20), ui2.BoxStyle{ transparent: true }, ui2.TextStyle{ size: 16 })
+		...ui2.button('tab-new', '', ui2.rect(new_x, 11, 28, 14), ui2.BoxStyle{ transparent: true }, ui2.TextStyle{})
+		vector:              ui2.VectorPath{
+			points:       [ui2.VectorPoint{ x: 4.5, y: 0.5 }, ui2.VectorPoint{ x: 19.5, y: 0.5 },
+				ui2.VectorPoint{ x: 26.5, y: 13.5 }, ui2.VectorPoint{ x: 0.5, y: 13.5 }]
+			fill:         0xd4d4d4
+			stroke:       0xadadad
+			stroke_width: 1
+		}
 		tooltip:             'New tab'
 		accessibility_label: 'New tab'
 	}
 	return ui2.Element{
-		...ui2.view('tab-strip', ui2.rect(0, 0, width, 29), ui2.BoxStyle{ bg: 0xdbdbdb }, children)
+		...ui2.view('tab-strip', ui2.rect(0, 0, width, 29), ui2.BoxStyle{ bg: 0xdbdbdb, border_bottom: 1, border_color: 0xadadad }, children)
 		accessibility_role: 'tab_list'
 		action_id:          'window-drag'
 		clickable:          true

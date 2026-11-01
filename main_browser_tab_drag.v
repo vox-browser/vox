@@ -15,6 +15,12 @@ fn (app &BrowserApp) browser_tab_index(tab &BrowserApp) int {
 // Capture the whole gesture before page pointer dispatch, including a release
 // over the document. GG delivers its separate click callback after mouse-down.
 fn (mut app BrowserApp) handle_browser_tab_drag(event &gg.Event, width int) bool {
+	return app.handle_browser_tab_drag_target(event, width, -1)
+}
+
+// UI2 has already picked the visible surface. Overlapping shoulders must keep
+// that tab identity instead of inferring a neighboring slot from the x position.
+fn (mut app BrowserApp) handle_browser_tab_drag_target(event &gg.Event, width int, pressed_index int) bool {
 	if event.typ == .mouse_down && event.mouse_button == .left && app.tabs != unsafe { nil } {
 		app.tabs.drag = none
 	}
@@ -23,11 +29,11 @@ fn (mut app BrowserApp) handle_browser_tab_drag(event &gg.Event, width int) bool
 		app.initialize_browser_tabs()
 		first, end := browser_visible_tabs(width, app.browser_tab_count(), app.browser_selected_tab())
 		tab_width := browser_tab_width(width, end - first)
-		index := first + int(math.floor((f64(event.mouse_x) - tab_strip_leading_width) / tab_width))
+		index := if pressed_index >= 0 { pressed_index } else { first + int(math.floor((f64(event.mouse_x) - tab_strip_leading_width) / tab_width)) }
 		if index < first || index >= end { return false }
 		left := tab_strip_leading_width + f64(index - first) * tab_width
 		// Leave the close button's existing click action alone.
-		if event.mouse_x >= left + tab_width - 30 { return false }
+		if pressed_index < 0 && event.mouse_x >= left + tab_width - 16 { return false }
 		app.tabs.drag = BrowserTabDrag{
 			process_id: if app.process_tabs() {
 				app.tabs.session.state.tabs[index].id.clone()

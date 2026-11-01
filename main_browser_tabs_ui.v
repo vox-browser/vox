@@ -35,7 +35,7 @@ fn (app &BrowserApp) browser_tab_strip(chrome BrowserChromeState) ui2.Element {
 				}
 			}
 		}
-		item := browserui.Tab{ index: index, title: chrome.tab_titles[index], icon: app.browser_tab_icon_path(index, chrome), x: x, width: width, selected: index == chrome.selected_tab }
+		item := browserui.Tab{ index: index, title: chrome.tab_titles[index], icon: app.browser_tab_icon_path(index, chrome), x: x, width: width, selected: index == chrome.selected_tab, dragging: moving }
 		if moving { dragged << item } else { tabs << item }
 	}
 	tabs << dragged

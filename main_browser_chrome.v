@@ -82,7 +82,7 @@ fn (mut app BrowserApp) toggle_browser_debug() {
 fn (app &BrowserApp) browser_chrome_snapshot_path(resource_url string) string {
 	// Keep previous chrome layouts and debug-only diagnostics out of normal
 	// startup snapshots, while retaining the shared snapshots cache directory.
-	return cached_snapshot_path('${resource_url}\nui2-chrome-v5:${app.chrome_debug}:${app.browser_tab_snapshot_key()}:zoom=${app.page_zoom}:bookmarks=${app.bookmark_bar_visible()}:${if app.bookmarks != unsafe { nil } {
+	return cached_snapshot_path('${resource_url}\nui2-classic-chrome-v6:${app.chrome_debug}:${app.browser_tab_snapshot_key()}:zoom=${app.page_zoom}:bookmarks=${app.bookmark_bar_visible()}:${if app.bookmarks != unsafe { nil } {
 		app.bookmarks.version
 	} else {
 		u64(0)

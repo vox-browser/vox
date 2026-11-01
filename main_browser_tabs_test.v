@@ -139,7 +139,7 @@ fn test_tab_drag_threshold_close_button_and_cancellation() {
 	assert !app.tabs.drag?.moving
 	assert browser_tabs_test_pointer(mut app, .mouse_up, 102, 15)
 	assert app.tabs.selected == 0
-	assert !browser_tabs_test_pointer(mut app, .mouse_down, 225, 15) // Close button.
+	assert !browser_tabs_test_pointer(mut app, .mouse_down, 236, 15) // Restored 16px close button.
 	assert !browser_tabs_test_pointer(mut app, .mouse_down, 455, 15) // New tab.
 	assert !browser_tabs_test_pointer(mut app, .mouse_down, 100, 100)
 	assert browser_tabs_test_pointer(mut app, .mouse_down, 100, 15)
@@ -675,4 +675,20 @@ $if vox_ui2 ? {
 		app.poll_detached_tab_windows()
 		assert app.tabs.pages.len == 1
 	}
+}
+
+fn test_overlapping_tab_shoulders_keep_the_identity_hit_by_ui2() {
+	mut app := browser_tabs_test_app()
+	defer { browser_tabs_test_cleanup(mut app) }
+	app.activate_tab_chrome('tab-new')
+	// Tab 0's visible foot extends into slot 1. UI2 selected tab 0's surface.
+	assert app.handle_browser_tab_drag_target(&gg.Event{typ: .mouse_down, mouse_button: .left, mouse_x: 251, mouse_y: 27}, 800, 0)
+	assert app.tabs.selected == 0
+	assert app.handle_browser_tab_drag_target(&gg.Event{typ: .mouse_up, mouse_button: .left, mouse_x: 251, mouse_y: 27}, 800, 0)
+	assert app.tabs.selected == 0
+	// Restoring the smaller close button must not leave a dead area beside it.
+	app.select_browser_tab(1)
+	assert app.handle_browser_tab_drag_target(&gg.Event{typ: .mouse_down, mouse_button: .left, mouse_x: 220, mouse_y: 15}, 800, 0)
+	assert app.tabs.selected == 0
+	assert app.handle_browser_tab_drag_target(&gg.Event{typ: .mouse_up, mouse_button: .left, mouse_x: 220, mouse_y: 15}, 800, 0)
 }

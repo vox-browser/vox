@@ -75,6 +75,10 @@ def main():
                 "if !(st.pointer_buttons[pointer] or { false }) || voidptr(st.event_handler) == unsafe { nil } {",
                 "if (!(st.pointer_buttons[pointer] or { false }) && !(st.pointer_draggable[pointer] or { false })) || voidptr(st.event_handler) == unsafe { nil } {",
             )
+            text = text.replace(
+                "\tapply_common_native_state(native, el)\n\treturn native",
+                "\tapply_common_native_state(native, el)\n\tapply_embedded_vector_path(native, el)\n\treturn native",
+            )
             # A native-styled transparent button is flat at rest. Let UI2's
             # backend supply the hover/pressed bezel, without browser subclasses.
             text = text.replace(
@@ -103,6 +107,9 @@ def main():
                 "\t\t'menu_item' { macos.nsstring('AXMenuItem') }\n"
                 "\t\t'group' { macos.nsstring('AXGroup') }",
             )
+            # UI2 and its custom renderer interpret packed colors as sRGB.
+            # Calibrated RGB lightens the classic gray chrome on modern displays.
+            text = text.replace("'colorWithCalibratedRed:green:blue:alpha:'", "'colorWithSRGBRed:green:blue:alpha:'")
             write_if_changed(output, text)
         else:
             link_to(output, entry)
@@ -114,7 +121,7 @@ def main():
     ui.mkdir(exist_ok=True)
     for entry in (source / "ui").iterdir():
         output = ui / entry.name
-        if entry.name in {"chart.v", "ui_immediate.c.v"}:
+        if entry.name in {"chart.v", "ui_immediate.c.v", "ui.v"}:
             if output.is_symlink():
                 output.unlink()
             text = entry.read_text()
@@ -122,6 +129,12 @@ def main():
             text = text.replace("math.max(48, f64(", "math.max(48.0, f64(")
             text = text.replace("math.max(0, r * r", "math.max(0.0, r * r")
             text = text.replace("if el.enabled && !el.readonly {", "if el.enabled {")
+            if entry.name == "ui.v":
+                text = text.replace("pub struct Element {\npub:", "pub struct Element {\npub:\n\tvector VectorPath")
+            if entry.name == "ui_immediate.c.v":
+                text = text.replace("\t\tarea := element_area(ctx, el, off_x, off_y)",
+                    "\t\tarea := element_area(ctx, el, off_x, off_y)\n"
+                    "\t\tdraw_embedded_vector_path(ctx, el.vector, off_x + el.frame.x, off_y + el.frame.y)")
             # Transparent buttons are used as dismiss targets over documents.
             text = text.replace(
                 "\t\t\t\t} else {\n\t\t\t\t\tdraw_rect(ctx, x, y, el.frame.width, el.frame.height, el.box.bg, el.box.radius)",
@@ -163,7 +176,7 @@ def main():
     adapter.mkdir(exist_ok=True)
     # Remove the previous single-control adapter when refreshing an old stage.
     (adapter / "embedded_textbox_darwin.v").unlink(missing_ok=True)
-    for name in ("embedded_browser_darwin.v", "embedded_elements_custom.c.v", "embedded_input_darwin.v", "embedded_input_darwin.h", "embedded_panel_darwin.v", "embedded_host_linux.v", "embedded_host_linux.h"):
+    for name in ("embedded_browser_darwin.v", "embedded_elements_custom.c.v", "embedded_input_darwin.v", "embedded_input_darwin.h", "embedded_panel_darwin.v", "embedded_host_linux.v", "embedded_host_linux.h", "vector_path.v", "vector_path_darwin.v", "vector_path_darwin.h", "vector_path_custom.c.v"):
         write_if_changed(adapter / name, (repo / "tools/ui2" / name).read_text())
     write_if_changed(
         target / "v.mod",

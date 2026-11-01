@@ -119,7 +119,7 @@ fn browser_ui_event(event string) {
 				'drag' { sapp.EventType.mouse_move }
 				else { sapp.EventType.mouse_up }
 			}
-			app.handle_browser_tab_drag(&gg.Event{ typ: typ, mouse_button: .left, mouse_x: f32(parts[3].f64()), mouse_y: f32(parts[4].f64()) }, app.browser_chrome.width)
+			app.handle_browser_tab_drag_target(&gg.Event{ typ: typ, mouse_button: .left, mouse_x: f32(parts[3].f64()), mouse_y: f32(parts[4].f64()) }, app.browser_chrome.width, parts[2].all_after('tabdrag-').int())
 			mut ui_state := app.browser_ui()
 			ui_state.version++
 			app.refresh_browser_ui()

@@ -49,6 +49,7 @@ fn test_custom_ui2_routes_tab_drag_middle_click_and_wheel_through_its_targets() 
 		mut log := unsafe { custom_ui_events }
 		log.events.clear()
 		ui2.draw_embedded_elements(ctx, [tab_strip(800, [Tab{ index: 0, title: 'Saved', x: 62, width: 184 }], 258)], map[string]int{}, record_custom_ui_event)
+		assert ctx.r.num_vertices() > 0 // the custom backend painted the vector silhouettes
 		assert ui2.embedded_elements_event(&gg.Event{ typ: .mouse_down, mouse_button: .left, mouse_x: 97, mouse_y: 15 })
 		assert ui2.embedded_elements_event(&gg.Event{ typ: .mouse_move, mouse_x: 197, mouse_y: 15 })
 		assert ui2.embedded_elements_event(&gg.Event{ typ: .mouse_up, mouse_button: .left, mouse_x: 197, mouse_y: 15 })
