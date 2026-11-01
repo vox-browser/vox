@@ -1,112 +1,71 @@
-All Vox-owned UI follows the [V/UI2 implementation rule](../../AGENTS.md#ui-implementation).
-The [migration audit](../../docs/UI2_MIGRATION_AUDIT.md) lists remaining Cocoa and
-GG UI owners, including tab controls, toolbar painting, menus, and settings glue.
+Vox-owned UI is declared in shared V/UI2 components under the
+[UI implementation rule](../../AGENTS.md#ui-implementation). The
+[migration audit](../../docs/UI2_MIGRATION_AUDIT.md) maps the former Cocoa and GG
+owners to their replacements and explains the retained native boundaries.
 
-The production macOS chrome mounts its navigation buttons, single-line address
-editor, and diagnostic, link/console and RAM labels with UI2. AppKit drawing
-supplies the classic gray tab strip, flat arrow/reload icons, thin address border,
-and compact red/yellow/green window buttons. The window uses a full-size content
-view with its native title hidden, so window buttons and tabs share one row.
-The custom window buttons invoke the window's close, minimize and zoom actions;
-the empty tab-strip background supports dragging and double-click zoom.
+`main_browser_chrome.v`, `main_browser_tabs_ui.v`, `bookmarkui/`,
+`main_browser_settings.v`, and `browserui/` supply controls, layout, styling,
+actions, accessibility labels, popup state and shortcut decisions. Enter submits
+the address. Cmd+L focuses/selects it. Cmd+Shift+D toggles diagnostics;
+Cmd+Shift+B toggles bookmarks; Cmd+D saves the committed page. Windows/Linux use
+Ctrl for those commands. Browser settings use Cmd+, on macOS and Ctrl+, elsewhere.
+Native field editing, selection, clipboard and IME stay with UI2's backend.
 
-Enter submits the address; there is no Go button. The diagnostic row (HTTP
-status, response bytes, paint count and document dimensions) is hidden by
-default. Cmd+Shift+D on macOS or Ctrl+Shift+D on Windows/Linux toggles it, including during
-address editing. Cmd+Shift+B toggles the bookmarks bar, and Cmd+D saves the loaded
-page's URL and title even while the address field contains unsubmitted edits.
-Windows/Linux use Ctrl for those shortcuts. Bookmarks and bar visibility are
-shared across tabs and saved in the profile's `bookmarks.json`. Bookmark controls, layout, context actions and the scrollable overflow are declared
-in `bookmarkui/` with UI2 elements shared by macOS and Linux. UI2 owns the
-buttons, images, tooltips, accessibility and event dispatch. Flat native-styled
-buttons receive hover feedback from each UI2 backend. Overflow rows also
-have a remove button. Favicons use the browser's decoder and content-addressed
-PNG cache, so UI2 needs no Cocoa image adapter or additional requests.
-The combined tab strip and toolbar is 60px high normally and 92px with diagnostics;
-the bookmarks bar adds 28px when visible.
-The document viewport and pointer coordinates follow that height. Cached
-full-window images are keyed by visibility and discarded on a toggle, so a
-debug image cannot reintroduce diagnostics into normal browsing.
+The combined tab strip and toolbar is 60px normally and 92px with diagnostics.
+The bookmarks bar adds 28px. The document viewport follows that height. UI2
+reconciles keyed controls, preserving editing state across resize/status updates.
+A V timer samples browser-plus-worker memory once a second and updates only the
+UI2 RAM label; it stops on unmount. It does not invalidate the document painter.
 
-UI2 mounts two keyed view subtrees in the existing GG content view. No overlay
-covers the document. Vox owns the window, document renderer, navigation and
-toolbar shortcuts and chrome drawing; UI2 owns text editing, selection and input
-methods. Reconciliation retains the address field and its selection on resize
-and status updates. A native timer updates the UI2 RAM label without waking the
-document painter or allocating in the V heap, and stops on unmount/window close.
+`build-prod-browser.sh` stages UI2 under `Build/v/modules` using
+`tools/prepare_ui2.py`, enabling `-d vox_ui2` on macOS. `UI2_SOURCE_DIR` defaults
+to `~/.vmodules/ui2`; the dependency checkout is never modified. The adapter adds
+mount/reconciliation cleanup, generic normalized keyboard/wheel delivery,
+clipboard and host-window actions, and auxiliary panel hosting. Browser shortcut
+and form policy stay outside the backend. Stable UI2 IDs are exposed as native
+view identifiers for accessibility/testing tools.
 
-`build-prod-browser.sh` stages UI2 under `Build/v/modules` with this adapter, then
-enables it with `-d vox_ui2`. It reads `UI2_SOURCE_DIR`, defaulting to
-`~/.vmodules/ui2`. The dependency checkout is never modified. The stage uses the
-current compiler checkout's `macos` bridge, makes three floating-point calls
-explicit for the browser's compatibility frontend, and keeps native label text
-access on the actual `NSTextField` when AppKit adds private drawing subviews.
-Linux stages the same module and draws the bookmark elements through UI2's
-custom renderer in the existing GG pass. Its embedding adapter consumes only
-UI2 pointer targets, leaving document input available. The other Linux chrome
-controls retain their existing GG path. macOS builds that opt out of UI2 retain
-the compatibility bookmark bar.
+Linux uses the same element tree through UI2's custom renderer in the existing
+GG pass. `embedded_elements_custom.c.v` handles event delivery and text editing;
+`embedded_host_linux` forwards generic window operations to X11. There is no
+separate browser-owned GG control implementation. The custom renderer does not
+establish Linux graphics or window parity when tested on macOS.
 
-To exercise native navigation-button actions and enabled states, field editing,
-Enter navigation, Cmd+L, clipboard operations, Unicode deletion, Escape,
-resizing, diagnostic shortcuts, viewport sizing, status refresh, committed-URL
-synchronization and cleanup:
+Run expensive compilation through `tools/run_memory_bounded.py` with unique lock
+and report paths, then execute focused binaries with `--limit-gib 3`. Supply
+`-memory-limit 10G` to V. For example:
 
 ```sh
-sh tools/test_address_bar.sh
+python3 tools/run_memory_bounded.py --lock Build/ui2-address-build.lock \
+  --report Build/ui2-address-build.json -- \
+  sh tools/test_address_bar.sh -memory-limit 10G -skip-running -o Build/ui2-address-test
+python3 tools/run_memory_bounded.py --limit-gib 3 --lock Build/ui2-address-run.lock \
+  --report Build/ui2-address-run.json -- env VOX_TEST_WINDOW=1 Build/ui2-address-test
 ```
 
-Tab ownership, native tab actions, keyboard routing and modified link clicks:
+The same runner accepts `VOX_CHROME_TEST_FILE` for
+`main_browser_tabs_test.v`, `main_browser_tab_favicon_test.v`,
+`main_browser_tabs_portable_test.v`, `main_browser_bookmarks_test.v`,
+`main_browser_settings_test.v`, `main_link_context_menu_test.v`,
+`main_select_picker_test.v`, `main_memory_status_test.v`,
+`main_browser_window_state_test.v`, and `main_history_swipe_test.v`.
+Sources are linked from the canonical checkout, including for the settings test.
+
+Small component checks avoid compiling the document engine. Stage UI2 first with
+`python3 tools/prepare_ui2.py`; use its printed directory in `-path`:
 
 ```sh
-sh tools/test_browser_tabs.sh
-sh tools/test_browser_tabs.sh -gc none
+v -enable-globals -memory-limit 10G -cc clang \
+  -path 'Build/v/modules|.|@vmodules|@vlib' test browserui
+v -enable-globals -memory-limit 10G -cc clang -d vox_ui2 \
+  -path 'Build/v/modules|.|@vmodules|@vlib' browserui/mounted_darwin_test.v
+v -enable-globals -memory-limit 10G -cc clang -d ui2_custom_rendering \
+  -path 'Build/v/modules|.|@vmodules|@vlib' browserui/custom_test.v
 ```
 
-Bookmark shortcuts, tab sharing, mounted UI2 bar geometry, navigation and overflow:
-
-```sh
-python3 tools/run_memory_bounded.py --report Build/bookmarks-chrome-test.json -- \
-  env VOX_CHROME_TEST_FILE=main_browser_bookmarks_test.v \
-  sh tools/test_address_bar.sh -memory-limit 10G
-python3 tools/run_memory_bounded.py --limit-gib 3 --report Build/bookmarks-store-test.json -- \
-  v -enable-globals -memory-limit 10G test browserbookmarks
-```
-
-The shared declaration and the custom backend's pointer routing can be checked
-without compiling the document engine (stage UI2 first with
-`python3 tools/prepare_ui2.py` and put the printed module directory in `-path`):
-
-```sh
-v -enable-globals -memory-limit 10G test bookmarkui
-v -enable-globals -memory-limit 10G -d ui2_custom_rendering \
-  -path 'Build/v/modules|.|@vmodules|@vlib' test bookmarkui
-v -enable-globals -memory-limit 10G -d vox_ui2 \
-  -path 'Build/v/modules|.|@vmodules|@vlib' bookmarkui/mounted_darwin_test.v
-```
-
-Run these under the repository memory guard, using 3 GiB for focused test
-executables. The custom-backend input test uses a CPU command recorder and
-native text drawing on macOS; it does not establish Linux window or GPU parity.
-
-The integrated title row, real window-button selectors, top-row hit testing,
-content-size preservation and restoration also have a standalone AppKit check:
-
-```sh
-clang -fobjc-arc -framework Cocoa tools/native_browser_chrome_test.m -o /tmp/vox-browser-chrome-test
-/tmp/vox-browser-chrome-test
-```
-
-These tests exercise the actual mounted controls through AppKit commands.
-They also check that the document remains available for hit testing and that
-unmount removes both controls and RAM sampling. They do not require Accessibility
-or Screen Recording permission, and restore the clipboard after testing.
-
-Earlier compact-toolbar validation, before the integrated title row (2026-10-18): all thirteen focused cases and all five portable address
-cases pass. The signed production build passes `--headless-smoke`, and the
-`inline-node` document screenshot comparison passes with maximum channel error 1
-(13 differing pixels). A full content-view capture confirms the compact toolbar
-without Go or diagnostics. The shortcut case checks diagnostic visibility from
-both address and page focus while preserving edits and selection. All 57 focused
-capture/measurement tool tests pass, and a 320×1300 document capture stitches two
-strips into one uniform image without including browser chrome.
+The mounted test drives real UI2 controls through AppKit. The custom test uses a
+CPU command recorder, verifying read-only focus and mutation handling. Native
+host-only checks remain in `tools/native_browser_chrome_test.m`,
+`tools/native_browser_window_state_test.m`, and
+`tools/test_native_history_swipe.py`; application policy is tested in V.
+Linux window validation uses `tools/test_linux_browser.py` on Linux.
