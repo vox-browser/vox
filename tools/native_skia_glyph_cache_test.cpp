@@ -194,7 +194,10 @@ int main()
         assert(!rows.prepare(key, width, height, nullptr, 0).image);
         CGImageRelease(output);
     }
+    assert(s_glyph_text_blob_cache.size() > 0);
     ladybird_v_skia_release_unused_graphics_memory();
+    assert(s_glyph_text_blob_cache.size() == 0);
+    assert(s_glyph_text_blob_cache.charged_bytes() == 0);
     CGImageRelease(image); CGContextRelease(context);
     std::cout << "Native glyph cache: " << comparisons << " exact replay comparisons passed\n";
 }

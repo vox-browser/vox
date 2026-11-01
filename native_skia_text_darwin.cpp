@@ -57,6 +57,7 @@
 #include "include/core/SkSurfaceProps.h"
 #include "include/core/SkStream.h"
 #include "include/core/SkTextBlob.h"
+#include "native_glyph_text_blob_cache.h"
 #include "src/core/SkGlyph.h"
 #include "include/core/SkTypeface.h"
 #include "include/core/SkSamplingOptions.h"
@@ -643,6 +644,7 @@ public:
     void clear() { index.clear(); entries.clear(); bytes = 0; }
 };
 GlyphRasterCache s_glyph_raster_cache;
+VoxGlyphTextBlobCache s_glyph_text_blob_cache;
 
 template<typename T> void append_glyph_key(std::vector<uint8_t>& key, T const* data, size_t count)
 {
@@ -929,6 +931,7 @@ extern "C" void ladybird_v_skia_release_unused_graphics_memory()
     }
     s_sparse_raster_pool.clear();
     s_glyph_raster_cache.clear();
+    s_glyph_text_blob_cache.clear();
     SkGraphics::PurgeAllCaches();
 }
 
@@ -1365,14 +1368,7 @@ static int draw_retained_glyph_run(CGContextRef destination,
         layout_test_font && *layout_test_font)
         font.setHinting(SkFontHinting::kNormal);
 
-    SkTextBlobBuilder builder;
-    auto const& run = builder.allocRunPos(font, glyph_count);
-    for (int index = 0; index < glyph_count; ++index) {
-        run.glyphs[index] = glyphs[index];
-        run.pos[index * 2] = static_cast<SkScalar>(packed_positions[index * 2]);
-        run.pos[index * 2 + 1] = static_cast<SkScalar>(packed_positions[index * 2 + 1]);
-    }
-    auto blob = builder.make();
+    auto blob = s_glyph_text_blob_cache.get(font, glyphs, packed_positions, glyph_count);
     if (!blob)
         return 0;
 
