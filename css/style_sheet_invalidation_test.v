@@ -874,7 +874,7 @@ fn test_inserted_style_only_conditionals_preserve_unrelated_styles_and_match_a_f
 		assert sheet.insert_rule(text, 1)! == 1
 		assert document.needs_full_style_update() == disable_conditional_sheet_invalidation, text
 		if !disable_conditional_sheet_invalidation {
-			assert target.needs_style_update(), text
+			assert target.needs_style_update() == (disable_inactive_conditional_sheet_skip || (!text.contains('10000px') && !text.contains('unknown-property'))), text
 			assert !bystander.needs_style_update(), text
 		}
 		document.update_style()
@@ -910,4 +910,32 @@ fn test_inserted_conditional_group_preserves_preexisting_media_match_changes() {
 	assert sheet.insert_rule('@media all {.absent {color:red}}', 2)! == 2
 	document.update_style()
 	assert conditional_sheet_invalidation_property(target, .color) == 'rgb(0, 128, 0)'
+}
+
+
+fn test_inactive_conditional_rule_insertion_waits_for_its_media_to_match() {
+	for text in ['@media (min-width: 900px) {.target, * {color:red}}',
+		'@supports (display:block) {@media (min-width: 900px) {.target, * {color:red}}}',
+		'@media (min-width: 900px) {@supports (display:block) {.target, * {color:red}}}'] {
+		mut document, mut sheet, target, bystander := conditional_sheet_invalidation_fixture()
+		defer { document.finalize() }
+		previous := target.el_computed_properties() or { panic('missing style') }
+		assert sheet.insert_rule(text, 1)! == 1
+		assert document.needs_full_style_update() == (disable_conditional_sheet_invalidation || disable_inactive_conditional_sheet_skip), text
+		document.update_style()
+		assert conditional_sheet_invalidation_property(target, .color) == 'rgb(0, 0, 255)', text
+		if !disable_conditional_sheet_invalidation && !disable_inactive_conditional_sheet_skip {
+			assert voidptr(target.el_computed_properties() or { panic('missing style') }) == voidptr(previous), text
+		}
+		document.set_viewport_rect(dom.Rect{width: 1000, height: 600})
+		document.evaluate_media_rules()
+		assert document.needs_full_style_update(), text
+		document.update_style()
+		assert conditional_sheet_invalidation_property(target, .color) == 'rgb(255, 0, 0)', text
+		assert conditional_sheet_invalidation_property(bystander, .color) == 'rgb(255, 0, 0)', text
+		document.set_viewport_rect(dom.Rect{width: 800, height: 600})
+		document.evaluate_media_rules()
+		document.update_style()
+		assert conditional_sheet_invalidation_property(target, .color) == 'rgb(0, 0, 255)', text
+	}
 }

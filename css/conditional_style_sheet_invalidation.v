@@ -4,9 +4,13 @@ import dom
 import os
 
 const disable_conditional_sheet_invalidation = os.getenv('VOX_DISABLE_CONDITIONAL_SHEET_INVALIDATION') != ''
+const disable_inactive_conditional_sheet_skip = os.getenv('VOX_DISABLE_INACTIVE_CONDITIONAL_SHEET_SKIP') != ''
 const conditional_sheet_invalidation_diagnostics = os.getenv('VOX_CONDITIONAL_SHEET_INVALIDATION_DIAGNOSTICS') != ''
 
-__global conditional_sheet_invalidation_reported bool
+__global (
+	conditional_sheet_invalidation_reported bool
+	inactive_conditional_sheet_skip_reported bool
+)
 
 // Conditional groups containing only style rules change the same subjects as
 // those selectors. Rules that register fonts, layers, properties or other
@@ -27,6 +31,17 @@ fn can_target_inserted_conditional_style_rule(rule &CSSRule) bool {
 }
 
 fn extend_conditional_style_rule_invalidation(mut result StyleSheetInvalidationSet, rule &CSSRule) {
+	// Media matches were evaluated before building this plan. Inactive groups
+	// cannot change current styles; normal media-change invalidation will make
+	// them effective after their condition changes.
+	if !disable_inactive_conditional_sheet_skip && rule.type_ in [.media, .supports]
+		&& !rule.condition_matches() {
+		if conditional_sheet_invalidation_diagnostics && !inactive_conditional_sheet_skip_reported {
+			inactive_conditional_sheet_skip_reported = true
+			eprintln('Vox conditional stylesheet: skipped inactive style-only group')
+		}
+		return
+	}
 	if rule.type_ == .style {
 		extend_style_sheet_invalidation_set_with_style_rule(mut result, rule)
 	}
