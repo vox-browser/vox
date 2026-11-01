@@ -2988,6 +2988,110 @@ static bool draw_chromium_root_raster_grid(std::vector<uint32_t>& pixels,
         page_x, page_y, scroll_y, scale, draw);
 }
 
+// Replay eligible SVG vectors inside the filter's own coordinate system.
+// Filtering an already rasterized, rotated bitmap changes both source edge
+// coverage and the Gaussian downsample grid at fractional paint offsets.
+extern "C" int ladybird_v_skia_end_css_svg_shadow(CGContextRef context,
+    CGContextRef destination, float canvas_width, float canvas_height, float scale,
+    const float* transform, const float* bounds, const float* shadow, const float* page_origin)
+{
+    SharedPicturePixelsScope shared_pixels;
+    auto found = s_isolated_input_recordings.find(context);
+    if (found == s_isolated_input_recordings.end()) return 0;
+    auto recording = std::move(found->second);
+    s_isolated_input_recordings.erase(found);
+    if (!destination || !transform || !bounds || !shadow || !page_origin || recording->unsupported
+        || recording->bounds.isEmpty() || !recording->bounds.isFinite() || !(scale > 0)) return 0;
+    auto layer_bounds = SkRect::MakeLTRB(bounds[0], bounds[1], bounds[2], bounds[3]);
+    if (!layer_bounds.isFinite() || layer_bounds.isEmpty() || !std::isfinite(scale)
+        || !s_raster_layer_is_root || s_msaa_grid_columns <= 0
+        || s_shared_viewport_width <= 0 || s_shared_viewport_height <= 0) return 0;
+    for (int i = 0; i < 7; ++i) if (!std::isfinite(shadow[i])) return 0;
+    for (int i = 0; i < 2; ++i)
+        if (!std::isfinite(page_origin[i]) || page_origin[i] < 0
+            || page_origin[i] != std::floor(page_origin[i])) return 0;
+    RasterRegion document_region{int(page_origin[0]), int(page_origin[1]),
+        int(page_origin[0]) + s_shared_viewport_width,
+        int(page_origin[1]) + s_shared_viewport_height};
+    if (document_region.right > canvas_width || document_region.bottom > canvas_height) return 0;
+    auto matrix = SkMatrix::MakeAll(transform[0],transform[2],transform[4],
+        transform[1],transform[3],transform[5],0,0,1);
+    SkMatrix inverse;
+    if (!matrix.isFinite() || !matrix.invert(&inverse)) return 0;
+    float x_scale = std::hypot(transform[0],transform[1]);
+    float y_scale = std::hypot(transform[2],transform[3]);
+    if (!(x_scale > 0) || !std::isfinite(x_scale) || !std::isfinite(y_scale)
+        || std::abs(x_scale-y_scale)>1e-5f*x_scale
+        || std::abs(transform[0]*transform[2]+transform[1]*transform[3])>1e-5f*x_scale*x_scale) return 0;
+    auto offset = inverse.mapVector(shadow[0],shadow[1]);
+    auto channel = [](float value) {
+        return uint8_t(std::lround(std::clamp(value,0.0f,1.0f)*255));
+    };
+    auto sigma = std::max(shadow[2],0.0f)/x_scale;
+    auto filter = SkImageFilters::DropShadow(offset.x(),offset.y(),sigma,sigma,
+        SkColorSetARGB(channel(shadow[6]),channel(shadow[3]),channel(shadow[4]),channel(shadow[5])),nullptr);
+    auto input = recording->recorder.finishRecordingAsPicture();
+    int width = raster_dimension(canvas_width,scale), height = raster_dimension(canvas_height,scale);
+    if (!input || !filter || width<=0 || height<=0 || width>16384 || height>16384
+        || size_t(width)*height>8*1024*1024 || !shared_picture_draw()) return 0;
+    std::vector<uint32_t> pixels(size_t(width)*height);
+    RasterRegion region{0,0,int(std::ceil(canvas_width)),int(std::ceil(canvas_height))};
+    if (!copy_backdrop(destination,region,scale,width,height,pixels)) return 0;
+    auto info = SkImageInfo::Make(width,height,kBGRA_8888_SkColorType,
+        kPremul_SkAlphaType,SkColorSpace::MakeSRGB());
+    auto backdrop = SkImages::RasterFromPixmapCopy(SkPixmap(info,pixels.data(),size_t(width)*4));
+    if (!backdrop) return 0;
+    SkPictureRecorder output;
+    auto* canvas = output.beginRecording(SkRect::MakeWH(width,height));
+    canvas->drawImage(backdrop,0,0);
+    canvas->scale(scale,scale);
+    canvas->concat(matrix);
+    SkPaint paint;
+    paint.setImageFilter(filter);
+    canvas->saveLayer(layer_bounds,&paint);
+    canvas->concat(inverse);
+    canvas->drawPicture(input);
+    canvas->restore();
+    auto picture = output.finishRecordingAsPicture();
+    SkSerialProcs procs;
+    procs.fImageProc = serialize_shared_picture_image;
+    procs.fTypefaceProc = vox_serialize_picture_typeface;
+    auto bytes = picture->serialize(&procs);
+    if (!bytes) return 0;
+    // Match the owning root's complete raster tiles. A full-viewport replay
+    // changes the Gaussian downsample phase and quantizes a different result.
+    // The browser chrome is outside the document's raster coordinate system.
+    int document_width = raster_dimension(document_region.width(), scale);
+    int document_height = raster_dimension(document_region.height(), scale);
+    std::vector<uint32_t> document_pixels(size_t(document_width) * document_height);
+    if (!copy_backdrop(destination, document_region, scale, document_width,
+            document_height, document_pixels)) return 0;
+    // V sizes a root grid to at least the viewport. The painted layer's ink
+    // can be shorter, particularly for a page containing positioned SVG only.
+    int content_height = raster_dimension(std::max(double(s_shared_viewport_height),
+        s_raster_layer_height), scale);
+    int rows = std::max(1, (content_height - 2 + s_msaa_grid_height - 3)
+        / (s_msaa_grid_height - 2));
+    VoxChromiumRasterGrid grid{s_msaa_grid_width, s_msaa_grid_height,
+        s_msaa_grid_columns, rows};
+    bool rendered = vox_draw_chromium_raster_grid(document_pixels, document_width,
+        document_height, 0, std::lround(s_root_raster_scroll_y * scale), grid,
+        [&](auto& tile, long offset_x, long offset_y, int) {
+            float tile_matrix[]{1, 0, float(offset_x - document_region.left * scale),
+                0, 1, float(offset_y - document_region.top * scale), 0, 0, 1};
+            return shared_picture_draw()(reinterpret_cast<uint8_t*>(tile.data()),
+                s_msaa_grid_width, s_msaa_grid_height, s_msaa_grid_width * 4,
+                bytes->data(), bytes->size(), tile_matrix);
+        });
+    if (!rendered) return 0;
+    if (std::getenv("VOX_SVG_FILTER_DIAGNOSTICS"))
+        std::fprintf(stderr,"VOX_RECORDED_SVG_FILTER bounds=%g,%g,%g,%g\n",
+            recording->bounds.x(),recording->bounds.y(),recording->bounds.width(),recording->bounds.height());
+    return composite_pixels(destination, std::move(document_pixels), document_width,
+        document_height, document_region.left, canvas_height - document_region.bottom,
+        document_region.width(), document_region.height(), true);
+}
+
 static bool draw_chromium_root_shape_batch(std::vector<uint32_t>& pixels,
     int width, int height, RasterRegion const& region, float page_x,
     float page_y, float scroll_y, float scale, VoxGraphiteShape const& descriptor)

@@ -232,6 +232,8 @@ extern int ladybird_v_skia_draw_drop_shadow(CGContextRef destination,
 	CGImageRef source, float canvas_width, float canvas_height, float scale,
 	float offset_x, float offset_y, float standard_deviation, uint8_t red,
 	uint8_t green, uint8_t blue, uint8_t alpha);
+extern int ladybird_v_skia_end_css_svg_shadow(CGContextRef context, CGContextRef destination,
+    float width, float height, float scale, const float *transform, const float *bounds, const float *shadow, const float *page_origin);
 extern int ladybird_v_skia_draw_drop_shadow_chain(CGContextRef destination,
 	CGImageRef source, float canvas_width, float canvas_height, float scale,
 	const float *shadows, size_t shadow_count);
@@ -2596,6 +2598,10 @@ typedef struct {
 	int copies_to_fresh_frame;
 	int borrows_fresh_frame;
 	int gradient_blur_recording;
+	int svg_filter_recording;
+	float svg_filter_transform[6];
+	float svg_filter_bounds[4];
+	float svg_filter_page_origin[2];
 } NativeCSSFilterLayer;
 
 static NativeCSSFilterLayer native_css_filter_stack[NATIVE_CSS_FILTER_MAX_DEPTH];
@@ -2727,6 +2733,25 @@ void native_record_css_gradient_blur_input(void) {
 		|| layer->destination != native_font_compositing_context
 		|| native_font_compositing_transparency_depth != 0) return;
 	layer->gradient_blur_recording = ladybird_v_skia_begin_isolated_input(layer->context,
+		layer->canvas_width, layer->canvas_height);
+#endif
+}
+
+void native_record_css_svg_filter_input(float a, float b, float c, float d, float e, float f,
+    float left, float top, float right, float bottom, float page_x, float page_y) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	if (native_css_filter_overflow_depth || native_css_filter_stack_depth <= 0
+		|| getenv("VOX_DISABLE_RECORDED_SVG_FILTERS")) return;
+	NativeCSSFilterLayer *layer = &native_css_filter_stack[native_css_filter_stack_depth - 1];
+	if (!layer->active || layer->operation_count != 1 || layer->operations[0].kind != 1
+		|| layer->graph_node_count != 0) return;
+	float transform[] = {a,b,c,d,e,f};
+	memcpy(layer->svg_filter_transform, transform, sizeof(transform));
+	float bounds[] = {left,top,right,bottom};
+	memcpy(layer->svg_filter_bounds,bounds,sizeof(bounds));
+	layer->svg_filter_page_origin[0] = page_x;
+	layer->svg_filter_page_origin[1] = page_y;
+	layer->svg_filter_recording = ladybird_v_skia_begin_isolated_input(layer->context,
 		layer->canvas_width, layer->canvas_height);
 #endif
 }
@@ -4063,6 +4088,19 @@ void native_end_css_filter_layer(void) {
 		CGContextClearRect(layer.destination,
 			CGRectMake(0, 0, layer.canvas_width, layer.canvas_height));
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	if (layer.svg_filter_recording) {
+		NativeCSSFilterOperation operation = layer.operations[0];
+		float shadow[] = {operation.first, operation.second, operation.third,
+			operation.red, operation.green, operation.blue, operation.alpha};
+		int rendered = ladybird_v_skia_end_css_svg_shadow(layer.context, layer.destination,
+			layer.canvas_width, layer.canvas_height, layer.scale, layer.svg_filter_transform, layer.svg_filter_bounds, shadow, layer.svg_filter_page_origin);
+		if (rendered) {
+			if (source_image) CGImageRelease(source_image);
+			free(layer.operations);
+			native_free_svg_filter_graph(&layer);
+			return;
+		}
+	}
 	if (layer.gradient_blur_recording
 		&& ladybird_v_skia_end_css_gradient_blur(layer.context, layer.destination,
 			layer.canvas_width, layer.canvas_height, layer.scale, layer.operations[0].first)) {
