@@ -32,12 +32,13 @@ SELECTORS = [dict(name='body', selector='body', limit=1, attributes=[]),
              dict(name='images', selector='img', limit=1000, attributes=['src', 'srcset', 'alt']),
              dict(name='all', selector='*', limit=0, attributes=[])]
 SCOPE = ('Exclusive resource-coalition creation through encoded document PNG availability; '
-         'fresh process, empty private profile/cache, original HTTPS responses via one local '
+         'fresh process, empty private profile/cache, sealed HTTPS responses via one local '
          'SOCKS/TLS replay without forwarding, original author JavaScript enabled. '
          'Vox ends before PNG file write; Brave includes CDP PNG delivery and target/window setup. '
          'Readiness polling and two seconds of settlement are included; semantic audits and '
          'teardown follow the endpoint. Exited helpers and explicitly allowed coalition-owned '
          'services are included. GPU execution, observer/replay and outside services are excluded. '
+         'The fixture records any shared JavaScript wall-clock override; monotonic timers remain real. '
          'OS filesystem/shader caches are retained. Per-engine references test stability; '
          'cross-browser pixel differences are reported separately.')
 
@@ -65,6 +66,8 @@ def fixture_expectations(archive):
                 local_font_fallback_sources=local_only_font_sources(styles),
                 document_sha256=entry['sha256'], document_bytes=entry['bytes'],
                 responses=len(manifest['responses']),
+                benchmark_clock=manifest.get('benchmark_clock'),
+                workload=manifest.get('workload', 'Original archived responses and author scripts'),
                 manifest_sha256=browser.sha(archive / 'manifest.json'))
 
 
