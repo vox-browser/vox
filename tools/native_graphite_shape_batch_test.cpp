@@ -24,7 +24,7 @@ int main(int argc, char** argv)
     constexpr int width = 544, height = 256, vw = 130, vh = 96, pitch = vw * 4 + 13;
     for (int count : {2, 3, 8}) for (int scale : {1, 2}) for (int msaa : {0, 1})
     for (int background : {0, 1}) for (int fill : {0, 1, 2, 3, 4, 5})
-    for (int fractional : {0, 1}) for (int rounded : {0, 1}) {
+    for (int fractional : {0, 1}) for (int rounded : {0, 1}) for (bool large : {false, true}) {
         std::vector<VoxGraphiteShape> shapes(count);
         std::vector<std::vector<float>> clips(count, {9, 3, 14, 21, 22, 1, 25, 17});
         std::vector<VoxGraphitePixelRegion> regions(count);
@@ -35,7 +35,7 @@ int main(int argc, char** argv)
             shape.matrix[2] = 20 + i * 3 + (fractional ? .37f : 0);
             shape.matrix[5] = i % 3 == 0 ? -11.25f : 43.125f;
             shape.rect[0] = .25f; shape.rect[1] = 1.125f;
-            shape.rect[2] = 27; shape.rect[3] = 19;
+            shape.rect[2] = large ? 431 : 27; shape.rect[3] = large ? 213 : 19;
             if (rounded) for (int n = 4; n < 12; ++n) shape.rect[n] = 3.75f;
             shape.fill = fill; shape.thickness = 1.75f; shape.anti_alias = 1;
             for (float& border : shape.border_widths) border = 1.75f;

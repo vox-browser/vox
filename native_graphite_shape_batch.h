@@ -17,19 +17,31 @@ int vox_graphite_draw_shape_regions_pixels(VoxGraphitePixelRegion const* regions
     struct Readback { std::unique_ptr<const SkImage::AsyncReadResult> result; };
     struct Patch {
         SmallShapePatchBounds bounds;
+        bool cacheable = true;
         std::vector<uint8_t> pixels;
         VoxGraphiteRasterCache::Request cached;
         std::shared_ptr<Readback> readback;
     };
     std::vector<Patch> patches(count);
+    size_t pixel_count = 0;
     for (int i = 0; i < count; ++i) {
         auto const& view = regions[i];
         if (!view.pixels || view.x < 0 || view.y < 0 || view.width <= 0 || view.height <= 0
             || view.pitch <= 0 || view.width > width || view.height > height
             || view.x > width - view.width || view.y > height - view.height
-            || size_t(view.pitch) < size_t(view.width) * 4
-            || !small_shape_patch_bounds(shapes[i], width, height, patches[i].bounds)) return 0;
+            || size_t(view.pitch) < size_t(view.width) * 4) return 0;
         auto& patch = patches[i];
+        if (!small_shape_patch_bounds(shapes[i], width, height, patch.bounds)) {
+            // Preserve the same validation, surface and draw for larger ink.
+            // Its caller supplies the exact immutable tile intersection. This
+            // rectangle is not implied by the shape, so bypass the patch cache.
+            if (std::getenv("VOX_DISABLE_LARGE_SHAPE_BATCH")
+                || !small_shape_patch_bounds(shapes[i], width, height, patch.bounds, false)) return 0;
+            patch.bounds = {view.x, view.y, view.width, view.height};
+            patch.cacheable = false;
+        }
+        pixel_count += size_t(patch.bounds.width) * patch.bounds.height;
+        if (pixel_count > 1024 * 1024) return 0;
         patch.pixels.resize(size_t(patch.bounds.width) * patch.bounds.height * 4);
         if (has_background && !patch.pixels.empty())
             copy_shape_patch(view, patch.pixels.data(), patch.bounds.left, patch.bounds.top,
@@ -44,7 +56,7 @@ int vox_graphite_draw_shape_regions_pixels(VoxGraphitePixelRegion const* regions
     for (int i = 0; i < count; ++i) {
         auto& patch = patches[i];
         if (patch.pixels.empty()) continue;
-        patch.cached = shape_cache.prepare_patches(shapes[i], width, height,
+        if (patch.cacheable) patch.cached = shape_cache.prepare_patches(shapes[i], width, height,
             int(patch.pixels.size() / 4), has_background != 0, patch.pixels.data());
         if (patch.cached.hit) continue;
         if (!gpu) gpu = context();

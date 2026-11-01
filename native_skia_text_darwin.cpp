@@ -2930,6 +2930,81 @@ static bool draw_chromium_root_shape_batch(std::vector<uint32_t>& pixels,
         });
 }
 
+// Stage the existing clipped-grid draws, preserving its tile intersections
+// and ownership. Only publish after the batch has supplied every tile.
+static bool draw_chromium_clipped_shape_batch(std::vector<uint32_t>& pixels,
+    int width, int height, RasterRegion const& region, float page_x,
+    float page_y, float scroll_y, float scale, SkRect const& ink,
+    VoxGraphiteShape const& descriptor)
+{
+    if (std::getenv("VOX_DISABLE_CLIPPED_SHAPE_BATCH") || s_raster_layer_is_root
+        || size_t(width) * height > 1024 * 1024) return false;
+    auto draw = graphite_shape_regions_draw();
+    if (!draw) return false;
+    struct Tile {
+        std::vector<uint32_t> pixels;
+        VoxGraphiteShape shape;
+        int x, y, width, height;
+    };
+    std::vector<Tile> tiles;
+    auto original = pixels;
+    size_t area = 0;
+    bool collected = draw_chromium_clipped_layer_raster_grid<true>(original,
+        width, height, region, page_x, page_y, scroll_y, scale, ink,
+        [&](auto& target, long offset_x, long offset_y, bool msaa,
+            int x, int y, int w, int h) {
+            area += size_t(w) * h;
+            if (tiles.size() >= 64 || area > 1024 * 1024) return false;
+            auto shape = descriptor;
+            shape.matrix[2] += offset_x;
+            shape.matrix[5] += offset_y;
+            shape.force_msaa = msaa;
+            tiles.push_back({target, shape, x, y, w, h});
+            return true;
+        });
+    if (!collected || tiles.size() < 2) return false;
+    std::vector<VoxGraphitePixelRegion> views;
+    std::vector<VoxGraphiteShape> shapes;
+    for (auto& tile : tiles) {
+        views.push_back({tile.x, tile.y, tile.width, tile.height, tile.width * 4,
+            reinterpret_cast<uint8_t*>(tile.pixels.data())});
+        shapes.push_back(tile.shape);
+    }
+#ifdef VOX_TEST_CLIPPED_SHAPE_BATCH
+    if (std::getenv("VOX_TEST_CLIPPED_BATCH_FAIL_BEFORE_GPU")) {
+        std::fprintf(stderr, "VOX_CLIPPED_BATCH_TEST_FAILURE before_gpu\n");
+        return false;
+    }
+#endif
+    if (!draw(views.data(), shapes.data(), int(tiles.size()),
+            s_msaa_grid_width, s_msaa_grid_height, 1)) return false;
+#ifdef VOX_TEST_CLIPPED_SHAPE_BATCH
+    if (std::getenv("VOX_TEST_CLIPPED_BATCH_FAIL_BEFORE_PUBLISH")) {
+        std::fprintf(stderr, "VOX_CLIPPED_BATCH_TEST_FAILURE before_publish\n");
+        return false;
+    }
+#endif
+    // Reuse the serial enumerator for clipping and border ownership. It reads
+    // the immutable backdrop and commits only on complete enumeration success.
+    size_t cursor = 0;
+    auto result = pixels;
+    bool published = draw_chromium_clipped_layer_raster_grid<true>(result,
+        width, height, region, page_x, page_y, scroll_y, scale, ink,
+        [&](auto& target, long, long, bool, int x, int y, int w, int h) {
+            if (cursor >= tiles.size()) return false;
+            auto& tile = tiles[cursor++];
+            if (x != tile.x || y != tile.y || w != tile.width || h != tile.height) return false;
+            target = std::move(tile.pixels);
+            return true;
+        });
+    if (!published || cursor != tiles.size()) return false;
+    pixels = std::move(result);
+    if (std::getenv("VOX_CLIPPED_SHAPE_BATCH_DIAGNOSTICS"))
+        std::fprintf(stderr, "VOX_CLIPPED_SHAPE_BATCH tiles=%zu area=%zu scroll=%.9g\n",
+            tiles.size(), area, s_root_raster_scroll_y);
+    return true;
+}
+
 extern "C" void ladybird_v_skia_set_rect_clip_outs(float const* rects, int count)
 {
     s_rect_clip_outs.assign(rects, rects + (rects && count > 0 ? count * 4 : 0));
@@ -3791,7 +3866,9 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
                 ink.outset(thickness / 2, thickness / 2);
             if (has_underlay) ink.join(underlay_rect.rect());
 #ifndef VOX_DISABLE_LAYER_SHAPE_REGIONS
-            if (draw_region) tiled = draw_chromium_clipped_layer_raster_grid<true>(pixels,
+            tiled = draw_chromium_clipped_shape_batch(pixels, raster_width, raster_height,
+                region, page_x, page_y, scroll_y, destination_scale, matrix.mapRect(ink), descriptor);
+            if (!tiled && draw_region) tiled = draw_chromium_clipped_layer_raster_grid<true>(pixels,
                 raster_width, raster_height, region, page_x, page_y, scroll_y,
                 destination_scale, matrix.mapRect(ink),
                 [&](auto& target, long offset_x, long offset_y, bool msaa,
