@@ -14,14 +14,16 @@ struct VoxChromiumRasterRegion {
 // temporary CPU storage and keep the source unchanged when the backend declines.
 template<typename Draw>
 bool vox_draw_chromium_raster_grid_batch(std::vector<uint32_t>& pixels, int width,
-    int height, long first_x, long first_y, VoxChromiumRasterGrid grid, Draw draw)
+    int height, long first_x, long first_y, VoxChromiumRasterGrid grid, Draw draw,
+    size_t max_pixels = 1024 * 1024)
 {
-    constexpr size_t max_pixels = 1024 * 1024;
+    constexpr size_t max_tile_pixels = 1024 * 1024;
+    if (max_pixels > 4 * 1024 * 1024) return false;
     if (width <= 0 || height <= 0 || size_t(width) * height > max_pixels
         || pixels.size() < size_t(width) * height || first_x < 0 || first_y < 0
         || grid.width <= 2 || grid.height <= 2 || grid.columns <= 0 || grid.rows <= 0
         || size_t(grid.columns) * grid.rows > INT_MAX
-        || size_t(grid.width) * grid.height > max_pixels) return false;
+        || size_t(grid.width) * grid.height > max_tile_pixels) return false;
     long extent_x = long(grid.columns) * (grid.width - 2) + 2;
     long extent_y = long(grid.rows) * (grid.height - 2) + 2;
     if (first_x > extent_x || first_y > extent_y
@@ -31,7 +33,7 @@ bool vox_draw_chromium_raster_grid_batch(std::vector<uint32_t>& pixels, int widt
     long first_row = grid.owner(first_y, grid.height, grid.rows);
     long last_row = grid.owner(first_y + height - 1, grid.height, grid.rows);
     size_t count = size_t(last_column - first_column + 1) * (last_row - first_row + 1);
-    if (count < 2 || count > 64 || count * size_t(grid.width) * grid.height > 8 * max_pixels)
+    if (count < 2 || count > 64 || count * size_t(grid.width) * grid.height > 8 * max_tile_pixels)
         return false;
     std::vector<VoxChromiumRasterRegion> regions;
     regions.reserve(count);

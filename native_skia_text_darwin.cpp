@@ -92,11 +92,13 @@ VoxSharedPicturePixelsRegistry s_shared_picture_pixels;
 class SharedPicturePixelsScope {
     SharedPicturePixelsScope* previous_;
     std::vector<uint64_t> tokens_;
+    struct Input { uint8_t const* bytes; size_t size; sk_sp<SkData> payload; };
+    std::vector<Input> inputs_;
     bool enabled_;
 public:
     static thread_local SharedPicturePixelsScope* active;
-    SharedPicturePixelsScope() : previous_(active), enabled_(false) {
-        if (!std::getenv("VOX_DISABLE_SHARED_PICTURE_PIXELS")) {
+    explicit SharedPicturePixelsScope(bool enabled = true) : previous_(active), enabled_(false) {
+        if (enabled && !std::getenv("VOX_DISABLE_SHARED_PICTURE_PIXELS")) {
             void* library = dlopen("@rpath/libVoxGraphiteDawn.dylib", RTLD_LAZY | RTLD_LOCAL);
             auto supports = library ? reinterpret_cast<int(*)()>(
                 dlsym(library, "vox_graphite_picture_supports_shared_pixels")) : nullptr;
@@ -113,6 +115,9 @@ public:
     }
     sk_sp<SkData> encode(sk_sp<SkData> bytes) {
         if (!enabled_ || !bytes || bytes->size() < 64 * 1024) return bytes;
+        for (auto const& input : inputs_)
+            if (input.size == bytes->size() && !std::memcmp(input.bytes, bytes->data(), input.size))
+                return input.payload;
         auto* retained = bytes.release();
         std::shared_ptr<void const> owner(retained, [](void const* value) {
             static_cast<SkData const*>(value)->unref();
@@ -125,7 +130,9 @@ public:
             std::fprintf(stderr, "VOX_SHARED_PICTURE_PIXELS_ENCODE bytes=%zu live=%zu\n",
                 retained->size(), s_shared_picture_pixels.live_bytes());
         VoxSharedPicturePixelsToken payload; payload.token = token;
-        return SkData::MakeWithCopy(&payload, sizeof(payload));
+        auto result = SkData::MakeWithCopy(&payload, sizeof(payload));
+        if (result) inputs_.push_back({static_cast<uint8_t const*>(retained->data()), retained->size(), result});
+        return result;
     }
 };
 thread_local SharedPicturePixelsScope* SharedPicturePixelsScope::active = nullptr;

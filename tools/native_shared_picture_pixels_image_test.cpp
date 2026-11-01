@@ -25,6 +25,10 @@ int main()
             assert(copied);
             token_bytes = scope.encode(copied);
             assert(token_bytes && token_bytes->size() == sizeof(VoxSharedPicturePixelsToken));
+            auto independent = SkData::MakeWithCopy(copied->data(), copied->size());
+            auto duplicate = scope.encode(std::move(independent));
+            assert(duplicate && duplicate->size() == token_bytes->size()
+                && !std::memcmp(duplicate->data(), token_bytes->data(), token_bytes->size()));
             shared = vox_decode_picture_image(token_bytes->data(), token_bytes->size());
             assert(shared && s_shared_picture_pixels.live_bytes() >= source.size());
             image.reset(); copied.reset();

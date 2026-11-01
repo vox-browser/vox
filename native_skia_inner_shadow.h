@@ -245,7 +245,7 @@ static bool draw_inset_picture_batch(InsetDecorationRecording const& group, SkPi
                 std::fprintf(stderr, "VOX_PICTURE_BATCH inset tiles=%zu target=%dx%d\n",
                     requests.size(), grid.width, grid.height);
             return result != 0;
-        });
+        }, std::getenv("VOX_DISABLE_LARGE_DECORATION_BATCH") ? 1024 * 1024 : 4 * 1024 * 1024);
 }
 
 // Retain the original backdrop before the fallback leaves draw. A failed or
@@ -326,6 +326,7 @@ static bool s_test_fail_deferred_decorations;
 
 extern "C" int ladybird_v_skia_end_inset_decorations(CGContextRef destination)
 {
+    SharedPicturePixelsScope shared_pixels(!std::getenv("VOX_DISABLE_SHARED_DECORATION_PIXELS"));
     if (!s_inset_decoration_recording || s_inset_decoration_recording->destination != destination)
         return 0;
     auto group = std::move(s_inset_decoration_recording);
@@ -383,6 +384,9 @@ extern "C" int ladybird_v_skia_end_inset_decorations(CGContextRef destination)
     // consumed by the CPU compositor, including its border ownership texels.
     bool rendered = regional && draw_inset_picture_batch(*group, picture.get(), bytes,
         multisampled_bytes, pixels);
+    if (std::getenv("VOX_DECORATION_BATCH_DIAGNOSTICS"))
+        std::fprintf(stderr, "VOX_DECORATION_BATCH rendered=%d pixels=%zu size=%dx%d encoded=%zu\n",
+            rendered, size_t(group->width) * group->height, group->width, group->height, bytes->size());
     if (!rendered) rendered = regional
         ? draw_chromium_root_raster_grid<true>(pixels, group->width, group->height,
             group->region, 0, group->page_y, group->scroll_y, group->scale, rasterize)

@@ -50,6 +50,40 @@ int main()
         assert(actual == backdrop);
         ++comparisons;
     }
+    // Decoration pictures may cover a Retina viewport. Keep the ordinary
+    // budget unchanged and opt into a bounded larger set of CPU views.
+    {
+        constexpr int width = 1500, height = 1000;
+        VoxChromiumRasterGrid grid {544, 256, 3, 4};
+        std::vector<uint32_t> backdrop(size_t(width) * height, 71);
+        auto expected = backdrop;
+        auto paint = [](auto& tile, int cell) {
+            for (auto& pixel : tile) pixel ^= uint32_t(cell * 1729 + 31);
+        };
+        assert(vox_draw_chromium_raster_grid_regions(expected, width, height, 0, 0, grid,
+            [&](auto& tile, long, long, int cell, int, int, int, int) { paint(tile, cell); return true; }));
+        auto actual = backdrop;
+        assert(!vox_draw_chromium_raster_grid_batch(actual, width, height, 0, 0, grid,
+            [](auto&) { assert(false); return true; }));
+        assert(actual == backdrop);
+        assert(vox_draw_chromium_raster_grid_batch(actual, width, height, 0, 0, grid,
+            [&](auto& regions) {
+                for (auto& tile : regions) paint(tile.pixels, tile.cell);
+                return true;
+            }, 4 * 1024 * 1024));
+        assert(actual == expected);
+        actual = backdrop;
+        assert(!vox_draw_chromium_raster_grid_batch(actual, width, height, 0, 0, grid,
+            [](auto& regions) {
+                for (auto& tile : regions) std::fill(tile.pixels.begin(), tile.pixels.end(), 0);
+                return false;
+            }, 4 * 1024 * 1024));
+        assert(actual == backdrop);
+        assert(!vox_draw_chromium_raster_grid_batch(actual, width, height, 0, 0, grid,
+            [](auto&) { assert(false); return true; }, 4 * 1024 * 1024 + 1));
+        assert(!vox_draw_chromium_raster_grid_batch(actual, 8192, 1, 0, 0,
+            {1024, 1024, 9, 1}, [](auto&) { assert(false); return true; }, 4 * 1024 * 1024));
+    }
     std::vector<uint32_t> pixels(1024, 71);
     auto untouched = pixels;
     for (auto grid : {VoxChromiumRasterGrid{2, 8, 2, 2}, {8, 2, 2, 2}, {8, 8, 0, 2},
