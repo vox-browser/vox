@@ -1,24 +1,23 @@
 # BBC homepage instruction comparison
 
 **The requested 10% advantage remains open. BBC does not qualify for
-`OPTIMIZED_SITES.md`.** The latest attempted seven-pair cohort has a Vox
-median of **36,574,920,629** retired instructions and a Brave lower-bound
-median of **15,732,111,035**. Its conservative ratio is **2.43280501847826**,
-above 0.9: `380624524590 > 140809505706` fails the integer gate. Brave trial
-6 differs from its unchanged reference, invalidating acceptance. All 21
-content audits and native exits pass; 20/21 pixel references pass. Every
-observation remains included.
+`OPTIMIZED_SITES.md`.** The latest seven-pair cohort has a Vox median of
+**36,723,883,384** retired instructions and a Brave lower-bound median of
+**15,720,570,525**. All 21 content audits, fixed pixel comparisons and native
+exits pass. The conservative ratio is **2.4371307290010487**, above 0.9:
+`380952780900 > 140680800882` fails the integer gate. Every observation,
+including the first Brave launch outlier, remains included.
 
-The same-binary eligibility-order control has median 35,893,386,847; enabling
-the early check regresses the median by 1.8988%. Its conservative control ratio
-is 1.0650725477025864. The latest valid cohort is the preceding scalar-shape
-comparison, with Vox median 37,314,150,142 and Brave lower-bound median
-15,652,929,710. It also fails both gates and regresses against its control.
-Neither result establishes accepted instruction savings.
+The same-binary protected-value-index control has median 36,263,509,061;
+enabling the index regresses the median by 1.2695%. Its conservative control
+ratio is 1.0764197224480159. This is the latest valid cohort, and neither
+instruction gate establishes accepted savings. The preceding eligibility-order
+cohort's Brave trial 6 pixel mismatch remains retained.
 
 The machine-readable [evidence](benchmark-results/bbc-brave-instructions-2026-11-01.json)
-retains exact counts for every recorded attempt, including failures and first
-launches, ownership audits, commands and artifact hashes. Raw archives, logs,
+retains 613 attempts and 25 cohorts, including failures and first launches;
+511 complete cohort raw results were independently checked against the recorded
+vectors, medians and integer gates. It also retains ownership audits, commands and artifact hashes. Raw archives, logs,
 PNGs, executable copies, PID registries, compiler output and guard receipts are
 under `Build/bbc-home-instructions-20261101-054807/` in the canonical checkout.
 
@@ -850,3 +849,82 @@ peak RSS 1,344,749,568 bytes, and completes in 109.6054 seconds with controller
 exit 1. Every count and invalid observation remains retained. Neither the
 point estimate nor conservative gate supplies improvement credit. Evidence uses
 `longhand-eligibility-*`; the requested 10% advantage remains open.
+
+
+### Indexed JavaScript value protections
+
+Commit `49832905` replaces linear root scans and shifting removal with a
+handle index and swap removal. Separate protections for duplicate handles
+remain balanced against the actual JavaScriptCore GC API. A reverse position
+updates a moved entry without scanning other protections of the same handle.
+Unknown and already released handles remain harmless, and closing the owning
+runtime releases every remaining protection before destroying its context.
+
+Nine compile/runtime/control jobs pass across normal, no-GC and preallocated
+modes. Focused checks cover interleaved duplicates, moved positions, actual JSC
+collection and context teardown. The broad checks enter all 415 cases in each
+mode and retain only the known 13.5-versus-13 text-control baseline failure.
+Control tooling `31a8e9fe` passes 166 browser-instruction tests.
+
+The production build completes in 199.2511 seconds, peak sampled RSS
+8,968,568,832 bytes, with feature sources stable. Executable SHA256 is
+`97018325d23294c8087a15a0cf03dfd8172178a04ab3f31ad6d8ef58a9b7f71d`;
+the generated C is
+`64efb7fb0370a28692cc491355b7f18aea5a0a704cc5b6a5ae160ca6f5ddaefc`.
+Headless startup, all 11 smoke comparisons at their unchanged tolerances, and
+eight pixel-exact SVG mutation comparisons pass. The first screenshot-wrapper
+attempt lacked executable permission on its capture helper and never launched
+those checks. That attempt remains retained; corrected wrappers use a new
+validation directory. Enabled/disabled BBC diagnostics both preserve original
+pixels, content and native exits. They confirm one JSC context and 1,932/1,991
+evaluations; only the indexed run reports swap removal, 2,436 times.
+
+The uninstrumented seven alternating triples produce the latest results above.
+All observations pass content, fixed pixels and exits; both instruction gates
+fail and the median regresses. The guard adopts 69 processes without errors,
+peak RSS 1,357,119,488 bytes, and completes in 111.4603 seconds with controller
+exit 1 for failed acceptance. Measurement scripts are pinned in a separate
+15-file snapshot. Evidence uses `protected-value-index-*`. No BBC gain is
+credited and the catalog remains unchanged.
+
+### Further diagnostic attribution
+
+Separate O2 process-counter probes and an external sampled production profile
+retain their original BBC content, pixels and native exits. They cannot supply
+unprofiled performance credit. Exclusive scope counts subtract only explicitly
+instrumented nested scopes; background work and observer overhead remain.
+The complete-workflow probe records 10,687 eligible longhand restores, 9,707
+hits and 980 insertions. Disabling the whole cache is not supported by this
+91% observed hit rate.
+
+The grid probe records 16,062 successful auto-height seeds and 23,295
+rejections involving an already definite item height. Of those, 14,605 reject
+only on that initial predicate. Later CSS constraints were not evaluated for
+these early rejections, so those counts do not establish that all rejected
+items are safely reusable. No layout change is credited from this lead.
+
+The deeper layout-workflow probe records 12 layout callbacks with inclusive
+cost 10,128,412,117; viewport layout accounts for 7,466,729,355 inclusive.
+There are 1,904 intrinsic-height measurements (2,173,393,130 inclusive) and
+24,461 intrinsic-width measurements (17,368,746,850 inclusive, including nested
+measurements). These inclusive totals overlap and must not be added.
+The earlier roughly 11-billion “document update exclusive” value included
+uninstrumented layout callbacks: the deeper probe attributes just 65,293,443
+to that outer scope after subtracting its instrumented children. A separate
+sample attributes most large copies to restoring the stationary raster, rather
+than command scanning; it supplies no evidence that TLS dominates. Raw prefixes
+are `macro-workflow-*`, `complete-workflow-*`, `grid-seed-*`,
+`layout-workflow-*` and `current-workload-*`.
+
+The engine-call v2 probe separates captured intrinsic identities without
+converting function objects to strings or adding GC roots. Its ordinary call
+intrinsic accounts for 5,969,821,954 exclusive instructions across 13,595
+calls; function metadata setup accounts for just 6,072,946 across 358 calls.
+That supports inspecting callback work rather than metadata initialization.
+These are overlapping, instrumented process scopes, not accepted browser gains.
+An initial probe crashed in headless startup because its C patch resized
+unrelated array-index expressions as well as the counter arrays. No BBC launch
+was attempted. The retained corrected probe restricts all three changes to
+unique instrumentation statements; headless, content, original pixels and
+native exit pass with balanced depth and no counter errors. Prefixes are
+`engine-call-*` and `engine-call-v2-*`; production code was unaffected.
