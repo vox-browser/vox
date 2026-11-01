@@ -172,6 +172,23 @@ def oracle_command(site, args):
     return command
 
 
+def warm_oracle_cache(common, route, output, timeout):
+    """Close the warmup browser before copying its encoded cache to a fresh one."""
+    profile = output / 'brave-warm-profile'
+    report = output / 'brave-warm.json'
+    guarded([*common, *route, '--pixel-reference', output / 'brave-warm.png',
+             '--output', report, '--profile-output', profile], output / 'brave-warm', timeout)
+    check_filters(read_json(report))
+    if not profile.is_dir():
+        raise RuntimeError('Brave cache warmup did not save a closed profile')
+    prepared = list(common)
+    if '--profile-template' in prepared:
+        prepared[prepared.index('--profile-template') + 1] = str(profile)
+    else:
+        prepared.extend(['--profile-template', str(profile)])
+    return prepared
+
+
 def run_case(site, args):
     output = args.output / site['id']
     output.mkdir(parents=True, exist_ok=False)
@@ -208,8 +225,11 @@ def run_case(site, args):
         report = output / 'brave.json'
         # Both browsers request the same original URLs from the same sealed proxy.
         common[common.index('--url') + 1] = manifest['url']
-        guarded([*common, '--pixel-reference', reference, '--output', report,
-                 '--proxy-server', replay.ready['proxy'].replace('socks5h:', 'socks5:'), '--replay-spki', spki],
+        cache_policy = getattr(args, 'cache_policy', 'cold')
+        write_json(output / 'cache-policy.json', dict(policy=cache_policy, warmup_qualified=False))
+        route = ['--proxy-server', replay.ready['proxy'].replace('socks5h:', 'socks5:'), '--replay-spki', spki]
+        reference_command = warm_oracle_cache(common, route, output, args.timeout) if cache_policy == 'complete' else common
+        guarded([*reference_command, '--pixel-reference', reference, '--output', report, *route],
                 output / 'brave', args.timeout)
         check_filters(read_json(report))
         state = read_json(Path(str(reference) + '.json'))
@@ -232,13 +252,12 @@ def run_case(site, args):
             audit, config, requests, args.settle)
         before = executable_identity(args.vox)
         write_json(output / 'identity.json', before)
-        cache_policy = getattr(args, 'cache_policy', 'cold')
-        write_json(output / 'cache-policy.json', dict(policy=cache_policy, warmup_qualified=False))
         if cache_policy == 'complete':
             warm_native_cache(args.vox, manifest['url'], output, profile, environment,
                               state, args.timeout, before)
             write_json(output / 'cache-policy.json', dict(policy=cache_policy, warmup_qualified=True,
                 decoded_images='Fresh process; encoded response cache retained',
+                oracle_warmup_report=str(output / 'brave-warm.json'),
                 warmup_audit=str(output / 'vox-warm.audit.json')))
         guarded([args.vox, '--window-width', '1024', '--window-height', '852',
                  '--screenshot', actual, manifest['url']], output / 'vox', args.timeout, environment)
@@ -278,7 +297,7 @@ def main():
                         help='Copy a closed prepared Brave profile into each disposable oracle profile')
     parser.add_argument('--vox', type=Path, default=VOX)
     parser.add_argument('--cache-policy', choices=['cold', 'complete'], default='cold',
-                        help='Use an empty native cache, or populate encoded responses in a separate process first')
+                        help='Use an empty native cache, or warm both browsers in discarded processes first')
     parser.add_argument('--diff-tool', type=Path)
     parser.add_argument('--audit-config', type=Path, help='Native capture selectors for diagnosing a mismatch; include body and images')
     parser.add_argument('--settle', type=float, default=5)

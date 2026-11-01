@@ -2,6 +2,23 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
+const transientFiles = new Set(['SingletonLock', 'SingletonCookie', 'SingletonSocket',
+    'DevToolsActivePort']);
+const persistentFile = source => !transientFiles.has(path.basename(source));
+
+// The caller must stop its disposable browser first so the HTTP cache and
+// extension stores are closed. Never overwrite a template or a prior trial.
+export async function saveClosedOracleProfile(profile, destination) {
+    const target = path.resolve(destination);
+    await fs.mkdir(target, {mode: 0o700});
+    try {
+        await fs.cp(profile, target, {recursive: true, filter: persistentFile});
+    } catch (error) {
+        await fs.rm(target, {recursive: true, force: true});
+        throw error;
+    }
+}
+
 // Copy a closed, explicitly supplied prepared profile. Never launch Brave
 // against the template or retain its process locks/debugging endpoint.
 export async function createOracleProfile(template = '') {
@@ -10,8 +27,7 @@ export async function createOracleProfile(template = '') {
         if (template) {
             await fs.cp(path.resolve(template), profile, {
                 recursive: true,
-                filter: source => !['SingletonLock', 'SingletonCookie', 'SingletonSocket',
-                    'DevToolsActivePort'].includes(path.basename(source)),
+                filter: persistentFile,
             });
         }
         const defaults = path.join(profile, 'Default');

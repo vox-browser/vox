@@ -6,11 +6,42 @@ import unittest
 from unittest.mock import patch
 
 from forum_news_pixels import (CATALOG, check_filters, check_native, native_capture_environment,
-                               oracle_command, seal_capture, warm_native_cache, write_json)
+                               oracle_command, seal_capture, warm_native_cache, warm_oracle_cache, write_json)
 from page_archive import digest, load_archive
 
 
 class ForumNewsPixelTests(unittest.TestCase):
+    def test_oracle_warmup_replaces_only_the_disposable_profile_template(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary)
+            common = ['node', 'oracle.mjs', '--url', 'https://news.example/',
+                      '--profile-template', '/closed-template', '--extension', '/full-ubo']
+            route = ['--proxy-server', 'socks5://127.0.0.1:1234', '--replay-spki', 'private-ca']
+            def capture(command, prefix, timeout):
+                self.assertEqual(command[:len(common)], common)
+                self.assertEqual(command[len(common):len(common)+len(route)], route)
+                Path(command[command.index('--profile-output')+1]).mkdir()
+                write_json(Path(command[command.index('--output')+1]), self.report())
+            with patch('forum_news_pixels.guarded', side_effect=capture):
+                prepared = warm_oracle_cache(common, route, output, 60)
+            self.assertEqual(common[common.index('--profile-template')+1], '/closed-template')
+            self.assertEqual(prepared[prepared.index('--profile-template')+1], str(output/'brave-warm-profile'))
+            self.assertEqual(prepared[prepared.index('--extension')+1], '/full-ubo')
+
+    def test_oracle_warmup_rejects_filter_disagreement_and_missing_closed_profile(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary)
+            def capture(command, prefix, timeout):
+                write_json(output/'brave-warm.json', self.report())
+            with patch('forum_news_pixels.guarded', side_effect=capture):
+                with self.assertRaisesRegex(RuntimeError, 'closed profile'):
+                    warm_oracle_cache(['oracle'], [], output, 60)
+            report = self.report()
+            report['cosmetic']['css_matches'] = False
+            with patch('forum_news_pixels.guarded'), patch('forum_news_pixels.read_json', return_value=report):
+                with self.assertRaisesRegex(RuntimeError, 'cosmetic'):
+                    warm_oracle_cache(['oracle'], [], output, 60)
+
     def test_complete_cache_uses_a_discarded_process_with_separate_profile_and_audit(self):
         with tempfile.TemporaryDirectory() as temporary:
             output = Path(temporary)

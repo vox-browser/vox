@@ -8,7 +8,7 @@ import crypto from 'node:crypto';
 import { spawn, execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { captureArchive } from './capture_archive.mjs';
-import { createOracleProfile } from './oracle_profile.mjs';
+import { createOracleProfile, saveClosedOracleProfile } from './oracle_profile.mjs';
 import { capturePixelReference, referenceLaunchArguments, waitForPixelDocument } from './pixel_reference.mjs';
 import { navigationObservation } from './navigation.mjs';
 import { hasHeaderFilter, requestIdentity, summarizeRequestParity } from './request_stream.mjs';
@@ -26,6 +26,7 @@ const options = {
     'visibility-probe': '',
     'capture-dir': '',
     'profile-template': '',
+    'profile-output': '',
     'pixel-reference': '',
     'proxy-server': '',
     'replay-spki': '',
@@ -49,6 +50,9 @@ if (requestedCorpus && (!Array.isArray(requestedCorpus) || requestedCorpus.some(
     throw new Error('--requests must contain an array of typed request or response checks');
 }
 const replayInput = recordedVox || requestedCorpus;
+if (options['profile-output'] && (replayInput || !options['pixel-reference'])) {
+    throw new Error('--profile-output requires a successful pixel-reference page visit');
+}
 if (Boolean(options['document-fixture']) !== Boolean(options['visibility-probe'])) {
     throw new Error('--document-fixture and --visibility-probe must be supplied together');
 }
@@ -152,7 +156,7 @@ const browser = spawn(options.brave, [
     ...referenceLaunchArguments(options),
     `--user-data-dir=${profile}`, `--load-extension=${extension}`, 'about:blank',
 ], { stdio: ['ignore', 'ignore', 'ignore'] });
-let background, page;
+let background, page, completed = false;
 try {
     let port;
     for (let attempt = 0; attempt < 300; attempt++) {
@@ -420,6 +424,7 @@ try {
     console.log(JSON.stringify({ output: path.resolve(options.output), ...capture.counts, common_stream: { requests: capture.common_stream.distinct_requests, vox_blocked: capture.common_stream.vox.blocked, full_ublock_origin_blocked: capture.common_stream.full_ublock_origin.blocked, matches: capture.common_stream.matches }, ...(visibility ? { visibility: { ...visibility.counts, matches: visibility.matches } } : {}), ...(navigation ? {coverage: navigation.coverage, status: navigation.status, title: navigation.title} : {}), ...(cosmeticComparison ? { css_matches: cosmeticComparison.css_matches, procedural_matches: cosmeticComparison.procedural_matches, scriptlet_filters_match: cosmeticComparison.scriptlet_filters_match } : {}) }));
     if (mismatches.length || oracleDisagreements.length || !capture.common_stream.matches || (visibility && !visibility.matches) || (cosmeticComparison && (!cosmeticComparison.css_matches || !cosmeticComparison.procedural_matches || !cosmeticComparison.scriptlet_filters_match))) process.exitCode = 1;
     else if (!requests.length || (navigation && navigation.coverage !== 'page')) process.exitCode = 2;
+    completed = !process.exitCode;
 } finally {
     background?.close();
     page?.close();
@@ -429,5 +434,12 @@ try {
         const force = setTimeout(() => browser.kill('SIGKILL'), 5000);
         browser.once('exit', () => { clearTimeout(force); resolve(); });
     });
-    await fs.rm(profile, { recursive: true, force: true });
+    try {
+        if (completed && options['profile-output']) {
+            if (browser.signalCode === 'SIGKILL') throw new Error('Cannot save a forcibly terminated oracle profile');
+            await saveClosedOracleProfile(profile, options['profile-output']);
+        }
+    } finally {
+        await fs.rm(profile, { recursive: true, force: true });
+    }
 }

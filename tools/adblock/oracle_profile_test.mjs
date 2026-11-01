@@ -3,7 +3,25 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { createOracleProfile } from './oracle_profile.mjs';
+import { createOracleProfile, saveClosedOracleProfile } from './oracle_profile.mjs';
+
+test('a closed warm profile retains encoded cache without overwriting another trial', async t => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'vox-oracle-warm-'));
+    t.after(() => fs.rm(root, {recursive: true, force: true}));
+    const source = path.join(root, 'source'), saved = path.join(root, 'saved');
+    await fs.mkdir(path.join(source, 'Default/Cache/Cache_Data'), {recursive: true});
+    await fs.writeFile(path.join(source, 'Default/Cache/Cache_Data/response'), 'encoded response');
+    await fs.writeFile(path.join(source, 'DevToolsActivePort'), 'old endpoint');
+    await fs.symlink('/closed-browser', path.join(source, 'SingletonLock'));
+    await saveClosedOracleProfile(source, saved);
+    assert.equal(await fs.readFile(path.join(saved, 'Default/Cache/Cache_Data/response'), 'utf8'), 'encoded response');
+    assert.equal((await fs.stat(saved)).mode & 0o777, 0o700);
+    for (const name of ['DevToolsActivePort', 'SingletonLock']) {
+        await assert.rejects(fs.lstat(path.join(saved, name)), {code: 'ENOENT'});
+    }
+    await assert.rejects(saveClosedOracleProfile(source, saved), {code: 'EEXIST'});
+    assert.equal(await fs.readFile(path.join(saved, 'Default/Cache/Cache_Data/response'), 'utf8'), 'encoded response');
+});
 
 test('fresh oracle disables the separate Brave blocker', async () => {
     const profile = await createOracleProfile();
