@@ -39,6 +39,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
         write_json(output / 'pixels.json', verdict)
         self.assertTrue(verdict['exact'], verdict['metrics'] + '\nArtifacts: ' + str(output))
 
+    def test_compositor_parent_resumes_after_disjoint_scrolling_content(self):
+        self.compare_fixture('compositor-disjoint-scroll-gap')
+
     def test_letter_spacing_disables_optional_ligatures(self):
         self.compare_fixture('spaced-optional-ligatures')
 

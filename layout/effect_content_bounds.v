@@ -133,6 +133,23 @@ fn effect_leaf_ink_bounds_with_precision_guard(command &PaintCommand, native_pre
 	return mapped
 }
 
+// Conservative transformed leaf ink, including the native float precision guard.
+// This does not account for ancestor clipping or scope/filter dependencies.
+pub fn paint_leaf_native_ink_bounds(command &PaintCommand) ?LayoutRect {
+ if command.kind == 'draw_text' && command.glyph_orientation == .horizontal {
+  if run:=command.glyph_run {
+   if ink:=run.outline_ink_bounds() {
+    if math.abs(command.glyph_translation_x)>1_000_000 || math.abs(command.glyph_translation_y)>1_000_000 { return none }
+    normalized:=PaintCommand{...*command,kind:'fill_rect',
+     x:command.glyph_translation_x+f64(ink.x),y:command.glyph_translation_y+f64(ink.y),
+     width:f64(ink.width),height:f64(ink.height)}
+    return effect_leaf_ink_bounds_with_precision_guard(&normalized,true)
+   }
+  }
+ }
+ return effect_leaf_ink_bounds_with_precision_guard(command, true)
+}
+
 // Ordinary leaves and a text clip's final output rectangle are eligible.
 // Callers discard a text clip only as a complete group; individual source
 // pixels inside a resource/filter group can still contribute visible output.

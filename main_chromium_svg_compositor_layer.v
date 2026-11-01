@@ -111,6 +111,8 @@ fn chromium_svg_compositor_layer_supported_for_viewport(commands []layout.PaintC
 					|| commands[gap].fixed_to_viewport || commands[gap].visual_layer_data != none
 					|| (bounds.x < rect.x + rect.width && bounds.x + bounds.width > rect.x
 						&& bounds.y < rect.y + rect.height && bounds.y + bounds.height > rect.y) {
+					if chromium_compositor_gap_can_flush_parent(commands, plan, index,
+						previous + 1, command_index, rect) { break }
 					return chromium_svg_compositor_layer_declined(index, gap, 'interleaved layer', commands[gap].kind)
 				}
 			}

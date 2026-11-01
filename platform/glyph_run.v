@@ -328,6 +328,45 @@ pub fn (run &GlyphRun) glyphs() []Glyph {
 	return run.glyphs_
 }
 
+// A tighter envelope for separation checks. Preserve the face-wide box used
+// by ordinary recording; bitmap/CFF and varied faces keep that fallback too.
+pub fn (run &GlyphRun) outline_ink_bounds() ?GlyphRunBounds {
+	if run.face_ != .document || run.font_ == unsafe { nil } { return none }
+	if run.font_.italic || run.font_.weight >= 600 || run.font_.requested_variations.len != 0 {
+		return none
+	}
+	if system := run.font_.system_face() {
+		if system.variations.len != 0 { return none }
+	}
+	face := font_face(run.font_) or { return none }
+	if !font_face_has_truetype_outlines(face) { return none }
+	for tag in ['COLR', 'CBDT', 'sbix', 'SVG '] {
+		if tag in face.tables { return none }
+	}
+	mut left := f32(math.inf(1))
+	mut top := f32(math.inf(1))
+	mut right := f32(math.inf(-1))
+	mut bottom := f32(math.inf(-1))
+	mut found := false
+	for glyph in run.glyphs_ {
+		if !glyph.should_paint { continue }
+		if glyph.glyph_index < 0 || glyph.glyph_index >= int(face.length) { return none }
+		if !finite_glyph_coordinate(glyph.position.x) || !finite_glyph_coordinate(glyph.position.y)
+			|| math.abs(glyph.position.x) > 1_000_000 || math.abs(glyph.position.y) > 1_000_000 {
+			return none
+		}
+		bounds := run.font_.glyph_bounds(glyph.glyph_index)
+		if bounds.x_max <= bounds.x_min || bounds.y_max <= bounds.y_min { continue }
+		left = f32(math.min(left, glyph.position.x + bounds.x_min))
+		right = f32(math.max(right, glyph.position.x + bounds.x_max))
+		top = f32(math.min(top, glyph.position.y - bounds.y_max))
+		bottom = f32(math.max(bottom, glyph.position.y - bounds.y_min))
+		found = true
+	}
+	if !found { return none }
+	return GlyphRunBounds{left, top, right - left, bottom - top}
+}
+
 pub fn (run &GlyphRun) bounding_box() GlyphRunBounds {
 	return run.bounding_box_
 }

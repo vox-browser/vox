@@ -1,0 +1,13 @@
+<!doctype html><meta charset="utf-8"><title>Disjoint compositor spans around scrolling content</title>
+<style>
+html{background:#090b0f;color:#edf0f5;-webkit-font-smoothing:antialiased}
+body{margin:0;font:23px/1.16 Times}
+.under{position:absolute;left:20px;top:20px;width:180px;height:100px;will-change:opacity;background:#15191f}
+.prefix{position:absolute;left:30px;top:40px;width:160px;height:60px;background:linear-gradient(125deg,#18263780,#26364a80)}
+.scroll{position:absolute;left:30px;top:106px;width:160px;height:20px;overflow:auto;background:#11171f}
+.scroll div{width:400px;height:20px;background:linear-gradient(90deg,#354e6a,#171f2a)}
+p{position:absolute;left:30px;width:160px;margin:0}
+#first{top:140px}#second{top:180px;color:#939ba9}#third{top:220px;color:#b9c9dd}
+</style>
+<div class="under"></div><div class="prefix"></div><div class="scroll"><div></div></div>
+<p id="first">A community.</p><p id="second">Find people.</p><p id="third">Build things.</p>
