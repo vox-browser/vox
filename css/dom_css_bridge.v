@@ -1144,7 +1144,8 @@ pub fn document_has_running_css_animations(document &dom.Document) bool {
 	style_computer := unsafe { &StyleComputer(dom_style_computer.css_handle) }
 	if style_computer.css_animation_storage_ != unsafe { nil } {
 		for entry in style_computer.css_animation_storage_.entries {
-			if entry.animation.play_state() == .running {
+			if entry.animation.play_state() == .running
+				&& style_computer.animation_target_needs_rendering(entry.abstract_element) {
 				return true
 			}
 		}
@@ -1152,7 +1153,8 @@ pub fn document_has_running_css_animations(document &dom.Document) bool {
 	if style_computer.css_transition_storage_ != unsafe { nil } {
 		for _, bucket in style_computer.css_transition_storage_.associated_transitions {
 			for entry in bucket.entries {
-				if entry.transition.play_state_ == .running {
+				if entry.transition.play_state_ == .running
+					&& style_computer.animation_target_needs_rendering(entry.abstract_element) {
 					return true
 				}
 			}

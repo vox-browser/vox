@@ -15702,10 +15702,26 @@ pub fn (mut s StyleComputer) set_animation_time_ms(time_ms f64) {
 		// A document clock advances even on a static page. Only effect targets
 		// can change animated style; dirtying an empty set requests another
 		// rendering opportunity and turns slow static frames into a redraw loop.
-		mut has_targets := (s.css_animation_storage_ != unsafe { nil }
-			&& s.css_animation_storage_.entries.len > 0)
-			|| (s.css_transition_storage_ != unsafe { nil }
-				&& s.css_transition_storage_.associated_transitions.len > 0)
+		mut has_targets := false
+		if s.css_animation_storage_ != unsafe { nil } {
+			for entry in s.css_animation_storage_.entries {
+				if s.animation_target_needs_rendering(entry.abstract_element) {
+					has_targets = true
+					break
+				}
+			}
+		}
+		if !has_targets && s.css_transition_storage_ != unsafe { nil } {
+			for _, bucket in s.css_transition_storage_.associated_transitions {
+				for entry in bucket.entries {
+					if s.animation_target_needs_rendering(entry.abstract_element) {
+						has_targets = true
+						break
+					}
+				}
+				if has_targets { break }
+			}
+		}
 		if !has_targets {
 			if hook := document.animations_hook_ {
 				if hook.effect_targets != unsafe { nil } {
