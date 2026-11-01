@@ -414,6 +414,7 @@ mut:
 	browsing_history_error              string
 	bookmarks                           &browserbookmarks.Store = unsafe { nil }
 	bookmarks_error                     string
+	bookmark_overflow_open              bool
 	bookmark_bar_first                  int
 	history_page                        &BrowserHistoryPage = unsafe { nil }
 	new_tab_history_version             u64
@@ -7297,7 +7298,18 @@ fn (mut app BrowserApp) draw() {
 	submission_claim := if paint_document && processmetrics.instructions_enabled() {
 		app.paint_timing.submission.claim(app.navigation_generation)
 	} else { DocumentSubmissionClaim{} }
-	if paint_document {
+	// Pixel reuse is decided after all scripts, layout and animation work.
+	mut stationary_reused := false
+	$if macos {
+		if app.ctx.native_rendering {
+			if paint_document {
+				stationary_reused = app.begin_stationary_document_raster()
+			} else {
+				C.native_discard_stationary_raster()
+			}
+		}
+	}
+	if paint_document && !stationary_reused {
 		mut scroll_damage := ScrollRasterDamage{}
 		$if macos {
 			if app.ctx.native_rendering && app.document != unsafe { nil }
@@ -7366,7 +7378,7 @@ fn (mut app BrowserApp) draw() {
 						app.flush_rounded_rect_underlay(0, page_y, window.height)
 						if text_scroll_layer { end_chromium_text_scroll_layer() }
 						app.select_chromium_raster_layer(next_layer)
-						text_scroll_layer = app.begin_chromium_text_scroll_layer(next_layer)
+						text_scroll_layer = app.begin_chromium_text_scroll_layer(next_layer, command_index)
 						raster_layer = next_layer
 					}
 				}
@@ -7470,9 +7482,12 @@ fn (mut app BrowserApp) draw() {
 			}
 		}
 		replay_scratch.finish()
-	} else {
+	} else if !paint_document {
 		$if macos { C.native_discard_scroll_raster() }
 		draw_srgb_rect(app.ctx, 0, 0, f32(window.width), f32(window.height), gg.rgb(255, 255, 255))
+	}
+	$if macos {
+		if app.ctx.native_rendering && paint_document { C.native_end_stationary_raster() }
 	}
 
 	if app.chrome_height() > 0 {
@@ -7664,6 +7679,7 @@ fn browser_pointer_button_mask(button int) u32 {
 fn (mut app BrowserApp) handle_event(event &gg.Event) {
 	app.platform_pointer_modifiers = browser_pointer_modifiers(event.modifiers)
 	$if !vox_ui2 ? {
+		if app.handle_portable_bookmark_event(event) { return }
 		if app.handle_browser_tab_drag(event, browser_window_size().width) { return }
 	}
 	if app.navigation_work_depth > 0 {

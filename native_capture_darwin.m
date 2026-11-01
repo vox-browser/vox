@@ -23,6 +23,7 @@ static void native_capture_instruction_checkpoint(const char *label) {
 
 #include "native_layer_presentation_darwin.h"
 #include "native_scroll_raster_darwin.h"
+#include "native_stationary_raster_darwin.h"
 #include "native_deferred_font_darwin.h"
 #include "native_svg_mask_layer_darwin.h"
 #include "native_svg_mask_pixels.h"
@@ -5302,6 +5303,7 @@ static void native_update_animated_image_frame(NSImage *image) {
 	// The native image timeline advances independently of DOM invalidation.
 	// Keep its visible frames on complete replay rather than retaining a still.
 	native_scroll_raster_independent_content();
+	native_stationary_raster_independent_content();
 	NSInteger frame_count = [[animated_representation valueForProperty:NSImageFrameCount] integerValue];
 	// The screenshot JavaScript host resolves its image-animation checkpoint at
 	// frame 1. Keep native decoding at the same checkpoint; otherwise the capture
