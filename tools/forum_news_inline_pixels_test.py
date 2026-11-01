@@ -12,6 +12,9 @@ from forum_news_pixels import REPO, VOX, executable_identity, guarded, write_jso
 
 @unittest.skipUnless(sys.platform == 'darwin', 'The reference uses native macOS fonts')
 class ForumNewsInlinePixelsTests(unittest.TestCase):
+    def test_clamped_svg_spacer_sizes_the_positioned_image_wrapper(self):
+        self.compare_fixture('pikabu-clamped-svg-image')
+
     def test_webp_yuv_and_rgba_paint_paths_preserve_reference_pixels(self):
         for case, width, height in [
                 ('webp-yuv', 1024, 768), ('webp-yuv-scaled', 1024, 768),

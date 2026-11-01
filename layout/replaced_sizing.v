@@ -141,6 +141,16 @@ fn compute_replaced_size_with_box_model(box &Box, available_space AvailableSpace
 	}
 	width = apply_replaced_axis_constraints(node, computed.size_value(.min_width), computed.size_value(.max_width),
 		width, available_space.width, box_model, true)
+	// CSS 2.2 10.6.2 transfers the used width into an automatic height.
+	// A specified width can still be changed by min/max-width; deriving the
+	// height before that clamp leaves responsive images at their old height.
+	// Definite heights and the both-auto constraint table retain their own
+	// independent block-axis constraints.
+	if specified_width != none && specified_height == none {
+		if intrinsic_ratio := ratio {
+			height = width.divided_by_fraction(intrinsic_ratio)
+		}
+	}
 	constraint_rerun_uses_intrinsic_height := specified_width == none
 		&& specified_height == none && ratio == none && intrinsic.height != none
 	constraint_rerun_intrinsic_height := intrinsic.height or { CSSPixels.new(0) }
