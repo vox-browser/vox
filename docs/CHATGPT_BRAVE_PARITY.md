@@ -5,8 +5,8 @@ application. Pixel-exact parity and an actual conversation are **not complete**.
 The full-page comparison still has rendering differences; focused fixtures and
 a successful application startup are not a substitute for that comparison.
 
-The latest unchanged-original-archive capture differs in **876 of 786,432
-pixels (0.1114%, MAE 0.0009)**. Startup, native typing and Enter are validated;
+The latest unchanged-original-archive capture differs in **874 of 786,432
+pixels (0.1111%, MAE 0.0008)**. Startup, native typing and Enter are validated;
 a completed chat reply remains unverified. The recorded 60-second idle check
 peaks at 1.82 GB rather than continuing toward the 12 GiB guard.
 
@@ -633,3 +633,52 @@ focused textarea without a newline, with the home-ready marker present and no
 reported JavaScript errors. The archive does not contain a successful chat
 response, so a completed conversation and pixel-exact full-page parity remain
 unverified.
+
+
+## Fractional compositor caret sampling (2026-11-01)
+
+Commit `89d2708c` tags input and textarea carets in the paint transport and
+routes eligible Chromium caret fills through a translated solid color raster.
+The native recorder was introduced on shared master in `e61b978f`; this commit
+connects it to the tagged caret and adds its focused coverage. Complete
+compositor pictures sample transparent cap rows linearly and retain integral
+side coverage. Rectangular control clips round outward to avoid applying the
+fractional cap coverage twice. Unsupported geometry retains the rectangle path.
+
+All 16 native cases pass AddressSanitizer and UndefinedBehaviorSanitizer,
+covering two raster scales, four fractional phases, two widths, the text-control
+clip and all neighboring pixels. The focused layout test passes with Boehm,
+no GC and preallocated memory. The new normal-window Brave fixture is pixel-exact.
+The original complete-page comparison falls from 876 to **874 differing pixels**,
+with maximum channel error falling from 18 to **2**; no pixel exceeds 3. MAE is
+0.0008344650 across all 786,432 pixels. References and tolerances are unchanged.
+
+Evidence under `Build/chatgpt-svg-parity-20261101/`:
+
+- `caret-layer-native-sanitizers/` and `compositor-caret-tag-results.json`:
+  native sanitizers and all three V memory configurations pass.
+- `production-caret-layer/`: guarded production build succeeds. Other sessions
+  changed unrelated inputs during compilation; the caret helper, transport,
+  native bridge and recorder remain identical before and after. The executable
+  SHA256 is `407366bc00663be8487f2b0d3ddc484b4bb337390bed62c4170d06c889105d38`;
+  the native painter is
+  `16b596c215b3953bf9ea320fe0d9fab3e9e6569c1291633089cc86456e357e55`.
+- `candidate-validation-caret-layer/results.json`: all 16 validation groups
+  pass with stable executable/library identities. The 35 screenshot checks
+  include 14 exact focused comparisons, the default 11 smoke cases (eight
+  exact, three within their existing bounds), and ten exact SVG mutation guards.
+  Headless startup also passes.
+
+The unchanged, non-forwarding original archive capture is
+`Build/chatgpt-shadow-modules-20261031/caret-layer-20261101-acceptance/`.
+It retains the active document, visible cookie banner, 1024×768 viewport and
+60-second settle. Startup, both stylesheets and zero native script errors are
+verified. `caret-layer-20261101-editor/` separately passes native typing and Enter.
+The remaining heading, footer and cookie-edge differences leave pixel-perfect
+parity open; the archive still cannot establish a completed service reply.
+
+An ordinary rounded-shadow recording experiment was rejected because its
+focused comparison regressed. Its patches and failed captures are retained
+under the same evidence root. Earlier first-frame crashes from a shared bundle
+lacking the already-landed stationary-raster document guard also remain failures;
+only the fresh, successfully completed bundle above receives validation credit.
