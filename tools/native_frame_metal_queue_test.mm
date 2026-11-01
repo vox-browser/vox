@@ -99,6 +99,22 @@ int main()
             [sets[0] release]; [sets[1] release];
         }
 #endif
+        // Consecutive full windows retire exactly once each, and leave no
+        // queue alive until the next command. Idle release also ends a partial
+        // window immediately, regardless of the configured reuse limit.
+        [queue retireCompletedQueue];
+        int base_created = created, base_destroyed = destroyed;
+        for (int frame = 0; frame < VOX_METAL_QUEUE_FRAME_LIMIT * 3; ++frame) {
+            [queue commandBuffer];
+            assert(created == base_created + frame / VOX_METAL_QUEUE_FRAME_LIMIT + 1);
+            bool boundary = (frame + 1) % VOX_METAL_QUEUE_FRAME_LIMIT == 0;
+            assert(bool([queue finishCompletedFrame]) == boundary);
+            assert(destroyed == base_destroyed + (frame + 1) / VOX_METAL_QUEUE_FRAME_LIMIT);
+            assert(bool(last_queue) != boundary);
+        }
+        [queue commandBuffer];
+        assert(![queue finishCompletedFrame] && last_queue);
+        assert([queue retireCompletedQueue] && !last_queue);
         [queue release];
         assert(destroyed == created && factory_destroyed == 1 && !last_queue);
     }

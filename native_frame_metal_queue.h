@@ -3,7 +3,7 @@
 #import <Metal/Metal.h>
 #include <time.h>
 #ifndef VOX_METAL_QUEUE_FRAME_LIMIT
-#define VOX_METAL_QUEUE_FRAME_LIMIT 64
+#define VOX_METAL_QUEUE_FRAME_LIMIT 256
 #endif
 
 // Graphite keeps this queue identity with its Context and compiled pipelines.
