@@ -8,13 +8,14 @@ Results apply to the frozen page and pinned build in each linked report.
 | Site | Recorded date | Trials per browser | Statistic | Vox instructions | Brave observed instructions | Fewer instructions | Vox scroll FPS | Brave scroll FPS† | Evidence |
 | --- | --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | --- |
 | Old Reddit /r/programming/ | 2026-11-01 | 7 | Median | 4,954,400,539 | 9,248,675,091 | **46.43%** | 39.2–53.0 | 59.56–59.78 | [Comparison](docs/OLD_REDDIT_PROGRAMMING_INSTRUCTIONS.md) |
-| Hacker News homepage | 2026-11-01 | 7 | Median | 4,877,590,820 | 8,554,149,229 | **42.98%** | 46.1–51.5 | 59.78–59.79 | [Comparison](docs/HACKER_NEWS_BRAVE_INSTRUCTIONS.md) |
+| Hacker News homepage | 2026-11-01 | 7 | Median | 4,877,590,820 | 8,554,149,229 | **42.98%** | 59.7–59.8 | 59.78–59.79 | [Comparison](docs/HACKER_NEWS_BRAVE_INSTRUCTIONS.md), [scrolling](docs/HACKER_NEWS_SCROLLING.md) |
 | Wikipedia portal (www.wikipedia.org) | 2026-11-01 | 7 | Median | 6,686,475,010 | 9,702,898,348 | **31.09%** | 3.1–3.6 | 59.57–59.79 | [Audit](docs/OPTIMIZED_SITES_AUDIT.md), [comparison](docs/WIKIPEDIA_BRAVE_INSTRUCTIONS.md) |
 | vlang.io (CLI protocol) | 2026-11-01 | 7 | Mean | 8.630 billion | 10.500 billion | **17.81%** | 0.8–0.9 | 59.49–59.79 | [Audit](docs/OPTIMIZED_SITES_AUDIT.md), [comparison](docs/VLANG_RENDERING_INSTRUCTIONS.md) |
 
 FPS ranges span **two completed trials** per browser/page; the trial counts and
 mean/median labels above refer to instructions. The [Vox scrolling report](docs/OPTIMIZED_SITES_SCROLL_FPS.md)
-records native Cocoa input and changed-layer publications. **† Brave uses CDP
+records native Cocoa input and changed-layer publications; the
+[Hacker News follow-up](docs/HACKER_NEWS_SCROLLING.md) supplies its newer Vox range. **† Brave uses CDP
 wheel input and Chromium presentation feedback, with frame-event tracing enabled**;
 see its [report and raw evidence](docs/BRAVE_SCROLL_FPS.md). This bypasses Cocoa
 input and observes a later frame boundary, so these columns do not establish a
@@ -40,8 +41,9 @@ The reports retain exact endpoints, identities and counter limits.
 | Page | Recorded date | Vox scroll FPS | p95 interval, both trials | Intervals over 16.67 ms | Evidence |
 | --- | --- | ---: | ---: | ---: | --- |
 | Wikipedia English Main Page (live) | 2026-11-01 | **80.2–84.1** | 15.68 / 14.81 ms | 3.90% / 3.09% | [Report](docs/WIKIPEDIA_SCROLLING.md), [receipts](docs/benchmark-results/wikipedia-main-scroll-vprofile-20261101.json) |
+| Hacker News homepage (live) | 2026-11-01 | **113.1–115.7** | 10.74 / 11.67 ms | 0.17% / 2.27% | [Report](docs/HACKER_NEWS_SCROLLING.md), [receipts](docs/benchmark-results/hacker-news-scroll-2026-11-01.json) |
 
-These two fresh installed-process trials count scroll-changing native layer
+**Wikipedia:** These two fresh installed-process trials count scroll-changing native layer
 publications over the full input window. Each completes 600 precise wheel inputs
 at nominal 120 Hz, delta 1, continuous forward motion, with a 1024×764 document
 viewport at scale 2, fresh private profiles/caches and 12 seconds settling after
@@ -50,6 +52,17 @@ runtime uninitialized. The report retains median/maximum intervals, publication
 counts and boundary gaps. Occasional longer intervals remain; physical display
 scanout is unmeasured. This English Main Page result has a newer build and a
 different workload from the frozen portal instruction/Brave comparisons above.
+
+**Hacker News:** Two fresh processes of the completed installed production
+snapshot each complete 1,200 precise native inputs at nominal 120 Hz, delta 1,
+reversing every 120 events, with a 1024×768 document viewport at scale 2 and
+20 seconds settling after the title. They use the live page, empty private
+profiles/caches and normal site restrictions. The p95 intervals fit a 60 FPS
+budget; occasional misses and initial publication gaps remain. This protocol
+checks rendering headroom above 60 FPS; it differs from the 600-input, 60 Hz
+frozen-page protocol in the main table. The frozen-page controls already approached
+60 FPS before the glyph-cache change, so the report makes no isolated speedup
+claim. Physical display scanout is unmeasured.
 
 ## How to benchmark against Brave
 

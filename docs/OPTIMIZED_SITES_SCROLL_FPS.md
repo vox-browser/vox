@@ -1,13 +1,18 @@
 # Optimized-site scrolling FPS
 
-These measurements cover the frozen pages and production builds listed in
+These historical measurements cover the initial frozen-page production builds in
 [OPTIMIZED_SITES.md](../OPTIMIZED_SITES.md). They measure **scroll-changing native
 layer publications**, after Cocoa `updateLayer` completes. They do not measure
 physical display scanout. Brave uses a separate, explicitly labeled
 [CDP/presentation-feedback measurement](BRAVE_SCROLL_FPS.md).
 
-Each Vox catalog range spans two completed, unprofiled trials. Instruction counts,
-instruction-cohort trial counts and their mean/median labels remain separate.
+Each initial Vox catalog range spans two completed, unprofiled trials.
+The [Hacker News follow-up](HACKER_NEWS_SCROLLING.md) updates that row to
+59.7–59.8 FPS under the same 60 Hz protocol and separately verifies live
+scrolling above 60 FPS with 120 Hz input; the original evidence below remains.
+
+Instruction counts, instruction-cohort trial counts and their mean/median labels
+remain separate.
 The [durable receipt](benchmark-results/optimized-sites-scroll-2026-11-01.json)
 contains commands, identities, host load, actual exits, all attempts and exact
 statistics. The [compressed raw records](benchmark-results/optimized-sites-scroll-2026-11-01-raw.json.gz)
