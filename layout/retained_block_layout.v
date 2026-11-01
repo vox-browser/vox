@@ -89,6 +89,7 @@ fn collect_retained_block_inputs(node &Node, mut inputs []RetainedInlineInput) b
 		sibling_index: node.index_in_parent_
 		text: text
 		font_list: computed.cached_computed_font_list()
+		font_generation: computed.cached_computed_font_list_generation_
 		line_height: line_height
 		root_font_size: computed.root_font_size_px_
 		root_line_height: computed.root_line_height_px_

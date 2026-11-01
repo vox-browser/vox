@@ -13,6 +13,7 @@ struct RetainedInlineInput {
 	sibling_index  int
 	text           string
 	font_list      ?&css.FontCascadeList
+	font_generation u64
 	line_height    CSSPixels
 	root_font_size f64
 	root_line_height f64
@@ -100,6 +101,7 @@ fn collect_retained_inline_inputs(node &Node, root bool, mut inputs []RetainedIn
 		sibling_index:  node.index_in_parent_
 		text:           text
 		font_list:      computed.cached_computed_font_list()
+		font_generation: computed.cached_computed_font_list_generation_
 		line_height:    line_height
 		root_font_size: computed.root_font_size_px_
 		root_line_height: computed.root_line_height_px_
@@ -134,22 +136,26 @@ fn retained_inline_inputs_are_current(inputs []RetainedInlineInput) bool {
 }
 
 // A completed face advances the document font generation even for other
-// weights and families. After ordinary style/tree validation, settled cascades
-// can retain their geometry when their actual faces and metric contexts match.
-// FontCascadeList::equals rejects either cascade while it has pending faces,
-// so fallback visibility and first-use loading keep the full layout path.
+// weights and families. After ordinary style/tree validation, retain geometry
+// when its actual faces and metric contexts match. Pending cascades additionally
+// require the original live FontComputer cache entry, which expires on selected
+// face loads, failures, display-period changes and descriptor mutations.
 fn retained_layout_fonts_are_current(inputs []RetainedInlineInput) bool {
+	mut reused_pending := false
 	for input in inputs {
 		previous := input.font_list or { return false }
 		computed := input.node.computed_values()
 		computer := css.css_style_computer_for(input.node.document()).font_computer()
 		current := computed.computed_font_list(computer)
-		if !previous.equals(current) || computed.line_height() != input.line_height
+		same_pending := retained_pending_layout_cascade_is_current(input, previous, current, computed, computer)
+		if (!same_pending && !previous.equals(current)) || computed.line_height() != input.line_height
 			|| computed.root_font_size_px_ != input.root_font_size
 			|| computed.root_line_height_px_ != input.root_line_height {
 			return false
 		}
+		reused_pending = reused_pending || same_pending
 	}
+	if reused_pending { report_live_pending_layout_reuse() }
 	return true
 }
 
