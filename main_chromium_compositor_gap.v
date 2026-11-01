@@ -77,6 +77,7 @@ fn chromium_compositor_gap_can_flush_parent(commands []layout.PaintCommand,
 			return false
 		}
 		command := unsafe { &commands[index] }
+		if chromium_compositor_leaf_is_culled(command,viewport) { continue }
 		if command.fixed_to_viewport || command.visual_layer_data != none
 			|| command.kind.starts_with('begin_') || command.kind.starts_with('end_') {
 			return false
@@ -102,6 +103,10 @@ fn chromium_compositor_gap_can_flush_parent(commands []layout.PaintCommand,
 			after_ink << ink
 		}
 	}
+	// A completed prefix can publish before any balanced child effect when
+	// the resumed parent has no viewport ink. The child still executes in its
+	// original order, even if its filter moves pixels into the viewport.
+	if !has_after { return chromium_compositor_gap_has_balanced_scopes(commands,start,end) }
 	if has_before && has_after && chromium_compositor_ink_overlaps(before, after) {
 		// A union fills holes between otherwise disjoint parent leaves, for
 		// example a footer background recorded before the intervening contents.
