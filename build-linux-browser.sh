@@ -50,6 +50,7 @@ mkdir -p "$build_dir"
 python3 "$repo_dir/tools/build_regex_backend.py"
 python3 "$repo_dir/tools/build_linux_native.py"
 http_modules=$(python3 "$repo_dir/tools/prepare_http_compat.py" "$v_compiler")
+ui2_modules=$(python3 "$repo_dir/tools/prepare_ui2.py" "$v_compiler")
 linux_modules=$(python3 "$repo_dir/tools/prepare_linux_modules.py" "$v_compiler")
 # The compiler qualifies packages from the nearest `modules`,
 # `.vmodules`, `vlib` or lookup-path-named directory, or from an ancestor v.mod.
@@ -59,7 +60,7 @@ linux_modules=$(python3 "$repo_dir/tools/prepare_linux_modules.py" "$v_compiler"
 set -- -memory-limit 10G -enable-globals -cc "${CC:-clang}" \
     -d use_openssl \
     -exclude '@vlib/time/zoneinfo.native.v' \
-    -path "$repo_dir|$linux_modules|$http_modules|@vmodules|@vlib" -gc "$gc_mode"
+    -path "$repo_dir|$linux_modules|$http_modules|$ui2_modules|@vmodules|@vlib" -gc "$gc_mode"
 if [ "$gc_mode" = none ]; then
     set -- "$@" -prod
 else

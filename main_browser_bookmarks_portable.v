@@ -3,6 +3,8 @@ module main
 $if !vox_ui2 ? {
 	import gg
 	import math
+	import bookmarkui
+	import ui2
 
 	fn (mut app BrowserApp) portable_bookmark_range(width int) (int, int) {
 		items := app.browser_bar_bookmarks()
@@ -12,6 +14,16 @@ $if !vox_ui2 ? {
 	}
 
 	fn (mut app BrowserApp) draw_portable_bookmarks(width int) {
+		$if linux || ui2_custom_rendering ? {
+			chrome := app.browser_chrome_state(width, app.ctx.height)
+			state := app.browser_bookmark_ui_state(chrome)
+			mut images := map[string]int{}
+			for i, item in state.items {
+				if item.icon != '' { images[item.icon] = chrome.bookmark_favicons[i] }
+			}
+			ui2.draw_embedded_elements(app.ctx, bookmarkui.elements(state), images, portable_bookmark_event)
+			return
+		}
 		if !app.bookmark_bar_visible() { return }
 		items := app.browser_bar_bookmarks()
 		top := int(app.bookmark_bar_top())
@@ -52,7 +64,28 @@ $if !vox_ui2 ? {
 		}
 	}
 
+	fn portable_bookmark_event(action string) {
+		if address_bar_owner.app == unsafe { nil } { return }
+		mut app := address_bar_owner.app.active_browser_tab()
+		app.activate_browser_chrome(action)
+		request_browser_frame()
+	}
+
+	fn (mut app BrowserApp) handle_portable_bookmark_event(event &gg.Event) bool {
+		$if linux || ui2_custom_rendering ? {
+			mut owner := unsafe { address_bar_owner }
+			owner.app = app
+			if ui2.embedded_elements_event(event) {
+				if event.typ == .mouse_down { app.suppress_next_click_for_chrome = true }
+				request_browser_frame()
+				return true
+			}
+		}
+		return false
+	}
+
 	fn (mut app BrowserApp) handle_portable_bookmark_click(x f32, y f32) bool {
+		$if linux || ui2_custom_rendering ? { return false }
 		if !app.bookmark_bar_visible() || y < app.bookmark_bar_top() || y >= app.page_top() {
 			return false
 		}

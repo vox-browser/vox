@@ -12,9 +12,12 @@ default. Cmd+Shift+D on macOS or Ctrl+Shift+D on Windows/Linux toggles it, inclu
 address editing. Cmd+Shift+B toggles the bookmarks bar, and Cmd+D saves the loaded
 page's URL and title even while the address field contains unsubmitted edits.
 Windows/Linux use Ctrl for those shortcuts. Bookmarks and bar visibility are
-shared across tabs and saved in the profile's `bookmarks.json`. Native bookmark
-buttons open pages, offer removal through their context menus, and overflow
-into a menu when the window is narrow.
+shared across tabs and saved in the profile's `bookmarks.json`. Bookmark controls, layout, context actions and the scrollable overflow are declared
+in `bookmarkui/` with UI2 elements shared by macOS and Linux. UI2 owns the
+buttons, images, tooltips, accessibility and event dispatch. Flat native-styled
+buttons receive hover feedback from each UI2 backend. Overflow rows also
+have a remove button. Favicons use the browser's decoder and content-addressed
+PNG cache, so UI2 needs no Cocoa image adapter or additional requests.
 The combined tab strip and toolbar is 60px high normally and 92px with diagnostics;
 the bookmarks bar adds 28px when visible.
 The document viewport and pointer coordinates follow that height. Cached
@@ -34,8 +37,11 @@ enables it with `-d vox_ui2`. It reads `UI2_SOURCE_DIR`, defaulting to
 current compiler checkout's `macos` bridge, makes three floating-point calls
 explicit for the browser's compatibility frontend, and keeps native label text
 access on the actual `NSTextField` when AppKit adds private drawing subviews.
-Linux and ordinary builds without that define retain the portable GG chrome;
-the embedding adapter currently uses AppKit.
+Linux stages the same module and draws the bookmark elements through UI2's
+custom renderer in the existing GG pass. Its embedding adapter consumes only
+UI2 pointer targets, leaving document input available. The other Linux chrome
+controls retain their existing GG path. macOS builds that opt out of UI2 retain
+the compatibility bookmark bar.
 
 To exercise native navigation-button actions and enabled states, field editing,
 Enter navigation, Cmd+L, clipboard operations, Unicode deletion, Escape,
@@ -53,7 +59,7 @@ sh tools/test_browser_tabs.sh
 sh tools/test_browser_tabs.sh -gc none
 ```
 
-Bookmark shortcuts, tab sharing, native bar geometry, navigation and overflow:
+Bookmark shortcuts, tab sharing, mounted UI2 bar geometry, navigation and overflow:
 
 ```sh
 python3 tools/run_memory_bounded.py --report Build/bookmarks-chrome-test.json -- \
@@ -62,6 +68,22 @@ python3 tools/run_memory_bounded.py --report Build/bookmarks-chrome-test.json --
 python3 tools/run_memory_bounded.py --limit-gib 3 --report Build/bookmarks-store-test.json -- \
   v -enable-globals -memory-limit 10G test browserbookmarks
 ```
+
+The shared declaration and the custom backend's pointer routing can be checked
+without compiling the document engine (stage UI2 first with
+`python3 tools/prepare_ui2.py` and put the printed module directory in `-path`):
+
+```sh
+v -enable-globals -memory-limit 10G test bookmarkui
+v -enable-globals -memory-limit 10G -d ui2_custom_rendering \
+  -path 'Build/v/modules|.|@vmodules|@vlib' test bookmarkui
+v -enable-globals -memory-limit 10G -d vox_ui2 \
+  -path 'Build/v/modules|.|@vmodules|@vlib' bookmarkui/mounted_darwin_test.v
+```
+
+Run these under the repository memory guard, using 3 GiB for focused test
+executables. The custom-backend input test uses a CPU command recorder and
+native text drawing on macOS; it does not establish Linux window or GPU parity.
 
 The integrated title row, real window-button selectors, top-row hit testing,
 content-size preservation and restoration also have a standalone AppKit check:

@@ -41,9 +41,12 @@ fn (app &BrowserApp) bookmark_bar_top() f64 {
 
 fn (mut app BrowserApp) activate_browser_bookmarks(action string) {
 	app.initialize_browser_bookmarks()
-	if app.optimized_sites_only() && !action.starts_with('bookmark-open:') { return }
+	if app.optimized_sites_only() && !action.starts_with('bookmark-open:') && action !in ['bookmarks-more', 'bookmarks-dismiss'] { return }
 	match action {
+		'bookmarks-more' { app.bookmark_overflow_open = !app.bookmark_overflow_open }
+		'bookmarks-dismiss' { app.bookmark_overflow_open = false }
 		'bookmarks-toggle' {
+			app.bookmark_overflow_open = false
 			app.bookmarks.toggle_visible() or {
 				app.report_bookmarks_error(err.msg())
 				return
@@ -63,6 +66,7 @@ fn (mut app BrowserApp) activate_browser_bookmarks(action string) {
 				index := action.all_after(':').int()
 				items := app.browser_bar_bookmarks()
 				if index < 0 || index >= items.len { return }
+				app.bookmark_overflow_open = false
 				app.blur_address_bar()
 				app.navigate(items[index].url, true)
 				return

@@ -118,8 +118,8 @@ $if vox_ui2 ? {
 	fn C.native_test_address_close(window voidptr)
 	fn C.native_test_address_selection(field voidptr) uint
 	fn C.native_test_settings_address_state(control voidptr, editable int) int
-	fn C.native_test_bookmark_bar_geometry(width int, top int) int
-	fn C.native_test_bookmark_click(index int)
+	fn C.native_test_bookmark_bar_geometry(control voidptr, width int, top int) int
+	fn C.native_test_chrome_click(control voidptr)
 
 	fn test_native_address_is_selectable_read_only_and_bookmark_links_use_the_catalog() {
 		directory := optimized_browsing_test_settings()
@@ -140,14 +140,14 @@ $if vox_ui2 ? {
 		}
 		field := app.mount_ui2_chrome(C.native_test_address_parent(window), 800, 600)!
 		assert C.native_test_settings_address_state(field, 0) != 0
-		assert C.native_test_bookmark_bar_geometry(800, int(app.bookmark_bar_top())) != 0
+		assert C.native_test_bookmark_bar_geometry(ui2.embedded_browser_control('bookmarks-bar'), 800, int(app.bookmark_bar_top())) != 0
 		app.focus_address_bar()
 		assert C.native_test_address_selection(field) == u32(app.address.len)
 		ui2.set_text('address', 'https://unconfirmed.example/')
 		address_bar_event('address-change')
 		assert ui2.text('address') == 'https://www.wikipedia.org/'
 		app.navigation_work_depth = 1
-		C.native_test_bookmark_click(1)
+		C.native_test_chrome_click(ui2.embedded_browser_control('bookmark-open:1'))
 		assert (app.deferred_navigation_input or { panic('bookmark did not dispatch') }).address == 'https://old.reddit.com/r/programming/'
 		browsersettings.save(browsersettings.Proxy{allow_any_site: true})!
 		app.update_browser_chrome(800, 600)

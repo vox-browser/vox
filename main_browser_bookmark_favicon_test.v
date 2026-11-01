@@ -62,10 +62,9 @@ $if vox_ui2 ? {
 	fn C.native_test_address_window() voidptr
 	fn C.native_test_address_parent(window voidptr) voidptr
 	fn C.native_test_address_close(window voidptr)
-	fn C.native_test_bookmark_has_favicon(index int) int
-	fn C.native_test_bookmark_button(index int) voidptr
-	fn C.native_test_bookmark_capture(path &char)
-	fn C.native_test_bookmark_click(index int)
+	fn C.native_test_bookmark_has_favicon(control voidptr) int
+	fn C.native_test_bookmark_capture(control voidptr, path &char)
+	fn C.native_test_chrome_click(control voidptr)
 
 	fn test_native_default_favicons_and_overflow_render_and_click_the_programming_bookmark() {
 		window := C.native_test_address_window()
@@ -73,13 +72,14 @@ $if vox_ui2 ? {
 		app.bookmarks.seed_optimized_sites()!
 		app.mount_ui2_chrome(C.native_test_address_parent(window), 800, 600)!
 		defer { app.unmount_address_bar(); app.document.finalize(); C.native_test_address_close(window) }
-		for index in 0 .. 3 { assert C.native_test_bookmark_has_favicon(index) != 0 }
-		if path := os.getenv_opt('VOX_BOOKMARK_CAPTURE') { C.native_test_bookmark_capture(path.str) }
+		for index in 0 .. 3 { assert C.native_test_bookmark_has_favicon(ui2.embedded_browser_control('bookmark-open:${index}')) != 0 }
+		if path := os.getenv_opt('VOX_BOOKMARK_CAPTURE') { C.native_test_bookmark_capture(ui2.embedded_browser_control('bookmarks-bar'), path.str) }
 		app.navigation_work_depth = 1
-		C.native_test_bookmark_click(1)
+		C.native_test_chrome_click(ui2.embedded_browser_control('bookmark-open:1'))
 		assert (app.deferred_navigation_input or { panic('missing bookmark click') }).address == 'https://old.reddit.com/r/programming/'
 		app.update_browser_chrome(140, 600)
-		for index in 0 .. 3 { assert C.native_test_bookmark_has_favicon(index) != 0 }
+		C.native_test_chrome_click(ui2.embedded_browser_control('bookmarks-more'))
+		for index in 0 .. 3 { assert C.native_test_bookmark_has_favicon(ui2.embedded_browser_control('bookmark-open:${index}')) != 0 }
 	}
 
 	fn test_native_remote_icon_completion_preserves_the_existing_button() {
@@ -91,11 +91,11 @@ $if vox_ui2 ? {
 		app.background_resource_pending[address] = true
 		app.mount_ui2_chrome(C.native_test_address_parent(window), 800, 600)!
 		defer { app.unmount_address_bar(); app.document.finalize(); C.native_test_address_close(window) }
-		button := C.native_test_bookmark_button(0)
-		assert button != unsafe { nil } && C.native_test_bookmark_has_favicon(0) == 0
+		button := ui2.embedded_browser_control('bookmark-open:0')
+		assert button != unsafe { nil } && C.native_test_bookmark_has_favicon(ui2.embedded_browser_control('bookmark-open:0')) == 0
 		app.resource_cache[address] = PreloadedResource{url: address, body: base64.decode(bookmark_favicon_png).bytestr()}
 		app.update_browser_chrome(800, 600)
-		assert C.native_test_bookmark_has_favicon(0) != 0
-		assert C.native_test_bookmark_button(0) == button
+		assert C.native_test_bookmark_has_favicon(ui2.embedded_browser_control('bookmark-open:0')) != 0
+		assert ui2.embedded_browser_control('bookmark-open:0') == button
 	}
 }

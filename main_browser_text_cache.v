@@ -21,6 +21,7 @@ mut:
 	favicon_complete    bool
 	favicon_fallback    bool
 	tab_favicons        []int
+	bookmark_icon_paths map[int]string
 	bookmark_favicons   []int
 }
 

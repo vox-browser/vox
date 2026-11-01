@@ -24,7 +24,7 @@ def main():
     repo = Path(__file__).resolve().parent.parent
     modules = Path(os.environ.get("VMODULES", str(Path.home() / ".vmodules")))
     source = Path(os.environ.get("UI2_SOURCE_DIR", str(modules / "ui2"))).resolve()
-    if not (source / "appkit/ui_macos_darwin.v").is_file():
+    if not (source / "ui/ui.v").is_file():
         raise SystemExit("UI2 not found. Set UI2_SOURCE_DIR to your UI2 checkout.")
     target = repo / "Build/v/modules/ui2"
     target.mkdir(parents=True, exist_ok=True)
@@ -48,6 +48,21 @@ def main():
                 "\tif macos.msg_bool_id(view, 'isKindOfClass:', macos.get_class('NSTextField')) {\n"
                 "\t\treturn view\n\t}\n",
             )
+            # A native-styled transparent button is flat at rest. Let UI2's
+            # backend supply the hover/pressed bezel, without browser subclasses.
+            text = text.replace(
+                "\tif native_style && box_draws_fill(box) {",
+                "\tmacos.msg_void_bool(button_view, 'setShowsBorderOnlyWhileMouseInside:', false)\n"
+                "\tif native_style && !box_draws_fill(box) {\n"
+                "\t\tmacos.msg_void_i64(button_view, 'setButtonType:', ns_button_type_momentary_push_in)\n"
+                "\t\tmacos.msg_void_u64(button_view, 'setBezelStyle:', 13)\n"
+                "\t\tmacos.msg_void_bool(button_view, 'setBordered:', true)\n"
+                "\t\tmacos.msg_void_bool(button_view, 'setShowsBorderOnlyWhileMouseInside:', true)\n"
+                "\t\tmacos.msg_void_bool(button_view, 'setWantsLayer:', false)\n"
+                "\t\tmacos.msg_void1(button_view, 'setFont:', native_font(size, bold, italic))\n"
+                "\t\tnative_control_set_attributed_title(button_view, title, text_hex, size, bold, italic, underline)\n"
+                "\t} else if native_style && box_draws_fill(box) {",
+            )
             write_if_changed(output, text)
         else:
             link_to(output, entry)
@@ -59,13 +74,28 @@ def main():
     ui.mkdir(exist_ok=True)
     for entry in (source / "ui").iterdir():
         output = ui / entry.name
-        if entry.name == "chart.v":
+        if entry.name in {"chart.v", "ui_immediate.c.v"}:
             if output.is_symlink():
                 output.unlink()
             text = entry.read_text()
             text = text.replace("math.max(0, math.min(1,", "math.max(0.0, math.min(1.0,")
             text = text.replace("math.max(48, f64(", "math.max(48.0, f64(")
             text = text.replace("math.max(0, r * r", "math.max(0.0, r * r")
+            # Transparent buttons are used as dismiss targets over documents.
+            text = text.replace(
+                "\t\t\t\t} else {\n\t\t\t\t\tdraw_rect(ctx, x, y, el.frame.width, el.frame.height, el.box.bg, el.box.radius)",
+                "\t\t\t\t} else if box_draws_fill(el.box) {\n\t\t\t\t\tdraw_rect(ctx, x, y, el.frame.width, el.frame.height, el.box.bg, el.box.radius)",
+            )
+            text = text.replace(
+                "\t\t\t\tif el.native_style && el.box.bg == unstyled_box_bg {",
+                "\t\t\t\tif el.native_style && el.box.transparent {\n"
+                "\t\t\t\t\tif (g_tooltip.pointer_in && g_tooltip.pointer_x >= x && g_tooltip.pointer_x < x + el.frame.width\n"
+                "\t\t\t\t\t\t&& g_tooltip.pointer_y >= y && g_tooltip.pointer_y < y + el.frame.height)\n"
+                "\t\t\t\t\t\t|| (g_touch.down && g_touch.pointer_target.id == el.id) {\n"
+                "\t\t\t\t\t\tdraw_rect(ctx, x, y, el.frame.width, el.frame.height, el.box.bg, el.box.radius)\n"
+                "\t\t\t\t\t}\n"
+                "\t\t\t\t} else if el.native_style && el.box.bg == unstyled_box_bg {",
+            )
             write_if_changed(output, text)
         else:
             link_to(output, entry)
@@ -75,26 +105,25 @@ def main():
     )
     compiler = Path(compiler_name).resolve()
     macos_source = compiler.parent / "vlib/macos"
-    if not (macos_source / "objc_bridge.h").is_file():
+    if sys.platform == "darwin" and not (macos_source / "objc_bridge.h").is_file():
         raise SystemExit("UI2 requires a current V checkout with vlib/macos.")
-    macos = target.parent / "macos"
-    macos.mkdir(exist_ok=True)
-    write_if_changed(
-        macos / "macos.c.v",
-        (macos_source / "macos.c.v").read_text().replace(
-            "@VEXEROOT/vlib/macos/objc_bridge.h", str(macos_source / "objc_bridge.h")
-        ),
-    )
+    if sys.platform == "darwin":
+        macos = target.parent / "macos"
+        macos.mkdir(exist_ok=True)
+        write_if_changed(
+            macos / "macos.c.v",
+            (macos_source / "macos.c.v").read_text().replace(
+                "@VEXEROOT/vlib/macos/objc_bridge.h", str(macos_source / "objc_bridge.h")
+            ),
+        )
     adapter = target / "vox"
     if adapter.is_symlink():
         adapter.unlink()
     adapter.mkdir(exist_ok=True)
     # Remove the previous single-control adapter when refreshing an old stage.
     (adapter / "embedded_textbox_darwin.v").unlink(missing_ok=True)
-    write_if_changed(
-        adapter / "embedded_browser_darwin.v",
-        (repo / "tools/ui2/embedded_browser_darwin.v").read_text(),
-    )
+    for name in ("embedded_browser_darwin.v", "embedded_elements_custom.c.v"):
+        write_if_changed(adapter / name, (repo / "tools/ui2" / name).read_text())
     write_if_changed(
         target / "v.mod",
         "Module {\n name: 'ui2'\n"

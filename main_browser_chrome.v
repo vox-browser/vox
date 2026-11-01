@@ -1,6 +1,7 @@
 module main
 
 import gg
+import platform
 
 $if vox_ui2 ? {
 	import ui2
@@ -33,6 +34,7 @@ struct BrowserChromeState {
 	bookmarks_version u64
 	bookmarks_error string
 	bookmark_favicons []int
+	bookmark_overflow_open bool
 }
 
 fn browser_chrome_requires_update(previous BrowserChromeState, next BrowserChromeState) bool {
@@ -112,6 +114,7 @@ fn (app &BrowserApp) browser_chrome_state(width int, height int) BrowserChromeSt
 		bookmarks_visible: app.bookmark_bar_visible()
 		bookmarks_version: (if app.bookmarks != unsafe { nil } { app.bookmarks.version } else { u64(0) }) * 2 + if app.optimized_sites_only() { u64(1) } else { u64(0) }
 		bookmarks_error: app.bookmarks_error
+		bookmark_overflow_open: app.bookmark_overflow_open
 		bookmark_favicons: app.cached_browser_bookmark_favicons()
 	}
 }
@@ -174,14 +177,17 @@ $if vox_ui2 ? {
 	}
 
 	fn (mut app BrowserApp) mount_ui2_chrome(parent voidptr, width int, height int) !voidptr {
+		persistent := platform.enter_persistent()
+		defer { platform.leave_persistent(persistent) }
+		mut owner := unsafe { address_bar_owner }
+		owner.app = app
 		C.native_browser_chrome_prepare_window(parent)
 		chrome := app.browser_chrome_state(width, height)
-		ui2.mount_embedded_browser(parent, browser_chrome_elements(chrome), address_bar_event)!
+		ui2.mount_embedded_browser(parent, app.browser_chrome_ui_elements(chrome), address_bar_event)!
 		app.browser_chrome = chrome
 		app.native_address_bar = true
 		app.style_native_browser_chrome()
 		app.update_native_browser_tabs(chrome)
-		app.update_native_browser_bookmarks(chrome)
 		C.native_browser_chrome_start_memory(ui2.embedded_browser_control('memory'))
 		return ui2.embedded_browser_control('address')
 	}
@@ -197,14 +203,20 @@ fn (mut app BrowserApp) update_browser_chrome(width int, height int) {
 		changed := browser_chrome_requires_update(app.browser_chrome, chrome)
 		app.browser_chrome = chrome
 		if !changed { return }
-		ui2.update_embedded_browser(browser_chrome_elements(chrome))
+		// UI2 retains action IDs and menu keys after the frame scratch expires.
+		persistent := platform.enter_persistent()
+		defer { platform.leave_persistent(persistent) }
+		ui2.update_embedded_browser(app.browser_chrome_ui_elements(chrome))
 		app.style_native_browser_chrome()
 		app.update_native_browser_tabs(chrome)
-		app.update_native_browser_bookmarks(chrome)
 	}
 }
 
 fn (mut app BrowserApp) activate_browser_chrome(action string) {
+	if action.starts_with('bookmark-') || action.starts_with('bookmarks-') {
+		app.activate_browser_bookmarks(action)
+		return
+	}
 	if action.starts_with('tab-') {
 		app.activate_tab_chrome(action)
 		return

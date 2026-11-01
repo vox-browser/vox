@@ -41,7 +41,6 @@ fn (mut app BrowserApp) unmount_address_bar() {
 		ui2.remove_embedded_settings()
 		C.native_browser_settings_remove()
 		C.native_browser_tabs_remove()
-		C.native_browser_bookmarks_remove()
 		C.native_browser_chrome_restore_window()
 		C.native_address_bar_remove_shortcuts()
 		C.native_browser_chrome_stop_memory()

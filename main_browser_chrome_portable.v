@@ -2,8 +2,8 @@ module main
 
 import gg
 
-// The Linux GG shell retains its portable controls until UI2 supports embedding
-// in its X11 window. Production macOS builds compile only the UI2 chrome.
+// Linux retains GG navigation controls; bookmarks use UI2 in that same draw
+// pass. Production macOS builds mount the native UI2 chrome instead.
 $if !vox_ui2 ? {
 	fn (mut app BrowserApp) draw_chrome_button(x f32, label string, enabled bool) {
 		foreground := if enabled { gg.rgb(125, 125, 125) } else { gg.rgb(205, 205, 205) }
