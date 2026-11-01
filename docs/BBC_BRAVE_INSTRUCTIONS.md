@@ -1,21 +1,22 @@
 # BBC homepage instruction comparison
 
 **The requested 10% advantage remains open. BBC does not qualify for
-`OPTIMIZED_SITES.md`.** The latest seven-pair cohort has a Vox median of
-**36,673,262,472** retired instructions and a Brave lower-bound median of
-**16,116,361,443**. All 21 content audits, fixed pixel comparisons and native
-exits pass. The conservative ratio is **2.3992396531867937**, above 0.9:
-`381236402140 > 143008957638` fails the integer gate. Every observation,
-including first launches, remains included.
+`OPTIMIZED_SITES.md`.** The latest seven-pair attempt (cohort 29) has a Vox
+median of **36,552,719,392** retired instructions and a Brave lower-bound median
+of **16,368,303,379**. All content audits and native exits pass, but Brave pair 7
+fails its unchanged pixel reference, invalidating acceptance. No sample is
+excluded or retried. Its conservative ratio is **2.3885773998393387**, above 0.9:
+`381249610600 > 143652305160` also fails the integer gate.
 
-The same-binary attribute-bucket control has median 37,003,319,838. The observed
-median reduction is 0.8920%, with conservative control ratio 1.080487412955897.
-Both gates fail; this does not establish accepted BBC savings. Earlier failing
-and invalid observations remain retained.
+The same-binary deletion control has median 35,753,542,095. The candidate median
+regresses 2.2352%, with conservative control ratio 1.0806463811663494; neither
+gate passes. Cohort 28 remains the latest fully valid observation, with Vox
+median 36,673,262,472 and Brave lower median 16,116,361,443. Earlier failing and
+invalid observations remain retained; no accepted BBC savings are claimed here.
 
 The machine-readable [evidence](benchmark-results/bbc-brave-instructions-2026-11-01.json)
-retains 697 attempts and 28 cohorts, including failures and first launches;
-574 complete cohort raw results were independently checked against the recorded
+retains 720 attempts and 29 cohorts, including failures and first launches;
+595 complete cohort raw results were independently checked against the recorded
 vectors, medians and integer gates. It also retains ownership audits, commands and artifact hashes. Raw archives, logs,
 PNGs, executable copies, PID registries, compiler output and guard receipts are
 under `Build/bbc-home-instructions-20261101-054807/` in the canonical checkout.
@@ -91,6 +92,7 @@ capture marker. An invalid cohort is retained for diagnosis, not acceptance.
 | Shared geometry accessors, recovered production build | 34,949,303,465 | 15,879,294,537 | 2.31320003135991 | All observations valid; Brave and matched-control gates fail |
 | Shared compact Node properties | 36,123,754,014 | 15,806,323,773 | 2.3259499042136356 | All observations valid; median regresses against control; both gates fail |
 | Required attribute buckets before tag buckets | 36,673,262,472 | 16,116,361,443 | 2.3992396531867937 | All observations valid; Brave and matched-control gates fail |
+| Selective ordinary style-rule deletion | 36,552,719,392 | 16,368,303,379 | 2.3885773998393387 | Brave pair 7 photo differs; median regresses against control; both gates fail |
 
 The grid block-height cohort alternates an older control, candidate and Brave;
 control/candidate medians are 101,567,929,247 and 90,700,737,334 (10.70% observed
@@ -1107,3 +1109,52 @@ receives no unprofiled instruction credit. Raw stacks, generated-source and
 build identities, guard receipts, and the fixed-reference comparison are in
 `full-pass-trace-probe-build/` and
 `full-pass-trace-diagnostic-validation.json` under the evidence root.
+
+## Ordinary inline style-rule deletion (cohort 29)
+
+Commit `682d53b9` projects an ordinary inline rule's selector invalidation before
+CSSOM removal clears its parent stylesheet and namespace context. It rebuilds
+the owning rule cache and marks the projected subjects, preserving broad paths
+for constructed sheets, other owners, nested/global rules and unbounded
+selectors. Independent media-match changes retain pre-deletion shadow effects
+when falling back. Tooling commit `9502e54c` selects the old path with
+`--control-disable-deleted-style-rule-invalidation` in the same binary.
+
+The corrected focused selection passes 55 cases in four files, in default,
+no-GC and preallocated modes, with both enabled and disabled paths: all nine
+compile/runtime jobs exit zero. It exercises inheritance, generated pseudos,
+namespaces, CSSOM errors, host/slot inheritance and media-change fallback.
+The initial test helper's compile failure and the earlier focused success before
+the media fallback review are retained. An obsolete production compilation was
+explicitly stopped during that correction: guard exit 125, shell exit -15,
+79.534449 seconds. It supplies no browser validation.
+
+The corrected production build exits zero in 193.029545042 seconds, sampled
+peak 9,020,604,416 bytes. Its executable SHA256 is
+`9b8757b08c36857d0515dd1bf78c07bbdef68bcd3f31bfa853e571f31f0f1cf8`;
+generated C is `80f2eb62651673b3b4d259722c7e627009530b8c95bc8a5096f21722480786ea`.
+The three owned sources remain stable through compilation. Fresh headless
+startup, eleven screenshot smoke cases with their unchanged tolerances, and
+eight exact SVG mutation checks pass. The first screenshot wrapper attempts
+failed before browser launch because the copied capture script lacked execute
+permission; those exits are retained, and only the failed checks were rerun
+after correcting the script mode.
+
+Separate archived BBC diagnostics match the original document pixels exactly,
+pass content/native exits and record one JavaScriptCore context with 1,965
+candidate and 2,029 control evaluations. Thirteen candidate deletions take the
+new path, versus zero control traces. They include broad reset selectors as
+well as consent-overlay rules; eligibility alone does not establish savings.
+All fourteen Vox captures in the cohort match the original reference. Brave
+pair 7 differs in a photo region by 304,064 pixels (maximum channel error 18);
+all other captures match. Every raw result is retained. The candidate/control
+medians regress as reported above, so no broad-suite cadence credit or reset
+is taken. The memory guard adopts 70 processes without adoption error, records
+1,403,207,680 peak sampled bytes over 114.093986 seconds, and returns the
+benchmark's failing exit 1. Browser kernel exits are all zero.
+
+Receipts are `deleted-style-rule-cohort/`,
+`deleted-style-rule-cohort-derived.json`, `deleted-style-rule-checks*/`,
+`deleted-style-rule-build*/`, `deleted-style-rule-compiled-witness-v2/`,
+`deleted-style-rule-validation/` and the enabled/disabled diagnostic validations
+under the retained evidence root. This attempt adds no BBC catalog entry.
