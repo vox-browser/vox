@@ -3,9 +3,14 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <spawn.h>
+#include <stdlib.h>
 #include <sys/file.h>
 #include <sys/wait.h>
 #include <unistd.h>
+
+static int vox_tabs_create_directory(char *pattern) {
+    return mkdtemp(pattern) ? 0 : (errno ? errno : EINVAL);
+}
 
 // Keep the lock inode for the session's entire lifetime. Unlinking a lock on
 // release lets a third process lock a different inode while a waiter holds it.

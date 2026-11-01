@@ -13,6 +13,7 @@ fn C.vox_tabs_spawn(&char, &&char, &&char) i32
 fn C.vox_tabs_alive(i32) i32
 fn C.vox_tabs_terminate(i32)
 fn C.vox_tabs_reap(i32) i32
+fn C.vox_tabs_create_directory(&char) i32
 
 pub struct Tab {
 pub mut:
@@ -62,8 +63,7 @@ pub fn create(frame Frame) !&Session {
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
 	initialize_session_codec()!
-	folder := os.join_path(os.temp_dir(), 'vox-tabs-${rand.uuid_v4()}')
-	os.mkdir(folder)!
+	folder := create_session_directory(os.temp_dir())!
 	os.chmod(folder, 0o700)!
 	id := rand.uuid_v4()
 	mut session := &Session{ folder: folder.clone(), id: id.clone() }
@@ -73,6 +73,18 @@ pub fn create(frame Frame) !&Session {
 	session.save(state)!
 	session.remember(state)
 	return session
+}
+
+// A stale process's directory must never be selected again when an application
+// PRNG sequence repeats. The OS reserves the name and creates it atomically.
+fn create_session_directory(root string) !string {
+	mut pattern := os.join_path(root, 'vox-tabs-XXXXXX').bytes()
+	pattern << u8(0)
+	code := C.vox_tabs_create_directory(&char(pattern.data))
+	if code != 0 {
+		return error_with_code('could not create tab session directory in ${root}', int(code))
+	}
+	return unsafe { tos_clone(&pattern[0]) }
 }
 
 pub fn join(folder string, id string) !&Session {
