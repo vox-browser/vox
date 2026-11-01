@@ -194,6 +194,8 @@ def parse_args(argv=None):
                    help='Alternate the same Vox binary with geometry bound to exact font generations')
     control.add_argument('--control-font-refresh-cascades', action='store_true',
                    help='Alternate the same Vox binary with cascades cleared on every font-input refresh')
+    control.add_argument('--control-pending-font-layout', action='store_true',
+                   help='Alternate the same Vox binary with pending font cascades forcing line and block layout')
     control.add_argument('--control-live-font-cascades', action='store_true',
                    help='Alternate the same Vox binary without reusing retained font inputs across generations')
     control.add_argument('--control-vox-app', type=Path,
@@ -223,6 +225,7 @@ def control_environment(args):
     if args.control_vox_app:
         return {}
     for option, variable in (
+        ('control_pending_font_layout', 'VOX_DISABLE_LIVE_PENDING_LAYOUT_REUSE'),
         ('control_font_refresh_cascades', 'VOX_DISABLE_FONT_REFRESH_CASCADE_REUSE'),
         ('control_live_font_geometry', 'VOX_DISABLE_LIVE_FONT_GEOMETRY_REUSE'),
         ('control_lazy_image_batches', 'VOX_DISABLE_LAZY_IMAGE_BATCHES'),
