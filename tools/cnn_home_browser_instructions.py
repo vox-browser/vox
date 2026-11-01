@@ -188,6 +188,8 @@ def parse_args(argv=None):
                    help='Alternate the same Vox binary with hidden CSS animation redraws enabled')
     control.add_argument('--control-live-font-cascades', action='store_true',
                    help='Alternate the same Vox binary without reusing retained font inputs across generations')
+    control.add_argument('--control-vox-app', type=Path,
+                   help='Alternate a separately pinned Vox control application without environment overrides')
     p.add_argument('--repeat', type=int, default=7)
     p.add_argument('--settle-seconds', type=float, default=5)
     p.add_argument('--timeout', type=float, default=180)
@@ -207,6 +209,21 @@ def parse_args(argv=None):
 def trial_order(index, control=False):
     order = ['control', 'vox', 'brave'] if control else ['vox', 'brave']
     return order if index % 2 == 0 else order[::-1]
+
+
+def control_environment(args):
+    if args.control_vox_app:
+        return {}
+    for option, variable in (
+        ('control_live_font_cascades', 'VOX_DISABLE_LIVE_FONT_CASCADE_REUSE'),
+        ('control_hidden_animations', 'VOX_DISABLE_HIDDEN_ANIMATION_THROTTLING'),
+        ('control_font_completion', 'VOX_DISABLE_FACE_SPECIFIC_FONT_COMPLETION'),
+        ('control_lazy_images', 'VOX_DISABLE_LAZY_IMAGE_PROBE_CACHE'),
+        ('control_static_media', 'VOX_DISABLE_STATIC_MEDIA_RASTER_REUSE'),
+    ):
+        if getattr(args, option):
+            return {variable: '1'}
+    return {}
 
 
 def audit_native_filters(args, folder):
@@ -251,11 +268,9 @@ def main():
     args.post_readiness_expression = 'new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(()=>r(true))))'
     apps = {}
     sources = [('vox', args.vox_app), ('brave', args.brave_app)]
-    has_control = (args.control_static_media or args.control_lazy_images
-                   or args.control_font_completion or args.control_hidden_animations
-                   or args.control_live_font_cascades)
+    has_control = bool(args.control_vox_app or control_environment(args))
     if has_control:
-        sources.append(('control', args.vox_app))
+        sources.append(('control', args.control_vox_app or args.vox_app))
     for engine, source in sources:
         target = args.output / engine / source.name
         target.parent.mkdir()
@@ -280,6 +295,8 @@ def main():
     pinned = browser.fingerprint(paths)
     browser.write_json(args.output / 'inputs.json', dict(files=pinned, fixture=expected, scope=SCOPE,
         source_vox_identity=executable_identity(args.vox_app / 'Contents/MacOS/Vox'),
+        source_control_identity=(executable_identity(args.control_vox_app / 'Contents/MacOS/Vox')
+                                 if args.control_vox_app else None),
         author_scripts=False, normal_scripting_policy=True, javascript_backends=dict(vox='javascriptcore', brave='v8'),
         viewport=[1024, 768], scale=1, settle_seconds=args.settle_seconds,
         brave_profile_template=str(args.brave_profile_template), vox_cache_template=str(args.vox_cache_template)))
@@ -305,12 +322,7 @@ def main():
                 args.vox_environment = dict(VOX_PROXY=replay.ready['proxy'], SSL_CERT_FILE=replay.ready['ca'],
                     VOX_BLOCK_COOKIE_BANNERS='0', VOX_ADBLOCK_LOG=str(folder / 'requests.jsonl'))
                 if engine == 'control':
-                    key = ('VOX_DISABLE_LIVE_FONT_CASCADE_REUSE' if args.control_live_font_cascades
-                           else 'VOX_DISABLE_HIDDEN_ANIMATION_THROTTLING' if args.control_hidden_animations
-                           else 'VOX_DISABLE_FACE_SPECIFIC_FONT_COMPLETION' if args.control_font_completion
-                           else 'VOX_DISABLE_LAZY_IMAGE_PROBE_CACHE' if args.control_lazy_images
-                           else 'VOX_DISABLE_STATIC_MEDIA_RASTER_REUSE')
-                    args.vox_environment[key] = '1'
+                    args.vox_environment.update(control_environment(args))
                 row = browser.run_browser('vox' if engine == 'control' else engine, apps[engine], folder, args)
                 row['scope'] = SCOPE
                 if engine in ('vox', 'control') and row['exit'] == 0:

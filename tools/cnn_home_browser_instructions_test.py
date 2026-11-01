@@ -14,6 +14,17 @@ class CNNHomeInstructionTests(unittest.TestCase):
         self.assertEqual(benchmark.trial_order(0, True), ['control', 'vox', 'brave'])
         self.assertEqual(benchmark.trial_order(1, True), ['brave', 'vox', 'control'])
 
+    def test_separate_control_app_does_not_disable_any_engine_optimization(self):
+        names = ['control_live_font_cascades', 'control_hidden_animations', 'control_font_completion',
+                 'control_lazy_images', 'control_static_media']
+        args = SimpleNamespace(control_vox_app=None, **dict.fromkeys(names, False))
+        self.assertEqual(benchmark.control_environment(args), {})
+        args.control_vox_app = Path('separately-pinned-control.app')
+        self.assertEqual(benchmark.control_environment(args), {})
+        args.control_vox_app = None
+        args.control_hidden_animations = True
+        self.assertEqual(benchmark.control_environment(args), {'VOX_DISABLE_HIDDEN_ANIMATION_THROTTLING': '1'})
+
     def expected(self):
         return dict(title='Latest | CNN', headlines=['first', 'second'], image_sources=['photo.jpg'])
 
