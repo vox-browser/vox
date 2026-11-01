@@ -14,7 +14,7 @@ and launch `Build/linux/vox`. See [Linux setup and checks](docs/LINUX.md) for
 dependencies, the Skia bootstrap, headless operation, and platform limitations.
 
 On macOS, **Cmd+,** or **Vox → Settings…** opens the native UI2 settings
-window. By default, the bookmarks bar offers **Wikipedia**, **Old Reddit
+window. By default, the bookmarks bar offers **Wikipedia (English Main Page)**, **Old Reddit
 (r/programming)** and **vlang.io**, with bundled favicons visible even offline,
 and the address bar is read-only. Custom bookmarks load their favicons in the
 background and show a globe until an icon is available. Navigation stays within those

@@ -9,7 +9,7 @@ fn test_optimized_bookmarks_migrate_once_and_preserve_existing_items() {
 	path := os.join_path(directory, 'bookmarks.json')
 	mut store := open(path)!
 	store.add('https://private.example/', 'My bookmark')!
-	store.add('https://www.wikipedia.org/', 'My Wikipedia title')!
+	store.add('https://en.wikipedia.org/wiki/Main_Page', 'My Wikipedia title')!
 	mut other_process := open(path)!
 	store.seed_optimized_sites()!
 	other_process.seed_optimized_sites()!
@@ -24,13 +24,14 @@ fn test_optimized_bookmarks_migrate_once_and_preserve_existing_items() {
 	assert reopened.items.len == 3
 	assert !reopened.visible
 	assert reopened.optimized_defaults_added
-	assert !reopened.items.any(it.url == 'https://www.wikipedia.org/')
+	assert !reopened.items.any(it.url == 'https://en.wikipedia.org/wiki/Main_Page')
 }
 
 fn test_fresh_defaults_and_failed_migration_preserve_unsaved_state() {
 	mut store := open('')!
 	store.seed_optimized_sites()!
 	assert store.visible && store.items.len == 3
+	assert store.items[0].url == 'https://en.wikipedia.org/wiki/Main_Page'
 	assert store.items[1].url == 'https://old.reddit.com/r/programming/'
 	mut broken := open('')!
 	broken.path = '/dev/null/bookmarks.json'
@@ -67,4 +68,32 @@ fn test_existing_seeded_reddit_is_updated_without_resetting_visibility_or_custom
 	store = open(path)!
 	store.seed_optimized_sites()!
 	assert store.items.len == 1 && store.items[0].title == 'My programming'
+}
+
+fn test_existing_wikipedia_default_moves_to_main_page_and_preserves_user_bookmarks() {
+	directory := os.join_path(os.temp_dir(), 'vox-wikipedia-migration-${os.getpid()}-${time.sys_mono_now()}')
+	os.mkdir_all(directory)!
+	defer { os.rmdir_all(directory) or {} }
+	path := os.join_path(directory, 'bookmarks.json')
+	os.write_file(path, '{"optimized_defaults_added":true,"visible":false,"version":8,"items":[{"url":"https://www.wikipedia.org/","title":"Wikipedia"},{"url":"https://old.reddit.com/","title":"Old Reddit"},{"url":"https://custom.test/","title":"Custom"}]}')!
+	mut store := open(path)!
+	store.seed_optimized_sites()!
+	assert store.items.len == 3 && !store.visible
+	assert store.items[0].url == 'https://en.wikipedia.org/wiki/Main_Page'
+	assert store.items[1].url == 'https://old.reddit.com/r/programming/'
+	assert store.items[2].title == 'Custom'
+	assert store.version == 9
+	assert open(path)!.items == store.items
+	store.seed_optimized_sites()!
+	assert store.version == 9
+	// Keep a separately named portal bookmark unchanged.
+	os.write_file(path, '{"optimized_defaults_added":true,"items":[{"url":"https://www.wikipedia.org/","title":"My portal"}]}')!
+	store = open(path)!
+	store.seed_optimized_sites()!
+	assert store.items[0].url == 'https://www.wikipedia.org/' && store.items[0].title == 'My portal'
+	// Prefer an existing Main Page bookmark, preserving its custom title.
+	os.write_file(path, '{"optimized_defaults_added":true,"items":[{"url":"https://www.wikipedia.org/","title":"Wikipedia"},{"url":"https://en.wikipedia.org/wiki/Main_Page","title":"My Main Page"}]}')!
+	store = open(path)!
+	store.seed_optimized_sites()!
+	assert store.items.len == 1 && store.items[0].title == 'My Main Page'
 }

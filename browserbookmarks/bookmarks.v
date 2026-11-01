@@ -69,7 +69,7 @@ pub fn (mut store Store) seed_optimized_sites() ! {
 	defer { guard.release() }
 	store.reload()!
 	if store.optimized_defaults_added {
-		store.update_optimized_reddit()!
+		store.update_optimized_destinations()!
 		return
 	}
 	persistent := platform.enter_persistent()
@@ -91,18 +91,25 @@ pub fn (mut store Store) seed_optimized_sites() ! {
 	}
 }
 
-fn (mut store Store) update_optimized_reddit() ! {
-	if !store.items.any(it.url == 'https://old.reddit.com/' && it.title == 'Old Reddit') { return }
+fn optimized_default_destination(item Bookmark) string {
+	if item.url == 'https://www.wikipedia.org/' && item.title == 'Wikipedia' {
+		return optimizedsites.wikipedia_address
+	}
+	if item.url == 'https://old.reddit.com/' && item.title == 'Old Reddit' {
+		return optimizedsites.reddit_address
+	}
+	return item.url
+}
+
+fn (mut store Store) update_optimized_destinations() ! {
+	if !store.items.any(optimized_default_destination(it) != it.url) { return }
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
-	already_present := store.items.any(it.url == optimizedsites.reddit_address)
 	mut items := []Bookmark{cap: store.items.len}
 	for item in store.items {
-		if item.url == 'https://old.reddit.com/' && item.title == 'Old Reddit' {
-			if !already_present { items << Bookmark{...item, url: optimizedsites.reddit_address} }
-		} else {
-			items << item
-		}
+		destination := optimized_default_destination(item)
+		if destination != item.url && store.items.any(it.url == destination) { continue }
+		items << Bookmark{...item, url: destination}
 	}
 	store.persist(store.visible, items)!
 }
