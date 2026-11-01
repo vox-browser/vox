@@ -3,7 +3,7 @@
 Pixel-perfect parity remains open. The current settled, archived comparison at
 1280 × 800 CSS pixels and scale 1 has **4 differing pixels at the top** and
 **zero at every sampled 800-pixel scroll position from Y 2400 through 7200**,
-with **4 at Y 8000**. The reviews viewport at Y 9600 has **308** differences,
+with **4 at Y 8000**. The news/reviews viewport at Y 9600 has **137** differences,
 and the community viewport at Y 10400 has **160**. The sponsor viewport at
 Y 1600 has **452** differences, and the bottom has **97**. Lilly at Y 8800 now
 has **14,681** differences against the full-resolution Brave variant, despite
@@ -1403,3 +1403,85 @@ All six feature inputs remain unchanged through the 366.13-second production
 build, whose sampled peak RSS is 8.12 GiB under the 12 GiB guard. Other shared
 inputs change, so the complete checkout is not frozen. The initial shared
 build's source hashes and compiled-C feature witness are also retained.
+
+## Promoted text after vector culling
+
+`f0895d33` preserves the transparent raster of a promoted text layer after its
+last vector leaves the viewport. The existing complete-picture eligibility
+check already validated every remaining command, effect boundary and child
+gap, but its final vector-only condition discarded that layer when culling
+removed the vector. Text then painted over the parent pixels directly, changing
+the intermediate premultiplied rounding. A validated text-containing layer now
+retains its surface. Unsupported effects, clipping and gaps keep their existing
+rejection checks; a layer without text or vectors does not gain this path.
+
+The fixed-reference News viewport at Y 9600 improves from **2,982 to 137
+differing pixels**. A same-build negative control replaces only the final
+`has_svg || has_text` machine instruction with the preceding `has_svg` result.
+It restores 2,982 differences with byte-identical native libraries. The change
+removes 2,845 errors, introduces none and worsens none. This exceeds restoration
+of the historical 308-pixel result, but the remaining 137 still prevent exact
+conformance.
+
+Every decoded native PNG at the other fifteen sampled positions is byte-identical
+to the preceding cropped-decode production bundle. The remaining counts are
+4/1,463/452 at Y 0/800/1600, zero at each 800-pixel sample from 2400 through
+7200, 4 at 8000, 14,681 at 8800, 160 at 10400, and 97 at 10664 and 10701.
+All sixteen document identity, 1280×800 viewport, readiness, font/error and
+visible-image completion audits pass. These remain scale-one archived-page
+comparisons against unchanged earlier Brave references.
+
+Five focused culling tests pass in both Boehm and no-GC builds. Ten SVG layer
+tests pass in no-GC mode. Their former vector-only expectations are updated to
+check the new supported text capability while retaining rejection cases for
+unsupported effects and resources. The initial run against those old
+expectations remains preserved as a failure.
+
+The production validation passes startup, fourteen screenshot smoke cases under
+their existing bounds, and eight exact image/gradient/table golds. Its strict
+browser suite passes **61 of 63** fixtures and exits one. The Guardian carousel
+fade has 3,208 differing pixels; the JPEG XL image-path fixture has 22,715.
+Both failures produce byte-identical native RGBA with the same-build feature
+veto, so neither is attributed to this text change. They remain failures, with
+no reference or tolerance adjustment. Separate live scripted vlang.io loading
+has loaded fonts, five completed visible images and zero native errors. It
+supplies loading evidence, not a live-page pixel comparison.
+
+`9ae9bfbb` adds a diagnostic for the first vector feature selecting a
+complete compositor picture. Additional native probes confirm identical glyph
+IDs, positions, colors and font settings across the culling control; its layer
+recording state differs. The first injected probe breaks the separate adblock
+worker handshake and captures a navigation-error page, so it receives no
+document or rendering credit. Corrected probes exclude injection from the
+separate worker and successfully load the audited document. A proposed bounded-SVG culling change and an integer-color
+GPU glyph experiment leave the page unchanged and are not shipped. Two small
+experimental text fixtures likewise do not exercise this promoted path; their
+unchanged 2,432-pixel failures remain under `Build/` and are not added as golds.
+
+Evidence under `Build/vlang-text-phase-20261101/` includes:
+
+- [Matched negative control](../Build/vlang-text-phase-20261101/promoted-text-negative-control.json),
+  `promoted-text-{target,negative-target}/`, and
+  [pixel movement](../Build/vlang-text-phase-20261101/news-pixel-movement.json).
+- [Full-page audit](../Build/vlang-text-phase-20261101/page-regression-audit.json),
+  `promoted-text-full-page/`, `promoted-focus-{none,boehm}-*` and
+  `promoted-svg-{none,final}-*` retain successful and failed checks.
+- [Validation exits](../Build/vlang-text-phase-20261101/validation-status.json),
+  [unchanged browser failures](../Build/vlang-text-phase-20261101/unchanged-browser-failures.json),
+  and the individual smoke, strict, gradient and live logs preserve the aggregate
+  failed browser verdict.
+- [Source witness](../Build/vlang-text-phase-20261101/production-source-witness.json),
+  `compiled-promoted-text-function.c` and `production-generated.c.gz` retain the
+  compiled eligibility expression. Both implementation inputs remain stable
+  through the 268.16-second production build, whose sampled peak RSS is
+  8.10 GiB under the 12 GiB guard. Other shared inputs change, so the complete
+  checkout is not frozen.
+
+The validated executable is
+`774a3b6a18b0b87c1fd416128bb0bc3697431f2278ddb89ba4f5709135e77518`,
+preserved in `Vox-promoted-text-installed.app`. Its native text library is
+`a18b3fda25126c2dd392b73df017f1280c4ddb84a52c380e3b5a6546efef85f0`.
+The initial shared production attempt fails after compilation because its build
+script changes during execution; that private candidate supplies diagnostic
+evidence only. The final promoted-text build supplies the checks above.
+Full live-page and scale-two parity remain open.
