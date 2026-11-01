@@ -26,14 +26,14 @@ fn test_bookmark_icons_decode_offline_and_keep_published_chrome_state_immutable(
 	defer { app.document.finalize() }
 	app.bookmarks.seed_optimized_sites()!
 	before := app.browser_chrome_state(800, 600)
-	assert before.bookmark_favicons.len == 3
+	assert before.bookmark_favicons.len == 4
 	assert before.bookmark_favicons.all(it >= 0)
 	assert app.background_resource_pending.len == 0
 	assert app.browser_chrome_state(800, 600).bookmark_favicons == before.bookmark_favicons
 	app.bookmarks.remove(0)!
 	after := app.browser_chrome_state(800, 600)
-	assert after.bookmark_favicons.len == 2
-	assert before.bookmark_favicons.len == 3
+	assert after.bookmark_favicons.len == 3
+	assert before.bookmark_favicons.len == 4
 	assert after.bookmark_favicons == before.bookmark_favicons[1..]
 }
 
@@ -72,14 +72,14 @@ $if vox_ui2 ? {
 		app.bookmarks.seed_optimized_sites()!
 		app.mount_ui2_chrome(C.native_test_address_parent(window), 800, 600)!
 		defer { app.unmount_address_bar(); app.document.finalize(); C.native_test_address_close(window) }
-		for index in 0 .. 3 { assert C.native_test_bookmark_has_favicon(ui2.embedded_browser_control('bookmark-open:${index}')) != 0 }
+		for index in 0 .. 4 { assert C.native_test_bookmark_has_favicon(ui2.embedded_browser_control('bookmark-open:${index}')) != 0 }
 		if path := os.getenv_opt('VOX_BOOKMARK_CAPTURE') { C.native_test_bookmark_capture(ui2.embedded_browser_control('bookmarks-bar'), path.str) }
 		app.navigation_work_depth = 1
 		C.native_test_chrome_click(ui2.embedded_browser_control('bookmark-open:1'))
 		assert (app.deferred_navigation_input or { panic('missing bookmark click') }).address == 'https://old.reddit.com/r/programming/'
 		app.update_browser_chrome(140, 600)
 		C.native_test_chrome_click(ui2.embedded_browser_control('bookmarks-more'))
-		for index in 0 .. 3 { assert C.native_test_bookmark_has_favicon(ui2.embedded_browser_control('bookmark-open:${index}')) != 0 }
+		for index in 0 .. 4 { assert C.native_test_bookmark_has_favicon(ui2.embedded_browser_control('bookmark-open:${index}')) != 0 }
 	}
 
 	fn test_native_remote_icon_completion_preserves_the_existing_button() {

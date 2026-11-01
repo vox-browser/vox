@@ -28,7 +28,7 @@ fn test_restricted_shell_blocks_navigation_history_redirects_and_address_edits()
 		bookmarks: browserbookmarks.open('')!
 	}
 	assert app.bookmark_bar_visible()
-	assert app.browser_bar_bookmarks().len == 3
+	assert app.browser_bar_bookmarks().len == 4
 	assert !app.address_bar_editable()
 	app.focus_address_bar()
 	app.handle_character(u32(`x`))
@@ -48,14 +48,17 @@ fn test_restricted_shell_blocks_navigation_history_redirects_and_address_edits()
 	assert app.document == unsafe { nil }
 	app.activate_browser_bookmarks('bookmarks-toggle')
 	app.activate_browser_bookmarks('bookmark-remove:0')
-	assert app.bookmark_bar_visible() && app.browser_bar_bookmarks().len == 3
+	assert app.bookmark_bar_visible() && app.browser_bar_bookmarks().len == 4
 	assert app.browser_destination_allowed('https://en.wikipedia.org/wiki/V')
+	assert app.browser_destination_allowed('https://news.ycombinator.com/')
 	assert app.browser_destination_allowed(browser_new_tab_url)
 	assert app.browser_destination_allowed(browser_history_url)
 	assert !app.browser_destination_allowed('javascript:location="https://evil.test"')
 	app.navigation_work_depth = 1
 	app.activate_browser_bookmarks('bookmark-open:2')
 	assert (app.deferred_navigation_input or { panic('missing optimized bookmark navigation') }).address == 'https://vlang.io/'
+	app.activate_browser_bookmarks('bookmark-open:3')
+	assert (app.deferred_navigation_input or { panic('missing Hacker News bookmark navigation') }).address == 'https://news.ycombinator.com/'
 }
 
 fn test_settings_unlock_and_relock_the_existing_shell_without_losing_custom_bookmarks() {
@@ -86,7 +89,7 @@ fn test_settings_unlock_and_relock_the_existing_shell_without_losing_custom_book
 	assert app.navigation_generation == 0
 	assert app.deferred_navigation_input == none
 	assert !app.address_bar_editable()
-	assert app.browser_bar_bookmarks().len == 3
+	assert app.browser_bar_bookmarks().len == 4
 	assert app.bookmarks.items.len == 1
 }
 
@@ -152,10 +155,10 @@ $if vox_ui2 ? {
 		browsersettings.save(browsersettings.Proxy{allow_any_site: true})!
 		app.update_browser_chrome(800, 600)
 		assert C.native_test_settings_address_state(field, 1) != 0
-		assert app.browser_bar_bookmarks().len == 4
+		assert app.browser_bar_bookmarks().len == 5
 		browsersettings.save(browsersettings.Proxy{})!
 		app.update_browser_chrome(800, 600)
 		assert C.native_test_settings_address_state(field, 0) != 0
-		assert app.browser_bar_bookmarks().len == 3
+		assert app.browser_bar_bookmarks().len == 4
 	}
 }

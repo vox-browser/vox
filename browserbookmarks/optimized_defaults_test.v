@@ -13,15 +13,15 @@ fn test_optimized_bookmarks_migrate_once_and_preserve_existing_items() {
 	mut other_process := open(path)!
 	store.seed_optimized_sites()!
 	other_process.seed_optimized_sites()!
-	assert other_process.items.len == 4
+	assert other_process.items.len == 5
 	assert other_process.items[0].title == 'My Wikipedia title'
-	assert other_process.items[3].title == 'My bookmark'
+	assert other_process.items[4].title == 'My bookmark'
 	assert other_process.visible
 	other_process.remove(0)!
 	other_process.toggle_visible()!
 	mut reopened := open(path)!
 	reopened.seed_optimized_sites()!
-	assert reopened.items.len == 3
+	assert reopened.items.len == 4
 	assert !reopened.visible
 	assert reopened.optimized_defaults_added
 	assert !reopened.items.any(it.url == 'https://en.wikipedia.org/wiki/Main_Page')
@@ -30,9 +30,10 @@ fn test_optimized_bookmarks_migrate_once_and_preserve_existing_items() {
 fn test_fresh_defaults_and_failed_migration_preserve_unsaved_state() {
 	mut store := open('')!
 	store.seed_optimized_sites()!
-	assert store.visible && store.items.len == 3
+	assert store.visible && store.items.len == 4
 	assert store.items[0].url == 'https://en.wikipedia.org/wiki/Main_Page'
 	assert store.items[1].url == 'https://old.reddit.com/r/programming/'
+	assert store.items[3].url == 'https://news.ycombinator.com/'
 	mut broken := open('')!
 	broken.path = '/dev/null/bookmarks.json'
 	broken.seed_optimized_sites() or {

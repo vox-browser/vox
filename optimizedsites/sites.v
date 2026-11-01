@@ -17,6 +17,7 @@ pub const sites = [
 	Site{'Wikipedia', wikipedia_address, 'wikipedia.org'},
 	Site{'Old Reddit', reddit_address, 'old.reddit.com'},
 	Site{'vlang.io', 'https://vlang.io/', 'vlang.io'},
+	Site{'Hacker News', 'https://news.ycombinator.com/', 'news.ycombinator.com'},
 ]
 
 pub fn allows(address string) bool {

@@ -7,6 +7,7 @@ import url
 const wikipedia_icon = 'data:image/x-icon;base64,' + base64.encode($embed_file('assets/wikipedia.ico').to_bytes())
 const reddit_icon = 'data:image/png;base64,' + base64.encode($embed_file('assets/reddit.png').to_bytes())
 const vlang_icon = 'data:image/png;base64,' + base64.encode($embed_file('assets/vlang.png').to_bytes())
+const hacker_news_icon = 'data:image/x-icon;base64,' + base64.encode($embed_file('assets/hacker-news.ico').to_bytes())
 
 pub fn favicon_data_url(address string) string {
 	parsed := url.parse(address) or { return '' }
@@ -19,6 +20,7 @@ pub fn favicon_data_url(address string) string {
 			'wikipedia.org' { wikipedia_icon }
 			'old.reddit.com' { reddit_icon }
 			'vlang.io' { vlang_icon }
+			'news.ycombinator.com' { hacker_news_icon }
 			else { '' }
 		}
 	}
