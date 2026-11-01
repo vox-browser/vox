@@ -3,6 +3,19 @@ module layout
 import dom
 import html
 
+fn retained_image_handle(document &dom.Document, id string) &Node {
+ element := document.get_element_by_id(id) or { panic('missing '+id) }
+ return unsafe { &Node(element.as_node().unsafe_layout_node() or { panic('missing layout') }.real_layout_handle()) }
+}
+
+fn retained_image_assert_full_layout(mut document dom.Document) {
+ before := (document.record_display_list() or { panic('missing paint') }).dump()
+ document.set_needs_full_layout_tree_update(true)
+ document.update_layout(.debugging)
+ assert (document.record_display_list() or { panic('missing rebuilt paint') }).dump() == before
+}
+
+
 fn retained_image_pixels(width int, height int, value u8) html.DecodedImageData {
 	return html.BitmapDecodedImageData.create([html.BitmapDecodedImageFrame{
 		frame: dom.DecodedImageFrame_.create(&dom.Bitmap_{
@@ -30,7 +43,7 @@ fn retained_image_fixture() (&dom.Document, &html.HTMLImageElementModel) {
 fn test_decoded_image_block_layout_survives_an_external_change_and_retains_old_paint() {
 	mut document, _ := retained_image_fixture()
 	defer { document.finalize() }
-	root := retained_block_handle(document, 'stable')
+	root := retained_image_handle(document, 'stable')
 	before := document_layout_result(document) or { panic('missing layout') }
 	cache := before.state.block_layouts_[u64(voidptr(root))] or { panic('missing image block cache') }
 	old := document.record_display_list() or { panic('missing paint') }
@@ -45,13 +58,13 @@ fn test_decoded_image_block_layout_survives_an_external_change_and_retains_old_p
 	assert voidptr(after.state.block_layouts_[u64(voidptr(root))] or { panic('missing retained block') }) == voidptr(cache)
 	assert document.get_element_by_id('photo')?.get_bounding_client_rect().y == old_y + 50
 	assert old.dump() == old_dump
-	retained_block_assert_full_layout(mut document)
+	retained_image_assert_full_layout(mut document)
 }
 
 fn test_retained_image_geometry_expires_after_source_and_intrinsic_size_changes() {
 	mut document, mut image := retained_image_fixture()
 	defer { document.finalize() }
-	root := retained_block_handle(document, 'stable')
+	root := retained_image_handle(document, 'stable')
 	before := document_layout_result(document) or { panic('missing layout') }
 	cache := before.state.block_layouts_[u64(voidptr(root))] or { panic('missing image block cache') }
 	old_height := document.get_element_by_id('photo')?.get_bounding_client_rect().height
@@ -62,7 +75,7 @@ fn test_retained_image_geometry_expires_after_source_and_intrinsic_size_changes(
 	assert !retained_inline_inputs_are_current(cache.inputs)
 	document.update_layout(.debugging)
 	assert element.get_bounding_client_rect().height == old_height * 2
-	retained_block_assert_full_layout(mut document)
+	retained_image_assert_full_layout(mut document)
 }
 
 fn test_same_size_image_replacement_paints_current_pixels_without_mutating_old_commands() {
@@ -83,7 +96,7 @@ fn test_same_size_image_replacement_paints_current_pixels_without_mutating_old_c
 	assert commands.len == 1
 	bitmap := commands[0].replaced_image_bitmap or { panic('missing new pixels') }
 	assert bitmap.data[0] == 128 && old_bitmap.data[0] == 255
-	retained_block_assert_full_layout(mut document)
+	retained_image_assert_full_layout(mut document)
 }
 
 fn test_unavailable_images_and_other_replaced_elements_reject_block_retention() {
@@ -92,7 +105,7 @@ fn test_unavailable_images_and_other_replaced_elements_reject_block_retention() 
 		mut document := html.parse_document('<!doctype html><section id="stable" style="overflow:hidden;width:180px">${contents}<p>Following text.</p></section>')
 		defer { document.finalize() }
 		_ = layout_document_typed_in_viewport(document, 400, 400)
-		root := retained_block_handle(document, 'stable')
+		root := retained_image_handle(document, 'stable')
 		assert u64(voidptr(root)) !in (document_layout_result(document) or { panic('missing layout') }).state.block_layouts_
 	}
 }
