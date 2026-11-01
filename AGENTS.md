@@ -181,6 +181,12 @@
   count/load/timestamps, summaries and actual browser/benchmark/guard exits in
   a unique `Build/` directory, with durable evidence linked from the site report.
 - Keep `v -profile` and other instrumentation in separate diagnostic runs.
+  Record the selected JavaScript backend and separately verify whether the
+  page-script runtime initializes and executes code. `--enable-javascript` or
+  an engine selector is not evidence of execution. Before attributing engine
+  performance, verify the selected path and absence of fallback in a separate
+  diagnostic; a script-free capture whose runtime stays uninitialized measures
+  startup/rendering workflow. Report unsupported scripting/DOM behavior explicitly.
   Attribute an optimization only after confirming its path executes on the
   workload and comparing unprofiled matched control/candidate trials. Preserve
   the focused checks and 5,000,000-instruction broad-check cadence below.

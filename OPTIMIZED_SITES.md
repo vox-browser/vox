@@ -33,6 +33,9 @@ The reports retain exact endpoints, identities and counter limits.
   highest observed Vox count is **45.91% below the lowest Brave count**. Live
   access is blocked by HTTP 403; no live or current-authentication claim is
   made. This new workload does not reverify the historical home-page fixture.
+  The selected Vox page-script runtime is unused on this script-free fixture;
+  the [JSC/LibJS selector comparison](docs/OLD_REDDIT_ENGINE_COMPARISON.md) is
+  a configuration comparison, not a JavaScript-execution benchmark.
 - **Hacker News:** the frozen original homepage and five resources, with author
   scripts enabled, fresh empty profiles/caches and two seconds of settlement.
   All 14 captures match the unchanged Brave reference at every pixel and retain

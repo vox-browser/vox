@@ -15,6 +15,13 @@ acquisition attempts receive no instruction credit. The new fixture differs
 from the [historical home-page result](OLD_REDDIT_INSTRUCTIONS.md); the old
 private fixture and receipts remain unavailable.
 
+The original command implicitly selects Vox's default **JavaScriptCore**;
+Brave uses **V8**. A follow-up [explicit engine comparison](OLD_REDDIT_ENGINE_COMPARISON.md)
+confirms that this script-free fixture initializes no selected page-script
+runtime in either Vox JavaScriptCore or LibJS mode. `--enable-javascript`
+preserves `noscript` behavior but does not force runtime creation. The counts
+therefore describe startup/rendering workflows, not JavaScript execution speed.
+
 | Pair | Vox observed instructions | Brave observed instructions | Differing pixels, Vox / Brave |
 | --- | ---: | ---: | ---: |
 | 1 | 4,979,489,773 | 9,320,609,714 | 0 / 0 |
@@ -118,6 +125,7 @@ python3 tools/run_memory_bounded.py \
   --cache Build/old-reddit-instructions-20261101/frozen-cache \
   --output Build/reddit-programming-repeat \
   --vox Build/old-reddit-instructions-20261101/measured/Vox.app/Contents/MacOS/Vox \
+  --vox-js-engine javascriptcore \
   --network-deny Build/wikipedia-instructions-20261101/network-deny.dylib \
   --diff-tool Build/wikipedia-instructions-20261101/pixel_diff \
   --repeat 7 --required-reduction .10
