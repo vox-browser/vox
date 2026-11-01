@@ -1,0 +1,1306 @@
+{
+  "schema_version": 1,
+  "recorded_utc": "2026-11-01T01:38:49.086035+00:00",
+  "result_status": "transparent_gradient_optimization_committed_brave_target_open",
+  "implementation_commit": "215b6e4",
+  "memory_guard_commit": "0f56fb13",
+  "instruction_target_credit": false,
+  "metric": "Hardware-retired CPU instructions from audited exclusive macOS resource coalitions; includes exited owned helpers, charged kernel work and explicit coalition-owned services. GPU execution and outside services excluded.",
+  "workload": {
+    "fixture": "Tests/Browser/Brave/hn-home-instructions",
+    "url": "https://news.ycombinator.com/",
+    "viewport_css": [
+      1024,
+      768
+    ],
+    "device_scale": 2,
+    "settle_seconds": 2,
+    "script_policy": "Original author scripts enabled",
+    "cache_profile_policy": "fresh private cache/profile each trial; OS shader/filesystem caches not cleared",
+    "endpoint": "Navigation request to encoded PNG availability; Vox native window setup follows its start marker, Brave window setup precedes Page.navigate."
+  },
+  "results": {
+    "brave_median_lower_bound_instructions": 1384856453.5,
+    "candidate_median": 4237070157.0,
+    "control_gate": {
+      "brave_median_lower_bound_instructions": 1384856453.5,
+      "instruction_scope": "navigation",
+      "pairs": 8,
+      "passed": false,
+      "target_vox_fraction": 0.9,
+      "vox_median_instructions": 4268701477.5,
+      "worst_vox_over_best_brave": 3.2884384974514824
+    },
+    "control_median": 4268701477.5,
+    "instruction_scope": "navigation",
+    "launch_gate": {
+      "brave_median_lower_bound_instructions": 8520270605.0,
+      "instruction_scope": "launch",
+      "pairs": 8,
+      "passed": false,
+      "target_vox_fraction": 0.9,
+      "vox_median_instructions": 4873836713.0,
+      "worst_vox_over_best_brave": 1.550834769159914
+    },
+    "median_saving": 31631320.5,
+    "paired_savings": [
+      -8109768309,
+      33105489,
+      60811313,
+      9241378,
+      6440092,
+      44042634,
+      3193407,
+      75878139
+    ],
+    "pairs": 8,
+    "passed": false,
+    "target_vox_fraction": 0.9,
+    "vox_median_instructions": 4237070157.0,
+    "worst_vox_over_best_brave": 9.472161789257147,
+    "median_reduction": 0.007410056820962131,
+    "paired_assessment": {
+      "paired_savings": [
+        -8109768309,
+        33105489,
+        60811313,
+        9241378,
+        6440092,
+        44042634,
+        3193407,
+        75878139
+      ],
+      "median_paired_saving": 21173433.5,
+      "bootstrap_95_percent": [
+        3193407.0,
+        60811313.0
+      ],
+      "wins": 7,
+      "trials": 8,
+      "method": "Fixed-seed 50000-resample percentile bootstrap of paired median; all trials including the first regression retained"
+    },
+    "mean_instruction_saving": -984631982.125,
+    "all_observations_retained": true,
+    "all_24_pixels_exact": true,
+    "all_24_story_id_audits_exact": true
+  },
+  "v_profile": {
+    "compiler_flag": "-profile (all functions, including inline functions)",
+    "build_script": "Build/hn-vprofile-20261101/build-profile.sh",
+    "report": "Build/hn-vprofile-20261101/full-profile-run/v-profile.txt",
+    "rows": 8112,
+    "follow_up": {
+      "profile-control-confirm": {
+        "main__BrowserApp__draw_chromium_svg_image_group": {
+          "calls": 2,
+          "inclusive": "475.095ms",
+          "self": "475.086ms"
+        },
+        "main__BrowserApp__draw_command": {
+          "calls": 808,
+          "inclusive": "972.536ms",
+          "self": "197.734ms"
+        },
+        "main__draw_native_css_gradient_tile": {
+          "calls": 42,
+          "inclusive": "229.611ms",
+          "self": "229.495ms"
+        }
+      },
+      "profile-candidate-confirm": {
+        "main__BrowserApp__draw_chromium_svg_image_group": {
+          "calls": 2,
+          "inclusive": "120.193ms",
+          "self": "120.184ms"
+        },
+        "main__BrowserApp__draw_command": {
+          "calls": 808,
+          "inclusive": "224.553ms",
+          "self": "73.828ms"
+        },
+        "main__draw_native_css_gradient_tile": {
+          "calls": 42,
+          "inclusive": "0.267ms",
+          "self": "0.141ms"
+        }
+      }
+    },
+    "note": "Diagnostic elapsed timings and shared counters, not instruction savings; V profiler is not thread safe. Savings use separate unprofiled hardware-counter trials."
+  },
+  "eligibility": {
+    "transparent_fast_path_calls": 42,
+    "all_pixels_exact": true,
+    "source_isolation": {
+      "passed": true,
+      "control_source_sha256": "8bb86db63942362253023a82182d23ff2ca84baa050bed7a1f1ae5c23b9c3484",
+      "candidate_source_sha256": "110316876b10cf3bbcbbe03fa505fa67e9d1ab728370f17c6b0f08d8a183f832",
+      "difference": "One include and the transparent-gradient early return; other native inputs unchanged"
+    },
+    "diagnostic_only": true
+  },
+  "verification": {
+    "memory_guard_tests": 26,
+    "focused_native": "PASS transparent stop and actual bridge gates",
+    "sanitizers": "ASan and UBSan passed",
+    "broad": {
+      "passed": true,
+      "original_results": [
+        {
+          "job": "broad-gradient_tiles-compile",
+          "exit": 0,
+          "identity_stable": true
+        },
+        {
+          "job": "broad-gradient_tiles-run",
+          "exit": 0,
+          "identity_stable": true
+        },
+        {
+          "job": "broad-gradient_interpolation-compile",
+          "exit": 1,
+          "identity_stable": true
+        },
+        {
+          "job": "broad-gradient_region-compile",
+          "exit": 0,
+          "identity_stable": true
+        },
+        {
+          "job": "broad-gradient_region-run",
+          "exit": 134,
+          "identity_stable": true
+        },
+        {
+          "job": "broad-gradient_backdrop-compile",
+          "exit": 0,
+          "identity_stable": true
+        },
+        {
+          "job": "broad-gradient_backdrop-run",
+          "exit": 0,
+          "identity_stable": true
+        },
+        {
+          "job": "broad-gradient_text-compile",
+          "exit": 0,
+          "identity_stable": true
+        },
+        {
+          "job": "broad-gradient_text-run",
+          "exit": 0,
+          "identity_stable": true
+        },
+        {
+          "job": "broad-svg_color-compile",
+          "exit": 0,
+          "identity_stable": true
+        },
+        {
+          "job": "broad-svg_color-run",
+          "exit": 0,
+          "identity_stable": true
+        },
+        {
+          "job": "broad-svg_clip-compile",
+          "exit": 0,
+          "identity_stable": true
+        },
+        {
+          "job": "broad-svg_clip-run",
+          "exit": 0,
+          "identity_stable": true
+        },
+        {
+          "job": "broad-text_color-compile",
+          "exit": 0,
+          "identity_stable": true
+        },
+        {
+          "job": "broad-text_color-run",
+          "exit": 0,
+          "identity_stable": true
+        },
+        {
+          "job": "broad-screenshots-smoke",
+          "exit": 0,
+          "identity_stable": true
+        },
+        {
+          "job": "broad-screenshots-svg",
+          "exit": 0,
+          "identity_stable": true
+        }
+      ],
+      "corrected_jobs": {
+        "broad-gradient_interpolation-compile": "Build/hn-vprofile-20261101/broad-gradient_interpolation-compile-v2.json",
+        "broad-gradient_interpolation-run": "Build/hn-vprofile-20261101/broad-gradient_interpolation-run-v2.json",
+        "broad-gradient_region-run": "Build/hn-vprofile-20261101/broad-gradient_region-run-v2.json"
+      },
+      "note": "Original failures retained: interpolation used older LibWeb Skia headers; region test lacked its required reference-library environment. No test expectation or tolerance changed.",
+      "smoke_cases": 11,
+      "smoke_passes": 11,
+      "smoke_differing_pixels": [
+        13,
+        0,
+        1341,
+        0,
+        2033,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "svg_cases": 10,
+      "svg_passes": 10,
+      "svg_differing_pixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "headless_startup_exit": 0,
+    "signature_verified": true,
+    "live_diagnostic": "complete Hacker News with 30 stories and zero reported native JavaScript errors; no live instruction comparison credit"
+  },
+  "trials": [
+    {
+      "trial": 1,
+      "control": {
+        "root": {
+          "command": "/Users/alex/code/vox2/Build/hn-vprofile-20261101/matched-gradient/apps/control/Vox.app/Contents/MacOS/Vox --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/hn-vprofile-20261101/matched-gradient/trial-1-control/document.png http://127.0.0.1:52820/",
+          "parent": 1,
+          "pid": 12362,
+          "uid": 501
+        },
+        "resource_coalition": 303423,
+        "instruction_interval": {
+          "lower": 4312688821,
+          "upper": 4312688821
+        },
+        "launch_instruction_interval": {
+          "lower": 4963555359,
+          "upper": 4963555359
+        },
+        "exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "started_unix": 1793496595.663506,
+        "finished_unix": 1793496599.293377,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            4.7958984375,
+            6.5625,
+            8.72509765625
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            4.7958984375,
+            6.5625,
+            8.72509765625
+          ]
+        },
+        "png_sha256": "56c144f3489a67c55a62327a5c0a436508c265a079f1d9ac8be453db7f28ae25"
+      },
+      "candidate": {
+        "root": {
+          "command": "/Users/alex/code/vox2/Build/hn-vprofile-20261101/matched-gradient/apps/candidate/Vox.app/Contents/MacOS/Vox --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/hn-vprofile-20261101/matched-gradient/trial-1-candidate/document.png http://127.0.0.1:52820/",
+          "parent": 1,
+          "pid": 12505,
+          "uid": 501
+        },
+        "resource_coalition": 303427,
+        "instruction_interval": {
+          "lower": 12422457130,
+          "upper": 12422457130
+        },
+        "launch_instruction_interval": {
+          "lower": 13073016236,
+          "upper": 13073016236
+        },
+        "exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "started_unix": 1793496605.858817,
+        "finished_unix": 1793496609.741411,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            4.6728515625,
+            6.4775390625,
+            8.66943359375
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            4.93896484375,
+            6.50244140625,
+            8.6650390625
+          ]
+        },
+        "png_sha256": "56c144f3489a67c55a62327a5c0a436508c265a079f1d9ac8be453db7f28ae25"
+      },
+      "brave": {
+        "root": {
+          "command": "/Users/alex/code/vox2/Build/hn-vprofile-20261101/matched-gradient/apps/brave/Brave Browser.app/Contents/MacOS/Brave Browser --no-startup-window --no-first-run --no-default-browser-check --enable-automation --disable-background-networking --disable-sync --no-proxy-server --hide-scrollbars --force-color-profile=srgb --lang=en-US --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --remote-debugging-port=0 --user-data-dir=/Users/alex/code/vox2/Build/hn-vprofile-20261101/matched-gradient/trial-1-brave/profile",
+          "parent": 1,
+          "pid": 12425,
+          "uid": 501
+        },
+        "resource_coalition": 303425,
+        "instruction_interval": {
+          "lower": 1490046281,
+          "upper": 1541776688
+        },
+        "launch_instruction_interval": {
+          "lower": 9016824324,
+          "upper": 9044106333
+        },
+        "exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "started_unix": 1793496599.716203,
+        "finished_unix": 1793496605.438136,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            4.73193359375,
+            6.51953125,
+            8.697265625
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            4.6728515625,
+            6.4775390625,
+            8.66943359375
+          ]
+        },
+        "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb"
+      }
+    },
+    {
+      "trial": 2,
+      "control": {
+        "root": {
+          "command": "/Users/alex/code/vox2/Build/hn-vprofile-20261101/matched-gradient/apps/control/Vox.app/Contents/MacOS/Vox --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/hn-vprofile-20261101/matched-gradient/trial-2-control/document.png http://127.0.0.1:52820/",
+          "parent": 1,
+          "pid": 12845,
+          "uid": 501
+        },
+        "resource_coalition": 303433,
+        "instruction_interval": {
+          "lower": 4255677098,
+          "upper": 4255677098
+        },
+        "launch_instruction_interval": {
+          "lower": 4891020941,
+          "upper": 4891020941
+        },
+        "exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "started_unix": 1793496617.577187,
+        "finished_unix": 1793496620.686429,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            5.02392578125,
+            6.49365234375,
+            8.6494140625
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            5.34228515625,
+            6.53515625,
+            8.6513671875
+          ]
+        },
+        "png_sha256": "56c144f3489a67c55a62327a5c0a436508c265a079f1d9ac8be453db7f28ae25"
+      },
+      "candidate": {
+        "root": {
+          "command": "/Users/alex/code/vox2/Build/hn-vprofile-20261101/matched-gradient/apps/candidate/Vox.app/Contents/MacOS/Vox --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/hn-vprofile-20261101/matched-gradient/trial-2-candidate/document.png http://127.0.0.1:52820/",
+          "parent": 1,
+          "pid": 12728,
+          "uid": 501
+        },
+        "resource_coalition": 303429,
+        "instruction_interval": {
+          "lower": 4222571609,
+          "upper": 4222571609
+        },
+        "launch_instruction_interval": {
+          "lower": 4858148950,
+          "upper": 4858148950
+        },
+        "exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "started_unix": 1793496610.183188,
+        "finished_unix": 1793496613.276438,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            4.93896484375,
+            6.50244140625,
+            8.6650390625
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            4.93896484375,
+            6.50244140625,
+            8.6650390625
+          ]
+        },
+        "png_sha256": "56c144f3489a67c55a62327a5c0a436508c265a079f1d9ac8be453db7f28ae25"
+      },
+      "brave": {
+        "root": {
+          "command": "/Users/alex/code/vox2/Build/hn-vprofile-20261101/matched-gradient/apps/brave/Brave Browser.app/Contents/MacOS/Brave Browser --no-startup-window --no-first-run --no-default-browser-check --enable-automation --disable-background-networking --disable-sync --no-proxy-server --hide-scrollbars --force-color-profile=srgb --lang=en-US --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --remote-debugging-port=0 --user-data-dir=/Users/alex/code/vox2/Build/hn-vprofile-20261101/matched-gradient/trial-2-brave/profile",
+          "parent": 1,
+          "pid": 12788,
+          "uid": 501
+        },
+        "resource_coalition": 303431,
+        "instruction_interval": {
+          "lower": 1385150503,
+          "upper": 1432068061
+        },
+        "launch_instruction_interval": {
+          "lower": 8503906754,
+          "upper": 8521321951
+        },
+        "exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "started_unix": 1793496613.717692,
+        "finished_unix": 1793496617.145576,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            4.93896484375,
+            6.50244140625,
+            8.6650390625
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            5.02392578125,
+            6.49365234375,
+            8.6494140625
+          ]
+        },
+        "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb"
+      }
+    },
+    {
+      "trial": 3,
+      "control": {
+        "root": {
+          "command": "/Users/alex/code/vox2/Build/hn-vprofile-20261101/matched-gradient/apps/control/Vox.app/Contents/MacOS/Vox --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/hn-vprofile-20261101/matched-gradient/trial-3-control/document.png http://127.0.0.1:52820/",
+          "parent": 1,
+          "pid": 12888,
+          "uid": 501
+        },
+        "resource_coalition": 303435,
+        "instruction_interval": {
+          "lower": 4268624967,
+          "upper": 4268624967
+        },
+        "launch_instruction_interval": {
+          "lower": 4906681624,
+          "upper": 4906681624
+        },
+        "exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "started_unix": 1793496621.122756,
+        "finished_unix": 1793496624.236873,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            5.34228515625,
+            6.53515625,
+            8.6513671875
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            5.34228515625,
+            6.53515625,
+            8.6513671875
+          ]
+        },
+        "png_sha256": "56c144f3489a67c55a62327a5c0a436508c265a079f1d9ac8be453db7f28ae25"
+      },
+      "candidate": {
+        "root": {
+          "command": "/Users/alex/code/vox2/Build/hn-vprofile-20261101/matched-gradient/apps/candidate/Vox.app/Contents/MacOS/Vox --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/hn-vprofile-20261101/matched-gradient/trial-3-candidate/document.png http://127.0.0.1:52820/",
+          "parent": 1,
+          "pid": 13006,
+          "uid": 501
+        },
+        "resource_coalition": 303439,
+        "instruction_interval": {
+          "lower": 4207813654,
+          "upper": 4207813654
+        },
+        "launch_instruction_interval": {
+          "lower": 4845926718,
+          "upper": 4845926718
+        },
+        "exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "started_unix": 1793496628.619369,
+        "finished_unix": 1793496631.776903,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            5.5546875,
+            6.55908203125,
+            8.6474609375
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            5.51025390625,
+            6.53271484375,
+            8.6259765625
+          ]
+        },
+        "png_sha256": "56c144f3489a67c55a62327a5c0a436508c265a079f1d9ac8be453db7f28ae25"
+      },
+      "brave": {
+        "root": {
+          "command": "/Users/alex/code/vox2/Build/hn-vprofile-20261101/matched-gradient/apps/brave/Brave Browser.app/Contents/MacOS/Brave Browser --no-startup-window --no-first-run --no-default-browser-check --enable-automation --disable-background-networking --disable-sync --no-proxy-server --hide-scrollbars --force-color-profile=srgb --lang=en-US --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --remote-debugging-port=0 --user-data-dir=/Users/alex/code/vox2/Build/hn-vprofile-20261101/matched-gradient/trial-3-brave/profile",
+          "parent": 1,
+          "pid": 12949,
+          "uid": 501
+        },
+        "resource_coalition": 303437,
+        "instruction_interval": {
+          "lower": 1404552953,
+          "upper": 1454700522
+        },
+        "launch_instruction_interval": {
+          "lower": 8592669512,
+          "upper": 8619224131
+        },
+        "exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "started_unix": 1793496624.6840918,
+        "finished_unix": 1793496628.1836329,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            5.5546875,
+            6.55908203125,
+            8.6474609375
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            5.5546875,
+            6.55908203125,
+            8.6474609375
+          ]
+        },
+        "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb"
+      }
+    },
+    {
+      "trial": 4,
+      "control": {
+        "root": {
+          "command": "/Users/alex/code/vox2/Build/hn-vprofile-20261101/matched-gradient/apps/control/Vox.app/Contents/MacOS/Vox --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/hn-vprofile-20261101/matched-gradient/trial-4-control/document.png http://127.0.0.1:52820/",
+          "parent": 1,
+          "pid": 13604,
+          "uid": 501
+        },
+        "resource_coalition": 303445,
+        "instruction_interval": {
+          "lower": 4268915261,
+          "upper": 4268915261
+        },
+        "launch_instruction_interval": {
+          "lower": 4904221957,
+          "upper": 4904221957
+        },
+        "exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "started_unix": 1793496639.598461,
+        "finished_unix": 1793496642.6956701,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            5.19775390625,
+            6.43212890625,
+            8.5654296875
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            5.19775390625,
+            6.43212890625,
+            8.5654296875
+          ]
+        },
+        "png_sha256": "56c144f3489a67c55a62327a5c0a436508c265a079f1d9ac8be453db7f28ae25"
+      },
+      "candidate": {
+        "root": {
+          "command": "/Users/alex/code/vox2/Build/hn-vprofile-20261101/matched-gradient/apps/candidate/Vox.app/Contents/MacOS/Vox --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/hn-vprofile-20261101/matched-gradient/trial-4-candidate/document.png http://127.0.0.1:52820/",
+          "parent": 1,
+          "pid": 13189,
+          "uid": 501
+        },
+        "resource_coalition": 303441,
+        "instruction_interval": {
+          "lower": 4259673883,
+          "upper": 4259673883
+        },
+        "launch_instruction_interval": {
+          "lower": 4898327697,
+          "upper": 4898327697
+        },
+        "exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "started_unix": 1793496632.211757,
+        "finished_unix": 1793496635.3619452,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            5.51025390625,
+            6.53271484375,
+            8.6259765625
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            5.38916015625,
+            6.490234375,
+            8.5986328125
+          ]
+        },
+        "png_sha256": "56c144f3489a67c55a62327a5c0a436508c265a079f1d9ac8be453db7f28ae25"
+      },
+      "brave": {
+        "root": {
+          "command": "/Users/alex/code/vox2/Build/hn-vprofile-20261101/matched-gradient/apps/brave/Brave Browser.app/Contents/MacOS/Brave Browser --no-startup-window --no-first-run --no-default-browser-check --enable-automation --disable-background-networking --disable-sync --no-proxy-server --hide-scrollbars --force-color-profile=srgb --lang=en-US --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --remote-debugging-port=0 --user-data-dir=/Users/alex/code/vox2/Build/hn-vprofile-20261101/matched-gradient/trial-4-brave/profile",
+          "parent": 1,
+          "pid": 13383,
+          "uid": 501
+        },
+        "resource_coalition": 303443,
+        "instruction_interval": {
+          "lower": 1311470117,
+          "upper": 1361967232
+        },
+        "launch_instruction_interval": {
+          "lower": 8429664137,
+          "upper": 8450535189
+        },
+        "exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "started_unix": 1793496635.794571,
+        "finished_unix": 1793496639.1638231,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            5.38916015625,
+            6.490234375,
+            8.5986328125
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            5.38916015625,
+            6.490234375,
+            8.5986328125
+          ]
+        },
+        "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb"
+      }
+    },
+    {
+      "trial": 5,
+      "control": {
+        "root": {
+          "command": "/Users/alex/code/vox2/Build/hn-vprofile-20261101/matched-gradient/apps/control/Vox.app/Contents/MacOS/Vox --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/hn-vprofile-20261101/matched-gradient/trial-5-control/document.png http://127.0.0.1:52820/",
+          "parent": 1,
+          "pid": 13833,
+          "uid": 501
+        },
+        "resource_coalition": 303447,
+        "instruction_interval": {
+          "lower": 4253174120,
+          "upper": 4253174120
+        },
+        "launch_instruction_interval": {
+          "lower": 4888042853,
+          "upper": 4888042853
+        },
+        "exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "started_unix": 1793496643.13644,
+        "finished_unix": 1793496646.210023,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            5.19775390625,
+            6.43212890625,
+            8.5654296875
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            5.90234375,
+            6.5576171875,
+            8.59716796875
+          ]
+        },
+        "png_sha256": "56c144f3489a67c55a62327a5c0a436508c265a079f1d9ac8be453db7f28ae25"
+      },
+      "candidate": {
+        "root": {
+          "command": "/Users/alex/code/vox2/Build/hn-vprofile-20261101/matched-gradient/apps/candidate/Vox.app/Contents/MacOS/Vox --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/hn-vprofile-20261101/matched-gradient/trial-5-candidate/document.png http://127.0.0.1:52820/",
+          "parent": 1,
+          "pid": 14090,
+          "uid": 501
+        },
+        "resource_coalition": 303451,
+        "instruction_interval": {
+          "lower": 4246734028,
+          "upper": 4246734028
+        },
+        "launch_instruction_interval": {
+          "lower": 4884831784,
+          "upper": 4884831784
+        },
+        "exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "started_unix": 1793496650.484512,
+        "finished_unix": 1793496653.545534,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            7.19140625,
+            6.81396484375,
+            8.67529296875
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            7.19140625,
+            6.81396484375,
+            8.67529296875
+          ]
+        },
+        "png_sha256": "56c144f3489a67c55a62327a5c0a436508c265a079f1d9ac8be453db7f28ae25"
+      },
+      "brave": {
+        "root": {
+          "command": "/Users/alex/code/vox2/Build/hn-vprofile-20261101/matched-gradient/apps/brave/Brave Browser.app/Contents/MacOS/Brave Browser --no-startup-window --no-first-run --no-default-browser-check --enable-automation --disable-background-networking --disable-sync --no-proxy-server --hide-scrollbars --force-color-profile=srgb --lang=en-US --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --remote-debugging-port=0 --user-data-dir=/Users/alex/code/vox2/Build/hn-vprofile-20261101/matched-gradient/trial-5-brave/profile",
+          "parent": 1,
+          "pid": 14009,
+          "uid": 501
+        },
+        "resource_coalition": 303449,
+        "instruction_interval": {
+          "lower": 1384428954,
+          "upper": 1446950791
+        },
+        "launch_instruction_interval": {
+          "lower": 8501457354,
+          "upper": 8534274863
+        },
+        "exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "started_unix": 1793496646.6438851,
+        "finished_unix": 1793496650.04386,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            5.90234375,
+            6.5576171875,
+            8.59716796875
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            7.19140625,
+            6.81396484375,
+            8.67529296875
+          ]
+        },
+        "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb"
+      }
+    },
+    {
+      "trial": 6,
+      "control": {
+        "root": {
+          "command": "/Users/alex/code/vox2/Build/hn-vprofile-20261101/matched-gradient/apps/control/Vox.app/Contents/MacOS/Vox --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/hn-vprofile-20261101/matched-gradient/trial-6-control/document.png http://127.0.0.1:52820/",
+          "parent": 1,
+          "pid": 14280,
+          "uid": 501
+        },
+        "resource_coalition": 303457,
+        "instruction_interval": {
+          "lower": 4268777988,
+          "upper": 4268777988
+        },
+        "launch_instruction_interval": {
+          "lower": 4904001918,
+          "upper": 4904001918
+        },
+        "exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "started_unix": 1793496661.385103,
+        "finished_unix": 1793496664.483336,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            6.47265625,
+            6.671875,
+            8.6025390625
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            6.5146484375,
+            6.67724609375,
+            8.5927734375
+          ]
+        },
+        "png_sha256": "56c144f3489a67c55a62327a5c0a436508c265a079f1d9ac8be453db7f28ae25"
+      },
+      "candidate": {
+        "root": {
+          "command": "/Users/alex/code/vox2/Build/hn-vprofile-20261101/matched-gradient/apps/candidate/Vox.app/Contents/MacOS/Vox --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/hn-vprofile-20261101/matched-gradient/trial-6-candidate/document.png http://127.0.0.1:52820/",
+          "parent": 1,
+          "pid": 14131,
+          "uid": 501
+        },
+        "resource_coalition": 303453,
+        "instruction_interval": {
+          "lower": 4224735354,
+          "upper": 4224735354
+        },
+        "launch_instruction_interval": {
+          "lower": 4866792455,
+          "upper": 4866792455
+        },
+        "exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "started_unix": 1793496653.9913568,
+        "finished_unix": 1793496657.04477,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            7.19140625,
+            6.81396484375,
+            8.67529296875
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            6.775390625,
+            6.73388671875,
+            8.6357421875
+          ]
+        },
+        "png_sha256": "56c144f3489a67c55a62327a5c0a436508c265a079f1d9ac8be453db7f28ae25"
+      },
+      "brave": {
+        "root": {
+          "command": "/Users/alex/code/vox2/Build/hn-vprofile-20261101/matched-gradient/apps/brave/Brave Browser.app/Contents/MacOS/Brave Browser --no-startup-window --no-first-run --no-default-browser-check --enable-automation --disable-background-networking --disable-sync --no-proxy-server --hide-scrollbars --force-color-profile=srgb --lang=en-US --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --remote-debugging-port=0 --user-data-dir=/Users/alex/code/vox2/Build/hn-vprofile-20261101/matched-gradient/trial-6-brave/profile",
+          "parent": 1,
+          "pid": 14192,
+          "uid": 501
+        },
+        "resource_coalition": 303455,
+        "instruction_interval": {
+          "lower": 1378065027,
+          "upper": 1420813883
+        },
+        "launch_instruction_interval": {
+          "lower": 8498868860,
+          "upper": 8515636727
+        },
+        "exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "started_unix": 1793496657.4762082,
+        "finished_unix": 1793496660.945956,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            6.775390625,
+            6.73388671875,
+            8.6357421875
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            6.47265625,
+            6.671875,
+            8.6025390625
+          ]
+        },
+        "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb"
+      }
+    },
+    {
+      "trial": 7,
+      "control": {
+        "root": {
+          "command": "/Users/alex/code/vox2/Build/hn-vprofile-20261101/matched-gradient/apps/control/Vox.app/Contents/MacOS/Vox --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/hn-vprofile-20261101/matched-gradient/trial-7-control/document.png http://127.0.0.1:52820/",
+          "parent": 1,
+          "pid": 14344,
+          "uid": 501
+        },
+        "resource_coalition": 303459,
+        "instruction_interval": {
+          "lower": 4246577351,
+          "upper": 4246577351
+        },
+        "launch_instruction_interval": {
+          "lower": 4880848774,
+          "upper": 4880848774
+        },
+        "exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "started_unix": 1793496664.932674,
+        "finished_unix": 1793496668.014053,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            6.5146484375,
+            6.67724609375,
+            8.5927734375
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            6.5146484375,
+            6.67724609375,
+            8.5927734375
+          ]
+        },
+        "png_sha256": "56c144f3489a67c55a62327a5c0a436508c265a079f1d9ac8be453db7f28ae25"
+      },
+      "candidate": {
+        "root": {
+          "command": "/Users/alex/code/vox2/Build/hn-vprofile-20261101/matched-gradient/apps/candidate/Vox.app/Contents/MacOS/Vox --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/hn-vprofile-20261101/matched-gradient/trial-7-candidate/document.png http://127.0.0.1:52820/",
+          "parent": 1,
+          "pid": 14469,
+          "uid": 501
+        },
+        "resource_coalition": 303463,
+        "instruction_interval": {
+          "lower": 4243383944,
+          "upper": 4243383944
+        },
+        "launch_instruction_interval": {
+          "lower": 4879778578,
+          "upper": 4879778578
+        },
+        "exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "started_unix": 1793496672.456279,
+        "finished_unix": 1793496675.545696,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            6.23291015625,
+            6.61572265625,
+            8.5595703125
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            6.5341796875,
+            6.671875,
+            8.56787109375
+          ]
+        },
+        "png_sha256": "56c144f3489a67c55a62327a5c0a436508c265a079f1d9ac8be453db7f28ae25"
+      },
+      "brave": {
+        "root": {
+          "command": "/Users/alex/code/vox2/Build/hn-vprofile-20261101/matched-gradient/apps/brave/Brave Browser.app/Contents/MacOS/Brave Browser --no-startup-window --no-first-run --no-default-browser-check --enable-automation --disable-background-networking --disable-sync --no-proxy-server --hide-scrollbars --force-color-profile=srgb --lang=en-US --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --remote-debugging-port=0 --user-data-dir=/Users/alex/code/vox2/Build/hn-vprofile-20261101/matched-gradient/trial-7-brave/profile",
+          "parent": 1,
+          "pid": 14410,
+          "uid": 501
+        },
+        "resource_coalition": 303461,
+        "instruction_interval": {
+          "lower": 1407594981,
+          "upper": 1444581499
+        },
+        "launch_instruction_interval": {
+          "lower": 8536634456,
+          "upper": 8548652998
+        },
+        "exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "started_unix": 1793496668.4549298,
+        "finished_unix": 1793496672.011127,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            6.5146484375,
+            6.67724609375,
+            8.5927734375
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            6.23291015625,
+            6.61572265625,
+            8.5595703125
+          ]
+        },
+        "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb"
+      }
+    },
+    {
+      "trial": 8,
+      "control": {
+        "root": {
+          "command": "/Users/alex/code/vox2/Build/hn-vprofile-20261101/matched-gradient/apps/control/Vox.app/Contents/MacOS/Vox --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/hn-vprofile-20261101/matched-gradient/trial-8-control/document.png http://127.0.0.1:52820/",
+          "parent": 1,
+          "pid": 14643,
+          "uid": 501
+        },
+        "resource_coalition": 303469,
+        "instruction_interval": {
+          "lower": 4306634509,
+          "upper": 4306634509
+        },
+        "launch_instruction_interval": {
+          "lower": 4944604413,
+          "upper": 4944604413
+        },
+        "exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "started_unix": 1793496683.500376,
+        "finished_unix": 1793496686.5851269,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            6.5712890625,
+            6.67724609375,
+            8.55859375
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            6.205078125,
+            6.59912109375,
+            8.52001953125
+          ]
+        },
+        "png_sha256": "56c144f3489a67c55a62327a5c0a436508c265a079f1d9ac8be453db7f28ae25"
+      },
+      "candidate": {
+        "root": {
+          "command": "/Users/alex/code/vox2/Build/hn-vprofile-20261101/matched-gradient/apps/candidate/Vox.app/Contents/MacOS/Vox --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/hn-vprofile-20261101/matched-gradient/trial-8-candidate/document.png http://127.0.0.1:52820/",
+          "parent": 1,
+          "pid": 14537,
+          "uid": 501
+        },
+        "resource_coalition": 303465,
+        "instruction_interval": {
+          "lower": 4230756370,
+          "upper": 4230756370
+        },
+        "launch_instruction_interval": {
+          "lower": 4867894848,
+          "upper": 4867894848
+        },
+        "exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "started_unix": 1793496675.996097,
+        "finished_unix": 1793496679.109453,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            6.5341796875,
+            6.671875,
+            8.56787109375
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            6.5341796875,
+            6.671875,
+            8.56787109375
+          ]
+        },
+        "png_sha256": "56c144f3489a67c55a62327a5c0a436508c265a079f1d9ac8be453db7f28ae25"
+      },
+      "brave": {
+        "root": {
+          "command": "/Users/alex/code/vox2/Build/hn-vprofile-20261101/matched-gradient/apps/brave/Brave Browser.app/Contents/MacOS/Brave Browser --no-startup-window --no-first-run --no-default-browser-check --enable-automation --disable-background-networking --disable-sync --no-proxy-server --hide-scrollbars --force-color-profile=srgb --lang=en-US --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --remote-debugging-port=0 --user-data-dir=/Users/alex/code/vox2/Build/hn-vprofile-20261101/matched-gradient/trial-8-brave/profile",
+          "parent": 1,
+          "pid": 14581,
+          "uid": 501
+        },
+        "resource_coalition": 303467,
+        "instruction_interval": {
+          "lower": 1384562404,
+          "upper": 1442901855
+        },
+        "launch_instruction_interval": {
+          "lower": 8575904000,
+          "upper": 8608618238
+        },
+        "exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "started_unix": 1793496679.552156,
+        "finished_unix": 1793496683.0573142,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            6.5712890625,
+            6.67724609375,
+            8.55859375
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            6.5712890625,
+            6.67724609375,
+            8.55859375
+          ]
+        },
+        "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb"
+      }
+    }
+  ],
+  "artifacts": {
+    "Build/hn-vprofile-20261101/control-identity.json": "478d690d883dbf5edb847bb726795d92c9c87b77e1398de0d272cc807c9b0fcf",
+    "Build/hn-vprofile-20261101/script-identity.json": "7eedbcbe93653fe15ac25a959a341904cb9e65758c669b9a87b22750e12bc9b1",
+    "Build/hn-vprofile-20261101/profile-build.log": "97a7826e2e3ca7fe5298c0251ae041437a0a482e6cdcdaa23a4e54a7ba3d3728",
+    "Build/hn-vprofile-20261101/profile-build-guard.json": "8822b366ca34472ec84a5ea8929f409ea24e9edbffcebf09ad71ed356b376001",
+    "Build/hn-vprofile-20261101/full-profile-run/v-profile.txt": "990aca51e05533931cb19bf2ba6401d29eb4dfcc84b068217e901f52103a71ae",
+    "Build/hn-vprofile-20261101/full-profile-run/result.json": "bdf459c74c74c8d03707bb96a5ec8513742a75b2d6754e1331e0b3f25c1b87e7",
+    "Build/hn-vprofile-20261101/profile-run-guard.json": "efa041311147d4d13217be3e016a7d9fc4bb80720a7554874983004089c9b8b5",
+    "Build/hn-vprofile-20261101/guard-tests.json": "eea27e40f12f1d849491b0997a14a7879f64aa0ec1ed394a30ec592bed272880",
+    "Build/hn-vprofile-20261101/control-cohort-guard.json": "b842fed865bc53e792e2b0f8a842876737233e0e8dddeb27ef4f17bf3e533631",
+    "Build/hn-vprofile-20261101/gradient-source-isolation.json": "e0fe9e4e3fc98f726194221da8bb835b7268a916839a2c8287f67bc08e88f43a",
+    "Build/hn-vprofile-20261101/gradient-control-build.json": "352565c3a568a94fc7159c671d8e86be59e29d0c6765e296abd3453cf9139fa2",
+    "Build/hn-vprofile-20261101/gradient-candidate-build.json": "d18cc5c1a662b90d5284d082340d7b894dd3d5e584361d1d0d3c61f91c0b784e",
+    "Build/hn-vprofile-20261101/gradient-focused.json": "e7371c5024bfb627846c622c92d021018519ea005ed4e91cc0a8f73893e13e26",
+    "Build/hn-vprofile-20261101/gradient-focused-v2.json": "68b93106afc4f944898fcc009b072b3589a220cfd59aefa83cd45ee7e71c368a",
+    "Build/hn-vprofile-20261101/gradient-sanitizer.json": "f3d9075aedde8b6740707447b3b1a6fd69676331bc3c94262ca88fc33fd219e1",
+    "Build/hn-vprofile-20261101/gradient-eligibility.json": "f2c2c12d86009fa87baec5b2398933e103f3f2a56b1248226d7279fe150e593e",
+    "Build/hn-vprofile-20261101/gradient-eligibility/result.json": "672bd1fcdb93d8366b1d5541a52e5f3579aae9a890add399fecba9981b89c365",
+    "Build/hn-vprofile-20261101/matched-gradient-guard.json": "3dfddd044e29f7aaadd528c40746f6b220f74561858912bf3bea2e1289cf5c92",
+    "Build/hn-vprofile-20261101/matched-gradient/inputs.json": "cbfa2dbfbc175b72217ed29aac74e810b604c8f0b4a331c202b01fa6f52365a7",
+    "Build/hn-vprofile-20261101/matched-gradient/triples.json": "28b50c7bdc8abefbb6e019f785b1598dd2c25409a716d319ea91a5ab7a5c365e",
+    "Build/hn-vprofile-20261101/matched-gradient/summary.json": "36a0fdd9ddea31a5a03ee04ec06b53ebda56909ddfa7103a025af4af0c4ceb01",
+    "Build/hn-vprofile-20261101/paired-assessment.json": "9122586441b31631933626bf10e81401987c43501dae101dd83dd925b0fdde1d",
+    "Build/hn-vprofile-20261101/broad-controller.json": "000361be7bb4dbe86289cac7b24390ab21c6c69acd539e3edf6843b6b1f7871c",
+    "Build/hn-vprofile-20261101/broad-reconciled.json": "131d832c96ea3ac51f59c27a4c7bebf3b6afc542a6427d091c3faffe6b127a20",
+    "Build/hn-vprofile-20261101/headless.json": "3531d4f66beb7817b442dafec4ac13c11ea321a686aae2c8fd6e58e5fc6bd7f0",
+    "Build/hn-vprofile-20261101/headless.log": "3e7075c0bbab082b8782c68c27571544964ea5e410db271c743c18f78e0928fe",
+    "Build/hn-vprofile-20261101/signature-verification.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "Build/hn-vprofile-20261101/profile-confirm-results.json": "c31974517a05118d4790b2894750fd6f6730f7bdc70d08c41bd1e0864de65918",
+    "Build/hn-vprofile-20261101/profile-control-confirm/v-profile.txt": "c07dee64178ae2861a24a2a55350798f3131a8ed107124a6b705090df83e0d38",
+    "Build/hn-vprofile-20261101/profile-candidate-confirm/v-profile.txt": "cc92c24721763246bd247bc59e2ae31fbaebb398ff7f6764b90c66ac80f44bfc",
+    "Build/hn-vprofile-20261101/live-gradient-candidate.json": "ca1481f4a73360241b07a74d239358dd0f34e1ba927bd647a838d601f6ff3868",
+    "Build/hn-vprofile-20261101/live-gradient-candidate/result.json": "2f8e46410de2ea2cdeb408601fb353545bc294a01eb9e10ae2a763435f736c05",
+    "Build/hn-vprofile-20261101/broad-gradient_region-compile.guard.json": "f852feb2413121a03cd3f6bb9503db1bdd572ec08e27cbb5a30994b329ea879d",
+    "Build/hn-vprofile-20261101/broad-gradient_region-run.guard.json": "7967677c0c29a832f7b61f54074d61059326639eeaa75b9d0f58c5dd100cf465",
+    "Build/hn-vprofile-20261101/broad-gradient_tiles-compile.guard.json": "d54de8fd0584f5bb80a279452c10ed5384b35593d884f5f108881f2c83e38ebd",
+    "Build/hn-vprofile-20261101/broad-gradient_backdrop-compile.guard.json": "2ea6d3403bc6877196c9ea9a281ff6809c79def4403f3758cce43106b84125d0",
+    "Build/hn-vprofile-20261101/broad-screenshots-smoke.guard.json": "a99d5c412f8e3a42423ff25c63f76b0a106a4d8ce58e19976b6d70903cacc5fe",
+    "Build/hn-vprofile-20261101/broad-svg_color-compile.guard.json": "f392151ce64a2324bef9be1e0dc587f71f3f34099402fd63241c89ca3b62a6ec",
+    "Build/hn-vprofile-20261101/broad-text_color-compile.guard.json": "3e86471499d11a4b0abd24d30465d529087474fe639da2a14019d5870055f96f",
+    "Build/hn-vprofile-20261101/broad-text_color-run.guard.json": "7c4509099cf0cd65529000fa783a83448be3935472f73500a20aa918c5703a96",
+    "Build/hn-vprofile-20261101/broad-gradient_tiles-run.guard.json": "910eb7ff9f2b64b94934571e2941cea2adec8d6949a403b1d9697c09196fd0bf",
+    "Build/hn-vprofile-20261101/broad-svg_clip-compile.guard.json": "871fa67002f5f3fc826bb8ffe67ba92bc8da6859de04e50d8d37747d528876c4",
+    "Build/hn-vprofile-20261101/broad-gradient_interpolation-compile.guard.json": "eb4c4c5ad1197a116bfe8618f2b9fb21fdb87d57696d0b6b5d57b31a6f1ba01e",
+    "Build/hn-vprofile-20261101/broad-gradient_backdrop-run.guard.json": "c0aa0b1353ce1a30e2997f8f00bc955d7042d0c8cb1afcf904beb69d1fa58f61",
+    "Build/hn-vprofile-20261101/broad-screenshots-svg.guard.json": "9b1b631e531fab92c6ea4fabbdc3c6c090e5c0ed0f9c97de92b7d1673df6ee80",
+    "Build/hn-vprofile-20261101/broad-svg_clip-run.guard.json": "fd66a9712fe4c294a85afbec5231f8b12e5126b524a8b2a2172d90b2ac485e5b",
+    "Build/hn-vprofile-20261101/broad-gradient_text-run.guard.json": "4b594a0bb941d0183d35236b1e2a448435cdb217b1d1099268da22b94144a8de",
+    "Build/hn-vprofile-20261101/broad-gradient_text-compile.guard.json": "8af501395ecbf939e3d6de85b4df2a90c7cedd46d002fb4941ed5cb50213a47d",
+    "Build/hn-vprofile-20261101/broad-svg_color-run.guard.json": "536ea93e569c34ecf2227f19279ebc2b0ecd5ceaf674cd7aa928f80bf0b225e7",
+    "Build/hn-vprofile-20261101/broad-interpolation-command-v2.json": "ef0681cc381a96ec3d119d9302e5d511312e06e14fe0ec1b042c0466672f9e1e",
+    "Build/hn-vprofile-20261101/broad-gradient_region-run-v2.json": "55841119f6eb0e0f086de49d5656410e9660a6789d9ac0450caf43b15862dc48",
+    "Build/hn-vprofile-20261101/broad-gradient_interpolation-compile-v2.json": "6a15b36053c62eaf96b9122ed78669e82fb1670c199c6a7af93330671ade54a0",
+    "Build/hn-vprofile-20261101/broad-gradient_interpolation-run-v2.json": "a019d6268f5394e01d342229c3f0039c1d98d61907cdca17ba415dd2f0c77747",
+    "Build/hn-vprofile-20261101/gradient-control/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "99ff3484025053dd5e72dd74a30ab0cfdfceb51f20291cdf48267a5133715875",
+    "Build/hn-vprofile-20261101/gradient-control/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "9ae820a35628b3bfb39fd49bac0849755340b392e14c1aaa9666fb3e4371f4f2",
+    "Build/hn-vprofile-20261101/gradient-control/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "980473ad3bb39804965cdea4d44627d91156d1516dcfd5dc6511b42b12675f91",
+    "Build/hn-vprofile-20261101/gradient-control/Vox.app/Contents/MacOS/Vox": "929d986d16137cd49beae09c68938a40d69c13d7a62a5f8026ce8f7f478b5608",
+    "Build/hn-vprofile-20261101/gradient-control/Vox.app/Contents/MacOS/VoxAdblockWorker": "617662e2680c968272673cab953c66832e2da18cc0a6d32cb19564ee290ea3e8",
+    "Build/hn-vprofile-20261101/gradient-candidate/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "99ff3484025053dd5e72dd74a30ab0cfdfceb51f20291cdf48267a5133715875",
+    "Build/hn-vprofile-20261101/gradient-candidate/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "d31bb4331568cf01992c47a020f55fcddd8fc8117872afd2f62937aacb55ac65",
+    "Build/hn-vprofile-20261101/gradient-candidate/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "980473ad3bb39804965cdea4d44627d91156d1516dcfd5dc6511b42b12675f91",
+    "Build/hn-vprofile-20261101/gradient-candidate/Vox.app/Contents/MacOS/Vox": "ac11c56baaa7d18a5ee0275c45c1e7a3f5409b81b7db3d13d87939878c39f81d",
+    "Build/hn-vprofile-20261101/gradient-candidate/Vox.app/Contents/MacOS/VoxAdblockWorker": "617662e2680c968272673cab953c66832e2da18cc0a6d32cb19564ee290ea3e8",
+    "Build/hn-vprofile-20261101/instrumented/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "99ff3484025053dd5e72dd74a30ab0cfdfceb51f20291cdf48267a5133715875",
+    "Build/hn-vprofile-20261101/instrumented/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "d31bb4331568cf01992c47a020f55fcddd8fc8117872afd2f62937aacb55ac65",
+    "Build/hn-vprofile-20261101/instrumented/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "980473ad3bb39804965cdea4d44627d91156d1516dcfd5dc6511b42b12675f91",
+    "Build/hn-vprofile-20261101/instrumented/Vox.app/Contents/MacOS/Vox": "c4ea5933aacebfe93df2e011b58509561e776b64ffa70d799f41c073e968a2ff",
+    "Build/hn-vprofile-20261101/instrumented/Vox.app/Contents/MacOS/VoxAdblockWorker": "ee0033acb8a2997beb77899f0a99782a8cee1ba43adeec683c6049aeaa3df7b2"
+  }
+}

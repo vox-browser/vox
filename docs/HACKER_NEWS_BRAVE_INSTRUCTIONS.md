@@ -1,5 +1,115 @@
 # Hacker News instructions against Brave, 2026-11-01
 
+The subsequent `v -profile` investigation retains the transparent-gradient
+optimization in `215b6e4`. Its matched Vox median decreases from
+**4,268,701,477.5 to 4,237,070,157 instructions (0.741%)**. Brave's median
+lower bound is **1,384,856,453.5**. The requested 10% advantage over Brave
+remains **open**. The implementation, validation and full retained results
+are described below; the earlier measurements remain historical evidence.
+
+## V-profile continuation
+
+The diagnostic builds the canonical checkout with current V's **`-profile`**
+for all functions, including inline functions. It produces 8,112 populated
+function rows. Build outputs are isolated under
+`Build/hn-vprofile-20261101/instrumented/`; the existing production application
+is preserved. The guarded build completes in 292.46 seconds with 11.43 GiB
+sampled peak process-tree RSS, inside the unchanged 12 GiB budget. The diagnostic
+capture exits zero and matches the original Hacker News reference exactly.
+
+The profile identifies 42 calls to `draw_native_css_gradient_tile`, initially
+127.571 ms inclusive. The homepage's vote-arrow backgrounds include
+`linear-gradient(transparent, transparent)`, which was still building shaders,
+allocating raster storage and entering the native GPU renderer. The new native
+gate returns successfully before that work for finite, zero-alpha CSS stops.
+It preserves tiny nonzero alpha, invalid stops, SVG spread modes, and the
+caller's surrounding clip/effect state.
+
+A separate instrumented native library confirms **42 successful fast-path
+uses** and an exact full-content capture. Source isolation verifies that the
+matched control and candidate native inputs differ only by this gate and its
+header include. Both applications share the same unprofiled V executable,
+helper, other native libraries and resources. No source checkout or worktree
+was copied.
+
+A follow-up uses the same V-profile executable and switches only the matched
+native libraries. Both report 42 gradient calls and 808 command draws. The
+gradient wrapper's inclusive time is 229.611 ms for control and 0.267 ms for
+candidate. **These are diagnostic elapsed times, not retired instructions or
+whole-page savings.** V profiling has shared, non-thread-safe counters, and
+other native timings vary substantially between those runs. No profiling
+measurement contributes instruction-count credit.
+
+Eight alternating unprofiled control/Brave/candidate triples retain every
+observation, with no retries or exclusions:
+
+| Trial | Vox control | Vox candidate | Brave lower bound | Paired instruction saving |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 4,312,688,821 | 12,422,457,130 | 1,490,046,281 | -8,109,768,309 |
+| 2 | 4,255,677,098 | 4,222,571,609 | 1,385,150,503 | 33,105,489 |
+| 3 | 4,268,624,967 | 4,207,813,654 | 1,404,552,953 | 60,811,313 |
+| 4 | 4,268,915,261 | 4,259,673,883 | 1,311,470,117 | 9,241,378 |
+| 5 | 4,253,174,120 | 4,246,734,028 | 1,384,428,954 | 6,440,092 |
+| 6 | 4,268,777,988 | 4,224,735,354 | 1,378,065,027 | 44,042,634 |
+| 7 | 4,246,577,351 | 4,243,383,944 | 1,407,594,981 | 3,193,407 |
+| 8 | 4,306,634,509 | 4,230,756,370 | 1,384,562,404 | 75,878,139 |
+
+The first candidate observation is a substantial regression, and its cause
+is not isolated. Consequently, this does **not** establish a cold-start gain:
+the arithmetic mean regresses by 984,631,982.125 instructions. Seven pairs
+improve. The paired median saving is 21,173,433.5 instructions; a fixed-seed
+50,000-resample percentile bootstrap interval is [3,193,407, 60,811,313]. The
+difference between engine medians is 31,631,320.5 instructions. All 24 captures
+match all 3,145,728 pixels and retain all 30 story IDs in source order, with
+successful browser exits. The conservative candidate/Brave ratio is 9.4722,
+which fails the unchanged 0.90 target. OS filesystem/shader caches are not
+flushed; all browsers still receive fresh private profiles and caches.
+
+The observed median reduction crosses the 5,000,000-instruction broad-check
+threshold. Completed validation includes the focused native gate and its
+actual bridge entry point, AddressSanitizer/UndefinedBehaviorSanitizer checks,
+eight broader native gradient/text/SVG checks, and 21 screenshot comparisons.
+Eighteen screenshots are exact; three default smoke cases pass their existing
+platform bounds. The eight source/paint-server mutation cases and both
+turbulence cases are exact. The broader region check includes 192 exact
+integration comparisons, and the independent modern-Skia interpolation check
+includes four exact GPU comparisons. Fresh headless startup and strict deep
+signature verification pass. A fresh candidate process also loads the live
+Hacker News homepage completely with 30 stories and zero reported JavaScript
+errors; this receives no paired live instruction credit.
+
+Initial test-launch failures are retained: strict compilation reported unused
+functions in the included preexisting native implementation; its focused test
+now explicitly suppresses that warning. The first broad interpolation command
+selected old LibWeb Skia headers, and the first region launch omitted its
+required reference-library environment. Corrected commands pass without changing
+assertions or pixel tolerances. The initial nonzero receipts are not described
+as successful whole-suite runs. After the completed broad checkpoint,
+additional accumulated instruction savings for this slice are zero.
+
+The memory-guard repair is committed separately as `0f56fb13`. A benchmark can
+atomically register LaunchServices PIDs and their creation times through
+`--memory-guard-registry`; the outer guard adopts them through
+`--adopt-pids-from`. PID reuse does not adopt an unrelated process. Twenty-six
+focused tests pass, including a real independently launched process exceeding
+its memory budget. The final cohort's guard accounts for the reparented browser
+trees, records all adopted identities, observes 896 MiB peak RSS and exits 1
+because the benchmark's instruction target fails. These RSS observations do not
+include non-descendant system services. The earlier guard limitation below
+remains applicable to historical runs without adoption.
+
+All commands, profiles, complete observations, failure receipts, pixel outputs,
+compiler flags, executable/native identities and fixed-seed assessment are
+under `Build/hn-vprofile-20261101/`. The durable
+[V-profile result](benchmark-results/hacker-news-v-profile-2026-11-01.json)
+records every count and artifact hashes. The accepted candidate is a pinned
+completed app with the changed native library; it does not replace another
+session's shared production bundle. The reproduction command below can use
+`--vox-app Build/hn-vprofile-20261101/gradient-candidate/Vox.app`, with the same
+private PID registry passed to the outer guard and benchmark.
+
+## Initial comparison and removed experiments
+
 The requested 10% navigation instruction reduction remains **open**. Eight
 alternating control/candidate/Brave trials retain a control Vox median of
 **4,271,112,593.5** retired instructions and a Brave median lower bound of
@@ -106,9 +216,11 @@ Reproduce with a fresh output directory and report filename:
 env -u ALL_PROXY -u HTTP_PROXY -u HTTPS_PROXY \
     -u all_proxy -u http_proxy -u https_proxy \
   python3 tools/run_memory_bounded.py \
-    --lock Build/hn-repeat.lock --report Build/hn-repeat-guard.json -- \
+    --lock Build/hn-repeat.lock --report Build/hn-repeat-guard.json \
+    --adopt-pids-from Build/hn-repeat-pids.json -- \
   python3 tools/hacker_news_browser_instructions.py \
     --output Build/hn-repeat \
+    --memory-guard-registry Build/hn-repeat-pids.json \
     --home-archive Tests/Browser/Brave/hn-home-instructions \
     --target-vox-fraction .9 --instruction-scope navigation \
     --diff-tool Build/hn-home-instructions-20261031/pixel_diff
