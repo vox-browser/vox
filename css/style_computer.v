@@ -1858,6 +1858,7 @@ fn update_style_recursively(mut style_computer StyleComputer, node &dom.Node, ne
                 else if parent_display_changed { 2 } else if ancestor_needs_descendant_style_recompute { 3 }
                 else if recompute_elements_depending_on_custom_properties { 4 } else { 5 }
             record_diagnostic_style_update_cause(reason)
+            record_diagnostic_style_update_element(reason, element)
 			mut abstract_element := dom.AbstractElement.new(element, none)
 			node_invalidation, _ = style_computer.recompute_style_with_invalidation(mut abstract_element, &did_change_custom_properties)
 		} else {

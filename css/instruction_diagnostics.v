@@ -5,6 +5,7 @@ import dom
 import os
 
 const diagnostic_style_reasons_enabled = os.getenv('VOX_DIAGNOSTIC_STYLE_REASONS') != ''
+const diagnostic_style_elements_enabled = os.getenv('VOX_DIAGNOSTIC_STYLE_ELEMENTS') != ''
 
 __global (
 	diagnostic_instruction_totals [18]u64
@@ -50,6 +51,11 @@ fn record_diagnostic_style_update_cause(index int) {
 	} $else {
 		if diagnostic_style_reasons_enabled { diagnostic_style_update_causes[index]++ }
 	}
+}
+
+fn record_diagnostic_style_update_element(reason int, element &dom.Element) {
+	if !diagnostic_style_elements_enabled || reason != 1 { return }
+	eprintln('Vox dirty style element: ${element.document().url.serialize()} ${element.local_name()} id=${element.get_attribute_value('id')} class=${element.get_attribute_value('class')}')
 }
 
 fn record_diagnostic_longhand_lookup(hit bool) {
