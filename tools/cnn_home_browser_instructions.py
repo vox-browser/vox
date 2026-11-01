@@ -307,7 +307,10 @@ def main():
                 browser.require(browser.fingerprint(paths) == pinned, 'Pinned benchmark input changed')
             pairs.append(pair)
             browser.write_json(args.output / 'pairs.json', pairs)
-        summary = summarize(pairs, args.diagnostic)
+        try:
+            summary = summarize(pairs, args.diagnostic)
+        except RuntimeError as error:
+            summary = dict(acceptance=False, passed=False, pairs=len(pairs), error=str(error))
         browser.write_json(args.output / 'summary.json', summary)
         print(json.dumps(summary), flush=True)
         return 0 if summary.get('valid') or summary['passed'] else 1
