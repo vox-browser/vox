@@ -1,32 +1,33 @@
 # BBC homepage instruction comparison
 
 **The requested 10% advantage remains open. BBC does not qualify for
-`OPTIMIZED_SITES.md`.** The latest measured candidate (cohort 37, since
-removed) has a Vox median of **35,760,574,950** and a Brave lower-bound median
-of **16,077,980,043** instructions. All 21 content, original-pixel and native-exit
+`OPTIMIZED_SITES.md`.** The latest measured setting (cohort 39) has a Vox
+median of **35,194,223,202** and a Brave lower-bound median of
+**15,768,785,889** instructions. All 21 content, original-pixel and native-exit
 audits pass, and all 14 Vox/control captures emit zero verbose font traces.
-The conservative ratio is **2.7173610002528643**:
-`431871721090 > 143037509166` fails the integer gate. Every observation remains
-included, including both browsers' first-launch outliers.
+The conservative ratio is **2.3256469115293705**:
+`364991976900 > 141247915830` fails the integer gate. Every observation remains
+included.
 
-The same-binary disabled control has median 35,739,161,061. The direct-query
-request envelope increases the candidate median by 0.0599171563189449%; its
-conservative control ratio of 1.2629941369318158 also fails. The implementation
-and its control option were removed. No accepted BBC savings are claimed.
+The same-binary control has median 34,763,549,223. Raising JavaScriptCore's
+baseline compilation warmup from 500 to 5,000 increases the median by
+1.238866538733796%; lowering it to 50 in cohort 38 increases that cohort's
+median by 4.113109590498887%. Production thresholds remain unchanged. The
+latest setting does not establish production-default performance or accepted
+BBC savings.
 
-Cohort 37 explicitly uses `VOX_RETAIN_INCREMENTAL_WEBP_PAINT_POLICY=1` in both
-Vox arms to reproduce the historical frozen RGB workload. Current production's
+Cohorts 37–39 explicitly use `VOX_RETAIN_INCREMENTAL_WEBP_PAINT_POLICY=1` in
+both Vox arms to reproduce the historical frozen RGB workload. Production's
 completed-response YUV policy changes photo pixels; an unchanged-binary
 isolation confirms that the historical switch restores the original reference.
 The compatibility control changes no default and earns no decoder credit.
-This is a historical-renderer frozen-page result, not current-default or live
-site acceptance. These removed-candidate measurements also do not establish
-current-master performance. Earlier invalid captures, protocol corrections,
+These are historical-renderer frozen-page results, rather than current-default
+or live site acceptance. Earlier invalid captures, protocol corrections,
 failing cohorts and their outliers remain retained.
 
 The machine-readable [evidence](benchmark-results/bbc-brave-instructions-2026-11-01.json)
-retains 916 attempts and 37 cohorts, including failures and first launches;
-763 complete cohort raw results were independently checked against the recorded
+retains 964 attempts and 39 cohorts, including failures and first launches;
+805 complete cohort raw results were independently checked against the recorded
 vectors, medians and integer gates. It also retains ownership audits, commands and artifact hashes. Raw archives, logs,
 PNGs, executable copies, PID registries, compiler output and guard receipts are
 under `Build/bbc-home-instructions-20261101-054807/` in the canonical checkout.
@@ -111,6 +112,8 @@ capture marker. An invalid cohort is retained for diagnosis, not acceptance.
 | Quiet instruction counting (protocol correction) | 34,693,898,775 | 16,382,454,723 | 2.9155220150098202 | Brave pair 3 pixel mismatch; integer gate fails; zero engine credit |
 | Retained font-validation memoization | 35,330,134,680 | 15,983,256,775 | 2.8075196412182386 | All captures valid; median regresses 2.2607% against control; implementation reverted |
 | Direct DOM query fields, historical WebP policy | 35,760,574,950 | 16,077,980,043 | 2.7173610002528643 | All captures valid; median regresses 0.0599% against control; implementation removed; historical decoder setting required |
+| Earlier baseline JIT, historical WebP policy | 35,976,507,921 | 15,918,309,134 | 2.361239852002433 | All captures valid; threshold 50 regresses 4.1131% against control; production default unchanged |
+| Later baseline JIT, historical WebP policy | 35,194,223,202 | 15,768,785,889 | 2.3256469115293705 | All captures valid; threshold 5,000 regresses 1.2389% against control; production default unchanged |
 
 The grid block-height cohort alternates an older control, candidate and Brave;
 control/candidate medians are 101,567,929,247 and 90,700,737,334 (10.70% observed
@@ -1704,3 +1707,84 @@ all focused-check folders, `native-callback-workflow-assessment.json` and
 `query-action-workflow-assessment.json`. All failed harness invocations,
 default-policy photo mismatches, completed cohorts and first launches remain
 retained in durable evidence.
+
+
+## Rejected baseline JIT thresholds (cohorts 38–39)
+
+The per-action diagnostic left substantial script execution inside JavaScriptCore
+calls. Tooling commit `1471c3257` exposes explicit baseline-JIT warmup settings
+for each Vox arm, derives the corresponding soon threshold, and records both
+in the input manifest. The shared environment cleaner removes ambient `JSC_`
+controls; none were present in the preceding selected runs, and this correction
+earns no engine credit. Isolation, failure restoration, argument bounds and
+unchanged Brave environments are covered by the 50 BBC cases; all 206 focused
+instruction-tool tests pass.
+
+WebKit documents [environment option overrides and initialization timing](https://github.com/WebKit/WebKit/blob/main/Source/JavaScriptCore/runtime/OptionsList.h).
+The actual installed system runtime reports baseline warmup 500, soon 100,
+optimizing warmup 1,000, with baseline, DFG and FTL enabled. These trials change
+only the two baseline thresholds. The global `jitPolicyScale` remains one;
+no other tier threshold, script, replay byte or capture endpoint changes.
+
+Both cohorts reuse the latest successfully completed shared production bundle,
+without requesting another build. Executable SHA256 is
+`2c61f78249e5405f134816e71a856c83ea3c0275734fd8d6c056726da165bdba`.
+Its existing build/compiler and memory guard exit zero, the source receipt has
+no changed inputs, and every copied executable/native-library hash matches.
+This bundle contains the direct-query removal and the explicit historical
+WebP policy. Fifteen benchmark tools are frozen separately. The reuse receipt
+pins the existing build and guard receipts as well as every bundle file.
+
+Two initial BBC diagnostics confirm settings 50/10 and 500/100 in the runtime's
+option dump, original pixels/content, normal native exits and actual JSC
+execution: one context with 1,948 / 1,986 evaluations. Two further diagnostic
+captures enable compilation reporting and preserve the same correctness checks.
+They positively observe 1,693 baseline compilations at 50/10 versus 978 at
+500/100. A fifth diagnostic at 5,000/1,000 observes 497 baseline compilations,
+with original pixels/content and a zero native exit. Optimizing warmup remains
+1,000 throughout. Diagnostic logs and injected execution probes supply no
+instruction credit.
+
+Cohort 38 retains seven alternating triples using 50/10 against 500/100 and
+Brave. All 21 native/content/pixel and identity checks pass. Vox's median is
+35,976,507,921; control is 34,555,214,096; Brave's lower median is
+15,918,309,134. Four of seven candidate pairs regress, and the median is
+4.113109590498887% higher. Its maximum Vox count is 37,061,960,555 and minimum
+Brave lower count 15,695,974,521. The integer gate fails:
+`370619605550 > 141263770689`. The control ratio 1.0941184637550283 also fails.
+The guard adopts 67 processes without errors, peaks at 1,751,564,288 bytes and
+finishes in 112.516308708 seconds.
+
+Cohort 39 retains seven further alternating triples using 5,000/1,000 against
+500/100 and Brave, with all 21 checks passing. Vox's median is 35,194,223,202;
+control is 34,763,549,223; Brave's lower median is 15,768,785,889. Four of seven
+candidate pairs regress, and the median is 1.238866538733796% higher. Its
+maximum Vox count is 36,499,197,690 and minimum Brave lower count
+15,694,212,870. The integer gate fails:
+`364991976900 > 141247915830`. The control ratio 1.0675891263283646 also fails.
+The guard adopts 66 processes without errors, peaks at 1,716,240,384 bytes and
+finishes in 109.682204083 seconds.
+
+Both acceptance drivers and outer guards exit one because their instruction
+gates fail; individual browsers exit normally. All 28 Vox/control cohort logs
+have zero verbose font traces, no compilation logging and no injected probe.
+Raw host load, timestamps, ownership and helper observations remain retained.
+Neither setting becomes the production default or earns savings. No measured
+reduction triggers another broad batch; the prior unchanged text-control
+baseline failure remains and the broad cadence is not reset.
+
+A separate seven-second wall-clock sample of the same pinned bundle at the
+original 500/100 thresholds preserves reference pixels/content and exits
+normally. Its exclusive stack accounting has no negative child sums. Main
+thread samples still enter layout, style and native layer completion; copied
+bytes are dominated by stationary native bitmap replay. These sampled weights
+are diagnostic, and do not establish retired-instruction savings or justify
+attributing earlier counts to copying alone.
+
+Receipts include `jsc-baseline-reused-build.json`,
+`jsc-baseline-frozen-tools.json`, all five threshold diagnostics,
+`jsc-baseline-compilation-validation.json`,
+`jsc-late-baseline-compilation-validation.json`, both cohort folders and
+derived JSON files, `jsc-baseline-all-tool-checks.log` and
+`jsc-default-profile-assessment.json` under the evidence root. Every attempt
+remains retained. BBC is not added to the optimized-sites catalog.
