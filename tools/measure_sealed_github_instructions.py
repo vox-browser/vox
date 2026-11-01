@@ -262,7 +262,7 @@ def processes():
 def clean_environment():
     env = dict(os.environ)
     for key in list(env):
-        if key.startswith(('DYLD_', 'VOX_', 'LADYBIRD_', 'SCREENSHOT_', 'GC_')) or key.lower() in (
+        if key.startswith(('DYLD_', 'VOX_', 'LADYBIRD_', 'SCREENSHOT_', 'GC_', 'JSC_')) or key.lower() in (
                 'http_proxy', 'https_proxy', 'all_proxy', 'no_proxy') or key == 'DEBUG_TIMING':
             env.pop(key, None)
     return env

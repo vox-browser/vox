@@ -163,8 +163,11 @@ def audit_instruction_logging(row, log, diagnostic=False):
 def run_trial(engine, app, folder, args):
     environment = args.vox_environment
     try:
+        if engine in ('vox', 'control'):
+            warmup = getattr(args, 'control_jsc_baseline_warmup' if engine == 'control'
+                             else 'jsc_baseline_warmup', None)
+            args.vox_environment = dict(environment, **jsc_baseline_environment(warmup))
         if engine == 'control':
-            args.vox_environment = dict(environment)
             if args.control_disable_grid_width_only:
                 args.vox_environment['VOX_DISABLE_GRID_WIDTH_ONLY'] = '1'
             if getattr(args, 'control_disable_stationary_raster', False):
@@ -234,6 +237,13 @@ def run_trial(engine, app, folder, args):
         args.vox_environment = environment
 
 
+def jsc_baseline_environment(warmup):
+    if warmup is None:
+        return {}
+    return dict(JSC_thresholdForJITAfterWarmUp=str(warmup),
+                JSC_thresholdForJITSoon=str(max(1, warmup // 5)))
+
+
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--archive', type=Path, required=True)
@@ -241,6 +251,10 @@ def parse_args(argv=None):
     parser.add_argument('--memory-guard-registry', type=Path, required=True)
     parser.add_argument('--vox-app', type=Path, default=REPO / 'Build/v/Vox.app')
     parser.add_argument('--control-vox-app', type=Path, help='Also run a pinned Vox control before each candidate/Brave pair')
+    parser.add_argument('--jsc-baseline-warmup', type=int,
+                        help='Explicit baseline-JIT warmup threshold for Vox; soon threshold is max(1, warmup // 5)')
+    parser.add_argument('--control-jsc-baseline-warmup', type=int,
+                        help='Explicit baseline-JIT warmup threshold for the matched Vox control')
     parser.add_argument('--control-disable-grid-width-only', action='store_true',
                         help='Disable only grid width-probe reuse in the pinned Vox control')
     parser.add_argument('--control-disable-stationary-raster', action='store_true',
@@ -318,6 +332,11 @@ def parse_args(argv=None):
     parser.add_argument('--timeout', type=float, default=180)
     parser.add_argument('--settle-seconds', type=float, default=2)
     args = parser.parse_args(argv)
+    for warmup in (args.jsc_baseline_warmup, args.control_jsc_baseline_warmup):
+        if warmup is not None and not 1 <= warmup <= 2147483647:
+            parser.error('JSC baseline warmup must be a positive signed 32-bit integer')
+    if args.control_jsc_baseline_warmup is not None and not args.control_vox_app:
+        parser.error('The JSC baseline control needs --control-vox-app')
     if any((args.control_disable_grid_width_only, args.control_disable_stationary_raster,
             args.control_disable_client_geometry_index,
             args.control_disable_tracked_persistent_shortcut, args.control_disable_attribute_case_buckets,
@@ -410,6 +429,8 @@ def main():
         fixture=expected, original_scripts_retained=True, author_javascript_enabled=True,
         viewport=[1024, 768], scale=args.scale, settle_seconds=args.settle_seconds,
         javascript_backends=dict(vox='javascriptcore', brave='v8'),
+        jsc_baseline_environment=dict(vox=jsc_baseline_environment(args.jsc_baseline_warmup),
+            control=jsc_baseline_environment(args.control_jsc_baseline_warmup)),
         retain_incremental_webp_paint_policy=args.retain_incremental_webp_paint_policy,
         webp_policy_credit='None: explicit historical workload compatibility only',
         control_disable_grid_width_only=args.control_disable_grid_width_only,

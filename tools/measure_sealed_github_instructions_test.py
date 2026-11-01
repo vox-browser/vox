@@ -279,6 +279,7 @@ class ProvenanceTests(unittest.TestCase):
 
     def test_ambient_controls_cannot_change_declared_native_gc_policy(self):
         inherited = dict(PATH='/bin', KEEP='yes', GC_MARKERS='9', GC_DISABLE='1',
+                         JSC_useJIT='false', JSC_thresholdForJITAfterWarmUp='1',
                          GC_PRINT_STATS='1', VOX_PROFILE_CSS='1', DYLD_LIBRARY_PATH='/foreign',
                          SCREENSHOT_SETTLE_SECONDS='200', HTTPS_PROXY='http://proxy')
         args = SimpleNamespace(network_deny=Path('/deny.dylib'), work_dir=Path('/results'),

@@ -1,6 +1,6 @@
 import unittest
 
-from bbc_browser_instructions import URL, audit_instruction_logging, evaluate_cohort, parse_args, trial_order, run_trial, validate_document
+from bbc_browser_instructions import URL, audit_instruction_logging, evaluate_cohort, jsc_baseline_environment, parse_args, trial_order, run_trial, validate_document
 from types import SimpleNamespace
 from unittest.mock import patch
 from hacker_news_browser_instructions import evaluate_pairs
@@ -21,6 +21,47 @@ def document():
 
 
 class BBCInstructionTests(unittest.TestCase):
+    def test_baseline_jit_settings_are_isolated_from_brave_and_restored_on_failure(self):
+        environment = dict(VOX_PROXY='socks5h://fixture', VOX_RETAIN_INCREMENTAL_WEBP_PAINT_POLICY='1')
+        args = SimpleNamespace(vox_environment=environment, control_disable_grid_width_only=False,
+                               jsc_baseline_warmup=50, control_jsc_baseline_warmup=500)
+        seen = []
+        def observe(engine, app, folder, options):
+            seen.append((engine, dict(options.vox_environment)))
+            return {'exit': 0}
+        with patch('bbc_browser_instructions.browser.run_browser', side_effect=observe):
+            for engine in ['control', 'vox', 'brave']:
+                run_trial(engine, 'same-app', engine, args)
+        self.assertEqual(seen, [('vox', dict(environment, JSC_thresholdForJITAfterWarmUp='500',
+                                            JSC_thresholdForJITSoon='100')),
+                                ('vox', dict(environment, JSC_thresholdForJITAfterWarmUp='50',
+                                            JSC_thresholdForJITSoon='10')),
+                                ('brave', environment)])
+        for engine in ['control', 'vox']:
+            with patch('bbc_browser_instructions.browser.run_browser', side_effect=RuntimeError('failed')):
+                with self.assertRaises(RuntimeError):
+                    run_trial(engine, 'same-app', engine, args)
+            self.assertIs(args.vox_environment, environment)
+
+    def test_baseline_jit_thresholds_are_explicit_and_bounded(self):
+        args = ['--archive', 'fixture', '--output', 'results', '--memory-guard-registry', 'pids',
+                '--capture-reference']
+        defaults = parse_args(args)
+        self.assertIsNone(defaults.jsc_baseline_warmup)
+        self.assertIsNone(defaults.control_jsc_baseline_warmup)
+        self.assertEqual(jsc_baseline_environment(None), {})
+        self.assertEqual(jsc_baseline_environment(1), dict(JSC_thresholdForJITAfterWarmUp='1',
+                                                         JSC_thresholdForJITSoon='1'))
+        self.assertEqual(parse_args(args + ['--jsc-baseline-warmup', '50']).jsc_baseline_warmup, 50)
+        controlled = parse_args(args + ['--control-vox-app', 'Vox.app', '--control-jsc-baseline-warmup', '500'])
+        self.assertEqual(controlled.control_jsc_baseline_warmup, 500)
+        for flag in ['--jsc-baseline-warmup', '--control-jsc-baseline-warmup']:
+            for invalid in ['0', '-1', '2147483648', '1.5']:
+                with self.subTest(flag=flag, invalid=invalid), self.assertRaises(SystemExit):
+                    parse_args(args + ['--control-vox-app', 'Vox.app', flag, invalid])
+        with self.assertRaises(SystemExit):
+            parse_args(args + ['--control-jsc-baseline-warmup', '500'])
+
     def test_instruction_logging_accepts_phase_counters_without_verbose_font_traces(self):
         row = audit_instruction_logging({'exit': 0}, 'Vox instructions cumulative: frame_complete 123\n')
         self.assertEqual(row['exit'], 0)
