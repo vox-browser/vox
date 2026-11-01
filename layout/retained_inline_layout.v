@@ -54,13 +54,13 @@ mut:
 }
 
 // Reusing line layout requires a closed inline context: no floats, atomic
-// children, positioned content, first-letter splits or clamp side effects.
+// children, shifted positioned content, first-letter splits or clamp effects.
 // Other contexts continue through the ordinary formatting algorithm.
 fn collect_retained_inline_inputs(node &Node, root bool, mut inputs []RetainedInlineInput) bool {
 	computed := node.computed_values()
 	if node.is_generated_for_pseudo_element() || node.is_generated_text_node()
 		|| node.is_in_ua_internal_shadow_tree() || node.is_svg_box() || node.is_replaced_box()
-		|| node.is_floating() || node.is_positioned() || node.is_list_item_box()
+		|| node.is_floating() || !retained_layout_position_is_unshifted(node) || node.is_list_item_box()
 		|| node.is_list_item_marker_box() {
 		return false
 	}
@@ -228,6 +228,7 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 			&& retained_inline_inputs_are_current(cached.inputs)
 			&& (cached.font_generation == font_generation
 				|| retained_layout_fonts_are_current(cached.inputs)) {
+			report_relative_flow_layout_reuse(cached.inputs)
 			if cached.font_generation != font_generation && processmetrics.instructions_enabled() {
 				eprintln('Vox retained inline font generation: ${cached.font_generation} -> ${font_generation}, ${cached.inputs.len} inputs')
 			}
