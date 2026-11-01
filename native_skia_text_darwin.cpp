@@ -8,6 +8,7 @@
 #include <dlfcn.h>
 #include <chrono>
 #include "native_graphite_bridge.h"
+#include "native_gradient_visibility.h"
 #include "native_picture_typeface_cache.h"
 #include "native_graphite_solid_rect.h"
 #include "native_svg_path_regions.h"
@@ -4541,6 +4542,12 @@ static int draw_svg_gradient_path(CGContextRef destination, float const* data,
     if (!destination || !data || segment_count <= 0 || !stop_data
         || stop_count <= 0 || canvas_width <= 0 || canvas_height <= 0)
         return 0;
+
+    // CSS background blending uses source-over, including generated-image
+    // tiles. Do not build a shader, allocate a raster or enter Metal for a
+    // fully transparent image; its enclosing clips/effects remain balanced.
+    if ((spread_method == 3 || spread_method == 4)
+        && vox_gradient_stops_are_transparent(stop_data, stop_count)) return 1;
 
     auto path = path_from_serialized_segments(data, segment_count);
     path.setFillType(even_odd ? SkPathFillType::kEvenOdd : SkPathFillType::kWinding);
