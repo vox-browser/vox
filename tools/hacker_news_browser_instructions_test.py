@@ -11,6 +11,7 @@ from hacker_news_browser_instructions import (
     ASSETS, WIDTH, HEIGHT, METAL_COMPILER, SET_STORE_UPDATER, accepted_coalition_executable,
     check_content, code_sign_clone_identity, document_comments, evaluate_pairs,
     exact_coalition_membership, fixture_server, membership, launch_instruction_interval,
+    parse_args, progress_record,
 )
 
 
@@ -28,6 +29,43 @@ class HackerNewsInstructionGateTests(unittest.TestCase):
         self.assertTrue(evaluate_pairs(self.pairs())['passed'])
         self.assertFalse(evaluate_pairs(self.pairs(vox=901))['passed'])
         self.assertTrue(evaluate_pairs(self.pairs(vox=100))['passed'])
+
+    def test_cli_defaults_count_startup_and_use_requested_ten_percent_target(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / 'evidence'
+            for fixture in ([], ['--home-archive', 'Tests/Browser/Brave/hn-home-instructions']):
+                args = parse_args(['--output', str(output), *fixture])
+                self.assertEqual(args.instruction_scope, 'launch')
+                self.assertEqual(args.target_vox_fraction, .9)
+                self.assertFalse(output.exists(), 'Argument parsing must not launch or write evidence')
+        pairs = self.pairs(vox=3000, brave=1000)
+        for pair in pairs:
+            pair['vox']['launch_instruction_interval'] = dict(lower=4900, upper=4900)
+            pair['brave']['launch_instruction_interval'] = dict(lower=8500, upper=8510)
+        # The old headline showed 3x by subtracting unequal amounts of setup.
+        # The default must gate the cumulative totals, while retaining the diagnostic.
+        self.assertTrue(evaluate_pairs(pairs, args.target_vox_fraction, args.instruction_scope)['passed'])
+        self.assertFalse(evaluate_pairs(pairs, args.target_vox_fraction, 'navigation')['passed'])
+
+    def test_cli_preserves_explicit_historical_scope_and_target(self):
+        args = parse_args(['--output', 'unused', '--instruction-scope', 'navigation',
+                           '--target-vox-fraction', '.8'])
+        self.assertEqual(args.instruction_scope, 'navigation')
+        self.assertEqual(args.target_vox_fraction, .8)
+
+    def test_progress_reports_the_selected_interval_and_retains_both(self):
+        row = observation(3000, launch_instruction_interval=dict(lower=4900, upper=4900))
+        for scope, key in [('launch', 'launch_instruction_interval'), ('navigation', 'instruction_interval')]:
+            progress = progress_record(1, 'vox', row, scope)
+            self.assertEqual(progress['instruction_scope'], scope)
+            self.assertEqual(progress['instructions'], row[key])
+            self.assertEqual(progress['navigation_instruction_interval'], row['instruction_interval'])
+            self.assertEqual(progress['launch_instruction_interval'], row['launch_instruction_interval'])
+        failed = progress_record(1, 'vox', dict(exit=1, error='launch failed'), 'launch')
+        self.assertIsNone(failed['instructions'])
+        self.assertEqual(failed['error'], 'launch failed')
+        with self.assertRaisesRegex(RuntimeError, 'Unknown instruction scope'):
+            progress_record(1, 'vox', row, 'other')
 
     def test_launch_totals_retain_startup_and_native_capture_boundary(self):
         result = dict(resource_coalition=17, native_coalition_markers=dict(markers=[

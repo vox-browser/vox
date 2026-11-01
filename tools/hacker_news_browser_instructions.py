@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-"""Compare cached Hacker News navigation/capture CPU work with Brave.
+"""Compare cached Hacker News startup/capture CPU work with Brave.
 
 Run under tools/run_memory_bounded.py on macOS. Exclusive resource coalitions
 include live and exited browser helpers and the explicitly named coalition-owned
 system services. GPU execution and services outside the coalition are excluded.
-Both captures must match the original Brave pixels exactly.
+Both captures must match the original Brave pixels exactly. The default counts
+startup in both browsers. The optional navigation interval has asymmetric window
+setup boundaries and cannot establish comparable page-only instruction costs.
 """
 from __future__ import annotations
 
@@ -69,6 +71,7 @@ SCOPE = ('Navigation request to encoded document PNG availability, fresh process
          'include exited helpers and coalition-owned Metal compiler and CascadeSets update services; GPU execution '
          'and services outside the coalition are excluded. '
          'Full story/comment-row identity is checked after the measured PNG endpoint. '
+         'The asymmetric window setup makes this interval diagnostic only. '
          'This is a capture workflow comparison, not identical internal rendering endpoints.')
 LAUNCH_SCOPE = ('Exclusive browser resource-coalition creation through encoded document PNG '
                 'availability, including browser/window startup and the navigation/capture workflow '
@@ -242,6 +245,14 @@ def evaluate_pairs(pairs, target=TARGET, instruction_scope='navigation'):
                 passed=max(vox) * fraction.denominator <= min(brave) * fraction.numerator, pairs=len(pairs))
 
 
+def progress_record(pair, engine, row, instruction_scope):
+    require(instruction_scope in ('navigation', 'launch'), 'Unknown instruction scope')
+    key = 'launch_instruction_interval' if instruction_scope == 'launch' else 'instruction_interval'
+    return dict(pair=pair, engine=engine, exit=row['exit'], instruction_scope=instruction_scope,
+                instructions=row.get(key), navigation_instruction_interval=row.get('instruction_interval'),
+                launch_instruction_interval=row.get('launch_instruction_interval'), error=row.get('error'))
+
+
 def wait_until(predicate, deadline, description):
     while True:
         value = predicate()
@@ -389,7 +400,9 @@ def membership(api, cid, app, pid, deadline, attempts, browser=None):
 def run_browser(engine, app, folder, args):
     folder.mkdir()
     binary = app / 'Contents/MacOS' / ('Vox' if engine == 'vox' else 'Brave Browser')
-    result = dict(engine=engine, exit=1, scope=SCOPE, membership_attempts=[],
+    scope = getattr(args, 'instruction_scope', 'launch')
+    result = dict(engine=engine, exit=1, instruction_scope=scope,
+                  scope=LAUNCH_SCOPE if scope == 'launch' else SCOPE, membership_attempts=[],
                   viewport_css_pixels=[WIDTH, HEIGHT], device_scale=args.scale)
     browser = client = sampler = counter = queue = None
     root = None
@@ -557,7 +570,7 @@ def run_browser(engine, app, folder, args):
     return result
 
 
-def main():
+def parse_args(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path, required=True, help='New evidence directory')
     parser.add_argument('--memory-guard-registry', type=Path,
@@ -569,23 +582,27 @@ def main():
     parser.add_argument('--expected', type=Path)
     parser.add_argument('--home-archive', type=Path,
                         help='Sealed original home-page resources; replayed locally without downloads')
-    parser.add_argument('--target-vox-fraction', type=float,
-                        help='Maximum Vox/Brave instruction ratio (home: .8, discussion: .9)')
-    parser.add_argument('--instruction-scope', choices=['navigation', 'launch'], default='navigation',
-                        help='Gate navigation-to-PNG (default) or full startup-to-PNG; both are recorded')
+    parser.add_argument('--target-vox-fraction', type=float, default=TARGET,
+                        help='Maximum Vox/Brave instruction ratio (default: .9)')
+    parser.add_argument('--instruction-scope', choices=['navigation', 'launch'], default='launch',
+                        help='Gate full startup-to-PNG (default); navigation is an asymmetric '
+                             'window-setup diagnostic. Both intervals are recorded')
     parser.add_argument('--scale', type=int, choices=[1, 2], default=2)
     parser.add_argument('--repeat', type=int, default=3)
     parser.add_argument('--timeout', type=float, default=120)
     parser.add_argument('--settle-seconds', type=float, default=2)
-    args = parser.parse_args()
-    if args.target_vox_fraction is None:
-        args.target_vox_fraction = .8 if args.home_archive else TARGET
+    args = parser.parse_args(argv)
     if args.expected is None:
         args.expected = FIXTURES / 'expected/hacker-news-home-instructions.png' if args.home_archive else EXPECTED
     if (args.repeat < 2 or not math.isfinite(args.timeout) or args.timeout <= 0
             or not 0 <= args.settle_seconds < args.timeout
             or not 0 < args.target_vox_fraction <= 1):
         parser.error('Need at least two pairs, a positive watchdog, and a bounded nonnegative settle')
+    return args
+
+
+def main():
+    args = parse_args()
     args.output = args.output.resolve()
     args.output.mkdir(parents=True, exist_ok=False)
     args.diff_tool = args.diff_tool.resolve()
@@ -625,7 +642,9 @@ def main():
         paths.update(path for path in app.rglob('*') if path.is_file())
     paths.update(native_dependencies(apps['vox'] / 'Contents/MacOS/Vox'))
     pinned = fingerprint(paths)
-    write_json(args.output / 'inputs.json', dict(files=pinned, scope=SCOPE,
+    write_json(args.output / 'inputs.json', dict(files=pinned,
+               scope=LAUNCH_SCOPE if args.instruction_scope == 'launch' else SCOPE,
+               navigation_scope=SCOPE,
                settle_seconds=args.settle_seconds, target_vox_fraction=args.target_vox_fraction,
                instruction_scope=args.instruction_scope, launch_scope=LAUNCH_SCOPE,
                comment_ids=args.expected_comments,
@@ -644,8 +663,7 @@ def main():
                 row = run_browser(engine, apps[engine], args.output / f'pair-{index+1}-{engine}', args)
                 pair[engine] = row
                 require(fingerprint(paths) == pinned, 'Pinned input or browser runtime changed during measurement')
-                print(json.dumps(dict(pair=index+1, engine=engine, exit=row['exit'],
-                                 instructions=row.get('instruction_interval'), error=row.get('error'))), flush=True)
+                print(json.dumps(progress_record(index+1, engine, row, args.instruction_scope)), flush=True)
             pairs.append(pair)
             write_json(args.output / 'pairs.json', pairs)
     try:
