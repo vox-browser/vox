@@ -63,7 +63,7 @@ int main()
         [queue commandBufferWithUnretainedReferences];
         [queue commandBufferWithDescriptor:[[MTLCommandBufferDescriptor new] autorelease]];
         assert(created == 1 && commands == 3);
-        for (int frame = 0; frame < 7; ++frame) {
+        for (int frame = 0; frame < VOX_METAL_QUEUE_FRAME_LIMIT - 1; ++frame) {
             assert(![queue finishCompletedFrame]);
             assert(created == 1 && destroyed == 0 && last_queue);
         }
@@ -85,7 +85,7 @@ int main()
             [queue commandBuffer];
             assert(created == 3 && [last_queue residencyCount] == 2);
             // Explicit retirement resets the preceding partial frame window.
-            for (int frame = 0; frame < 7; ++frame) assert(![queue finishCompletedFrame]);
+            for (int frame = 0; frame < VOX_METAL_QUEUE_FRAME_LIMIT - 1; ++frame) assert(![queue finishCompletedFrame]);
             [queue removeResidencySet:sets[0]];
             assert([last_queue residencyCount] == 1);
             assert([queue retireCompletedQueue] && destroyed == 3);
@@ -102,5 +102,5 @@ int main()
         [queue release];
         assert(destroyed == created && factory_destroyed == 1 && !last_queue);
     }
-    std::puts("Metal frame queue: eight-frame reuse, forced retirement, labels and residency sets passed");
+    std::printf("Metal frame queue: %d-frame reuse, forced retirement, labels and residency sets passed\n", VOX_METAL_QUEUE_FRAME_LIMIT);
 }
