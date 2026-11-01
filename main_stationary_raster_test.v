@@ -2,6 +2,11 @@ module main
 
 import layout
 
+fn test_stationary_raster_skips_initial_frame_without_a_document() {
+	app := BrowserApp{}
+	assert !app.begin_stationary_document_raster()
+}
+
 fn test_stationary_raster_excludes_independently_updated_content() {
 	ordinary := [layout.PaintCommand{kind: 'fill_rect'},
 		layout.PaintCommand{kind: 'draw_replaced_image'},

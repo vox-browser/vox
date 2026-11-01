@@ -20,6 +20,8 @@ fn stationary_document_raster_eligible(commands []layout.PaintCommand) bool {
 // display list. Animated native images also veto storage while being painted.
 fn (app &BrowserApp) begin_stationary_document_raster() bool {
 	$if macos {
+		// AppKit can request the first frame before navigation creates a document.
+		if app.document == unsafe { nil } { return false }
 		eligible := stationary_document_raster_eligible(app.paint_commands)
 		return C.native_begin_stationary_raster(u64(app.document.unique_id().value()),
 			app.document.paint_content_revision(), app.paint_generation, app.scroll_y,
