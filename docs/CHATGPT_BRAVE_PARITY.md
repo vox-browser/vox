@@ -5,8 +5,8 @@ application. Pixel-exact parity and an actual conversation are **not complete**.
 The full-page comparison still has rendering differences; focused fixtures and
 a successful application startup are not a substitute for that comparison.
 
-The latest unchanged-original-archive capture differs in **7,169 of 786,432
-pixels (0.9116%, MAE 0.0110)**. Startup, native typing and Enter are validated;
+The latest unchanged-original-archive capture differs in **6,797 of 786,432
+pixels (0.8643%, MAE 0.0095)**. Startup, native typing and Enter are validated;
 a completed chat reply remains unverified. The recorded 60-second idle check
 peaks at 1.82 GB rather than continuing toward the 12 GiB guard.
 
@@ -422,3 +422,65 @@ capture compared against the unchanged, matched Brave reference identified in
 and peak RSS 1,826,275,328 bytes. The native typing/Enter check above also uses
 this latest shared executable. Pixel-perfect rendering and a completed chat
 reply remain unverified.
+
+
+## Translucent rounded borders (2026-11-01)
+
+`b976cef2` composites a matching solid background and translucent uniform border
+through one outer rounded clip and offscreen layer. The border fills the inverse
+inner rounded path, matching Brave's recorded paint commands. The recorder finds
+the background after leading outer shadows; padding-box and content-box
+backgrounds retain their separate clips. The native fallback uses the Dawn
+picture rasterizer to preserve the layer's premultiplied resolve. Its inverse
+path remains inside that offscreen layer and does not select MSAA for unrelated
+shapes in the parent raster.
+
+The new `rounded-translucent-border-clip-layer` fixture includes five border
+cases, with thin borders and several shadows, and an unrelated black pill.
+Every RGBA pixel in its 800×600 viewport matches normal-window Brave at scale 1.
+The five original cases are unchanged in the reference; the added pill catches
+parent-pass MSAA leakage. That rejected trial differed by 32 pixels with maximum
+channel error 12 in this expanded fixture and added three larger errors to the
+homepage's Accept all button. The final build removes those errors. No masks,
+reference allowances or full-page tolerances were introduced.
+
+Evidence is under `Build/chatgpt-svg-parity-20261101/`:
+
+- `rounded-translucent-border-isolated-msaa-results.json`: both focused V cases
+  execute in Boehm, no-GC and prealloc modes. They cover all three background
+  clips, no/one/multiple shadows, empty clips and incompatible geometry.
+- `native-clip-sanitizers/`: all five native sanitizer executables pass, including
+  twelve exact native/GPU clip-layer cases and the existing rounded-underlay
+  checks with tile batching and compound patches disabled separately.
+- `black-neighbor-reference-v2/` and `border-reference-final.json`: the matched
+  local Brave capture, reference identity and retained rejected control.
+- `production-border-isolated-msaa/`: successful signed production build,
+  stable source snapshots and `committed-source-validation.json`. All nine
+  required committed source hashes match the build inputs. Later unrelated
+  image-decode edits in shared files were excluded from this feature commit.
+- `candidate-validation-border-isolated-msaa/results.json`: eleven exact
+  focused Brave fixtures, successful headless startup, eleven default screenshot
+  passes (eight exact and three within existing allowances), ten exact live SVG
+  mutation comparisons, and successful archived startup/native input checks.
+  Every group retains stable executable and native-library identities.
+
+The executable SHA256 is
+`c1d92f0e526723503945bb70de68b7337ad8195a86fa2bee484eed4ccd3511c7`.
+The Skia bridge SHA256 is
+`45909d7f9f2380c57ac81ddc65f991c99adcca526a88a8fe6f86ef79344efa5f`.
+
+`Build/chatgpt-shadow-modules-20261031/rounded-border-isolated-msaa-20261101-acceptance/`
+retains the final original-archive capture, PID, audit, proxy log and complete
+pixel diff against the unchanged matched Brave reference. Both stylesheets load,
+the frontend reaches its home-ready marker, and native/JavaScript error counts
+are zero. The full 1024×768 comparison has 6,797 differing pixels, maximum error
+60, MAE 0.0095, 334 pixels above error 3 and seven above 25. Its sampled aggregate
+peak RSS is 1,821,261,824 bytes over 21.29 seconds. This is a capture observation,
+not a new idle-memory or scrolling-performance measurement.
+
+`rounded-border-isolated-msaa-20261101-editor/` records fresh native AppKit
+mouse/keyboard input. The composer retains `Vox`, Enter adds no newline, and
+native/JavaScript errors remain zero. The archive still lacks the service
+responses needed for an actual chat reply. All captures reuse the original
+SOCKS download through non-forwarding local replay. Full-page pixel parity and
+a completed conversation remain open.
