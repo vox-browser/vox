@@ -37,10 +37,14 @@ typedef void (*VoxTabAction)(void *, int, int, int);
 // tab silhouette. Use native buttons for focus, tooltips and accessibility.
 static NSBezierPath *vox_tab_path(NSRect r) {
 	NSBezierPath *p = [NSBezierPath bezierPath];
+	// Keep the short shoulder curves smooth at Retina scale. Matching control
+	// vectors at each join avoids a kink where the slope meets the top corner;
+	// horizontal foot tangents blend the overlapping tabs into the strip.
+	p.flatness = .1;
 	[p moveToPoint:NSMakePoint(NSMinX(r), NSMaxY(r))];
 	[p curveToPoint:NSMakePoint(NSMinX(r)+11, NSMinY(r)+4)
-		controlPoint1:NSMakePoint(NSMinX(r)+5, NSMaxY(r)-2)
-		controlPoint2:NSMakePoint(NSMinX(r)+7, NSMinY(r)+4)];
+		controlPoint1:NSMakePoint(NSMinX(r)+5, NSMaxY(r))
+		controlPoint2:NSMakePoint(NSMinX(r)+10, NSMinY(r)+7)];
 	[p curveToPoint:NSMakePoint(NSMinX(r)+16, NSMinY(r))
 		controlPoint1:NSMakePoint(NSMinX(r)+12, NSMinY(r)+1)
 		controlPoint2:NSMakePoint(NSMinX(r)+13, NSMinY(r))];
@@ -49,8 +53,8 @@ static NSBezierPath *vox_tab_path(NSRect r) {
 		controlPoint1:NSMakePoint(NSMaxX(r)-13, NSMinY(r))
 		controlPoint2:NSMakePoint(NSMaxX(r)-12, NSMinY(r)+1)];
 	[p curveToPoint:NSMakePoint(NSMaxX(r), NSMaxY(r))
-		controlPoint1:NSMakePoint(NSMaxX(r)-7, NSMinY(r)+4)
-		controlPoint2:NSMakePoint(NSMaxX(r)-5, NSMaxY(r)-2)];
+		controlPoint1:NSMakePoint(NSMaxX(r)-10, NSMinY(r)+7)
+		controlPoint2:NSMakePoint(NSMaxX(r)-5, NSMaxY(r))];
 	[p closePath];
 	return p;
 }
