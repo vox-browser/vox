@@ -51,7 +51,15 @@ mut:
 // its parent. Its unchanged descendants keep local geometry when the whole
 // context moves. Specialized layout and position-dependent side effects still
 // run through the complete algorithm.
-fn collect_retained_block_inputs(node &Node, mut inputs []RetainedInlineInput) bool {
+fn collect_retained_block_inputs(node &Node, mut inputs []RetainedInlineInput,
+	mut rejected map[u64]bool) bool {
+	key := u64(voidptr(node))
+	if !disable_retained_block_rejection_cache && rejected[key] {
+		report_retained_block_rejection()
+		return false
+	}
+	mut accepted := false
+	defer { if !accepted { remember_rejected_block_input(mut rejected, key) } }
 	computed := node.computed_values()
 	image := if node.is_replaced_box() { retained_block_image_input(node) } else { none }
 	if node.is_generated_for_pseudo_element() || node.is_generated_text_node()
@@ -98,8 +106,9 @@ fn collect_retained_block_inputs(node &Node, mut inputs []RetainedInlineInput) b
 		image: image
 	}
 	for child in node.children() {
-		if !collect_retained_block_inputs(child, mut inputs) { return false }
+		if !collect_retained_block_inputs(child, mut inputs, mut rejected) { return false }
 	}
+	accepted = true
 	return true
 }
 
@@ -164,7 +173,7 @@ fn run_retaining_independent_formatting_context(mut state LayoutState, box &Node
 		}
 	}
 	mut inputs := []RetainedInlineInput{}
-	if !collect_retained_block_inputs(box, mut inputs) {
+	if !collect_retained_block_inputs(box, mut inputs, mut state.block_layout_rejections_) {
 		return layout_uncached_independent_formatting_context(mut state, box, mut used, mode, space)
 	}
 	width := used.content_width()

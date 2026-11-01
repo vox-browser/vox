@@ -926,6 +926,7 @@ fn finish_document_layout(document &dom.Document, root &Node, viewport_width f64
 	// the lookup owner for removed or otherwise ineligible previous contexts.
 	state.previous_inline_layouts_ = map[u64]&RetainedInlineLayout{}
 	state.previous_block_layouts_ = map[u64]&RetainedBlockLayout{}
+	state.block_layout_rejections_ = map[u64]bool{}
 	timing_checkpoint = layout_timing_checkpoint('      scrollable_overflow', timing_checkpoint)
 	if os.getenv('LADYBIRD_DEBUG_TIMING') != '' {
 		eprintln('Ladybird V timing:     geometry ${(timing_checkpoint - geometry_started) / 1_000_000} ms')
