@@ -22,6 +22,7 @@ from urllib.parse import urlsplit
 import hacker_news_browser_instructions as browser
 from measure_sealed_github_instructions import FixtureHTML, text_content
 from page_archive import Replay, load_archive
+from stackoverflow_browser_instructions import local_only_font_sources
 
 REPO = Path(__file__).resolve().parents[1]
 URL = 'https://www.bbc.com/'
@@ -52,6 +53,7 @@ def fixture_expectations(archive):
     headlines = [text_content(node) for node in parser.nodes
                  if node['attrs'].get('data-testid') == 'card-headline']
     images = [node for node in parser.nodes if node['tag'] == 'img']
+    styles = [text_content(node) for node in parser.nodes if node['tag'] == 'style']
     placeholders = sorted({node['attrs'].get('src', '') for node in images
                            if urlsplit(node['attrs'].get('src', '')).path.endswith('/grey-placeholder.png')})
     browser.require(title.startswith('BBC Home') and len(headlines) >= 20 and len(images) >= 10,
@@ -60,6 +62,7 @@ def fixture_expectations(archive):
                 image_sources=sorted(node['attrs'].get('src', '') for node in images
                                      if node['attrs'].get('src', '') not in placeholders),
                 placeholder_sources=placeholders,
+                local_font_fallback_sources=local_only_font_sources(styles),
                 document_sha256=entry['sha256'], document_bytes=entry['bytes'],
                 responses=len(manifest['responses']),
                 manifest_sha256=browser.sha(archive / 'manifest.json'))
@@ -103,12 +106,20 @@ def validate_document(audit, expected):
         visible.append(row)
     browser.require(visible, 'BBC has no visible decoded images')
     browser.require(audit.get('fonts_status') == 'loaded', 'BBC fonts are unsettled')
+    local_fallbacks = []
     for face in audit.get('font_faces', []):
-        browser.require(face['status'] not in ('loading', 'error'), 'BBC requested font failed')
+        allowed = expected.get('local_font_fallback_sources', {}).get(face.get('family', '').casefold(), [])
+        sources = face.get('declared_sources', [])
+        local_missing = face['status'] == 'error' and bool(sources) and all(s in allowed for s in sources)
+        browser.require(face['status'] not in ('loading', 'error') or local_missing,
+                        'BBC requested font failed')
+        if local_missing:
+            local_fallbacks.append(dict(family=face['family'], sources=sources))
         browser.require(face['status'] != 'loaded' or face.get('parsed_font_present'),
                         'BBC loaded font has no parsed data')
     return dict(passed=True, headlines=len(actual), images=images['count'],
                 visible_decoded_images=len(visible), dom_elements=selections['all']['count'],
+                unavailable_local_fallbacks=local_fallbacks,
                 body_text_sha256=hashlib.sha256(bodies[0]['text'].encode()).hexdigest())
 
 
@@ -185,6 +196,7 @@ def main():
         'measure_sealed_github_instructions.py', 'measure_browser_instructions.py',
         'capture_brave_reference.py', 'process_instruction_counts.py', 'run_memory_bounded.py',
         'check_pixel_equality.py', 'pikabu_browser_instructions.py'))
+    paths.add(REPO / 'tools/stackoverflow_browser_instructions.py')
     paths.update(path for path in (args.expected_vox, args.expected_brave) if path)
     paths.update((args.diff_tool, args.audit_config))
     pinned = browser.fingerprint(paths)

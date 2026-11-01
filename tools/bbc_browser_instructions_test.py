@@ -100,6 +100,18 @@ class BBCInstructionTests(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 validate_document(audit, expected)
 
+    def test_only_proven_local_font_absence_may_use_platform_fallback(self):
+        audit, expected = document()
+        expected['local_font_fallback_sources'] = {'bbc-fallback': ['Arial', 'Arial Bold']}
+        face = dict(family='BBC-Fallback', status='error', declared_sources=['Arial'])
+        audit['font_faces'] = [face]
+        result = validate_document(audit, expected)
+        self.assertEqual(result['unavailable_local_fallbacks'], [dict(family='BBC-Fallback', sources=['Arial'])])
+        for sources in [[], ['Arial', 'https://fonts.test/missing.woff2'], ['Unknown font']]:
+            face['declared_sources'] = sources
+            with self.subTest(sources=sources), self.assertRaises(RuntimeError):
+                validate_document(audit, expected)
+
     def test_acceptance_requires_seven_pairs_and_existing_references(self):
         args = ['--archive', 'archive', '--output', 'output', '--memory-guard-registry', 'pids.json']
         for extra in [[], ['--expected-vox', 'v.png', '--expected-brave', 'b.png', '--repeat', '6']]:
