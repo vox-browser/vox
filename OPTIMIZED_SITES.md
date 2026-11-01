@@ -24,6 +24,103 @@ Vox ends before the PNG file write and Brave includes CDP screenshot delivery.
 GPU execution and services outside the recorded ownership scope are excluded.
 The reports retain exact endpoints, identities and counter limits.
 
+## How to benchmark against Brave
+
+Use the following procedure before adding or updating a result. The full
+repository requirements are in [AGENTS.md](AGENTS.md#cpu-instruction-comparisons-against-brave).
+
+1. **Choose the scope before measuring.** The default is a fresh browser launch
+   through completed document PNG capture, including startup and window/target
+   setup in both engines. Use cumulative process/coalition readings; subtracting
+   a post-launch baseline removes startup. Record whether encoding, CDP delivery,
+   content audits and teardown are included. A navigation-only comparison needs
+   equivalent initialized windows and matching boundaries in both browsers.
+   Hacker News's old navigation markers included window setup only for Vox;
+   use its `--instruction-scope launch` acceptance mode.
+2. **Pin the browsers and inputs.** Reuse the latest successfully completed
+   production bundle, following the shared-build rules; pin a completed copy
+   when isolating a change. Record executable and transitive native-library
+   hashes, helpers, Brave's framework/version, HTML/resource hashes, references
+   and measurement sources. Launch fresh processes and verify identities
+   throughout the cohort. An older build cannot validate newer engine code.
+3. **Match the workload.** Use the same frozen bytes, author-script policy,
+   viewport, backing/capture scale and settle conditions. Record both browsers'
+   filtering policies. Give every trial fresh private profiles/caches, remove
+   ambient measurement and proxy overrides, and replay archived responses
+   without live fallback.
+   State whether OS filesystem/shader caches are retained. Record host CPU
+   count, load and timestamps. Validate live behavior separately before making
+   a live-site claim; an archived or script-stripped page has that limited scope.
+4. **Verify JavaScript activity separately.** Record the selected backend and
+   script policy. Vox's selectors are `javascriptcore` and `libjs`; Brave uses
+   V8. A selector or `--enable-javascript` does not prove execution: independently
+   verify runtime initialization, actual code execution and absence of fallback.
+   Keep probes outside the measured cohort and report unsupported DOM/script
+   behavior. A script-free page whose runtime stays uninitialized measures
+   startup/rendering, not JavaScript execution speed. See the
+   [Old Reddit runtime probes](docs/OLD_REDDIT_ENGINE_COMPARISON.md).
+5. **Validate content and pixels.** Establish fixed references before the cohort.
+   Require the intended URL/title, complete readiness, correct viewport and full
+   content identity, such as every post/story ID in order. Reject error pages,
+   missing content, crashes and abnormal/unknown exits. Check unchanged pixel
+   references for every capture. Per-engine reference stability is distinct
+   from cross-browser pixel equality; disclose any difference and never change
+   references, masks or tolerances to obtain instruction credit.
+6. **Use matching counters and memory guards.** Use the same hardware-counter
+   backend and ownership policy for both engines. Account for exited helpers
+   where supported; disclose missing samples and excluded GPU/outside-service
+   work. Both polled process-tree totals are lower bounds, so do not call a Vox
+   observation an upper bound without proof. Run under
+   `tools/run_memory_bounded.py` with its default 12 GiB budget. LaunchServices
+   runs also need the same private PID registry passed as `--adopt-pids-from`
+   to the guard and `--memory-guard-registry` to the supporting harness; verify
+   adoption and browser RSS accounting.
+7. **Collect at least seven complete alternating pairs.** For multiple Vox
+   backends, rotate matched configurations and Brave controls. Keep every
+   attempt, including first-launch outliers, failures and regressions; do not
+   retry or exclude samples to pass. Profile with `v -profile` or other probes
+   in separate diagnostic runs. Attribute an optimization only when its path
+   executes on this workload and matched unprofiled controls support the gain.
+8. **Compute and retain the result.** For a 10% target, require
+   `10 * max(Vox) <= 9 * min(Brave)` using exact integer arithmetic; use Vox's
+   upper and Brave's lower readings when intervals are available. Honor a
+   different requested threshold explicitly. A gate on polled lower-bound totals
+   is an **observed-count comparison**, not a certified
+   bound on total work. Report the highest-Vox/lowest-Brave ratio as well as
+   medians. The catalog percentage is `100 * (1 - statistic(Vox) / statistic(Brave))`,
+   using the same declared mean or median and unrounded counts; paired reductions
+   are a separate statistic. Preserve raw commands, logs, counters, PNGs, audits,
+   identities, host conditions and actual browser/benchmark/guard exits in a
+   unique `Build/` directory, with durable counts and hashes linked from the
+   report. Keep private account-bearing artifacts out of commits. Preserve
+   earlier failing cohorts, and qualify the result by its build, workload and
+   cache conditions. Changing measurement boundaries earns no engine speedup.
+
+For example, replay the archived Hacker News homepage with fresh output,
+receipt and registry names (replace `UNIQUE` on every run):
+
+```sh
+env -u ALL_PROXY -u HTTP_PROXY -u HTTPS_PROXY \
+    -u all_proxy -u http_proxy -u https_proxy \
+  python3 tools/run_memory_bounded.py \
+    --lock Build/hn-brave-UNIQUE.lock \
+    --report Build/hn-brave-UNIQUE-guard.json \
+    --adopt-pids-from Build/hn-brave-UNIQUE-pids.json -- \
+  python3 tools/hacker_news_browser_instructions.py \
+    --output Build/hn-brave-UNIQUE \
+    --memory-guard-registry Build/hn-brave-UNIQUE-pids.json \
+    --home-archive Tests/Browser/Brave/hn-home-instructions \
+    --instruction-scope launch --target-vox-fraction .9 --repeat 7 \
+    --scale 2 --settle-seconds 2 \
+    --diff-tool Build/hn-home-instructions-20261031/pixel_diff
+```
+
+Use an existing verified pixel-diff binary. For other rows, use the linked
+report's own fixture, references and harness. The [Old Reddit recipe](docs/OLD_REDDIT_PROGRAMMING_INSTRUCTIONS.md#verification-and-reproduction)
+accepts `--vox-js-engine javascriptcore` or `--vox-js-engine libjs`, with
+`--repeat 7 --required-reduction .10`; record runtime eligibility for either.
+Keep the existing focused checks and broad-regression cadence from `AGENTS.md`.
+
 ## Workload and rendering scope
 
 - **Old Reddit /r/programming/:** cached account-bearing markup, 17 executable
