@@ -50,9 +50,9 @@ std::mutex gpu_mutex;
 // Shared sprite sources leave room for many small, distinct draw results.
 VoxGraphiteRasterCache image_cache(32 * 1024 * 1024, 2048);
 VoxGraphiteImageUploadCache<sk_sp<SkImage>> image_upload_cache;
-VoxGraphiteRasterCache path_cache(8 * 1024 * 1024);
-VoxGraphiteRasterCache shape_cache(16 * 1024 * 1024);
-VoxGraphiteRasterCache shadow_cache(8 * 1024 * 1024, 128);
+VoxGraphiteRasterCache path_cache(8 * 1024 * 1024, 512, true);
+VoxGraphiteRasterCache shape_cache(16 * 1024 * 1024, 512, true);
+VoxGraphiteRasterCache shadow_cache(8 * 1024 * 1024, 128, true);
 // Reuse only the target allocation; every draw still clears, paints and reads
 // the same full GPU coordinates. Keep the recorder alive with its surfaces.
 struct RegionTarget {

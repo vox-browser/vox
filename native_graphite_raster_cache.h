@@ -4,6 +4,7 @@
 #include "native_graphite_bridge.h"
 #include "native_raster_snapshot.h"
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstring>
 #include <cstdio>
@@ -219,6 +220,61 @@ class VoxGraphiteRasterCache {
     }
     size_t retained_bytes = 0;
     size_t byte_limit, entry_limit;
+    bool repeat_large_draws;
+    std::array<uint64_t, 256> recent_draws {};
+    size_t recent_draw_count = 0, recent_draw_next = 0;
+
+    // This fingerprint controls allocation only. Collisions can admit an
+    // unnecessary entry, but never return cached pixels: every hit above
+    // still compares complete parameters, source and backdrop values.
+    bool admit_large_draw(Entry const& entry, Rows source, Rows backdrop, Rows extra)
+    {
+        uint64_t fingerprint = 14695981039346656037ull;
+        auto bytes = [&](void const* data, size_t size) {
+            auto* p = static_cast<uint8_t const*>(data);
+            for (size_t i = 0; i < size; ++i)
+                fingerprint = (fingerprint ^ p[i]) * 1099511628211ull;
+        };
+        auto rows = [&](Rows input) {
+            bytes(&input.bytes, sizeof(input.bytes));
+            bytes(&input.height, sizeof(input.height));
+            size_t size = input.bytes * input.height;
+            // Sample logical pixels, excluding row padding and addresses.
+            for (size_t i = 0; i < std::min(size, size_t(64)); ++i) {
+                size_t at = size <= 64 ? i : i * ((size - 1) / 63);
+                bytes(input.pixels + (at / input.bytes) * input.pitch + at % input.bytes, 1);
+            }
+        };
+        int dimensions[] {entry.width, entry.height, entry.surface_width, entry.surface_height,
+            entry.region_x, entry.region_y, int(entry.has_background)};
+        bytes(dimensions, sizeof(dimensions));
+        if (entry.is_shape) {
+            auto shape = entry.shape;
+            shape.clip_outs = nullptr;
+            bytes(&shape, sizeof(shape));
+        } else if (entry.is_path) {
+            auto path = entry.path;
+            path.segments = nullptr;
+            path.stops = nullptr;
+            bytes(&path, sizeof(path));
+        } else {
+            bytes(&entry.shadow, sizeof(entry.shadow));
+        }
+        rows(source);
+        rows(extra);
+        if (entry.has_background) rows(backdrop);
+        bool found = std::find(recent_draws.begin(), recent_draws.begin() + recent_draw_count,
+            fingerprint) != recent_draws.begin() + recent_draw_count;
+        if (!found) {
+            recent_draws[recent_draw_next] = fingerprint;
+            recent_draw_next = (recent_draw_next + 1) % recent_draws.size();
+            recent_draw_count = std::min(recent_draw_count + 1, recent_draws.size());
+        }
+        if (std::getenv("VOX_RASTER_ADMISSION_DIAGNOSTICS"))
+            std::fprintf(stderr, "VOX_RASTER_ADMISSION admit=%d kind=%s\n", found,
+                entry.is_shape ? "shape" : entry.is_path ? "path" : "shadow");
+        return found;
+    }
     static constexpr size_t max_entry_bytes = 8 * 1024 * 1024;
     // Retina photo draws include their decoded source and both raster rows.
     // Keep the total cache budget unchanged, but admit these larger image
@@ -226,8 +282,9 @@ class VoxGraphiteRasterCache {
     static constexpr size_t max_image_entry_bytes = 16 * 1024 * 1024;
 
 public:
-    explicit VoxGraphiteRasterCache(size_t bytes = 32 * 1024 * 1024, size_t count = 512)
-        : byte_limit(bytes), entry_limit(count) { }
+    explicit VoxGraphiteRasterCache(size_t bytes = 32 * 1024 * 1024, size_t count = 512,
+        bool repeat_large = false)
+        : byte_limit(bytes), entry_limit(count), repeat_large_draws(repeat_large) { }
     struct Request {
         bool hit = false;
         std::unique_ptr<Entry> pending;
@@ -445,6 +502,14 @@ private:
             request.hit = true;
             return request;
         }
+        static bool admission_enabled = !std::getenv("VOX_DISABLE_RASTER_CACHE_ADMISSION");
+        if (repeat_large_draws && admission_enabled && !is_image && cost >= 64 * 1024) {
+            auto candidate = parameters;
+            candidate.width = width;
+            candidate.height = height;
+            candidate.has_background = has_background;
+            if (!admit_large_draw(candidate, source, backdrop, extra)) return request;
+        }
         auto entry = std::make_unique<Entry>(parameters);
         entry->shape.clip_outs = nullptr;
         entry->image.pixels = nullptr;
@@ -483,6 +548,7 @@ public:
         source_entries.clear();
         sources.clear();
         retained_bytes = 0;
+        recent_draw_count = recent_draw_next = 0;
     }
 };
 

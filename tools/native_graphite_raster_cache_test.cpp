@@ -16,8 +16,57 @@ static VoxGraphiteImage image(uint8_t const* pixels)
     return value;
 }
 
+static void large_draw_admission()
+{
+    constexpr int width = 128, height = 128, pitch = width * 4 + 16;
+    std::vector<uint8_t> pixels(size_t(pitch) * height, 31);
+    auto original = pixels;
+    VoxGraphiteShape shape {};
+    shape.matrix[0] = shape.matrix[4] = shape.matrix[8] = 1;
+    shape.rect[2] = shape.rect[3] = 100;
+    shape.fill = 1;
+    shape.alpha = 255;
+    VoxGraphiteRasterCache cache(1024 * 1024, 16, true);
+    auto cold = cache.prepare(shape, width, height, pitch, true, pixels.data());
+    assert(!cold.hit && !cold.pending && pixels == original);
+    cache.finish(std::move(cold), pixels.data(), pitch);
+    auto warm = cache.prepare(shape, width, height, pitch, true, pixels.data());
+    assert(!warm.hit && warm.pending && pixels == original);
+    for (int y = 0; y < height; ++y)
+        std::fill_n(pixels.data() + size_t(y) * pitch, width * 4, 137);
+    cache.finish(std::move(warm), pixels.data(), pitch);
+    pixels = original;
+    assert(cache.prepare(shape, width, height, pitch, true, pixels.data()).hit);
+    for (int y = 0; y < height; ++y) {
+        for (int x = 0; x < width * 4; ++x) assert(pixels[size_t(y) * pitch + x] == 137);
+        for (int x = width * 4; x < pitch; ++x) assert(pixels[size_t(y) * pitch + x] == 31);
+    }
+    // Sampling is an allocation hint. Even changes between sampled bytes
+    // must miss the full-value cache lookup and leave caller output intact.
+    pixels = original;
+    pixels[1]++;
+    auto changed = pixels;
+    auto miss = cache.prepare(shape, width, height, pitch, true, pixels.data());
+    assert(!miss.hit && pixels == changed);
+    cache.clear();
+    for (int i = 0; i < 1000; ++i) {
+        auto unique = shape;
+        unique.matrix[2] = float(i);
+        auto request = cache.prepare(unique, width, height, pitch, true, pixels.data());
+        assert(!request.hit && !request.pending && pixels == changed);
+    }
+    // A bounded admission history can discard old hints without returning
+    // stale pixels. Clearing also removes all hints and retained output.
+    assert(!cache.prepare(shape, width, height, pitch, true, pixels.data()).pending);
+    cache.clear();
+    assert(!cache.prepare(shape, width, height, pitch, true, pixels.data()).pending);
+    auto small = cache.prepare(shape, 16, 16, pitch, true, pixels.data());
+    assert(!small.hit && small.pending);
+}
+
 int main()
 {
+    large_draw_admission();
     std::vector<uint8_t> source(16, 87), pixels(16, 31);
     auto descriptor = image(source.data());
     VoxGraphiteRasterCache cache;
