@@ -2676,6 +2676,10 @@ extern "C" int ladybird_v_skia_draw_gradient_text(CGContextRef context,
     return drawn;
 }
 
+#ifdef VOX_TEST_DIRECT_GRADIENT_BLUR
+static bool s_test_fail_direct_gradient_blur;
+static unsigned s_test_direct_gradient_blur_successes;
+#endif
 extern "C" int ladybird_v_skia_end_css_gradient_blur(CGContextRef context,
     CGContextRef destination, float canvas_width, float canvas_height, float scale, float sigma)
 {
@@ -2726,6 +2730,52 @@ extern "C" int ladybird_v_skia_end_css_gradient_blur(CGContextRef context,
     Backdrop cropped {original.pixels + size_t(top) * original.pitch + size_t(left) * 4,
         original.pitch};
     copy_backdrop_pixels(cropped, output_width, output_height, pixels);
+    // Keep the original filter target and crop. The opaque backdrop can enter
+    // the GPU directly instead of becoming an encoded image inside the picture.
+    auto direct_draw = picture_regions_backdrop_draw();
+    if (regional && direct_draw && !std::getenv("VOX_DISABLE_DIRECT_GRADIENT_BLUR_BACKDROP")) {
+        SkPictureRecorder direct_recorder;
+        auto* direct_canvas = direct_recorder.beginRecording(SkRect::MakeWH(width, height));
+        direct_canvas->scale(scale, scale);
+        SkPaint direct_paint;
+        direct_paint.setImageFilter(filter);
+        direct_canvas->saveLayer(recording->bounds, &direct_paint);
+        direct_canvas->drawPicture(input);
+        direct_canvas->restore();
+        auto direct_picture = direct_recorder.finishRecordingAsPicture();
+        SkSerialProcs direct_procs;
+        direct_procs.fImageProc = serialize_shared_picture_image;
+        direct_procs.fTypefaceProc = vox_serialize_picture_typeface;
+        auto direct_bytes = direct_picture->serialize(&direct_procs);
+        if (direct_bytes) {
+            VoxGraphitePictureRegion request {
+                {left, top, output_width, output_height, output_width * 4,
+                    reinterpret_cast<uint8_t*>(pixels.data())},
+                direct_bytes->data(), direct_bytes->size(), {1, 0, 0, 0, 1, 0, 0, 0, 1}};
+            bool rendered;
+#ifdef VOX_TEST_DIRECT_GRADIENT_BLUR
+            if (s_test_fail_direct_gradient_blur) {
+                std::fill(pixels.begin(), pixels.end(), 0xdeadbeefu);
+                rendered = false;
+            } else
+#endif
+                rendered = direct_draw(&request, 1, width, height);
+            if (rendered) {
+#ifdef VOX_TEST_DIRECT_GRADIENT_BLUR
+                ++s_test_direct_gradient_blur_successes;
+#endif
+                if (std::getenv("VOX_DIRECT_GRADIENT_BLUR_DIAGNOSTICS"))
+                    std::fprintf(stderr, "VOX_DIRECT_GRADIENT_BLUR target=%dx%d region=%d,%d,%d,%d\n",
+                        width, height, left, top, output_width, output_height);
+                return composite_pixels(destination, std::move(pixels), output_width, output_height,
+                    left / scale, canvas_height - (top + output_height) / scale,
+                    output_width / scale, output_height / scale, true);
+            }
+            // Retain ordinary replay even if a future backend partially writes
+            // its private output before reporting a failed transfer.
+            copy_backdrop_pixels(cropped, output_width, output_height, pixels);
+        }
+    }
     auto info = SkImageInfo::Make(output_width, output_height, kBGRA_8888_SkColorType,
         kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
     auto backdrop = SkImages::RasterFromPixmapCopy(SkPixmap(info, pixels.data(), size_t(output_width) * 4));

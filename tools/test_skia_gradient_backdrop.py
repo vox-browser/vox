@@ -47,7 +47,7 @@ def main():
               '-Wl,-rpath,' + str(native)]
     for framework in ['CoreFoundation', 'CoreGraphics', 'CoreText', 'Foundation', 'Metal']:
         common += ['-framework', framework]
-    for test in ['native_skia_gradient_backdrop_test', 'native_skia_gradient_tiles_test',
+    for test in ['native_skia_gradient_blur_backdrop_test', 'native_skia_gradient_backdrop_test', 'native_skia_gradient_tiles_test',
                  'native_skia_gradient_interpolation_test', 'native_skia_css_gradient_picture_test',
                  'native_skia_shared_layer_test', 'native_picture_image_transport_test',
                  'native_chromium_image_resize_test',
