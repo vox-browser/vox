@@ -42,6 +42,21 @@ class PreciseScrollTests(unittest.TestCase):
     def test_fixture_navigation_seeds_only_allow_any_site(self):
         self.check_isolated_launch(True)
 
+    def test_fixture_profile_cannot_silently_disable_replay_proxy(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary) / "measurement"
+            def compile_probe(command, **kwargs):
+                Path(command[-1]).write_bytes(b"fixture probe")
+            with mock.patch.object(measure_precise_scroll.sys, "platform", "darwin"), \
+                    mock.patch.object(measure_precise_scroll.sys, "argv", ["probe", "--output", str(output),
+                        "--allow-fixture-navigation", "--network-policy", "fixture replay"]), \
+                    mock.patch.dict(os.environ, VOX_PROXY="socks5h://127.0.0.1:9000"), \
+                    mock.patch.object(measure_precise_scroll.subprocess, "run", compile_probe), \
+                    mock.patch.object(measure_precise_scroll.subprocess, "Popen") as launch:
+                with self.assertRaisesRegex(ValueError, "cannot combine with VOX_PROXY"):
+                    measure_precise_scroll.main()
+                launch.assert_not_called()
+
     def check_isolated_launch(self, allow_fixture_navigation):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve()
@@ -71,7 +86,7 @@ class PreciseScrollTests(unittest.TestCase):
                 self.assertEqual(command[command.index("--window-height") + 1], "876")
                 self.assertNotIn("--enable-javascript", command)
                 self.assertNotIn("--disable-javascript", command)
-                self.assertEqual(env["VOX_PROXY"], "http://127.0.0.1:9")
+                self.assertEqual(env["VOX_PROXY"], "" if allow_fixture_navigation else "http://127.0.0.1:9")
                 self.assertEqual(env["SSL_CERT_FILE"], str(certificate))
                 self.assertNotIn("VOX_PROFILE_FRAMES", env)
                 self.assertNotIn("DYLD_LIBRARY_PATH", env)
@@ -92,7 +107,7 @@ class PreciseScrollTests(unittest.TestCase):
                                     VOX_PROFILE_DIR=str(user_profile), VOX_PROFILE_FRAMES="600",
                                     DYLD_LIBRARY_PATH="/unrelated/native/libraries",
                                     SSL_CERT_FILE=str(certificate),
-                                    VOX_PROXY="http://127.0.0.1:9"), \
+                                    VOX_PROXY="" if allow_fixture_navigation else "http://127.0.0.1:9"), \
                     mock.patch.object(measure_precise_scroll.subprocess, "run", compile_probe), \
                     mock.patch.object(measure_precise_scroll.subprocess, "Popen", launch), \
                     mock.patch.object(measure_precise_scroll.os, "cpu_count", return_value=18), \

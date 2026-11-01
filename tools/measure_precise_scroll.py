@@ -210,6 +210,12 @@ def main():
             digest.update(str(path.relative_to(cache)).encode() + b"\0" + path.read_bytes())
     env = dict(os.environ)
     env.update(item.split("=", 1) for item in args.env)
+    # A settings file is an explicit proxy override, even when it contains
+    # only allow_any_site (its missing enabled field defaults to false).
+    # This flag is for file/loopback fixtures, not a replacement for a replay
+    # proxy profile. Fail rather than silently bypassing the requested route.
+    if args.allow_fixture_navigation and env.get("VOX_PROXY"):
+        raise ValueError("--allow-fixture-navigation disables profile proxying; cannot combine with VOX_PROXY")
     # Diagnostic workload changes are forbidden in this acceptance probe.
     for name in list(env):
         if name.startswith(("VOX_PROFILE_", "VOX_SCROLL_PROFILE_")) or name in {
@@ -245,7 +251,7 @@ def main():
     evidence = dict(command=command, compile_command=compile_command,
                     source_and_binary_sha256=hashes, cache_sha256=digest.hexdigest(),
                     initial_profile=("private profile seeded only with allow_any_site=true; "
-                                     "default bookmark bar; no saved proxy override"
+                                     "default bookmark bar; explicit direct networking"
                                      if args.allow_fixture_navigation else
                                      "empty private profile; default bookmark bar; no saved proxy override"),
                     chrome_height=args.chrome_height,
