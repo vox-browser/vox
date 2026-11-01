@@ -4,9 +4,10 @@ Pixel-perfect parity remains open. The current settled, archived comparison at
 1280 × 800 CSS pixels and scale 1 has **4 differing pixels at the top** and
 **zero at every sampled 800-pixel scroll position from Y 2400 through 7200**,
 with **4 at Y 8000**. The reviews viewport at Y 9600 has **308** differences,
-and the community viewport at Y 10400 has **160**. Sponsor pixels, the Lilly
-preview, some review glyphs, and a footer book image still differ; the bottom has
-97 differences. Copy-button and book-cover geometry agree with Brave.
+and the community viewport at Y 10400 has **160**. The sponsor viewport at
+Y 1600 has **452** differences, and the bottom has **97**. The Lilly preview,
+some review glyphs, sponsor edges and a footer book image still differ.
+Copy-button and book-cover geometry agree with Brave.
 These results do not establish full live-page or scale-two parity.
 
 ## Capture readiness correction
@@ -1035,3 +1036,76 @@ in `image-decode-v2-pinned-final.json`; `image-decode-v2-installed-final.json`
 also confirms identical installed bundle bytes. Sponsor, Lilly, shadow, glyph,
 gradient and book-image residuals, full live-page parity and scale-two parity
 remain open.
+
+## Screen blending with floating-point group opacity
+
+`6e7472f4` extends the readable offscreen layer path to CSS screen blending.
+The preceding Quartz transparency path quantizes fractional group opacity,
+shifting otherwise matching colors by one level. The new compositor applies
+opacity to premultiplied source channels as float32 and uses Skia's screen
+coefficients, One and InverseSourceColor, before final byte rounding. Other
+blend modes retain their existing paths.
+
+The 800×600 `screen-opacity-composite` gold improves from **80,000 differing
+pixels to zero**, with agreeing fresh Brave references before, after and in a
+same-build negative control. A separate scale-two capture also matches exactly.
+The fixture includes grayscale and unfiltered screen blending at opacity 0.85,
+plus normal blending and full-opacity screen controls.
+
+At archived Y 1600, differences improve from **22,821 to 452**. The audit removes
+22,379 errors and introduces ten one-level errors. Nineteen pixels in total
+worsen by one level. The mask of errors above three levels stays unchanged.
+The other fifteen sampled positions have byte-identical native captures, including the
+97-pixel footer. This is a partial page correction, not pixel-perfect sponsor
+or effect-scene rendering.
+
+An additional diagnostic scene with nested groups, clipped text, gradients and
+SVG edges improves from 22,958 to 10,764 differences, but introduces 942 new
+one-level errors. Its inputs, captures and audit remain under `Build/`; it does
+not receive exact-conformance credit. These remaining raster and filter errors
+need further work.
+
+Evidence under `Build/vlang-parity-20261031/`:
+
+- `screen-blend-focused-formatted/` records ASan/UBSan validation of 917,504
+  pixels against fourteen independent GPU pictures: opaque and translucent
+  sources/backdrops at seven opacities. Run
+  `python3 tools/test_chromium_screen_blend.py` with a completed Dawn library.
+- `screen-opacity-composite-before/`, `screen-blend-v1-{fixture,scale2}/` and
+  `screen-blend-v1-negative-fixture/` retain the browser comparisons. The
+  signed negative copy changes one comparison in `native_begin_css_effect_layer`
+  to admit only normal blending into the offscreen path. Its exact instruction,
+  disassembly and hashes are recorded in `screen-blend-v1-negative-browser.json`
+  and `screen-blend-v1-effect-assembly.txt`.
+- `screen-blend-v1-negative-target-control.json` records the negative browser's
+  byte-identical native match to the preceding production browser at Y 1600,
+  restoring 22,821 errors against the valid fixed reference. Its fresh Brave
+  reference shows missing What Lab artwork and changed downstream geometry and
+  is rejected. That failed reference and its 395,094-pixel comparison remain
+  in `screen-blend-v1-negative-target/`.
+- `screen-blend-v1-page/` explicitly uses fixed references from
+  `image-decode-v2-negative-page/`; it is not a fresh paired Brave sweep.
+  `screen-blend-v1-detailed-pixel-audit.json` preserves the introduced and
+  worsened coordinates. `screen-blend-v1-scopes-audit.json` retains the
+  nonconformant diagnostic scene's results.
+- `screen-blend-v1-production-{guard,status}.json` records production exit zero,
+  430.42 seconds and sampled peak RSS of 8.21 GiB under the 12 GiB guard. All
+  four implementation dependencies for this fix stay stable; unrelated CSS,
+  native corner/glyph work and test formatting changes are listed separately.
+- `screen-blend-v1-pinned-smoke-v2-status.json` records fourteen screenshot
+  checks passing their existing bounds. All 52 strict browser fixtures and all
+  eight image/gradient/table golds pass. `screen-blend-v1-all-{status,guard}.json`
+  records the sequential checks and actual supervisor exit zero under 3 GiB.
+  Startup and live scripted loading pass with loaded fonts, five completed
+  visible image requests and zero native errors.
+
+Full-sweep credit belongs to the preserved production executable
+`7cc8f303f57f2f7fc6e0c6f1122296c55556e8802ec3124602c44f29688f3c51`
+in `Vox-screen-blend-v1-installed.app`, whose identity stays unchanged through
+validation. Another session subsequently replaces the shared bundle; both
+identities are retained in `screen-blend-v1-installed-final.json`. Fresh checks
+of that latest bundle also pass the exact screen fixture and live scripted
+loading in `screen-blend-latest-{fixture,live}/`. Its fixed-reference target
+captures in `screen-blend-latest-target/` reproduce 4/452/97 differences at
+Y 0/1600/10701. Those checks do not supply the preceding bundle's
+broad-validation credit. Full live-page and scale-two parity remain open.

@@ -995,3 +995,13 @@ control. Their differing-pixel counts change from 262/0/262 to 0/0/0. Run
 `python3 tools/test_chromium_image_decode_cache.py` for the bounded native cache
 checks. See [vlang rendering](../../../docs/VLANG_BRAVE_RENDERING.md) for build
 identities, retained failed reference captures and the footer pixel audit.
+
+`screen-opacity-composite` checks fractional opacity with CSS screen blending,
+with and without grayscale. Normal blending and full-opacity screen blending
+provide controls. Its 800×600, scale 1 gold has three agreeing Brave references
+and improves from 80,000 differing pixels to zero; a separate scale-two capture
+is also exact. Run `python3 tools/forum_news_inline_pixels_test.py` for the
+browser regression and `python3 tools/test_chromium_screen_blend.py` for the
+ASan/UBSan comparison against independent GPU pictures. See
+[vlang rendering](../../../docs/VLANG_BRAVE_RENDERING.md) for the sponsor
+viewport's gains, remaining edge regressions and preserved negative controls.
