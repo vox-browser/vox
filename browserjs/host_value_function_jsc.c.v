@@ -81,18 +81,14 @@ pub fn (mut runtime Runtime) retain_javascript_value(value voidptr) !voidptr {
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
 	C.JSValueProtect(runtime.context, value)
-	runtime.protected_values_ << value
+	runtime.remember_protected_value(value)
 	return value
 }
 
 pub fn (mut runtime Runtime) release_javascript_value(value voidptr) {
 	if runtime.closed || runtime.context == unsafe { nil } { return }
-	for index, retained in runtime.protected_values_ {
-		if retained == value {
-			runtime.protected_values_.delete(index)
-			C.JSValueUnprotect(runtime.context, value)
-			return
-		}
+	if runtime.forget_protected_value(value) {
+		C.JSValueUnprotect(runtime.context, value)
 	}
 }
 

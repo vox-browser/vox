@@ -71,6 +71,8 @@ mut:
 	value_host_functions_     []&ValueHostFunctionRecord
 	native_stream_wrapper_records_ map[voidptr]voidptr
 	protected_values_         []voidptr
+	protected_value_indices_  map[voidptr][]int
+	protected_value_positions_ []int
 	value_call_intrinsic_     voidptr
 	promise_observe_intrinsic_ voidptr
 	value_error_intrinsic_     voidptr
@@ -380,6 +382,8 @@ pub fn (mut runtime Runtime) close() {
 		if runtime.context != unsafe { nil } {
 			for value in runtime.protected_values_ { C.JSValueUnprotect(runtime.context, value) }
 			runtime.protected_values_ = []
+			runtime.protected_value_indices_.clear()
+			runtime.protected_value_positions_ = []
 			release_javascript_core_context(runtime.context)
 			runtime.context = unsafe { nil }
 		}
