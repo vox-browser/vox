@@ -206,6 +206,8 @@ def parse_args(argv=None):
                    help='Alternate the same Vox binary without reusing parsed rule selectors')
     control.add_argument('--control-flex-layout', action='store_true',
                    help='Alternate the same Vox binary without retaining unchanged flex geometry')
+    control.add_argument('--control-block-eligibility', action='store_true',
+                   help='Alternate the same Vox binary without remembering rejected geometry cache probes')
     control.add_argument('--control-live-font-cascades', action='store_true',
                    help='Alternate the same Vox binary without reusing retained font inputs across generations')
     control.add_argument('--control-vox-app', type=Path,
@@ -239,6 +241,7 @@ def control_environment(args):
     if args.control_vox_app:
         return {}
     for option, variable in (
+        ('control_block_eligibility', 'VOX_DISABLE_RETAINED_BLOCK_REJECTION_CACHE'),
         ('control_flex_layout', 'VOX_DISABLE_RETAINED_FLEX_LAYOUT'),
         ('control_rule_selectors', 'VOX_DISABLE_RULE_SELECTOR_REUSE'),
         ('control_block_images', 'VOX_DISABLE_RETAINED_BLOCK_IMAGES'),
