@@ -110,6 +110,7 @@ class CNNHomeInstructionTests(unittest.TestCase):
             benchmark.parse_args(arguments + ['--repeat', '1'])
         self.assertTrue(benchmark.parse_args(arguments + ['--diagnostic', '--repeat', '1']).diagnostic)
         self.assertTrue(benchmark.parse_args(arguments + ['--control-font-completion']).control_font_completion)
+        self.assertTrue(benchmark.parse_args(arguments + ['--control-hidden-animations']).control_hidden_animations)
         with self.assertRaises(SystemExit):
             benchmark.parse_args(arguments + ['--control-font-completion', '--control-lazy-images'])
 
