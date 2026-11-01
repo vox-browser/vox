@@ -2,6 +2,9 @@ module css
 
 import processmetrics
 import dom
+import os
+
+const diagnostic_style_reasons_enabled = os.getenv('VOX_DIAGNOSTIC_STYLE_REASONS') != ''
 
 __global (
 	diagnostic_instruction_totals [18]u64
@@ -34,6 +37,8 @@ fn record_diagnostic_instruction_scope(index int, start processmetrics.Instructi
 fn diagnostic_font_guard_reject(index int) bool {
 	$if vox_css_diagnostics ? {
 		diagnostic_font_guard_rejections[index]++
+	} $else {
+		if diagnostic_style_reasons_enabled { diagnostic_font_guard_rejections[index]++ }
 	}
 	return false
 }
@@ -42,6 +47,8 @@ fn diagnostic_font_guard_reject(index int) bool {
 fn record_diagnostic_style_update_cause(index int) {
 	$if vox_css_diagnostics ? {
 		diagnostic_style_update_causes[index]++
+	} $else {
+		if diagnostic_style_reasons_enabled { diagnostic_style_update_causes[index]++ }
 	}
 }
 
@@ -60,6 +67,14 @@ fn record_diagnostic_longhand_rejection(id PropertyID, value &dom.StyleValue) {
 }
 
 pub fn report_diagnostic_instruction_scopes() {
+	if diagnostic_style_reasons_enabled {
+		for index, count in diagnostic_font_guard_rejections {
+			if count > 0 { eprintln('Vox runtime font guard: ${index} ${count}') }
+		}
+		for index, count in diagnostic_style_update_causes {
+			if count > 0 { eprintln('Vox runtime style cause: ${index} ${count}') }
+		}
+	}
 	$if vox_css_diagnostics ? {
 		for index, count in diagnostic_font_guard_rejections {
 			if count > 0 { eprintln('Vox diagnostic font guard: ${index} ${count}') }
