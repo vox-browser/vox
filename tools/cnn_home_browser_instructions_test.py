@@ -15,7 +15,7 @@ class CNNHomeInstructionTests(unittest.TestCase):
         self.assertEqual(benchmark.trial_order(1, True), ['brave', 'vox', 'control'])
 
     def test_separate_control_app_does_not_disable_any_engine_optimization(self):
-        names = ['control_lazy_image_batches', 'control_geometry_snapshot_keys', 'control_live_font_cascades', 'control_hidden_animations', 'control_font_completion',
+        names = ['control_live_font_geometry', 'control_lazy_image_batches', 'control_geometry_snapshot_keys', 'control_live_font_cascades', 'control_hidden_animations', 'control_font_completion',
                  'control_lazy_images', 'control_static_media']
         args = SimpleNamespace(control_vox_app=None, **dict.fromkeys(names, False))
         self.assertEqual(benchmark.control_environment(args), {})
@@ -123,6 +123,8 @@ class CNNHomeInstructionTests(unittest.TestCase):
         self.assertTrue(benchmark.parse_args(arguments + ['--control-font-completion']).control_font_completion)
         self.assertTrue(benchmark.parse_args(arguments + ['--control-hidden-animations']).control_hidden_animations)
         self.assertTrue(benchmark.parse_args(arguments + ['--control-live-font-cascades']).control_live_font_cascades)
+        geometry = benchmark.parse_args(arguments + ['--control-live-font-geometry'])
+        self.assertEqual(benchmark.control_environment(geometry), {'VOX_DISABLE_LIVE_FONT_GEOMETRY_REUSE': '1'})
         batch = benchmark.parse_args(arguments + ['--control-lazy-image-batches'])
         self.assertEqual(benchmark.control_environment(batch), {'VOX_DISABLE_LAZY_IMAGE_BATCHES': '1'})
         args = benchmark.parse_args(arguments + ['--control-geometry-snapshot-keys'])
