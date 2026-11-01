@@ -175,6 +175,8 @@ def run_trial(engine, app, folder, args):
                 args.vox_environment['VOX_DISABLE_CONSTANT_LONGHAND_REUSE'] = '1'
             if getattr(args, 'control_disable_live_pending_text_reuse', False):
                 args.vox_environment['VOX_DISABLE_LIVE_PENDING_TEXT_REUSE'] = '1'
+            if getattr(args, 'control_disable_static_user_style_filter', False):
+                args.vox_environment['VOX_DISABLE_STATIC_USER_STYLE_FILTER'] = '1'
             if getattr(args, 'control_disable_targeted_user_style_changes', False):
                 args.vox_environment['VOX_DISABLE_TARGETED_USER_STYLE_CHANGES'] = '1'
             if getattr(args, 'control_disable_deleted_style_rule_invalidation', False):
@@ -245,6 +247,8 @@ def parse_args(argv=None):
                         help='Disable numeric-ratio, angle-free font-style and time value reuse in the pinned Vox control')
     parser.add_argument('--control-disable-live-pending-text-reuse', action='store_true',
                         help='Discard text shapes after unrelated pending-font changes in the pinned Vox control')
+    parser.add_argument('--control-disable-static-user-style-filter', action='store_true',
+                        help='Use coarse subject predicates when replacing user styles in the pinned Vox control')
     parser.add_argument('--control-disable-targeted-user-style-changes', action='store_true',
                         help='Invalidate the entire document after user stylesheet replacement in the pinned Vox control')
     parser.add_argument('--control-disable-deleted-style-rule-invalidation', action='store_true',
@@ -301,7 +305,7 @@ def parse_args(argv=None):
             args.control_disable_live_pending_text_reuse,
             args.control_disable_live_pending_font_refresh,
             args.control_disable_positioned_image_ratio_reuse,
-            args.control_disable_conditional_sheet_invalidation or args.control_disable_inactive_conditional_sheet_skip or args.control_disable_classic_import_word_scan or args.control_disable_longhand_shape_reuse or args.control_disable_longhand_eligibility_first or args.control_disable_protected_value_index or args.control_disable_shared_element_geometry or args.control_disable_shared_node_properties or args.control_disable_attribute_tag_buckets or args.control_disable_deleted_style_rule_invalidation or args.control_disable_targeted_user_style_changes)) and not args.control_vox_app:
+            args.control_disable_conditional_sheet_invalidation or args.control_disable_inactive_conditional_sheet_skip or args.control_disable_classic_import_word_scan or args.control_disable_longhand_shape_reuse or args.control_disable_longhand_eligibility_first or args.control_disable_protected_value_index or args.control_disable_shared_element_geometry or args.control_disable_shared_node_properties or args.control_disable_attribute_tag_buckets or args.control_disable_deleted_style_rule_invalidation or args.control_disable_targeted_user_style_changes or args.control_disable_static_user_style_filter)) and not args.control_vox_app:
         parser.error('Disabling the control optimization needs --control-vox-app')
     if not args.capture_reference and (args.repeat < 7 or not args.expected_vox or not args.expected_brave):
         parser.error('Acceptance needs seven pairs and both existing pixel references')
@@ -405,6 +409,7 @@ def main():
         control_disable_attribute_tag_buckets=args.control_disable_attribute_tag_buckets,
         control_disable_deleted_style_rule_invalidation=args.control_disable_deleted_style_rule_invalidation,
         control_disable_targeted_user_style_changes=args.control_disable_targeted_user_style_changes,
+        control_disable_static_user_style_filter=args.control_disable_static_user_style_filter,
         brave_post_readiness_expression=args.post_readiness_expression,
         readiness_correction='Await visible image decode before the original settlement; no engine credit',
         system=subprocess.check_output(['sw_vers'], text=True)))

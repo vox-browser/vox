@@ -147,6 +147,24 @@ class BBCInstructionTests(unittest.TestCase):
                 run_trial('control', 'same-app', 'control', args)
         self.assertIs(args.vox_environment, environment)
 
+    def test_static_user_style_filter_control_is_isolated_and_restored_on_failure(self):
+        environment = {'VOX_PROXY': 'socks5h://fixture'}
+        args = SimpleNamespace(vox_environment=environment, control_disable_grid_width_only=False,
+                               control_disable_static_user_style_filter=True)
+        seen = []
+        def observe(engine, app, folder, options):
+            seen.append((engine, dict(options.vox_environment)))
+            return {'exit': 0}
+        with patch('bbc_browser_instructions.browser.run_browser', side_effect=observe):
+            for engine in ['control', 'vox', 'brave']:
+                run_trial(engine, 'same-app', engine, args)
+        self.assertEqual(seen, [('vox', dict(environment, VOX_DISABLE_STATIC_USER_STYLE_FILTER='1')),
+                                ('vox', environment), ('brave', environment)])
+        with patch('bbc_browser_instructions.browser.run_browser', side_effect=RuntimeError('failed')):
+            with self.assertRaises(RuntimeError):
+                run_trial('control', 'same-app', 'control', args)
+        self.assertIs(args.vox_environment, environment)
+
     def test_targeted_user_style_changes_control_is_isolated_and_restored_on_failure(self):
         environment = {'VOX_PROXY': 'socks5h://fixture'}
         args = SimpleNamespace(vox_environment=environment, control_disable_grid_width_only=False,
@@ -505,7 +523,7 @@ class BBCInstructionTests(unittest.TestCase):
                      '--control-disable-extended-longhand-reuse', '--control-disable-color-longhand-reuse',
                      '--control-copy-stationary-raster-commands', '--control-disable-retained-flow-items',
                      '--control-disable-face-specific-font-display', '--control-disable-constant-longhand-reuse',
-                     '--control-disable-intrinsic-font-reuse', '--control-disable-pending-intrinsic-font-reuse', '--control-disable-live-pending-text-reuse', '--control-disable-live-pending-font-refresh', '--control-disable-positioned-image-ratio-reuse', '--control-disable-conditional-sheet-invalidation', '--control-disable-inactive-conditional-sheet-skip', '--control-disable-classic-import-word-scan', '--control-disable-longhand-shape-reuse', '--control-disable-longhand-eligibility-first', '--control-disable-protected-value-index', '--control-disable-shared-element-geometry', '--control-disable-shared-node-properties', '--control-disable-attribute-tag-buckets', '--control-disable-deleted-style-rule-invalidation', '--control-disable-targeted-user-style-changes']:
+                     '--control-disable-intrinsic-font-reuse', '--control-disable-pending-intrinsic-font-reuse', '--control-disable-live-pending-text-reuse', '--control-disable-live-pending-font-refresh', '--control-disable-positioned-image-ratio-reuse', '--control-disable-conditional-sheet-invalidation', '--control-disable-inactive-conditional-sheet-skip', '--control-disable-classic-import-word-scan', '--control-disable-longhand-shape-reuse', '--control-disable-longhand-eligibility-first', '--control-disable-protected-value-index', '--control-disable-shared-element-geometry', '--control-disable-shared-node-properties', '--control-disable-attribute-tag-buckets', '--control-disable-deleted-style-rule-invalidation', '--control-disable-targeted-user-style-changes', '--control-disable-static-user-style-filter']:
             with self.subTest(flag=flag):
                 with self.assertRaises(SystemExit):
                     parse_args(args + [flag])
