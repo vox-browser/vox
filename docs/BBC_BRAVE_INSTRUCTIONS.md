@@ -1,18 +1,20 @@
 # BBC homepage instruction comparison
 
 **The requested 10% advantage remains open. BBC does not qualify for
-`OPTIMIZED_SITES.md`.** The latest valid seven-pair cohort has a Vox median
-of **37,463,386,894** retired instructions and a Brave lower-bound median of
-**15,655,612,802**. Its conservative ratio is **2.4762586430968168**, above
-0.9: `385560003150 > 140132374218` fails the integer gate. All 21 content,
-unchanged pixel-reference and native-exit checks pass. Every observation is
-retained, including first launches and high counts.
+`OPTIMIZED_SITES.md`.** The latest attempted seven-pair cohort has a Vox
+median of **36,574,920,629** retired instructions and a Brave lower-bound
+median of **15,732,111,035**. Its conservative ratio is **2.43280501847826**,
+above 0.9: `380624524590 > 140809505706` fails the integer gate. Brave trial
+6 differs from its unchanged reference, invalidating acceptance. All 21
+content audits and native exits pass; 20/21 pixel references pass. Every
+observation remains included.
 
-The same-binary import-filter control has median 37,366,488,853; enabling the
-filter regresses the median by 0.2593%. Its conservative matched-control ratio
-is 1.0559372113230752. No instruction improvement is credited. The preceding
-inactive-stylesheet cohort remains retained with its Brave trial 3 pixel
-mismatch; its reported counts have not been excluded or replaced.
+The same-binary eligibility-order control has median 35,893,386,847; enabling
+the early check regresses the median by 1.8988%. Its conservative control ratio
+is 1.0650725477025864. The latest valid cohort is the preceding scalar-shape
+comparison, with Vox median 37,314,150,142 and Brave lower-bound median
+15,652,929,710. It also fails both gates and regresses against its control.
+Neither result establishes accepted instruction savings.
 
 The machine-readable [evidence](benchmark-results/bbc-brave-instructions-2026-11-01.json)
 retains exact counts for every recorded attempt, including failures and first
@@ -85,6 +87,8 @@ capture marker. An invalid cohort is retained for diagnosis, not acceptance.
 | Filtering helper JIT entitlement | 37,990,584,359 | 15,546,241,164 | 3.0270279597468543 | All observations valid; median regresses against control; both gates fail |
 | Skip inactive conditional-rule insertion | 37,396,821,455 | 15,731,322,435 | 2.514265550853879 | Brave pair 3 differs; Brave and matched-control gates fail |
 | Classic-script import identifier filter | 37,463,386,894 | 15,655,612,802 | 2.4762586430968168 | All observations valid; median regresses against control; both gates fail |
+| Viewport, grid-placement and radius longhand reuse | 37,314,150,142 | 15,652,929,710 | 2.510631500286319 | All observations valid; median regresses against control; both gates fail |
+| Check own eligibility before inherited hashing | 36,574,920,629 | 15,732,111,035 | 2.43280501847826 | Brave pair 6 differs; median regresses against control; both gates fail |
 
 The grid block-height cohort alternates an older control, candidate and Brave;
 control/candidate medians are 101,567,929,247 and 90,700,737,334 (10.70% observed
@@ -198,7 +202,7 @@ The selected backend has no observed LibJS fallback. These instrumented runs
 receive no hardware-counter performance credit.
 
 The newest measured executable is SHA256
-`46196ed8f47f6fdff9f8564daba9b90eca87933804f41144e07281a714b3721d`.
+`2226008c70cb493c9decd4092b9dd0e695854300ba39c488c703ce91520f45d6`.
 The preceding font-display candidate is
 `5aae83a4408e023380d51e4430003b519ec427bcd96b3701b634930eeda62952`.
 The JIT-only candidate is
@@ -776,3 +780,73 @@ but both instruction gates fail and the median regresses against its control.
 The guard adopts 66 processes without errors, peak RSS 1,352,007,680 bytes,
 and completes in 109.8753 seconds with controller exit 1 for failed acceptance.
 The raw prefix is `classic-import-*`. BBC remains outside the site catalog.
+
+
+### Viewport, grid placement and radius longhand reuse
+
+Commit `2ad3e906` allows the existing computed-longhand cache to accept
+viewport-relative `vw`/`vh`/`vmin`/`vmax` lengths, simple grid auto-flow and
+integer line/span placement, and scalar border radii. Snapshots preserve typed
+values, optional names, component arrays and flags; retained-input mutations
+still reject reuse. Font/container-relative and calculated inputs remain on
+the ordinary path. Viewport changes invalidate the key, and restored properties
+retain their viewport-dependency flags.
+
+Nine focused compile/runtime/control jobs pass in normal, no-GC and
+preallocated modes. A failed compile exposed unsupported negative smart-cast
+narrowing in generated C; explicit guarded casts correct it. The next failed
+check used a fresh oracle with a different viewport; matching that input
+preserves the full-property oracle and verifies that resize rejects the old
+entry and resolves 50vw to 320px at 640px. Both failures remain retained.
+The broad checks enter 415 cases per mode, with only the known text-control
+baseline failure. A CLI continuation interrupted the last 13 no-GC batches;
+recovery uses the completed compile with a pinned, unchanged executable and
+runs all 65 remaining cases successfully. The incomplete attempt remains.
+Control tooling `e0cc71db` passes 164 browser-instruction tests.
+
+The production build takes 182.1466 seconds, peak sampled RSS 8,928,722,944
+bytes, with the feature sources stable. Its executable is
+`8fbb7b69e680520603f17cce866ab30ab0beafae41a49378cc504dd7c20ca9e6`.
+A post-build generated-C snapshot was unavailable; source-input hashes,
+actual executable symbols and positive runtime-path traces are retained in
+`longhand-shape-executable-witness/`. Headless startup, 11 smoke comparisons
+and eight SVG mutation comparisons pass with exact pixels. Both BBC
+diagnostics pass original pixels, content and native exits with 1,945/2,085
+JavaScriptCore evaluations; only the enabled run reports a successful restore.
+
+All 21 uninstrumented cohort observations pass content, pixel and native-exit
+checks. The candidate median 37,314,150,142 regresses 3.4473% against control
+36,070,672,871; the conservative control ratio is 1.1054633006230532. Brave
+lower median is 15,652,929,710 and the integer gate
+`391358005840 > 140292275157` fails. The guard adopts 67 processes without
+errors, peak RSS 1,374,060,544 bytes, and completes in 110.1369 seconds with
+controller exit 1 for failed acceptance. No BBC improvement is credited.
+Evidence uses `longhand-shape-*` and the retained broad-recovery directory.
+
+### Longhand eligibility ordering
+
+Commit `cb190e09` checks an element's own declarations before hashing inherited
+values. Rejected declarations can skip that inherited walk. Eligible own-value
+hash contributions are XOR-combined after the unchanged parent hash, preserving
+the previous key exactly. The control retains the prior ordering. Nine focused
+jobs pass across the three memory modes, and both 415-case broader modes retain
+only the existing baseline failure. The first extraction compile had an
+unrenamed local count; it remains retained. Separately committed control
+tooling `fae61ca7` passes 165 browser-instruction tests.
+
+The production build takes 179.8584 seconds, peak sampled RSS 8,970,797,056
+bytes, with feature sources stable. Executable SHA256 is
+`2226008c70cb493c9decd4092b9dd0e695854300ba39c488c703ce91520f45d6`;
+the captured generated C is
+`33a528bd857f51d680cae27e816199d86b255443d03ed5e5d387feac5b203419`.
+Headless startup, 11 smoke comparisons and eight SVG mutation comparisons
+pass with exact pixels. Enabled/disabled BBC diagnostics preserve original
+pixels, content and native exits, with 1,985/1,989 JavaScriptCore evaluations.
+Only the enabled run reports rejection before inherited hashing.
+
+The uninstrumented cohort produces the latest results above, including its
+Brave trial 6 image mismatch. The guard adopts 72 processes without errors,
+peak RSS 1,344,749,568 bytes, and completes in 109.6054 seconds with controller
+exit 1. Every count and invalid observation remains retained. Neither the
+point estimate nor conservative gate supplies improvement credit. Evidence uses
+`longhand-eligibility-*`; the requested 10% advantage remains open.
