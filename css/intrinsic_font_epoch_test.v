@@ -36,7 +36,7 @@ fn test_intrinsic_font_epoch_rejects_a_replacement_already_refreshed_by_another_
 	assert style.cached_font_inputs_are_unchanged_since(computer, computer.environment_generation())
 }
 
-fn test_intrinsic_font_epoch_rejects_unknown_pending_and_foreign_cascades() {
+fn test_intrinsic_font_epoch_rejects_unknown_and_foreign_cascades() {
 	mut computer := FontComputer.create()
 	mut style := intrinsic_epoch_style('monospace')
 	assert !style.cached_font_inputs_are_unchanged_since(computer, computer.environment_generation())
@@ -47,7 +47,7 @@ fn test_intrinsic_font_epoch_rejects_unknown_pending_and_foreign_cascades() {
 	computer.register_font_face(face)
 	mut pending := intrinsic_epoch_style('PendingIntrinsicFamily')
 	assert pending.computed_font_list(computer).pending_faces.len == 1
-	assert !pending.cached_font_inputs_are_unchanged_since(computer, computer.environment_generation())
+	assert pending.cached_font_inputs_are_unchanged_since(computer, computer.environment_generation()) == !disable_pending_intrinsic_font_reuse
 }
 
 fn test_intrinsic_font_epoch_rejects_a_changed_font_rendering_policy() {

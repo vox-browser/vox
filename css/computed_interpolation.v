@@ -5863,14 +5863,29 @@ pub fn (c &ComputedProperties) cached_computed_font_list() ?&FontCascadeList {
 	return c.cached_computed_font_list_
 }
 
+const disable_pending_intrinsic_font_reuse = os.getenv('VOX_DISABLE_PENDING_INTRINSIC_FONT_REUSE') != ''
+const pending_intrinsic_font_reuse_diagnostics = os.getenv('VOX_PENDING_INTRINSIC_FONT_REUSE_DIAGNOSTICS') != ''
+
+__global pending_intrinsic_font_reuse_reported bool
+
 // Geometry recorded at `generation` can survive unrelated font completions
 // only when its original cascade is still live. A newly computed replacement
 // cannot establish what fonts the older geometry used, even if it is current.
 pub fn (c &ComputedProperties) cached_font_inputs_are_unchanged_since(computer &FontComputer, generation u64) bool {
 	list := c.cached_computed_font_list_ or { return false }
-	return list.pending_faces.len == 0
-		&& list.computed_cache_created_generation_ <= generation
-		&& computer.cached_cascade_is_current(list)
+	if list.computed_cache_created_generation_ > generation
+		|| !computer.cached_cascade_is_current(list) { return false }
+	if list.pending_faces.len != 0 {
+		if disable_pending_intrinsic_font_reuse { return false }
+		// Loads, failures and display-period transitions expire every cached
+		// cascade that selected the changing face. A still-live original list
+		// therefore retains both fallback metrics and its visibility state.
+		if pending_intrinsic_font_reuse_diagnostics && !pending_intrinsic_font_reuse_reported {
+			pending_intrinsic_font_reuse_reported = true
+			eprintln('Vox intrinsic pending font reuse: original cascade is live')
+		}
+	}
+	return true
 }
 
 pub fn (mut c ComputedProperties) clear_computed_font_list_cache() {

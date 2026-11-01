@@ -2,6 +2,7 @@ module layout
 
 import css
 import html
+import os
 
 fn intrinsic_epoch_layout_node(root &Node, id string) ?&Node {
 	if owner := root.dom_node() {
@@ -113,4 +114,36 @@ fn test_intrinsic_sizes_reject_containing_blocks_outside_the_parent_chain() {
 	computer.did_load_font('UnrelatedIntrinsicFamily')
 	assert !intrinsic_fonts_are_unchanged_since(node, original.font_generation_)
 	assert voidptr(box.cached_intrinsic_sizes()) != voidptr(original)
+}
+
+fn test_intrinsic_sizes_with_unresolved_fonts_retain_original_geometry_until_selected_family_changes() {
+	mut document := html.parse_document('<!doctype html><div id="subject" style="display:inline-grid;font:16px/20px PendingIntrinsicLayout,monospace"><div>several words</div></div>')
+	defer { document.finalize() }
+	mut computer := css.css_style_computer_for(document).font_computer()
+	mut set := css.FontFaceSet.create_for_font_computer(computer)
+	face := css.FontFaceObject.construct_impl('PendingIntrinsicLayout', css.FontFaceSource.from_string('url("pending.ttf")'), css.FontFaceDescriptors{ unicode_range: 'U+400-4FF' })
+	set.add(face) or { panic(err) }
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	prepare_intrinsic_epoch_fonts(result.root)
+	node := intrinsic_epoch_layout_node(result.root, 'subject')?
+	assert node.computed_values().computed_font_list(computer).pending_faces.len == 1
+	mut box := node.as_box()?
+	mut state := result.state
+	minimum := calculate_min_content_width(mut state, box)
+	maximum := calculate_max_content_width(mut state, box)
+	original := box.cached_intrinsic_sizes()
+	computer.did_load_font('UnrelatedIntrinsicLayout')
+	retained := box.cached_intrinsic_sizes()
+	if disable_intrinsic_font_reuse || os.getenv('VOX_DISABLE_PENDING_INTRINSIC_FONT_REUSE') != '' {
+		assert voidptr(retained) != voidptr(original)
+	} else {
+		assert voidptr(retained) == voidptr(original)
+	}
+	assert calculate_min_content_width(mut state, box) == minimum
+	assert calculate_max_content_width(mut state, box) == maximum
+	computer.clear_computed_font_cache('PendingIntrinsicLayout')
+	assert voidptr(box.cached_intrinsic_sizes()) != voidptr(retained)
+	box.reset_cached_intrinsic_sizes()
+	assert calculate_min_content_width(mut state, box) == minimum
+	assert calculate_max_content_width(mut state, box) == maximum
 }
