@@ -876,7 +876,13 @@ fn (mut parser Parser) parse_css_value_tokens(property_id PropertyID, mut tokens
 	// Properties containing syntactically valid var()/attr()/env()/if()/inherit()
 	// are resolved after the custom-property cascade. Invalid argument grammars
 	// are rejected now rather than becoming guaranteed-invalid at computed time.
-	remaining := tokens.values[tokens.index..].clone()
+	// Validation only reads this span. Only an unresolved result publishes the
+	// vector, so resolved scalar values need no input-sized allocation.
+	remaining := if disable_component_input_reuse {
+		tokens.values[tokens.index..].clone()
+	} else {
+		tokens.values[tokens.index..]
+	}
 	mut substitution_presence := SubstitutionFunctionsPresence{}
 	for token in remaining {
 		if token.is(.semicolon) {
@@ -887,7 +893,8 @@ fn (mut parser Parser) parse_css_value_tokens(property_id PropertyID, mut tokens
 		}
 	}
 	if substitution_presence.has_any() {
-		return StyleValue(UnresolvedStyleValue.create_with_presence(remaining, substitution_presence, none))
+		owned := if disable_component_input_reuse { remaining } else { remaining.clone() }
+		return StyleValue(UnresolvedStyleValue.create_with_presence(owned, substitution_presence, none))
 	}
 	// CSS-wide keywords can be used as the entire value of any property.
 	if value := parse_css_wide_keyword_value(mut tokens) {

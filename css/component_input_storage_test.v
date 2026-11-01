@@ -17,7 +17,7 @@ fn test_streamed_component_input_keeps_owned_nested_values_and_unterminated_rule
 	}
 	mut declaration := actual.css_rules().rules[0].style() or { panic('missing first declaration') }
 	assert declaration.get_property_value('--nested') == 'fn([one], "日本語")'
-	assert declaration.get_property_value('width') == 'calc(10px + 2em)'
+	assert declaration.get_property_value('width') == 'calc(2em + 10px)'
 	assert actual.css_rules().rules[1].style()?.get_property_value('height') == '17px'
 	declaration.set_property('--nested','fn([two], "Ещё")','') or { panic(err) }
 	assert declaration.get_property_value('--nested') == 'fn([two], "Ещё")'

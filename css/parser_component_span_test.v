@@ -51,3 +51,13 @@ fn test_repeated_component_span_parses_do_not_retain_an_input_sized_copy() {
 	assert values[0].is(.whitespace)
 	assert values.last().token().dimension_value() == 29
 }
+
+fn test_unresolved_property_results_snapshot_the_borrowed_component_headers() {
+	mut values := parse_component_values_for_value_logic('var(--requested, 17px)')
+	mut parser := Parser.from_component_span(values)
+	value := parser.parse_css_value(.width) or { panic('missing unresolved width') }
+	assert value is UnresolvedStyleValue
+	values[0] = ComponentValue.from_token(Token.create_dimension_from_double(99,'px','99px'))
+	assert value.serialize(.normal) == 'var(--requested, 17px)'
+	assert values[0].token().dimension_value() == 99
+}
