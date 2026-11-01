@@ -1,0 +1,12 @@
+<!doctype html>
+<meta charset="utf-8"><title>Later compositor picture reuses a completed image decode</title>
+<style>
+html,body{margin:0;background:#090b0f}body{height:9600px}img{position:absolute;display:block}
+.prime{left:48px;top:20px;width:60px;height:60px}
+.under{position:absolute;left:20px;top:8970px;width:180px;height:140px;will-change:opacity;background:#15191f}
+.gradient{position:absolute;left:30px;top:8980px;width:160px;height:100px;background:linear-gradient(125deg,#090b0f,#090b0f)}
+.reused{left:48px;top:9000.75px;width:32px;height:32px}
+</style>
+<img class="prime" src="../resources/image-decode-reused.png" alt="Prime larger decode">
+<div class="under"></div><div class="gradient"></div>
+<img class="reused" src="../resources/image-decode-reused.png" alt="Reuse after scrolling">

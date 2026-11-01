@@ -9,6 +9,7 @@
 #include <chrono>
 #include "native_graphite_bridge.h"
 #include "native_gradient_visibility.h"
+#include "native_chromium_image_decode_cache.h"
 #include "native_picture_typeface_cache.h"
 #include "native_graphite_solid_rect.h"
 #include "native_svg_path_regions.h"
@@ -1859,6 +1860,62 @@ extern "C" int ladybird_v_skia_draw_rgba_image_tiles(CGContextRef destination,
         static_cast<float>(region.width()), static_cast<float>(region.height()), has_background);
 }
 
+static VoxChromiumImageDecodeCache s_image_decode_cache;
+static std::string s_image_resource_identity;
+static uint64_t s_image_decode_scope;
+static void const* s_image_decode_document;
+static uint64_t s_image_decode_paint_generation, s_image_decode_navigation;
+
+extern "C" void ladybird_v_skia_begin_image_decode_frame(void const* document,
+    uint64_t paint_generation, uint64_t navigation)
+{
+    s_image_decode_cache.complete_frame();
+    if (document != s_image_decode_document || paint_generation != s_image_decode_paint_generation
+        || navigation != s_image_decode_navigation)
+        s_image_decode_cache.reset_requests();
+    s_image_decode_document = document;
+    s_image_decode_paint_generation = paint_generation;
+    s_image_decode_navigation = navigation;
+    s_image_decode_scope = 0;
+    s_image_resource_identity.clear();
+}
+
+extern "C" void ladybird_v_skia_set_image_decode_scope(uint64_t scope)
+{
+    s_image_decode_scope = scope;
+}
+
+extern "C" void ladybird_v_skia_set_image_resource_identity(char const* value, int length)
+{
+    if (!value || length <= 0 || length > 16384) s_image_resource_identity.clear();
+    else s_image_resource_identity.assign(value, size_t(length));
+}
+
+static void retain_compatible_image_decode(VoxGraphiteImage& image,
+    SkMatrix const& matrix, float scale)
+{
+    if (s_image_resource_identity.empty()) return;
+    float sx = std::hypot(matrix.getScaleX() * scale, matrix.getSkewY() * scale)
+        * image.destination[2] / image.source[2];
+    float sy = std::hypot(matrix.getSkewX() * scale, matrix.getScaleY() * scale)
+        * image.destination[3] / image.source[3];
+    float width = image.width * sx, height = image.height * sy;
+    if (!std::isfinite(width) || !std::isfinite(height) || width <= 0 || height <= 0) return;
+    int requested = 0;
+    if (!image.nearest) {
+        for (int level = 1; level <= 30; ++level) {
+            int w = vox_image_decode_axis(image.width, level);
+            int h = vox_image_decode_axis(image.height, level);
+            if (w < std::ceil(width) || h < std::ceil(height)) break;
+            requested = level;
+            if (w == 1 && h == 1) break;
+        }
+    }
+    int selected = s_image_decode_cache.select(s_image_resource_identity, image, requested,
+        s_image_decode_scope);
+    if (selected >= 0) image.flags = vox_image_with_decode_level(image.flags, selected);
+}
+
 static bool s_has_image_background = false;
 static uint8_t s_image_background_rgba[4];
 static float s_image_border_rect[12], s_image_border_width;
@@ -1965,6 +2022,7 @@ extern "C" int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
         }
         std::copy_n(s_image_color_profile, VOX_IMAGE_COLOR_PROFILE_VALUES, descriptor.color_profile);
         if (clip_radii) std::copy_n(clip_radii, 8, descriptor.clip + 4);
+        retain_compatible_image_decode(descriptor, matrix, destination_scale);
         shared_recording_image(destination, matrix, descriptor);
         raster_matrix(matrix, region, raster_scale_x, raster_scale_y).get9(descriptor.matrix);
         auto rows = chromium_layer_msaa_rows(region.top, raster_height, page_y, scroll_y, destination_scale);

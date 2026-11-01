@@ -47,6 +47,9 @@ extern void ladybird_v_skia_release_unused_graphics_memory(void);
 extern int ladybird_v_skia_release_idle_graphics_memory(void);
 extern int ladybird_v_skia_configure_font(const char *path, int slot);
 extern void ladybird_v_skia_set_image_color_profile(const float *profile);
+extern void ladybird_v_skia_set_image_resource_identity(const char *value, int length);
+extern void ladybird_v_skia_begin_image_decode_frame(const void *, uint64_t, uint64_t);
+extern void ladybird_v_skia_set_image_decode_scope(uint64_t);
 extern void ladybird_v_skia_set_css_gradient_tile_bounds(const float *bounds);
 extern void ladybird_v_skia_set_root_raster_scroll_y(double scroll_y);
 extern void ladybird_v_skia_set_raster_layer(double origin_x, double origin_y, int root);
@@ -5621,6 +5624,25 @@ void native_draw_image_part(gg__Image *image, float destination_x, float destina
 	              fraction:MIN(MAX(opacity, 0.0f), 1.0f)
 	        respectFlipped:NO
 	                 hints:@{ NSImageHintInterpolation: @(NSImageInterpolationNone) }];
+}
+
+void native_set_image_resource_identity(const char *value, int length) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+    ladybird_v_skia_set_image_resource_identity(value, length);
+#endif
+}
+
+void native_begin_image_decode_frame(const void *document, uint64_t paint_generation,
+    uint64_t navigation) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+    ladybird_v_skia_begin_image_decode_frame(document, paint_generation, navigation);
+#endif
+}
+
+void native_set_image_decode_scope(uint64_t scope) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+    ladybird_v_skia_set_image_decode_scope(scope);
+#endif
 }
 
 void native_draw_image_part_transformed(gg__Image *image, float destination_x,

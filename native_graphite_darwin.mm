@@ -1,6 +1,7 @@
 #import <Metal/Metal.h>
 #include "native_frame_metal_queue.h"
 #include "native_graphite_bridge.h"
+#include "native_chromium_image_decode_cache.h"
 #include "native_graphite_raster_cache.h"
 #include "native_graphite_image_upload_cache.h"
 #include "native_graphite_solid_rect.h"
@@ -327,7 +328,11 @@ static void plan_image_draw(VoxGraphiteImage const* image, PreparedImageDraw& pr
         * image->destination[2] / image->source[2];
     float sy = std::hypot(image->matrix[1], image->matrix[4])
         * image->destination[3] / image->source[3];
-    if (!image->nearest) {
+    int decode_level = image->nearest ? 0 : vox_image_decode_level(image->flags);
+    if (decode_level >= 0) {
+        upload_width = vox_image_decode_axis(image->width, decode_level);
+        upload_height = vox_image_decode_axis(image->height, decode_level);
+    } else if (!image->nearest) {
         int target_width = std::max(1, static_cast<int>(std::ceil(image->width * sx)));
         int target_height = std::max(1, static_cast<int>(std::ceil(image->height * sy)));
         for (int level = 1; level < 31; ++level) {

@@ -428,6 +428,7 @@ fn (mut app BrowserApp) update_chromium_viewport_raster_plan() {
 
 fn (mut app BrowserApp) set_chromium_msaa_tiles() {
 	$if macos {
+		app.begin_chromium_image_decode_frame()
 		if os.getenv('VOX_DIAGNOSTIC_PAINT_LAYER') != '' {
 			for index, command in app.paint_commands {
 				owner := app.chromium_raster_plan.command_layers[index]
@@ -458,6 +459,7 @@ fn (mut app BrowserApp) select_chromium_raster_layer(index int) {
 			return
 		}
 		layer := app.chromium_raster_plan.layers[index]
+		set_chromium_image_decode_scope(if index == 0 || layer.legacy_raster { 0 } else { index })
 		scale := C.native_display_device_pixel_ratio()
 		x := if index == 0 || layer.legacy_raster {
 			0.0

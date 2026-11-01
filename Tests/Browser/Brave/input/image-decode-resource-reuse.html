@@ -1,0 +1,12 @@
+<!doctype html>
+<meta charset="utf-8"><title>Resource-specific reuse of a larger image decode</title>
+<style>
+html,body{margin:0;background:#090b0f}img{position:absolute;display:block}
+.small{top:120.75px;width:32px;height:32px}.large{top:20px;width:60px;height:60px}
+</style>
+<!-- Identical bytes at distinct URLs have independent decode histories. -->
+<img class="small" style="left:48px" src="../resources/image-decode-cold.png" alt="Cold small image">
+<img class="large" style="left:198px" src="../resources/image-decode-reused.png" alt="Prime shared resource">
+<img class="small" style="left:198px" src="../resources/image-decode-reused.png" alt="Reuse larger decode">
+<img class="large" style="left:348px" src="../resources/image-decode-reused.png" alt="Prime another draw">
+<img class="small" style="left:348px" src="../resources/image-decode-separate.png" alt="Independent equal pixels">

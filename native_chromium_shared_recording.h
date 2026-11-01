@@ -200,7 +200,11 @@ void shared_recording_image(CGContextRef destination, SkMatrix const& matrix,
         && image.source[2] == image.width && image.source[3] == image.height;
     // DrawImageRectOp::Serialize requests the full image at the draw's scale;
     // the strict source crop is applied after the decoded upload is selected.
-    if (!image.nearest) {
+    int decode_level = image.nearest ? 0 : vox_image_decode_level(image.flags);
+    if (decode_level >= 0) {
+        upload_width = vox_image_decode_axis(image.width, decode_level);
+        upload_height = vox_image_decode_axis(image.height, decode_level);
+    } else if (!image.nearest) {
         for (int level = 1; level < 31; ++level) {
             int divisor = 1 << level;
             int width = (image.width + divisor - 1) / divisor;

@@ -12,7 +12,8 @@ from forum_news_pixels import REPO, VOX, executable_identity, guarded, write_jso
 
 @unittest.skipUnless(sys.platform == 'darwin', 'The reference uses native macOS fonts')
 class ForumNewsInlinePixelsTests(unittest.TestCase):
-    def compare_fixture(self, name, width=800, height=600, scroll_y=0, document_active=False):
+    def compare_fixture(self, name, width=800, height=600, scroll_y=0, document_active=False,
+                        initial_viewport=False):
         output = Path(tempfile.mkdtemp(prefix='forum-news-inline-', dir=REPO / 'Build'))
         fixture = REPO / 'Tests/Browser/Brave/input' / (name + '.html')
         reference = REPO / 'Tests/Browser/Brave/expected' / (name + '.png')
@@ -24,6 +25,8 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
             LADYBIRD_SCREENSHOT_DELAY_SECONDS='0')
         if document_active:
             environment['VOX_CAPTURE_DOCUMENT_ACTIVE'] = '1'
+        if initial_viewport:
+            environment['VOX_CAPTURE_INITIAL_VIEWPORT'] = '1'
         identity = executable_identity(VOX)
         write_json(output / 'identity.json', identity)
         command = [VOX, '--window-width', str(width), '--window-height', str(height + 84)]
@@ -38,6 +41,15 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
         verdict = compare(reference, actual, output / 'diff.png', tool)
         write_json(output / 'pixels.json', verdict)
         self.assertTrue(verdict['exact'], verdict['metrics'] + '\nArtifacts: ' + str(output))
+
+    def test_image_decode_reuse_follows_resource_identity(self):
+        self.compare_fixture('image-decode-resource-reuse')
+
+    def test_concurrent_compositor_picture_keeps_its_image_decode(self):
+        self.compare_fixture('image-decode-compositor-reuse')
+
+    def test_scrolling_picture_reuses_a_completed_larger_image_decode(self):
+        self.compare_fixture('image-decode-scrolling-reuse', scroll_y=8800, initial_viewport=True)
 
     def test_compositor_parent_resumes_after_disjoint_scrolling_content(self):
         self.compare_fixture('compositor-disjoint-scroll-gap')
