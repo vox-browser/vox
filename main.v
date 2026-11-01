@@ -4879,7 +4879,8 @@ fn (mut app BrowserApp) create_image_from_resource_bytes(image_url string, bytes
 				// incremental RGB paint generator. Existing decoded images are
 				// retained by background_image_uncached before reaching here.
 				if C.native_webp_yuv_paint_supported() != 0 && app.document != unsafe { nil }
-					&& app.document.font_rendering_policy() == .chromium {
+					&& app.document.font_rendering_policy() == .chromium
+					&& app.webp_complete_yuv_allowed(image_url, bytes) {
 					mut width := 0
 					mut height := 0
 					mut size := 0
