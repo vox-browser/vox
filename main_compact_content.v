@@ -24,7 +24,6 @@ mut:
 	css_rule_lists map[string]&css.CSSRuleList
 	radio_lists map[string]&html.RadioNodeList
 	next_key int
-	query_fields_traced bool
 }
 
 fn install_compact_element_content_binding_with_policy(document &dom.Document, mut runtime browserjs.Runtime, policy CompactInitialElementPolicy) ! {
@@ -135,15 +134,6 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 		platform.leave_persistent(persistent)
 		allocation_scope.finish()
 	}
-	if input.starts_with('@') {
-		fields := input[1..].split_nth('\n', 3)
-		if fields.len != 3 { return error('Invalid element query fields') }
-		if compact_query_fields_diagnostics && !binding.query_fields_traced {
-			binding.query_fields_traced = true
-			eprintln('Vox compact query: direct string fields')
-		}
-		return binding.query_fields(fields[0], fields[1], fields[2])
-	}
 	request := json2.decode[map[string]json2.Any](input)!
 	if snapshot := json_string_property(request, 'snapshot') {
 		mut messages := []string{}
@@ -171,10 +161,6 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	}
 	action := json_string_property(request, 'action') or { return error('Invalid selector action') }
 	key := json_string_property(request, 'key') or { '' }
-	return binding.query_fields(key, action, selector)
-}
-
-fn (mut binding CompactElementQueryBinding) query_fields(key string, action string, selector string) !string {
 	if action == 'cssSheet' { return binding.css_sheet_query(selector) }
 	if action == 'linkSheet' { return binding.link_sheet_query(key) }
 	if action == 'inputValue' { return binding.input_value_query(key, selector) }
