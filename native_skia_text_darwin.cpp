@@ -88,6 +88,55 @@
 #endif
 
 namespace {
+VoxSharedPicturePixelsRegistry s_shared_picture_pixels;
+class SharedPicturePixelsScope {
+    SharedPicturePixelsScope* previous_;
+    std::vector<uint64_t> tokens_;
+    bool enabled_;
+public:
+    static thread_local SharedPicturePixelsScope* active;
+    SharedPicturePixelsScope() : previous_(active), enabled_(false) {
+        if (!std::getenv("VOX_DISABLE_SHARED_PICTURE_PIXELS")) {
+            void* library = dlopen("@rpath/libVoxGraphiteDawn.dylib", RTLD_LAZY | RTLD_LOCAL);
+            auto supports = library ? reinterpret_cast<int(*)()>(
+                dlsym(library, "vox_graphite_picture_supports_shared_pixels")) : nullptr;
+            enabled_ = supports && supports();
+            if (library) dlclose(library);
+        }
+        active = this;
+    }
+    SharedPicturePixelsScope(SharedPicturePixelsScope const&) = delete;
+    SharedPicturePixelsScope& operator=(SharedPicturePixelsScope const&) = delete;
+    ~SharedPicturePixelsScope() {
+        active = previous_;
+        for (auto token : tokens_) s_shared_picture_pixels.retire(token);
+    }
+    sk_sp<SkData> encode(sk_sp<SkData> bytes) {
+        if (!enabled_ || !bytes || bytes->size() < 64 * 1024) return bytes;
+        auto* retained = bytes.release();
+        std::shared_ptr<void const> owner(retained, [](void const* value) {
+            static_cast<SkData const*>(value)->unref();
+        });
+        auto token = s_shared_picture_pixels.insert(owner,
+            static_cast<uint8_t const*>(retained->data()), retained->size());
+        if (!token) return sk_ref_sp(retained);
+        tokens_.push_back(token);
+        if (std::getenv("VOX_SHARED_PICTURE_PIXELS_DIAGNOSTICS"))
+            std::fprintf(stderr, "VOX_SHARED_PICTURE_PIXELS_ENCODE bytes=%zu live=%zu\n",
+                retained->size(), s_shared_picture_pixels.live_bytes());
+        VoxSharedPicturePixelsToken payload; payload.token = token;
+        return SkData::MakeWithCopy(&payload, sizeof(payload));
+    }
+};
+thread_local SharedPicturePixelsScope* SharedPicturePixelsScope::active = nullptr;
+}
+extern "C" __attribute__((visibility("default")))
+int vox_picture_pixels_acquire(uint64_t token, VoxSharedPicturePixelsLease* out)
+{
+    return s_shared_picture_pixels.acquire(token, out);
+}
+
+namespace {
 
 VoxRasterBufferPool s_sparse_raster_pool;
 
@@ -2488,6 +2537,7 @@ extern "C" int ladybird_v_skia_draw_gradient_text(CGContextRef context,
     void* mask_input, CGContextRef destination, float canvas_width,
     float canvas_height, float scale, float x, float y, float width, float height)
 {
+    SharedPicturePixelsScope shared_pixels;
     std::unique_ptr<IsolatedInputRecording> mask(
         static_cast<IsolatedInputRecording*>(mask_input));
     std::unique_ptr<IsolatedInputRecording> content(
@@ -2585,6 +2635,7 @@ extern "C" int ladybird_v_skia_draw_gradient_text(CGContextRef context,
 extern "C" int ladybird_v_skia_end_css_gradient_blur(CGContextRef context,
     CGContextRef destination, float canvas_width, float canvas_height, float scale, float sigma)
 {
+    SharedPicturePixelsScope shared_pixels;
     auto found = s_isolated_input_recordings.find(context);
     if (found == s_isolated_input_recordings.end()) return 0;
     auto recording = std::move(found->second);

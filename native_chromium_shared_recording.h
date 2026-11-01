@@ -242,7 +242,9 @@ void shared_recording_content(CGContextRef destination, SkRect bounds, float pag
 
 sk_sp<SkData> serialize_shared_picture_image(SkImage* image, void*)
 {
-    return vox_encode_picture_image(image);
+    auto bytes = vox_encode_picture_image(image);
+    return SharedPicturePixelsScope::active
+        ? SharedPicturePixelsScope::active->encode(std::move(bytes)) : bytes;
 }
 
 void shared_recording_image(CGContextRef destination, SkMatrix const& matrix,

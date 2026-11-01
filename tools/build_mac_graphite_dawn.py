@@ -132,7 +132,8 @@ group("tint") {{ public_configs = [":dawn_api_config"] }}
                '-Wl,-hidden-lskia', '-Wl,-hidden-lskcms', '-Wl,-hidden-lwebgpu_dawn']
     for framework in ['CoreText', 'Metal', 'CoreGraphics', 'Foundation', 'ImageIO', 'IOSurface', 'IOKit', 'QuartzCore', 'Cocoa']:
         command += ['-framework', framework]
-    command += ['-Wl,-exported_symbol,_vox_graphite_draw_picture_pixels',
+    command += ['-Wl,-exported_symbol,_vox_graphite_picture_supports_shared_pixels',
+                '-Wl,-exported_symbol,_vox_graphite_draw_picture_pixels',
                 '-Wl,-exported_symbol,_vox_graphite_draw_picture_region_pixels',
                 '-Wl,-exported_symbol,_vox_graphite_draw_picture_regions_pixels',
                 '-Wl,-exported_symbol,_vox_graphite_picture_release_unused_graphics_memory',

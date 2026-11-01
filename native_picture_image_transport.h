@@ -1,6 +1,8 @@
 #pragma once
 
 #include "native_skia_image_color_space.h"
+#include "native_shared_picture_pixels.h"
+#include <dlfcn.h>
 #include "include/core/SkData.h"
 #include "include/core/SkImage.h"
 #include "include/core/SkImageInfo.h"
@@ -8,6 +10,8 @@
 #include <cmath>
 #include <cstdint>
 #include <cstring>
+#include <cstdio>
+#include <cstdlib>
 
 // Pictures cross two independently linked Skia revisions. Keep source pixels
 // and numerical color-space values in the payload. The receiving GPU converts
@@ -35,8 +39,15 @@ static sk_sp<SkData> vox_encode_picture_image(SkImage* image)
     return bytes;
 }
 
-static sk_sp<SkImage> vox_decode_picture_image(void const* bytes, size_t size)
+struct VoxPicturePixelLeaseOwner {
+    VoxSharedPicturePixelsLease lease;
+    ~VoxPicturePixelLeaseOwner() { if (lease.release) lease.release(lease.owner); }
+};
+
+static sk_sp<SkImage> vox_decode_picture_image_view(void const* bytes, size_t size,
+    VoxSharedPicturePixelsLease lease = {})
 {
+    VoxPicturePixelLeaseOwner input_owner {lease};
     int32_t dimensions[3] {};
     if (!bytes || size < sizeof(int32_t) * 2) return nullptr;
     std::memcpy(dimensions, bytes, sizeof(int32_t) * 2);
@@ -56,6 +67,43 @@ static sk_sp<SkImage> vox_decode_picture_image(void const* bytes, size_t size)
         || size != header + size_t(width) * height * 4) return nullptr;
     auto info = SkImageInfo::Make(width, height, kRGBA_8888_SkColorType,
         kPremul_SkAlphaType, vox_image_color_space_from_profile(tagged ? profile : nullptr));
+    if (input_owner.lease.owner && input_owner.lease.release) {
+        auto owner = std::make_unique<VoxPicturePixelLeaseOwner>();
+        std::swap(owner->lease, input_owner.lease);
+        auto data = SkData::MakeWithProc(static_cast<uint8_t const*>(bytes) + header,
+            size - header, [](void const*, void* context) {
+                delete static_cast<VoxPicturePixelLeaseOwner*>(context);
+            }, owner.get());
+        if (!data) return nullptr;
+        owner.release();
+        return SkImages::RasterFromData(info, std::move(data), size_t(width) * 4);
+    }
     return SkImages::RasterFromPixmapCopy(SkPixmap(info,
         static_cast<uint8_t const*>(bytes) + header, size_t(width) * 4));
+}
+
+struct VoxSharedPicturePixelsToken {
+    int32_t tag = -2;
+    uint32_t version = 1;
+    uint64_t token = 0;
+};
+static_assert(sizeof(VoxSharedPicturePixelsToken) == 16);
+
+static sk_sp<SkImage> vox_decode_picture_image(void const* bytes, size_t size)
+{
+    int32_t tag = 0;
+    if (!bytes || size < sizeof(tag)) return nullptr;
+    std::memcpy(&tag, bytes, sizeof(tag));
+    if (tag != -2) return vox_decode_picture_image_view(bytes, size);
+    if (size != sizeof(VoxSharedPicturePixelsToken)) return nullptr;
+    VoxSharedPicturePixelsToken payload;
+    std::memcpy(&payload, bytes, sizeof(payload));
+    if (payload.version != 1 || !payload.token) return nullptr;
+    static auto acquire = reinterpret_cast<VoxAcquireSharedPicturePixels>(
+        dlsym(RTLD_DEFAULT, "vox_picture_pixels_acquire"));
+    VoxSharedPicturePixelsLease lease;
+    if (!acquire || !acquire(payload.token, &lease)) return nullptr;
+    if (std::getenv("VOX_SHARED_PICTURE_PIXELS_DIAGNOSTICS"))
+        std::fprintf(stderr, "VOX_SHARED_PICTURE_PIXELS_DECODE bytes=%zu\n", lease.size);
+    return vox_decode_picture_image_view(lease.bytes, lease.size, lease);
 }
