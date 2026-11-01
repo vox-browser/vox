@@ -1076,11 +1076,18 @@ pub fn set_document_user_style_sheet(document &dom.Document, css_text string) {
 	if existing := scope.user_style_source {
 		if existing == css_text { return }
 	}
+	change := prepare_targeted_user_style_change(document, mut scope, css_text)
 	scope.user_style_source = css_text
 	scope.invalidate_rule_cache()
 	mut mutable_document := unsafe { &dom.Document(document) }
 	mutable_document.bump_style_environment_version()
-	mutable_document.set_needs_full_style_update(true)
+	if targeted := change {
+		// Keep the parsed replacement used to project the invalidation plan.
+		scope.user_style_sheet = targeted.sheet
+		invalidate_user_style_change_tree(document.as_node(), targeted.invalidation)
+	} else {
+		mutable_document.set_needs_full_style_update(true)
+	}
 }
 
 // --- Document style-update hook ---
