@@ -5943,7 +5943,9 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			cull_bottom = math.max(cull_bottom, bounds_points[index])
 		}
 	}
-	if cull_bottom < app.page_top() || cull_top > f32(window_height - app.status_height()) {
+	// The caller supplies this frame's document viewport origin. Re-reading
+	// browser settings for every leaf can also change chrome geometry mid-frame.
+	if cull_bottom < app.paint_replay_viewport_top(page_y) || cull_top > f32(window_height - app.status_height()) {
 		return
 	}
 	if command.kind == 'apply_backdrop_filter' {
@@ -6668,7 +6670,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			image_data := command.image()
 			if (image_data.background_svg_document != none || image_data.background_static_svg_resource != none)
 				&& !background_image_clip_intersects_viewport(command, f64(page_x), f64(page_y),
-					f64(app.ctx.width), f64(app.page_top()), f64(window_height - app.status_height()),
+					f64(app.ctx.width), f64(app.paint_replay_viewport_top(page_y)), f64(window_height - app.status_height()),
 					app.paint_effect_depth > 0) {
 				return
 			}
