@@ -146,6 +146,20 @@ def trial_order(index, control=False):
     return order if index % 2 == 0 else order[::-1]
 
 
+def audit_instruction_logging(row, log, diagnostic=False):
+    prefixes = ('Vox retained block font generation:', 'Vox retained inline font generation:',
+                'Vox retained text font generation:')
+    count = None if log is None else sum(line.startswith(prefixes) for line in log.splitlines())
+    row['font_generation_diagnostic_lines'] = count
+    row['font_generation_diagnostics_allowed'] = diagnostic
+    if count is None or (count and not diagnostic):
+        reason = ('Missing native browser log for instruction diagnostic audit' if count is None else
+                  'Verbose retained-font tracing is enabled outside a diagnostic run')
+        row['exit'] = 1
+        row['error'] = '; '.join(filter(None, [row.get('error'), reason]))
+    return row
+
+
 def run_trial(engine, app, folder, args):
     environment = args.vox_environment
     try:
@@ -390,6 +404,7 @@ def main():
     paths.update((args.diff_tool, args.audit_config))
     pinned = browser.fingerprint(paths)
     browser.write_json(args.output / 'inputs.json', dict(files=pinned, scope=SCOPE,
+        font_generation_diagnostic_policy='Per-cache-hit tracing is rejected outside reference diagnostics; counting alone must not enable it',
         fixture=expected, original_scripts_retained=True, author_javascript_enabled=True,
         viewport=[1024, 768], scale=args.scale, settle_seconds=args.settle_seconds,
         javascript_backends=dict(vox='javascriptcore', brave='v8'),
@@ -448,6 +463,12 @@ def main():
                 order = [args.reference_engine]
             for engine in order:
                 row = run_trial(engine, apps[engine], args.output / f'pair-{index+1}-{engine}', args)
+                if engine in ('vox', 'control'):
+                    try:
+                        log = (args.output / f'pair-{index+1}-{engine}/browser.log').read_text(errors='replace')
+                    except OSError:
+                        log = None
+                    audit_instruction_logging(row, log, args.capture_reference)
                 row['scope'] = SCOPE
                 browser.write_json(args.output / f'pair-{index+1}-{engine}/result.json', row)
                 pair[engine] = row

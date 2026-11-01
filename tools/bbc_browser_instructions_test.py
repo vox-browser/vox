@@ -1,6 +1,6 @@
 import unittest
 
-from bbc_browser_instructions import URL, evaluate_cohort, parse_args, trial_order, run_trial, validate_document
+from bbc_browser_instructions import URL, audit_instruction_logging, evaluate_cohort, parse_args, trial_order, run_trial, validate_document
 from types import SimpleNamespace
 from unittest.mock import patch
 from hacker_news_browser_instructions import evaluate_pairs
@@ -21,6 +21,32 @@ def document():
 
 
 class BBCInstructionTests(unittest.TestCase):
+    def test_instruction_logging_accepts_phase_counters_without_verbose_font_traces(self):
+        row = audit_instruction_logging({'exit': 0}, 'Vox instructions cumulative: frame_complete 123\n')
+        self.assertEqual(row['exit'], 0)
+        self.assertEqual(row['font_generation_diagnostic_lines'], 0)
+
+    def test_instruction_logging_rejects_all_font_trace_kinds_and_preserves_prior_error(self):
+        log = '\n'.join('Vox retained ' + kind + ' font generation: 1 -> 2'
+                        for kind in ['block', 'inline', 'text'])
+        row = audit_instruction_logging({'exit': 0, 'error': 'prior error'}, log)
+        self.assertEqual(row['exit'], 1)
+        self.assertEqual(row['font_generation_diagnostic_lines'], 3)
+        self.assertIn('prior error', row['error'])
+        self.assertIn('outside a diagnostic run', row['error'])
+
+    def test_instruction_logging_retains_explicit_diagnostic_observations(self):
+        row = audit_instruction_logging({'exit': 0}, 'Vox retained text font generation: 1 -> 2', True)
+        self.assertEqual(row['exit'], 0)
+        self.assertEqual(row['font_generation_diagnostic_lines'], 1)
+        self.assertTrue(row['font_generation_diagnostics_allowed'])
+
+    def test_instruction_logging_missing_log_invalidates_even_a_diagnostic(self):
+        for diagnostic in [False, True]:
+            row = audit_instruction_logging({'exit': 0}, None, diagnostic)
+            self.assertEqual(row['exit'], 1)
+            self.assertIsNone(row['font_generation_diagnostic_lines'])
+
     def test_conditional_sheet_invalidation_control_is_isolated_and_restored_on_failure(self):
         environment = {'VOX_PROXY': 'socks5h://fixture'}
         args = SimpleNamespace(vox_environment=environment, control_disable_grid_width_only=False,
