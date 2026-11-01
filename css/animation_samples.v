@@ -391,6 +391,14 @@ fn (retiring &RetiringAnimationSamples) value_references_arena(value &dom.StyleV
 // can share as slices. The snapshot is scanned word by word: it holds copies of
 // typed values whose own pointers may lead into a sample.
 fn (retiring &RetiringAnimationSamples) computed_references_arena(computed &ComputedProperties) bool {
+	return retiring.computed_references_arena_at_depth(computed, 0)
+}
+
+fn (retiring &RetiringAnimationSamples) computed_references_arena_at_depth(computed &ComputedProperties, depth int) bool {
+	if computed == unsafe { nil } { return false }
+	// Density projections normally form a single derived snapshot. Retain an
+	// arena conservatively if a malformed or unusually deep chain appears.
+	if depth >= 8 { return true }
 	// Fields materialized outside the snapshot, such as content and list
 	// markers, are rewritten by each resolve like the snapshot itself.
 	if retiring.struct_references_arena(voidptr(computed), int(sizeof(ComputedProperties))) {
@@ -438,6 +446,21 @@ fn (retiring &RetiringAnimationSamples) computed_references_arena(computed &Comp
 		// allocated earlier.
 		if cache.rare_data_ != unsafe { nil }
 			&& retiring.struct_references_arena(voidptr(cache.rare_data_), int(sizeof(ComputedLayoutRareData))) {
+			return true
+		}
+	}
+	// Retina layout borrows dimensionless properties and resolves its own
+	// snapshot. The CSS source may already have replaced its samples while
+	// that projected style is still installed on a layout node.
+	projection := computed.device_layout_projection_
+	if projection != unsafe { nil } {
+		if retiring.struct_references_arena(voidptr(projection), int(sizeof(DeviceLayoutStyleProjection)))
+			|| (projection.provenance != unsafe { nil }
+				&& retiring.struct_references_arena(voidptr(projection.provenance), int(sizeof(ComputedGeometryProvenance))))
+			|| retiring.computed_references_arena_at_depth(projection.style, depth + 1) {
+			if os.getenv('VOX_ANIMATION_SAMPLE_PAGE_DIAGNOSTICS') != '' {
+				eprintln('VOX_ANIMATION_SAMPLE_PROJECTION_HOLD depth=${depth}')
+			}
 			return true
 		}
 	}
