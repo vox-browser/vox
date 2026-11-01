@@ -1,5 +1,16 @@
 # Brave rendering fixtures
 
+The registered `bbc` guest-page archive now retains the live author CSSOM
+rules, original encoded images and the consent-rejected document. At 1024×768,
+scale 1, it matches Brave with full uBO exactly when both browsers start with
+complete encoded responses. Run `tools/forum_news_pixels.py --sites bbc
+--cache-policy complete` with the extension, checker and closed profile options
+described in [the site report](../../../docs/ADBLOCK_POPULAR_SITES.md).
+This opt-in mode warms each browser in a discarded process before capturing
+from a fresh process. Its separate reports retain the cache policy and filter
+checks. The default cold native load still has a WebP decoder-state difference
+and remains open; the cached result does not qualify cold-load parity.
+
 `stackoverflow-empty-accessibility-clip` checks rounded header controls beside
 an accessibility link clipped with `inset(50%)`. Its 800×600, scale 1 reference
 comes from two agreeing Brave 156.1.98.60 captures. The fixture is pixel-exact;

@@ -1,5 +1,9 @@
 # Popular-site adblock verification
 
+The latest BBC rendering checkpoint is recorded at the end of this document.
+It supersedes the earlier BBC archive counts: complete-response cache captures
+are pixel-exact; cold-load parity remains open.
+
 The matrix exercises guest pages on 13 representative news, video, social,
 shopping, reference, and developer sites. It compares Vox's native filtering
 engine with full Manifest V2 uBlock Origin 1.75.0 in an isolated Brave profile,
@@ -2092,3 +2096,76 @@ candidate and the original standalone reduction remain in the same directory.
 The `adf10924` broad baseline remains; this is the ninth completed SVG/native
 fix in this conformance series after that checkpoint. Full ten-site pixel
 parity remains open.
+
+## BBC author styles and response-cache state, 1 November 2026
+
+Work moved to BBC News at the user's request to skip Stack Overflow.
+The preceding BBC archive had lost the empty style element's inserted author
+rules, so its unstyled logo and the historical 76,604/526,496 pixel counts did
+not represent the styled guest page. Commit `2657d0a2` refreshes the registered
+archive using the existing CSSOM-aware capture implementation. It retains 94
+responses, 5,168,947 bytes, their original URLs and content hashes, and the full
+uBO capture report. The manifest SHA-256 is
+`ded3c976d0e47081743f3caa948576e5c9aa2f144cede9b1cc07674bd399bc8b`.
+The preparation used a disposable profile and clicked Sourcepoint's “I do not
+agree” button; personal browser profiles and system proxy settings were unused.
+
+Commit `1a2e34bf` aligns the native comparison with full uBO's consent UI
+policy by disabling Vox's separate cookie-banner blocker in the capture
+process. It preserves the banner shown in Brave and removes 75,941 differing
+pixels from that comparison. The browser's ordinary default is unchanged.
+
+The remaining cold native difference is confined to the lead WebP photograph:
+78,799 pixels on both the earlier executable
+`068c409166506105949b7ba18416367c6fd5cfd1785fa78b38b308577c652356`
+and the latest pinned executable below. The final cold trial's live-to-frozen
+reference is exact and all its full-uBO audits match; it still fails pixels.
+The resource bytes, selected URL, natural dimensions and CSS geometry agree.
+Its retained incremental RGB generator differs from Brave's complete-body YUV
+decode. Fresh Brave replays can also select a different generator for the two
+gallery thumbnails; one observed replay differs from the live image at 18,786
+pixels. These decoder-state differences remain visible failures. No URL, image
+size, timing heuristic, tolerance or excluded region was added to mask them.
+
+Commits `d4fb032b` and `ecb4d675` add an explicit `--cache-policy complete`
+comparison. Each browser first loads the sealed archive in a discarded process.
+Brave saves a closed private profile without process locks; Vox retains only
+encoded responses and uses a separate final private profile. Both captures
+then launch fresh processes. Warmup reports, final audits and `cache-policy.json`
+remain separate. Missing navigation, filter disagreement, changed executable
+identity, forced shutdown and guard failures still reject the trial. The
+default native cache policy remains `cold`.
+
+Two independent full BBC runs are exact with this complete-response policy:
+**zero differing RGBA pixels**, and **zero live-to-frozen pixels**, at 1024×768
+and scale 1. The native request/header decisions and Brave's cosmetic, procedural
+and scriptlet selections agree with full MV2 uBO 1.75.0 and the pinned lists.
+The latest reused executable is
+`c1d92f0e526723503945bb70de68b7337ad8195a86fa2bee484eed4ccd3511c7`;
+the native text bridge is
+`45909d7f9f2380c57ac81ddc65f991c99adcca526a88a8fe6f86ef79344efa5f`.
+The earlier completed executable also gives zero under the qualified policy.
+This work changes the comparison tooling and test archive, with no new renderer
+implementation or production build. It establishes cached BBC rendering only;
+cold BBC and full ten-site acceptance remain open.
+
+Reproduce the qualified trial with:
+
+```sh
+python3 tools/forum_news_pixels.py --sites bbc --cache-policy complete \
+  --output Build/bbc-complete-new-trial \
+  --profile-template Build/forum-news-svg-rect-precision-20261030/oracle-unmanaged-template \
+  --extension Build/forum-news-parity-20261030/extension/uBlock0.chromium \
+  --checker Build/forum-news-parity-resume-20261030/adblock-check \
+  --diff-tool Build/forum-news-parity-20261030/hn-baseline/pixel_diff
+```
+
+Eleven Python conformance tests and sixteen Node capture/profile/reference
+tests pass. All BBC archive body hashes and both provenance hashes validate.
+Evidence is under `Build/bbc-parity-20261101/`: `both-cache/` and
+`both-cache-repeat/` contain the qualified latest-bundle runs, `complete-policy/`
+the earlier bundle, `final-cold/` and `consented-matrix/` the cold native
+residuals, and `fixture-integrity.json` the
+sealed-body validation. `registered-bbc/`, `registered-repeat/` and
+`registered-complete/` retain the incidental native hover, cold Brave decoder
+variation and remaining-child guard failure; none supplies acceptance credit.
