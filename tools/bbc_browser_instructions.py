@@ -283,6 +283,8 @@ def parse_args(argv=None):
                         help='Invalidate entire inline stylesheet owners after style rule deletion in the pinned Vox control')
     parser.add_argument('--control-disable-attribute-tag-buckets', action='store_true',
                         help='Prefer tag buckets over required attributes in the pinned Vox control')
+    parser.add_argument('--retain-incremental-webp-paint-policy', action='store_true',
+                        help='Reproduce the historical WebP paint policy in both Vox arms; no decoder optimization credit')
     parser.add_argument('--control-disable-compact-query-fields', action='store_true',
                         help='Use the JSON request envelope only in matched Vox control trials')
     parser.add_argument('--control-disable-shared-node-properties', action='store_true',
@@ -412,6 +414,8 @@ def main():
         fixture=expected, original_scripts_retained=True, author_javascript_enabled=True,
         viewport=[1024, 768], scale=args.scale, settle_seconds=args.settle_seconds,
         javascript_backends=dict(vox='javascriptcore', brave='v8'),
+        retain_incremental_webp_paint_policy=args.retain_incremental_webp_paint_policy,
+        webp_policy_credit='None: explicit historical workload compatibility only',
         control_disable_grid_width_only=args.control_disable_grid_width_only,
         control_disable_stationary_raster=args.control_disable_stationary_raster,
         control_disable_client_geometry_index=args.control_disable_client_geometry_index,
@@ -459,6 +463,8 @@ def main():
         args.url = URL
         args.vox_environment = dict(VOX_PROXY=replay.ready['proxy'], SSL_CERT_FILE=replay.ready['ca'],
                                     VOX_BLOCK_COOKIE_BANNERS='0')
+        if args.retain_incremental_webp_paint_policy:
+            args.vox_environment['VOX_RETAIN_INCREMENTAL_WEBP_PAINT_POLICY'] = '1'
         args.brave_proxy_argument = '--proxy-server=' + replay.ready['proxy'].replace('socks5h:', 'socks5:')
         args.brave_arguments = ['--ignore-certificate-errors-spki-list=' + spki]
         for index in range(1 if args.capture_reference else args.repeat):

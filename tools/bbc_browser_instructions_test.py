@@ -300,7 +300,8 @@ class BBCInstructionTests(unittest.TestCase):
         self.assertIs(args.vox_environment, environment)
 
     def test_compact_query_fields_control_is_isolated_and_restored_on_failure(self):
-        environment = {'VOX_PROXY': 'socks5h://fixture'}
+        environment = {'VOX_PROXY': 'socks5h://fixture',
+                       'VOX_RETAIN_INCREMENTAL_WEBP_PAINT_POLICY': '1'}
         args = SimpleNamespace(vox_environment=environment, control_disable_grid_width_only=False,
                                control_disable_compact_query_fields=True)
         seen = []
@@ -610,6 +611,12 @@ class BBCInstructionTests(unittest.TestCase):
                     with self.assertRaises(RuntimeError):
                         run_trial('control', 'same-app', 'control', args)
                 self.assertIs(args.vox_environment, environment)
+
+    def test_historical_webp_policy_is_explicit_and_does_not_require_a_control_app(self):
+        args = ['--archive', 'archive', '--output', 'output', '--memory-guard-registry', 'pids.json',
+                '--capture-reference']
+        self.assertFalse(parse_args(args).retain_incremental_webp_paint_policy)
+        self.assertTrue(parse_args(args + ['--retain-incremental-webp-paint-policy']).retain_incremental_webp_paint_policy)
 
     def test_optimization_controls_require_a_control_app(self):
         args = ['--archive', 'archive', '--output', 'output', '--memory-guard-registry', 'pids.json',
