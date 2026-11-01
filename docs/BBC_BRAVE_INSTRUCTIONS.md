@@ -1,21 +1,21 @@
 # BBC homepage instruction comparison
 
 **The requested 10% advantage remains open. BBC does not qualify for
-`OPTIMIZED_SITES.md`.** The latest seven-pair cohort (30) has a Vox median of
-**35,907,301,467** retired instructions and a Brave lower-bound median of
-**15,955,255,013**. All 21 content audits, unchanged pixel comparisons and native
-exits pass. Its conservative ratio is **2.3261551572669523**, above 0.9:
-`369121266050 > 142814695059` fails the integer gate. Every observation,
+`OPTIMIZED_SITES.md`.** The latest seven-pair cohort (31) has a Vox median of
+**36,606,121,582** retired instructions and a Brave lower-bound median of
+**16,121,151,447**. All 21 content audits, unchanged pixel comparisons and native
+exits pass. Its conservative ratio is **2.3956684098670245**, above 0.9:
+`382388358030 > 143654906835` fails the integer gate. Every observation,
 including first launches, remains included.
 
-The same-binary user-style-change control has median 35,633,312,221. The
-candidate median regresses 0.7689%, with conservative control ratio
-1.0717219893655683; neither gate passes. Earlier failing and invalid observations
+The same-binary static-subject-filter control has median 35,858,765,278. The
+candidate median regresses 2.0842%, with conservative control ratio
+1.1037537986880996; neither gate passes. Earlier failing and invalid observations
 remain retained; no accepted BBC savings are claimed here.
 
 The machine-readable [evidence](benchmark-results/bbc-brave-instructions-2026-11-01.json)
-retains 743 attempts and 30 cohorts, including failures and first launches;
-616 complete cohort raw results were independently checked against the recorded
+retains 766 attempts and 31 cohorts, including failures and first launches;
+637 complete cohort raw results were independently checked against the recorded
 vectors, medians and integer gates. It also retains ownership audits, commands and artifact hashes. Raw archives, logs,
 PNGs, executable copies, PID registries, compiler output and guard receipts are
 under `Build/bbc-home-instructions-20261101-054807/` in the canonical checkout.
@@ -92,7 +92,8 @@ capture marker. An invalid cohort is retained for diagnosis, not acceptance.
 | Shared compact Node properties | 36,123,754,014 | 15,806,323,773 | 2.3259499042136356 | All observations valid; median regresses against control; both gates fail |
 | Required attribute buckets before tag buckets | 36,673,262,472 | 16,116,361,443 | 2.3992396531867937 | All observations valid; Brave and matched-control gates fail |
 | Selective ordinary style-rule deletion | 36,552,719,392 | 16,368,303,379 | 2.3885773998393387 | Brave pair 7 photo differs; median regresses against control; both gates fail |
-| Plain user stylesheet subject invalidation | 35,907,301,467 | 15,955,255,013 | 2.3261551572669523 | All observations valid; median regresses against control; both gates fail |
+| Plain user stylesheet subject invalidation | 36,606,121,582 | 16,121,151,447 | 2.3956684098670245 | All observations valid; median regresses against control; both gates fail |
+| Necessary static predicates for user-style subjects | 36,606,121,582 | 16,121,151,447 | 2.3956684098670245 | All observations valid; median regresses against control; both gates fail |
 
 The grid block-height cohort alternates an older control, candidate and Brave;
 control/candidate medians are 101,567,929,247 and 90,700,737,334 (10.70% observed
@@ -1195,3 +1196,44 @@ cadence reset or catalog entry is claimed. Receipts are
 `user-style-change-build/`, `user-style-change-compiled-witness/`,
 `user-style-change-validation/`, `user-style-change-checks*/` and the two
 `user-style-change*-diagnostic-validation.json` files under the evidence root.
+
+
+## Necessary static user-style subjects (cohort 31)
+
+Commit `459d7c47` combines the required static ID, class, tag and attribute
+predicates in each rightmost selector compound when invalidating plain user
+stylesheet replacements. Dynamic predicates and combinators are omitted to keep
+a conservative superset. Unprojectable subjects retain the existing fallback;
+shadow trees retain their complete updates. Namespace, quirks and attribute
+case semantics use the existing selector matcher. Tooling commit `7f25594a`
+adds `--control-disable-static-user-style-filter`; all 40 driver tests pass.
+The focused selection passes 48 cases in four files, default, no-GC and
+preallocated modes, with candidate and control paths: all nine jobs exit zero.
+Initial compilation failures are retained.
+
+The production build exits zero in 190.724934625 seconds, sampled peak
+9,121,071,104 bytes. All five owned source inputs remain stable. Executable
+SHA256 is `e9f98e57e6b61c3598ca352dc1defcc3dabf440930efc510843f44643d6ed136`;
+generated C is `5b85c4393d0182e0e014268ebf6e27809789280409913e8f71995f6127489096`.
+Fresh headless startup, eleven smoke captures with unchanged bounds and eight
+exact SVG mutation comparisons pass. Separate BBC diagnostics record 690 newly
+marked, 660 rejected and 1,205 already-dirty elements. Cumulative directly dirty
+style computations fall from 5,693 to 5,023; full computations remain 7,592.
+Both paths match the original pixels and content, exit normally, and execute
+JavaScriptCore (one context, 1,967 candidate / 1,941 control evaluations).
+
+All seven triples pass content, fixed pixels and native exits. Candidate median
+regresses 2.0841663069155247% against the control; the conservative control ratio
+is 1.1037537986880996. The Brave integer gate fails as reported above. The first
+cohort command had a misspelled control option and exited 2 before launching
+any browser; its command, log and guard remain retained. The corrected unique
+`static-user-style-filter-v2-cohort` retains every observation, including the
+first control and Brave launch outliers. Its guard adopts 72 processes without
+error, records 1,596,243,968 peak sampled bytes over 114.413184959 seconds,
+and returns the benchmark's failing exit 1. No positive marginal credit,
+broad-suite cadence reset or catalog entry is claimed.
+
+Receipts are `static-user-style-filter-v2-cohort/`, its derived JSON,
+`static-user-style-filter-checks*/`, `static-user-style-filter-build/`,
+`static-user-style-filter-compiled-witness/`, `static-user-style-filter-validation/`
+and the enabled/disabled diagnostic validations under the retained evidence root.
