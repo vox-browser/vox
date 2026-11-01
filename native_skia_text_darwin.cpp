@@ -3268,6 +3268,48 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
         }
         copy_backdrop_pixels(backdrop, raster_width, raster_height, pixels, covered);
     }
+    if (s_chromium_painting && fill == 7 && has_underlay && shared_picture_draw()) {
+        // ClipLayer backgrounds need the same premultiplied resolve as Blink's
+        // Dawn picture raster. The scalar Metal shape bridge rounds the layer
+        // one byte earlier, even when both record identical rounded geometry.
+        auto draw_layer = [&](auto& target, int width, int height, long dx, long dy) {
+            SkPictureRecorder recorder;
+            auto* canvas = recorder.beginRecording(SkRect::MakeWH(width, height));
+            if (has_background) {
+                auto info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
+                    kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
+                auto image = SkImages::RasterFromPixmapCopy(
+                    SkPixmap(info, target.data(), size_t(width) * 4));
+                if (!image) return false;
+                canvas->drawImage(image, 0, 0);
+            }
+            auto transform = raster_matrix(matrix, region, raster_scale_x, raster_scale_y);
+            transform.postTranslate(dx, dy);
+            canvas->setMatrix(transform);
+            clip_out_rects(canvas);
+            auto background = underlay_paint;
+            if (has_float_underlay_color)
+                background.setColor4f({s_underlay_float_color[0], s_underlay_float_color[1],
+                    s_underlay_float_color[2], s_underlay_float_color[3]});
+            vox_draw_rounded_single_border(canvas, rounded_rect, paint, fill,
+                border_widths, &background);
+            SkSerialProcs procs;
+            procs.fImageProc = serialize_shared_picture_image;
+            auto bytes = recorder.finishRecordingAsPicture()->serialize(&procs);
+            float identity[] {1, 0, 0, 0, 1, 0, 0, 0, 1};
+            return bytes && shared_picture_draw()(reinterpret_cast<uint8_t*>(target.data()),
+                width, height, width * 4, bytes->data(), bytes->size(), identity);
+        };
+        bool drawn = has_background && draw_chromium_root_raster_grid(pixels,
+            raster_width, raster_height, region, page_x, page_y, scroll_y, destination_scale,
+            [&](auto& target, long dx, long dy, bool) {
+                return draw_layer(target, s_msaa_grid_width, s_msaa_grid_height, dx, dy);
+            });
+        if (!drawn) drawn = draw_layer(pixels, raster_width, raster_height, 0, 0);
+        if (drawn) return composite_pixels(destination, std::move(pixels), raster_width,
+            raster_height, region.left, canvas_height - region.bottom,
+            region.width(), region.height(), has_background);
+    }
     if (s_chromium_painting) {
         VoxGraphiteShape descriptor {
             .matrix = {}, .rect = {x, y, rect_width, rect_height,

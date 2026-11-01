@@ -15,13 +15,31 @@ inline void vox_draw_rounded_single_border(SkCanvas* canvas, SkRRect const& oute
     // A uniform elliptical CSS border has independently inset radii. A
     // stroked ellipse offsets its contour instead, producing different edges.
     // Mode 6 receives the center rectangle and the uniform border width.
-    if (mode == 6) {
+    if (mode == 6 || mode == 7) {
         SkRRect outside, inside;
         float half = widths[0] / 2;
         outer.outset(half, half, &outside);
         outer.inset(half, half, &inside);
         SkPaint fill(paint);
         fill.setStyle(SkPaint::kFill_Style);
+        // Blink's background bleed avoidance clips a single layer to the
+        // outer contour, then paints the background and inverse inner path.
+        // Independent antialias coverage of a background and translucent
+        // stroke darkens their shared edge.
+        if (mode == 7 && background) {
+            canvas->save();
+            canvas->clipRRect(outside, SkClipOp::kIntersect, paint.isAntiAlias());
+            canvas->saveLayer(nullptr, nullptr);
+            canvas->drawRect(outside.rect(), *background);
+            SkPathBuilder builder;
+            builder.addRRect(inside);
+            auto inverse_inner = builder.detach();
+            inverse_inner.setFillType(SkPathFillType::kInverseWinding);
+            canvas->drawPath(inverse_inner, fill);
+            canvas->restore();
+            canvas->restore();
+            return;
+        }
         canvas->drawDRRect(outside, inside, fill);
         return;
     }

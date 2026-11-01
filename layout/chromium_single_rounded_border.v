@@ -61,23 +61,35 @@ pub fn rounded_single_border_mode(kind string) int {
 // only consecutive solid fills with matching geometry and painting state.
 fn chromium_pair_rounded_border_background(mut commands []PaintCommand, background_start int,
 	border_start int, border_end int, inline_background bool) {
-	if background_start < 0 || border_start != background_start + 1
+	if background_start < 0 || border_start <= background_start
 		|| border_end != border_start + 1 || border_end > commands.len {
 		return
 	}
-	background := commands[background_start]
 	border := commands[border_start]
+	mut background_index := background_start
+	if commands[background_index].kind == 'paint_outer_box_shadow' {
+		color := css.parse_color_string(border.color) or { return }
+		if border.kind != 'paint_uniform_border' || color.a == 0 || color.a == 255 { return }
+		// Opaque backgrounds paint after the outer shadows. The range starts
+		// before those shadows, rather than at the solid background itself.
+		for background_index < border_start && background_index - background_start < 8
+			&& commands[background_index].kind == 'paint_outer_box_shadow' {
+			background_index++
+		}
+	}
+	if border_start != background_index + 1 { return }
+	background := commands[background_index]
 	if (rounded_single_border_mode(border.kind) == 0 && border.kind != 'paint_uniform_border')
 		|| background.kind != 'fill_rect'
 		|| background.radius <= 0 || background.opacity != border.opacity
 		|| background.clip_outs != border.clip_outs {
 		return
 	}
-	// Block backgrounds already share the stroke's center rectangle. Inline
-	// backgrounds fill the outer border box instead; retain that full extent
-	// while keeping both draws in one multisampled render pass.
+	// Opaque block borders inset their backgrounds to the stroke center.
+	// Translucent block borders and inline backgrounds keep the outer box;
+	// retain that extent so the native player can share their rounded clip.
 	mut inset := 0.0
-	if inline_background && border.kind == 'paint_uniform_border' && background.x != border.x {
+	if border.kind == 'paint_uniform_border' && background.x != border.x {
 		inset = border.stroke_width / 2
 		if inset <= 0 { return }
 	}
@@ -89,7 +101,7 @@ fn chromium_pair_rounded_border_background(mut commands []PaintCommand, backgrou
 		border.corner_radii.bottom_right, border.corner_radii.bottom_left] {
 		if corner.x != radius || corner.y != radius { return }
 	}
-	commands[background_start].underlays_next = true
+	commands[background_index].underlays_next = true
 }
 
 // Portable players keep the ordinary translated border paths.
