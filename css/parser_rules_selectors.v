@@ -1084,11 +1084,11 @@ fn (mut parser RuleSelectorParser) consume_the_remnants_of_a_bad_declaration(mut
 
 fn parser_consume_a_component_value_from_tokens(mut input RawTokenStream) ComponentValue {
 	for {
-		token := input.next_token()
-		if token.is(.open_curly) || token.is(.open_square) || token.is(.open_paren) {
+		type_ := input.component_token_type()
+		if type_ in [.open_curly, .open_square, .open_paren] {
 			return ComponentValue.from_block(parser_consume_a_simple_block(mut input))
 		}
-		if token.is(.function) {
+		if type_ == .function {
 			return ComponentValue.from_function(parser_consume_a_function(mut input))
 		}
 		return ComponentValue.from_token(input.consume_a_token())
@@ -1099,17 +1099,21 @@ fn parser_consume_a_component_value_from_tokens(mut input RawTokenStream) Compon
 // https://drafts.csswg.org/css-syntax/#consume-simple-block
 fn parser_consume_a_simple_block(mut input RawTokenStream) SimpleBlock {
 	// Assert: the next token of input is <{-token>, <[-token>, or <(-token>.
-	next := input.next_token()
-	assert next.is(.open_curly) || next.is(.open_square) || next.is(.open_paren)
+	type_ := input.component_token_type()
+	assert type_ in [.open_curly, .open_square, .open_paren]
 
 	// Let ending token be the mirror variant of the next token.
-	ending_token := input.next_token().mirror_variant()
+	ending_token := match type_ {
+		.open_curly { TokenType.close_curly }
+		.open_square { TokenType.close_square }
+		else { TokenType.close_paren }
+	}
 
 	// Let block be a new simple block with its associated token set to the next token and with its value initially set
 	// to an empty list.
 	mut block := SimpleBlock{
 		token: input.next_token()
-		value: []ComponentValue{}
+		value: []ComponentValue{cap: component_input_initial_capacity()}
 	}
 
 	// Discard a token from input.
@@ -1117,8 +1121,8 @@ fn parser_consume_a_simple_block(mut input RawTokenStream) SimpleBlock {
 
 	// Process input:
 	for {
-		token := input.next_token()
-		if token.is(.end_of_file) || token.is(ending_token) {
+		next_type := input.component_token_type()
+		if next_type == .end_of_file || next_type == ending_token {
 			block.end_token = input.consume_a_token()
 			return block
 		}
@@ -1130,21 +1134,21 @@ fn parser_consume_a_simple_block(mut input RawTokenStream) SimpleBlock {
 // https://drafts.csswg.org/css-syntax/#consume-function
 fn parser_consume_a_function(mut input RawTokenStream) Function {
 	// Assert: The next token is a <function-token>.
-	assert input.next_token().is(.function)
+	assert input.component_token_type() == .function
 
 	// Consume a token from input, and let function be a new function with its name equal the returned token's value, and
 	// a value set to an empty list.
 	name_token := input.consume_a_token()
 	mut function := Function{
 		name: name_token.function_name()
-		value: []ComponentValue{}
+		value: []ComponentValue{cap: component_input_initial_capacity()}
 		name_token: name_token
 	}
 
 	// Process input:
 	for {
-		token := input.next_token()
-		if token.is(.end_of_file) || token.is(.close_paren) {
+		next_type := input.component_token_type()
+		if next_type == .end_of_file || next_type == .close_paren {
 			function.end_token = input.consume_a_token()
 			return function
 		}
