@@ -159,6 +159,10 @@ def run_trial(engine, app, folder, args):
                 args.vox_environment['VOX_DISABLE_VISUAL_CONTEXT_INDEX'] = '1'
             if getattr(args, 'control_disable_tracked_persistent_shortcut', False):
                 args.vox_environment['VOX_DISABLE_TRACKED_PERSISTENT_SHORTCUT'] = '1'
+            if getattr(args, 'control_disable_attribute_case_buckets', False):
+                args.vox_environment['VOX_DISABLE_ATTRIBUTE_CASE_BUCKETS'] = '1'
+            if getattr(args, 'control_disable_persistent_scope_jumps', False):
+                args.vox_environment['VOX_DISABLE_PERSISTENT_SCOPE_JUMPS'] = '1'
         return browser.run_browser('vox' if engine == 'control' else engine, app, folder, args)
     finally:
         args.vox_environment = environment
@@ -179,6 +183,10 @@ def parse_args(argv=None):
                         help='Use recursive visual-context lookup in the pinned Vox control')
     parser.add_argument('--control-disable-tracked-persistent-shortcut', action='store_true',
                         help='Walk detached allocation blocks in the pinned Vox control')
+    parser.add_argument('--control-disable-attribute-case-buckets', action='store_true',
+                        help='Search all HTML enumerated attribute names in the pinned Vox control')
+    parser.add_argument('--control-disable-persistent-scope-jumps', action='store_true',
+                        help='Visit every allocation block when leaving scopes in the pinned Vox control')
     parser.add_argument('--brave-app', type=Path, default=Path('/Applications/Brave Browser.app'))
     parser.add_argument('--diff-tool', type=Path, default=REPO / 'Build/hn-home-instructions-20261031/pixel_diff')
     parser.add_argument('--expected-vox', type=Path)
@@ -192,7 +200,8 @@ def parse_args(argv=None):
     args = parser.parse_args(argv)
     if any((args.control_disable_grid_width_only, args.control_disable_stationary_raster,
             args.control_disable_client_geometry_index,
-            args.control_disable_tracked_persistent_shortcut)) and not args.control_vox_app:
+            args.control_disable_tracked_persistent_shortcut, args.control_disable_attribute_case_buckets,
+            args.control_disable_persistent_scope_jumps)) and not args.control_vox_app:
         parser.error('Disabling the control optimization needs --control-vox-app')
     if not args.capture_reference and (args.repeat < 7 or not args.expected_vox or not args.expected_brave):
         parser.error('Acceptance needs seven pairs and both existing pixel references')
@@ -258,6 +267,8 @@ def main():
         control_disable_stationary_raster=args.control_disable_stationary_raster,
         control_disable_client_geometry_index=args.control_disable_client_geometry_index,
         control_disable_tracked_persistent_shortcut=args.control_disable_tracked_persistent_shortcut,
+        control_disable_attribute_case_buckets=args.control_disable_attribute_case_buckets,
+        control_disable_persistent_scope_jumps=args.control_disable_persistent_scope_jumps,
         brave_post_readiness_expression=args.post_readiness_expression,
         readiness_correction='Await visible image decode before the original settlement; no engine credit',
         system=subprocess.check_output(['sw_vers'], text=True)))
