@@ -265,16 +265,38 @@ extern "C" int ladybird_v_skia_end_inset_decorations(CGContextRef destination)
     if (!bytes) return 0;
     auto pixels = group->backdrop;
     auto draw = shared_picture_draw();
-    bool rendered = draw_chromium_root_raster_grid(pixels, group->width, group->height,
+    auto draw_region = picture_region_draw();
+    bool regional = draw_region && !std::getenv("VOX_DISABLE_PICTURE_REGIONS")
+        && !std::getenv("VOX_DISABLE_INSET_PICTURE_REGIONS");
+    auto rasterize = [&](auto& tile, long offset_x, long offset_y, bool multisampled,
+        int x, int y, int width, int height) {
+        if (multisampled && !multisampled_bytes)
+            multisampled_bytes = inset_picture_bytes(picture.get(), true);
+        auto const& selected = multisampled ? multisampled_bytes : bytes;
+        if (!selected) return false;
+        float translation[] {1, 0, float(offset_x), 0, 1, float(offset_y), 0, 0, 1};
+        if (regional) {
+            int result = draw_region(reinterpret_cast<uint8_t*>(tile.data()),
+                s_msaa_grid_width, s_msaa_grid_height, width * 4,
+                x, y, width, height, selected->data(), selected->size(), translation);
+            if (result && std::getenv("VOX_PICTURE_REGION_DIAGNOSTICS"))
+                std::fprintf(stderr, "VOX_PICTURE_REGION inset target=%dx%d region=%d,%d,%d,%d\n",
+                    s_msaa_grid_width, s_msaa_grid_height, x, y, width, height);
+            return result != 0;
+        }
+        return draw(reinterpret_cast<uint8_t*>(tile.data()), s_msaa_grid_width,
+            s_msaa_grid_height, s_msaa_grid_width * 4, selected->data(), selected->size(), translation) != 0;
+    };
+    // Keep each original full-sized GPU tile and transfer only the intersection
+    // consumed by the CPU compositor, including its border ownership texels.
+    bool rendered = regional
+        ? draw_chromium_root_raster_grid<true>(pixels, group->width, group->height,
+            group->region, 0, group->page_y, group->scroll_y, group->scale, rasterize)
+        : draw_chromium_root_raster_grid(pixels, group->width, group->height,
         group->region, 0, group->page_y, group->scroll_y, group->scale,
         [&](auto& tile, long offset_x, long offset_y, bool multisampled) {
-            if (multisampled && !multisampled_bytes)
-                multisampled_bytes = inset_picture_bytes(picture.get(), true);
-            auto const& selected = multisampled ? multisampled_bytes : bytes;
-            if (!selected) return false;
-            float translation[] {1, 0, float(offset_x), 0, 1, float(offset_y), 0, 0, 1};
-            return draw(reinterpret_cast<uint8_t*>(tile.data()), s_msaa_grid_width,
-                s_msaa_grid_height, s_msaa_grid_width * 4, selected->data(), selected->size(), translation) != 0;
+            return rasterize(tile, offset_x, offset_y, multisampled,
+                0, 0, s_msaa_grid_width, s_msaa_grid_height);
         });
     if (!rendered) {
         float identity[] {1, 0, 0, 0, 1, 0, 0, 0, 1};
