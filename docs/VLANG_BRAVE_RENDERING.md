@@ -1,17 +1,13 @@
 # vlang.io rendering against Brave
 
-Pixel-perfect parity remains open. The latest calculated-length fix removes
-the News card positioning error, but its shared production build also contains
-a paint-client layerization regression described below. The preceding settled, archived comparison at
-1280 × 800 CSS pixels and scale 1 has **4 differing pixels at the top** and
-**zero at every sampled 800-pixel scroll position from Y 2400 through 7200**,
-with **4 at Y 8000**. The news/reviews viewport at Y 9600 has **137** differences,
-and the community viewport at Y 10400 has **160**. The sponsor viewport at
-Y 1600 has **452** differences, and the bottom has **97**. Lilly at Y 8800 now
-has **14,681** differences against the full-resolution Brave variant, despite
-matching a previously observed reduced-decode variant exactly. Some review
-glyphs, sponsor edges and a footer book image still differ.
-Copy-button and book-cover geometry agree with Brave.
+Pixel-perfect parity remains open. The current settled archived comparison at
+1280 × 800 CSS pixels and scale 1 has **4 differing pixels at the top**,
+**427 at Y 1600**, **zero at every sampled 800-pixel position from Y 2400
+through 7200**, and **4 at Y 8000**. News at Y 9600 is now **exact**;
+community at Y 10400 has **160** differences and the bottom has **97**.
+Lilly at Y 8800 has **14,681** differences against the full-resolution Brave
+variant. Principles text, sponsor artwork, image decoding and the footer book
+still prevent full equality. Copy-button and book-cover geometry agree.
 These results do not establish full live-page or scale-two parity.
 
 ## Capture readiness correction
@@ -1621,5 +1617,91 @@ The initial independent closed-path harness fails to compile against the
 immutable SkPath API; its corrected builder version executes and remains at
 sixteen differences. No conformance claim uses that failed compile.
 
-The next sponsor work still needs to explain the curve coverage difference.
+The recorded-paint audit below subsequently resolves the reduced curve case.
 Full-page, live and scale-two parity remain open.
+
+
+## Fixed-point object-fit sizing
+
+`b21af201` applies Chromium's fixed-point aspect-ratio fitting to replaced
+content. Blink's [PhysicalSize::FitToAspectRatio](https://chromium.googlesource.com/chromium/src/+/156.0.8078.48/third_party/blink/renderer/platform/geometry/physical_size.cc)
+first computes a truncated constrained height, then compares that height with
+the available height. Comparing floating-point ratios first can incorrectly
+switch the constrained axis even though both heights occupy the same LayoutUnit.
+Contain, cover and scale-down now use the fixed-point product/division order,
+with saturated output. The default translated LibWeb path is preserved. The
+existing opt-in context flag is renamed to `use_chromium_geometry` to cover this
+rule alongside the preceding calculated-length conversion.
+
+The reduced turtle scene demonstrates the difference. Its 125.6875×69.984375
+container previously became 125.671875×69.984375 after object-fit. Blink keeps
+the original width because its truncated ratio height already equals the
+available height. That 1/64-pixel width difference changes the SVG viewBox
+transform and sixteen MSAA edge pixels. The native production capture now
+matches the unchanged plain-scene Brave reference exactly: **16 → 0**.
+The new independent, three-image `object-fit-fixed-point-svg` regression covers
+plain, grayscale/screen/opacity, and integral-size control images and improves
+from **2 differing pixels to zero**. Fresh Brave references before and after
+are byte-identical. No image dimensions or site names select the implementation.
+
+Brave's actual paint commands supply the missing evidence. After activating the
+test window away from the pointer, its LayerTree snapshot exposes the SVG's
+33 paths and both image/viewBox transforms. Replaying those transforms through
+the existing renderer is exact on both tested target sizes. The earlier two
+LayerTree attempts retain stale blank-page layer IDs and fail to make snapshots;
+they receive no input-analysis credit. The viewport PNG remains unchanged after
+the successful recorded-paint audit. The earlier dependency upgrades and small
+matrix perturbations were therefore unsuccessful diagnostics, not fixes.
+
+The complete sixteen-position frozen-page sweep retains every prior pixel at
+the other fifteen positions. At Y 1600 it improves **452 → 427**. Twenty-eight
+pixels improve, five worsen by one channel level and two previously exact pixels
+become one-level differences. Three worsened pixels already had larger errors.
+The comparison is not monotonic and the remaining 427 are not exact conformance.
+All sixteen document/viewport/readiness/font/error and visible-image audits pass.
+The formerly regressed layerization viewports, including News, are restored by
+subsequent shared fixes already present in the baseline production bundle.
+
+A same-build diagnostic changes only the four object-fit policy loads in its
+private executable. It restores the new fixture's two errors and the sponsor
+viewport's 452; the latter native RGBA is byte-identical to the preceding
+production control. Calculated-length conversion stays enabled and every native
+library stays unchanged. This executable is not installed.
+
+Four fitting tests pass in both no-GC and Boehm modes. They cover the axis tie,
+truncating contain/cover sizes, scale-down, large-product saturation, subunit
+intrinsic rejection, and the preserved default resolver. Six calculated-length
+precision tests and twenty existing painting tests execute successfully too.
+The three initial fitting tests fail before the implementation. An attempted
+BrowserApp integration harness produces no nested-image command and fails before
+its sizing assertion in both attempts; those logs and experimental test source
+are retained, and that addition is not shipped or counted as passing validation.
+
+The pinned production build passes startup, fourteen screenshot smoke cases
+under their existing bounds, **all 66 strict browser screenshot tests**, eight
+exact image/gradient/table golds and live scripted loading. Live navigation has
+loaded fonts, five completed visible images and zero native errors, supplying
+loading evidence only. None of the earlier five strict failures recur in this
+shared production baseline; no tolerance or existing reference is changed here.
+
+Evidence in `Build/vlang-next-20261101/` includes
+[feature pixel checks](../Build/vlang-next-20261101/feature-pixel-checks.json),
+`object-fit-{before,after,negative-fixture}/`, `turtle-plain-after/`,
+[page audits](../Build/vlang-next-20261101/page-audit.json),
+[pixel movement](../Build/vlang-next-20261101/sponsor-pixel-movement.json),
+`sponsor-worsened-pixels.json`, `negative-control.json`,
+`sponsor-layer-audit-v3/layer-8-commands.json`, `sponsor-brave-matrix-*`,
+`fit-*`, `precision-after-*`, `painting-legacy-*`, `svg-container-*`,
+[validation exits](../Build/vlang-next-20261101/validation-status.json),
+and `object-fit-live/status.json`.
+
+The executable is
+`1b00f59e2f397657146a0c919e25d7ec9c13d6b1eb04f9665db6b82cb43b9d48`,
+preserved in `Vox-object-fit-installed.app`. Its native text library is
+`f3fbbb9af91ab22baa5c875984faeca69b5b4bb702ec79e522e559ed3be4ee3f`.
+All five implementation inputs remain stable through the 235.29-second signed
+production build, with sampled peak RSS 8.48 GiB under the default 12 GiB guard.
+Two unrelated native inputs change during compilation, so the complete checkout
+is not frozen. Compiled-C source and its hash are preserved in
+`object-fit-compiled.c`, `production-generated.c.gz` and `source-witness.json`.
+The executable and library identities remain pinned across the validation.
