@@ -1,4 +1,29 @@
-# Wikipedia scrolling profile
+# Wikipedia Main Page scrolling
+
+The target for `https://en.wikipedia.org/wiki/Main_Page` remains smooth 60 fps. The current changes reduce repeated native raster work and preserve the tested pixels, but the live and contended precise-wheel measurements have not established that target. These measurements count changed Cocoa layer contents after `updateLayer`, including scroll-position changes; they do not measure physical display scanout.
+
+The native renderer now transfers fractional rectangular borders as edge strips, reuses eligible CPU glyph masks by Skia's exact packed mask phases, transfers small compositor controls through compact regions, and skips redundant GPU work for transparent shapes. Long thin scrollbars keep the compact transfer path. Lossless glyph-backdrop snapshots retain roughly twice as many entries within the existing 64 MiB text-cache budget; every hit still compares the complete input pixels. A larger 128 MiB budget and GPU batching were tested and rejected because neither gave consistent frame-timing gains.
+
+The frozen page uses the original HTTPS URL and archived response bytes, without network forwarding. Every launch has an empty private profile, an independent cache, the default Wikipedia script policy, a 1024×764 document viewport at 2× scale, and 12 seconds settling after a matching title. Throughput includes the entire first-to-last input window. Reports include actual wheel delivery, leading/trailing stalls, scroll intervals and deadline misses. Continuous-forward and oscillating inputs are separate workloads. Other repository sessions ran compilers and browsers during these measurements; changing controls limit timing attribution.
+
+| Workload and measured build | Mean scroll-changing publications/s, both trials | p95 scroll interval |
+| --- | ---: | ---: |
+| Frozen oscillating 60 Hz input, cohort 10 control | 48.25 / 50.33 | See full interval distributions |
+| Frozen oscillating 60 Hz input, cohort 10 candidate | 58.61 / 57.00 | Deadline misses remain |
+| Earlier live Main Page, continuous nominal 120 Hz input | 46.03 / 52.24 | 32.71 / 29.90 ms |
+| Updated native libraries on the last working executable, live continuous input | 57.86 / 46.73 | 27.11 / 32.44 ms |
+| Frozen continuous nominal 120 Hz input, final compressed-cache control | 41.80 / 24.88 | 36.79 / 62.33 ms |
+| Frozen continuous nominal 120 Hz input, final compressed-cache candidate | 35.15 / 26.62 | 45.07 / 57.78 ms |
+
+The compressed-cache comparison demonstrates cache retention and pixel correctness; the timing cohort does not establish a reliable FPS improvement. All attempts and regressions are retained. Instrumented cache counters and conversion microbenchmarks do not supply scrolling performance credit. Exact page comparisons at matching end scroll positions pass with zero differing pixels. Focused native tests cover fractional glyph positions, backdrop changes and padding, cache bounds and eviction, transparent compositing, original GPU tile geometry and ownership, and long scrollbar transfers. Startup smoke checks cover DOM events and native wheel routing.
+
+[Committed measurement receipts](benchmark-results/wikipedia-main-scroll-20261101.json) retain cohort summaries, exact commands, executable/library/probe identities, host loads and exits. [Full local evidence](../Build/wikipedia-main-scroll-20261101-043231/report.md) includes every cohort, rejected experiment, protocol limitation and raw-log location. The native changes are commits `c51a8df9`, `f572d47a`, `270aeea8`, `7e9d1935`, `39a324e9` and `43241262`, with distant-boundary regression coverage in `1414526a`.
+
+A new shared production executable crashed before navigation because the stationary-document cache dereferenced the initial absent document. Commit `962b53ba` adds a guard and a passing focused regression test. The current shared production build includes that guard; a duplicate build was not queued. The latest live numbers above use the last working executable with updated native libraries, so installed-bundle startup and live validation remain pending.
+
+## Historical portal profiling
+
+The earlier results below concern `https://www.wikipedia.org/`, a different document and a synthetic draw-callback workload. They do not establish the Main Page's native scrolling FPS.
 
 The shipped change bounds native SVG-mask and opacity transparency layers before replaying their children. Wikipedia's sprite backgrounds previously replayed many opacity groups whose output was outside the embedding clip. Effect commands now retain the clip active at their scope, before descendant clips; mask layers likewise use their mask bounds. A small fringe preserves fractional antialiasing. Filter inputs retain their independent offscreen contexts.
 
