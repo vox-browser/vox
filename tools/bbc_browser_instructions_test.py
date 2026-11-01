@@ -645,7 +645,6 @@ class BBCInstructionTests(unittest.TestCase):
         args = ['--archive', 'archive', '--output', 'output', '--memory-guard-registry', 'pids.json',
                 '--capture-reference']
         for flag in ['--control-disable-inline-measurement-reuse',
-                     '--control-force-metric-computation-context',
                      '--control-disable-grid-width-only', '--control-disable-stationary-raster',
                      '--control-disable-client-geometry-index',
                      '--control-disable-tracked-persistent-shortcut',
@@ -687,25 +686,6 @@ class BBCInstructionTests(unittest.TestCase):
             for engine in ['control', 'vox', 'brave']:
                 run_trial(engine, 'same-app', engine, args)
         self.assertEqual(seen, [('vox', dict(environment, VOX_DISABLE_INLINE_MEASUREMENT_REUSE='1')),
-                               ('vox', environment), ('brave', environment)])
-        self.assertIs(args.vox_environment, environment)
-        with patch('bbc_browser_instructions.browser.run_browser', side_effect=RuntimeError('failed')):
-            with self.assertRaises(RuntimeError):
-                run_trial('control', 'same-app', 'control', args)
-        self.assertIs(args.vox_environment, environment)
-
-    def test_metric_context_control_is_isolated_and_restored_on_failure(self):
-        environment = {'VOX_PROXY': 'socks5h://fixture'}
-        args = SimpleNamespace(vox_environment=environment, control_disable_grid_width_only=False,
-                               control_force_metric_computation_context=True)
-        seen = []
-        def observe(engine, app, folder, options):
-            seen.append((engine, dict(options.vox_environment)))
-            return {'exit': 0}
-        with patch('bbc_browser_instructions.browser.run_browser', side_effect=observe):
-            for engine in ['control', 'vox', 'brave']:
-                run_trial(engine, 'same-app', engine, args)
-        self.assertEqual(seen, [('vox', dict(environment, VOX_FORCE_METRIC_COMPUTATION_CONTEXT='1')),
                                ('vox', environment), ('brave', environment)])
         self.assertIs(args.vox_environment, environment)
         with patch('bbc_browser_instructions.browser.run_browser', side_effect=RuntimeError('failed')):

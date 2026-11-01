@@ -168,8 +168,6 @@ def run_trial(engine, app, folder, args):
                              else 'jsc_baseline_warmup', None)
             args.vox_environment = dict(environment, **jsc_baseline_environment(warmup))
         if engine == 'control':
-            if getattr(args, 'control_force_metric_computation_context', False):
-                args.vox_environment['VOX_FORCE_METRIC_COMPUTATION_CONTEXT'] = '1'
             if getattr(args, 'control_disable_inline_measurement_reuse', False):
                 args.vox_environment['VOX_DISABLE_INLINE_MEASUREMENT_REUSE'] = '1'
             if args.control_disable_grid_width_only:
@@ -257,8 +255,6 @@ def parse_args(argv=None):
     parser.add_argument('--control-vox-app', type=Path, help='Also run a pinned Vox control before each candidate/Brave pair')
     parser.add_argument('--control-disable-inline-measurement-reuse', action='store_true',
                         help='Recompute closed text layouts in each temporary measurement of the matched control')
-    parser.add_argument('--control-force-metric-computation-context', action='store_true',
-                        help='Prepare full font and viewport contexts for every computed value in the matched control')
     parser.add_argument('--jsc-baseline-warmup', type=int,
                         help='Explicit baseline-JIT warmup threshold for Vox; soon threshold is max(1, warmup // 5)')
     parser.add_argument('--control-jsc-baseline-warmup', type=int,
@@ -345,8 +341,7 @@ def parse_args(argv=None):
             parser.error('JSC baseline warmup must be a positive signed 32-bit integer')
     if args.control_jsc_baseline_warmup is not None and not args.control_vox_app:
         parser.error('The JSC baseline control needs --control-vox-app')
-    if any((args.control_force_metric_computation_context,
-            args.control_disable_inline_measurement_reuse,
+    if any((args.control_disable_inline_measurement_reuse,
             args.control_disable_grid_width_only, args.control_disable_stationary_raster,
             args.control_disable_client_geometry_index,
             args.control_disable_tracked_persistent_shortcut, args.control_disable_attribute_case_buckets,
@@ -450,7 +445,6 @@ def main():
         control_disable_attribute_case_buckets=args.control_disable_attribute_case_buckets,
         control_disable_persistent_scope_jumps=args.control_disable_persistent_scope_jumps,
         control_disable_inline_measurement_reuse=args.control_disable_inline_measurement_reuse,
-        control_force_metric_computation_context=args.control_force_metric_computation_context,
         control_disable_extended_longhand_reuse=args.control_disable_extended_longhand_reuse,
         control_disable_color_longhand_reuse=args.control_disable_color_longhand_reuse,
         control_copy_stationary_raster_commands=args.control_copy_stationary_raster_commands,
