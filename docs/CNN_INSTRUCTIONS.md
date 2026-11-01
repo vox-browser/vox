@@ -27,6 +27,30 @@ first-pair variants. Those counters and attempts are retained; this work earns
 no optimization credit and adds no shader-cache policy to the production code.
 Raw evidence is under `Build/cnn-home-dawn-matched-20261101-0848/`.
 
+The lazy-image batching change (`07d1e347`) snapshots which requests are near
+one committed viewport before synchronous cached completions can invalidate it.
+Source ownership and cancellation are still checked before each completion.
+The diagnostic admits six requests together with exact CNN pixels. Current
+checks cover 23 root cases per GC mode, 39 broader HTML/layout cases per mode,
+the screenshot smoke set, eight SVG mutation guards and 100 AST fixtures.
+The original movement fixture started outside the loading threshold; its failed
+attempt remains, alongside a corrected fixture passing in both modes.
+
+Two unprofiled diagnostic triplets have mixed full-coalition results:
+**29,874,012,629 / 36,958,872,903** for Vox against
+**31,423,152,926 / 31,222,913,480** for the same-binary control.
+The process-only endpoints fall in both pairs, but owned GPU compiler-service
+charges increase the second candidate's total. Those component counts do not
+replace the selected launch-coalition scope. Both Brave captures also differ
+from the fixed reference, so this earns no site acceptance or repeatable full
+CPU saving. All attempts remain under
+`Build/cnn-home-lazy-batch-matched-20261101-0918/`.
+
+Explicit Brave scale and image-decoding diagnostics did not remove the pixel
+variation. The normal measurement driver and reference remain unchanged.
+The new font-geometry slice (`33278ac1`) passes 49 cases in each of three modes;
+its production site validation is pending, with no CPU credit yet.
+
 ## November 1: current 10% request, sealed homepage cohort
 
 The current target is **10% fewer instructions than Brave**, superseding the
