@@ -424,6 +424,7 @@ def run_browser(engine, app, folder, args):
                 VOX_CAPTURE_AUDIT_CONFIG=str(args.audit_config),
                 VOX_CAPTURE_AUDIT_PATH=str(folder / 'audit.json'),
                 VOX_CAPTURE_DOCUMENT_ONLY='1', LADYBIRD_SCREENSHOT_DELAY_SECONDS=str(args.settle_seconds))
+            environment.update(getattr(args, 'vox_environment', {}))
             # An empty value still enables native controls that test getenv().
             ambient = sorted(os.environ.keys() - clean_environment().keys() - environment.keys())
             require(not ambient, 'Remove ambient measurement controls: ' + ', '.join(ambient))
@@ -434,10 +435,12 @@ def run_browser(engine, app, folder, args):
             root = wait_until(lambda: root_for(binary, str(png)), deadline, 'Vox launch')
         else:
             arguments = ['--no-startup-window', '--no-first-run', '--no-default-browser-check',
-                '--enable-automation', '--disable-background-networking', '--disable-sync', '--no-proxy-server',
+                '--enable-automation', '--disable-background-networking', '--disable-sync',
+                getattr(args, 'brave_proxy_argument', '--no-proxy-server'),
                 '--hide-scrollbars', '--force-color-profile=srgb', '--lang=en-US',
                 '--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1',
                 '--remote-debugging-port=0', '--user-data-dir=' + str(profile)]
+            arguments += getattr(args, 'brave_arguments', [])
             result['command'] = launch(app, arguments, folder, {})
             endpoint = wait_until(lambda: chrome_debugger_endpoint(profile / 'DevToolsActivePort'),
                                   deadline, 'Brave debugger')
@@ -488,7 +491,7 @@ def run_browser(engine, app, folder, args):
             result['navigation'] = navigation
             require(not navigation.get('errorText'), 'Brave navigation failed: ' + str(navigation.get('errorText')))
             # Scalar readiness only; pixel validation follows the measured interval.
-            expression = f'''location.href==={json.dumps(args.url)}
+            expression = getattr(args, 'readiness_expression', None) or f'''location.href==={json.dumps(args.url)}
                 && document.readyState==='complete' && document.fonts.status==='loaded'
                 && innerWidth==={WIDTH} && innerHeight==={HEIGHT} && devicePixelRatio==={args.scale}
                 && [...document.images].every(i=>i.complete && i.naturalWidth>0)'''
@@ -517,6 +520,7 @@ def run_browser(engine, app, folder, args):
                 selections:[{name:ROW_NAME,count:document.querySelectorAll(ROW_SELECTOR).length,
                 elements:[...document.querySelectorAll(ROW_SELECTOR)].map(e=>({attributes:{id:e.id}}))}]})'''
             expression = expression.replace('ROW_NAME', json.dumps(row_name)).replace('ROW_SELECTOR', json.dumps(selector))
+            expression = getattr(args, 'audit_expression', None) or expression
             audit = client.call('Runtime.evaluate', dict(expression=expression,
                 returnByValue=True))['result']['value']
             write_json(folder / 'audit.json', audit)
@@ -532,11 +536,20 @@ def run_browser(engine, app, folder, args):
         result['launch_instruction_interval'] = launch_instruction_interval(engine, result)
         result['navigation_scope'] = SCOPE
         result['launch_scope'] = LAUNCH_SCOPE
-        check_content(audit, args.url, args.expected_comments, getattr(args, 'row_name', 'comments'))
-        result.update(content_exact=True, comment_rows=len(args.expected_comments))
-        verdict = compare(args.expected, png, folder / 'document.diff.png', args.diff_tool)
+        validator = getattr(args, 'content_validator', None)
+        if validator:
+            result['content_audit'] = validator(audit)
+        else:
+            check_content(audit, args.url, args.expected_comments, getattr(args, 'row_name', 'comments'))
+            result['comment_rows'] = len(args.expected_comments)
+        result['content_exact'] = True
+        if getattr(args, 'capture_reference', False):
+            result.update(reference_capture=True, png_sha256=sha(png), exit=0)
+            return result
+        expected = getattr(args, 'expected_' + engine, None) or args.expected
+        verdict = compare(expected, png, folder / 'document.diff.png', args.diff_tool)
         result.update(pixels_exact=verdict['exact'], pixel_comparison=verdict, png_sha256=sha(png))
-        require(verdict['exact'], 'Captured document differs from the unchanged Brave reference')
+        require(verdict['exact'], 'Captured document differs from its unchanged pixel reference')
         result['exit'] = 0
     except Exception as error:
         result.update(error=str(error), traceback=traceback.format_exc())

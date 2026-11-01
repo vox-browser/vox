@@ -1,0 +1,127 @@
+import unittest
+
+from bbc_browser_instructions import URL, parse_args, validate_document
+from hacker_news_browser_instructions import evaluate_pairs
+
+
+def document():
+    expected = dict(title='BBC Home | News', headlines=['First story', 'Second story'],
+                    image_sources=['https://images.test/photo.jpg'], placeholder_sources=[])
+    audit = dict(url=URL, title=expected['title'], ready='complete', viewport_width=1024,
+                 viewport_height=768, fonts_status='loaded', font_faces=[], selections=[
+        dict(name='body', count=1, elements=[dict(text='Full document text ' * 100)]),
+        dict(name='headlines', count=2, elements=[dict(text=text) for text in expected['headlines']]),
+        dict(name='images', count=1, elements=[dict(rect=dict(x=10, y=20, width=200, height=100),
+            attributes=dict(src='https://images.test/photo.jpg'),
+            image=dict(complete=True, natural_width=480))]),
+        dict(name='all', count=2000, elements=[])])
+    return audit, expected
+
+
+class BBCInstructionTests(unittest.TestCase):
+    def test_full_source_content_and_visible_images_are_required(self):
+        audit, expected = document()
+        result = validate_document(audit, expected)
+        self.assertTrue(result['passed'])
+        self.assertEqual(result['headlines'], 2)
+        self.assertEqual(result['visible_decoded_images'], 1)
+
+    def test_wrong_document_or_unsettled_state_is_rejected(self):
+        for key, value in [('url', URL + 'news'), ('title', 'BBC unavailable'),
+                           ('ready', 'interactive'), ('viewport_height', 767),
+                           ('fonts_status', 'loading')]:
+            audit, expected = document()
+            audit[key] = value
+            with self.subTest(key=key), self.assertRaises(RuntimeError):
+                validate_document(audit, expected)
+
+    def test_truncated_missing_and_reordered_headlines_are_rejected(self):
+        for mutation in ('truncate', 'reorder', 'replace', 'count', 'missing'):
+            audit, expected = document()
+            row = audit['selections'][1]
+            if mutation == 'truncate':
+                row['elements'].pop()
+            elif mutation == 'reorder':
+                row['elements'].reverse()
+            elif mutation == 'replace':
+                row['elements'][0]['text'] = 'Different news'
+            elif mutation == 'count':
+                row['count'] += 1
+            else:
+                audit['selections'].pop(1)
+            with self.subTest(mutation=mutation), self.assertRaises(RuntimeError):
+                validate_document(audit, expected)
+
+    def test_missing_images_or_visible_decode_failures_reject_credit(self):
+        for mutation in ('missing', 'incomplete', 'zero', 'hidden'):
+            audit, expected = document()
+            row = audit['selections'][2]
+            if mutation == 'missing':
+                row['elements'].clear()
+            elif mutation == 'incomplete':
+                row['elements'][0]['image']['complete'] = False
+            elif mutation == 'zero':
+                row['elements'][0]['image']['natural_width'] = 0
+            else:
+                row['elements'][0]['rect']['y'] = 800
+            with self.subTest(mutation=mutation), self.assertRaises(RuntimeError):
+                validate_document(audit, expected)
+
+    def test_retained_native_decode_and_offscreen_lazy_images(self):
+        audit, expected = document()
+        audit['selections'][2]['elements'][0]['image'] = dict(paint_decoded=True, paint_width=480)
+        validate_document(audit, expected)
+        expected['image_sources'].append('https://images.test/second.jpg')
+        expected['image_sources'].sort()
+        row = audit['selections'][2]
+        row['count'] += 1
+        row['elements'].append(dict(rect=dict(x=0, y=900, width=480, height=240), image={},
+                                   attributes=dict(src='https://images.test/second.jpg')))
+        validate_document(audit, expected)
+
+    def test_hydration_can_remove_only_source_loading_placeholders(self):
+        audit, expected = document()
+        expected['placeholder_sources'] = ['https://assets.test/grey-placeholder.png']
+        validate_document(audit, expected)
+        images = audit['selections'][2]
+        images['count'] += 1
+        images['elements'].append(dict(rect=dict(x=0, y=900, width=200, height=100), image={},
+            attributes=dict(src=expected['placeholder_sources'][0])))
+        validate_document(audit, expected)
+        images['elements'][-1]['attributes']['src'] = 'https://images.test/unexpected.jpg'
+        with self.assertRaises(RuntimeError):
+            validate_document(audit, expected)
+
+    def test_requested_font_errors_and_missing_parsed_font_reject_credit(self):
+        for face in [dict(status='error'), dict(status='loading'),
+                     dict(status='loaded', parsed_font_present=False)]:
+            audit, expected = document()
+            audit['font_faces'] = [face]
+            with self.assertRaises(RuntimeError):
+                validate_document(audit, expected)
+
+    def test_acceptance_requires_seven_pairs_and_existing_references(self):
+        args = ['--archive', 'archive', '--output', 'output', '--memory-guard-registry', 'pids.json']
+        for extra in [[], ['--expected-vox', 'v.png', '--expected-brave', 'b.png', '--repeat', '6']]:
+            with self.assertRaises(SystemExit):
+                parse_args(args + extra)
+        parsed = parse_args(args + ['--expected-vox', 'v.png', '--expected-brave', 'b.png'])
+        self.assertEqual(parsed.repeat, 7)
+        self.assertEqual(parsed.scale, 2)
+        self.assertFalse(parsed.capture_reference)
+        self.assertTrue(parse_args(args + ['--capture-reference']).capture_reference)
+        self.assertEqual(parse_args(args + ['--capture-reference', '--reference-engine', 'brave'])
+                         .reference_engine, 'brave')
+        with self.assertRaises(SystemExit):
+            parse_args(args + ['--expected-vox', 'v.png', '--expected-brave', 'b.png',
+                               '--reference-engine', 'brave'])
+
+    def test_reference_capture_cannot_pass_acceptance(self):
+        pairs = [dict(vox=dict(exit=0, content_exact=True, reference_capture=True),
+                      brave=dict(exit=0, content_exact=True, reference_capture=True))] * 7
+        with self.assertRaises(RuntimeError):
+            evaluate_pairs(pairs, .9, 'launch')
+
+
+if __name__ == '__main__':
+    unittest.main()
