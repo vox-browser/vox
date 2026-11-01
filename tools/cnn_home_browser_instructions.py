@@ -218,6 +218,8 @@ def parse_args(argv=None):
                    help='Alternate the same Vox binary with argument workspaces for plain CSS tokens')
     control.add_argument('--control-text-run-positions', action='store_true',
                    help='Alternate the same Vox binary with per-character history for committed HTML text')
+    control.add_argument('--control-component-input', action='store_true',
+                   help='Alternate the same Vox binary with copied component lookahead and unreserved blocks')
     control.add_argument('--control-live-font-cascades', action='store_true',
                    help='Alternate the same Vox binary without reusing retained font inputs across generations')
     control.add_argument('--control-vox-app', type=Path,
@@ -251,6 +253,7 @@ def control_environment(args):
     if args.control_vox_app:
         return {}
     for option, variable in (
+        ('control_component_input', 'VOX_DISABLE_COMPONENT_INPUT_REUSE'),
         ('control_text_run_positions', 'VOX_DISABLE_COMPACT_TEXT_RUN_POSITIONS'),
         ('control_leaf_validation', 'VOX_DISABLE_LEAF_SUBSTITUTION_SKIP'),
         ('control_scratch_policy', 'VOX_DISABLE_SCRATCH_POISON_CACHE'),
