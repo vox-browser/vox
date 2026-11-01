@@ -5215,3 +5215,5 @@ extern "C" int ladybird_v_skia_draw_clipped_svg_radial_gradient_path(
 }
 
 #include "native_chromium_corner_shape_paint.h"
+
+#include "native_chromium_svg_cover_pattern.h"

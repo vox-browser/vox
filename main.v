@@ -6664,6 +6664,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 		}
 		'draw_background_image' {
 			defer { app.flush_rounded_rect_underlay(page_x, page_y, window_height) }
+			if app.draw_chromium_svg_fractional_background(command,page_x,page_y,scroll_y) { return }
 			image_data := command.image()
 			if (image_data.background_svg_document != none || image_data.background_static_svg_resource != none)
 				&& !background_image_clip_intersects_viewport(command, f64(page_x), f64(page_y),

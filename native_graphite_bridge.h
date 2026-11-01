@@ -159,6 +159,9 @@ int vox_graphite_draw_path_batch_pixels(uint8_t *pixels, int width, int height,
 int vox_graphite_draw_svg_image_pixels(uint8_t *pixels, int width, int height,
     int pitch, int has_background, const VoxGraphitePath *paths, int count,
     const float *parent_matrix, const float *viewport, const float *rounded_clip);
+int vox_graphite_draw_svg_pattern_pixels(uint8_t *pixels, int width, int height,
+    int pitch, int has_background, const VoxGraphitePath *paths, int count,
+    const float *parent_matrix, const float *tile, const float *clip, float opacity, int linear);
 int vox_graphite_convert_icc_rgba(uint8_t *pixels, int count,
     const uint8_t *profile, int profile_size);
 #ifdef __cplusplus

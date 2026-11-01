@@ -66,6 +66,13 @@ fn test_native_static_svg_background_refresh_preserves_owned_replay_and_msaa() {
 	assert static_svg_background_test_fill(first_commands) == css.Color.rgb(255, 0, 0)
 	repeated := svg_background_paint_commands(first.image_data, 30, 20) or { panic('missing cached picture') }
 	assert voidptr(repeated.data) == voidptr(first_commands.data)
+	// Distinct fractional viewports must not alias the same integer-size scene.
+	fractional := svg_background_paint_commands_for_viewport(first.image_data,30.125,20.25) or { panic('fractional picture') }
+	other := svg_background_paint_commands_for_viewport(first.image_data,30.25,20.25) or { panic('other fractional picture') }
+	assert voidptr(fractional.data) != voidptr(other.data)
+	cached_fractional := svg_background_paint_commands_for_viewport(first.image_data,30.125,20.25) or { panic('cached fractional picture') }
+	assert voidptr(cached_fractional.data) == voidptr(fractional.data)
+	assert static_svg_background_test_fill(fractional) == css.Color.rgb(255,0,0)
 	first_ranges := chromium_svg_background_msaa_ranges(first)
 	assert first_ranges.len == 1
 	first_body := app.resource_cache[address].body

@@ -1735,6 +1735,22 @@ int native_draw_svg_path_batch(const VoxGraphitePath *paths, int count,
 #endif
 }
 
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+extern int ladybird_v_skia_draw_svg_cover_pattern(CGContextRef, const VoxGraphitePath*, int,
+    const float*, const float*, const float*, float, float, float, float, float);
+#endif
+int native_draw_svg_cover_pattern(const VoxGraphitePath *paths, int count,
+    const float *outer, const float *tile, const float *clip,
+    float page_x, float page_y, float scroll_y, float canvas_width, float canvas_height) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+    CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
+    return ladybird_v_skia_draw_svg_cover_pattern(context,paths,count,outer,tile,clip,
+        page_x,page_y,scroll_y,canvas_width,canvas_height);
+#else
+    return 0;
+#endif
+}
+
 #include "native_rounded_svg_ancestor_darwin.h"
 
 int native_draw_svg_path_batch_with_rounded_ancestor(const VoxGraphitePath *paths,

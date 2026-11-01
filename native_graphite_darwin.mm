@@ -1660,3 +1660,5 @@ int vox_graphite_draw_svg_image_pixels(uint8_t* pixels, int width, int height,
     if (rounded_clip) canvas->restore();
     return read_pixels(gpu, recorder.get(), surface.get(), info, pixels, pitch);
 }
+
+#include "native_graphite_svg_pattern.h"

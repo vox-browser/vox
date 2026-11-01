@@ -8,15 +8,20 @@ import painting
 import platform
 
 fn svg_background_paint_commands(image &layout.PaintImageData, width int, height int) ?[]layout.PaintCommand {
+	return svg_background_paint_commands_for_viewport(image,f64(width),f64(height))
+}
+
+fn svg_background_paint_commands_for_viewport(image &layout.PaintImageData,
+	width f64, height f64) ?[]layout.PaintCommand {
 	if resource := image.background_static_svg_resource {
-		return layout.static_svg_background_commands(resource, width, height)
+		return layout.static_svg_background_commands_for_viewport(resource, width, height)
 	}
 	svg_document := image.background_svg_document or { return none }
 	mut document := unsafe { &dom.Document(svg_document) }
 	persistent := platform.enter_persistent()
 	document.set_svg_image_color_scheme(css.preferred_color_scheme_to_string(image.background_svg_color_scheme))
 	platform.leave_persistent(persistent)
-	list := svg_image_document_display_list(document, width, height) or { return none }
+	list := svg_image_document_display_list_for_viewport(document, width, height) or { return none }
 	return layout.display_list_commands(list)
 }
 
@@ -32,6 +37,11 @@ fn svg_background_natural_metrics(image &layout.PaintImageData) ?css.SizeWithAsp
 // SVG backgrounds are replayed, and inspected for MSAA, for every tile of
 // every recording; a document already laid out at that size keeps its list.
 fn svg_image_document_display_list(svg_document &dom.Document, width int, height int) ?&dom.DisplayList {
+	return svg_image_document_display_list_for_viewport(svg_document,f64(width),f64(height))
+}
+
+fn svg_image_document_display_list_for_viewport(svg_document &dom.Document,
+	width f64, height f64) ?&dom.DisplayList {
 	mut document := unsafe { &dom.Document(svg_document) }
 	viewport := document.viewport_rect()
 	if viewport.width == f64(width) && viewport.height == f64(height)

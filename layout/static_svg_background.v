@@ -10,8 +10,8 @@ struct SVGBackgroundImage {
 }
 
 struct StaticSVGBackgroundScene {
-	width    int
-	height   int
+	width    f64
+	height   f64
 	commands []PaintCommand
 }
 
@@ -125,7 +125,12 @@ fn (image SVGBackgroundImage) intrinsic_dimensions() (f64, f64) {
 // be looked up in the host's layout tree.
 pub fn static_svg_background_commands(resource &StaticSVGBackgroundResource, width int,
 	height int) ?[]PaintCommand {
-	if width <= 0 || height <= 0 { return none }
+	return static_svg_background_commands_for_viewport(resource,f64(width),f64(height))
+}
+
+pub fn static_svg_background_commands_for_viewport(resource &StaticSVGBackgroundResource,
+	width f64, height f64) ?[]PaintCommand {
+	if !(width > 0 && height > 0) || width > 32768 || height > 32768 { return none }
 	mut mutable_resource := unsafe { &StaticSVGBackgroundResource(resource) }
 	for scene in resource.scenes {
 		if scene.width == width && scene.height == height { return scene.commands }
@@ -161,7 +166,7 @@ pub fn static_svg_background_commands(resource &StaticSVGBackgroundResource, wid
 	return commands
 }
 
-fn static_svg_document_commands(document &dom.Document, width int, height int) ?[]PaintCommand {
+fn static_svg_document_commands(document &dom.Document, width f64, height f64) ?[]PaintCommand {
 	mut image := unsafe { &dom.Document(document) }
 	viewport := image.viewport_rect()
 	if viewport.width == f64(width) && viewport.height == f64(height)
