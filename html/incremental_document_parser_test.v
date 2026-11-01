@@ -10,7 +10,7 @@ fn incremental_test_parser(content_type string) (&dom.Document, &fetch.Body, &In
 	document.update_readiness(.loading)
 	document.set_ready_to_run_scripts()
 	body := fetch.Body.streaming()
-	mime_type := mimesniff.MimeType.parse(content_type) or { panic(err) }
+	mime_type := mimesniff.MimeType.parse(content_type) or { panic('invalid MIME fixture') }
 	parser := IncrementalDocumentParser.create(document, body, dom.URL{ value: 'https://example.test/stream' }, mime_type)
 	return document, body, parser
 }
@@ -85,7 +85,7 @@ fn test_incremental_document_parser_defers_pumping_until_scripts_are_ready() {
 	mut document := dom.Document.create(dom.url_about_blank())
 	document.update_readiness(.loading)
 	body := fetch.Body.from_bytes('<!doctype html><title>Deferred</title>'.bytes(), .bytes)
-	mime_type := mimesniff.MimeType.parse('text/html;charset=utf-8') or { panic(err) }
+	mime_type := mimesniff.MimeType.parse('text/html;charset=utf-8') or { panic('invalid MIME fixture') }
 	mut parser := IncrementalDocumentParser.create(document, body, dom.URL{ value: 'https://example.test/deferred' }, mime_type)
 	parser.start()
 	assert document.has_deferred_parser_start()
@@ -101,7 +101,7 @@ fn test_incremental_document_parser_holds_encoding_sensitive_bytes_for_late_meta
 	mut document := dom.Document.create(dom.url_about_blank())
 	document.update_readiness(.loading)
 	body := fetch.Body.streaming()
-	mime_type := mimesniff.MimeType.parse('text/html') or { panic(err) }
+	mime_type := mimesniff.MimeType.parse('text/html') or { panic('invalid MIME fixture') }
 	mut parser := IncrementalDocumentParser.create(document, body, dom.URL{
 		value: 'https://example.test/late-charset'
 	}, mime_type)
@@ -145,7 +145,7 @@ fn test_incremental_document_parser_releases_bytes_after_blocking_script() {
 	mut blocking_style := document.create_element('style') or { panic(err) }
 	document.script_blocking_style_sheet_set << blocking_style
 	body := fetch.Body.streaming()
-	mime_type := mimesniff.MimeType.parse('text/html') or { panic(err) }
+	mime_type := mimesniff.MimeType.parse('text/html') or { panic('invalid MIME fixture') }
 	mut parser := IncrementalDocumentParser.create(document, body, dom.URL{
 		value: 'https://example.test/blocked-late-charset'
 	}, mime_type)
