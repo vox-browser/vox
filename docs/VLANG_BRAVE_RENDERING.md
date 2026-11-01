@@ -2,13 +2,81 @@
 
 Pixel-perfect parity remains open. The current settled archived comparison at
 1280 × 800 CSS pixels and scale 1 has **4 differing pixels at the top**,
-**427 at Y 1600**, **zero at every sampled 800-pixel position from Y 2400
+**214 at Y 1600**, **zero at every sampled 800-pixel position from Y 2400
 through 7200**, and **4 at Y 8000**. News at Y 9600 is now **exact**;
 community at Y 10400 has **160** differences and the bottom has **97**.
 Lilly at Y 8800 has **14,681** differences against the full-resolution Brave
-variant. Principles text, sponsor artwork, image decoding and the footer book
+variant. Code text, sponsor artwork, image decoding and the footer book
 still prevent full equality. Copy-button and book-cover geometry agree.
 These results do not establish full live-page or scale-two parity.
+
+## Document origins in cropped glyph rasters
+
+`ceeb64b4` preserves the document origin in Chromium-policy positioned glyph
+blobs before subtracting the integer crop of a small text surface. Previously,
+cropping first changed float addition at a quarter-pixel mask boundary. The
+principles link had the correct font, color, baseline and HarfBuzz advances,
+but its third glyph selected a different mask. The default renderer retains
+relative blobs. Positioned-blob keys include the origin, and compact CPU mask
+keys use the same positioned coordinates as the actual draw.
+
+The new `glyph-document-origin` fixture uses an original 1,136-byte CC0 font.
+At 15px, its I and m advances total 16.875 ideal pixels; individually truncated
+16.16 advances place the following glyph just below that boundary. Two fresh
+Brave references agree exactly. The fixture improves from **828 differences
+to zero**. Thirty native cropped/full-canvas comparisons pass at backing scales
+one and two. Ignoring the new origin makes the full-canvas assertion fail.
+The existing cache ownership checks and **6,240 exact glyph replay comparisons**
+pass normally and with AddressSanitizer and UndefinedBehaviorSanitizer.
+
+The archived Y 1600 comparison improves from **427 to 214**. All 213 changed
+pixels improve and none worsen. The native RGBA output at the other fifteen
+sampled positions is unchanged in the controlled diagnostic sweep. A production
+sweep separately checks the latest shared build against the same fixed Brave
+references. Live scripted loading completes with fonts loaded, all five visible
+image requests complete and zero native errors; this is not live pixel parity.
+The synthetic browser fixture's scale-two capture remains at **9,330**
+differences, with identical native output before and after this fix. The native
+scale-two oracle does not establish browser-wide Retina conformance.
+
+Evidence is under `Build/vlang-glyphs-20261101/`:
+
+- `final-verification.json` verifies all sixteen production captures against
+  the controlled candidate, final bundle identities and the completed checks.
+- `native-checks/`, `native-sanitized/` and their guards retain the native
+  checks. `negative-origin-status.json` retains the failed control assertion.
+- `synthetic-fixture-{before,after}/`,
+  `canonical-fixture-second-reference/` and `font-reproducibility.json` retain
+  the exact scale-one result, independent reference and deterministic font.
+- `glyph-origin-page-comparison.json`, `native-document-page/`,
+  `native-document-page-tail/` and `production-full-page/` retain page captures,
+  readiness audits, identities and unchanged-reference comparisons. The first
+  diagnostic sweep stops on a disk-space error after Y 2400; its remaining
+  positions are retained in the separate tail sweep.
+- `glyph-origin-smoke-v2/` passes thirteen cases before a disk-space error
+  interrupts PNG conversion of the last case. `glyph-origin-smoke-resume/`
+  passes that case without changing its bounds. Both attempts are retained.
+  `glyph-origin-inline-regressions-final.log` passes **all 67 strict fixtures**.
+  `glyph-origin-gradients-final/` and `glyph-origin-live/` retain the remaining
+  graphics and live-loading checks. The aggregate's earlier disk failure is
+  preserved in `final-validation.log` and the individual failed logs.
+- `completed-production.json` pins the reused shared production build from
+  `Build/hn-scroll60-20261101/production-build/`. The browser build exits zero,
+  with no changed implementation inputs. Its surrounding controller exits one
+  at an unrelated raw-binary Hacker News asset assertion after the successful
+  build; it is not recorded as a passing supervisor. `native-text-section.json`
+  verifies that the signed bundle's native instructions match the compiled
+  bridge; signing changes its full-file hash.
+
+The production executable is
+`a3090be3949360c1c114f55d511bb4ce4cb61691459449d2d32c595c0c65a6c7`,
+and its native text library is
+`14c3896931934e842701cffb2184f3e7a07a0059f38b68dfd7d45b9cb2c7562c`.
+They are pinned in `Vox-glyph-origin-installed.app`. Required native source
+hashes are stable across that build. Windowed checks use fresh processes,
+private profiles, scale one and the test display away from the pointer, under
+3 GiB runtime guards. The two earlier requests for the shared production lock
+return busy and do not queue builds.
 
 ## Capture readiness correction
 
