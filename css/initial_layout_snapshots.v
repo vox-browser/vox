@@ -2,6 +2,7 @@ module css
 
 import dom
 import math
+import os
 $if prealloc {
 	import platform
 }
@@ -75,10 +76,41 @@ fn begin_inherited_layout_snapshot(style &ComputedProperties, source &ComputedPr
 	return InitialLayoutSnapshot{}
 }
 
+const disable_geometry_snapshot_keys = os.getenv('VOX_DISABLE_GEOMETRY_SNAPSHOT_KEYS') != ''
+
+fn layout_snapshot_number_bits(number f64) u64 {
+	// Equality treats both zero signs alike. Never split equal snapshots.
+	return if number == 0 { u64(0) } else { math.f64_bits(number) }
+}
+
+fn layout_snapshot_mix(key u64, value u64) u64 {
+	return (key ^ value) * 1099511628211
+}
+
+fn layout_snapshot_size_key(key u64, size &Size) u64 {
+	mut result := layout_snapshot_mix(key, u64(size.type_))
+	if value := size.length_percentage_ {
+		result = layout_snapshot_mix(result, u64(i64(value.unit_code_)))
+		// Calculations keep their ordinary deep comparison. Their pointer is
+		// an ownership detail and must not distinguish equal resolved values.
+		if !value.is_calculated() {
+			result = layout_snapshot_mix(result, layout_snapshot_number_bits(unsafe { value.payload_.number }))
+		}
+	}
+	return result
+}
+
 fn initial_layout_snapshot_key(cache &ComputedLayoutCache) u64 {
 	color := cache.computed_values_color_
-	return math.f64_bits(cache.computed_values_font_size_.to_double())
+	mut key := layout_snapshot_number_bits(cache.computed_values_font_size_.to_double())
 		^ (u64(color.r) << 24 | u64(color.g) << 16 | u64(color.b) << 8 | u64(color.a))
+	if disable_geometry_snapshot_keys { return key }
+	// Font and color alone put most of a page into one bounded bucket. Use
+	// ordinary geometry to separate it before the complete field comparison.
+	key = layout_snapshot_mix(key, layout_snapshot_number_bits(cache.computed_values_font_weight_))
+	key = layout_snapshot_mix(key, u64(cache.computed_values_position_))
+	key = layout_snapshot_size_key(key, &cache.computed_values_width_)
+	return layout_snapshot_size_key(key, &cache.computed_values_height_)
 }
 
 fn (mut candidate InitialLayoutSnapshot) publish(mut style ComputedProperties) {

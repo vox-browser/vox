@@ -140,3 +140,31 @@ fn test_idle_shared_snapshot_does_not_retain_an_obsolete_owner() {
 		assert C.vox_property_store_alive() & 3 == 0
 	}
 }
+
+fn test_idle_snapshot_pool_handles_more_than_one_coarse_bucket_of_geometry() {
+	mut styles := []&ComputedProperties{}
+	for _ in 0 .. 2 {
+		for width in 1 .. 401 {
+			style := idle_snapshot_style()
+			mut values := unsafe { &MutableComputedValues(style) }
+			values.set_width(Size.make_length(Length.make_px(width)))
+			styles << style
+		}
+	}
+	assert share_idle_layout_snapshots(styles) == 400
+	for index in [0, 255, 256, 399] {
+		assert voidptr(styles[index].computed_layout_cache()) == voidptr(styles[index + 400].computed_layout_cache())
+	}
+}
+
+fn test_geometry_snapshot_keys_keep_signed_zero_and_unhashed_fields_correct() {
+	first := idle_snapshot_style()
+	second := idle_snapshot_style()
+	mut a := unsafe { &MutableComputedValues(first) }
+	mut b := unsafe { &MutableComputedValues(second) }
+	a.set_width(Size.make_length(Length.make_px(0.0)))
+	b.set_width(Size.make_length(Length.make_px(-0.0)))
+	assert share_idle_layout_snapshots([first, second]) == 1
+	b.set_opacity(.25)
+	assert share_idle_layout_snapshots([first, second]) == 0
+}

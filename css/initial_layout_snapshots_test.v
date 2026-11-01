@@ -313,3 +313,27 @@ fn test_scripted_typed_styles_share_but_animated_and_untyped_styles_keep_the_ord
 	assert animated.shared_geometry_cache_ == unsafe { nil }
 	assert animated.computed_layout_cache().computed_values_width_ == Size.make_length(Length.make_px(67))
 }
+
+fn test_initial_snapshot_pool_keeps_sharing_after_many_distinct_geometries() {
+	$if !prealloc { return }
+	mut document := initial_snapshot_document()
+	mut scope := document.enter_native_storage()
+	defer {
+		scope.finish()
+		document.release_native_storage()
+	}
+	mut originals := []&ComputedProperties{}
+	for width in 1 .. 401 {
+		mut style := computed_properties_with_initial_values()
+		initial_snapshot_set(mut style, .width, '${width}px')
+		_ = resolve_computed_values_for_document(style, document)
+		originals << style
+	}
+	for index in [0, 255, 256, 399] {
+		mut duplicate := computed_properties_with_initial_values()
+		initial_snapshot_set(mut duplicate, .width, '${index + 1}px')
+		_ = resolve_computed_values_for_document(duplicate, document)
+		assert voidptr(duplicate.computed_layout_cache()) == voidptr(originals[index].computed_layout_cache())
+		assert duplicate.geometry_provenance().matches(duplicate)
+	}
+}

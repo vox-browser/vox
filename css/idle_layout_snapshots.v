@@ -1,6 +1,5 @@
 module css
 
-import math
 
 fn idle_layout_rare_data_is_shareable(data &ComputedLayoutRareData) bool {
 	// Scalar SVG geometry and transform origins have no element-owned clients.
@@ -63,9 +62,7 @@ pub fn share_idle_layout_snapshots(styles []&ComputedProperties) int {
 		if voidptr(cache) == unsafe { nil } || !idle_layout_snapshot_is_shareable(cache) {
 			continue
 		}
-		color := cache.computed_values_color_
-		key := math.f64_bits(cache.computed_values_font_size_.to_double()) ^
-			(u64(color.r) << 24 | u64(color.g) << 16 | u64(color.b) << 8 | u64(color.a))
+		key := initial_layout_snapshot_key(cache)
 		mut found := false
 		mut bucket := buckets[key] or { []&ComputedLayoutCache{} }
 		for previous in bucket {
