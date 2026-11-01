@@ -5,6 +5,7 @@ import dom
 #include "pending_has_lifetime_test.h"
 
 $if gcboehm ? {
+	#flag -DVOX_CSS_PENDING_HAS_LIFETIME_GC
 	fn C.vox_pending_has_watch_owner(index u32, owner voidptr)
 	fn C.vox_pending_has_owners_alive() u32
 	fn C.vox_pending_has_collect(depth u32)

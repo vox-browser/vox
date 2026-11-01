@@ -1,6 +1,6 @@
 #ifndef VOX_CSS_PENDING_HAS_LIFETIME_TEST_H
 #define VOX_CSS_PENDING_HAS_LIFETIME_TEST_H
-#ifdef _VGCBOEHM
+#ifdef VOX_CSS_PENDING_HAS_LIFETIME_GC
 #include <assert.h>
 #include <stdint.h>
 #include <gc/gc.h>
