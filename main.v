@@ -4874,9 +4874,12 @@ fn (mut app BrowserApp) create_image_from_resource_bytes(image_url string, bytes
 						return image
 					}
 				}
+				// Resource publication supplies a completed body, even when HTTP
+				// delivered it in chunks. Transport progress does not create an
+				// incremental RGB paint generator. Existing decoded images are
+				// retained by background_image_uncached before reaching here.
 				if C.native_webp_yuv_paint_supported() != 0 && app.document != unsafe { nil }
-					&& app.document.font_rendering_policy() == .chromium
-					&& !app.webp_generator_requires_rgb(image_url, bytes) {
+					&& app.document.font_rendering_policy() == .chromium {
 					mut width := 0
 					mut height := 0
 					mut size := 0

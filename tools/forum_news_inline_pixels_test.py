@@ -12,6 +12,15 @@ from forum_news_pixels import REPO, VOX, executable_identity, guarded, write_jso
 
 @unittest.skipUnless(sys.platform == 'darwin', 'The reference uses native macOS fonts')
 class ForumNewsInlinePixelsTests(unittest.TestCase):
+    def test_webp_yuv_and_rgba_paint_paths_preserve_reference_pixels(self):
+        for case, width, height in [
+                ('webp-yuv', 1024, 768), ('webp-yuv-scaled', 1024, 768),
+                ('webp-rgba-mip', 1024, 768), ('webp-rgba-mip-blend', 1024, 768),
+                ('webp-alpha-premultiplication', 800, 600),
+                ('webp-root-raster-tiles', 1280, 800)]:
+            with self.subTest(case=case):
+                self.compare_fixture(case, width=width, height=height)
+
     def test_svg_drop_shadow_preserves_local_vectors_and_root_raster_tiles(self):
         self.compare_fixture('verge-svg-filter-space', width=1024, height=768)
 
