@@ -146,6 +146,9 @@ fn chromium_svg_compositor_layer_supported_for_viewport(commands []layout.PaintC
 		}
 		if command_index < opacity_end { continue }
 		command := unsafe { &commands[command_index] }
+		if rect := viewport {
+			if chromium_compositor_leaf_is_culled(command, rect) { continue }
+		}
 		contoured_shadow := command.kind == 'paint_outer_box_shadow' && chromium_contoured_box_supported(command)
 		if command.opacity != 1 || command.group_opacity != 1
 			|| (command.blur != 0 && !contoured_shadow)
