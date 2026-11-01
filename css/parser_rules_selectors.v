@@ -75,6 +75,8 @@ pub mut:
 mut:
 	raw_rules_transient bool
 	component_input_transient bool
+	parsed_rule_selectors map[string]Selector
+	parsed_rule_selector_bytes int
 }
 
 pub fn RuleSelectorParser.create(params ParsingParams, input string, encoding string) RuleSelectorParser {
@@ -3081,7 +3083,7 @@ fn (mut parser RuleSelectorParser) parse_a_selector_list(mut tokens ParserTokenS
 			} else {
 				return none
 			}
-		} else if selector := parser_parse_validated_selector(selector_text, mode, parser.declared_namespaces) {
+		} else if selector := parser.parse_memoized_rule_selector(selector_text, mode) {
 			selectors.selectors << selector
 		} else if parsing_mode == .forgiving {
 			selectors.selectors << selector_from_text(selector_text)

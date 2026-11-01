@@ -2396,6 +2396,7 @@ fn collect_matching_rules_with_storage(style_computer &StyleComputer, abstract_e
  defer { record_diagnostic_instruction_scope(13, diagnostic_matches_start) }
 
 	mut matching_rules := []ScopedMatchingRule{}
+	mut repeated_rule_matches := map[u64]RepeatedRuleMatch{}
 	for scoped_rule_to_run in rules_to_run {
 		// NOTE: When matching an element that is itself a shadow host against a
 		// rule from outside its own shadow root, we must not use the element as
@@ -2482,6 +2483,11 @@ fn collect_matching_rules_with_storage(style_computer &StyleComputer, abstract_e
 				}
 				did_match = matches(selector, matching_slot_element, slot_shadow_host, mut candidate_buffer.context, PseudoElement.slotted, selector_scope, .normal, none)
 			}
+		} else if rule_to_run.scope_rule == none && rule_root == none
+			&& shadow_host_to_use == none && !selector.has_part_pseudo_element() {
+			did_match = match_repeated_rule_selector(selector, abstract_element.element(),
+				style_scope_pseudo_element_from_abstract_element(abstract_element),
+				mut candidate_buffer.context, mut repeated_rule_matches, storage)
 		} else {
 			did_match = matches(selector, abstract_element.element(), shadow_host_to_use, mut candidate_buffer.context, style_scope_pseudo_element_from_abstract_element(abstract_element), selector_scope, .normal, none)
 		}

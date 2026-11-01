@@ -932,6 +932,7 @@ pub mut:
 // by-value graph makes every Selector copy recursively retain/copy its arrays.
 pub struct SelectorData {
 pub mut:
+	repeated_rule_parse            bool
 	text                          string
 	compound_selectors            []CompoundSelector
 	specificity                   ?u32
@@ -1353,15 +1354,14 @@ pub fn (selector Selector) relative_to(parent SimpleSelector) Selector {
 	}
 
 	mut first := true
-	for mut compound_selector in selector.compound_selectors() {
-		if first {
-			if compound_selector.combinator == .no_combinator {
-				compound_selector.combinator = .descendant
-			}
-			first = false
+	for compound_selector in selector.compound_selectors() {
+		copied_compound_selectors << CompoundSelector{
+			...compound_selector
+			combinator: if first && compound_selector.combinator == .no_combinator {
+				.descendant
+			} else { compound_selector.combinator }
 		}
-
-		copied_compound_selectors << compound_selector
+		first = false
 	}
 
 	return selector_from_compound_selectors(copied_compound_selectors)
