@@ -30,5 +30,15 @@ Object.defineProperty(Node.prototype,"compareDocumentPosition",{value:{compareDo
  const target=__compactEqualityState(other);
  return __queryElements(own.bridgeKey,"compareDocumentPosition",JSON.stringify({otherKey:target.bridgeKey,ownState:own.created?own:undefined,otherState:target.created?target:undefined}));
 }}.compareDocumentPosition,writable:true,enumerable:true,configurable:true});
+Object.defineProperty(Node.prototype,"replaceChild",{value:{replaceChild(node,child){
+ "use strict";const own=__compactEqualityState(this);
+ if(arguments.length<2)throw new TypeError("replaceChild requires two arguments");
+ const replacement=__compactEqualityState(node),old=__compactEqualityState(child),touched=[own,replacement,old];
+ for(const state of touched){__compactInvalidateContent(state);const parent=__state.elements[state.parentKey];if(parent)__compactInvalidateContent(parent);}
+ try{__queryElements(own.bridgeKey,"replaceChild",JSON.stringify({own,replacement,child:old}));}
+ catch(error){const match=/^(HierarchyRequestError|NotFoundError|NotSupportedError):\s*(.*)/.exec(String(error.message));if(match)throw new DOMException(match[2],match[1]);throw error;}
+ for(const state of touched){const parent=__queryElements(state.bridgeKey,"nodeParent","");state.parentKey=parent?__compactEqualityState(parent).bridgeKey:"";state.nativeParent=true;if(parent)__compactInvalidateContent(__compactEqualityState(parent));}
+ return child;
+}}.replaceChild,writable:true,enumerable:true,configurable:true});
 '
 }
