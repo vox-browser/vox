@@ -1,14 +1,13 @@
 # BBC homepage instruction comparison
 
 **The requested 10% advantage remains open. BBC does not qualify for
-`OPTIMIZED_SITES.md`.** The latest complete seven-pair cohort has a Vox median
-of **43,359,803,356** retired instructions and a Brave lower-bound median of
-**15,823,854,730**. Its conservative ratio is **3.368777312785835**, above the
-required 0.9. All content audits and native exits pass. All seven enabled Vox
-captures match the original pixels, but control pair 5 and Brave pairs 4 and 7
-fail their unchanged references. This cohort is invalid for acceptance; every
-observation remains included. The enabled median also regresses 0.3177% against
-its disabled control, so no instruction improvement is credited.
+`OPTIMIZED_SITES.md`.** The latest valid seven-pair cohort has a Vox median
+of **40,329,352,824** retired instructions and a Brave lower-bound median of
+**15,970,908,247**. Its conservative ratio is **2.8081095382756427**, above the
+required 0.9. All 21 observations pass content, original pixels and native exits.
+The enabled median improves 3.1608% against its disabled control, but the
+conservative control ratio is 1.1059377404151833; no accepted improvement is
+credited. Every observation remains included.
 
 The machine-readable [evidence](benchmark-results/bbc-brave-instructions-2026-11-01.json)
 retains exact counts for every recorded attempt, including failures and first
@@ -74,6 +73,7 @@ capture marker. An invalid cohort is retained for diagnosis, not acceptance.
 | Numeric-ratio, font-style and duration reuse | 44,005,434,509 | 15,397,702,164 | 3.037884119847623 | Gate fails; Brave pair 4 photo differs |
 | Completed shared O3 production build | 42,995,770,723 | 15,723,370,671 | 3.110810439568189 | All observations valid; gate fails; no isolated compiler attribution |
 | Intrinsic sizes across unrelated font completions | 43,359,803,356 | 15,823,854,730 | 3.368777312785835 | Gate fails; control pair 5 and Brave pairs 4/7 differ; median regresses against control |
+| Original live pending-font intrinsic reuse | 40,329,352,824 | 15,970,908,247 | 2.8081095382756427 | All observations valid; Brave and matched-control gates fail |
 
 The grid block-height cohort alternates an older control, candidate and Brave;
 control/candidate medians are 101,567,929,247 and 90,700,737,334 (10.70% observed
@@ -424,3 +424,34 @@ passes, but initial signing rejects compiler bitcode saved inside the bundle.
 Moving only those intermediate artifacts into the adjacent evidence directory
 and signing the same executable fixes the diagnostic packaging; both attempts
 and artifact hashes are retained.
+
+Commit `b8074e59` extends intrinsic reuse to original, live pending cascades.
+Selected-face completion, failure and display-period changes still expire the
+cascade; an already-refreshed replacement cannot validate earlier geometry.
+The same proof also serves resolved CSS geometry. Unknown inputs, changed
+styles and external containing blocks retain their earlier guards. All 16 CSS
+and 14 layout checks pass in normal, no-GC and preallocated modes, including
+disabled controls. Both broad modes enter all 403 cases and pass 402, with the
+same sole input-baseline failure. Matched-control tooling `9719b766` passes all
+180 instruction-tool checks.
+
+The required production build finishes in 470.54 seconds, peaking at
+6,503,596,032 bytes with its own implementation/test inputs stable. Its pinned
+executable SHA256 is
+`f9ae4f7c5745ab3cde140485e99f2fca41a98bd98255d27ebfbaed9b55880738`.
+Captured compiler input witnesses the original/live pending guard. Startup,
+11 smoke and eight SVG cases pass with stable binary identities. Separate BBC
+diagnostics match the original pixels and content, observe the new path only
+when enabled, and witness 2,424/2,447 JavaScriptCore evaluations in
+candidate/control.
+
+The uninstrumented pending-font cohort changes only
+`VOX_DISABLE_PENDING_INTRINSIC_FONT_REUSE` between identical executables.
+Control median 41,645,708,065 versus enabled 40,329,352,824 is a 3.1608% point
+reduction, with pair 5 regressing. The conservative control ratio
+1.1059377404151833 fails, so no accepted engine saving is credited. All 21
+observations pass content, original references and native exits. First launches
+and Brave trials above 31 billion remain included. The integer Brave gate
+fails: 439,854,987,830 > 140,973,663,474. The guard adopts 65 identities without
+error, peaks at 1,478,033,408 bytes and completes in 144.66 seconds. The requested
+10% advantage remains open.
