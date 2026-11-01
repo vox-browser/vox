@@ -5,6 +5,7 @@
 #include "native_allocator_policy_darwin.h"
 #include "native_raster_buffer_pool.h"
 #include "native_raster_snapshot.h"
+#include "native_immutable_rgba_image.h"
 #include <CoreGraphics/CoreGraphics.h>
 #include <dlfcn.h>
 #include <chrono>
@@ -2357,39 +2358,49 @@ static int draw_css_image_filter(CGContextRef destination, CGImageRef source,
     if (width <= 0 || height <= 0)
         return 0;
 
-    auto source_pitch = static_cast<size_t>(width) * 4;
-    std::vector<uint8_t> source_pixels(source_pitch * static_cast<size_t>(height));
-    auto color_space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
-    auto decode = CGBitmapContextCreate(source_pixels.data(), width, height, 8,
-        source_pitch, color_space,
-        static_cast<CGBitmapInfo>(kCGImageAlphaPremultipliedLast)
-            | static_cast<CGBitmapInfo>(kCGBitmapByteOrder32Big));
-    CGColorSpaceRelease(color_space);
-    if (!decode)
-        return 0;
-    CGContextSetBlendMode(decode, kCGBlendModeCopy);
-    CGContextDrawImage(decode, CGRectMake(0, 0, width, height), source);
-    CGContextRelease(decode);
-    for (size_t offset = 0; !s_chromium_painting && offset < source_pixels.size(); offset += 4) {
-        auto source_alpha = source_pixels[offset + 3];
+    VoxImmutableRGBAImage immutable_source;
+    bool immutable_input = !std::getenv("VOX_DISABLE_IMMUTABLE_FILTER_INPUT");
+    bool direct_source = s_chromium_painting && immutable_input
+        && immutable_source.load(source);
+    auto source_pitch = direct_source ? CGImageGetBytesPerRow(source) : static_cast<size_t>(width) * 4;
+    std::vector<uint8_t> decoded_source;
+    if (!direct_source) {
+        decoded_source.resize(source_pitch * static_cast<size_t>(height));
+        auto color_space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+        auto decode = CGBitmapContextCreate(decoded_source.data(), width, height, 8,
+            source_pitch, color_space,
+            static_cast<CGBitmapInfo>(kCGImageAlphaPremultipliedLast)
+                | static_cast<CGBitmapInfo>(kCGBitmapByteOrder32Big));
+        CGColorSpaceRelease(color_space);
+        if (!decode)
+            return 0;
+        CGContextSetBlendMode(decode, kCGBlendModeCopy);
+        CGContextDrawImage(decode, CGRectMake(0, 0, width, height), source);
+        CGContextRelease(decode);
+    }
+    if (direct_source && std::getenv("VOX_IMMUTABLE_FILTER_INPUT_DIAGNOSTICS"))
+        std::fprintf(stderr, "VOX_IMMUTABLE_FILTER_INPUT width=%d height=%d\n", width, height);
+    auto* source_pixels = direct_source ? immutable_source.pixels() : decoded_source.data();
+    for (size_t offset = 0; !s_chromium_painting && offset < decoded_source.size(); offset += 4) {
+        auto source_alpha = decoded_source[offset + 3];
         if (source_alpha != 0 && source_alpha != 255) {
-            source_pixels[offset] = static_cast<uint8_t>(std::min(255,
-                (source_pixels[offset] * 255 + source_alpha / 2) / source_alpha));
-            source_pixels[offset + 1] = static_cast<uint8_t>(std::min(255,
-                (source_pixels[offset + 1] * 255 + source_alpha / 2) / source_alpha));
-            source_pixels[offset + 2] = static_cast<uint8_t>(std::min(255,
-                (source_pixels[offset + 2] * 255 + source_alpha / 2) / source_alpha));
+            decoded_source[offset] = static_cast<uint8_t>(std::min(255,
+                (decoded_source[offset] * 255 + source_alpha / 2) / source_alpha));
+            decoded_source[offset + 1] = static_cast<uint8_t>(std::min(255,
+                (decoded_source[offset + 1] * 255 + source_alpha / 2) / source_alpha));
+            decoded_source[offset + 2] = static_cast<uint8_t>(std::min(255,
+                (decoded_source[offset + 2] * 255 + source_alpha / 2) / source_alpha));
         }
     }
 
     auto source_info = SkImageInfo::Make(width, height, kRGBA_8888_SkColorType,
         s_chromium_painting ? kPremul_SkAlphaType : kUnpremul_SkAlphaType,
         SkColorSpace::MakeSRGB());
-    auto source_image = SkImages::RasterFromPixmapCopy(
-        SkPixmap(source_info, source_pixels.data(), source_pitch));
-    if (!source_image)
-        return 0;
-
+    sk_sp<SkImage> source_image;
+    if (!immutable_input) {
+        source_image = SkImages::RasterFromPixmapCopy(SkPixmap(source_info, source_pixels, source_pitch));
+        if (!source_image) return 0;
+    }
     std::vector<uint32_t> output_pixels(static_cast<size_t>(width)
         * static_cast<size_t>(height));
     auto output_info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
@@ -2418,7 +2429,7 @@ static int draw_css_image_filter(CGContextRef destination, CGImageRef source,
             return 1;
         auto cropped_image = SkImages::RasterFromPixmapCopy(SkPixmap(
             source_info.makeWH(right - left, bottom - top),
-            source_pixels.data() + static_cast<size_t>(top) * source_pitch + left * 4,
+            source_pixels + static_cast<size_t>(top) * source_pitch + left * 4,
             source_pitch));
         if (!cropped_image)
             return 0;
@@ -2449,6 +2460,8 @@ static int draw_css_image_filter(CGContextRef destination, CGImageRef source,
         }
     }
 
+    if (!source_image) source_image = SkImages::RasterFromPixmapCopy(SkPixmap(source_info, source_pixels, source_pitch));
+    if (!source_image) return 0;
     auto surface = SkSurfaces::WrapPixels(output_info, output_pixels.data(),
         static_cast<size_t>(width) * sizeof(uint32_t));
     if (!surface)
