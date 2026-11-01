@@ -69,7 +69,14 @@ export async function capturePixelReference(page, file, navigation) {
     const first = await capture();
     await new Promise(resolve=>setTimeout(resolve,250));
     const second = await capture();
-    if (!first.equals(second)) throw new Error('Pixel reference changed between consecutive captures');
+    if (!first.equals(second)) {
+        const captures=[file+'.unstable-1.png',file+'.unstable-2.png'];
+        await fs.writeFile(captures[0],first);
+        await fs.writeFile(captures[1],second);
+        await fs.writeFile(file+'.json',JSON.stringify({...state,stable:false,
+            unstable_captures:captures},null,2)+'\n');
+        throw new Error('Pixel reference changed between consecutive captures; frames: '+captures.join(', '));
+    }
     await fs.writeFile(file,second);
     await fs.writeFile(file+'.json',JSON.stringify({...state,stable:true},null,2)+'\n');
     return {file,sha256:crypto.createHash('sha256').update(second).digest('hex'),

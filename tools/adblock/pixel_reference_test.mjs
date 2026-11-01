@@ -81,7 +81,11 @@ test('changing frames cannot leave a passing reference, while offscreen lazy ima
     const page={evaluate:async()=>state,send:async()=>({data:Buffer.from(String(count++)).toString('base64')})};
     await assert.rejects(capturePixelReference(page,file,{coverage:'page',url:state.url}),/changed between/);
     await assert.rejects(fs.stat(file),{code:'ENOENT'});
-    assert.equal(JSON.parse(await fs.readFile(file+'.json','utf8')).stable,false);
+    const failure=JSON.parse(await fs.readFile(file+'.json','utf8'));
+    assert.equal(failure.stable,false);
+    assert.deepEqual(failure.unstable_captures,[file+'.unstable-1.png',file+'.unstable-2.png']);
+    assert.equal(await fs.readFile(failure.unstable_captures[0],'utf8'),'0');
+    assert.equal(await fs.readFile(failure.unstable_captures[1],'utf8'),'1');
     page.send=async()=>({data:Buffer.from('stable').toString('base64')});
     const result=await capturePixelReference(page,file,{coverage:'page',url:state.url});
     assert.equal(result.stable,true);
