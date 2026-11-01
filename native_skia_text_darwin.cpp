@@ -54,6 +54,7 @@
 #include "include/core/SkSurfaceProps.h"
 #include "include/core/SkStream.h"
 #include "include/core/SkTextBlob.h"
+#include "src/core/SkGlyph.h"
 #include "include/core/SkTypeface.h"
 #include "include/core/SkSamplingOptions.h"
 #include "include/effects/SkImageFilters.h"
@@ -476,11 +477,16 @@ class GlyphRasterCache {
         size_t cost;
         ~Entry() { if (image) CGImageRelease(image); }
     };
-    std::list<std::unique_ptr<Entry>> entries;
+    using Entries = std::list<std::unique_ptr<Entry>>;
+    Entries entries;
+    std::unordered_multimap<uint64_t, Entries::iterator> index;
     size_t bytes = 0;
+#ifdef VOX_GLYPH_CACHE_DIAGNOSTICS
+    uint64_t requests = 0, hits = 0, evictions = 0;
+#endif
     size_t byte_limit, entry_limit;
 public:
-    explicit GlyphRasterCache(size_t limit = 8 * 1024 * 1024, size_t count = 512)
+    explicit GlyphRasterCache(size_t limit = 64 * 1024 * 1024, size_t count = 4096)
         : byte_limit(limit), entry_limit(count) { }
     struct Request {
         CGImageRef image {nullptr};
@@ -489,6 +495,12 @@ public:
     Request prepare(std::vector<uint8_t> key, int width, int height,
         uint8_t const* background, size_t pitch)
     {
+#ifdef VOX_GLYPH_CACHE_DIAGNOSTICS
+        if (++requests % 1000 == 0)
+            std::fprintf(stderr, "VOX_GLYPH_CACHE requests=%llu hits=%llu evictions=%llu entries=%zu bytes=%zu\n",
+                (unsigned long long)requests, (unsigned long long)hits, (unsigned long long)evictions,
+                entries.size(), bytes);
+#endif
         if (width <= 0 || height <= 0 || (background && pitch < size_t(width) * 4)) return {};
         size_t row_bytes = size_t(width) * 4;
         if (row_bytes > byte_limit / size_t(height)) return {};
@@ -497,7 +509,9 @@ public:
         if (!entry_limit || cost > std::min(byte_limit, size_t(256 * 1024))) return {};
         uint64_t hash = 14695981039346656037ull;
         for (auto value : key) hash = (hash ^ value) * 1099511628211ull;
-        for (auto it = entries.begin(); it != entries.end(); ++it) {
+        auto candidates = index.equal_range(hash);
+        for (auto candidate = candidates.first; candidate != candidates.second; ++candidate) {
+            auto it = candidate->second;
             auto const& entry = **it;
             if (entry.hash != hash || entry.key != key || entry.width != width || entry.height != height
                 || entry.background.size() != (background ? pixel_bytes : 0)) continue;
@@ -506,6 +520,9 @@ public:
                 equal = !std::memcmp(entry.background.data() + size_t(y) * row_bytes,
                     background + size_t(y) * pitch, row_bytes);
             if (!equal) continue;
+#ifdef VOX_GLYPH_CACHE_DIAGNOSTICS
+            ++hits;
+#endif
             auto image = entry.image;
             entries.splice(entries.begin(), entries, it);
             return {image, nullptr};
@@ -526,14 +543,22 @@ public:
         if (!image || !request.pending) return;
         auto& entry = *request.pending;
         while (!entries.empty() && (bytes + entry.cost > byte_limit || entries.size() >= entry_limit)) {
-            bytes -= entries.back()->cost;
+            auto victim = std::prev(entries.end());
+            auto candidates = index.equal_range((*victim)->hash);
+            for (auto candidate = candidates.first; candidate != candidates.second; ++candidate)
+                if (candidate->second == victim) { index.erase(candidate); break; }
+            bytes -= (*victim)->cost;
             entries.pop_back();
+#ifdef VOX_GLYPH_CACHE_DIAGNOSTICS
+            ++evictions;
+#endif
         }
         entry.image = CGImageRetain(image);
         bytes += entry.cost;
         entries.push_front(std::move(request.pending));
+        index.emplace(entries.front()->hash, entries.begin());
     }
-    void clear() { entries.clear(); bytes = 0; }
+    void clear() { index.clear(); entries.clear(); bytes = 0; }
 };
 GlyphRasterCache s_glyph_raster_cache;
 
@@ -1161,6 +1186,54 @@ extern "C" int ladybird_v_skia_glyph_intercepts(char const* key, int face_index,
     return static_cast<int>(intervals.size());
 }
 
+// CPU horizontal masks snap their baseline and use quarter-pixel horizontal
+// phases. Key the same packed masks and integer placements used by Skia's
+// prepare_for_direct_mask_drawing(), rather than unobservable float jitter.
+// Keep bitmap/color fonts, effects, large text, GPU colors and transforms on
+// the exact original geometry key.
+static bool append_cpu_mask_positions(std::vector<uint8_t>& key, SkFont const& font,
+    SkMatrix const& matrix, SkRect const& bounds, float baseline_x, float baseline_y,
+    uint16_t const* glyphs, double const* positions, int count)
+{
+    if (!font.isBaselineSnap() || font.isEmbeddedBitmaps() || matrix.hasPerspective()
+        || matrix.getSkewX() != 0 || matrix.getSkewY() != 0
+        || !(matrix.getScaleX() > 0 && matrix.getScaleY() > 0)
+        || font.getSize() * std::max(matrix.getScaleX(), matrix.getScaleY()) > 128
+        || !bounds.isFinite() || bounds.width() * matrix.getScaleX() > 8192
+        || bounds.height() * matrix.getScaleY() > 128) return false;
+    auto* face = font.getTypeface();
+    if (!face) return false;
+    static std::unordered_map<SkTypefaceID, bool> outline_faces;
+    auto known = outline_faces.find(face->uniqueID());
+    if (known == outline_faces.end()) {
+        bool outline = true;
+        for (auto tag : {SkSetFourByteTag('s','b','i','x'), SkSetFourByteTag('C','O','L','R'),
+                 SkSetFourByteTag('C','B','D','T'), SkSetFourByteTag('S','V','G',' ')})
+            outline = outline && face->getTableSize(tag) == 0;
+        if (outline_faces.size() >= 64) outline_faces.clear();
+        known = outline_faces.emplace(face->uniqueID(), outline).first;
+    }
+    if (!known->second) return false;
+    auto position_matrix = matrix;
+    position_matrix.preTranslate(baseline_x, baseline_y);
+    position_matrix.postTranslate(SkPackedGlyphID::kSubpixelRound, .5f);
+    std::vector<int32_t> masks;
+    masks.reserve(size_t(count) * 3);
+    for (int i = 0; i < count; ++i) {
+        auto point = position_matrix.mapPoint(SkPoint::Make(float(positions[i * 2]), float(positions[i * 2 + 1])));
+        if (!point.isFinite() || std::abs(point.x()) > 1000000 || std::abs(point.y()) > 1000000) return false;
+        SkPackedGlyphID packed(glyphs[i], point, SkIPoint::Make(SkPackedGlyphID::kXYFieldMask.x(), 0));
+        masks.push_back(int32_t(packed.value()));
+        masks.push_back(int32_t(std::floor(point.x())));
+        masks.push_back(int32_t(std::floor(point.y())));
+    }
+    // The glyph mask shape still depends on the complete linear transform.
+    float linear[] {matrix.getScaleX(), matrix.getScaleY(), font.getSkewX()};
+    append_glyph_key(key, linear, 3);
+    append_glyph_key(key, masks.data(), masks.size());
+    return true;
+}
+
 static bool apply_unrounded_glyph_color(SkPaint&);
 
 static int draw_retained_glyph_run(CGContextRef destination,
@@ -1288,11 +1361,22 @@ static int draw_retained_glyph_run(CGContextRef destination,
         append_glyph_key(key, font_key, sizeof(font_key) / sizeof(font_key[0]));
         auto color_key = paint.getColor4f();
         append_glyph_key(key, &color_key.fR, 4);
-        float geometry[] {font_size, baseline_x, baseline_y, blur, font.getSkewX()};
-        append_glyph_key(key, geometry, 5);
-        SkScalar values[9]; draw_matrix.get9(values); append_glyph_key(key, values, 9);
-        append_glyph_key(key, glyphs, glyph_count);
-        append_glyph_key(key, packed_positions, size_t(glyph_count) * 2);
+        std::vector<uint8_t> mask_positions;
+        bool mask_key = chromium && !has_float_color && !emoji_face && blur == 0
+            && append_cpu_mask_positions(mask_positions, font, draw_matrix, blob->bounds(),
+                baseline_x, baseline_y, glyphs, packed_positions, glyph_count);
+        uint32_t key_kind = mask_key;
+        append_glyph_key(key, &key_kind, 1);
+        if (mask_key) {
+            append_glyph_key(key, &font_size, 1);
+            key.insert(key.end(), mask_positions.begin(), mask_positions.end());
+        } else {
+            float geometry[] {font_size, baseline_x, baseline_y, blur, font.getSkewX()};
+            append_glyph_key(key, geometry, 5);
+            SkScalar values[9]; draw_matrix.get9(values); append_glyph_key(key, values, 9);
+            append_glyph_key(key, glyphs, glyph_count);
+            append_glyph_key(key, packed_positions, size_t(glyph_count) * 2);
+        }
         cached = s_glyph_raster_cache.prepare(std::move(key), raster_width, raster_height, backdrop.pixels, backdrop.pitch);
     }
     auto destination_rect = CGRectMake(static_cast<float>(region.left),

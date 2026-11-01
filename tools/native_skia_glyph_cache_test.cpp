@@ -122,6 +122,37 @@ int main()
     assert(cache.prepare(key, 4, 4, nullptr, 0).image);
     assert(!cache.prepare(key, 4, 4, padded.data(), 15).pending);
     assert(!cache.prepare(key, 400, 400, nullptr, 0).pending);
+    // The same key may have several exact backdrops. Index lookup must visit
+    // each version, and eviction/clear must remove its list iterator.
+    GlyphRasterCache versions(4096, 2);
+    std::vector<uint8_t> shared_key {17};
+    auto first = pixels;
+    auto second = pixels; second[9]++;
+    for (auto* input : {&first, &second}) {
+        auto pending = versions.prepare(shared_key, 4, 4,
+            reinterpret_cast<uint8_t const*>(input->data()), 16);
+        assert(pending.pending && !pending.image);
+        versions.finish(std::move(pending), image);
+    }
+    for (int pass = 0; pass < 8; ++pass)
+        for (auto* input : {&first, &second})
+            assert(versions.prepare(shared_key, 4, 4,
+                reinterpret_cast<uint8_t const*>(input->data()), 16).image);
+    for (int generation = 0; generation < 64; ++generation) {
+        std::vector<uint8_t> current_key {uint8_t(generation + 32)};
+        auto pending = versions.prepare(current_key, 4, 4, nullptr, 0);
+        assert(pending.pending && !pending.image);
+        versions.finish(std::move(pending), image);
+        assert(versions.prepare(current_key, 4, 4, nullptr, 0).image);
+        assert(!versions.prepare(shared_key, 4, 4,
+            reinterpret_cast<uint8_t const*>(first.data()), 16).image);
+        if (generation % 7 == 0) versions.clear();
+    }
+    auto moved_request = versions.prepare(shared_key, 4, 4, nullptr, 0);
+    versions.finish(std::move(moved_request), image);
+    std::swap(versions, cache);
+    assert(cache.prepare(shared_key, 4, 4, nullptr, 0).image);
+    versions.clear(); cache.clear();
     ladybird_v_skia_release_unused_graphics_memory();
     CGImageRelease(image); CGContextRelease(context);
     std::cout << "Native glyph cache: " << comparisons << " exact replay comparisons passed\n";
