@@ -12,6 +12,7 @@
 #include "native_chromium_image_decode_cache.h"
 #include "native_picture_typeface_cache.h"
 #include "native_graphite_solid_rect.h"
+#include "native_plain_rect_raster.h"
 #include "native_svg_path_regions.h"
 #include "native_chromium_raster_phase.h"
 #include "native_chromium_raster_rows.h"
@@ -3021,7 +3022,12 @@ static bool draw_chromium_sparse_rounded(CGContextRef destination, VoxGraphiteSh
     float hy = shape.fill ? 0 : shape.thickness * shape.matrix[4] / 2;
     if (!shape.fill && (!(hx > 0 && hy > 0) || !std::isfinite(hx) || !std::isfinite(hy)
             || edges[2] - edges[0] <= hx * 2 || edges[3] - edges[1] <= hy * 2)) return false;
-    for (int i = 0; i < 4; ++i) {
+    auto plain_core = vox_plain_rect_core(shape, width, height);
+#ifdef VOX_DISABLE_PLAIN_RECT_STRIPS
+    plain_core = {};
+#endif
+    bool plain = !plain_core.empty();
+    for (int i = 0; !plain && i < 4; ++i) {
         float half = i % 2 ? hy : hx;
         for (float edge : {edges[i] - half, edges[i] + half})
             if (!std::isfinite(edge) || edge != std::floor(edge)) return false;
@@ -3032,9 +3038,9 @@ static bool draw_chromium_sparse_rounded(CGContextRef destination, VoxGraphiteSh
             || shape.rect[i] < 0 || shape.rect[i + 1] < 0) return false;
         rx = std::max(rx, shape.rect[i]); ry = std::max(ry, shape.rect[i + 1]);
     }
-    if (rx == 0 || ry == 0) return false;
+    if (!plain && (rx == 0 || ry == 0)) return false;
     float cw = std::ceil(rx * shape.matrix[0] + hx) + 2, ch = std::ceil(ry * shape.matrix[4] + hy) + 2;
-    if (cw * 2 >= edges[2] - edges[0] || ch * 2 >= edges[3] - edges[1] || cw * ch > 4096) return false;
+    if (!plain && (cw * 2 >= edges[2] - edges[0] || ch * 2 >= edges[3] - edges[1] || cw * ch > 4096)) return false;
     long fc = grid.owner(first_x, grid.width, grid.columns), lc = grid.owner(first_x + width - 1, grid.width, grid.columns);
     long fr = grid.owner(first_y, grid.height, grid.rows), lr = grid.owner(first_y + height - 1, grid.height, grid.rows);
     // The same mapped corner cuts must survive each original float addition.
@@ -3044,7 +3050,8 @@ static bool draw_chromium_sparse_rounded(CGContextRef destination, VoxGraphiteSh
         float mapped[4];
         if (!vox_axis_aligned_rect(tile, mapped)) return false;
         for (int e = 0; e < 4; ++e)
-            if (double(mapped[e]) != double(edges[e]) + (e % 2 ? oy : ox)) return false;
+            if (std::abs(double(mapped[e]) - (double(edges[e]) + (e % 2 ? oy : ox)))
+                > (plain ? .25 : 0)) return false;
     }
     double lcut = std::ceil(edges[0] + cw), rcut = std::floor(edges[2] - cw);
     double tcut = std::ceil(edges[1] + ch), bcut = std::floor(edges[3] - ch);
@@ -3059,10 +3066,17 @@ static bool draw_chromium_sparse_rounded(CGContextRef destination, VoxGraphiteSh
         copy_backdrop_pixels(source, part.width, part.height, part.pixels);
         parts.push_back(std::move(part));
     };
-    add(edges[0] - hx - 2, edges[1] - hy - 2, lcut, tcut);
-    add(rcut, edges[1] - hy - 2, edges[2] + hx + 2, tcut);
-    add(edges[0] - hx - 2, bcut, lcut, edges[3] + hy + 2);
-    add(rcut, bcut, edges[2] + hx + 2, edges[3] + hy + 2);
+    if (plain) {
+        add(0, 0, width, plain_core.top);
+        add(0, plain_core.bottom, width, height);
+        add(0, plain_core.top, plain_core.left, plain_core.bottom);
+        add(plain_core.right, plain_core.top, width, plain_core.bottom);
+    } else {
+        add(edges[0] - hx - 2, edges[1] - hy - 2, lcut, tcut);
+        add(rcut, edges[1] - hy - 2, edges[2] + hx + 2, tcut);
+        add(edges[0] - hx - 2, bcut, lcut, edges[3] + hy + 2);
+        add(rcut, bcut, edges[2] + hx + 2, edges[3] + hy + 2);
+    }
     // Every tile reads the immutable destination, including its shared border;
     // only texels owned by that tile are copied into the staged corner images.
     for (long row = fr; row <= lr; ++row) for (long column = fc; column <= lc; ++column) {
@@ -3102,6 +3116,34 @@ static bool draw_chromium_sparse_rounded(CGContextRef destination, VoxGraphiteSh
                     r - l, part.pixels.data() + size_t(y - part.top) * part.width + l - part.left);
         }
     }
+    if (plain && !shape.fill) {
+        // The stroke's interior is unchanged backdrop. Its disjoint device-
+        // aligned strips can publish independently without copying that large
+        // empty area. Prepare every owned image before changing the destination
+        // so an allocation failure still falls back to the original replay.
+        std::vector<CGImageRef> images;
+        for (auto& part : parts) {
+            auto image = create_pixel_image(destination, std::move(part.pixels), part.width, part.height);
+            if (!image) {
+                for (auto previous : images) CGImageRelease(previous);
+                return false;
+            }
+            images.push_back(image);
+        }
+        for (size_t i = 0; i < parts.size(); ++i) {
+            auto const& part = parts[i];
+            composite_image(destination, images[i], CGRectMake(
+                region.left + part.left / double(scale),
+                canvas_height - region.top - (part.top + part.height) / double(scale),
+                part.width / double(scale), part.height / double(scale)), true);
+            CGImageRelease(images[i]);
+        }
+#ifdef VOX_PLAIN_RECT_STRIP_DIAGNOSTICS
+        std::fprintf(stderr, "VOX_PLAIN_RECT_STRIPS scroll=%g fill=0 publications=%zu result=1\n",
+            s_root_raster_scroll_y, parts.size());
+#endif
+        return true;
+    }
     // One publication keeps Quartz's original image footprint and clipping.
     // Assemble in the readable destination's RGBA order. Only the small GPU
     // corner patches need channel conversion; the full backdrop and output
@@ -3118,7 +3160,8 @@ static bool draw_chromium_sparse_rounded(CGContextRef destination, VoxGraphiteSh
         int(std::clamp<double>(edges[2], 0, width)),
         int(std::clamp<double>(edges[3], 0, height))
     };
-    auto omitted = shape.fill ? covered : RasterRegion {};
+    auto omitted = plain && shape.fill ? RasterRegion{plain_core.left, plain_core.top, plain_core.right, plain_core.bottom}
+        : (shape.fill ? covered : RasterRegion {});
     for (int y = 0; y < height; ++y) {
         auto copy = [&](int left, int right) {
             std::memcpy(pixels + size_t(y) * width + left,
@@ -3132,7 +3175,14 @@ static bool draw_chromium_sparse_rounded(CGContextRef destination, VoxGraphiteSh
     auto rectangle = shape;
     std::fill(rectangle.rect + 4, rectangle.rect + 12, 0);
     std::swap(rectangle.red, rectangle.blue);
-    bool filled = rectangle.fill
+    bool filled = plain;
+    if (plain && shape.fill) {
+        uint32_t color = 0xff000000u | uint32_t(shape.blue) << 16
+            | uint32_t(shape.green) << 8 | shape.red;
+        for (int y = plain_core.top; y < plain_core.bottom; ++y)
+            std::fill(pixels + size_t(y) * width + plain_core.left,
+                pixels + size_t(y) * width + plain_core.right, color);
+    } else if (!plain) filled = rectangle.fill
         ? vox_draw_solid_rect(reinterpret_cast<uint8_t*>(pixels), width, height, width * 4, true, rectangle)
         : vox_draw_solid_stroke(reinterpret_cast<uint8_t*>(pixels), width, height, width * 4, true, rectangle);
     if (!filled) return false;
@@ -3148,6 +3198,10 @@ static bool draw_chromium_sparse_rounded(CGContextRef destination, VoxGraphiteSh
     int result = composite_image(destination, image,
         CGRectMake(region.left, canvas_height - region.bottom, region.width(), region.height()), true);
     if (image) CGImageRelease(image);
+#ifdef VOX_PLAIN_RECT_STRIP_DIAGNOSTICS
+    if (plain) std::fprintf(stderr, "VOX_PLAIN_RECT_STRIPS scroll=%g fill=%d core=%d,%d,%d,%d result=%d\n",
+        s_root_raster_scroll_y, shape.fill, plain_core.left, plain_core.top, plain_core.right, plain_core.bottom, result);
+#endif
     return result;
 }
 
@@ -3282,6 +3336,19 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
     auto raster_height = raster_dimension(region.height(), destination_scale);
     auto raster_scale_x = static_cast<float>(raster_width) / static_cast<float>(region.width());
     auto raster_scale_y = static_cast<float>(raster_height) / static_cast<float>(region.height());
+#ifdef VOX_PLAIN_RECT_STRIP_DIAGNOSTICS
+    if (s_chromium_painting && s_root_raster_scroll_y > 0) {
+        static unsigned reported = 0;
+        if (reported++ < 48) {
+            auto color = paint.getColor4f();
+            std::fprintf(stderr, "VOX_PLAIN_GATE root=%d prefetch=%d fill=%d backdrop=%d underlay=%d clipouts=%zu rect=%d palette=%d color=%g,%g,%g,%g bytes=%d,%d,%d,%d xywh=%g,%g,%g,%g\n",
+                s_raster_layer_is_root, s_plain_rect_prefetch != nullptr, fill, opaque_backdrop,
+                has_underlay, s_rect_clip_outs.size(), rounded_rect.isRect(),
+                color == SkColor4f::FromColor(SkColorSetRGB(red, green, blue)),
+                color.fR, color.fG, color.fB, color.fA, red, green, blue, alpha, x, y, rect_width, rect_height);
+        }
+    }
+#endif
     if (!s_plain_rect_prefetch && s_chromium_painting && fill < 2 && opaque_backdrop && !has_underlay && s_rect_clip_outs.empty()) {
         VoxGraphiteShape sparse {
             .matrix = {}, .rect = {x, y, rect_width, rect_height,

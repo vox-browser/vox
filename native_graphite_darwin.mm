@@ -967,7 +967,10 @@ static bool draw_rounded_parts(VoxGraphitePixelRegion const* regions, int count,
             && edges[i] + half == std::floor(edges[i] + half);
     }
     if (!shape.fill) {
-        if (!aligned_stroke || edges[2] - edges[0] <= half_x * 2
+#ifdef VOX_DISABLE_PLAIN_RECT_STRIPS
+        if (!aligned_stroke) return false;
+#endif
+        if (edges[2] - edges[0] <= half_x * 2
             || edges[3] - edges[1] <= half_y * 2) return false;
         for (int i = 0; i < 4; ++i) {
             float half = i % 2 ? half_y : half_x;

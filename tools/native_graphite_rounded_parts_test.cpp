@@ -125,13 +125,34 @@ int main(int argc, char** argv)
         views[0].pitch = pitch;
         if (stroke) {
             auto valid = shape;
-            for (int defect = 0; defect < 8; ++defect) {
+            // Fractional thin strokes retain every covered edge from the GPU.
+            // Compare all four compact views with the unchanged full renderer.
+            for (float thickness : {.25f, .75f}) {
+                shape = valid;
+                shape.thickness = thickness / scale;
+                std::fill(expected.begin(), expected.end(), 0);
+                for (int i = 0; i < 4; ++i) for (int y = 0; y < h; ++y)
+                    std::memcpy(expected.data() + (size_t(views[i].y + y) * width + views[i].x) * 4,
+                        views[i].pixels + y * pitch, w * 4);
+                assert(full(expected.data(), width, height, width * 4, background, &shape));
+                assert(draw(views, 4, width, height, background, &shape));
+                for (int i = 0; i < 4; ++i) {
+                    assert(storage[i][0] == 0xa9);
+                    for (int y = 0; y < h; ++y) {
+                        assert(!std::memcmp(views[i].pixels + y * pitch,
+                            expected.data() + (size_t(views[i].y + y) * width + views[i].x) * 4, w * 4));
+                        for (int b = w * 4; b < pitch; ++b) assert(views[i].pixels[y * pitch + b] == 0xa9);
+                    }
+                    std::copy(saved[i].begin(), saved[i].end(), storage[i].begin());
+                }
+                ++comparisons;
+            }
+            for (int defect : {0, 1, 2, 3, 5, 6, 7}) {
                 shape = valid;
                 if (defect == 0) shape.thickness = 0;
                 if (defect == 1) shape.thickness = -1;
                 if (defect == 2) shape.thickness = std::numeric_limits<float>::infinity();
                 if (defect == 3) shape.thickness = std::numeric_limits<float>::quiet_NaN();
-                if (defect == 4) shape.thickness = .25f / scale;
                 if (defect == 5) shape.rect[2] = shape.thickness / 2;
                 if (defect == 6) shape.has_underlay = 1;
                 if (defect == 7) shape.alpha = 128;
