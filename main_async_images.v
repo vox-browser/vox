@@ -6,6 +6,7 @@ import adblock
 import dom
 import html
 import platform
+import painting
 
 const max_browser_image_fetches = 8
 
@@ -26,6 +27,9 @@ mut:
 	active_fetches int
 	cancelled bool
 	deferred_lazy_images []DeferredBrowserLazyImage
+	lazy_image_queue_revision u64
+	lazy_image_probe DeferredLazyImageProbe
+	lazy_image_probe_offsets []painting.Point
 }
 
 fn new_browser_image_request_loader(document &dom.Document, resources map[string]PreloadedResource) &BrowserImageRequestLoader {
@@ -54,6 +58,7 @@ fn (mut loader BrowserImageRequestLoader) cancel() {
 		platform.release_closure(voidptr(request.complete))
 	}
 	loader.deferred_lazy_images = []DeferredBrowserLazyImage{}
+	loader.lazy_image_queue_revision++
 	loader.queued = []BrowserImageFetchJob{}
 	for _, completions in loader.pending {
 		for complete in completions { platform.release_closure(voidptr(complete)) }
@@ -99,6 +104,7 @@ fn (mut loader BrowserImageRequestLoader) request(image &dom.HTMLImageElement,
 				address: address
 				complete: complete
 			}
+			loader.lazy_image_queue_revision++
 			request_browser_frame_during_preparation()
 			return
 		}

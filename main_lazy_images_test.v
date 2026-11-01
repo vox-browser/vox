@@ -50,6 +50,61 @@ fn test_native_lazy_images_wait_for_geometry_and_load_when_scrolled_near() {
 	assert !app.resume_deferred_lazy_image_requests()
 }
 
+fn test_lazy_image_negative_probe_is_reused_until_geometry_or_policy_changes() {
+	mut app := lazy_native_test_app('<div style="height:5000px"></div><img id="far" loading="lazy" width="1" height="1" src="${lazy_native_png}">', true)
+	defer { if mut owner := app.image_request_loader { owner.cancel() }; app.document.finalize() }
+	app.relayout(320, 284)
+	loader := app.image_request_loader?
+	assert !app.resume_deferred_lazy_image_requests()
+	assert loader.lazy_image_probe.valid
+	probe := loader.lazy_image_probe
+	for _ in 0 .. 3 {
+		assert !app.has_resumable_lazy_image_requests()
+		assert !app.resume_deferred_lazy_image_requests()
+		assert loader.lazy_image_probe == probe
+	}
+	mut image := app.document.get_element_by_id('far')?
+	image.set_attribute_value('loading', 'eager')
+	app.relayout(320, 284)
+	assert app.has_resumable_lazy_image_requests()
+	assert app.resume_deferred_lazy_image_requests()
+	assert lazy_native_test_model(app, 'far').complete()
+}
+
+fn test_lazy_image_negative_probe_observes_nested_scrolling_without_new_commands() {
+	mut app := lazy_native_test_app('<div id="scroller" style="height:200px;overflow:auto"><div style="height:5000px"></div><img id="far" loading="lazy" width="1" height="1" src="${lazy_native_png}"></div>', true)
+	defer { if mut owner := app.image_request_loader { owner.cancel() }; app.document.finalize() }
+	app.relayout(320, 284)
+	assert !app.resume_deferred_lazy_image_requests()
+	loader := app.image_request_loader?
+	assert loader.lazy_image_probe.valid
+	probe := loader.lazy_image_probe
+	generation := app.paint_generation
+	mut scroller := app.document.get_element_by_id('scroller')?
+	scroller.set_scroll_top(4900)
+	assert app.paint_generation == generation
+	assert app.has_resumable_lazy_image_requests()
+	assert (app.deferred_lazy_image_probe(loader) or { panic('missing scroll probe') }) != probe
+	assert app.resume_deferred_lazy_image_requests()
+	assert lazy_native_test_model(app, 'far').complete()
+}
+
+fn test_lazy_image_negative_probe_still_discards_a_superseded_model_request() {
+	mut app := lazy_native_test_app('<div style="height:5000px"></div><img id="far" loading="lazy" width="1" height="1" src="${lazy_native_png}">', true)
+	defer { if mut owner := app.image_request_loader { owner.cancel() }; app.document.finalize() }
+	app.relayout(320, 284)
+	assert !app.resume_deferred_lazy_image_requests()
+	loader := app.image_request_loader?
+	assert loader.lazy_image_probe.valid
+	mut model := lazy_native_test_model(app, 'far')
+	// This public model operation changes request ownership without touching
+	// the DOM or any of the geometry revisions in the negative probe.
+	model.upgrade_pending_request_to_current_request()
+	assert model.pending_request() == none
+	assert !app.resume_deferred_lazy_image_requests()
+	assert loader.deferred_lazy_images.len == 0
+}
+
 fn test_native_lazy_images_resume_on_reveal_or_eager_attribute_change() {
 	for reveal in [false,true] {
 		mut app := lazy_native_test_app('<img id="image" loading="lazy" style="display:none" src="${lazy_native_png}">', true)
