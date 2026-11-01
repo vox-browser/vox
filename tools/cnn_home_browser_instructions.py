@@ -186,6 +186,8 @@ def parse_args(argv=None):
                    help='Alternate the same Vox binary with family-wide font completion invalidation')
     control.add_argument('--control-hidden-animations', action='store_true',
                    help='Alternate the same Vox binary with hidden CSS animation redraws enabled')
+    control.add_argument('--control-live-font-cascades', action='store_true',
+                   help='Alternate the same Vox binary without reusing retained font inputs across generations')
     p.add_argument('--repeat', type=int, default=7)
     p.add_argument('--settle-seconds', type=float, default=5)
     p.add_argument('--timeout', type=float, default=180)
@@ -250,7 +252,8 @@ def main():
     apps = {}
     sources = [('vox', args.vox_app), ('brave', args.brave_app)]
     has_control = (args.control_static_media or args.control_lazy_images
-                   or args.control_font_completion or args.control_hidden_animations)
+                   or args.control_font_completion or args.control_hidden_animations
+                   or args.control_live_font_cascades)
     if has_control:
         sources.append(('control', args.vox_app))
     for engine, source in sources:
@@ -302,7 +305,8 @@ def main():
                 args.vox_environment = dict(VOX_PROXY=replay.ready['proxy'], SSL_CERT_FILE=replay.ready['ca'],
                     VOX_BLOCK_COOKIE_BANNERS='0', VOX_ADBLOCK_LOG=str(folder / 'requests.jsonl'))
                 if engine == 'control':
-                    key = ('VOX_DISABLE_HIDDEN_ANIMATION_THROTTLING' if args.control_hidden_animations
+                    key = ('VOX_DISABLE_LIVE_FONT_CASCADE_REUSE' if args.control_live_font_cascades
+                           else 'VOX_DISABLE_HIDDEN_ANIMATION_THROTTLING' if args.control_hidden_animations
                            else 'VOX_DISABLE_FACE_SPECIFIC_FONT_COMPLETION' if args.control_font_completion
                            else 'VOX_DISABLE_LAZY_IMAGE_PROBE_CACHE' if args.control_lazy_images
                            else 'VOX_DISABLE_STATIC_MEDIA_RASTER_REUSE')
