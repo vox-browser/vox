@@ -19,12 +19,79 @@ struct SharedRootRecording {
     std::vector<uint32_t> backdrop;
     int backdrop_width = 0;
     bool opaque_backdrop_recorded = false;
+    unsigned deferred_leaves = 0;
 };
 std::unique_ptr<SharedRootRecording> s_shared_root_recording;
 bool s_shared_root_enabled = false;
 bool s_shared_layer_enabled = false;
 bool s_shared_layer_backdrop = false;
 int s_shared_viewport_width = 0, s_shared_viewport_height = 0;
+bool s_deferred_layer_frame_enabled = false;
+bool s_deferred_layer_frame_failed = false;
+std::unordered_map<CGContextRef, CGRect> s_deferred_layer_destinations;
+
+extern "C" void ladybird_v_skia_begin_deferred_layer_frame(int enabled)
+{
+    s_deferred_layer_frame_enabled = enabled && !std::getenv("VOX_DISABLE_DEFERRED_LAYERS");
+    s_deferred_layer_frame_failed = false;
+    s_deferred_layer_destinations.clear();
+}
+
+extern "C" int ladybird_v_skia_finish_deferred_layer_frame()
+{
+    int result = !s_deferred_layer_frame_failed;
+    s_deferred_layer_frame_enabled = false;
+    s_deferred_layer_destinations.clear();
+    return result;
+}
+
+// The native adapter calls this only for its private opacity bitmap, whose
+// initial clip is constructed with ClipToRect. Never infer a rectangular clip
+// from an arbitrary CGContext's bounding box.
+extern "C" void ladybird_v_skia_set_deferred_layer_destination(CGContextRef context, int active)
+{
+    if (!active) { s_deferred_layer_destinations.erase(context); return; }
+    if (!s_deferred_layer_frame_enabled || !context) return;
+    auto clip = CGContextConvertRectToDeviceSpace(context, CGContextGetClipBoundingBox(context));
+    if (CGRectIsEmpty(clip) || CGRectIsNull(clip) || CGRectIsInfinite(clip)) return;
+    for (double edge : {CGRectGetMinX(clip), CGRectGetMinY(clip), CGRectGetMaxX(clip), CGRectGetMaxY(clip)})
+        if (!std::isfinite(edge) || edge != std::floor(edge)) return;
+    s_deferred_layer_destinations[context] = clip;
+}
+
+bool shared_recording_defers_leaf_raster(CGContextRef destination, SkRect const& ink)
+{
+    if (!s_deferred_layer_frame_enabled || !ink.isFinite() || ink.isEmpty()
+        || !s_shared_root_recording || s_shared_root_recording->root
+        || s_shared_root_recording->destination != destination
+        || s_shared_root_recording->replay_bounds.empty()
+        || !s_shared_root_recording->blocked_bounds.empty()
+        || !s_deferred_layer_destinations.count(destination)) return false;
+    auto& group = *s_shared_root_recording;
+    auto bounds = SkRect::MakeXYWH(group.origin_x,
+        group.origin_y + group.page_y - group.scroll_y, group.layer_width, group.layer_height);
+    for (auto drawn : group.replay_bounds) {
+        if (!drawn.isFinite()) return false;
+        bounds.join(drawn);
+    }
+    // Preserve old fallback pixels outside the complete picture's publication
+    // bounds, including text overflow and antialiasing fringes.
+    if (!bounds.contains(ink)) return false;
+    ++group.deferred_leaves;
+    return true;
+}
+
+struct DeferredLayerPublication {
+    SharedRootRecording const& group;
+    bool published = false;
+    ~DeferredLayerPublication() {
+        if (group.deferred_leaves && !published) s_deferred_layer_frame_failed = true;
+    }
+};
+#ifdef VOX_TEST_DEFERRED_LAYERS
+bool s_test_fail_deferred_layer;
+#endif
+
 
 struct SharedClip {
     SkRRect rect;
@@ -310,7 +377,18 @@ void shared_recording_image(CGContextRef destination, SkMatrix const& matrix,
 void finish_shared_recording()
 {
     auto group = std::move(s_shared_root_recording);
-    if (!group || group->replay_bounds.empty() || !group->columns) return;
+    if (!group) return;
+    DeferredLayerPublication publication {*group};
+    if (group->replay_bounds.empty() || !group->columns) return;
+#ifdef VOX_TEST_DEFERRED_LAYERS
+    if (s_test_fail_deferred_layer && group->deferred_leaves) return;
+#endif
+    if (group->deferred_leaves) {
+        auto found = s_deferred_layer_destinations.find(group->destination);
+        auto clip = CGContextConvertRectToDeviceSpace(group->destination,
+            CGContextGetClipBoundingBox(group->destination));
+        if (found == s_deferred_layer_destinations.end() || !CGRectEqualToRect(found->second, clip)) return;
+    }
     if (int64_t(group->columns) * group->rows > INT32_MAX) return;
     auto picture = group->recorder->finishRecordingAsPicture();
     SkSerialProcs procs;
@@ -392,9 +470,12 @@ void finish_shared_recording()
                 native_composite_opacity_pixels(output, backdrop, output, width, 1);
             }
         }
-        composite_pixels(group->destination, std::move(pixels), width, height, left,
+        publication.published = composite_pixels(group->destination, std::move(pixels), width, height, left,
             group->canvas_height - top - height / group->scale,
-            width / group->scale, height / group->scale, true);
+            width / group->scale, height / group->scale, true) != 0;
+        if (publication.published && group->deferred_leaves && std::getenv("VOX_PICTURE_REGION_DIAGNOSTICS"))
+            std::fprintf(stderr, "VOX_DEFERRED_LAYER leaves=%u width=%d height=%d\n",
+                group->deferred_leaves, width, height);
         return;
     }
     int width = group->tile_width, height = group->tile_height;

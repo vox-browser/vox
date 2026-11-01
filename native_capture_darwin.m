@@ -999,6 +999,37 @@ static int native_compositing_canvas_is_readable(CGContextRef context) {
 		&& ctm.a > 0 && ctm.d > 0 && ctm.b == 0 && ctm.c == 0 && ctm.tx == 0 && ctm.ty == 0;
 }
 
+static void native_set_deferred_layer_destination(CGContextRef context, int active) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+    typedef void (*Set)(CGContextRef, int);
+    static Set set;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{ set = (Set)dlsym(RTLD_DEFAULT, "ladybird_v_skia_set_deferred_layer_destination"); });
+    if (set) set(context, active);
+#endif
+}
+
+void native_begin_deferred_layer_frame(int enabled) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+    typedef void (*Begin)(int);
+    static Begin begin;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{ begin = (Begin)dlsym(RTLD_DEFAULT, "ladybird_v_skia_begin_deferred_layer_frame"); });
+    if (begin) begin(enabled);
+#endif
+}
+
+int native_finish_deferred_layer_frame(void) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+    typedef int (*Finish)(void);
+    static Finish finish;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{ finish = (Finish)dlsym(RTLD_DEFAULT, "ladybird_v_skia_finish_deferred_layer_frame"); });
+    if (finish) return finish();
+#endif
+    return 1;
+}
+
 static int native_begin_offscreen_opacity_group(NativeOpacityGroup *group, CGContextRef parent,
 	float opacity, int blend_mode) {
 	if (!native_compositing_canvas_is_readable(parent)) {
@@ -1026,6 +1057,7 @@ static int native_begin_offscreen_opacity_group(NativeOpacityGroup *group, CGCon
 	if (context == NULL) return 0;
 	CGContextConcatCTM(context, CGContextGetCTM(parent));
 	CGContextClipToRect(context, clip);
+	native_set_deferred_layer_destination(context, 1);
 	CGContextSetShouldAntialias(context, true);
 	CGContextSetInterpolationQuality(context, CGContextGetInterpolationQuality(parent));
 	BOOL flipped = [[NSGraphicsContext currentContext] isFlipped];
@@ -1043,6 +1075,10 @@ static int native_begin_offscreen_opacity_group(NativeOpacityGroup *group, CGCon
 }
 
 static void native_end_offscreen_opacity_group(NativeOpacityGroup *group) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+    ladybird_v_skia_finish_shared_recording();
+#endif
+	native_set_deferred_layer_destination(group->context, 0);
 	[NSGraphicsContext restoreGraphicsState];
 	native_font_compositing_context = group->parent;
 	native_font_compositing_transparency_depth = 0;

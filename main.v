@@ -7321,178 +7321,200 @@ fn (mut app BrowserApp) draw() {
 		}
 	}
 	if paint_document && !stationary_reused {
-		mut scroll_damage := ScrollRasterDamage{}
-		$if macos {
-			if app.ctx.native_rendering && app.document != unsafe { nil }
-				&& app.document.font_rendering_policy() == .chromium {
-				app.update_chromium_viewport_raster_plan()
-				C.native_set_chromium_shared_recording(i32(app.page_zoom == 1 && chromium_shared_recording_supported(app.paint_commands, app.chromium_raster_plan)), i32(app.viewport_width), i32(app.viewport_height))
-				C.native_begin_font_compositing_layer(f32(app.ctx.width), f32(app.ctx.height))
-				app.set_chromium_msaa_tiles()
-			} else if app.ctx.native_rendering
-				&& app.paint_commands_have_backdrop_filter {
-				// Backdrop commands need a snapshot of pixels already painted in this
-				// frame. Keep the ordinary fast path direct-to-window.
-				C.native_begin_css_filter_layer(f32(app.ctx.width), f32(app.ctx.height))
-				C.native_discard_scroll_raster()
-			} else if app.ctx.native_rendering {
-				C.native_discard_scroll_raster()
-			}
-		}
-		$if macos {
-			if app.ctx.native_rendering && app.document != unsafe { nil }
-				&& app.document.font_rendering_policy() == .chromium {
-				// Diagnostic baseline retains the previous full-canvas clear.
-				if os.getenv('VOX_DISABLE_SCROLL_RASTER_DAMAGE_OPTIMIZATIONS') != '' {
-					draw_srgb_rect(app.ctx, 0, 0, f32(window.width), f32(window.height), gg.rgb(255, 255, 255))
+		// Complete compositor pictures can omit their speculative leaf rasters.
+		// Retry painting once after a failed GPU publication; preparation,
+		// document scripts and rendering opportunities have already run.
+		for replay_attempt in 0 .. 2 {
+			app.portable_shadow_image_index = 0
+			$if macos {
+				if app.ctx.native_rendering {
+					enabled := replay_attempt == 0 && app.document != unsafe { nil }
+						&& app.document.font_rendering_policy() == .chromium
+					C.native_begin_deferred_layer_frame(i32(enabled))
 				}
-				scroll_damage = app.begin_scroll_raster()
-				app.scroll_profile.scroll_raster_reused = scroll_damage.reused
 			}
-		}
-		// Reused frames already contain overlapping document pixels. The native
-		// damage clip limits this clear and subsequent replay to the exposed strip.
-		if !scroll_damage.unoptimized || scroll_damage.reused {
-			draw_srgb_rect(app.ctx, 0, 0, f32(window.width), f32(window.height), gg.rgb(255, 255, 255))
-		}
-		page_y := app.page_top()
-		mut culling := PaintCanvasCulling{}
-		$if macos {
-			culling.enabled = app.ctx.native_rendering && !app.paint_canvas_culling_disabled
-		}
-		mut raster_layer := -1
-		mut text_scroll_layer := false
-		mut replay_scratch := app.begin_native_replay_scratch()
-		mut shared_svg_end := 0
-		mut rect_prefetch_end := 0
-		for command_index in 0 .. app.paint_commands.len {
-			if command_index < shared_svg_end { continue }
+			mut scroll_damage := ScrollRasterDamage{}
 			$if macos {
-				if app.ctx.native_rendering && command_index < app.chromium_raster_plan.command_layers.len
-					&& app.chromium_raster_plan.command_layers[command_index] < 0 { continue }
+				if app.ctx.native_rendering && app.document != unsafe { nil }
+					&& app.document.font_rendering_policy() == .chromium {
+					app.update_chromium_viewport_raster_plan()
+					C.native_set_chromium_shared_recording(i32(app.page_zoom == 1 && chromium_shared_recording_supported(app.paint_commands, app.chromium_raster_plan)), i32(app.viewport_width), i32(app.viewport_height))
+					C.native_begin_font_compositing_layer(f32(app.ctx.width), f32(app.ctx.height))
+					app.set_chromium_msaa_tiles()
+				} else if app.ctx.native_rendering
+					&& app.paint_commands_have_backdrop_filter {
+					// Backdrop commands need a snapshot of pixels already painted in this
+					// frame. Keep the ordinary fast path direct-to-window.
+					C.native_begin_css_filter_layer(f32(app.ctx.width), f32(app.ctx.height))
+					C.native_discard_scroll_raster()
+				} else if app.ctx.native_rendering {
+					C.native_discard_scroll_raster()
+				}
 			}
-			platform.cooperative_work_checkpoint()
-			mut command := unsafe { &app.paint_commands[command_index] }
-			if app.page_zoom != 1 {
-				mut projected := app.zoomed_paint_command(*command)
-				command = &projected
-			}
-			if culling.skip(command, 0, f64(page_y), f64(window.width), f64(window.height)) {
-				continue
-			}
-			if scroll_damage.separate_scrollbars && command.scrollbar_axis != '' { continue }
-			if scroll_damage.skips(command) { continue }
 			$if macos {
-				if app.ctx.native_rendering && command_index < app.chromium_raster_plan.command_layers.len {
-					next_layer := app.chromium_raster_plan.command_layers[command_index]
-					if next_layer != raster_layer {
-						app.flush_rounded_rect_underlay(0, page_y, window.height)
-						if text_scroll_layer { end_chromium_text_scroll_layer() }
-						app.select_chromium_raster_layer(next_layer)
-						text_scroll_layer = app.begin_chromium_text_scroll_layer(next_layer, command_index)
-						raster_layer = next_layer
+				if app.ctx.native_rendering && app.document != unsafe { nil }
+					&& app.document.font_rendering_policy() == .chromium {
+					// Diagnostic baseline retains the previous full-canvas clear.
+					if os.getenv('VOX_DISABLE_SCROLL_RASTER_DAMAGE_OPTIMIZATIONS') != '' {
+						draw_srgb_rect(app.ctx, 0, 0, f32(window.width), f32(window.height), gg.rgb(255, 255, 255))
+					}
+					scroll_damage = app.begin_scroll_raster()
+					app.scroll_profile.scroll_raster_reused = scroll_damage.reused
+				}
+			}
+			// Reused frames already contain overlapping document pixels. The native
+			// damage clip limits this clear and subsequent replay to the exposed strip.
+			if !scroll_damage.unoptimized || scroll_damage.reused {
+				draw_srgb_rect(app.ctx, 0, 0, f32(window.width), f32(window.height), gg.rgb(255, 255, 255))
+			}
+			page_y := app.page_top()
+			mut culling := PaintCanvasCulling{}
+			$if macos {
+				culling.enabled = app.ctx.native_rendering && !app.paint_canvas_culling_disabled
+			}
+			mut raster_layer := -1
+			mut text_scroll_layer := false
+			mut replay_scratch := app.begin_native_replay_scratch()
+			mut shared_svg_end := 0
+			mut rect_prefetch_end := 0
+			for command_index in 0 .. app.paint_commands.len {
+				if command_index < shared_svg_end { continue }
+				$if macos {
+					if app.ctx.native_rendering && command_index < app.chromium_raster_plan.command_layers.len
+						&& app.chromium_raster_plan.command_layers[command_index] < 0 { continue }
+				}
+				platform.cooperative_work_checkpoint()
+				mut command := unsafe { &app.paint_commands[command_index] }
+				if app.page_zoom != 1 {
+					mut projected := app.zoomed_paint_command(*command)
+					command = &projected
+				}
+				if culling.skip(command, 0, f64(page_y), f64(window.width), f64(window.height)) {
+					continue
+				}
+				if scroll_damage.separate_scrollbars && command.scrollbar_axis != '' { continue }
+				if scroll_damage.skips(command) { continue }
+				$if macos {
+					if app.ctx.native_rendering && command_index < app.chromium_raster_plan.command_layers.len {
+						next_layer := app.chromium_raster_plan.command_layers[command_index]
+						if next_layer != raster_layer {
+							app.flush_rounded_rect_underlay(0, page_y, window.height)
+							if text_scroll_layer { end_chromium_text_scroll_layer() }
+							app.select_chromium_raster_layer(next_layer)
+							text_scroll_layer = app.begin_chromium_text_scroll_layer(next_layer, command_index)
+							raster_layer = next_layer
+						}
+					}
+				}
+				$if macos {
+					if command_index >= rect_prefetch_end && command.kind == 'fill_rect' {
+						rect_prefetch_end = app.prefetch_chromium_rects(command_index, page_y)
+					}
+				}
+				if command.kind == 'begin_svg_mask_layer' {
+					shared_svg_end = app.draw_chromium_svg_rectangular_mask(app.paint_commands,
+						app.chromium_raster_plan.command_layers, command_index, 0, page_y)
+					if shared_svg_end > command_index { continue }
+				}
+				if command.kind == 'begin_css_effect_layer' {
+					shared_svg_end = app.draw_chromium_svg_opacity_group(app.paint_commands,
+						app.chromium_raster_plan.command_layers, command_index, 0, page_y)
+					if shared_svg_end > command_index { continue }
+				}
+				if command.kind == 'draw_svg_path' {
+					shared_svg_end = app.draw_chromium_svg_gradient_group(command_index, page_y)
+					if shared_svg_end == command_index {
+						shared_svg_end = app.draw_chromium_svg_solid_group(app.paint_commands,
+							app.chromium_raster_plan.command_layers, command_index, 0, page_y)
+					}
+					if shared_svg_end > command_index { continue }
+				}
+				if command.kind == 'draw_background_image' {
+					group_end := app.draw_chromium_background_border_group(command_index, *command, page_y, window.height)
+					if group_end > command_index {
+						shared_svg_end = group_end
+						continue
+					}
+				}
+				if command.kind == 'paint_outer_box_shadow' {
+					outer_end := app.draw_chromium_outer_decorations(command_index, page_y, window.height, mut culling)
+					if outer_end > command_index {
+						shared_svg_end = outer_end
+						continue
+					}
+				}
+				if command.kind in ['fill_rect', 'fill_rounded_rect'] {
+					rounded_end := app.draw_chromium_rounded_background_pair(command_index, page_y, window.height)
+					if rounded_end > command_index {
+						shared_svg_end = rounded_end
+						continue
+					}
+					inset_end := app.draw_chromium_inset_decorations(command_index, page_y, window.height)
+					if inset_end > command_index {
+						shared_svg_end = inset_end
+						continue
+					}
+				}
+				$if macos {
+					if app.ctx.native_rendering && app.document != unsafe { nil }
+						&& app.document.font_rendering_policy() == .chromium
+						&& command.kind == 'begin_background_text_clip'
+						&& chromium_gradient_text_input_supported(app.paint_commands, command_index) {
+						C.native_prepare_background_text_gradient_input()
+					}
+				}
+				if app.scroll_profile.active && app.scroll_profile.replay_kinds {
+					before := platform.thread_arena_usage().used
+					app.draw_command(*command, 0, page_y, window.height)
+					app.scroll_profile.replay_kind_bytes[command.kind] += platform.thread_arena_usage().used - before
+				} else {
+					app.draw_command(*command, 0, page_y, window.height)
+				}
+				$if macos {
+					if app.ctx.native_rendering && app.document != unsafe { nil }
+						&& app.document.font_rendering_policy() == .chromium
+						&& command.kind == 'begin_css_filter_layer'
+						&& chromium_gradient_blur_input_supported(app.paint_commands, command_index) {
+						C.native_record_css_gradient_blur_input()
 					}
 				}
 			}
-			$if macos {
-				if command_index >= rect_prefetch_end && command.kind == 'fill_rect' {
-					rect_prefetch_end = app.prefetch_chromium_rects(command_index, page_y)
-				}
+			if text_scroll_layer { end_chromium_text_scroll_layer() }
+			app.flush_rounded_rect_underlay(0, page_y, window.height)
+			app.scroll_profile_mark('replay')
+			for index in app.portable_shadow_image_index .. app.portable_shadow_images.len {
+				app.ctx.remove_cached_image_by_idx(app.portable_shadow_images[index].image_id)
 			}
-			if command.kind == 'begin_svg_mask_layer' {
-				shared_svg_end = app.draw_chromium_svg_rectangular_mask(app.paint_commands,
-					app.chromium_raster_plan.command_layers, command_index, 0, page_y)
-				if shared_svg_end > command_index { continue }
-			}
-			if command.kind == 'begin_css_effect_layer' {
-				shared_svg_end = app.draw_chromium_svg_opacity_group(app.paint_commands,
-					app.chromium_raster_plan.command_layers, command_index, 0, page_y)
-				if shared_svg_end > command_index { continue }
-			}
-			if command.kind == 'draw_svg_path' {
-				shared_svg_end = app.draw_chromium_svg_gradient_group(command_index, page_y)
-				if shared_svg_end == command_index {
-					shared_svg_end = app.draw_chromium_svg_solid_group(app.paint_commands,
-						app.chromium_raster_plan.command_layers, command_index, 0, page_y)
-				}
-				if shared_svg_end > command_index { continue }
-			}
-			if command.kind == 'draw_background_image' {
-				group_end := app.draw_chromium_background_border_group(command_index, *command, page_y, window.height)
-				if group_end > command_index {
-					shared_svg_end = group_end
-					continue
-				}
-			}
-			if command.kind == 'paint_outer_box_shadow' {
-				outer_end := app.draw_chromium_outer_decorations(command_index, page_y, window.height, mut culling)
-				if outer_end > command_index {
-					shared_svg_end = outer_end
-					continue
-				}
-			}
-			if command.kind in ['fill_rect', 'fill_rounded_rect'] {
-				rounded_end := app.draw_chromium_rounded_background_pair(command_index, page_y, window.height)
-				if rounded_end > command_index {
-					shared_svg_end = rounded_end
-					continue
-				}
-				inset_end := app.draw_chromium_inset_decorations(command_index, page_y, window.height)
-				if inset_end > command_index {
-					shared_svg_end = inset_end
-					continue
-				}
+			app.portable_shadow_images = app.portable_shadow_images[..app.portable_shadow_image_index].clone()
+			if report_first_paint {
+				paint_checkpoint = debug_timing_checkpoint('first_paint_replay (${app.paint_commands.len} commands)', paint_checkpoint)
 			}
 			$if macos {
 				if app.ctx.native_rendering && app.document != unsafe { nil }
-					&& app.document.font_rendering_policy() == .chromium
-					&& command.kind == 'begin_background_text_clip'
-					&& chromium_gradient_text_input_supported(app.paint_commands, command_index) {
-					C.native_prepare_background_text_gradient_input()
+					&& app.document.font_rendering_policy() == .chromium {
+					C.native_end_scroll_raster()
+					if scroll_damage.separate_scrollbars {
+						app.draw_scroll_raster_scrollbars(page_y, window.height)
+					}
+					C.native_set_chromium_msaa_tiles(unsafe { nil }, 0, chromium_min_gpu_raster_tile_rows)
+					C.native_set_chromium_raster_layer(0, 0, 1)
+					C.native_end_font_compositing_layer()
+				} else if app.ctx.native_rendering
+					&& app.paint_commands_have_backdrop_filter {
+					C.native_end_css_filter_layer()
 				}
 			}
-			if app.scroll_profile.active && app.scroll_profile.replay_kinds {
-				before := platform.thread_arena_usage().used
-				app.draw_command(*command, 0, page_y, window.height)
-				app.scroll_profile.replay_kind_bytes[command.kind] += platform.thread_arena_usage().used - before
-			} else {
-				app.draw_command(*command, 0, page_y, window.height)
-			}
+			replay_scratch.finish()
+			mut replay_completed := true
 			$if macos {
-				if app.ctx.native_rendering && app.document != unsafe { nil }
-					&& app.document.font_rendering_policy() == .chromium
-					&& command.kind == 'begin_css_filter_layer'
-					&& chromium_gradient_blur_input_supported(app.paint_commands, command_index) {
-					C.native_record_css_gradient_blur_input()
-				}
+				if app.ctx.native_rendering { replay_completed = C.native_finish_deferred_layer_frame() != 0 }
+			}
+			if replay_completed { break }
+			$if macos {
+				C.native_discard_scroll_raster()
+				C.native_discard_stationary_raster()
 			}
 		}
-		if text_scroll_layer { end_chromium_text_scroll_layer() }
-		app.flush_rounded_rect_underlay(0, page_y, window.height)
-		app.scroll_profile_mark('replay')
-		for index in app.portable_shadow_image_index .. app.portable_shadow_images.len {
-			app.ctx.remove_cached_image_by_idx(app.portable_shadow_images[index].image_id)
-		}
-		app.portable_shadow_images = app.portable_shadow_images[..app.portable_shadow_image_index].clone()
-		if report_first_paint {
-			paint_checkpoint = debug_timing_checkpoint('first_paint_replay (${app.paint_commands.len} commands)', paint_checkpoint)
-		}
-		$if macos {
-			if app.ctx.native_rendering && app.document != unsafe { nil }
-				&& app.document.font_rendering_policy() == .chromium {
-				C.native_end_scroll_raster()
-				if scroll_damage.separate_scrollbars {
-					app.draw_scroll_raster_scrollbars(page_y, window.height)
-				}
-				C.native_set_chromium_msaa_tiles(unsafe { nil }, 0, chromium_min_gpu_raster_tile_rows)
-				C.native_set_chromium_raster_layer(0, 0, 1)
-				C.native_end_font_compositing_layer()
-			} else if app.ctx.native_rendering
-				&& app.paint_commands_have_backdrop_filter {
-				C.native_end_css_filter_layer()
-			}
-		}
-		replay_scratch.finish()
 	} else if !paint_document {
 		$if macos { C.native_discard_scroll_raster() }
 		draw_srgb_rect(app.ctx, 0, 0, f32(window.width), f32(window.height), gg.rgb(255, 255, 255))

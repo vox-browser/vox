@@ -115,6 +115,7 @@ bool isolated_input_defers_leaf_raster(CGContextRef context)
         && found->second->defer_leaf_raster && !found->second->unsupported;
 }
 
+bool shared_recording_defers_leaf_raster(CGContextRef, SkRect const&);
 SkCanvas* shared_recording_canvas(CGContextRef);
 void shared_recording_clip(CGContextRef, SkCanvas*);
 void shared_recording_block(SkRect);
@@ -1352,6 +1353,7 @@ static int draw_retained_glyph_run(CGContextRef destination,
         local_bounds = paint.computeFastBounds(local_bounds, &filtered_bounds);
     }
     auto device_bounds = matrix.mapRect(local_bounds);
+    if (shared_recording_defers_leaf_raster(destination, device_bounds.makeOutset(2, 2))) return 1;
     RasterRegion region;
     if (!clipped_raster_region(device_bounds, canvas_width, canvas_height, 2.0f, region))
         return 1;
@@ -3555,7 +3557,8 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
         else
             input->second->unsupported = true;
     }
-    if (isolated_input_defers_leaf_raster(destination)) return 1;
+    if (isolated_input_defers_leaf_raster(destination)
+        || shared_recording_defers_leaf_raster(destination, matrix.mapRect(local_bounds).makeOutset(2, 2))) return 1;
     RasterRegion region;
     if (!clipped_raster_region(matrix.mapRect(local_bounds), canvas_width,
             canvas_height, anti_alias ? 2.0f : 0.0f, region))
@@ -4061,7 +4064,8 @@ extern "C" int ladybird_v_skia_draw_outer_box_shadow(CGContextRef destination,
             recording->drawRRect(shadow, paint);
             recording->restore();
             shared_recording_content(destination, matrix.mapRect(local_bounds), page_y, scroll_y);
-            if (isolated_input_defers_leaf_raster(destination)) return 1;
+            if (isolated_input_defers_leaf_raster(destination)
+                || shared_recording_defers_leaf_raster(destination, matrix.mapRect(local_bounds))) return 1;
         }
     }
 
@@ -5042,6 +5046,7 @@ static int draw_svg_gradient_path(CGContextRef destination, float const* data,
         recorded_paint.setDither(!picture_pattern);
         canvas->drawPath(path, recorded_paint);
         canvas->restore();
+        if (shared_recording_defers_leaf_raster(destination, ink.makeOutset(2, 2))) return 1;
     }
     RasterRegion region;
     if (!clipped_raster_region(matrix.mapRect(local_bounds), canvas_width,

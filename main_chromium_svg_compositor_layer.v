@@ -151,8 +151,10 @@ fn chromium_svg_compositor_layer_supported_for_viewport(commands []layout.PaintC
 			if chromium_compositor_leaf_is_culled(command, rect) { continue }
 		}
 		contoured_shadow := command.kind == 'paint_outer_box_shadow' && chromium_contoured_box_supported(command)
+		recorded_shadow := contoured_shadow || (!disable_complete_shadow_pictures
+			&& chromium_complete_outer_shadow_supported(command))
 		if command.opacity != 1 || command.group_opacity != 1
-			|| (command.blur != 0 && !contoured_shadow)
+			|| (command.blur != 0 && !recorded_shadow)
 			|| command.outer_shadow || !chromium_svg_compositor_clip_outs_supported(command)
 			|| command.scrollbar_axis != ''
 			|| !chromium_shared_recording_clips_supported(command) {
@@ -167,8 +169,7 @@ fn chromium_svg_compositor_layer_supported_for_viewport(commands []layout.PaintC
 				has_svg = true
 			}
 			'paint_outer_box_shadow' {
-				supported,_ := chromium_shared_recording_leaf_supported(command)
-				if !supported { return chromium_svg_compositor_layer_declined(index,command_index,'unrecorded leaf',command.kind) }
+				if !recorded_shadow { return chromium_svg_compositor_layer_declined(index,command_index,'unrecorded leaf',command.kind) }
 				has_svg = true
 			}
 			'paint_inner_box_shadow' {
@@ -202,6 +203,14 @@ fn chromium_svg_compositor_layer_supported_for_viewport(commands []layout.PaintC
 			}
 			'fill_rect', 'fill_rounded_rect', 'paint_uniform_border' {
 				has_svg = has_svg || chromium_contoured_box_supported(command)
+			}
+			'draw_video' {
+				// With no frame source or retained bitmap, draw_command returns
+				// before painting any video pixels. Recheck on every replay.
+				if disable_complete_shadow_pictures || command.video_frame_source != none
+					|| command.video_bitmap != none {
+					return chromium_svg_compositor_layer_declined(index, command_index, 'live video', command.kind)
+				}
 			}
 			'draw_text' { has_text = true }
 			'fill_ellipse', 'stroke_ellipse', 'stroke_rounded_rect' {}

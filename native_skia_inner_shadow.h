@@ -135,7 +135,8 @@ extern "C" int ladybird_v_skia_draw_inner_box_shadow(CGContextRef destination,
         draw_shadow(recording);
         recording->restore();
         shared_recording_content(destination, matrix.mapRect(content.rect()), page_y, scroll_y);
-        if (isolated_input_defers_leaf_raster(destination)) return 1;
+        if (isolated_input_defers_leaf_raster(destination)
+            || shared_recording_defers_leaf_raster(destination, matrix.mapRect(content.rect()).makeOutset(2, 2))) return 1;
     }
     draw_shadow(canvas);
     auto picture = recorder.finishRecordingAsPicture();
