@@ -48,8 +48,29 @@ CPU saving. All attempts remain under
 
 Explicit Brave scale and image-decoding diagnostics did not remove the pixel
 variation. The normal measurement driver and reference remain unchanged.
-The new font-geometry slice (`33278ac1`) passes 49 cases in each of three modes;
-its production site validation is pending, with no CPU credit yet.
+The font-geometry slice (`33278ac1`) passes 49 cases in each of three modes.
+Its first production diagnostic had zero reuse hits and a separate 119-pixel
+gradient mismatch. Font and deferred-layer controls, plus native library swaps,
+retain that mismatch. The shared raster-bounds correction (`fac01e59`) restores
+CNN pixel equality; no reference or tolerance changed.
+
+Guarded font refresh now preserves a cascade that the font computer still owns
+(`75c8fef4`). It passes 147 focused runtimes across three compiler/GC modes, the
+visual smoke and SVG guards, headless smoke and 100 AST fixtures. A diagnostic
+uses 28,857,329,605 coalition instructions and confirms 1,433 retained cascades.
+Two unprofiled triplets use 28,758,852,587 / 28,660,404,634 for Vox and
+28,639,357,846 / 28,736,877,681 for its control: this slice has no repeatable
+launch saving. All four Vox images are exact; Brave differs at 1 and 13,565
+pixels, so neither pair qualifies. Evidence is under
+`Build/cnn-home-font-refresh-matched-20261101-1021/`.
+
+A production compilation completed but packaging failed when the shared disk
+filled. Validation reuses a later successfully completed shared bundle with
+matching required source hashes. Disposable completed-trial profile/cache copies
+and rebuildable test binaries were removed with hash manifests; ten large
+generated-source/log files were losslessly compressed. The original templates,
+fixtures, raw counters, PNGs, audits and failed attempts remain. See the storage
+incident in the durable receipt.
 
 ## November 1: current 10% request, sealed homepage cohort
 
