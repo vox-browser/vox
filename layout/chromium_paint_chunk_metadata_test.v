@@ -201,3 +201,36 @@ fn test_live_scrolled_clips_and_fixed_content_survive_document_space_culling() {
 	}
 	assert clipped && fixed
 }
+
+fn test_atomic_masks_keep_complete_scopes_without_disabling_sibling_paint_metadata() {
+	for top in [200, 6400] {
+		mut document := html.parse_document(chunk_metadata_document_markup() +
+			'<svg style="position:absolute;left:80px;top:${top}px" width="40" height="40"><defs><mask id="mask"><rect width="40" height="40" fill="white"/></mask></defs><g mask="url(#mask)"><rect width="40" height="40" fill="red"/></g></svg>')
+		defer { document.finalize() }
+		document.set_font_rendering_policy(.chromium)
+		_ = layout_document_typed_in_viewport(document, 1280, 800)
+		commands := display_list_commands(document.record_display_list() or { panic('paint') })
+		mut plan := ChromiumRasterLayerPlan{}
+		update_chromium_raster_layer_plan_for_viewport(document, commands, 1,
+			LayoutRect{0, 6400, 1280, 800}, mut plan)
+		assert plan.has_paint_metadata
+		mut mask_owner := -1
+		mut in_mask := false
+		mut masks := 0
+		for index, command in commands {
+			if command.kind == 'begin_svg_mask_layer' {
+				masks++
+				in_mask = true
+				mask_owner = plan.command_layers[index]
+				assert (mask_owner >= 0) == (top == 6400)
+			}
+			if in_mask { assert plan.command_layers[index] == mask_owner }
+			if command.kind == 'end_svg_mask_layer' { in_mask = false }
+		}
+		assert masks == 1 && !in_mask
+		assert plan.layers.any(it.command_indices.len == 0 && it.bounds.y == 8950)
+		for index, command in commands {
+			if command.kind == 'fill_gradient' { assert plan.command_layers[index] > 0 }
+		}
+	}
+}

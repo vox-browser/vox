@@ -260,10 +260,13 @@ fn chromium_layerize_visible_paint_chunks(result &DocumentLayoutResult,
 			scope = u64(parent)
 		}
 	}
-	// Atomic filters/masks require their own metadata traversal. Preserve the
-	// existing planner until that traversal can keep their complete scopes.
+	// Captured masks and filters already form balanced atomic chunks. Their
+	// descendants' metadata is skipped below, just like their enclosed paint;
+	// ordinary siblings still need their own hit-test geometry and tile origin.
+	// Other legacy effects retain the preceding planner.
 	for chunk in scratch.chunks {
-		if chunk.state.legacy_effect && chromium_paint_chunk_is_interested(chunk, cull) {
+		if chunk.state.legacy_effect && chromium_paint_chunk_is_interested(chunk, cull)
+			&& commands[chunk.command_index].kind !in ['begin_svg_mask_layer', 'begin_css_filter_layer'] {
 			chromium_layerize_chunks_into(scratch.chunks, commands.len, scale, mut plan, mut scratch.layer_states)
 			return
 		}
