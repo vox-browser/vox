@@ -5,8 +5,8 @@ Pixel-perfect parity remains open. The current settled, archived comparison at
 **zero at every sampled 800-pixel scroll position from Y 2400 through 7200**,
 with **4 at Y 8000**. The reviews viewport at Y 9600 has **308** differences,
 and the community viewport at Y 10400 has **160**. Sponsor pixels, the Lilly
-preview, some review glyphs, and footer images still differ; the bottom has
-360 differences. Copy-button and book-cover geometry agree with Brave.
+preview, some review glyphs, and a footer book image still differ; the bottom has
+97 differences. Copy-button and book-cover geometry agree with Brave.
 These results do not establish full live-page or scale-two parity.
 
 ## Capture readiness correction
@@ -945,3 +945,93 @@ bundle; `compositor-gap-v10-pinned-final.json` confirms its unchanged identity.
 Private harness adapters bind only the repository/browser paths while retaining
 the canonical screenshot comparisons and tolerances. Full live-page and scale-two
 parity remain open.
+
+## Resource-specific image decode reuse
+
+`5fcca1f8` removes all 263 footer-logo differences. The header draws the same
+500×500 resource at 60 CSS pixels, selecting a 63×63 upload. Its later 32-pixel
+footer draw now retains that compatible upload instead of independently
+selecting 32×32. Both the Metal image leaf and complete-picture replay receive
+the selected size. This follows the compatible-image lookup in Chromium's
+[GPU image decode cache](https://chromium.googlesource.com/chromium/src/+/refs/tags/156.0.8078.48/cc/tiles/gpu_image_decode_cache.cc).
+
+Equal pixels at different URLs remain independent. A retained raster picture
+keeps its existing requested-size decision, while a new picture can reuse
+completed earlier decodes. Source pixels, alpha interpretation, dimensions and
+color-profile changes invalidate that resource's history. The cache owns bounded
+source snapshots rather than retaining borrowed pixel pointers: 32 MiB overall,
+128 resources, at most 8 MiB per entry, and 64 retained request decisions per
+resource. Oversized, planar and repeated inputs retain their preceding path.
+This is compatible reuse for ordinary replaced RGBA images, not a complete
+translation of Chromium's image scheduler or decode cache.
+
+Three new 800×600, scale 1 golds have agreeing fresh Brave 156.1.98.60
+references before the fix, after it, and with the same-build negative control:
+
+| Fixture | Before | After |
+| --- | ---: | ---: |
+| `image-decode-resource-reuse` | 262 | 0 |
+| `image-decode-compositor-reuse` | 0 | 0 |
+| `image-decode-scrolling-reuse`, Y 8800 | 262 | 0 |
+
+The concurrent compositor control prevents promoting another picture's in-use
+decode prematurely. The scrolling case settles the initial viewport before
+moving a distant image into a new compositor picture. The three resource files
+contain identical bytes at distinct URLs; content equality cannot stand in for
+resource identity.
+
+On the archived page, Y 10664 and the bottom at Y 10701 improve from **360 to
+97**. The other fourteen sampled positions retain byte-identical Vox captures.
+Using one fixed Brave reference per viewport, the pixel audit records no new or
+worsened pixels anywhere. All remaining bottom differences belong to the book
+image. A private signed negative copy returns immediately from the new resource
+identity setter, restoring both old fixture counts and all 263 logo differences
+without changing the executable or other native code.
+
+The initial fresh-pair sweep remains failed: Brave's Lilly pixels changed at
+Y 8800, and its Y 10664 reference also varied despite unchanged reported scroll
+coordinates. Both complete sets are retained; they are not presented as a
+successful matched fresh-reference sweep. The separate fixed-reference audit
+compares the unchanged native captures against the negative run's references.
+An additional diagnostic headless Brave pair demonstrates that `decoding="async"`
+alone changes the isolated Lilly crop by 14,994 pixels; it does not yet establish
+the cause of the full-page variations or fix Lilly.
+
+Evidence under `Build/vlang-parity-20261031/`:
+
+- `image-decode-cache-focused/` records 115 ASan/UBSan checks passing, including
+  source/profile mutation, independent URLs, retained pictures, byte/count
+  eviction, malformed inputs and decode hints. Run the committed check with
+  `python3 tools/test_chromium_image_decode_cache.py`.
+- `image-decode-v2-{resource,compositor,scrolling}/` and
+  `image-decode-v2-negative-{resource,compositor,scrolling}/` retain the exact
+  fixture comparisons. `image-decode-v2-negative-browser.json` records the
+  diagnostic native-library byte patch and identities.
+- `image-decode-v2-{negative-page,page}/` retains all 32 fresh page captures;
+  `image-decode-v2-all-{status,guard}.json` retains their failed reference check.
+  `image-decode-v2-native-pixel-audit.json` records the fixed-reference audit.
+  `image-decode-v2-footer/` independently records the fresh 97-pixel result.
+- `image-decode-v2-production-{guard,status}.json` records production exit zero,
+  243.42 seconds and sampled peak RSS of 8.24 GiB under the 12 GiB guard. Six
+  feature input files remain stable; shared native files and unrelated headers
+  change during compilation, so this is not a claim of a wholly frozen checkout.
+- `image-decode-v2-pinned-smoke-v2-status.json` records fourteen screenshot checks
+  passing their existing bounds. `image-decode-v2-pinned-inline-regressions-v2.log`
+  records all 51 strict browser cases passing, and
+  `image-decode-v2-pinned-gradient-regressions/` retains eight exact image,
+  gradient and table golds. The earlier smoke adapter failed before launching a
+  browser because its wrapper was missing; that failed receipt is preserved.
+- `image-decode-native-{picture,metal}-run.json` records 200 independent native
+  picture comparisons and 32 mipmapped leaf comparisons passing under ASan.
+  `image-decode-v2-recovery-{status,guard}.json` records the remaining sequential
+  checks with actual supervisor exit zero. Startup and live scripted loading
+  pass, including loaded fonts, five completed visible image requests and zero
+  native errors. Live loading supplies no matched pixel-parity credit.
+
+The signed production executable is
+`07ef545eb25728ef3b7e4db83b53044136eae6b0d1d9519a510a6d1688e4197a`,
+preserved in `Vox-image-decode-v2-installed.app`. Its final identity is recorded
+in `image-decode-v2-pinned-final.json`; `image-decode-v2-installed-final.json`
+also confirms identical installed bundle bytes. Sponsor, Lilly, shadow, glyph,
+gradient and book-image residuals, full live-page parity and scale-two parity
+remain open.

@@ -982,3 +982,16 @@ scrollbar geometry and clipped inset shadows retain their actual bounds.
 Run `python3 tools/forum_news_inline_pixels_test.py` for the browser regression.
 See [vlang rendering](../../../docs/VLANG_BRAVE_RENDERING.md) for the matched
 viewport controls, focused checks, bundle identity, and remaining page differences.
+
+`image-decode-resource-reuse` checks larger decoded-image reuse for the same
+resource while identical bytes at separate URLs stay independent. The
+`image-decode-compositor-reuse` control keeps concurrent retained pictures'
+decode choices independent. `image-decode-scrolling-reuse` settles the initial
+viewport and then captures Y 8800, allowing a newly visible picture to reuse a
+completed larger decode. The three 800×600, scale 1 golds have agreeing Brave
+156.1.98.60 references before/after the fix and in the same-build negative
+control. Their differing-pixel counts change from 262/0/262 to 0/0/0. Run
+`python3 tools/forum_news_inline_pixels_test.py` for all browser fixtures, and
+`python3 tools/test_chromium_image_decode_cache.py` for the bounded native cache
+checks. See [vlang rendering](../../../docs/VLANG_BRAVE_RENDERING.md) for build
+identities, retained failed reference captures and the footer pixel audit.
