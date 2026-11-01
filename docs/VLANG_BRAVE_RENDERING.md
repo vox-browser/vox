@@ -1571,3 +1571,55 @@ preserved in `Vox-calculated-length-installed.app`. Its native text library is
 `d6485fcea4d88ae3e5b921fc089bd77337223f53115e8b9efa712c33dc8e33fb`.
 Full live-page and scale-two equality remain open, as does production validation
 without the shared layerization regression.
+
+
+## Isolated sponsor curve investigation
+
+A reduced SVG image scene retains sixteen of the sponsor's large edge errors,
+including the same swapped coverage at (165,33) and (181,48). Its native layout
+and the fresh Brave viewport agree. Plain rendering, opacity alone, and screen
+blending without grayscale each retain sixteen differences. Grayscale alone has
+22 total differences, including the same sixteen large coverage errors. This
+rules out the combined grayscale/screen effect as the source of those edges.
+The maximum plain-scene channel error is 64; the original filtered scene's is 53.
+
+A native interposer confirms a 125×70 snapped destination and 33 SVG paths.
+One-ULP matrix changes, a full-size raster target and Blink-style decimal parsing
+leave the sixteen original errors unchanged. Only one source number differs
+between the tested decimal parsers. An independent harness constructs all 33
+paths directly with Skia's SVG parser and reproduces the sixteen errors on both
+125×70 and 1280×600 targets. Explicit contour closure also leaves them unchanged.
+A floored object-fit size experiment does not fix them. These remain diagnostic
+experiments; none is shipped as a precision or geometry adjustment.
+
+Fresh Brave reports Chromium 156.0.8078.48 and GraphiteDawnMetal with GPU
+rasterization enabled. Its plain-scene pixels remain identical across the two
+captures used for the renderer audit. The production backend is pinned to
+Chromium 155's Skia/Dawn, so isolated dependency builds test that possible cause:
+
+- Skia `886e42fda11610a56dd1b22e8697e27f9d1e34f2`, as pinned by Chromium 156,
+  with the existing Dawn backend still produces sixteen differences.
+- The same Skia with Chromium 156's Dawn
+  `1da41e55bb915dd03f61028fad64a99ee1786d48` and its pinned dependencies also
+  produces sixteen differences. Both old and new picture serializers work with
+  this diagnostic renderer and retain the same result.
+- A private browser bundle using that newer renderer and the already recorded
+  paint-client veto produces byte-identical native RGBA at Y 1600, 8800 and
+  10701: the counts remain 452, 14,681 and 97. The dependency change earns no
+  rendering credit and is not installed or committed to the build tools.
+
+Evidence remains in `Build/vlang-calc-20261101/`:
+[sponsor investigation](../Build/vlang-calc-20261101/sponsor-investigation.json),
+`sponsor-{turtle-before,variant-*,probe-*}/`, `compare-sponsor-*.cpp`,
+`sponsor-path-*.log`, `sponsor-full156-*.log`, `svg-source-receipts.json`,
+`brave-{gpu-info,version}.json`, and
+[full-version pixel controls](../Build/vlang-calc-20261101/full156-pixel-control.json).
+Archive/dependency hashes, build commands, guard receipts and failed diagnostic
+iterations are retained alongside them. All three dependency builds finish
+under the default 12 GiB guard; focused GPU runs and browser captures use 3 GiB.
+The initial independent closed-path harness fails to compile against the
+immutable SkPath API; its corrected builder version executes and remains at
+sixteen differences. No conformance claim uses that failed compile.
+
+The next sponsor work still needs to explain the curve coverage difference.
+Full-page, live and scale-two parity remain open.
