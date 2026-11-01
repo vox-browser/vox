@@ -3,7 +3,7 @@ module css
 import dom
 
 fn document_reuse_set(mut style ComputedProperties, property PropertyID, text string) {
-	style.set_property(property, parse_css_value(ParsingParams{}, text, property) or { panic(err) }, .no, .no)
+	style.set_property(property, parse_css_value(ParsingParams{}, text, property) or { panic('missing CSS value') }, .no, .no)
 }
 
 fn test_unchanged_document_materialization_keeps_the_published_cache() {
@@ -98,10 +98,73 @@ fn test_document_materialization_keeps_animated_and_manual_cache_writes_conserva
 	manual := style.computed_layout_cache()
 	_ = resolve_computed_values_for_document(style, document)
 	assert voidptr(style.computed_layout_cache()) != voidptr(manual)
-	width := parse_css_value(ParsingParams{}, '70px', .width) or { panic(err) }
+	width := parse_css_value(ParsingParams{}, '70px', .width) or { panic('missing CSS value') }
 	style.set_animated_property(.width, width, .no, .no)
 	_ = resolve_computed_values_for_document(style, document)
 	animated := style.computed_layout_cache()
 	_ = resolve_computed_values_for_document(style, document)
 	assert voidptr(style.computed_layout_cache()) != voidptr(animated)
+}
+
+fn test_document_geometry_survives_an_unrelated_font_generation_with_its_original_cascade() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	defer { document.finalize() }
+	mut style := computed_properties_with_initial_values()
+	document_reuse_set(mut style, .font_family, 'serif')
+	document_reuse_set(mut style, .width, '3ch')
+	_ = resolve_computed_values_for_document(style, document)
+	before := style.computed_layout_cache()
+	proof := style.geometry_provenance()
+	fonts := style.cached_computed_font_list()?
+	mut computer := css_style_computer_for(document).font_computer()
+	computer.did_load_font('GeometryUnusedFamily')
+	_ = resolve_computed_values_for_document(style, document)
+	assert style.cached_computed_font_list_generation_ > proof.font_generation
+	assert voidptr(style.cached_computed_font_list()?) == voidptr(fonts)
+	assert voidptr(style.geometry_provenance()) == voidptr(proof)
+	assert voidptr(style.computed_layout_cache()) == voidptr(before)
+	assert proof.matches(style)
+	// An affected family and a changed root context keep their full fallback.
+	computer.did_load_font('serif')
+	_ = resolve_computed_values_for_document(style, document)
+	assert voidptr(style.cached_computed_font_list()?) != voidptr(fonts)
+	assert voidptr(style.geometry_provenance()) != voidptr(proof)
+	current := style.geometry_provenance()
+	style.root_line_height_px_ += 1
+	_ = resolve_computed_values_for_document(style, document)
+	assert voidptr(style.geometry_provenance()) != voidptr(current)
+}
+
+fn test_font_geometry_does_not_reuse_a_new_cascade_as_proof_of_older_geometry() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	defer { document.finalize() }
+	mut style := computed_properties_with_initial_values()
+	document_reuse_set(mut style, .font_family, 'serif')
+	_ = resolve_computed_values_for_document(style, document)
+	proof := style.geometry_provenance()
+	mut computer := css_style_computer_for(document).font_computer()
+	computer.did_load_font('serif')
+	// Discovery may happen before the geometry resolver. Keep this new list
+	// separate from the original list captured by the old provenance.
+	_ = style.computed_font_list(computer)
+	assert !proof.matches(style)
+	_ = resolve_computed_values_for_document(style, document)
+	assert voidptr(style.geometry_provenance()) != voidptr(proof)
+}
+
+fn test_font_geometry_keeps_pending_cascades_conservative_across_generations() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	defer { document.finalize() }
+	mut computer := css_style_computer_for(document).font_computer()
+	face := FontFaceObject.construct_impl('GeometryPending', FontFaceSource.from_string('url("pending.ttf")'), FontFaceDescriptors{})
+	computer.register_font_face(face)
+	mut style := computed_properties_with_initial_values()
+	document_reuse_set(mut style, .font_family, 'GeometryPending')
+	_ = resolve_computed_values_for_document(style, document)
+	proof := style.geometry_provenance()
+	assert !proof.font_cascade_was_settled
+	assert (style.cached_computed_font_list()?).pending_faces.len == 1
+	computer.did_load_font('GeometryUnusedFamily')
+	_ = resolve_computed_values_for_document(style, document)
+	assert voidptr(style.geometry_provenance()) != voidptr(proof)
 }

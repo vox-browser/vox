@@ -611,3 +611,17 @@ fn test_anonymous_geometry_preserves_container_lengths_when_the_container_resize
 	assert actual.computed_layout_cache().computed_values_border_spacing_horizontal_.to_px(context).to_double() == 12
 	assert actual.computed_layout_cache().computed_values_border_spacing_vertical_.to_px(context).to_double() == 14
 }
+
+fn test_anonymous_geometry_keeps_the_original_font_snapshot_after_unrelated_completion() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	defer { document.finalize() }
+	mut source := anonymous_geometry_resolved_source(document)
+	proof := source.geometry_provenance()
+	mut computer := css_style_computer_for(document).font_computer()
+	computer.did_load_font('AnonymousGeometryUnusedFamily')
+	_ = source.computed_font_list(computer)
+	assert proof.matches(source)
+	assert source.cached_computed_font_list_generation_ > proof.font_generation
+	assert source.anonymous_computed_geometry_source(source.clone_for_anonymous_block()) != none
+	anonymous_geometry_check(source, document)
+}

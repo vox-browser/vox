@@ -1,6 +1,7 @@
 module css
 
 import dom
+import os
 
 // Raw property arrays are shared by ordinary ComputedProperties value copies.
 // A mutation epoch shared by those copies invalidates every geometry snapshot
@@ -28,6 +29,7 @@ struct ComputedGeometryProvenance {
 	font_list                     &FontCascadeList
 	font_computer                 &FontComputer
 	font_generation               u64
+	font_cascade_was_settled       bool
 }
 
 fn (c &ComputedProperties) geometry_provenance() &ComputedGeometryProvenance {
@@ -43,6 +45,7 @@ struct AnonymousComputedGeometrySource {
 	font_list       &FontCascadeList
 	font_computer   &FontComputer
 	font_generation u64
+	font_cascade_was_settled bool
 }
 
 // Consumers retaining derived data need to detect in-place inherited-style
@@ -101,6 +104,24 @@ fn computed_geometry_subject_matches(first ?&dom.Element, second ?&dom.Element) 
 	return second == none
 }
 
+const disable_live_font_geometry_reuse = os.getenv('VOX_DISABLE_LIVE_FONT_GEOMETRY_REUSE') != ''
+const live_font_geometry_diagnostics = os.getenv('VOX_LIVE_FONT_GEOMETRY_DIAGNOSTICS') != ''
+
+// The original cascade must still be live; a replacement with equal metrics
+// cannot establish which fonts produced the older resolved geometry.
+fn (c &ComputedProperties) font_geometry_generation_is_current(computer &FontComputer, generation u64, was_settled bool) bool {
+	if generation == c.cached_computed_font_list_generation_ { return true }
+	if disable_live_font_geometry_reuse || !was_settled || computer == unsafe { nil }
+		|| generation > c.cached_computed_font_list_generation_
+		|| !c.cached_font_inputs_are_unchanged_since(computer, generation) {
+		return false
+	}
+	if live_font_geometry_diagnostics {
+		eprintln('Vox font geometry: retained original cascade across environment change')
+	}
+	return true
+}
+
 fn (p &ComputedGeometryProvenance) matches(c &ComputedProperties) bool {
 	return p.matches_context(c) && p.generation != 0 && p.generation == p.token.generation
 }
@@ -112,7 +133,7 @@ fn (p &ComputedGeometryProvenance) matches_context(c &ComputedProperties) bool {
 		&& p.root_font_depends_on_viewport == c.root_font_metrics_depend_on_viewport_metrics_
 		&& computed_geometry_subject_matches(p.subject, c.subject_element_)
 		&& voidptr(p.font_computer) == voidptr(c.cached_computed_font_list_owner_)
-		&& p.font_generation == c.cached_computed_font_list_generation_
+		&& c.font_geometry_generation_is_current(p.font_computer, p.font_generation, p.font_cascade_was_settled)
 		&& voidptr(fonts) == voidptr(p.font_list)
 }
 
@@ -141,6 +162,7 @@ fn (mut c ComputedProperties) publish_computed_geometry_provenance(previous &Com
 		font_list:                     fonts
 		font_computer:                 c.cached_computed_font_list_owner_
 		font_generation:               c.cached_computed_font_list_generation_
+		font_cascade_was_settled:       fonts.pending_faces.len == 0
 	}
 }
 
@@ -168,5 +190,6 @@ fn (c &ComputedProperties) anonymous_computed_geometry_source(clone &ComputedPro
 		font_list:       p.font_list
 		font_computer:   p.font_computer
 		font_generation: p.font_generation
+		font_cascade_was_settled: p.font_cascade_was_settled
 	}
 }

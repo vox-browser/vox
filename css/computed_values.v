@@ -460,7 +460,7 @@ fn resolve_computed_values_for_document_impl(style &ComputedProperties, document
 	if source := anonymous_source {
 		if voidptr(source.font_list) == voidptr(font_list)
 			&& voidptr(source.font_computer) == voidptr(computed_style.cached_computed_font_list_owner_)
-			&& source.font_generation == computed_style.cached_computed_font_list_generation_ {
+			&& computed_style.font_geometry_generation_is_current(source.font_computer, source.font_generation, source.font_cascade_was_settled) {
 			resolved_anonymous_source = source.cache
 			layout_scale := computed_style.layout_coordinate_scale()
 			computed_style.computed_layout_cache_ = initial_anonymous_geometry_cache()
