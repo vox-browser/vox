@@ -17,6 +17,7 @@ class CNNHomeInstructionTests(unittest.TestCase):
     def test_separate_control_app_does_not_disable_any_engine_optimization(self):
         names = ['control_component_input', 'control_text_run_positions', 'control_leaf_validation', 'control_scratch_policy', 'control_size_query_results', 'control_hidden_styles', 'control_block_eligibility', 'control_rule_selectors', 'control_block_images', 'control_relative_flow_layout', 'control_pending_font_layout', 'control_font_refresh_cascades', 'control_live_font_geometry', 'control_lazy_image_batches', 'control_geometry_snapshot_keys', 'control_live_font_cascades', 'control_hidden_animations', 'control_font_completion',
                  'control_lazy_images', 'control_static_media']
+        names.extend(['control_has_results', 'control_flex_layout'])
         args = SimpleNamespace(control_vox_app=None, **dict.fromkeys(names, False))
         self.assertEqual(benchmark.control_environment(args), {})
         args.control_vox_app = Path('separately-pinned-control.app')
@@ -51,6 +52,9 @@ class CNNHomeInstructionTests(unittest.TestCase):
         args.control_text_run_positions = False
         args.control_component_input = True
         self.assertEqual(benchmark.control_environment(args), {'VOX_DISABLE_COMPONENT_INPUT_REUSE': '1'})
+        args.control_component_input = False
+        args.control_has_results = True
+        self.assertEqual(benchmark.control_environment(args), {'VOX_DISABLE_UNCHANGED_HAS_INVALIDATION': '1'})
 
     def expected(self):
         return dict(title='Latest | CNN', headlines=['first', 'second'], image_sources=['photo.jpg'])
