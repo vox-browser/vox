@@ -3441,6 +3441,13 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
         : rounded_rect.rect();
     if (has_underlay)
         local_bounds.join(underlay_rect.rect());
+    if (auto input = s_isolated_input_recordings.find(destination);
+        input != s_isolated_input_recordings.end()) {
+        if (paint.canComputeFastBounds())
+            input->second->bounds.join(matrix.mapRect(local_bounds));
+        else
+            input->second->unsupported = true;
+    }
     RasterRegion region;
     if (!clipped_raster_region(matrix.mapRect(local_bounds), canvas_width,
             canvas_height, anti_alias ? 2.0f : 0.0f, region))

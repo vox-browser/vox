@@ -172,6 +172,38 @@ struct InsetDecorationRecording {
 };
 static std::unique_ptr<InsetDecorationRecording> s_inset_decoration_recording;
 
+// A decoration pair may have reserved the whole viewport before its ink was
+// known. Keep only the original backdrop under that ink. The GPU still renders
+// complete Chromium tiles; cropping their input does not change tile coverage.
+static void trim_inset_decoration_backdrop(InsetDecorationRecording& group, SkRect ink)
+{
+    if (!ink.isFinite() || ink.isEmpty()) return;
+    double left = std::max(double(group.region.left), double(std::floor(ink.left() - 2)));
+    double top = std::max(double(group.region.top), double(std::floor(ink.top() - 2)));
+    double right = std::min(double(group.region.right), double(std::ceil(ink.right() + 2)));
+    double bottom = std::min(double(group.region.bottom), double(std::ceil(ink.bottom() + 2)));
+    if (!(right > left && bottom > top)) return;
+    double x = (left - group.region.left) * group.scale;
+    double y = (top - group.region.top) * group.scale;
+    double width = (right - left) * group.scale;
+    double height = (bottom - top) * group.scale;
+    // Preserve the original pixel grid, including unusual backing scales.
+    for (double value : {x, y, width, height})
+        if (!std::isfinite(value) || value != std::floor(value)) return;
+    if (x < 0 || y < 0 || width <= 0 || height <= 0
+        || x + width > group.width || y + height > group.height
+        || (width == group.width && height == group.height)) return;
+    int w = int(width), h = int(height);
+    std::vector<uint32_t> cropped(size_t(w) * h);
+    for (int row = 0; row < h; ++row)
+        std::copy_n(group.backdrop.data() + size_t(int(y) + row) * group.width + int(x),
+            w, cropped.data() + size_t(row) * w);
+    group.backdrop = std::move(cropped);
+    group.region = {int(left), int(top), int(right), int(bottom)};
+    group.width = w;
+    group.height = h;
+}
+
 // Retain the original backdrop before the fallback leaves draw. A failed or
 // unsupported recording leaves those ordinary draws intact.
 extern "C" int ladybird_v_skia_begin_inset_decorations(CGContextRef destination,
@@ -212,6 +244,8 @@ extern "C" int ladybird_v_skia_end_inset_decorations(CGContextRef destination)
     std::unique_ptr<IsolatedInputRecording> input(
         static_cast<IsolatedInputRecording*>(ladybird_v_skia_take_isolated_input(destination)));
     if (!input || input->unsupported) return 0;
+    if (!std::getenv("VOX_DISABLE_INSET_DECORATION_BOUNDS"))
+        trim_inset_decoration_backdrop(*group, input->bounds);
     auto content = input->recorder.finishRecordingAsPicture();
     if (!content) return 0;
     auto info = SkImageInfo::Make(group->width, group->height, kBGRA_8888_SkColorType,
