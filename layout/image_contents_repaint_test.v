@@ -162,3 +162,86 @@ fn test_fixed_size_image_with_a_new_source_needs_layout() {
 	assert commands.len == 1
 	assert commands[0].image().image_url == 'https://thumbs.example/c.jpg'
 }
+
+fn positioned_image_repaint_fixture(style string) &dom.Document {
+	document := image_contents_repaint_document('<!doctype html><style>html,body{margin:0}#parent{position:relative;width:160px;height:120px}#image{${style}}</style><div id="parent"><img id="image" src="https://thumbs.example/first.jpg"></div><div>following content</div>')
+	complete_image_contents_repaint_image(document, 'image')
+	layout_document_typed_in_viewport(document, 200, 200)
+	assert document.layout_is_up_to_date()
+	return document
+}
+
+fn replace_positioned_image_repaint_source(document &dom.Document, width int, height int) {
+	mut element := document.get_element_by_id('image') or { panic('missing image') }
+	mut model := html.html_image_element_model_for_dom_element(unsafe { &dom.HTMLImageElement(element) })
+	model.set_fetch_hook(fn [width, height] (_ dom.URL) !html.DecodedImageData {
+		return image_contents_repaint_data(width, height)
+	})
+	previous := element.get_attribute_value('src')
+	element.set_attribute_value('src', 'https://thumbs.example/second.jpg')
+	html.html_image_element_form_associated_element_attribute_changed(unsafe { &dom.HTMLImageElement(element) },
+		'src', previous, 'https://thumbs.example/second.jpg', none)
+	assert model.complete()
+}
+
+fn test_positioned_image_source_replacement_keeps_geometry_only_with_the_same_natural_ratio() {
+	mut document := positioned_image_repaint_fixture('position:absolute;width:100%;height:auto;object-fit:contain')
+	defer { document.finalize() }
+	result := document_layout_result(document)?
+	old_commands := result.paint_tree.paint_commands().filter(it.kind == 'draw_replaced_image')
+	assert old_commands.len == 1
+	old_bitmap := old_commands[0].replaced_image_bitmap?
+	assert old_bitmap.width == 8 && old_bitmap.height == 6
+	replace_positioned_image_repaint_source(document, 16, 12)
+	assert document.layout_is_up_to_date() == !disable_positioned_image_ratio_reuse
+	document.update_layout(.debugging)
+	actual := (document.record_display_list()?).dump()
+	if !disable_positioned_image_ratio_reuse {
+		assert voidptr(document_layout_result(document)?) == voidptr(result)
+	}
+	commands := (document_layout_result(document)?).paint_tree.paint_commands().filter(it.kind == 'draw_replaced_image')
+	assert commands.len == 1
+	assert commands[0].image().image_url == 'https://thumbs.example/second.jpg'
+	new_bitmap := commands[0].replaced_image_bitmap?
+	assert new_bitmap.width == 16 && new_bitmap.height == 12
+	assert voidptr(new_bitmap) != voidptr(old_bitmap)
+	assert old_commands[0].image().image_url == 'https://thumbs.example/first.jpg'
+	assert old_bitmap.width == 8
+	document.set_needs_full_layout_tree_update(true)
+	document.update_layout(.debugging)
+	assert (document.record_display_list()?).dump() == actual
+}
+
+fn test_positioned_image_repaint_rejects_changed_ratio_and_intrinsic_constraints() {
+	for style in ['position:absolute;width:100%;height:auto',
+		'position:relative;width:100%;height:auto',
+		'position:absolute;width:auto;height:auto',
+		'position:absolute;width:100%;height:auto;max-width:max-content',
+		'position:absolute;width:100%;height:auto;min-width:min-content'] {
+		mut document := positioned_image_repaint_fixture(style)
+		defer { document.finalize() }
+		changed_ratio := style == 'position:absolute;width:100%;height:auto'
+		replace_positioned_image_repaint_source(document, 16, if changed_ratio { 16 } else { 12 })
+		assert !document.layout_is_up_to_date(), style
+		document.update_layout(.debugging)
+		actual := (document.record_display_list()?).dump()
+		document.set_needs_full_layout_tree_update(true)
+		document.update_layout(.debugging)
+		rebuilt := (document.record_display_list()?).dump()
+		if rebuilt != actual { eprintln('Image repaint rebuild differs for ${style}') }
+		assert rebuilt == actual
+	}
+}
+
+fn test_positioned_image_repaint_preserves_pending_attribute_selector_relayout() {
+	mut document := positioned_image_repaint_fixture('position:absolute;width:100%;height:auto}#image[src$="second.jpg"]{width:80px')
+	defer { document.finalize() }
+	replace_positioned_image_repaint_source(document, 16, 12)
+	document.update_style()
+	assert !document.layout_is_up_to_date()
+	document.update_layout(.debugging)
+	actual := (document.record_display_list()?).dump()
+	document.set_needs_full_layout_tree_update(true)
+	document.update_layout(.debugging)
+	assert (document.record_display_list()?).dump() == actual
+}

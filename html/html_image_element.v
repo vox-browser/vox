@@ -139,8 +139,14 @@ fn (mut image HTMLImageElementModel) set_needs_layout_update_or_repaint_after_im
 		node.set_needs_layout_tree_update(true, .html_image_element_update_the_image_data)
 		return
 	}
-	if !is_image_box || image_element_dimensions_may_depend_on_intrinsic_size(dom_element, layout_node)
-		|| !node.image_provider_contents_changed() {
+	updated_without_layout := if !is_image_box {
+		false
+	} else if image_element_dimensions_may_depend_on_intrinsic_size(dom_element, layout_node) {
+		node.try_repaint_image_with_unchanged_geometry()
+	} else {
+		node.image_provider_contents_changed()
+	}
+	if !updated_without_layout {
 		node.set_needs_layout_update(reason)
 	}
 }

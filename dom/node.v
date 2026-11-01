@@ -261,7 +261,7 @@ pub type PaintableSetNeedsRepaintCallback = fn (voidptr, voidptr, InvalidateDisp
 
 pub type PaintableScrollAncestorToOffsetCallback = fn (voidptr, voidptr, int)
 
-pub type PaintableImageContentsChangedCallback = fn (voidptr, voidptr) bool
+pub type PaintableImageContentsChangedCallback = fn (voidptr, voidptr, bool) bool
 
 pub type PaintableBoxTypeAgnosticPositionCallback = fn (voidptr, voidptr) CSSPixelPoint_
 
@@ -346,12 +346,16 @@ pub fn (mut p Paintable) set_needs_repaint(should_invalidate_display_list Invali
 // set_needs_repaint(PaintCommands) for this paintable's image provider. Returns
 // false when its retained paint input cannot take the new contents.
 pub fn (mut p Paintable) image_provider_contents_changed() bool {
+	return p.image_provider_contents_changed_impl(false)
+}
+
+fn (mut p Paintable) image_provider_contents_changed_impl(check_geometry bool) bool {
 	if p.repaint_callback_target == unsafe { nil } || p.callbacks == unsafe { nil }
 		|| p.callbacks.image_contents_changed_callback == unsafe { nil } {
 		return false
 	}
 	p.needs_repaint = true
-	return p.callbacks.image_contents_changed_callback(p.repaint_callback_target, p.layout_handle)
+	return p.callbacks.image_contents_changed_callback(p.repaint_callback_target, p.layout_handle, check_geometry)
 }
 
 pub fn (mut p Paintable) set_selection_state(state SelectionState) {
@@ -4308,6 +4312,16 @@ pub fn (mut n Node) set_needs_repaint(should_invalidate_display_list InvalidateD
 // ImageProvider::image_provider_contents_changed(). Returns whether the
 // provider's new contents reached every paintable without a layout pass.
 pub fn (mut n Node) image_provider_contents_changed() bool {
+	return n.image_provider_contents_changed_impl(false)
+}
+
+// Let the retained layout/paint owner prove that changed intrinsic inputs do
+// not affect this image's geometry before it publishes the replacement pixels.
+pub fn (mut n Node) try_repaint_image_with_unchanged_geometry() bool {
+	return n.image_provider_contents_changed_impl(true)
+}
+
+fn (mut n Node) image_provider_contents_changed_impl(check_geometry bool) bool {
 	layout_node := n.unsafe_layout_node() or { return false }
 	mut paintables := layout_node.paintables()
 	if paintables.len == 0 {
@@ -4315,7 +4329,7 @@ pub fn (mut n Node) image_provider_contents_changed() bool {
 	}
 	mut pushed := true
 	for mut paintable in paintables {
-		if !paintable.image_provider_contents_changed() {
+		if !paintable.image_provider_contents_changed_impl(check_geometry) {
 			pushed = false
 		}
 	}

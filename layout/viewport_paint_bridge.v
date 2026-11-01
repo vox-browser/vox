@@ -143,7 +143,7 @@ fn collect_paintable_boxes_with_auto_content_visibility_in_subtree(node &Node, m
 
 __global layout_paintable_callbacks = &dom.PaintableCallbacks{
 	set_needs_repaint_callback: layout_paintable_set_needs_repaint
-	image_contents_changed_callback: layout_paintable_image_contents_changed
+	image_contents_changed_callback: layout_paintable_image_contents_changed_with_geometry_check
 	scroll_ancestor_to_offset_into_view_callback: layout_paintable_scroll_ancestor_to_offset_into_view
 	box_type_agnostic_position_callback: layout_paintable_box_type_agnostic_position
 	inverse_transform_point_callback: layout_paintable_inverse_transform_point
@@ -1294,8 +1294,13 @@ fn layout_paintable_set_needs_repaint(target voidptr, layout_handle voidptr, sho
 // Painting::push_replaced_image_paint_facts() and set_needs_repaint(PaintCommands)
 // for an image box whose new contents cannot change its used size. Its retained
 // paint box keeps the source URL and natural size recorded at layout; refresh
-// them in place. A new source URL or an SVG document still needs layout.
+// them in place. The checked form also permits a new source when committed
+// positioned geometry depends only on an unchanged natural aspect ratio.
 fn layout_paintable_image_contents_changed(target voidptr, layout_handle voidptr) bool {
+	return layout_paintable_image_contents_changed_with_geometry_check(target, layout_handle, false)
+}
+
+fn layout_paintable_image_contents_changed_with_geometry_check(target voidptr, layout_handle voidptr, check_geometry bool) bool {
 	if layout_handle == unsafe { nil } {
 		return false
 	}
@@ -1307,18 +1312,36 @@ fn layout_paintable_image_contents_changed(target voidptr, layout_handle voidptr
 	if paintable.is_svg_image || box.media().is_svg_image || image_box.svg_image_document() != none {
 		return false
 	}
+	if check_geometry {
+		if !positioned_image_geometry_is_independent_of_natural_width(source_node, result.state) {
+			return false
+		}
+		dom_node := source_node.dom_node() or { return false }
+		element := dom_node.as_element() or { return false }
+		if available_html_svg_image_document(element) != none { return false }
+		previous_size := paintable.intrinsic_size or { return false }
+		new_size := available_html_image_natural_size(element) or { return false }
+		if !positioned_image_natural_ratios_match(previous_size, new_size) { return false }
+	}
 	mut mutable_image_box := unsafe { &ImageBox(image_box) }
+	if check_geometry { mutable_image_box.reset_cached_intrinsic_sizes() }
 	mutable_image_box.reset_for_relayout()
 	if mutable_image_box.svg_image_document() != none {
 		return false
 	}
 	source := mutable_image_box.source()
 	source_url := source_node.document().encoding_parse_and_serialize_url(source) or { source }
-	if source_url != box.media().replaced_image_url {
+	if check_geometry {
+		previous_size := paintable.intrinsic_size or { return false }
+		if !positioned_image_natural_ratios_match(previous_size, mutable_image_box.natural_size()) {
+			return false
+		}
+	} else if source_url != box.media().replaced_image_url {
 		return false
 	}
 	box.media_data = retained_block_box_media(BlockBoxMediaData{
 		...*box.media()
+		replaced_image_url: source_url
 		replaced_image_bitmap: mutable_image_box.replaced_image_bitmap()
 		replaced_image_paintable: &painting.ImagePaintable{
 			...*paintable
@@ -1327,6 +1350,7 @@ fn layout_paintable_image_contents_changed(target voidptr, layout_handle voidptr
 		}
 	})
 	layout_paintable_set_needs_repaint(target, layout_handle, .paint_commands)
+	if check_geometry { report_positioned_image_ratio_reuse() }
 	return true
 }
 
