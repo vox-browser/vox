@@ -1643,6 +1643,9 @@ pub mut:
 	cached_computed_font_list_generation_    u64
 	cached_computed_font_list_owner_         &FontComputer = unsafe { nil }
 	cached_first_available_computed_font_    &PlatformFont = unsafe { nil }
+	// Keep the font-only refresh's original inputs even when a synchronous
+	// font query materializes a replacement before style invalidation runs.
+	font_input_refresh_snapshot_ &FontCascadeList = unsafe { nil }
 	line_height_                             ?CSSPixels
 	attempted_pseudo_class_matches_          PseudoClassBitmap
 	raw_cascaded_font_size_                  ?&dom.StyleValue
@@ -5927,6 +5930,9 @@ pub fn (mut c ComputedProperties) computed_font_list(font_computer &FontComputer
 			// A different family/weight can finish without expiring this cascade.
 			// Keep its resolved inputs instead of rebuilding the same cache key.
 			c.cached_computed_font_list_generation_ = generation
+			if c.font_input_refresh_snapshot_ == unsafe { nil } {
+				c.font_input_refresh_snapshot_ = font_list
+			}
 			return font_list
 		}
 		c.clear_computed_font_list_cache()
@@ -5962,6 +5968,9 @@ pub fn (mut c ComputedProperties) computed_font_list(font_computer &FontComputer
 	c.cached_computed_font_list_ = font_list
 	c.cached_computed_font_list_generation_ = font_computer.environment_generation()
 	c.cached_computed_font_list_owner_ = font_computer
+	if c.font_input_refresh_snapshot_ == unsafe { nil } {
+		c.font_input_refresh_snapshot_ = font_list
+	}
 	if font_environment_changed {
 		// A face loaded after this style was materialized. Refresh the selected
 		// face and the layout-facing line height together so the current shaping

@@ -5,6 +5,10 @@ import os
 
 const disable_font_refresh_cascade_reuse = os.getenv('VOX_DISABLE_FONT_REFRESH_CASCADE_REUSE') != ''
 const font_refresh_cascade_diagnostics = os.getenv('VOX_FONT_REFRESH_CASCADE_DIAGNOSTICS') != ''
+const disable_live_pending_font_refresh = os.getenv('VOX_DISABLE_LIVE_PENDING_FONT_REFRESH') != ''
+const live_pending_font_refresh_diagnostics = os.getenv('VOX_LIVE_PENDING_FONT_REFRESH_DIAGNOSTICS') != ''
+
+__global live_pending_font_refresh_reported bool
 
 fn font_family_value_names_family(value StyleValue, family_name string) bool {
 	return match value {
@@ -208,7 +212,24 @@ fn (s &StyleComputer) refresh_font_inputs(abstract_element dom.AbstractElement) 
 	computed.root_line_height_px_ = s.root_element_font_metrics.line_height.to_double()
 	computed.root_font_metrics_depend_on_viewport_metrics_ = s.root_element_font_metrics_depend_on_viewport_metrics
 	mut invalidation := RequiredInvalidationAfterStyleChange{}
-	same_font := if previous := old_font_list { previous.equals(new_font_list) } else { false }
+	same_font := if previous := old_font_list {
+		original := if computed.font_input_refresh_snapshot_ != unsafe { nil } {
+			computed.font_input_refresh_snapshot_
+		} else { previous }
+		// Pending lists cannot be compared by value: their selected faces can
+		// change fallback visibility as well as metrics. Identity is sufficient
+		// only while the font computer still owns this exact live snapshot.
+		retained_pending := !disable_live_pending_font_refresh
+			&& original.pending_faces.len > 0
+			&& voidptr(original) == voidptr(new_font_list)
+			&& s.font_computer().cached_cascade_is_current(original)
+		if retained_pending && live_pending_font_refresh_diagnostics
+			&& !live_pending_font_refresh_reported {
+			live_pending_font_refresh_reported = true
+			eprintln('Vox font refresh: original live pending cascade keeps geometry')
+		}
+		retained_pending || original.equals(new_font_list)
+	} else { false }
 	if !same_font || old_line_height != computed.line_height()
 		|| old_root_font_size != computed.root_font_size_px_
 		|| old_root_line_height != computed.root_line_height_px_ {
@@ -220,6 +241,7 @@ fn (s &StyleComputer) refresh_font_inputs(abstract_element dom.AbstractElement) 
 			layout_node.apply_style(bridge)
 		}
 	}
+	computed.font_input_refresh_snapshot_ = new_font_list
 	return invalidation
 }
 
