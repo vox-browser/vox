@@ -202,8 +202,8 @@ def parse_args(argv=None):
                    help='Alternate the same Vox binary without caching unshifted relative flow')
     control.add_argument('--control-block-images', action='store_true',
                    help='Alternate the same Vox binary without retaining image-containing block layout')
-    control.add_argument('--control-font-completion-rendering', action='store_true',
-                   help='Alternate the same Vox binary with synchronous font-completion layout')
+    control.add_argument('--control-rule-selectors', action='store_true',
+                   help='Alternate the same Vox binary without reusing parsed rule selectors')
     control.add_argument('--control-live-font-cascades', action='store_true',
                    help='Alternate the same Vox binary without reusing retained font inputs across generations')
     control.add_argument('--control-vox-app', type=Path,
@@ -237,7 +237,7 @@ def control_environment(args):
     if args.control_vox_app:
         return {}
     for option, variable in (
-        ('control_font_completion_rendering', 'VOX_DISABLE_FONT_COMPLETION_COALESCING'),
+        ('control_rule_selectors', 'VOX_DISABLE_RULE_SELECTOR_REUSE'),
         ('control_block_images', 'VOX_DISABLE_RETAINED_BLOCK_IMAGES'),
         ('control_relative_flow_layout', 'VOX_DISABLE_RELATIVE_FLOW_LAYOUT_REUSE'),
         ('control_pending_font_layout', 'VOX_DISABLE_LIVE_PENDING_LAYOUT_REUSE'),
