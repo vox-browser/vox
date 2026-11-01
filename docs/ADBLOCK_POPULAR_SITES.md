@@ -1,8 +1,9 @@
 # Popular-site adblock verification
 
-The latest BBC and CNN rendering checkpoints are recorded at the end of this
-document. BBC and CNN complete-response cache captures are pixel-exact; cold
-BBC and CNN's saved-live/frozen-reference acceptance remain open.
+The latest BBC, CNN and Guardian rendering checkpoints are recorded at the end
+of this document. Guardian passes the registered viewport comparison with cold
+and complete-response caches. BBC and CNN complete-response cache captures are
+pixel-exact; cold BBC and CNN's saved-live/frozen-reference acceptance remain open.
 
 The matrix exercises guest pages on 13 representative news, video, social,
 shopping, reference, and developer sites. It compares Vox's native filtering
@@ -2248,3 +2249,51 @@ retains exit 1 for that gate. Cold decoding and unstable live recaptures remain
 unqualified. See [CNN rendering evidence](CNN_BRAVE_PARITY.md) and its
 [durable receipt](benchmark-results/cnn-brave-pixels-2026-11-01.json) for exact
 scope, bundle identities, commands, guard results and retained failed attempts.
+
+
+## Guardian archived viewport reaches zero pixels, 1 November 2026
+
+The Guardian passes the registered full-uBO comparison at **zero differing RGBA
+pixels** over the complete 1024×768 document viewport, scale 1, with both cold
+and complete encoded-response caches. The saved live Brave frame also matches
+both frozen Brave references exactly. Each capture uses a fresh browser process
+and private profile. No pixel reference, tolerance or excluded region was changed
+to accept a renderer fix.
+
+The archive was refreshed after declining optional cookies with SourcePoint's
+“No, thank you” button in a private Brave profile. Its 88 sealed responses contain
+3,529,846 bytes. The fresh live capture checks 207 request/header decisions,
+including 16 blocks, with zero native/full-uBO disagreements and matching
+cosmetic CSS, procedural filters and scriptlets. This establishes real page
+coverage before accepting the frozen reference; the consent UI was not hidden
+by an injected stylesheet or script.
+
+The matched native baseline has 250,066 differing pixels. Focused fixes refresh
+intrinsic widths after a web font loads, decode supported static sRGB JPEG XL
+images with Brave-compatible pixels, validate gradient stops at native float
+precision, preserve SVG and positioned paint-client boundaries, resume pictures
+across provably disjoint content and masks, and snap eligible hit-test bounds
+before mapping through paint properties, while preserving painted ink bounds.
+Own and inherited non-translation transforms keep their property-space bounds;
+the earlier broader snapping experiment regressed CNN's gradient and was rejected.
+
+Each renderer fix has a separate commit with focused tests. The final fix is
+`fac01e59`. The final check covers the paint-client cases in both default and
+no-GC modes, related metadata
+and layer planning, eleven native pixel regressions, CNN's unchanged archived
+viewport, and fresh headless startup. Full acceptance commands, exact executable
+and native-library identities, cache conditions, source/build receipts, all
+retained intermediate pixel counts and failed attempts are in the
+[durable Guardian receipt](benchmark-results/guardian-brave-pixels-2026-11-01.json).
+Raw evidence is under `Build/guardian-parity-20261101/`. The required V inputs
+remain unchanged across the build; independent native Graphite edits during
+compilation are recorded. Acceptance is tied to the pinned executable and
+library bytes.
+
+This result covers the frozen guest viewport. The freezer removes author scripts
+and preserves the initialized DOM/CSS; the replay serves only sealed resources
+at their original HTTPS origins. It does not establish complete live Vox
+scripting, video playback, logged-in behavior or every scrolling position.
+There is no CPU-instruction or scrolling-performance claim, and the existing
+broad-verification baseline is unchanged. The other catalog sites retain their
+individual acceptance status.
