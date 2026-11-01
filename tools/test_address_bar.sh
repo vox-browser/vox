@@ -8,6 +8,19 @@ http_modules=$(python3 "$repo_dir/tools/prepare_http_compat.py" "$v_compiler")
 test_dir="$repo_dir/Build/v/address-bar-tests"
 test_file=${VOX_CHROME_TEST_FILE:-main_address_bar_test.v}
 mkdir -p "$test_dir"
+# Sources stay in the canonical checkout. Remove retired links, and expose the
+# headers and module directories used by includes in this test package.
+for source in "$test_dir"/*.v; do
+    if [ -L "$source" ] && [ ! -e "$source" ]; then rm "$source"; fi
+done
+for header in "$repo_dir"/*.h; do
+    ln -sf "$header" "$test_dir/$(basename "$header")"
+done
+for directory in "$repo_dir"/*; do
+    [ -d "$directory" ] || continue
+    [ "$(basename "$directory")" != Build ] || continue
+    ln -sfn "$directory" "$test_dir/$(basename "$directory")"
+done
 # The settings component only needs the native embedding adapter. Keep its
 # focused check independent of the complete document/layout engine.
 if [ "$test_file" = main_browser_settings_test.v ]; then
