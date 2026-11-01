@@ -1320,3 +1320,86 @@ guards. The partial-response directory also records the PNG hash, exact split,
 delays and per-crop counts. Plane upload, CPU versus GPU plane mip generation,
 source endpoint rounding and Metal-versus-Dawn probes leave the 97 book pixels
 unchanged. Full live-page and scale-two conformance remain open.
+
+## Cropped image decoding hints
+
+`81e6b5f8` applies the synchronous cropped-source decode rule before choosing an
+upload. The browser collects live HTML image hints across the paint list first,
+so a synchronous use also governs an earlier async use of the same resource.
+`ab12479b` excludes empty image rectangles and requests with no decoded frame.
+Those inactive uses cannot contribute a decode task merely because the shell
+has cached pixels from another image at the same URL.
+
+The implementation follows Chromium's
+[cropped-upload rule](https://chromium.googlesource.com/chromium/src/+/refs/tags/156.0.8078.48/cc/tiles/gpu_image_decode_cache.cc)
+and [checker-image decisions](https://chromium.googlesource.com/chromium/src/+/refs/tags/156.0.8078.48/cc/tiles/checker_image_tracker.cc).
+Unspecified/sync hints, animated images and small async source regions select
+the full source for a cropped draw. Large, completed async images retain their
+scaled complete-source request. Source bounds round outward before testing
+the desktop 1 MiB threshold; Blink only lowers that threshold on
+[non-desktop Android configurations](https://chromium.googlesource.com/chromium/src/+/refs/tags/156.0.8078.48/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc).
+This does not implement partial PNG publication or the complete task scheduler.
+
+Two 800×600 scale-one fixtures have byte-identical fresh Brave references
+before and after their respective changes:
+
+| Fixture | Before | After |
+| --- | ---: | ---: |
+| `cropped-image-decoding-modes` | 182,349 | 0 |
+| `cropped-image-inactive-decode-hints` | 45,528 | 0 |
+
+The first includes auto/sync/async crops, a shared resource whose async use
+occurs first, a small async crop and an uncropped control. The second adds
+hidden and distant deferred images at a visible async image's URL. The first
+implementation regresses the Gitly viewport from four to 9,314 differences;
+the inactive-use correction restores four. Both failing captures and their
+unchanged references remain retained.
+
+Focused checks pass 134 ASan/UBSan cache assertions, including nineteen new
+mode/crop checks, thirty public image-bridge scenes at both display scales,
+and four V tests in each of no-GC and Boehm modes. Disabling hint collection in
+the GPU test produces 459,355 differing pixels. The V mini suite links the
+canonical helper and test files, avoiding unrelated browser UI compilation.
+Earlier failed attempts remain preserved without pass credit. Run the cache
+checks with `python3 tools/test_chromium_image_decode_cache.py`; the GPU program
+is included in `tools/test_skia_gradient_backdrop.py`.
+
+The broad native run passes eleven of twelve programs across its original and
+continuation runs. Its shared-layer gradient case fails with 5,343 differing
+channels both with and without this feature. The separate browser validation
+passes startup, fourteen screenshot smoke checks, all sixty strict fixtures,
+eight exact image/gradient/table golds and live scripted loading. Live loading
+reports five complete visible images, loaded fonts and zero native errors;
+it supplies no whole-live-page pixel comparison credit.
+
+The sixteen-position fixed-reference sweep retains the preceding residuals
+except Y 9600, which has 2,982 differences rather than the historical 308.
+Disabling this feature in the same earlier production executable also produces
+2,982 there, isolating that additional text difference from image hints. Lilly
+still differs by 14,681 pixels and the footer book by 97. All sixteen document
+identity, viewport, readiness and font/error audits pass. Full page parity
+remains open.
+
+An HTTP fixture diagnostic initially captures a blank Brave uncropped control,
+producing 63,348 differences. Its metadata does not establish image readiness,
+so the cause remains unproven. A later diagnostic with image and network audits
+is exact with all seven images complete and no network failures. The inactive
+fixture's HTTP comparison is also exact. These separate diagnostics retain the
+failed capture and do not establish a stable HTTP cohort.
+
+Evidence under `Build/vlang-cropped-decode-20261101/` includes
+`fixture-comparison.json`, `cache-focused/`, `native-policy-{positive,negative}-*`,
+`policy-final-v3-*`, the failed `native-regressions/` and successful
+`native-regressions-remaining/`, `shared-layer-before-policy-v2-*`,
+`validation-status.json`, `final-page-audit.json` and the individual capture
+directories. The controlled HTTP runs are `cropped-image-*-http/` and
+`cropped-image-decoding-modes-http-audit/`.
+
+The final executable is
+`53f2472079173736dcca4b68415ee5ac798df4ae18b2fc7c814d266db48f4552`,
+preserved in `Vox-cropped-decode-v2-installed.app`; its native text library is
+`ea57efeed85f7fd70a42fdf5cbe3200c074405ac127edef143c35a092b0ec9aa`.
+All six feature inputs remain unchanged through the 366.13-second production
+build, whose sampled peak RSS is 8.12 GiB under the 12 GiB guard. Other shared
+inputs change, so the complete checkout is not frozen. The initial shared
+build's source hashes and compiled-C feature witness are also retained.
