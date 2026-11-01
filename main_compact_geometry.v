@@ -116,25 +116,7 @@ function __compactRectList(values){
  __elementApply(__elementRecordSet,__compactRectLists,[list,rects]);return list;
 }
 Object.defineProperty(Element.prototype,"getClientRects",{value:function getClientRects(){const state=__elementApply(__elementRecordGet,__elementRecords,[this]);if(!state)throw new TypeError("Illegal Element receiver");const request={};if(state.created)request.state=state;return __compactRectList(__queryElements(state.bridgeKey,"geometry",JSON.stringify(request)));},writable:true,enumerable:true,configurable:true});
-function __compactElementGeometry(object,state){
- const read=function(receiver,name){const own=__elementApply(__elementRecordGet,__elementRecords,[receiver]);if(!own)throw new TypeError("Illegal Element receiver");return __queryElements(own.bridgeKey,"geometry",name);};
- object.getBoundingClientRect=function getBoundingClientRect(){return read(this,"rect");};
- for(const name of ["clientTop","clientLeft","clientWidth","clientHeight","scrollWidth","scrollHeight"]){
-  Object.defineProperty(object,name,{get(){return read(this,name);},enumerable:true,configurable:true});
- }
- for(const name of ["scrollTop","scrollLeft"]){
-  Object.defineProperty(object,name,{get(){return read(this,name);},set(value){
-   const own=__elementApply(__elementRecordGet,__elementRecords,[this]);if(!own)throw new TypeError("Illegal Element receiver");
-   value=+value;if(!__compactScrollFinite(value))value=0;
-   __queryElements(own.bridgeKey,"setScroll",JSON.stringify({name,value}));
-  },enumerable:true,configurable:true});
- }
- if(state.namespaceURI!=="http://www.w3.org/1999/xhtml")return;
- for(const name of ["offsetTop","offsetLeft","offsetWidth","offsetHeight"]){
-  Object.defineProperty(object,name,{get(){return read(this,name);},enumerable:true,configurable:true});
- }
- Object.defineProperty(object,"offsetParent",{get(){return __queryElements(state.bridgeKey,"offsetParent","");},enumerable:true,configurable:true});
-}
+' + compact_element_geometry_bindings() + r'
 const __compactScrollFinite=Number.isFinite;
 Object.defineProperty(Element.prototype,"ownerDocument",{get:function(){
  if(!__elementApply(__elementRecordGet,__elementRecords,[this]))throw new TypeError("Illegal Node receiver");
