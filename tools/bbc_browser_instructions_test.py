@@ -21,6 +21,24 @@ def document():
 
 
 class BBCInstructionTests(unittest.TestCase):
+    def test_constant_longhand_control_is_isolated_and_restored_on_failure(self):
+        environment = {'VOX_PROXY': 'socks5h://fixture'}
+        args = SimpleNamespace(vox_environment=environment, control_disable_grid_width_only=False,
+                               control_disable_constant_longhand_reuse=True)
+        seen = []
+        def observe(engine, app, folder, options):
+            seen.append((engine, dict(options.vox_environment)))
+            return {'exit': 0}
+        with patch('bbc_browser_instructions.browser.run_browser', side_effect=observe):
+            for engine in ['control', 'vox', 'brave']:
+                run_trial(engine, 'same-app', engine, args)
+        self.assertEqual(seen, [('vox', dict(environment, VOX_DISABLE_CONSTANT_LONGHAND_REUSE='1')),
+                                ('vox', environment), ('brave', environment)])
+        with patch('bbc_browser_instructions.browser.run_browser', side_effect=RuntimeError('failed')):
+            with self.assertRaises(RuntimeError):
+                run_trial('control', 'same-app', 'control', args)
+        self.assertIs(args.vox_environment, environment)
+
     def test_font_display_control_is_isolated_and_restored_on_failure(self):
         environment = {'VOX_PROXY': 'socks5h://fixture'}
         args = SimpleNamespace(vox_environment=environment, control_disable_grid_width_only=False,
@@ -198,7 +216,7 @@ class BBCInstructionTests(unittest.TestCase):
                      '--control-disable-attribute-case-buckets', '--control-disable-persistent-scope-jumps',
                      '--control-disable-extended-longhand-reuse', '--control-disable-color-longhand-reuse',
                      '--control-copy-stationary-raster-commands', '--control-disable-retained-flow-items',
-                     '--control-disable-face-specific-font-display']:
+                     '--control-disable-face-specific-font-display', '--control-disable-constant-longhand-reuse']:
             with self.subTest(flag=flag):
                 with self.assertRaises(SystemExit):
                     parse_args(args + [flag])
