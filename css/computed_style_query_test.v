@@ -103,3 +103,42 @@ fn test_computed_query_inline_comparison_flushes_pending_style_and_restores_inli
 	assert voidptr(up_to_date_computed_properties_for_element(target)) == voidptr(pair.with_inline)
 	computed_query_assert_oracle(target)
 }
+
+fn test_computed_query_new_child_keeps_unrelated_computed_styles() {
+	mut document, mut branch, target, unrelated := computed_query_fixture()
+	_ = up_to_date_computed_properties_for_element(target)
+	unrelated_before := computed_query_stored(unrelated)
+	mut inserted := document.create_element_ns(dom.namespace_html_uri, 'span') or { panic(err) }
+	inserted.set_attribute_value('style', 'width:var(--query-width)')
+	mut parent := branch.as_node()
+	parent.append_child(inserted.as_node()) or { panic(err) }
+	assert inserted.el_computed_properties() == none
+	document.reset_style_invalidation_counters()
+	style := up_to_date_computed_properties_for_element(inserted)
+	assert computed_query_property(style, .width) == '17px'
+	assert computed_query_property(style, .color) == computed_query_property(computed_query_stored(branch), .color)
+	assert (voidptr(computed_query_stored(unrelated)) == voidptr(unrelated_before)) == !disable_selective_missing_style_query
+	if !disable_selective_missing_style_query {
+		assert document.style_invalidation_counters().element_style_recomputations <= 2
+	}
+	computed_query_assert_oracle(inserted)
+}
+
+fn test_computed_query_inline_comparison_on_new_child_keeps_unrelated_styles() {
+	mut document, mut branch, target, unrelated := computed_query_fixture()
+	_ = up_to_date_computed_properties_for_element(target)
+	unrelated_before := computed_query_stored(unrelated)
+	mut inserted := document.create_element_ns(dom.namespace_html_uri, 'span') or { panic(err) }
+	inserted.set_attribute_value('style', 'width:39px')
+	mut parent := branch.as_node()
+	parent.append_child(inserted.as_node()) or { panic(err) }
+	document.reset_style_invalidation_counters()
+	pair := computed_styles_with_and_without_inline(inserted) or { panic('missing pair') }
+	assert computed_query_property(pair.with_inline, .width) == '39px'
+	assert computed_query_property(pair.without_inline, .width) == 'auto'
+	assert (voidptr(computed_query_stored(unrelated)) == voidptr(unrelated_before)) == !disable_selective_missing_style_query
+	if !disable_selective_missing_style_query {
+		assert document.style_invalidation_counters().element_style_recomputations <= 2
+	}
+	assert inserted.get_attribute('style') or { '' } == 'width:39px'
+}

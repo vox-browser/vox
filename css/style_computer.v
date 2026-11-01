@@ -2033,8 +2033,7 @@ pub fn up_to_date_computed_properties_for_element(element &dom.Element) &Compute
 	// Bootstrap missing styles, then let the document retain the scope of later
 	// invalidations, including font-only updates and stale inheritance ancestors.
 	if abstract_element.computed_properties() == none {
-		document.needs_full_style_update = true
-		document.update_style()
+		prepare_missing_style_for_query(element)
 	} else if document.element_needs_style_update(element) {
 		document.update_style()
 	}
@@ -2065,8 +2064,7 @@ pub fn computed_styles_with_and_without_inline(element &dom.Element) ?ComputedSt
 	css_style_computer_for(document)
 	abstract_element := dom.AbstractElement.new(element, none)
 	if abstract_element.computed_properties() == none {
-		document.needs_full_style_update = true
-		document.update_style()
+		prepare_missing_style_for_query(element)
 	} else if document.element_needs_style_update(element) {
 		document.update_style()
 	}
