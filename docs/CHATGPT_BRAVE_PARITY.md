@@ -5,8 +5,8 @@ application. Pixel-exact parity and an actual conversation are **not complete**.
 The full-page comparison still has rendering differences; focused fixtures and
 a successful application startup are not a substitute for that comparison.
 
-The latest unchanged-original-archive capture differs in **6,797 of 786,432
-pixels (0.8643%, MAE 0.0095)**. Startup, native typing and Enter are validated;
+The latest unchanged-original-archive capture differs in **6,594 of 786,432
+pixels (0.8385%, MAE 0.0066)**. Startup, native typing and Enter are validated;
 a completed chat reply remains unverified. The recorded 60-second idle check
 peaks at 1.82 GB rather than continuing toward the 12 GiB guard.
 
@@ -484,3 +484,81 @@ native/JavaScript errors remain zero. The archive still lacks the service
 responses needed for an actual chat reply. All captures reuse the original
 SOCKS download through non-forwarding local replay. Full-page pixel parity and
 a completed conversation remain open.
+
+
+## CSS superellipse decorations and shared recordings
+
+`813c0e68` transports computed physical/logical `corner-shape` values through
+layout decorations and retained paint payloads. The Chromium painter now draws
+solid nonnegative superellipse backgrounds, uniform borders and outer shadows.
+Inset curves retain their original border geometry. Separate native geometry
+checks reproduce Brave's complete spread-shadow and below-round inset paths,
+including their float control points and path ordering. Concave native replay,
+gradient backgrounds and propagation of custom contours to descendant clips
+remain outside this slice.
+
+The captured ChatGPT composer uses `superellipse(1.1)`. Its outer contour and
+unfiltered shadow require parent-tile multisampling; ordinary rounded-border
+rules remain unchanged. Supported contoured decorations now join root and
+compositor picture eligibility. Keeping interacting paints in one picture
+preserves their shared coverage before resolving pixels. The native shadow
+sequence also retains the opaque source and `SrcIn` color filter used by
+[Chromium's DrawLooper](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/cc/paint/draw_looper.cc).
+That sequence adjustment alone produced no pixel improvement in its diagnostic.
+
+The new `corner-shape-superellipse` fixture covers `1.1`, `1.25` and `.98`,
+padding/content background clips, elliptical corners, three overlapping
+shadows and an independent rounded button. Its normal-window Brave reference
+is unchanged across two captures. Earlier prototypes differed in 267 pixels,
+then 100. A diagnostic shared recording reached zero; the final installed
+production bundle also compares **pixel-exact over all 800×600 pixels**.
+The reference and comparison regions were not changed to obtain that result.
+
+Evidence is under `Build/chatgpt-svg-parity-20261101/`:
+
+- `contoured-final-binding-results.json` executes five focused binding,
+  tile-classification and recording-eligibility cases in Boehm, no-GC and
+  preallocated modes. The two style-transport cases also pass in all three
+  modes; their original Boehm receipt is in `corner-shape-transport/`, and the
+  other modes are in `corner-shape-transport-results.json`.
+- `corner-shape-reference-native-sanitizers/` passes all seven sanitizer
+  programs, including 27 geometry checks. The final expanded contour test
+  passes 24 exact native/GPU cases in
+  `native-corner-shape/test-msaa-color-v8-{compile,run}.*`, covering both scales,
+  shared recording on/off, both parent-tile modes and three border alphas.
+  Failed development prototypes remain retained without acceptance credit.
+- `production-corner-shape-shared/` records the successful canonical production
+  build: 452.16 seconds, sampled peak RSS 8,839,282,688 bytes, compiler and guard
+  exit zero. Eighteen separate compiled feature files match both snapshots and
+  the committed sources in `committed-feature-sources.json`. Independent edits
+  changed shared files during compilation; no claim is made that the bundle
+  validates every later edit in the shared checkout.
+- `candidate-validation-corner-shape-shared/results.json` passes all fourteen
+  groups with stable executable/native-library identities. Twelve focused
+  Brave fixtures and ten SVG mutation guards are exact. The eleven default
+  screenshot cases pass with their unchanged bounds: eight exact and three
+  existing allowances. Headless startup and archived native input also pass.
+  This totals 33 screenshot comparisons, thirty exact.
+
+The accepted executable SHA256 is
+`30c8df0398d9da52bd307e321324fad8ee0ef6e9973def12a270a5f8c4b6d045`;
+the Skia bridge is
+`a2c8091e077d7b6e7c807d7849db597a0a4bc65d264d9a25a954c14ee714290b`.
+The retained identity files also pin Graphite, Dawn and the filter snapshot.
+Each check launches a fresh process.
+
+The original-archive capture is
+`Build/chatgpt-shadow-modules-20261031/corner-shape-shared-20261101-acceptance/`.
+Both stylesheets load, home-ready is `1`, and native/JavaScript errors are zero.
+It differs from the unchanged Brave reference in **6,594 pixels**, with MAE
+0.0066, maximum error 60, eight pixels above error 3, five above 25 and two
+above 50. The capture peaks at 1,955,495,936 bytes over 21.29 seconds. The earlier
+6,797-pixel capture is retained; these whole-bundle comparisons also include
+independent changes and do not isolate one fix's contribution.
+
+`corner-shape-shared-20261101-editor/` verifies native AppKit typing and Enter:
+the textarea contains `Vox` without a newline and startup remains error-free.
+Its peak RSS is 2,250,014,720 bytes over 23.10 seconds. These are capture/input
+observations, not idle-memory or scrolling measurements. The original SOCKS
+archive is reused through non-forwarding replay. Full-page pixel equality and
+a completed service reply remain open.
