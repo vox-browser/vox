@@ -6,6 +6,7 @@
 #include "native_raster_buffer_pool.h"
 #include "native_raster_snapshot.h"
 #include "native_immutable_rgba_image.h"
+#include "native_rgba_alpha_bounds.h"
 #include <CoreGraphics/CoreGraphics.h>
 #include <dlfcn.h>
 #include <chrono>
@@ -2401,8 +2402,9 @@ static int draw_css_image_filter(CGContextRef destination, CGImageRef source,
         source_image = SkImages::RasterFromPixmapCopy(SkPixmap(source_info, source_pixels, source_pitch));
         if (!source_image) return 0;
     }
-    std::vector<uint32_t> output_pixels(static_cast<size_t>(width)
-        * static_cast<size_t>(height));
+    bool bounded_input = !std::getenv("VOX_DISABLE_FILTER_ALPHA_BOUNDS");
+    std::vector<uint32_t> output_pixels;
+    if (!bounded_input) output_pixels.resize(size_t(width) * height);
     auto output_info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
         kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
     SkPaint paint;
@@ -2415,7 +2417,10 @@ static int draw_css_image_filter(CGContextRef destination, CGImageRef source,
         // padding. Keep that padding out of the filter input: Skia uses the
         // input bounds when choosing the downsampled blur grid.
         int left = width, top = height, right = 0, bottom = 0;
-        for (int y = 0; y < height; ++y) {
+        if (bounded_input) {
+            auto bounds = vox_rgba_alpha_bounds(source_pixels, width, height, source_pitch);
+            left = bounds.left; top = bounds.top; right = bounds.right; bottom = bounds.bottom;
+        } else for (int y = 0; y < height; ++y) {
             for (int x = 0; x < width; ++x) {
                 if (source_pixels[static_cast<size_t>(y) * source_pitch + x * 4 + 3]) {
                     left = std::min(left, x);
@@ -2425,6 +2430,9 @@ static int draw_css_image_filter(CGContextRef destination, CGImageRef source,
                 }
             }
         }
+        if (std::getenv("VOX_FILTER_ALPHA_BOUNDS_DIAGNOSTICS"))
+            std::fprintf(stderr, "VOX_FILTER_ALPHA_BOUNDS empty=%d target=%dx%d ink=%d,%d,%d,%d\n",
+                right <= left || bottom <= top, width, height, left, top, right, bottom);
         if (right <= left || bottom <= top)
             return 1;
         auto cropped_image = SkImages::RasterFromPixmapCopy(SkPixmap(
@@ -2439,6 +2447,7 @@ static int draw_css_image_filter(CGContextRef destination, CGImageRef source,
         // blending instead of unpremultiplying the filter's translucent input.
         RasterRegion region {0, 0, static_cast<int>(std::ceil(canvas_width)),
             static_cast<int>(std::ceil(canvas_height))};
+        output_pixels.resize(size_t(width) * height);
         bool has_background = copy_backdrop(destination, region, scale, width, height, output_pixels);
         if (has_background) {
             auto background = SkImages::RasterFromPixmapCopy(SkPixmap(output_info,
@@ -2460,6 +2469,7 @@ static int draw_css_image_filter(CGContextRef destination, CGImageRef source,
         }
     }
 
+    output_pixels.resize(size_t(width) * height);
     if (!source_image) source_image = SkImages::RasterFromPixmapCopy(SkPixmap(source_info, source_pixels, source_pitch));
     if (!source_image) return 0;
     auto surface = SkSurfaces::WrapPixels(output_info, output_pixels.data(),

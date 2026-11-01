@@ -35,8 +35,13 @@ static std::vector<uint8_t> render(bool optimized, int scale, float sigma, int a
         CGBitmapInfo(kCGImageAlphaPremultipliedLast) | kCGBitmapByteOrder32Big);
     CGColorSpaceRelease(srgb); assert(destination);
     CGContextScaleCTM(destination, scale, scale);
-    if (optimized) unsetenv("VOX_DISABLE_IMMUTABLE_FILTER_INPUT");
-    else setenv("VOX_DISABLE_IMMUTABLE_FILTER_INPUT", "1", 1);
+    if (optimized) {
+        unsetenv("VOX_DISABLE_IMMUTABLE_FILTER_INPUT");
+        unsetenv("VOX_DISABLE_FILTER_ALPHA_BOUNDS");
+    } else {
+        setenv("VOX_DISABLE_IMMUTABLE_FILTER_INPUT", "1", 1);
+        setenv("VOX_DISABLE_FILTER_ALPHA_BOUNDS", "1", 1);
+    }
     ladybird_v_skia_set_chromium_painting(1);
     if (shadow) {
         float shadows[] {2.25f, -1.5f, sigma, .3f, .7f, .2f, .6f};
