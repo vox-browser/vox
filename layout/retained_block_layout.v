@@ -2,7 +2,6 @@ module layout
 
 import css
 import dom
-import processmetrics
 
 struct RetainedBlockValues {
 	node       &NodeWithStyle
@@ -149,7 +148,7 @@ fn run_retaining_independent_formatting_context(mut state LayoutState, box &Node
 			report_retained_flex_layout(cached.inputs)
 			report_retained_grid_layout(cached.inputs)
 			report_relative_flow_layout_reuse(cached.inputs)
-			if cached.font_generation != font_generation && processmetrics.instructions_enabled() {
+			if cached.font_generation != font_generation && retained_font_generation_diagnostics {
 				eprintln('Vox retained block font generation: ${cached.font_generation} -> ${font_generation}, ${cached.inputs.len} inputs')
 			}
 			used.borrow_retained_line_boxes(cached.lines)

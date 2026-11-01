@@ -2,7 +2,6 @@ module layout
 
 import css
 import dom
-import processmetrics
 
 struct RetainedInlineInput {
 	node           &Node
@@ -234,7 +233,7 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 			&& (cached.font_generation == font_generation
 				|| retained_layout_fonts_are_current(cached.inputs)) {
 			report_relative_flow_layout_reuse(cached.inputs)
-			if cached.font_generation != font_generation && processmetrics.instructions_enabled() {
+			if cached.font_generation != font_generation && retained_font_generation_diagnostics {
 				eprintln('Vox retained inline font generation: ${cached.font_generation} -> ${font_generation}, ${cached.inputs.len} inputs')
 			}
 			used.borrow_retained_line_boxes(cached.lines)

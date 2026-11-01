@@ -1,7 +1,6 @@
 module layout
 
 import css
-import processmetrics
 import os
 
 const disable_live_pending_text_reuse = os.getenv('VOX_DISABLE_LIVE_PENDING_TEXT_REUSE') != ''
@@ -37,7 +36,7 @@ fn refresh_inline_chunk_font_owner(text &TextNode) {
 				&& text.cached_font_environment_generation_ == generation)
 				|| original_pending_text_cascade_is_current(text, previous, current, style)
 				|| previous.equals(current)) {
-			if text.cached_font_environment_generation_ != generation && processmetrics.instructions_enabled() {
+			if text.cached_font_environment_generation_ != generation && retained_font_generation_diagnostics {
 				eprintln('Vox retained text font generation: ${text.cached_font_environment_generation_} -> ${generation}')
 			}
 			mutable_text.cached_inline_font_owner_ = current
