@@ -15,7 +15,7 @@ class CNNHomeInstructionTests(unittest.TestCase):
         self.assertEqual(benchmark.trial_order(1, True), ['brave', 'vox', 'control'])
 
     def test_separate_control_app_does_not_disable_any_engine_optimization(self):
-        names = ['control_relative_flow_layout', 'control_pending_font_layout', 'control_font_refresh_cascades', 'control_live_font_geometry', 'control_lazy_image_batches', 'control_geometry_snapshot_keys', 'control_live_font_cascades', 'control_hidden_animations', 'control_font_completion',
+        names = ['control_block_images', 'control_relative_flow_layout', 'control_pending_font_layout', 'control_font_refresh_cascades', 'control_live_font_geometry', 'control_lazy_image_batches', 'control_geometry_snapshot_keys', 'control_live_font_cascades', 'control_hidden_animations', 'control_font_completion',
                  'control_lazy_images', 'control_static_media']
         args = SimpleNamespace(control_vox_app=None, **dict.fromkeys(names, False))
         self.assertEqual(benchmark.control_environment(args), {})
@@ -150,6 +150,8 @@ class CNNHomeInstructionTests(unittest.TestCase):
         self.assertEqual(benchmark.control_environment(pending), {'VOX_DISABLE_LIVE_PENDING_LAYOUT_REUSE': '1'})
         relative = benchmark.parse_args(arguments + ['--control-relative-flow-layout'])
         self.assertEqual(benchmark.control_environment(relative), {'VOX_DISABLE_RELATIVE_FLOW_LAYOUT_REUSE': '1'})
+        images = benchmark.parse_args(arguments + ['--control-block-images'])
+        self.assertEqual(benchmark.control_environment(images), {'VOX_DISABLE_RETAINED_BLOCK_IMAGES': '1'})
         batch = benchmark.parse_args(arguments + ['--control-lazy-image-batches'])
         self.assertEqual(benchmark.control_environment(batch), {'VOX_DISABLE_LAZY_IMAGE_BATCHES': '1'})
         args = benchmark.parse_args(arguments + ['--control-geometry-snapshot-keys'])
