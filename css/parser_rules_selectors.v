@@ -3918,6 +3918,10 @@ pub fn to_arbitrary_substitution_function(name string) ?ArbitrarySubstitutionFun
 // the parser boundary gives properties, descriptors, syntax parsing, and Typed
 // OM one recursive implementation for inspecting component values.
 pub fn collect_arbitrary_substitution_function_presence(values []ComponentValue, mut presence SubstitutionFunctionsPresence) ! {
+	if !disable_leaf_substitution_skip && !substitution_values_have_nested_values(values) {
+		report_leaf_substitution_skip()
+		return
+	}
 	$if prealloc {
 		scratch := platform.begin_thread_scratch('CSS substitution validation')
 		collect_substitution_presence_in_workspace(values, mut presence) or {
@@ -3940,6 +3944,10 @@ fn collect_substitution_presence_in_workspace(values []ComponentValue, mut prese
 }
 
 fn collect_arbitrary_substitution_function_presence_from_component(value ComponentValue, mut presence SubstitutionFunctionsPresence) ! {
+	if !disable_leaf_substitution_skip && !value.is_function() && !value.is_block() {
+		report_leaf_substitution_skip()
+		return
+	}
 	$if prealloc {
 		scratch := platform.begin_thread_scratch('CSS substitution validation')
 		collect_substitution_presence_from_component_in_workspace(value, mut presence) or {

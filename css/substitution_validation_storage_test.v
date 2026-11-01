@@ -35,3 +35,32 @@ fn test_substitution_validation_error_and_partial_flags_survive_input_retirement
 	assert presence.var && !presence.env
 	assert message == 'invalid arbitrary substitution function syntax'
 }
+
+fn test_leaf_validation_preserves_existing_flags_and_nested_argument_failures() {
+	for source in ['', 'red', '17px 20%', '"var(--literal)"', '--literal, none',
+		'calc(1px + var(--x))', '[red env()]', 'red var() blue', 'attr(data-x) var(--valid) env()'] {
+		values := parse_component_values_for_value_logic(source)
+		mut expected := SubstitutionFunctionsPresence{attr:true}
+		mut expected_error := ''
+		collect_substitution_presence_in_workspace(values,mut expected) or { expected_error = err.msg() }
+		mut actual := SubstitutionFunctionsPresence{attr:true}
+		mut actual_error := ''
+		collect_arbitrary_substitution_function_presence(values,mut actual) or { actual_error = err.msg() }
+		assert actual == expected
+		assert actual_error == expected_error
+		for value in values {
+			mut expected_component := SubstitutionFunctionsPresence{env:true}
+			mut expected_component_error := ''
+			collect_substitution_presence_from_component_in_workspace(value,mut expected_component) or {
+				expected_component_error = err.msg()
+			}
+			mut actual_component := SubstitutionFunctionsPresence{env:true}
+			mut actual_component_error := ''
+			collect_arbitrary_substitution_function_presence_from_component(value,mut actual_component) or {
+				actual_component_error = err.msg()
+			}
+			assert actual_component == expected_component
+			assert actual_component_error == expected_component_error
+		}
+	}
+}
