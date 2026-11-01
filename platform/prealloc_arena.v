@@ -116,6 +116,9 @@ mut:
 	current_arena             &Arena         = unsafe { nil }
 	retained_allocation_stack []RetainedAllocationEntry
 	retained_allocation_depth int
+	disable_tracked_persistent_shortcut bool
+	trace_tracked_persistent_shortcut bool
+	reported_tracked_persistent_shortcut bool
 }
 
 __global arena_thread_state ArenaThreadState
@@ -147,6 +150,8 @@ fn arena_state() &ArenaThreadState {
 			}
 		}
 		state.owner = u64(C.pthread_self())
+		state.disable_tracked_persistent_shortcut = os.getenv('VOX_DISABLE_TRACKED_PERSISTENT_SHORTCUT') != ''
+		state.trace_tracked_persistent_shortcut = os.getenv('VOX_TRACKED_PERSISTENT_DIAGNOSTICS') != ''
 		verify_prealloc_layout()
 	}
 	$if prealloc {
@@ -347,8 +352,27 @@ pub fn enter_persistent() ArenaEntry {
 		// workers. Reach their own base without consulting UI arena ownership.
 		previous := current_block()
 		mut parent := unsafe { &PreallocBlockView(previous) }
-		for parent != unsafe { nil } && parent.is_scope {
-			parent = parent.previous
+		mut thread_state := unsafe { &arena_thread_state }
+		// Detached Arenas have no base-parent link. Their current tail can be
+		// hundreds of blocks from that nil link, but ownership already proves
+		// that the ordinary Arena path below applies. Raw nested scratch scopes
+		// have a different scope identity and retain their original parent walk.
+		tracked_caller := thread_state.initialized
+			&& !thread_state.disable_tracked_persistent_shortcut
+			&& thread_state.owner == u64(C.pthread_self())
+			&& thread_state.current_arena != unsafe { nil }
+			&& parent != unsafe { nil }
+			&& parent.scope == voidptr(thread_state.current_arena.scope)
+		if tracked_caller {
+			if thread_state.trace_tracked_persistent_shortcut
+				&& !thread_state.reported_tracked_persistent_shortcut {
+				thread_state.reported_tracked_persistent_shortcut = true
+				eprintln('Vox persistent arena: tracked caller shortcut')
+			}
+		} else {
+			for parent != unsafe { nil } && parent.is_scope {
+				parent = parent.previous
+			}
 		}
 		if parent != unsafe { nil } && voidptr(parent) != previous {
 			for parent.next != unsafe { nil } && !parent.next.is_scope {
