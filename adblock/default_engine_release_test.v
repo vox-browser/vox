@@ -47,6 +47,9 @@ fn test_default_engine_release_restores_complete_filters_and_keeps_owned_results
 	retained_scriptlets := filters.scriptlets.clone()
 	retained_rules := filters.filters.clone()
 	for _ in 0 .. 2 {
+		// Cached decisions need not recreate the idle engine. Exercise releasing
+		// an actually live context independently of those retained results.
+		_ = evaluate_engine('1')!
 		assert release_unused_engine()
 		assert !release_unused_engine()
 		assert C.vox_adblock_get_context() == unsafe { nil }
@@ -78,6 +81,7 @@ fn test_default_engine_release_leaves_custom_engine_and_its_state_independent() 
 	assert default_before.error == ''
 	assert !default_before.blocked
 	for expected_count in 18 .. 21 {
+		_ = evaluate_engine('1')!
 		assert release_unused_engine()
 		assert custom.context != unsafe { nil }
 		assert custom.check(request).blocked

@@ -1,5 +1,7 @@
 module adblock
 
+import os
+
 pub struct DocumentFilters {
 pub:
 	css        string
@@ -15,8 +17,19 @@ pub fn document_filters(document_url string, tokens []string) !DocumentFilters {
 		&& !document_url.starts_with('http://')) {
 		return DocumentFilters{}
 	}
-	result := evaluate_engine('JSON.stringify(voxDocumentFilters(${encode_transport_json(document_url)}, ${encode_transport_json(tokens)}))')!
-	return decode_transport_json[DocumentFilters](result)
+	source := 'JSON.stringify(voxDocumentFilters(${encode_transport_json(document_url)}, ${encode_transport_json(tokens)}))'
+	memo_enabled := os.getenv('VOX_DISABLE_DOCUMENT_FILTER_MEMO') != '1'
+	if memo_enabled {
+		if result := retained_document_filters(source) {
+			record_document_filter_memo(true, source.len, result.len)
+			return decode_transport_json[DocumentFilters](result)
+		}
+	}
+	result := evaluate_engine(source)!
+	filters := decode_transport_json[DocumentFilters](result)!
+	if memo_enabled { retain_document_filters(source, result) }
+	record_document_filter_memo(false, source.len, result.len)
+	return filters
 }
 
 // Run the publisher's procedural-selector implementation against the browser's

@@ -258,6 +258,9 @@ fn test_worker_restores_full_bundled_request_header_cosmetic_and_scriptlet_rules
 		assert filters.css.contains('div[data-concert]')
 		assert filters.filters.any(it.contains('abort-current-script'))
 		assert filters.scriptlets.contains('const scriptletGlobals =')
+		// Memoized queries can leave the helper idle. Create an actual context
+		// before checking its release, independently of the retained results.
+		assert evaluate_engine('42')! == '42'
 		assert release_unused_engine()
 		assert filters.css.contains('div[data-concert]')
 		assert filters.scriptlets.contains('const scriptletGlobals =')
