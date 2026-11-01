@@ -73,3 +73,24 @@ fn test_scratch_poison_flags_preserve_exact_comma_separated_label_matching() {
 	os.setenv('VOX_ARENA_POISON', '10', true)
 	assert C.vox_thread_scratch_poison_enabled('unlisted'.str, 8) == 0
 }
+
+fn scratch_cached_policy_worker() bool {
+	for label in ['one','two','日本語','unlisted'] {
+		expected := C.vox_thread_scratch_poison_enabled(label.str,label.len)
+		for _ in 0 .. 32 {
+			scratch := begin_thread_scratch(label)
+			$if prealloc { assert scratch.lease.poison == expected }
+			bytes := []u8{len:1024,init:19}
+			assert bytes[0] + bytes[1023] == 38
+			scratch.finish()
+		}
+	}
+	return true
+}
+
+fn test_cached_scratch_launch_policy_preserves_poisoned_scopes_on_every_thread() {
+	assert scratch_cached_policy_worker()
+	mut workers := []thread bool{}
+	for _ in 0 .. 4 { workers << spawn scratch_cached_policy_worker() }
+	for worker in workers { assert worker.wait() }
+}

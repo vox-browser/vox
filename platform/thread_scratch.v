@@ -16,6 +16,7 @@ mut:
 
 fn C.vox_thread_scratch_acquire() &C.VoxThreadScratchLease
 fn C.vox_thread_scratch_poison_enabled(&u8, i64) i32
+fn C.vox_thread_scratch_cached_poison_enabled(&u8, i64) i32
 
 // Short-lived synchronous work on the calling thread. No V allocation made
 // inside this scope may escape it; native APIs must copy the inputs they keep.
@@ -31,7 +32,7 @@ pub fn begin_thread_scratch(label string) ThreadScratchScope {
 		mut lease := C.vox_thread_scratch_acquire()
 		lease.label = label.str
 		lease.label_len = label.len
-		lease.poison = C.vox_thread_scratch_poison_enabled(label.str, label.len)
+		lease.poison = C.vox_thread_scratch_cached_poison_enabled(label.str, label.len)
 		if lease.poison != 0 { C.vox_install_poison_fault_handler() }
 		remember_current_arena_tail()
 		lease.scope = unsafe { prealloc_scope_begin() }

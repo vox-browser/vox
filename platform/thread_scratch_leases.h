@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 typedef struct VoxThreadScratchLease {
     void *scope;
@@ -24,11 +25,9 @@ typedef struct VoxThreadScratchLeaseChunk {
 static pthread_key_t vox_thread_scratch_key;
 static pthread_once_t vox_thread_scratch_once = PTHREAD_ONCE_INIT;
 
-static int32_t vox_thread_scratch_poison_enabled(const unsigned char *label, int64_t length) {
-    const char *poison = getenv("VOX_ARENA_POISON");
-    if (poison && strcmp(poison, "1") == 0) return 1;
-    const char *names = getenv("VOX_ARENA_NO_REUSE");
-    if (!names) names = "";
+static int32_t vox_thread_scratch_matches_poison_configuration(int32_t poison,
+    const char *names, const unsigned char *label, int64_t length) {
+    if (poison) return 1;
     for (const char *start = names;;) {
         const char *end = strchr(start, ',');
         size_t bytes = end ? (size_t)(end - start) : strlen(start);
@@ -37,6 +36,43 @@ static int32_t vox_thread_scratch_poison_enabled(const unsigned char *label, int
         if (!end) return 0;
         start = end + 1;
     }
+}
+
+// The uncached reader remains available for explicit diagnostic comparisons.
+static int32_t vox_thread_scratch_poison_enabled(const unsigned char *label, int64_t length) {
+    const char *poison = getenv("VOX_ARENA_POISON");
+    const char *names = getenv("VOX_ARENA_NO_REUSE");
+    return vox_thread_scratch_matches_poison_configuration(
+        poison && strcmp(poison, "1") == 0, names ? names : "", label, length);
+}
+
+static pthread_once_t vox_thread_scratch_configuration_once = PTHREAD_ONCE_INIT;
+static int32_t vox_thread_scratch_configuration_poison;
+static int32_t vox_thread_scratch_configuration_uncached;
+static const char *vox_thread_scratch_configuration_names;
+
+// Like the reusable arena policy, scratch policy is launch configuration. Own
+// the selected-label bytes so later environment storage changes cannot dangle.
+static void vox_thread_scratch_initialize_configuration(void) {
+    const char *poison = getenv("VOX_ARENA_POISON");
+    vox_thread_scratch_configuration_poison = poison && strcmp(poison, "1") == 0;
+    const char *names = getenv("VOX_ARENA_NO_REUSE");
+    vox_thread_scratch_configuration_names = strdup(names ? names : "");
+    if (!vox_thread_scratch_configuration_names) abort();
+    const char *uncached = getenv("VOX_DISABLE_SCRATCH_POISON_CACHE");
+    vox_thread_scratch_configuration_uncached = uncached && *uncached;
+    const char *diagnostics = getenv("VOX_SCRATCH_POISON_CACHE_DIAGNOSTICS");
+    if (diagnostics && *diagnostics)
+        fprintf(stderr, "Vox scratch policy: cached launch poison configuration\n");
+}
+
+static int32_t vox_thread_scratch_cached_poison_enabled(const unsigned char *label, int64_t length) {
+    if (pthread_once(&vox_thread_scratch_configuration_once, vox_thread_scratch_initialize_configuration))
+        abort();
+    if (vox_thread_scratch_configuration_uncached)
+        return vox_thread_scratch_poison_enabled(label, length);
+    return vox_thread_scratch_matches_poison_configuration(vox_thread_scratch_configuration_poison,
+        vox_thread_scratch_configuration_names, label, length);
 }
 
 static void vox_thread_scratch_destroy(void *pointer) {
