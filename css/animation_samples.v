@@ -1,6 +1,7 @@
 module css
 
 import dom
+import os
 import platform
 
 // Storage for sampled animation values under -prealloc.
@@ -394,6 +395,19 @@ fn (retiring &RetiringAnimationSamples) computed_references_arena(computed &Comp
 	// markers, are rewritten by each resolve like the snapshot itself.
 	if retiring.struct_references_arena(voidptr(computed), int(sizeof(ComputedProperties))) {
 		return true
+	}
+	// Copy-on-write can allocate just a property page while the computed
+	// style, its store and every value remain in longer-lived storage. The
+	// page itself must survive until the installed style stops reading it.
+	if computed.property_store_ != unsafe { nil } {
+		for index, page in computed.property_store_.pages {
+			if retiring.arena.contains(voidptr(page)) {
+				if os.getenv('VOX_ANIMATION_SAMPLE_PAGE_DIAGNOSTICS') != '' {
+					eprintln('VOX_ANIMATION_SAMPLE_PAGE_HOLD page=${index}')
+				}
+				return true
+			}
+		}
 	}
 	for index in 0 .. computed.raw_property_count() {
 		if retiring.value_references_arena(computed.raw_property_at_index(index)) {
