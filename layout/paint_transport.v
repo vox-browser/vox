@@ -898,6 +898,8 @@ pub mut:
 	// A square fill_rect that Blink rasterizes as an antialiased GPU rectangle,
 	// such as a text decoration with fractional ends.
 	antialiased_rect bool
+	// A text caret has its own solid compositor raster in Chromium.
+	is_caret bool
 	// Native text fields use non-AA paint flags, including their fill underlay.
 	disable_antialias bool
 	// A rounded fill_rect drawn with the following border or background image.
@@ -3819,6 +3821,7 @@ fn paint_cursor(box &BlockBox, opacity f64) ?PaintCommand {
 		width: rounded.width
 		height: rounded.height
 		color: caret_color.serialize()
+		is_caret: true
 		opacity: opacity
 	}
 }
@@ -3861,6 +3864,7 @@ fn paint_empty_cursor(box &BlockBox, layout_node &Node, dom_node &dom.Node,
 		width: rounded.width
 		height: rounded.height
 		color: caret_color.serialize()
+		is_caret: true
 		opacity: opacity
 	}
 }

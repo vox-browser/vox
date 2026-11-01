@@ -24,6 +24,8 @@ fn test_empty_focused_textarea_paints_its_caret_above_the_placeholder() {
 		commands := root.paint_commands()
 		carets := commands.filter(it.kind == 'fill_rect' && it.color == 'rgb(17 23 31)' && it.width == 1)
 		assert carets.len == 1
+		assert carets[0].is_caret
+		assert commands.filter(it.is_caret).len == 1
 		assert carets[0].height > 0
 		if family == 'Arial' {
 			assert carets[0].y == 2

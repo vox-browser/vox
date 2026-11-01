@@ -784,7 +784,8 @@ void native_cache_browser_snapshot(string path_value) {
 	native_request_browser_redraw();
 }
 
-void native_draw_rect_srgb(float x, float y, float width, float height, gg__Color color) {
+static void native_draw_solid_rect_srgb(float x, float y, float width, float height,
+	gg__Color color, int caret) {
 	if (width <= 0 || height <= 0) {
 		return;
 	}
@@ -793,8 +794,15 @@ void native_draw_rect_srgb(float x, float y, float width, float height, gg__Colo
 		return;
 	}
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
-    ladybird_v_skia_record_rect(context, x, y, width, height,
-        color.r, color.g, color.b, color.a);
+    if (caret) {
+        extern void ladybird_v_skia_record_caret(CGContextRef, float, float, float, float,
+            uint8_t, uint8_t, uint8_t, uint8_t);
+        ladybird_v_skia_record_caret(context, x, y, width, height,
+            color.r, color.g, color.b, color.a);
+    } else {
+        ladybird_v_skia_record_rect(context, x, y, width, height,
+            color.r, color.g, color.b, color.a);
+    }
 #endif
 	static CGColorSpaceRef colorSpace;
 	static dispatch_once_t onceToken;
@@ -811,6 +819,14 @@ void native_draw_rect_srgb(float x, float y, float width, float height, gg__Colo
 	CGContextSetFillColorWithColor(context, cgColor);
 	CGContextFillRect(context, CGRectMake(x, y, width, height));
 	CGColorRelease(cgColor);
+}
+
+void native_draw_rect_srgb(float x, float y, float width, float height, gg__Color color) {
+	native_draw_solid_rect_srgb(x, y, width, height, color, 0);
+}
+
+void native_draw_caret_rect_srgb(float x, float y, float width, float height, gg__Color color) {
+	native_draw_solid_rect_srgb(x, y, width, height, color, 1);
 }
 
 static CGContextRef native_font_compositing_context;

@@ -6030,6 +6030,9 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 		}
 		'fill_rect' {
 			fill := app.paint_colors.color(command.color, command.opacity)
+			if app.draw_chromium_caret(command, x, y, w, h, fill, non_axis_aligned) {
+				return
+			}
 			$if macos {
 				// CoreGraphics quantizes translucent solid colors before blending.
 				// Keep Chromium's source color in the Skia raster until the blend.
