@@ -9,7 +9,7 @@ Results apply to the frozen page and pinned build in each linked report.
 | --- | --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | --- |
 | Old Reddit /r/programming/ | 2026-11-01 | 7 | Median | 4,954,400,539 | 9,248,675,091 | **46.43%** | 39.2–53.0 | 59.56–59.78 | [Comparison](docs/OLD_REDDIT_PROGRAMMING_INSTRUCTIONS.md) |
 | Hacker News homepage | 2026-11-01 | 7 | Median | 4,877,590,820 | 8,554,149,229 | **42.98%** | 46.1–51.5 | 59.78–59.79 | [Comparison](docs/HACKER_NEWS_BRAVE_INSTRUCTIONS.md) |
-| Wikipedia homepage | 2026-11-01 | 7 | Median | 6,686,475,010 | 9,702,898,348 | **31.09%** | 3.1–3.6 | 59.57–59.79 | [Audit](docs/OPTIMIZED_SITES_AUDIT.md), [comparison](docs/WIKIPEDIA_BRAVE_INSTRUCTIONS.md) |
+| Wikipedia portal (www.wikipedia.org) | 2026-11-01 | 7 | Median | 6,686,475,010 | 9,702,898,348 | **31.09%** | 3.1–3.6 | 59.57–59.79 | [Audit](docs/OPTIMIZED_SITES_AUDIT.md), [comparison](docs/WIKIPEDIA_BRAVE_INSTRUCTIONS.md) |
 | vlang.io (CLI protocol) | 2026-11-01 | 7 | Mean | 8.630 billion | 10.500 billion | **17.81%** | 0.8–0.9 | 59.49–59.79 | [Audit](docs/OPTIMIZED_SITES_AUDIT.md), [comparison](docs/VLANG_RENDERING_INSTRUCTIONS.md) |
 
 FPS ranges span **two completed trials** per browser/page; the trial counts and
@@ -34,6 +34,22 @@ including exited helpers and explicitly allowed coalition-owned system services;
 Vox ends before the PNG file write and Brave includes CDP screenshot delivery.
 GPU execution and services outside the recorded ownership scope are excluded.
 The reports retain exact endpoints, identities and counter limits.
+
+## Latest live scrolling
+
+| Page | Recorded date | Vox scroll FPS | p95 interval, both trials | Intervals over 16.67 ms | Evidence |
+| --- | --- | ---: | ---: | ---: | --- |
+| Wikipedia English Main Page (live) | 2026-11-01 | **80.2–84.1** | 15.68 / 14.81 ms | 3.90% / 3.09% | [Report](docs/WIKIPEDIA_SCROLLING.md), [receipts](docs/benchmark-results/wikipedia-main-scroll-vprofile-20261101.json) |
+
+These two fresh installed-process trials count scroll-changing native layer
+publications over the full input window. Each completes 600 precise wheel inputs
+at nominal 120 Hz, delta 1, continuous forward motion, with a 1024×764 document
+viewport at scale 2, fresh private profiles/caches and 12 seconds settling after
+the Wikipedia title. The default Wikipedia script policy leaves its author-script
+runtime uninitialized. The report retains median/maximum intervals, publication
+counts and boundary gaps. Occasional longer intervals remain; physical display
+scanout is unmeasured. This English Main Page result has a newer build and a
+different workload from the frozen portal instruction/Brave comparisons above.
 
 ## How to benchmark against Brave
 
