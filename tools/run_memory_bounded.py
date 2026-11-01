@@ -96,6 +96,16 @@ def stop_job(process, owned):
         os.killpg(process.pid, signal.SIGKILL)
     except ProcessLookupError:
         pass
+    except PermissionError:
+        # macOS can retain an exited child's process group after the last
+        # owned task has gone. Preserve its real exit instead of losing the
+        # receipt to a cleanup error. An active owned task still fails closed.
+        if process.poll() is None:
+            raise
+        remaining = process_snapshot()
+        if any(pid in remaining and remaining[pid][3] == started
+               for pid, started in owned.items()):
+            raise
     process.wait()
 
 

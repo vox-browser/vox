@@ -5,11 +5,41 @@ import sys
 import tempfile
 import time
 import unittest
+from unittest.mock import Mock, patch
 
-from run_memory_bounded import job_processes, publish_adopted_processes, read_adopted_processes
+from run_memory_bounded import job_processes, publish_adopted_processes, read_adopted_processes, stop_job
 
 
 class BoundedCommandTests(unittest.TestCase):
+    def test_exited_group_permission_error_preserves_child_exit(self):
+        process = Mock(pid=10)
+        process.poll.return_value = 1
+        with patch('run_memory_bounded.process_snapshot', return_value={}), \
+             patch('run_memory_bounded.os.killpg', side_effect=PermissionError):
+            stop_job(process, {10: 'original'})
+        process.wait.assert_called_once_with()
+
+    def test_group_permission_error_still_rejects_active_owned_processes(self):
+        for child_exit, snapshot in [(None, {}), (1, {11: (1, 11, 100, 'owned')})]:
+            process = Mock(pid=10)
+            process.poll.return_value = child_exit
+            with patch('run_memory_bounded.process_snapshot', return_value=snapshot), \
+                 patch('run_memory_bounded.os.kill'), \
+                 patch('run_memory_bounded.os.killpg', side_effect=PermissionError):
+                with self.assertRaises(PermissionError):
+                    stop_job(process, {11: 'owned'})
+            process.wait.assert_not_called()
+
+    def test_exited_group_does_not_target_a_reused_pid(self):
+        process = Mock(pid=10)
+        process.poll.return_value = 0
+        with patch('run_memory_bounded.process_snapshot', return_value={11: (1, 11, 100, 'reused')}), \
+             patch('run_memory_bounded.os.kill') as kill, \
+             patch('run_memory_bounded.os.killpg', side_effect=PermissionError):
+            stop_job(process, {11: 'original'})
+        kill.assert_not_called()
+        process.wait.assert_called_once_with()
+
     def test_adopted_roots_require_the_exact_start_and_retain_children(self):
         snapshot = {10: (1, 10, 100, 'a'), 20: (1, 20, 200, 'b'),
                     21: (20, 21, 300, 'c'), 30: (1, 30, 400, 'reused')}
