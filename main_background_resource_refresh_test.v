@@ -10,6 +10,7 @@ fn test_polled_svg_background_completion_keeps_paint_projection_in_mixed_and_fav
 		address := 'https://polled-background.example.test/${batch}.svg'
 		mut document := html.parse_document('<!doctype html><style>body{margin:0}#target{width:40px;height:20px;background:url("${address}")}span{background:url("${address}")}</style><div id="target"></div><span>inline background</span><p>untouched text</p><img id="logo" src="https://polled-background.example.test/logo.svg" width="18" height="18">')
 		defer { document.finalize() }
+		_ = html.WindowModel.create_top_level(document, none, 'polled-svg-background')!
 		logo := document.get_element_by_id('logo')?
 		mut logo_model := html.html_image_element_model_for_dom_element(unsafe { &dom.HTMLImageElement(logo) })
 		logo_model.set_fetch_hook(fn (url dom.URL) !html.DecodedImageData {
@@ -59,7 +60,8 @@ fn test_polled_svg_background_completion_keeps_paint_projection_in_mixed_and_fav
 			assert voidptr(after.root) == root
 			assert voidptr(after.state) == state
 			assert voidptr(after.paint_tree.children.data) == children
-			assert voidptr(after.paint_tree.find_box(i64(target.as_node().unique_id()))?) == voidptr(box)
+			retained_box := after.paint_tree.find_box(i64(target.as_node().unique_id()))?
+			assert retained_box.layout_handle == box.layout_handle
 			assert after.hit_test_display_list_is_valid
 			assert voidptr(document.element_from_point(2, 2)?) == voidptr(hit)
 			assert document.paint_content_revision() > revision

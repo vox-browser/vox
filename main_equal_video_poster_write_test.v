@@ -95,12 +95,25 @@ fn equal_poster_resolve(probe &EqualPosterProbe, index int, bytes []u8) {
 
 fn equal_poster_drain(document &dom.Document) {
 	settings := unsafe { &html.EnvironmentSettingsObject(document.relevant_settings_object()) }
-	mut queue := settings.responsible_event_loop().task_queue()
+	mut loop := settings.responsible_event_loop()
+	mut queue := loop.task_queue()
 	for _ in 0 .. 200 {
-		mut task := queue.take_first_runnable() or { return }
-		task.execute()
+		loop.perform_a_microtask_checkpoint()
+		if !queue.has_runnable_tasks() { return }
+		loop.process()
 	}
 	panic('poster owner task queue did not drain')
+}
+
+fn equal_poster_wait_decode(document &dom.Document, probe &EqualPosterProbe, expected int) {
+	settings := unsafe { &html.EnvironmentSettingsObject(document.relevant_settings_object()) }
+	mut loop := settings.responsible_event_loop()
+	deadline := time.sys_mono_now() + 4 * time.second
+	loop.spin_until(fn [probe, expected, deadline] () bool {
+		return probe.decode_count >= expected || time.sys_mono_now() >= deadline
+	})
+	assert probe.decode_count == expected
+	equal_poster_drain(document)
 }
 
 fn test_equal_poster_writes_restart_pending_fetches_for_parsed_and_created_native_owners() {
@@ -128,7 +141,7 @@ fn test_equal_poster_writes_restart_pending_fetches_for_parsed_and_created_nativ
 			assert (client.fetch_request_client_document_url() or { panic('missing client document') }) == document.url
 		}
 		equal_poster_resolve(probe, 2, base64.decode(equal_poster_small))
-		equal_poster_drain(document)
+		equal_poster_wait_decode(document, probe, 1)
 		assert video.poster_frame()?.width == 1 && probe.decode_count == 1
 		assert document.anything_is_delaying_the_load_event()
 		independent.finish()
@@ -157,14 +170,14 @@ fn test_equal_poster_write_supersedes_queued_completion_and_rechecks_a_finished_
 	equal_poster_drain(document)
 	assert probe.decode_count == 0 && document.anything_is_delaying_the_load_event()
 	equal_poster_resolve(probe, 1, base64.decode(equal_poster_small))
-	equal_poster_drain(document)
+	equal_poster_wait_decode(document, probe, 1)
 	assert probe.decode_count == 1 && video.poster_frame()?.width == 1
 	assert !document.anything_is_delaying_the_load_event()
 	_ = runtime.evaluate_host('equalVideos[0].setAttribute("poster","same.png");0')!
 	equal_poster_flush(document, runtime)!
 	assert probe.requests.len == 3 && video.poster_frame()?.width == 1
 	equal_poster_resolve(probe, 2, 'invalid encoded image'.bytes())
-	equal_poster_drain(document)
+	equal_poster_wait_decode(document, probe, 2)
 	assert probe.decode_count == 2 && video.poster_frame() == none && video.natural_element_size() == none
 	assert !document.anything_is_delaying_the_load_event()
 }
@@ -185,7 +198,7 @@ fn test_equal_poster_write_reparses_the_live_document_base_and_paints_the_refetc
 	assert probe.requests[1].current_url().serialize() == 'https://equal-poster.example/second/same.png'
 	assert voidptr(element.get_attribute_node_ns(none, 'poster')?) == voidptr(attribute)
 	equal_poster_resolve(probe, 1, base64.decode(equal_poster_small))
-	equal_poster_drain(document)
+	equal_poster_wait_decode(document, probe, 1)
 	assert video.natural_element_size()? == html.VideoDimensions{1, 1}
 	result := layout.run_document_layout(document, 320, 200)?
 	commands := result.paint_tree.paint_commands().filter(it.kind == 'draw_video')
@@ -214,6 +227,6 @@ fn test_equal_poster_replay_keeps_first_qualified_attribute_identity_and_namespa
 	assert probe.requests.len == 1 && foreign.owner_element() == none
 	assert voidptr(element.get_attribute_node('poster')?) == voidptr(actual)
 	equal_poster_resolve(probe, 0, base64.decode(equal_poster_small))
-	equal_poster_drain(document)
+	equal_poster_wait_decode(document, probe, 1)
 	assert video.poster_frame()?.width == 1 && probe.decode_count == 1
 }
