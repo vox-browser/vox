@@ -4389,12 +4389,3 @@ fn selector_string_hash(value string) u32 {
 	}
 	return hash
 }
-
-fn selector_html_attribute_is_case_insensitive(name string) bool {
-	return name in ['accept', 'accept-charset', 'align', 'alink', 'axis', 'bgcolor', 'charset', 'checked',
-		'clear', 'codetype', 'color', 'compact', 'declare', 'defer', 'dir', 'direction', 'disabled',
-		'enctype', 'face', 'frame', 'hreflang', 'http-equiv', 'lang', 'language', 'link', 'media',
-		'method', 'multiple', 'nohref', 'noresize', 'noshade', 'nowrap', 'readonly', 'rel', 'rev',
-		'rules', 'scope', 'scrolling', 'selected', 'shape', 'target', 'text', 'type', 'valign',
-		'valuetype', 'vlink']
-}
