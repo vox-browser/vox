@@ -5,8 +5,8 @@ application. Pixel-exact parity and an actual conversation are **not complete**.
 The full-page comparison still has rendering differences; focused fixtures and
 a successful application startup are not a substitute for that comparison.
 
-The latest unchanged-original-archive capture differs in **874 of 786,432
-pixels (0.1111%, MAE 0.0008)**. Startup, native typing and Enter are validated;
+The latest unchanged-original-archive capture differs in **523 of 786,432
+pixels (0.0665%, MAE 0.0005)**. Startup, native typing and Enter are validated;
 a completed chat reply remains unverified. The recorded 60-second idle check
 peaks at 1.82 GB rather than continuing toward the 12 GiB guard.
 
@@ -682,3 +682,59 @@ focused comparison regressed. Its patches and failed captures are retained
 under the same evidence root. Earlier first-frame crashes from a shared bundle
 lacking the already-landed stationary-raster document guard also remain failures;
 only the fresh, successfully completed bundle above receives validation credit.
+
+
+## macOS reduced-transparency preference (2026-11-01)
+
+Commit `ea5cc6b2` samples macOS's native Reduce Transparency setting before the
+browser's initial document is created. The Page preference reaches both the
+stylesheet media evaluator and Window media-feature queries through Document.
+Detached documents retain `no-preference`. Changing a Page preference invalidates
+attached styles and schedules media-query evaluation; setting the same value
+again leaves the environment version unchanged. Native OS notification handling
+and resampling after a running process's startup remain outside this slice.
+
+This Mac's `NSWorkspace.accessibilityDisplayShouldReduceTransparency` and its
+stored accessibility preference both report true. Brave consequently disables
+ChatGPT's heading masks; Vox previously always reported `no-preference`.
+A separate diagnostic forces only that CSS condition in a copied replay archive
+and reduces the comparison from 874 to 523 differing pixels. It is diagnostic
+only. The production fix then obtains **the same 523-pixel result from the
+unchanged original archive**, without stylesheet or HTML substitutions.
+The complete heading now matches the unchanged Brave reference.
+
+All remaining differences are in the footer/cookie-banner region and have
+maximum channel error **1**. Full-page MAE is 0.0004987717 across 786,432 pixels.
+Pixel-perfect parity and a completed conversation remain open. The original
+HTML and Brave PNG hashes are rechecked and unchanged; replay still never
+forwards missing responses or downloads ChatGPT again.
+
+Evidence under `Build/chatgpt-svg-parity-20261101/`:
+
+- `reduced-transparency-host.json`: the native macOS preference observation.
+- `reduced-transparency-render-update-results.json`: three focused cases pass
+  in Boehm, no-GC and preallocation modes (nine case executions). They cover
+  detached defaults, Page isolation/reassociation, cached stylesheet and Window
+  queries, boolean query syntax, no-op preference writes and actual relayout.
+  The first test attempt read the cached MediaQueryList before its rendering
+  update and failed. Its original result is retained; the corrected test runs
+  the existing media-query update before observing the cached value.
+- `production-reduced-transparency/`: guarded production build succeeds. The
+  implementation inputs remain identical before and after. Other sessions
+  changed unrelated inputs, and the focused test correction changed the
+  test-only source during compilation. The executable SHA256 is
+  `7ce713f3ebb850274e4383c162af0aaaee02200aaf91418489509a114f3fb1fc`;
+  the native painting library remains
+  `16b596c215b3953bf9ea320fe0d9fab3e9e6569c1291633089cc86456e357e55`.
+- `candidate-validation-reduced-transparency/results.json`: all 16 groups pass
+  with stable executable/library identities: 14 exact focused screenshots,
+  eleven smoke comparisons (eight exact, three under existing bounds), ten
+  exact SVG guards, headless startup, original archived startup and native input.
+
+The full archived capture and native input evidence are respectively
+`Build/chatgpt-shadow-modules-20261031/reduced-transparency-20261101-acceptance/`
+and `reduced-transparency-20261101-editor/`. Both pass complete readiness,
+active-document identity, both stylesheet owners, the home-ready marker and
+zero native-reported JavaScript errors. The native input check types `Vox` and
+presses Enter without inserting a newline. No successful service reply is in
+the archive, so this is not evidence of a completed conversation.
