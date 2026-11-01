@@ -135,7 +135,31 @@ static void check_clipped_raster_grid()
             assert(pixels[size_t(y) * width + x] == expected);
             ++comparisons;
         }
+        auto compact = backdrop;
+        int compact_calls = 0;
+        assert(vox_draw_chromium_raster_grid_clipped_regions(compact, width, height,
+            first_x, first_y, grid, content_width, content_height,
+            [&](auto& tile, long offset_x, long offset_y, int cell, int left, int top, int w, int h) {
+                ++compact_calls;
+                assert(tile.size() == size_t(w) * h && left >= 0 && top >= 0
+                    && left + w <= grid.width && top + h <= grid.height);
+                for (int y = 0; y < h; ++y) for (int x = 0; x < w; ++x) {
+                    long sx = left + x - offset_x, sy = top + y - offset_y;
+                    assert(sx >= 0 && sx < width && sy >= 0 && sy < height);
+                    assert(tile[size_t(y) * w + x] == backdrop[size_t(sy) * width + sx]);
+                    tile[size_t(y) * w + x] = uint32_t(cell + 1);
+                }
+                return true;
+            }));
+        assert(compact_calls == calls && compact == pixels);
         if (!outside) {
+            compact = backdrop;
+            assert(!vox_draw_chromium_raster_grid_clipped_regions(compact, width, height,
+                first_x, first_y, grid, content_width, content_height,
+                [](auto& tile, long, long, int, int, int, int, int) {
+                    std::fill(tile.begin(), tile.end(), 0xDEADBEEFU); return false;
+                }));
+            assert(compact == backdrop);
             pixels = backdrop;
             assert(!vox_draw_chromium_raster_grid_clipped(pixels, width, height,
                 first_x, first_y, grid, content_width, content_height, [](auto& tile, long, long, int) {

@@ -2707,7 +2707,7 @@ static bool draw_chromium_layer_raster_grid(std::vector<uint32_t>& pixels,
         });
 }
 
-template<typename Draw>
+template<bool Compact = false, typename Draw>
 static bool draw_chromium_clipped_layer_raster_grid(std::vector<uint32_t>& pixels,
     int width, int height, RasterRegion const& region, float page_x,
     float page_y, float scroll_y, float scale, SkRect const& paint_bounds, Draw draw)
@@ -2731,12 +2731,21 @@ static bool draw_chromium_clipped_layer_raster_grid(std::vector<uint32_t>& pixel
     int rows = int(std::max(1.0, std::ceil((s_raster_layer_height * scale - 2)
         / (s_msaa_grid_height - 2))));
     VoxChromiumRasterGrid grid{s_msaa_grid_width, s_msaa_grid_height, s_msaa_grid_columns, rows};
-    return vox_draw_chromium_raster_grid_clipped(pixels, width, height, first_x, first_y, grid,
-        int(content_width), int(content_height),
-        [&](auto& tile, long offset_x, long offset_y, int cell) {
-            bool msaa = std::binary_search(s_msaa_grid_tiles.begin(), s_msaa_grid_tiles.end(), cell);
-            return draw(tile, offset_x, offset_y, msaa);
-        });
+    if constexpr (Compact) {
+        return vox_draw_chromium_raster_grid_clipped_regions(pixels, width, height, first_x, first_y, grid,
+            int(content_width), int(content_height),
+            [&](auto& tile, long offset_x, long offset_y, int cell, int x, int y, int w, int h) {
+                bool msaa = std::binary_search(s_msaa_grid_tiles.begin(), s_msaa_grid_tiles.end(), cell);
+                return draw(tile, offset_x, offset_y, msaa, x, y, w, h);
+            });
+    } else {
+        return vox_draw_chromium_raster_grid_clipped(pixels, width, height, first_x, first_y, grid,
+            int(content_width), int(content_height),
+            [&](auto& tile, long offset_x, long offset_y, int cell) {
+                bool msaa = std::binary_search(s_msaa_grid_tiles.begin(), s_msaa_grid_tiles.end(), cell);
+                return draw(tile, offset_x, offset_y, msaa);
+            });
+    }
 }
 
 template<bool Compact = false, typename Draw>
@@ -3625,7 +3634,27 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
             if (paint.getStyle() == SkPaint::kStroke_Style)
                 ink.outset(thickness / 2, thickness / 2);
             if (has_underlay) ink.join(underlay_rect.rect());
-            tiled = draw_chromium_clipped_layer_raster_grid(pixels,
+#ifndef VOX_DISABLE_LAYER_SHAPE_REGIONS
+            if (draw_region) tiled = draw_chromium_clipped_layer_raster_grid<true>(pixels,
+                raster_width, raster_height, region, page_x, page_y, scroll_y,
+                destination_scale, matrix.mapRect(ink),
+                [&](auto& target, long offset_x, long offset_y, bool msaa,
+                    int x, int y, int width, int height) {
+                    auto shape = descriptor;
+                    shape.matrix[2] += offset_x;
+                    shape.matrix[5] += offset_y;
+                    shape.force_msaa = msaa;
+                    VoxGraphitePixelRegion view {x, y, width, height, width * 4,
+                        reinterpret_cast<uint8_t*>(target.data())};
+                    bool rendered = draw_region(&view, s_msaa_grid_width, s_msaa_grid_height, 1, &shape) != 0;
+#ifdef VOX_LAYER_REGION_DIAGNOSTICS
+                    if (rendered) std::fprintf(stderr, "VOX_LAYER_SHAPE_REGION scroll=%g alpha=%u size=%dx%d tile=%dx%d\n",
+                        s_root_raster_scroll_y, alpha, width, height, s_msaa_grid_width, s_msaa_grid_height);
+#endif
+                    return rendered;
+                });
+#endif
+            if (!tiled) tiled = draw_chromium_clipped_layer_raster_grid(pixels,
                 raster_width, raster_height, region, page_x, page_y, scroll_y,
                 destination_scale, matrix.mapRect(ink),
                 [&](auto& target, long offset_x, long offset_y, bool msaa) {

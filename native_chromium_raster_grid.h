@@ -234,6 +234,43 @@ bool vox_draw_chromium_raster_grid_clipped(std::vector<uint32_t>& pixels, int wi
     return true;
 }
 
+// Keep the same clipping and original tile coordinates while allocating only
+// each leaf/tile intersection for a region-capable backend.
+template<typename Draw>
+bool vox_draw_chromium_raster_grid_clipped_regions(std::vector<uint32_t>& pixels, int width,
+    int height, long first_x, long first_y, VoxChromiumRasterGrid grid,
+    int content_width, int content_height, Draw draw)
+{
+    if (width <= 0 || height <= 0 || pixels.size() < size_t(width) * height
+        || grid.width <= 2 || grid.height <= 2 || grid.columns <= 0 || grid.rows <= 0
+        || content_width <= 0 || content_height <= 0
+        || size_t(grid.width) * grid.height > 8 * 1024 * 1024) return false;
+    if (content_width > long(grid.columns) * (grid.width - 2) + 2
+        || content_height > long(grid.rows) * (grid.height - 2) + 2) return false;
+    long extent_x = content_width, extent_y = content_height;
+    // Check before negating or adding an arbitrary caller-supplied origin.
+    if (first_x <= -long(width) || first_y <= -long(height)
+        || first_x >= extent_x || first_y >= extent_y) return true;
+    int left = first_x < 0 ? int(-first_x) : 0;
+    int top = first_y < 0 ? int(-first_y) : 0;
+    int right = int(std::min(long(width), extent_x - first_x));
+    int bottom = int(std::min(long(height), extent_y - first_y));
+    int clipped_width = right - left, clipped_height = bottom - top;
+    std::vector<uint32_t> clipped(size_t(clipped_width) * clipped_height);
+    for (int y = top; y < bottom; ++y)
+        std::copy_n(pixels.data() + size_t(y) * width + left, clipped_width,
+            clipped.data() + size_t(y - top) * clipped_width);
+    if (!vox_draw_chromium_raster_grid_impl<true>(clipped, clipped_width, clipped_height,
+            first_x + left, first_y + top, grid,
+            [&](auto& tile, long offset_x, long offset_y, int cell, int x, int y, int w, int h) {
+                return draw(tile, offset_x - left, offset_y - top, cell, x, y, w, h);
+            })) return false;
+    for (int y = top; y < bottom; ++y)
+        std::copy_n(clipped.data() + size_t(y - top) * clipped_width, clipped_width,
+            pixels.data() + size_t(y) * width + left);
+    return true;
+}
+
 // A region-capable backend retains the full GPU tile's dimensions and origin,
 // but only transfers the leaf's intersection. Pixels outside it are transparent.
 template<typename Draw>
