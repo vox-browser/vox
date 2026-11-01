@@ -175,6 +175,8 @@ def run_trial(engine, app, folder, args):
                 args.vox_environment['VOX_DISABLE_CONSTANT_LONGHAND_REUSE'] = '1'
             if getattr(args, 'control_disable_live_pending_text_reuse', False):
                 args.vox_environment['VOX_DISABLE_LIVE_PENDING_TEXT_REUSE'] = '1'
+            if getattr(args, 'control_disable_shared_element_geometry', False):
+                args.vox_environment['VOX_DISABLE_SHARED_ELEMENT_GEOMETRY'] = '1'
             if getattr(args, 'control_disable_protected_value_index', False):
                 args.vox_environment['VOX_DISABLE_PROTECTED_VALUE_INDEX'] = '1'
             if getattr(args, 'control_disable_longhand_eligibility_first', False):
@@ -235,6 +237,8 @@ def parse_args(argv=None):
                         help='Disable numeric-ratio, angle-free font-style and time value reuse in the pinned Vox control')
     parser.add_argument('--control-disable-live-pending-text-reuse', action='store_true',
                         help='Discard text shapes after unrelated pending-font changes in the pinned Vox control')
+    parser.add_argument('--control-disable-shared-element-geometry', action='store_true',
+                        help='Create separate geometry accessors for every element in the pinned Vox control')
     parser.add_argument('--control-disable-protected-value-index', action='store_true',
                         help='Use linear protected-value removal in the pinned Vox control')
     parser.add_argument('--control-disable-longhand-eligibility-first', action='store_true',
@@ -281,7 +285,7 @@ def parse_args(argv=None):
             args.control_disable_live_pending_text_reuse,
             args.control_disable_live_pending_font_refresh,
             args.control_disable_positioned_image_ratio_reuse,
-            args.control_disable_conditional_sheet_invalidation or args.control_disable_inactive_conditional_sheet_skip or args.control_disable_classic_import_word_scan or args.control_disable_longhand_shape_reuse or args.control_disable_longhand_eligibility_first or args.control_disable_protected_value_index)) and not args.control_vox_app:
+            args.control_disable_conditional_sheet_invalidation or args.control_disable_inactive_conditional_sheet_skip or args.control_disable_classic_import_word_scan or args.control_disable_longhand_shape_reuse or args.control_disable_longhand_eligibility_first or args.control_disable_protected_value_index or args.control_disable_shared_element_geometry)) and not args.control_vox_app:
         parser.error('Disabling the control optimization needs --control-vox-app')
     if not args.capture_reference and (args.repeat < 7 or not args.expected_vox or not args.expected_brave):
         parser.error('Acceptance needs seven pairs and both existing pixel references')
@@ -380,6 +384,7 @@ def main():
         control_disable_longhand_shape_reuse=args.control_disable_longhand_shape_reuse,
         control_disable_longhand_eligibility_first=args.control_disable_longhand_eligibility_first,
         control_disable_protected_value_index=args.control_disable_protected_value_index,
+        control_disable_shared_element_geometry=args.control_disable_shared_element_geometry,
         brave_post_readiness_expression=args.post_readiness_expression,
         readiness_correction='Await visible image decode before the original settlement; no engine credit',
         system=subprocess.check_output(['sw_vers'], text=True)))
