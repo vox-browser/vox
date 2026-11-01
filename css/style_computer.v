@@ -1674,6 +1674,14 @@ fn style_computer_update_animated_style_callback(target voidptr) {
 			continue
 		}
 		mut target_was_recomputed := false
+		// Animation sampling runs outside the document's top-down style walk.
+		// A custom-property change or arena refresh can recascade descendants;
+		// seed their real ancestors before the selector bloom filter is used.
+		samples.enter()
+		filter_ancestors := if custom_properties_changed || (full_refresh && installs_inherited_values) {
+			style_computer.push_animation_recompute_ancestors(target_element)
+		} else { []&dom.Element{} }
+		samples.leave()
 		if custom_properties_changed
 			&& (target_element.element().style_uses_var_css_function()
 				|| target_element.element().style_uses_inherit_css_function()) {
@@ -1703,6 +1711,7 @@ fn style_computer_update_animated_style_callback(target voidptr) {
 			}
 			child = current.next_sibling()
 		}
+		for ancestor in filter_ancestors { style_computer.pop_ancestor(ancestor) }
 
 		mut retained_compositor_paint := false
 		mut retained_local_paint := false
