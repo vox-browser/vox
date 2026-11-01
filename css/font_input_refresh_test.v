@@ -422,6 +422,12 @@ fn test_absolute_root_font_size_keywords_keep_font_refresh_and_match_the_full_ca
 }
 
 fn test_other_family_nested_size_consumers_refresh_after_ancestor_font_metrics_change() {
+	for pre_registered in [false, true] {
+		font_input_assert_nested_size_consumers_after_face_load(pre_registered)
+	}
+}
+
+fn font_input_assert_nested_size_consumers_after_face_load(pre_registered bool) {
 	$if macos {
 		mut document, root, outer, _ := font_input_fixture()
 		mut mutable_root := unsafe { &dom.Element(root) }
@@ -442,6 +448,9 @@ fn test_other_family_nested_size_consumers_refresh_after_ancestor_font_metrics_c
 		plain.set_attribute_value('style', 'font-family:serif')
 		parent_node.append_child(plain.as_node()) or { panic(err) }
 		add_document_author_style_sheet(document, '#size-consumer::before{content:"x";font-family:serif;font-size:calc(.5em + 1px);width:calc(2em + 3px)}#plain-consumer::before{content:"plain";font-family:serif}')
+		pending := if pre_registered {
+			font_completion_pending_face(document, '400', 'U+0-10FFFF')
+		} else { unsafe { &FontFaceObject(nil) } }
 		document.update_style()
 		before := font_input_style(child, none)
 		before_pseudo := font_input_style(child, .before)
@@ -453,7 +462,11 @@ fn test_other_family_nested_size_consumers_refresh_after_ancestor_font_metrics_c
 		assert before_pseudo.font_input_depends_on_font_size_
 		assert plain_before.font_input_refresh_safe_
 		assert !plain_before.font_input_depends_on_font_size_
-		font_input_install_real_face(document)
+		if pending != unsafe { nil } {
+			font_completion_finish(pending)
+		} else {
+			font_input_install_real_face(document)
+		}
 		assert !root.has_pending_font_input_update()
 		assert parent.has_pending_font_input_update()
 		assert child.has_pending_font_input_update()
@@ -496,7 +509,7 @@ fn test_loaded_face_refreshes_selected_weight_without_invalidating_other_weight_
 		mut target := unsafe { &dom.Element(subject) }
 		target.set_attribute_value('style', 'font-family:FontInputFixture;font-weight:700;font-size:20px;width:120px')
 		mut regular := unsafe { &dom.Element(unrelated) }
-		regular.set_attribute_value('style', 'font-family:FontInputFixture;font-weight:400;font-size:20px;width:120px')
+		regular.set_attribute_value('style', 'font-family:FontInputFixture;font-weight:400;font-size:.875rem;width:2em')
 		face400 := font_completion_pending_face(document, '400', 'U+0-10FFFF')
 		face700 := font_completion_pending_face(document, '700', 'U+0-10FFFF')
 		font_completion_finish(face400)

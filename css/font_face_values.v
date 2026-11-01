@@ -4330,6 +4330,15 @@ fn (mut computer FontComputer) publish_loaded_font_face(face &FontFaceObject) {
 	}
 	if affected {
 		if document := computer.document_ {
+			if font_completion_diagnostics {
+				if root := document.document_element() {
+					if bridge := root.el_computed_properties() {
+						if style := computed_properties_from_dom(bridge) {
+							eprintln('Vox font completion root: safe=${style.font_input_refresh_safe_} size_relative=${style.font_input_depends_on_font_size_} affected=${retained_style_needs_changed_font_inputs(bridge, key.family_name, face)}')
+						}
+					}
+				}
+			}
 			mark_changed_font_inputs(document, key.family_name, face)
 		}
 	}

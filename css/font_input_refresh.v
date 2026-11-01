@@ -33,7 +33,9 @@ fn retained_style_needs_changed_font_inputs(style &dom.CSSComputedProperties_, f
 	// The ancestor's computed font size can itself use face metrics. Include
 	// nested em/rem consumers so their retained size-input checks run even
 	// when they select another family and have no direct inheritance entry.
-	if computed.font_input_depends_on_font_size_ { return true }
+	// For a known face completion, root metrics and the inheritance fanout
+	// below reach these consumers from the actual affected ancestor instead.
+	if changed_face == unsafe { nil } && computed.font_input_depends_on_font_size_ { return true }
 	// Completion changes an already registered face's availability, rather
 	// than matching descriptors or family order. A retained cascade records
 	// precisely which pending faces its selected weight/stretch can use.
