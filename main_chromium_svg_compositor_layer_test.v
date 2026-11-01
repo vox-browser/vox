@@ -130,7 +130,7 @@ fn test_svg_compositor_isolation_accepts_a_captured_masked_vector_image() {
 	assert !chromium_svg_compositor_layer_supported(changed,svg_compositor_test_plan(),1)
 }
 
-fn test_svg_compositor_isolation_rejects_effects_resources_and_missing_vectors() {
+fn test_svg_compositor_isolation_rejects_unsupported_effects_and_resources() {
 	base := [layout.PaintCommand{ kind: 'fill_rect' },
 		layout.PaintCommand{ kind: 'fill_rect', color: 'white' }, svg_compositor_test_path(),
 		layout.PaintCommand{ kind: 'draw_text', text: 'Home' },
@@ -138,10 +138,8 @@ fn test_svg_compositor_isolation_rejects_effects_resources_and_missing_vectors()
 	plan := svg_compositor_test_plan()
 	for replacement in [layout.PaintCommand{ kind: 'begin_css_effect_layer' },
 		layout.PaintCommand{ kind: 'end_css_effect_layer' },
-		layout.PaintCommand{ kind: 'draw_replaced_image' },
 		layout.PaintCommand{ kind: 'paint_nested_display_list' },
 		layout.PaintCommand{ kind: 'draw_svg_path' },
-		layout.PaintCommand{ kind: 'draw_text', text: 'No SVG' },
 		layout.PaintCommand{ ...base[2], opacity: .5 },
 		layout.PaintCommand{ ...base[2], group_opacity: .5 },
 		layout.PaintCommand{ ...base[2], blur: 1 },
@@ -150,6 +148,14 @@ fn test_svg_compositor_isolation_rejects_effects_resources_and_missing_vectors()
 		mut changed := base.clone()
 		changed[2] = replacement
 		assert !chromium_svg_compositor_layer_supported(changed, plan, 1)
+	}
+	// A promoted layer still owns its transparent text raster when no
+	// visible vector remains; supported image leaves share that boundary.
+	for replacement in [layout.PaintCommand{kind: 'draw_text', text: 'No SVG'},
+		layout.PaintCommand{kind: 'draw_replaced_image'}] {
+		mut changed := base.clone()
+		changed[2] = replacement
+		assert chromium_svg_compositor_layer_supported(changed, plan, 1)
 	}
 }
 

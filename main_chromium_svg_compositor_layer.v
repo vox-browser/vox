@@ -106,6 +106,7 @@ fn chromium_svg_compositor_layer_supported_for_viewport(commands []layout.PaintC
 		return false
 	}
 	mut has_svg := false
+	mut has_text := false
 	mut opacity_end := -1
 	mut identity_scope_ends := []int{}
 	for position, command_index in layer.command_indices {
@@ -202,12 +203,16 @@ fn chromium_svg_compositor_layer_supported_for_viewport(commands []layout.PaintC
 			'fill_rect', 'fill_rounded_rect', 'paint_uniform_border' {
 				has_svg = has_svg || chromium_contoured_box_supported(command)
 			}
-			'draw_text','fill_ellipse', 'stroke_ellipse', 'stroke_rounded_rect' {}
+			'draw_text' { has_text = true }
+			'fill_ellipse', 'stroke_ellipse', 'stroke_rounded_rect' {}
 			else { return chromium_svg_compositor_layer_declined(index, command_index, 'unsupported leaf', command.kind) }
 		}
 		if has_svg && !had_svg && os.getenv('VOX_DIAGNOSTIC_PAINT_LAYER') != '' {
 			eprintln('VOX_PAINT_LAYER_RECORDING_FEATURE layer=${index} command=${command_index} kind=${command.kind} xywh=${command.x},${command.y},${command.width},${command.height} transform=${command.transform}')
 		}
 	}
-	return has_svg && identity_scope_ends.len == 0
+	// Culling a distant vector does not remove the promoted layer's
+	// transparency boundary. Text still rounds against that transparent
+	// surface before blending over the parent, including across safe gaps.
+	return (has_svg || has_text) && identity_scope_ends.len == 0
 }

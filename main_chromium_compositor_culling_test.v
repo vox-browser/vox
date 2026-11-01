@@ -109,3 +109,42 @@ fn test_culled_unsupported_background_does_not_disable_visible_gradient_picture(
 	assert !chromium_compositor_leaf_is_culled(&moved, viewport)
 	assert !chromium_svg_compositor_layer_supported_for_viewport([gradient, moved], plan, 1, viewport)
 }
+
+fn test_culling_the_last_vector_retains_a_promoted_text_surface() {
+	gradient := layout.PaintCommand{
+		kind: 'fill_gradient'
+		y: 4000
+		width: 100
+		height: 20
+		gradient_background_layer: true
+		image_data: &layout.PaintImageData{image_clip_y: 4000, image_clip_width: 100, image_clip_height: 20}
+		gradient: &layout.LinearGradient{
+			kind: 'linear'
+			x2: 1
+			stops: [layout.GradientStop{css.Color{255, 255, 255, 255}, 0},
+				layout.GradientStop{css.Color{0, 0, 0, 255}, 1}]
+		}
+	}
+	text := layout.PaintCommand{kind: 'draw_text', text: 'Find your people.', width: 100, height: 20}
+	commands := [gradient, text]
+	plan := layout.ChromiumRasterLayerPlan{
+		has_paint_metadata: true
+		layers: [layout.ChromiumRasterLayer{}, layout.ChromiumRasterLayer{
+			composited_contents: true
+			command_indices: [0, 1]
+		}]
+		command_layers: [1, 1]
+	}
+	viewport := layout.LayoutRect{0, 0, 800, 600}
+	assert !chromium_text_scroll_layer_supported(commands, plan, 1)
+	assert chromium_compositor_leaf_is_culled(&gradient, viewport)
+	assert chromium_svg_compositor_layer_supported_for_viewport(commands, plan, 1, viewport)
+	bad_text := layout.PaintCommand{...text, blur: 1}
+	assert !chromium_svg_compositor_layer_supported_for_viewport([gradient, bad_text], plan, 1, viewport)
+	no_text := layout.PaintCommand{kind: 'fill_rect', width: 100, height: 20}
+	assert !chromium_svg_compositor_layer_supported_for_viewport([gradient, no_text], plan, 1, viewport)
+	mut unpromoted := plan
+	unpromoted.layers = plan.layers.clone()
+	unpromoted.layers[1].composited_contents = false
+	assert !chromium_svg_compositor_layer_supported_for_viewport(commands, unpromoted, 1, viewport)
+}
