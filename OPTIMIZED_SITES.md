@@ -7,19 +7,34 @@ Results apply to the frozen page and pinned build in each linked report.
 
 | Site | Recorded date | Trials per browser | Statistic | Vox instructions | Brave observed instructions | Fewer instructions | Evidence |
 | --- | --- | ---: | --- | ---: | ---: | ---: | --- |
+| Hacker News homepage | 2026-11-01 | 7 | Median | 4,877,590,820 | 8,554,149,229 | **42.98%** | [Comparison](docs/HACKER_NEWS_BRAVE_INSTRUCTIONS.md) |
 | Wikipedia homepage | 2026-11-01 | 7 | Median | 6,600,176,026 | 9,661,801,676 | **31.69%** | [Comparison](docs/WIKIPEDIA_BRAVE_INSTRUCTIONS.md) |
 | Old Reddit | 2026-10-17 | 7 | Median | 6,289,762,769 | 8,208,707,273 | **23.38%** | [Comparison](docs/OLD_REDDIT_INSTRUCTIONS.md) |
 | vlang.io | 2026-10-31 | 16 | Mean | 8.701 billion | 10.425 billion | **16.54%** | [Comparison](docs/VLANG_RENDERING_INSTRUCTIONS.md) |
 
 Percentages compare the two browser summaries in the same row. Means and
-medians are labeled separately; the vlang.io means are rounded. All three
-workloads use a 1024×768 CSS-pixel viewport at capture scale 1. Vox includes
-capture and teardown; Brave ends before shutdown and its observed process-tree
-counts are polling lower bounds. GPU execution and external services are
-excluded. The reports retain exact endpoints, identities and counter limits.
+medians are labeled separately; the vlang.io means are rounded. All workloads
+use a 1024×768 CSS-pixel viewport. Hacker News uses native capture scale 2;
+the other workloads use scale 1. Wikipedia, Old Reddit and
+vlang.io use process-tree counters: Vox includes capture and teardown, while
+Brave ends before shutdown and its observed counts are polling lower bounds.
+Hacker News uses exclusive resource-coalition counters through PNG availability,
+including exited helpers and explicitly allowed coalition-owned system services;
+Vox ends before the PNG file write and Brave includes CDP screenshot delivery.
+GPU execution and services outside the recorded ownership scope are excluded.
+The reports retain exact endpoints, identities and counter limits.
 
 ## Workload and rendering scope
 
+- **Hacker News:** the frozen original homepage and five resources, with author
+  scripts enabled, fresh empty profiles/caches and two seconds of settlement.
+  All 14 captures match the unchanged Brave reference at every pixel and retain
+  all 30 story IDs. The highest Vox count is **41.61% below the lowest Brave
+  bound**, passing the 10% target. The earlier 3× headline excluded Brave's
+  window setup while including Vox's; the corrected startup scope includes
+  setup for both. The same pinned binaries were reused, so the accounting
+  correction receives no engine optimization credit. OS caches are retained;
+  the report preserves earlier startup outliers and makes no cold-system claim.
 - **Wikipedia:** original archived responses, fresh empty profiles/caches,
   JavaScript disabled in both browsers, matching Vox's existing Wikipedia
   policy. All 14 captures match their respective engine baselines exactly;
@@ -46,8 +61,7 @@ excluded. The reports retain exact endpoints, identities and counter limits.
 ## Comparisons still open
 
 [Pikabu](docs/PIKABU_INSTRUCTIONS.md) has a small, variable observed median lead
-that does not establish a repeatable advantage. [Hacker News](docs/HACKER_NEWS_HOME_PERFORMANCE.md),
-[CNN](docs/CNN_INSTRUCTIONS.md) and
+that does not establish a repeatable advantage. [CNN](docs/CNN_INSTRUCTIONS.md) and
 [Stack Overflow on macOS](docs/STACKOVERFLOW_MACOS_PR_COMPARISON.md) have not
 established lower instruction counts than Brave. Stack Overflow's
 [Linux optimization](docs/STACKOVERFLOW_LINUX_PERFORMANCE.md) compares two Vox

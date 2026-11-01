@@ -120,6 +120,90 @@
   actual window rendering and address-bar keyboard navigation. Use
   `python3 tools/test_linux_native.py --gc none` for ownership diagnostics.
 
+## CPU instruction comparisons against Brave
+
+- Choose and record the measurement scope before collecting the acceptance
+  cohort. The default for site comparisons and `OPTIMIZED_SITES.md` is a fresh
+  browser launch through completed document PNG capture, including startup and
+  native window/target setup in both browsers. Read cumulative counters from
+  process or exclusive coalition creation; subtracting a post-launch sample
+  silently removes startup. Record exact endpoints, including PNG encoding,
+  CDP delivery, audit and teardown work that either endpoint includes.
+- A navigation-only comparison must start both browsers after equivalent
+  window/target setup and finish at matching documented capture boundaries.
+  Hacker News's Vox `navigation_started` marker precedes native window setup,
+  while Brave's `Page.navigate` follows blank-window creation and resizing.
+  Their deltas are an asymmetric diagnostic and cannot establish comparable
+  page-only costs. Use `tools/hacker_news_browser_instructions.py` with
+  `--instruction-scope launch` for its acceptance result; it records both
+  intervals. Keep selected counts and scope labels consistent in progress,
+  summaries and reports. A scope correction must retain the earlier results,
+  explain the error and rerun the corrected protocol; moving boundaries earns
+  no engine optimization credit.
+- Use the same hardware-counter backend and ownership policy for both browsers
+  within a comparison. Pin executable/native-library hashes, browser versions,
+  fixture/resource hashes and references; launch fresh processes for each trial
+  and verify identities throughout. Audit helper ownership and include exited
+  tasks where the backend supports them. Disclose process-sampler lower bounds,
+  missing final samples and excluded GPU/outside-service work. An exclusive
+  coalition counter includes exited helpers and explicitly allowed owned system
+  services; do not mix its totals with a process-tree count or an unrelated
+  inherited coalition.
+- Match the page bytes, author-script policy, viewport, backing/capture scale,
+  cache/network policy, settle period and window placement between engines.
+  Use fresh private profiles/caches and remove ambient measurement/proxy
+  overrides. State whether OS filesystem/shader caches are retained. Replayed
+  fixtures establish frozen-page results; validate live behavior separately
+  before claiming a live-site fix. Require successful document identity,
+  readiness and complete content audits, plus unchanged pixel-reference checks.
+  Distinguish per-engine reference stability from cross-browser pixel equality;
+  never change references or tolerances to obtain instruction credit.
+- Use at least seven complete alternating Vox/Brave pairs for an acceptance
+  claim. Retain every attempt, including first-launch outliers, failures and
+  regressions; do not retry or exclude samples to pass. Report medians and the
+  conservative highest-Vox-upper-bound/lowest-Brave-lower-bound ratio. For the
+  default 10% goal, require `10 * max(Vox upper) <= 9 * min(Brave lower)` using
+  integer arithmetic; honor a different user-requested threshold explicitly.
+  Failed loads, mismatched pixels/content, unavailable counters, abnormal exits
+  or changed identities invalidate acceptance. Preserve prior failing cohorts
+  and qualify any later passing result by its pinned build and cache conditions.
+- Run the cohort through the memory guard above. LaunchServices reparents
+  windowed browser processes, so pass the same private PID registry to the guard
+  as `--adopt-pids-from PATH` and to the Hacker News driver as
+  `--memory-guard-registry PATH`; verify that adoption and browser RSS accounting
+  succeeded. Keep raw commands, logs, counters, PNGs, PID identities, host CPU
+  count/load/timestamps, summaries and actual browser/benchmark/guard exits in
+  a unique `Build/` directory, with durable evidence linked from the site report.
+- Keep `v -profile` and other instrumentation in separate diagnostic runs.
+  Attribute an optimization only after confirming its path executes on the
+  workload and comparing unprofiled matched control/candidate trials. Preserve
+  the focused checks and 5,000,000-instruction broad-check cadence below.
+  Add a qualifying result to `OPTIMIZED_SITES.md` with its statistic, exact
+  workload/capture scope, rendering limitations and linked evidence; startup
+  instruction counts do not establish isolated rendering time or scrolling fps.
+
+For the archived Hacker News homepage, use unique output/receipt/registry names
+and an existing verified pixel-diff binary, for example:
+
+```sh
+env -u ALL_PROXY -u HTTP_PROXY -u HTTPS_PROXY \
+    -u all_proxy -u http_proxy -u https_proxy \
+  python3 tools/run_memory_bounded.py \
+    --lock Build/hn-brave-UNIQUE.lock \
+    --report Build/hn-brave-UNIQUE-guard.json \
+    --adopt-pids-from Build/hn-brave-UNIQUE-pids.json -- \
+  python3 tools/hacker_news_browser_instructions.py \
+    --output Build/hn-brave-UNIQUE \
+    --memory-guard-registry Build/hn-brave-UNIQUE-pids.json \
+    --home-archive Tests/Browser/Brave/hn-home-instructions \
+    --instruction-scope launch --target-vox-fraction .9 --repeat 7 \
+    --diff-tool Build/hn-home-instructions-20261031/pixel_diff
+```
+
+See [the Hacker News scope audit](docs/HACKER_NEWS_BRAVE_INSTRUCTIONS.md) for
+the corrected comparison and retained historical results. Use the latest
+completed production bundle by default, following the shared-build rules above.
+
 ## Scrolling performance measurements
 
 - Measure the requested production bundle and page with precise wheel events
