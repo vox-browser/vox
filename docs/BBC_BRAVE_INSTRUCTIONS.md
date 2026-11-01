@@ -1,22 +1,23 @@
 # BBC homepage instruction comparison
 
 **The requested 10% advantage remains open. BBC does not qualify for
-`OPTIMIZED_SITES.md`.** The latest measured setting (cohort 39) has a Vox
-median of **35,194,223,202** and a Brave lower-bound median of
-**15,768,785,889** instructions. All 21 content, original-pixel and native-exit
-audits pass, and all 14 Vox/control captures emit zero verbose font traces.
-The conservative ratio is **2.3256469115293705**:
-`364991976900 > 141247915830` fails the integer gate. Every observation remains
-included.
+`OPTIMIZED_SITES.md`.** Cohort 40 has a Vox median of **33,933,451,330**,
+a same-binary control median of **35,617,351,645**, and a Brave lower median
+of **16,118,311,870** instructions. All 14 Vox/control captures preserve the
+original pixels and content and exit normally. Brave pair 7 changes 368,241
+photo pixels, invalidating acceptance. Every observation remains retained;
+no sample is retried or excluded.
 
-The same-binary control has median 34,763,549,223. Raising JavaScriptCore's
-baseline compilation warmup from 500 to 5,000 increases the median by
-1.238866538733796%; lowering it to 50 in cohort 38 increases that cohort's
-median by 4.113109590498887%. Production thresholds remain unchanged. The
-latest setting does not establish production-default performance or accepted
-BBC savings.
+Reusing closed text measurements reduces the observed Vox median by
+**1,683,900,315 instructions (4.727752730701374%)** against its matched
+control. All seven candidate/control pairs improve, but the conservative
+highest-candidate/lowest-control ratio is 1.0341074114812472. The invalid
+Brave cohort also fails the diagnostic integer gate:
+`357554103320 > 144023674617`, ratio 2.234345803519834. This establishes no
+10% advantage over Brave. The prior baseline-JIT experiments remain rejected;
+production JIT thresholds remain unchanged.
 
-Cohorts 37–39 explicitly use `VOX_RETAIN_INCREMENTAL_WEBP_PAINT_POLICY=1` in
+Cohorts 37–40 explicitly use `VOX_RETAIN_INCREMENTAL_WEBP_PAINT_POLICY=1` in
 both Vox arms to reproduce the historical frozen RGB workload. Production's
 completed-response YUV policy changes photo pixels; an unchanged-binary
 isolation confirms that the historical switch restores the original reference.
@@ -26,8 +27,8 @@ or live site acceptance. Earlier invalid captures, protocol corrections,
 failing cohorts and their outliers remain retained.
 
 The machine-readable [evidence](benchmark-results/bbc-brave-instructions-2026-11-01.json)
-retains 964 attempts and 39 cohorts, including failures and first launches;
-805 complete cohort raw results were independently checked against the recorded
+retains 990 attempts and 40 cohorts, including failures and first launches;
+826 complete cohort raw results were independently checked against the recorded
 vectors, medians and integer gates. It also retains ownership audits, commands and artifact hashes. Raw archives, logs,
 PNGs, executable copies, PID registries, compiler output and guard receipts are
 under `Build/bbc-home-instructions-20261101-054807/` in the canonical checkout.
@@ -114,6 +115,7 @@ capture marker. An invalid cohort is retained for diagnosis, not acceptance.
 | Direct DOM query fields, historical WebP policy | 35,760,574,950 | 16,077,980,043 | 2.7173610002528643 | All captures valid; median regresses 0.0599% against control; implementation removed; historical decoder setting required |
 | Earlier baseline JIT, historical WebP policy | 35,976,507,921 | 15,918,309,134 | 2.361239852002433 | All captures valid; threshold 50 regresses 4.1131% against control; production default unchanged |
 | Later baseline JIT, historical WebP policy | 35,194,223,202 | 15,768,785,889 | 2.3256469115293705 | All captures valid; threshold 5,000 regresses 1.2389% against control; production default unchanged |
+| Closed text measurement reuse | 33,933,451,330 | 16,118,311,870 | 2.234345803519834 | Brave pair 7 photo differs; acceptance invalid; diagnostic gate fails |
 
 The grid block-height cohort alternates an older control, candidate and Brave;
 control/candidate medians are 101,567,929,247 and 90,700,737,334 (10.70% observed
@@ -1788,3 +1790,92 @@ Receipts include `jsc-baseline-reused-build.json`,
 derived JSON files, `jsc-baseline-all-tool-checks.log` and
 `jsc-default-profile-assessment.json` under the evidence root. Every attempt
 remains retained. BBC is not added to the optimized-sites catalog.
+
+
+## Same-pass text measurements (cohort 40)
+
+A full formatting diagnostic records 1,971,908 process-counter reads with
+balanced scopes, original pixels/content and a normal native exit. That
+instrumentation substantially inflates the work being observed. A separate
+1-in-128 fine-scope sample reduces the read count to 73,904, retains the same
+correctness checks and observes 14,854 direct-text inline entries in temporary
+measurement states, including 14,050 normal definite-width entries. These are
+candidates for further eligibility checks, not a saved-instruction estimate.
+Both probes use a historical O2 binary containing the subsequently reverted
+font memoization; neither supplies current-master performance credit. The
+initial sampled invocation rejects ambient proxies before launch and is retained.
+
+Implementation `efa91a92b`, corrected by `874cefb41`, retains closed direct-text
+line results only within the current layout pass's measurement pool. Keys
+include layout mode, available space, root dimensions and definite-size flags;
+text, tree, style revisions, font generation, font policy and style environment
+must still match. Four entries per root bound the cache. Float, positioned,
+atomic and clamped content remain ineligible. Empty results are excluded so
+replay cannot consume a block margin when ordinary layout produces no line.
+Owned line fragments and glyph runs survive the producing probe's scratch
+arena; writable consumers detach cache-owned fragment buffers.
+
+The final 24-case focused batch passes with the cache enabled and disabled in
+normal, no-GC and preallocated modes. Earlier compiler/fixture failures and the
+preallocated test-snapshot lifetime failure remain retained; their corrected
+runs replace no evidence. Tooling `a6def7403` isolates the control environment
+and records the switch. All 207 instruction-tool tests pass.
+
+The first production build is deliberately stopped before publishing after
+review finds the empty-text margin edge case. Its guard records child signal
+15, controller exit 143, elapsed 138.057855791 seconds and peak
+6,322,716,672 bytes. The corrected build and guard exit zero in
+194.001846209 seconds, peak 9,137,307,648 bytes. Owned source inputs remain
+stable; two unrelated native paths change during compilation and are explicitly
+recorded. The saved generated C, executable and actual native-library hashes
+pin the resulting binary; the comparison uses that same binary in both arms.
+Executable SHA256 is
+`4e6ade6f94b27fac5b2a51561742a7025a8beaa2ab699c99704785f58ace3cb3`.
+Fresh headless startup and strict bundle-signature verification both pass.
+
+Separate enabled/disabled BBC diagnostics preserve original reference pixels,
+complete content and normal native exits. A positive reuse trace appears only
+in the enabled run. Injected JSC witnesses report one context with 2,046 / 2,043
+evaluations. The subsequent unprofiled cohort has no injected probe, reuse
+logging or verbose font traces in any of its 14 Vox/control runs.
+
+All seven retained Vox/control pairs reduce observed instructions, by
+4.014534980735229%, 2.229922387406047%, 5.53704833851455%,
+6.304474455899179%, 2.168213145138187%, 5.408958274401621% and
+9.672050634775353%. Control median is 35,617,351,645 and candidate median
+33,933,451,330: a point reduction of 1,683,900,315 (4.727752730701374%).
+The highest-candidate/lowest-control ratio is 1.0341074114812472, so the
+conservative control envelope does not establish a 10% reduction. All
+first-launch and high-count observations remain included.
+
+Brave's lower median is 16,118,311,870, but its final capture differs in
+368,241 photo pixels (11.7061%, maximum channel error 18), within bounds
+`32,882 1480x549`. Content and native exit still pass; pixel acceptance fails.
+Chromium's [WebP decoder](https://raw.githubusercontent.com/chromium/chromium/main/third_party/blink/renderer/platform/image-decoders/webp/webp_image_decoder.cc)
+permits YUV decoding after complete data arrives. Timing-dependent RGB/YUV
+selection is consistent with the historical photo-only variation, but the
+installed Brave branch was not instrumented, so that cause remains an inference.
+No reference, tolerance or replay timing is changed, and the cohort is not
+retried. Its raw diagnostic gate also fails:
+`357554103320 > 144023674617`. The guard adopts 68 processes without errors,
+peaks at 1,748,828,160 bytes and finishes in 109.832618959 seconds. Driver,
+guard and controller exit one. This invalid cohort earns no Brave acceptance.
+
+The valid matched Vox/control point reduction exceeds the 5,000,000-instruction
+broad-check threshold. All 456 selected cases enter in each mode: 455 pass,
+and only the unchanged text-control baseline (13.5 versus expected 13) fails.
+Both compilers and all other runtime batches exit zero, with terminal guard
+receipts and unchanged owned source inputs. This is no whole-suite pass or
+broad cadence reset. No BBC catalog entry is added.
+
+Receipts include `inline-measurement-build-v2/`, both compiled-witness folders,
+all six focused-check attempts, both BBC diagnostics,
+`inline-measurement-cohort/`, its derived JSON and raw quiet/control audits,
+`inline-measurement-broad-cadence.json`, `broad-inline-measurement/`,
+`broad-inline-measurement-validation.json`, both formatting-probe assessments
+and the 207-test tool receipt under the evidence root. Verified lossless
+compression retains generated compiler/check bytes and 286 completed private
+profiles. Every archived profile member and symlink was checked before its
+source directory retired; the restoration manifest and archives remain in
+Build. Counters, logs, PNGs, audits, raw results, fixtures and references keep
+their original paths and bytes.
