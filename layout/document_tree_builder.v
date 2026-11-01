@@ -602,6 +602,11 @@ mut:
 
 fn document_layout_update_callback_with_paint_tree(document &dom.Document, viewport_width f64,
 	viewport_height f64, needs_layout_tree_rebuild bool, build_paint_tree bool) voidptr {
+	// Geometry reads can enter this callback directly through Document::update_layout,
+	// without the embedder layout wrapper. Keep one font-policy snapshot for this
+	// synchronous pass too, including its retained paint-tree projection.
+	mut font_policy := platform.begin_layout_font_policy_scope()
+	defer { font_policy.finish() }
 	resize_handle_states := if previous := document_layout_result(document) {
 		previous.resize_handle_states.clone()
 	} else {

@@ -319,7 +319,7 @@ pub fn (font &Font) system_face() ?SystemFontFace {
 	if face := font.system_face_override {
 		return face
 	}
-	if !font.uses_system_font_matching() || font.source_path != '' {
+	if font.source_path != '' || !font.uses_system_font_matching() {
 		return none
 	}
 	if font.system_face_resolved_ {
