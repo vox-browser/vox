@@ -42,6 +42,9 @@ class PreciseScrollTests(unittest.TestCase):
     def test_fixture_navigation_seeds_only_allow_any_site(self):
         self.check_isolated_launch(True)
 
+    def test_profile_reset_is_explicitly_marked_as_diagnostic(self):
+        self.check_isolated_launch(False, v_profile_reset=True)
+
     def test_fixture_profile_cannot_silently_disable_replay_proxy(self):
         with tempfile.TemporaryDirectory() as temporary:
             output = Path(temporary) / "measurement"
@@ -57,7 +60,7 @@ class PreciseScrollTests(unittest.TestCase):
                     measure_precise_scroll.main()
                 launch.assert_not_called()
 
-    def check_isolated_launch(self, allow_fixture_navigation):
+    def check_isolated_launch(self, allow_fixture_navigation, v_profile_reset=False):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve()
             binary = root / "Vox"
@@ -91,6 +94,7 @@ class PreciseScrollTests(unittest.TestCase):
                 self.assertNotIn("VOX_PROFILE_FRAMES", env)
                 self.assertNotIn("DYLD_LIBRARY_PATH", env)
                 self.assertEqual(env["VOX_PRECISE_REQUIRED_TITLE"], "fixture")
+                self.assertEqual(env["VOX_PRECISE_RESET_V_PROFILE"], "1" if v_profile_reset else "")
                 kwargs["stdout"].write(log_for())
                 return mock.Mock(pid=123, wait=mock.Mock(return_value=0))
 
@@ -101,11 +105,14 @@ class PreciseScrollTests(unittest.TestCase):
                          "--env", f"VOX_PROFILE_DIR={user_profile}"]
             if allow_fixture_navigation:
                 arguments.append("--allow-fixture-navigation")
+            if v_profile_reset:
+                arguments.append("--v-profile-reset")
             with mock.patch.object(measure_precise_scroll.sys, "platform", "darwin"), \
                     mock.patch.object(measure_precise_scroll.sys, "argv", arguments), \
                     mock.patch.dict(measure_precise_scroll.os.environ,
                                     VOX_PROFILE_DIR=str(user_profile), VOX_PROFILE_FRAMES="600",
                                     DYLD_LIBRARY_PATH="/unrelated/native/libraries",
+                                    VOX_PRECISE_RESET_V_PROFILE="ambient-must-not-enable-profiling",
                                     SSL_CERT_FILE=str(certificate),
                                     VOX_PROXY="" if allow_fixture_navigation else "http://127.0.0.1:9"), \
                     mock.patch.object(measure_precise_scroll.subprocess, "run", compile_probe), \
@@ -118,6 +125,7 @@ class PreciseScrollTests(unittest.TestCase):
                 measure_precise_scroll.main()
             evidence = json.loads((output / "run.json").read_text())
             self.assertTrue(evidence["valid"])
+            self.assertEqual(evidence["diagnostic_only"], v_profile_reset)
             self.assertEqual("seeded only" in evidence["initial_profile"], allow_fixture_navigation)
             self.assertEqual(evidence["script_policy"], "automatic")
             self.assertEqual(evidence["host"], {"cpu_count": 18,
@@ -133,6 +141,38 @@ class PreciseScrollTests(unittest.TestCase):
                              hashlib.sha256(certificate.read_bytes()).hexdigest())
             for name, content in saved.items():
                 self.assertEqual((user_profile / name).read_text(), content)
+
+    @unittest.skipUnless(sys.platform == "darwin", "macOS injected observer")
+    def test_native_profile_reset_calls_real_symbol_and_rejects_missing_profiler(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            observer = Path(measure_precise_scroll.__file__).with_name("measure_precise_scroll_darwin.m")
+            helper = root / "reset.m"
+            helper.write_text('#include "' + str(observer) + '"\n' + r'''
+                int main(int argc, char **argv) {
+                    (void)argv;
+                    setenv("VOX_PRECISE_RESET_V_PROFILE", argc > 1 ? "1" : "", 1);
+                    reset_v_profile_if_requested();
+                    return 0;
+                }
+            ''')
+            stub = root / "profiler.c"
+            stub.write_text('#include <stdio.h>\nvoid vreset_profile_stats(void) { puts("RESET_CALLED"); }\n')
+            for present in [False, True]:
+                binary = root / ("with-profiler" if present else "without-profiler")
+                subprocess.run(["clang", "-O2", "-fobjc-arc", str(helper),
+                                *([str(stub)] if present else []),
+                                "-framework", "Cocoa", "-framework", "QuartzCore",
+                                "-Wl,-undefined,dynamic_lookup", "-o", str(binary)], check=True)
+                disabled = subprocess.run([str(binary)], capture_output=True, text=True, check=True)
+                self.assertNotIn("RESET_CALLED", disabled.stdout)
+                enabled = subprocess.run([str(binary), "reset"], capture_output=True, text=True)
+                self.assertEqual(enabled.returncode, 0 if present else 2, enabled.stderr)
+                if present:
+                    self.assertIn("RESET_CALLED", enabled.stdout)
+                    self.assertIn("SCROLL_PROFILE_RESET", enabled.stderr)
+                else:
+                    self.assertIn("profiler symbol is absent", enabled.stderr)
 
     @unittest.skipUnless(sys.platform == "darwin", "macOS injected observer")
     def test_observer_loads_in_helper_without_renderer_or_probe_environment(self):

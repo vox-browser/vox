@@ -26,6 +26,7 @@ static double rendered_scroll;
 // The signed adblock helper inherits DYLD_INSERT_LIBRARIES but does not link
 // the renderer. Loading this observer must not break its startup handshake.
 extern void ladybird_v_skia_set_root_raster_scroll_y(double) __attribute__((weak_import));
+extern void vreset_profile_stats(void) __attribute__((weak_import));
 static void track_scroll(double y) {
     rendered_scroll = y;
     ladybird_v_skia_set_root_raster_scroll_y(y);
@@ -46,6 +47,17 @@ static unsigned inputs, publications, input_limit, reverse_every, frame_capacity
 static BOOL active;
 static const char *required_title;
 static double settle_seconds, ready_since = -1;
+
+static void reset_v_profile_if_requested(void) {
+    const char *requested = getenv("VOX_PRECISE_RESET_V_PROFILE");
+    if (!requested || !*requested) return;
+    if (!vreset_profile_stats) {
+        fprintf(stderr, "SCROLL_ERROR v -profile reset requested but profiler symbol is absent\n");
+        exit(2);
+    }
+    vreset_profile_stats();
+    fprintf(stderr, "SCROLL_PROFILE_RESET before_first_input=1 diagnostic_only=1\n");
+}
 
 static BOOL title_matches(void) {
     return !required_title || !*required_title ||
@@ -155,6 +167,7 @@ static void tick(void) {
         fprintf(stderr, "SCROLL_POSITION window=%ld event_window=%ld x=%g y=%g\n",
             (long)input_view.window.windowNumber, (long)event.windowNumber,
             event.locationInWindow.x, event.locationInWindow.y);
+        reset_v_profile_if_requested();
         started = CACurrentMediaTime();
         active = YES;
     }

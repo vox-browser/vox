@@ -147,6 +147,8 @@ def main():
     parser.add_argument("--cache-template", type=Path)
     parser.add_argument("--allow-fixture-navigation", action="store_true",
                         help="Seed only allow_any_site in the private profile for file/loopback fixtures")
+    parser.add_argument("--v-profile-reset", action="store_true",
+                        help="Diagnostic only: reset v -profile counters immediately before native input")
     parser.add_argument("--network-policy", required=True,
                         help="Describe live access or supplied network-blocking interposer; recorded verbatim")
     parser.add_argument("--insert-library", action="append", type=Path, default=[])
@@ -233,6 +235,7 @@ def main():
                VOX_PRECISE_INPUTS=str(args.inputs), VOX_PRECISE_REVERSE=str(args.reverse_every),
                VOX_PRECISE_HZ=str(args.input_hz), VOX_PRECISE_DELTA=str(args.delta),
                VOX_PRECISE_SETTLE=str(args.settle_seconds),
+               VOX_PRECISE_RESET_V_PROFILE="1" if args.v_profile_reset else "",
                VOX_PRECISE_FAILURE_CAPTURE=str(output / "navigation-error.png"),
                VOX_PRECISE_REQUIRED_TITLE=args.require_title)
     pinned = [binary, *sorted(binary.parent.glob("*.dylib")),
@@ -249,6 +252,7 @@ def main():
     command = [str(binary), *script_flags, "--window-width", str(args.width),
                "--window-height", str(args.height + args.chrome_height), args.url]
     evidence = dict(command=command, compile_command=compile_command,
+                    diagnostic_only=args.v_profile_reset,
                     source_and_binary_sha256=hashes, cache_sha256=digest.hexdigest(),
                     initial_profile=("private profile seeded only with allow_any_site=true; "
                                      "default bookmark bar; explicit direct networking"
