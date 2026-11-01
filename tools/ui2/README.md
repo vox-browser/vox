@@ -11,6 +11,13 @@ Cmd+Shift+B toggles bookmarks; Cmd+D saves the committed page. Windows/Linux use
 Ctrl for those commands. Browser settings use Cmd+, on macOS and Ctrl+, elsewhere.
 Native field editing, selection, clipboard and IME stay with UI2's backend.
 
+Tabs retain the classic sloped shoulders, overlapping edges, thin outline and
+active-tab seam into the toolbar. Their contour and stacking are declared in
+`browserui/tabs.v`, including the small slanted new-tab button. UI2's embedding
+adapter supplies a generic `VectorPath` decoration for native and custom
+renderers; it contains no tab-specific drawing code. Packed UI2 colors use sRGB
+on both backends.
+
 The combined tab strip and toolbar is 60px normally and 92px with diagnostics.
 The bookmarks bar adds 28px. The document viewport follows that height. UI2
 reconciles keyed controls, preserving editing state across resize/status updates.
