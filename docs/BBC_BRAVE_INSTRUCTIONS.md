@@ -2,9 +2,9 @@
 
 **The requested 10% advantage remains open. BBC does not qualify for
 `OPTIMIZED_SITES.md`.** The latest complete seven-pair cohort has a Vox median
-of **75,303,556,310** retired instructions and a Brave lower-bound median of
-**15,575,369,841**. Its conservative ratio is **5.409313292632096**, above the
-required 0.9. One Brave capture also differs from its fixed reference.
+of **47,129,217,196** retired instructions and a Brave lower-bound median of
+**15,646,633,009**. Its conservative ratio is **3.2509168791412764**, above the
+required 0.9. All 21 control/Vox/Brave observations pass content, pixels and browser exits; the instruction gate fails.
 
 The machine-readable [evidence](benchmark-results/bbc-brave-instructions-2026-11-01.json)
 retains exact counts for every recorded attempt, including failures and first
@@ -59,6 +59,9 @@ capture marker. An invalid cohort is retained for diagnosis, not acceptance.
 | Grid block-height reuse | 90,700,737,334 | 15,566,813,595 | 6.241506185808689 | Gate fails; Brave pair 5 photo differs |
 | Disposable grid width probes | 71,087,924,913 | 15,830,667,000 | 4.987054269056659 | Gate fails; Brave pairs 3 and 6 photo differs |
 | Stationary raster reuse | 75,303,556,310 | 15,575,369,841 | 5.409313292632096 | Gate fails; Brave pair 7 photo differs |
+| Client-geometry index and tracked-arena shortcut | 65,708,093,045 | 15,584,042,718 | 4.367784478797594 | Gate fails; Brave pair 1 photo differs |
+| JIT entitlement | 49,813,515,416 | 15,679,077,351 | 3.3100826753570693 | Gate fails; Brave pair 2 photo differs |
+| Attribute-name buckets and scope-parent jumps | 47,129,217,196 | 15,646,633,009 | 3.2509168791412764 | All observations valid; gate fails |
 
 The grid block-height cohort alternates an older control, candidate and Brave;
 control/candidate medians are 101,567,929,247 and 90,700,737,334 (10.70% observed
@@ -75,14 +78,52 @@ separate diagnostic proves 149 cache reuses and zero differing reference
 pixels. Faster replay admits more native frames during settlement, increasing
 preparation work; no net instruction improvement is credited to this cache.
 
+The geometry/arena cohort uses one binary with both paths disabled only in
+controls: medians 69,618,641,818 versus 65,708,093,045 (5.62% observed reduction).
+Its conservative matched-control gate fails.
+
+The JIT cohort compares the same compiled executable and libraries, differing
+only in the code signature's `com.apple.security.cs.allow-jit` entitlement.
+Every file-backed Mach-O section and other bundle file is verified unchanged.
+WebKit's [executable allocator](https://raw.githubusercontent.com/WebKit/WebKit/main/Source/JavaScriptCore/jit/ExecutableAllocator.cpp)
+checks this entitlement on the measured system; Apple's
+[entitlement documentation](https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.security.cs.allow-jit)
+describes its purpose. Controls have a median of 68,622,675,849 versus
+49,813,515,416 with JIT (27.41% reduction). The conservative matched-control
+ratio, 0.796913029622123, clears 0.9. Separate diagnostics positively observe
+JavaScriptCore JIT/DFG compilation threads and identical results in a C API
+probe. Probe counts are diagnostic, not BBC optimization credit. The BBC cohort
+still fails the Brave target and retains its Brave photo difference.
+
+The newest cohort compares the same binary with only attribute-name buckets
+and allocation-scope jumps disabled in controls. Medians are 50,918,264,203
+versus 47,129,217,196 (7.44% observed reduction); its conservative matched-control
+ratio is 1.0424294404793093 and fails. Separate diagnostics execute both paths,
+record one JavaScriptCore context and 2,002 evaluations, and match the original
+Vox image exactly.
+
+An initial attempt stopped after one control because another session changed
+`tools/hacker_news_browser_instructions.py`. Its raw result and changed hashes
+remain recorded. The complete replacement cohort uses an immutable copy of
+15 exact committed measurement scripts, with the original script hash restored
+by copying its committed version. No browser sources were copied. Original
+failed-cohort data remain included in durable evidence.
+
+A summary bug passed three-engine records to a strict two-engine evaluator,
+which reported “Incomplete measured pair.” Commit `376a3c0b` projects the
+Vox/Brave and Vox/control comparisons independently, validates all observations
+and keeps the integer gate. Recomputed summaries use the original raw counts;
+no endpoint, reference or trial changes. Earlier original summaries remain
+retained. The newest corrected summary fails solely on the instruction gate.
+
 For acceptance, at least seven alternating complete pairs must pass content,
 pixels, identities and exits, and integer arithmetic must satisfy
 `10 * max(Vox upper) <= 9 * min(Brave lower)`. No recorded cohort meets this.
 
 ## Rendering and execution limits
 
-Every Vox image in the last three cohorts matches its original reference
-exactly. The recurring Brave difference affects 64,177 pixels within one photo,
+Every Vox image in the corrected cohorts matches its original reference
+exactly. The newest cohort also has seven exact Brave captures. The recurring Brave difference affects 64,177 pixels within one photo,
 with unchanged image bytes, source URL, intrinsic dimensions and geometry.
 Awaiting visible `img.decode()` did not remove it. Its cause remains unresolved;
 those attempts are retained without exclusions or relaxed tolerances.
@@ -100,12 +141,13 @@ executed. The grid diagnostics separately prove the optimized paths execute.
 The selected backend has no observed LibJS fallback. These instrumented runs
 receive no hardware-counter performance credit.
 
-The stationary browser executable is SHA256
-`cba09e35ddf82cc12a5ccc4de0e55e5beb01b50f7444b97c18342b6000d2ad60`;
-native-library identities and actual generated-C witnesses are in the evidence.
-A failed preceding build encountered a concurrent unresolved SVG symbol. The
-next successful shared production build was reused and copied with verified
-identity. Source snapshots disclose concurrent edits.
+The newest measured executable is SHA256
+`cb6aba5e499183dd9557f0d706feaaed43a2cfffb782cb485480dbffea65e12a`.
+The JIT-only candidate is
+`ea63463d5d1e7c6d28c320fbf2060eead45490e549a2ac45f607ccdff8e65c89`.
+Native-library identities, source snapshots, entitlement checks and generated-C
+witnesses are recorded. Concurrent source edits are disclosed; same-binary
+controls isolate the two newest runtime switches.
 
 ## Verification and remaining work
 
@@ -115,17 +157,25 @@ all 11 default screenshot cases (eight exact, three under existing bounds),
 and all eight required SVG mutation cases exactly. All 100 upstream LibJS AST
 fixtures match exactly.
 
-The broader 394-case layout run retains an input baseline mismatch: Vox returns
-13.5 where the unchanged test and an independent Brave content-box oracle
-require 13. Splitting no-GC checks into fresh five-case processes avoids their
-combined retained-memory growth, but a font-cache fingerprint still exceeded
-12 GiB in one case. Commit `df20e4d2` replaces recursive decoded-font formatting
-with exact retained-font identity; its four focused cases pass in both modes.
-The interrupted broad attempt and its missing guard receipt remain recorded;
-the guard cleanup fix has eight passing tests. Broad completion and the input
-baseline regression remain open.
+The current broader rerun enters all 394 cases in both normal and no-GC
+modes (79 fresh no-GC processes). Each mode passes 393 cases and retains one
+input baseline mismatch: Vox returns 13.5 where the unchanged test and an
+independent Brave content-box oracle require 13. The prior font-fingerprint
+memory failure is corrected and its previously interrupted cases now complete.
+Earlier failed attempts, including the missing receipt after guard cleanup
+failed, remain recorded. The input baseline failure keeps broad verification
+open.
 
-Client-geometry indexing and a tracked-arena allocation shortcut are being
-checked. They have no claimed BBC instruction credit in this report. The site
-catalog must wait for a complete qualifying cohort; startup counts establish
-neither isolated rendering time nor scrolling FPS.
+All 45 allocator checks pass in normal, no-GC and preallocated modes, including
+a preallocated run with scope jumps disabled. Nine selector checks pass in
+normal and no-GC modes. The cohort evaluator change passes 146 Python checks.
+The newest pinned browser passes headless startup, all 11 screenshot smoke
+cases and all eight SVG mutation cases. These checks do not establish full
+BBC rendering or scripting parity.
+
+The remaining work is to reduce the full launch/capture workload sufficiently
+to pass the conservative Brave gate while preserving content and references.
+A separate CSS diagnostic build is pending because the shared build guard is
+busy; the available measured bundle remains usable. The site catalog must
+wait for a qualifying cohort. Startup counts establish neither isolated
+rendering time nor scrolling FPS.
