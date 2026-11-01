@@ -1184,7 +1184,10 @@ static bool small_shape_patch_bounds(VoxGraphiteShape const& shape, int width, i
     int bottom = bound(std::ceil(bounds.bottom()) + 2, height);
     int patch_width = right - left, patch_height = bottom - top;
     size_t count = size_t(patch_width) * patch_height;
-    if (count > 16384 || count * 4 >= size_t(width) * height) return false;
+    // Overlay scrollbars can span almost the full viewport. Keep their thin
+    // fills and outlines compact too, with at most 256 KiB per staged patch.
+    bool thin = std::min(patch_width, patch_height) <= 32;
+    if (count > (thin ? 65536u : 16384u) || count * 4 >= size_t(width) * height) return false;
     patch = {left, top, patch_width, patch_height};
     return true;
 }
