@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <netdb.h>
+#include <stdio.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
@@ -61,5 +62,6 @@ int main(void) {
         }
         close(server);
     }
+    puts("DNS/external connect denied; loopback permitted");
     return 0;
 }
