@@ -16,6 +16,15 @@ from measure_disk_scroll import offline_environment
 
 
 class PageArchiveTests(unittest.TestCase):
+    def test_valueless_inline_style_preserves_resource_discovery(self):
+        parser = page_archive.ResourceLinks('https://www.wikipedia.org/')
+        parser.feed('<img style src="/globe.png"><div style></div>'
+                    '<div style="background:url(/sprite.svg)"></div>')
+        self.assertEqual(parser.links, {
+            'https://www.wikipedia.org/globe.png',
+            'https://www.wikipedia.org/sprite.svg',
+        })
+
     def test_replay_accepts_browser_connection_bursts(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

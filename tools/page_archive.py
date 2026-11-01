@@ -52,7 +52,7 @@ class ResourceLinks(HTMLParser):
             url = http_url(self.base, value) if value else None
             if url:
                 self.links.add(url)
-        self.links.update(css_links(self.base, attrs.get('style', '')))
+        self.links.update(css_links(self.base, attrs.get('style') or ''))
 
     def handle_endtag(self, tag):
         if tag == 'style':
