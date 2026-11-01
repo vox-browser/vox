@@ -1084,7 +1084,7 @@ pub fn set_document_user_style_sheet(document &dom.Document, css_text string) {
 	if targeted := change {
 		// Keep the parsed replacement used to project the invalidation plan.
 		scope.user_style_sheet = targeted.sheet
-		invalidate_user_style_change_tree(document.as_node(), targeted.invalidation)
+		invalidate_user_style_change_tree(document.as_node(), targeted.invalidation, targeted.subject_filter)
 	} else {
 		mutable_document.set_needs_full_style_update(true)
 	}

@@ -9,6 +9,7 @@ const targeted_user_style_change_diagnostics = os.getenv('VOX_TARGETED_USER_STYL
 struct TargetedUserStyleChange {
 	sheet        &CSSStyleSheet
 	invalidation &StyleSheetInvalidationSet
+	subject_filter ?&StaticUserStyleFilter
 }
 
 // Replacing plain user rules can change subjects from either sheet, including
@@ -35,11 +36,16 @@ fn prepare_targeted_user_style_change(document &dom.Document, mut scope StyleSco
 	if targeted_user_style_change_diagnostics {
 		eprintln('Vox user style change: selected old/new selector invalidation')
 	}
-	return TargetedUserStyleChange{sheet: replacement, invalidation: invalidation}
+	return TargetedUserStyleChange{sheet: replacement, invalidation: invalidation,
+		subject_filter: build_static_user_style_filter(document, sheets)}
 }
 
-fn invalidate_user_style_change_tree(root &dom.Node, invalidation &StyleSheetInvalidationSet) {
-	invalidate_root_for_style_sheet_change(root, invalidation, .style_sheet_replace, false)
+fn invalidate_user_style_change_tree(root &dom.Node, invalidation &StyleSheetInvalidationSet, subject_filter ?&StaticUserStyleFilter) {
+	if filter := subject_filter {
+		invalidate_static_user_style_subjects(root, filter)
+	} else {
+		invalidate_root_for_style_sheet_change(root, invalidation, .style_sheet_replace, false)
+	}
 	invalidate_user_style_change_shadow_roots(root, invalidation)
 }
 
