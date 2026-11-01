@@ -23,6 +23,30 @@
 - Keep documentation-only and tooling-only changes in separate commits when
   they are independently reviewable.
 
+## UI implementation
+
+- Always implement Vox-owned UI in V using UI2. This includes browser chrome,
+  tabs, bookmarks, menus, context menus, pickers, settings, dialogs, and status
+  overlays. Keep UI layout, styling, interaction state, hit testing, and action
+  routing in shared V/UI2 components used across supported platforms.
+- Do not add or expand application UI in Objective-C `.m`/`.mm` files, included
+  native headers, direct AppKit calls from V, or hand-drawn GG/Sokol controls.
+  Writing a platform-specific widget in V without UI2 does not satisfy this rule.
+- If UI2 lacks a required capability, extend its V components or the repository's
+  UI2 embedding/backend adapter. Do not create a separate Cocoa or GG UI fallback.
+  Existing platform-specific UI is migration debt, not a pattern for new work;
+  see [the UI2 migration audit](docs/UI2_MIGRATION_AUDIT.md).
+- Keep native code limited to necessary platform integration and engine services:
+  window hosting, normalized input delivery, clipboard/OS calls, timers,
+  document rendering, graphics, media, and JavaScript runtime bridges. Put
+  application-specific UI policy in V and expose platform operations through
+  UI2's backend boundary. Native code inside UI2's platform backend is expected;
+  a second browser-owned Cocoa widget implementation is not.
+- Preserve behavior when migrating UI, including keyboard shortcuts, editing and
+  focus, accessibility, tab/process ownership, and popup dismissal. Add focused
+  tests with the migration. Audit included headers as well as `.m` wrappers;
+  moving widget code into a header does not change its ownership.
+
 ## LibWeb V translation
 
 - This repository (`~/code/vox2`) is the canonical LibWeb V translation workspace.

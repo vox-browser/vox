@@ -1,3 +1,7 @@
+All Vox-owned UI follows the [V/UI2 implementation rule](../../AGENTS.md#ui-implementation).
+The [migration audit](../../docs/UI2_MIGRATION_AUDIT.md) lists remaining Cocoa and
+GG UI owners, including tab controls, toolbar painting, menus, and settings glue.
+
 The production macOS chrome mounts its navigation buttons, single-line address
 editor, and diagnostic, link/console and RAM labels with UI2. AppKit drawing
 supplies the classic gray tab strip, flat arrow/reload icons, thin address border,
