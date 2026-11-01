@@ -134,6 +134,23 @@ def check_native(audit, reference):
         raise RuntimeError('Vox body content is missing')
 
 
+def warm_native_cache(binary, url, output, profile, environment, reference, timeout, identity):
+    """Populate encoded responses, then discard the process and its decoded images."""
+    warm_profile = output / 'vox-warm-profile'
+    warm_profile.mkdir()
+    shutil.copyfile(profile / 'settings.json', warm_profile / 'settings.json')
+    audit = output / 'vox-warm.audit.json'
+    requests = output / 'vox-warm.requests.jsonl'
+    requests.touch()
+    warm_environment = dict(environment, VOX_PROFILE_DIR=str(warm_profile),
+                            VOX_CAPTURE_AUDIT_PATH=str(audit), VOX_ADBLOCK_LOG=str(requests))
+    guarded([binary, '--window-width', '1024', '--window-height', '852',
+             '--screenshot', output / 'vox-warm.png', url], output / 'vox-warm', timeout, warm_environment)
+    if identity != executable_identity(binary):
+        raise RuntimeError('Shared production bundle changed during cache warmup')
+    check_native(read_json(audit), reference)
+
+
 def guarded(command, prefix, timeout, environment=None):
     guard = [sys.executable, str(REPO / 'tools/run_memory_bounded.py'),
              '--limit-gib', '3', '--timeout', str(timeout), '--lock', str(prefix) + '.lock',
@@ -215,6 +232,14 @@ def run_case(site, args):
             audit, config, requests, args.settle)
         before = executable_identity(args.vox)
         write_json(output / 'identity.json', before)
+        cache_policy = getattr(args, 'cache_policy', 'cold')
+        write_json(output / 'cache-policy.json', dict(policy=cache_policy, warmup_qualified=False))
+        if cache_policy == 'complete':
+            warm_native_cache(args.vox, manifest['url'], output, profile, environment,
+                              state, args.timeout, before)
+            write_json(output / 'cache-policy.json', dict(policy=cache_policy, warmup_qualified=True,
+                decoded_images='Fresh process; encoded response cache retained',
+                warmup_audit=str(output / 'vox-warm.audit.json')))
         guarded([args.vox, '--window-width', '1024', '--window-height', '852',
                  '--screenshot', actual, manifest['url']], output / 'vox', args.timeout, environment)
         if before != executable_identity(args.vox):
@@ -229,6 +254,7 @@ def run_case(site, args):
         if not replay_verdict['exact']:
             status = 'live-to-frozen-mismatch'
         return dict(status=status,
+                    cache_policy=cache_policy,
                     different_pixels=verdict['different_pixels'], artifacts=str(output),
                     live_to_frozen_different_pixels=replay_verdict['different_pixels'],
                     manifest_sha256=digest((archive / 'manifest.json').read_bytes()))
@@ -251,6 +277,8 @@ def main():
     parser.add_argument('--profile-template', type=Path,
                         help='Copy a closed prepared Brave profile into each disposable oracle profile')
     parser.add_argument('--vox', type=Path, default=VOX)
+    parser.add_argument('--cache-policy', choices=['cold', 'complete'], default='cold',
+                        help='Use an empty native cache, or populate encoded responses in a separate process first')
     parser.add_argument('--diff-tool', type=Path)
     parser.add_argument('--audit-config', type=Path, help='Native capture selectors for diagnosing a mismatch; include body and images')
     parser.add_argument('--settle', type=float, default=5)
@@ -281,7 +309,7 @@ def main():
         guarded([compiler, '-memory-limit', '10G', '-nocache', '-o', args.diff_tool, REPO / 'tools/pixel_diff.v'],
                 args.output / 'diff-tool', args.timeout)
     summary = dict(started_at=time.strftime('%Y-%m-%dT%H:%M:%S%z'), catalog=str(CATALOG),
-                   threshold='zero differing RGBA pixels', sites=[])
+                   threshold='zero differing RGBA pixels', cache_policy=args.cache_policy, sites=[])
     for site in sites:
         print(f"[{site['id']}] {site['url']}", flush=True)
         try:

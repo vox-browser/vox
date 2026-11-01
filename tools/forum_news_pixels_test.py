@@ -6,11 +6,63 @@ import unittest
 from unittest.mock import patch
 
 from forum_news_pixels import (CATALOG, check_filters, check_native, native_capture_environment,
-                               oracle_command, seal_capture, write_json)
+                               oracle_command, seal_capture, warm_native_cache, write_json)
 from page_archive import digest, load_archive
 
 
 class ForumNewsPixelTests(unittest.TestCase):
+    def test_complete_cache_uses_a_discarded_process_with_separate_profile_and_audit(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary)
+            profile = output / 'profile'
+            profile.mkdir()
+            settings = dict(enabled=True, host='127.0.0.1', port='1234')
+            write_json(profile / 'settings.json', settings)
+            reference = dict(url='https://news.example/', title='News')
+            audit = dict(**reference, ready='complete', viewport_width=1024, viewport_height=768,
+                         selections=[dict(name='body', elements=[dict(text='story ' * 300)])])
+            environment = dict(VOX_PROFILE_DIR=str(profile), LADYBIRD_CACHE_DIR=str(output / 'cache'),
+                               VOX_CAPTURE_AUDIT_PATH=str(output / 'main.audit.json'))
+            def capture(command, prefix, timeout, env):
+                self.assertEqual(command[-1], reference['url'])
+                self.assertEqual(env['LADYBIRD_CACHE_DIR'], environment['LADYBIRD_CACHE_DIR'])
+                self.assertNotEqual(env['VOX_PROFILE_DIR'], str(profile))
+                write_json(Path(env['VOX_CAPTURE_AUDIT_PATH']), audit)
+            with patch('forum_news_pixels.guarded', side_effect=capture) as launch, \
+                    patch('forum_news_pixels.executable_identity', return_value={'binary': 'same'}):
+                warm_native_cache(Path('/vox'), reference['url'], output, profile, environment,
+                                  reference, 60, {'binary': 'same'})
+            self.assertEqual(launch.call_count, 1)
+            self.assertEqual(json.loads((output / 'vox-warm-profile/settings.json').read_text()), settings)
+            self.assertFalse((output / 'main.audit.json').exists())
+            self.assertEqual(environment['VOX_PROFILE_DIR'], str(profile))
+
+    def test_cache_warmup_cannot_qualify_a_navigation_error(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary)
+            profile = output / 'profile'
+            profile.mkdir()
+            write_json(profile / 'settings.json', {})
+            def capture(command, prefix, timeout, env):
+                write_json(Path(env['VOX_CAPTURE_AUDIT_PATH']), dict(url='about:blank', title='Error'))
+            with patch('forum_news_pixels.guarded', side_effect=capture), \
+                    patch('forum_news_pixels.executable_identity', return_value={'binary': 'same'}):
+                with self.assertRaises(RuntimeError):
+                    warm_native_cache(Path('/vox'), 'https://news.example/', output, profile, {},
+                                      dict(url='https://news.example/', title='News'), 60, {'binary': 'same'})
+
+    def test_cache_warmup_rejects_a_changed_executable(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary)
+            profile = output / 'profile'
+            profile.mkdir()
+            write_json(profile / 'settings.json', {})
+            with patch('forum_news_pixels.guarded'), \
+                    patch('forum_news_pixels.executable_identity', return_value={'binary': 'changed'}):
+                with self.assertRaisesRegex(RuntimeError, 'bundle changed during cache warmup'):
+                    warm_native_cache(Path('/vox'), 'https://news.example/', output, profile, {},
+                                      dict(url='https://news.example/', title='News'), 60, {'binary': 'same'})
+
     def test_native_capture_preserves_reference_consent_ui_in_an_isolated_environment(self):
         with patch.dict('os.environ', {'PATH': '/tools', 'VOX_BLOCK_COOKIE_BANNERS': '1',
                                       'VOX_PROFILE_DIR': '/personal-profile',
