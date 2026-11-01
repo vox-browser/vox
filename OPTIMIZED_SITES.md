@@ -5,12 +5,20 @@ macOS comparisons cover browser startup through a completed document capture;
 fewer instructions measure CPU work, rather than elapsed rendering time.
 Results apply to the frozen page and pinned build in each linked report.
 
-| Site | Recorded date | Trials per browser | Statistic | Vox instructions | Brave observed instructions | Fewer instructions | Evidence |
-| --- | --- | ---: | --- | ---: | ---: | ---: | --- |
-| Old Reddit /r/programming/ | 2026-11-01 | 7 | Median | 4,954,400,539 | 9,248,675,091 | **46.43%** | [Comparison](docs/OLD_REDDIT_PROGRAMMING_INSTRUCTIONS.md) |
-| Hacker News homepage | 2026-11-01 | 7 | Median | 4,877,590,820 | 8,554,149,229 | **42.98%** | [Comparison](docs/HACKER_NEWS_BRAVE_INSTRUCTIONS.md) |
-| Wikipedia homepage | 2026-11-01 | 7 | Median | 6,686,475,010 | 9,702,898,348 | **31.09%** | [Audit](docs/OPTIMIZED_SITES_AUDIT.md), [comparison](docs/WIKIPEDIA_BRAVE_INSTRUCTIONS.md) |
-| vlang.io (CLI protocol) | 2026-11-01 | 7 | Mean | 8.630 billion | 10.500 billion | **17.81%** | [Audit](docs/OPTIMIZED_SITES_AUDIT.md), [comparison](docs/VLANG_RENDERING_INSTRUCTIONS.md) |
+| Site | Recorded date | Trials per browser | Statistic | Vox instructions | Brave observed instructions | Fewer instructions | Vox scroll FPS | Brave scroll FPS | Evidence |
+| --- | --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | --- |
+| Old Reddit /r/programming/ | 2026-11-01 | 7 | Median | 4,954,400,539 | 9,248,675,091 | **46.43%** | — | — | [Comparison](docs/OLD_REDDIT_PROGRAMMING_INSTRUCTIONS.md) |
+| Hacker News homepage | 2026-11-01 | 7 | Median | 4,877,590,820 | 8,554,149,229 | **42.98%** | — | — | [Comparison](docs/HACKER_NEWS_BRAVE_INSTRUCTIONS.md) |
+| Wikipedia homepage | 2026-11-01 | 7 | Median | 6,686,475,010 | 9,702,898,348 | **31.09%** | — | — | [Audit](docs/OPTIMIZED_SITES_AUDIT.md), [comparison](docs/WIKIPEDIA_BRAVE_INSTRUCTIONS.md) |
+| vlang.io (CLI protocol) | 2026-11-01 | 7 | Mean | 8.630 billion | 10.500 billion | **17.81%** | — | — | [Audit](docs/OPTIMIZED_SITES_AUDIT.md), [comparison](docs/VLANG_RENDERING_INSTRUCTIONS.md) |
+
+**— means unmeasured for the listed page/build, not zero FPS.** These instruction
+capture cohorts do not measure scrolling frame rate. FPS requires its own linked
+real-input measurement with a stated endpoint; startup time, callback timing and
+synthetic completion cadence cannot supply these values. The older
+[Reddit scrolling results](docs/OLD_REDDIT_SCROLLING.md) use a different subreddit
+and synthetic callbacks; the [Wikipedia profile](docs/WIKIPEDIA_SCROLLING.md)
+reports callback work. Neither establishes scroll FPS for these rows.
 
 Percentages compare the two browser summaries in the same row. Means and
 medians are labeled separately; the vlang.io means are rounded. All workloads
@@ -121,6 +129,18 @@ accepts `--vox-js-engine javascriptcore` or `--vox-js-engine libjs`, with
 `--repeat 7 --required-reduction .10`; record runtime eligibility for either.
 Keep the existing focused checks and broad-regression cadence from `AGENTS.md`.
 
+For scroll FPS, follow the [scrolling measurement rules](AGENTS.md#scrolling-performance-measurements)
+and use [precise native input](tools/measure_precise_scroll.py) or the
+[disk-replay runner](docs/DISK_SCROLL_BENCHMARK.md) for Vox. Use the listed page
+and pinned builds; match viewport, scale and input schedule between browsers,
+with at least two complete unprofiled trials each. Count
+scroll-changing native frame publications over the entire first-to-last input
+window, verify movement and retain actual input times.
+Link median/p95/maximum intervals, deadline misses, input/frame counts and
+boundary gaps alongside FPS. State the endpoint for each browser; native
+publication is distinct from physical display scanout. A Brave FPS value needs
+its own matched measurement.
+
 ## Workload and rendering scope
 
 - **Old Reddit /r/programming/:** cached account-bearing markup, 17 executable
@@ -164,9 +184,9 @@ Keep the existing focused checks and broad-regression cadence from `AGENTS.md`.
 
 ## Historical result awaiting raw verification
 
-| Site | Recorded date | Trials per browser | Statistic | Vox instructions | Brave observed instructions | Fewer instructions | Evidence |
-| --- | --- | ---: | --- | ---: | ---: | ---: | --- |
-| Old Reddit home | 2026-10-17 | 7 | Median | 6,289,762,769 | 8,208,707,273 | **23.38%** | [Historical comparison](docs/OLD_REDDIT_INSTRUCTIONS.md), [audit](docs/OPTIMIZED_SITES_AUDIT.md) |
+| Site | Recorded date | Trials per browser | Statistic | Vox instructions | Brave observed instructions | Fewer instructions | Vox scroll FPS | Brave scroll FPS | Evidence |
+| --- | --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | --- |
+| Old Reddit home | 2026-10-17 | 7 | Median | 6,289,762,769 | 8,208,707,273 | **23.38%** | — | — | [Historical comparison](docs/OLD_REDDIT_INSTRUCTIONS.md), [audit](docs/OPTIMIZED_SITES_AUDIT.md) |
 
 The documented arithmetic and startup scope check out, but the private
 `Build/reddit-parity/` fixture and per-process receipts are absent from this
