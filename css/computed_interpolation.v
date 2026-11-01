@@ -1473,16 +1473,17 @@ __global (
 )
 
 fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.StyleValue {
+	computed_interpolation_verify_longhand_property(property_id)
+	index := int(property_id) - int(first_longhand_property_id())
+	// Retained initial values need no allocation or arena switch on a hit.
+	if computed_interpolation_initial_value_cache.len != 0 {
+		cached := computed_interpolation_initial_value_cache[index]
+		if cached != unsafe { nil } { return cached }
+	}
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
-	computed_interpolation_verify_longhand_property(property_id)
 	if computed_interpolation_initial_value_cache.len == 0 {
 		computed_interpolation_initial_value_cache = []&dom.StyleValue{len: number_of_longhand_properties, init: unsafe { nil }}
-	}
-	index := int(property_id) - int(first_longhand_property_id())
-	cached := computed_interpolation_initial_value_cache[index]
-	if cached != unsafe { nil } {
-		return cached
 	}
 	initial_text := property_initial_value_string(property_id)
 
