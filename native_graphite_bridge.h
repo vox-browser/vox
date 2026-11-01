@@ -146,6 +146,10 @@ typedef struct VoxGraphitePictureRegion {
 // the call. Wait once, and publish no CPU output unless every transfer succeeds.
 int vox_graphite_draw_picture_regions_pixels(const VoxGraphitePictureRegion *regions,
     int count, int surface_width, int surface_height);
+// The output views initially contain immutable BGRA backdrop pixels. Upload
+// them directly before picture replay; preserve all original tile coordinates.
+int vox_graphite_draw_picture_regions_with_backdrop_pixels(const VoxGraphitePictureRegion *regions,
+    int count, int surface_width, int surface_height);
 // Image interpolation uses the complete surface extent. Only the region has a
 // CPU backdrop; the rest is transparent. Failure leaves the region untouched.
 int vox_graphite_draw_image_region_pixels(const VoxGraphitePixelRegion *region,

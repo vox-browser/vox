@@ -3,14 +3,15 @@
 #include <cassert>
 #include <iostream>
 
-static std::vector<uint8_t> render(bool optimized, int scale, float scroll, int alpha, bool msaa)
+static std::vector<uint8_t> render(bool optimized, int scale, float scroll, int alpha, bool msaa,
+    bool translucent_backdrop = false)
 {
     constexpr int lw = 1024, lh = 768;
     int width = lw * scale, height = lh * scale, pitch = width * 4 + 16;
     std::vector<uint8_t> pixels(size_t(pitch) * height, 0xa5);
     for (int y = 0; y < height; ++y) for (int x = 0; x < width; ++x) {
         auto* p = pixels.data() + size_t(y) * pitch + x * 4;
-        p[0] = 31 + x % 97; p[1] = 43 + y % 83; p[2] = 71; p[3] = 255;
+        p[0] = 31 + x % 97; p[1] = 43 + y % 83; p[2] = 71; p[3] = translucent_backdrop ? 173 : 255;
     }
     auto space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
     auto context = CGBitmapContextCreate(pixels.data(), width, height, 8, pitch, space,
@@ -19,9 +20,11 @@ static std::vector<uint8_t> render(bool optimized, int scale, float scroll, int 
     if (optimized) {
         unsetenv("VOX_DISABLE_LARGE_DECORATION_BATCH");
         unsetenv("VOX_DISABLE_SHARED_DECORATION_PIXELS");
+        unsetenv("VOX_DISABLE_DIRECT_PICTURE_BACKDROP");
     } else {
         setenv("VOX_DISABLE_LARGE_DECORATION_BATCH", "1", 1);
         setenv("VOX_DISABLE_SHARED_DECORATION_PIXELS", "1", 1);
+        setenv("VOX_DISABLE_DIRECT_PICTURE_BACKDROP", "1", 1);
     }
     ladybird_v_skia_set_chromium_painting(1);
     ladybird_v_skia_set_raster_layer(0, 0, 1);
@@ -47,11 +50,13 @@ static std::vector<uint8_t> render(bool optimized, int scale, float scroll, int 
 }
 int main()
 {
+    if (std::getenv("VOX_ENABLE_DIRECT_PICTURE_BACKDROP")) assert(picture_regions_backdrop_draw());
     unsigned checks = 0;
     for (int scale : {1, 2}) for (float scroll : {0.f, 37.5f, 240.f})
-    for (int alpha : {128, 255}) for (bool msaa : {false, true}) {
-        auto expected = render(false, scale, scroll, alpha, msaa);
-        auto actual = render(true, scale, scroll, alpha, msaa);
+    for (int alpha : {128, 255}) for (bool msaa : {false, true})
+    for (bool translucent_backdrop : {false, true}) {
+        auto expected = render(false, scale, scroll, alpha, msaa, translucent_backdrop);
+        auto actual = render(true, scale, scroll, alpha, msaa, translucent_backdrop);
         assert(expected == actual); ++checks;
     }
     std::cout << checks << " large decoration scenes preserve all pixels, row padding, mixed MSAA, scroll phase and lease cleanup\n";

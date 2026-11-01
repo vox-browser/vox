@@ -212,9 +212,10 @@ static void trim_inset_decoration_backdrop(InsetDecorationRecording& group, SkRe
 }
 
 static bool draw_inset_picture_batch(InsetDecorationRecording const& group, SkPicture* picture,
-    sk_sp<SkData> const& bytes, sk_sp<SkData>& multisampled_bytes, std::vector<uint32_t>& pixels)
+    sk_sp<SkData> const& bytes, sk_sp<SkData>& multisampled_bytes, std::vector<uint32_t>& pixels,
+    bool direct_backdrop = false)
 {
-    auto draw = picture_regions_draw();
+    auto draw = direct_backdrop ? picture_regions_backdrop_draw() : picture_regions_draw();
     auto const* disabled = std::getenv("VOX_DISABLE_INSET_PICTURE_BATCH");
     if (!draw || (disabled && disabled[0] && std::strcmp(disabled, "0") != 0)
         || !s_raster_layer_is_root || s_msaa_grid_columns <= 0
@@ -341,6 +342,36 @@ extern "C" int ladybird_v_skia_end_inset_decorations(CGContextRef destination)
         trim_inset_decoration_backdrop(*group, input->bounds);
     auto content = input->recorder.finishRecordingAsPicture();
     if (!content) return 0;
+    auto publish = [&](std::vector<uint32_t>&& pixels) {
+        int result = composite_pixels(destination, std::move(pixels), group->width, group->height,
+            group->region.left, group->canvas_height - group->region.bottom,
+            group->region.width(), group->region.height(), true);
+        checkpoint.published = result != 0;
+        if (result && !group->checkpoint.empty() && std::getenv("VOX_PICTURE_REGION_DIAGNOSTICS"))
+            std::fprintf(stderr, "VOX_DEFERRED_DECORATIONS width=%d height=%d\n", group->width, group->height);
+        return result;
+    };
+    auto draw_region = picture_region_draw();
+    bool regional = draw_region && !std::getenv("VOX_DISABLE_PICTURE_REGIONS")
+        && !std::getenv("VOX_DISABLE_INSET_PICTURE_REGIONS");
+    if (regional && !std::getenv("VOX_DISABLE_DIRECT_PICTURE_BACKDROP")
+        && picture_regions_backdrop_draw()) {
+        SkPictureRecorder direct_recorder;
+        auto* direct_canvas = direct_recorder.beginRecording(SkRect::MakeWH(group->width, group->height));
+        direct_canvas->scale(group->scale, group->scale);
+        direct_canvas->translate(-group->region.left, -group->region.top);
+        direct_canvas->drawPicture(content);
+        auto direct_picture = direct_recorder.finishRecordingAsPicture();
+        auto direct_bytes = inset_picture_bytes(direct_picture.get(), false);
+        sk_sp<SkData> direct_msaa;
+        auto direct_pixels = group->backdrop;
+        if (direct_bytes && draw_inset_picture_batch(*group, direct_picture.get(), direct_bytes,
+                direct_msaa, direct_pixels, true)) {
+            if (std::getenv("VOX_DIRECT_BACKDROP_DIAGNOSTICS"))
+                std::fprintf(stderr, "VOX_DIRECT_PICTURE_BACKDROP pixels=%zu\n", size_t(group->width) * group->height);
+            return publish(std::move(direct_pixels));
+        }
+    }
     auto info = SkImageInfo::Make(group->width, group->height, kBGRA_8888_SkColorType,
         kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
     auto background = SkImages::RasterFromPixmapCopy(SkPixmap(info,
@@ -358,9 +389,6 @@ extern "C" int ladybird_v_skia_end_inset_decorations(CGContextRef destination)
     if (!bytes) return 0;
     auto pixels = group->backdrop;
     auto draw = shared_picture_draw();
-    auto draw_region = picture_region_draw();
-    bool regional = draw_region && !std::getenv("VOX_DISABLE_PICTURE_REGIONS")
-        && !std::getenv("VOX_DISABLE_INSET_PICTURE_REGIONS");
     auto rasterize = [&](auto& tile, long offset_x, long offset_y, bool multisampled,
         int x, int y, int width, int height) {
         if (multisampled && !multisampled_bytes)
@@ -401,13 +429,7 @@ extern "C" int ladybird_v_skia_end_inset_decorations(CGContextRef destination)
         if (!draw(reinterpret_cast<uint8_t*>(pixels.data()), group->width, group->height,
                 group->width * 4, bytes->data(), bytes->size(), identity)) return 0;
     }
-    int result = composite_pixels(destination, std::move(pixels), group->width, group->height,
-        group->region.left, group->canvas_height - group->region.bottom,
-        group->region.width(), group->region.height(), true);
-    checkpoint.published = result != 0;
-    if (result && !group->checkpoint.empty() && std::getenv("VOX_PICTURE_REGION_DIAGNOSTICS"))
-        std::fprintf(stderr, "VOX_DEFERRED_DECORATIONS width=%d height=%d\n", group->width, group->height);
-    return result;
+    return publish(std::move(pixels));
 }
 
 // A non-deferred legacy group already painted its fallback leaves. Only a

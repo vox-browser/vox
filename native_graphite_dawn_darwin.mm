@@ -241,9 +241,8 @@ int vox_graphite_draw_picture_pixels(uint8_t* pixels, int width, int height,
         0, 0, width, height, bytes, size, matrix);
 }
 
-extern "C" __attribute__((visibility("default")))
-int vox_graphite_draw_picture_regions_pixels(VoxGraphitePictureRegion const* regions,
-    int count, int width, int height)
+static int draw_picture_regions_pixels(VoxGraphitePictureRegion const* regions,
+    int count, int width, int height, bool has_background)
 {
     if (!regions || count <= 0 || count > 64 || width <= 0 || height <= 0
         || width > 16384 || height > 16384
@@ -301,6 +300,10 @@ int vox_graphite_draw_picture_regions_pixels(VoxGraphitePictureRegion const* reg
         SkAutoCanvasRestore state(canvas, true);
         canvas->resetMatrix();
         canvas->clear(SK_ColorTRANSPARENT);
+        auto const& backdrop = regions[i].output;
+        if (has_background)
+            surface->writePixels(SkPixmap(info.makeWH(backdrop.width, backdrop.height),
+                backdrop.pixels, backdrop.pitch), backdrop.x, backdrop.y);
         SkMatrix matrix; matrix.set9(regions[i].matrix);
         canvas->setMatrix(matrix);
         canvas->drawPicture(pictures[i]);
@@ -340,6 +343,20 @@ int vox_graphite_draw_picture_regions_pixels(VoxGraphitePictureRegion const* reg
     if (std::getenv("VOX_PICTURE_REGION_DIAGNOSTICS"))
         std::fprintf(stderr, "VOX_PICTURE_BATCH_GPU jobs=%d image_reuses=%u\n", count, provider->reuse_count());
     return 1;
+}
+
+extern "C" __attribute__((visibility("default")))
+int vox_graphite_draw_picture_regions_pixels(VoxGraphitePictureRegion const* regions,
+    int count, int width, int height)
+{
+    return draw_picture_regions_pixels(regions, count, width, height, false);
+}
+
+extern "C" __attribute__((visibility("default")))
+int vox_graphite_draw_picture_regions_with_backdrop_pixels(VoxGraphitePictureRegion const* regions,
+    int count, int width, int height)
+{
+    return draw_picture_regions_pixels(regions, count, width, height, true);
 }
 
 extern "C" __attribute__((visibility("default")))

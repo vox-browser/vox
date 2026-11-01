@@ -2538,6 +2538,16 @@ static auto picture_regions_draw()
     return draw;
 }
 
+static auto picture_regions_backdrop_draw()
+{
+    static auto draw = [] {
+        void* library = dlopen("@rpath/libVoxGraphiteDawn.dylib", RTLD_LAZY | RTLD_LOCAL);
+        return library ? reinterpret_cast<decltype(&vox_graphite_draw_picture_regions_with_backdrop_pixels)>(
+            dlsym(library, "vox_graphite_draw_picture_regions_with_backdrop_pixels")) : nullptr;
+    }();
+    return draw;
+}
+
 // Consumes both inputs on success and failure; the native bitmap inputs remain
 // available for fallback when recording, backdrop access or GPU replay fails.
 extern "C" int ladybird_v_skia_draw_gradient_text(CGContextRef context,
