@@ -5,6 +5,7 @@
 module layout
 
 import css
+import os
 
 struct GridTrack {
 mut:
@@ -2334,6 +2335,32 @@ fn grid_item_preferred_block_size_behaves_as_auto(item &Node, item_state &UsedVa
 	return false
 }
 
+// The first row-sizing pass has just laid this item out at its resolved inline
+// size with indefinite block space. For an unconstrained auto-height block,
+// that is also its max-content block measurement. Retain the scalar result so
+// nested grids do not immediately repeat the same independent layout for each
+// intrinsic track-sizing phase. Constrained, ratio-dependent and subgrid boxes
+// keep the ordinary intrinsic probe.
+fn seed_grid_auto_item_block_height(item &Node, values &UsedValues, containing_height_is_definite bool) bool {
+	if containing_height_is_definite || !item.is_block_container() || item.has_size_containment()
+		|| !values.has_definite_width() || values.has_definite_height()
+		|| values.height_constraint != .none || item.is_table_wrapper() {
+		return false
+	}
+	computed := item.computed_values()
+	if !computed.size_value(.height).is_auto() || !computed.size_value(.min_height).is_auto()
+		|| !computed.size_value(.max_height).is_none()
+		|| computed.grid_template_columns().is_subgrid() || computed.grid_template_rows().is_subgrid() {
+		return false
+	}
+	mut box := item.as_box() or { return false }
+	if box.has_preferred_aspect_ratio() { return false }
+	mut cache := box.cached_intrinsic_sizes()
+	cache.cache_content_height(false, values.content_width().raw_value(),
+		clamp_to_max_dimension_value(values.content_height()))
+	return true
+}
+
 // GridFormattingContext::calculate_min_content_contribution() and
 // calculate_max_content_contribution(), row dimension. Row contributions are
 // measured from the item's laid-out inline size; using its previous margin-box
@@ -2567,6 +2594,8 @@ fn grid_intrinsic_outer_width_contribution(mut state LayoutState, item &Node, co
 }
 
 fn run_grid_formatting_context(mut state LayoutState, container &Node, mut container_state UsedValues, layout_mode LayoutMode, available_space AvailableSpace) FormattingContextResult {
+	diagnose_block_reuse := os.getenv('VOX_GRID_BLOCK_REUSE_DIAGNOSTICS') == '1'
+	enable_block_reuse := os.getenv('VOX_DISABLE_GRID_BLOCK_REUSE') != '1'
 	// A resolved block size can be reused during intrinsic measurement. An
 	// indefinite one still needs row sizing: a nested grid's auto height is
 	// part of its block parent's contribution to an ancestor grid row.
@@ -2882,6 +2911,10 @@ fn run_grid_formatting_context(mut state LayoutState, container &Node, mut conta
 		} else {
 			none
 		}, forced_width, none)
+		if enable_block_reuse && seed_grid_auto_item_block_height(placement.item, item_state, container_state.has_definite_height())
+			&& diagnose_block_reuse {
+			eprintln('Vox grid intrinsic block reuse: width=${item_state.content_width().raw_value()} height=${item_state.content_height().raw_value()}')
+		}
 	}
 	mut maximum_row_span := 1
 	for placement in row_sizing_placements {
