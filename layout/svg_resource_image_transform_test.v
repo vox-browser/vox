@@ -4,6 +4,21 @@ import html
 import math
 import painting
 
+fn test_scaled_svg_viewport_keeps_pattern_image_coordinates_in_target_user_space() {
+	source := 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAAD0lEQVR4nGNgaGBAIOI4ANA0CAF5jtVRAAAAAElFTkSuQmCC'
+	mut document := html.parse_document('<!doctype html><svg width="152" height="91.2" viewBox="0 0 200 120"><defs><image id="image" width="600" height="360" href="${source}"/><pattern id="tile" width="1" height="1" patternContentUnits="objectBoundingBox"><use href="#image" transform="scale(.001666666666666667 .002777777777777778)"/></pattern></defs><rect width="200" height="120" fill="url(#tile)"/></svg>')
+	defer { document.finalize() }
+	root := layout_document_typed_in_viewport(document, 240, 160)
+	paths := root.paint_commands().filter(it.kind == 'draw_svg_path')
+	pattern := paths[0].svg().fill_pattern or { panic('pattern') }
+	operations := (pattern.tile_display_list or { panic('tile') }).operations.filter(it.kind == .image)
+	bounds := operations[0].transform.map_rect(operations[0].image_rect)
+	assert math.abs(bounds.x) < 0.001
+	assert math.abs(bounds.y) < 0.001
+	assert math.abs(bounds.width - 200) < 0.001
+	assert math.abs(bounds.height - 120) < 0.001
+}
+
 fn test_pattern_images_share_the_resource_and_use_transforms_of_vector_paths() {
 	raster := 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAAD0lEQVR4nGNgaGBAIOI4ANA0CAF5jtVRAAAAAElFTkSuQmCC'
 	vector := "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 360'%3E%3Crect width='600' height='360' fill='green'/%3E%3C/svg%3E"

@@ -2512,7 +2512,12 @@ fn resolve_svg_pattern_paint_style(node &Node, state &LayoutState, paint css.SVG
 			content_origin = painting.Point{bounds.x, bounds.y}
 		}
 	}
-	operations := normalize_svg_pattern_operations(collection.operations, inverse_target, content_origin)
+	// Resource collection uses CSS layout coordinates. The target CTM also
+	// includes its outer SVG viewport, so enter that space before removing it.
+	// Otherwise a downscaled viewBox enlarges the contents inside the tile.
+	page_operations := transform_svg_mask_paint_operations(collection.operations,
+		painting_affine_from_svg(outer_svg_viewport_transform_in_page_space(node, state)))
+	operations := normalize_svg_pattern_operations(page_operations, inverse_target, content_origin)
 	seen.clear()
 	mut pattern_transform := painting_affine_from_svg(svg_pattern_transform(element, mut seen))
 	if computed_properties := css.computed_properties_for_element(element) {
