@@ -15,7 +15,7 @@ class CNNHomeInstructionTests(unittest.TestCase):
         self.assertEqual(benchmark.trial_order(1, True), ['brave', 'vox', 'control'])
 
     def test_separate_control_app_does_not_disable_any_engine_optimization(self):
-        names = ['control_scratch_policy', 'control_size_query_results', 'control_hidden_styles', 'control_block_eligibility', 'control_flex_layout', 'control_rule_selectors', 'control_block_images', 'control_relative_flow_layout', 'control_pending_font_layout', 'control_font_refresh_cascades', 'control_live_font_geometry', 'control_lazy_image_batches', 'control_geometry_snapshot_keys', 'control_live_font_cascades', 'control_hidden_animations', 'control_font_completion',
+        names = ['control_leaf_validation', 'control_scratch_policy', 'control_size_query_results', 'control_hidden_styles', 'control_block_eligibility', 'control_flex_layout', 'control_rule_selectors', 'control_block_images', 'control_relative_flow_layout', 'control_pending_font_layout', 'control_font_refresh_cascades', 'control_live_font_geometry', 'control_lazy_image_batches', 'control_geometry_snapshot_keys', 'control_live_font_cascades', 'control_hidden_animations', 'control_font_completion',
                  'control_lazy_images', 'control_static_media']
         args = SimpleNamespace(control_vox_app=None, **dict.fromkeys(names, False))
         self.assertEqual(benchmark.control_environment(args), {})
@@ -42,6 +42,9 @@ class CNNHomeInstructionTests(unittest.TestCase):
         args.control_size_query_results = False
         args.control_scratch_policy = True
         self.assertEqual(benchmark.control_environment(args), {'VOX_DISABLE_SCRATCH_POISON_CACHE': '1'})
+        args.control_scratch_policy = False
+        args.control_leaf_validation = True
+        self.assertEqual(benchmark.control_environment(args), {'VOX_DISABLE_LEAF_SUBSTITUTION_SKIP': '1'})
 
     def expected(self):
         return dict(title='Latest | CNN', headlines=['first', 'second'], image_sources=['photo.jpg'])

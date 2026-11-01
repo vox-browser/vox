@@ -214,6 +214,8 @@ def parse_args(argv=None):
                    help='Alternate the same Vox binary without reusing unchanged container query answers')
     control.add_argument('--control-scratch-policy', action='store_true',
                    help='Alternate the same Vox binary with uncached scratch poison configuration checks')
+    control.add_argument('--control-leaf-validation', action='store_true',
+                   help='Alternate the same Vox binary with argument workspaces for plain CSS tokens')
     control.add_argument('--control-live-font-cascades', action='store_true',
                    help='Alternate the same Vox binary without reusing retained font inputs across generations')
     control.add_argument('--control-vox-app', type=Path,
@@ -247,6 +249,7 @@ def control_environment(args):
     if args.control_vox_app:
         return {}
     for option, variable in (
+        ('control_leaf_validation', 'VOX_DISABLE_LEAF_SUBSTITUTION_SKIP'),
         ('control_scratch_policy', 'VOX_DISABLE_SCRATCH_POISON_CACHE'),
         ('control_size_query_results', 'VOX_DISABLE_SIZE_QUERY_RESULT_REUSE'),
         ('control_hidden_styles', 'VOX_DISABLE_DEFERRED_HIDDEN_STYLES'),
