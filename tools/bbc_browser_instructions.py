@@ -215,6 +215,20 @@ def parse_args(argv=None):
     return args
 
 
+def evaluate_cohort(pairs, has_control=False):
+    """Keep the optional control out of the Vox/Brave pair schema."""
+    browser.require(len(pairs) >= 7, 'Acceptance needs seven complete pairs')
+    engines = {'vox', 'brave', 'control'} if has_control else {'vox', 'brave'}
+    browser.require(all(set(pair) == engines for pair in pairs), 'Incomplete BBC cohort')
+    summary = browser.evaluate_pairs(
+        [dict(vox=pair['vox'], brave=pair['brave']) for pair in pairs], .9, 'launch')
+    if has_control:
+        # This also validates every control's content, pixels, exit and bounds.
+        summary['matched_control'] = browser.evaluate_pairs(
+            [dict(vox=pair['vox'], brave=pair['control']) for pair in pairs], .9, 'launch')
+    return summary
+
+
 def main():
     args = parse_args()
     expected = fixture_expectations(args.archive)
@@ -304,16 +318,9 @@ def main():
                            acceptance=False)
         else:
             try:
-                summary = browser.evaluate_pairs(pairs, .9, 'launch')
+                summary = evaluate_cohort(pairs, bool(args.control_vox_app))
             except RuntimeError as error:
                 summary = dict(passed=False, error=str(error), pairs=len(pairs))
-            if args.control_vox_app:
-                try:
-                    summary['matched_control'] = browser.evaluate_pairs(
-                        [dict(vox=pair['vox'], brave=pair['control']) for pair in pairs], .9, 'launch')
-                except RuntimeError as error:
-                    summary['matched_control'] = dict(passed=False, error=str(error))
-                    summary['passed'] = False
             summary['cross_browser_pixels'] = browser.compare(args.expected_brave, args.expected_vox,
                 args.output / 'cross-browser.diff.png', args.diff_tool)
         browser.write_json(args.output / 'summary.json', summary)

@@ -1,6 +1,6 @@
 import unittest
 
-from bbc_browser_instructions import URL, parse_args, trial_order, run_trial, validate_document
+from bbc_browser_instructions import URL, evaluate_cohort, parse_args, trial_order, run_trial, validate_document
 from types import SimpleNamespace
 from unittest.mock import patch
 from hacker_news_browser_instructions import evaluate_pairs
@@ -21,6 +21,31 @@ def document():
 
 
 class BBCInstructionTests(unittest.TestCase):
+    def test_cohort_projects_controls_and_preserves_the_integer_brave_gate(self):
+        def row(count):
+            return dict(exit=0, pixels_exact=True, content_exact=True,
+                        launch_instruction_interval=dict(lower=count, upper=count))
+        pairs = [dict(vox=row(9 * 10**17), brave=row(10**18), control=row(11 * 10**17))
+                 for _ in range(7)]
+        result = evaluate_cohort(pairs, True)
+        self.assertTrue(result['passed'])
+        self.assertTrue(result['matched_control']['passed'])
+        self.assertEqual(result['pairs'], 7)
+        pairs[0]['vox'] = row(9 * 10**17 + 1)
+        self.assertFalse(evaluate_cohort(pairs, True)['passed'])
+        plain = [dict(vox=pair['vox'], brave=pair['brave']) for pair in pairs]
+        self.assertEqual(evaluate_cohort(plain)['passed'], False)
+        for invalid in [pairs[:6], plain, [dict(pair, extra=row(1)) for pair in pairs]]:
+            with self.assertRaises(RuntimeError):
+                evaluate_cohort(invalid, True)
+        for key, value in [('exit', 1), ('pixels_exact', False), ('content_exact', False),
+                           ('launch_instruction_interval', dict(lower=0, upper=1))]:
+            with self.subTest(key=key):
+                broken = [dict(pair) for pair in pairs]
+                broken[0]['control'] = dict(row(11 * 10**17), **{key: value})
+                with self.assertRaises(RuntimeError):
+                    evaluate_cohort(broken, True)
+
     def test_attribute_and_scope_controls_never_leak_between_trials(self):
         environment = {'VOX_PROXY': 'socks5h://fixture'}
         for attributes, scopes in [(True, False), (False, True), (True, True)]:
