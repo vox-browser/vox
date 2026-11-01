@@ -15,11 +15,19 @@ v_compiler=${V_BIN:-}
 if [ -z "$v_compiler" ]; then
     v_compiler=$(command -v v || true)
     v_compiler=${v_compiler:-"$HOME/code/v/v"}
+else
+    v_compiler=$(command -v "$v_compiler" || true)
 fi
 if [ ! -x "$v_compiler" ]; then
     echo "V compiler not found. Set V_BIN to an executable V compiler." >&2
     exit 1
 fi
+# Resolve the caller's relative path before helpers or the build change directory.
+# Keep the executable name intact: a symlink may select a compiler wrapper.
+case "$v_compiler" in
+    /*) ;;
+    *) v_compiler="$(pwd -P)/$v_compiler" ;;
+esac
 gc_mode=${LADYBIRD_V_GC:-boehm}
 case "$gc_mode" in
     boehm|boehm_full|none) ;;

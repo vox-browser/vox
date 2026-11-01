@@ -22,6 +22,9 @@ sudo apt-get install build-essential clang ninja-build generate-ninja pkg-config
 You also need a current V checkout, a Rust compiler with edition 2024 support,
 and Python 3.12 or newer. Set `V_BIN` if V is outside
 `PATH` and `~/code/v/v`.
+On Linux, `V_BIN` accepts a command on `PATH` (for example, `V_BIN=v`), an
+absolute executable path, or a path relative to the directory from which you
+invoke the build script. The build resolves that path before changing directories.
 
 ```sh
 # Builds pinned Skia 144 under Build/deps; subsequent runs reuse it.
