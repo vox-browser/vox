@@ -2704,8 +2704,10 @@ static bool draw_chromium_layer_raster_grid(std::vector<uint32_t>& pixels,
     if (s_msaa_grid_columns <= 0) return false;
     long first_x = std::lround((region.left - page_x
         - (s_raster_layer_is_root ? 0 : s_raster_origin_x)) * scale);
+    // Display-list matrices already project root scrolling into region. Undo
+    // it before locating either a root tile or an independent layer's tile.
     long first_y = std::lround((region.top - page_y + scroll_y
-        + (s_raster_layer_is_root ? s_root_raster_scroll_y : -s_raster_origin_y)) * scale);
+        + s_root_raster_scroll_y - (s_raster_layer_is_root ? 0 : s_raster_origin_y)) * scale);
     int content_height = std::max(1, static_cast<int>(std::ceil(s_raster_layer_height * scale)));
     int rows = std::max(1, (content_height - 2 + s_msaa_grid_height - 3) / (s_msaa_grid_height - 2));
     VoxChromiumRasterGrid grid{s_msaa_grid_width, s_msaa_grid_height, s_msaa_grid_columns, rows};

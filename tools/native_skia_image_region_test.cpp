@@ -74,8 +74,10 @@ int main()
                     control ? 0 : shift, control ? 0 : shift,
                     control && backdrop ? 1 : root);
                 (control ? size : &ladybird_v_skia_set_raster_layer_size)(160, 120);
-                (control ? root_scroll : &ladybird_v_skia_set_root_raster_scroll_y)(
-                    control && !root ? 0 : scroll);
+                // Non-root cases use the bridge's local scroll argument. The
+                // matrix here has no projected root scroll; that distinct
+                // coordinate basis is covered by scrolled_image_grid_test.
+                (control ? root_scroll : &ladybird_v_skia_set_root_raster_scroll_y)(root ? scroll : 0);
                 float image_border[] {8 + offset + shift, 8 + offset + shift, 120, 96,
                     4, 4, 7, 7, 3, 3, 0, 0};
                 (control ? background : &ladybird_v_skia_set_image_background)(255, 255, 255,
