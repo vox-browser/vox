@@ -1,14 +1,15 @@
 # ChatGPT rendering and startup against Brave
 
-The macOS production browser now starts the archived logged-out ChatGPT
-application. Pixel-exact parity and an actual conversation are **not complete**.
-The full-page comparison still has rendering differences; focused fixtures and
-a successful application startup are not a substitute for that comparison.
+The macOS production browser starts the archived logged-out ChatGPT
+application and matches the unchanged Brave reference **pixel for pixel at
+1024×768, scale 1**. An actual conversation and current live-site parity remain
+unverified; the downloaded document's signed conversation token has expired.
 
-The latest unchanged-original-archive capture differs in **22 of 786,432
-pixels (0.0028%, MAE 0.000021)**. Startup, native typing and Enter are validated;
-a completed chat reply remains unverified. The recorded 60-second idle check
-peaks at 1.92 GiB, within the 12 GiB guard.
+The latest unchanged-original-archive capture has **zero differing pixels out
+of 786,432**, maximum channel error 0 and MAE 0. Startup, native typing and Enter
+are validated. The recorded 60-second idle check peaks at 2,054,422,528 bytes,
+within the 12 GiB guard. This result is specific to the pinned production build
+and archived page described below.
 
 ## Captured workload
 
@@ -753,7 +754,7 @@ effects, ownership gaps and clips retain the existing fallback.
 
 The original-archive comparison now has **22 differing pixels**, maximum
 channel error 1 and MAE 0.0000209808349609375. They are confined to the sidebar
-sign-up button's curved edges; the visible footer and cookie-banner region are
+Log in button's curved edges; the visible footer and cookie-banner region are
 exact. No pixels or regions are excluded from the full-page comparison, and
 pixel-perfect parity remains open. The intermediate shared build had 84
 remaining pixels before the rounded-box surface was enabled. Different shared
@@ -822,3 +823,120 @@ zero native JavaScript errors with a stable executable/library identity.
 The missing-script requests disappear. Sentinel and conversation preparation
 POSTs still receive the deliberate offline 404 responses, and two favicons
 remain absent. A completed service reply remains unverified.
+
+
+## Live API checks with the original cached document (2026-11-01)
+
+The captured homepage embeds a signed conversation-document affinity token,
+issued on **2026-10-31 at 03:41:38.169 UTC** and expiring on **2026-11-01 at
+03:41:38.169 UTC**. Normal Brave, using the sealed frontend bytes and its own
+TLS connection through the original SOCKS proxy, receives **HTTP 403,
+`Invalid conversation document affinity`**, from both conversation preparation
+attempts. Its Sentinel preparation requests succeed with HTTP 200. After
+CDP keyboard input, Brave displays “Chat stopped unexpectedly”. This
+rejects a completed-conversation claim for the expired snapshot; it does not
+establish a Vox runtime defect.
+
+`Build/chatgpt-svg-parity-20261101/brave-live-api-direct-socks/` records the
+fresh private normal-window Brave process, intercepted cached GET responses,
+forwarded conversation/Sentinel requests, status/body hashes, input and
+before/after screenshots. The original HTML SHA256 remains unchanged; no
+existing page or script response was downloaded again. The guard exits zero
+with a sampled peak of 1,190,592,512 bytes. Token expiry is recorded without
+copying the token into `expired-document-affinity.json`.
+
+A separate native Vox diagnostic replays the same frontend and forwards only
+the two API families through a local TLS bridge and SOCKS. It completes with
+zero native JavaScript errors and dispatches native typing plus Enter, but
+receives HTTP 403 challenge HTML. That bridge uses Python TLS rather than
+Vox's or Brave's direct upstream TLS, so those responses cannot be attributed
+to Vox's native transport. Evidence is
+`Build/chatgpt-shadow-modules-20261031/live-api-20261101-editor-diagnostic/`;
+the guarded peak is 2,387,869,696 bytes and the browser/guard exit zero.
+
+A fresh homepage response is required to obtain a current signed document
+affinity before a real service reply can be validated. That requires an
+explicit exception to this task's download-once constraint. Original archive
+rendering and engine checks can continue without replacing its HTML or
+changing its pixel reference.
+
+
+## Rounded backgrounds beneath invisible borders (2026-11-01)
+
+`51a4d34f` removes the final **22 one-shade edge differences**, at the sidebar's
+**Log in** button. An invisible uniform border still clips a solid background
+to its outer rounded contour. Vox previously rejected the zero-alpha border
+from its shared-clip path and drew a rounded rectangle directly. The native
+player now clips a rectangle as Brave does, without allocating an offscreen
+layer or painting an inverse inner path when the border has no ink. Matching
+outer backgrounds after ordinary shadows use the same path; padding/content
+background clips remain separate.
+
+The accepted full capture is
+`Build/chatgpt-shadow-modules-20261031/transparent-background-20261101-acceptance/`.
+It reports complete readiness, the expected active document, both stylesheet
+owners, the home-ready marker and zero native JavaScript errors. All 786,432
+RGBA pixels match the unchanged normal-window Brave reference, whose SHA256
+remains `59c9c9d12efe7410712f6edf1d4f82db9d79d3d219afd2914796aec2b1366095`.
+The browser and 12 GiB guard exit zero after 61.70 seconds, with a sampled peak
+of 2,054,422,528 bytes. No regions are excluded and no tolerance is applied.
+
+The reused completed production bundle is
+`Build/vlang-text-phase-20261101/Vox-feature-trace-installed.app`. Its executable
+SHA256 is `65377482c779266be6ef7474ac186a7bd80645a39cb148ceb513f6c2be28b847`
+and painting-library SHA256 is
+`a81429e0c55e0da9cc5fcaf52240b75b15b3a5ccd2e54392c5c18c37eea47e7d`.
+All four changed implementation/test inputs match the build's before and after
+snapshots and the checked source. The shared build includes unrelated source
+drift, retained in its receipt. New processes were launched for every check;
+the pinned bundle remains stable throughout the focused and full captures.
+
+Verification under `Build/chatgpt-svg-parity-20261101/`:
+
+- `transparent-rounded-checks/`: three focused V functions pass in default,
+  no-GC and preallocated modes, nine executions total. This includes actual
+  transparent-border documents with and without shadows, matching outer clips,
+  and rejection of padding/content clips and opaque borders. Inputs are stable.
+- `candidate-validation-transparent-background/results.json`: all fifteen
+  groups pass, including ten focused pixel groups, headless startup, archived
+  startup and its assessment, eleven screenshot smoke comparisons (eight exact
+  and three under their existing bounds), and ten exact SVG guards. Both the
+  new transparent-border fixture and the existing translucent-border fixture
+  are exact. Executable/library identities are recorded and stable.
+- `Build/chatgpt-shadow-modules-20261031/transparent-background-20261101-editor/`
+  validates native typing plus Enter against the extended cached script graph,
+  without inserting a newline. It has complete startup/readiness, zero native
+  JavaScript errors and stable identities; the browser/guard exit zero after
+  78.50 seconds with a sampled peak of 2,366,111,744 bytes. This remains an
+  input check, not a successful service reply.
+- `brave-sidebar-audit-20261101/` records the real sidebar button's geometry,
+  computed styles and Brave's `clipRRect` followed by `drawRect`. An earlier
+  sign-up selector matched a hidden header button and is retained separately;
+  it supplied no sidebar evidence.
+- `rounded-background-native-20261101-probe/` and
+  `transparent-clip-control-20261101-diagnostic/`, under the shadow-modules
+  evidence root, retain the private diagnostic control: 22 pixels before
+  zero-alpha eligibility and zero afterward. A separate production capture,
+  rather than this patched executable, supplies the accepted result above.
+
+The original broader reduced fixture retains a 24-pixel, one-shade difference
+for a padding-box background in `transparent-rounded-background-capture/`.
+That separate case is outside this matching outer-border change and has no
+passing credit. The committed fixture covers ordinary and promoted outer
+backgrounds, a neighboring vector path and a shadowed background. Existing
+conformance references and tolerances are unchanged.
+
+Failed production attempts are retained without acceptance credit. The shared
+`Build/cnn-home-lazy-final-20261101/` build encountered a build-script syntax
+change during execution; the first `production-transparent-background/` attempt
+then encountered an unrelated mutable array alias in the shared lazy-image WIP.
+The buffer now uses a mutable reference, retaining its storage reuse. That
+small compatibility correction remains with the existing shared lazy-image
+work rather than including that unfinished feature in this rendering commit.
+Two later build-attempt guards returned busy without queueing a build; the
+completed shared bundle above was reused instead.
+
+The earlier `rounded-background-20261101-probe/` interposition experiment exits
+before startup with a dynamic-linker symbol error. It supplies no rendering
+credit. The successful native-library diagnostic and the final complete
+production captures remain distinct from that failed launch.
