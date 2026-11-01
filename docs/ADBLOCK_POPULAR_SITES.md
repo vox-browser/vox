@@ -1,11 +1,12 @@
 # Popular-site adblock verification
 
 The latest BBC, CNN, Guardian and Verge rendering checkpoints are recorded at the end
-of this document. Guardian passes the registered viewport comparison with cold
-and complete-response caches. BBC, CNN and Verge complete-response cache captures
-are pixel-exact; cold BBC/Verge and CNN's saved-live/frozen-reference acceptance
-remain open. The latest bundle's additional Guardian full-page recheck timed out;
-its earlier accepted checkpoint is retained below.
+of this document. Guardian and Verge pass the registered viewport comparison
+with cold and complete-response caches. BBC and CNN complete-response cache
+captures are pixel-exact; cold BBC and CNN's saved-live/frozen-reference
+acceptance remain open. The latest bundle also preserves CNN and Guardian's
+unchanged archived viewports exactly; the earlier Guardian timeout is retained
+with its original evidence below.
 
 The matrix exercises guest pages on 13 representative news, video, social,
 shopping, reference, and developer sites. It compares Vox's native filtering
@@ -2348,3 +2349,44 @@ performance claim. Exact commands, executable/library hashes, full-uBO list
 hashes, build source concurrency, failed experiments and guard exits are in the
 [durable Verge receipt](benchmark-results/verge-brave-pixels-2026-11-02.json).
 Raw artifacts are under `Build/verge-parity-20261101/`.
+
+
+## Verge cold and complete caches reach zero pixels, 2 November 2026
+
+Commit `55a065fa` closes the cold-cache lead-photo difference. Two independent
+registered cold-cache comparisons and one complete-response-cache comparison
+pass at **zero differing RGBA pixels**, over the entire 1024×768 document
+viewport at scale 1. Saved-live Brave and each frozen Brave reference also
+match exactly. The archive, resource bytes, references, tolerances and full-uBO
+settings are unchanged. Every comparison reports zero filtering disagreements.
+
+A separate native diagnostic confirms the earlier cold run painted the
+540×360 WebP as premultiplied RGB, whereas the exact cached run used YUV420.
+Its source URL and 580×464 destination rectangle agree. The old policy inferred
+that an incremental RGB generator existed whenever HTTP delivered a decodable
+prefix before completion. That is transport progress: the native adapter
+publishes the completed response before creating its first paint image.
+[Chromium records whether decoding is incremental when its first paint
+generator is created](https://github.com/chromium/chromium/blob/main/third_party/blink/renderer/platform/graphics/deferred_image_decoder.cc#L139).
+
+The fix removes that inference. Eligible completed WebP resources now use the
+same native YUV painting path after chunked and buffered delivery. An RGB paint
+image already present in the image cache remains retained. Document/canvas
+RGBA decoding, alpha and color-managed fallbacks, and HTTP progress reporting
+are preserved. This does not add progressive partial-response painting.
+
+Both focused tests pass with the native Skia painter explicitly enabled in
+default and no-GC modes. Six existing WebP fixtures are now registered in the
+pixel suite, covering YUV, scaling, RGBA mipmaps, alpha and root tiles. All nine
+selected pixel captures pass. Fresh headless startup passes, and the same
+pinned bundle preserves CNN and Guardian's unchanged archived viewports at
+zero pixels. Earlier Guardian timeouts remain in the prior receipt; their
+recovery on this later shared-source build is not attributed to this fix.
+
+Exact commands, decoder diagnostics, executable/library hashes, source/build
+receipts, the original 105,761-pixel failure and all qualifying checks are in
+the [cold-cache Verge receipt](benchmark-results/verge-cold-brave-pixels-2026-11-02.json).
+Raw artifacts are under `Build/verge-cold-20261102/`. This establishes the frozen
+guest viewport with author scripts removed; live scripting, video, logged-in
+behavior and all scroll positions remain unqualified. There is no instruction
+count or scrolling-performance claim.
