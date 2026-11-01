@@ -388,7 +388,12 @@ pub fn (window &WindowModel) query_media_feature(media_feature css.MediaFeatureI
 			css.MediaFeatureValue.from_ident(configuration.preferred_color_scheme)
 		}
 		.prefers_contrast { css.MediaFeatureValue.from_ident(configuration.preferred_contrast) }
-		.prefers_reduced_data, .prefers_reduced_transparency {
+		.prefers_reduced_transparency {
+			css.MediaFeatureValue.from_ident(if window.associated_document().prefers_reduced_transparency() {
+				'reduce'
+			} else { 'no-preference' })
+		}
+		.prefers_reduced_data {
 			css.MediaFeatureValue.from_ident('no-preference')
 		}
 		.prefers_reduced_motion { css.MediaFeatureValue.from_ident(configuration.preferred_motion) }

@@ -39,6 +39,7 @@ pub mut:
 	preferred_color_scheme_             string = 'auto'
 	preferred_contrast_                 string = 'auto'
 	preferred_motion_                   string = 'auto'
+	prefers_reduced_transparency_        bool
 	palette_is_dark_                    bool
 	zoom_level_                         f64 = 1
 	screen_rect_                        PixelRect

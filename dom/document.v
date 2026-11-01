@@ -3167,6 +3167,7 @@ pub:
 	did_allocate_backing_stores_callback fn (voidptr, int, int) = unsafe { nil }
 	did_update_editing_history_callback  fn (voidptr, bool, bool) = unsafe { nil }
 	preferred_color_scheme_callback      fn (voidptr) string = unsafe { nil }
+	prefers_reduced_transparency_callback fn (voidptr) bool = unsafe { nil }
 	user_style_callback                  fn (voidptr) ?string = unsafe { nil }
 	request_frame_callback               fn (voidptr) = unsafe { nil }
 	has_rendering_opportunity_callback   fn (voidptr) bool = unsafe { nil }

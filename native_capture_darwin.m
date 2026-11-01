@@ -2,6 +2,7 @@
 #include "native_snapshot_png_darwin.h"
 #include "native_allocator_policy_darwin.h"
 #include "native_test_window_darwin.h"
+#include "native_media_preferences_darwin.h"
 #include <CoreImage/CoreImage.h>
 #include <CoreText/CoreText.h>
 #include <malloc/malloc.h>

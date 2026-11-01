@@ -8022,7 +8022,8 @@ fn main() {
 			spawn prepare_initial_navigation_filter_worker()
 		}
 	}
-	page_model := page.Page.create(1.0) or { panic(err) }
+	mut page_model := page.Page.create(1.0) or { panic(err) }
+	configure_browser_media_preferences(mut page_model, needs_native_font_replay)
 	mut page_client := page_model.client()
 	page_client.set_event_recording(false)
 	main_checkpoint = debug_timing_checkpoint('startup_page_model', main_checkpoint)

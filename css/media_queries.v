@@ -1566,7 +1566,11 @@ fn query_media_feature(feature_name string, document ?&dom.Document) ?MediaFeatu
 			}
 			media_feature_ident_value(if preferred == 'dark' { 'dark' } else { 'light' })
 		}
-		'prefers-contrast', 'prefers-reduced-data', 'prefers-reduced-motion', 'prefers-reduced-transparency' {
+		'prefers-reduced-transparency' {
+			reduce := if doc := document { doc.prefers_reduced_transparency() } else { false }
+			media_feature_ident_value(if reduce { 'reduce' } else { 'no-preference' })
+		}
+		'prefers-contrast', 'prefers-reduced-data', 'prefers-reduced-motion' {
 			media_feature_ident_value('no-preference')
 		}
 		'resolution' {
