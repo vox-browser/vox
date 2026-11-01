@@ -177,8 +177,11 @@ def parse_args(argv=None):
     p.add_argument('--diff-tool', type=Path, required=True)
     p.add_argument('--diagnostic', action='store_true')
     p.add_argument('--diagnostic-engine', choices=['vox', 'brave', 'both'], default='both')
-    p.add_argument('--control-static-media', action='store_true',
+    control = p.add_mutually_exclusive_group()
+    control.add_argument('--control-static-media', action='store_true',
                    help='Alternate the same Vox binary with static-media raster reuse disabled')
+    control.add_argument('--control-lazy-images', action='store_true',
+                   help='Alternate the same Vox binary with negative lazy-image probes uncached')
     p.add_argument('--repeat', type=int, default=7)
     p.add_argument('--settle-seconds', type=float, default=5)
     p.add_argument('--timeout', type=float, default=180)
@@ -242,7 +245,7 @@ def main():
     args.post_readiness_expression = 'new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(()=>r(true))))'
     apps = {}
     sources = [('vox', args.vox_app), ('brave', args.brave_app)]
-    if args.control_static_media:
+    if args.control_static_media or args.control_lazy_images:
         sources.append(('control', args.vox_app))
     for engine, source in sources:
         target = args.output / engine / source.name
@@ -285,7 +288,7 @@ def main():
                                '--load-extension=' + str(args.extension), '--headless=new']
         for index in range(args.repeat):
             pair = {}
-            order = trial_order(index, args.control_static_media)
+            order = trial_order(index, args.control_static_media or args.control_lazy_images)
             if args.diagnostic_engine != 'both':
                 order = [args.diagnostic_engine]
             for engine in order:
@@ -293,7 +296,9 @@ def main():
                 args.vox_environment = dict(VOX_PROXY=replay.ready['proxy'], SSL_CERT_FILE=replay.ready['ca'],
                     VOX_BLOCK_COOKIE_BANNERS='0', VOX_ADBLOCK_LOG=str(folder / 'requests.jsonl'))
                 if engine == 'control':
-                    args.vox_environment['VOX_DISABLE_STATIC_MEDIA_RASTER_REUSE'] = '1'
+                    key = ('VOX_DISABLE_LAZY_IMAGE_PROBE_CACHE' if args.control_lazy_images
+                           else 'VOX_DISABLE_STATIC_MEDIA_RASTER_REUSE')
+                    args.vox_environment[key] = '1'
                 row = browser.run_browser('vox' if engine == 'control' else engine, apps[engine], folder, args)
                 row['scope'] = SCOPE
                 if engine in ('vox', 'control') and row['exit'] == 0:
