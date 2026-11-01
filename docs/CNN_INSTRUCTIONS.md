@@ -20,6 +20,13 @@ and the same visual guards, but two exact diagnostic triplets show no repeatable
 site instruction saving. It receives no CPU credit. Those counts and compiler
 build attempts are retained in the durable receipt below.
 
+The shader-cache prototype was discarded after two exact diagnostic triplets
+showed no useful saving. A changed shader entry-point namespace also caused
+about 18 billion instructions in an owned Metal compiler service in both
+first-pair variants. Those counters and attempts are retained; this work earns
+no optimization credit and adds no shader-cache policy to the production code.
+Raw evidence is under `Build/cnn-home-dawn-matched-20261101-0848/`.
+
 ## November 1: current 10% request, sealed homepage cohort
 
 The current target is **10% fewer instructions than Brave**, superseding the
