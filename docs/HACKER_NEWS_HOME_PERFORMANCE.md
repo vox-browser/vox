@@ -1,5 +1,10 @@
 # Cached Hacker News home-page instructions
 
+The 2026-11-01 request uses a 10% threshold. Its new measurements and separate
+startup/navigation accounting are in
+[Hacker News instructions against Brave](HACKER_NEWS_BRAVE_INSTRUCTIONS.md).
+The earlier 20% target and experiments below remain historical evidence.
+
 The target is a Vox instruction count at most 80% of Brave's, while preserving
 the complete home page. It has **not passed** the comparison.
 
