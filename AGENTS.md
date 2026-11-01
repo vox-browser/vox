@@ -283,6 +283,15 @@ completed production bundle by default, following the shared-build rules above.
   scanout; use a display presentation measurement for claims about displayed
   frames. Record actual input cadence: a nominal 60 Hz timer can deliver late
   when the main thread is blocked.
+- Brave's signed app can be observed without injected libraries or macOS capture
+  permissions using `tools/measure_brave_scroll.py`. It drives CDP wheel input
+  and joins damaging scroll frames to Chromium presentation feedback, validating
+  renderer/input identity, complete compositor frames and unchanged references.
+  Label these as instrumented CDP observations: they bypass Cocoa input, enable
+  frame-event tracing and use a different boundary from Vox's layer publications.
+  They cannot supply unprofiled optimization acceptance or a matched browser FPS
+  ratio. Preserve animation-only controls, raw traces and the original failed
+  injection diagnostics; see [Brave scrolling FPS](docs/BRAVE_SCROLL_FPS.md).
 - Run at least two complete, unprofiled trials for each measured build. For
   optimization credit use alternating matched control/candidate trials, retain
   every result, and report regressions as well as gains. Profile separately;

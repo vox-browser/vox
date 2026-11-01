@@ -3,9 +3,10 @@
 These measurements cover the frozen pages and production builds listed in
 [OPTIMIZED_SITES.md](../OPTIMIZED_SITES.md). They measure **scroll-changing native
 layer publications**, after Cocoa `updateLayer` completes. They do not measure
-physical display scanout. Brave remains unmeasured with this endpoint.
+physical display scanout. Brave uses a separate, explicitly labeled
+[CDP/presentation-feedback measurement](BRAVE_SCROLL_FPS.md).
 
-Each catalog range spans two completed, unprofiled trials. Instruction counts,
+Each Vox catalog range spans two completed, unprofiled trials. Instruction counts,
 instruction-cohort trial counts and their mean/median labels remain separate.
 The [durable receipt](benchmark-results/optimized-sites-scroll-2026-11-01.json)
 contains commands, identities, host load, actual exits, all attempts and exact
@@ -127,7 +128,7 @@ they did not provide a live fallback or a different document. vlang.io’s logs
 also retain CoreText warnings that `.SFNS-Regular` falls back to
 `TimesNewRomanPSMT` in the pinned build. These are recorded rendering conditions.
 
-## Brave measurement remains open
+## Earlier Brave probe failure
 
 A diagnostic constructor observer loaded in Vox, but the same injection mechanism
 did not load in either a fresh headless or windowed process of the installed
@@ -140,9 +141,12 @@ Independent macOS preflight checks returned false for both screen capture and
 posting native events. No validated external frame-publication/input measurement
 was therefore available in this session. CDP screenshots, `requestAnimationFrame`
 and synthetic callback throughput do not supply a matching native FPS result.
-The Brave cells stay **—**, meaning unmeasured, rather than assuming 60 FPS or
-substituting a different endpoint. The historical Reddit-home fixture is also
-still missing and receives no new FPS value.
+The Brave cells initially stayed **—**, meaning unmeasured. A subsequent
+[Brave-specific tool and cohort](BRAVE_SCROLL_FPS.md) measure Chromium's reported
+scroll presentations through CDP without injection or macOS capture permissions.
+The table labels that different input path, frame boundary and enabled tracing;
+it does not claim a matched native-input FPS ratio. The historical Reddit-home
+fixture is still missing and receives no new FPS value.
 
 ## Reproduce Vox trials
 

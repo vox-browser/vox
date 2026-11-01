@@ -5,22 +5,23 @@ macOS comparisons cover browser startup through a completed document capture;
 fewer instructions measure CPU work, rather than elapsed rendering time.
 Results apply to the frozen page and pinned build in each linked report.
 
-| Site | Recorded date | Trials per browser | Statistic | Vox instructions | Brave observed instructions | Fewer instructions | Vox scroll FPS | Brave scroll FPS | Evidence |
+| Site | Recorded date | Trials per browser | Statistic | Vox instructions | Brave observed instructions | Fewer instructions | Vox scroll FPS | Brave scroll FPS† | Evidence |
 | --- | --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | --- |
-| Old Reddit /r/programming/ | 2026-11-01 | 7 | Median | 4,954,400,539 | 9,248,675,091 | **46.43%** | 39.2–53.0 | — | [Comparison](docs/OLD_REDDIT_PROGRAMMING_INSTRUCTIONS.md) |
-| Hacker News homepage | 2026-11-01 | 7 | Median | 4,877,590,820 | 8,554,149,229 | **42.98%** | 46.1–51.5 | — | [Comparison](docs/HACKER_NEWS_BRAVE_INSTRUCTIONS.md) |
-| Wikipedia homepage | 2026-11-01 | 7 | Median | 6,686,475,010 | 9,702,898,348 | **31.09%** | 3.1–3.6 | — | [Audit](docs/OPTIMIZED_SITES_AUDIT.md), [comparison](docs/WIKIPEDIA_BRAVE_INSTRUCTIONS.md) |
-| vlang.io (CLI protocol) | 2026-11-01 | 7 | Mean | 8.630 billion | 10.500 billion | **17.81%** | 0.8–0.9 | — | [Audit](docs/OPTIMIZED_SITES_AUDIT.md), [comparison](docs/VLANG_RENDERING_INSTRUCTIONS.md) |
+| Old Reddit /r/programming/ | 2026-11-01 | 7 | Median | 4,954,400,539 | 9,248,675,091 | **46.43%** | 39.2–53.0 | 59.56–59.78 | [Comparison](docs/OLD_REDDIT_PROGRAMMING_INSTRUCTIONS.md) |
+| Hacker News homepage | 2026-11-01 | 7 | Median | 4,877,590,820 | 8,554,149,229 | **42.98%** | 46.1–51.5 | 59.78–59.79 | [Comparison](docs/HACKER_NEWS_BRAVE_INSTRUCTIONS.md) |
+| Wikipedia homepage | 2026-11-01 | 7 | Median | 6,686,475,010 | 9,702,898,348 | **31.09%** | 3.1–3.6 | 59.57–59.79 | [Audit](docs/OPTIMIZED_SITES_AUDIT.md), [comparison](docs/WIKIPEDIA_BRAVE_INSTRUCTIONS.md) |
+| vlang.io (CLI protocol) | 2026-11-01 | 7 | Mean | 8.630 billion | 10.500 billion | **17.81%** | 0.8–0.9 | 59.49–59.79 | [Audit](docs/OPTIMIZED_SITES_AUDIT.md), [comparison](docs/VLANG_RENDERING_INSTRUCTIONS.md) |
 
-FPS ranges span **two completed native-publication trials** per pinned page/build;
-the trial counts and mean/median labels above refer to instructions. The
-[scrolling report and raw evidence](docs/OPTIMIZED_SITES_SCROLL_FPS.md) record
-600 precise wheel inputs, actual input cadence, full-window throughput, frame
-intervals and deadline misses. Scrolling uses a 1024×768 document viewport at
-native scale 2. Publication is not physical display scanout, and these results
-do not establish smooth 60 FPS. **— means unmeasured, not zero FPS.** Brave's
-native observer could not load; external capture/input permissions were also
-unavailable. Its FPS comparison remains open.
+FPS ranges span **two completed trials** per browser/page; the trial counts and
+mean/median labels above refer to instructions. The [Vox scrolling report](docs/OPTIMIZED_SITES_SCROLL_FPS.md)
+records native Cocoa input and changed-layer publications. **† Brave uses CDP
+wheel input and Chromium presentation feedback, with frame-event tracing enabled**;
+see its [report and raw evidence](docs/BRAVE_SCROLL_FPS.md). This bypasses Cocoa
+input and observes a later frame boundary, so these columns do not establish a
+matched FPS ratio or optimization acceptance. Both use the same frozen page,
+1024×768 document viewport, native scale 2, 600 alternating wheel inputs and a
+full input-window denominator. Neither endpoint measures physical display
+scanout or establishes smooth 60 FPS. **— means unmeasured, not zero FPS.**
 
 Percentages compare the two browser summaries in the same row. Means and
 medians are labeled separately; the vlang.io means are rounded. Instruction
