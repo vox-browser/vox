@@ -49,16 +49,14 @@ class PreciseScrollTests(unittest.TestCase):
             def launch(command, **kwargs):
                 env = kwargs["env"]
                 self.assertEqual(Path(env["VOX_PROFILE_DIR"]), output / "profile")
-                self.assertEqual(json.loads((output / "profile/settings.json").read_text()),
-                                 {"allow_any_site": True})
-                bookmarks = json.loads((output / "profile/bookmarks.json").read_text())
-                self.assertFalse(bookmarks["visible"])
-                self.assertTrue(bookmarks["optimized_defaults_added"])
+                self.assertEqual(list((output / "profile").iterdir()), [])
+                self.assertEqual(command[command.index("--window-height") + 1], "876")
                 self.assertNotIn("--enable-javascript", command)
                 self.assertNotIn("--disable-javascript", command)
                 self.assertEqual(env["VOX_PROXY"], "http://127.0.0.1:9")
                 self.assertEqual(env["SSL_CERT_FILE"], str(certificate))
                 self.assertNotIn("VOX_PROFILE_FRAMES", env)
+                self.assertNotIn("DYLD_LIBRARY_PATH", env)
                 self.assertEqual(env["VOX_PRECISE_REQUIRED_TITLE"], "fixture")
                 kwargs["stdout"].write(log_for())
                 return mock.Mock(pid=123, wait=mock.Mock(return_value=0))
@@ -72,6 +70,7 @@ class PreciseScrollTests(unittest.TestCase):
                     mock.patch.object(measure_precise_scroll.sys, "argv", arguments), \
                     mock.patch.dict(measure_precise_scroll.os.environ,
                                     VOX_PROFILE_DIR=str(user_profile), VOX_PROFILE_FRAMES="600",
+                                    DYLD_LIBRARY_PATH="/unrelated/native/libraries",
                                     SSL_CERT_FILE=str(certificate),
                                     VOX_PROXY="http://127.0.0.1:9"), \
                     mock.patch.object(measure_precise_scroll.subprocess, "run", compile_probe), \

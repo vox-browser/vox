@@ -144,6 +144,8 @@ def main():
     parser.add_argument("--env", action="append", default=[])
     parser.add_argument("--width", type=int, default=1024)
     parser.add_argument("--height", type=int, default=764, help="Document viewport height, without chrome")
+    parser.add_argument("--chrome-height", type=int, default=112,
+                        help="Tab/toolbar, default bookmarks and status bar; use 84 for older bundles without bookmarks")
     parser.add_argument("--inputs", type=int, default=600)
     parser.add_argument("--input-hz", type=float, default=60)
     parser.add_argument("--target-hz", type=float, default=60)
@@ -159,6 +161,7 @@ def main():
     if sys.platform != "darwin":
         parser.error("This native publication probe requires macOS")
     if not (10 <= args.inputs <= 100000 and args.width > 0 and args.height > 0
+            and 0 <= args.chrome_height <= 1000
             and 1 <= args.delta <= 100 and 1 <= args.reverse_every <= 100000
             and args.input_hz <= 1000 and args.settle_seconds <= 3600
             and all(math.isfinite(v) and v > 0 for v in
@@ -190,11 +193,6 @@ def main():
     # override the requested route. Never read or update the user's profile.
     profile = output / "profile"
     profile.mkdir()
-    # New profiles seed a visible optimized-sites bar. Keep the requested
-    # document viewport independent of that migration and navigation UI mode.
-    (profile / "settings.json").write_text(json.dumps({"allow_any_site": True}) + "\n")
-    (profile / "bookmarks.json").write_text(json.dumps({
-        "optimized_defaults_added": True, "visible": False, "items": [], "version": 1}) + "\n")
     digest = hashlib.sha256()
     for path in sorted(cache.rglob("*")):
         if path.is_file():
@@ -208,9 +206,12 @@ def main():
                 "LADYBIRD_SCREENSHOT_DELAY_SECONDS"}:
             env.pop(name)
     libraries = [path.resolve() for path in args.insert_library]
+    # The signed bundle resolves its embedded bridges through @executable_path.
+    # A global loader search override also changes transitive dependency lookup
+    # and helper startup; exercise the bundle's ordinary loader configuration.
+    env.pop("DYLD_LIBRARY_PATH", None)
     env.update(VOX_TEST_WINDOW="1", LADYBIRD_CACHE_DIR=str(cache),
                VOX_PROFILE_DIR=str(profile),
-               DYLD_LIBRARY_PATH=str(binary.parent),
                DYLD_INSERT_LIBRARIES=":".join(map(str, [probe, *libraries])),
                VOX_PRECISE_INPUTS=str(args.inputs), VOX_PRECISE_REVERSE=str(args.reverse_every),
                VOX_PRECISE_HZ=str(args.input_hz), VOX_PRECISE_DELTA=str(args.delta),
@@ -228,10 +229,11 @@ def main():
     script_flags = {"automatic": [], "enabled": ["--enable-javascript"],
                     "disabled": ["--disable-javascript"]}[args.script_policy]
     command = [str(binary), *script_flags, "--window-width", str(args.width),
-               "--window-height", str(args.height + 84), args.url]
+               "--window-height", str(args.height + args.chrome_height), args.url]
     evidence = dict(command=command, compile_command=compile_command,
                     source_and_binary_sha256=hashes, cache_sha256=digest.hexdigest(),
-                    initial_profile="private profile; unrestricted navigation; bookmark bar hidden; no saved proxy override",
+                    initial_profile="empty private profile; default bookmark bar; no saved proxy override",
+                    chrome_height=args.chrome_height,
                     script_policy=args.script_policy,
                     viewport=[args.width, args.height], network_policy=args.network_policy,
                     schedule=dict(inputs=args.inputs, hz=args.input_hz, delta=args.delta,
