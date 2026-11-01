@@ -1,8 +1,37 @@
 # vlang.io scrolling
 
-The live **60 FPS target remains unmet**. The latest measured production snapshot publishes **6.57–7.12 scroll-changing native frames per second** on live `https://vlang.io/`, and **10.78–10.93** on the frozen page. Every measured scrolling interval still exceeds 16.67 ms. These are completed Cocoa layer publications; physical display scanout is unmeasured. Optimization work continues.
+The live **60 FPS target remains unmet**. The latest measured installed production bundle publishes **28.15–28.24 scroll-changing native frames per second** on live `https://vlang.io/`, and **10.90–11.25** on the frozen page. Live median scroll intervals are 34.2–34.6 ms; every measured interval still exceeds 16.67 ms. These are completed Cocoa layer publications; physical display scanout is unmeasured. Optimization work continues.
 
-The [compositor milestone receipt](benchmark-results/vlang-scroll-20261101-compositor-milestone.json) and [compressed raw records](benchmark-results/vlang-scroll-20261101-compositor-milestone-raw.json.gz) retain 64 completed measurements and 1,657 raw text artifacts through this checkpoint, including diagnostic runs, failures, commands, input/publication timestamps, source and executable identities, host load, guard exits and rejected patches. Full artifacts remain in `Build/vlang-scroll-compositor-20261101-111741/`. Later experiments are not acceptance results in this checkpoint.
+The [compositor milestone receipt](benchmark-results/vlang-scroll-20261101-compositor-milestone.json) and [compressed raw records](benchmark-results/vlang-scroll-20261101-compositor-milestone-raw.json.gz) retain 64 completed measurements and 1,657 raw text artifacts through this checkpoint, including diagnostic runs, failures, commands, input/publication timestamps, source and executable identities, host load, guard exits and rejected patches. Full artifacts remain in `Build/vlang-scroll-compositor-20261101-111741/`. That milestone is historical; later accepted cohorts are retained below.
+
+## Large decoration batches and direct backdrop upload
+
+The [large-decoration receipt](benchmark-results/vlang-scroll-20261101-large-decorations.json) and [compressed raw records](benchmark-results/vlang-scroll-20261101-large-decorations-raw.json.gz) retain every subsequent cohort, failed attempt, input/publication record, source/executable identity, pixel audit, host condition and actual exit. Earlier receipts remain unchanged.
+
+`71c708db` sends large root-decoration pictures through the existing tile batch instead of serial GPU submissions. It raises only the bounded CPU-region ceiling; original tile sizes, MSAA, backdrop pixels and aggregate GPU limits remain unchanged. Scoped shared pixels are deduplicated by full value. Separate actual-input diagnostics record 72 batches covering 2.07–3.03 million pixels, and 118 shared encode/decode pairs. The corrected live stack sample identifies the preceding serial decoration raster path; the first empty-stack sample remains invalid and retained.
+
+`590ecea7` uploads immutable backdrop tile pixels directly to the same Dawn targets before drawing the original content picture. It avoids encoding/decoding a backdrop image and retains transactional fallback. The final path passes 48 exact native scenes, including translucent backgrounds, row padding, mixed MSAA and fractional scrolling. Both changes preserve four HTTP page pairs at scales 1/2 and Y=0/240 exactly. No reference or tolerance changed. An initial direct-upload build failed because `writePixels` returns void; tests against that build's old backend exercised fallback and supply no path-validation credit. Corrected builds explicitly verify the new API.
+
+| Alternating unprofiled cohort | Control FPS (1 / 2) | Candidate FPS (1 / 2) |
+| --- | ---: | ---: |
+| Large decorations, frozen | 11.18 / 11.99 | 11.80 / 11.96 |
+| Large decorations, live | 7.35 / 7.16 | 28.08 / 26.75 |
+| Direct backdrop, frozen prototype | 9.87 / 11.47 | 11.21 / 11.37 |
+| Direct backdrop, live prototype | 27.56 / 27.48 | 28.45 / 28.21 |
+| Direct backdrop, final live build | 27.80 / 26.59 | 28.66 / 26.88 |
+
+The large live gain reproduces in both pairs. Frozen results are mixed. Direct upload yields small live gains across both prototype and final pairs; host variation prevents a precise isolated percentage claim. The 456.75 ms frozen control stall is retained. Decoder image caching was not pursued: the large batch already reuses one upload in 23/24 or 27/28 jobs.
+
+The native libraries were installed under the shared production guard, signed and verified, then smoke-tested in a fresh process and pinned for all four measurements below. This reuses the latest completed executable, including other sessions' changes, and does not require a duplicate full V build. Whole-build measurements do not isolate the contribution of every commit.
+
+| Installed production trial | Scroll FPS | Actual input Hz | Inputs / completed publications | Median / p95 / max interval (ms) | Missed 16.67 ms | Leading / trailing scroll gap (ms) |
+| --- | ---: | ---: | --- | --- | ---: | --- |
+| Frozen 1 | 10.90 | 55.79 | 600 / 121 | 90.65 / 103.89 / 109.07 | 100.00% | 263.79 / 0.13 |
+| Live 1 | 28.15 | 52.70 | 600 / 334 | 34.62 / 39.58 / 84.44 | 100.00% | 88.61 / 37.25 |
+| Frozen 2 | 11.25 | 55.70 | 600 / 126 | 86.79 / 96.55 / 173.17 | 100.00% | 271.74 / 59.77 |
+| Live 2 | 28.24 | 53.02 | 600 / 335 | 34.16 / 39.56 / 86.48 | 100.00% | 85.72 / 0.18 |
+
+The protocol remains a fresh process/private profile/cache, verified title plus 20-second settle, 1024×768 document viewport at backing scale 2, and 600 precise delta-2 native wheel events requested at 60 Hz and reversed every 60 events. Full first-to-last actual input time supplies the throughput denominator. Fixture bytes, script/animation policy, network denial and pixel references remain unchanged; live trials use direct HTTPS and automatic author scripting. Shared host load is retained. No retired-instruction savings are claimed and the broad-suite instruction-savings carry is unchanged. Subsequent device-space picture-key/cache experiments remain unaccepted diagnostics at this checkpoint.
 
 ## Clipped shape batches and shared picture pixels
 
