@@ -174,3 +174,28 @@ fn test_module_readiness_does_not_wait_for_top_level_await_and_close_releases_de
 	runtime.close()
 	assert host.closed && host.native_loader == unsafe { nil }
 }
+
+
+fn test_classic_import_identifier_filter_preserves_execution_and_real_imports() {
+	$if !darwin { return }
+	mut document := html.create_navigation_document(dom.URL{value:'https://modules.test/page'}, dom.URL{value:'https://modules.test/'}.origin(), none)!
+	mut runtime := Runtime.create()
+	defer { runtime.close(); document.finalize() }
+	settings := unsafe { &html.EnvironmentSettingsObject(document.relevant_settings_object()) }
+	runtime.bind_scripting_environment(settings)!
+	seen := &ModuleTestRequests{}
+	mut host := ModuleHost.create(settings, module_test_transport({'https://modules.test/value.js':'export default 42;'}, seen))
+	host.install(mut runtime)!
+	plain := ScriptSource{url:'https://modules.test/plain.js',code:'globalThis.important="!important";function importer(){return 42}globalThis.importIdentifierValue=importer();'}
+	plain_transform := host.transform_classic(plain)!
+	assert plain_transform.code == plain.code
+	assert runtime.run_document_scripts_collect_errors([plain]) == []string{}
+	assert runtime.evaluate_host('importIdentifierValue===42&&important==="!important"')! == 'true'
+	assert seen.urls.len == 0
+	actual := ScriptSource{url:'https://modules.test/actual.js',code:'globalThis.importer=0;import /* still a token */ ("./value.js").then(ns=>globalThis.filteredImportValue=ns.default);'}
+	actual_transform := host.transform_classic(actual)!
+	assert actual_transform.code != actual.code
+	assert runtime.run_document_scripts_collect_errors([actual]) == []string{}
+	module_test_until(host, runtime, 'globalThis.filteredImportValue===42')
+	assert seen.urls == ['https://modules.test/value.js']
+}

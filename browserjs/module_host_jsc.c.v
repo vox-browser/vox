@@ -142,6 +142,7 @@ fn (mut host ModuleHost) rewrite(code string, base string, key string, is_module
 
 fn (mut host ModuleHost) transform_classic(source ScriptSource) !ScriptSource {
 	if !source.code.contains('import') { return source }
+	if classic_source_can_skip_import_lexer(source.code) { return source }
 	base := if source.url == '' { host.settings.api_base_url().serialize() } else { source.url }
 	return ScriptSource{ ...source, code: host.rewrite(source.code, base, base, false)! }
 }
