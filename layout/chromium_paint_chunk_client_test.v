@@ -3,6 +3,26 @@ module layout
 import html
 import os
 
+fn test_absolute_scroll_overlay_does_not_absorb_later_in_flow_content() {
+	base := os.read_file('${@DIR}/../Tests/Browser/Brave/input/guardian-carousel-paint-clients.html')!
+	mut document := html.parse_document(base + '<h1 style="margin:0;padding-top:406px">Later news</h1>')
+	defer { document.finalize() }
+	document.set_font_rendering_policy(.chromium)
+	_ = layout_document_typed_in_viewport(document, 1024, 768)
+	commands := display_list_commands(document.record_display_list() or { panic('missing paint') })
+	mut plan := ChromiumRasterLayerPlan{}
+	update_chromium_raster_layer_plan_for_viewport(document, commands, 1, LayoutRect{0,0,1024,768}, mut plan)
+	assert plan.has_paint_metadata
+	mut headings := 0
+	for index, command in commands {
+		if command.kind == 'draw_text' && command.text.contains('Later') {
+			headings++
+			assert plan.command_layers[index] == 0
+		}
+	}
+	assert headings > 0
+}
+
 fn test_carousel_overlay_does_not_promote_a_disjoint_svg_with_the_same_property_state() {
 	base := os.read_file('${@DIR}/../Tests/Browser/Brave/input/guardian-carousel-paint-clients.html')!
 	for wrapped in [false, true] {

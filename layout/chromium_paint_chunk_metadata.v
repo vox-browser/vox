@@ -199,6 +199,7 @@ fn chromium_collect_paint_metadata(result &DocumentLayoutResult, commands []Pain
 // decoration along with an overlapping scroller overlay. Layerization may still
 // merge their compatible chunks after considering the intervening geometry.
 fn chromium_paint_client(box &BlockBox) u64 {
+	mut positioned := u64(0)
 	if box.layout_handle != unsafe { nil } {
 		mut ancestor := ?&Node(unsafe { &Node(box.layout_handle) })
 		for {
@@ -206,12 +207,18 @@ fn chromium_paint_client(box &BlockBox) u64 {
 			// Blink records an inline SVG viewport as one paint client. Its
 			// individual paths must not merge into unrelated overlap layers.
 			if node.is_svg_svg_box() { return u64(voidptr(node)) }
+			// Out-of-flow metadata must not expand the following normal-flow
+			// chunk into an otherwise disjoint scroll overlay's bounds.
+			if positioned == 0 && node.is_absolutely_positioned() {
+				positioned = u64(voidptr(node))
+			}
 			ancestor = node.parent()
 		}
 		if viewport := chromium_single_svg_content(unsafe { &Node(box.layout_handle) }) {
 			return u64(voidptr(viewport))
 		}
 	}
+	if positioned != 0 { return positioned }
 	// Ordinary boxes retain their shared property-state chunk. An SVG
 	// viewport contributes a distinct transform/recording client.
 	return 1
