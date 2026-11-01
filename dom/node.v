@@ -3981,7 +3981,7 @@ pub fn (n &Node) is_same_node(other_node ?&Node) bool {
 pub fn (n &Node) is_equal_node(other_node ?&Node) bool {
 	// The isEqualNode(otherNode) method steps are to return true if otherNode is non-null and this equals otherNode; otherwise false.
 	other := other_node or { return false }
-	if n == other {
+	if voidptr(n) == voidptr(other) {
 		return true
 	}
 	if n.node_type != other.node_type {

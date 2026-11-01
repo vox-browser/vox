@@ -11,5 +11,18 @@ for(const [name,value] of Object.entries({ELEMENT_NODE:1,ATTRIBUTE_NODE:2,TEXT_N
  Object.defineProperty(Node,name,{value,enumerable:true});Object.defineProperty(Node.prototype,name,{value,enumerable:true});
 }
 Object.defineProperty(globalThis,"Node",{value:Node,writable:true,configurable:true});
+function __compactEqualityState(node){
+ if(node===document)return{bridgeKey:"",nodeType:9};
+ const state=__elementApply(__elementRecordGet,__elementRecords,[node])||__elementApply(__compactNodeGet,__compactNodeRecords,[node])||__elementApply(__compactNodeGet,__compactDocuments,[node]);
+ if(!state)throw new TypeError("Expected a Node");return state;
+}
+Object.defineProperty(Node.prototype,"isEqualNode",{value:{isEqualNode(other){
+ "use strict";const own=__compactEqualityState(this);
+ if(arguments.length===0)throw new TypeError("isEqualNode requires one argument");
+ if(other===null||other===undefined)return false;
+ const target=__compactEqualityState(other);
+ if(this===other)return true;
+ return __queryElements(own.bridgeKey,"isEqualNode",JSON.stringify({otherKey:target.bridgeKey,ownState:own.created?own:undefined,otherState:target.created?target:undefined}));
+}}.isEqualNode,writable:true,enumerable:true,configurable:true});
 '
 }

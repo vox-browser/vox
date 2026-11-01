@@ -169,6 +169,7 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 		return binding.client_rects_query(key, selector)
 	}
 	if action == 'templateContent' { return binding.template_content_query(key, selector) }
+	if action == 'isEqualNode' { return binding.equal_node_query(key, selector) }
 	if action == 'attachShadow' { return binding.attach_shadow_query(key, selector) }
 	if key.starts_with('__created_') && action in ['shadowRoot', 'setMarkup', 'getRootNode'] {
 		if binding.node_for_key(key) == none {
