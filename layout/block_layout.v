@@ -564,6 +564,7 @@ fn layout_uncached_independent_formatting_context(mut state LayoutState, box &No
 // heights resolve against the definite viewport height. Unlike a normal block, the viewport's own dimensions
 // are NOT computed from its style — they are the viewport rect.
 pub fn layout_viewport(mut state LayoutState, viewport &Viewport, viewport_width f64, viewport_height f64) {
+	state.prepare_intrinsic_seed_visits(unsafe { &Node(viewport) })
 	viewport_node_with_style := unsafe { &NodeWithStyle(viewport) }
 	mut viewport_used_values := state.get_mutable(viewport_node_with_style)
 	viewport_used_values.set_content_width(css_px(viewport_width))

@@ -437,6 +437,7 @@ fn populate_intrinsic_containing_block_chain(mut throwaway LayoutState, mut sour
 // block is not on the subtree root's own chain. Seed every such external
 // containing block before intrinsic traversal begins.
 fn populate_intrinsic_external_containing_blocks(mut throwaway LayoutState, mut source LayoutState, subtree_root &Node, node &Node) {
+	if try_populate_intrinsic_external_blocks_with_visits(mut throwaway, mut source, subtree_root, node) { return }
 	mut visited := map[u32]bool{}
 	populate_intrinsic_external_containing_blocks_once(mut throwaway, mut source, subtree_root, node, mut visited)
 }

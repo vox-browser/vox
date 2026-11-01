@@ -991,6 +991,9 @@ mut:
 	scratch_slots_ []&MeasurementScratchSlot
 	scratch_depth_ int
 	scratch_enabled_ bool
+	intrinsic_seed_order_ &LayoutTreeOrder = unsafe { nil }
+	intrinsic_seed_stamps_ []u32
+	intrinsic_seed_epoch_ u32
 }
 
 fn (mut pool MeasurementUsedValuesChunkPool) take() &MeasurementUsedValuesChunk {
@@ -1016,6 +1019,11 @@ fn (mut pool MeasurementUsedValuesChunkPool) release() {
 	assert pool.active_arenas == 0
 	pool.release_scratch()
 	pool.closed = true
+	// In preallocated document layout the vector belongs to the enclosing
+	// geometry workspace, which has already retired at this boundary.
+	$if !prealloc { unsafe { pool.intrinsic_seed_stamps_.free() } }
+	pool.intrinsic_seed_stamps_ = []u32{}
+	pool.intrinsic_seed_order_ = unsafe { nil }
 	for chunk in pool.chunks {
 		free_measurement_allocation(chunk)
 	}
