@@ -15,10 +15,11 @@ $if vox_ui2 ? {
 			f64(chrome.width), chrome.bookmarks_version, app.bookmarks_error.str, app.bookmarks_error.len) == 0 {
 			return
 		}
-		for index, item in app.bookmarks.items {
+		items := app.browser_bar_bookmarks()
+		for index, item in items {
 			C.native_browser_bookmarks_item(index, item.title.str, item.title.len, item.url.str, item.url.len)
 		}
-		C.native_browser_bookmarks_end(app.bookmarks.items.len)
+		C.native_browser_bookmarks_end(items.len)
 	}
 
 	fn native_browser_bookmark_action(owner voidptr, action int, index int) {

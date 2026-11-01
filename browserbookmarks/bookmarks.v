@@ -5,6 +5,7 @@ import processlock
 import json2
 import os
 import platform
+import optimizedsites
 
 pub struct Bookmark {
 pub:
@@ -14,6 +15,7 @@ pub:
 
 struct SavedBookmarks {
 pub:
+	optimized_defaults_added bool
 	visible bool
 	items   []Bookmark
 	version u64
@@ -23,6 +25,7 @@ pub:
 @[heap]
 pub struct Store {
 pub mut:
+	optimized_defaults_added bool
 	visible bool
 	items   []Bookmark
 	version u64
@@ -48,6 +51,7 @@ pub fn open(path string) !&Store {
 		contents := os.read_file(path)!
 		store.profile_hash = processlock.fingerprint(contents)
 		saved := json2.decode[SavedBookmarks](contents)!
+		store.optimized_defaults_added = saved.optimized_defaults_added
 		store.visible = saved.visible
 		store.version = saved.version
 		for item in saved.items {
@@ -57,6 +61,31 @@ pub fn open(path string) !&Store {
 		}
 	}
 	return store
+}
+
+// Migrate once, preserving user bookmarks and subsequent edits/removals.
+pub fn (mut store Store) seed_optimized_sites() ! {
+	guard := processlock.acquire(store.path)!
+	defer { guard.release() }
+	store.reload()!
+	if store.optimized_defaults_added { return }
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	mut items := []Bookmark{}
+	for site in optimizedsites.sites {
+		existing := store.items.filter(it.url == site.address)
+		items << if existing.len > 0 { existing[0] } else {
+			Bookmark{url: site.address, title: site.title}
+		}
+	}
+	for item in store.items {
+		if !items.any(it.url == item.url) { items << item }
+	}
+	store.optimized_defaults_added = true
+	store.persist(true, items) or {
+		store.optimized_defaults_added = false
+		return err
+	}
 }
 
 pub fn eligible_url(address string) bool {
@@ -119,7 +148,7 @@ fn (mut store Store) write_profile(visible bool, items []Bookmark) ! {
 		os.mkdir_all(os.dir(store.path))!
 		temporary := '${store.path}.tmp-${os.getpid()}'
 		mut file := os.open_file(temporary, 'w', 0o600)!
-		encoded := json2.encode(SavedBookmarks{ visible: visible, items: items, version: store.version + 1 },
+		encoded := json2.encode(SavedBookmarks{ visible: visible, items: items, version: store.version + 1, optimized_defaults_added: store.optimized_defaults_added },
 			escape_unicode: true
 		)
 		file.write_string(encoded) or {
@@ -153,5 +182,6 @@ pub fn (mut store Store) reload() ! {
 	store.items = fresh.items
 	store.visible = fresh.visible
 	store.version = fresh.version
+	store.optimized_defaults_added = fresh.optimized_defaults_added
 	store.profile_hash = fresh.profile_hash
 }

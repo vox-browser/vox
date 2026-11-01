@@ -116,6 +116,7 @@ fn fetch_navigation_preload(resource_url string, source_url string, request_type
 }
 
 fn (mut app BrowserApp) prepare_loaded_page(loaded LoadedPage, add_history bool) {
+	if !app.allow_browser_destination(loaded.url) { return }
 	history_needed := add_history || if pending := app.pending_page_preload {
 		pending.generation == app.navigation_generation && pending.add_history
 	} else {

@@ -5,15 +5,17 @@ $if !vox_ui2 ? {
 	import math
 
 	fn (mut app BrowserApp) portable_bookmark_range(width int) (int, int) {
+		items := app.browser_bar_bookmarks()
 		capacity := math.max(1, (width - 44) / 164)
-		if app.bookmark_bar_first >= app.bookmarks.items.len { app.bookmark_bar_first = 0 }
-		return app.bookmark_bar_first, math.min(app.bookmarks.items.len, app.bookmark_bar_first + capacity)
+		if app.bookmark_bar_first >= items.len { app.bookmark_bar_first = 0 }
+		return app.bookmark_bar_first, math.min(items.len, app.bookmark_bar_first + capacity)
 	}
 
 	fn (mut app BrowserApp) draw_portable_bookmarks(width int) {
 		if !app.bookmark_bar_visible() { return }
+		items := app.browser_bar_bookmarks()
 		top := int(app.bookmark_bar_top())
-		if app.bookmarks.items.len == 0 {
+		if items.len == 0 {
 			app.ctx.draw_text(12, top + 7, 'Save your favorite pages here with Ctrl+D',
 				color: gg.rgb(85, 85, 85)
 				size:  12
@@ -22,13 +24,13 @@ $if !vox_ui2 ? {
 		}
 		first, end := app.portable_bookmark_range(width)
 		for index in first .. end {
-			title := address_for_display(app.bookmarks.items[index].title, 0, false, 20)
+			title := address_for_display(items[index].title, 0, false, 20)
 			app.ctx.draw_text(12 + (index - first) * 164, top + 7, title,
 				color: gg.rgb(55, 55, 55)
 				size:  12
 			)
 		}
-		if first > 0 || end < app.bookmarks.items.len {
+		if first > 0 || end < items.len {
 			app.ctx.draw_text(width - 28, top + 5, '»', color: gg.rgb(55, 55, 55), size: 15)
 		}
 	}
@@ -37,10 +39,11 @@ $if !vox_ui2 ? {
 		if !app.bookmark_bar_visible() || y < app.bookmark_bar_top() || y >= app.page_top() {
 			return false
 		}
+		items := app.browser_bar_bookmarks()
 		width := browser_window_size().width
 		first, end := app.portable_bookmark_range(width)
 		if x >= width - 34 {
-			app.bookmark_bar_first = if end < app.bookmarks.items.len { end } else { 0 }
+			app.bookmark_bar_first = if end < items.len { end } else { 0 }
 			request_browser_frame()
 		} else if x >= 8 {
 			index := first + int(x - 8) / 164

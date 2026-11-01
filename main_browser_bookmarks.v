@@ -26,10 +26,13 @@ fn (mut app BrowserApp) initialize_browser_bookmarks() {
 		app.bookmarks_error = 'Bookmarks could not be opened: ${err.msg()}'
 		browserbookmarks.open('') or { panic(err) }
 	}
+	if app.restrict_to_optimized_sites {
+		app.bookmarks.seed_optimized_sites() or { app.report_bookmarks_error(err.msg()) }
+	}
 }
 
 fn (app &BrowserApp) bookmark_bar_visible() bool {
-	return app.bookmarks != unsafe { nil } && app.bookmarks.visible
+	return app.bookmarks != unsafe { nil } && (app.optimized_sites_only() || app.bookmarks.visible)
 }
 
 fn (app &BrowserApp) bookmark_bar_top() f64 {
@@ -38,6 +41,7 @@ fn (app &BrowserApp) bookmark_bar_top() f64 {
 
 fn (mut app BrowserApp) activate_browser_bookmarks(action string) {
 	app.initialize_browser_bookmarks()
+	if app.optimized_sites_only() && !action.starts_with('bookmark-open:') { return }
 	match action {
 		'bookmarks-toggle' {
 			app.bookmarks.toggle_visible() or {
@@ -57,9 +61,10 @@ fn (mut app BrowserApp) activate_browser_bookmarks(action string) {
 		else {
 			if action.starts_with('bookmark-open:') {
 				index := action.all_after(':').int()
-				if index < 0 || index >= app.bookmarks.items.len { return }
+				items := app.browser_bar_bookmarks()
+				if index < 0 || index >= items.len { return }
 				app.blur_address_bar()
-				app.navigate(app.bookmarks.items[index].url, true)
+				app.navigate(items[index].url, true)
 				return
 			}
 			if !action.starts_with('bookmark-remove:') { return }

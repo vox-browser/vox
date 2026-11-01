@@ -63,7 +63,7 @@ static void native_browser_settings_install(void (*callback)(void)) {
 
 static void *native_browser_settings_content(void) {
     if (!vox_settings_window) {
-        vox_settings_window = [[VoxSettingsWindow alloc] initWithContentRect:NSMakeRect(0, 0, 500, 380)
+        vox_settings_window = [[VoxSettingsWindow alloc] initWithContentRect:NSMakeRect(0, 0, 500, 510)
             styleMask:NSWindowStyleMaskTitled | NSWindowStyleMaskClosable
             backing:NSBackingStoreBuffered defer:NO];
         vox_settings_window.title = @"Vox Settings";
@@ -91,6 +91,15 @@ static void native_browser_settings_show(void) { [vox_settings_window makeKeyAnd
 static void native_browser_settings_hide(void) { [vox_settings_window close]; }
 static void native_browser_settings_enabled(void *field, int enabled) {
     [(__bridge NSControl *)field setEnabled:enabled != 0];
+}
+static void native_browser_settings_address_editable(void *address, int editable) {
+    if (!address) return;
+    NSTextField *field = (__bridge NSTextField *)address;
+    if (!editable && field.isEditable && field.currentEditor) [field.window endEditingFor:field];
+    field.editable = editable != 0;
+    field.selectable = YES;
+    field.toolTip = editable ? @"Enter a URL"
+        : @"Use an optimized bookmark. Enable Allow opening any site in Settings to edit.";
 }
 static void native_browser_settings_style_control(void *control, int role) {
     NSView *view = (__bridge NSView *)control;

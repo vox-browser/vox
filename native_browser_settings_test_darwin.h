@@ -24,7 +24,7 @@ static int native_test_settings_controls(void *host, void *port, void *sites, vo
         && [(__bridge id)checkbox isKindOfClass:NSButton.class]
         && [(__bridge id)apply isKindOfClass:NSButton.class]
         && field.window == vox_settings_window
-        && NSEqualSizes(vox_settings_window.contentView.bounds.size, NSMakeSize(500, 380));
+        && NSEqualSizes(vox_settings_window.contentView.bounds.size, NSMakeSize(500, 510));
 }
 
 static int native_test_settings_close_shortcut(void) {
@@ -58,4 +58,9 @@ static void native_test_settings_capture(void) {
     [view cacheDisplayInRect:view.bounds toBitmapImageRep:image];
     [[image representationUsingType:NSBitmapImageFileTypePNG properties:@{}]
         writeToFile:[NSString stringWithUTF8String:path] atomically:YES];
+}
+
+static int native_test_settings_address_state(void *control, int editable) {
+    NSTextField *field = (__bridge NSTextField *)control;
+    return field.isEditable == (editable != 0) && field.isSelectable;
 }

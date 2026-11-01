@@ -84,6 +84,7 @@ fn (mut app BrowserApp) blur_address_bar() {
 }
 
 fn (mut app BrowserApp) submit_address_bar() {
+	if !app.address_bar_editable() { return }
 	$if vox_ui2 ? {
 		if app.native_address_bar { app.address = ui2.text('address') }
 	}
@@ -107,12 +108,20 @@ $if vox_ui2 ? {
 	fn address_bar_event(event string) {
 		if event.starts_with('settings-') {
 			browser_settings_event(event)
+			if address_bar_owner.app != unsafe { nil } {
+				mut app := address_bar_owner.app.active_browser_tab()
+				app.update_browser_chrome(app.browser_chrome.width, app.browser_chrome.height)
+				request_browser_frame()
+			}
 			return
 		}
 		if address_bar_owner.app == unsafe { nil } { return }
 		mut app := address_bar_owner.app.active_browser_tab()
 		match event {
-			'address-change' { app.address = ui2.text('address') }
+			'address-change' {
+				if app.address_bar_editable() { app.address = ui2.text('address') }
+				else { app.sync_address_bar() }
+			}
 			else { app.activate_browser_chrome(event) }
 		}
 	}

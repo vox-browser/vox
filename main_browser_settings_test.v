@@ -27,6 +27,7 @@ $if vox_ui2 ? {
 	fn C.native_test_settings_submit(control voidptr) int
 	fn C.native_test_settings_edit(control voidptr, value &char)
 	fn C.native_test_settings_capture()
+	fn C.native_test_settings_address_state(control voidptr, editable int) int
 
 	fn test_native_ui2_settings_apply_cancel_validation_and_toolbar_reconciliation() {
 		directory := os.join_path(os.temp_dir(), 'vox-native-settings-${os.getpid()}-${time.sys_mono_now()}')
@@ -50,6 +51,9 @@ $if vox_ui2 ? {
 		C.native_browser_settings_install(show_browser_settings)
 		assert C.native_test_settings_shortcut() != 0
 		assert C.native_browser_settings_visible() != 0
+		assert !ui2.control_checked('settings-allow-any-site')
+		assert ui2.text('settings-browsing-note').contains('may render slowly')
+		assert ui2.text('settings-browsing-progress').contains('quickly')
 		host := ui2.embedded_browser_control('settings-host')
 		port := ui2.embedded_browser_control('settings-port')
 		sites := ui2.embedded_browser_control('settings-sites')
@@ -80,20 +84,26 @@ $if vox_ui2 ? {
 		assert ui2.text('settings-error').contains('hostnames')
 		assert !os.exists(path)
 		ui2.set_text('settings-sites', 'Example.com, another.org')
+		C.native_test_chrome_click(ui2.embedded_browser_control('settings-allow-any-site'))
 		assert C.native_test_settings_submit(port) != 0
 		assert C.native_browser_settings_visible() == 0
 		assert browsersettings.current().host == 'localhost'
 		assert browsersettings.current().port == '9050'
 		assert browsersettings.current().sites == 'example.com, another.org'
+		assert browsersettings.current().allow_any_site
+		assert C.native_test_settings_address_state(ui2.embedded_browser_control('address'), 1) != 0
 		browsersettings.initialize(path)!
 		show_browser_settings()
 		assert ui2.text('settings-port') == '9050'
 		assert ui2.text('settings-sites') == 'example.com, another.org'
+		assert ui2.control_checked('settings-allow-any-site')
 		C.native_test_settings_capture()
+		C.native_test_chrome_click(ui2.embedded_browser_control('settings-allow-any-site'))
 		C.native_test_settings_edit(sites, c'discarded.example')
 		C.native_test_chrome_click(ui2.embedded_browser_control('settings-cancel'))
 		show_browser_settings()
 		assert ui2.text('settings-host') == 'localhost'
+		assert ui2.control_checked('settings-allow-any-site')
 		assert ui2.text('settings-sites') == 'example.com, another.org'
 		assert ui2.text('settings-error') == ''
 		C.native_test_settings_edit(host, c'closed.example')
@@ -102,9 +112,12 @@ $if vox_ui2 ? {
 		show_browser_settings()
 		assert ui2.text('settings-host') == 'localhost'
 		C.native_test_chrome_click(checkbox)
+		C.native_test_chrome_click(ui2.embedded_browser_control('settings-allow-any-site'))
 		assert C.native_test_chrome_enabled(host) == 0
 		assert C.native_test_chrome_enabled(sites) == 0
 		C.native_test_chrome_click(apply)
+		assert !browsersettings.current().allow_any_site
+		assert C.native_test_settings_address_state(ui2.embedded_browser_control('address'), 0) != 0
 		assert browsersettings.proxy_override('https://example.com/') or { panic('missing direct override') } == ''
 		// Destroying the settings window must clear its root from UI2 as well.
 		ui2.remove_embedded_settings()

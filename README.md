@@ -14,7 +14,18 @@ and launch `Build/linux/vox`. See [Linux setup and checks](docs/LINUX.md) for
 dependencies, the Skia bootstrap, headless operation, and platform limitations.
 
 On macOS, **Cmd+,** or **Vox → Settings…** opens the native UI2 settings
-window. Enable **Use SOCKS5 proxy**, enter its host and port, and choose
+window. By default, the bookmarks bar offers **Wikipedia**, **Old Reddit** and
+**vlang.io**, and the address bar is read-only. Navigation stays within those
+site families, including their subdomains; existing custom bookmarks are kept
+and become available when unrestricted browsing is enabled. Choose **Allow
+opening any site** and **Apply** to unlock the address bar and other sites.
+The setting starts off for new and existing profiles. Settings explains that
+unconfirmed, untested sites may render slowly and performance is improving
+quickly. See [the recorded comparisons](OPTIMIZED_SITES.md) for the exact tested
+workloads. Automated screenshot captures and headless engine checks retain
+their explicitly requested inputs and viewport geometry.
+
+In Settings, enable **Use SOCKS5 proxy**, enter its host and port, and choose
 **Apply**. Destination DNS lookups go through the proxy, and changes take
 effect for new requests without restarting. Turning the checkbox off and
 applying selects direct connections. To proxy selected sites, fill **Only for
