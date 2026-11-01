@@ -2232,6 +2232,10 @@ fn set_javascript_element_attribute(mut element dom.Element, name string, value 
 	if input_model != unsafe { nil } {
 		input_model.form_associated_element_attribute_changed(name, old_value, value, none)
 	}
+	if name == 'form' && element.is_html_element() && element.local_name() == 'button' {
+		mut control := html.HTMLButtonElementModel.create(unsafe { &dom.HTMLButtonElement(&element) }).control
+		control.form_node_attribute_changed(name)
+	}
 	if element.local_name() == 'img' && name == 'src' {
 		image := unsafe { &dom.HTMLImageElement(&element) }
 		html.html_image_element_form_associated_element_attribute_changed(image, 'src', old_value, value, none)

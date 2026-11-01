@@ -11,6 +11,7 @@ struct CompactFormControlsQuery {
 	id    string
 	value string
 	state map[string]json2.Any
+	submitter map[string]json2.Any
 }
 
 fn (mut binding CompactElementQueryBinding) form_controls_query(key string, source string) !string {
@@ -71,6 +72,24 @@ fn (mut binding CompactElementQueryBinding) form_controls_query(key string, sour
 		return error('TypeError: Invalid HTMLFormElement receiver')
 	}
 	mut form := html.HTMLFormElementModel.create(unsafe { &dom.HTMLFormElement(element) })
+	if query.op == 'requestSubmit' {
+		mut submitter := ?&html.FormAssociatedElement(none)
+		if query.submitter.len > 0 {
+			submitter_key := json_string_property(query.submitter, 'bridgeKey') or { return error('TypeError: Expected an HTMLElement') }
+			submitter_node := binding.equality_node(submitter_key, json2.Any(query.submitter))!
+			submitter_element := submitter_node.as_element() or { return error('TypeError: Expected an HTMLElement') }
+			if !submitter_element.is_html_element() { return error('TypeError: Expected an HTMLElement') }
+			mut control := match submitter_element.local_name() {
+				'button' { html.HTMLButtonElementModel.create(unsafe { &dom.HTMLButtonElement(submitter_element) }).control }
+				'input' { html.HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(submitter_element) }).control }
+				else { return error('TypeError: the submitter is not a submit button') }
+			}
+			if control.form() == none { control.reset_form_owner() }
+			submitter = control
+		}
+		form.request_submit(submitter)!
+		return 'null'
+	}
 	collection := form.elements()
 	if query.op == 'items' {
 		mut result := []json2.Any{}
@@ -145,5 +164,17 @@ Object.defineProperty(HTMLFormElement.prototype,"elements",{get:function(){
  __elementApply(__elementRecordSet,__formCollectionStates,[collection,state]);__elementApply(__elementRecordSet,__formCollections,[this,collection]);return collection;
 },enumerable:true,configurable:true});
 Object.defineProperty(HTMLFormElement.prototype,"length",{get:function(){__formControlsState(this);return this.elements.length;},enumerable:true,configurable:true});
+Object.defineProperty(HTMLFormElement.prototype,"requestSubmit",{value:({requestSubmit(){
+ "use strict";const state=__formControlsState(this),submitter=arguments[0],request={op:"requestSubmit"};
+ if(submitter!==undefined&&submitter!==null){
+  const target=__elementApply(__elementRecordGet,__elementRecords,[submitter]);
+  if(!target||target.namespaceURI!=="http://www.w3.org/1999/xhtml")throw new TypeError("Expected an HTMLElement");
+  request.submitter=target;
+ }
+ try{__formControlsQuery(state,request);}catch(error){
+  const match=/^(TypeError|NotFoundError):\s*(.*)/.exec(String(error.message));
+  if(match){if(match[1]==="TypeError")throw new TypeError(match[2]);throw new DOMException(match[2],match[1]);}throw error;
+ }
+}}).requestSubmit,writable:true,enumerable:true,configurable:true});
 '
 }
