@@ -234,3 +234,25 @@ fn test_atomic_masks_keep_complete_scopes_without_disabling_sibling_paint_metada
 		}
 	}
 }
+
+fn test_viewport_culling_keeps_unsized_generated_images_until_they_can_request_their_source() {
+	mut document := html.parse_document(chunk_metadata_document_markup() +
+		'<style>.pending:before{content:url(https://pending-image.test/play.svg)}</style><span class="pending" style="position:absolute;top:6500px">duration</span>')
+	defer { document.finalize() }
+	document.set_font_rendering_policy(.chromium)
+	_ = layout_document_typed_in_viewport(document, 1280, 800)
+	commands := display_list_commands(document.record_display_list() or { panic('paint') })
+	mut plan := ChromiumRasterLayerPlan{}
+	update_chromium_raster_layer_plan_for_viewport(document, commands, 1,
+		LayoutRect{0, 6400, 1280, 800}, mut plan)
+	assert plan.has_paint_metadata
+	mut pending := 0
+	for index, command in commands {
+		if command.kind != 'draw_replaced_image' || command.image_data == unsafe { nil }
+			|| command.image_data.image_url != 'https://pending-image.test/play.svg' { continue }
+		assert command.width == 0 || command.height == 0
+		assert plan.command_layers[index] >= 0
+		pending++
+	}
+	assert pending == 1
+}

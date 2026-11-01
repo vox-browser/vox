@@ -243,6 +243,19 @@ fn chromium_paint_chunk_is_interested(chunk ChromiumRasterChunk, cull LayoutRect
 		|| chromium_layer_bounds_overlap(chunk.bounds, cull)
 }
 
+fn chromium_paint_chunk_has_pending_image(chunk ChromiumRasterChunk, commands []PaintCommand) bool {
+	for index in chunk.command_index .. chunk.command_end {
+		command := unsafe { &commands[index] }
+		// An undecoded generated image can have no intrinsic size yet. Native
+		// replay starts its request before checking that geometry; dropping the
+		// command here would prevent the completion that gives it a real size.
+		if command.kind == 'draw_replaced_image' && command.image_data != unsafe { nil }
+			&& command.image_data.image_url != '' && command.replaced_image_bitmap == none
+			&& (command.width <= 0 || command.height <= 0) { return true }
+	}
+	return false
+}
+
 fn chromium_layerize_visible_paint_chunks(result &DocumentLayoutResult,
 	commands []PaintCommand, cull LayoutRect, scale f64,
 	mut scratch ChromiumRasterPlanScratch, mut plan ChromiumRasterLayerPlan) {
@@ -289,7 +302,8 @@ fn chromium_layerize_visible_paint_chunks(result &DocumentLayoutResult,
 			metadata_index++
 		}
 		if !chromium_paint_chunk_is_interested(chunk, cull)
-			&& !scratch.paint_visible_effects[chunk.state.effect_scope] {
+			&& !scratch.paint_visible_effects[chunk.state.effect_scope]
+			&& !chromium_paint_chunk_has_pending_image(chunk, commands) {
 			scratch.command_chunk_groups << -1
 		} else {
 			context := chromium_chunk_context(chunk, result, commands)
