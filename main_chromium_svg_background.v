@@ -60,6 +60,37 @@ struct ChromiumSVGBackgroundReplay {
 	transform       [6]f64
 }
 
+// Native replay keeps these paths in the current picture. Inspect the actual
+// resolved SVG rather than treating every vector background as a bitmap barrier.
+// Repeats, effects and rounded image clips retain the ordinary fallback.
+fn chromium_svg_background_can_share_recording(command &layout.PaintCommand) bool {
+	if command.kind != 'draw_background_image' || command.image_data == unsafe { nil }
+		|| command.opacity != 1 || command.group_opacity != 1 {
+		return false
+	}
+	image := command.image_data
+	if image.background_blend_mode != .normal || image.image_attachment == 'fixed'
+		|| image.image_clip_radii != layout.BoxRadii{} {
+		return false
+	}
+	natural := svg_background_natural_metrics(image) or { return false }
+	background := image.background_layer_data or { return false }
+	layer := background.resolve_image(image.image_url,
+		painting.Rect{command.x, command.y, command.width, command.height}, natural) or { return false }
+	clip := painting.Rect{image.image_clip_x, image.image_clip_y, image.image_clip_width, image.image_clip_height}
+	if clip.width <= 0 || clip.height <= 0 { return false }
+	plan := painting.background_tile_plan(layer,
+		painting.Point{command.image_scroll_offset_x, command.image_scroll_offset_y}, clip)
+	if plan.repeat_x || plan.repeat_y { return false }
+	replay := chromium_svg_background_replay(plan.first_tile, normalized_paint_transform(command.transform))
+	commands := svg_background_paint_commands(image, replay.viewport_width, replay.viewport_height) or { return false }
+	if commands.len == 0 || commands.len > 32768 { return false }
+	for index in 0 .. commands.len {
+		if !chromium_svg_solid_path_supported(&commands[index]) { return false }
+	}
+	return true
+}
+
 // Non-repeating SVG backgrounds lay out in an independently rounded container.
 // Blink maps that picture to the snapped destination, whose dimensions match
 // the rounded container; fractional CSS tile dimensions do not scale it again.

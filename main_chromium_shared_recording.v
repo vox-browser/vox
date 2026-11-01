@@ -100,6 +100,7 @@ fn chromium_shared_recording_leaf_supported(command &layout.PaintCommand) (bool,
 	match command.kind {
 		'draw_background_image' {
 			data := command.image_data
+			if chromium_svg_background_can_share_recording(command) { return true, true }
 			if data == unsafe { nil } || data.background_blend_mode != .normal
 				|| data.background_svg_document != none || data.background_static_svg_resource != none {
 				return false, false
