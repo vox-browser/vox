@@ -130,6 +130,11 @@ fn run_inline_formatting_context_for_width(mut state LayoutState, containing_blo
 	}
 	result := run_uncached_inline_formatting_context_for_width(mut state, containing_block,
 		mut used, mode, space, context, width_only)
+	// Discarded whitespace never starts inline content and must not consume a
+	// pending block margin on replay. Only retain results which produced text.
+	if used.line_boxes.len == 0 || !used.line_boxes.any(it.fragments_.len > 0) {
+		return result
+	}
 	// The ordinary text shaping caches retain their own payloads. Copy line
 	// fragments and glyph runs explicitly; none may point into this probe's arena.
 	mut retained := platform.enter_retained_allocations()

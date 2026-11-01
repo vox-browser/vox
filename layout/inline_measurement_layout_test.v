@@ -151,3 +151,20 @@ fn test_inline_measurement_excludes_unpooled_committed_positioned_and_clamped_la
 		source.release_measurement_chunk_pool()
 	}
 }
+
+fn test_inline_measurement_does_not_cache_discarded_whitespace() {
+	document := dom.Document.create(dom.url_about_blank())
+	container := measurement_inline_fixture(document, '')
+	mut text := container.children()[0].as_text_node()?
+	mut data := text.dom_node()?.as_character_data()?
+	data.set_data(' \n\t ')
+	text.invalidate_text_for_rendering()
+	mut source := LayoutState.new()
+	source.enable_measurement_chunk_pool()
+	defer { source.release_measurement_chunk_pool() }
+	space := AvailableSpace.new(AvailableSize.make_definite(CSSPixels.new(180)), AvailableSize.make_indefinite())
+	for _ in 0 .. 3 {
+		assert !measurement_inline_compare(mut source, container, space, .normal, false)
+		assert source.measurement_chunk_pool_.inline_measurements_.len == 0
+	}
+}
