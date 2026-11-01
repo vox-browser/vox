@@ -110,6 +110,20 @@ class CNNHomeInstructionTests(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             benchmark.summarize(pairs)
 
+    def test_thirty_percent_target_uses_the_exact_conservative_boundary(self):
+        result = benchmark.summarize(self.pairs(vox=700), target_vox_fraction=.7)
+        self.assertTrue(result['acceptance'])
+        self.assertEqual(result['target_vox_fraction'], .7)
+        pairs = self.pairs(vox=700)
+        pairs[3]['vox']['launch_instruction_interval']['upper'] = 701
+        self.assertFalse(benchmark.summarize(pairs, target_vox_fraction=.7)['acceptance'])
+        self.assertFalse(benchmark.summarize(self.pairs(vox=7 * 10**17 + 1,
+                                                      brave=10**18),
+                                             target_vox_fraction=.7)['acceptance'])
+        diagnostic = benchmark.summarize(self.pairs(1), diagnostic=True, target_vox_fraction=.7)
+        self.assertEqual(diagnostic['target_vox_fraction'], .7)
+        self.assertFalse(diagnostic['acceptance'])
+
     def test_cli_rejects_short_acceptance_and_retains_explicit_diagnostics(self):
         arguments = [item for name in ('output', 'memory-guard-registry', 'brave-profile-template',
                      'vox-cache-template', 'extension', 'checker', 'expected', 'diff-tool')
@@ -117,6 +131,11 @@ class CNNHomeInstructionTests(unittest.TestCase):
         args = benchmark.parse_args(arguments)
         self.assertEqual(args.repeat, 7)
         self.assertEqual(args.settle_seconds, 5)
+        self.assertEqual(args.target_vox_fraction, .9)
+        self.assertEqual(benchmark.parse_args(arguments + ['--target-vox-fraction', '.7']).target_vox_fraction, .7)
+        for value in ('0', '-.7', '1.1', 'nan', 'inf'):
+            with self.assertRaises(SystemExit):
+                benchmark.parse_args(arguments + ['--target-vox-fraction', value])
         with self.assertRaises(SystemExit):
             benchmark.parse_args(arguments + ['--repeat', '1'])
         self.assertTrue(benchmark.parse_args(arguments + ['--diagnostic', '--repeat', '1']).diagnostic)

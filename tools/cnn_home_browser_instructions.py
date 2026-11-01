@@ -143,16 +143,18 @@ def full_ubo_ready(connection, port, deadline):
         background.sock.close()
 
 
-def summarize(pairs, diagnostic=False):
+def summarize(pairs, diagnostic=False, target_vox_fraction=.9):
+    browser.require(0 < target_vox_fraction <= 1, 'Target fraction must be in (0, 1]')
     if diagnostic:
         return dict(acceptance=False, passed=False, valid=all(row.get('exit') == 0
                     for pair in pairs for row in pair.values()), pairs=len(pairs),
+                    target_vox_fraction=target_vox_fraction,
                     reason='Diagnostic observations; seven complete pairs required')
     browser.require(len(pairs) >= 7, 'Seven complete alternating pairs required')
     browser.require(all(pair.get('vox', {}).get('filter_gate', {}).get('passed') is True
                         and pair.get('brave', {}).get('brave_setup') for pair in pairs),
                     'Every pair needs verified full-uBO filtering')
-    result = browser.evaluate_pairs([dict(vox=pair['vox'], brave=pair['brave']) for pair in pairs], .9, 'launch')
+    result = browser.evaluate_pairs([dict(vox=pair['vox'], brave=pair['brave']) for pair in pairs], target_vox_fraction, 'launch')
     if any('control' in pair for pair in pairs):
         browser.require(all('control' in pair and pair['control'].get('filter_gate', {}).get('passed')
                             for pair in pairs), 'Every control needs verified content and filters')
@@ -201,6 +203,8 @@ def parse_args(argv=None):
     control.add_argument('--control-vox-app', type=Path,
                    help='Alternate a separately pinned Vox control application without environment overrides')
     p.add_argument('--repeat', type=int, default=7)
+    p.add_argument('--target-vox-fraction', type=float, default=.9,
+                   help='Maximum Vox/Brave instruction fraction; use .7 for 30%% fewer')
     p.add_argument('--settle-seconds', type=float, default=5)
     p.add_argument('--timeout', type=float, default=180)
     args = p.parse_args(argv)
@@ -208,6 +212,8 @@ def parse_args(argv=None):
         p.error('Acceptance needs seven pairs; --diagnostic explicitly disables acceptance')
     if not 0 <= args.settle_seconds < args.timeout:
         p.error('Invalid settle period or timeout')
+    if not 0 < args.target_vox_fraction <= 1:
+        p.error('Target fraction must be in (0, 1]')
     if args.diagnostic_engine != 'both' and not args.diagnostic:
         p.error('Single-engine observations require --diagnostic')
     for key, value in vars(args).items():
@@ -314,6 +320,7 @@ def main():
                                  if args.control_vox_app else None),
         author_scripts=False, normal_scripting_policy=True, javascript_backends=dict(vox='javascriptcore', brave='v8'),
         viewport=[1024, 768], scale=1, settle_seconds=args.settle_seconds,
+        target_vox_fraction=args.target_vox_fraction,
         brave_profile_template=str(args.brave_profile_template), vox_cache_template=str(args.vox_cache_template)))
     replay = Replay(args.archive, args.output / 'replay')
     thread = threading.Thread(target=replay.server.serve_forever, daemon=True)
@@ -352,9 +359,10 @@ def main():
             pairs.append(pair)
             browser.write_json(args.output / 'pairs.json', pairs)
         try:
-            summary = summarize(pairs, args.diagnostic)
+            summary = summarize(pairs, args.diagnostic, args.target_vox_fraction)
         except RuntimeError as error:
-            summary = dict(acceptance=False, passed=False, pairs=len(pairs), error=str(error))
+            summary = dict(acceptance=False, passed=False, pairs=len(pairs),
+                           target_vox_fraction=args.target_vox_fraction, error=str(error))
         browser.write_json(args.output / 'summary.json', summary)
         print(json.dumps(summary), flush=True)
         return 0 if summary.get('valid') or summary['passed'] else 1
