@@ -2390,3 +2390,57 @@ Raw artifacts are under `Build/verge-cold-20261102/`. This establishes the froze
 guest viewport with author scripts removed; live scripting, video, logged-in
 behavior and all scroll positions remain unqualified. There is no instruction
 count or scrolling-performance claim.
+
+
+## Pikabu sizing and SVG patterns improve; full-page gate remains open, 2 November 2026
+
+Four separately committed fixes correct constrained replaced-element heights
+(`be3bb70d`), SVG image resource transforms (`f6f48ee53`), pattern viewport
+normalization (`7fdd5da4b`), and single-image pattern sampling (`b170f17be`).
+Pikabu's SVG spacer now derives its automatic height from the clamped used
+width, removing the vertical gap above its photograph. Embedded pattern images
+keep their `<use>` and resource transforms. Eligible single-image patterns
+retain a paint record instead of passing through a second sampled Quartz tile.
+Effects and unsupported inputs retain the existing fallback.
+
+The controlled sizing regression improves from **78,400 to zero** differing
+pixels. The regression using Pikabu's real onboarding SVG and its actual
+fractional placement improves from **12,819 to zero**, with two agreeing Brave
+references. The same banner rectangle is exact in both cold and complete-cache
+full-page captures. Outside that rectangle, the matched native before/after
+frames are unchanged. Twelve selected native pixel captures pass, including
+both new SVG pattern cases, the sizing case, WebP paths and related image
+controls. Focused layout and eligibility checks pass in default and no-GC
+modes. CNN and Guardian's unchanged archived viewports remain exact, and fresh
+headless startup passes.
+
+**Pikabu is not pixel-exact yet.** The registered complete-cache run has
+**79,769 differing pixels**, including the photograph, header shadows and some
+controls. Its saved-live/frozen Brave reference differs at **three** plus-button
+edge pixels, despite matching bounds and computed styles. Neither discrepancy
+is waived. The candidate archive is retained under `Build/` and has not
+replaced the canonical site fixture. Its live full-uBO capture checks 174
+decisions, including one block, with zero disagreements and matching cosmetic,
+procedural and scriptlet policies. Native replay checks 52 decisions with zero
+disagreements. Cookie preparation uses the real “Понятно” button in a private
+profile.
+
+A broader synthetic SVG-image case still differs at **307 pixels** near a
+fractional image boundary. It remains in the raw diagnostics; the initial
+attribution to explicit SVG dimensions was rejected. Adding a site base and
+removing those dimensions preserves both its original Brave PNG and the native
+failure. The committed real-asset regression covers Pikabu's observed placement
+and does not claim to resolve every fractional SVG-image embedding. A broader
+adapter test also fails three empty-clip assertions; its inputs contain no
+images, and that entire suite is not reported green. The affected pattern/mask
+subset passes in both memory modes.
+
+The final production build records unchanged inputs throughout compilation.
+Exact executable/library hashes, commands, guards, all rejected experiments,
+reference checks and remaining diagnostics are in the
+[Pikabu receipt](benchmark-results/pikabu-brave-pixels-2026-11-02.json).
+Raw evidence is under `Build/pikabu-parity-20261102/`. Live browser capture uses
+the default 12 GiB guard after a retained 3 GiB failure; frozen/native runtime
+checks retain 3 GiB. This validates frozen guest rendering with author scripts
+removed. Full live scripting, video, authenticated behavior and all scroll
+positions remain unqualified. There is no instruction-count or scrolling claim.
