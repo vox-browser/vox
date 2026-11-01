@@ -1,21 +1,24 @@
 # BBC homepage instruction comparison
 
 **The requested 10% advantage remains open. BBC does not qualify for
-`OPTIMIZED_SITES.md`.** The latest seven-pair cohort (33) has a Vox median of
-**35,400,964,816** retired instructions and a Brave lower-bound median of
-**16,625,613,691**. All 21 captures pass their unchanged content, pixels and
-native-exit audits. Its conservative ratio is **2.839621547749952**, above 0.9:
-`458364766710 > 145275799293` fails the integer gate. Every observation,
-including the 45,836,476,671-instruction candidate outlier, remains included.
+`OPTIMIZED_SITES.md`.** The latest seven-pair cohort (34) has a Vox median of
+**35,348,564,657** retired instructions and a Brave lower-bound median of
+**16,161,771,586**. All 21 captures pass their unchanged content, pixels and
+native-exit audits. Its conservative ratio is **2.8677260187784155**, above 0.9:
+`455031460390 > 142805941596` fails the integer gate. Every observation,
+including the 45,503,146,039-instruction candidate outlier, remains included.
 
-The same-binary grid-reuse control has median 36,443,294,804. The candidate
-median falls 2.8601420195563554%, but its conservative control ratio is
-1.3202111637189726; both conservative gates fail. Earlier failing and invalid
+The same-binary visitation control has median 36,545,688,678. The candidate
+median falls 3.2756915091892935%, but its conservative control ratio is
+1.2791310365516306; both conservative gates fail. Earlier failing and invalid
 observations remain retained; no accepted BBC savings are claimed here.
+Counter-enabled observations also emit retained-font diagnostic logging. A
+corrected cohort separating that logging is pending; this protocol correction
+will receive no engine optimization credit.
 
 The machine-readable [evidence](benchmark-results/bbc-brave-instructions-2026-11-01.json)
-retains 815 attempts and 33 cohorts, including failures and first launches;
-679 complete cohort raw results were independently checked against the recorded
+retains 838 attempts and 34 cohorts, including failures and first launches;
+700 complete cohort raw results were independently checked against the recorded
 vectors, medians and integer gates. It also retains ownership audits, commands and artifact hashes. Raw archives, logs,
 PNGs, executable copies, PID registries, compiler output and guard receipts are
 under `Build/bbc-home-instructions-20261101-054807/` in the canonical checkout.
@@ -96,6 +99,7 @@ capture marker. An invalid cohort is retained for diagnosis, not acceptance.
 | Necessary static predicates for user-style subjects | 36,606,121,582 | 16,121,151,447 | 2.3956684098670245 | All observations valid; median regresses against control; both gates fail |
 | Repeated default cosmetic-filter queries | 36,057,458,625 | 16,480,599,153 | 2.3630417159732398 | Gate fails; Brave pair 1 photo differs; median regresses against control |
 | Retained ordinary grid geometry | 35,400,964,816 | 16,625,613,691 | 2.839621547749952 | All observations valid; median falls 2.8601% against control; both conservative gates fail |
+| Dense intrinsic-seed visitation | 35,348,564,657 | 16,161,771,586 | 2.8677260187784155 | All observations valid; median falls 3.2757% against control; both conservative gates fail |
 
 The grid block-height cohort alternates an older control, candidate and Brave;
 control/candidate medians are 101,567,929,247 and 90,700,737,334 (10.70% observed
@@ -1375,3 +1379,66 @@ A second lossless storage receipt preserves 66 completed focused-test binaries:
 was checked before unlinking the executable, and the receipt retains its mode,
 mtime and restorable path. Active browser bundles and the current focused-test
 binaries remain executable. See `completed-check-binary-compression-receipt.json`.
+
+
+## Dense intrinsic-seed visitation (cohort 34)
+
+Commit `edb5330e` replaces per-probe hash visitation with an epoch-stamped dense
+vector scoped to one formatting pass. Each probe still copies current source
+geometry, including hoisted external containing blocks. It does not cache used
+geometry or remove the existing prefix-chain seeding. Valid physical ownership
+and the complete tree-order identity guard index use. Mutated/reindexed trees,
+foreign containing blocks and absent/closed pools use the original general
+walk; epoch wrap clears the vector before restarting. The shared pool exposes
+this pass-owned storage to nested probes without placing it in their shorter
+scratch arenas. Tooling commit `a4d39e29` adds an isolated disabled control;
+all 43 driver tests pass.
+
+Focused checks pass 21 cases in seven files, in default, no-GC and preallocated
+modes, with enabled and disabled paths: 126 test executions and nine zero exits.
+Four new cases compare hoisted chains and fresh source geometry, wraparound,
+nested measurements and mutated/reindexed/closed fallbacks with the original
+hash walk. Existing external-percentage, pooled-probe and native workspace
+ownership cases retain their original assertions.
+
+The available bundle initially lacked the flag while another production build
+was running, so no duplicate build was queued. That shared build contains all
+five unchanged owned sources and a positive generated-C witness. Its compiler
+and guard exit zero in 212.44877970800002 seconds, sampled peak 9,127,231,488
+bytes. Other shared sources changed; both matched paths use the same pinned
+completed bundle, and only the visitation flag differs. Executable SHA256 is
+`d1851e59fab75fb0798cc7fdbc340f12bd0a6613c0e7e630e200284998d634f8`;
+generated C is `1dc41be7bcd034bcce8af38d19803c80abbf5983e949d6a45bee616bbe17bd9b`.
+Fresh headless startup, eleven smoke comparisons with unchanged bounds and
+eight exact SVG mutation comparisons pass. The separate BBC diagnostic proves
+visitation storage executes only in the enabled path. Both paths preserve the
+original pixels, content and native exit zero. JavaScriptCore executes one
+context with 1,925 candidate / 2,059 control evaluations; these diagnostics
+supply no instruction credit.
+
+All seven triples match their original references, complete content and native
+exit audits. The median point reduction against control is 1,197,124,021
+instructions, but both conservative gates fail. Every outlier and attempt is
+retained. The guard adopts 68 processes without error, records 1,745,453,056
+peak sampled bytes over 112.319832208 seconds, and returns benchmark exit 1.
+Broad verification enters all 446 cases in both default and no-GC modes; each
+has 445 passes and only the unchanged text-control baseline failure, 13.5
+versus expected 13. Both compilers exit zero; default-all and no-GC batch 2
+exit 1, all other 89 no-GC batches exit zero. This is not a whole-suite pass
+or broad cadence reset. The requested Brave advantage and catalog entry
+remain open.
+
+The evidence also retains two subsequent lossless storage receipts. Old completed
+app executable copies share 66 verified gzip objects: 238 original paths,
+4,952,094,384 logical bytes, 637,799,621 unique compressed bytes. Their modes,
+mtimes and restorable paths remain recorded; active/current bundles stay
+executable. A second completed-cache pass replaces 23,496 payloads with links
+to verified immutable SHA256-addressed bytes, retaining the original metadata.
+It covers 1,431,116,333 logical bytes and keeps fresh private caches for each
+new trial. No live cache, measurement result, PNG or fixture is modified.
+
+Receipts are `intrinsic-seed-visits-cohort/`, its derived JSON,
+`intrinsic-seed-visits-checks/`, `intrinsic-seed-visits-reused-build.json`,
+`intrinsic-seed-visits-compiled-witness/`, `intrinsic-seed-visits-validation/`,
+both diagnostic validations, `retained-app-executable-compression-receipt.json`
+and `retained-cache-payload-sharing-v2-receipt.json` under the evidence root.
