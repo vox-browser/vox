@@ -213,12 +213,12 @@ fn test_absolutized_uses_computation_context_and_preserves_typed_tree() {
 
 	grid_value := parse_css_value_logic(.grid_template_columns, 'calc(1em + 2px)')?
 	assert grid_value is GridTrackSizeListStyleValue
-	absolutized_grid := grid_value.absolutized(ComputationContext{
+	absolutized_grid := StyleValue(grid_value.absolutized(ComputationContext{
 		length_resolution_context: LengthResolutionContext{
 			font_metrics: LengthFontMetrics.new(font_size, CSSPixels.new(10), CSSPixels.new(14), CSSPixels.new(10), CSSPixels.new(24))
 			root_font_metrics: LengthFontMetrics.default()
 		}
-	})
+	}))
 	assert absolutized_grid is GridTrackSizeListStyleValue
 	assert absolutized_grid.serialize(.normal) == 'calc(22px)'
 }
