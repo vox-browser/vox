@@ -9,6 +9,7 @@ struct ChromiumPaintMetadata {
 	context int
 	state   ChromiumRasterPropertyState
 	bounds  LayoutRect
+	client  u64
 }
 
 // Chromium expands a vertical root scrollport by 4000 pixels and retains its
@@ -180,20 +181,70 @@ fn chromium_collect_paint_metadata(result &DocumentLayoutResult, commands []Pain
 				context: context
 				state:   ChromiumRasterPropertyState{ ...state, scroll_hit_test: box.own_scroll_frame_index }
 				bounds:  marker
+				client:  chromium_paint_client(box)
 			}
 			has_scroll_marker = true
 		}
 		// Reverse traversal puts the ordinary background metadata first when
 		// the vector is restored to paint order below.
-		scratch.paint_metadata << ChromiumPaintMetadata{after, context, state, bounds}
+		scratch.paint_metadata << ChromiumPaintMetadata{after, context, state, bounds,
+			chromium_paint_client(box)}
 	}
 	scratch.paint_metadata.reverse_in_place()
 	return has_scroll_marker
 }
 
+// Keep each paint client's hit-test and drawing bounds together. Combining
+// unrelated clients before layerization can promote a later, disjoint SVG or
+// decoration along with an overlapping scroller overlay. Layerization may still
+// merge their compatible chunks after considering the intervening geometry.
+fn chromium_paint_client(box &BlockBox) u64 {
+	if box.layout_handle != unsafe { nil } {
+		mut ancestor := ?&Node(unsafe { &Node(box.layout_handle) })
+		for {
+			node := ancestor or { break }
+			// Blink records an inline SVG viewport as one paint client. Its
+			// individual paths must not merge into unrelated overlap layers.
+			if node.is_svg_svg_box() { return u64(voidptr(node)) }
+			ancestor = node.parent()
+		}
+		if viewport := chromium_single_svg_content(unsafe { &Node(box.layout_handle) }) {
+			return u64(voidptr(viewport))
+		}
+	}
+	// Ordinary boxes retain their shared property-state chunk. An SVG
+	// viewport contributes a distinct transform/recording client.
+	return 1
+}
+
+// Transparent links, flex wrappers and button content boxes around one inline
+// SVG belong to its recording too. Out-of-flow accessibility labels and hit
+// targets do not turn that sole principal child into a mixed text/SVG client.
+fn chromium_single_svg_content(node &Node) ?&Node {
+	mut current := node
+	for {
+		if current.is_svg_svg_box() { return current }
+		if current.is_text_node() { return none }
+		mut principal := ?&Node(none)
+		for child in current.children() {
+			if child.is_absolutely_positioned() { continue }
+			if child.is_text_node() {
+				text := unsafe { &TextNode(child) }
+				if text.source_text_.trim_space() == '' { continue }
+				return none
+			}
+			if principal != none { return none }
+			principal = child
+		}
+		current = principal or { return none }
+	}
+	return none
+}
+
 fn chromium_append_paint_chunk(bounds LayoutRect, state ChromiumRasterPropertyState,
-	context int, mut scratch ChromiumRasterPlanScratch) int {
+	context int, client u64, mut scratch ChromiumRasterPlanScratch) int {
 	if context >= 0 && context == scratch.paint_chunk_context && state.scroll_hit_test == 0
+		&& client != 0 && client == scratch.paint_chunk_client
 		&& !state.legacy_effect && scratch.paint_chunks.len > 0
 		&& scratch.paint_chunks.last().state == state {
 		index := scratch.paint_chunks.len - 1
@@ -212,17 +263,20 @@ fn chromium_append_paint_chunk(bounds LayoutRect, state ChromiumRasterPropertySt
 		command_end:   index + 1
 	}
 	scratch.paint_chunk_context = if state.scroll_hit_test > 0 { -1 } else { context }
+	scratch.paint_chunk_client = client
 	return index
 }
 
 fn chromium_chunk_context(chunk ChromiumRasterChunk, result &DocumentLayoutResult,
-	commands []PaintCommand) int {
+	commands []PaintCommand) (int, u64) {
 	mut context := -1
+	mut client := u64(0)
+	mut multiple_clients := false
 	for index in chunk.command_index .. chunk.command_end {
 		command := unsafe { &commands[index] }
 		if command.visual_layer_data != none { continue }
 		if command.paint_box_index < 0 || command.paint_box_index >= result.paint_order.len {
-			return -1
+			return -1, 0
 		}
 		box := result.paint_order[command.paint_box_index].box
 		current := command.visual_context_index or {
@@ -232,10 +286,13 @@ fn chromium_chunk_context(chunk ChromiumRasterChunk, result &DocumentLayoutResul
 				box.accumulated_visual_context_index
 			}
 		}
-		if context >= 0 && context != current { return -1 }
+		if context >= 0 && context != current { return -1, 0 }
+		current_client := chromium_paint_client(box)
+		if client != 0 && client != current_client { multiple_clients = true }
+		client = current_client
 		context = current
 	}
-	return context
+	return context, if multiple_clients { u64(0) } else { client }
 }
 
 fn chromium_paint_chunk_is_interested(chunk ChromiumRasterChunk, cull LayoutRect) bool {
@@ -293,11 +350,12 @@ fn chromium_layerize_visible_paint_chunks(result &DocumentLayoutResult,
 	scratch.command_chunk_groups.clear()
 	mut metadata_index := 0
 	scratch.paint_chunk_context = -1
+	scratch.paint_chunk_client = 0
 	for chunk in scratch.chunks {
 		for metadata_index < scratch.paint_metadata.len
 			&& scratch.paint_metadata[metadata_index].at <= chunk.command_index {
 			metadata := scratch.paint_metadata[metadata_index]
-			chromium_append_paint_chunk(metadata.bounds, metadata.state, metadata.context,
+			chromium_append_paint_chunk(metadata.bounds, metadata.state, metadata.context, metadata.client,
 				mut scratch)
 			metadata_index++
 		}
@@ -306,8 +364,8 @@ fn chromium_layerize_visible_paint_chunks(result &DocumentLayoutResult,
 			&& !chromium_paint_chunk_has_pending_image(chunk, commands) {
 			scratch.command_chunk_groups << -1
 		} else {
-			context := chromium_chunk_context(chunk, result, commands)
-			group := chromium_append_paint_chunk(chunk.bounds, chunk.state, context,
+			context, client := chromium_chunk_context(chunk, result, commands)
+			group := chromium_append_paint_chunk(chunk.bounds, chunk.state, context, client,
 				mut scratch)
 			if chunk.unbounded_sticky_overlap {
 				last := scratch.paint_chunks[group]
@@ -323,7 +381,7 @@ fn chromium_layerize_visible_paint_chunks(result &DocumentLayoutResult,
 	}
 	for metadata_index < scratch.paint_metadata.len {
 		metadata := scratch.paint_metadata[metadata_index]
-		chromium_append_paint_chunk(metadata.bounds, metadata.state, metadata.context,
+		chromium_append_paint_chunk(metadata.bounds, metadata.state, metadata.context, metadata.client,
 			mut scratch)
 		metadata_index++
 	}

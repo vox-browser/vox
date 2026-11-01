@@ -57,6 +57,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_cnn_ticker_keeps_its_picture_beside_an_offscreen_svg_background(self):
         self.compare_fixture('cnn-ticker-offscreen-background', width=1024, height=768)
 
+    def test_guardian_carousel_overlay_keeps_the_logo_in_its_root_raster(self):
+        self.compare_fixture('guardian-carousel-paint-clients', width=1024, height=768)
+
     def test_guardian_late_font_updates_the_editions_intrinsic_width(self):
         self.compare_fixture('guardian-intrinsic-font-width')
 

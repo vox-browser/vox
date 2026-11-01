@@ -80,6 +80,7 @@ mut:
 	command_chunk_groups []int
 	paint_chunk_layers []int
 	paint_chunk_context int = -1
+	paint_chunk_client u64
 	paint_visible_effects map[u64]bool
 }
 
