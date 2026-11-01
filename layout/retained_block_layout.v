@@ -42,7 +42,6 @@ struct RetainedBlockLayout {
 	grid_container_rare ?&UsedValuesRareData
 	result            FormattingContextResult
 mut:
-	font_validation_ RetainedFontValidation
 	paint_lines_ map[u64]&RetainedBlockPaintLines
 	paint_boxes_ map[u64]&RetainedBlockPaintBox
 	visual_lines_ map[u64][]dom.VisualLine
@@ -143,7 +142,8 @@ fn run_retaining_independent_formatting_context(mut state LayoutState, box &Node
 			&& cached.font_policy == box.document().font_rendering_policy()
 			&& cached.style_environment == box.document().style_environment_version()
 			&& retained_inline_inputs_are_current(cached.inputs)
-			&& cached.fonts_are_current(font_generation) {
+			&& (cached.font_generation == font_generation
+				|| retained_layout_fonts_are_current(cached.inputs)) {
 			report_retained_block_image_reuse(cached.inputs)
 			report_retained_flex_layout(cached.inputs)
 			report_retained_grid_layout(cached.inputs)

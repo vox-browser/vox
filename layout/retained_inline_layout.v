@@ -47,7 +47,6 @@ struct RetainedInlineLayout {
 	inline_end        StaticPositionRect
 	result            InlineFormattingResult
 mut:
-	font_validation_ RetainedFontValidation
 	paint_lines_  []TextLine
 	paint_origin_ css.CSSPixelPoint
 	paint_ready_  bool
@@ -231,7 +230,8 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 			&& cached.style_environment == root.document().style_environment_version()
 			&& cached.content_width == used.content_width()
 			&& retained_inline_inputs_are_current(cached.inputs)
-			&& cached.fonts_are_current(font_generation) {
+			&& (cached.font_generation == font_generation
+				|| retained_layout_fonts_are_current(cached.inputs)) {
 			report_relative_flow_layout_reuse(cached.inputs)
 			if cached.font_generation != font_generation && retained_font_generation_diagnostics {
 				eprintln('Vox retained inline font generation: ${cached.font_generation} -> ${font_generation}, ${cached.inputs.len} inputs')
