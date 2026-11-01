@@ -86,20 +86,29 @@ def stop_job(process, owned):
     # Kill the original group as well as observed descendants which created
     # another session. SIGKILL prevents a compiler continuing after the guard.
     snapshot = process_snapshot()
+    killed_root = False
     for pid, started in owned.items():
         if pid in snapshot and snapshot[pid][3] == started:
             try:
                 os.kill(pid, signal.SIGKILL)
+                killed_root |= pid == process.pid
             except ProcessLookupError:
                 pass
     try:
         os.killpg(process.pid, signal.SIGKILL)
     except ProcessLookupError:
         pass
-    except PermissionError:
+    except PermissionError as error:
         # macOS can retain an exited child's process group after the last
         # owned task has gone. Preserve its real exit instead of losing the
         # receipt to a cleanup error. An active owned task still fails closed.
+        # A successful SIGKILL is asynchronous. Reap the verified root before
+        # deciding that this is still an active, inaccessible process group.
+        if process.poll() is None and killed_root:
+            try:
+                process.wait(timeout=1)
+            except subprocess.TimeoutExpired:
+                raise error
         if process.poll() is None:
             raise
         remaining = process_snapshot()

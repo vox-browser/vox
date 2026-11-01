@@ -11,6 +11,29 @@ from run_memory_bounded import job_processes, publish_adopted_processes, read_ad
 
 
 class BoundedCommandTests(unittest.TestCase):
+    def test_group_permission_error_waits_for_a_verified_signalled_root(self):
+        process = Mock(pid=10)
+        process.poll.side_effect = [None, -9]
+        with patch('run_memory_bounded.process_snapshot', side_effect=[
+                {10: (1, 10, 100, 'original')}, {}]), \
+             patch('run_memory_bounded.os.kill') as kill, \
+             patch('run_memory_bounded.os.killpg', side_effect=PermissionError):
+            stop_job(process, {10: 'original'})
+        self.assertEqual(kill.call_args.args[0], 10)
+        self.assertEqual([call.kwargs for call in process.wait.call_args_list],
+                         [{'timeout': 1}, {}])
+
+    def test_group_permission_error_rejects_a_signalled_root_that_stays_active(self):
+        process = Mock(pid=10)
+        process.poll.return_value = None
+        process.wait.side_effect = subprocess.TimeoutExpired('child', 1)
+        with patch('run_memory_bounded.process_snapshot', return_value={10: (1, 10, 100, 'original')}), \
+             patch('run_memory_bounded.os.kill'), \
+             patch('run_memory_bounded.os.killpg', side_effect=PermissionError):
+            with self.assertRaises(PermissionError):
+                stop_job(process, {10: 'original'})
+        process.wait.assert_called_once_with(timeout=1)
+
     def test_exited_group_permission_error_preserves_child_exit(self):
         process = Mock(pid=10)
         process.poll.return_value = 1
