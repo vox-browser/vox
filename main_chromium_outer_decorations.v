@@ -116,9 +116,10 @@ fn (mut app BrowserApp) draw_chromium_outer_decorations(index int, page_y f32, w
 		// tiles. Including browser chrome would give the first row a negative
 		// document coordinate and select the differently sized fallback target.
 		// The native constructor adds two guard pixels around this rectangle.
-		if C.native_begin_inset_decorations(2, page_y + 2,
+		if C.native_begin_deferred_inset_decorations(2, page_y + 2,
 			f32(app.viewport_width - 4), f32(app.viewport_height - 4),
 			f32(app.ctx.width), f32(app.ctx.height), page_y, 0) == 0 { return index }
+		retry_culling := culling
 		for i in index .. end {
 			if chromium_outer_decoration_gap_is_culled(unsafe { &app.paint_commands[i] }, mut culling,
 				page_y, app.ctx.width, window_height - app.status_height()) {
@@ -126,7 +127,15 @@ fn (mut app BrowserApp) draw_chromium_outer_decorations(index int, page_y f32, w
 			}
 			app.draw_command(app.paint_commands[i], 0, page_y, window_height)
 		}
-		C.native_end_inset_decorations()
+		if C.native_end_deferred_inset_decorations() == 0 {
+			// The native transaction restores the prefix before retrying.
+			mut replay_culling := retry_culling
+			for i in index .. end {
+				if chromium_outer_decoration_gap_is_culled(unsafe { &app.paint_commands[i] },
+					mut replay_culling, page_y, app.ctx.width, window_height - app.status_height()) { continue }
+				app.draw_command(app.paint_commands[i], 0, page_y, window_height)
+			}
+		}
 		return end
 	}
 	return index

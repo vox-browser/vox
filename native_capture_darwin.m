@@ -1,3 +1,4 @@
+#include <dlfcn.h>
 #include <Cocoa/Cocoa.h>
 #include "native_snapshot_png_darwin.h"
 #include "native_allocator_policy_darwin.h"
@@ -5226,10 +5227,41 @@ int native_begin_inset_decorations(float x, float y, float width, float height,
 #endif
 }
 
+int native_begin_deferred_inset_decorations(float x, float y, float width, float height,
+    float canvas_width, float canvas_height, float page_y, float scroll_y) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+    typedef int (*Begin)(CGContextRef, float, float, float, float, float, float, float, float);
+    static Begin begin;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        begin = (Begin)dlsym(RTLD_DEFAULT, "ladybird_v_skia_begin_deferred_inset_decorations");
+    });
+    if (begin) return begin([[NSGraphicsContext currentContext] CGContext], x, y,
+        width, height, canvas_width, canvas_height, page_y, scroll_y);
+#endif
+    // Completed bundles with the preceding bridge keep the ordinary group.
+    return native_begin_inset_decorations(x, y, width, height,
+        canvas_width, canvas_height, page_y, scroll_y);
+}
+
 void native_end_inset_decorations(void) {
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
     ladybird_v_skia_end_inset_decorations([[NSGraphicsContext currentContext] CGContext]);
 #endif
+}
+
+int native_end_deferred_inset_decorations(void) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+    typedef int (*End)(CGContextRef);
+    static End end;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        end = (End)dlsym(RTLD_DEFAULT, "ladybird_v_skia_end_deferred_inset_decorations");
+    });
+    if (end) return end([[NSGraphicsContext currentContext] CGContext]);
+#endif
+    native_end_inset_decorations();
+    return 1;
 }
 
 void native_draw_inner_box_shadow_corners_srgb(float outer_x, float outer_y,

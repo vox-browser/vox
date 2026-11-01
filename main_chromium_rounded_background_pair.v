@@ -54,12 +54,16 @@ fn (mut app BrowserApp) draw_chromium_rounded_background_pair(index int, page_y 
 			app.chromium_raster_plan.command_layers, index)
 		if end == index { return index }
 		app.flush_rounded_rect_underlay(0, page_y, window_height)
-		if C.native_begin_inset_decorations(2, page_y + 2,
+		if C.native_begin_deferred_inset_decorations(2, page_y + 2,
 			f32(app.viewport_width - 4), f32(app.viewport_height - 4),
 			f32(app.ctx.width), f32(app.ctx.height), page_y, 0) == 0 { return index }
 		for i in index .. end { app.draw_command(app.paint_commands[i], 0, page_y, window_height) }
 		app.flush_rounded_rect_underlay(0, page_y, window_height)
-		C.native_end_inset_decorations()
+		if C.native_end_deferred_inset_decorations() == 0 {
+			// The native transaction restores the prefix before retrying.
+			for i in index .. end { app.draw_command(app.paint_commands[i], 0, page_y, window_height) }
+			app.flush_rounded_rect_underlay(0, page_y, window_height)
+		}
 		return end
 	}
 	return index

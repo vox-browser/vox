@@ -95,6 +95,7 @@ struct IsolatedInputRecording {
     SkPictureRecorder recorder;
     SkRect bounds = SkRect::MakeEmpty();
     bool unsupported = false;
+    bool defer_leaf_raster = false;
 };
 std::unordered_map<CGContextRef, std::unique_ptr<IsolatedInputRecording>> s_isolated_input_recordings;
 
@@ -103,6 +104,15 @@ SkCanvas* isolated_input_recording_canvas(CGContextRef context)
     auto found = s_isolated_input_recordings.find(context);
     return found == s_isolated_input_recordings.end() ? nullptr
         : found->second->recorder.getRecordingCanvas();
+}
+
+// Only an explicitly transactional group may omit its speculative leaf pixels.
+// Unsupported input causes the owner to restore its checkpoint and replay.
+bool isolated_input_defers_leaf_raster(CGContextRef context)
+{
+    auto found = s_isolated_input_recordings.find(context);
+    return found != s_isolated_input_recordings.end()
+        && found->second->defer_leaf_raster && !found->second->unsupported;
 }
 
 SkCanvas* shared_recording_canvas(CGContextRef);
@@ -3545,6 +3555,7 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
         else
             input->second->unsupported = true;
     }
+    if (isolated_input_defers_leaf_raster(destination)) return 1;
     RasterRegion region;
     if (!clipped_raster_region(matrix.mapRect(local_bounds), canvas_width,
             canvas_height, anti_alias ? 2.0f : 0.0f, region))
@@ -4050,6 +4061,7 @@ extern "C" int ladybird_v_skia_draw_outer_box_shadow(CGContextRef destination,
             recording->drawRRect(shadow, paint);
             recording->restore();
             shared_recording_content(destination, matrix.mapRect(local_bounds), page_y, scroll_y);
+            if (isolated_input_defers_leaf_raster(destination)) return 1;
         }
     }
 

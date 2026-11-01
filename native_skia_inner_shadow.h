@@ -135,6 +135,7 @@ extern "C" int ladybird_v_skia_draw_inner_box_shadow(CGContextRef destination,
         draw_shadow(recording);
         recording->restore();
         shared_recording_content(destination, matrix.mapRect(content.rect()), page_y, scroll_y);
+        if (isolated_input_defers_leaf_raster(destination)) return 1;
     }
     draw_shadow(canvas);
     auto picture = recorder.finishRecordingAsPicture();
@@ -169,6 +170,11 @@ struct InsetDecorationRecording {
     int width, height;
     float scale, canvas_height, page_y, scroll_y;
     std::vector<uint32_t> backdrop;
+    // A deferred group can contain an unsupported native fallback draw. Keep
+    // its original rows until final publication, so retry starts pixel-exact.
+    std::vector<uint32_t> checkpoint;
+    RasterRegion checkpoint_region;
+    int checkpoint_width = 0, checkpoint_height = 0;
 };
 static std::unique_ptr<InsetDecorationRecording> s_inset_decoration_recording;
 
@@ -273,14 +279,62 @@ extern "C" int ladybird_v_skia_begin_inset_decorations(CGContextRef destination,
     return 1;
 }
 
+extern "C" int ladybird_v_skia_begin_deferred_inset_decorations(CGContextRef destination,
+    float x, float y, float width, float height, float canvas_width,
+    float canvas_height, float page_y, float scroll_y)
+{
+    if (!ladybird_v_skia_begin_inset_decorations(destination, x, y, width, height,
+            canvas_width, canvas_height, page_y, scroll_y)) return 0;
+    if (std::getenv("VOX_DISABLE_DEFERRED_DECORATIONS")) return 1;
+    // Fractional ancestor coverage blends final publication with the already
+    // painted fallback prefix. Keep that legacy prefix when a clip is active.
+    auto clip = CGContextConvertRectToDeviceSpace(destination, CGContextGetClipBoundingBox(destination));
+    if (!CGRectEqualToRect(clip, CGRectMake(0, 0,
+            CGBitmapContextGetWidth(destination), CGBitmapContextGetHeight(destination)))) return 1;
+    auto tracked = s_shared_clips.find(destination);
+    if (tracked != s_shared_clips.end()
+        && (tracked->second.unsupported || !tracked->second.clips.empty())) return 1;
+    auto& group = *s_inset_decoration_recording;
+    group.checkpoint = group.backdrop;
+    group.checkpoint_region = group.region;
+    group.checkpoint_width = group.width;
+    group.checkpoint_height = group.height;
+    s_isolated_input_recordings.at(destination)->defer_leaf_raster = true;
+    return 1;
+}
+
+struct DeferredInsetCheckpoint {
+    InsetDecorationRecording const& group;
+    bool published = false;
+    ~DeferredInsetCheckpoint()
+    {
+        if (published || group.checkpoint.empty()) return;
+        auto rows = read_backdrop(group.destination, group.checkpoint_region,
+            group.scale, group.checkpoint_width, group.checkpoint_height);
+        if (!rows.pixels) return;
+        for (int y = 0; y < group.checkpoint_height; ++y)
+            swap_red_blue_pixels(const_cast<uint8_t*>(rows.pixels) + size_t(y) * rows.pitch,
+                reinterpret_cast<uint8_t const*>(group.checkpoint.data()
+                    + size_t(y) * group.checkpoint_width), group.checkpoint_width);
+    }
+};
+
+#ifdef VOX_TEST_DEFERRED_DECORATIONS
+static bool s_test_fail_deferred_decorations;
+#endif
+
 extern "C" int ladybird_v_skia_end_inset_decorations(CGContextRef destination)
 {
     if (!s_inset_decoration_recording || s_inset_decoration_recording->destination != destination)
         return 0;
     auto group = std::move(s_inset_decoration_recording);
+    DeferredInsetCheckpoint checkpoint {*group};
     std::unique_ptr<IsolatedInputRecording> input(
         static_cast<IsolatedInputRecording*>(ladybird_v_skia_take_isolated_input(destination)));
     if (!input || input->unsupported) return 0;
+#ifdef VOX_TEST_DEFERRED_DECORATIONS
+    if (s_test_fail_deferred_decorations) return 0;
+#endif
     if (!std::getenv("VOX_DISABLE_INSET_DECORATION_BOUNDS"))
         trim_inset_decoration_backdrop(*group, input->bounds);
     auto content = input->recorder.finishRecordingAsPicture();
@@ -342,7 +396,21 @@ extern "C" int ladybird_v_skia_end_inset_decorations(CGContextRef destination)
         if (!draw(reinterpret_cast<uint8_t*>(pixels.data()), group->width, group->height,
                 group->width * 4, bytes->data(), bytes->size(), identity)) return 0;
     }
-    return composite_pixels(destination, std::move(pixels), group->width, group->height,
+    int result = composite_pixels(destination, std::move(pixels), group->width, group->height,
         group->region.left, group->canvas_height - group->region.bottom,
         group->region.width(), group->region.height(), true);
+    checkpoint.published = result != 0;
+    if (result && !group->checkpoint.empty() && std::getenv("VOX_PICTURE_REGION_DIAGNOSTICS"))
+        std::fprintf(stderr, "VOX_DEFERRED_DECORATIONS width=%d height=%d\n", group->width, group->height);
+    return result;
+}
+
+// A non-deferred legacy group already painted its fallback leaves. Only a
+// rolled-back deferred transaction asks the V owner to replay the group.
+extern "C" int ladybird_v_skia_end_deferred_inset_decorations(CGContextRef destination)
+{
+    if (!s_inset_decoration_recording || s_inset_decoration_recording->destination != destination) return 0;
+    bool deferred = !s_inset_decoration_recording->checkpoint.empty();
+    int result = ladybird_v_skia_end_inset_decorations(destination);
+    return result || !deferred;
 }
