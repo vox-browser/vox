@@ -111,12 +111,12 @@ pub fn (c &ComputedProperties) length_resolution_context() LengthResolutionConte
 		root_font_metrics_depend_on_viewport_metrics: c.root_font_metrics_depend_on_viewport_metrics_
 	}
 	if subject := c.subject_element_ {
-		context.use_float_calculated_lengths = subject.document().font_rendering_policy() == .chromium
+		context.use_chromium_geometry = subject.document().font_rendering_policy() == .chromium
 		context.subject_element = subject
 		context.subject_inline_axis_is_horizontal = c.writing_mode() == .horizontal_tb
 		context.query_container_cache = &LengthQueryContainerCache{}
 	} else if c.cached_first_available_computed_font_ != unsafe { nil } {
-		context.use_float_calculated_lengths = c.cached_first_available_computed_font_.font_rendering_policy == .chromium
+		context.use_chromium_geometry = c.cached_first_available_computed_font_.font_rendering_policy == .chromium
 	}
 	return context
 }

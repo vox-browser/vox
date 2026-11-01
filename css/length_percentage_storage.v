@@ -69,7 +69,7 @@ pub fn (lp LengthPercentage) to_px(context LengthResolutionContext, reference_va
 	if lp.is_calculated() {
 		resolved := Length.resolve_calculated_with_px(lp.calculated(), context, reference_value)
 		pixels := resolved.to_px_without_rounding(context)
-		return CSSPixels.truncated_value_for(if context.use_float_calculated_lengths {
+		return CSSPixels.truncated_value_for(if context.use_chromium_geometry {
 			f64(f32(pixels))
 		} else {
 			pixels

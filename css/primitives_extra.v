@@ -26,7 +26,7 @@ fn length_resolution_context_from_document(document &dom.Document) LengthResolut
 	// hooks are not available in the V DOM yet, so default initial metrics are
 	// the current boundary and the document viewport is preserved.
 	mut context := length_resolution_context_from_viewport_rect(css_pixel_rect_from_dom_rect(document.viewport_rect()))
-	context.use_float_calculated_lengths = document.font_rendering_policy() == .chromium
+	context.use_chromium_geometry = document.font_rendering_policy() == .chromium
 	return context
 }
 
