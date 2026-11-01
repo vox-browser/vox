@@ -119,6 +119,9 @@ mut:
 	disable_tracked_persistent_shortcut bool
 	trace_tracked_persistent_shortcut bool
 	reported_tracked_persistent_shortcut bool
+	disable_persistent_scope_jumps bool
+	trace_persistent_scope_jumps bool
+	reported_persistent_scope_jump bool
 }
 
 __global arena_thread_state ArenaThreadState
@@ -152,6 +155,8 @@ fn arena_state() &ArenaThreadState {
 		state.owner = u64(C.pthread_self())
 		state.disable_tracked_persistent_shortcut = os.getenv('VOX_DISABLE_TRACKED_PERSISTENT_SHORTCUT') != ''
 		state.trace_tracked_persistent_shortcut = os.getenv('VOX_TRACKED_PERSISTENT_DIAGNOSTICS') != ''
+		state.disable_persistent_scope_jumps = os.getenv('VOX_DISABLE_PERSISTENT_SCOPE_JUMPS') != ''
+		state.trace_persistent_scope_jumps = os.getenv('VOX_PERSISTENT_SCOPE_JUMP_DIAGNOSTICS') != ''
 		verify_prealloc_layout()
 	}
 	$if prealloc {
@@ -346,6 +351,31 @@ pub fn transient_arena_entered() bool {
 
 // enter_persistent routes allocations to the thread's base arena while an
 // arena is entered: retained state such as caches must outlive the arena.
+fn persistent_parent_outside_scopes(block &PreallocBlockView, jump_scopes bool) &PreallocBlockView {
+	mut parent := unsafe { block }
+	for parent != unsafe { nil } && parent.is_scope {
+		if jump_scopes && parent.scope != unsafe { nil } {
+			scope := unsafe { &PreallocScopeView(parent.scope) }
+			// Every block in a V scope has the same descriptor. Its first
+			// block is where the linear walk would leave that scope, including
+			// the nil link of a detached Arena. Do not use scope.previous:
+			// detaching an Arena deliberately changes first.previous.
+			if scope.first != unsafe { nil } && scope.first.scope == parent.scope {
+				parent = scope.first.previous
+				mut state := unsafe { &arena_thread_state }
+				if state.initialized && state.trace_persistent_scope_jumps
+					&& !state.reported_persistent_scope_jump && state.owner == u64(C.pthread_self()) {
+					state.reported_persistent_scope_jump = true
+					eprintln('Vox persistent arena: scope parent jump')
+				}
+				continue
+			}
+		}
+		parent = parent.previous
+	}
+	return parent
+}
+
 pub fn enter_persistent() ArenaEntry {
 	$if prealloc {
 		// Raw thread scratch scopes retain their parent links, including on
@@ -370,9 +400,8 @@ pub fn enter_persistent() ArenaEntry {
 				eprintln('Vox persistent arena: tracked caller shortcut')
 			}
 		} else {
-			for parent != unsafe { nil } && parent.is_scope {
-				parent = parent.previous
-			}
+			parent = persistent_parent_outside_scopes(parent, thread_state.initialized
+				&& !thread_state.disable_persistent_scope_jumps)
 		}
 		if parent != unsafe { nil } && voidptr(parent) != previous {
 			for parent.next != unsafe { nil } && !parent.next.is_scope {
@@ -401,9 +430,7 @@ pub fn enter_persistent() ArenaEntry {
 		// metadata, without changing the caller restored by Arena.leave().
 		mut base_parent := unsafe { &PreallocBlockView(state.base_tail) }
 		if base_parent != unsafe { nil } && base_parent.is_scope {
-			for base_parent != unsafe { nil } && base_parent.is_scope {
-				base_parent = base_parent.previous
-			}
+			base_parent = persistent_parent_outside_scopes(base_parent, !state.disable_persistent_scope_jumps)
 			if base_parent != unsafe { nil } {
 				for base_parent.next != unsafe { nil } && !base_parent.next.is_scope {
 					base_parent = base_parent.next
