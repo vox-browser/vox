@@ -29,6 +29,7 @@ pub fn discard_native_document_computed_styles(document &dom.Document) bool {
 		computer.has_result_cache_ = &HasResultCache{}
 		computer.matching_rule_candidates_ = unsafe { nil }
 		computer.deferred_hidden_styles_ = map[u64]bool{}
+		computer.size_query_matches_ = map[u64]RecordedSizeQueryMatches{}
 	}
 	return true
 }

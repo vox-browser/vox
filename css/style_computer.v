@@ -1014,6 +1014,8 @@ fn (s &StyleComputer) recompute_style_with_invalidation(mut abstract_element dom
 	mut document := unsafe { &dom.Document(element.document()) }
 	document.record_element_style_recomputation()
 	element.reset_style_dependency_flags()
+	mut dependency_computer := unsafe { &StyleComputer(s) }
+	dependency_computer.size_query_matches_.delete(u64(element.as_node().unique_id().value()))
 	mut had_list_marker := false
 	mut old_style := ?&ComputedProperties(none)
 	if old_dom_style := abstract_element.computed_properties() {

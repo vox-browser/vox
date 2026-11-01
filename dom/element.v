@@ -1631,6 +1631,7 @@ pub mut:
 	style_uses_if_css_function                                                      bool
 	style_uses_inherit_css_function                                                 bool
 	style_depends_on_size_container_query_                                          bool
+	style_depends_on_container_relative_units_                                      bool
 	style_depends_on_style_container_query_                                         bool
 	is_size_query_container_                                                        bool
 	is_style_query_container_                                                       bool
@@ -2751,6 +2752,7 @@ pub fn (mut e Element) reset_style_dependency_flags() {
 	e.style_uses_if_css_function = false
 	e.style_uses_inherit_css_function = false
 	e.style_depends_on_size_container_query_ = false
+	e.style_depends_on_container_relative_units_ = false
 	e.style_depends_on_style_container_query_ = false
 }
 
@@ -2776,6 +2778,15 @@ pub fn (e &Element) style_depends_on_size_container_query() bool {
 
 pub fn (mut e Element) set_style_depends_on_size_container_query() {
 	e.style_depends_on_size_container_query_ = true
+}
+
+pub fn (e &Element) style_depends_on_container_relative_units() bool {
+	return e.style_depends_on_container_relative_units_
+}
+
+pub fn (mut e Element) set_style_depends_on_container_relative_units() {
+	e.style_depends_on_size_container_query_ = true
+	e.style_depends_on_container_relative_units_ = true
 }
 
 pub fn (e &Element) style_depends_on_style_container_query() bool {

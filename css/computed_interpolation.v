@@ -10913,6 +10913,7 @@ pub mut:
 	ancestor_filter_                                     CountingBloomFilter = CountingBloomFilter.new()
 	has_result_cache_                                    &HasResultCache = &HasResultCache{}
 	deferred_hidden_styles_ map[u64]bool
+	size_query_matches_ map[u64]RecordedSizeQueryMatches
 	materializing_hidden_styles_ bool
 	matching_rule_candidates_                            &MatchingRuleCandidateScratch = unsafe { nil }
 	matching_rule_sets_ &MatchingRuleSetWorkspacePool = unsafe { nil }

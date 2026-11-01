@@ -2518,7 +2518,7 @@ fn container_relative_basis_length(context LengthResolutionContext, physical_axi
 	}
 	subject := context.subject_element or { return 0 }
 	mut mutable_subject := unsafe { &dom.Element(subject) }
-	mutable_subject.set_style_depends_on_size_container_query()
+	mutable_subject.set_style_depends_on_container_relative_units()
 	query_container := get_or_compute_query_container_for_axis(context, physical_axis) or {
 		context.record_viewport_relative_length_resolution()
 		return if physical_axis == .width {

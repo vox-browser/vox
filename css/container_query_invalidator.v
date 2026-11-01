@@ -47,7 +47,8 @@ pub fn invalidate_descendant_styles_depending_on_size_container_query(query_cont
 		node := stack.pop()
 		if element := node.as_element() {
 			document.record_size_query_container_scan_visit()
-			if element.style_depends_on_size_container_query() {
+			if element.style_depends_on_size_container_query()
+				&& (element.needs_style_update() || !size_query_results_unchanged(element)) {
 				mut mutable_element := unsafe { &dom.Element(element) }
 				mutable_element.set_needs_style_update(true)
 			}

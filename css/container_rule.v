@@ -216,11 +216,23 @@ fn (rule &CSSRule) parent_container_rule() ?&CSSRule {
 }
 
 pub fn (rule &CSSRule) container_rule_matches(element dom.AbstractElement) bool {
+	matched := rule.container_rule_matches_without_recording(element)
+	if !disable_size_query_result_reuse && rule.container_rule_contains_size_feature() {
+		bridge := element.document().style_computer()
+		if bridge.css_handle != unsafe { nil } {
+			mut computer := unsafe { &StyleComputer(bridge.css_handle) }
+			computer.record_size_query_match(rule, element, matched)
+		}
+	}
+	return matched
+}
+
+fn (rule &CSSRule) container_rule_matches_without_recording(element dom.AbstractElement) bool {
 	if rule.type_ != .container_rule || !rule.container_conditions_match(element) {
 		return false
 	}
 	if parent := rule.parent_container_rule() {
-		return parent.container_rule_matches(element)
+		return parent.container_rule_matches_without_recording(element)
 	}
 	return true
 }
