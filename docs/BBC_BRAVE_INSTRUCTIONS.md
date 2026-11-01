@@ -1,26 +1,32 @@
 # BBC homepage instruction comparison
 
 **The requested 10% advantage remains open. BBC does not qualify for
-`OPTIMIZED_SITES.md`.** The latest measured candidate (cohort 36, since
-reverted) has a Vox median of **35,330,134,680** and a Brave lower-bound median
-of **15,983,256,775** instructions. All 21 content, original-pixel and native-exit
+`OPTIMIZED_SITES.md`.** The latest measured candidate (cohort 37, since
+removed) has a Vox median of **35,760,574,950** and a Brave lower-bound median
+of **16,077,980,043** instructions. All 21 content, original-pixel and native-exit
 audits pass, and all 14 Vox/control captures emit zero verbose font traces.
-The conservative ratio is **2.8075196412182386**:
-`444785251530 > 142583767002` fails the integer gate. Every observation,
-including the 44,478,525,153-instruction candidate outlier, remains included.
+The conservative ratio is **2.7173610002528643**:
+`431871721090 > 143037509166` fails the integer gate. Every observation remains
+included, including both browsers' first-launch outliers.
 
-The same-binary disabled control has median 34,549,094,311. Font-validation
-memoization increases the candidate median by 2.260668143625777%; its
-conservative control ratio of 1.292491765799286 also fails. The implementation
-and control option were reverted after this cohort. These pinned candidate
-measurements do not establish current-master performance. No accepted BBC
-savings are claimed, and the earlier logging correction receives no engine
-optimization credit. All earlier invalid captures and failing cohorts remain
-retained.
+The same-binary disabled control has median 35,739,161,061. The direct-query
+request envelope increases the candidate median by 0.0599171563189449%; its
+conservative control ratio of 1.2629941369318158 also fails. The implementation
+and its control option were removed. No accepted BBC savings are claimed.
+
+Cohort 37 explicitly uses `VOX_RETAIN_INCREMENTAL_WEBP_PAINT_POLICY=1` in both
+Vox arms to reproduce the historical frozen RGB workload. Current production's
+completed-response YUV policy changes photo pixels; an unchanged-binary
+isolation confirms that the historical switch restores the original reference.
+The compatibility control changes no default and earns no decoder credit.
+This is a historical-renderer frozen-page result, not current-default or live
+site acceptance. These removed-candidate measurements also do not establish
+current-master performance. Earlier invalid captures, protocol corrections,
+failing cohorts and their outliers remain retained.
 
 The machine-readable [evidence](benchmark-results/bbc-brave-instructions-2026-11-01.json)
-retains 888 attempts and 36 cohorts, including failures and first launches;
-742 complete cohort raw results were independently checked against the recorded
+retains 916 attempts and 37 cohorts, including failures and first launches;
+763 complete cohort raw results were independently checked against the recorded
 vectors, medians and integer gates. It also retains ownership audits, commands and artifact hashes. Raw archives, logs,
 PNGs, executable copies, PID registries, compiler output and guard receipts are
 under `Build/bbc-home-instructions-20261101-054807/` in the canonical checkout.
@@ -104,6 +110,7 @@ capture marker. An invalid cohort is retained for diagnosis, not acceptance.
 | Dense intrinsic-seed visitation | 35,348,564,657 | 16,161,771,586 | 2.8677260187784155 | All observations valid; median falls 3.2757% against control; both conservative gates fail |
 | Quiet instruction counting (protocol correction) | 34,693,898,775 | 16,382,454,723 | 2.9155220150098202 | Brave pair 3 pixel mismatch; integer gate fails; zero engine credit |
 | Retained font-validation memoization | 35,330,134,680 | 15,983,256,775 | 2.8075196412182386 | All captures valid; median regresses 2.2607% against control; implementation reverted |
+| Direct DOM query fields, historical WebP policy | 35,760,574,950 | 16,077,980,043 | 2.7173610002528643 | All captures valid; median regresses 0.0599% against control; implementation removed; historical decoder setting required |
 
 The grid block-height cohort alternates an older control, candidate and Brave;
 control/candidate medians are 101,567,929,247 and 90,700,737,334 (10.70% observed
@@ -1594,3 +1601,106 @@ Receipts include `retained-font-validation-v2-cohort/`, its derived JSON,
 folders, both pairs of BBC diagnostics, `retained-font-validation-checks/`,
 `broad-retained-font-validation/`, `retained-font-validation-revert-checks/`
 and `task-source-workflow-assessment.json` under the evidence root.
+
+
+## Removed direct DOM query fields (cohort 37)
+
+The native-callback diagnostic balances 130,864 process-counter reads with zero
+errors, preserves original pixels/content and native exit, and executes one
+JavaScriptCore context with 1,951 evaluations. Its compiler exits zero in
+140.683889333 seconds, peak 6,033,981,440 bytes. Four full canvas-registry
+snapshots cost only 31,701,775 instructions. The central element query executes
+7,608 times, with 1,666,161,625 exclusive instructions. This diagnostic uses
+the earlier pinned candidate with subsequently reverted font memoization;
+nested process scopes include background work and observer overhead, and
+provide no optimization credit.
+
+`7cdf5fdd` attempted to replace the outer JSON envelope with three direct string
+fields when no pending mutations require replay. Pending operations kept the
+original JSON snapshot path; keys/actions containing the delimiter and other
+value types retained the JSON path. Fourteen cases in seven files pass in
+three memory modes, enabled and disabled: 84 executions and nine zero-exit
+jobs. Cases cover pending replay, malformed packets, Unicode, newlines and
+embedded NULs. The first compile lacked the staged UI2 adapter; that failure
+remains retained, and corrected checks use the production module paths.
+`0c48c698` added the isolated same-binary control; all 48 driver tests pass.
+
+The first production compiler exits zero, but its outer wrapper exits one
+when a concurrent `replaceChild` dispatch changes an owned file after C
+emission. Removing precisely that unrelated line reconstructs the before-file
+SHA256; generated C contains the query optimization and excludes the unrelated
+dispatch. This line was also captured in the feature commit and is deliberately
+preserved when removing the query optimization. The private executable is
+`64a573e00badeb31f525ec156781d0f40cc6f6b48bc9dcd6850f6c055b8e21f7`,
+generated C `392495233ca0f499c0f5394702d5eba6211ee039eaee5a275c1615fb8a9de09f`.
+Headless startup and all nineteen native comparisons pass after a prepared
+capture script's missing executable mode is corrected in a unique rerun;
+no document capture started in the initial failed script invocation.
+
+Both BBC diagnostics pass content/native exits and show direct-query execution
+only when enabled, but produce the same changed photo pixels: 427,366 differing
+pixels (13.5856%), maximum channel error 18. PNG SHA256 is
+`263ed9abded8e95ca49e2443d13c5750717686ab96569d02594c7bcc07446a8a`.
+Native libraries are identical to the prior passing bundle. Shared commit
+`55a065fa` changed first completed-WebP paint selection from transport-informed
+RGB to YUV. No instruction cohort is collected from the failed default-policy
+captures, and references/tolerances remain unchanged.
+
+`3a64fe9d` adds an explicit historical paint-policy control, leaving completed
+YUV decoding as the production default. `4fb0c21b` records that setting in the
+driver and applies it to both Vox arms. The WebP selection, retained-image and
+query checks pass 39 actual executions across three memory modes and nine jobs;
+the original completed-YUV-only case runs in each default mode and is explicitly
+omitted from historical controls, which have their own selection checks.
+All 49 driver tests pass. This compatibility setting earns no engine credit.
+
+A single guarded production build then exits zero in 193.862369209 seconds,
+peak 9,093,365,760 bytes. All eight relevant source files remain unchanged;
+other changed inputs are retained in the build receipt. Private executable
+SHA256 is `c5f61d7f1b4117d9ba9b8c75675b4778868bb2745e19b74048d3c638a2a10d7e`;
+generated C is `1a6a66cc3a7e1bd9aa3b52e7e8ce13b8af3e276ecdf490abd06f850f643f8a95`.
+Headless, eleven smoke and eight SVG comparisons pass. Both separate BBC
+historical-policy diagnostics match the original pixels/content and exit
+normally; direct fields execute only in the enabled arm. JavaScriptCore
+executes one context with 2,000 candidate / 1,949 control evaluations. A further
+same-binary disabled-query diagnostic with the default paint policy restores
+the changed-photo PNG exactly, passes content/native exit, and executes 2,023
+JSC evaluations. This isolates the decoder setting without changing references.
+
+The seven historical-policy triples retain all original settlement, viewport,
+script, cache, fixture and encoded-PNG boundaries. All 21 content/pixel/native
+and identity checks pass; all 14 Vox logs contain zero verbose font traces.
+The first Vox count is 43,187,172,109 and the first Brave lower count is
+32,094,954,408; neither is excluded. Vox's median is 21,413,889 instructions
+higher than control, and both conservative gates fail. The guard adopts 72
+processes without errors, samples peak 1,755,987,968 bytes over 120.397922416
+seconds, and returns driver exit one for failed acceptance.
+
+`6c296864` removes the attempted optimization while preserving the concurrent
+`replaceChild` routing. `d1081794` removes its control option and retains the
+historical paint-policy option. Fresh post-removal checks pass all 87 actual
+executions in nine files across three memory modes, plus all 48 driver tests.
+The default-only WebP case retains the same explicit historical-control
+exclusion. No measured reduction triggers an additional broad batch; the
+prior unchanged text-control baseline failure remains, and the broad cadence
+is not reset. No BBC catalog entry is added.
+
+A separate per-action diagnostic balances 148,722 reads and 90 callback/action
+labels with zero errors, preserves the original pixels/content and native exit,
+and retains its JSC execution witness. Its compiler exits zero in 153.110694833
+seconds, peak 6,114,934,784 bytes. Sixty-five geometry queries total
+5,309,586,505 inclusive instructions, including nested style/layout work.
+CSS-sheet actions cost 518,349,714 exclusive across 715 calls; document scalar
+reads cost 331,807,917 across 1,115. The 2,487 first-child and 2,547 next-sibling
+queries cost 256,355,464 and 163,465,028 exclusive respectively. These nested,
+instrumented process scopes cannot be summed into acceptance totals or used
+as gain evidence. They use the earlier font-memo candidate and establish no
+benefit from the removed direct-query path.
+
+Receipts under the evidence root include `compact-query-fields-rgb-cohort/`,
+its derived JSON, both build folders and compiled witnesses, enabled/control
+BBC diagnostics, `compact-query-fields-webp-policy-isolation-assessment.json`,
+all focused-check folders, `native-callback-workflow-assessment.json` and
+`query-action-workflow-assessment.json`. All failed harness invocations,
+default-policy photo mismatches, completed cohorts and first launches remain
+retained in durable evidence.
