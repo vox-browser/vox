@@ -1,6 +1,10 @@
 module css
 
 import dom
+import os
+
+const disable_font_refresh_cascade_reuse = os.getenv('VOX_DISABLE_FONT_REFRESH_CASCADE_REUSE') != ''
+const font_refresh_cascade_diagnostics = os.getenv('VOX_FONT_REFRESH_CASCADE_DIAGNOSTICS') != ''
 
 fn font_family_value_names_family(value StyleValue, family_name string) bool {
 	return match value {
@@ -176,8 +180,18 @@ fn (s &StyleComputer) refresh_font_inputs(abstract_element dom.AbstractElement) 
 	} else {
 		computed.line_height()
 	}
-	computed.clear_computed_font_list_cache()
+	// The refresh guard has already proved that the computed font inputs are
+	// unchanged. Let the FontComputer expire a selected face's cascade; a root
+	// metric refresh can also visit styles whose original cascade is still live.
+	if disable_font_refresh_cascade_reuse { computed.clear_computed_font_list_cache() }
 	new_font_list := computed.computed_font_list(s.font_computer())
+	if font_refresh_cascade_diagnostics {
+		if previous := old_font_list {
+			if voidptr(previous) == voidptr(new_font_list) {
+				eprintln('Vox font refresh: retained original live cascade')
+			}
+		}
+	}
 	computed.cached_first_available_computed_font_ = computed.first_available_computed_font(s.font_computer())
 	computed.computed_values_line_height_ = computed.line_height()
 	if abstract_element.pseudo_element() == none && abstract_element.element().is_html_element()
