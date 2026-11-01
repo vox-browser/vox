@@ -28,6 +28,31 @@ typedef void (*VoxBookmarkAction)(void *, int, int);
 }
 @end
 
+@interface VoxBookmarkButton : NSButton
+@property(nonatomic) BOOL hovered;
+@end
+
+@implementation VoxBookmarkButton
+- (void)updateTrackingAreas {
+	[super updateTrackingAreas];
+	for (NSTrackingArea *area in self.trackingAreas) [self removeTrackingArea:area];
+	[self addTrackingArea:[[NSTrackingArea alloc] initWithRect:self.bounds
+		options:NSTrackingMouseEnteredAndExited | NSTrackingActiveInKeyWindow | NSTrackingInVisibleRect
+		owner:self userInfo:nil]];
+}
+- (void)setHovered:(BOOL)hovered { _hovered = hovered; [self setNeedsDisplay:YES]; }
+- (void)mouseEntered:(NSEvent *)event { self.hovered = YES; }
+- (void)mouseExited:(NSEvent *)event { self.hovered = NO; }
+- (void)drawRect:(NSRect)dirty {
+	if (self.hovered) {
+		NSColor *fill = self.isHighlighted ? [NSColor colorWithWhite:0 alpha:.12] : [NSColor colorWithWhite:0 alpha:.07];
+		[fill setFill];
+		[[NSBezierPath bezierPathWithRoundedRect:NSInsetRect(self.bounds, .5, .5) xRadius:8 yRadius:8] fill];
+	}
+	[super drawRect:dirty];
+}
+@end
+
 static VoxBookmarkBar *vox_bookmark_bar;
 static uint64_t vox_bookmark_version;
 static NSString *vox_bookmark_error;
@@ -87,7 +112,7 @@ static void native_browser_bookmarks_item(int index, const unsigned char *title_
 	NSMenu *context = [[NSMenu alloc] initWithTitle:title]; context.autoenablesItems = NO;
 	[context addItem:remove];
 	if (bar.overflow.numberOfItems == 0 && bar.nextX + width <= bar.bounds.size.width - 34) {
-		NSButton *button = [[NSButton alloc] initWithFrame:NSMakeRect(bar.nextX, 2, width, 23)];
+		NSButton *button = [[VoxBookmarkButton alloc] initWithFrame:NSMakeRect(bar.nextX, 2, width, 23)];
 		button.title = title; button.font = font; button.bordered = NO;
 		button.image = native_bookmark_default_icon();
 		button.imagePosition = NSImageLeft;
@@ -151,7 +176,7 @@ static void native_browser_bookmarks_end(int count) {
 		[bar addSubview:hint];
 	}
 	if (bar.overflow.numberOfItems > 0) {
-		NSButton *more = [[NSButton alloc] initWithFrame:NSMakeRect(MAX(0, bar.bounds.size.width - 30), 2, 24, 23)];
+		NSButton *more = [[VoxBookmarkButton alloc] initWithFrame:NSMakeRect(MAX(0, bar.bounds.size.width - 30), 2, 24, 23)];
 		more.title = @"»"; more.bordered = NO; more.font = [NSFont systemFontOfSize:15];
 		more.target = bar; more.action = @selector(showOverflow:);
 		more.accessibilityLabel = @"More bookmarks"; more.toolTip = @"More bookmarks";
