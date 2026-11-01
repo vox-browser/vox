@@ -136,14 +136,18 @@ fn chromium_gradient_stop_analysis(gradient layout.LinearGradient) ?ChromiumGrad
 	}
 	mut same_alpha := true
 	mut same_rgb := true
-	mut previous := f64(0)
+	mut previous := f32(0)
 	for index in 0 .. count {
 		stop := chromium_gradient_stop(gradient.stops, gradient.colors, index)
-		if math.is_nan(stop.offset) || math.is_inf(stop.offset, 0) || stop.offset < previous
-			|| stop.offset > 1 {
+		// Eligibility must use the same positions sent to Skia. Projecting a
+		// CSS 100% endpoint can leave a double just above one that is exactly
+		// one in the native float representation.
+		offset := f32(stop.offset)
+		if math.is_nan(stop.offset) || math.is_inf(stop.offset, 0) || offset < previous
+			|| offset > 1 {
 			return none
 		}
-		previous = stop.offset
+		previous = offset
 		same_alpha = same_alpha && stop.color.a == first.a
 		same_rgb = same_rgb && (stop.color.a == 0 || (stop.color.r == visible_color.r
 			&& stop.color.g == visible_color.g && stop.color.b == visible_color.b))

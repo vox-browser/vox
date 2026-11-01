@@ -248,3 +248,20 @@ fn test_chromium_radial_gradient_retains_unquantized_stops_and_gpu_clips() {
 			layout.GradientStop{css.Color{0,0,255,255}, 1}]
 	})
 }
+
+fn test_chromium_gradient_endpoint_eligibility_uses_native_float_positions() {
+	base := layout.LinearGradient{
+		kind: 'linear'
+		x1: 1
+		y1: .5
+		y2: .5
+		stops: [layout.GradientStop{css.Color{255,255,255,255},0},
+			layout.GradientStop{css.Color{255,255,255,153},.6},
+			layout.GradientStop{css.Color{255,255,255,0},1.0000000000000002}]
+	}
+	data := chromium_linear_gradient_stop_data(base,1) or { panic('native endpoint is exactly one') }
+	assert data[14] == 1
+	rejected := layout.LinearGradient{...base, stops:[base.stops[0],
+		layout.GradientStop{css.Color{255,255,255,0},1.000001}]}
+	assert chromium_linear_gradient_stop_data(rejected,1) == none
+}
