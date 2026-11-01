@@ -4243,6 +4243,7 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 		decoration_data: retained_block_box_decoration(BlockBoxDecorationData{
 			border_radius: border_radius
 			border_radii: border_radii
+			corner_shapes: computed.corner_shape_parameters()
 			outline_width: outline_width
 			outline_offset: outline_offset
 			shadow: shadow

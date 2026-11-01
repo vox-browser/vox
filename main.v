@@ -5960,6 +5960,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 		}
 		return
 	}
+	if app.draw_chromium_corner_shape(command, &source_command, matrix, page_x, page_y, scroll_y, window_height) { return }
 	match command.kind {
 		'paint_nested_display_list' {
 			paintable := command.nested_viewport_paintable or { return }

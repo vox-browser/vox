@@ -238,6 +238,7 @@ fn refresh_local_paint_styles_in_box(mut box BlockBox, state &LayoutState,
 			box.outline_is_auto = fresh.outline_is_auto
 			box.decoration_data = retained_block_box_decoration(BlockBoxDecorationData{
 				...*box.decorations()
+				corner_shapes: fresh.decorations().corner_shapes
 				outline_width: fresh.decorations().outline_width
 				outline_offset: fresh.decorations().outline_offset
 				shadow: fresh.decorations().shadow

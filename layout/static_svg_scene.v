@@ -75,10 +75,7 @@ fn own_static_svg_command(command &PaintCommand) ?PaintCommand {
 	mut border := unsafe { &PaintLocalBorderData(nil) }
 	if command.local_border_data != unsafe { nil } {
 		border = &PaintLocalBorderData{
-			origin_x:                command.local_border_data.origin_x
-			origin_y:                command.local_border_data.origin_y
-			transform_context_index: command.local_border_data.transform_context_index
-			initial_transform:       command.local_border_data.initial_transform
+			...*command.local_border_data
 		}
 	}
 	mut svg := unsafe { &PaintSVGPathData(nil) }

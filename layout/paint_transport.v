@@ -2567,6 +2567,8 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 			box.border, effective_border_colors(box.border_colors, box.border_color), box.border_styles, box_radii)
 		chromium_pair_rounded_border_background(mut commands, background_paint_start,
 			border_start, border_end, false)
+		chromium_pair_contoured_background(mut commands, background_paint_start,
+			border_start, border_end, box.decorations().corner_shapes)
 		table_border_start := commands.len
 		box.append_table_border_commands(mut commands, opacity)
 		table_border_end := commands.len
@@ -2654,6 +2656,7 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 				commands[command_index].transform = chromium_local_border_transform(data,
 					box.paint_transform, box.own_paint_transform)
 			}
+			chromium_record_corner_shapes(mut commands[command_index], box, border_rect, box_radii)
 			commands[command_index].paint_box_index = entry_index
 			commands[command_index].force_dark_backdrop = painting.Color{box.background_color.r,
 				box.background_color.g, box.background_color.b, box.background_color.a}

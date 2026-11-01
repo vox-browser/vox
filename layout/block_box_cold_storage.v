@@ -42,6 +42,7 @@ pub struct BlockBoxDecorationData {
 pub:
 	border_radius         f64
 	border_radii          BoxRadii
+	corner_shapes         [4]f64 = [f64(1), 1, 1, 1]!
 	outline_width         f64
 	outline_offset        f64
 	shadow                ?BoxShadow

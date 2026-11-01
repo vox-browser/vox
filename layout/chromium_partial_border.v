@@ -10,10 +10,14 @@ import painting
 // retained transform so compositor updates can repeat that operation.
 pub struct PaintLocalBorderData {
 pub:
+	has_local_geometry bool = true
 	origin_x f64
 	origin_y f64
 	transform_context_index int
 	initial_transform painting.Affine
+	corner_shapes [4]f64 = [f64(1), 1, 1, 1]!
+	shape_border_rect LayoutRect
+	shape_border_radii BoxRadii
 }
 
 fn chromium_local_border_transform(data &PaintLocalBorderData, full [6]f64,
@@ -41,7 +45,7 @@ fn chromium_local_border_transform(data &PaintLocalBorderData, full [6]f64,
 fn chromium_border_replay_transform(command &PaintCommand, full [6]f64,
 	tree &painting.AccumulatedVisualContextTree) [6]f64 {
 	data := command.local_border_data
-	if data == unsafe { nil } { return full }
+	if data == unsafe { nil } || !data.has_local_geometry { return full }
 	initial := data.initial_transform
 	mut own := [initial.a, initial.b, initial.c, initial.d, initial.e, initial.f]!
 	if data.transform_context_index > 0 && data.transform_context_index < tree.nodes.len {

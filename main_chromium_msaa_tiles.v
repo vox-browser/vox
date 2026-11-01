@@ -133,7 +133,22 @@ $if test {
 
 fn chromium_msaa_trigger_rect(command layout.PaintCommand) ?layout.LayoutRect {
 	match command.kind {
+		'paint_outer_box_shadow' {
+			// An unfiltered non-round contour is a path on the parent pass.
+			// Filtered shadows rasterize that path in their own blur surface.
+			if command.blur != 0 || !chromium_contoured_path_required(&command)
+				|| command.corner_radii == layout.BoxRadii{}
+				|| command.local_border_data.corner_shapes.all(it >= 10) { return none }
+			return transformed_raster_bounds(command.transform,command.x-1,command.y-1,
+				command.width+2,command.height+2)
+		}
 		'paint_uniform_border' {
+			// A superellipse's outer clip is a path on the parent pass.
+			if chromium_contoured_path_required(&command) {
+				outset := math.max(command.stroke_width,0)/2+1
+				return transformed_raster_bounds(command.transform,command.x-outset,command.y-outset,
+					command.width+outset*2,command.height+outset*2)
+			}
 			// An elliptical ring clips its inner rrect through the path
 			// renderer. Other draws in the same tile share that MSAA pass.
 			r := command.corner_radii
@@ -151,7 +166,19 @@ fn chromium_msaa_trigger_rect(command layout.PaintCommand) ?layout.LayoutRect {
 			return transformed_raster_bounds(command.transform, command.x, command.y,
 				command.width, command.height)
 		}
+		'fill_rounded_rect' {
+			if !command.underlays_next && chromium_contoured_path_required(&command)
+				&& command.corner_radii != layout.BoxRadii{} {
+				return transformed_raster_bounds(command.transform,command.x-1,command.y-1,
+					command.width+2,command.height+2)
+			}
+			return none
+		}
 		'fill_rect' {
+			if !command.underlays_next && command.radius>0 && chromium_contoured_path_required(&command) {
+				return transformed_raster_bounds(command.transform,command.x-1,command.y-1,
+					command.width+2,command.height+2)
+			}
 			if command.clip_outs.len < 8 {
 				return none
 			}

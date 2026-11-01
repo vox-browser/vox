@@ -76,7 +76,8 @@ fn chromium_shared_recording_clips_supported(command &layout.PaintCommand) bool 
 }
 
 fn chromium_shared_recording_leaf_supported(command &layout.PaintCommand) (bool, bool) {
-	mut has_vectors := false
+	mut has_vectors := chromium_contoured_box_supported(command)
+		&& command.kind in ['fill_rect','fill_rounded_rect','paint_uniform_border']
 	// Native replay discards ordinary leaves with an empty clip before
 	// drawing. Hidden accessible controls must not disable the recording;
 	// effect boundaries still need their existing balanced replay path.
@@ -87,6 +88,15 @@ fn chromium_shared_recording_leaf_supported(command &layout.PaintCommand) (bool,
 	if !chromium_shared_recording_clips_supported(command)
 		|| command.clip_outs.len > 0 || command.outer_shadow {
 		return false, false
+	}
+	if command.kind == 'paint_outer_box_shadow' && chromium_contoured_box_supported(command) {
+		data := command.box_shadow_data
+		if data == unsafe { nil } || command.width <= 0 || command.height <= 0
+			|| data.content_rect.width <= 0 || data.content_rect.height <= 0
+			|| command.blur < 0 || math.is_nan(command.blur) || math.is_inf(command.blur,0) {
+			return false,false
+		}
+		return true,true
 	}
 	if command.kind == 'paint_inner_box_shadow' {
 		data := command.box_shadow_data

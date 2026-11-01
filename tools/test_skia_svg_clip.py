@@ -34,12 +34,13 @@ def main():
                          ('svg-color', 'native_skia_svg_color_test.cpp'),
                          ('rounded-underlay-color', 'native_skia_rounded_underlay_color_test.cpp'),
                          ('uniform-border-clip-layer', 'native_skia_uniform_border_clip_layer_test.cpp'),
-                         ('superellipse-geometry', 'native_chromium_superellipse_test.cpp')]:
+                         ('superellipse-geometry', 'native_chromium_superellipse_test.cpp'),
+                         ('contoured-box', 'native_chromium_corner_shape_paint_test.cpp')]:
         executable = output / name
         command = ['clang++', '-std=c++20', '-O1', '-g', '-fsanitize=address,undefined',
                    '-fno-omit-frame-pointer']
         if name in ('svg-clip', 'svg-mask-backdrop', 'svg-color', 'rounded-underlay-color',
-                    'uniform-border-clip-layer', 'superellipse-geometry'):
+                    'uniform-border-clip-layer', 'superellipse-geometry', 'contoured-box'):
             command += ['-x', 'objective-c++', '-I' + str(skia / 'include/skia'),
                         '-I' + str(skia / 'include'), '-L' + str(skia / 'lib'), '-lskia',
                         '-Wl,-rpath,' + str(skia / 'lib'),
