@@ -2,12 +2,13 @@
 
 **The requested 10% advantage remains open. BBC does not qualify for
 `OPTIMIZED_SITES.md`.** The latest complete seven-pair cohort has a Vox median
-of **44,005,434,509** retired instructions and a Brave lower-bound median of
-**15,397,702,164**. Its conservative ratio is **3.037884119847623**, above the
-required 0.9. Every Vox/control observation passes content and original pixels.
-All native browser exits are zero, but Brave pair 4 differs from its unchanged
-photo reference and its audit result fails. This cohort is invalid for
-acceptance; every observation remains included.
+of **43,359,803,356** retired instructions and a Brave lower-bound median of
+**15,823,854,730**. Its conservative ratio is **3.368777312785835**, above the
+required 0.9. All content audits and native exits pass. All seven enabled Vox
+captures match the original pixels, but control pair 5 and Brave pairs 4 and 7
+fail their unchanged references. This cohort is invalid for acceptance; every
+observation remains included. The enabled median also regresses 0.3177% against
+its disabled control, so no instruction improvement is credited.
 
 The machine-readable [evidence](benchmark-results/bbc-brave-instructions-2026-11-01.json)
 retains exact counts for every recorded attempt, including failures and first
@@ -71,6 +72,8 @@ capture marker. An invalid cohort is retained for diagnosis, not acceptance.
 | Retained ordinary flow items in grid/flex | 44,521,001,422 | 15,591,881,320 | 3.681015720678472 | All observations valid; gate fails |
 | Selected-face display/failure invalidation | 46,582,465,131 | 15,619,372,290 | 3.3740750674717432 | All observations valid; gate fails; median regresses against control |
 | Numeric-ratio, font-style and duration reuse | 44,005,434,509 | 15,397,702,164 | 3.037884119847623 | Gate fails; Brave pair 4 photo differs |
+| Completed shared O3 production build | 42,995,770,723 | 15,723,370,671 | 3.110810439568189 | All observations valid; gate fails; no isolated compiler attribution |
+| Intrinsic sizes across unrelated font completions | 43,359,803,356 | 15,823,854,730 | 3.368777312785835 | Gate fails; control pair 5 and Brave pairs 4/7 differ; median regresses against control |
 
 The grid block-height cohort alternates an older control, candidate and Brave;
 control/candidate medians are 101,567,929,247 and 90,700,737,334 (10.70% observed
@@ -331,5 +334,93 @@ The initial production build attempt found the shared guard busy; after that
 separate C-capture job completed without an installed candidate, the required
 production build completed in 255.44 seconds, peaking at 8,791,277,568 bytes.
 Its cache implementation inputs were stable throughout the build. A separate
-layout-counter diagnostic is the next investigation; it supplies no acceptance
-or engine instruction credit.
+layout-counter diagnostic supplies no acceptance or engine instruction credit.
+
+The first layout probe records overlapping recursive intervals, some exceeding
+the entire process count. A second probe separates outermost selected intervals
+and counts cache activity. It observes 402,520 intrinsic-cache hits, 14,009 empty
+slots, 6,914 font-epoch expirations and 19,609 resets. Its 20,318 minimum and
+20,292 maximum width probes motivate investigating font-epoch reuse. Both
+captures retain complete content and match the original Vox reference exactly.
+The second private compile overlaps an edit to `native_graphite_dawn_darwin.mm`;
+the receipt verifies that this source was neither a direct compiler input nor
+included in the generated C. The diagnostic instead links pinned native objects.
+
+Counter overhead is material. Three separate calibrations of the same Darwin
+process-counter helper each retain 10,000 consecutive-read intervals, with
+medians of 6,534, 6,559 and 6,559 instructions. Nested scope totals therefore
+cannot establish uninstrumented CSS or layout costs. No calibration value is
+subtracted from acceptance counts or claimed as engine savings. Refined sampled
+stack analysis also remains diagnostic wall-clock evidence.
+
+The next seven-pair comparison reuses a completed shared production build
+(`f73d60545c98f002b96ad3be1340d288f695593c4a8c72f24dc37e5458d8ad9f`)
+with the shared O3 compiler setting. All 14 observations pass content, original
+pixels and exits. Its integer gate still fails:
+487,128,908,650 > 140,933,054,682. Brave's first launch exceeds 31 billion
+instructions and remains included. Concurrent engine changes prevent attributing
+the difference from earlier cohorts to O3 alone.
+
+Commit `77ed7129` records a cascade's creation generation and retains intrinsic
+dimensions across later unrelated font completions only when every subtree and
+ancestor cascade is still original and live. Pending, unknown or replaced
+cascades, changed rendering policies and containing blocks outside the parent
+chain retain recomputation. Normal style/tree invalidation still resets caches.
+All 11 CSS and 13 layout checks pass in normal, no-GC and preallocated modes,
+including disabled layout controls. Both broad modes enter all 402 cases and
+pass 401, with the same sole input-baseline failure. The matched benchmark
+control in `1badee84` passes the 179-check instruction-tool suite.
+
+The first build attempt finds the production guard busy. The completed shared
+build includes an earlier version without the final containing-block guard,
+as witnessed in captured compiler input, so it cannot validate that guard.
+The required final build completes in 397.00 seconds, peaking at 7,088,160,768
+bytes with all six implementation/test inputs stable. Its executable SHA256 is
+`664599f14e25df9e0bdbdafb5f81e58e7386dd6d54bfb60511814b8d6a96801a`.
+Captured C confirms the final guard and inactive CSS instruction scopes.
+Startup, 11 smoke cases and eight SVG cases pass with stable identities.
+The first screenshot jobs stop before browser launch because the prepared
+capture helper lacks executable permission; corrected checks and both failed
+attempts remain retained.
+
+Separate BBC diagnostics observe the new path only when enabled, with one
+JavaScriptCore context/group and 2,508/2,451 evaluations in candidate/control.
+Both captures match the original reference exactly. The uninstrumented cohort
+uses one executable, changing only `VOX_DISABLE_INTRINSIC_FONT_REUSE` in controls.
+Its control median is 43,222,471,464 versus enabled 43,359,803,356, a **0.3177%
+median regression**. Pairs 4 and 5 regress, and the conservative control ratio
+is 1.2555710949355419. No instruction improvement is credited.
+
+All 21 content audits and native kernel exits pass, but control pair 5 differs
+in 545,271 pixels and Brave pairs 4/7 differ in 64,177/304,064 photo pixels.
+The control image visibly has an underlined central headline and faded photo,
+consistent with a hover effect; it remains a failed observation. All seven
+enabled Vox captures match exactly. Brave pairs 1 and 2 exceed 31 billion and
+remain included. The integer Brave gate fails:
+526,191,905,120 > 140,577,031,557. The guard adopts 71 identities without error,
+peaking at 1,468,874,752 bytes over 174.31 seconds. BBC remains outside the
+optimized-site catalog.
+
+A subsequent count-only diagnostic keeps hardware-counter scopes inactive and
+matches the original Vox pixels and content. It observes 13,224 longhand-cache
+hits and 1,230 lookup misses, plus first unsupported declarations led by
+`background-position-x` (375), `grid-template-columns` (329), `grid-column-start`
+(247) and `border-top-left-radius` (192). Of 2,084 intrinsic font-epoch checks,
+471 retain the cache; 1,613 first reject pending fonts. That first-rejection
+classification does not establish whether those pending cascades are still
+live, so it cannot justify relaxing the guard. Concurrent edits to included
+`native_capture_darwin.m` and the separately pinned Skia implementation remain
+disclosed; this private build supplies diagnostic leads, not isolated
+performance evidence. A follow-up probe saves its preprocessed compiler input
+and distinguishes original/live pending cascades from expired or newer ones.
+
+The follow-up count-only capture also matches the original pixels, complete
+content and native exit. It observes 5,023 epoch checks: 781 retained caches and
+4,242 pending rejections. All 4,242 pending cascades are original and live;
+none is expired or newer than the cached geometry. This identifies a candidate
+for investigation, without instruction credit. Saved preprocessed compiler
+input pins included native sources despite concurrent edits. The compile
+passes, but initial signing rejects compiler bitcode saved inside the bundle.
+Moving only those intermediate artifacts into the adjacent evidence directory
+and signing the same executable fixes the diagnostic packaging; both attempts
+and artifact hashes are retained.
