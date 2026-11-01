@@ -2,21 +2,22 @@
 
 **The requested 10% advantage remains open. BBC does not qualify for
 `OPTIMIZED_SITES.md`.** The latest seven-pair cohort has a Vox median of
-**36,723,883,384** retired instructions and a Brave lower-bound median of
-**15,720,570,525**. All 21 content audits, fixed pixel comparisons and native
-exits pass. The conservative ratio is **2.4371307290010487**, above 0.9:
-`380952780900 > 140680800882` fails the integer gate. Every observation,
-including the first Brave launch outlier, remains included.
+**34,949,303,465** retired instructions and a Brave lower-bound median of
+**15,879,294,537**. All 21 content audits, fixed pixel comparisons and native
+exits pass. The conservative ratio is **2.31320003135991**, above 0.9:
+`363944124910 > 141600254184` fails the integer gate. Every observation,
+including first launches, remains included.
 
-The same-binary protected-value-index control has median 36,263,509,061;
-enabling the index regresses the median by 1.2695%. Its conservative control
-ratio is 1.0764197224480159. This is the latest valid cohort, and neither
-instruction gate establishes accepted savings. The preceding eligibility-order
-cohort's Brave trial 6 pixel mismatch remains retained.
+The same-binary geometry-accessor control has median 36,105,952,180. Sharing
+accessors reduces the observed median by 3.2035%, while the conservative control
+ratio is 1.0394984739457216. This is the latest valid cohort; neither gate
+establishes accepted instruction savings. The preceding indexed-root cohort
+also passes pixels but regresses its median. All earlier invalid observations
+remain retained.
 
 The machine-readable [evidence](benchmark-results/bbc-brave-instructions-2026-11-01.json)
-retains 613 attempts and 25 cohorts, including failures and first launches;
-511 complete cohort raw results were independently checked against the recorded
+retains 645 attempts and 26 cohorts, including failures and first launches;
+532 complete cohort raw results were independently checked against the recorded
 vectors, medians and integer gates. It also retains ownership audits, commands and artifact hashes. Raw archives, logs,
 PNGs, executable copies, PID registries, compiler output and guard receipts are
 under `Build/bbc-home-instructions-20261101-054807/` in the canonical checkout.
@@ -928,3 +929,52 @@ was attempted. The retained corrected probe restricts all three changes to
 unique instrumentation statements; headless, content, original pixels and
 native exit pass with balanced depth and no counter errors. Prefixes are
 `engine-call-*` and `engine-call-v2-*`; production code was unaffected.
+
+
+### Shared compact-element geometry accessors
+
+Commit `ae931997` shares geometry getter/setter functions and descriptor records
+across element wrappers. Each wrapper keeps its own properties and existing
+flags. Native reads stay live; scroll setters check the receiver before numeric
+conversion; the owner-bound `offsetParent` accessor stays separate. Nine
+compile/runtime/control jobs pass in normal, no-GC and preallocated modes,
+including native scrolling and mutation-version parent checks. Broad checks
+enter all 830 selected cases and retain only the known text-control baseline.
+Control tooling `55820e1d` passes 168 browser-instruction tests.
+
+The first production build completes in 200.1532 seconds at peak sampled RSS
+8,883,847,168 bytes. Its feature sources are stable, executable SHA256
+`ef408c0f92b9fe3bf88ba7ac18290c004c931ef7e79eb2c9d149956795d6dc75`;
+generated C is
+`66944da1eafb295419cd9457f8a76076aaaba5e6d2bc9279d973ce2ab903343c`.
+Headless, smoke and SVG checks pass. Its BBC captures, however, omit photos
+with accessors enabled or disabled. All nine isolation attempts remain
+recorded. Removing observation, disabling image-layout reuse, and swapping
+either or both native libraries do not restore photos. The previous completed
+production still matches the original PNG exactly. The generated function diff
+identifies a temporary scripted-capture font-wait experiment captured during
+compilation; that experiment is already absent from canonical source. Disabling
+that captured experiment restores the original PNG bytes. The rejected build
+supplies no performance cohort or optimization credit.
+
+The next completed shared production already contains the accessor code and
+the original scripted initial-layout branch. Its executable is
+`aeffd1020b69961c0d9e906a452bbfdf76d264cc0f64a1289eafd18a94b8924c`.
+It is reused without another production build. Its completed guard, source
+hashes and identities are pinned in `shared-element-geometry-shared-recovery/`;
+feature and initial-layout sources match before/after snapshots and current
+source. That shared build reports three other changed native-test/cache inputs;
+the actual executable and native-library identities are pinned independently.
+Fresh headless, 11 smoke comparisons at unchanged tolerances and eight
+pixel-exact SVG mutation comparisons pass. Enabled/disabled BBC diagnostics
+preserve original pixels, content and native exits, with one JSC context and
+1,961/2,011 evaluations. The separate probe observes shared getter identity only
+in the enabled run. No interposer is loaded in the measured cohort.
+
+The seven alternating triples produce the latest results above. Every trial
+passes content, fixed pixels and exits. The median point reduction is 3.2035%;
+the conservative control comparison and requested Brave gate still fail. The
+guard adopts 67 processes without errors, peak RSS 1,358,364,672 bytes, and
+completes in 110.0661 seconds with controller exit 1 for failed acceptance.
+Prefixes are `shared-element-geometry-*`; the measured cohort is explicitly
+`shared-element-geometry-v2-cohort`. BBC remains outside the catalog.
