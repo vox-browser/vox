@@ -48,7 +48,7 @@ fn test_image_decode_policy_reads_live_html_hints_and_owner() {
 	assert chromium_image_decoding_hint(document, other.as_node().unique_id().value()) == -1
 }
 
-fn test_incomplete_image_vetoes_async_decoding_until_completion() {
+fn test_unavailable_image_does_not_contribute_a_decode_task() {
 	mut document := decode_policy_test_document('<img id="image" src="https://image.test/pixel.png" decoding="async">')
 	defer { document.finalize() }
 	image := document.get_element_by_id('image') or { panic('image') }
@@ -56,7 +56,7 @@ fn test_incomplete_image_vetoes_async_decoding_until_completion() {
 	model.set_async_fetch_hook(fn (_ dom.URL, _ html.HTMLImageFetchCompletion) {})
 	model.update_the_image_data(false, false)
 	id := image.as_node().unique_id().value()
-	assert chromium_image_decoding_hint(document, id) == 0
+	assert chromium_image_decoding_hint(document, id) == -1
 	_ = install_decode_policy_test_pixels(image)
 	assert chromium_image_decoding_hint(document, id) == 1
 }
@@ -71,6 +71,11 @@ fn test_replaced_image_commands_retain_the_html_element_identity() {
 	images := commands.filter(it.kind == 'draw_replaced_image')
 	assert images.len == 1
 	assert images[0].image().image_element_id == image.as_node().unique_id().value()
+	assert chromium_paint_image_decoding_hint(document, &images[0]) == 1
+	zero_width := layout.PaintCommand{ ...images[0] width: 0 }
+	zero_height := layout.PaintCommand{ ...images[0] height: 0 }
+	assert chromium_paint_image_decoding_hint(document, &zero_width) == -1
+	assert chromium_paint_image_decoding_hint(document, &zero_height) == -1
 }
 
 fn test_animated_image_vetoes_async_checkering() {

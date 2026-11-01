@@ -1,0 +1,22 @@
+<!doctype html>
+<meta charset="utf-8"><title>Inactive images do not contribute decoding hints</title>
+<style>
+html,body{margin:0;background:#090b0f;scrollbar-width:none}body{height:10000px}
+img{display:block;position:absolute;width:330px;height:138px;object-fit:cover;border-radius:5px}
+.left{left:50px}.right{left:430px}.first{top:20px}.second{top:205px}.third{top:400px}
+.small{left:430px;top:355px;width:100px;height:30px}
+.whole{left:430px;top:400px;width:330px;height:192px;object-fit:contain}
+</style>
+<!-- Different query strings are distinct resources. The shared pair must use
+     the conservative hint even though its async image occurs first. -->
+<img class="left first" src="../resources/odd-image-upload.png?auto">
+<img class="left second" decoding="sync" src="../resources/odd-image-upload.png?sync">
+<img class="left third" decoding="async" src="../resources/odd-image-upload.png?async">
+<img class="right first" decoding="async" src="../resources/odd-image-upload.png?shared">
+<img class="right second" decoding="sync" src="../resources/odd-image-upload.png?shared">
+<img class="small" decoding="async" src="../resources/image-decode-cold.png?small">
+<img class="whole" src="../resources/odd-image-upload.png?whole">
+
+<!-- Neither inactive image has a decoded frame in its own lazy request. -->
+<img decoding="sync" loading="lazy" style="display:none" src="../resources/odd-image-upload.png?async">
+<img decoding="sync" loading="lazy" style="left:50px;top:9000px" src="../resources/odd-image-upload.png?async">

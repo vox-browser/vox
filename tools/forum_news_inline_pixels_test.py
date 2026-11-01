@@ -66,6 +66,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_cropped_images_honor_conservative_html_decoding_hints(self):
         self.compare_fixture('cropped-image-decoding-modes')
 
+    def test_inactive_images_do_not_override_visible_decode_hints(self):
+        self.compare_fixture('cropped-image-inactive-decode-hints')
+
     def test_image_decode_reuse_follows_resource_identity(self):
         self.compare_fixture('image-decode-resource-reuse')
 

@@ -15,7 +15,7 @@ fn (app &BrowserApp) begin_chromium_image_decode_frame() {
 		for command in app.paint_commands {
 			if command.kind != 'draw_replaced_image' { continue }
 			image := command.image()
-			mode := chromium_image_decoding_hint(app.document, image.image_element_id)
+			mode := chromium_paint_image_decoding_hint(app.document, &command)
 			if mode < 0 || image.image_url.len == 0 || image.image_url.len > 16384 { continue }
 			C.native_add_image_decoding_hint(image.image_url.str, i32(image.image_url.len), i32(mode))
 		}
