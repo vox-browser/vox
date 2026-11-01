@@ -24,5 +24,11 @@ Object.defineProperty(Node.prototype,"isEqualNode",{value:{isEqualNode(other){
  if(this===other)return true;
  return __queryElements(own.bridgeKey,"isEqualNode",JSON.stringify({otherKey:target.bridgeKey,ownState:own.created?own:undefined,otherState:target.created?target:undefined}));
 }}.isEqualNode,writable:true,enumerable:true,configurable:true});
+Object.defineProperty(Node.prototype,"compareDocumentPosition",{value:{compareDocumentPosition(other){
+ "use strict";const own=__compactEqualityState(this);
+ if(arguments.length===0)throw new TypeError("compareDocumentPosition requires one argument");
+ const target=__compactEqualityState(other);
+ return __queryElements(own.bridgeKey,"compareDocumentPosition",JSON.stringify({otherKey:target.bridgeKey,ownState:own.created?own:undefined,otherState:target.created?target:undefined}));
+}}.compareDocumentPosition,writable:true,enumerable:true,configurable:true});
 '
 }

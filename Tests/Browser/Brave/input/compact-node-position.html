@@ -1,0 +1,31 @@
+<!doctype html>
+<meta charset="utf-8">
+<style>
+html,body { margin:0; height:100%; background:white }
+body.success { background:#008000 }
+body.failure { background:red }
+</style>
+<div id="host"><span id="child"></span></div><div id="sibling"></div>
+<script>
+try {
+    const compare = Node.prototype.compareDocumentPosition;
+    const host = document.getElementById('host');
+    const child = document.getElementById('child');
+    const sibling = document.getElementById('sibling');
+    if (compare.call(host, child) !== 20 || compare.call(child, host) !== 10
+        || compare.call(host, sibling) !== 4 || compare.call(host, host) !== 0)
+        throw new Error('Native node order');
+    host.insertBefore(sibling, child);
+    if (compare.call(sibling, child) !== 4 || compare.call(host, sibling) !== 20)
+        throw new Error('Live node order');
+    const fragment = document.createDocumentFragment();
+    const text = document.createTextNode('');
+    fragment.appendChild(text);
+    if (compare.call(fragment, text) !== 20 || (compare.call(host, fragment) & 33) !== 33)
+        throw new Error('Detached node order');
+    document.body.className = 'success';
+} catch (error) {
+    document.body.className = 'failure';
+    throw error;
+}
+</script>
