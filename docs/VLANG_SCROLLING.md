@@ -293,3 +293,14 @@ and verifies that the installed bundle contains the bounds fix and excludes
 the rejected cache. Fresh-process headless smoke passes. The production
 snapshot includes other sessions' changes; its live trial results in the
 receipt describe that complete bundle and do not isolate this one fix.
+
+
+## Selector and content audit follow-up
+
+The [diagnostic checkpoint](benchmark-results/vlang-scroll-20261101-selector-diagnostics.json) and [raw delta](benchmark-results/vlang-scroll-20261101-selector-diagnostics-raw.json.gz) preserve 195 trial summaries and 4,417 raw artifacts reconstructed against the pinned large-decoration base. The target remains open; there is no additional accepted optimization at this checkpoint.
+
+The flat-picture tile prototype passed native pixel, ownership and rollback checks, plus separate live verification of 152,687,392 pixels. Its prototype live pairs were 33.58→34.48 and 32.33→35.20 FPS. The final cohort was inconsistent: 33.48→59.90 and 34.27→33.17. A later resource-cache audit found that the near-60 trial had no stylesheet or subresources cached, while the other three retained identical 51,866-byte author CSS. That outlier fails content acceptance; a matching document title alone was insufficient. The experiment was removed, and the earlier production libraries restored. Frozen actual-input verification proved zero tiles, correcting the earlier implication that both workloads exercised the fast path. No references or tolerances were changed.
+
+Active-window audits then exposed a correctness problem: the GitHub SVG occupies 752.33×752.33 CSS pixels in normal browsing despite an author rule specifying 20×20. Screenshot mode on the same build uses 20×20. The cached stylesheet bytes match. Both the DOM's raw style and the layout style lose the SVG width/height rules, with correct SVG namespaces. Disabling font-refresh shortcuts did not help. A separate diagnostic bypass of the ancestor-selector bloom filter restores 20×20 GitHub and 24×24 social icons, locating the problem in selector filtering. Root-cause work remains pending; this diagnostic bypass supplies no optimization credit.
+
+Tooling commits `fed9bd7a` and `d47d3f4c` add bounded read-only computed-size, namespace and SVG paint-geometry audit output. Their full build, fresh startup and zero-exit active/screenshot observations are retained. Other active-window observations write their audit and PNG but crash in the HTTP/2 TLS read thread during shutdown; exit 139 is preserved and the driver now rejects it. A short corrected-page scroll diagnostic was initially stopped by an overly restrictive 3 GiB guard before input; its subsequent normal-budget run is diagnostic work, not an acceptance cohort. Shared build identities, changing unrelated inputs and all failures remain in the evidence.
