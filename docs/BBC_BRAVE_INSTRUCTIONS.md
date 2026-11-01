@@ -1,26 +1,26 @@
 # BBC homepage instruction comparison
 
 **The requested 10% advantage remains open. BBC does not qualify for
-`OPTIMIZED_SITES.md`.** The latest seven-pair cohort (35), with verbose font
-tracing separated from instruction counting, has a Vox median of
-**34,693,898,775** and a Brave lower-bound median of **16,382,454,723**.
-The conservative ratio is **2.9155220150098202**:
-`466694242280 > 144065047662` fails the integer gate. This cohort is also
-invalid for acceptance because Brave pair 3 differs from its original pixel
-reference. All 21 content and native-exit audits pass; the other 20 pixel
-comparisons pass. The failed capture and Vox's 46,669,424,228-instruction
-outlier remain included.
+`OPTIMIZED_SITES.md`.** The latest measured candidate (cohort 36, since
+reverted) has a Vox median of **35,330,134,680** and a Brave lower-bound median
+of **15,983,256,775** instructions. All 21 content, original-pixel and native-exit
+audits pass, and all 14 Vox/control captures emit zero verbose font traces.
+The conservative ratio is **2.8075196412182386**:
+`444785251530 > 142583767002` fails the integer gate. Every observation,
+including the 44,478,525,153-instruction candidate outlier, remains included.
 
-The same-binary visitation control has median 36,099,515,786; its conservative
-control ratio is 1.3679708656362242 and fails. All 14 Vox/control captures emit
-zero verbose font-generation traces. The logging change corrects the
-measurement protocol and receives no engine optimization credit. Earlier
-failing and invalid observations remain retained; no accepted BBC savings are
-claimed here.
+The same-binary disabled control has median 34,549,094,311. Font-validation
+memoization increases the candidate median by 2.260668143625777%; its
+conservative control ratio of 1.292491765799286 also fails. The implementation
+and control option were reverted after this cohort. These pinned candidate
+measurements do not establish current-master performance. No accepted BBC
+savings are claimed, and the earlier logging correction receives no engine
+optimization credit. All earlier invalid captures and failing cohorts remain
+retained.
 
 The machine-readable [evidence](benchmark-results/bbc-brave-instructions-2026-11-01.json)
-retains 861 attempts and 35 cohorts, including failures and first launches;
-721 complete cohort raw results were independently checked against the recorded
+retains 888 attempts and 36 cohorts, including failures and first launches;
+742 complete cohort raw results were independently checked against the recorded
 vectors, medians and integer gates. It also retains ownership audits, commands and artifact hashes. Raw archives, logs,
 PNGs, executable copies, PID registries, compiler output and guard receipts are
 under `Build/bbc-home-instructions-20261101-054807/` in the canonical checkout.
@@ -103,6 +103,7 @@ capture marker. An invalid cohort is retained for diagnosis, not acceptance.
 | Retained ordinary grid geometry | 35,400,964,816 | 16,625,613,691 | 2.839621547749952 | All observations valid; median falls 2.8601% against control; both conservative gates fail |
 | Dense intrinsic-seed visitation | 35,348,564,657 | 16,161,771,586 | 2.8677260187784155 | All observations valid; median falls 3.2757% against control; both conservative gates fail |
 | Quiet instruction counting (protocol correction) | 34,693,898,775 | 16,382,454,723 | 2.9155220150098202 | Brave pair 3 pixel mismatch; integer gate fails; zero engine credit |
+| Retained font-validation memoization | 35,330,134,680 | 15,983,256,775 | 2.8075196412182386 | All captures valid; median regresses 2.2607% against control; implementation reverted |
 
 The grid block-height cohort alternates an older control, candidate and Brave;
 control/candidate medians are 101,567,929,247 and 90,700,737,334 (10.70% observed
@@ -1503,3 +1504,93 @@ evidence root. Additional lossless storage receipts retain completed check
 binaries, generated C, broad binaries and completed cache payloads. Raw vectors,
 medians and gates for all 35 cohorts and 721 complete cohort results were
 independently checked; all 861 attempts remain in the durable evidence.
+
+
+## Rejected retained font-validation memoization (cohort 36)
+
+`78e878dc` attempted to remember a successful retained-layout font comparison
+for the current FontComputer generation. It left the original cascade/metric
+snapshots immutable and kept the complete style/tree/space validation before
+reuse. Face, font-cache, display-period and policy changes advance that
+generation and require a new comparison. `43a41bc1` added the same-binary
+`VOX_DISABLE_RETAINED_FONT_VALIDATION` control, isolated to control trials.
+All 29 focused cases pass in default, no-GC and preallocated modes, enabled
+and disabled: 174 executions and nine jobs exiting zero. The positive reuse
+trace appears only in enabled runs. All 48 driver tests pass.
+
+The first reused bundle, executable
+`af46b81773fa96d7c20c06cbd943c32fcca71effd03ec033cdc1b21d2d14b3dc`,
+passes headless startup and all nineteen native pixel checks, but both BBC
+diagnostics produce image `9dfe7a0f774032b53f1aa9d4d795cc75f9945874a9ead5386b1221ff4c78bff8`.
+That is the previously rejected scripted-font-wait image: 781,504 differing
+pixels (24.8433%), maximum channel error 246. Both content/native audits pass,
+but original pixels fail. The enabled/control images are identical and the
+new path executes only when enabled. This bundle contains the capture-font-wait
+switch absent from current source; no instruction cohort is collected from it.
+A subsequent shared bundle also contains that switch and is declined before
+launch. Both failed BBC diagnostics and the rejected build assessment remain
+retained. No reference is changed.
+
+The next completed shared production build is reused with no duplicate build
+queued. All six relevant owned/capture sources are unchanged before/after/current;
+only an unrelated diagnostic tool changes. Its compiler and guard exit zero
+in 216.01609158300002 seconds, sampled peak 9,046,474,752 bytes. Executable
+SHA256 is `118396061fba409ea5b97842f8e47316c2d6962365b1953b92d94093d888a8fd`;
+generated C is `afa3fd91bae4d7c6db1f8ead7a91861b4c2ccd645e2e6d08ca5862e93128dff1`.
+Both exclude the rejected capture switch. Headless startup, eleven smoke and
+eight SVG mutation comparisons pass. Separate BBC enabled/control diagnostics
+match the original pixels/content, exit normally, and prove memoization only
+in the enabled path. JavaScriptCore executes one context with 1,954 candidate /
+2,005 control evaluations. These diagnostics supply no instruction credit.
+
+All seven triples then pass every content, original-pixel, native-exit and
+identity audit. Vox/control logs contain zero verbose font traces. Nevertheless,
+the candidate median is 781,040,369 instructions higher than control, and both
+conservative gates fail. The guard adopts 67 processes without error, observes
+1,726,791,680 peak bytes over 111.007288208 seconds, and returns benchmark exit 1.
+No observation is retried or excluded. Broad verification enters all 449 cases
+in each memory mode: 448 pass in default and no-GC; only the unchanged
+text-control baseline (13.5 versus expected 13) fails. Both compilers and all
+other runtime jobs exit zero; no-GC uses 90 fresh processes. This is not a
+whole-suite pass or a broad cadence reset.
+
+Because the matched cohort demonstrates no benefit, `bbb4b0a0` reverts the
+implementation and `007679b4` reverts its control option. Post-revert checks
+pass all 156 focused executions across three memory modes and both logging
+environments, plus all 47 driver tests. Counting-only traces remain zero;
+explicit verbose runs still emit four traces per mode. No BBC catalog entry
+or performance credit is added.
+
+The separate task-source diagnostic uses the pinned candidate's generated C
+at O2, with process-wide counters rather than coalition acceptance totals.
+Its compiler exits zero in 143.801787875 seconds, peak 6,099,845,120 bytes.
+All 19,378 counter reads balance at depth zero with zero errors; the original
+pixels/content and native exit pass, and JavaScriptCore executes one context
+with 2,051 evaluations. Six posted-message tasks total 8,128,576,989 inclusive /
+3,969,505,357 exclusive instructions, whereas 3,607 timer tasks total
+369,358,066. Event-loop processing itself has 241,484,590 exclusive
+instructions. Fourteen viewport layouts total 6,354,883,920; sixteen style
+updates total 5,737,953,739. These scopes overlap, include background work and
+instrumentation overhead, and must not be added together. The diagnostic
+includes the subsequently reverted memoization, establishes no gain, and
+motivates finer script/resource attribution.
+
+A finer diagnostic balances 48,410 counter reads at depth zero with zero
+errors, preserves original pixels/content and native exit, and executes one
+JavaScriptCore context with 2,022 evaluations. Its compiler exits zero in
+145.365888042 seconds, peak 5,901,025,280 bytes. The 14,496 JavaScriptCore
+function calls account for 6,435,657,482 exclusive instructions; the five
+posted-message task bodies fall to 496,245 exclusive instructions when these
+nested calls are measured. Fifteen typed paint projections cost 909,481,362.
+Native script polling itself costs 10,060,129 exclusive instructions, image
+polling 598,513,800, and background polling 6,399,318. This diagnostic uses the
+same subsequently reverted candidate; overlapping scopes and diagnostic
+process counters supply no instruction credit. Its assessment and raw scopes
+are retained in `engine-workflow-detail-assessment.json`.
+
+Receipts include `retained-font-validation-v2-cohort/`, its derived JSON,
+`retained-font-validation-v2-reused-build.json`,
+`retained-font-validation-v2-compiled-witness/`, both native-validation
+folders, both pairs of BBC diagnostics, `retained-font-validation-checks/`,
+`broad-retained-font-validation/`, `retained-font-validation-revert-checks/`
+and `task-source-workflow-assessment.json` under the evidence root.
