@@ -5,8 +5,10 @@ Pixel-perfect parity remains open. The current settled, archived comparison at
 **zero at every sampled 800-pixel scroll position from Y 2400 through 7200**,
 with **4 at Y 8000**. The reviews viewport at Y 9600 has **308** differences,
 and the community viewport at Y 10400 has **160**. The sponsor viewport at
-Y 1600 has **452** differences, and the bottom has **97**. The Lilly preview,
-some review glyphs, sponsor edges and a footer book image still differ.
+Y 1600 has **452** differences, and the bottom has **97**. Lilly at Y 8800 now
+has **14,681** differences against the full-resolution Brave variant, despite
+matching a previously observed reduced-decode variant exactly. Some review
+glyphs, sponsor edges and a footer book image still differ.
 Copy-button and book-cover geometry agree with Brave.
 These results do not establish full live-page or scale-two parity.
 
@@ -1109,3 +1111,83 @@ loading in `screen-blend-latest-{fixture,live}/`. Its fixed-reference target
 captures in `screen-blend-latest-target/` reproduce 4/452/97 differences at
 Y 0/1600/10701. Those checks do not supply the preceding bundle's
 broad-validation credit. Full live-page and scale-two parity remain open.
+
+
+## CPU image resize consistency
+
+`19dc02cc` makes retained pictures use the same Chromium-pinned CPU resizer as
+native image leaves. The recorder previously used Ladybird's Skia, whose
+sampling phase differs for some odd-sized downscales. With identical Lilly
+pixels and numerical color profile, resizing 1191 × 690 to 596 × 345 produced
+98,115 different pixels between the two Skia revisions. The leaf already used
+the Chromium result; later retained-picture replay replaced it with the other
+upload. The fix transports premultiplied RGBA through a bounded C API without
+crossing Skia object ABIs. Older libraries retain their previous fallback.
+
+The generated `odd-image-picture-upload` fixture places an odd-sized PNG in
+tiles covered by an SVG picture. It improves from **44,844 differing pixels to
+zero** at 800 × 600 and scale 1 against an unchanged Brave reference. Two fresh
+Brave references agree byte for byte. The fixture's separate scale-two check
+still has **983 one-level differences**; the old and new native PNGs are
+byte-identical there. No tolerance or reference was changed to accept them.
+
+The archived page at Y 8800 improves from **20,163 to 14,681** against the fixed
+full-resolution Brave reference. This is not a monotonic pixel improvement:
+4,244 previously matching pixels become different, 5,710 have greater maximum
+channel error, and 12,848 improve. Against the independently retained
+reduced-decode Brave screenshots in `image-decode-v2-page/` and
+`cropped-image-probe-page/`, the result improves from **22,623 to zero**.
+Both newly captured full-page Brave references in this run choose the
+full-resolution variant and still differ by 14,681 pixels. The decode-choice
+variation remains unresolved; matching the earlier variant does not establish
+current full-page conformance.
+
+All fifteen other sampled native page PNGs are byte-identical to the preceding
+screen-blend bundle. Their counts stay 4/1463/452 at Y 0/800/1600, zero at every
+sample from 2400 through 7200, 4 at 8000, 308 at 9600, 160 at 10400, and 97 at
+10664 and 10701. Every captured document reports complete readiness, loaded
+fonts and zero native errors. Live scripted navigation separately completes
+with five visible image requests loaded; it supplies loading evidence only.
+
+The new native check freezes 24 CPU resize hashes from Chromium's pinned Skia,
+covering odd/even dimensions, opaque/translucent sources, color profiles,
+strides, row padding and source immutability, plus identity copying and 29
+invalid descriptors. It passes ASan/UBSan. The expanded GPU test passes 204
+image scenes, including four half-sized odd-source cases. Restoring the old
+recorder resizer fails the new case with 110,896 differing channels; the former
+200-scene corpus did not expose that phase difference. All nine native
+image/gradient programs pass, including 32 mipmapped leaves. The 115 decode
+cache checks, fourteen screenshot smoke cases, 53 existing strict browser
+fixtures, the new strict fixture and eight image/gradient/table golds pass.
+
+Run the focused checks with `python3 tools/test_chromium_image_resize.py` and
+`python3 tools/test_skia_gradient_backdrop.py`. Evidence is retained under
+`Build/vlang-color-filters-20261101/`:
+
+- [Resize oracle comparison](../Build/vlang-color-filters-20261101/resize-comparison.json),
+  [fixed-hash check](../Build/vlang-color-filters-20261101/resize-final-runner/status.json),
+  [GPU positive/negative checks](../Build/vlang-color-filters-20261101/resize-204-status.json)
+  and `native-regressions/` identify the CPU difference and regression coverage.
+- `odd-picture-{before,after,repeat}/` preserves the strict fixture's captures,
+  browser identities, audits and guards. `odd-picture-scale-two{,-before}/`
+  retains the unchanged failing scale-two comparison.
+- [Fixed-reference sweep](../Build/vlang-color-filters-20261101/pinned-resize-fixed-page/status.json),
+  [pixel movement](../Build/vlang-color-filters-20261101/lilly-pixel-movement.json),
+  [other viewport audit](../Build/vlang-color-filters-20261101/full-page-regression-audit.json)
+  and `pinned-resize-fresh-{a,b}/` retain both passing and failing comparisons.
+- [Validation exits](../Build/vlang-color-filters-20261101/validation-status.json)
+  accompany the individual runtime guards and logs. Capture-driver exit zero
+  means capture completed, not that its pixel comparison passed.
+- `pinned-resize-production-{guard,status}.json` records production exit zero,
+  246.25 seconds and sampled peak RSS of 8.22 GiB under the 12 GiB guard.
+  Another session changed unrelated Metal adapter code during compilation,
+  so whole-file source stability is false. Adding the unchanged resize
+  function to the preserved source reconstructs the pre-build hash; the other four feature
+  inputs stay stable. `resize-feature-source-audit.json` preserves that limit.
+
+The validated executable is
+`433f15dc0ea95ad33ab6d835b8ecc990afbfec55f9a8f2741e0c8b3ff1049c51`,
+preserved in `Vox-pinned-resize-installed.app`. Its native library hashes and
+unchanged final identity are recorded in `validation-final-identity.json`.
+These results correct CPU upload consistency, not the remaining Brave decode
+choice, live-page differences or scale-two raster differences.
