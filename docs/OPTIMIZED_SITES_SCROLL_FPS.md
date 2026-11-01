@@ -176,6 +176,8 @@ needs its recorded `--cache-template`. Wikipedia instead uses its recorded
 `--allow-fixture-navigation`. Keep the native scale, input schedule, fixture
 hashes and network/cache policy fixed when comparing new browser builds.
 
-Subsequent [vlang.io scrolling work](VLANG_SCROLLING.md) bounds decoration
-backdrops and records new frozen/live trials. Those results remain separate
-from the pinned catalog cohort above; the live 60 FPS target is still open.
+Subsequent [vlang.io scrolling work](VLANG_SCROLLING.md) bounds and batches
+gradient-text, decoration and blur transfers. Its latest production snapshot
+measures 3.51–4.25 native scroll FPS live and 6.28–7.68 on the frozen page.
+Those results remain separate from the pinned catalog cohort above; every
+measured interval still misses the 60 FPS budget and the target remains open.
