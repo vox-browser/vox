@@ -290,7 +290,7 @@ fi
     -o "$helper_tmp" "$repo_dir/tools/adblock-worker-mini/main.v"
 chmod 755 "$helper_tmp"
 if command -v codesign >/dev/null 2>&1; then
-    codesign --force --sign - "$helper_tmp" >/dev/null
+    codesign --force --sign - --entitlements "$repo_dir/packaging/Vox.entitlements.plist" "$helper_tmp" >/dev/null
 fi
 mv -f "$helper_tmp" "$binary_dir/VoxAdblockWorker"
 
