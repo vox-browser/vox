@@ -2,22 +2,22 @@
 
 **The requested 10% advantage remains open. BBC does not qualify for
 `OPTIMIZED_SITES.md`.** The latest seven-pair cohort has a Vox median of
-**34,949,303,465** retired instructions and a Brave lower-bound median of
-**15,879,294,537**. All 21 content audits, fixed pixel comparisons and native
-exits pass. The conservative ratio is **2.31320003135991**, above 0.9:
-`363944124910 > 141600254184` fails the integer gate. Every observation,
+**36,123,754,014** retired instructions and a Brave lower-bound median of
+**15,806,323,773**. All 21 content audits, fixed pixel comparisons and native
+exits pass. The conservative ratio is **2.3259499042136356**, above 0.9:
+`365942955350 > 141597486351` fails the integer gate. Every observation,
 including first launches, remains included.
 
-The same-binary geometry-accessor control has median 36,105,952,180. Sharing
-accessors reduces the observed median by 3.2035%, while the conservative control
-ratio is 1.0394984739457216. This is the latest valid cohort; neither gate
-establishes accepted instruction savings. The preceding indexed-root cohort
-also passes pixels but regresses its median. All earlier invalid observations
-remain retained.
+The same-binary Node-property control has median 35,968,844,096. Sharing those
+properties regresses the observed median by 0.4307%; the conservative control
+ratio is 1.0468228361421543. The preceding geometry-accessor cohort observes a
+3.2035% median reduction, but its conservative control gate also fails. Neither
+result establishes accepted savings. All earlier invalid observations remain
+retained.
 
 The machine-readable [evidence](benchmark-results/bbc-brave-instructions-2026-11-01.json)
-retains 645 attempts and 26 cohorts, including failures and first launches;
-532 complete cohort raw results were independently checked against the recorded
+retains 670 attempts and 27 cohorts, including failures and first launches;
+553 complete cohort raw results were independently checked against the recorded
 vectors, medians and integer gates. It also retains ownership audits, commands and artifact hashes. Raw archives, logs,
 PNGs, executable copies, PID registries, compiler output and guard receipts are
 under `Build/bbc-home-instructions-20261101-054807/` in the canonical checkout.
@@ -978,3 +978,65 @@ guard adopts 67 processes without errors, peak RSS 1,358,364,672 bytes, and
 completes in 110.0661 seconds with controller exit 1 for failed acceptance.
 Prefixes are `shared-element-geometry-*`; the measured cohort is explicitly
 `shared-element-geometry-v2-cohort`. BBC remains outside the catalog.
+
+
+### Shared compact Node properties
+
+Commit `ffd830ef` reuses accessor and method functions for native text, comment
+and fragment wrappers. Per-wrapper metadata and the original own-property order
+and flags remain. Descriptor initialization waits until the other Node bindings
+exist. Receiver checks, live native reads, string conversion, Unicode edits,
+fragments, cloning, adoption and equality are covered by eight focused cases.
+Nine compile/runtime/control jobs pass across the three memory modes. All 830
+broad cases execute with only the known text-control baseline failure. Control
+tooling `dff36e9a` passes 169 browser-instruction tests.
+
+The production build completes in 224.5673 seconds, peak sampled RSS
+8,983,019,520 bytes. Feature and initial-layout sources stay stable, and the
+compiled witness excludes the rejected scripted-font-wait experiment. Executable
+SHA256 is
+`303db5470a34705f1ae423319efab2be3e315ced5a65b57f382d91f461d1d1d3`;
+generated C is
+`c7059ede50e480d53440cbc32fec2f4280884108a4258c24a5f6f95d429d1ef3`.
+Fresh headless startup, 11 smoke comparisons at unchanged tolerances and eight
+pixel-exact SVG mutation comparisons pass. Enabled/disabled BBC diagnostics
+preserve original pixels, content and native exits, confirming one JSC context
+and 1,978/1,999 evaluations. The separate observer reads a diagnostic counter
+without evaluating additional JavaScript: 385 shared wrapper constructions in
+the enabled run, zero in the disabled run, with 1,598/1,609 valid observations.
+The counter and interposer are absent from acceptance. Probe source/library
+hashes are retained separately.
+
+Every observation in the seven alternating triples passes content, fixed
+pixels and native exits. The candidate median regresses 0.4307% and both gates
+fail, so no BBC gain is credited. The guard adopts 66 processes without errors,
+peak RSS 1,367,080,960 bytes, and completes in 112.7993 seconds with controller
+exit 1 for failed acceptance. Evidence uses `shared-node-properties-*`.
+
+
+### Font-refresh guard diagnostic
+
+A separate O2 diagnostic counts rejections of the existing font-only style
+refresh guard. It records just seven rejections: four for an unsafe stored
+font context and three for changed inherited values. None has a stored raw
+cascaded font-size prefix. Relaxing those guards is unsupported as a major
+BBC optimization. Original content, pixels and native exit pass, with one JSC
+context and 2,045 evaluations. Counters report through process exit, including
+possible audit/teardown work; they are diagnostic counts, not acceptance costs.
+The first diagnostic compile placed its helper after a caller and failed C
+declaration checks. That attempt is retained; the corrected v2 declares the
+helper before first use and passes. Production code is unchanged. Prefixes are
+`font-guard-*` and `font-guard-v2-*`.
+
+
+The following coarse CSS probe keeps ten nested process-counter scopes and
+reports once at exit, avoiding per-event log output. It passes original pixels,
+content and native exit, with 219,344 reads, balanced depth and zero counter
+errors. Its largest selected exclusive scope is matching-rule construction:
+19,940 calls and 3,288,325,303 instructions. Longhand key construction and restore
+account for 549,695,997 and 446,435,895; the remaining property computation is
+1,184,476,986 exclusive. Font-input refresh is 74,743,037 exclusive. These O2
+instrumented counts include observer/background work and possible audit/teardown;
+inclusive values overlap and cannot be added. They support investigating rule
+matching rather than removing font safety guards or the whole longhand cache.
+Raw prefix: `css-coarse-*`.
