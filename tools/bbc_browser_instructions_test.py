@@ -645,6 +645,7 @@ class BBCInstructionTests(unittest.TestCase):
         args = ['--archive', 'archive', '--output', 'output', '--memory-guard-registry', 'pids.json',
                 '--capture-reference']
         for flag in ['--control-disable-inline-measurement-reuse',
+                     '--control-disable-nested-inline-measurement-reuse',
                      '--control-disable-grid-width-only', '--control-disable-stationary-raster',
                      '--control-disable-client-geometry-index',
                      '--control-disable-tracked-persistent-shortcut',
@@ -686,6 +687,25 @@ class BBCInstructionTests(unittest.TestCase):
             for engine in ['control', 'vox', 'brave']:
                 run_trial(engine, 'same-app', engine, args)
         self.assertEqual(seen, [('vox', dict(environment, VOX_DISABLE_INLINE_MEASUREMENT_REUSE='1')),
+                               ('vox', environment), ('brave', environment)])
+        self.assertIs(args.vox_environment, environment)
+        with patch('bbc_browser_instructions.browser.run_browser', side_effect=RuntimeError('failed')):
+            with self.assertRaises(RuntimeError):
+                run_trial('control', 'same-app', 'control', args)
+        self.assertIs(args.vox_environment, environment)
+
+    def test_nested_inline_control_keeps_direct_text_reuse_and_is_restored(self):
+        environment = {'VOX_PROXY': 'socks5h://fixture'}
+        args = SimpleNamespace(vox_environment=environment, control_disable_grid_width_only=False,
+                               control_disable_nested_inline_measurement_reuse=True)
+        seen = []
+        def observe(engine, app, folder, options):
+            seen.append((engine, dict(options.vox_environment)))
+            return {'exit': 0}
+        with patch('bbc_browser_instructions.browser.run_browser', side_effect=observe):
+            for engine in ['control', 'vox', 'brave']:
+                run_trial(engine, 'same-app', engine, args)
+        self.assertEqual(seen, [('vox', dict(environment, VOX_DISABLE_NESTED_INLINE_MEASUREMENT_REUSE='1')),
                                ('vox', environment), ('brave', environment)])
         self.assertIs(args.vox_environment, environment)
         with patch('bbc_browser_instructions.browser.run_browser', side_effect=RuntimeError('failed')):
