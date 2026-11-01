@@ -51,13 +51,13 @@ fn test_flex_does_not_shorten_an_existing_workspace_or_intrinsic_probe() {
 	state.measurement_chunk_pool_.scratch_enabled_ = true
 	mut outer := begin_document_geometry_scratch(document)
 	mut flex := begin_nested_geometry_scratch(document, .normal)
-	assert flex.scratch == unsafe { nil }
+	assert !flex.active
 	work := []u8{len: 1024, init: 53}
 	flex.finish()
 	assert work[work.len - 1] == 53
 	mut probe := state.new_measurement_for_subtree(node)
 	mut probe_flex := begin_nested_geometry_scratch(document, .normal)
-	assert probe_flex.scratch == unsafe { nil }
+	assert !probe_flex.active
 	mut values := probe.get_mutable(node)
 	values.set_grid_template_columns([CSSPixels.new(59)])
 	probe_flex.finish()
@@ -66,7 +66,7 @@ fn test_flex_does_not_shorten_an_existing_workspace_or_intrinsic_probe() {
 	probe.release_measurement()
 	outer.finish()
 	mut intrinsic := begin_nested_geometry_scratch(document, .intrinsic_sizing)
-	assert intrinsic.scratch == unsafe { nil }
+	assert !intrinsic.active
 	intrinsic.finish()
 	state.release_measurement_chunk_pool()
 	allocations.finish()
