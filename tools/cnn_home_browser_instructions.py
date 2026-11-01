@@ -186,6 +186,8 @@ def parse_args(argv=None):
                    help='Alternate the same Vox binary with family-wide font completion invalidation')
     control.add_argument('--control-hidden-animations', action='store_true',
                    help='Alternate the same Vox binary with hidden CSS animation redraws enabled')
+    control.add_argument('--control-geometry-snapshot-keys', action='store_true',
+                   help='Alternate the same Vox binary with coarse geometry snapshot buckets')
     control.add_argument('--control-live-font-cascades', action='store_true',
                    help='Alternate the same Vox binary without reusing retained font inputs across generations')
     control.add_argument('--control-vox-app', type=Path,
@@ -215,6 +217,7 @@ def control_environment(args):
     if args.control_vox_app:
         return {}
     for option, variable in (
+        ('control_geometry_snapshot_keys', 'VOX_DISABLE_GEOMETRY_SNAPSHOT_KEYS'),
         ('control_live_font_cascades', 'VOX_DISABLE_LIVE_FONT_CASCADE_REUSE'),
         ('control_hidden_animations', 'VOX_DISABLE_HIDDEN_ANIMATION_THROTTLING'),
         ('control_font_completion', 'VOX_DISABLE_FACE_SPECIFIC_FONT_COMPLETION'),
