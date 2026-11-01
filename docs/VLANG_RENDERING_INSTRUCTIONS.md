@@ -1,5 +1,17 @@
 # vlang.io rendering instructions
 
+The subsequent [catalog audit](OPTIMIZED_SITES_AUDIT.md) repeats seven CLI
+pairs using the same pinned candidate, fixture and unchanged engine references.
+Vox averages **8,630,402,362.71 observed instructions** versus Brave's
+**10,500,268,115.57: 17.81% fewer**. The highest observed Vox count is 15.10%
+below the lowest observed Brave count. All 14 browser exits are recorded as
+zero; every PNG matches its historical engine reference exactly. The engines
+differ from one another at **112,005 of 786,432 pixels**, with maximum channel
+error **3**. This establishes per-engine stability, not cross-browser pixel
+equality. Both aggregate process-tree counts remain polling lower bounds.
+The catalog uses this fresh CLI cohort; the earlier CLI and background cohorts
+below remain retained, including their unresolved launch-context dependence.
+
 The 9B **average** target is met. The production bundle recorded on 2026-10-31
 averages **8.701 billion observed retired CPU instructions**, versus **10.425
 billion for Brave**, in 16 alternating, matched trials using the original CLI
@@ -12,7 +24,7 @@ poster, and JavaScript policy enabled. Live author-script behavior is checked
 separately. These figures do not measure live-site instructions, scrolling fps,
 physical display presentation, or GPU instructions.
 
-## Current results
+## Recorded 2026-10-31 results
 
 All instruction figures are billions. Every completed trial is retained.
 

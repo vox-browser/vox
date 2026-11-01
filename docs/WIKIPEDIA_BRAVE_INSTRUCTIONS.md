@@ -1,5 +1,17 @@
 # Wikipedia instructions against Brave, 2026-11-01
 
+The subsequent [catalog audit](OPTIMIZED_SITES_AUDIT.md) reruns seven pairs
+with this same pinned Vox build, archive and unchanged engine references. Its
+medians are **6,686,475,010 for Vox** and **9,702,898,348 for Brave: 31.09%
+fewer observed instructions**. The highest observed Vox count is 29.81% below
+the lowest observed Brave count. All 14 browser exits are now explicitly
+recorded as zero, and all captures match their engine references exactly.
+The seven-pixel cross-browser difference remains. Both polled process-tree
+aggregates are lower bounds; final readings cover both observed Vox tasks,
+but an unsampled short-lived child cannot be ruled out by polling alone.
+The original cohort and its statistics below remain historical evidence;
+the catalog now uses the audited cohort.
+
 The existing production Vox build already meets the requested target of at least
 10% fewer retired CPU instructions than Brave on this workload. Across seven
 alternating fresh-process pairs, Vox's median is **6,600,176,026** instructions

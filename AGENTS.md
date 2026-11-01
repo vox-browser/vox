@@ -149,6 +149,12 @@
   coalition counter includes exited helpers and explicitly allowed owned system
   services; do not mix its totals with a process-tree count or an unrelated
   inherited coalition.
+  Polled process-tree sums are lower bounds for both engines: missing Vox
+  children do not become an upper bound because Brave also has omissions.
+  Label the gate as a comparison of observed counts unless complete Vox
+  coverage or an actual upper bound is established. Preserve exact raw counts
+  in durable evidence, recompute catalog statistics from it, and distinguish
+  historical claims with missing receipts from independently verified cohorts.
 - Match the page bytes, author-script policy, viewport, backing/capture scale,
   cache/network policy, settle period and window placement between engines.
   Use fresh private profiles/caches and remove ambient measurement/proxy

@@ -1,5 +1,15 @@
 # Old Reddit CPU instruction comparison
 
+The 2026-11-01 [catalog audit](OPTIMIZED_SITES_AUDIT.md) verifies the documented
+arithmetic and startup scope, but the referenced private `Build/reddit-parity/`
+fixture and process receipts are absent from this checkout. The historical
+measurement below cannot be independently reverified here and is listed
+separately from freshly verified catalog entries. The ratio of its medians
+gives **23.38% fewer instructions**; its **23.44% median paired reduction** is
+a different statistic. The legacy harness also did not enforce a fresh Vox
+profile; fresh profiles, sanitized environments and fuller runtime pins are
+now required by the repaired driver. No new Reddit performance claim is made.
+
 On 2026-10-17, the production build used **21.39% fewer retired CPU
 instructions** in the conservative seven-run comparison:
 `max(Vox) / min(Brave) = 0.786111236`. Every measured
@@ -44,8 +54,9 @@ polls can be missed. Brave audit and shutdown work are excluded. This
 asymmetry favors Brave in the reported comparison.
 
 Both browsers receive the same local HTML and original resource response
-bodies/headers. Requests absent from the archive fail closed. Profiles/caches
-are isolated per launch, engine order alternates, and no decoded-image or
+bodies/headers. Requests absent from the archive fail closed. Brave profiles
+and resource caches are isolated per launch; the legacy harness does not prove
+Vox profile isolation. Engine order alternates, and no decoded-image or
 saved-page raster cache is used. The viewport and device scale are 1024×768
 and 1 in both engines. Normal scripting policy remains enabled to preserve
 `noscript` semantics; the frozen input has executable script tags removed.
@@ -79,17 +90,16 @@ Capacity hints trade some transient memory for fewer repeated heap traces.
 
 ## Reproduction and artifacts
 
-Build the normal signed bundle and the process-local network guard, then run
-from the repository root:
+The following command requires restoring the private fixture and reference
+first. Reuse the latest completed signed bundle, an existing verified
+process-local network guard and pixel-diff tool, following `AGENTS.md`.
+Run from the repository root under the memory guard:
 
 ```sh
-sh build-prod-browser.sh
-clang -dynamiclib -O2 tools/pikabu_instruction_network_deny.c \
-  -o Build/pikabu-instructions-network-deny.dylib
-mkdir -p Build/pixel-equality
-v -old-compiler -o Build/pixel-equality/pixel_diff tools/pixel_diff.v
 env -u VOX_TRACE_REDRAWS -u GC_INITIAL_HEAP_SIZE -u GC_MAXIMUM_HEAP_SIZE \
   -u GC_FREE_SPACE_DIVISOR -u GC_MARKERS \
+  python3 tools/run_memory_bounded.py \
+  --lock Build/reddit-repeat.lock --report Build/reddit-repeat-guard.json -- \
   python3 tools/reddit_browser_instructions.py \
   --html Build/reddit-parity/frozen.html \
   --expected Build/reddit-parity/brave-frozen.png \
@@ -97,7 +107,7 @@ env -u VOX_TRACE_REDRAWS -u GC_INITIAL_HEAP_SIZE -u GC_MAXIMUM_HEAP_SIZE \
   --repeat 7 --output Build/reddit-parity/instructions/new-measurement
 ```
 
-Use `~/code/v/v` if `v` is not on `PATH`. The output directory must be new.
+The output directory and guard receipt names must be new.
 The command exits nonzero on a pixel mismatch, unreadable counters, changed
 pinned inputs/binaries, or a failed instruction gate. Keep measurement runs
 serialized with other local tests and builds. Account-bearing inputs and raw
