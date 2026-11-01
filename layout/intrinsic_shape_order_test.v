@@ -73,7 +73,9 @@ fn shape_order_node() &TextNode {
 }
 
 fn shape_order_fingerprint(run &platform.GlyphRun) string {
-	return '${run.font()} ${run.text_type()} ${run.face()} ${run.width()} ${run.space_width} ${run.glyphs()} ${run.glyph_indices()} ${run.glyph_positions()} ${run.bounding_box()}'
+	// The run retains this exact font. Formatting Font recursively serializes
+	// its decoded TTF caches on every comparison and exhausts no-GC test memory.
+	return '${u64(voidptr(run.font()))} ${run.text_type()} ${run.face()} ${run.width()} ${run.space_width} ${run.glyphs()} ${run.glyph_indices()} ${run.glyph_positions()} ${run.bounding_box()}'
 }
 
 fn test_intrinsic_shape_order_preserves_every_shape_key_and_forks_owners() {
