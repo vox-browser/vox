@@ -1,7 +1,8 @@
 {
   "version": 1,
   "url": "https://www.bbc.com/news",
-  "sealed_unix": 1793314308.979973,
+  "source_document_request_method": "GET",
+  "sealed_unix": 1793496505.84506,
   "responses": {
     "https://www.bbc.com/news": {
       "status": 200,
@@ -28,11 +29,11 @@
         },
         {
           "name": "brequestid",
-          "value": "eefd4d596f9646c8894bfbc34a211e9b"
+          "value": "625c39a506c4488c96117bbdbbba56c3"
         },
         {
           "name": "bsig",
-          "value": "e9d166f45f719b1a889785b64433c9bf"
+          "value": "e2551a02b3c5abdd4c208745da65c2d6"
         },
         {
           "name": "cache-control",
@@ -40,11 +41,11 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:35 GMT"
+          "value": "Sun, 01 Nov 2026 01:28:19 GMT"
         },
         {
           "name": "etag",
-          "value": "\"opda68gmgs8f5x\""
+          "value": "\"9bk3xmvs1e84f2\""
         },
         {
           "name": "fastly-restarts",
@@ -100,7 +101,7 @@
         },
         {
           "name": "x-cache-age",
-          "value": "143"
+          "value": "561"
         },
         {
           "name": "x-cache-hits",
@@ -112,7 +113,7 @@
         },
         {
           "name": "x-correlation-id",
-          "value": "a265f0fe-0ee8-479c-9a21-696b5a511d13"
+          "value": "64148192-65e7-4f42-982b-628a80918f96"
         },
         {
           "name": "x-fastly-cache-status",
@@ -140,117 +141,86 @@
         },
         {
           "name": "x-served-by",
-          "value": "cache-mxp6980-MXP"
+          "value": "cache-bgy-lime1210031-BGY"
         },
         {
           "name": "x-timer",
-          "value": "S1793313995.385940,VS0,VE26"
+          "value": "S1793496499.026797,VS0,VE24"
         },
         {
           "name": "content-length",
-          "value": "228727"
+          "value": "273592"
         },
         {
           "name": "Content-Type",
           "value": "text/html;charset=utf-8"
         }
       ],
-      "sha256": "e823253330e12d7a3f8b8f451c16e6a54dd62b1226bdfeae217541061b32417c",
-      "bytes": 228727
+      "sha256": "9d8fd4b3ded466ecace46a4920a7bce7927b7c6d35723400413c5f04b980eeed",
+      "bytes": 273592
     },
-    "https://cdn.tinypass.com/api/tinypass.min.js": {
+    "https://static.files.bbci.co.uk/fonts/reith/2.512/BBCReithSans_W_Md.woff2": {
       "status": 200,
       "headers": [
         {
-          "name": "cf-cache-status",
-          "value": "HIT"
-        },
-        {
-          "name": "x-amz-version-id",
-          "value": "_RUQq2OyU220Go.R79Tx2KTi9ipt3RLV"
+          "name": "access-control-max-age",
+          "value": "300"
         },
         {
           "name": "etag",
-          "value": "W/\"b298e09b5a13505da3f6b0db2a34e35b\""
+          "value": "\"7c60423ccf6f2997c6bb5e80966aa9b7\""
         },
         {
-          "name": "age",
-          "value": "5691"
+          "name": "x-amz-version-id",
+          "value": "wlfXIvx7oFSp_E9dfH6hCxTLczqLdW0N"
         },
         {
-          "name": "expires",
-          "value": "Fri, 30 Oct 2026 02:46:38 GMT"
+          "name": "report-to",
+          "value": "{\"group\":\"default\",\"max_age\":3600,\"endpoints\":[{\"url\":\"https://assets.bbc-reporting-api.app/report-endpoint\",\"priority\":1}],\"include_subdomains\":true}"
         },
         {
-          "name": "alt-svc",
-          "value": "h3=\":443\"; ma=86400"
+          "name": "access-control-allow-methods",
+          "value": "HEAD,GET"
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
-        },
-        {
-          "name": "content-type",
-          "value": "text/javascript"
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
         },
         {
           "name": "last-modified",
-          "value": "Wed, 28 Oct 2026 08:10:59 GMT"
+          "value": "Wed, 20 May 2026 13:09:12 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "font/woff2"
         },
         {
           "name": "x-amz-id-2",
-          "value": "TmSkWA6HQubQ4mXdQSj1lKgRBgmRMP9GlKSQCjGqhURQOJMtYcXv4+ka1Iqs3nQ/voAVQmxF+y0="
+          "value": "z8oDRcYq/Qs/2c8j9sQvszQq5w9wbsv6/qE5teWp7ftW4+qLgQ1MAaQwzeALBP0kT0KIWpO9+mZpcwmJYb5z+VOH+UeGu5oI"
         },
         {
-          "name": "x-amz-replication-status",
-          "value": "REPLICA"
+          "name": "access-control-allow-headers",
+          "value": "*"
         },
         {
           "name": "cache-control",
-          "value": "public, max-age=14400"
+          "value": "public, max-age=31536000, immutable"
         },
         {
-          "name": "x-amz-request-id",
-          "value": "3DDR064P3VES1RZN"
-        },
-        {
-          "name": "cf-ray",
-          "value": "a525b7a95baddf5e-ZRH"
-        },
-        {
-          "name": "server",
-          "value": "cloudflare"
-        },
-        {
-          "name": "x-amz-server-side-encryption",
-          "value": "AES256"
-        },
-        {
-          "name": "content-length",
-          "value": "497751"
-        }
-      ],
-      "sha256": "b7c42d08846f10e6c2def4ea4ea19867b85a9e956361be06914343da58ac48fb",
-      "bytes": 497751
-    },
-    "https://static.bbci.co.uk/frameworks/requirejs/0.13.0/sharedmodules/require.js": {
-      "status": 200,
-      "headers": [
-        {
-          "name": "cache-control",
-          "value": "max-age=31536000"
+          "name": "nel",
+          "value": "{\"report_to\":\"default\",\"max_age\": 604800,\"include_subdomains\":true,\"failure_fraction\":0.01}"
         },
         {
           "name": "timing-allow-origin",
           "value": "https://www.bbc.co.uk, https://www.bbc.com"
         },
         {
-          "name": "etag",
-          "value": "\"6807-4dc5b54e0dcc0-gzip\""
+          "name": "access-control-allow-credentials",
+          "value": "false"
         },
         {
-          "name": "expires",
-          "value": "Thu, 16 Jan 2025 19:18:38 GMT"
+          "name": "x-amz-request-id",
+          "value": "7N03YPRDNGR5X127"
         },
         {
           "name": "accept-ranges",
@@ -261,102 +231,7 @@
           "value": "*"
         },
         {
-          "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
-        },
-        {
-          "name": "content-type",
-          "value": "application/javascript"
-        },
-        {
-          "name": "vary",
-          "value": "Accept-Encoding"
-        },
-        {
           "name": "server",
-          "value": "Apache"
-        },
-        {
-          "name": "last-modified",
-          "value": "Fri, 10 May 2013 11:18:51 GMT"
-        },
-        {
-          "name": "content-length",
-          "value": "26631"
-        }
-      ],
-      "sha256": "ac67b60f44b8f1771c6e3ef5b0718f9e2d2e8a764114191e195fadd7876f41c0",
-      "bytes": 26631
-    },
-    "https://gn-web-assets.api.bbc.com/ngas/latest/dotcom-bootstrap.js": {
-      "status": 200,
-      "headers": [
-        {
-          "name": "Access-Control-Max-Age",
-          "value": "3000"
-        },
-        {
-          "name": "ETag",
-          "value": "W/\"59144c57f24fd20fdf0e6c04f97f7e4d\""
-        },
-        {
-          "name": "Age",
-          "value": "120"
-        },
-        {
-          "name": "Access-Control-Allow-Methods",
-          "value": "HEAD, GET"
-        },
-        {
-          "name": "X-Cache",
-          "value": "Hit from cloudfront"
-        },
-        {
-          "name": "X-Amz-Cf-Id",
-          "value": "jeZa4FEWqurCAfwE-gpOOygpZiwxquldpbK3yGgrHtVH5NMvkIB65Q=="
-        },
-        {
-          "name": "Date",
-          "value": "Thu, 29 Oct 2026 22:44:38 GMT"
-        },
-        {
-          "name": "Content-Type",
-          "value": "application/javascript"
-        },
-        {
-          "name": "Vary",
-          "value": "Origin,Accept-Encoding"
-        },
-        {
-          "name": "Last-Modified",
-          "value": "Tue, 13 Oct 2026 13:40:41 GMT"
-        },
-        {
-          "name": "Cache-Control",
-          "value": "max-age=360,public"
-        },
-        {
-          "name": "Connection",
-          "value": "keep-alive"
-        },
-        {
-          "name": "Access-Control-Allow-Credentials",
-          "value": "true"
-        },
-        {
-          "name": "Via",
-          "value": "1.1 6ef02ef178dd95409bf06626a26e011c.cloudfront.net (CloudFront)"
-        },
-        {
-          "name": "Access-Control-Allow-Origin",
-          "value": "https://www.bbc.com"
-        },
-        {
-          "name": "X-Amz-Cf-Pop",
-          "value": "MXP63-P5"
-        },
-        {
-          "name": "Server",
           "value": "AmazonS3"
         },
         {
@@ -365,11 +240,359 @@
         },
         {
           "name": "content-length",
-          "value": "75898"
+          "value": "65312"
         }
       ],
-      "sha256": "639912b5bcd2d3c10027d7c40e541df99d02af63f86ab1801dbe0911513919d3",
-      "bytes": 75898
+      "sha256": "cf53949ae979b2772510ce7ef6ec5f61072c91d2aa0625c412f29a9a229b1c42",
+      "bytes": 65312
+    },
+    "https://static.files.bbci.co.uk/fonts/reith/2.512/BBCReithSerif_W_Md.woff2": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-max-age",
+          "value": "300"
+        },
+        {
+          "name": "etag",
+          "value": "\"f1433494c3104d19a56528493a27b068\""
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "nWNAvjdqrpYoGUD.Jdk6JQNhFLJcabLr"
+        },
+        {
+          "name": "report-to",
+          "value": "{\"group\":\"default\",\"max_age\":3600,\"endpoints\":[{\"url\":\"https://assets.bbc-reporting-api.app/report-endpoint\",\"priority\":1}],\"include_subdomains\":true}"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "HEAD,GET"
+        },
+        {
+          "name": "date",
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 20 May 2026 13:09:12 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "font/woff2"
+        },
+        {
+          "name": "x-amz-id-2",
+          "value": "vX2BDSsIZ10mn5kX6G2YzU9ieKkTQvJOvX2fPLuOcV1A+Va3KtK1JOavJ7/9Tv06e0PHKY5HPMY="
+        },
+        {
+          "name": "access-control-allow-headers",
+          "value": "*"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000, immutable"
+        },
+        {
+          "name": "nel",
+          "value": "{\"report_to\":\"default\",\"max_age\": 604800,\"include_subdomains\":true,\"failure_fraction\":0.01}"
+        },
+        {
+          "name": "timing-allow-origin",
+          "value": "https://www.bbc.co.uk, https://www.bbc.com"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "false"
+        },
+        {
+          "name": "x-amz-request-id",
+          "value": "7N03492QSR2XSQRJ"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "79104"
+        }
+      ],
+      "sha256": "2976e4f218a0cf62149c05efb62ac69d4515a60b28d0b0f868e1bf5ec467aef2",
+      "bytes": 79104
+    },
+    "https://static.files.bbci.co.uk/fonts/reith/2.512/BBCReithSerif_W_Rg.woff2": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-max-age",
+          "value": "300"
+        },
+        {
+          "name": "etag",
+          "value": "\"9db09ba316f1bef2de973d53c5b339bb\""
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "Kwgx5nY1BuhI.aRZbQVwIAjte6mjNFdw"
+        },
+        {
+          "name": "report-to",
+          "value": "{\"group\":\"default\",\"max_age\":3600,\"endpoints\":[{\"url\":\"https://assets.bbc-reporting-api.app/report-endpoint\",\"priority\":1}],\"include_subdomains\":true}"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "HEAD,GET"
+        },
+        {
+          "name": "date",
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 20 May 2026 13:09:12 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "font/woff2"
+        },
+        {
+          "name": "x-amz-id-2",
+          "value": "lxJIq0AyIa5bAnTjo4a+hLVc6nKmI2yASTuA6j+wzLiDTFCytnH1J+pXUuBMkxknqLlddV/IwHii+fdfK5MgBvi++PlIESph"
+        },
+        {
+          "name": "access-control-allow-headers",
+          "value": "*"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000, immutable"
+        },
+        {
+          "name": "nel",
+          "value": "{\"report_to\":\"default\",\"max_age\": 604800,\"include_subdomains\":true,\"failure_fraction\":0.01}"
+        },
+        {
+          "name": "timing-allow-origin",
+          "value": "https://www.bbc.co.uk, https://www.bbc.com"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "false"
+        },
+        {
+          "name": "x-amz-request-id",
+          "value": "7N051ESXKNNKDQX3"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "79836"
+        }
+      ],
+      "sha256": "f01c21d3fcf79cd2864fe88016fb89ca7fd307794b846de4312ca3e5805685ef",
+      "bytes": 79836
+    },
+    "https://static.files.bbci.co.uk/fonts/reith/2.512/BBCReithSans_W_Rg.woff2": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-max-age",
+          "value": "300"
+        },
+        {
+          "name": "etag",
+          "value": "\"17a0df970078d0f4764c04c335ef555a\""
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "eIcVVL5667.Nnzmz3xBePLnCrBJa1b7a"
+        },
+        {
+          "name": "report-to",
+          "value": "{\"group\":\"default\",\"max_age\":3600,\"endpoints\":[{\"url\":\"https://assets.bbc-reporting-api.app/report-endpoint\",\"priority\":1}],\"include_subdomains\":true}"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "HEAD,GET"
+        },
+        {
+          "name": "date",
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 20 May 2026 13:09:12 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "font/woff2"
+        },
+        {
+          "name": "x-amz-id-2",
+          "value": "eLI0RSVHDBd8SI+YG5uMyecpb2unGmgFkaQOYz+tJLkNvaizk6LApYb7avtWYVQHTdu6IboEbvI="
+        },
+        {
+          "name": "access-control-allow-headers",
+          "value": "*"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000, immutable"
+        },
+        {
+          "name": "nel",
+          "value": "{\"report_to\":\"default\",\"max_age\": 604800,\"include_subdomains\":true,\"failure_fraction\":0.01}"
+        },
+        {
+          "name": "timing-allow-origin",
+          "value": "https://www.bbc.co.uk, https://www.bbc.com"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "false"
+        },
+        {
+          "name": "x-amz-request-id",
+          "value": "7N05SKENAADRREQX"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "66468"
+        }
+      ],
+      "sha256": "13af37b33a332856c4f9194d2020bea0d8e91b078aac2f68ee90940dd7fdc070",
+      "bytes": 66468
+    },
+    "https://static.files.bbci.co.uk/fonts/reith/2.512/BBCReithSans_W_Bd.woff2": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-max-age",
+          "value": "300"
+        },
+        {
+          "name": "etag",
+          "value": "\"a119e2352736b09277d0ebb23b2e1c91\""
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "iMGsreln0IW1vYeJNKXoxJd7c8BLO.xJ"
+        },
+        {
+          "name": "report-to",
+          "value": "{\"group\":\"default\",\"max_age\":3600,\"endpoints\":[{\"url\":\"https://assets.bbc-reporting-api.app/report-endpoint\",\"priority\":1}],\"include_subdomains\":true}"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "HEAD,GET"
+        },
+        {
+          "name": "date",
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 20 May 2026 13:09:12 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "font/woff2"
+        },
+        {
+          "name": "x-amz-id-2",
+          "value": "9w+V322OHP/ce1TA6vn87yrIPXGY75WzZZgaScKqKQcpz+28rXZTOWdc/wICu9z6nHUps238Qi9AWFQ8A6wLtV0M58H8+JH4"
+        },
+        {
+          "name": "access-control-allow-headers",
+          "value": "*"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000, immutable"
+        },
+        {
+          "name": "nel",
+          "value": "{\"report_to\":\"default\",\"max_age\": 604800,\"include_subdomains\":true,\"failure_fraction\":0.01}"
+        },
+        {
+          "name": "timing-allow-origin",
+          "value": "https://www.bbc.co.uk, https://www.bbc.com"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "false"
+        },
+        {
+          "name": "x-amz-request-id",
+          "value": "7N054TAJPAXJJ1G7"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "59740"
+        }
+      ],
+      "sha256": "c2daf1f588a2908c2be252977f1ede62aef30dc7f7cbdd1802a05899b45dad3f",
+      "bytes": 59740
     },
     "https://static.files.bbci.co.uk/fonts/reith/2.512/BBCReithSans_W_ExBd.woff2": {
       "status": 200,
@@ -396,7 +619,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
         },
         {
           "name": "last-modified",
@@ -408,7 +631,7 @@
         },
         {
           "name": "x-amz-id-2",
-          "value": "DNJKASNCf7LtmpOqpp9kMFzLQ/EfeGnnulJMbspB90OwD3jGSLZlCQMCLLTHN3RsqmRtMTJaROI="
+          "value": "Lrbp5Df1ARixSyhesJVQxlSRl5XidnTpJEuAPJHNXTNAY7eoo5RAsiTLgOWRwkOw7wrKdv0h9k5YzN4kY7txmI8JxBXtYBsJ"
         },
         {
           "name": "access-control-allow-headers",
@@ -432,7 +655,7 @@
         },
         {
           "name": "x-amz-request-id",
-          "value": "7N0249ZTA9SCNFVQ"
+          "value": "7N06DZSGC8SVZ327"
         },
         {
           "name": "accept-ranges",
@@ -457,97 +680,6 @@
       ],
       "sha256": "3cdbe1e0c495a3b47c440e0935292f22cd3911bd68240d9076acfc1355b05707",
       "bytes": 47844
-    },
-    "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/17y-vwlw.bfs8.js": {
-      "status": 200,
-      "headers": [
-        {
-          "name": "access-control-max-age",
-          "value": "300"
-        },
-        {
-          "name": "etag",
-          "value": "\"86a53cec90ee4f81394042fe90ff2b0f\""
-        },
-        {
-          "name": "x-amz-version-id",
-          "value": "7uQ40A5UCzScDxBO12WuVi5FzahZJpBY"
-        },
-        {
-          "name": "report-to",
-          "value": "{\"group\":\"default\",\"max_age\":3600,\"endpoints\":[{\"url\":\"https://assets.bbc-reporting-api.app/report-endpoint\",\"priority\":1}],\"include_subdomains\":true}"
-        },
-        {
-          "name": "access-control-allow-methods",
-          "value": "HEAD,GET"
-        },
-        {
-          "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
-        },
-        {
-          "name": "last-modified",
-          "value": "Tue, 27 Oct 2026 12:25:23 GMT"
-        },
-        {
-          "name": "vary",
-          "value": "Accept-Encoding"
-        },
-        {
-          "name": "content-type",
-          "value": "text/javascript"
-        },
-        {
-          "name": "x-amz-id-2",
-          "value": "2DslaR176B01ZP7yiU2l0ro+MCsQqLqgPsx6bJ+gwKzynq9A5sLcJQdK3/cTMXAZpPeqSP6ZG78FF2Aw2nKzgdzRHQtTmtip"
-        },
-        {
-          "name": "access-control-allow-headers",
-          "value": "*"
-        },
-        {
-          "name": "cache-control",
-          "value": "max-age=31622400"
-        },
-        {
-          "name": "nel",
-          "value": "{\"report_to\":\"default\",\"max_age\": 604800,\"include_subdomains\":true,\"failure_fraction\":0.01}"
-        },
-        {
-          "name": "timing-allow-origin",
-          "value": "https://www.bbc.co.uk, https://www.bbc.com"
-        },
-        {
-          "name": "access-control-allow-credentials",
-          "value": "false"
-        },
-        {
-          "name": "x-amz-request-id",
-          "value": "R7MDNX9JSX9AVJPS"
-        },
-        {
-          "name": "accept-ranges",
-          "value": "bytes"
-        },
-        {
-          "name": "access-control-allow-origin",
-          "value": "*"
-        },
-        {
-          "name": "server",
-          "value": "AmazonS3"
-        },
-        {
-          "name": "x-amz-server-side-encryption",
-          "value": "AES256"
-        },
-        {
-          "name": "content-length",
-          "value": "1821"
-        }
-      ],
-      "sha256": "c9e92b619cc54123d24d169da89263d5856c687a37208a4acc5ef0d8f86d8447",
-      "bytes": 1821
     },
     "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/grey-placeholder.png": {
       "status": 200,
@@ -574,7 +706,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
         },
         {
           "name": "last-modified",
@@ -636,7 +768,7 @@
       "sha256": "c82d8b6ca64af30bd87942187a369b422175a5c909b57c443f581958c0a09aa3",
       "bytes": 501
     },
-    "https://ichef.bbci.co.uk/news/320/cpsprodpb/3c0a/live/202db8a0-d3d8-11f1-b441-2b33b063138f.jpg.webp": {
+    "https://ichef.bbci.co.uk/news/640/cpsprodpb/053a/live/d1a9e840-d54c-11f1-bcb7-8f812b44c2e5.jpg.webp": {
       "status": 200,
       "headers": [
         {
@@ -645,7 +777,7 @@
         },
         {
           "name": "etag",
-          "value": "\"237ef861082d5559d5833b4b3f7c44dc\""
+          "value": "\"4c88846b9f4d90204f2456bd9b8d07d3\""
         },
         {
           "name": "access-control-allow-methods",
@@ -653,15 +785,15 @@
         },
         {
           "name": "expires",
-          "value": "Fri, 29 Oct 2027 20:39:49 GMT"
+          "value": "Sun, 31 Oct 2027 19:23:59 GMT"
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
         },
         {
           "name": "last-modified",
-          "value": "Thu, 29 Oct 2026 20:36:53 GMT"
+          "value": "Sat, 31 Oct 2026 19:22:27 GMT"
         },
         {
           "name": "content-type",
@@ -701,11 +833,579 @@
         },
         {
           "name": "content-length",
-          "value": "6116"
+          "value": "34984"
         }
       ],
-      "sha256": "7ba8a4a5bd0c6905e6743168074c1efacbb6ab5063af14b0b403de6626d04c32",
-      "bytes": 6116
+      "sha256": "2107054e13a88c8ea6008dc9f776316bfe7c4fa4faf873040a61d9fe5dd7dfc6",
+      "bytes": 34984
+    },
+    "https://ichef.bbci.co.uk/news/320/cpsprodpb/c5b8/live/2b5b2bb0-d430-11f1-b441-2b33b063138f.jpg.webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-max-age",
+          "value": "300"
+        },
+        {
+          "name": "etag",
+          "value": "\"78475017dc96e2641b7547a438e20f5a\""
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "HEAD,GET"
+        },
+        {
+          "name": "expires",
+          "value": "Sun, 31 Oct 2027 22:03:36 GMT"
+        },
+        {
+          "name": "date",
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Sat, 31 Oct 2026 22:01:40 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "access-control-allow-headers",
+          "value": "*"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "timing-allow-origin",
+          "value": "https://www.bbc.co.uk, https://www.bbc.com"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "false"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "5846"
+        }
+      ],
+      "sha256": "fe14091d42c15974fc8927ce746846da2a11b42291b89019f8fa58906467169b",
+      "bytes": 5846
+    },
+    "https://ichef.bbci.co.uk/news/320/cpsprodpb/5cde/live/f5e426a0-d586-11f1-a6a4-9b195a139571.jpg.webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-max-age",
+          "value": "300"
+        },
+        {
+          "name": "etag",
+          "value": "\"a4b38298eafc064446bf0fcbc0bea7be\""
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "HEAD,GET"
+        },
+        {
+          "name": "expires",
+          "value": "Mon, 01 Nov 2027 00:43:25 GMT"
+        },
+        {
+          "name": "date",
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Sun, 01 Nov 2026 00:41:25 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "access-control-allow-headers",
+          "value": "*"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "timing-allow-origin",
+          "value": "https://www.bbc.co.uk, https://www.bbc.com"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "false"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "3606"
+        }
+      ],
+      "sha256": "8730ee1d8ee775a9a4579a867cf924821551314a1f5a54dcdcbca7ed8c35d575",
+      "bytes": 3606
+    },
+    "https://ichef.bbci.co.uk/news/320/cpsprodpb/02cf/live/411e4740-d433-11f1-93e1-3b657b665bcf.jpg.webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-max-age",
+          "value": "300"
+        },
+        {
+          "name": "etag",
+          "value": "\"5a4cec2d5ca9dbdce6a3859ec11cdb68\""
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "HEAD,GET"
+        },
+        {
+          "name": "expires",
+          "value": "Sun, 31 Oct 2027 23:08:18 GMT"
+        },
+        {
+          "name": "date",
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Sat, 31 Oct 2026 23:06:14 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "access-control-allow-headers",
+          "value": "*"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "timing-allow-origin",
+          "value": "https://www.bbc.co.uk, https://www.bbc.com"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "false"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "6382"
+        }
+      ],
+      "sha256": "a9d643cd3ced6dbd888fa3872147cace079d542f88cda1a4b27c643b5eb572f2",
+      "bytes": 6382
+    },
+    "https://ichef.bbci.co.uk/news/320/cpsprodpb/6f47/live/8e8b6090-d568-11f1-910b-9bd7c745c627.jpg.webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-max-age",
+          "value": "300"
+        },
+        {
+          "name": "etag",
+          "value": "\"c7a789a271895f9a6f5a969ae2bfd570\""
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "HEAD,GET"
+        },
+        {
+          "name": "expires",
+          "value": "Sun, 31 Oct 2027 20:26:02 GMT"
+        },
+        {
+          "name": "date",
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Sat, 31 Oct 2026 20:25:19 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "access-control-allow-headers",
+          "value": "*"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "timing-allow-origin",
+          "value": "https://www.bbc.co.uk, https://www.bbc.com"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "false"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "7944"
+        }
+      ],
+      "sha256": "7bf2e08ddd47ad437fb837aededdc667fcfa86c0b4dee430d23d85d28ffe9559",
+      "bytes": 7944
+    },
+    "https://ichef.bbci.co.uk/news/320/cpsprodpb/1d3a/live/6230e120-d570-11f1-93e1-3b657b665bcf.jpg.webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-max-age",
+          "value": "300"
+        },
+        {
+          "name": "etag",
+          "value": "\"1edf6a09c89d4e99b4f087cf5241a6c4\""
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "HEAD,GET"
+        },
+        {
+          "name": "expires",
+          "value": "Sun, 31 Oct 2027 21:30:11 GMT"
+        },
+        {
+          "name": "date",
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Sat, 31 Oct 2026 21:29:03 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "access-control-allow-headers",
+          "value": "*"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "timing-allow-origin",
+          "value": "https://www.bbc.co.uk, https://www.bbc.com"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "false"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "8336"
+        }
+      ],
+      "sha256": "dedeff525f370749805456a7ac025f656f489a89aca168a5811e268d9546645c",
+      "bytes": 8336
+    },
+    "https://static.bbci.co.uk/frameworks/requirejs/0.13.0/sharedmodules/require.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "timing-allow-origin",
+          "value": "https://www.bbc.co.uk, https://www.bbc.com"
+        },
+        {
+          "name": "etag",
+          "value": "\"6807-4dc5b54e0dcc0-gzip\""
+        },
+        {
+          "name": "expires",
+          "value": "Thu, 01 Jun 2023 17:54:54 GMT"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "date",
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 10 May 2013 11:18:51 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "server",
+          "value": "Apache"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript"
+        },
+        {
+          "name": "content-length",
+          "value": "26631"
+        }
+      ],
+      "sha256": "ac67b60f44b8f1771c6e3ef5b0718f9e2d2e8a764114191e195fadd7876f41c0",
+      "bytes": 26631
+    },
+    "https://cdn.tinypass.com/api/tinypass.min.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "UFOSVOMS6fkJwhqc3DFQQ8ZJfZmMLHyM"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"0821b88e22917e1876494d286b1727d3\""
+        },
+        {
+          "name": "age",
+          "value": "3843"
+        },
+        {
+          "name": "expires",
+          "value": "Sun, 01 Nov 2026 05:26:16 GMT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 30 Oct 2026 08:28:34 GMT"
+        },
+        {
+          "name": "x-amz-id-2",
+          "value": "cO1JmPL0zhz5ZwUbISNVBweJUb6Pe+tvxfpg6G+dhDkIcZSSZhp9WgWA3+9SlUJng3C6meL65RtW1aIQUtqNZcjWeOG95Zhh"
+        },
+        {
+          "name": "x-amz-replication-status",
+          "value": "REPLICA"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=14400"
+        },
+        {
+          "name": "x-amz-request-id",
+          "value": "D13G4GT3SZA6NY5M"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a5371c3fb9484335-ZRH"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "497759"
+        }
+      ],
+      "sha256": "372e16ccfbadfc3f8849f2cbfc069631ec0b7a6112c23bfab06abc5888f9f938",
+      "bytes": 497759
+    },
+    "https://emp.bbci.co.uk/emp/bump-4/bump-4.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-max-age",
+          "value": "300"
+        },
+        {
+          "name": "etag",
+          "value": "\"4341be60fe71e27de6273217d90a6d43\""
+        },
+        {
+          "name": "report-to",
+          "value": "{\"group\":\"default\",\"max_age\":3600,\"endpoints\":[{\"url\":\"https://assets.bbc-reporting-api.app/report-endpoint\",\"priority\":1}],\"include_subdomains\":true}"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "HEAD,GET"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "oGJqb1EYOqXV6Gd0fcpMRHGr6zd3UaildW2La2nYmP-nlnSYmIsz3w=="
+        },
+        {
+          "name": "date",
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript; charset=utf-8"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 26 Oct 2026 10:52:42 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "access-control-allow-headers",
+          "value": "*"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=300, s-max-age=150"
+        },
+        {
+          "name": "nel",
+          "value": "{\"report_to\":\"default\",\"max_age\": 604800,\"include_subdomains\":true,\"failure_fraction\":0.01}"
+        },
+        {
+          "name": "timing-allow-origin",
+          "value": "https://www.bbc.co.uk, https://www.bbc.com"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "false"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "LHR82-P1"
+        },
+        {
+          "name": "origin-agent-cluster",
+          "value": "?0"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "content-length",
+          "value": "135871"
+        }
+      ],
+      "sha256": "c2c7875f2aab40fd9815ec650f4d34a0b18f8d76037e1b025f7aeef413cf07da",
+      "bytes": 135871
     },
     "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0k530rgixl5kt.js": {
       "status": 200,
@@ -732,7 +1432,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
         },
         {
           "name": "last-modified",
@@ -798,271 +1498,6 @@
       "sha256": "e369265a9d8c40769f6ccdcd0b87cb392a3672fedbba01f16075d4f298d59166",
       "bytes": 36524
     },
-    "https://emp.bbci.co.uk/emp/bump-4/bump-4.js": {
-      "status": 200,
-      "headers": [
-        {
-          "name": "access-control-max-age",
-          "value": "300"
-        },
-        {
-          "name": "etag",
-          "value": "\"4341be60fe71e27de6273217d90a6d43\""
-        },
-        {
-          "name": "report-to",
-          "value": "{\"group\":\"default\",\"max_age\":3600,\"endpoints\":[{\"url\":\"https://assets.bbc-reporting-api.app/report-endpoint\",\"priority\":1}],\"include_subdomains\":true}"
-        },
-        {
-          "name": "access-control-allow-methods",
-          "value": "HEAD,GET"
-        },
-        {
-          "name": "x-amz-cf-id",
-          "value": "oGJqb1EYOqXV6Gd0fcpMRHGr6zd3UaildW2La2nYmP-nlnSYmIsz3w=="
-        },
-        {
-          "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
-        },
-        {
-          "name": "content-type",
-          "value": "application/javascript; charset=utf-8"
-        },
-        {
-          "name": "last-modified",
-          "value": "Mon, 26 Oct 2026 10:52:42 GMT"
-        },
-        {
-          "name": "vary",
-          "value": "Accept-Encoding"
-        },
-        {
-          "name": "access-control-allow-headers",
-          "value": "*"
-        },
-        {
-          "name": "cache-control",
-          "value": "public, max-age=300, s-max-age=150"
-        },
-        {
-          "name": "nel",
-          "value": "{\"report_to\":\"default\",\"max_age\": 604800,\"include_subdomains\":true,\"failure_fraction\":0.01}"
-        },
-        {
-          "name": "timing-allow-origin",
-          "value": "https://www.bbc.co.uk, https://www.bbc.com"
-        },
-        {
-          "name": "access-control-allow-credentials",
-          "value": "false"
-        },
-        {
-          "name": "access-control-allow-origin",
-          "value": "*"
-        },
-        {
-          "name": "x-amz-cf-pop",
-          "value": "LHR82-P1"
-        },
-        {
-          "name": "origin-agent-cluster",
-          "value": "?0"
-        },
-        {
-          "name": "server",
-          "value": "AmazonS3"
-        },
-        {
-          "name": "content-length",
-          "value": "135871"
-        }
-      ],
-      "sha256": "c2c7875f2aab40fd9815ec650f4d34a0b18f8d76037e1b025f7aeef413cf07da",
-      "bytes": 135871
-    },
-    "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0-a6nanpwqpag.js": {
-      "status": 200,
-      "headers": [
-        {
-          "name": "access-control-max-age",
-          "value": "300"
-        },
-        {
-          "name": "etag",
-          "value": "\"cc610e44211340a5c0b638b6ea9c0a68\""
-        },
-        {
-          "name": "x-amz-version-id",
-          "value": "oAdZts64JdUnr3jZVufWbMeG.28VR.E1"
-        },
-        {
-          "name": "report-to",
-          "value": "{\"group\":\"default\",\"max_age\":3600,\"endpoints\":[{\"url\":\"https://assets.bbc-reporting-api.app/report-endpoint\",\"priority\":1}],\"include_subdomains\":true}"
-        },
-        {
-          "name": "access-control-allow-methods",
-          "value": "HEAD,GET"
-        },
-        {
-          "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
-        },
-        {
-          "name": "last-modified",
-          "value": "Tue, 27 Oct 2026 12:25:21 GMT"
-        },
-        {
-          "name": "vary",
-          "value": "Accept-Encoding"
-        },
-        {
-          "name": "content-type",
-          "value": "text/javascript"
-        },
-        {
-          "name": "x-amz-id-2",
-          "value": "fjmZw+Hvv75w+J4i28NSeAFBYGhFUhhSUlMjhWsiTkzs9RYqcXPGH8qOCyaSetOVjrl5N/jk5M0ProkHUum+i7ryf+6AzF3w"
-        },
-        {
-          "name": "access-control-allow-headers",
-          "value": "*"
-        },
-        {
-          "name": "cache-control",
-          "value": "max-age=31622400"
-        },
-        {
-          "name": "nel",
-          "value": "{\"report_to\":\"default\",\"max_age\": 604800,\"include_subdomains\":true,\"failure_fraction\":0.01}"
-        },
-        {
-          "name": "timing-allow-origin",
-          "value": "https://www.bbc.co.uk, https://www.bbc.com"
-        },
-        {
-          "name": "access-control-allow-credentials",
-          "value": "false"
-        },
-        {
-          "name": "x-amz-request-id",
-          "value": "3HQBD8MZG4JK2V7Y"
-        },
-        {
-          "name": "accept-ranges",
-          "value": "bytes"
-        },
-        {
-          "name": "access-control-allow-origin",
-          "value": "*"
-        },
-        {
-          "name": "server",
-          "value": "AmazonS3"
-        },
-        {
-          "name": "x-amz-server-side-encryption",
-          "value": "AES256"
-        },
-        {
-          "name": "content-length",
-          "value": "23644"
-        }
-      ],
-      "sha256": "6382492412736c25323b49c8282e48c2da65de65bfba9fc23ee9b299891e5f31",
-      "bytes": 23644
-    },
-    "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0s_kjwmep8yf2.js": {
-      "status": 200,
-      "headers": [
-        {
-          "name": "access-control-max-age",
-          "value": "300"
-        },
-        {
-          "name": "etag",
-          "value": "\"bc08877c4936e9ac6fad6613e922a100\""
-        },
-        {
-          "name": "x-amz-version-id",
-          "value": "Wqmu74dpZ4AcLhPvg86BITNTpOJHX_VY"
-        },
-        {
-          "name": "report-to",
-          "value": "{\"group\":\"default\",\"max_age\":3600,\"endpoints\":[{\"url\":\"https://assets.bbc-reporting-api.app/report-endpoint\",\"priority\":1}],\"include_subdomains\":true}"
-        },
-        {
-          "name": "access-control-allow-methods",
-          "value": "HEAD,GET"
-        },
-        {
-          "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
-        },
-        {
-          "name": "last-modified",
-          "value": "Tue, 27 Oct 2026 12:25:22 GMT"
-        },
-        {
-          "name": "vary",
-          "value": "Accept-Encoding"
-        },
-        {
-          "name": "content-type",
-          "value": "text/javascript"
-        },
-        {
-          "name": "x-amz-id-2",
-          "value": "HDEPw0ENMUkT5KUEQi9KLl2t5zt6iicHKZ2Xw9y76b7qTjfdq4KNFFOc+n3hPHlvpAn2ci+VePBjSIN6L3lue2FhQ2GaCIlH"
-        },
-        {
-          "name": "access-control-allow-headers",
-          "value": "*"
-        },
-        {
-          "name": "cache-control",
-          "value": "max-age=31622400"
-        },
-        {
-          "name": "nel",
-          "value": "{\"report_to\":\"default\",\"max_age\": 604800,\"include_subdomains\":true,\"failure_fraction\":0.01}"
-        },
-        {
-          "name": "timing-allow-origin",
-          "value": "https://www.bbc.co.uk, https://www.bbc.com"
-        },
-        {
-          "name": "access-control-allow-credentials",
-          "value": "false"
-        },
-        {
-          "name": "x-amz-request-id",
-          "value": "0D0995NZV6GCCTJZ"
-        },
-        {
-          "name": "accept-ranges",
-          "value": "bytes"
-        },
-        {
-          "name": "access-control-allow-origin",
-          "value": "*"
-        },
-        {
-          "name": "server",
-          "value": "AmazonS3"
-        },
-        {
-          "name": "x-amz-server-side-encryption",
-          "value": "AES256"
-        },
-        {
-          "name": "content-length",
-          "value": "25448"
-        }
-      ],
-      "sha256": "43a274c8e775e4745b5675363f437c01feac88662e7f6040a53f21cba5ad272b",
-      "bytes": 25448
-    },
     "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0zpz-874su9ks.js": {
       "status": 200,
       "headers": [
@@ -1088,7 +1523,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
         },
         {
           "name": "last-modified",
@@ -1154,6 +1589,366 @@
       "sha256": "9ea3f2b34d76ce6a162b709cc65c34cc37a66660de2853e1c305dd93bf294314",
       "bytes": 29966
     },
+    "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/site.webmanifest": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-max-age",
+          "value": "300"
+        },
+        {
+          "name": "etag",
+          "value": "\"0a7b4d9bbaeba5f2d6a05194d2d3de5b\""
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "8IVoCK5rH8oozm0ukFN4C7f1AmN82T4T"
+        },
+        {
+          "name": "report-to",
+          "value": "{\"group\":\"default\",\"max_age\":3600,\"endpoints\":[{\"url\":\"https://assets.bbc-reporting-api.app/report-endpoint\",\"priority\":1}],\"include_subdomains\":true}"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "HEAD,GET"
+        },
+        {
+          "name": "date",
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 27 Oct 2026 12:25:20 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/manifest+json"
+        },
+        {
+          "name": "x-amz-id-2",
+          "value": "4p4PY3gLDgZUmodorEPxfVpLcSUxZQBPKABR8qvVkEe5ZjD9efe7RU7E95XpFKDvUVSwVjzUHzIz2slyGF4oRZVlGjv3+A+h"
+        },
+        {
+          "name": "access-control-allow-headers",
+          "value": "*"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31622400"
+        },
+        {
+          "name": "nel",
+          "value": "{\"report_to\":\"default\",\"max_age\": 604800,\"include_subdomains\":true,\"failure_fraction\":0.01}"
+        },
+        {
+          "name": "timing-allow-origin",
+          "value": "https://www.bbc.co.uk, https://www.bbc.com"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "false"
+        },
+        {
+          "name": "x-amz-request-id",
+          "value": "86QSECVW64SNP0PD"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "358"
+        }
+      ],
+      "sha256": "7e6b5dafa2921d8ca94a2a0cf17539ea755d7db2d3b4586015715f9a8378756d",
+      "bytes": 358
+    },
+    "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0s_kjwmep8yf2.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-max-age",
+          "value": "300"
+        },
+        {
+          "name": "etag",
+          "value": "\"bc08877c4936e9ac6fad6613e922a100\""
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "Wqmu74dpZ4AcLhPvg86BITNTpOJHX_VY"
+        },
+        {
+          "name": "report-to",
+          "value": "{\"group\":\"default\",\"max_age\":3600,\"endpoints\":[{\"url\":\"https://assets.bbc-reporting-api.app/report-endpoint\",\"priority\":1}],\"include_subdomains\":true}"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "HEAD,GET"
+        },
+        {
+          "name": "date",
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 27 Oct 2026 12:25:22 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "x-amz-id-2",
+          "value": "z9iMDFXf3aKZCiSFFLEu17G0TgW+NO9FC4INiqknEnAmrAUFMF9kkhr1JcHqgmKnrl+GVOwdz/g="
+        },
+        {
+          "name": "access-control-allow-headers",
+          "value": "*"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31622400"
+        },
+        {
+          "name": "nel",
+          "value": "{\"report_to\":\"default\",\"max_age\": 604800,\"include_subdomains\":true,\"failure_fraction\":0.01}"
+        },
+        {
+          "name": "timing-allow-origin",
+          "value": "https://www.bbc.co.uk, https://www.bbc.com"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "false"
+        },
+        {
+          "name": "x-amz-request-id",
+          "value": "QCRYT0Q9Z7DVEVR2"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "25448"
+        }
+      ],
+      "sha256": "43a274c8e775e4745b5675363f437c01feac88662e7f6040a53f21cba5ad272b",
+      "bytes": 25448
+    },
+    "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0-a6nanpwqpag.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-max-age",
+          "value": "300"
+        },
+        {
+          "name": "etag",
+          "value": "\"cc610e44211340a5c0b638b6ea9c0a68\""
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "oAdZts64JdUnr3jZVufWbMeG.28VR.E1"
+        },
+        {
+          "name": "report-to",
+          "value": "{\"group\":\"default\",\"max_age\":3600,\"endpoints\":[{\"url\":\"https://assets.bbc-reporting-api.app/report-endpoint\",\"priority\":1}],\"include_subdomains\":true}"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "HEAD,GET"
+        },
+        {
+          "name": "date",
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 27 Oct 2026 12:25:21 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "x-amz-id-2",
+          "value": "CaXPJAitbLxKBg58CvXfzCE22oQg5VqDlrMdJtFfBNFD4+oiSk5/x3WnRge/RGFPi9e4itlD5MuHzJDE94Y5dJic5wK2/gaj"
+        },
+        {
+          "name": "access-control-allow-headers",
+          "value": "*"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31622400"
+        },
+        {
+          "name": "nel",
+          "value": "{\"report_to\":\"default\",\"max_age\": 604800,\"include_subdomains\":true,\"failure_fraction\":0.01}"
+        },
+        {
+          "name": "timing-allow-origin",
+          "value": "https://www.bbc.co.uk, https://www.bbc.com"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "false"
+        },
+        {
+          "name": "x-amz-request-id",
+          "value": "QCRPJ8YQB3RM7DY5"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "23644"
+        }
+      ],
+      "sha256": "6382492412736c25323b49c8282e48c2da65de65bfba9fc23ee9b299891e5f31",
+      "bytes": 23644
+    },
+    "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/17y-vwlw.bfs8.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-max-age",
+          "value": "300"
+        },
+        {
+          "name": "etag",
+          "value": "\"86a53cec90ee4f81394042fe90ff2b0f\""
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "7uQ40A5UCzScDxBO12WuVi5FzahZJpBY"
+        },
+        {
+          "name": "report-to",
+          "value": "{\"group\":\"default\",\"max_age\":3600,\"endpoints\":[{\"url\":\"https://assets.bbc-reporting-api.app/report-endpoint\",\"priority\":1}],\"include_subdomains\":true}"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "HEAD,GET"
+        },
+        {
+          "name": "date",
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 27 Oct 2026 12:25:23 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "x-amz-id-2",
+          "value": "2DslaR176B01ZP7yiU2l0ro+MCsQqLqgPsx6bJ+gwKzynq9A5sLcJQdK3/cTMXAZpPeqSP6ZG78FF2Aw2nKzgdzRHQtTmtip"
+        },
+        {
+          "name": "access-control-allow-headers",
+          "value": "*"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31622400"
+        },
+        {
+          "name": "nel",
+          "value": "{\"report_to\":\"default\",\"max_age\": 604800,\"include_subdomains\":true,\"failure_fraction\":0.01}"
+        },
+        {
+          "name": "timing-allow-origin",
+          "value": "https://www.bbc.co.uk, https://www.bbc.com"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "false"
+        },
+        {
+          "name": "x-amz-request-id",
+          "value": "R7MDNX9JSX9AVJPS"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "1821"
+        }
+      ],
+      "sha256": "c9e92b619cc54123d24d169da89263d5856c687a37208a4acc5ef0d8f86d8447",
+      "bytes": 1821
+    },
     "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0pr885e78gdj8.js": {
       "status": 200,
       "headers": [
@@ -1179,7 +1974,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
         },
         {
           "name": "last-modified",
@@ -1245,800 +2040,6 @@
       "sha256": "43278b629a1156a81e375dff43ad5735d9f1cd531c230d4863593d9eabd4570e",
       "bytes": 23393
     },
-    "https://static.files.bbci.co.uk/fonts/reith/2.512/BBCReithSerif_W_Md.woff2": {
-      "status": 200,
-      "headers": [
-        {
-          "name": "access-control-max-age",
-          "value": "300"
-        },
-        {
-          "name": "etag",
-          "value": "\"f1433494c3104d19a56528493a27b068\""
-        },
-        {
-          "name": "x-amz-version-id",
-          "value": "nWNAvjdqrpYoGUD.Jdk6JQNhFLJcabLr"
-        },
-        {
-          "name": "report-to",
-          "value": "{\"group\":\"default\",\"max_age\":3600,\"endpoints\":[{\"url\":\"https://assets.bbc-reporting-api.app/report-endpoint\",\"priority\":1}],\"include_subdomains\":true}"
-        },
-        {
-          "name": "access-control-allow-methods",
-          "value": "HEAD,GET"
-        },
-        {
-          "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
-        },
-        {
-          "name": "last-modified",
-          "value": "Wed, 20 May 2026 13:09:12 GMT"
-        },
-        {
-          "name": "content-type",
-          "value": "font/woff2"
-        },
-        {
-          "name": "x-amz-id-2",
-          "value": "ieAbc6/bmonLZUOmVBJfphndfHGUMkOHQysNqNw/UAzl1pWi/BEuOC3zEGWZzzrn1m2JwfzuEX0="
-        },
-        {
-          "name": "access-control-allow-headers",
-          "value": "*"
-        },
-        {
-          "name": "cache-control",
-          "value": "public, max-age=31536000, immutable"
-        },
-        {
-          "name": "nel",
-          "value": "{\"report_to\":\"default\",\"max_age\": 604800,\"include_subdomains\":true,\"failure_fraction\":0.01}"
-        },
-        {
-          "name": "timing-allow-origin",
-          "value": "https://www.bbc.co.uk, https://www.bbc.com"
-        },
-        {
-          "name": "access-control-allow-credentials",
-          "value": "false"
-        },
-        {
-          "name": "x-amz-request-id",
-          "value": "7N0AR2FDM2AF9DSR"
-        },
-        {
-          "name": "accept-ranges",
-          "value": "bytes"
-        },
-        {
-          "name": "access-control-allow-origin",
-          "value": "*"
-        },
-        {
-          "name": "server",
-          "value": "AmazonS3"
-        },
-        {
-          "name": "x-amz-server-side-encryption",
-          "value": "AES256"
-        },
-        {
-          "name": "content-length",
-          "value": "79104"
-        }
-      ],
-      "sha256": "2976e4f218a0cf62149c05efb62ac69d4515a60b28d0b0f868e1bf5ec467aef2",
-      "bytes": 79104
-    },
-    "https://static.files.bbci.co.uk/fonts/reith/2.512/BBCReithSans_W_Bd.woff2": {
-      "status": 200,
-      "headers": [
-        {
-          "name": "access-control-max-age",
-          "value": "300"
-        },
-        {
-          "name": "etag",
-          "value": "\"a119e2352736b09277d0ebb23b2e1c91\""
-        },
-        {
-          "name": "x-amz-version-id",
-          "value": "iMGsreln0IW1vYeJNKXoxJd7c8BLO.xJ"
-        },
-        {
-          "name": "report-to",
-          "value": "{\"group\":\"default\",\"max_age\":3600,\"endpoints\":[{\"url\":\"https://assets.bbc-reporting-api.app/report-endpoint\",\"priority\":1}],\"include_subdomains\":true}"
-        },
-        {
-          "name": "access-control-allow-methods",
-          "value": "HEAD,GET"
-        },
-        {
-          "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
-        },
-        {
-          "name": "last-modified",
-          "value": "Wed, 20 May 2026 13:09:12 GMT"
-        },
-        {
-          "name": "content-type",
-          "value": "font/woff2"
-        },
-        {
-          "name": "x-amz-id-2",
-          "value": "dnD2mX6JyLi4DDMy1wT9n/bjx8LrHN1qQ5EYqYRUzQeApGzUiZmT5Ha73/i1jjqXqlf3YzE57v9RZwTC/QFoHaqq5gMefnGW"
-        },
-        {
-          "name": "access-control-allow-headers",
-          "value": "*"
-        },
-        {
-          "name": "cache-control",
-          "value": "public, max-age=31536000, immutable"
-        },
-        {
-          "name": "nel",
-          "value": "{\"report_to\":\"default\",\"max_age\": 604800,\"include_subdomains\":true,\"failure_fraction\":0.01}"
-        },
-        {
-          "name": "timing-allow-origin",
-          "value": "https://www.bbc.co.uk, https://www.bbc.com"
-        },
-        {
-          "name": "access-control-allow-credentials",
-          "value": "false"
-        },
-        {
-          "name": "x-amz-request-id",
-          "value": "7N0ANPZWHDEZCAV4"
-        },
-        {
-          "name": "accept-ranges",
-          "value": "bytes"
-        },
-        {
-          "name": "access-control-allow-origin",
-          "value": "*"
-        },
-        {
-          "name": "server",
-          "value": "AmazonS3"
-        },
-        {
-          "name": "x-amz-server-side-encryption",
-          "value": "AES256"
-        },
-        {
-          "name": "content-length",
-          "value": "59740"
-        }
-      ],
-      "sha256": "c2daf1f588a2908c2be252977f1ede62aef30dc7f7cbdd1802a05899b45dad3f",
-      "bytes": 59740
-    },
-    "https://static.files.bbci.co.uk/fonts/reith/2.512/BBCReithSans_W_Md.woff2": {
-      "status": 200,
-      "headers": [
-        {
-          "name": "access-control-max-age",
-          "value": "300"
-        },
-        {
-          "name": "etag",
-          "value": "\"7c60423ccf6f2997c6bb5e80966aa9b7\""
-        },
-        {
-          "name": "x-amz-version-id",
-          "value": "wlfXIvx7oFSp_E9dfH6hCxTLczqLdW0N"
-        },
-        {
-          "name": "report-to",
-          "value": "{\"group\":\"default\",\"max_age\":3600,\"endpoints\":[{\"url\":\"https://assets.bbc-reporting-api.app/report-endpoint\",\"priority\":1}],\"include_subdomains\":true}"
-        },
-        {
-          "name": "access-control-allow-methods",
-          "value": "HEAD,GET"
-        },
-        {
-          "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
-        },
-        {
-          "name": "last-modified",
-          "value": "Wed, 20 May 2026 13:09:12 GMT"
-        },
-        {
-          "name": "content-type",
-          "value": "font/woff2"
-        },
-        {
-          "name": "x-amz-id-2",
-          "value": "BodC0wx37KsdUKduFd6+NM3FzuAZMY44zkffvKiTMfkb0kVBOiqVhqIlH+HqWJa88Jal9lahuTM="
-        },
-        {
-          "name": "access-control-allow-headers",
-          "value": "*"
-        },
-        {
-          "name": "cache-control",
-          "value": "public, max-age=31536000, immutable"
-        },
-        {
-          "name": "nel",
-          "value": "{\"report_to\":\"default\",\"max_age\": 604800,\"include_subdomains\":true,\"failure_fraction\":0.01}"
-        },
-        {
-          "name": "timing-allow-origin",
-          "value": "https://www.bbc.co.uk, https://www.bbc.com"
-        },
-        {
-          "name": "access-control-allow-credentials",
-          "value": "false"
-        },
-        {
-          "name": "x-amz-request-id",
-          "value": "7N03G467RAXRFXNX"
-        },
-        {
-          "name": "accept-ranges",
-          "value": "bytes"
-        },
-        {
-          "name": "access-control-allow-origin",
-          "value": "*"
-        },
-        {
-          "name": "server",
-          "value": "AmazonS3"
-        },
-        {
-          "name": "x-amz-server-side-encryption",
-          "value": "AES256"
-        },
-        {
-          "name": "content-length",
-          "value": "65312"
-        }
-      ],
-      "sha256": "cf53949ae979b2772510ce7ef6ec5f61072c91d2aa0625c412f29a9a229b1c42",
-      "bytes": 65312
-    },
-    "https://ichef.bbci.co.uk/ace/standard/640/cpsprodpb/290f/live/0848c3f0-d3d4-11f1-9c32-1532a6164171.jpg.webp": {
-      "status": 200,
-      "headers": [
-        {
-          "name": "access-control-max-age",
-          "value": "300"
-        },
-        {
-          "name": "etag",
-          "value": "\"1c14ada23fb3c01354e7a0b55a0f119e\""
-        },
-        {
-          "name": "access-control-allow-methods",
-          "value": "HEAD,GET"
-        },
-        {
-          "name": "expires",
-          "value": "Fri, 29 Oct 2027 20:06:54 GMT"
-        },
-        {
-          "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
-        },
-        {
-          "name": "last-modified",
-          "value": "Thu, 29 Oct 2026 20:05:23 GMT"
-        },
-        {
-          "name": "content-type",
-          "value": "image/webp"
-        },
-        {
-          "name": "access-control-allow-headers",
-          "value": "*"
-        },
-        {
-          "name": "cache-control",
-          "value": "max-age=31536000"
-        },
-        {
-          "name": "timing-allow-origin",
-          "value": "https://www.bbc.co.uk, https://www.bbc.com"
-        },
-        {
-          "name": "access-control-allow-credentials",
-          "value": "false"
-        },
-        {
-          "name": "accept-ranges",
-          "value": "bytes"
-        },
-        {
-          "name": "access-control-allow-origin",
-          "value": "*"
-        },
-        {
-          "name": "server",
-          "value": "AmazonS3"
-        },
-        {
-          "name": "x-amz-server-side-encryption",
-          "value": "AES256"
-        },
-        {
-          "name": "content-length",
-          "value": "9942"
-        }
-      ],
-      "sha256": "a8061fb97d0b921bd1038a11d1141a6eeaac3275c074f4fc10ae639bc5a94d20",
-      "bytes": 9942
-    },
-    "https://ichef.bbci.co.uk/news/320/cpsprodpb/213a/live/ecf64a00-d3d3-11f1-9c32-1532a6164171.jpg.webp": {
-      "status": 200,
-      "headers": [
-        {
-          "name": "access-control-max-age",
-          "value": "300"
-        },
-        {
-          "name": "etag",
-          "value": "\"0b6714523e9f6a2c892fada0e370cb2f\""
-        },
-        {
-          "name": "access-control-allow-methods",
-          "value": "HEAD,GET"
-        },
-        {
-          "name": "expires",
-          "value": "Fri, 29 Oct 2027 20:23:32 GMT"
-        },
-        {
-          "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
-        },
-        {
-          "name": "last-modified",
-          "value": "Thu, 29 Oct 2026 20:21:55 GMT"
-        },
-        {
-          "name": "content-type",
-          "value": "image/webp"
-        },
-        {
-          "name": "access-control-allow-headers",
-          "value": "*"
-        },
-        {
-          "name": "cache-control",
-          "value": "max-age=31536000"
-        },
-        {
-          "name": "timing-allow-origin",
-          "value": "https://www.bbc.co.uk, https://www.bbc.com"
-        },
-        {
-          "name": "access-control-allow-credentials",
-          "value": "false"
-        },
-        {
-          "name": "accept-ranges",
-          "value": "bytes"
-        },
-        {
-          "name": "access-control-allow-origin",
-          "value": "*"
-        },
-        {
-          "name": "server",
-          "value": "AmazonS3"
-        },
-        {
-          "name": "x-amz-server-side-encryption",
-          "value": "AES256"
-        },
-        {
-          "name": "content-length",
-          "value": "9550"
-        }
-      ],
-      "sha256": "b89d8824c710a5161cde5e500195291604eeea45631c969a2efdf52733231311",
-      "bytes": 9550
-    },
-    "https://ichef.bbci.co.uk/news/320/cpsprodpb/cbb9/live/fe693560-d3c2-11f1-93e1-3b657b665bcf.jpg.webp": {
-      "status": 200,
-      "headers": [
-        {
-          "name": "access-control-max-age",
-          "value": "300"
-        },
-        {
-          "name": "etag",
-          "value": "\"a98dc351c747ea1f850d139ad6d063b0\""
-        },
-        {
-          "name": "access-control-allow-methods",
-          "value": "HEAD,GET"
-        },
-        {
-          "name": "expires",
-          "value": "Fri, 29 Oct 2027 20:09:33 GMT"
-        },
-        {
-          "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
-        },
-        {
-          "name": "last-modified",
-          "value": "Thu, 29 Oct 2026 20:05:59 GMT"
-        },
-        {
-          "name": "content-type",
-          "value": "image/webp"
-        },
-        {
-          "name": "access-control-allow-headers",
-          "value": "*"
-        },
-        {
-          "name": "cache-control",
-          "value": "max-age=31536000"
-        },
-        {
-          "name": "timing-allow-origin",
-          "value": "https://www.bbc.co.uk, https://www.bbc.com"
-        },
-        {
-          "name": "access-control-allow-credentials",
-          "value": "false"
-        },
-        {
-          "name": "accept-ranges",
-          "value": "bytes"
-        },
-        {
-          "name": "access-control-allow-origin",
-          "value": "*"
-        },
-        {
-          "name": "server",
-          "value": "AmazonS3"
-        },
-        {
-          "name": "x-amz-server-side-encryption",
-          "value": "AES256"
-        },
-        {
-          "name": "content-length",
-          "value": "11964"
-        }
-      ],
-      "sha256": "169459fff210c79a1a5784118e2204124c62a3962a1f85469a2919459ce33d39",
-      "bytes": 11964
-    },
-    "https://ichef.bbci.co.uk/news/320/cpsprodpb/d46f/live/7d9cd370-d3e4-11f1-9caf-3b69fd8bbd8b.jpg.webp": {
-      "status": 200,
-      "headers": [
-        {
-          "name": "access-control-max-age",
-          "value": "300"
-        },
-        {
-          "name": "etag",
-          "value": "\"a96fdb77b20c42dd33753cf8ce06ff33\""
-        },
-        {
-          "name": "access-control-allow-methods",
-          "value": "HEAD,GET"
-        },
-        {
-          "name": "expires",
-          "value": "Fri, 29 Oct 2027 22:04:16 GMT"
-        },
-        {
-          "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
-        },
-        {
-          "name": "last-modified",
-          "value": "Thu, 29 Oct 2026 22:03:01 GMT"
-        },
-        {
-          "name": "content-type",
-          "value": "image/webp"
-        },
-        {
-          "name": "access-control-allow-headers",
-          "value": "*"
-        },
-        {
-          "name": "cache-control",
-          "value": "max-age=31536000"
-        },
-        {
-          "name": "timing-allow-origin",
-          "value": "https://www.bbc.co.uk, https://www.bbc.com"
-        },
-        {
-          "name": "access-control-allow-credentials",
-          "value": "false"
-        },
-        {
-          "name": "accept-ranges",
-          "value": "bytes"
-        },
-        {
-          "name": "access-control-allow-origin",
-          "value": "*"
-        },
-        {
-          "name": "server",
-          "value": "AmazonS3"
-        },
-        {
-          "name": "x-amz-server-side-encryption",
-          "value": "AES256"
-        },
-        {
-          "name": "content-length",
-          "value": "12654"
-        }
-      ],
-      "sha256": "0d2785eb3e880551b55aa8c24d3406b3310622811de54c65d26e8179bc6f8292",
-      "bytes": 12654
-    },
-    "https://ichef.bbci.co.uk/news/320/cpsprodpb/5421/live/19962d80-d3e5-11f1-9caf-3b69fd8bbd8b.jpg.webp": {
-      "status": 200,
-      "headers": [
-        {
-          "name": "access-control-max-age",
-          "value": "300"
-        },
-        {
-          "name": "etag",
-          "value": "\"3f4c96dcce46b8041104dc179f16f23f\""
-        },
-        {
-          "name": "access-control-allow-methods",
-          "value": "HEAD,GET"
-        },
-        {
-          "name": "expires",
-          "value": "Fri, 29 Oct 2027 22:09:16 GMT"
-        },
-        {
-          "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
-        },
-        {
-          "name": "last-modified",
-          "value": "Thu, 29 Oct 2026 22:07:53 GMT"
-        },
-        {
-          "name": "content-type",
-          "value": "image/webp"
-        },
-        {
-          "name": "access-control-allow-headers",
-          "value": "*"
-        },
-        {
-          "name": "cache-control",
-          "value": "max-age=31536000"
-        },
-        {
-          "name": "timing-allow-origin",
-          "value": "https://www.bbc.co.uk, https://www.bbc.com"
-        },
-        {
-          "name": "access-control-allow-credentials",
-          "value": "false"
-        },
-        {
-          "name": "accept-ranges",
-          "value": "bytes"
-        },
-        {
-          "name": "access-control-allow-origin",
-          "value": "*"
-        },
-        {
-          "name": "server",
-          "value": "AmazonS3"
-        },
-        {
-          "name": "x-amz-server-side-encryption",
-          "value": "AES256"
-        },
-        {
-          "name": "content-length",
-          "value": "12220"
-        }
-      ],
-      "sha256": "100d8a77a2f434747a8422b8a9b4787cee83bf022b06494434fad7b7fe015534",
-      "bytes": 12220
-    },
-    "https://static.files.bbci.co.uk/fonts/reith/2.512/BBCReithSans_W_Rg.woff2": {
-      "status": 200,
-      "headers": [
-        {
-          "name": "access-control-max-age",
-          "value": "300"
-        },
-        {
-          "name": "etag",
-          "value": "\"17a0df970078d0f4764c04c335ef555a\""
-        },
-        {
-          "name": "x-amz-version-id",
-          "value": "eIcVVL5667.Nnzmz3xBePLnCrBJa1b7a"
-        },
-        {
-          "name": "report-to",
-          "value": "{\"group\":\"default\",\"max_age\":3600,\"endpoints\":[{\"url\":\"https://assets.bbc-reporting-api.app/report-endpoint\",\"priority\":1}],\"include_subdomains\":true}"
-        },
-        {
-          "name": "access-control-allow-methods",
-          "value": "HEAD,GET"
-        },
-        {
-          "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
-        },
-        {
-          "name": "last-modified",
-          "value": "Wed, 20 May 2026 13:09:12 GMT"
-        },
-        {
-          "name": "content-type",
-          "value": "font/woff2"
-        },
-        {
-          "name": "x-amz-id-2",
-          "value": "hOeF13BCawDyOYzYj2Eoyoe4PN/gOYDNChhwXgxrjD6TYfu5w2KfRmjemOCR1yUAaN4mpw9uFFJq4V9HceQuxEFFKvYwrTIZ"
-        },
-        {
-          "name": "access-control-allow-headers",
-          "value": "*"
-        },
-        {
-          "name": "cache-control",
-          "value": "public, max-age=31536000, immutable"
-        },
-        {
-          "name": "nel",
-          "value": "{\"report_to\":\"default\",\"max_age\": 604800,\"include_subdomains\":true,\"failure_fraction\":0.01}"
-        },
-        {
-          "name": "timing-allow-origin",
-          "value": "https://www.bbc.co.uk, https://www.bbc.com"
-        },
-        {
-          "name": "access-control-allow-credentials",
-          "value": "false"
-        },
-        {
-          "name": "x-amz-request-id",
-          "value": "7N0CJEPA2MQ1SP54"
-        },
-        {
-          "name": "accept-ranges",
-          "value": "bytes"
-        },
-        {
-          "name": "access-control-allow-origin",
-          "value": "*"
-        },
-        {
-          "name": "server",
-          "value": "AmazonS3"
-        },
-        {
-          "name": "x-amz-server-side-encryption",
-          "value": "AES256"
-        },
-        {
-          "name": "content-length",
-          "value": "66468"
-        }
-      ],
-      "sha256": "13af37b33a332856c4f9194d2020bea0d8e91b078aac2f68ee90940dd7fdc070",
-      "bytes": 66468
-    },
-    "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0jl4bpoiy-t_p.js": {
-      "status": 200,
-      "headers": [
-        {
-          "name": "access-control-max-age",
-          "value": "300"
-        },
-        {
-          "name": "etag",
-          "value": "\"97ed935ac37a9c9d5ba65e4daef3db74\""
-        },
-        {
-          "name": "x-amz-version-id",
-          "value": ".VLi9eXq1gMyCT5lCAsVKu0OGa0eb4_l"
-        },
-        {
-          "name": "report-to",
-          "value": "{\"group\":\"default\",\"max_age\":3600,\"endpoints\":[{\"url\":\"https://assets.bbc-reporting-api.app/report-endpoint\",\"priority\":1}],\"include_subdomains\":true}"
-        },
-        {
-          "name": "access-control-allow-methods",
-          "value": "HEAD,GET"
-        },
-        {
-          "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
-        },
-        {
-          "name": "last-modified",
-          "value": "Tue, 27 Oct 2026 12:25:22 GMT"
-        },
-        {
-          "name": "vary",
-          "value": "Accept-Encoding"
-        },
-        {
-          "name": "content-type",
-          "value": "text/javascript"
-        },
-        {
-          "name": "x-amz-id-2",
-          "value": "VuG+pCon7xZ/VpjSF45uvxHMtyb8783t/p0wmkNr80yEM3+fCiKuM011hb0dEH6li9tmsxuxkbk="
-        },
-        {
-          "name": "access-control-allow-headers",
-          "value": "*"
-        },
-        {
-          "name": "cache-control",
-          "value": "max-age=31622400"
-        },
-        {
-          "name": "nel",
-          "value": "{\"report_to\":\"default\",\"max_age\": 604800,\"include_subdomains\":true,\"failure_fraction\":0.01}"
-        },
-        {
-          "name": "timing-allow-origin",
-          "value": "https://www.bbc.co.uk, https://www.bbc.com"
-        },
-        {
-          "name": "access-control-allow-credentials",
-          "value": "false"
-        },
-        {
-          "name": "x-amz-request-id",
-          "value": "XCYPRHAWHBDJ2E4P"
-        },
-        {
-          "name": "accept-ranges",
-          "value": "bytes"
-        },
-        {
-          "name": "access-control-allow-origin",
-          "value": "*"
-        },
-        {
-          "name": "server",
-          "value": "AmazonS3"
-        },
-        {
-          "name": "x-amz-server-side-encryption",
-          "value": "AES256"
-        },
-        {
-          "name": "content-length",
-          "value": "6821"
-        }
-      ],
-      "sha256": "dff644624d905c732f9a0ef6e564d052584e957ae393366d0319fea89b695d48",
-      "bytes": 6821
-    },
     "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0-kefdrf6ih5s.js": {
       "status": 200,
       "headers": [
@@ -2064,7 +2065,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
         },
         {
           "name": "last-modified",
@@ -2155,7 +2156,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
         },
         {
           "name": "last-modified",
@@ -2246,7 +2247,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
         },
         {
           "name": "last-modified",
@@ -2262,7 +2263,7 @@
         },
         {
           "name": "x-amz-id-2",
-          "value": "CQf1MdLojQCCTpZ6lq8mgd+tZngX+x+pBpc1spijcEPRjeaqN6uQ77/6xosxBIa6WkZJFrtzA3U="
+          "value": "EWIdYN4pPvND+p3ZAiI+eifKJDDa/KWr6WnqYs02HpeHWm2wwjdWyyEbtWRfeGs3wguhCTrJ40/dLlaC2tBwImr+xL4C7Ecb"
         },
         {
           "name": "access-control-allow-headers",
@@ -2286,7 +2287,7 @@
         },
         {
           "name": "x-amz-request-id",
-          "value": "J9M45J9G3X0V7R4S"
+          "value": "QCRGPPBB7509PVC5"
         },
         {
           "name": "accept-ranges",
@@ -2337,7 +2338,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
         },
         {
           "name": "last-modified",
@@ -2428,7 +2429,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
         },
         {
           "name": "last-modified",
@@ -2519,7 +2520,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
         },
         {
           "name": "last-modified",
@@ -2585,361 +2586,6 @@
       "sha256": "a524098545ef1cd851bfe249d8547418701553c1271fa61df83e322d31ef1bda",
       "bytes": 29178
     },
-    "https://ichef.bbci.co.uk/news/320/cpsprodpb/873a/live/9401f6d0-d3a4-11f1-a5cd-49637fcbd4e4.jpg.webp": {
-      "status": 200,
-      "headers": [
-        {
-          "name": "access-control-max-age",
-          "value": "300"
-        },
-        {
-          "name": "etag",
-          "value": "\"d4d97207d7e3df50cc5598f9542daa1c\""
-        },
-        {
-          "name": "access-control-allow-methods",
-          "value": "HEAD,GET"
-        },
-        {
-          "name": "expires",
-          "value": "Fri, 29 Oct 2027 14:29:18 GMT"
-        },
-        {
-          "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
-        },
-        {
-          "name": "last-modified",
-          "value": "Thu, 29 Oct 2026 14:26:17 GMT"
-        },
-        {
-          "name": "content-type",
-          "value": "image/webp"
-        },
-        {
-          "name": "access-control-allow-headers",
-          "value": "*"
-        },
-        {
-          "name": "cache-control",
-          "value": "max-age=31536000"
-        },
-        {
-          "name": "timing-allow-origin",
-          "value": "https://www.bbc.co.uk, https://www.bbc.com"
-        },
-        {
-          "name": "access-control-allow-credentials",
-          "value": "false"
-        },
-        {
-          "name": "accept-ranges",
-          "value": "bytes"
-        },
-        {
-          "name": "access-control-allow-origin",
-          "value": "*"
-        },
-        {
-          "name": "server",
-          "value": "AmazonS3"
-        },
-        {
-          "name": "x-amz-server-side-encryption",
-          "value": "AES256"
-        },
-        {
-          "name": "content-length",
-          "value": "6036"
-        }
-      ],
-      "sha256": "90a1cf9c4a56ccb9716cd520883e076a951d45e1add5de336a20b87ed3434863",
-      "bytes": 6036
-    },
-    "https://ichef.bbci.co.uk/news/320/cpsprodpb/2148/live/b9f2de90-d31d-11f1-b441-2b33b063138f.jpg.webp": {
-      "status": 200,
-      "headers": [
-        {
-          "name": "access-control-max-age",
-          "value": "300"
-        },
-        {
-          "name": "etag",
-          "value": "\"ff22d5a31b500b77d2fc78becd3db192\""
-        },
-        {
-          "name": "access-control-allow-methods",
-          "value": "HEAD,GET"
-        },
-        {
-          "name": "expires",
-          "value": "Thu, 28 Oct 2027 22:21:34 GMT"
-        },
-        {
-          "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
-        },
-        {
-          "name": "last-modified",
-          "value": "Wed, 28 Oct 2026 22:20:21 GMT"
-        },
-        {
-          "name": "content-type",
-          "value": "image/webp"
-        },
-        {
-          "name": "access-control-allow-headers",
-          "value": "*"
-        },
-        {
-          "name": "cache-control",
-          "value": "max-age=31536000"
-        },
-        {
-          "name": "timing-allow-origin",
-          "value": "https://www.bbc.co.uk, https://www.bbc.com"
-        },
-        {
-          "name": "access-control-allow-credentials",
-          "value": "false"
-        },
-        {
-          "name": "accept-ranges",
-          "value": "bytes"
-        },
-        {
-          "name": "access-control-allow-origin",
-          "value": "*"
-        },
-        {
-          "name": "server",
-          "value": "AmazonS3"
-        },
-        {
-          "name": "x-amz-server-side-encryption",
-          "value": "AES256"
-        },
-        {
-          "name": "content-length",
-          "value": "3504"
-        }
-      ],
-      "sha256": "16bea7a4ec0105cb8ae59a92ac84bf1397b2f07fee3941e92c9a3dfc4bb7a58a",
-      "bytes": 3504
-    },
-    "https://ichef.bbci.co.uk/news/320/cpsprodpb/64cf/live/0f06e8c0-d2e9-11f1-b441-2b33b063138f.jpg.webp": {
-      "status": 200,
-      "headers": [
-        {
-          "name": "access-control-max-age",
-          "value": "300"
-        },
-        {
-          "name": "etag",
-          "value": "\"5d8bd23e4096e4aead00d663d5a64d9e\""
-        },
-        {
-          "name": "access-control-allow-methods",
-          "value": "HEAD,GET"
-        },
-        {
-          "name": "expires",
-          "value": "Fri, 29 Oct 2027 00:45:39 GMT"
-        },
-        {
-          "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
-        },
-        {
-          "name": "last-modified",
-          "value": "Thu, 29 Oct 2026 00:33:12 GMT"
-        },
-        {
-          "name": "content-type",
-          "value": "image/webp"
-        },
-        {
-          "name": "access-control-allow-headers",
-          "value": "*"
-        },
-        {
-          "name": "cache-control",
-          "value": "max-age=31536000"
-        },
-        {
-          "name": "timing-allow-origin",
-          "value": "https://www.bbc.co.uk, https://www.bbc.com"
-        },
-        {
-          "name": "access-control-allow-credentials",
-          "value": "false"
-        },
-        {
-          "name": "accept-ranges",
-          "value": "bytes"
-        },
-        {
-          "name": "access-control-allow-origin",
-          "value": "*"
-        },
-        {
-          "name": "server",
-          "value": "AmazonS3"
-        },
-        {
-          "name": "x-amz-server-side-encryption",
-          "value": "AES256"
-        },
-        {
-          "name": "content-length",
-          "value": "7468"
-        }
-      ],
-      "sha256": "3fb8bb1c105fbb3a39b80a5e370037c4e85a8287ee0fa4f411af30408bda65c1",
-      "bytes": 7468
-    },
-    "https://ichef.bbci.co.uk/news/320/cpsprodpb/e9c9/live/e9ad7380-d3c6-11f1-867c-77016fb236d7.jpg.webp": {
-      "status": 200,
-      "headers": [
-        {
-          "name": "access-control-max-age",
-          "value": "300"
-        },
-        {
-          "name": "etag",
-          "value": "\"d966f4e6401979c2754483b2e696d460\""
-        },
-        {
-          "name": "access-control-allow-methods",
-          "value": "HEAD,GET"
-        },
-        {
-          "name": "expires",
-          "value": "Fri, 29 Oct 2027 21:34:07 GMT"
-        },
-        {
-          "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
-        },
-        {
-          "name": "last-modified",
-          "value": "Thu, 29 Oct 2026 21:33:37 GMT"
-        },
-        {
-          "name": "content-type",
-          "value": "image/webp"
-        },
-        {
-          "name": "access-control-allow-headers",
-          "value": "*"
-        },
-        {
-          "name": "cache-control",
-          "value": "max-age=31536000"
-        },
-        {
-          "name": "timing-allow-origin",
-          "value": "https://www.bbc.co.uk, https://www.bbc.com"
-        },
-        {
-          "name": "access-control-allow-credentials",
-          "value": "false"
-        },
-        {
-          "name": "accept-ranges",
-          "value": "bytes"
-        },
-        {
-          "name": "access-control-allow-origin",
-          "value": "*"
-        },
-        {
-          "name": "server",
-          "value": "AmazonS3"
-        },
-        {
-          "name": "x-amz-server-side-encryption",
-          "value": "AES256"
-        },
-        {
-          "name": "content-length",
-          "value": "8890"
-        }
-      ],
-      "sha256": "0a6f402486e86b1e748d95cc0d76bd709b0fae3a8e8391b49f9a46f7d1dc03db",
-      "bytes": 8890
-    },
-    "https://ichef.bbci.co.uk/news/640/cpsprodpb/68aa/live/62ba1a00-d3de-11f1-9c32-1532a6164171.jpg.webp": {
-      "status": 200,
-      "headers": [
-        {
-          "name": "access-control-max-age",
-          "value": "300"
-        },
-        {
-          "name": "etag",
-          "value": "\"118888d8b733d9e694f943c716441533\""
-        },
-        {
-          "name": "access-control-allow-methods",
-          "value": "HEAD,GET"
-        },
-        {
-          "name": "expires",
-          "value": "Fri, 29 Oct 2027 21:20:45 GMT"
-        },
-        {
-          "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
-        },
-        {
-          "name": "last-modified",
-          "value": "Thu, 29 Oct 2026 21:20:06 GMT"
-        },
-        {
-          "name": "content-type",
-          "value": "image/webp"
-        },
-        {
-          "name": "access-control-allow-headers",
-          "value": "*"
-        },
-        {
-          "name": "cache-control",
-          "value": "max-age=31536000"
-        },
-        {
-          "name": "timing-allow-origin",
-          "value": "https://www.bbc.co.uk, https://www.bbc.com"
-        },
-        {
-          "name": "access-control-allow-credentials",
-          "value": "false"
-        },
-        {
-          "name": "accept-ranges",
-          "value": "bytes"
-        },
-        {
-          "name": "access-control-allow-origin",
-          "value": "*"
-        },
-        {
-          "name": "server",
-          "value": "Apache"
-        },
-        {
-          "name": "x-amz-server-side-encryption",
-          "value": "AES256"
-        },
-        {
-          "name": "content-length",
-          "value": "18972"
-        }
-      ],
-      "sha256": "813390b2c21789bd96e93465ef0f1eea5ac05e74968fba72bf74cd2364bb224f",
-      "bytes": 18972
-    },
     "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/05el2iwpn3pyx.js": {
       "status": 200,
       "headers": [
@@ -2965,7 +2611,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
         },
         {
           "name": "last-modified",
@@ -3056,7 +2702,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
         },
         {
           "name": "last-modified",
@@ -3147,7 +2793,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
         },
         {
           "name": "last-modified",
@@ -3238,7 +2884,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
         },
         {
           "name": "last-modified",
@@ -3329,7 +2975,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
         },
         {
           "name": "last-modified",
@@ -3395,93 +3041,6 @@
       "sha256": "dd181f9f615bb71d8f0a5b7c0ad50bd47dcee782ef2a3a516577a56bd4d53cfd",
       "bytes": 15392
     },
-    "https://static.files.bbci.co.uk/fonts/reith/2.512/BBCReithSerif_W_Rg.woff2": {
-      "status": 200,
-      "headers": [
-        {
-          "name": "access-control-max-age",
-          "value": "300"
-        },
-        {
-          "name": "etag",
-          "value": "\"9db09ba316f1bef2de973d53c5b339bb\""
-        },
-        {
-          "name": "x-amz-version-id",
-          "value": "Kwgx5nY1BuhI.aRZbQVwIAjte6mjNFdw"
-        },
-        {
-          "name": "report-to",
-          "value": "{\"group\":\"default\",\"max_age\":3600,\"endpoints\":[{\"url\":\"https://assets.bbc-reporting-api.app/report-endpoint\",\"priority\":1}],\"include_subdomains\":true}"
-        },
-        {
-          "name": "access-control-allow-methods",
-          "value": "HEAD,GET"
-        },
-        {
-          "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
-        },
-        {
-          "name": "last-modified",
-          "value": "Wed, 20 May 2026 13:09:12 GMT"
-        },
-        {
-          "name": "content-type",
-          "value": "font/woff2"
-        },
-        {
-          "name": "x-amz-id-2",
-          "value": "iuJ6ewB/O6090REbjNqAQhwHMv/0jdDpyWMFLgAiYf9HwmEQz77XQ0V32CdgF/xY+8SgRGRHv+NKpwVbY4kBuRJQPY8VkhAk"
-        },
-        {
-          "name": "access-control-allow-headers",
-          "value": "*"
-        },
-        {
-          "name": "cache-control",
-          "value": "public, max-age=31536000, immutable"
-        },
-        {
-          "name": "nel",
-          "value": "{\"report_to\":\"default\",\"max_age\": 604800,\"include_subdomains\":true,\"failure_fraction\":0.01}"
-        },
-        {
-          "name": "timing-allow-origin",
-          "value": "https://www.bbc.co.uk, https://www.bbc.com"
-        },
-        {
-          "name": "access-control-allow-credentials",
-          "value": "false"
-        },
-        {
-          "name": "x-amz-request-id",
-          "value": "7N0AA6E1Z8EHVD19"
-        },
-        {
-          "name": "accept-ranges",
-          "value": "bytes"
-        },
-        {
-          "name": "access-control-allow-origin",
-          "value": "*"
-        },
-        {
-          "name": "server",
-          "value": "AmazonS3"
-        },
-        {
-          "name": "x-amz-server-side-encryption",
-          "value": "AES256"
-        },
-        {
-          "name": "content-length",
-          "value": "79836"
-        }
-      ],
-      "sha256": "f01c21d3fcf79cd2864fe88016fb89ca7fd307794b846de4312ca3e5805685ef",
-      "bytes": 79836
-    },
     "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/1556fllq~t8x3.js": {
       "status": 200,
       "headers": [
@@ -3507,7 +3066,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
         },
         {
           "name": "last-modified",
@@ -3598,7 +3157,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
         },
         {
           "name": "last-modified",
@@ -3689,7 +3248,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
         },
         {
           "name": "last-modified",
@@ -3780,7 +3339,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
         },
         {
           "name": "last-modified",
@@ -3871,7 +3430,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
         },
         {
           "name": "last-modified",
@@ -3937,93 +3496,6 @@
       "sha256": "03b522f1bdba75c82eda171462e44f29263e09779bf61acb06465c126156ceaa",
       "bytes": 71931
     },
-    "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/site.webmanifest": {
-      "status": 200,
-      "headers": [
-        {
-          "name": "access-control-max-age",
-          "value": "300"
-        },
-        {
-          "name": "etag",
-          "value": "\"0a7b4d9bbaeba5f2d6a05194d2d3de5b\""
-        },
-        {
-          "name": "x-amz-version-id",
-          "value": "8IVoCK5rH8oozm0ukFN4C7f1AmN82T4T"
-        },
-        {
-          "name": "report-to",
-          "value": "{\"group\":\"default\",\"max_age\":3600,\"endpoints\":[{\"url\":\"https://assets.bbc-reporting-api.app/report-endpoint\",\"priority\":1}],\"include_subdomains\":true}"
-        },
-        {
-          "name": "access-control-allow-methods",
-          "value": "HEAD,GET"
-        },
-        {
-          "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
-        },
-        {
-          "name": "last-modified",
-          "value": "Tue, 27 Oct 2026 12:25:20 GMT"
-        },
-        {
-          "name": "content-type",
-          "value": "application/manifest+json"
-        },
-        {
-          "name": "x-amz-id-2",
-          "value": "4p4PY3gLDgZUmodorEPxfVpLcSUxZQBPKABR8qvVkEe5ZjD9efe7RU7E95XpFKDvUVSwVjzUHzIz2slyGF4oRZVlGjv3+A+h"
-        },
-        {
-          "name": "access-control-allow-headers",
-          "value": "*"
-        },
-        {
-          "name": "cache-control",
-          "value": "max-age=31622400"
-        },
-        {
-          "name": "nel",
-          "value": "{\"report_to\":\"default\",\"max_age\": 604800,\"include_subdomains\":true,\"failure_fraction\":0.01}"
-        },
-        {
-          "name": "timing-allow-origin",
-          "value": "https://www.bbc.co.uk, https://www.bbc.com"
-        },
-        {
-          "name": "access-control-allow-credentials",
-          "value": "false"
-        },
-        {
-          "name": "x-amz-request-id",
-          "value": "86QSECVW64SNP0PD"
-        },
-        {
-          "name": "accept-ranges",
-          "value": "bytes"
-        },
-        {
-          "name": "access-control-allow-origin",
-          "value": "*"
-        },
-        {
-          "name": "server",
-          "value": "AmazonS3"
-        },
-        {
-          "name": "x-amz-server-side-encryption",
-          "value": "AES256"
-        },
-        {
-          "name": "content-length",
-          "value": "358"
-        }
-      ],
-      "sha256": "7e6b5dafa2921d8ca94a2a0cf17539ea755d7db2d3b4586015715f9a8378756d",
-      "bytes": 358
-    },
     "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/13ad5orspgznk.js": {
       "status": 200,
       "headers": [
@@ -4049,7 +3521,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
         },
         {
           "name": "last-modified",
@@ -4140,7 +3612,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
         },
         {
           "name": "last-modified",
@@ -4231,7 +3703,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
         },
         {
           "name": "last-modified",
@@ -4322,7 +3794,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
         },
         {
           "name": "last-modified",
@@ -4413,7 +3885,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
         },
         {
           "name": "last-modified",
@@ -4504,7 +3976,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
         },
         {
           "name": "last-modified",
@@ -4595,7 +4067,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
         },
         {
           "name": "last-modified",
@@ -4686,7 +4158,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
         },
         {
           "name": "last-modified",
@@ -4777,7 +4249,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
         },
         {
           "name": "last-modified",
@@ -4868,7 +4340,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
         },
         {
           "name": "last-modified",
@@ -4959,7 +4431,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
         },
         {
           "name": "last-modified",
@@ -5025,6 +4497,361 @@
       "sha256": "3eb4b0ea5e700623fd5a082d70a1d7f915f647a0de76b5b62f0c036fd7001933",
       "bytes": 19790
     },
+    "https://ichef.bbci.co.uk/news/640/cpsprodpb/52bf/live/c3b77ec0-d3b5-11f1-a340-478c8f3b9e55.jpg.webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-max-age",
+          "value": "300"
+        },
+        {
+          "name": "etag",
+          "value": "\"d5b4d860ecf6d37f93e180830b13af30\""
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "HEAD,GET"
+        },
+        {
+          "name": "expires",
+          "value": "Mon, 01 Nov 2027 00:19:26 GMT"
+        },
+        {
+          "name": "date",
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Sun, 01 Nov 2026 00:17:07 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "access-control-allow-headers",
+          "value": "*"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "timing-allow-origin",
+          "value": "https://www.bbc.co.uk, https://www.bbc.com"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "false"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "22472"
+        }
+      ],
+      "sha256": "8a9bd9543bf02a57e224b4c0cc5af3fb244d084242fd782e867d9204d10871c7",
+      "bytes": 22472
+    },
+    "https://ichef.bbci.co.uk/ace/standard/320/cpsprodpb/6a77/live/cbef5d00-d514-11f1-b441-2b33b063138f.jpg.webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-max-age",
+          "value": "300"
+        },
+        {
+          "name": "etag",
+          "value": "\"1003ef160adcee89602e8dbafbcad0eb\""
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "HEAD,GET"
+        },
+        {
+          "name": "expires",
+          "value": "Sun, 31 Oct 2027 20:40:24 GMT"
+        },
+        {
+          "name": "date",
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Sat, 31 Oct 2026 10:21:13 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "access-control-allow-headers",
+          "value": "*"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "timing-allow-origin",
+          "value": "https://www.bbc.co.uk, https://www.bbc.com"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "false"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "12730"
+        }
+      ],
+      "sha256": "f2ff06e757e13e68ef911acc4b5e36143a34fe30b489c4918bf3d97751f62900",
+      "bytes": 12730
+    },
+    "https://ichef.bbci.co.uk/news/320/cpsprodpb/8e67/live/634d7ac0-d46a-11f1-a701-fddedf244c16.jpg.webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-max-age",
+          "value": "300"
+        },
+        {
+          "name": "etag",
+          "value": "\"70ecf29414814647693bbc977426e8b9\""
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "HEAD,GET"
+        },
+        {
+          "name": "expires",
+          "value": "Sun, 31 Oct 2027 09:18:22 GMT"
+        },
+        {
+          "name": "date",
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Sat, 31 Oct 2026 09:16:15 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "access-control-allow-headers",
+          "value": "*"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "timing-allow-origin",
+          "value": "https://www.bbc.co.uk, https://www.bbc.com"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "false"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "Apache"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "6822"
+        }
+      ],
+      "sha256": "a11ecabcd42ae67f24cbcca7893e2bda52f49b64a8e1e6724acb307e34fb6744",
+      "bytes": 6822
+    },
+    "https://ichef.bbci.co.uk/news/320/cpsprodpb/a56b/live/5a0952f0-d487-11f1-80bc-6d398902272f.jpg.webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-max-age",
+          "value": "300"
+        },
+        {
+          "name": "etag",
+          "value": "\"325780a85f56651c9f661612438c0d39\""
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "HEAD,GET"
+        },
+        {
+          "name": "expires",
+          "value": "Sun, 31 Oct 2027 04:33:13 GMT"
+        },
+        {
+          "name": "date",
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Sat, 31 Oct 2026 04:32:09 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "access-control-allow-headers",
+          "value": "*"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "timing-allow-origin",
+          "value": "https://www.bbc.co.uk, https://www.bbc.com"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "false"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "7358"
+        }
+      ],
+      "sha256": "b98bfbca48f7364c6267527f30e4db707591c42cbe5e1223c6f0effa57392dcf",
+      "bytes": 7358
+    },
+    "https://ichef.bbci.co.uk/news/320/cpsprodpb/2371/live/1f84cb60-d4bd-11f1-a701-fddedf244c16.jpg.webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-max-age",
+          "value": "300"
+        },
+        {
+          "name": "etag",
+          "value": "\"fdd335e3b0ca1349157886fdda8ad9b0\""
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "HEAD,GET"
+        },
+        {
+          "name": "expires",
+          "value": "Sat, 30 Oct 2027 23:54:58 GMT"
+        },
+        {
+          "name": "date",
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 30 Oct 2026 23:54:01 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "access-control-allow-headers",
+          "value": "*"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "timing-allow-origin",
+          "value": "https://www.bbc.co.uk, https://www.bbc.com"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "false"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "Apache"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "9152"
+        }
+      ],
+      "sha256": "73f65b5ab213abe1556b95b4bced2261962d0b015fbad40da79920dae99719ed",
+      "bytes": 9152
+    },
     "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/13lckzgg918t5.js": {
       "status": 200,
       "headers": [
@@ -5050,7 +4877,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
         },
         {
           "name": "last-modified",
@@ -5141,7 +4968,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
         },
         {
           "name": "last-modified",
@@ -5232,7 +5059,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
         },
         {
           "name": "last-modified",
@@ -5323,7 +5150,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
         },
         {
           "name": "last-modified",
@@ -5414,7 +5241,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
         },
         {
           "name": "last-modified",
@@ -5505,7 +5332,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
         },
         {
           "name": "last-modified",
@@ -5596,7 +5423,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
         },
         {
           "name": "last-modified",
@@ -5687,7 +5514,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
         },
         {
           "name": "last-modified",
@@ -5778,7 +5605,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
         },
         {
           "name": "last-modified",
@@ -5869,7 +5696,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
         },
         {
           "name": "last-modified",
@@ -5935,97 +5762,6 @@
       "sha256": "825c72eaadac1dfffd882f5f956d45a62a09347d944055ac5f5c195c0b358479",
       "bytes": 44857
     },
-    "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/turbopack-0eg_6rsvcuq6e.js": {
-      "status": 200,
-      "headers": [
-        {
-          "name": "access-control-max-age",
-          "value": "300"
-        },
-        {
-          "name": "etag",
-          "value": "\"1032c67fee5939e8a410d71b80e28a50\""
-        },
-        {
-          "name": "x-amz-version-id",
-          "value": "l0mVQ0SM3I7omJHnhFLoDZxwUp7Derz7"
-        },
-        {
-          "name": "report-to",
-          "value": "{\"group\":\"default\",\"max_age\":3600,\"endpoints\":[{\"url\":\"https://assets.bbc-reporting-api.app/report-endpoint\",\"priority\":1}],\"include_subdomains\":true}"
-        },
-        {
-          "name": "access-control-allow-methods",
-          "value": "HEAD,GET"
-        },
-        {
-          "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
-        },
-        {
-          "name": "last-modified",
-          "value": "Tue, 27 Oct 2026 12:25:23 GMT"
-        },
-        {
-          "name": "vary",
-          "value": "Accept-Encoding"
-        },
-        {
-          "name": "content-type",
-          "value": "text/javascript"
-        },
-        {
-          "name": "x-amz-id-2",
-          "value": "sKCTWUlak4VWOBr9wio5wXn9y1EPcAikAGnGGHvrygazxs2O2mfMAg1W/RSa5/01hymueJYjXnDybJwoaq2PJd/bebq9lyMe"
-        },
-        {
-          "name": "access-control-allow-headers",
-          "value": "*"
-        },
-        {
-          "name": "cache-control",
-          "value": "max-age=31622400"
-        },
-        {
-          "name": "nel",
-          "value": "{\"report_to\":\"default\",\"max_age\": 604800,\"include_subdomains\":true,\"failure_fraction\":0.01}"
-        },
-        {
-          "name": "timing-allow-origin",
-          "value": "https://www.bbc.co.uk, https://www.bbc.com"
-        },
-        {
-          "name": "access-control-allow-credentials",
-          "value": "false"
-        },
-        {
-          "name": "x-amz-request-id",
-          "value": "EQK6C7V61DWKE2W8"
-        },
-        {
-          "name": "accept-ranges",
-          "value": "bytes"
-        },
-        {
-          "name": "access-control-allow-origin",
-          "value": "*"
-        },
-        {
-          "name": "server",
-          "value": "AmazonS3"
-        },
-        {
-          "name": "x-amz-server-side-encryption",
-          "value": "AES256"
-        },
-        {
-          "name": "content-length",
-          "value": "11399"
-        }
-      ],
-      "sha256": "4de48db9fc3e1d91ee5907327ee0f1017a4821ba3b52ccbc16f42ceea5afe232",
-      "bytes": 11399
-    },
     "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/ucIVEZCJOb7mWOSdECe6w/_buildManifest.js": {
       "status": 200,
       "headers": [
@@ -6051,7 +5787,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
         },
         {
           "name": "last-modified",
@@ -6117,6 +5853,97 @@
       "sha256": "44ba1dfcdd0ae1d11c4efd797d53811f869baf259d2d59d7eb5440583c5472d0",
       "bytes": 1693
     },
+    "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/turbopack-0eg_6rsvcuq6e.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-max-age",
+          "value": "300"
+        },
+        {
+          "name": "etag",
+          "value": "\"1032c67fee5939e8a410d71b80e28a50\""
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "l0mVQ0SM3I7omJHnhFLoDZxwUp7Derz7"
+        },
+        {
+          "name": "report-to",
+          "value": "{\"group\":\"default\",\"max_age\":3600,\"endpoints\":[{\"url\":\"https://assets.bbc-reporting-api.app/report-endpoint\",\"priority\":1}],\"include_subdomains\":true}"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "HEAD,GET"
+        },
+        {
+          "name": "date",
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 27 Oct 2026 12:25:23 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "x-amz-id-2",
+          "value": "sKCTWUlak4VWOBr9wio5wXn9y1EPcAikAGnGGHvrygazxs2O2mfMAg1W/RSa5/01hymueJYjXnDybJwoaq2PJd/bebq9lyMe"
+        },
+        {
+          "name": "access-control-allow-headers",
+          "value": "*"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31622400"
+        },
+        {
+          "name": "nel",
+          "value": "{\"report_to\":\"default\",\"max_age\": 604800,\"include_subdomains\":true,\"failure_fraction\":0.01}"
+        },
+        {
+          "name": "timing-allow-origin",
+          "value": "https://www.bbc.co.uk, https://www.bbc.com"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "false"
+        },
+        {
+          "name": "x-amz-request-id",
+          "value": "EQK6C7V61DWKE2W8"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "11399"
+        }
+      ],
+      "sha256": "4de48db9fc3e1d91ee5907327ee0f1017a4821ba3b52ccbc16f42ceea5afe232",
+      "bytes": 11399
+    },
     "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/ucIVEZCJOb7mWOSdECe6w/_ssgManifest.js": {
       "status": 200,
       "headers": [
@@ -6142,7 +5969,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
         },
         {
           "name": "last-modified",
@@ -6233,7 +6060,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:38 GMT"
+          "value": "Sun, 01 Nov 2026 01:26:16 GMT"
         },
         {
           "name": "last-modified",
@@ -6299,128 +6126,84 @@
       "sha256": "95ea07356281f634824367e07931feac78ad1c53ad48fc9080913a8331f04e66",
       "bytes": 458
     },
-    "https://www.bbc.co.uk/userinfo": {
+    "https://gn-web-assets.api.bbc.com/ngas/latest/dotcom-bootstrap.js": {
       "status": 200,
       "headers": [
         {
-          "name": "x-robots-tag",
-          "value": "bingbot: noarchive"
+          "name": "Access-Control-Max-Age",
+          "value": "3000"
         },
         {
-          "name": "access-control-expose-headers",
-          "value": "Content-Length,Content-Range"
+          "name": "ETag",
+          "value": "W/\"59144c57f24fd20fdf0e6c04f97f7e4d\""
         },
         {
-          "name": "report-to",
-          "value": "{\"group\":\"default\",\"max_age\":2592000,\"endpoints\":[{\"url\":\"https://default.bbc-reporting-api.app/report-endpoint\",\"priority\":1}],\"include_subdomains\":true}"
+          "name": "Age",
+          "value": "63"
         },
         {
-          "name": "access-control-allow-methods",
-          "value": "GET, OPTIONS"
+          "name": "Access-Control-Allow-Methods",
+          "value": "HEAD, GET"
         },
         {
-          "name": "req-svc-chain",
-          "value": "FASTLY,GTM"
+          "name": "X-Cache",
+          "value": "Hit from cloudfront"
         },
         {
-          "name": "x-cache",
-          "value": "HIT"
+          "name": "X-Amz-Cf-Id",
+          "value": "4MPDi0reT_nU9kDCgZPAzHf2LiZuAcOo2bOavq2DBNqpvtYhTtCJBA=="
         },
         {
-          "name": "alt-svc",
-          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+          "name": "Date",
+          "value": "Sun, 01 Nov 2026 01:28:19 GMT"
         },
         {
-          "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:39 GMT"
+          "name": "Last-Modified",
+          "value": "Tue, 13 Oct 2026 13:40:41 GMT"
         },
         {
-          "name": "content-type",
-          "value": "application/json"
+          "name": "Vary",
+          "value": "Origin,Accept-Encoding"
         },
         {
-          "name": "x-served-by",
-          "value": "cache-bgy-lime1210027-BGY"
+          "name": "Content-Type",
+          "value": "application/javascript"
         },
         {
-          "name": "x-cache-hits",
-          "value": "2"
+          "name": "Cache-Control",
+          "value": "max-age=360,public"
         },
         {
-          "name": "access-control-allow-headers",
-          "value": "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range"
-        },
-        {
-          "name": "vary",
-          "value": "Origin,X-BBC-Edge-Scheme,Accept-Encoding"
-        },
-        {
-          "name": "nel",
-          "value": "{\"report_to\":\"default\",\"max_age\":2592000,\"include_subdomains\":true,\"failure_fraction\":0.25}"
-        },
-        {
-          "name": "cache-control",
-          "value": "public,max-age=300,stale-while-revalidate=300,stale-if-error=7200"
-        },
-        {
-          "name": "x-timer",
-          "value": "S1793313999.299232,VS0,VE21"
-        },
-        {
-          "name": "x-lb-nocache",
+          "name": "Access-Control-Allow-Credentials",
           "value": "true"
         },
         {
-          "name": "via",
-          "value": "1.1 BBC-GTM, 1.1 varnish"
+          "name": "Via",
+          "value": "1.1 a59d4986c8def904895cd9c21c73a7e2.cloudfront.net (CloudFront)"
         },
         {
-          "name": "x-fastly-pre-flight-cache-status",
-          "value": "MISS-CLUSTER"
-        },
-        {
-          "name": "permissions-policy",
-          "value": "browsing-topics=(), join-ad-interest-group=(), run-ad-auction=()"
-        },
-        {
-          "name": "x-fastly-cache-status",
-          "value": "HIT"
-        },
-        {
-          "name": "accept-ranges",
-          "value": "bytes"
-        },
-        {
-          "name": "access-control-allow-origin",
+          "name": "Access-Control-Allow-Origin",
           "value": "https://www.bbc.com"
         },
         {
-          "name": "x-fastly-pre-flight-cache",
-          "value": "HIT, MISS"
+          "name": "X-Amz-Cf-Pop",
+          "value": "ZRH52-P1"
         },
         {
-          "name": "x-cache-age",
-          "value": "18"
+          "name": "Server",
+          "value": "AmazonS3"
         },
         {
-          "name": "origin-agent-cluster",
-          "value": "?0"
-        },
-        {
-          "name": "fastly-restarts",
-          "value": "1"
-        },
-        {
-          "name": "server",
-          "value": "BBC-GTM"
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
         },
         {
           "name": "content-length",
-          "value": "85"
+          "value": "75898"
         }
       ],
-      "sha256": "8a7265e10f3074b7501de1b212fca673fca165590b04ce976588f39935f66abb",
-      "bytes": 85
+      "sha256": "639912b5bcd2d3c10027d7c40e541df99d02af63f86ab1801dbe0911513919d3",
+      "bytes": 75898
     },
     "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0-e.cy8zqdh4a.js": {
       "status": 200,
@@ -6447,7 +6230,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:39 GMT"
+          "value": "Sun, 01 Nov 2026 01:26:22 GMT"
         },
         {
           "name": "last-modified",
@@ -6538,7 +6321,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:39 GMT"
+          "value": "Sun, 01 Nov 2026 01:26:22 GMT"
         },
         {
           "name": "last-modified",
@@ -6554,7 +6337,7 @@
         },
         {
           "name": "x-amz-id-2",
-          "value": "jDudWGn6wK1C9swsfMrQKQ7QRTJ5ZXw+Pymt08Bh3KuKdEM95UPkg20S8qBaaeFmwxCZWVS9hzI="
+          "value": "d2zV23l3+ym7gLv04mxfpChfOAaA1vMyizBCmRscsxrPDRreUm8PHRrTAnmwiNyg/cHGd9NkJmkSJUI/ePgVGJEhrsN7YuaL"
         },
         {
           "name": "access-control-allow-headers",
@@ -6578,7 +6361,7 @@
         },
         {
           "name": "x-amz-request-id",
-          "value": "C1AXYMAFFVMNH3G0"
+          "value": "C7MMC72ZVYCRW7T7"
         },
         {
           "name": "accept-ranges",
@@ -6629,7 +6412,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:39 GMT"
+          "value": "Sun, 01 Nov 2026 01:26:22 GMT"
         },
         {
           "name": "last-modified",
@@ -6720,7 +6503,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:39 GMT"
+          "value": "Sun, 01 Nov 2026 01:26:22 GMT"
         },
         {
           "name": "last-modified",
@@ -6736,7 +6519,7 @@
         },
         {
           "name": "x-amz-id-2",
-          "value": "OWEcQtbLvNIFoup+fcXVWKpG+Q6TZevIEideWXH1gVmgM3Y+D+r3GK3Voo1LNcav5Tkg/Jrglv7cVY8vljiIKtLFhkPIGU6V"
+          "value": "GarDmS/PV0kVl98bKTyy+YPLP+B3hptPOO5DlNKRUUqKmJqpIencJmjLDXAX1nv7I1d+WkmWx/0="
         },
         {
           "name": "access-control-allow-headers",
@@ -6760,7 +6543,7 @@
         },
         {
           "name": "x-amz-request-id",
-          "value": "N6CVCBHHNS50EC6S"
+          "value": "C7MP5JJDJDBPHKAD"
         },
         {
           "name": "accept-ranges",
@@ -6811,7 +6594,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:39 GMT"
+          "value": "Sun, 01 Nov 2026 01:26:22 GMT"
         },
         {
           "name": "last-modified",
@@ -6877,6 +6660,97 @@
       "sha256": "fe0a1d5f3640b599ff12b7409b7b4ce4272d5396e3983bb8fc07e3e9efe0f4d9",
       "bytes": 38828
     },
+    "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0.gu_l8v2fg11.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-max-age",
+          "value": "300"
+        },
+        {
+          "name": "etag",
+          "value": "\"821e21a26f9e47cd2c7a08424195086e\""
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "Wp83FsxhAu8zlHd.W88pR.xcW.CvVMyk"
+        },
+        {
+          "name": "report-to",
+          "value": "{\"group\":\"default\",\"max_age\":3600,\"endpoints\":[{\"url\":\"https://assets.bbc-reporting-api.app/report-endpoint\",\"priority\":1}],\"include_subdomains\":true}"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "HEAD,GET"
+        },
+        {
+          "name": "date",
+          "value": "Sun, 01 Nov 2026 01:26:23 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 27 Oct 2026 12:25:21 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "x-amz-id-2",
+          "value": "kAYWtCW/G+wpZdZc+6hahRpJ/NtOYNtkoGyi9sP2zUGfwlTBZWpamo9Y9KRt2G2sJE0DJIidPu9h6ob+wv0ptTLyx5Ia+ezz"
+        },
+        {
+          "name": "access-control-allow-headers",
+          "value": "*"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31622400"
+        },
+        {
+          "name": "nel",
+          "value": "{\"report_to\":\"default\",\"max_age\": 604800,\"include_subdomains\":true,\"failure_fraction\":0.01}"
+        },
+        {
+          "name": "timing-allow-origin",
+          "value": "https://www.bbc.co.uk, https://www.bbc.com"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "false"
+        },
+        {
+          "name": "x-amz-request-id",
+          "value": "QCRQ84K03QF0FBKN"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "5376"
+        }
+      ],
+      "sha256": "3e2bd65a17d5f45c51df4036753d0dcd283c45b4dd48e7ca22bf4eeb38449e68",
+      "bytes": 5376
+    },
     "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0.44191m_y6r1.js": {
       "status": 200,
       "headers": [
@@ -6902,7 +6776,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:39 GMT"
+          "value": "Sun, 01 Nov 2026 01:26:23 GMT"
         },
         {
           "name": "last-modified",
@@ -6968,72 +6842,92 @@
       "sha256": "c0d233d34bde493ebdd970be1680c9c1db7f42fdafe91e5d19ace1622a51b03c",
       "bytes": 5427
     },
-    "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0.gu_l8v2fg11.js": {
+    "https://www.bbc.co.uk/userinfo": {
       "status": 200,
       "headers": [
         {
-          "name": "access-control-max-age",
-          "value": "300"
+          "name": "x-robots-tag",
+          "value": "bingbot: noarchive"
         },
         {
-          "name": "etag",
-          "value": "\"821e21a26f9e47cd2c7a08424195086e\""
-        },
-        {
-          "name": "x-amz-version-id",
-          "value": "Wp83FsxhAu8zlHd.W88pR.xcW.CvVMyk"
+          "name": "access-control-expose-headers",
+          "value": "Content-Length,Content-Range"
         },
         {
           "name": "report-to",
-          "value": "{\"group\":\"default\",\"max_age\":3600,\"endpoints\":[{\"url\":\"https://assets.bbc-reporting-api.app/report-endpoint\",\"priority\":1}],\"include_subdomains\":true}"
+          "value": "{\"group\":\"default\",\"max_age\":2592000,\"endpoints\":[{\"url\":\"https://default.bbc-reporting-api.app/report-endpoint\",\"priority\":1}],\"include_subdomains\":true}"
         },
         {
           "name": "access-control-allow-methods",
-          "value": "HEAD,GET"
+          "value": "GET, OPTIONS"
+        },
+        {
+          "name": "req-svc-chain",
+          "value": "FASTLY,GTM"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:39 GMT"
-        },
-        {
-          "name": "last-modified",
-          "value": "Tue, 27 Oct 2026 12:25:21 GMT"
-        },
-        {
-          "name": "vary",
-          "value": "Accept-Encoding"
+          "value": "Sun, 01 Nov 2026 01:26:22 GMT"
         },
         {
           "name": "content-type",
-          "value": "text/javascript"
+          "value": "application/json"
         },
         {
-          "name": "x-amz-id-2",
-          "value": "1CqYcNSirGOCgmAhSkhCOFVmUn3aSzosnXKv1v96WaWVqyG8RM6+5e5c/rOdJNIWaWpC3DJHT5U="
+          "name": "x-served-by",
+          "value": "cache-fra-etou8220113-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "1"
         },
         {
           "name": "access-control-allow-headers",
-          "value": "*"
+          "value": "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range"
         },
         {
-          "name": "cache-control",
-          "value": "max-age=31622400"
+          "name": "vary",
+          "value": "Origin,X-BBC-Edge-Scheme,Accept-Encoding"
         },
         {
           "name": "nel",
-          "value": "{\"report_to\":\"default\",\"max_age\": 604800,\"include_subdomains\":true,\"failure_fraction\":0.01}"
+          "value": "{\"report_to\":\"default\",\"max_age\":2592000,\"include_subdomains\":true,\"failure_fraction\":0.25}"
         },
         {
-          "name": "timing-allow-origin",
-          "value": "https://www.bbc.co.uk, https://www.bbc.com"
+          "name": "cache-control",
+          "value": "public,max-age=300,stale-while-revalidate=300,stale-if-error=7200"
         },
         {
-          "name": "access-control-allow-credentials",
-          "value": "false"
+          "name": "x-timer",
+          "value": "S1793496382.411659,VS0,VE3"
         },
         {
-          "name": "x-amz-request-id",
-          "value": "C1ASW4SP1T2W6TJB"
+          "name": "x-lb-nocache",
+          "value": "true"
+        },
+        {
+          "name": "via",
+          "value": "1.1 BBC-GTM, 1.1 varnish"
+        },
+        {
+          "name": "x-fastly-pre-flight-cache-status",
+          "value": "HIT-CLUSTER"
+        },
+        {
+          "name": "permissions-policy",
+          "value": "browsing-topics=(), join-ad-interest-group=(), run-ad-auction=()"
+        },
+        {
+          "name": "x-fastly-cache-status",
+          "value": "HIT-CLUSTER"
         },
         {
           "name": "accept-ranges",
@@ -7041,7 +6935,94 @@
         },
         {
           "name": "access-control-allow-origin",
-          "value": "*"
+          "value": "https://www.bbc.com"
+        },
+        {
+          "name": "x-fastly-pre-flight-cache",
+          "value": "HIT, HIT"
+        },
+        {
+          "name": "x-cache-age",
+          "value": "12"
+        },
+        {
+          "name": "origin-agent-cluster",
+          "value": "?0"
+        },
+        {
+          "name": "fastly-restarts",
+          "value": "1"
+        },
+        {
+          "name": "server",
+          "value": "BBC-GTM"
+        },
+        {
+          "name": "content-length",
+          "value": "85"
+        }
+      ],
+      "sha256": "8a7265e10f3074b7501de1b212fca673fca165590b04ce976588f39935f66abb",
+      "bytes": 85
+    },
+    "https://cdn.privacy-mgmt.com/unified/wrapperMessagingWithoutDetection.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "W/\"6428e0406731174436c53d2e74f4f824\""
+        },
+        {
+          "name": "age",
+          "value": "1904"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "cXwolFzLkPLoGXqaLlIi6d_YkgCSb_TM2g6RFWT6O0i3tA2dxQGelQ=="
+        },
+        {
+          "name": "date",
+          "value": "Sun, 01 Nov 2026 00:54:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 14:08:52 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=3600"
+        },
+        {
+          "name": "referrer-policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "name": "via",
+          "value": "1.1 b0b28ec8da60bdc40e5fb6dc8ad8eae8.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "x-xss-protection",
+          "value": "1; mode=block"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "ZRH52-P1"
         },
         {
           "name": "server",
@@ -7053,11 +7034,11 @@
         },
         {
           "name": "content-length",
-          "value": "5376"
+          "value": "151158"
         }
       ],
-      "sha256": "3e2bd65a17d5f45c51df4036753d0dcd283c45b4dd48e7ca22bf4eeb38449e68",
-      "bytes": 5376
+      "sha256": "962dbda42beffd76c97893891de825c420df6887423f35a42ba8db70ee1213b3",
+      "bytes": 151158
     },
     "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0yoghfwkswxeg.js": {
       "status": 200,
@@ -7084,7 +7065,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:40 GMT"
+          "value": "Sun, 01 Nov 2026 01:26:24 GMT"
         },
         {
           "name": "last-modified",
@@ -7150,64 +7131,60 @@
       "sha256": "edfc0707656673b8095aedee9bf84317dc398e39a762cf59ff68aea7386df26a",
       "bytes": 15509
     },
-    "https://cdn.privacy-mgmt.com/unified/wrapperMessagingWithoutDetection.js": {
+    "https://ichef.bbci.co.uk/news/320/cpsprodpb/840c/live/7d897fe0-d12e-11f1-a94e-6dd2aca774ac.jpg.webp": {
       "status": 200,
       "headers": [
         {
+          "name": "access-control-max-age",
+          "value": "300"
+        },
+        {
           "name": "etag",
-          "value": "W/\"6428e0406731174436c53d2e74f4f824\""
+          "value": "\"41d97f5205d546ca2783d70043e681d5\""
         },
         {
-          "name": "age",
-          "value": "2432"
+          "name": "access-control-allow-methods",
+          "value": "HEAD,GET"
         },
         {
-          "name": "x-content-type-options",
-          "value": "nosniff"
-        },
-        {
-          "name": "x-cache",
-          "value": "Hit from cloudfront"
-        },
-        {
-          "name": "x-amz-cf-id",
-          "value": "_T9HNq7fkSyWT8V0UrylAIZt1B4GO392JkZmABFmbXa7anva6CgOjg=="
+          "name": "expires",
+          "value": "Sun, 31 Oct 2027 00:07:25 GMT"
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:06:10 GMT"
-        },
-        {
-          "name": "content-type",
-          "value": "text/javascript"
-        },
-        {
-          "name": "vary",
-          "value": "Accept-Encoding"
+          "value": "Sun, 01 Nov 2026 01:28:19 GMT"
         },
         {
           "name": "last-modified",
-          "value": "Wed, 28 Oct 2026 14:08:52 GMT"
+          "value": "Sat, 31 Oct 2026 00:04:07 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "access-control-allow-headers",
+          "value": "*"
         },
         {
           "name": "cache-control",
-          "value": "max-age=3600"
+          "value": "max-age=31536000"
         },
         {
-          "name": "referrer-policy",
-          "value": "strict-origin-when-cross-origin"
+          "name": "timing-allow-origin",
+          "value": "https://www.bbc.co.uk, https://www.bbc.com"
         },
         {
-          "name": "via",
-          "value": "1.1 33e14b5e35da41c50782d5d51d6b09a8.cloudfront.net (CloudFront)"
+          "name": "access-control-allow-credentials",
+          "value": "false"
         },
         {
-          "name": "x-xss-protection",
-          "value": "1; mode=block"
+          "name": "accept-ranges",
+          "value": "bytes"
         },
         {
-          "name": "x-amz-cf-pop",
-          "value": "MXP63-P2"
+          "name": "access-control-allow-origin",
+          "value": "*"
         },
         {
           "name": "server",
@@ -7219,11 +7196,445 @@
         },
         {
           "name": "content-length",
-          "value": "151158"
+          "value": "12436"
         }
       ],
-      "sha256": "962dbda42beffd76c97893891de825c420df6887423f35a42ba8db70ee1213b3",
-      "bytes": 151158
+      "sha256": "942f327bd8b9fffb58bb4dfd09dce5b8d77fcb2cbe66ed647d92fb41e0a1cd57",
+      "bytes": 12436
+    },
+    "https://ichef.bbci.co.uk/news/320/cpsprodpb/95ec/live/566810d0-915e-11f1-a8f1-774cbc5e1a9f.jpg.webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-max-age",
+          "value": "300"
+        },
+        {
+          "name": "etag",
+          "value": "\"a6a5c46c64f3e8a74d09012512d5e405\""
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "HEAD,GET"
+        },
+        {
+          "name": "expires",
+          "value": "Sun, 31 Oct 2027 13:21:34 GMT"
+        },
+        {
+          "name": "date",
+          "value": "Sun, 01 Nov 2026 01:28:19 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 06 Aug 2026 06:31:16 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "access-control-allow-headers",
+          "value": "*"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "timing-allow-origin",
+          "value": "https://www.bbc.co.uk, https://www.bbc.com"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "false"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "4008"
+        }
+      ],
+      "sha256": "73cca342f7161f36cfb3f4ceaa9c0885efb42486686e8484b0966b53bab38c26",
+      "bytes": 4008
+    },
+    "https://ichef.bbci.co.uk/news/320/cpsprodpb/dc6e/live/d3851b40-d528-11f1-93e1-3b657b665bcf.jpg.webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-max-age",
+          "value": "300"
+        },
+        {
+          "name": "etag",
+          "value": "\"d3883c7688936a8b53c957f8af24199f\""
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "HEAD,GET"
+        },
+        {
+          "name": "expires",
+          "value": "Sun, 31 Oct 2027 12:52:10 GMT"
+        },
+        {
+          "name": "date",
+          "value": "Sun, 01 Nov 2026 01:28:19 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Sat, 31 Oct 2026 12:50:46 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "access-control-allow-headers",
+          "value": "*"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "timing-allow-origin",
+          "value": "https://www.bbc.co.uk, https://www.bbc.com"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "false"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "8514"
+        }
+      ],
+      "sha256": "c6bbc1c43f603e14da331845d50cc4cb37cefaca7700176ea9ba4470fd7dc4c5",
+      "bytes": 8514
+    },
+    "https://ichef.bbci.co.uk/news/320/cpsprodpb/f2d7/live/d14e6dc0-d47b-11f1-93e1-3b657b665bcf.png.webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-max-age",
+          "value": "300"
+        },
+        {
+          "name": "etag",
+          "value": "\"6be477230b053af102476b8c3df55cbe\""
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "HEAD,GET"
+        },
+        {
+          "name": "expires",
+          "value": "Mon, 01 Nov 2027 00:09:18 GMT"
+        },
+        {
+          "name": "date",
+          "value": "Sun, 01 Nov 2026 01:28:19 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Sun, 01 Nov 2026 00:06:02 GMT"
+        },
+        {
+          "name": "access-control-allow-headers",
+          "value": "*"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "timing-allow-origin",
+          "value": "https://www.bbc.co.uk, https://www.bbc.com"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "false"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "6728"
+        }
+      ],
+      "sha256": "02dfbb93ab3bd611b106dc278192a05cde38d27f308e5af14cd2b538dc924746",
+      "bytes": 6728
+    },
+    "https://ichef.bbci.co.uk/news/640/cpsprodpb/edb0/live/55b5ceb0-d534-11f1-b64c-03717a6e5b71.jpg.webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-max-age",
+          "value": "300"
+        },
+        {
+          "name": "etag",
+          "value": "\"13ef87fb50e5120b23340fb18d09d12f\""
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "HEAD,GET"
+        },
+        {
+          "name": "expires",
+          "value": "Sun, 31 Oct 2027 14:30:37 GMT"
+        },
+        {
+          "name": "date",
+          "value": "Sun, 01 Nov 2026 01:28:19 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Sat, 31 Oct 2026 14:28:16 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "access-control-allow-headers",
+          "value": "*"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "timing-allow-origin",
+          "value": "https://www.bbc.co.uk, https://www.bbc.com"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "false"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "41318"
+        }
+      ],
+      "sha256": "57b0436f3ce0b3a9a6174a301c9191a545233698344e9e65cf4b229580300a0c",
+      "bytes": 41318
+    },
+    "https://cdn.privacy-mgmt.com/unified/4.41.0/gdpr-tcf.e7290277d588e0de9bb9.bundle.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "W/\"5ad9235e34918ed599cd0004a1be9e03\""
+        },
+        {
+          "name": "age",
+          "value": "299842"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "CFFWWD0ujTdDqC5MRhaoCisUNFLoZ7riIWZ6eKemSmDgfXjxMgPt9Q=="
+        },
+        {
+          "name": "date",
+          "value": "Wed, 28 Oct 2026 14:09:05 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 14:07:00 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "referrer-policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "name": "via",
+          "value": "1.1 b0b28ec8da60bdc40e5fb6dc8ad8eae8.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "x-xss-protection",
+          "value": "1; mode=block"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "ZRH52-P1"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "164357"
+        }
+      ],
+      "sha256": "a82be1dad91f072c918985cea6de30ff7ea700712e7a0db6d0da28911bb69fe6",
+      "bytes": 164357
+    },
+    "https://cdn.privacy-mgmt.com/unified/4.41.0/usnat-gpp.1af7b0a971740919848e.bundle.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "W/\"38aecc19b80ca950f7c8aca67cb00c37\""
+        },
+        {
+          "name": "age",
+          "value": "299789"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "59fZ4Pff3m4tWyVqF48EOItO7J16_N6B5j79eppTNAsf9wbkIn9Dkg=="
+        },
+        {
+          "name": "date",
+          "value": "Wed, 28 Oct 2026 14:09:57 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 14:07:00 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "referrer-policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "name": "via",
+          "value": "1.1 b0b28ec8da60bdc40e5fb6dc8ad8eae8.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "x-xss-protection",
+          "value": "1; mode=block"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "ZRH52-P1"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "414042"
+        }
+      ],
+      "sha256": "ba352b6cca632366f5ff76af50c254b504dc4acb620964f32ba500b8997013ab",
+      "bytes": 414042
     },
     "https://mybbc-analytics.files.bbci.co.uk/echo-client-js/echo-2.6.0-avi.min.js": {
       "status": 200,
@@ -7238,7 +7649,7 @@
         },
         {
           "name": "age",
-          "value": "29318249"
+          "value": "29500633"
         },
         {
           "name": "report-to",
@@ -7250,7 +7661,7 @@
         },
         {
           "name": "x-amz-cf-id",
-          "value": "qeEdodI8x9OXlq88okYAm02CcrnoYRo6ADiml6ByLeMAn3iEjC5Umw=="
+          "value": "sUxyPMGceEY5Gy8BHVu3jX0w3MsTnkmWVSp5ohElBXMWZmhQWJ2P7g=="
         },
         {
           "name": "date",
@@ -7282,11 +7693,11 @@
         },
         {
           "name": "via",
-          "value": "1.1 46c5d8b0517607b4696f26e157a3889e.cloudfront.net (CloudFront)"
+          "value": "1.1 33bbce3c2eb1494fd9ca9c71d11cf154.cloudfront.net (CloudFront)"
         },
         {
           "name": "x-amz-cf-pop",
-          "value": "MXP63-P5"
+          "value": "ZRH52-P1"
         },
         {
           "name": "server",
@@ -7304,156 +7715,6 @@
       "sha256": "ed453d318101930b5673ffd55befbea5832fc727c8ca594a3dfc3a77386f8eb3",
       "bytes": 406669
     },
-    "https://cdn.privacy-mgmt.com/unified/4.41.0/gdpr-tcf.e7290277d588e0de9bb9.bundle.js": {
-      "status": 200,
-      "headers": [
-        {
-          "name": "etag",
-          "value": "W/\"5ad9235e34918ed599cd0004a1be9e03\""
-        },
-        {
-          "name": "age",
-          "value": "117460"
-        },
-        {
-          "name": "x-content-type-options",
-          "value": "nosniff"
-        },
-        {
-          "name": "x-cache",
-          "value": "Hit from cloudfront"
-        },
-        {
-          "name": "x-amz-cf-id",
-          "value": "b88QMim_BUhpxwvcws5CFdCt4O3q60Q7qCEvLPFb5-hUj7WczJK-Lw=="
-        },
-        {
-          "name": "date",
-          "value": "Wed, 28 Oct 2026 14:09:05 GMT"
-        },
-        {
-          "name": "content-type",
-          "value": "text/javascript"
-        },
-        {
-          "name": "vary",
-          "value": "Accept-Encoding"
-        },
-        {
-          "name": "last-modified",
-          "value": "Wed, 28 Oct 2026 14:07:00 GMT"
-        },
-        {
-          "name": "cache-control",
-          "value": "max-age=31536000"
-        },
-        {
-          "name": "referrer-policy",
-          "value": "strict-origin-when-cross-origin"
-        },
-        {
-          "name": "via",
-          "value": "1.1 33e14b5e35da41c50782d5d51d6b09a8.cloudfront.net (CloudFront)"
-        },
-        {
-          "name": "x-xss-protection",
-          "value": "1; mode=block"
-        },
-        {
-          "name": "x-amz-cf-pop",
-          "value": "MXP63-P2"
-        },
-        {
-          "name": "server",
-          "value": "AmazonS3"
-        },
-        {
-          "name": "x-amz-server-side-encryption",
-          "value": "AES256"
-        },
-        {
-          "name": "content-length",
-          "value": "164357"
-        }
-      ],
-      "sha256": "a82be1dad91f072c918985cea6de30ff7ea700712e7a0db6d0da28911bb69fe6",
-      "bytes": 164357
-    },
-    "https://cdn.privacy-mgmt.com/unified/4.41.0/usnat-gpp.1af7b0a971740919848e.bundle.js": {
-      "status": 200,
-      "headers": [
-        {
-          "name": "etag",
-          "value": "W/\"38aecc19b80ca950f7c8aca67cb00c37\""
-        },
-        {
-          "name": "age",
-          "value": "117407"
-        },
-        {
-          "name": "x-content-type-options",
-          "value": "nosniff"
-        },
-        {
-          "name": "x-cache",
-          "value": "Hit from cloudfront"
-        },
-        {
-          "name": "x-amz-cf-id",
-          "value": "dFO7FJEYPdLBx-oklXDTdpEG1uuAGlsHhCZJffwf_oR56fXel9aEgw=="
-        },
-        {
-          "name": "date",
-          "value": "Wed, 28 Oct 2026 14:09:57 GMT"
-        },
-        {
-          "name": "content-type",
-          "value": "text/javascript"
-        },
-        {
-          "name": "vary",
-          "value": "Accept-Encoding"
-        },
-        {
-          "name": "last-modified",
-          "value": "Wed, 28 Oct 2026 14:07:00 GMT"
-        },
-        {
-          "name": "cache-control",
-          "value": "max-age=31536000"
-        },
-        {
-          "name": "referrer-policy",
-          "value": "strict-origin-when-cross-origin"
-        },
-        {
-          "name": "via",
-          "value": "1.1 33e14b5e35da41c50782d5d51d6b09a8.cloudfront.net (CloudFront)"
-        },
-        {
-          "name": "x-xss-protection",
-          "value": "1; mode=block"
-        },
-        {
-          "name": "x-amz-cf-pop",
-          "value": "MXP63-P2"
-        },
-        {
-          "name": "server",
-          "value": "AmazonS3"
-        },
-        {
-          "name": "x-amz-server-side-encryption",
-          "value": "AES256"
-        },
-        {
-          "name": "content-length",
-          "value": "414042"
-        }
-      ],
-      "sha256": "ba352b6cca632366f5ff76af50c254b504dc4acb620964f32ba500b8997013ab",
-      "bytes": 414042
-    },
     "https://mybbc-analytics.files.bbci.co.uk/analytics-remote-config/producers.json": {
       "status": 200,
       "headers": [
@@ -7467,7 +7728,7 @@
         },
         {
           "name": "age",
-          "value": "1793"
+          "value": "3253"
         },
         {
           "name": "report-to",
@@ -7479,11 +7740,11 @@
         },
         {
           "name": "x-amz-cf-id",
-          "value": "aD3RgL9XYyiuHUXE5JyFF0V4oxzndCTmMsiAIOlsFjqZAEea9TVCYA=="
+          "value": "6dFoMV8yMXPsS127jMe1vpnZp4VIEP11qTBmj8b5OmbcRr92hTmoVA=="
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:16:53 GMT"
+          "value": "Sun, 01 Nov 2026 00:32:16 GMT"
         },
         {
           "name": "content-type",
@@ -7511,7 +7772,7 @@
         },
         {
           "name": "via",
-          "value": "1.1 e7384d53bf3a60c262ebdb3ab77e3cd4.cloudfront.net (CloudFront)"
+          "value": "1.1 319e9c7c3a6c2c5b2bab4ef63ef59812.cloudfront.net (CloudFront)"
         },
         {
           "name": "access-control-allow-origin",
@@ -7519,7 +7780,7 @@
         },
         {
           "name": "x-amz-cf-pop",
-          "value": "MXP63-P5"
+          "value": "ZRH52-P1"
         },
         {
           "name": "server",
@@ -7550,7 +7811,7 @@
         },
         {
           "name": "age",
-          "value": "3091"
+          "value": "1874"
         },
         {
           "name": "report-to",
@@ -7562,11 +7823,11 @@
         },
         {
           "name": "x-amz-cf-id",
-          "value": "8OUXUQes3sJgXu_3mQrTI-Yz37L6GvO1nY90mCs7yCMhqmvIQRHRdg=="
+          "value": "T_1fhInt6TtqgPRruHlPUGUhSdM0_B_Qy0ZBrs289r2u5QK0GH1Vrg=="
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 21:57:14 GMT"
+          "value": "Sun, 01 Nov 2026 00:55:16 GMT"
         },
         {
           "name": "content-type",
@@ -7594,7 +7855,7 @@
         },
         {
           "name": "via",
-          "value": "1.1 e7384d53bf3a60c262ebdb3ab77e3cd4.cloudfront.net (CloudFront)"
+          "value": "1.1 319e9c7c3a6c2c5b2bab4ef63ef59812.cloudfront.net (CloudFront)"
         },
         {
           "name": "access-control-allow-origin",
@@ -7602,7 +7863,7 @@
         },
         {
           "name": "x-amz-cf-pop",
-          "value": "MXP63-P5"
+          "value": "ZRH52-P1"
         },
         {
           "name": "server",
@@ -7633,7 +7894,7 @@
         },
         {
           "name": "age",
-          "value": "58599"
+          "value": "68231"
         },
         {
           "name": "access-control-allow-credentials",
@@ -7645,7 +7906,7 @@
         },
         {
           "name": "via",
-          "value": "1.1 4c153ff0feed1a45db2039ce118ec77e.cloudfront.net (CloudFront)"
+          "value": "1.1 e88b7159f8022f6a253ca0d3e23a4574.cloudfront.net (CloudFront)"
         },
         {
           "name": "referrer-policy",
@@ -7661,11 +7922,11 @@
         },
         {
           "name": "x-amz-cf-id",
-          "value": "CBbbg6WpWj1KYjp4VkeW4DFtHafteHYjJF4xAxeFFvm0OqGgPT_OZA=="
+          "value": "6jW5tLFd8tVjXvO4OMzsDPUkCMlQIAHMLnzzfpAOBn3nX-f02uQ0eg=="
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 06:30:07 GMT"
+          "value": "Sat, 31 Oct 2026 06:31:09 GMT"
         },
         {
           "name": "x-xss-protection",
@@ -7681,7 +7942,7 @@
         },
         {
           "name": "x-amz-cf-pop",
-          "value": "MXP63-P2"
+          "value": "ZRH52-P1"
         },
         {
           "name": "content-length",
@@ -7691,99 +7952,12 @@
       "sha256": "15b74bdb67683f7e3c62a382e7ca41e19eb15a9aa68b5003ffd37fc1adf78e42",
       "bytes": 209
     },
-    "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/favicon.ico": {
-      "status": 200,
-      "headers": [
-        {
-          "name": "access-control-max-age",
-          "value": "300"
-        },
-        {
-          "name": "etag",
-          "value": "\"001afe003af84172c0be97b60dca770e\""
-        },
-        {
-          "name": "x-amz-version-id",
-          "value": "8OsnAKYFJSiO_jkOf8x0FKr__8V7dYph"
-        },
-        {
-          "name": "report-to",
-          "value": "{\"group\":\"default\",\"max_age\":3600,\"endpoints\":[{\"url\":\"https://assets.bbc-reporting-api.app/report-endpoint\",\"priority\":1}],\"include_subdomains\":true}"
-        },
-        {
-          "name": "access-control-allow-methods",
-          "value": "HEAD,GET"
-        },
-        {
-          "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:46 GMT"
-        },
-        {
-          "name": "last-modified",
-          "value": "Tue, 27 Oct 2026 12:25:20 GMT"
-        },
-        {
-          "name": "content-type",
-          "value": "image/vnd.microsoft.icon"
-        },
-        {
-          "name": "x-amz-id-2",
-          "value": "pzPvWGm0Jd6fbxE/F2fmTWm5o9jtrtvHFW2hkjxIWgMRZYMXpCp8sL4AmPIIuClxe8rTJ5mVyenkkIzMO+oudgjSTYdvhBPh"
-        },
-        {
-          "name": "access-control-allow-headers",
-          "value": "*"
-        },
-        {
-          "name": "cache-control",
-          "value": "max-age=31622400"
-        },
-        {
-          "name": "nel",
-          "value": "{\"report_to\":\"default\",\"max_age\": 604800,\"include_subdomains\":true,\"failure_fraction\":0.01}"
-        },
-        {
-          "name": "timing-allow-origin",
-          "value": "https://www.bbc.co.uk, https://www.bbc.com"
-        },
-        {
-          "name": "access-control-allow-credentials",
-          "value": "false"
-        },
-        {
-          "name": "x-amz-request-id",
-          "value": "RR5ZDV11X0K1HQ5J"
-        },
-        {
-          "name": "accept-ranges",
-          "value": "bytes"
-        },
-        {
-          "name": "access-control-allow-origin",
-          "value": "*"
-        },
-        {
-          "name": "server",
-          "value": "AmazonS3"
-        },
-        {
-          "name": "x-amz-server-side-encryption",
-          "value": "AES256"
-        },
-        {
-          "name": "content-length",
-          "value": "6318"
-        }
-      ],
-      "sha256": "056639a4bbd7061068d2a27ae5f6c77a0b494867bccc6d946ad6842023424232",
-      "bytes": 6318
-    },
     "https://cdn.privacy-mgmt.com/wrapper/v2/meta-data?hasCsp=true&accountId=1786&env=prod&metadata=%7B%22gdpr%22%3A%7B%7D%2C%22usnat%22%3A%7B%7D%7D&propertyId=26225&scriptVersion=4.41.0&scriptType=unified": {
       "status": 200,
       "headers": [
         {
           "name": "age",
-          "value": "1680"
+          "value": "2665"
         },
         {
           "name": "access-control-allow-methods",
@@ -7799,11 +7973,11 @@
         },
         {
           "name": "x-amz-cf-id",
-          "value": "bf9yPS1URjOGy-K6OF4AsDpqiodb2lO42bkypCVWcIm5YuJxUYpEIQ=="
+          "value": "vd7lwpUMooZmjSv2COfO37w4mCy6x5ZfLi8pJuatEMVGHhNYoHL7nQ=="
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:18:46 GMT"
+          "value": "Sun, 01 Nov 2026 00:42:04 GMT"
         },
         {
           "name": "content-type",
@@ -7831,7 +8005,7 @@
         },
         {
           "name": "via",
-          "value": "1.1 4c153ff0feed1a45db2039ce118ec77e.cloudfront.net (CloudFront)"
+          "value": "1.1 a8b33ff40e244f67d922fbfab23360e6.cloudfront.net (CloudFront)"
         },
         {
           "name": "access-control-allow-origin",
@@ -7847,7 +8021,7 @@
         },
         {
           "name": "x-amz-cf-pop",
-          "value": "MXP63-P2"
+          "value": "ZRH52-P1"
         },
         {
           "name": "x-powered-by",
@@ -7861,9 +8035,13 @@
       "sha256": "2be1968086e3ee9649e3fe53d3c4cd770f06a2e3ca0d34e0e832548d5962ee1e",
       "bytes": 649
     },
-    "https://cdn.privacy-mgmt.com/wrapper/v2/messages?hasCsp=true&env=prod&body=%7B%22accountId%22%3A1786%2C%22campaignEnv%22%3A%22prod%22%2C%22campaigns%22%3A%7B%22gdpr%22%3A%7B%22consentStatus%22%3A%7B%7D%2C%22targetingParams%22%3A%7B%7D%7D%2C%22usnat%22%3A%7B%22consentStatus%22%3A%7B%7D%2C%22hasLocalData%22%3Afalse%2C%22targetingParams%22%3A%7B%7D%7D%7D%2C%22clientMMSOrigin%22%3A%22https%3A%2F%2Fcdn.privacy-mgmt.com%22%2C%22hasCSP%22%3Atrue%2C%22includeData%22%3A%7B%22localState%22%3A%7B%22type%22%3A%22string%22%7D%2C%22actions%22%3A%7B%22type%22%3A%22RecordString%22%7D%2C%22cookies%22%3A%7B%22type%22%3A%22RecordString%22%7D%7D%2C%22propertyHref%22%3A%22https%3A%2F%2Fwww.bbc.com%2Fnews%22%7D&localState=null&metadata=%7B%22gdpr%22%3A%7B%22applies%22%3Atrue%7D%2C%22usnat%22%3A%7B%22applies%22%3Afalse%7D%7D&nonKeyedLocalState=null&ch=515230719515230719ef18515130582e42b&scriptVersion=4.41.0&scriptType=unified": {
+    "https://cdn.privacy-mgmt.com/wrapper/v2/messages?hasCsp=true&env=prod&body=%7B%22accountId%22%3A1786%2C%22campaignEnv%22%3A%22prod%22%2C%22campaigns%22%3A%7B%22gdpr%22%3A%7B%22consentStatus%22%3A%7B%22hasConsentData%22%3Afalse%2C%22consentedToAll%22%3Afalse%2C%22consentedToAny%22%3Afalse%2C%22rejectedAny%22%3Afalse%7D%2C%22hasLocalData%22%3Afalse%2C%22targetingParams%22%3A%7B%7D%7D%2C%22usnat%22%3A%7B%22consentStatus%22%3A%7B%22rejectedAny%22%3Afalse%2C%22consentedToAll%22%3Atrue%2C%22consentedToAny%22%3Afalse%2C%22hasConsentData%22%3Afalse%2C%22previousOptInAll%22%3Afalse%7D%2C%22hasLocalData%22%3Atrue%2C%22targetingParams%22%3A%7B%7D%7D%7D%2C%22clientMMSOrigin%22%3A%22https%3A%2F%2Fcdn.privacy-mgmt.com%22%2C%22hasCSP%22%3Atrue%2C%22includeData%22%3A%7B%22localState%22%3A%7B%22type%22%3A%22string%22%7D%2C%22actions%22%3A%7B%22type%22%3A%22RecordString%22%7D%2C%22cookies%22%3A%7B%22type%22%3A%22RecordString%22%7D%7D%2C%22propertyHref%22%3A%22https%3A%2F%2Fwww.bbc.com%2Fnews%22%7D&localState=%7B%22gdpr%22%3A%7B%22mmsCookies%22%3A%5B%22_sp_v1_ss%3D1%3AH4sIAAAAAAAAAItWqo5RKimOUbKKxs_IAzEMamN1YpRSQcy80pwcILsErKC6lpoSSrEA-EAOLpYAAAA%253D%22%5D%2C%22propertyId%22%3A26225%2C%22messageId%22%3A1489022%7D%2C%22usnat%22%3A%7B%22mmsCookies%22%3A%5B%22_sp_v1_ss%3D1%3AH4sIAAAAAAAAAItWqo5RKimOUbKKJouRV5qToxOjlIrELgFLVNfWxg5KCaVYAJMyuYn0AAAA%22%5D%2C%22propertyId%22%3A26225%2C%22messageId%22%3A0%7D%7D&metadata=%7B%22gdpr%22%3A%7B%22applies%22%3Atrue%7D%2C%22usnat%22%3A%7B%22applies%22%3Afalse%7D%7D&nonKeyedLocalState=%7B%22gdpr%22%3A%7B%22_sp_v1_data%22%3A%221293142%22%2C%22_sp_v1_p%22%3A%22894%22%7D%2C%22usnat%22%3A%7B%22_sp_v1_data%22%3A%221311153%22%2C%22_sp_v1_p%22%3A%22480%22%7D%7D&ch=515230719515230719ef18515130582e42b&scriptVersion=4.41.0&scriptType=unified": {
       "status": 200,
       "headers": [
+        {
+          "name": "age",
+          "value": "3"
+        },
         {
           "name": "access-control-allow-methods",
           "value": "GET, PUT, POST, DELETE"
@@ -7874,15 +8052,15 @@
         },
         {
           "name": "x-cache",
-          "value": "Miss from cloudfront"
+          "value": "Hit from cloudfront"
         },
         {
           "name": "x-amz-cf-id",
-          "value": "Yi2PQxLCWFpRvFk9fppd5KbDp1n5_WZntH3S3gPgA9ubsMjQw9MZUQ=="
+          "value": "5wuVCtf3e1B8vVJSlrNEe4ggVaTihgjSDbPCq48Vrj0GQxuZfmpVSw=="
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:46:47 GMT"
+          "value": "Sun, 01 Nov 2026 01:28:17 GMT"
         },
         {
           "name": "content-type",
@@ -7910,15 +8088,11 @@
         },
         {
           "name": "via",
-          "value": "1.1 4c153ff0feed1a45db2039ce118ec77e.cloudfront.net (CloudFront)"
+          "value": "1.1 e88b7159f8022f6a253ca0d3e23a4574.cloudfront.net (CloudFront)"
         },
         {
           "name": "access-control-allow-origin",
           "value": "*"
-        },
-        {
-          "name": "x-sp-geo-usp",
-          "value": "CH-VD"
         },
         {
           "name": "x-xss-protection",
@@ -7926,7 +8100,7 @@
         },
         {
           "name": "x-amz-cf-pop",
-          "value": "MXP63-P2"
+          "value": "ZRH52-P1"
         },
         {
           "name": "x-powered-by",
@@ -7934,14 +8108,14 @@
         },
         {
           "name": "content-length",
-          "value": "37872"
+          "value": "33707"
         }
       ],
-      "sha256": "638ae001e0f685723bf61133cc290509ad96f3d421d7904726ce2e9b2953f804",
-      "bytes": 37872
+      "sha256": "1b6e7bbf91c469b7fc3bcf83c902746ef837c236fe4f1522264ddcbcabcc9704",
+      "bytes": 33707
     }
   },
   "workload": "Frozen guest DOM; scripts removed; original resource bytes",
-  "live_png_sha256": "8e754555c6448c6673cdb023035affa15eb3f2ad7a3ac6d000e1e9a9f50ea94c",
-  "capture_report_sha256": "3912c6cb785688109709a87895677ee646d3b732106d50b984e8fa0d437e1339"
+  "live_png_sha256": "953f62d22586241ace931d2ebf7f26a4f122100b739dfa13eba027d10c930739",
+  "capture_report_sha256": "072f056274b9249e0e4cb6755ca92199bab237270616bee598fa0e6fc1aafd8b"
 }
