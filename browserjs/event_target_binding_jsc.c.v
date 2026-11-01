@@ -54,6 +54,7 @@ mut:
 	drag_event_prototype voidptr
 	track_event_prototype voidptr
 	form_data_event_prototype voidptr
+	error_event_prototype voidptr
 	data_transfer_factory voidptr
 	data_transfer_prototype voidptr
 	data_transfer_constructor voidptr
@@ -83,6 +84,7 @@ pub fn (mut runtime Runtime) install_event_target_binding() ! {
 	runtime.require_javascript_value_context()!
 	owner := voidptr(&runtime)
 	if binding := event_target_bindings_[owner] {
+		if binding.error_event_prototype == unsafe { nil } { runtime.install_error_event_binding()! }
 		if binding.ui_event_prototype == unsafe { nil } {
 			if settings := runtime.scripting_settings_ {
 				if settings.global_object().data.kind == .window {
@@ -130,6 +132,7 @@ pub fn (mut runtime Runtime) install_event_target_binding() ! {
 	binding.event_constructor = runtime.evaluate_host_value('Event')!
 	runtime.retain_javascript_value(binding.factory)!
 	runtime.retain_javascript_value(binding.define_trusted)!
+	runtime.install_error_event_binding()!
 	if settings := runtime.scripting_settings_ {
 		if settings.global_object().data.kind == .window {
 			runtime.install_ui_event_binding()!
@@ -276,7 +279,9 @@ pub fn (mut runtime Runtime) javascript_event(event &dom.Event) !voidptr {
 		}
 	}
 	mut prototype := C.vox_jsc_JSValueMakeNull(runtime.context)
-	if binding.pointer_event_prototype != unsafe { nil } && event.interface_ == .pointer_event {
+	if binding.error_event_prototype != unsafe { nil } && event.interface_ == .error_event {
+		prototype = binding.error_event_prototype
+	} else if binding.pointer_event_prototype != unsafe { nil } && event.interface_ == .pointer_event {
 		prototype = binding.pointer_event_prototype
 	} else if binding.wheel_event_prototype != unsafe { nil } && event.interface_ == .wheel_event {
 		prototype = binding.wheel_event_prototype
@@ -565,7 +570,7 @@ fn (mut runtime Runtime) event_binding_call(method string, receiver voidptr, arg
 		property := runtime.binding_dom_string(args[0])!
 		return match property {
 			'type' {
-				if event.interface_ == .track_event {
+				if event.interface_ in [.track_event, .error_event] {
 					runtime.binding_utf16_string(libjs.utf16_string_from_utf8_without_validation(event.type_name()))!
 				} else {
 					runtime.binding_string(event.type_name())
