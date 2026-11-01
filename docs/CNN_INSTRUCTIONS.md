@@ -19,7 +19,9 @@ Vox's second and third trials include about **13.86 / 15.71 billion** instructio
 outside its main process, versus about **1.15 billion** in the other five. These
 costs remain in the selected coalition scope and every statistic. Brave pair 4
 also differs at **13,565 pixels**, within one image at `(32,414)`; maximum channel
-error is 7. Its content audit passes, but the unchanged pixel oracle rejects it.
+error is 7. Its content audit passes, but the unchanged pixel oracle rejects it. That
+observation has benchmark exit 1 and actual browser `kernel_exit_status=0`;
+the enclosing guard retains benchmark exit 1.
 No trials, references or tolerances are changed to obtain acceptance.
 
 | Pair | Vox instructions | Brave lower bound | Brave pixels exact |
