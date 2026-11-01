@@ -157,6 +157,7 @@ fn chromium_svg_compositor_layer_supported_for_viewport(commands []layout.PaintC
 			|| !chromium_shared_recording_clips_supported(command) {
 			return chromium_svg_compositor_layer_declined(index, command_index, 'leaf properties', command.kind)
 		}
+		had_svg := has_svg
 		match command.kind {
 			'fill_gradient' {
 				if !plan.has_paint_metadata || !chromium_compositor_css_gradient_supported(command) {
@@ -203,6 +204,9 @@ fn chromium_svg_compositor_layer_supported_for_viewport(commands []layout.PaintC
 			}
 			'draw_text','fill_ellipse', 'stroke_ellipse', 'stroke_rounded_rect' {}
 			else { return chromium_svg_compositor_layer_declined(index, command_index, 'unsupported leaf', command.kind) }
+		}
+		if has_svg && !had_svg && os.getenv('VOX_DIAGNOSTIC_PAINT_LAYER') != '' {
+			eprintln('VOX_PAINT_LAYER_RECORDING_FEATURE layer=${index} command=${command_index} kind=${command.kind} xywh=${command.x},${command.y},${command.width},${command.height} transform=${command.transform}')
 		}
 	}
 	return has_svg && identity_scope_ends.len == 0
