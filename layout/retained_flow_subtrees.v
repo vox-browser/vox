@@ -2,6 +2,12 @@ module layout
 
 import css
 import dom
+import os
+
+const disable_retained_flow_items = os.getenv('VOX_DISABLE_RETAINED_FLOW_ITEMS') != ''
+const retained_flow_item_diagnostics = os.getenv('VOX_RETAINED_FLOW_ITEM_DIAGNOSTICS') != ''
+
+__global retained_flow_item_reported bool
 
 struct RetainedFlowSubtree {
 	root     &Node
@@ -96,6 +102,7 @@ fn reusable_clean_flow_subtree(element &dom.Element, mut rejected map[u64]bool) 
 	if root.flow_validation_cache_ != unsafe { nil }
 		&& retained_flow_layout_node_is_ordinary(root)
 		&& retained_flow_validation_is_current(root.flow_validation_cache_) {
+		report_retained_flow_item(root)
 		return RetainedFlowSubtree{root: root, elements: root.flow_validation_cache_.elements}
 	}
 	mut elements := []&dom.Element{}
@@ -108,6 +115,7 @@ fn reusable_clean_flow_subtree(element &dom.Element, mut rejected map[u64]bool) 
 			elements: elements
 		}
 	}
+	report_retained_flow_item(root)
 	return RetainedFlowSubtree{
 		root:     root
 		elements: elements
@@ -182,8 +190,22 @@ fn collect_retained_flow_elements(element &dom.Element, mut elements []&dom.Elem
 fn retained_flow_layout_node_is_ordinary(node &Node) bool {
 	if node.is_generated_for_pseudo_element() || node.is_generated_text_node()
 		|| node.is_replaced_element() || node.is_svg_box() || node.is_list_item_box()
-		|| node.is_absolutely_positioned() || node.is_flex_item() || node.is_grid_item_ {
+		|| node.is_absolutely_positioned() {
 		return false
+	}
+	if node.is_flex_item() || node.is_grid_item_ {
+		if disable_retained_flow_items { return false }
+		parent := node.parent() or { return false }
+		parent_node := parent.dom_node() or { return false }
+		parent_element := parent_node.as_element() or { return false }
+		parent_computed := css.computed_properties_for_element(parent_element) or { return false }
+		// Keep the existing item role only while its formatting parent still
+		// supplies that role. Layout runs again in a fresh state, so new tracks,
+		// flex bases and containing-block sizes resolve normally.
+		// The old parent box can still hold its previous style while its
+		// replacement is being built. Read the freshly cascaded DOM style.
+		if node.is_flex_item() != parent_computed.display().is_flex_inside()
+			|| node.is_grid_item_ != parent_computed.display().is_grid_inside() { return false }
 	}
 	if !node.is_text_node() && !node.display().is_flow_inside()
 		&& !node.display().is_flow_root_inside() { return false }
@@ -191,6 +213,14 @@ fn retained_flow_layout_node_is_ordinary(node &Node) bool {
 		if metrics.continuation_of_node() != none { return false }
 	}
 	return true
+}
+
+fn report_retained_flow_item(node &Node) {
+	if retained_flow_item_diagnostics && !retained_flow_item_reported
+		&& (node.is_flex_item() || node.is_grid_item_) {
+		retained_flow_item_reported = true
+		eprintln('Vox retained flow: reused unchanged formatting item')
+	}
 }
 
 fn retained_flow_anonymous_layout_is_ordinary(node &Node) bool {
