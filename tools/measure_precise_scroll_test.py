@@ -154,6 +154,43 @@ class PreciseScrollTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
 
     @unittest.skipUnless(sys.platform == "darwin", "macOS precise wheel semantics")
+    def test_tail_waits_for_slow_publication_and_rejects_timeout(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / "tail.m"
+            observer = Path(measure_precise_scroll.__file__).with_name("measure_precise_scroll_darwin.m")
+            source.write_text('#include "' + str(observer) + '"\n' + r'''int main(int argc, char **argv) {
+                (void)argv;
+                started = last_input = CACurrentMediaTime();
+                inputs = input_limit = 12;
+                input_samples = calloc(inputs, sizeof(Input));
+                frame_samples = calloc(1, sizeof(Frame));
+                if (argc > 1) last_input -= 6;
+                else dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 400*NSEC_PER_MSEC),
+                    dispatch_get_main_queue(), ^{
+                        frame_samples[0] = (Frame){CACurrentMediaTime()-started, 0, 0, 42, inputs};
+                        publications = 1;
+                    });
+                dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 250*NSEC_PER_MSEC),
+                    dispatch_get_main_queue(), ^{ wait_for_final_publication(); });
+                dispatch_main();
+            }
+            ''')
+            binary = root / "tail"
+            subprocess.run(["clang", "-O2", "-fobjc-arc", str(source),
+                            "-framework", "Cocoa", "-framework", "QuartzCore",
+                            "-Wl,-undefined,dynamic_lookup", "-o", str(binary)], check=True)
+            for arguments, expected in [([], 0), (["timeout"], 2)]:
+                result = subprocess.run([str(binary), *arguments], capture_output=True, text=True, timeout=10)
+                self.assertEqual(result.returncode, expected, result.stderr)
+                if expected == 0:
+                    self.assertIn("SCROLL_DONE inputs=12 publications=1", result.stderr)
+                    frame = measure_precise_scroll.records(result.stderr, "SCROLL_PUBLISH")[0]
+                    self.assertGreaterEqual(frame["t_us"], 400000)
+                else:
+                    self.assertIn("SCROLL_ERROR final input publication timed out", result.stderr)
+
+    @unittest.skipUnless(sys.platform == "darwin", "macOS precise wheel semantics")
     def test_wheel_event_clears_physical_keyboard_modifiers(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

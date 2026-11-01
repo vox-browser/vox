@@ -77,7 +77,7 @@ static void published(id self, SEL selector) {
         now-started, now-before, now-last_input, rendered_scroll, inputs };
 }
 
-static void finish(void) {
+static void finish(int status) {
     active = NO;
     double finished = CACurrentMediaTime();
     for (unsigned i = 0; i < inputs; ++i)
@@ -92,7 +92,21 @@ static void finish(void) {
     fprintf(stderr, "SCROLL_DONE inputs=%u publications=%u duration_us=%.3f\n",
         inputs, publications, (finished-started)*1e6);
     fflush(stderr);
-    exit(0);
+    exit(status);
+}
+
+static void wait_for_final_publication(void) {
+    if (publications && frame_samples[publications-1].inputs == input_limit) {
+        finish(0);
+        return;
+    }
+    if (CACurrentMediaTime()-last_input >= 5) {
+        fprintf(stderr, "SCROLL_ERROR final input publication timed out\n");
+        finish(2);
+        return;
+    }
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 10*NSEC_PER_MSEC),
+        dispatch_get_main_queue(), ^{ wait_for_final_publication(); });
 }
 
 static NSEvent *unmodified_wheel_event(CGEventRef event) {
@@ -154,10 +168,11 @@ static void tick(void) {
     input_samples[index].elapsed = CACurrentMediaTime()-last_input;
     if (inputs == input_limit) {
         dispatch_source_cancel(timer);
-        // Allow the last input's requested publication to complete. Tail frames
-        // are retained in raw evidence but excluded from the timed input window.
+        // A slow page can take longer than 250ms to publish. Wait for evidence
+        // of the final input, with a bounded timeout. Tail frames remain outside
+        // the first-to-last-input throughput denominator in the Python summary.
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, NSEC_PER_SEC/4),
-            dispatch_get_main_queue(), ^{ finish(); });
+            dispatch_get_main_queue(), ^{ wait_for_final_publication(); });
     }
 }
 
