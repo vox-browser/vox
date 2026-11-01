@@ -1,9 +1,21 @@
 module main
 
 import dom
+import css
+import html
+
+fn font_completion_rendering_fixture() (&dom.Document, &css.FontFaceSet, &html.EventLoop) {
+	mut document, fonts, event_loop := font_environment_fixture()
+	document.set_cached_navigable(&dom.Navigable{
+		active_document_: document
+		is_top_level_traversable_: true
+	})
+	assert document.is_fully_active()
+	return document, fonts, event_loop
+}
 
 fn test_dirty_font_completion_waits_for_rendering_without_forcing_an_extra_layout() {
-	mut document, mut fonts, event_loop := font_environment_fixture()
+	mut document, mut fonts, event_loop := font_completion_rendering_fixture()
 	defer { document.finalize() }
 	document.update_readiness(.complete)
 	event_loop.update_font_face_sets_pending_on_the_environment([document])
@@ -28,7 +40,7 @@ fn test_dirty_font_completion_waits_for_rendering_without_forcing_an_extra_layou
 }
 
 fn test_forced_geometry_still_flushes_while_font_readiness_waits_for_rendering() {
-	mut document, mut fonts, event_loop := font_environment_fixture()
+	mut document, mut fonts, event_loop := font_completion_rendering_fixture()
 	defer { document.finalize() }
 	document.update_readiness(.complete)
 	event_loop.update_font_face_sets_pending_on_the_environment([document])
@@ -45,7 +57,7 @@ fn test_forced_geometry_still_flushes_while_font_readiness_waits_for_rendering()
 }
 
 fn test_clean_font_completion_settles_without_another_layout_pass() {
-	mut document, mut fonts, event_loop := font_environment_fixture()
+	mut document, mut fonts, event_loop := font_completion_rendering_fixture()
 	defer { document.finalize() }
 	document.update_readiness(.complete)
 	event_loop.update_font_face_sets_pending_on_the_environment([document])
@@ -56,4 +68,19 @@ fn test_clean_font_completion_settles_without_another_layout_pass() {
 	assert ready.state == .fulfilled
 	assert fonts.status() == .loaded
 	assert document.layout_engine_handle() == previous_layout
+}
+
+fn test_font_completion_without_an_active_rendering_owner_keeps_synchronous_layout() {
+	mut document, mut fonts, event_loop := font_environment_fixture()
+	defer { document.finalize() }
+	assert !document.is_fully_active()
+	document.update_readiness(.complete)
+	event_loop.update_font_face_sets_pending_on_the_environment([document])
+	fonts.switch_to_loading()
+	ready := fonts.ready()
+	mut element := document.body()?.as_node().as_element()?
+	element.set_attribute_value('style', 'width:41px')
+	fonts.switch_to_loaded()
+	assert ready.state == .fulfilled
+	assert element.client_width() == 41
 }
