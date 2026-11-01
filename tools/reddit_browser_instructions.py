@@ -117,6 +117,12 @@ def document_identity(path):
     return title, posts
 
 
+def vox_launch_arguments(js_engine):
+    if js_engine not in ('javascriptcore', 'libjs'):
+        raise ValueError('Vox supports javascriptcore or libjs, not V8')
+    return ['--enable-javascript', '--js-engine='+js_engine]
+
+
 def validate_document(report, url, title, posts, engine):
     audit = report['document_audit']
     if (audit.get('url') != url or audit.get('ready') != 'complete' or audit.get('title') != title
@@ -227,6 +233,8 @@ def main():
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--vox', type=Path, default=REPO/'Build/v/Vox.app/Contents/MacOS/Vox')
     parser.add_argument('--brave', type=Path, default=Path('/Applications/Brave Browser.app/Contents/MacOS/Brave Browser'))
+    parser.add_argument('--vox-js-engine', choices=['javascriptcore', 'libjs'], default='javascriptcore',
+                        help='Explicit Vox backend selection; Brave uses V8. A script-free page may not create a runtime.')
     parser.add_argument('--network-deny', type=Path, default=REPO/'Build/pikabu-instructions-network-deny.dylib')
     parser.add_argument('--diff-tool', type=Path, default=REPO/'Build/pixel-equality/pixel_diff')
     parser.add_argument('--repeat', type=int, default=7)
@@ -255,7 +263,7 @@ def main():
             config = SimpleNamespace(binary=args.vox if engine=='vox' else args.brave,
                 url=args.html.as_uri(), width=1024, height=768, timeout=90,
                 scratch_dir=args.output, sample_interval=.005,
-                vox_arg=['--enable-javascript'], chrome_launch_mode='blank',
+                vox_arg=vox_launch_arguments(args.vox_js_engine), chrome_launch_mode='blank',
                 chrome_disable_javascript=False,
                 chrome_extra_arg=['--no-proxy-server', '--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost'])
             started = time.time()
@@ -271,6 +279,7 @@ def main():
                     report = measurement.run_chrome(config, prefix, api,
                         client_factory=lambda url: RedditAssetsCDP(url, args.cache))
             report.update(profile_policy='fresh empty private profile per observation', screenshot_scale=1,
+                          selected_js_engine=args.vox_js_engine if engine == 'vox' else 'v8',
                           started_unix=started, finished_unix=time.time(), host_before=host_before,
                           host_after=dict(cpu_count=os.cpu_count(), load_average=os.getloadavg()))
             report_path = Path(str(prefix)+'.json')
@@ -296,6 +305,7 @@ def main():
         raise RuntimeError('Pinned executable, runtime or benchmark input changed')
     summary = evaluate_pairs(pairs, args.required_reduction)
     summary.update(pairs=pairs, pinned_sha256=pinned, cache_sha256=cache_hash,
+                   selected_js_engines=dict(vox=args.vox_js_engine, brave='v8'),
                    title=title, post_ids=posts, sample_interval_seconds=.005,
                    collector_environment={key: os.environ[key] for key in
                        ['GC_INITIAL_HEAP_SIZE','GC_MAXIMUM_HEAP_SIZE','GC_FREE_SPACE_DIVISOR','GC_MARKERS']

@@ -79,6 +79,18 @@ class FrozenResponseTests(unittest.TestCase):
 
 
 class DocumentIdentityTests(unittest.TestCase):
+    def test_both_vox_backends_are_explicit_in_the_real_launch_arguments(self):
+        from measure_browser_instructions import vox_launch_command
+        for engine in ['javascriptcore','libjs']:
+            args=SimpleNamespace(vox_arg=benchmark.vox_launch_arguments(engine),width=1024,
+                                 height=768,url='file:///frozen.html')
+            command=vox_launch_command(args,Path('/Vox'),'/capture.png')
+            self.assertIn('--enable-javascript',command)
+            self.assertIn('--js-engine='+engine,command)
+            self.assertEqual(command[-1],args.url)
+        with self.assertRaisesRegex(ValueError,'not V8'):
+            benchmark.vox_launch_arguments('v8')
+
     def test_source_title_and_post_order_are_derived_without_changing_noscript_policy(self):
         with tempfile.TemporaryDirectory() as directory:
             path=Path(directory)/'page.html'
