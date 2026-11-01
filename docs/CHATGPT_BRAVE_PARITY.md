@@ -5,8 +5,8 @@ application. Pixel-exact parity and an actual conversation are **not complete**.
 The full-page comparison still has rendering differences; focused fixtures and
 a successful application startup are not a substitute for that comparison.
 
-The latest unchanged-original-archive capture differs in **6,594 of 786,432
-pixels (0.8385%, MAE 0.0066)**. Startup, native typing and Enter are validated;
+The latest unchanged-original-archive capture differs in **876 of 786,432
+pixels (0.1114%, MAE 0.0009)**. Startup, native typing and Enter are validated;
 a completed chat reply remains unverified. The recorded 60-second idle check
 peaks at 1.82 GB rather than continuing toward the 12 GiB guard.
 
@@ -562,3 +562,74 @@ Its peak RSS is 2,250,014,720 bytes over 23.10 seconds. These are capture/input
 observations, not idle-memory or scrolling measurements. The original SOCKS
 archive is reused through non-forwarding replay. Full-page pixel equality and
 a completed service reply remain open.
+
+## Rounded SVG compositor clips and shadow bounds (2026-11-01)
+
+Commit `541dfe29` makes complete compositor pictures retain rounded ancestor
+clips on supported solid SVG fills and simple strokes. Scalar SVG batches keep their rectangular
+clip restriction. Balanced CSS scopes with full opacity and normal blending
+are eligible when their boundaries share the layer; incomplete scopes, real
+effects, masks and unsupported transforms retain their fallback.
+
+The ChatGPT microphone's two filled paths exercise this path. The focused
+`compositor-rounded-svg-clip` fixture combines a large SVG fill crossing a
+rounded overflow clip with the captured microphone, translucent border and
+three composer shadows. Its normal-window Brave reference is unchanged across
+two captures. The final production capture matches all 480,000 pixels exactly.
+
+A shadow recording must use the compositor's three-sigma ink extent in document
+coordinates, while its fallback bitmap may keep a larger allocation margin.
+Using the allocation margin as recording ink extends the picture above its
+layer and disables the raster tile that preserves Chromium's coverage phase.
+The original fixture had 270 one-level differences. The first installed bounds
+fix retained those differences because its extent was calculated after the
+paths moved to local coordinates; that failure is retained. The final fix
+calculates the extent before moving the paths and is pixel-exact.
+
+Private evidence is under `Build/chatgpt-svg-parity-20261101/`:
+
+- `compositor-rounded-svg-identity-scopes-results.json`: four focused V cases
+  pass in Boehm, no-GC and preallocation modes (12 case executions).
+- `compositor-clip-bounds-native-sanitizers/`: all seven native programs pass
+  AddressSanitizer and UndefinedBehaviorSanitizer. After correcting the bounds'
+  coordinate space, `compositor-clip-bounds-final-native/` repeats the affected
+  contoured painter's 24 exact GPU cases successfully.
+- `production-compositor-clip-bounds/`: the guarded base production build
+  succeeds. Other sessions changed unrelated inputs during compilation; the
+  feature's V files remain identical before and after. The initial installed
+  native bounds failure is retained in
+  `candidate-validation-compositor-clip-bounds/`.
+- `production-compositor-native-bounds-final/`: rebuilds and installs only the
+  corrected native painting library under the shared production lock, then
+  re-signs and verifies the assembled bundle. All native source inputs remain
+  stable. Re-signing changes the executable hash as well as the library hash;
+  the final identities are recorded in `identity-after.json`.
+- `candidate-validation-compositor-clip-bounds-final/results.json`: final
+  focused pixels, headless startup, the original archived application and
+  native input checks. All 15 groups pass with one unchanged final bundle
+  identity. The 34 screenshot comparisons include 13 exact focused fixtures,
+  the default 11 smoke cases (eight exact, three within existing bounds), and
+  ten exact SVG mutation guards. No reference or tolerance was changed.
+
+The accepted archived capture is
+`Build/chatgpt-shadow-modules-20261031/compositor-clip-bounds-final-20261101-acceptance/`.
+It preserves the original archived document and the existing 1024×768 Brave
+reference, with scale 1, an active document and the cookie banner visible.
+The private HTTPS SOCKS replay never forwards missing responses. A 60-second
+settle is followed by checks for the home-ready marker, both stylesheets,
+complete readiness, document activity and zero reported native JavaScript
+errors. The guard records a successful exit and a 1,947,320,320-byte peak.
+This is a readiness/rendering check, not a startup-speed measurement.
+
+The result is **876 of 786,432 differing pixels (0.1114%, MAE 0.0008688)**,
+with maximum channel error 18. Two pixels exceed 3 and 10; none exceed 25.
+The remaining differences include the heading, footer, cookie-banner edges
+and two caret-end pixels. The separately injected aliasing and clipping caret
+experiments do not fix those two pixels and supply no acceptance credit.
+
+`compositor-clip-bounds-final-20261101-editor/` checks native AppKit mouse and
+keyboard input after startup. Typing `Vox` followed by Enter leaves `Vox` in the
+focused textarea without a newline, with the home-ready marker present and no
+reported JavaScript errors. The archive does not contain a successful chat
+response, so a completed conversation and pixel-exact full-page parity remain
+unverified.
