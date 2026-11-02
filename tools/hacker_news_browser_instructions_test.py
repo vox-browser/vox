@@ -14,6 +14,7 @@ from hacker_news_browser_instructions import (
     parse_args, progress_record, finish_capture_readiness,
     prepare_browser_profile,
     configure_brave_viewport, capture_ownership_audit, await_exit,
+    existing_browser_processes, verified_preexisting_app_pids,
 )
 
 
@@ -406,14 +407,19 @@ class HackerNewsInstructionGateTests(unittest.TestCase):
             tasks_exited: int = 0
         app = Path('/private/fixture/Vox.app')
         binary = str(app / 'Contents/MacOS/Vox')
-        old = dict(pid=99, command=binary + ' user-page')
+        old = dict(pid=99, command=binary + ' user-page', start_ticks=123,
+                   resource_coalition=20)
         rows = [dict(pid=1, command=binary + ' unique-capture'), old]
         api = Mock()
         api.read.return_value = Reading()
+        api.resource_coalition.return_value = 20
+        process_api = Mock()
+        process_api.read.return_value = Mock(start=123, exited=False)
         for members, succeeds in (([dict(pid=1)], True),
                                   ([dict(pid=1), dict(pid=99)], False)):
             scan = dict(members=members, after_snapshot=dict(tasks_started=1, tasks_exited=0))
             with patch('hacker_news_browser_instructions.exact_coalition_membership', return_value=scan), \
+                 patch('hacker_news_browser_instructions.MacCounters', return_value=process_api), \
                  patch('hacker_news_browser_instructions.processes', return_value=rows):
                 if succeeds:
                     result = membership(api, 10, app, 1, time.monotonic() + 10, [], existing_processes=[old])
@@ -422,6 +428,80 @@ class HackerNewsInstructionGateTests(unittest.TestCase):
                 else:
                     with self.assertRaisesRegex(RuntimeError, 'preexisting browser task'):
                         membership(api, 10, app, 1, time.monotonic() + 10, [], existing_processes=[old])
+
+    def test_preexisting_snapshot_pins_start_time_and_coalition_for_only_the_selected_app(self):
+        app = Path('/fixture/Vox.app')
+        rows = [dict(pid=1, command=str(app) + '/Contents/MacOS/Vox old'),
+                dict(pid=2, command='/fixture/Other.app/Contents/MacOS/Other old')]
+        process_api, coalition_api = Mock(), Mock()
+        process_api.read.return_value = Mock(start=123, exited=False)
+        coalition_api.resource_coalition.return_value = 20
+        with patch('hacker_news_browser_instructions.processes', return_value=rows), \
+                patch('hacker_news_browser_instructions.MacCounters', return_value=process_api), \
+                patch('hacker_news_browser_instructions.MacCoalitionCounters', return_value=coalition_api):
+            self.assertEqual(existing_browser_processes(app),
+                             [dict(rows[0], start_ticks=123, resource_coalition=20)])
+        self.assertEqual(process_api.read.call_count, 2)
+        coalition_api.resource_coalition.assert_called_once_with(1)
+
+    def test_preexisting_snapshot_rejects_pid_reuse_during_identity_reads(self):
+        app = Path('/fixture/Vox.app')
+        process_api = Mock()
+        process_api.read.side_effect = [Mock(start=123, exited=False), Mock(start=124, exited=False)]
+        with patch('hacker_news_browser_instructions.processes',
+                   return_value=[dict(pid=1, command=str(app) + '/Contents/MacOS/Vox old')]), \
+                patch('hacker_news_browser_instructions.MacCounters', return_value=process_api), \
+                patch('hacker_news_browser_instructions.MacCoalitionCounters'), \
+                self.assertRaisesRegex(RuntimeError, 'changed while pinning'):
+            existing_browser_processes(app)
+
+    def test_preexisting_snapshot_ignores_exited_tasks_but_propagates_counter_denials(self):
+        app = Path('/fixture/Vox.app')
+        process_api = Mock()
+        with patch('hacker_news_browser_instructions.processes',
+                   return_value=[dict(pid=1, command=str(app) + '/Contents/MacOS/Vox old')]), \
+                patch('hacker_news_browser_instructions.MacCounters', return_value=process_api), \
+                patch('hacker_news_browser_instructions.MacCoalitionCounters'):
+            for code in (2, 3):
+                process_api.read.side_effect = OSError(code, 'gone')
+                self.assertEqual(existing_browser_processes(app), [])
+            process_api.read.side_effect = OSError(1, 'denied')
+            with self.assertRaises(OSError):
+                existing_browser_processes(app)
+
+    def test_reused_preexisting_pid_or_changed_coalition_is_never_exempted(self):
+        old = dict(pid=99, command='/fixture/Vox.app/Contents/MacOS/Vox worker',
+                   start_ticks=123, resource_coalition=20)
+        for start, current_cid in [(124, 20), (123, 30)]:
+            with self.subTest(start=start, current_cid=current_cid):
+                process_api, coalition_api = Mock(), Mock()
+                process_api.read.return_value = Mock(start=start, exited=False)
+                coalition_api.resource_coalition.return_value = current_cid
+                self.assertEqual(verified_preexisting_app_pids(process_api, coalition_api, 10,
+                                                             [old], [old]), set())
+
+    def test_preexisting_exclusion_requires_identity_through_both_live_reads(self):
+        old = dict(pid=99, command='/fixture/Vox.app/Contents/MacOS/Vox worker',
+                   start_ticks=123, resource_coalition=20)
+        process_api, coalition_api = Mock(), Mock()
+        coalition_api.resource_coalition.return_value = 20
+        process_api.read.side_effect = [Mock(start=123, exited=False), Mock(start=124, exited=False)]
+        self.assertEqual(verified_preexisting_app_pids(process_api, coalition_api, 10,
+                                                     [old], [old]), set())
+        process_api.read.side_effect = [Mock(start=123, exited=False), Mock(start=123, exited=True)]
+        self.assertEqual(verified_preexisting_app_pids(process_api, coalition_api, 10,
+                                                     [old], [old]), set())
+
+    def test_preexisting_exclusion_rejects_missing_provenance_and_shared_coalitions(self):
+        old = dict(pid=99, command='/fixture/Vox.app/Contents/MacOS/Vox worker')
+        process_api, coalition_api = Mock(), Mock()
+        with self.assertRaisesRegex(RuntimeError, 'no pinned process identity'):
+            verified_preexisting_app_pids(process_api, coalition_api, 10, [old], [old])
+        old.update(start_ticks=123, resource_coalition=10)
+        process_api.read.return_value = Mock(start=123, exited=False)
+        coalition_api.resource_coalition.return_value = 10
+        with self.assertRaisesRegex(RuntimeError, 'preexisting browser task'):
+            verified_preexisting_app_pids(process_api, coalition_api, 10, [old], [old])
 
     def test_worker_exit_during_ownership_queries_requires_a_new_exact_scan(self):
         self.check_ownership_race(exited=True)

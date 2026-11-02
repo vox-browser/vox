@@ -311,13 +311,60 @@ def configure_brave_viewport(browser, client, target, args):
     return resize_native_viewport(browser, client, target, WIDTH, HEIGHT, args.scale)
 
 
+def existing_browser_processes(app):
+    """Pin unrelated shared-bundle tasks before starting a measured root."""
+    process_api, coalition_api = MacCounters(), MacCoalitionCounters()
+    existing = []
+    for row in processes():
+        if not row['command'].startswith(str(app) + '/Contents/'):
+            continue
+        try:
+            before = process_api.read(row['pid'])
+            cid = coalition_api.resource_coalition(row['pid'])
+            after = process_api.read(row['pid'])
+        except OSError as error:
+            if error.errno in (2, 3):
+                continue
+            raise
+        require(before.start == after.start and not before.exited and not after.exited,
+                'Preexisting browser process changed while pinning its identity')
+        existing.append(dict(row, start_ticks=before.start, resource_coalition=cid))
+    return existing
+
+
+def verified_preexisting_app_pids(process_api, coalition_api, cid, rows, existing_processes):
+    """A PID/command match alone cannot exempt a recycled or moved task."""
+    previous = {(row['pid'], row['command']): row for row in existing_processes}
+    excluded = set()
+    for row in rows:
+        old = previous.get((row['pid'], row['command']))
+        if old is None:
+            continue
+        require(type(old.get('start_ticks')) is int and old['start_ticks'] > 0
+                and type(old.get('resource_coalition')) is int and old['resource_coalition'] > 0,
+                'Preexisting browser task has no pinned process identity')
+        try:
+            before = process_api.read(row['pid'])
+            current_cid = coalition_api.resource_coalition(row['pid'])
+            after = process_api.read(row['pid'])
+        except OSError as error:
+            if error.errno in (2, 3):
+                continue
+            raise
+        if (before.exited or after.exited or before.start != old['start_ticks']
+                or after.start != old['start_ticks'] or current_cid != old['resource_coalition']):
+            continue
+        require(current_cid != cid, 'Measured coalition contains a preexisting browser task')
+        excluded.add(row['pid'])
+    return excluded
+
+
 def launch(app, arguments, folder, environment):
     """LaunchServices gives this fresh app its own resource coalition."""
     # Shared installed bundles may already host the user's windows. -n and the
     # unique profile/capture argument identify our fresh root; membership() then
     # verifies its exclusive coalition without touching those existing tasks.
-    existing = [row for row in processes()
-                if row['command'].startswith(str(app) + '/Contents/')]
+    existing = existing_browser_processes(app)
     command = ['/usr/bin/open', '-n', '-g', '-a', str(app),
                '--stdout', str(folder / 'stdout.log'), '--stderr', str(folder / 'browser.log')]
     for key, value in sorted(environment.items()):
@@ -427,12 +474,12 @@ def exact_coalition_membership(api, process_api, cid, app, pid, deadline, attemp
 def membership(api, cid, app, pid, deadline, attempts, browser=None, existing_processes=()):
     limit = min(deadline, time.monotonic() + 20)
     while True:
-        scan = exact_coalition_membership(api, MacCounters(), cid, app, pid, limit, attempts)
-        existing = {(row['pid'], row['command']) for row in existing_processes}
+        process_api = MacCounters()
+        scan = exact_coalition_membership(api, process_api, cid, app, pid, limit, attempts)
         app_processes = [row for row in processes()
                          if row['command'].startswith(str(app) + '/Contents/')]
-        excluded = {row['pid'] for row in app_processes
-                    if (row['pid'], row['command']) in existing}
+        excluded = verified_preexisting_app_pids(process_api, api, cid, app_processes,
+                                                existing_processes)
         owned = {row['pid'] for row in app_processes} - excluded
         scan['preexisting_app_pids'] = sorted(excluded)
         scan['private_app_pids'] = sorted(owned)
