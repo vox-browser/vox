@@ -647,12 +647,6 @@ int vox_graphite_draw_image_pixels(uint8_t* pixels, int width, int height,
         || !image_draw_is_valid(image)) return 0;
     std::lock_guard lock(gpu_mutex);
     auto cached = image_cache.prepare(*image, width, height, pitch, has_background != 0, pixels);
-    if (std::getenv("VOX_OPAQUE_IMAGE_CACHE_DIAGNOSTICS")) {
-        using Clock = double (*)();
-        static auto clock = reinterpret_cast<Clock>(dlsym(RTLD_DEFAULT, "vox_precise_scroll_diagnostic_time"));
-        std::fprintf(stderr, "VOX_OPAQUE_IMAGE_CACHE path=full hit=%d changed_backdrop=%d source_width=%d source_height=%d t_us=%.3f\n",
-            cached.hit, cached.ignored_changed_backdrop, image->width, image->height, clock ? clock() : -1.0);
-    }
     if (cached.hit) return 1;
     auto* gpu = context();
     if (!gpu) return 0;
@@ -693,12 +687,6 @@ int vox_graphite_draw_image_region_pixels(VoxGraphitePixelRegion const* region,
         || size_t(region->pitch) < size_t(region->width) * 4) return 0;
     std::lock_guard lock(gpu_mutex);
     auto cached = image_cache.prepare_region(*image, width, height, *region, has_background != 0);
-    if (std::getenv("VOX_OPAQUE_IMAGE_CACHE_DIAGNOSTICS")) {
-        using Clock = double (*)();
-        static auto clock = reinterpret_cast<Clock>(dlsym(RTLD_DEFAULT, "vox_precise_scroll_diagnostic_time"));
-        std::fprintf(stderr, "VOX_OPAQUE_IMAGE_CACHE path=region hit=%d changed_backdrop=%d source_width=%d source_height=%d t_us=%.3f\n",
-            cached.hit, cached.ignored_changed_backdrop, image->width, image->height, clock ? clock() : -1.0);
-    }
     if (cached.hit) return 1;
     auto* gpu = context();
     if (!gpu) return 0;
