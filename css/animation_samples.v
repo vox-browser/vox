@@ -383,7 +383,11 @@ fn (retiring &RetiringAnimationSamples) descendant_styles_reference_arena(node &
 fn (retiring &RetiringAnimationSamples) value_references_arena(value &dom.StyleValue) bool {
 	return value != unsafe { nil } && (retiring.arena.contains(voidptr(value))
 		|| retiring.arena.contains(voidptr(value.css_text.str))
-		|| retiring.arena.contains(value.css_value_handle))
+		|| retiring.arena.contains(value.css_value_handle)
+		// A persistent typed box can still borrow component arrays from a
+		// sample. Keep those arrays alive with the installed value, too.
+		|| (value.css_value_handle != unsafe { nil }
+			&& retiring.struct_references_arena(value.css_value_handle, int(sizeof(TypedStyleValueBox)))))
 }
 
 // Whether any value of `computed`, or its materialized layout snapshot, is
