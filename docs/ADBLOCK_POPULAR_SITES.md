@@ -3080,3 +3080,25 @@ The [canonical-browser receipt](benchmark-results/slashdot-canonical-pixels-2026
 records the publication receipt, all captures, full-page failure, full-uBO
 checks and preservation results under `Build/slashdot-canonical-20261102/`.
 Stack Overflow and Pikabu remain deferred.
+
+## Slashdot ordinary empty-inline endings, 2 November 2026
+
+Commit `0587edd52` fixes the remaining 14px byline displacement. An ordinary
+empty descendant stayed on the inline traversal stack and hid its enclosing
+boxes' closing edges. Pop it while ascending, and carry metrics across skipped
+empty descendants and whitespace into the preceding in-flow item and tab advance.
+The four new checks pass with default GC and `-gc none`; 330 existing layout
+checks also pass.
+
+The extracted `empty-inline-ending-edges` fixture improves from **6,637 to zero
+pixels** on the canonical `c1a609e1…` production browser. Two full-uBO Brave
+references agree. The same qualified full Slashdot fixture improves from
+**8,435 to 890 pixels**, with **zero saved-live/frozen differences**. The broad
+suite passes **85 tests and 90 captures**. CNN, Guardian, The Verge and Lobsters
+remain exact in four fresh native checks.
+
+The remaining 890 differences include 813 header pixels and 77 elsewhere.
+Slashdot remains unfinished; Stack Overflow and Pikabu stay deferred. The
+[strict receipt](benchmark-results/slashdot-empty-inline-pixels-2026-11-02.json)
+retains the failed before/partial checks, executable/library identities, complete
+production receipt, raw commands, guards, captures and preservation results.
