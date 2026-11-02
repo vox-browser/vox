@@ -3545,3 +3545,32 @@ page result above but cannot validate `673fbece9`. The
 retains the failed wait and prepared sequential commands. The expanded
 97-test/103-capture production check and final site preservation remain pending;
 no passing result is claimed for them. All completed source fixes are committed.
+
+
+## Recovered rendering history and Old Reddit access, 2 November 2026
+
+The shared checkout's recovery replay restored the rendering work and all
+97 registered regression methods. The translated-background fixes are now
+`c2ca75543` (layout snapping) and `47f820834` (Skia edge coverage); isolated
+primitive dimensions are retained by `1f9fba79f`. Their source and unchanged
+pixel fixture match the earlier commits. Existing build and screenshot receipts
+keep their original commit identities. No earlier result is attributed to a
+new executable merely because the history was recovered.
+
+The first post-recovery build failed on missing JavaScriptCore declarations;
+commit `4f87e7084` repairs the rebased ABI bindings. A following completed build
+was superseded by subsequent inputs, leaving production verification of the
+final edge correction pending. The sequential focused, full-site, broad and
+preservation commands are prepared under
+[recovered validation](../Build/bbc-translation-recovered-20261102-2139/).
+
+A fresh full-uBO guest probe of **Old Reddit** also fails access. It redirects
+from `https://old.reddit.com/` toward the login page, then returns **HTTP 403**
+and the network-security block message. All six observed requests are allowed
+by both filtering engines, with zero request-decision or oracle disagreements;
+that agreement supplies no feed or cosmetic coverage. The pixel-reference
+attempt and separate document-identity audit both exit one. No page archive or
+reference PNG qualifies. The
+[Old Reddit access receipts](../Build/reddit-old-guest-access-20261102-2144/)
+retain both attempts, raw commands, reports and 3 GiB guards. This alternative
+does not remove the catalog's existing modern-Reddit access failure.

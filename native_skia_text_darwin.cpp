@@ -15,6 +15,7 @@
 #include "native_chromium_image_decode_cache.h"
 #include "native_picture_typeface_cache.h"
 #include "native_graphite_solid_rect.h"
+#include "native_graphite_shape_region_policy.h"
 #include "native_plain_rect_raster.h"
 #include "native_svg_path_regions.h"
 #include "native_chromium_raster_phase.h"
@@ -4104,9 +4105,11 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
             return value && *value;
         }();
         bool compound = has_underlay || !s_rect_clip_outs.empty();
+        bool ordinary_large_region = vox_large_shape_regions_enabled() && !compound
+            && fill < 2 && size_t(raster_width) * raster_height > 16384;
         bool region_eligible = draw_region && has_background
             && (!compound || !compound_patches_disabled)
-            && ((!compound && fill >= 2) || size_t(raster_width) * raster_height <= 16384);
+            && (ordinary_large_region || (!compound && fill >= 2) || size_t(raster_width) * raster_height <= 16384);
         if (s_plain_rect_prefetch) {
             if (region_eligible)
                 draw_chromium_root_raster_grid<true>(pixels, raster_width, raster_height,
@@ -4124,7 +4127,7 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
                     });
             return 1;
         }
-        bool tiled = region_eligible && draw_chromium_root_shape_batch(pixels,
+        bool tiled = region_eligible && !ordinary_large_region && draw_chromium_root_shape_batch(pixels,
             raster_width, raster_height, region, page_x, page_y, scroll_y,
             destination_scale, descriptor);
         if (!tiled) tiled = region_eligible && draw_chromium_root_raster_grid<true>(pixels,
