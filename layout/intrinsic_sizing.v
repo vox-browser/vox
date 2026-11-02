@@ -647,7 +647,11 @@ fn intrinsic_outer_width_contribution(mut state LayoutState, box &Box, constrain
 fn intrinsic_outer_width_contribution_with_resolved_box_model(mut state LayoutState, box &Box, constraint SizeConstraint, values &UsedValues, containing_width CSSPixels) CSSPixels {
 	node := unsafe { &Node(box) }
 	styled := node.as_node_with_style() or { return CSSPixels.new(0) }
-	mut inner := if constraint == .min_content {
+	preferred_width := definite_preferred_intrinsic_width(node, values, containing_width)
+	mut inner := if width := preferred_width {
+		report_definite_intrinsic_contribution()
+		width
+	} else if constraint == .min_content {
 		calculate_min_content_width(mut state, box)
 	} else {
 		calculate_max_content_width(mut state, box)
@@ -657,18 +661,20 @@ fn intrinsic_outer_width_contribution_with_resolved_box_model(mut state LayoutSt
 	// sizing. It must not be resolved against an otherwise unrelated definite
 	// ancestor merely because that ancestor was copied into the throwaway
 	// state.
-	if preferred.is_min_content() {
-		inner = css_pixels_max(inner, calculate_min_content_width(mut state, box))
-	} else if preferred.is_max_content() {
-		inner = css_pixels_max(inner, calculate_max_content_width(mut state, box))
-	} else if preferred.is_fit_content() {
-		inner = css_pixels_max(inner, calculate_fit_content_width(mut state, box, AvailableSize.make_definite(containing_width)))
-	} else if !preferred.contains_percentage() {
-		if resolved := resolve_layout_content_size(node, preferred, containing_width, values, true) {
-			// A definite preferred width determines the box's content width in
-			// the intrinsic-layout pass. Its descendants do not floor that width;
-			// overflow is deliberately excluded from the parent's contribution.
-			inner = resolved
+	if preferred_width == none {
+		if preferred.is_min_content() {
+			inner = css_pixels_max(inner, calculate_min_content_width(mut state, box))
+		} else if preferred.is_max_content() {
+			inner = css_pixels_max(inner, calculate_max_content_width(mut state, box))
+		} else if preferred.is_fit_content() {
+			inner = css_pixels_max(inner, calculate_fit_content_width(mut state, box, AvailableSize.make_definite(containing_width)))
+		} else if !preferred.contains_percentage() {
+			if resolved := resolve_layout_content_size(node, preferred, containing_width, values, true) {
+				// A definite preferred width determines the box's content width in
+				// the intrinsic-layout pass. Its descendants do not floor that width;
+				// overflow is deliberately excluded from the parent's contribution.
+				inner = resolved
+			}
 		}
 	}
 	available_width := if constraint == .min_content {
