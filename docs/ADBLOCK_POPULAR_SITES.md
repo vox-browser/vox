@@ -3138,3 +3138,29 @@ remain pending. Slashdot is unfinished; Stack Overflow and Pikabu stay deferred.
 The [source-fix receipt](benchmark-results/slashdot-header-source-fixes-2026-11-02.json)
 retains commits, exact identities, reference hashes, before/after checks,
 failures, memory guards and superseded build receipts.
+
+## Slashdot oracle stability and browser input checks, 2 November 2026
+
+The latest strict full-uBO comparison reports **244 native differing pixels**
+and **zero saved-live/frozen differences** on the same `f769e44d…` browser.
+Two separate fresh Brave/uBO captures also match the saved live image exactly.
+The earlier one-pixel poll-radio oracle mismatch remains in the evidence; its
+absence supplies no engine improvement credit. References and tolerances are
+unchanged.
+
+Commit `a564e9da7` closes a harness gap: pin both browsers before acquisition
+and warmup, then verify their identities after the complete comparison, including
+failed attempts. The Brave identity includes its native frameworks, GPU libraries,
+helpers and active framework-version aliases. All **18 harness tests pass**,
+including six input-mutation scenarios. The real full run retains **six Vox and
+29 Brave input paths**, unchanged before and after capture and the uBO audits.
+The Vox executable SHA-256 is
+`f769e44dbef6c5c309654f532cadf36bc7d5288a4b99c9f4a03f40845649be49`.
+
+The shared build is still busy, with further completed builds superseded by
+concurrent edits. Another bounded native-validation check exits 75; the final
+engine fixes, 89-test/94-capture suite and preservation on a bundle containing
+them remain pending. The [browser-input receipt](benchmark-results/slashdot-browser-inputs-2026-11-02.json)
+retains exact hashes, commands, exits, stable oracle captures, earlier failures
+and build receipts. Slashdot remains unfinished; Stack Overflow and Pikabu stay
+deferred.
