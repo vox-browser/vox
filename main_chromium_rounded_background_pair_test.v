@@ -128,4 +128,41 @@ fn test_positioned_partial_border_headers_keep_intervening_draw_order() {
 		with_path[2] = replacement
 		assert chromium_rounded_background_pair_end(with_path, layers, 0) == 0
 	}
+	image := layout.PaintCommand{...gap, kind:'draw_background_image',
+		image_data:&layout.PaintImageData{image_url:'test.png'}}
+	mut with_image := commands.clone()
+	with_image[2] = image
+	assert chromium_rounded_background_pair_end(with_image, layers, 0) == commands.len
+	for replacement in [
+		layout.PaintCommand{...image, image_data:unsafe { nil }},
+		layout.PaintCommand{...image, image_data:&layout.PaintImageData{image_url:'test.svg'}},
+		layout.PaintCommand{...image, image_data:&layout.PaintImageData{image_url:'test.png',background_blend_mode:.multiply}},
+	] {
+		with_image[2] = replacement
+		assert chromium_rounded_background_pair_end(with_image, layers, 0) == 0
+	}
+}
+
+fn test_positioned_headers_retain_real_svg_background_image_inputs() {
+	mut document := html.parse_document(os.read_file('${@VMODROOT}/Tests/Browser/Brave/input/chromium-positioned-header-image-gap.html')!)
+	defer { document.finalize() }
+	document.set_font_rendering_policy(.chromium)
+	root := layout.layout_document_typed_in_viewport(document, 1024, 768)
+	commands := root.paint_commands()
+	layers := []int{len:commands.len}
+	mut start := -1
+	for i, command in commands {
+		if command.kind == 'paint_partial_rounded_border' { start = i - 1; break }
+	}
+	assert start >= 0
+	end := chromium_rounded_background_pair_end(commands, layers, start)
+	assert end > start + 3
+	mut images := 0
+	mut headers := 0
+	for command in commands[start..end] {
+		if command.kind == 'draw_background_image' { images++ }
+		if command.kind == 'fill_rounded_rect' && command.color == 'rgb(76 76 76)' { headers++ }
+	}
+	assert images == 2
+	assert headers == 2
 }

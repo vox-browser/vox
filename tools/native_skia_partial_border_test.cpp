@@ -88,6 +88,21 @@ int main(int argc, char** argv)
         for (int channel = 0; channel < 3; ++channel)
             expected[(y * width + x) * 4 + channel] = 200;
     assert(expected == actual);
+    // A bounded non-deferred run retains all ordinary draws if recording
+    // fails. Its caller must not replay translucent leaves a second time.
+    assert(ladybird_v_skia_begin_inset_decorations(context,
+        30, 20, 40, 20, width, height, 0, 0));
+    auto before_failure = actual;
+    assert(ladybird_v_skia_draw_rounded_rect(context, 30, 20, 40, 20,
+        0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0,
+        width, height, 10, 50, 200, 128, 1, 0, 1, 1));
+    CGContextFlush(context);
+    auto ordinary_prefix = actual;
+    assert(before_failure != ordinary_prefix);
+    s_isolated_input_recordings.at(context)->unsupported = true;
+    assert(ladybird_v_skia_end_deferred_inset_decorations(context));
+    CGContextFlush(context);
+    assert(actual == ordinary_prefix);
     CGContextRelease(context);
     std::puts("Native partial rounded borders match Brave on cold and repeated draws");
 }
