@@ -1,18 +1,23 @@
 # BBC homepage instruction comparison
 
 **The requested 10% advantage remains open. BBC does not qualify for
-`OPTIMIZED_SITES.md`.** Cohort 42 has a Vox median of **33,233,453,967**,
-a same-binary control median of **34,484,213,827**, and a Brave lower median
-of **16,098,894,787** instructions. All 21 captures preserve each engine's
-original pixels and full content, pass identity checks, and exit normally.
-The instruction target still fails. Every observation remains retained;
-no sample is retried or excluded.
+`OPTIMIZED_SITES.md`.** Latest cohort 43 measures Vox **34,199,020,506**,
+its same-binary callback-array control **33,629,819,108**, and Brave lower
+median **16,131,151,077** instructions. All 21 captures preserve original
+per-engine pixels and full content, pass identity checks, and exit normally.
+The candidate regresses **569,201,398 instructions (1.6925496868479994%)**
+against control and has been removed. Every observation, including both
+first-launch outliers, remains retained; no sample is retried or excluded.
 
-Retaining immutable native frames reduces the observed Vox median by
-**1,250,759,860 instructions (3.627050528902287%)** against its matched copy
-control. Six pairs improve and one regresses; the conservative candidate/control
-ratio is 1.0179027541231616. The Brave integer gate fails:
-`341199892640 > 144047362977`, ratio 2.13179816019979.
+The last retained optimization, immutable native frames in cohort 42, measures
+Vox **33,233,453,967** against its copy control **34,484,213,827**, a point
+reduction of **1,250,759,860 (3.627050528902287%)**. Its Brave lower median is
+**16,098,894,787**. Six pairs improve and one regresses; conservative
+candidate/control ratio 1.0179027541231616 fails. Neither cohort meets the
+Brave target: cohort 43 fails `423377827010 > 145121253876`, ratio
+2.6256667037523163; cohort 42 fails `341199892640 > 144047362977`, ratio
+2.13179816019979. These differently pinned builds do not establish an
+isolated before/after gain between cohorts.
 
 The prior metric-context attempt regressed and was removed. The retained
 closed-text measurement cache in cohort 40 reduced the observed Vox median by
@@ -24,7 +29,7 @@ Brave cohort also fails the diagnostic integer gate:
 10% advantage over Brave. The prior baseline-JIT experiments remain rejected;
 production JIT thresholds remain unchanged.
 
-Cohorts 37–42 explicitly use `VOX_RETAIN_INCREMENTAL_WEBP_PAINT_POLICY=1` in
+Cohorts 37–43 explicitly use `VOX_RETAIN_INCREMENTAL_WEBP_PAINT_POLICY=1` in
 both Vox arms to reproduce the historical frozen RGB workload. Production's
 completed-response YUV policy changes photo pixels; an unchanged-binary
 isolation confirms that the historical switch restores the original reference.
@@ -34,8 +39,8 @@ or live site acceptance. Earlier invalid captures, protocol corrections,
 failing cohorts and their outliers remain retained.
 
 The machine-readable [evidence](benchmark-results/bbc-brave-instructions-2026-11-01.json)
-retains 1,040 attempts and 42 cohorts, including failures and first launches;
-868 complete cohort raw results were independently checked against the recorded
+retains 1,066 attempts and 43 cohorts, including failures and first launches;
+889 complete cohort raw results were independently checked against the recorded
 vectors, medians and integer gates. It also retains ownership audits, commands and artifact hashes. Raw archives, logs,
 PNGs, executable copies, PID registries, compiler output and guard receipts are
 under `Build/bbc-home-instructions-20261101-054807/` in the canonical checkout.
@@ -125,6 +130,7 @@ capture marker. An invalid cohort is retained for diagnosis, not acceptance.
 | Closed text measurement reuse | 33,933,451,330 | 16,118,311,870 | 2.234345803519834 | Brave pair 7 photo differs; acceptance invalid; diagnostic gate fails |
 | Value-dependent metric contexts | 34,812,815,726 | 16,130,512,650 | 2.715080947032688 | Brave pair 3 photo differs; median regresses 0.2522% against control; implementation removed |
 | Immutable native stationary frames | 33,233,453,967 | 16,098,894,787 | 2.13179816019979 | All captures valid; median falls 3.6271% against control; both conservative gates fail |
+| Small callback argument lists | 34,199,020,506 | 16,131,151,077 | 2.6256667037523163 | All captures valid; median regresses 1.6925% against control; implementation removed |
 
 The grid block-height cohort alternates an older control, candidate and Brave;
 control/candidate medians are 101,567,929,247 and 90,700,737,334 (10.70% observed
@@ -2051,3 +2057,108 @@ pass or cadence reset is claimed. Receipts are `stationary-snapshot-*` and
 `broad-stationary-snapshot-*` under the evidence root, including all commands,
 raw counters, original PNGs, ownership records and independently recomputed
 cohort vectors. BBC still does not qualify for `OPTIMIZED_SITES.md`.
+
+
+## Layout and JavaScript follow-up diagnostics
+
+Three separate read-only diagnostics preserve original BBC pixels, full
+content and native exit zero, with actual JavaScriptCore execution witnessed
+(2,089, 2,466 and 2,301 evaluations). The retained-layout check reports 24,661
+calls, 16,803 hits and 7,858 dirty-geometry rejections; no rejection occurs
+solely because a style object was replaced. The conservative style-identity
+check remains unchanged. The stabilization-count cache has 363 calls but only
+six misses and 17,980 node visits. Dirty reasons include five text edits,
+89 image-data updates, 76 layout-tree updates and 1,781 style changes.
+
+JavaScript call scopes identify 115 native calling sites, including 2,982
+microtask callbacks and 3,165 generic WebIDL callbacks. Scope depth returns
+to zero and counter errors remain zero. These O0 process-wide diagnostic
+counts include native DOM work, background work and instrumentation; only
+nested measured JavaScript calls are subtracted. They do not estimate
+production savings or earn instruction credit.
+
+The diagnostics use already pinned historical preprocessed input, containing
+the unused nested-inline experiment and lacking immutable native frames.
+Historical temporary support objects disappeared. All 124 objects were pinned
+before compiling; 120 missing objects were explicitly replaced by matching
+named support objects from the recorded successful immutable-frame production
+driver. This produces new diagnostic identities. Original pixels/content and
+fresh startup are checked, rather than claiming historical binary identity.
+The missing-object compile and a subsequent preprocessed `stderr` symbol
+failure remain retained. The corrected compiler succeeds; signing initially
+rejects inherited `Vox.gz` inside the app. That compressed executable is moved
+outside the bundle with exact SHA verification, then signing, strict deep
+verification and fresh headless startup pass. No browser trial is retried.
+
+Receipts are `layout-and-js-diagnostic-assessment.json`,
+`retained-style-eligibility-*`, `layout-dirty-reasons-*` and `js-callers-*`
+under the evidence root, including pinned inputs, object substitution
+provenance, commands, failures, native identities and raw observations.
+
+## Rejected small callback argument lists (cohort 43)
+
+Implementation `77a9d94b8` constructs zero- or one-argument callback lists
+inside JavaScriptCore rather than allocating them through its C API. Private
+captured `Reflect.apply` keeps primitive and undefined receivers, callable
+proxies and original thrown values. Larger calls and native forwarding retain
+their existing path. The 21 focused callback cases pass in default, no-GC and
+preallocated modes under both policies (126 executions, nine jobs). Checks
+include strict receiver identity, arity, symbols, callable proxies, original
+exceptions, author-replaced intrinsics, Promise/microtask ordering, worker
+ownership, closed contexts and retained roots. All 209 tool tests pass.
+
+The latest completed bundle initially lacks this path. A requested build stops
+with exit 75 at the busy shared production lock; it queues nothing and compiles
+nothing. Instead the successful shared typed-payload production build is reused.
+It completes in 197.516741792 seconds with peak sampled RSS 9,211,985,920 bytes;
+build and guard exit zero. Its actual source-before/after receipts prove all
+three owned inputs stable. Only an unrelated diagnostic test changes during
+the build. Generated C is pinned with SHA256
+`c28ecc3840253899c81bd991405674bf5aa1a7e16c63c0523a92c965f8cda1e4`;
+executable SHA256 is
+`399be67ffcf5f1e5168119fcad54f7223d60a312a8238a6dec79220f1d1977ae`.
+Native dependencies and the private app are pinned. Fresh startup and strict
+deep signing checks pass.
+
+Enabled and C-API-array control diagnostics both preserve original pixels,
+full content and native exits, with 1,919/1,945 JSC evaluations. Both new arity
+traces appear only when enabled. Tooling `43f521a7b` isolates
+`VOX_BOX_CALLBACK_ARGUMENTS=1` to the matched control, restores the environment
+after exceptions and requires a pinned control app. The seven-triple command
+is parsed before launching; frozen tools, historical RGB policy, reference
+images and capture boundaries remain unchanged. The acceptance cohort has no
+JSC probe, callback tracing, verbose font logging or profiling.
+
+All seven alternating triples pass original content, pixels, identities and
+native exits. Control median **33,629,819,108** versus candidate
+**34,199,020,506** is a regression of **569,201,398 instructions
+(1.6925496868479994%)**. Pair reductions are 2.5137859787264127%,
+-2.8277258717257725%, -2.0745342020430435%, -3.3801720287358172%,
+0.9063461068063661%, -1.8176190416307803% and 1.069560745613507%.
+Four pairs regress and three improve; conservative candidate/control ratio
+1.289368932965 fails. First-launch control **43,429,507,573** and candidate
+**42,337,782,701** remain included. No outlier is discarded or retried.
+
+Brave lower median is **16,131,151,077**; highest Vox upper is 42,337,782,701
+and lowest Brave lower is 16,124,583,764. The integer target fails:
+`423377827010 > 145121253876`, ratio **2.6256667037523163**. Driver, guard and
+controller exit 1 solely for the instruction gate. The guard adopts 70
+processes without error, peaks at 1,735,278,592 bytes and completes in
+118.167855167 seconds. Host activity, every raw count and actual exit remain
+recorded. No saving is attributed to this experiment or to unrelated native
+changes in the shared bundle.
+
+The implementation and its control are removed in `03ac1b2e6` and
+`58e7049c1`; prior source is restored byte-for-byte. All 19 remaining focused
+cases pass in three memory modes (57 executions, six jobs), and all 208 tool
+tests pass. The rejected production binary remains historical evidence;
+post-removal focused checks execute restored source. A regressing median
+triggers no new broad batch. Cohort 42's broad result remains 455/456 in each
+mode, retaining the 13.5-versus-13 text-control mismatch; its two broader main
+layout/animation failures remain unresolved. No whole-suite pass or cadence
+reset is claimed.
+
+Receipts are `small-callback-*` and `small-callback-shared-*` under the evidence
+root. The durable report now retains 1,066 attempts across 43 cohorts, with
+889 complete cohort records independently compared to raw counters, medians
+and integer gates. BBC still does not qualify for `OPTIMIZED_SITES.md`.
