@@ -3236,3 +3236,13 @@ retain the original failure, the incomplete first candidate, corrected checks,
 reference agreement, native baseline and diagnostic. The suite now contains
 **92 tests/97 captures**. Both latest layout fixes and the expanded suite await
 a shared production bundle; no duplicate build is queued.
+
+The subsequent shared production attempt
+`Build/production-build/receipts/20261102-171448-44c86769` fails at linking with
+`errno=28 (No space left on device)` and preserves the previous bundle. To
+unblock the already-running worker, remove 31 completed test executables owned
+by this task, reclaiming 515,409,856 bytes. Keep their SHA-256 identities in the
+[cleanup receipt](../Build/slashdot-artifact-cleanup-20261102.json), and preserve
+all commands, guards, logs, source inputs and PNGs. No other session's outputs
+or canonical browser bundle are removed. Native validation of `08d91e408` and
+`3f5b6b50d` remains pending; the old bundle cannot validate these source fixes.
