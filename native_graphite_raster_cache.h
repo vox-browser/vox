@@ -40,7 +40,6 @@ class VoxGraphiteRasterCache {
         VoxGraphitePath path {};
         bool is_path = false;
         bool is_shape = false;
-        bool packed_shape = false;
         bool is_shadow = false;
         int surface_width = 0, surface_height = 0;
         int region_x = 0, region_y = 0;
@@ -453,32 +452,12 @@ public:
             || pixel_count <= 0 || size_t(pixel_count) > max_entry_bytes / 4) return {};
         Entry parameters;
         parameters.is_shape = true;
-        parameters.packed_shape = true;
         parameters.shape = shape;
         parameters.surface_width = surface_width;
         parameters.surface_height = surface_height;
         return prepare_entry(parameters,
             Rows {reinterpret_cast<uint8_t const*>(shape.clip_outs), size_t(shape.clip_out_count) * 4 * sizeof(float), 0, 1}, pixel_count, 1,
             pixel_count * 4, has_background, pixels);
-    }
-    Request prepare_shape_region(VoxGraphiteShape const& shape, int surface_width,
-        int surface_height, VoxGraphitePixelRegion const& region, bool has_background)
-    {
-        if (shape.clip_out_count < 0 || (shape.clip_out_count && !shape.clip_outs)
-            || surface_width <= 0 || surface_height <= 0 || region.x < 0 || region.y < 0
-            || region.width <= 0 || region.height <= 0 || region.width > surface_width
-            || region.height > surface_height || region.x > surface_width - region.width
-            || region.y > surface_height - region.height) return {};
-        Entry parameters;
-        parameters.is_shape = true;
-        parameters.shape = shape;
-        parameters.surface_width = surface_width;
-        parameters.surface_height = surface_height;
-        parameters.region_x = region.x;
-        parameters.region_y = region.y;
-        return prepare_entry(parameters,
-            Rows {reinterpret_cast<uint8_t const*>(shape.clip_outs), size_t(shape.clip_out_count) * 4 * sizeof(float), 0, 1},
-            region.width, region.height, region.pitch, has_background, region.pixels);
     }
 private:
     Request prepare_entry(Entry const& parameters, Rows source, int width, int height,
@@ -531,7 +510,6 @@ private:
                 || entry.has_background != has_background || entry.is_shape != parameters.is_shape
                 || entry.is_path != parameters.is_path
                 || entry.is_shadow != parameters.is_shadow
-                || entry.packed_shape != parameters.packed_shape
                 || entry.surface_width != parameters.surface_width || entry.surface_height != parameters.surface_height
                 || entry.tiles.size() != parameters.tiles.size()
                 || !std::equal(entry.tiles.begin(), entry.tiles.end(), parameters.tiles.begin(), same_image)

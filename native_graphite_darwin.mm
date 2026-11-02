@@ -1368,8 +1368,6 @@ static bool draw_small_shape_patch(VoxGraphitePixelRegion const& region, int wid
     return true;
 }
 
-#include "native_graphite_shape_region.h"
-
 extern "C" __attribute__((visibility("default")))
 int vox_graphite_draw_shape_region_pixels(VoxGraphitePixelRegion const* region,
     int width, int height, int has_background, VoxGraphiteShape const* shape)
@@ -1380,8 +1378,7 @@ int vox_graphite_draw_shape_region_pixels(VoxGraphitePixelRegion const* region,
         || region->width > width || region->height > height
         || region->x > width - region->width || region->y > height - region->height
         || size_t(region->pitch) < size_t(region->width) * 4) return 0;
-    if (draw_small_shape_patch(*region, width, height, has_background != 0, *shape)) return 1;
-    return draw_bounded_shape_region(*region, width, height, has_background != 0, *shape);
+    return draw_small_shape_patch(*region, width, height, has_background != 0, *shape);
 }
 
 #include "native_graphite_shape_batch.h"
