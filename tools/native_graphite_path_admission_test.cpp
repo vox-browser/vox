@@ -3,6 +3,7 @@
 #include <cassert>
 #include <cstddef>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <dlfcn.h>
 #include <vector>
@@ -12,6 +13,7 @@
 int main(int argc, char** argv)
 {
     assert(argc == 3);
+    setenv("VOX_ENABLE_CANONICAL_PATH_ADMISSION", "1", 1);
     auto control = dlopen(argv[1], RTLD_NOW | RTLD_LOCAL);
     auto candidate = dlopen(argv[2], RTLD_NOW | RTLD_LOCAL);
     assert(control && candidate);

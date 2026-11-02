@@ -115,8 +115,15 @@ static void equivalent_path_admission(bool change_padding)
     }
 }
 
-int main()
+int main(int argc, char** argv)
 {
+    if (argc == 3 && !std::strcmp(argv[1], "--admission-policy")) {
+        assert(vox_canonical_path_admission_enabled() == (argv[2][0] == '1'));
+        return 0;
+    }
+    assert(argc == 1);
+    setenv("VOX_ENABLE_CANONICAL_PATH_ADMISSION", "1", 1);
+    unsetenv("VOX_DISABLE_CANONICAL_PATH_ADMISSION");
     large_draw_admission();
     equivalent_path_admission(true);
     equivalent_path_admission(false);

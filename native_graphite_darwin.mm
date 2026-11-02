@@ -1509,7 +1509,7 @@ int vox_graphite_draw_path_pixels(uint8_t* pixels, int width, int height,
         using Clock = double (*)();
         static auto clock = reinterpret_cast<Clock>(dlsym(RTLD_DEFAULT, "vox_precise_scroll_diagnostic_time"));
         std::fprintf(stderr, "VOX_PATH_CACHE canonical=%d hit=%d pending=%d width=%d height=%d gradient=%d t_us=%.3f\n",
-            !std::getenv("VOX_DISABLE_CANONICAL_PATH_ADMISSION"), cached.hit, bool(cached.pending),
+            vox_canonical_path_admission_enabled(), cached.hit, bool(cached.pending),
             width, height, path->gradient, clock ? clock() : -1);
     }
     if (cached.hit) return 1;

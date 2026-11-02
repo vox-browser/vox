@@ -6,12 +6,25 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdlib>
 #include <cstring>
 #include <cstdio>
 #include <list>
 #include <memory>
 #include <vector>
 #include <unordered_map>
+
+// Keep canonical admission available for diagnostics. Its live vlang cohort
+// regressed both pairs, so production retains the prior allocation policy.
+static inline bool vox_canonical_path_admission_enabled()
+{
+    static bool const enabled = [] {
+        auto* value = std::getenv("VOX_ENABLE_CANONICAL_PATH_ADMISSION");
+        return value && !std::strcmp(value, "1")
+            && !std::getenv("VOX_DISABLE_CANONICAL_PATH_ADMISSION");
+    }();
+    return enabled;
+}
 
 // Memoize complete GPU image, shape, shadow and path draws, including their input backdrop.
 // Sources can be canvas/video buffers, animated frames or recycled allocations: addresses
@@ -253,7 +266,7 @@ class VoxGraphiteRasterCache {
             shape.clip_outs = nullptr;
             bytes(&shape, sizeof(shape));
         } else if (entry.is_path) {
-            static bool const canonical = !std::getenv("VOX_DISABLE_CANONICAL_PATH_ADMISSION");
+            bool const canonical = vox_canonical_path_admission_enabled();
             auto const& path = entry.path;
             if (!canonical) {
                 auto old_key = path;
