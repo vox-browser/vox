@@ -317,6 +317,14 @@ pixels. Four focused layout/paint cases pass with default GC and `-gc none`,
 including native replay coordinates and preserved fallback states. Browser
 validation of the new ring remains pending the shared production build.
 
+`border-color-runs-zero-width` covers transparent triangle borders in four
+orientations, two sizes, and a generated comment-bubble tail. Two full-uBO Brave
+references agree at 1024×768 and scale 1. The settled older bundle differs at
+208 pixels. Three focused cases pass with default GC and `-gc none`, preserving
+color boundaries across zero-width or hidden sides and the final same-color
+flush. The typed pipeline now retains only the opaque triangle in its visible
+path; production pixel validation still needs the shared browser update.
+
 `stackoverflow-independent-hyphen-shaping` checks inserted system-font hyphens
 at integer and fractional line origins, narrow line fitting, explicit hyphen
 controls, and Arial. Its 800×600, scale 1 reference comes from two agreeing

@@ -888,16 +888,21 @@ fn paint_border(mut commands []DisplayListCommand, mut segments []ClipPathSegmen
 	edge BorderEdge, rect IntRect, radius CornerRadius, opposite_radius CornerRadius,
 	borders DeviceBordersData, border_rect IntRect, last bool) {
 	border := borders.for_edge(edge)
+	color := border_color(edge, borders)
+	next_edge := match edge {
+		.top { BorderEdge.right }
+		.right { BorderEdge.bottom }
+		.bottom { BorderEdge.left }
+		.left { BorderEdge.top }
+	}
 	if border.width <= 0 || border.line_style in [.none, .hidden] {
-		// A zero-width edge can still be the last member of a same-color run.
-		// Flush paths accumulated from earlier visible edges before returning.
-		if last && segments.len > 0 {
-			flush_border_path(mut commands, mut segments, border_rect, border_color(edge,
-				borders))
+		// Invisible edges still delimit color runs. Otherwise queued geometry
+		// can acquire the next visible edge's color when zero-width sides intervene.
+		if segments.len > 0 && (last || color != border_color(next_edge, borders)) {
+			flush_border_path(mut commands, mut segments, border_rect, color)
 		}
 		return
 	}
-	color := border_color(edge, borders)
 	if border.line_style in [.dotted, .dashed] {
 		append_border_line_command(mut commands, edge, rect, border, color)
 		return
@@ -924,12 +929,6 @@ fn paint_border(mut commands []DisplayListCommand, mut segments []ClipPathSegmen
 		else {
 			geometry := border_path_geometry(edge, rect, radius, opposite_radius, borders)
 			append_border_path_geometry(mut segments, geometry, radius, opposite_radius)
-			next_edge := match edge {
-				.top { BorderEdge.right }
-				.right { BorderEdge.bottom }
-				.bottom { BorderEdge.left }
-				.left { BorderEdge.top }
-			}
 			if last || color != border_color(next_edge, borders) {
 				flush_border_path(mut commands, mut segments, border_rect, color)
 			}
