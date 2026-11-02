@@ -102,6 +102,18 @@ pass in [the focused checks](../Build/forum-news-expansion-20261102/focused-mask
 Production pixel validation is pending a bundle containing that change; the
 old executable cannot validate it.
 
+Commit `e2ccd4b63` also snaps generated linear/radial mask image origins in the
+Chromium profile while preserving fractional layout and image dimensions.
+The new eight-column `techcrunch-gradient-solid` regression removes image
+decoding from the comparison: its two integer-origin columns already match,
+while fractional columns account for all 50,400 differing pixels in the old
+bundle. Two full-uBO Brave references agree exactly in
+[the reference receipts](../Build/forum-news-expansion-20261102/solid-mask-reference2/references.json).
+The layout test checks 32 policy/origin/gradient combinations and passes with
+both [default GC](../Build/forum-news-expansion-20261102/gradient-origin-default-run.guard.json)
+and [GC disabled](../Build/forum-news-expansion-20261102/gradient-origin-none-run.guard.json).
+The browser regression remains pending a production bundle containing the fix.
+
 ## Photo-mask isolation
 
 A synthetic [original-origin HTTP diagnostic](../Build/forum-news-expansion-20261102/http-image-probe/summary.json)
@@ -123,6 +135,16 @@ pin their canonical source and native-library inputs. Earlier `before2` and
 `after` attempts used an incorrectly constructed empty mask and are invalid
 for diagnosing composition; no renderer change was retained from them.
 
+The durable [HTTP image-effects command](../tools/forum_news_image_effects.py)
+now reconstructs that sealed diagnostic, checks a fresh full-uBO source against
+the committed PNG, then applies the normal source/frozen/native conformance
+workflow. It pins tools, canonical inputs and both browsers and rejects input
+changes. [Its initial complete run](../Build/forum-news-expansion-20261102/http-image-command/summary.json)
+reproduces the same 7,634 native differences with source equality;
+[23 catalog/archive unit tests](../Build/forum-news-expansion-20261102/image-effects-final-unit.guard.json)
+pass. The plain local-file fixture is intentionally absent from the inline
+suite because that route exercises a different decoder.
+
 ## Run
 
 ```sh
@@ -132,6 +154,12 @@ python3 tools/forum_news_pixels.py \
   --checker Build/slashdot-packaged-validation-20261102/adblock-check \
   --diff-tool Build/forum-news-parity-20261030/hn-baseline/pixel_diff \
   --output Build/forum-news-five-UNIQUE
+
+python3 tools/forum_news_image_effects.py \
+  --extension Build/forum-news-parity-20261030/extension/uBlock0.chromium \
+  --checker Build/slashdot-packaged-validation-20261102/adblock-check \
+  --diff-tool Build/forum-news-parity-20261030/hn-baseline/pixel_diff \
+  --output Build/forum-news-image-effects-UNIQUE
 ```
 
 Run expensive checks through the repository's memory guard. The driver also
