@@ -3531,3 +3531,64 @@ probe has no eligible tree hit and earns no credit; its five geometry/paint
 dumps remain identical. A separate native sampling attempt exits zero but
 produces no call stacks, so it is inconclusive. These results establish
 neither the requested live-site target nor scrolling performance.
+
+
+## Original ancestor hashes: cohort 58 (2026-11-03)
+
+The target remains **unmet**, with **58 cohorts / 1,397 attempts** retained.
+Commit `2f2f17b77` records scalar ancestor-selector hashes on push and removes
+those original hashes on pop, avoiding a second attribute read/hash pass.
+It handles non-LIFO seeded-ancestor removal, duplicate visits, saturation and
+reset, reuses bounded-to-active-depth buffers, and keeps their document
+ownership across scratch scopes. It also balances the filter correctly if
+attributes change while a visit is active. All **17 focused cases × two
+policies × three memory modes = 102 executions** pass. An initial alias-type
+compile failure and the test that caught buffer copy-on-write growth are
+retained; both are corrected before the commit.
+
+Seven alternating unprofiled **microbenchmark** pairs traverse the frozen
+BBC DOM 20 times, preserving checksum **64,980**. Process-delta medians are
+**112,206,970 candidate / 166,992,334 control**, a **32.8083%** reduction in
+this narrow operation. The standalone C-O3/no-GC workload has no CSS cascade,
+scripts, resources, browser startup, layout or PNG and earns **no BBC
+instruction credit**. Its diagnostic witness is separate from timed trials.
+
+Separate full-browser diagnostics pass original pixels, complete content,
+ownership and native exit zero in both arms. They witness one JavaScriptCore
+context with **1,922 / 2,045 evaluations**, and the saved-hash path executes
+after navigation and before PNG only in the candidate. The selected
+completed production receipt is `20261103-022243-2475302f`, executable SHA-256
+`6acb86324bbd5a08af6c62a9693a484f4a5b87accf8fd9941ad1d1d8b637703f`.
+All 239 instruction-tool tests pass. Headless startup and all 11 native
+smoke plus eight SVG screenshots pass on that pinned browser.
+
+The full **seven alternating control/Vox/Brave triples** retain all
+21 attempts. Control1, Brave4 and Vox7 fail private-helper ownership checks
+and have no selected count or normal kernel-exit receipt; cleanup statuses
+are 15 / 0 / 15. Brave2 completes normally but differs **368,241 pixels**
+from its unchanged reference. All 18 captured documents pass complete
+content audits and native exit zero; 17 PNGs are exact. No attempt is retried
+or excluded. Available six-sample diagnostic medians are **30,650,953,450
+Vox / 30,528,853,274.5 control / 15,152,715,132 Brave**.
+
+Only five pairs have both selected Vox/control intervals. Their candidate
+and control medians are **30,851,039,698 / 30,696,684,108**, a diagnostic
+**154,355,590-instruction regression**, with two gains and three regressions.
+The available-count conservative ratio is **2.0674350834**;
+`310,101,418,880 > 134,993,973,564` fails the 10% integer gate. No BBC saving,
+broad-cadence reset or catalog entry is credited. Previous broad baseline
+failures remain unresolved.
+
+All **1,639 pinned files** rehash unchanged, and every trial root is adopted
+without guard errors. Peak sampled browser-tree RSS is **1,746,681,856 bytes**.
+The scope, fixture, scripts, viewport, caches and original references remain
+unchanged; host telemetry and all failed attempts are preserved in the
+[tracked ledger](performance/bbc-ancestor-visits-20261103.json) and
+`Build/bbc-ancestor-visits-20261103/`.
+
+Commit `c6ab1abe6` now preserves observed process commands even when ownership
+fails. Brave4's receipt identifies a concurrent browser using the distinct
+`brave-reference-xicj64uk` private profile, plus its GPU/network helpers, in
+the global-app assertion. This explains that failure's extra PIDs without
+retroactively validating it or relaxing counter ownership. Frozen-page and
+JavaScript limitations above continue to apply.
