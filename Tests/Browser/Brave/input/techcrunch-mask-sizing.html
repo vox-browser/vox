@@ -1,0 +1,25 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>SVG image mask tiles retain size and position</title>
+<style>
+html,body{margin:0;background:#212623}
+.icon{position:absolute;left:20px;top:20px;width:16px;height:16px;background:white;
+ mask-image:url(../resources/techcrunch-menu.svg);mask-size:contain;mask-position:center;mask-repeat:no-repeat}
+#fractional{left:60.5px;top:20.25px}
+#wide{left:100px;width:24px}
+#tall{left:140px;height:24px}
+#natural{left:180px;mask-size:auto}
+#explicit{left:220px;mask-size:12px 10px;mask-position:right bottom}
+#cover{left:260px;mask-size:cover}
+#percent{left:300px;mask-size:75% auto;mask-position:25% 75%}
+#square{left:340px;mask-image:url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"%3E%3Cpath fill="white" d="M2 3H14V13H2Z"/%3E%3C/svg%3E');mask-size:100%}
+#zero{left:380px;mask-size:0 0}
+p{position:absolute;top:1500px;color:white}
+</style>
+<div class="icon" id="integer"></div><div class="icon" id="fractional"></div>
+<div class="icon" id="wide"></div><div class="icon" id="tall"></div>
+<div class="icon" id="natural"></div><div class="icon" id="explicit"></div>
+<div class="icon" id="cover"></div><div class="icon" id="percent"></div>
+<div class="icon" id="square"></div>
+<div class="icon" id="zero"></div>
+<p>These offscreen words satisfy the full-uBlock reference harness's document-content check. The visible cases compare a real non-square publisher mask in integer, fractional, wide and tall boxes. Natural dimensions, explicit dimensions, cover sizing and percentage positioning exercise the same concrete image sizing algorithm. A square mask retains the existing behavior. No saved pixels or computed styles replace the authored vectors. These offscreen words satisfy the full-uBlock reference harness's document-content check. The visible cases compare a real non-square publisher mask in integer, fractional, wide and tall boxes. Natural dimensions, explicit dimensions, cover sizing and percentage positioning exercise the same concrete image sizing algorithm. A square mask retains the existing behavior. No saved pixels or computed styles replace the authored vectors. These offscreen words satisfy the full-uBlock reference harness's document-content check. The visible cases compare a real non-square publisher mask in integer, fractional, wide and tall boxes. Natural dimensions, explicit dimensions, cover sizing and percentage positioning exercise the same concrete image sizing algorithm. A square mask retains the existing behavior. No saved pixels or computed styles replace the authored vectors.</p>

@@ -1655,7 +1655,7 @@ fn css_mask_image_for_box(element &dom.Element, computed &css.ComputedProperties
 		?string(none)
 	}
 	mut operations := []painting.SVGMaskPaintOperation{}
-	for item in values {
+	for index, item in values {
 		mut effective_item := item
 		if item is css.ImageSetStyleValue {
 			selected := item.image_for_device_pixel_ratio(element.document().device_pixels_per_css_pixel()) or {
@@ -1688,6 +1688,11 @@ fn css_mask_image_for_box(element &dom.Element, computed &css.ComputedProperties
 			element.document().encoding_parse_and_serialize_url(source) or { source }
 		}
 		if resolved_url == '' {
+			continue
+		}
+		if image_operations := css_svg_mask_image_operations(node, resolved_url, computed,
+			index, border_rect) {
+			operations << image_operations
 			continue
 		}
 		// SVG mask images are vector image documents, just like SVG images
