@@ -3818,7 +3818,6 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 	javascript_navigation := if app.document.as_node().is_scripting_enabled()
 		&& (sources.len > 0 || document_has_window_event_handlers(app.document)
 		|| browser_adblock_requires_runtime(app.document)) {
-		layout.request_fonts_for_existing_document_text(app.document)
 		app.js_runtime = create_browser_script_runtime(app.js_engine)
 		run_document_script_sources_with_media_loader(app.document, loaded.url, sources, app.js_runtime,
 			browser_fetch_image_request, image_loader.callback(), script_loader, fn [app] (element &dom.Element) {
