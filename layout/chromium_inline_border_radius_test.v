@@ -33,7 +33,10 @@ fn test_inline_percentage_radius_uses_padding_and_the_whole_text_run() {
 	borders := root.paint_commands().filter(it.kind == 'paint_uniform_border')
 	assert borders.len == 1
 	radius := borders[0].corner_radii.top_left
-	// Percentage resolution retains whole 1/64px units before the border inset.
-	assert radius.x == math.floor(box.width * 32) / 64 - 0.5
-	assert radius.y == math.floor(box.height * 32) / 64 - 0.5
+	// The percentage basis retains 78.015625px, while the painted border is
+	// snapped to 78px. Its common overlap factor also scales the vertical
+	// radius before the uniform border's half-width inset.
+	assert box.width == 78.015625 && box.height == 25
+	assert radius.x == 38.5
+	assert math.abs(radius.y - 11.997496604919434) < 0.000001
 }
