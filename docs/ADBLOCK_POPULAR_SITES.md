@@ -2814,3 +2814,34 @@ successive eligibility refinements. Raw artifacts are under
 unchanged. These are frozen guest rendering results with author scripts
 removed, without live-site, instruction-count or scrolling acceptance. Earlier
 saved-live/oracle and synthetic SVG qualifications remain open.
+
+
+## Pikabu completed animation surfaces, 2 November 2026
+
+Commit `4e38cb765` reduces the unchanged frozen-page comparison from **38 to
+4 differing pixels**. All 34 header pixels are fixed, with no new or otherwise
+changed pixels. The visible photo remains exact. The remaining four pixels
+are in the sidebar; the full-page zero-pixel gate remains open.
+
+A completed animation without a retained fill was still marked as a compositor
+candidate because its playback record remained running. Surface eligibility
+now consults the sampled effect phase and output for document timelines. Active,
+paused, filled and reversible timeline effects preserve their surfaces. Public
+animation playback state is unchanged.
+
+The isolated header regression improves from **54 pixels to zero**. Two fresh
+Brave/full-uBO references repeat its golden exactly; two fresh full-page Brave
+captures also repeat the unchanged full-page reference exactly. Seven layout
+animation and two CSS test functions pass in both GC modes, and 23 raster-plan
+functions pass with default GC. The production browser passes **80 rendering
+tests / 85 captures**, fresh headless startup and the unchanged CNN, Guardian
+and Verge archived viewports at zero pixels. All 52 Pikabu request decisions
+agree with full uBO, with no blocks or disagreements. Production source hashes
+stayed stable. Native libraries are identical to the preceding accepted build.
+
+The [completed-animation receipt](benchmark-results/pikabu-completed-animation-surface-2026-11-02.json)
+retains exact identities, source hashes, references and every guard result,
+including corrected test/compile failures. Raw artifacts are under
+`Build/pikabu-controls-final-20261102/`. These are frozen guest rendering results
+with author scripts removed. Live-site, performance and earlier oracle/synthetic
+qualifications remain open; existing references and tolerances are unchanged.
