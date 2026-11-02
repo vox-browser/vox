@@ -51,6 +51,9 @@ mut:
 	legacy_effect        bool
 	atomic_mask          bool
 	fixed_to_viewport    bool
+	// Separate fixed containers own separate paint-offset transforms. A shared
+	// boolean alone lets a sibling's paths change this container's MSAA coverage.
+	fixed_raster_owner   u64
 	requires_root_raster bool
 	scrollbar            bool
 	scroll_hit_test      int
@@ -79,6 +82,7 @@ mut:
 	sticky_scroll_parents map[int]int
 	fixed_bounds       map[u64]LayoutRect
 	compositor_bounds  map[u64]LayoutRect
+	compositor_fixed_raster_owners map[u64]u64
 	compositor_unbounded_animations map[u64]bool
 	compositor_scopes  []u64
 	paint_metadata []ChromiumPaintMetadata
@@ -280,6 +284,17 @@ fn chromium_scrollport_has_range(box &BlockBox) bool {
 	return overflow.width > padding_width || overflow.height > padding_height
 }
 
+fn chromium_fixed_raster_owner(box &BlockBox) u64 {
+	if !box.fixed_to_viewport || box.layout_handle == unsafe { nil } { return 0 }
+	mut ancestor := ?&Node(unsafe { &Node(box.layout_handle) })
+	for {
+		node := ancestor or { return 0 }
+		if node.is_fixed_position() { return u64(voidptr(node)) }
+		ancestor = node.parent()
+	}
+	return 0
+}
+
 fn chromium_single_svg_opacity_group(commands []PaintCommand, first int, end int,
 	layer &PaintVisualLayer) bool {
 	if layer.kind != .css_effect || layer.opacity <= 0 || layer.opacity >= 1
@@ -444,6 +459,7 @@ fn update_chromium_raster_layer_plan_with_cull(document &dom.Document, commands 
 	scratch.sticky_scroll_parents.clear()
 	scratch.fixed_bounds.clear()
 	scratch.compositor_bounds.clear()
+	scratch.compositor_fixed_raster_owners.clear()
 	scratch.compositor_unbounded_animations.clear()
 	for entry in result.paint_order {
 		// Use the box pointer itself: reading its transform through the loop's
@@ -455,6 +471,8 @@ fn update_chromium_raster_layer_plan_with_cull(document &dom.Document, commands 
 			// origins and GPU edge coverage.
 			scratch.compositor_bounds[u64(box.own_effects_visual_context_idx)] =
 				compatibility_affine_map_rect(box.paint_transform, box.border_box())
+			scratch.compositor_fixed_raster_owners[u64(box.own_effects_visual_context_idx)] =
+				chromium_fixed_raster_owner(box)
 			if box.layout_handle != unsafe { nil } {
 				node := unsafe { &Node(box.layout_handle) }
 				if chromium_compositor_animation_properties(node).transform {
@@ -567,6 +585,9 @@ fn update_chromium_raster_layer_plan_with_cull(document &dom.Document, commands 
 				mut state := scratch.properties[context]
 				state.effect_scope = effect_scope
 				state.fixed_to_viewport = commands[index].fixed_to_viewport
+				state.fixed_raster_owner = if state.fixed_to_viewport {
+					scratch.compositor_fixed_raster_owners[effect_scope]
+				} else { u64(0) }
 				scratch.compositor_scopes << effect_scope
 				// Even an empty will-change layer is an overlap barrier. Keep
 				// its container extent on this marker, not on every later chunk.
@@ -657,6 +678,9 @@ fn update_chromium_raster_layer_plan_with_cull(document &dom.Document, commands 
 				// parent's subsequent metadata or decoration commands.
 				state.atomic_mask = legacy_effect && commands[first].kind == 'begin_svg_mask_layer'
 				state.fixed_to_viewport = command.fixed_to_viewport
+				state.fixed_raster_owner = if state.fixed_to_viewport {
+					chromium_fixed_raster_owner(box)
+				} else { u64(0) }
 				// Scrollbars retain their own raster identity; appending one
 				// must not turn preceding overlap text into a mixed paint run.
 				state.scrollbar = command.scrollbar_axis != ''

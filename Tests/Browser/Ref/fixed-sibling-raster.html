@@ -1,0 +1,19 @@
+<!doctype html>
+<meta charset="utf-8">
+<link rel="match" href="fixed-sibling-raster.ref.html">
+<style>
+* { box-sizing: border-box; }
+html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: white; }
+.banner-container { position: fixed; left: 260px; right: 0; top: 61px; bottom: 76px; }
+.banner { position: absolute; left: 12px; bottom: 8px; width: 740px; height: 126.03125px;
+  border: 1px solid rgb(0 0 0 / .05); border-radius: 30px;
+  box-shadow: 0 4px 16px rgb(0 0 0 / .05); background: white; }
+.button { position: absolute; top: 41px; right: 20px; width: 96px; height: 40px;
+  border-radius: 999px; background: #0d0d0d; }
+.reject { right: 124px; width: 166px; background: white; border: 1px solid #e5e5e5; }
+.icon-container { position: fixed; left: 280px; bottom: 20px; width: 740px; height: 40px; }
+</style>
+<div class="banner-container"><div class="banner"><div class="button reject"></div><div class="button"></div></div></div>
+<!-- This opaque white SVG is below the banner, over the same white backdrop.
+     Its path must not change multisample coverage in the other fixed container. -->
+<div class="icon-container"><svg width="40" height="40" viewBox="0 0 40 40"><path d="M2 2L38 19L8 38Z" fill="white"/></svg></div>
