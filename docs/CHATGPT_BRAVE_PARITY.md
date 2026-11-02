@@ -1181,10 +1181,59 @@ activated Voice and failed. Neither supplies Send or poison acceptance.
 `query-decode-validation/results.json` retains the failed group alongside the
 ten passing normal groups; its combined assessment remains false.
 
-The input investigation now waits separately for composer attachment and a
-draft that enables Send. On the decoder build, the textarea contains the full
-prompt but that application state never becomes ready. The matching frontend
-uses `instanceof InputEvent`, `inputType` and `data`; native text edits currently
-arrive through a plain `UIEvent` wrapper. This is the next compatibility slice.
-The instrumented renderer-error module and title markers remain diagnostic
-only and supply no unmodified-page pixel acceptance.
+The input investigation waits separately for composer attachment and a draft
+that enables Send. On the decoder build, the textarea contains the full prompt
+but that application state never becomes ready. The matching frontend uses
+`instanceof InputEvent`, `inputType` and `data`; that build exposes native text
+edits through a plain `UIEvent` wrapper. The instrumented renderer-error module
+and title markers remain diagnostic only and supply no unmodified-page pixel
+acceptance.
+
+## Native InputEvent payloads
+
+`34e5fedb0` binds native `InputEvent` text and composition payloads, nullable
+data, data-transfer identity and the `UIEvent` inheritance chain. Text controls
+return a fresh empty target-range array. Native contenteditable ranges and
+nonempty constructor `targetRanges` remain unsupported; this is not full
+StaticRange or InputEvent parity.
+
+Constructor conversion, UTF-16 preservation, native wrapper identity and
+retained-root checks pass nine focused executions across default, no-GC and
+preallocated modes in `input-event-checks-final/`. Three further executions in
+`input-event-native-checks-final/` exercise actual BrowserApp typing and deletion,
+including a supplementary character, trusted event payloads, document capture,
+target identity and the textarea value visible during delivery. Final source
+hashes remain stable in both sets of receipts.
+
+The pinned production in `input-event-production/Vox.app` has executable SHA256
+`09a6eabeeab25d9c072d7d8fb616259be4d9ae2d0f5541b23d0e7347cf2e306b`.
+Its owned implementation hashes remain stable across the successful build;
+the sampled peak RSS is 9,014,509,568 bytes, and the receipt lists unrelated
+shared inputs that changed. The fixed-delay click
+again activates Voice and faults during teardown, so it supplies no Send
+acceptance. The unmodified Enter check exits normally with empty native/module
+error collections but stays on the homepage without a reply. Both failures
+remain in `input-event-validation/` and `input-event-validation-remainder/`.
+
+`vox-native-input-state/` confirms that the macOS input path delivers all thirty
+typed characters as trusted, composed `InputEvent` objects with the correct
+target, type, data and current value, observed in both capture and bubble
+listeners. The application's draft signal contains the exact prompt, while
+its `canSubmit` signal remains false. This diagnostic rules out absent native
+input delivery as the remaining submission failure; it does not establish the
+cause of the false signal or supply pixel acceptance.
+
+All nine rendering/startup groups pass in `input-event-rendering-validation/`:
+the Node fixture, eleven smoke cases with unchanged allowances, ten exact SVG
+mutations, compact modules, decorated text, focused controls, headless startup,
+the original homepage and its zero-pixel assessment. Executable/library
+identities remain stable. `input-event-combined-assessment.json` retains these
+passes alongside both failed interaction checks and remains false overall.
+
+The subsequent diagnostic in `vox-submit-input-state-3/` narrows the false
+submit signal to `authReady=false`; `hasText` is true, the draft is exact, and
+the other blocking flags are clear. It changes two composer modules to expose
+their inputs and adds a hidden observer, so it is diagnostic only. The earlier
+probe preparations and failed archive-header attempt remain retained without
+acceptance credit. The frontend's form-controller attachment is the next
+investigation target; no authentication bypass or site-specific patch is made.
