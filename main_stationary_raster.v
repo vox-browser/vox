@@ -10,6 +10,7 @@ const stationary_raster_borrow_diagnostics = os.getenv('VOX_STATIONARY_RASTER_BO
 __global stationary_raster_borrow_reported bool
 
 fn C.native_begin_stationary_raster(u64, u64, u64, f64, f64, f64, f64, i32) i32
+fn C.native_begin_stationary_raster_snapshot(u64, u64, u64, f64, f64, f64, f64, i32, i32) i32
 fn C.native_end_stationary_raster()
 fn C.native_discard_stationary_raster()
 
@@ -68,6 +69,14 @@ fn (app &BrowserApp) begin_stationary_document_raster() bool {
 		// AppKit can request the first frame before navigation creates a document.
 		if app.document == unsafe { nil } { return false }
 		eligible := stationary_document_raster_eligible(app.paint_commands)
+		$if vox_ui2 ? {
+			// UI2 updates separate native views after document replay. Nothing
+			// else draws into this bitmap, so an immutable frame can supply it.
+			return C.native_begin_stationary_raster_snapshot(u64(app.document.unique_id().value()),
+				app.document.paint_content_revision(), app.paint_generation, app.scroll_y,
+				f64(app.page_top()), app.page_zoom, app.overlay_scrollbars.paint_opacity,
+				i32(eligible), 1) != 0
+		}
 		return C.native_begin_stationary_raster(u64(app.document.unique_id().value()),
 			app.document.paint_content_revision(), app.paint_generation, app.scroll_y,
 			f64(app.page_top()), app.page_zoom, app.overlay_scrollbars.paint_opacity,

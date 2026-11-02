@@ -6,6 +6,13 @@ import gg
 
 fn C.native_test_parent_tick_frame_ownership(fn (voidptr), voidptr) int
 fn C.native_test_capture_copy_preserves_pixels_and_skips_redundant_frames() int
+fn C.native_test_layer_retains_immutable_frame_without_copying_pixels() int
+
+fn test_native_layer_retains_snapshot_ownership_and_still_runs_the_frame_callback() {
+	$if macos {
+		assert C.native_test_layer_retains_immutable_frame_without_copying_pixels() == 63
+	}
+}
 
 fn test_capture_copies_the_presented_raster_and_still_renders_real_invalidations() {
 	$if macos {

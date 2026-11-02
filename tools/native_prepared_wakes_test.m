@@ -39,6 +39,8 @@ static void prepared_draw(id view, SEL command, NSRect bounds) {
 
 int main(void) {
     @autoreleasepool {
+        assert(native_test_layer_retains_immutable_frame_without_copying_pixels() == 63);
+        puts("PASS immutable document snapshots retain pixels and run frame callbacks");
         setenv("LADYBIRD_SCREENSHOT_DELAY_SECONDS", "0", 1);
         unsetenv("LADYBIRD_SCREENSHOT_SCALE");
         PreparedWakeApplication *application = [PreparedWakeApplication sharedApplication];

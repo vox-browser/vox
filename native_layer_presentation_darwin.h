@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include "native_document_submission_darwin.h"
 #include "native_initial_document_clear.h"
+#include "native_frame_snapshot_darwin.h"
 #if defined(__aarch64__)
 #include <arm_neon.h>
 #endif
@@ -255,6 +256,7 @@ static CGImageRef native_layer_raster_frame_with_submission(NSView *view, CGFloa
     NativeDocumentSubmissionFrame frame = { .bitmap = bitmap,
         .token = ++native_document_submission_sequence };
     NativeDocumentSubmissionFrame *previous_submission = native_document_submission_current;
+    VoxFrameSnapshot previous_snapshot = vox_frame_snapshot_begin(bitmap);
     @try {
         native_document_submission_current = &frame;
         native_layer_document_bitmap = bitmap;
@@ -263,8 +265,9 @@ static CGImageRef native_layer_raster_frame_with_submission(NSView *view, CGFloa
         NSGraphicsContext.currentContext = [NSGraphicsContext
             graphicsContextWithCGContext:bitmap flipped:view.isFlipped];
         ((void (*)(id, SEL, NSRect))draw)(view, @selector(drawRect:), bounds);
-        image = CGBitmapContextCreateImage(bitmap);
+        image = vox_frame_snapshot_copy(bitmap);
     } @finally {
+        vox_frame_snapshot_restore(previous_snapshot);
         native_document_submission_current = previous_submission;
         native_layer_document_bitmap = previous_bitmap;
         native_layer_document_bitmap_claimed = previous_claimed;

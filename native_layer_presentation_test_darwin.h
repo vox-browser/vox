@@ -39,6 +39,46 @@ static void native_layer_test_asymmetric_draw(id self, SEL command, NSRect rect)
         rect.size.height / 2));
 }
 
+static CGImageRef native_layer_test_selected_snapshot;
+static BOOL native_layer_test_image(CGImageRef image, size_t width, size_t height);
+static void native_layer_test_snapshot_draw(id self, SEL command, NSRect rect) {
+    (void)self; (void)command; (void)rect;
+    native_layer_test_draws++;
+    if (!vox_frame_snapshot_select(NSGraphicsContext.currentContext.CGContext,
+            native_layer_test_selected_snapshot))
+        [NSException raise:@"NativeLayerTest" format:@"snapshot target mismatch"];
+}
+
+static int native_test_layer_retains_immutable_frame_without_copying_pixels(void) {
+    @autoreleasepool {
+        NSView *view = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 4, 2)];
+        int result = 0;
+        for (int scale = 1; scale <= 2; ++scale) {
+            CGImageRef original = native_layer_raster_frame(view, scale,
+                (IMP)native_layer_test_draw);
+            if (!original) continue;
+            native_layer_test_selected_snapshot = original;
+            NSUInteger draws = native_layer_test_draws;
+            CGImageRef retained = native_layer_raster_frame(view, scale,
+                (IMP)native_layer_test_snapshot_draw);
+            if (retained == original && native_layer_test_draws == draws + 1)
+                result |= 1 << (scale - 1);
+            if (!vox_frame_snapshot.context && !vox_frame_snapshot.image)
+                result |= 1 << (scale + 1);
+            CGImageRelease(original);
+            // The returned frame owns the snapshot after its source is gone.
+            if (native_layer_test_image(retained, 4 * scale, 2 * scale))
+                result |= 1 << (scale + 3);
+            if (retained) CGImageRelease(retained);
+            native_layer_test_selected_snapshot = NULL;
+        }
+#if !__has_feature(objc_arc)
+        [view release];
+#endif
+        return result;
+    }
+}
+
 static int native_test_capture_copy_preserves_pixels_and_skips_redundant_frames(void) {
     @autoreleasepool {
         NSView *view = [[NativeLayerFrameTestView alloc] initWithFrame:NSMakeRect(0, 0, 4, 2)];

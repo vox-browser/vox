@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "native_frame_snapshot_darwin.h"
 
 // A single bounded viewport. Engine preparation still runs on every frame;
 // this cache only replaces replay of the same committed document pixels.
@@ -19,12 +20,14 @@ typedef struct {
     CGAffineTransform transform;
     VoxStationaryRasterKey key;
     CGContextRef context;
-    int valid, active, independent;
+    CGImageRef image;
+    int valid, active, independent, allow_snapshot;
 } VoxStationaryRaster;
 static VoxStationaryRaster native_stationary_raster;
 
 static void native_discard_stationary_raster(void) {
     free(native_stationary_raster.pixels);
+    if (native_stationary_raster.image) CGImageRelease(native_stationary_raster.image);
     native_stationary_raster = (VoxStationaryRaster){0};
 }
 static void native_stationary_raster_independent_content(void) {
@@ -36,9 +39,9 @@ static int native_stationary_raster_same_key(VoxStationaryRasterKey a,
         && a.scroll == b.scroll && a.page_top == b.page_top && a.zoom == b.zoom
         && a.scrollbar_opacity == b.scrollbar_opacity;
 }
-static int native_begin_stationary_raster(uint64_t owner, uint64_t revision,
+static int native_begin_stationary_raster_snapshot(uint64_t owner, uint64_t revision,
     uint64_t generation, double scroll, double page_top, double zoom,
-    double scrollbar_opacity, int eligible) {
+    double scrollbar_opacity, int eligible, int allow_snapshot) {
     VoxStationaryRaster *cache = &native_stationary_raster;
     CGContextRef context = NSGraphicsContext.currentContext.CGContext;
     if (!eligible || getenv("VOX_DISABLE_STATIONARY_RASTER_REUSE") || !context
@@ -86,22 +89,41 @@ static int native_begin_stationary_raster(uint64_t owner, uint64_t revision,
     cache->active = !reuse;
     cache->independent = 0;
     cache->valid = reuse;
+    cache->allow_snapshot = allow_snapshot && !getenv("VOX_COPY_STATIONARY_RASTER_PIXELS");
     if (reuse) {
-        CGContextFlush(context);
-        memcpy(pixels, cache->pixels, bytes);
+        if (cache->allow_snapshot && cache->image
+            && vox_frame_snapshot_select(context, cache->image)) {
+            if (getenv("VOX_STATIONARY_SNAPSHOT_DIAGNOSTICS"))
+                fprintf(stderr, "Vox stationary raster: retained immutable frame\n");
+        } else {
+            CGContextFlush(context);
+            memcpy(pixels, cache->pixels, bytes);
+        }
         if (getenv("VOX_STATIONARY_RASTER_DIAGNOSTICS"))
             fprintf(stderr, "Vox stationary raster: reused\n");
     }
     return reuse;
 }
+static int native_begin_stationary_raster(uint64_t owner, uint64_t revision,
+    uint64_t generation, double scroll, double page_top, double zoom,
+    double scrollbar_opacity, int eligible) {
+    return native_begin_stationary_raster_snapshot(owner, revision, generation,
+        scroll, page_top, zoom, scrollbar_opacity, eligible, 0);
+}
 static void native_end_stationary_raster(void) {
     VoxStationaryRaster *cache = &native_stationary_raster;
     if (!cache->active) return;
     CGContextRef context = cache->context;
+    if (cache->image) CGImageRelease(cache->image);
+    cache->image = NULL;
     if (!cache->independent && context == NSGraphicsContext.currentContext.CGContext) {
         CGContextFlush(context);
         uint8_t *pixels = CGBitmapContextGetData(context);
-        if (pixels) { memcpy(cache->pixels, pixels, cache->bytes); cache->valid = 1; }
+        if (pixels) {
+            memcpy(cache->pixels, pixels, cache->bytes);
+            cache->valid = 1;
+            if (cache->allow_snapshot) cache->image = CGBitmapContextCreateImage(context);
+        }
     }
     cache->active = 0;
     cache->context = NULL;
