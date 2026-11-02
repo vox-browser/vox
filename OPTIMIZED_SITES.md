@@ -306,3 +306,36 @@ frozen questions page. All captures match their fixed per-engine references;
 Stack Overflow's
 [Linux optimization](docs/STACKOVERFLOW_LINUX_PERFORMANCE.md) compares two Vox
 versions using Cachegrind instruction references, rather than Vox against Brave.
+
+## Forum/news rendering coverage
+
+All 15 sites from the forum/news session are in the
+[test catalog](Tests/Browser/Brave/forum-news.json) and the bookmark-bar catalog.
+The bar retains Wikipedia, Old Reddit `/r/programming/` and vlang.io too, and
+lists Hacker News once. These entries track rendering work; the instruction
+comparisons above retain their own acceptance requirements and measured pages.
+
+The pixel checks use a frozen guest DOM at 1024×768, scale 1, original response
+bytes and matching full uBlock Origin lists. A strict pass requires zero pixels
+both from saved source to frozen Brave and from Vox to frozen Brave. Results
+apply to each report's pinned build and captured viewport, with live scripting,
+scrolling and whole-site behavior outside that claim.
+
+| Site | Rendering checkpoint | Evidence |
+| --- | --- | --- |
+| [Hacker News](https://news.ycombinator.com/) | Strict pass, 0 pixels; current control also passes | [Current control](Build/engadget-next-20261103/baseline/summary.json) |
+| [Reddit](https://www.reddit.com/) | Guest homepage blocked by HTTP 403; distinct from the measured Old Reddit programming page above | [Access record](docs/ADBLOCK_POPULAR_SITES.md) |
+| [Lobsters](https://lobste.rs/) | Strict frozen-viewport pass, 0 pixels | [Original checkpoints](docs/ADBLOCK_POPULAR_SITES.md) |
+| [Slashdot](https://slashdot.org/) | Strict frozen-viewport pass, 0 pixels | [Original checkpoints](docs/ADBLOCK_POPULAR_SITES.md) |
+| [Stack Overflow](https://stackoverflow.com/questions) | Deferred in this pixel-parity session | [Original checkpoints](docs/ADBLOCK_POPULAR_SITES.md) |
+| [BBC News](https://www.bbc.com/news) | Strict cold-cache pass, 0 pixels in two independent runs | [Original checkpoints](docs/ADBLOCK_POPULAR_SITES.md) |
+| [CNN](https://edition.cnn.com/) | Vox/frozen Brave 0 pixels; saved-source fidelity still fails | [Source/media limits](docs/ADBLOCK_POPULAR_SITES.md) |
+| [The Guardian](https://www.theguardian.com/international) | Strict frozen-viewport pass, 0 pixels | [Original checkpoints](docs/ADBLOCK_POPULAR_SITES.md) |
+| [The Verge](https://www.theverge.com/) | Strict frozen-viewport pass, 0 pixels | [Original checkpoints](docs/ADBLOCK_POPULAR_SITES.md) |
+| [Pikabu](https://pikabu.ru/) | Deferred in this pixel-parity session | [Original checkpoints](docs/ADBLOCK_POPULAR_SITES.md) |
+| [TechCrunch](https://techcrunch.com/) | Open: 34,710 native pixels; source fidelity passes | [Current checkpoint](docs/FORUM_NEWS_EXPANSION.md) |
+| [Engadget](https://www.engadget.com/) | Next site: 1,980 native pixels; saved-source gap 90,850 pixels | [Fresh baseline](Build/engadget-next-20261103/baseline/summary.json) |
+| [The Register](https://www.theregister.com/) | Open: initial native gap 6,786; source gap 110,180 pixels | [Five-site baseline](docs/FORUM_NEWS_EXPANSION.md) |
+| [Slate](https://slate.com/) | Open: initial native gap 221,448; source gap 19,064 pixels | [Five-site baseline](docs/FORUM_NEWS_EXPANSION.md) |
+| [WIRED](https://www.wired.com/) | Open: frozen reference changes between captures | [Five-site baseline](docs/FORUM_NEWS_EXPANSION.md) |
+
