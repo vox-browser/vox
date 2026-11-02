@@ -540,6 +540,7 @@ def run_browser(engine, app, folder, args):
                   scope=LAUNCH_SCOPE if scope == 'launch' else SCOPE, membership_attempts=[],
                   viewport_css_pixels=[WIDTH, HEIGHT], device_scale=args.scale)
     browser = client = sampler = counter = queue = None
+    memory_observer = None
     root = None
     root_start = None
     result['started_unix'] = time.time()
@@ -565,7 +566,7 @@ def run_browser(engine, app, folder, args):
             ambient = sorted(os.environ.keys() - clean_environment().keys() - environment.keys())
             require(not ambient, 'Remove ambient measurement controls: ' + ', '.join(ambient))
             result['environment'] = environment
-            arguments = ['--enable-javascript', '--window-width', str(WIDTH), '--window-height',
+            arguments = ['--enable-javascript' if getattr(args, 'vox_scripting', True) else '--disable-javascript', '--window-width', str(WIDTH), '--window-height',
                          str(HEIGHT + 84), '--screenshot', str(png), args.url]
             arguments = list(getattr(args, 'vox_arguments', [])) + arguments
             result['command'] = launch(app, arguments, folder, environment)
@@ -594,6 +595,9 @@ def run_browser(engine, app, folder, args):
                 'Launch reused a preexisting browser process')
         root_start = MacCounters().read(root['pid']).start
         result['root_start_ticks'] = root_start
+        observer_factory = getattr(args, 'browser_memory_observer', None)
+        if observer_factory:
+            memory_observer = observer_factory(root['pid'], root_start, folder)
         registry = getattr(args, 'memory_guard_registry', None)
         if registry:
             publish_adopted_processes(registry, [root['pid']])
@@ -653,6 +657,8 @@ def run_browser(engine, app, folder, args):
                     width=WIDTH + 80, height=HEIGHT + 140))['targetId']
             client = CDP(f'ws://127.0.0.1:{port}/devtools/page/{target}')
             client.call('Page.enable')
+            if getattr(args, 'brave_disable_javascript', False):
+                client.call('Emulation.setScriptExecutionDisabled', dict(value=True))
             result['native_viewport'] = configure_brave_viewport(browser, client, target, args)
             client.call('Emulation.setFocusEmulationEnabled', dict(enabled=True))
             counter = CoalitionCounter(api, cid)
@@ -752,6 +758,11 @@ def run_browser(engine, app, folder, args):
         for connection in (client, browser):
             if connection:
                 connection.sock.close()
+        if memory_observer:
+            try:
+                result['memory'] = memory_observer.finish()
+            except Exception as error:
+                result.update(exit=1, memory_error=str(error))
         write_json(folder / 'result.json', result)
     return result
 
