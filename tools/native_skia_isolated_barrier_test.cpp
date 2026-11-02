@@ -111,6 +111,29 @@ int main()
     assert(pixels[5 * 256 + 5 * 4] == 255);
     assert(ladybird_v_skia_finish_deferred_layer_frame());
 
+    // A full-width gradient must register its AA publication fringe even
+    // without an earlier full-width fill. Otherwise it paints behind the
+    // picture because that fringe falls outside the nominal layer bounds.
+    CGContextClearRect(parent, CGRectMake(0, 0, 64, 64));
+    pending_parent(parent);
+    float gradient_rect[] {0, 0, 24, 0,0,0,0,0,0,0,0,0,
+        1, 64, 24, 0,0,0,0,0,0,0,0,0,
+        1, 64, 40, 0,0,0,0,0,0,0,0,0,
+        1, 0, 40, 0,0,0,0,0,0,0,0,0,
+        5, 0,0,0,0,0,0,0,0,0,0,0};
+    float stops[] {0, 1, 0, 1, 0, 0, 1, 0, 1, 1};
+    assert(ladybird_v_skia_draw_clipped_svg_linear_gradient_path(parent,
+        gradient_rect, 5, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 64, 64,
+        0, 0, 0, 0, 4, 0, 24, 64, 24, 1, 0, 0, 1, 0, 0,
+        0, 0, stops, 2, 1, 1, nullptr, nullptr));
+    assert(s_shared_root_recording && s_shared_root_recording->deferred_leaves == 2);
+    assert(pixels[30 * 256 + 2 * 4 + 3] == 0);
+    finish_shared_recording();
+    assert(!s_deferred_layer_frame_failed);
+    assert(pixels[30 * 256 + 2 * 4 + 1] == 255);
+    assert(pixels[8 * 256 + 8 * 4] == 255);
+    assert(ladybird_v_skia_finish_deferred_layer_frame());
+
     // A viewport-sized solid background keeps the ordinary cheap fill,
     // after publishing any preceding picture; it creates no scroll tile key.
     CGContextClearRect(parent, CGRectMake(0, 0, 64, 64));

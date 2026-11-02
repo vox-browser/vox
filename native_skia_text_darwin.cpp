@@ -5659,6 +5659,11 @@ static int draw_svg_gradient_path(CGContextRef destination, float const* data,
         recorded_paint.setDither(!picture_pattern);
         canvas->drawPath(path, recorded_paint);
         canvas->restore();
+        // A full-width gradient's AA guard can extend beyond the logical
+        // layer. Register that publication fringe before testing deferral,
+        // even when no earlier rectangle expanded this picture's bounds.
+        if (!ink.isEmpty())
+            shared_recording_speculative_content(destination, ink.makeOutset(2, 2), page_y, scroll_y);
         if (shared_recording_defers_leaf_raster(destination, ink.makeOutset(2, 2))) return 1;
     }
     RasterRegion region;
