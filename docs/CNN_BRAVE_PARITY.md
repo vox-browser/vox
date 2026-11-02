@@ -60,3 +60,26 @@ Raw evidence is under `Build/cnn-zero-20261101/`: `full-control/`, `full-final/`
 `native-pattern-final/`, the focused compile/run receipts, and
 `production-visible-2/`. Intermediate regressions, diagnostic overrides and the
 failed UI-migration build are retained separately and supply no acceptance credit.
+
+
+## Cold-cache verification, 2 November 2026
+
+Production executable
+`c8993aa08e74513dacc5fda3f384b9cd6eb2835eddc8f98cf315b4c39bd9c324`
+also matches a fresh **cold-cache Brave/full-uBO** replay at zero differing RGBA
+pixels. Both browsers start in fresh private profiles without cache warmup;
+filter audits agree and browser identities remain pinned. Independent RGBA
+decoding confirms equality. The unchanged source/frozen gap is still **101,696
+pixels**, so this case correctly retains `live-to-frozen-mismatch` and the full
+seven-site cold matrix exits one. Six other sites pass both pixel gates. See
+[the cold matrix](../Build/forum-news-cold-seven-20261102-2212/) for both verdicts.
+
+A fresh source acquisition with matched complete-response preparation is also
+rejected: the visible autoplaying video preview changes 40,325 pixels between
+the warmup's consecutive captures. The requested document and fonts are loaded,
+but that frame is not stable enough to qualify. Both PNGs, the difference,
+media-element bounds, commands and failed guard remain under
+[the fresh capture attempt](../Build/cnn-source-fidelity-20261102-2219/).
+The registered archive and all pixel references remain unchanged. This is no
+new rendering fix or live-media acceptance; it strengthens the existing
+frozen-rendering result and preserves the unresolved source-fidelity gate.

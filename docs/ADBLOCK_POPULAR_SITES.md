@@ -1,14 +1,15 @@
 # Popular-site adblock verification
 
 Production executable `c8993aa0…` passes all **97 rendering tests/103 captures**
-with unchanged references. Hacker News, BBC and Slashdot pass strict frozen-page
-comparisons with full uBlock Origin; CNN, Guardian, The Verge and Lobsters native
-preservation captures also remain exact against their accepted Brave/uBO
-references. BBC passes two independent strict runs. Stack Overflow and Pikabu
-remain deferred at the user's request. Both modern and Old Reddit guest access
-are blocked, so Reddit does not count as page coverage. The final checkpoint
-records the pinned build, cache and author-script policies and evidence. These
-results establish the recorded frozen viewports, not live scripting parity.
+with unchanged references. Fresh cold-cache comparisons also give **zero native
+versus Brave pixels on all seven accessible frozen pages**, with matching full
+uBlock Origin audits. **Six of seven pass the strict source/replay gate**; CNN
+retains its 101,696-pixel saved-source mismatch, and a fresh CNN capture is
+unstable because of an autoplaying video preview. BBC passes two independent
+cold runs, closing its historical cold WebP residual on this build. Stack
+Overflow and Pikabu remain deferred, and Reddit guest access remains blocked.
+The final checkpoints record pinned builds, workload policies and evidence.
+These results concern frozen viewports and do not establish live scripting parity.
 
 The matrix exercises guest pages on 13 representative news, video, social,
 shopping, reference, and developer sites. It compares Vox's native filtering
@@ -3625,3 +3626,59 @@ failure/retry cases pass, and all seven recorded source hashes match the native
 files in `016cf333e`. The
 [supplemental receipts](../Build/shared-shape-commit-check-20261102/) distinguish
 those checks and their scopes. They supply no performance credit.
+
+
+## Cold-cache verification, 2 November 2026
+
+The existing completed-resource WebP fix, `255b231ce`, is already in production
+executable `c8993aa08e74513dacc5fda3f384b9cd6eb2835eddc8f98cf315b4c39bd9c324`.
+First paint selects decoding from the completed response body instead of using
+HTTP chunk-progress metadata to invent a retained RGB image. Truly existing
+paint images retain their identity. The historical paint-policy environment
+control remains separate from the default path. No decoder change was needed
+for this checkpoint.
+
+A fresh strict **cold-cache BBC** comparison passes with zero native differing
+pixels and zero saved-live/frozen Brave differences. The subsequent seven-site
+matrix repeats that result independently. Both BBC RGBA pairs equal
+`78bf82a09953f082822f699baf61d6bd8b555bf6100ee2f52f4f2b93dacf22f1`, matching the
+previous completed-cache result. The historical 78,799-pixel cold photograph
+residual does not reproduce on this build. The
+[BBC cold receipts](../Build/bbc-cold-recheck-20261102-2210/) retain the first
+run, filter audits, guard and independent RGBA comparison.
+
+The new matrix starts both browsers with fresh private profiles and empty
+encoded-response caches, with no warmup. All seven native frames match their
+fresh Brave/full-uBO frozen references exactly at 1024×768 and scale one.
+
+| Site | Native/Brave differing pixels | Saved source/frozen Brave differing pixels | Strict result |
+| --- | ---: | ---: | --- |
+| Hacker News | 0 | 0 | Pass |
+| Lobsters | 0 | 0 | Pass |
+| Slashdot | 0 | 0 | Pass |
+| BBC News | 0 | 0 | Pass |
+| CNN | 0 | 101,696 | Source-fidelity failure |
+| Guardian | 0 | 0 | Pass |
+| The Verge | 0 | 0 | Pass |
+
+The full matrix therefore **exits one**, with six strict passes; its source
+failure is retained. All request/header, cosmetic, procedural and scriptlet
+audits agree. Independent RGBA decoding verifies all seven native/Brave pairs.
+Executable/native-library identities remain unchanged across the entire matrix,
+and all fixture, resource and tool input hashes remain unchanged. The
+[cold seven-site evidence](../Build/forum-news-cold-seven-20261102-2212/)
+contains raw commands, per-site audits, both pixel verdicts, guard exits and
+`audit-summary.json`. No references, thresholds or excluded regions changed.
+The prior 97-method/103-capture pass remains the rendering-suite result for the
+same executable; that suite was not needlessly repeated for this data-only check.
+
+A fresh CNN source acquisition using matched complete-response preparation
+also fails qualification. Its warmup page reaches the requested URL, complete
+readiness and loaded fonts, but an `interactive-video__player` at
+32,127 (268.796875×151.1875) changes **40,325 pixels** between consecutive
+captures. The reference check rejects this changing preview. The
+[CNN source-fidelity attempt](../Build/cnn-source-fidelity-20261102-2219/)
+retains both unstable PNGs, their difference, state metadata and failed guard.
+The registered CNN archive is unchanged. CNN's engine-to-engine frozen equality
+is established in both cache modes; a faithful stable source capture and live
+media/script parity remain outside that acceptance.
