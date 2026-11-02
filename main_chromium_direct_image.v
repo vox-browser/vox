@@ -27,7 +27,8 @@ fn chromium_direct_image_layer_supported(commands []layout.PaintCommand,
 	if paintable.border_radii.has_any_radius() {
 		return false
 	}
-	if command.clip_list != unsafe { nil } {
+	if plan.has_picture_clip_metadata && layer.picture_local_rounded_clip { return false }
+	if !plan.has_picture_clip_metadata && command.clip_list != unsafe { nil } {
 		for clip_index, clip in command.clip_list.items {
 			if clip.corner_radii == layout.BoxRadii{} { continue }
 			// A new rounded clip can remain inside the ancestor's picture even

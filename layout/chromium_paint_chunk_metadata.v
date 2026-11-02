@@ -3,6 +3,7 @@ module layout
 import dom
 import math
 import css
+import painting
 
 struct ChromiumPaintMetadata {
 	at      int
@@ -10,6 +11,12 @@ struct ChromiumPaintMetadata {
 	state   ChromiumRasterPropertyState
 	bounds  LayoutRect
 	client  u64
+}
+
+enum ChromiumPaintMetadataMode {
+	none
+	clipping
+	geometry
 }
 
 // Chromium expands a vertical root scrollport by 4000 pixels and retains its
@@ -153,7 +160,7 @@ fn chromium_hit_test_border_rect(box &BlockBox) LayoutRect {
 }
 
 fn chromium_collect_paint_metadata(result &DocumentLayoutResult, commands []PaintCommand,
-	cull LayoutRect, mut scratch ChromiumRasterPlanScratch) bool {
+	cull LayoutRect, mut scratch ChromiumRasterPlanScratch) ChromiumPaintMetadataMode {
 	scratch.paint_metadata.clear()
 	count := result.paint_order.len * compatibility_paint_phase_count
 	scratch.paint_phase_firsts.clear()
@@ -209,7 +216,16 @@ fn chromium_collect_paint_metadata(result &DocumentLayoutResult, commands []Pain
 			chromium_paint_client(box)}
 	}
 	scratch.paint_metadata.reverse_in_place()
-	return has_scroll_marker
+	// A rounded image's ancestor can contribute a metadata-only chunk before
+	// its overflow clip. It still determines the picture's common clip state,
+	// even when the document has no independently scrolling contents.
+	if !has_scroll_marker {
+		for command in commands {
+			if command.kind != 'draw_replaced_image' || command.clip_list == unsafe { nil } { continue }
+			if command.clip_list.items.any(it.corner_radii != BoxRadii{}) { return .clipping }
+		}
+	}
+	return if has_scroll_marker { .geometry } else { .none }
 }
 
 // Keep each paint client's hit-test and drawing bounds together. Combining
@@ -287,6 +303,7 @@ fn chromium_append_paint_chunk(bounds LayoutRect, state ChromiumRasterPropertySt
 		command_index: index
 		command_end:   index + 1
 	}
+	scratch.paint_chunk_contexts << context
 	scratch.paint_chunk_context = if state.scroll_hit_test > 0 { -1 } else { context }
 	scratch.paint_chunk_client = client
 	return index
@@ -366,12 +383,14 @@ fn chromium_layerize_visible_paint_chunks(result &DocumentLayoutResult,
 			return
 		}
 	}
-	if !chromium_collect_paint_metadata(result, commands, cull, mut scratch) {
+	metadata_mode := chromium_collect_paint_metadata(result, commands, cull, mut scratch)
+	if metadata_mode == .none {
 		chromium_layerize_chunks_into(scratch.chunks, commands.len, scale, mut plan, mut scratch.layer_states)
 		return
 	}
-	plan.has_paint_metadata = true
+	plan.has_paint_metadata = metadata_mode == .geometry
 	scratch.paint_chunks.clear()
+	scratch.paint_chunk_contexts.clear()
 	scratch.command_chunk_groups.clear()
 	mut metadata_index := 0
 	scratch.paint_chunk_context = -1
@@ -420,6 +439,27 @@ fn chromium_layerize_visible_paint_chunks(result &DocumentLayoutResult,
 		scale, mut plan, mut scratch.layer_states)
 	scratch.paint_chunk_layers.clear()
 	scratch.paint_chunk_layers << plan.command_layers
+	chromium_record_picture_clip_states(result, commands, mut scratch, mut plan)
+	plan.has_picture_clip_metadata = true
+	if metadata_mode == .clipping {
+		// Clip ancestry is useful independently of hit-test raster geometry.
+		// Preserve the existing no-scroll layer placement and tile origins;
+		// metadata-only boxes must not change unrelated native pictures.
+		scratch.chunk_picture_local_clips.clear()
+		for group in scratch.command_chunk_groups {
+			scratch.chunk_picture_local_clips << if group < 0 { true } else {
+				plan.layers[scratch.paint_chunk_layers[group]].picture_local_rounded_clip
+			}
+		}
+		chromium_layerize_chunks_into(scratch.chunks, commands.len, scale, mut plan, mut scratch.layer_states)
+		for chunk_index, chunk in scratch.chunks {
+			if scratch.chunk_picture_local_clips[chunk_index] {
+				layer := plan.command_layers[chunk.command_index]
+				plan.layers[layer].picture_local_rounded_clip = true
+			}
+		}
+		return
+	}
 	plan.command_layers.clear()
 	for _ in 0 .. commands.len { plan.command_layers << -1 }
 	for index in 0 .. plan.layers.len { plan.layers[index].command_indices.clear() }
@@ -430,6 +470,55 @@ fn chromium_layerize_visible_paint_chunks(result &DocumentLayoutResult,
 		for command_index in chunk.command_index .. chunk.command_end {
 			plan.command_layers[command_index] = layer
 			plan.layers[layer].command_indices << command_index
+		}
+	}
+}
+
+fn chromium_common_recording_context(result &DocumentLayoutResult, first int, second int) int {
+	if first < 0 || second < 0 { return 0 }
+	mut left := first
+	mut right := second
+	// Visual contexts are appended after their parents. Raising the larger
+	// index therefore finds the common ancestor without allocating a path.
+	for left != right {
+		if left > right {
+			left = result.visual_context_tree.nodes[left].parent_index
+		} else {
+			right = result.visual_context_tree.nodes[right].parent_index
+		}
+		if left < 0 || right < 0 { return 0 }
+	}
+	return left
+}
+
+fn chromium_record_picture_clip_states(result &DocumentLayoutResult, commands []PaintCommand,
+	mut scratch ChromiumRasterPlanScratch, mut plan ChromiumRasterLayerPlan) {
+	scratch.layer_recording_contexts.clear()
+	for _ in plan.layers { scratch.layer_recording_contexts << -1 }
+	for group, context in scratch.paint_chunk_contexts {
+		layer := scratch.paint_chunk_layers[group]
+		old := scratch.layer_recording_contexts[layer]
+		scratch.layer_recording_contexts[layer] = if old < 0 {
+			if context < 0 { 0 } else { context }
+		} else {
+			chromium_common_recording_context(result, old, context)
+		}
+	}
+	for chunk_index, chunk in scratch.chunks {
+		group := scratch.command_chunk_groups[chunk_index]
+		if group < 0 { continue }
+		layer := scratch.paint_chunk_layers[group]
+		context, _ := chromium_chunk_context(chunk, result, commands)
+		mut cursor := context
+		stop := scratch.layer_recording_contexts[layer]
+		for cursor > 0 && cursor != stop {
+			node := result.visual_context_tree.nodes[cursor]
+			if node.data is painting.ClipVisualData {
+				if node.data.corner_radii != painting.CornerRadii{} {
+					plan.layers[layer].picture_local_rounded_clip = true
+				}
+			}
+			cursor = node.parent_index
 		}
 	}
 }

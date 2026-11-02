@@ -18,6 +18,9 @@ pub mut:
 	scroll_contents bool
 	// Fixed, sticky and hinted contents likewise rasterize before compositing.
 	composited_contents bool
+	// A rounded clip below the picture's common property state is rasterized
+	// inside that picture, preventing the single-image raster optimization.
+	picture_local_rounded_clip bool
 	// An opaque, flat scrolling background also paints inside the contents
 	// picture. Its ordinary border-box paint remains in the parent layer.
 	scroll_background_command int = -1
@@ -31,6 +34,7 @@ pub mut:
 	layers         []ChromiumRasterLayer
 	command_layers []int
 	has_paint_metadata bool
+	has_picture_clip_metadata bool
 mut:
 	// Keep inactive slots too: their command vectors are reused if layers return.
 	layer_storage []ChromiumRasterLayer
@@ -80,6 +84,9 @@ mut:
 	paint_metadata []ChromiumPaintMetadata
 	paint_phase_firsts []int
 	paint_chunks []ChromiumRasterChunk
+	paint_chunk_contexts []int
+	layer_recording_contexts []int
+	chunk_picture_local_clips []bool
 	command_chunk_groups []int
 	paint_chunk_layers []int
 	paint_chunk_context int = -1
@@ -140,6 +147,7 @@ fn (mut plan ChromiumRasterLayerPlan) prepare(count int) {
 		plan.layer_storage[index].legacy_raster = false
 		plan.layer_storage[index].scroll_contents = false
 		plan.layer_storage[index].composited_contents = false
+		plan.layer_storage[index].picture_local_rounded_clip = false
 		plan.layer_storage[index].scroll_background_command = -1
 		plan.layer_storage[index].unbounded_sticky_overlap = false
 		plan.layer_storage[index].unbounded_transform_overlap = false
@@ -156,6 +164,7 @@ fn (mut plan ChromiumRasterLayerPlan) append_layer(legacy bool) {
 	plan.layer_storage[index].legacy_raster = legacy
 	plan.layer_storage[index].scroll_contents = false
 	plan.layer_storage[index].composited_contents = false
+	plan.layer_storage[index].picture_local_rounded_clip = false
 	plan.layer_storage[index].unbounded_sticky_overlap = false
 	plan.layer_storage[index].unbounded_transform_overlap = false
 	plan.layers = unsafe { plan.layer_storage[..index + 1] }
@@ -421,6 +430,7 @@ pub fn update_chromium_raster_layer_plan(document &dom.Document, commands []Pain
 fn update_chromium_raster_layer_plan_with_cull(document &dom.Document, commands []PaintCommand,
 	device_scale f64, cull ?LayoutRect, mut plan ChromiumRasterLayerPlan) {
 	plan.has_paint_metadata = false
+	plan.has_picture_clip_metadata = false
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
 	result := document_layout_result(document) or {

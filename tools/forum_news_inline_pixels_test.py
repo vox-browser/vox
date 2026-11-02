@@ -18,6 +18,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_picture_local_rounded_clip_keeps_ordinary_image_sampling(self):
         self.compare_fixture('pikabu-picture-local-image-clip', width=1024, height=768)
 
+    def test_hoisted_image_keeps_its_clip_outside_the_raster_picture(self):
+        self.compare_fixture('pikabu-hoisted-image-clip', width=1024, height=768)
+
     def test_pikabu_svg_banner_samples_its_image_pattern_at_the_final_viewport(self):
         self.compare_fixture('pikabu-svg-image-pattern')
 

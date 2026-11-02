@@ -84,3 +84,30 @@ fn test_new_rounded_clip_keeps_the_single_image_on_its_picture_path() {
 	}
 	assert seen
 }
+
+fn test_metadata_keeps_the_hoisted_image_clip_outside_its_picture() {
+	markup := os.read_file(os.join_path(@DIR, 'Tests/Browser/Brave/input/pikabu-hoisted-image-clip.html'))!
+	mut document := html.parse_document(markup)
+	defer { document.finalize() }
+	document.set_font_rendering_policy(.chromium)
+	_ = layout.layout_document_typed_in_viewport(document, 1024, 768)
+	commands := layout.display_list_commands(document.record_display_list() or { panic('paint') })
+	mut plan := layout.ChromiumRasterLayerPlan{}
+	layout.update_chromium_raster_layer_plan_for_viewport(document, commands, 1,
+		layout.LayoutRect{0, 0, 1024, 768}, mut plan)
+	assert plan.has_picture_clip_metadata
+	mut seen := false
+	for index, command in commands {
+		if command.kind != 'draw_replaced_image' { continue }
+		seen = true
+		owner := plan.command_layers[index]
+		assert owner > 0
+		assert !plan.layers[owner].picture_local_rounded_clip
+		assert chromium_direct_image_layer_supported(commands, plan, owner)
+		// The preceding layer has another clip state: the old approximation
+		// incorrectly rejects this image despite its own complete clip metadata.
+		fallback := layout.ChromiumRasterLayerPlan{ ...plan, has_picture_clip_metadata: false }
+		assert !chromium_direct_image_layer_supported(commands, fallback, owner)
+	}
+	assert seen
+}
