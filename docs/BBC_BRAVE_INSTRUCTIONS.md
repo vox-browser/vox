@@ -2808,3 +2808,56 @@ Exact counts, native checks, raw failed attempts, ownership proofs, host
 telemetry and receipts are preserved in the
 [production supplement](benchmark-results/bbc-font-input-production-2026-11-02.json)
 and [compressed raw cohorts](benchmark-results/bbc-font-input-production-2026-11-02-raw.json.gz).
+
+## Adjacent stylesheet replacement, pending browser measurement
+
+Commits `96c9ea496` and `a9496867c` narrow invalidation when removing an inline
+sheet immediately followed by a replacement with the same complete selector
+sequence and conditional structure. Unchanged declarations need no additional
+restyling; changed declarations retain their existing selector invalidation.
+Ownership changes, rule-cache invalidation and pending updates remain intact.
+Global rules, different URL bases or media, disabled/constructed/shadow sheets
+and changed selector order retain the previous path. Only leaf rules requiring
+a tag never seen in the document can be ignored.
+
+An initial positive fixture reparsed already serialized server rules. Testing
+the original server text exposed shorthand expansion order and conservative
+typed differences, including default border widths and rgba values. The final
+comparison matches independent unique longhands by name, preserves competing
+logical/physical declaration order, and keeps typed differences significant.
+With the original server CSS and recorded document tag history, the standalone
+fixture produces an invalidation plan for **22 declaration rules**, rather
+than treating all 641 client rules as completely equivalent. This is parser
+fixture evidence; production eligibility remains unverified.
+
+All **75 focused cases** pass with the candidate enabled and forced off in
+default, no-GC and preallocated modes: **450 executions and nine zero-exit
+compile/runtime jobs**. Fourteen new cases cover ownership, pending updates,
+unseen/removed tags, full sequence order, independent shorthand expansion,
+logical aliases, duplicate internal declarations, media/global effects, live
+CSSOM changes and selective invalidation. Preparatory failures and the earlier
+normalized-only fixture remain retained. Tool commit `8b88d6eee` adds the
+isolated control flag; all **233 instruction-tool tests** pass.
+
+Two fresh native sampling runs on the available browser retain exact reference
+PNGs, complete content and capture ownership checks. Eager symbol loading in
+the first profile leaves mostly later capture/audit/teardown observations.
+The second records 2,137 main-thread samples and substantial native layout
+activity. Both include idle work and overlapping stacks; neither establishes
+retired-instruction attribution or an optimization gain.
+
+At the recorded receipt time the shared production build is busy, and the
+latest completed executable remains `f769e44d…`, which lacks this change.
+No duplicate build or app/tool copy is queued. Fresh production path/JSC
+diagnostics, native checks and the prepared seven-triple matched cohort must
+run on a completed bundle containing the final code. There is no new BBC
+instruction credit, broad-check reset or catalog qualification. The latest
+unprofiled cohort still fails the requested 10% target.
+
+See the [stylesheet evidence](benchmark-results/bbc-adjacent-sheet-removal-2026-11-02.json)
+and [compressed fixtures and native profiles](benchmark-results/bbc-adjacent-sheet-removal-2026-11-02-raw.json.gz)
+for commands, exact inputs, failures, guards, source identities and pending
+canonical runners. The earlier rendering/script limitations and private Brave
+immutable-flag cleanup remain open. Generated evidence remains local in
+`docs/benchmark-results/` and `Build/`, following the repository's current
+ignore policy; the source, tests and this report text are committed.
