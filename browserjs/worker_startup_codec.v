@@ -16,6 +16,7 @@ pub enum WorkerAgentFrameKind as u32 {
 	message
 	load_failure
 	shutdown
+	port_message
 }
 
 pub struct WorkerStartup {

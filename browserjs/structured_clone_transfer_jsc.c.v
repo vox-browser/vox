@@ -15,6 +15,8 @@ pub struct NativeArrayBufferTransferRecord {
 pub:
 	serialized html.SerializationRecord
 	buffers    []TransferredArrayBuffer
+	ports      []u64
+	memory     []WorkerTransferSlot
 }
 
 // Capture the detachment intrinsic when the realm is initialized, alongside
@@ -68,6 +70,10 @@ fn reserve_transferred_view_extents(value dom.JSValue, memory map[u64]bool, mut 
 }
 
 pub fn (bridge &ArrayBufferTransferBridge) serialize(value voidptr, transfer_list []voidptr) !NativeArrayBufferTransferRecord {
+	return bridge.serialize_for_worker(value, transfer_list, none)
+}
+
+fn (bridge &ArrayBufferTransferBridge) serialize_for_worker(value voidptr, transfer_list []voidptr, router ?&WorkerPortRouter) !NativeArrayBufferTransferRecord {
 	owner := bridge.clone.runtime
 	owner.require_javascript_value_context()!
 	persistent := platform.enter_persistent()
@@ -76,15 +82,29 @@ pub fn (bridge &ArrayBufferTransferBridge) serialize(value voidptr, transfer_lis
 	defer { projection.release_roots() }
 	mut memory := []&html.StructuredObject{}
 	mut identities := map[u64]bool{}
+	mut slots := []WorkerTransferSlot{}
+	mut buffer_count := u32(0)
+	mut port_count := u32(0)
 	for actual in transfer_list {
 		projection.root(actual)!
+		if u64(actual) in projection.input_memory {
+			return native_clone_unsupported('Cannot transfer the same object twice')
+		}
+		if port := owner.native_message_port(actual) {
+			if router == none { return native_clone_unsupported('MessagePort transfer requires a worker transport') }
+			port.require_idle_worker_transfer() or { return native_clone_unsupported(err.msg()) }
+			placeholder := html.StructuredObject.create(.object)
+			projected := html.structured_object_value(placeholder)
+			projection.input_memory[u64(actual)] = &projected
+			memory << placeholder
+			slots << WorkerTransferSlot{kind: .port, index: port_count}
+			port_count++
+			continue
+		}
 		// This prepass checks brands and duplicates, without rejecting detached
 		// buffers yet. Message getters must run before the transfer steps.
 		if int(bridge.clone.number(bridge.clone.engine('classify', [actual])!)!) != 22 {
 			return native_clone_unsupported('Transfer list entry is not an ArrayBuffer')
-		}
-		if u64(actual) in projection.input_memory {
-			return native_clone_unsupported('Cannot transfer the same ArrayBuffer twice')
 		}
 		mut placeholder := html.StructuredObject.create(.array_buffer)
 		metadata := projection.root(bridge.clone.engine('buffer_metadata', [actual])!)!
@@ -100,13 +120,21 @@ pub fn (bridge &ArrayBufferTransferBridge) serialize(value voidptr, transfer_lis
 		projection.input_memory[u64(actual)] = &projected
 		memory << placeholder
 		identities[u64(voidptr(placeholder))] = true
+		slots << WorkerTransferSlot{kind: .buffer, index: buffer_count}
+		buffer_count++
 	}
 	projected := projection.project(value)!
 	mut visited := map[u64]bool{}
 	reserve_transferred_view_extents(*projected, identities, mut visited)!
 	serialized := html.structured_serialize_with_transfer_memory(*projected, memory)!
 	mut buffers := []TransferredArrayBuffer{}
+	mut ports := []u64{}
 	for actual in transfer_list {
+		if port := owner.native_message_port(actual) {
+			mut transport := router or { return native_clone_unsupported('Missing worker port transport') }
+			ports << transport.export_port(port)!
+			continue
+		}
 		mut holder := html.StructuredObject.create(.array_buffer)
 		projection.project_array_buffer(actual, mut holder)!
 		// The captured engine operation enforces ArrayBufferDetachKey, including
@@ -114,11 +142,21 @@ pub fn (bridge &ArrayBufferTransferBridge) serialize(value voidptr, transfer_lis
 		owner.call_engine_function(bridge.transfer, [actual])!
 		buffers << TransferredArrayBuffer{bytes: holder.bytes, max_byte_length: holder.max_byte_length}
 	}
-	return NativeArrayBufferTransferRecord{serialized: serialized, buffers: buffers}
+	return NativeArrayBufferTransferRecord{serialized: serialized, buffers: buffers, ports: ports,
+		memory: if ports.len > 0 { slots } else { []WorkerTransferSlot{} }}
+}
+
+struct WorkerDeserializedMessage {
+	data voidptr
+	ports []&html.MessagePort
 }
 
 // The returned actual value carries one Runtime root, matching clone.deserialize.
 pub fn (bridge &ArrayBufferTransferBridge) deserialize(record NativeArrayBufferTransferRecord) !voidptr {
+	return bridge.deserialize_for_worker(record, none)!.data
+}
+
+fn (bridge &ArrayBufferTransferBridge) deserialize_for_worker(record NativeArrayBufferTransferRecord, router ?&WorkerPortRouter) !WorkerDeserializedMessage {
 	owner := bridge.clone.runtime
 	owner.require_javascript_value_context()!
 	persistent := platform.enter_persistent()
@@ -127,7 +165,9 @@ pub fn (bridge &ArrayBufferTransferBridge) deserialize(record NativeArrayBufferT
 	defer { owner.clean_up_html_script() }
 	mut projection := NativeCloneProjection{bridge: bridge.clone}
 	defer { projection.release_roots() }
+	validate_worker_transfer_memory(record)!
 	mut memory := []&html.StructuredObject{}
+	mut buffers := []&html.StructuredObject{}
 	for data in record.buffers {
 		if maximum := data.max_byte_length {
 			if maximum < u64(data.bytes.len) {
@@ -139,11 +179,29 @@ pub fn (bridge &ArrayBufferTransferBridge) deserialize(record NativeArrayBufferT
 		buffer.max_byte_length = data.max_byte_length
 		actual := projection.reconstruct_array_buffer(buffer)!
 		projection.output_memory[u64(voidptr(buffer))] = actual
-		memory << buffer
+		buffers << buffer
+	}
+	mut ports := []&html.MessagePort{}
+	mut placeholders := []&html.StructuredObject{}
+	for token in record.ports {
+		mut transport := router or { return native_clone_unsupported('Missing worker MessagePort transport') }
+		port := transport.import_port(token)!
+		placeholder := html.StructuredObject.create(.object)
+		mut runtime := unsafe { &Runtime(owner) }
+		projection.output_memory[u64(voidptr(placeholder))] = runtime.javascript_message_port(port)!
+		placeholders << placeholder
+		ports << port
+	}
+	if record.ports.len == 0 {
+		memory = buffers.clone()
+	} else {
+		for slot in record.memory {
+			memory << if slot.kind == .buffer { buffers[int(slot.index)] } else { placeholders[int(slot.index)] }
+		}
 	}
 	value := html.structured_deserialize_with_transfer_memory(record.serialized, memory,
 		owner.native_clone_deserialization_context()) or { return native_clone_unsupported(err.msg()) }
 	actual := projection.reconstruct(value)!
 	mut runtime := unsafe { &Runtime(owner) }
-	return runtime.retain_javascript_value(actual)
+	return WorkerDeserializedMessage{data: runtime.retain_javascript_value(actual)!, ports: ports}
 }

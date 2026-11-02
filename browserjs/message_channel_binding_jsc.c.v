@@ -9,6 +9,7 @@ import webidl
 @[heap]
 struct MessageChannelBinding {
 	clone &StructuredCloneBridge
+	transfer &ArrayBufferTransferBridge
 mut:
 	prototype voidptr
 	channels  map[voidptr]&html.MessageChannel
@@ -22,7 +23,8 @@ pub fn (mut runtime Runtime) install_message_channel_binding() ! {
 	owner := voidptr(&runtime)
 	if owner in message_channel_bindings_ { return }
 	runtime.install_message_event_binding()!
-	mut binding := &MessageChannelBinding{ clone: StructuredCloneBridge.create(&runtime)! }
+	transfer := ArrayBufferTransferBridge.create(&runtime)!
+	mut binding := &MessageChannelBinding{ clone: transfer.clone, transfer: transfer }
 	operation := runtime.make_value_host_function(fn [owner, mut binding] (_ voidptr, args []voidptr) !voidptr {
 		mut runtime := unsafe { &Runtime(owner) }
 		// Wrappers and the native port registry outlive individual script calls.
@@ -108,10 +110,15 @@ fn (mut runtime Runtime) message_channel_operation(mut binding MessageChannelBin
 			}
 		}
 		'post' {
-			// The clone bridge has no native transferable projection yet. Reject
-			// it explicitly rather than silently dropping or copying a transfer.
-			if runtime.ui_event_long(args[3])! != 0 {
-				return native_clone_unsupported('Native MessagePort transfer projection is not yet bound')
+			length := int(binding.clone.number(binding.clone.engine('list_length', [args[3]])!)!)
+			if length > 0 {
+				mut transfers := []voidptr{cap: length}
+				for index in 0 .. length {
+					transfers << binding.clone.engine('list_item', [args[3], C.JSValueMakeNumber(runtime.context, f64(index))])!
+				}
+				record := binding.transfer.serialize(args[2], transfers)!
+				port.post_message_without_transfer(runtime.worker_message_graph(record)!)!
+				return C.JSValueMakeUndefined(runtime.context)
 			}
 			mut projection := NativeCloneProjection{ bridge: binding.clone }
 			defer { projection.release_roots() }

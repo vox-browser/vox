@@ -1,12 +1,34 @@
 module browserjs
 
 import platform
+import dom
+import html
+import loader
+
+fn native_channel_fixture() !(&Runtime, &dom.Document) {
+ if !loader.is_initialized() { loader.initialize() }
+ url := dom.URL{ value: 'https://message.test/' }
+ document := html.parse_navigation_document('<!doctype html>', url, url.origin(), none)!
+ mut runtime := Runtime.create()
+ runtime.bind_scripting_environment(unsafe { &html.EnvironmentSettingsObject(document.relevant_settings_object()) })!
+ runtime.install_window_message_binding()!
+ runtime.install_document_window_event_binding(document, runtime.evaluate_host_value('({})')!)!
+ return runtime, document
+}
+
+fn deliver_native_channel_messages() {
+ mut queue := html.main_thread_event_loop().task_queue()
+ for {
+  task := queue.take_first_runnable_matching(fn (task &html.Task) bool { return task.source() == .posted_message }) or { break }
+  task.execute()
+ }
+}
 
 fn test_message_channel_binding_queues_native_messages_and_clones_values_at_send_time() {
 	$if !darwin && !linux {
 		return
 	}
-	mut runtime, mut document := window_message_fixture()!
+	mut runtime, mut document := native_channel_fixture()!
 	defer {
 		runtime.close()
 		document.finalize()
@@ -19,7 +41,7 @@ fn test_message_channel_binding_queues_native_messages_and_clones_values_at_send
  channel.port1.onmessage=function(event){if(this!==channel.port1)throw new Error("callback receiver");received.push(event);};
  received.length===0;
  ')! == 'true'
-	deliver_window_binding_messages()
+	deliver_native_channel_messages()
 	assert runtime.evaluate_host(r'
  const event=received[0],data=event.data;
  received.length===1&&event instanceof MessageEvent&&event instanceof Event&&event.isTrusted&&event.target===channel.port1&&event.currentTarget===null&&event.source===null&&event.origin===""&&event.lastEventId===""&&data===event.data&&data!==original&&data.self===data&&data.text==="before"&&data.map.get("key")===7n&&data.bytes[0]===1&&data.bytes!==original.bytes&&Object.isFrozen(event.ports)&&event.ports.length===0;
@@ -38,7 +60,7 @@ fn test_message_port_listener_start_and_onmessage_enable_the_actual_queue() {
 	$if !darwin && !linux {
 		return
 	}
-	mut runtime, mut document := window_message_fixture()!
+	mut runtime, mut document := native_channel_fixture()!
 	defer {
 		runtime.close()
 		document.finalize()
@@ -51,17 +73,17 @@ fn test_message_port_listener_start_and_onmessage_enable_the_actual_queue() {
  channel.port2.onmessage=event=>replies.push(event.data);
  channel.port2.postMessage("queued");true;
  ')! == 'true'
-	deliver_window_binding_messages()
+	deliver_native_channel_messages()
 	assert runtime.evaluate_host('received.length===0')! == 'true'
 	assert runtime.evaluate_host('channel.port1.start();channel.port1.start();channel.port1.postMessage("reply");received.length===0&&replies.length===0')! == 'true'
-	deliver_window_binding_messages()
+	deliver_native_channel_messages()
 	assert runtime.evaluate_host('received.join() === "queued"&&replies.join() === "reply"')! == 'true'
 	assert runtime.evaluate_host(r'
  globalThis.second=new MessageChannel();second.port2.postMessage("queued before handler");
  second.port1.addEventListener("message",event=>received.push(event.data));
  second.port1.onmessage=null;true;
  ')! == 'true'
-	deliver_window_binding_messages()
+	deliver_native_channel_messages()
 	assert runtime.evaluate_host('received.join("|")==="queued|queued before handler"')! == 'true'
 }
 
@@ -69,7 +91,7 @@ fn test_message_port_close_and_clone_failures_do_not_deliver_or_enter_closed_rea
 	$if !darwin && !linux {
 		return
 	}
-	mut runtime, mut document := window_message_fixture()!
+	mut runtime, mut document := native_channel_fixture()!
 	defer { document.finalize() }
 	runtime.install_message_channel_binding()!
 	assert runtime.evaluate_host(r'
@@ -81,7 +103,7 @@ fn test_message_port_close_and_clone_failures_do_not_deliver_or_enter_closed_rea
  let transferError=false;try{channel.port2.postMessage(0,[channel.port1])}catch(error){transferError=error instanceof DOMException&&error.name==="DataCloneError";}
  cloneErrors===4&&reads===1&&getterError&&transferError;
  ')! == 'true'
-	deliver_window_binding_messages()
+	deliver_native_channel_messages()
 	assert runtime.evaluate_host('count===0')! == 'true'
 	assert runtime.evaluate_host(r'
  globalThis.pending=new MessageChannel();pending.port1.onmessage=()=>{throw new Error("closed realm callback")};pending.port2.postMessage(2);true;
@@ -95,14 +117,14 @@ fn test_message_port_close_and_clone_failures_do_not_deliver_or_enter_closed_rea
 		assert !port.is_entangled()
 		assert port.pending_incoming_message_count() == 0
 	}
-	deliver_window_binding_messages()
+	deliver_native_channel_messages()
 }
 
 fn test_message_channel_webidl_identity_brands_and_argument_conversion() {
 	$if !darwin && !linux {
 		return
 	}
-	mut runtime, mut document := window_message_fixture()!
+	mut runtime, mut document := native_channel_fixture()!
 	defer {
 		runtime.close()
 		document.finalize()
@@ -130,7 +152,7 @@ fn test_message_channel_messages_and_events_outlive_temporary_allocations() {
 	$if !darwin && !linux {
 		return
 	}
-	mut runtime, mut document := window_message_fixture()!
+	mut runtime, mut document := native_channel_fixture()!
 	defer {
 		runtime.close()
 		document.finalize()
@@ -145,7 +167,7 @@ fn test_message_channel_messages_and_events_outlive_temporary_allocations() {
 	caller.finish()
 	gc_collect()
 	mut delivery := platform.begin_thread_scratch('MessageChannel delivery')
-	deliver_window_binding_messages()
+	deliver_native_channel_messages()
 	delivery.finish()
 	gc_collect()
 	assert runtime.evaluate_host('saved.target===channel.port1&&saved.data.text==="Санкт-Петербург 😀".repeat(64)&&saved.data.nested.value===42')! == 'true'

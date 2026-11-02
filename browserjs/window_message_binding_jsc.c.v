@@ -195,8 +195,9 @@ fn (mut runtime Runtime) window_message_operation(mut binding WindowMessageBindi
 			return C.vox_jsc_JSValueMakeNull(runtime.context)
 		}
 		'ports' {
-			if message.ports().len > 0 { return error('MessagePort has no native wrapper') }
-			return C.vox_jsc_JSObjectMakeArray(runtime.context, 0, unsafe { nil }, unsafe { nil })
+			mut ports := []voidptr{}
+			for port in message.ports() { ports << runtime.javascript_message_port(port)! }
+			return C.vox_jsc_JSObjectMakeArray(runtime.context, uint(ports.len), ports.data, unsafe { nil })
 		}
 		'init' {
 			type_ := runtime.binding_dom_string(args[2])!

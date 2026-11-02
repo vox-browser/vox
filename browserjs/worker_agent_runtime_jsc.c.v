@@ -245,6 +245,15 @@ pub fn (mut agent WorkerAgentRuntime) take_outgoing() [][]u8 {
 	return agent.global.take_outgoing()
 }
 
+pub fn (mut agent WorkerAgentRuntime) queue_port_message(bytes []u8) ! {
+	if agent.state_ in [.failed, .closed] { return }
+	agent.global.ports.queue_incoming(bytes)!
+}
+
+pub fn (mut agent WorkerAgentRuntime) take_outgoing_port_messages() ![][]u8 {
+	return agent.global.ports.take_outgoing()
+}
+
 pub fn (mut agent WorkerAgentRuntime) process() {
 	if agent.state_ != .ready || agent.environment.global_scope.is_closing() { return }
 	persistent := platform.enter_persistent()

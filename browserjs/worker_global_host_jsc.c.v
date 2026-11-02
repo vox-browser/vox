@@ -15,6 +15,7 @@ pub struct WorkerGlobalHost {
 mut:
 	runtime     &Runtime = unsafe { nil }
 	transfer    &ArrayBufferTransferBridge = unsafe { nil }
+	ports       &WorkerPortRouter = unsafe { nil }
 	outgoing    [][]u8
 	queued_bytes int
 	closed      bool
@@ -56,6 +57,8 @@ pub fn (mut host WorkerGlobalHost) install(mut runtime Runtime) ! {
 	runtime.bind_event_target(global, host.scope.this_impl())!
 	host.runtime = &runtime
 	host.transfer = ArrayBufferTransferBridge.create(&runtime)!
+	runtime.install_message_channel_binding()!
+	host.ports = WorkerPortRouter.create(&runtime, false)!
 	handle := voidptr(&host)
 	operation := runtime.make_value_host_function(fn [handle] (_ voidptr, args []voidptr) !voidptr {
 		mut host := unsafe { &WorkerGlobalHost(handle) }
@@ -92,6 +95,7 @@ pub fn (mut host WorkerGlobalHost) close() {
 	host.closed = true
 	host.outgoing = []
 	host.queued_bytes = 0
+	if host.ports != unsafe { nil } { host.ports.close() }
 	mut scope := unsafe { &html.DedicatedWorkerGlobalScope(host.scope) }
 	scope.terminate_worker()
 }
@@ -120,9 +124,11 @@ pub fn (mut host WorkerGlobalHost) queue_message(bytes []u8) ! {
 }
 
 fn (mut host WorkerGlobalHost) deliver(record NativeArrayBufferTransferRecord) ! {
-	actual := host.transfer.deserialize(record)!
+	message := host.transfer.deserialize_for_worker(record, host.ports)!
+	actual := message.data
 	mut event := html.MessageEvent.create('message', html.MessageEventInit{
 		data: host.runtime.event_callback_result(actual)!
+		ports: message.ports
 	})
 	mut binding := window_message_bindings_[voidptr(host.runtime)] or { return error('Missing worker MessageEvent binding') }
 	// deserialize returned the one Runtime root owned by this event's cache.
@@ -154,7 +160,7 @@ fn (mut host WorkerGlobalHost) operate(args []voidptr) !voidptr {
 			for index in 0 .. length {
 				buffers << clone.engine('list_item', [list, C.vox_jsc_JSValueMakeNumber(runtime.context, f64(index))])!
 			}
-			bytes := encode_worker_message(host.transfer.serialize(args[1], buffers)!)!
+			bytes := encode_worker_message(host.transfer.serialize_for_worker(args[1], buffers, host.ports)!)!
 			if bytes.len > 64 * 1024 * 1024 - host.queued_bytes { return error('Dedicated worker outgoing queue is full') }
 			host.outgoing << bytes
 			host.queued_bytes += bytes.len

@@ -37,7 +37,7 @@ fn message_channel_binding_factory() string {
    if(iterator!=null)transfer=sequence(options,iterator);
    else{const value=options.transfer;if(value!==undefined)transfer=sequence(value);}
   }
-  return operate("post",this,message,transfer.length);
+  return operate("post",this,message,transfer);
  },start(){return operate("start",this);},close(){return operate("close",this);}};
  for(const name of ["postMessage","start","close"])define(MessagePort.prototype,name,{value:methods[name],writable:true,enumerable:true,configurable:true});
  for(const name of ["onmessage","onmessageerror"]){

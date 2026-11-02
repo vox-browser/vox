@@ -58,6 +58,10 @@ pub fn (mut child WorkerChildSession) accept(frame WorkerProcessFrame) ! {
 			mut agent := child.agent or { return error('Worker message preceded startup') }
 			agent.queue_message(frame.bytes)!
 		}
+		u32(WorkerAgentFrameKind.port_message) {
+			mut agent := child.agent or { return error('Worker port message preceded startup') }
+			agent.queue_port_message(frame.bytes)!
+		}
 		u32(WorkerAgentFrameKind.shutdown) {
 			if frame.bytes.len != 0 { return error('Invalid worker shutdown frame') }
 			child.close()
@@ -69,6 +73,13 @@ pub fn (mut child WorkerChildSession) accept(frame WorkerProcessFrame) ! {
 fn (mut child WorkerChildSession) collect() {
 	if mut agent := child.agent {
 		for bytes in agent.take_outgoing() { child.send(.message, bytes) }
+		frames := agent.take_outgoing_port_messages() or {
+			agent.close()
+			child.send(.load_failure, [])
+			child.finished = true
+			return
+		}
+		for bytes in frames { child.send(.port_message, bytes) }
 		if agent.environment.global_scope.is_closing() { child.finished = true }
 	}
 }

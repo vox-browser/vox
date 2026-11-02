@@ -10,6 +10,44 @@ import platform
 const worker_message_max_bytes = 16 * 1024 * 1024
 const worker_message_max_capacity = u64(9007199254740991)
 
+pub enum WorkerTransferKind as u8 {
+	buffer
+	port
+}
+
+pub struct WorkerTransferSlot {
+pub:
+	kind WorkerTransferKind
+	index u32
+}
+
+fn validate_worker_transfer_memory(record NativeArrayBufferTransferRecord) ! {
+	if record.ports.len == 0 {
+		if record.memory.len != 0 { return error('Buffer-only worker messages use implicit transfer order') }
+		return
+	}
+	if record.memory.len != record.buffers.len + record.ports.len { return error('Invalid worker transfer memory length') }
+	mut tokens := map[u64]bool{}
+	for token in record.ports {
+		if token == 0 || tokens[token] { return error('Invalid or duplicate worker MessagePort token') }
+		tokens[token] = true
+	}
+	mut buffers := map[u32]bool{}
+	mut ports := map[u32]bool{}
+	for slot in record.memory {
+		match slot.kind {
+			.buffer {
+				if slot.index >= u32(record.buffers.len) || buffers[slot.index] { return error('Invalid worker buffer transfer index') }
+				buffers[slot.index] = true
+			}
+			.port {
+				if slot.index >= u32(record.ports.len) || ports[slot.index] { return error('Invalid worker port transfer index') }
+				ports[slot.index] = true
+			}
+		}
+	}
+}
+
 fn worker_message_write_u32(mut bytes []u8, value u32) {
 	for shift in [24, 16, 8, 0] { bytes << u8(value >> shift) }
 }
@@ -21,6 +59,7 @@ fn worker_message_write_u64(mut bytes []u8, value u64) {
 // Own every byte before returning to the sending event loop. Shared backing
 // stores cannot cross this process boundary through a same-process side table.
 pub fn encode_worker_message(record NativeArrayBufferTransferRecord) ![]u8 {
+	validate_worker_transfer_memory(record)!
 	if record.serialized.type_ != .ipc || record.serialized.data.len == 0 {
 		return error('Invalid worker structured serialization record')
 	}
@@ -28,6 +67,7 @@ pub fn encode_worker_message(record NativeArrayBufferTransferRecord) ![]u8 {
 		return error('Worker shared backing-store transport is unavailable')
 	}
 	mut length := u64(12) + u64(record.serialized.data.len)
+	if record.ports.len > 0 { length += 4 + u64(record.ports.len) * 8 + u64(record.memory.len) * 5 }
 	for buffer in record.buffers {
 		if maximum := buffer.max_byte_length {
 			if maximum < u64(buffer.bytes.len) || maximum > worker_message_max_capacity {
@@ -41,15 +81,21 @@ pub fn encode_worker_message(record NativeArrayBufferTransferRecord) ![]u8 {
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
 	mut bytes := []u8{cap: int(length)}
-	bytes << 'VXM1'.bytes()
+	bytes << if record.ports.len > 0 { 'VXM2'.bytes() } else { 'VXM1'.bytes() }
 	worker_message_write_u32(mut bytes, u32(record.serialized.data.len))
 	worker_message_write_u32(mut bytes, u32(record.buffers.len))
+	if record.ports.len > 0 { worker_message_write_u32(mut bytes, u32(record.ports.len)) }
 	bytes << record.serialized.data
 	for buffer in record.buffers {
 		worker_message_write_u32(mut bytes, u32(buffer.bytes.len))
 		bytes << u8(if buffer.max_byte_length != none { 1 } else { 0 })
 		worker_message_write_u64(mut bytes, buffer.max_byte_length or { 0 })
 		bytes << buffer.bytes
+	}
+	for token in record.ports { worker_message_write_u64(mut bytes, token) }
+	for slot in record.memory {
+		bytes << u8(slot.kind)
+		worker_message_write_u32(mut bytes, slot.index)
 	}
 	return bytes
 }
@@ -86,12 +132,16 @@ fn (mut reader WorkerMessageReader) read_u64() !u64 {
 pub fn decode_worker_message(bytes []u8) !NativeArrayBufferTransferRecord {
 	if bytes.len > worker_message_max_bytes { return error('Worker message exceeds the frame limit') }
 	mut reader := WorkerMessageReader{bytes: bytes}
-	if reader.take(4)! != 'VXM1'.bytes() { return error('Invalid worker message version') }
+	version := reader.take(4)!
+	if version != 'VXM1'.bytes() && version != 'VXM2'.bytes() { return error('Invalid worker message version') }
 	graph_length := reader.read_u32()!
 	buffer_count := reader.read_u32()!
+	port_count := if version == 'VXM2'.bytes() { reader.read_u32()! } else { u32(0) }
+	if version == 'VXM2'.bytes() && port_count == 0 { return error('Empty worker MessagePort transfer list') }
 	if graph_length == 0 { return error('Empty worker structured serialization record') }
 	graph := reader.take(int(graph_length))!
-	if u64(buffer_count) * 13 > u64(bytes.len - reader.offset) {
+	if u64(buffer_count) * 13 + u64(port_count) * 8
+		+ (if port_count > 0 { (u64(buffer_count) + u64(port_count)) * 5 } else { u64(0) }) > u64(bytes.len - reader.offset) {
 		return error('Truncated worker transfer list')
 	}
 	persistent := platform.enter_persistent()
@@ -111,9 +161,23 @@ pub fn decode_worker_message(bytes []u8) !NativeArrayBufferTransferRecord {
 			max_byte_length: if kind == 1 { ?u64(maximum) } else { none }
 		}
 	}
+	mut ports := []u64{cap: int(port_count)}
+	for _ in 0 .. int(port_count) { ports << reader.read_u64()! }
+	mut memory := []WorkerTransferSlot{}
+	if port_count > 0 {
+		for _ in 0 .. int(u64(buffer_count) + u64(port_count)) {
+			kind := reader.take(1)![0]
+			if kind > u8(WorkerTransferKind.port) { return error('Invalid worker transfer kind') }
+			memory << WorkerTransferSlot{kind: unsafe { WorkerTransferKind(kind) }, index: reader.read_u32()!}
+		}
+	}
 	if reader.offset != bytes.len { return error('Trailing worker message bytes') }
-	return NativeArrayBufferTransferRecord{
+	record := NativeArrayBufferTransferRecord{
 		serialized: html.SerializationRecord{data: graph.clone()}
 		buffers: buffers
+		ports: ports
+		memory: memory
 	}
+	validate_worker_transfer_memory(record)!
+	return record
 }

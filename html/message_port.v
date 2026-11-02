@@ -181,6 +181,7 @@ mut:
 	has_been_shipped_               bool
 	detached_                       bool
 	enabled_                        bool
+	has_sent_message_               bool
 	pending_messages_               []SerializedTransferRecord
 	pending_outgoing_messages_      []SerializedTransferRecord
 	message_task_generation_        u64
@@ -248,6 +249,25 @@ pub fn (port &MessagePort) pending_outgoing_message_count() uint {
 
 pub fn (port &MessagePort) pending_incoming_message_count() uint {
 	return uint(port.pending_messages_.len)
+}
+
+// The worker IPC adapter currently exports only unused, disabled endpoints.
+// Reject a port with queued or scheduled deliveries before moving its handle.
+pub fn (port &MessagePort) require_idle_worker_transfer() ! {
+	if port.detached_ { return error('DataCloneError: MessagePort is detached') }
+	if port.enabled_ || port.has_sent_message_ || port.pending_messages_.len != 0
+		|| port.pending_outgoing_messages_.len != 0 {
+		return error('DataCloneError: Transferring active or queued worker MessagePorts is unavailable')
+	}
+}
+
+// Backend-only endpoint draining. Script-visible endpoints keep using their
+// ordinary posted-message tasks and must never be drained by the IPC router.
+pub fn (mut port MessagePort) take_disabled_transport_messages() ![]SerializedTransferRecord {
+	if port.enabled_ || port.detached_ { return error('MessagePort transport endpoint is not disabled') }
+	result := port.pending_messages_
+	port.pending_messages_ = []
+	return result
 }
 
 pub fn (mut port MessagePort) fail_next_transfer_for_testing() {
@@ -400,6 +420,7 @@ fn (record SerializedTransferRecord) copy_for_transport() SerializedTransferReco
 }
 
 pub fn (mut port MessagePort) post_port_message(record SerializedTransferRecord) {
+	port.has_sent_message_ = true
 	if !port.is_entangled() {
 		return
 	}

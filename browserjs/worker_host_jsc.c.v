@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-2-Clause
-// Parent endpoint for classic dedicated workers in an independent JSC process.
+// Parent endpoint for dedicated workers in an independent JSC process.
 @[has_globals]
 module browserjs
 
@@ -14,6 +14,7 @@ struct RemoteWorker {
 	worker &html.Worker
 mut:
 	process ?&WorkerProcess
+	ports &WorkerPortRouter
 	ready bool
 }
 
@@ -53,6 +54,7 @@ pub fn (mut host WorkerHost) install(mut runtime Runtime) ! {
 		return error('Worker binding already belongs to another runtime')
 	}
 	runtime.install_message_event_binding()!
+	runtime.install_message_channel_binding()!
 	host.runtime = &runtime
 	host.transfer = ArrayBufferTransferBridge.create(&runtime)!
 	handle := voidptr(&host)
@@ -87,6 +89,7 @@ pub fn (mut host WorkerHost) install(mut runtime Runtime) ! {
 fn (mut remote RemoteWorker) disconnect() {
 	if mut process := remote.process { process.close() }
 	remote.process = none
+	remote.ports.close()
 }
 
 fn (mut remote RemoteWorker) terminate() {
@@ -121,7 +124,7 @@ fn (mut host WorkerHost) construct(receiver voidptr, args []voidptr) !voidptr {
 		type_: if runtime.binding_dom_string(args[5])! == 'module' { .module_ } else { .classic }
 	}
 	worker := &html.Worker{script_url: url, options: options}
-	mut remote := &RemoteWorker{worker: worker}
+	mut remote := &RemoteWorker{worker: worker, ports: WorkerPortRouter.create(runtime, true)!}
 	runtime.bind_event_target(receiver, worker.this_event_target())!
 	host.workers[receiver] = remote
 	// Fetch/startup failures are asynchronous events on the constructed Worker.
@@ -169,7 +172,7 @@ fn (mut host WorkerHost) operate(args []voidptr) !voidptr {
 			for index in 0 .. length {
 				buffers << clone.engine('list_item', [args[3], C.vox_jsc_JSValueMakeNumber(runtime.context, f64(index))])!
 			}
-			bytes := encode_worker_message(host.transfer.serialize(args[2], buffers)!)!
+			bytes := encode_worker_message(host.transfer.serialize_for_worker(args[2], buffers, remote.ports)!)!
 			if remote.worker.terminated_ { return C.vox_jsc_JSValueMakeUndefined(runtime.context) }
 			if process := remote.process {
 				process.queue(u32(WorkerAgentFrameKind.message), bytes) or {
@@ -193,6 +196,12 @@ pub fn (mut host WorkerHost) poll() {
 	mut active := false
 	for _, mut remote in host.workers {
 		mut process := remote.process or { continue }
+		port_frames := remote.ports.take_outgoing() or { remote.disconnect(); host.queue_failure(remote); continue }
+		mut port_failed := false
+		for bytes in port_frames {
+			process.queue(u32(WorkerAgentFrameKind.port_message), bytes) or { port_failed = true; break }
+		}
+		if port_failed { remote.disconnect(); host.queue_failure(remote); continue }
 		process.flush() or { remote.disconnect(); host.queue_failure(remote); continue }
 		for _ in 0 .. 64 {
 			read := process.receive() or { remote.disconnect(); host.queue_failure(remote); break }
@@ -206,6 +215,8 @@ pub fn (mut host WorkerHost) poll() {
 				remote.ready = true
 			} else if frame.kind == u32(WorkerAgentFrameKind.message) && remote.ready {
 				host.queue_message(remote, frame.bytes) or { remote.disconnect(); host.queue_failure(remote); break }
+			} else if frame.kind == u32(WorkerAgentFrameKind.port_message) && remote.ready {
+				remote.ports.queue_incoming(frame.bytes) or { remote.disconnect(); host.queue_failure(remote); break }
 			} else {
 				remote.disconnect()
 				host.queue_failure(remote)
@@ -250,8 +261,9 @@ fn (mut host WorkerHost) queue_message(remote &RemoteWorker, bytes []u8) ! {
 }
 
 fn (mut host WorkerHost) deliver(remote &RemoteWorker, record NativeArrayBufferTransferRecord) ! {
-	actual := host.transfer.deserialize(record)!
-	mut event := html.MessageEvent.create('message', html.MessageEventInit{data: host.runtime.event_callback_result(actual)!})
+	message := host.transfer.deserialize_for_worker(record, remote.ports)!
+	actual := message.data
+	mut event := html.MessageEvent.create('message', html.MessageEventInit{data: host.runtime.event_callback_result(actual)!, ports: message.ports})
 	mut binding := window_message_bindings_[voidptr(host.runtime)] or { return error('Missing MessageEvent binding') }
 	binding.data[voidptr(event)] = actual
 	event.set_is_trusted(true)

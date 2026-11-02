@@ -13,6 +13,39 @@ fn worker_codec_fixture() NativeArrayBufferTransferRecord {
 	}
 }
 
+fn test_worker_message_port_envelope_preserves_mixed_transfer_memory_and_rejects_bad_indices() {
+	record := NativeArrayBufferTransferRecord{
+		serialized: html.SerializationRecord{data: [u8(0)]}
+		buffers: [TransferredArrayBuffer{bytes: [u8(128), 255]}]
+		ports: [u64(1), u64(9223372036854775810)]
+		memory: [WorkerTransferSlot{kind: .port, index: 1}, WorkerTransferSlot{kind: .buffer, index: 0}, WorkerTransferSlot{kind: .port, index: 0}]
+	}
+	bytes := encode_worker_message(record)!
+	assert bytes[..4] == 'VXM2'.bytes()
+	decoded := decode_worker_message(bytes)!
+	assert decoded.ports == record.ports
+	assert decoded.memory == record.memory
+	assert decoded.buffers[0].bytes == [u8(128), 255]
+	assert encode_worker_message(decoded)! == bytes
+	for end in 0 .. bytes.len {
+		if _ := decode_worker_message(bytes[..end]) { assert false }
+	}
+	for bad in [
+		NativeArrayBufferTransferRecord{...record, ports: [u64(0), 2]},
+		NativeArrayBufferTransferRecord{...record, ports: [u64(1), 1]},
+		NativeArrayBufferTransferRecord{...record, memory: []},
+		NativeArrayBufferTransferRecord{...record, memory: [WorkerTransferSlot{kind: .port, index: 0}, WorkerTransferSlot{kind: .port, index: 0}, WorkerTransferSlot{kind: .buffer, index: 0}]},
+		NativeArrayBufferTransferRecord{...record, memory: [WorkerTransferSlot{kind: .port, index: 99}, WorkerTransferSlot{kind: .port, index: 0}, WorkerTransferSlot{kind: .buffer, index: 0}]},
+	] {
+		if _ := encode_worker_message(bad) { assert false }
+	}
+	mut corrupt := bytes.clone()
+	corrupt[corrupt.len - 5] = 255
+	if _ := decode_worker_message(corrupt) { assert false }
+	mut trailing := bytes.clone(); trailing << 0
+	if _ := decode_worker_message(trailing) { assert false }
+}
+
 fn test_worker_message_wire_format_preserves_transfer_order_and_full_width_capacities() {
 	record := worker_codec_fixture()
 	bytes := encode_worker_message(record)!
