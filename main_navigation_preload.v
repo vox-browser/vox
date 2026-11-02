@@ -44,7 +44,10 @@ fn (mut app BrowserApp) retain_navigation_resource(resource_url string, resource
 }
 
 fn parse_page_preload_document(loaded LoadedPage, scripting_enabled bool) &dom.Document {
-	document_url := dom.dom_url_parse(loaded.url, dom.url_about_blank(), 'UTF-8') or { dom.url_about_blank() }
+	// Discovery can begin inside another document's callback or frame workspace.
+	// Its identity survives that caller while asynchronous resources load.
+	persistent := platform.enter_persistent()
+	document_url := dom.dom_url_parse(loaded.url.clone(), dom.url_about_blank(), 'UTF-8') or { dom.url_about_blank() }
 	mut document := dom.Document.create(document_url)
 	// Resource classification resolves computed styles. Use the same font
 	// policy as the eventual navigation document, including system-face metrics.
@@ -53,7 +56,8 @@ fn parse_page_preload_document(loaded LoadedPage, scripting_enabled bool) &dom.D
 	install_browser_document_font_policies(mut document)
 	document.set_display_device_pixel_ratio(html.display_device_pixel_ratio())
 	document.enable_native_storage()
-	mut allocations := document.enter_native_storage()
+	platform.leave_persistent(persistent)
+	mut allocations := enter_preload_document_storage(document)
 	defer { allocations.finish() }
 	document.set_scripting_enabled_by_embedder(scripting_enabled)
 	document.set_allow_declarative_shadow_roots(true)
@@ -75,6 +79,14 @@ fn parse_page_preload_document(loaded LoadedPage, scripting_enabled bool) &dom.D
 	parser.resource_discovery_only = scripting_enabled
 	parser.run()
 	return document
+}
+
+// A discovery document has an independent lifetime even when another native
+// arena is entered. Ordinary enter_native_storage() preserves that caller.
+fn enter_preload_document_storage(document &dom.Document) platform.RetainedArenaScope {
+	mut storage := document.native_storage()
+	if storage == unsafe { nil } { return platform.RetainedArenaScope{} }
+	return storage.enter_nested()
 }
 
 fn retire_native_preload_document(document &dom.Document) {
@@ -237,7 +249,7 @@ fn (mut app BrowserApp) poll_page_preload() {
 // rather than accumulating in the shell's base arena before every navigation.
 fn foreground_preload_urls_in_document_storage(document &dom.Document, base_url string,
 	resources map[string]PreloadedResource, urls []string, width f64, height f64) []string {
-	mut allocations := document.enter_native_storage()
+	mut allocations := enter_preload_document_storage(document)
 	_ = install_external_styles(document, base_url, resources)
 	mut mutable_document := unsafe { &dom.Document(document) }
 	mutable_document.set_viewport_rect(dom.Rect{width:width, height:height})
@@ -245,7 +257,9 @@ fn foreground_preload_urls_in_document_storage(document &dom.Document, base_url 
 	foreground, _ := partition_nonrendered_image_preloads(document, base_url, urls)
 	allocations.finish()
 	// The caller retires the document next; worker arguments belong to the
-	// shell and must be copied after leaving its payload scope.
+	// shell, including when the caller itself has a temporary arena entered.
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	return foreground.map(it.clone())
 }
 
