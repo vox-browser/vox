@@ -27,6 +27,8 @@ def chunks(path):
         kind = data[offset + 4:offset + 8]
         body = data[offset + 8:offset + 8 + length]
         assert len(body) == length
+        crc = struct.unpack('>I', data[offset + 8 + length:offset + 12 + length])[0]
+        assert zlib.crc32(kind + body) & 0xFFFFFFFF == crc
         if kind not in (b'IDAT', b'IEND'):
             result.append((kind.decode('ascii'), body.hex()))
         offset += length + 12
@@ -99,10 +101,10 @@ def main():
             row['cases'] = [dict(case=case['case'], **compare(
                 artifacts / ('case-%d-reference.png' % case['case']),
                 artifacts / ('case-%d-actual.png' % case['case']))) for case in records]
-            row['passed'] = (row['test_exit_code'] == 0 and len(records) == 27 and
-                {case['case'] for case in records} == set(range(27)) and
+            row['passed'] = (row['test_exit_code'] == 0 and len(records) == 45 and
+                {case['case'] for case in records} == set(range(45)) and
                 all(case['passed'] for case in row['cases']) and
-                'PASS 27 snapshot PNG pixel/profile/density cases' in (directory / 'test.log').read_text())
+                'PASS 45 snapshot PNG pixel/profile/density cases' in (directory / 'test.log').read_text())
         result['changed_inputs'] = [str(path) for path, sha in pins.items() if digest(Path(path)) != sha]
         result['passed'] = len(result['jobs']) == 2 and all(row['passed'] for row in result['jobs'].values()) and not result['changed_inputs']
     except BaseException:
