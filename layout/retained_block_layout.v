@@ -53,8 +53,13 @@ mut:
 // run through the complete algorithm.
 fn collect_retained_block_inputs(node &Node, mut inputs []RetainedInlineInput,
 	mut rejected map[u64]bool) bool {
+	return collect_retained_block_inputs_in_svg(node, false, mut inputs, mut rejected)
+}
+
+fn collect_retained_block_inputs_in_svg(node &Node, in_simple_svg bool, mut inputs []RetainedInlineInput,
+	mut rejected map[u64]bool) bool {
 	key := u64(voidptr(node))
-	if !disable_retained_block_rejection_cache && rejected[key] {
+	if !in_simple_svg && !disable_retained_block_rejection_cache && rejected[key] {
 		report_retained_block_rejection()
 		return false
 	}
@@ -62,9 +67,12 @@ fn collect_retained_block_inputs(node &Node, mut inputs []RetainedInlineInput,
 	defer { if !accepted { remember_rejected_block_input(mut rejected, key) } }
 	computed := node.computed_values()
 	image := if node.is_replaced_box() { retained_block_image_input(node) } else { none }
+	simple_svg := retained_simple_svg_input(node)
+	inside_svg := in_simple_svg || simple_svg != none
+	if inside_svg && !retained_simple_svg_style_is_closed(node) { return false }
 	if node.is_generated_for_pseudo_element() || node.is_generated_text_node()
-		|| node.is_in_ua_internal_shadow_tree() || node.is_svg_box()
-		|| (node.is_replaced_box() && image == none)
+		|| node.is_in_ua_internal_shadow_tree() || (node.is_svg_box() && !inside_svg)
+		|| (node.is_replaced_box() && image == none && simple_svg == none)
 		|| node.is_floating() || !retained_layout_position_is_unshifted(node) || node.is_list_item_box()
 		|| node.is_list_item_marker_box() || node.is_fieldset_box()
 		|| node.has_layout_containment() || node.has_paint_containment()
@@ -105,9 +113,10 @@ fn collect_retained_block_inputs(node &Node, mut inputs []RetainedInlineInput,
 		root_font_size: computed.root_font_size_px_
 		root_line_height: computed.root_line_height_px_
 		image: image
+		simple_svg: simple_svg
 	}
 	for child in node.children() {
-		if !collect_retained_block_inputs(child, mut inputs, mut rejected) { return false }
+		if !collect_retained_block_inputs_in_svg(child, inside_svg, mut inputs, mut rejected) { return false }
 	}
 	accepted = true
 	return true
@@ -144,6 +153,7 @@ fn run_retaining_independent_formatting_context(mut state LayoutState, box &Node
 			&& retained_inline_inputs_are_current(cached.inputs)
 			&& (cached.font_generation == font_generation
 				|| retained_layout_fonts_are_current(cached.inputs)) {
+			report_retained_simple_svg(cached.inputs)
 			report_retained_block_image_reuse(cached.inputs)
 			report_retained_flex_layout(cached.inputs)
 			report_retained_grid_layout(cached.inputs)

@@ -17,6 +17,7 @@ struct RetainedInlineInput {
 	root_font_size f64
 	root_line_height f64
 	image          ?RetainedBlockImageInput
+	simple_svg     ?&RetainedSimpleSVGInput
 }
 
 struct RetainedInlineValues {
@@ -114,6 +115,11 @@ fn collect_retained_inline_inputs(node &Node, root bool, mut inputs []RetainedIn
 
 fn retained_inline_inputs_are_current(inputs []RetainedInlineInput) bool {
 	for index, input in inputs {
+		if svg_input := input.simple_svg {
+			owner := input.node.dom_node() or { return false }
+			if svg_input.elements.len == 0 || voidptr(owner) != voidptr(svg_input.elements[0].element.as_node()) { return false }
+			if !retained_simple_svg_input_is_current(svg_input) { return false }
+		}
 		if previous := input.image {
 			current := retained_block_image_input(input.node) or { return false }
 			if current != previous { return false }
