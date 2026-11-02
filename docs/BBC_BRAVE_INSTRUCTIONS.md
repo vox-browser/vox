@@ -3331,3 +3331,18 @@ broad-check reset is claimed; the 10% target remains open.** Local
 links raw controls, all failures, process counters, commands, host telemetry,
 source proofs and pending runners under `Build/bbc-box-edges-20261103/`.
 The bridge probe is retained under `Build/bbc-bridge-calls-20261103/`.
+
+
+The final 15-minute edge readiness observer also ends with exit 1 and no
+matching bundle; its timeout is retained rather than retried into acceptance.
+At the 00:54 local checkpoint, builds `003142-c60e729f`, `003723-c2c7eca2`,
+`004258-953e2ca6` and `004854-39b3268c` all completed but were superseded for
+changed inputs; `005352-a0c50202` was still running. The completed bundle's
+actual SHA remains `0bb14e2f940d1ee83a4a57f48179ab40fb3ecf71aa8b7331f199676792ab6974`
+and lacks the new edge path. Feature hashes remain equal to the focused pins.
+The pending runner syntax, probe/diff binaries, available generated C and host
+state are separately sealed in `ready-protocol-review.json`; canonical build
+receipts and the actual observer exit are linked from `shared-build-blocker.json`
+and the local edge evidence. No full-browser eligibility run or cohort starts
+from the stale bundle. This is an unresolved production-publication blocker,
+not a completed BBC optimization target.
