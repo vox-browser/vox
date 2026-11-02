@@ -307,15 +307,16 @@ widths while isolating layout from the separate inline-border painting gap.
 Two full-uBO Brave captures agree at 1024×768 and scale 1. The older production
 bundle differs at 12,341 pixels. The matching layout tests pass in both GC modes;
 see the [Slashdot receipt](../../../docs/benchmark-results/slashdot-brave-pixels-2026-11-02.json)
-for the production pixel-validation status.
+for the production evidence. This fixture is pixel-exact on the canonical
+`192ff348…` production browser.
 
 `chromium-unchecked-radio` covers automatic and authored control sizes,
 fractional placement, and a nonsquare control with a half-pixel center. Its two
 full-uBO Brave references agree at 1024×768 and scale 1. The pixel test waits
 five seconds for native publication; the settled older bundle differs at 556
 pixels. Four focused layout/paint cases pass with default GC and `-gc none`,
-including native replay coordinates and preserved fallback states. Browser
-validation of the new ring remains pending the shared production build.
+including native replay coordinates and preserved fallback states. The fixture
+is pixel-exact on the canonical `192ff348…` production browser.
 
 `border-color-runs-zero-width` covers transparent triangle borders in four
 orientations, two sizes, and a generated comment-bubble tail. Two full-uBO Brave
@@ -323,7 +324,14 @@ references agree at 1024×768 and scale 1. The settled older bundle differs at
 208 pixels. Three focused cases pass with default GC and `-gc none`, preserving
 color boundaries across zero-width or hidden sides and the final same-color
 flush. The typed pipeline now retains only the opaque triangle in its visible
-path; production pixel validation still needs the shared browser update.
+path. The fixture is pixel-exact on the canonical `192ff348…` production browser.
+
+`empty-inline-ending-edges` covers ordinary empty descendants and skipped
+whitespace at inline box endings, including their own edges and a following
+tab stop. Two full-uBO Brave references agree at 1024×768 and scale 1. It exposes
+the additional end-edge loss seen in Slashdot's real byline, beyond the empty
+generated-content case above. Native validation of this additional fix is
+tracked separately in the Slashdot receipt.
 
 `stackoverflow-independent-hyphen-shaping` checks inserted system-font hyphens
 at integer and fractional line origins, narrow line fitting, explicit hyphen

@@ -546,6 +546,11 @@ fn (mut iterator InlineLevelIterator) next_inline_node_in_pre_order(current &Nod
 			}
 			return next
 		}
+		// An empty inline can itself be the stack top. Close it before
+		// ascending so it cannot hide the enclosing boxes' end edges.
+		if iterator.stack_ends_with_node(node) {
+			iterator.exit_node_with_box_model_metrics()
+		}
 		parent := node.parent() or { return none }
 		node = parent
 		if iterator.stack_ends_with_node(node) {
@@ -635,6 +640,9 @@ fn (mut iterator InlineLevelIterator) generate_next_item() ?InlineLevelItem {
 		mut context := &iterator.text_node_context
 		is_first_chunk := context.next_chunk_index == 0
 		if context.next_chunk_index >= context.chunks.len {
+			if context.chunks.len == 0 {
+				iterator.transfer_skipped_inline_metrics_to_previous_item()
+			}
 			iterator.has_text_node_context = false
 			iterator.text_node_context = InlineTextNodeContext{}
 			iterator.previous_chunk_can_break_after = false
@@ -782,6 +790,9 @@ fn (mut iterator InlineLevelIterator) generate_next_item() ?InlineLevelItem {
 	}
 	}
 	if !current.is_box() {
+		if current.is_inline_node() && current.child_count() == 0 {
+			iterator.transfer_skipped_inline_metrics_to_previous_item()
+		}
 		iterator.skip_to_next()
 		return iterator.generate_next_item()
 	}
@@ -1090,4 +1101,25 @@ fn (mut iterator InlineLevelIterator) add_extra_box_model_metrics_to_item(mut it
 			iterator.extra_trailing_metrics = none
 		}
 	}
+}
+
+// An empty inline or a text node with no chunks still closes its ancestor
+// boxes. Carry those edges on the preceding in-flow item before advancing to
+// another node, whose lookahead may close a different set of ancestors.
+fn (mut iterator InlineLevelIterator) transfer_skipped_inline_metrics_to_previous_item() {
+	if iterator.items.len == 0 { return }
+	index := iterator.items.len - 1
+	if iterator.items[index].type_ !in [.text, .element] { return }
+	leading := iterator.extra_leading_metrics or { InlineExtraBoxMetrics{} }
+	trailing := iterator.extra_trailing_metrics or { InlineExtraBoxMetrics{} }
+	margin := leading.margin.plus(trailing.margin)
+	border := leading.border.plus(trailing.border)
+	padding := leading.padding.plus(trailing.padding)
+	iterator.items[index].margin_end = iterator.items[index].margin_end.plus(margin)
+	iterator.items[index].border_end = iterator.items[index].border_end.plus(border)
+	iterator.items[index].padding_end = iterator.items[index].padding_end.plus(padding)
+	iterator.extra_leading_metrics = none
+	iterator.extra_trailing_metrics = none
+	iterator.accumulated_width_for_tabs = iterator.accumulated_width_for_tabs
+		.plus(margin).plus(border).plus(padding)
 }

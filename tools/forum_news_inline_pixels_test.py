@@ -12,6 +12,10 @@ from forum_news_pixels import REPO, VOX, executable_identity, guarded, write_jso
 
 @unittest.skipUnless(sys.platform == 'darwin', 'The reference uses native macOS fonts')
 class ForumNewsInlinePixelsTests(unittest.TestCase):
+    def test_empty_inline_descendants_keep_edges_before_following_content(self):
+        self.compare_fixture('empty-inline-ending-edges', width=1024, height=768,
+                             settle_seconds=5)
+
     def test_zero_width_sides_flush_transparent_border_color_runs(self):
         self.compare_fixture('border-color-runs-zero-width', width=1024, height=768,
                              settle_seconds=5)
