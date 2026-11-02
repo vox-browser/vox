@@ -26,10 +26,21 @@ static inline bool vox_canonical_path_admission_enabled()
     return enabled;
 }
 
+static inline bool vox_opaque_rgba_image_cache_enabled()
+{
+    static bool const enabled = [] {
+        auto* value = std::getenv("VOX_ENABLE_OPAQUE_RGBA_IMAGE_CACHE");
+        return value && !std::strcmp(value, "1")
+            && !std::getenv("VOX_DISABLE_OPAQUE_RGBA_IMAGE_CACHE");
+    }();
+    return enabled;
+}
+
 // Memoize complete GPU image, shape, shadow and path draws, including their input backdrop.
 // Sources can be canvas/video buffers, animated frames or recycled allocations: addresses
 // are never an identity or a promise of immutability. Every hit compares the
 // actual source bytes and every parameter before copying owned output pixels.
+// A proved opaque interior may ignore its hidden backdrop; its fringe cannot.
 // The caller serializes access with the renderer's existing mutex.
 class VoxGraphiteRasterCache {
     struct Entry {
@@ -45,6 +56,7 @@ class VoxGraphiteRasterCache {
         int region_x = 0, region_y = 0;
         int width = 0, height = 0;
         bool has_background = false;
+        bool opaque_rgba_source = false;
         std::shared_ptr<std::vector<uint8_t> const> source;
         std::vector<uint8_t> extra;
         VoxRasterSnapshot background, output;
@@ -103,14 +115,16 @@ class VoxGraphiteRasterCache {
                 sizeof(a.color_profile)));
     }
     static VoxRasterSnapshot::Rect opaque_image_interior(VoxGraphiteImage const& image,
-        int width, int height)
+        int width, int height, bool opaque_rgba = false)
     {
-        // Planar YUV has no alpha plane. Restrict the proof to complete source
+        // Planar YUV has no alpha plane. RGBA requires an owned all-255 alpha
+        // proof plus the complete source comparison before returning a hit.
+        // Restrict the proof to complete source
         // samples and axis-aligned positive transforms; all other images keep
         // exact backdrop comparisons. Leave two device pixels at every edge
         // for clipping/MSAA/filtering coverage, including fractional geometry.
         auto const* m = image.matrix;
-        if (!(image.flags & 4) || image.opacity != 1 || image.has_color_profile
+        if ((!(image.flags & 4) && !opaque_rgba) || image.opacity != 1 || image.has_color_profile
             || m[1] != 0 || m[3] != 0 || m[6] != 0 || m[7] != 0 || m[8] != 1
             || !(m[0] > 0) || !(m[4] > 0)) return {};
         for (int i = 0; i < 9; ++i) if (!std::isfinite(m[i])) return {};
@@ -151,6 +165,15 @@ class VoxGraphiteRasterCache {
         };
         if (result.left >= result.right || result.top >= result.bottom) return {};
         return result;
+    }
+    static VoxRasterSnapshot::Rect image_view_interior(VoxRasterSnapshot::Rect rect,
+        int x, int y, int width, int height)
+    {
+        auto offset = [](size_t value, int origin, int limit) {
+            return value > size_t(origin) ? std::min(value - size_t(origin), size_t(limit)) : size_t(0);
+        };
+        return {offset(rect.left, x, width), offset(rect.top, y, height),
+            offset(rect.right, x, width), offset(rect.bottom, y, height)};
     }
     static bool same_shape(VoxGraphiteShape const& a, VoxGraphiteShape const& b)
     {
@@ -324,6 +347,9 @@ public:
     struct Request {
         bool hit = false;
         std::unique_ptr<Entry> pending;
+        // Diagnostic only: the full backdrop differed on an otherwise exact
+        // hit, so the independently opaque interior actually avoided a draw.
+        bool ignored_changed_backdrop = false;
     };
     Request prepare(VoxGraphiteImage const& image, int width, int height,
         int pitch, bool has_background, uint8_t* pixels)
@@ -487,8 +513,6 @@ private:
         if (immutable_cost > byte_limit) return request;
         size_t cost = immutable_cost + backdrop.bytes * backdrop.height * (has_background ? 2 : 1);
         if (cost > limit) return request;
-        auto opaque = is_image && parameters.tiles.empty() && !parameters.surface_width
-            ? opaque_image_interior(parameters.image, width, height) : VoxRasterSnapshot::Rect{};
         for (auto it = entries.begin(); it != entries.end(); ++it) {
             auto const& entry = **it;
             bool exact_region = entry.width == width && entry.height == height
@@ -518,16 +542,27 @@ private:
                     : entry.is_shadow ? !same_shadow(entry.shadow, parameters.shadow)
                                     : !same_image(entry.image, parameters.image))
                 || !extra.equal(entry.extra)) continue;
+            bool rgba = is_image && entry.opaque_rgba_source && vox_opaque_rgba_image_cache_enabled();
+            auto opaque = is_image && parameters.tiles.empty() && (!parameters.surface_width || rgba)
+                ? opaque_image_interior(parameters.image,
+                    parameters.surface_width ? parameters.surface_width : width,
+                    parameters.surface_height ? parameters.surface_height : height, rgba)
+                : VoxRasterSnapshot::Rect{};
+            auto ignore = image_view_interior(opaque, entry.region_x, entry.region_y, entry.width, entry.height);
+            bool diagnose = rgba && has_background && std::getenv("VOX_OPAQUE_IMAGE_CACHE_DIAGNOSTICS");
             if (exact_region) {
-                if ((has_background && !backdrop.equal(entry.background, opaque))
+                if ((has_background && !backdrop.equal(entry.background, ignore))
                     || !source.equal(*entry.source)) continue;
+                if (diagnose) request.ignored_changed_backdrop = !backdrop.equal(entry.background);
                 entry.output.copy_to(pixels, backdrop.bytes, backdrop.pitch, backdrop.height);
             } else {
                 size_t x = parameters.region_x - entry.region_x, y = parameters.region_y - entry.region_y;
                 VoxRasterSnapshot::Rect region {x, y, x + size_t(width), y + size_t(height)};
-                if ((has_background && !entry.background.equal_region(pixels,
-                        entry.width, entry.height, pitch, region))
+                if ((has_background && !entry.background.equal_region_outside_rectangle(pixels,
+                        entry.width, entry.height, pitch, region, ignore))
                     || !source.equal(*entry.source)) continue;
+                if (diagnose) request.ignored_changed_backdrop = !entry.background.equal_region(
+                    pixels, entry.width, entry.height, pitch, region);
                 if (!entry.output.copy_region_to(pixels, entry.width, entry.height, pitch, region)) continue;
 #ifdef VOX_IMAGE_REGION_KEY_DIAGNOSTICS
                 std::fprintf(stderr, "VOX_IMAGE_SUBVIEW_HIT width=%d height=%d from=%dx%d\n",
@@ -555,6 +590,12 @@ private:
         entry->height = height;
         entry->has_background = has_background;
         entry->source = intern_source(source);
+        if (is_image && parameters.tiles.empty() && !(parameters.image.flags & 4)
+            && !parameters.image.has_color_profile && vox_opaque_rgba_image_cache_enabled()) {
+            entry->opaque_rgba_source = !entry->source->empty();
+            for (size_t i = 3; entry->opaque_rgba_source && i < entry->source->size(); i += 4)
+                entry->opaque_rgba_source = (*entry->source)[i] == 255;
+        }
         entry->extra = extra.copy();
         if (has_background) entry->background = VoxRasterSnapshot(backdrop.pixels, backdrop.bytes, backdrop.pitch, backdrop.height);
         request.pending = std::move(entry);

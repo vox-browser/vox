@@ -265,13 +265,15 @@ public:
 private:
     template<bool Compare>
     bool replay_region(uint8_t const* input, uint8_t* output, size_t width,
-        size_t height, size_t pitch, Rect region) const
+        size_t height, size_t pitch, Rect region, Rect ignore = {}) const
     {
         if (region.left > region.right || region.right > width
             || region.top > region.bottom || region.bottom > height
             || width > SIZE_MAX / 4 || (height && width * 4 > SIZE_MAX / height)
             || width * 4 * height != logical_bytes_
-            || pitch < (region.right - region.left) * 4) return false;
+            || pitch < (region.right - region.left) * 4
+            || ignore.left > ignore.right || ignore.right > width
+            || ignore.top > ignore.bottom || ignore.bottom > height) return false;
         if (region.left == region.right || region.top == region.bottom) return true;
         auto span = [&](uint8_t const* bytes, size_t count, size_t x, size_t y,
             bool repeated, uint32_t value) {
@@ -280,8 +282,16 @@ private:
             if (first >= end) return true;
             size_t offset = (y - region.top) * pitch + (first - region.left) * 4;
             if constexpr (Compare) {
-                return repeated ? equal_run(input + offset, end - first, value)
-                    : !std::memcmp(input + offset, bytes + (first - x) * 4, (end - first) * 4);
+                auto compare = [&](size_t left, size_t right) {
+                    if (left >= right) return true;
+                    auto* actual = input + offset + (left - first) * 4;
+                    return repeated ? equal_run(actual, right - left, value)
+                        : !std::memcmp(actual, bytes + (left - x) * 4, (right - left) * 4);
+                };
+                if (y < ignore.top || y >= ignore.bottom)
+                    return compare(first, end);
+                return compare(first, std::min(end, ignore.left))
+                    && compare(std::max(first, ignore.right), end);
             } else {
                 if (repeated) copy_run(output + offset, end - first, value);
                 else std::memcpy(output + offset, bytes + (first - x) * 4, (end - first) * 4);
@@ -317,6 +327,11 @@ public:
         size_t pitch, Rect region) const
     {
         return replay_region<true>(pixels, nullptr, width, height, pitch, region);
+    }
+    bool equal_region_outside_rectangle(uint8_t const* pixels, size_t width, size_t height,
+        size_t pitch, Rect region, Rect ignore) const
+    {
+        return replay_region<true>(pixels, nullptr, width, height, pitch, region, ignore);
     }
     bool copy_region_to(uint8_t* pixels, size_t width, size_t height,
         size_t pitch, Rect region) const
