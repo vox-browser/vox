@@ -6,6 +6,8 @@ import math
 // Different corner radii use a rounded fill rather than the scalar-radius
 // underlay. Keep that fill and its uniform border in the same root render pass.
 fn chromium_rounded_background_pair_end(commands []layout.PaintCommand, layers []int, index int) int {
+	partial_end := chromium_partial_decoration_end(commands, layers, index)
+	if partial_end > index { return partial_end }
 	if index < 0 || index + 1 >= commands.len || layers.len != commands.len { return index }
 	background := unsafe { &commands[index] }
 	border := unsafe { &commands[index + 1] }
