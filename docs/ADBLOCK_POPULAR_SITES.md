@@ -3315,3 +3315,56 @@ is not evidence of full browser equality. Actual paint ordering and transaction
 eligibility remain under investigation. The previous 92-test and four-site
 preservation results apply to `118eb720…`; no passing expanded-suite result is
 claimed. Slashdot remains unfinished; Stack Overflow and Pikabu stay deferred.
+
+
+The independent-layer correction in `b37cf7124` passes the expanded **93-test,
+99-capture** rendering suite and exact CNN, Guardian, Verge and Lobsters
+preservation on production executable
+`aa65987e663bfe466affcd66825d3d0beb505e1a737e7500f1161a97e53866d9`.
+Both reduced card fixtures are now exact. Full Slashdot still has 12 differences;
+[the layer receipts](../Build/slashdot-layer-validation-20261102/) retain both
+results. `6888fe96b` adds bounded replay for positioned headers that follow
+other card backgrounds. A later production trace rejects that run at an
+intervening solid SVG path. `69dc26d46` admits those paths through the existing
+solid-path validator; the focused selection checks pass. Its full-page effect
+still needs a completed production build containing that extension.
+
+Commit `3b98213a8` resolves Chromium-profile corner radii in float precision,
+including percentage bases, calculations and common overlap scaling. The
+LibWeb profile retains its fixed-point algorithm. Chromium's
+[paint geometry](https://github.com/chromium/chromium/blob/main/third_party/blink/renderer/core/paint/contoured_border_geometry.cc)
+uses the pre-snap size for percentage radii, and
+[FloatValueForLength](https://github.com/chromium/chromium/blob/main/third_party/blink/renderer/platform/geometry/length_functions.cc)
+keeps the float result. These current upstream sources explain the implementation;
+they are not a checkout of the oracle's exact revision. A diagnostic radius
+replacement removes exactly the two Mastodon differences. The new fixture has
+two agreeing full-uBO references and a **26-pixel** native baseline. Three focused
+radius tests pass in both GC modes. `9f3988f05` updates the inline geometry test
+for the common overlap factor after snapping; both inline tests pass.
+
+Production executable
+`2f4bb4d9c8b30b19f3519d73f3dd0973251fd0ca0d2358bde9e6da6bad8de4c4`
+validates the radius correction: the new fixture is exact, all **94 rendering
+tests/100 captures pass**, and the four preserved sites remain exact. Full
+Slashdot has **10 native differing pixels**, all with maximum channel error one.
+The original saved-live/frozen Brave comparison remains exact. The
+[radius receipts](../Build/slashdot-percent-radius-fix-20261102/) retain source
+checks, reference agreement and failures; the
+[production receipts](../Build/slashdot-float-radius-validation-20261102/) retain
+the strict comparison, full suite, preservation captures and input identities.
+The 155-case adapter test file reports three empty-clip/mask assertion failures
+in each GC mode. Those cases do not enter the new Chromium-radius branch;
+no wholesale adapter-suite pass is claimed. An initial incorrect inline test
+expectation and the superseded shared build that observed an early compile
+error are also retained.
+
+A reduced text fixture reproduces the other three differences at exactly
+`(874,61)`, `(137,204)` and `(137,206)`: the Facebook glyph over its rounded white
+backing and the seam between two underlined font runs. Two full-uBO references
+agree, including after changing the font URL to the canonical local test resource.
+A native diagnostic reproduces all three old pixel values; retaining each
+related set of draws in one decoration transaction matches all three expected
+values. This diagnostic is not production acceptance. The
+[text artifacts](../Build/slashdot-text-edges-20261102/) retain the references,
+unchanged-pixel comparisons, shaped glyph inputs and native replay receipts.
+Slashdot remains unfinished, and Stack Overflow and Pikabu remain deferred.
