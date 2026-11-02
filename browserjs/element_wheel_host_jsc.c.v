@@ -1,6 +1,7 @@
 module browserjs
 
 import dom
+import json2
 
 
 fn C.vox_jsc_JSValueMakeUndefined(context voidptr) voidptr
@@ -60,7 +61,7 @@ pub fn (mut host ElementWheelHost) install(mut runtime Runtime) ! {
 		})
 		return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 	})!
-	factory := runtime.evaluate_host_value(element_wheel_host_bootstrap)!
+	factory := runtime.evaluate_host_value(element_wheel_host_bootstrap())!
 	defer { runtime.release_javascript_value(factory) }
 	runtime.call_javascript_function(factory, C.vox_jsc_JSValueMakeUndefined(runtime.context), [
 		bind,
@@ -181,11 +182,17 @@ fn (mut host ElementWheelHost) resolve_wheel_element_wrapper(target &dom.EventTa
 	return unsafe { nil }
 }
 
-const element_wheel_host_bootstrap = r'(function(bind,type,setResolver,getHandler,setHandler){
+fn element_wheel_host_bootstrap() string {
+	// Existing built-in event adapters still own their compact resource/UI
+	// delivery. Arbitrary author event names must share the native listener
+	// list with dispatchEvent, including capture, cancellation and options.
+	legacy_types := window_event_handler_names().map(it.event)
+	return r'(function(bind,type,setResolver,getHandler,setHandler){
  "use strict";
  const apply=Reflect.apply,define=Object.defineProperty,wrapped=new WeakSet(),has=WeakSet.prototype.has,add=WeakSet.prototype.add;
+ const legacyTypes=new Set(' + json2.encode(legacy_types) + r'),legacyHas=Set.prototype.has;
  const nativeAdd=EventTarget.prototype.addEventListener,nativeRemove=EventTarget.prototype.removeEventListener,nativeDispatch=EventTarget.prototype.dispatchEvent;
- function nativeEvent(name){return name==="wheel"||name==="beforeinput"||name==="input"||name==="change"||name==="click"||name==="keydown"||name==="keyup"||name==="keypress"||name==="submit"||name==="reset"||name==="formdata"||name==="invalid";}
+ function nativeEvent(name){return name==="wheel"||name==="beforeinput"||name==="input"||name==="change"||name==="click"||name==="keydown"||name==="keyup"||name==="keypress"||name==="submit"||name==="reset"||name==="formdata"||name==="invalid"||!apply(legacyHas,legacyTypes,[name]);}
  define(globalThis,"__ladybirdElementWheelSetResolver",{value:setResolver,configurable:true});
  define(globalThis,"__ladybirdElementWheelBind",{value:function(o,key,tag,namespace){
   const exposesHandler=apply(bind,undefined,[o,key,tag,namespace]);
@@ -212,3 +219,4 @@ const element_wheel_host_bootstrap = r'(function(bind,type,setResolver,getHandle
   apply(add,wrapped,[o]);
  },configurable:true});
 })'
+}

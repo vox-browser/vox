@@ -130,10 +130,10 @@ fn test_native_element_wheel_host_brands_before_conversion_and_preserves_legacy_
   let rejected=false;try{invoke()}catch(error){rejected=error instanceof TypeError}if(!rejected)return false;
  }
  if(reads!==0)return false;
- const callback={};const legacyType={[Symbol.toPrimitive](hint){reads++;if(hint!=="string")throw "hint";return "Wheel"}};
+ const callback={};const legacyType={[Symbol.toPrimitive](hint){reads++;if(hint!=="string")throw "hint";return "load"}};
  add.call(wheelDiv,legacyType,callback,options);remove.call(wheelDiv,legacyType,callback,options);
  const added=wheelDiv.legacyAdds[0],removed=wheelDiv.legacyRemoves[0];
- if(reads!==2||added[0]!=="Wheel"||removed[0]!=="Wheel"||added[1]!==callback||removed[1]!==callback||added[2]!==options||removed[2]!==options)return false;
+ if(reads!==2||added[0]!=="load"||removed[0]!=="load"||added[1]!==callback||removed[1]!==callback||added[2]!==options||removed[2]!==options)return false;
  const noop=()=>{};add.call(wheelDiv,type,noop);remove.call(wheelDiv,"wheel",noop);
  if(reads!==3)return false;
  let captureReads=0;remove.call(wheelDiv,"wheel",noop,{get capture(){captureReads++;return false},get once(){throw "once"},get passive(){throw "passive"},get signal(){throw "signal"}});
