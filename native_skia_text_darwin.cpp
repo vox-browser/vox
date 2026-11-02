@@ -4406,7 +4406,13 @@ extern "C" int ladybird_v_skia_draw_outer_box_shadow(CGContextRef destination,
             recording->clipRRect(content, SkClipOp::kDifference, true);
             recording->drawRRect(shadow, paint);
             recording->restore();
-            shared_recording_content(destination, matrix.mapRect(local_bounds), page_y, scroll_y);
+            // Leaf readback reserves extra scratch pixels. A complete picture
+            // instead uses the same three-sigma ink extent as its compositor
+            // layer. The scratch guard can otherwise expand the picture past
+            // its tile grid and change unrelated rounded-edge coverage.
+            auto ink_outset = std::ceil(std::max(blur, 0.0f) * 1.5f);
+            auto ink_bounds = shadow.rect().makeOutset(ink_outset, ink_outset);
+            shared_recording_content(destination, matrix.mapRect(ink_bounds), page_y, scroll_y);
             if (isolated_input_defers_leaf_raster(destination)
                 || shared_recording_defers_leaf_raster(destination, matrix.mapRect(local_bounds))) return 1;
         }
