@@ -31,13 +31,13 @@ pub fn (mut runtime Runtime) install_quota_exceeded_error_binding() ! {
 	mut binding := &QuotaExceededErrorBinding{}
 	quota_exceeded_error_bindings_[owner] = binding
 	binding.to_number = runtime.evaluate_host_value('(function(value){return +value})')!
-	runtime.define_value_host_function('__ladybirdQuotaExceededConstruct', fn [owner] (_ voidptr, args []voidptr) !voidptr {
+	construct := runtime.make_value_host_function(fn [owner] (_ voidptr, args []voidptr) !voidptr {
 		mut runtime := unsafe { &Runtime(owner) }
 		return runtime.construct_quota_exceeded_error(args) or {
 			return runtime.actual_javascript_exception(runtime.binding_exception_value(err))
 		}
 	})!
-	runtime.define_value_host_function('__ladybirdQuotaExceededGet', fn [owner, binding] (receiver voidptr, args []voidptr) !voidptr {
+	get := runtime.make_value_host_function(fn [owner, binding] (receiver voidptr, args []voidptr) !voidptr {
 		runtime := unsafe { &Runtime(owner) }
 		native := binding.by_wrapper[receiver] or {
 			return runtime.actual_javascript_exception(runtime.binding_exception_value(error('TypeError: Illegal QuotaExceededError receiver')))
@@ -50,7 +50,10 @@ pub fn (mut runtime Runtime) install_quota_exceeded_error_binding() ! {
 		if number := value { return C.vox_jsc_JSValueMakeNumber(runtime.context, number) }
 		return C.vox_jsc_JSValueMakeNull(runtime.context)
 	})!
-	binding.prototype = runtime.evaluate_host_value(quota_exceeded_error_native_bootstrap)!
+	bootstrap := runtime.evaluate_host_value(quota_exceeded_error_native_bootstrap)!
+	defer { runtime.release_javascript_value(bootstrap) }
+	binding.prototype = runtime.retain_javascript_value(runtime.call_javascript_function(bootstrap,
+		C.JSValueMakeUndefined(runtime.context), [construct, get])!)!
 	runtime.add_close_handler(fn [owner] () { quota_exceeded_error_bindings_.delete(owner) })
 }
 
@@ -106,7 +109,7 @@ pub fn (mut runtime Runtime) javascript_quota_exceeded_error(native &webidl.Quot
 	return object
 }
 
-const quota_exceeded_error_native_bootstrap = r'(function(){
+const quota_exceeded_error_native_bootstrap = r'(function(__ladybirdQuotaExceededConstruct,__ladybirdQuotaExceededGet){
  const define=Object.defineProperty,create=Object.create,setPrototypeOf=Object.setPrototypeOf,apply=Reflect.apply,construct=__ladybirdQuotaExceededConstruct,get=__ladybirdQuotaExceededGet,D=DOMException,T=TypeError;
  function QuotaExceededError(message="",options={}){if(!new.target)throw new T("QuotaExceededError constructor requires new");return construct(message,options,new.target.prototype)}
  setPrototypeOf(QuotaExceededError,D);QuotaExceededError.prototype=create(D.prototype);
@@ -115,4 +118,4 @@ const quota_exceeded_error_native_bootstrap = r'(function(){
  for(const property of ["quota","requested"])define(QuotaExceededError.prototype,property,{get:function(){return apply(get,this,[property])},enumerable:true,configurable:true});
  define(QuotaExceededError,"prototype",{writable:false});define(globalThis,"QuotaExceededError",{value:QuotaExceededError,writable:true,configurable:true});
  return QuotaExceededError.prototype;
-})()'
+})'

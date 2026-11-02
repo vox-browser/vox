@@ -17,6 +17,7 @@ fn C.vox_module_loader_install(voidptr, voidptr, voidptr, fn (voidptr, &char, u3
 fn C.vox_module_loader_close(voidptr, voidptr)
 fn C.vox_module_loader_evaluate(voidptr, &char, uint, &voidptr) voidptr
 fn C.vox_module_loader_supply(voidptr, voidptr, &char, uint, &char, uint, &voidptr) voidptr
+fn C.JSObjectDeleteProperty(voidptr, voidptr, voidptr, &voidptr) bool
 
 pub fn (mut host ModuleHost) install(mut runtime Runtime) ! {
 	$if !darwin {
@@ -57,9 +58,25 @@ pub fn (mut host ModuleHost) install(mut runtime Runtime) ! {
 			return host.runtime.binding_string(resolved)
 		})!
 		factory := runtime.evaluate_host_value(module_source_factory())!
-		host.transform = runtime.call_javascript_function(factory, C.vox_jsc_JSValueMakeUndefined(runtime.context),
-			[resolver, runtime.binding_string(host.helper_name)])!
-		runtime.retain_javascript_value(host.transform)!
+		defer { runtime.release_javascript_value(factory) }
+		functions := runtime.retain_javascript_value(runtime.call_javascript_function(factory, C.vox_jsc_JSValueMakeUndefined(runtime.context),
+			[resolver, runtime.binding_string(host.helper_name)])!)!
+		defer { runtime.release_javascript_value(functions) }
+		mut exception := unsafe { nil }
+		host.transform = runtime.retain_javascript_value(C.vox_jsc_JSObjectGetPropertyAtIndex(runtime.context, functions, 0, &exception))!
+		dynamic := C.vox_jsc_JSObjectGetPropertyAtIndex(runtime.context, functions, 1, &exception)
+		if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
+		// A private global lexical binding survives page lockdown without adding
+		// a non-configurable implementation property to the global object. The
+		// temporary initializer is removed before any author module executes.
+		temporary := host.helper_name + '_initializer'
+		property := js_source_string(temporary)
+		defer { C.JSStringRelease(property) }
+		global := C.JSContextGetGlobalObject(runtime.context)
+		C.vox_jsc_JSObjectSetProperty(runtime.context, global, property, dynamic, 0, &exception)
+		if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
+		defer { C.JSObjectDeleteProperty(runtime.context, global, property, unsafe { nil }) }
+		runtime.evaluate_host('const ${host.helper_name} = this[${json2.encode(temporary)}];')!
 		runtime.module_host_ = host
 		runtime.add_close_handler(fn [owner] () {
 			mut host := unsafe { &ModuleHost(owner) }

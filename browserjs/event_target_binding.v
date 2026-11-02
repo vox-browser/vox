@@ -3,8 +3,8 @@ module browserjs
 
 pub fn event_target_bootstrap() string {
 	return r'
-(function(){
- const native=__ladybirdEvent,apply=Reflect.apply,create=Object.create,define=Object.defineProperty;
+(function(native){
+ const apply=Reflect.apply,create=Object.create,define=Object.defineProperty;
  function call(method,receiver,args){return native(method,receiver,...(args||[]));}
  function EventTarget(){if(!new.target)throw new TypeError("EventTarget constructor requires new");call("constructTarget",this);}
  function Event(type,eventInitDict={}){if(!new.target)throw new TypeError("Event constructor requires new");if(arguments.length<1)throw new TypeError("Event constructor requires one argument");call("constructEvent",this,[type,eventInitDict]);}
@@ -36,8 +36,7 @@ pub fn event_target_bootstrap() string {
  define(globalThis,"CustomEvent",{value:CustomEvent,writable:true,configurable:true});
  const eventPrototype=Event.prototype,targetPrototype=EventTarget.prototype;
  const beforeUnloadPrototype=BeforeUnloadEvent.prototype;
- globalThis.__ladybirdEventFactory=function(kind,prototype){return create(prototype|| (kind==="beforeunload"?beforeUnloadPrototype:kind==="event"?eventPrototype:targetPrototype));};
- globalThis.__ladybirdEventDefineTrusted=trusted;
-})()
+ return [function(kind,prototype){return create(prototype|| (kind==="beforeunload"?beforeUnloadPrototype:kind==="event"?eventPrototype:targetPrototype));},trusted];
+})
 '
 }

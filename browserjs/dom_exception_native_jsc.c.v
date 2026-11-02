@@ -80,7 +80,7 @@ pub fn (mut runtime Runtime) install_dom_exception_binding() ! {
 	if _ := dom_exception_bindings_[owner] { return }
 	mut binding := &DOMExceptionBinding{}
 	dom_exception_bindings_[owner] = binding
-	runtime.define_value_host_function('__ladybirdDOMExceptionConstruct', fn [owner, mut binding] (receiver voidptr, args []voidptr) !voidptr {
+	construct := runtime.make_value_host_function(fn [owner, mut binding] (receiver voidptr, args []voidptr) !voidptr {
 		runtime := unsafe { &Runtime(owner) }
 		message := if args.len > 0 && !C.JSValueIsUndefined(runtime.context, args[0]) {
 			runtime.binding_dom_utf16(args[0])!
@@ -99,7 +99,7 @@ pub fn (mut runtime Runtime) install_dom_exception_binding() ! {
 		mutable_runtime.retain_javascript_value(receiver)!
 		return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 	})!
-	runtime.define_value_host_function('__ladybirdDOMExceptionGet', fn [owner, binding] (receiver voidptr, args []voidptr) !voidptr {
+	get := runtime.make_value_host_function(fn [owner, binding] (receiver voidptr, args []voidptr) !voidptr {
 		runtime := unsafe { &Runtime(owner) }
 		exception := binding.by_wrapper[receiver] or {
 			return runtime.actual_javascript_exception(runtime.binding_exception_value(error('TypeError: Illegal DOMException receiver')))
@@ -115,7 +115,9 @@ pub fn (mut runtime Runtime) install_dom_exception_binding() ! {
 	runtime.add_close_handler(fn [owner] () {
 		dom_exception_bindings_.delete(owner)
 	})
-	runtime.evaluate_host(dom_exception_bootstrap())!
+	bootstrap := runtime.evaluate_host_value('(function(__ladybirdDOMExceptionConstruct,__ladybirdDOMExceptionGet){' + dom_exception_bootstrap() + '})')!
+	defer { runtime.release_javascript_value(bootstrap) }
+	runtime.call_javascript_function(bootstrap, C.JSValueMakeUndefined(runtime.context), [construct, get])!
 	binding.factory =
 		runtime.evaluate_host_value('(function(){const create=Object.create,prototype=DOMException.prototype;return function(){return create(prototype)}})()')!
 }

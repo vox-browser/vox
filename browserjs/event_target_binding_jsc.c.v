@@ -122,7 +122,7 @@ pub fn (mut runtime Runtime) install_event_target_binding() ! {
 	runtime.install_dom_exception_binding()!
 	mut binding := &EventTargetBinding{}
 	event_target_bindings_[owner] = binding
-	runtime.define_value_host_function('__ladybirdEvent', fn [owner] (_ voidptr, args []voidptr) !voidptr {
+	native := runtime.make_value_host_function(fn [owner] (_ voidptr, args []voidptr) !voidptr {
 		mut runtime := unsafe { &Runtime(owner) }
 		if args.len < 2 {
 			return runtime.event_binding_type_error('Missing internal Event binding arguments')
@@ -130,12 +130,16 @@ pub fn (mut runtime Runtime) install_event_target_binding() ! {
 		method := runtime.binding_dom_string(args[0])!
 		return runtime.event_binding_call(method, args[1], args[2..])
 	})!
-	runtime.evaluate_host(event_target_bootstrap())!
-	binding.factory = runtime.evaluate_host_value('__ladybirdEventFactory')!
-	binding.define_trusted = runtime.evaluate_host_value('__ladybirdEventDefineTrusted')!
+	bootstrap := runtime.evaluate_host_value(event_target_bootstrap())!
+	defer { runtime.release_javascript_value(bootstrap) }
+	values := runtime.retain_javascript_value(runtime.call_javascript_function(bootstrap,
+		C.JSValueMakeUndefined(runtime.context), [native])!)!
+	defer { runtime.release_javascript_value(values) }
+	mut exception := unsafe { nil }
+	binding.factory = runtime.retain_javascript_value(C.JSObjectGetPropertyAtIndex(runtime.context, values, 0, &exception))!
+	binding.define_trusted = runtime.retain_javascript_value(C.JSObjectGetPropertyAtIndex(runtime.context, values, 1, &exception))!
+	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	binding.event_constructor = runtime.evaluate_host_value('Event')!
-	runtime.retain_javascript_value(binding.factory)!
-	runtime.retain_javascript_value(binding.define_trusted)!
 	runtime.install_error_event_binding()!
 	if settings := runtime.scripting_settings_ {
 		if settings.global_object().data.kind == .window {

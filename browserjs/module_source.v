@@ -9,8 +9,7 @@ fn module_source_factory() string {
 const stringify=JSON.stringify,apply=Reflect.apply,slice=Function.prototype.call.bind(String.prototype.slice),StringIntrinsic=String,TypeErrorIntrinsic=TypeError;
 const dynamic=function(base,key,value,options){return import({toString(){if(typeof value==="symbol")throw new TypeErrorIntrinsic("Cannot convert a Symbol to a string");return resolve(StringIntrinsic(value),base,key);}},options);};
 Object.defineProperty(dynamic,"resolve",{value:function(value,base,key){if(typeof value==="symbol")throw new TypeErrorIntrinsic("Cannot convert a Symbol to a string");return resolve(StringIntrinsic(value),base,key);}});
-Object.defineProperty(globalThis,helperName,{value:dynamic,configurable:false,writable:false});
-return function(source,base,key,isModule){
+return [function(source,base,key,isModule){
  let imports;try{imports=parse(source,key)[0];}catch(error){return source;}
  function rewrite(start,end){
   let output="",cursor=start;
@@ -37,5 +36,5 @@ return function(source,base,key,isModule){
  const metadata="import.meta.url="+stringify(base)+";delete import.meta.filename;import.meta.resolve=function resolve(specifier){return "+helperName+".resolve(specifier,"+stringify(base)+","+stringify(key)+")};";
  if(source.startsWith("#!")){const line=source.indexOf("\n");return line<0?source+"\n"+metadata:slice(source,0,line+1)+metadata+slice(source,line+1);}
  return metadata+source;
-};})'
+},dynamic];})'
 }
