@@ -5,7 +5,8 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
-from forum_news_pixels import (CATALOG, brave_identity, capture_site_archive, check_filters, check_native,
+from forum_news_pixels import (CATALOG, VOX_RUNTIME_ASSETS, brave_identity, capture_site_archive, check_filters, check_native,
+                               executable_identity,
                                native_capture_environment, oracle_command, run_case, seal_capture,
                                warm_native_cache, warm_oracle_cache, write_json)
 from page_archive import digest, load_archive
@@ -17,7 +18,7 @@ class ForumNewsPixelTests(unittest.TestCase):
         vox = root / 'Vox.app/Contents/MacOS/Vox'
         brave = root / 'Brave.app/Contents/MacOS/Brave'
         framework = root / 'Brave.app/Contents/Frameworks/Brave Framework.framework'
-        files = [vox, vox.parent / 'libpaint.dylib', brave,
+        files = [vox, vox.parent / 'libpaint.dylib', vox.parent / 'VoxAdblockWorker', brave,
                  framework / 'Versions/1/Brave Framework',
                  framework / 'Versions/2/Brave Framework',
                  framework / 'Versions/1/Libraries/libGLESv2.dylib',
@@ -38,12 +39,34 @@ class ForumNewsPixelTests(unittest.TestCase):
                          framework / 'Versions/Current/Brave Framework']:
                 self.assertEqual(identity[str(path)], digest(path.read_bytes()))
 
+    def test_vox_identity_includes_worker_and_runtime_assets_without_changing_brave_inputs(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            vox, brave, _ = self.browser_inputs(root)
+            checkout = root / 'checkout'
+            for name in VOX_RUNTIME_ASSETS:
+                path = checkout / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(name.encode())
+            with patch('forum_news_pixels.REPO', checkout):
+                identity = executable_identity(vox)
+                for path in [vox.parent / 'VoxAdblockWorker',
+                             *(checkout / name for name in VOX_RUNTIME_ASSETS)]:
+                    self.assertEqual(identity[str(path.resolve())], digest(path.read_bytes()))
+                self.assertFalse(any(str(checkout) in path for path in brave_identity(brave)))
+
     def test_comparison_rejects_browser_input_changes_after_a_successful_capture(self):
-        for changed in ['vox', 'vox-library', 'brave-framework', 'brave-gpu',
-                        'brave-helper', 'active-version']:
+        for changed in ['vox', 'vox-library', 'vox-helper', 'runtime-engine',
+                        'runtime-metadata', 'runtime-stylesheet', 'brave-framework',
+                        'brave-gpu', 'brave-helper', 'active-version']:
             with self.subTest(changed=changed), tempfile.TemporaryDirectory() as temporary:
                 root = Path(temporary)
                 vox, brave, framework = self.browser_inputs(root)
+                checkout = root / 'checkout'
+                for name in VOX_RUNTIME_ASSETS:
+                    path = checkout / name
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    path.write_bytes(name.encode())
                 args = SimpleNamespace(output=root / 'output', vox=vox, brave=brave)
                 def capture(site, arguments, output):
                     before = json.loads((output / 'browser-identities.json').read_text())
@@ -54,12 +77,17 @@ class ForumNewsPixelTests(unittest.TestCase):
                         current.symlink_to('2', target_is_directory=True)
                     else:
                         path = {'vox': vox, 'vox-library': vox.parent / 'libpaint.dylib',
+                                'vox-helper': vox.parent / 'VoxAdblockWorker',
+                                'runtime-engine': checkout / 'adblock/engine.js.gz',
+                                'runtime-metadata': checkout / 'adblock/engine.snapshot.json.gz',
+                                'runtime-stylesheet': checkout / 'css/ua_default.css',
                                 'brave-framework': framework / 'Versions/1/Brave Framework',
                                 'brave-gpu': framework / 'Versions/1/Libraries/libGLESv2.dylib',
                                 'brave-helper': framework / 'Versions/1/Helpers/Renderer.app/Contents/MacOS/Renderer'}[changed]
                         path.write_bytes(path.read_bytes() + b'updated')
                     return dict(status='pass', different_pixels=0)
-                with patch('forum_news_pixels.capture_case', side_effect=capture):
+                with patch('forum_news_pixels.REPO', checkout), \
+                        patch('forum_news_pixels.capture_case', side_effect=capture):
                     with self.assertRaisesRegex(RuntimeError, 'Browser inputs changed'):
                         run_case(dict(id='news'), args)
                 after = json.loads((args.output / 'news/browser-identities-after.json').read_text())

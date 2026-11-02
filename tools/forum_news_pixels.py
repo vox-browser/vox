@@ -26,6 +26,22 @@ CATALOG = REPO / 'Tests/Browser/Brave/forum-news.json'
 HARNESS = REPO / 'tools/adblock/brave_parity.mjs'
 BRAVE = Path('/Applications/Brave Browser.app/Contents/MacOS/Brave Browser')
 VOX = REPO / 'Build/v/Vox.app/Contents/MacOS/Vox'
+# C-optimized builds without V's -prod load $embed_file payloads from the
+# checkout. Pin these alongside the bundle, including the worker's sources.
+VOX_RUNTIME_ASSETS = (
+    'adblock/engine.js.gz', 'adblock/engine.snapshot.bin',
+    'adblock/engine.snapshot.json.gz', 'adblock/extended/procedural.js',
+    'url/public_suffix_list_reversed.dat',
+    'browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js',
+    'browserhistory/history.css', 'aria/aria_roles.json',
+    'dom/resources/pdfjs/viewer.html',
+    'optimizedsites/assets/wikipedia.ico', 'optimizedsites/assets/reddit.png',
+    'optimizedsites/assets/vlang.png', 'optimizedsites/assets/hacker-news.ico',
+    'layout/resources/chromium/broken-image-200.png',
+    'layout/resources/chromium/broken-image-100.png',
+    'css/ua_default.css', 'css/ua_quirks_mode.css',
+    'css/ua_mathml_default.css', 'css/ua_svg_default.css', 'html/media_controls.css',
+)
 
 
 def read_json(path):
@@ -107,6 +123,11 @@ def executable_identity(binary):
     snapshot = binary.parent.parent / 'Resources/adblock.snapshot.bin'
     if snapshot.is_file():
         paths.append(snapshot)
+    if binary.name == 'Vox':
+        helper = binary.parent / 'VoxAdblockWorker'
+        if helper.is_file():
+            paths.append(helper)
+        paths.extend(REPO / name for name in VOX_RUNTIME_ASSETS if (REPO / name).is_file())
     return {str(p.resolve()): digest(p.read_bytes()) for p in paths}
 
 
