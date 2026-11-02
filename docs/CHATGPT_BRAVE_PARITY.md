@@ -1941,3 +1941,66 @@ this planner, so the ordinary LibWeb screenshot mode cannot validate this
 specific rendering regression. Browser validation of the new fixed-owner
 source and its effect on the remaining 120 live-page pixels awaits a published
 bundle containing `9cee866b6`. No existing pixel reference or tolerance changes.
+
+
+## Hidden inherited SVG paint-resource guard
+
+`conformance-0bb-1/` runs the unchanged eleven-case smoke set and ten SVG
+mutation reftests against the pinned `0bb14e2f…` bundle. The smoke set passes
+with its existing allowances, and nine SVG cases are exact. The hidden
+paint-server inherited-style case fails by 10,000 pixels, so the combined
+command and memory guard correctly record exit 1. It does not receive an
+all-pass conformance claim. Browser/input identities remain unchanged.
+
+The first two-second audit still has the initial red resource style and its
+readiness class. `hidden-style-audit-10s/` allows the nested animation-frame
+callbacks to finish: the class clears, the actual inline custom property is
+green and reported errors are empty, but all 10,000 painted square pixels
+remain red. This isolates a retained-resource failure beyond the early
+capture's readiness issue. The expected reference and tolerances stay intact.
+
+The new `layout/svg_hidden_paint_server_style_test.v` reproduces the stale
+red gradient after a hidden ancestor's custom property changes through CSSOM.
+Its `currentColor` control already passes. Existing retained recordings must
+also keep their old colors after a later recording changes. The source fix
+notifies SVG paint-resource descriptions when an existing computed style or
+its custom-property data changes; an unrendered resource can affect a visible
+referencing element even when its own subtree contributes no visible box.
+The first six new-test executions pass across default, no-GC and production
+preallocated modes. That initial batch then stops on an unrelated, transient
+compile error in a new shared-checkout `layout/retained_simple_svg.v` file.
+The writer replaces its mutable scalar parameter with a budget record; this
+session leaves that work untouched. The failed compile is retained, and the
+broader corrected-source verification is recorded separately in
+`hidden-paint-style-verified/`. Native validation of this source fix remains
+pending a bundle containing it.
+
+
+`af634b414` commits that paint-resource invalidation fix with its focused
+regressions. The corrected-source verification passes 54 test-function
+executions across the three GC modes: two new hidden-resource cases, four
+retained-gradient snapshot cases, two hidden HTML deferral cases and ten
+unboxed CSSOM cases per mode. The 18 layout compile/runtime steps in
+`hidden-paint-style-recovery/` exit zero with unchanged focused inputs. The six
+actual-zero CSSOM steps are carried from `hidden-paint-style-verified/` after
+checking the relevant CSS/DOM sources remain unchanged; `cssom-carryover.json`
+records that disjoint carryover. Neither failed whole-batch attempt is called
+a pass. The second attempt encounters another unrelated, untracked shared
+file's optional-bounds compile error in `layout/css_svg_mask_geometry.v`;
+its writer subsequently adds the missing unwrap. This session changes neither
+of those concurrent feature files.
+
+`b508a2fb4` also adds a fixed-owner regression through the viewport metadata
+planner actually used by the browser. All three fixed-owner functions pass
+in default, no-GC and production-preallocated modes with unchanged inputs;
+`fixed-raster-viewport/` retains those six actual-zero compile/runtime steps.
+The earlier 105-function-execution planner selection remains retained.
+
+The latest completed bundle at this checkpoint remains `0bb14e2f…`. It
+validates the two successful live Send workflows and exposes the retained
+120-pixel live difference and hidden-resource guard failure. It cannot
+validate `9cee866b6` or `af634b414`. The shared production supervisor is
+building newer source; superseded receipts and the original failures remain
+retained. Current live pixel parity and the corrected native SVG guard await
+an executable that contains both rendering fixes. No duplicate production
+build, copied bundle, changed reference PNG or relaxed tolerance is used.
