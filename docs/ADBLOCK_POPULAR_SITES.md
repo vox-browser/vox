@@ -3246,3 +3246,72 @@ by this task, reclaiming 515,409,856 bytes. Keep their SHA-256 identities in the
 all commands, guards, logs, source inputs and PNGs. No other session's outputs
 or canonical browser bundle are removed. Native validation of `08d91e408` and
 `3f5b6b50d` remains pending; the old bundle cannot validate these source fixes.
+
+## Slashdot packaged filters and partial borders, 2 November 2026
+
+The completed `4bc878b1…` browser validates the two preceding layout fixes:
+`inline-block-followed-by-full-float` and `svg-auto-ratio-rounding` both become
+pixel exact. All **92 tests/97 captures pass**. The strict complete-cache,
+full-uBO comparison improves from 46 to **40 differing native pixels**, with
+**zero saved-live/frozen differences** and the unchanged sealed manifest
+`2e05c1621ac041a40bf799556ef78b5a1c131f183371c7b279aada8c9733a09c`.
+The [local receipts](../Build/slashdot-resume-20261102-1725/) retain executable,
+native-library, helper and runtime-asset identities, commands and guard exits.
+A preservation attempt gets exact CNN and Guardian captures but is invalidated
+when checkout filter assets change during Verge; it earns no cohort credit.
+
+Commit `9076bb9bd` packages the adblock JavaScript codec and compressed metadata
+beside the binary snapshot. The browser and helper select that complete set;
+an incomplete package or explicit diagnostic override cannot silently borrow a
+checkout member. Standalone tools keep their embedded fallback. Six focused
+asset tests pass in both GC modes. The worker suite passes with explicitly
+compiled current-V helpers, including a corrupted packaged codec that must fail
+instead of opening the valid checkout copy. The initial automatic helper build
+fails on an existing unsupported compiler option and remains in the local
+receipts. Commit `53ef832bd` pins the actual packaged inputs in comparisons and
+stops treating their unused checkout copies as runtime dependencies. All **20
+harness tests pass**, including mutation of each packaged member and changes to
+unused checkout copies.
+
+The resulting production executable
+`118eb72018bd9b0760daba7fd84828dbd145f73fc2ae0b08e77847519c7a7f60`
+retains **40 native differences, zero saved-live/frozen differences, all 92
+rendering tests/97 captures passing, and exact CNN, Guardian, Verge and Lobsters
+preservation captures**. Browser and input identities remain unchanged throughout
+those checks. The [packaged-browser receipts](../Build/slashdot-packaged-validation-20261102/)
+retain the full protocol and successful preservation and suite guard exits.
+
+Commit `ec567cd09` keeps equal opaque partial rounded borders as exact outer
+and inner rounded clips instead of the portable painter's polygonal arcs.
+Three layout tests pass in both GC modes; the three MSAA-selection checks pass.
+Two new reduced card fixtures each have two agreeing full-uBO Brave references;
+the preceding native browser differs at 37 and 36 pixels. The production
+`937e8774…` browser reduces the full Slashdot mismatch to **12 pixels**, while
+each reduced fixture still differs at seven one-byte edge pixels. These are
+failing regressions retained for the next fix, not passing conformance tests.
+The [partial-border artifacts](../Build/slashdot-rounded-card-20261102/) and
+[production comparison](../Build/slashdot-partial-validation-20261102/) retain
+reference agreement, native baselines, source checks and the failed assertions.
+The registered suite now contains **93 tests/99 captures**.
+
+Commit `2b0af9e3b` extends the existing decoration transaction to consecutive
+background/partial-border/child-header fills. Both selection tests pass,
+including rejection of changed geometry, opacity, transforms and layer ownership.
+The native bridge test is exact against the unchanged Brave reference on cold
+and repeated transactions. Switching just the border to Dawn leaves seven
+pixels and is discarded; retaining all three draws in one transaction is exact
+in that focused bridge test. Clearing MSAA selection also fails and receives no
+credit. Generated full-uBO reference attempts with empty document text fail the
+page-coverage audit and are retained without becoming test references.
+
+The completed production executable
+`33a523c366e9fa302d6fc70cda94d065101ba0cc21fef9c1242f9d379b1c2e0d`
+contains the transaction change. It fixes the first reduced card, but **three
+pixels on the second card still fail both new fixtures**; the full original-origin
+Slashdot comparison still has **12 native differences and zero saved-live/frozen
+differences**. The [grouping receipts](../Build/slashdot-group-validation-20261102/)
+retain these failures and pinned build inputs. The focused native transaction
+is not evidence of full browser equality. Actual paint ordering and transaction
+eligibility remain under investigation. The previous 92-test and four-site
+preservation results apply to `118eb720…`; no passing expanded-suite result is
+claimed. Slashdot remains unfinished; Stack Overflow and Pikabu stay deferred.
