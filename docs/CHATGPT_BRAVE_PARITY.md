@@ -1390,3 +1390,44 @@ visible on the worker global. The private diagnostic observer in
 finds the quota callbacks. This observer changes only the diagnostic worker
 response. Browser conversation pixels with the new worker support remain
 unvalidated at this point.
+
+`056eb2989` keeps the DOMException, QuotaExceededError and EventTarget native
+callbacks in private closures. Event wrapper factories also return directly
+to V instead of becoming global properties. The module import helper uses a
+private global lexical binding with its temporary initializer removed before
+author modules execute; dynamic imports continue to work after an author
+creates a same-named global property. The focused callback, exception, event,
+module and port checks pass in all three memory modes, with stable source
+receipts in `private-binding-focused-assessment.json`.
+
+The unchanged worker now completes its real process/port handshake in
+`dil-port-process-private-complete/`, returning `{kind:2,messageId:1}` with no
+errors. `dil-port-process-private-prealloc/` also passes using the same patched
+preallocation compiler as production. The error-observer worker response was
+used only to diagnose the earlier failure; these successful handshakes use
+the original two saved worker assets.
+
+The first production candidate is pinned in `rich-worker-production/`,
+executable `942104d390511a289c8096c1f9a40b5f5589cbfe113a57c3abc82907711807b8`.
+It builds with unchanged source inputs under the memory guard. Its first
+110-second Enter run reaches the 12 GiB guard before capture; that failed
+attempt remains in `vox-rich-worker-live-enter/`. The separate 70-second run
+finishes normally with the exact reply and empty error collections, but still
+uses fallback Markdown and retains the same 1,440 differing conversation
+pixels. This shorter result does not erase or explain the earlier memory
+failure. The fresh homepage run `vox-rich-worker-fresh-home-60/` is pixel-exact
+against the unchanged Brave homepage reference, at 1024×768.
+
+`vox-rich-worker-wire-70/` confirms that the actual committed Fetch path
+receives non-null DIL. The unchanged user-agent logger in
+`vox-rich-worker-front-observer-75/` also observes the coherent navigator
+identity. Its page observer sees repeated Worker construction and generic
+worker error events before rendering falls back. The native input probe
+changes dyld image order, and V's `os.executable()` returns image zero: the
+browser consequently attempts to spawn the injected library as its worker.
+
+`d3cb3ed99` selects the kernel-backed executable path already used for tabs and
+the filter worker. `worker-executable-checks/` passes in default, no-GC and
+preallocated modes with an injected library confirmed as image zero. The
+replacement production build and full browser conversation validation are
+pending; the first candidate's fallback capture earns no rich-reply parity.
