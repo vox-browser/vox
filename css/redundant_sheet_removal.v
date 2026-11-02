@@ -37,10 +37,40 @@ fn redundant_sheet_declarations_equal(left &CSSRule, right &CSSRule) bool {
 	if a.length() != b.length() || a.properties.len != b.properties.len
 		|| a.custom_properties.len != b.custom_properties.len { return false }
 	for i, property in a.properties {
-		other := b.properties[i]
-		if property.name != other.name || property.value != other.value
+		// CSSOM can serialize independent longhands as a shorthand whose
+		// expansion order differs, e.g. column-gap/row-gap becomes gap.
+		// Match unique longhands by name, retaining the relative order of
+		// logical/physical aliases that can compete for the same used edge.
+		for previous in a.properties[..i] {
+			if previous.name == property.name { return false }
+		}
+		id := property_id_from_string(property.name) or { return false }
+		if property_is_shorthand(id) { return false }
+		mut index := -1
+		for j, candidate in b.properties {
+			if candidate.name == property.name {
+				if index != -1 { return false }
+				index = j
+			}
+		}
+		if index == -1 { return false }
+		other := b.properties[index]
+		if property.value != other.value
 			|| property.important != other.important
 			|| style_value_option_changed(property.style_value, other.style_value) { return false }
+		if group := logical_property_group_for_property(id) {
+			for previous in a.properties[..i] {
+				previous_id := property_id_from_string(previous.name) or { return false }
+				previous_group := logical_property_group_for_property(previous_id) or { continue }
+				if previous_group != group
+					|| (!property_is_logical_alias(id) && !property_is_logical_alias(previous_id)) {
+					continue
+				}
+				for j, candidate in b.properties {
+					if candidate.name == previous.name && j >= index { return false }
+				}
+			}
+		}
 	}
 	for name, property in a.custom_properties {
 		other := b.custom_properties[name] or { return false }
@@ -51,6 +81,11 @@ fn redundant_sheet_declarations_equal(left &CSSRule, right &CSSRule) bool {
 }
 
 fn redundant_sheet_rules_equal(left []&CSSRule, right []&CSSRule, document &dom.Document) bool {
+	mut changed := []&CSSRule{}
+	return redundant_sheet_rule_sequences_match(left, right, document, mut changed) && changed.len == 0
+}
+
+fn redundant_sheet_rule_sequences_match(left []&CSSRule, right []&CSSRule, document &dom.Document, mut changed []&CSSRule) bool {
 	mut i := 0
 	mut j := 0
 	for {
@@ -61,8 +96,8 @@ fn redundant_sheet_rules_equal(left []&CSSRule, right []&CSSRule, document &dom.
 		b := right[j]
 		if a.type_ != b.type_ || a.type_ !in [.style, .media, .supports] { return false }
 		if a.type_ == .style {
-			if serialize_a_group_of_selectors(a.selectors) != serialize_a_group_of_selectors(b.selectors)
-				|| !redundant_sheet_declarations_equal(a, b) { return false }
+			if serialize_a_group_of_selectors(a.selectors) != serialize_a_group_of_selectors(b.selectors) { return false }
+			if !redundant_sheet_declarations_equal(a, b) { changed << a }
 		} else {
 			if a.condition_matches() != b.condition_matches() { return false }
 			if a.type_ == .media {
@@ -80,7 +115,7 @@ fn redundant_sheet_rules_equal(left []&CSSRule, right []&CSSRule, document &dom.
 		}
 		if children := a.rules {
 			other := b.rules or { return false }
-			if !redundant_sheet_rules_equal(children.rules, other.rules, document) { return false }
+			if !redundant_sheet_rule_sequences_match(children.rules, other.rules, document, mut changed) { return false }
 		} else if children := b.rules {
 			if children.rules.len != 0 { return false }
 		}
@@ -91,28 +126,41 @@ fn redundant_sheet_rules_equal(left []&CSSRule, right []&CSSRule, document &dom.
 }
 
 fn (list &StyleSheetList) removal_has_equivalent_following_sheet(sheet &CSSStyleSheet) bool {
+	changed := list.removal_following_sheet_changes(sheet) or { return false }
+	return changed.len == 0
+}
+
+fn (list &StyleSheetList) removal_following_sheet_changes(sheet &CSSStyleSheet) ?[]&CSSRule {
 	if retain_redundant_sheet_removal || !list.document_or_shadow_root.is_document()
 		|| sheet.constructed || sheet.base.disabled || sheet.rules.rules.len == 0
-		|| sheet.owning_documents_or_shadow_roots.len != 1 { return false }
-	owner := sheet.base.owner_node or { return false }
-	if !owner.as_node().is_html_style_element() { return false }
+		|| sheet.owning_documents_or_shadow_roots.len != 1 { return none }
+	owner := sheet.base.owner_node or { return none }
+	if !owner.as_node().is_html_style_element() { return none }
 	mut index := -1
 	for i, candidate in list.sheets {
 		if voidptr(candidate) == voidptr(sheet) { index = i; break }
 	}
-	if index < 0 || index + 1 >= list.sheets.len { return false }
+	if index < 0 || index + 1 >= list.sheets.len { return none }
 	following := list.sheets[index + 1]
-	following_owner := following.base.owner_node or { return false }
+	following_owner := following.base.owner_node or { return none }
 	if following.constructed || following.base.disabled
 		|| !following_owner.as_node().is_html_style_element()
 		|| sheet.base.location != following.base.location || sheet.base_url != following.base_url
 		|| sheet.base.media.media != following.base.media.media
-		|| sheet.did_match != following.did_match { return false }
-	if !redundant_sheet_rules_equal(sheet.rules.rules, following.rules.rules, list.document()) {
-		return false
+		|| sheet.did_match != following.did_match { return none }
+	mut changed := []&CSSRule{}
+	if !redundant_sheet_rule_sequences_match(sheet.rules.rules, following.rules.rules, list.document(), mut changed) {
+		return none
 	}
+	return changed
+}
+
+fn (list &StyleSheetList) removal_invalidation_from_following_sheet(sheet &CSSStyleSheet) ?StyleSheetInvalidationSet {
+	changed := list.removal_following_sheet_changes(sheet) or { return none }
+	mut result := StyleSheetInvalidationSet{}
+	for rule in changed { extend_style_sheet_invalidation_set_with_style_rule(mut result, rule) }
 	if redundant_sheet_removal_diagnostics {
-		eprintln('Vox stylesheet removal: retained styles covered by the adjacent following sheet')
+		eprintln('Vox stylesheet removal: adjacent following sheet, ${changed.len} changed declaration rules')
 	}
-	return true
+	return result
 }

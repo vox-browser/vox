@@ -177,3 +177,69 @@ fn test_redundant_sheet_removal_preserves_future_tag_insertion_and_media_changes
 	remaining.set_media('not all')
 	assert target.needs_style_update() || document.needs_full_style_update()
 }
+
+fn test_redundant_sheet_removal_accepts_independent_shorthand_expansion_order() {
+	document, mut list, target := redundant_removal_fixture([
+		'.target {column-gap:9.3px;row-gap:9.3px;color:red}',
+		'.target {color:red;gap:9.3px}',
+	])
+	defer { document.finalize() }
+	list.remove_sheet(list.sheets[0])
+	assert target.needs_style_update() == retain_redundant_sheet_removal
+}
+
+fn test_redundant_sheet_removal_keeps_competing_logical_declaration_order() {
+	for pair in [
+		['.target {margin-left:1px;margin-inline-start:2px}', '.target {margin-inline-start:2px;margin-left:1px}'],
+		['.target {width:1px;inline-size:2px}', '.target {inline-size:2px;width:1px}'],
+		['.target {border-top-color:red;border-block-start-color:blue}', '.target {border-block-start-color:blue;border-top-color:red}'],
+	] {
+		document, mut list, target := redundant_removal_fixture(pair)
+		assert !list.removal_has_equivalent_following_sheet(list.sheets[0])
+		list.remove_sheet(list.sheets[0])
+		assert target.needs_style_update()
+		document.finalize()
+	}
+}
+
+fn test_redundant_sheet_removal_rejects_duplicate_internal_declaration_names() {
+	document, list, _ := redundant_removal_fixture([
+		'.target {width:1px;height:1px}', '.target {width:1px;height:1px}',
+	])
+	defer { document.finalize() }
+	mut declaration := list.sheets[0].rules.rules[0].style() or { panic('missing style') }
+	_ = declaration.length()
+	declaration.properties[1] = declaration.properties[0]
+	assert !list.removal_has_equivalent_following_sheet(list.sheets[0])
+}
+
+fn test_following_sheet_removal_targets_only_changed_declaration_selectors() {
+	document, mut list, unchanged := redundant_removal_fixture([
+		'.target {color:red} .changed {color:blue}',
+		'.target {color:red} .changed {color:green}',
+	])
+	defer { document.finalize() }
+	mut changed := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic(err) }
+	changed.set_attribute_value('class', 'changed')
+	mut root := unchanged.as_node().parent() or { panic('missing parent') }
+	root.append_child(changed.as_node()) or { panic(err) }
+	clear_redundant_removal_flags(document, unchanged)
+	if !retain_redundant_sheet_removal {
+		rules := list.removal_following_sheet_changes(list.sheets[0]) or { panic('missing plan') }
+		assert rules.len == 1
+		assert rules[0].selector_text() == '.changed'
+	}
+	list.remove_sheet(list.sheets[0])
+	assert unchanged.needs_style_update() == retain_redundant_sheet_removal
+	assert changed.needs_style_update()
+}
+
+fn test_following_sheet_removal_does_not_treat_changed_selectors_as_replacements() {
+	document, mut list, target := redundant_removal_fixture([
+		'.target {color:red}', '.different {color:red}',
+	])
+	defer { document.finalize() }
+	assert list.removal_following_sheet_changes(list.sheets[0]) == none
+	list.remove_sheet(list.sheets[0])
+	assert target.needs_style_update()
+}

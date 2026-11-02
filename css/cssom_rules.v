@@ -2858,16 +2858,18 @@ pub fn (mut list StyleSheetList) move_sheet(sheet &CSSStyleSheet, mut destinatio
 }
 
 fn (mut list StyleSheetList) remove_sheet(sheet &CSSStyleSheet) {
-	// An adjacent, equivalent later sheet already supplies the same cascade.
-	// Keep rule-cache invalidation and ownership changes even when no element
-	// needs to be restyled. Pending invalidations from earlier edits stay set.
-	if list.removal_has_equivalent_following_sheet(sheet) {
+	// An adjacent later sheet with the same selector sequence already supplies
+	// the unchanged declarations. Restyle the remaining changed selectors while
+	// preserving pending invalidations, rule-cache invalidation and ownership.
+	if invalidation := list.removal_invalidation_from_following_sheet(sheet) {
 		mut mutable_sheet := unsafe { &CSSStyleSheet(sheet) }
 		mutable_sheet.remove_owning_document_or_shadow_root(list.document_or_shadow_root)
 		for i, candidate in list.sheets {
 			if voidptr(candidate) == voidptr(sheet) { list.sheets.delete(i); break }
 		}
 		invalidate_css_style_scope_for_node(list.document_or_shadow_root)
+		invalidate_root_for_style_sheet_change(list.document_or_shadow_root, invalidation,
+			.style_sheet_list_remove_sheet, invalidation.invalidation_set.needs_invalidate_whole_subtree())
 		return
 	}
 	mut invalidation_result := build_invalidation_set_for_stylesheet(sheet)
