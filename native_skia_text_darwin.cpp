@@ -186,6 +186,7 @@ SkCanvas* shared_recording_canvas(CGContextRef);
 void shared_recording_clip(CGContextRef, SkCanvas*);
 void shared_recording_block(SkRect);
 void shared_recording_content(CGContextRef, SkRect, float, float);
+void shared_recording_speculative_content(CGContextRef, SkRect, float, float);
 void shared_recording_image(CGContextRef, SkMatrix const&, VoxGraphiteImage const&);
 void finish_shared_recording();
 void clear_retained_layer_tiles();
@@ -1482,6 +1483,7 @@ static int draw_retained_glyph_run(CGContextRef destination,
         local_bounds = paint.computeFastBounds(local_bounds, &filtered_bounds);
     }
     auto device_bounds = matrix.mapRect(local_bounds);
+    shared_recording_speculative_content(destination, device_bounds.makeOutset(2, 2), page_y, scroll_y);
     if (shared_recording_defers_leaf_raster(destination, device_bounds.makeOutset(2, 2))) return 1;
     RasterRegion region;
     if (!clipped_raster_region(device_bounds, canvas_width, canvas_height, 2.0f, region))
@@ -3964,6 +3966,7 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
         else
             input->second->unsupported = true;
     }
+    shared_recording_speculative_content(destination, matrix.mapRect(local_bounds).makeOutset(2, 2), page_y, scroll_y);
     if (isolated_input_defers_leaf_raster(destination)
         || shared_recording_defers_leaf_raster(destination, matrix.mapRect(local_bounds).makeOutset(2, 2))) return 1;
     RasterRegion region;

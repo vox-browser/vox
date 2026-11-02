@@ -85,12 +85,14 @@ bool shared_recording_defers_leaf_raster(CGContextRef destination, SkRect const&
 }
 
 static double speculative_picture_time();
+static void speculative_picture_decline(SharedRootRecording const&);
 struct DeferredLayerPublication {
     SharedRootRecording const& group;
     bool published = false;
     ~DeferredLayerPublication() {
         if (group.deferred_leaves && !published) {
             s_deferred_layer_frame_failed = true;
+            if (group.speculative) speculative_picture_decline(group);
             if (group.speculative && std::getenv("VOX_SPECULATIVE_PICTURE_DIAGNOSTICS"))
                 std::fprintf(stderr, "VOX_SPECULATIVE_PICTURE_FAILED leaves=%u t_us=%.3f\n",
                     group.deferred_leaves, speculative_picture_time());
@@ -240,6 +242,15 @@ void shared_recording_content(CGContextRef destination, SkRect bounds, float pag
     group.columns = s_msaa_grid_columns;
     int height = std::max(1, int(std::ceil(s_raster_layer_height * group.scale)));
     group.rows = std::max(1, (height - 2 + group.tile_height - 3) / (group.tile_height - 2));
+}
+
+void shared_recording_speculative_content(CGContextRef destination, SkRect bounds,
+    float page_y, float scroll_y)
+{
+    if (!s_shared_root_recording || !s_shared_root_recording->speculative
+        || s_shared_root_recording->destination != destination || !bounds.isFinite()) return;
+    if (complete_speculative_picture_enabled())
+        shared_recording_content(destination, bounds, page_y, scroll_y);
 }
 
 sk_sp<SkData> serialize_shared_picture_image(SkImage* image, void*)

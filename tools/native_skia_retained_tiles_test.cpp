@@ -91,4 +91,36 @@ int main()
     first.tile_width = first.tile_height = 0;
     assert(!draw_retained_layer_tiles(first, b.get(), target, 8, 8, 0, 0));
     assert(target == before);
+    // Text/rect-only speculative pictures must acquire grid metadata before
+    // deferring their very first leaf; they have no SVG/gradient marker.
+    setenv("VOX_ENABLE_COMPLETE_SPECULATIVE_PICTURES", "1", 1);
+    auto space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+    auto context = CGBitmapContextCreate(nullptr, 2048, 1536, 8, 8192, space,
+        CGBitmapInfo(kCGImageAlphaPremultipliedLast) | kCGBitmapByteOrder32Big);
+    CGColorSpaceRelease(space); assert(context);
+    CGContextScaleCTM(context, 2, 2);
+    auto content_group = std::make_unique<SharedRootRecording>(group_at(20));
+    content_group->destination = context;
+    content_group->recorder = std::make_unique<SkPictureRecorder>();
+    content_group->recorder->beginRecording(SkRect::MakeWH(1024, 768));
+    s_shared_root_recording = std::move(content_group);
+    s_raster_layer_is_root = false; s_chromium_painting = true; s_shared_layer_enabled = true;
+    s_msaa_grid_columns = 2; s_msaa_grid_width = 544; s_msaa_grid_height = 256;
+    s_root_raster_scroll_y = 20;
+    auto ink = SkRect::MakeXYWH(120, 230, 60, 30);
+    shared_recording_speculative_content(context, ink, 8, 4);
+    assert(s_shared_root_recording->replay_bounds.size() == 1);
+    assert(s_shared_root_recording->scroll_y == 24 && s_shared_root_recording->page_y == 8);
+    assert(s_shared_root_recording->columns == 2 && s_shared_root_recording->tile_width == 544);
+    s_raster_origin_x = 100; s_raster_origin_y = 200;
+    s_raster_layer_width = s_raster_layer_height = 512;
+    assert(speculative_picture_context_eligible(context));
+    speculative_picture_decline(*s_shared_root_recording);
+    assert(!speculative_picture_context_eligible(context));
+    // An unrelated layer and a graphics-memory purge both release the veto.
+    s_raster_origin_x = 101; assert(speculative_picture_context_eligible(context));
+    s_raster_origin_x = 100; clear_retained_layer_tiles();
+    assert(speculative_picture_context_eligible(context));
+    s_shared_root_recording.reset(); CGContextRelease(context);
+
 }

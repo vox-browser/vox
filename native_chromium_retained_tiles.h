@@ -290,7 +290,7 @@ public:
     }
 };
 RetainedLayerTileCache s_retained_layer_tiles;
-void clear_retained_layer_tiles() { s_retained_layer_tiles.clear(); }
+void clear_retained_layer_tiles() { s_retained_layer_tiles.clear(); s_speculative_declined_layers.clear(); }
 
 static bool draw_retained_layer_tiles(SharedRootRecording const& group, SkPicture const* picture,
     std::vector<uint32_t>& output, int width, int height, float left, float top)

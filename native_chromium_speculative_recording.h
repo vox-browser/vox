@@ -11,11 +11,38 @@ static bool speculative_picture_enabled()
     }();
     return enabled;
 }
+static bool complete_speculative_picture_enabled()
+{
+    auto* value = std::getenv("VOX_ENABLE_COMPLETE_SPECULATIVE_PICTURES");
+    return value && !std::strcmp(value, "1");
+}
 static double speculative_picture_time()
 {
     using Clock = double (*)();
     static auto clock = reinterpret_cast<Clock>(dlsym(RTLD_DEFAULT, "vox_precise_scroll_diagnostic_time"));
     return clock ? clock() : -1;
+}
+
+// A failed transaction replays correctly, but repeating that failed work on
+// every wheel frame can cost more than ordinary rendering. Remember a small
+// set of declined layer geometries. A false match only declines acceleration;
+// no pixel or resource identity is inferred from these coordinates.
+struct SpeculativeDeclinedLayer {
+    float x, y, width, height, scale;
+    int canvas_width, canvas_height;
+    bool operator==(SpeculativeDeclinedLayer const&) const = default;
+};
+static std::vector<SpeculativeDeclinedLayer> s_speculative_declined_layers;
+static void speculative_picture_decline(SharedRootRecording const& group)
+{
+    if (!complete_speculative_picture_enabled()) return;
+    SpeculativeDeclinedLayer key {group.origin_x, group.origin_y, group.layer_width,
+        group.layer_height, group.scale, int(group.canvas_width * group.scale),
+        int(group.canvas_height * group.scale)};
+    if (std::find(s_speculative_declined_layers.begin(), s_speculative_declined_layers.end(), key)
+            != s_speculative_declined_layers.end()) return;
+    if (s_speculative_declined_layers.size() >= 128) s_speculative_declined_layers.erase(s_speculative_declined_layers.begin());
+    s_speculative_declined_layers.push_back(key);
 }
 static CGContextRef speculative_picture_current_context()
 {
@@ -42,6 +69,11 @@ static bool speculative_picture_context_eligible(CGContextRef context)
     if (!(ctm.a > 0) || ctm.d != ctm.a || ctm.b != 0 || ctm.c != 0
         || ctm.tx != 0 || ctm.ty != 0) return false;
     auto width = CGBitmapContextGetWidth(context), height = CGBitmapContextGetHeight(context);
+    SpeculativeDeclinedLayer key {float(s_raster_origin_x), float(s_raster_origin_y),
+        float(s_raster_layer_width), float(s_raster_layer_height), float(ctm.a), int(width), int(height)};
+    if (complete_speculative_picture_enabled()
+        && std::find(s_speculative_declined_layers.begin(), s_speculative_declined_layers.end(), key)
+            != s_speculative_declined_layers.end()) return false;
     if (!width || !height || width > 16384 || height > 16384
         || size_t(width) * height > 8 * 1024 * 1024
         || !(s_raster_layer_width * ctm.a >= 1 && s_raster_layer_width * ctm.a <= 16384)
