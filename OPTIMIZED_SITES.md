@@ -4,13 +4,19 @@ Recorded workloads where Vox uses fewer CPU instructions than Brave. These
 macOS comparisons cover browser startup through a completed document capture;
 fewer instructions measure CPU work, rather than elapsed rendering time.
 Results apply to the frozen page and pinned build in each linked report.
+Provisional entries retain unresolved acceptance checks.
 
 | Site | Recorded date | Trials per browser | Statistic | Vox instructions | Brave observed instructions | Fewer instructions | Vox scroll FPS | Brave scroll FPS† | Evidence |
 | --- | --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | --- |
 | Old Reddit /r/programming/ | 2026-11-01 | 7 | Median | 4,954,400,539 | 9,248,675,091 | **46.43%** | 39.2–53.0 | 59.56–59.78 | [Comparison](docs/OLD_REDDIT_PROGRAMMING_INSTRUCTIONS.md) |
 | Hacker News homepage | 2026-11-01 | 7 | Median | 4,877,590,820 | 8,554,149,229 | **42.98%** | 59.7–59.8 | 59.78–59.79 | [Comparison](docs/HACKER_NEWS_BRAVE_INSTRUCTIONS.md), [scrolling](docs/HACKER_NEWS_SCROLLING.md) |
+| CNN homepage (provisional) | 2026-11-01 | 7 | Median | 21,805,542,771 | 32,665,051,523 | **33.25%** | — | — | [Comparison](docs/CNN_INSTRUCTIONS.md), [receipts](docs/benchmark-results/cnn-home-thirty-percent-2026-11-01.json) |
 | Wikipedia portal (www.wikipedia.org) | 2026-11-01 | 7 | Median | 6,686,475,010 | 9,702,898,348 | **31.09%** | 3.1–3.6 | 59.57–59.79 | [Audit](docs/OPTIMIZED_SITES_AUDIT.md), [comparison](docs/WIKIPEDIA_BRAVE_INSTRUCTIONS.md) |
 | vlang.io (CLI protocol) | 2026-11-01 | 7 | Mean | 8.630 billion | 10.500 billion | **17.81%** | 0.8–0.9 | 59.49–59.79 | [Audit](docs/OPTIMIZED_SITES_AUDIT.md), [comparison](docs/VLANG_RENDERING_INSTRUCTIONS.md) |
+
+**CNN is provisional:** its median lead exceeds 30%, but the conservative gate
+fails with two large owned-helper costs, and one Brave capture mismatches the
+fixed pixel reference. All seven Vox captures are exact. CNN scrolling is unmeasured.
 
 FPS ranges span **two completed trials** per browser/page; the trial counts and
 mean/median labels above refer to instructions. The [Vox scrolling report](docs/OPTIMIZED_SITES_SCROLL_FPS.md)
@@ -19,7 +25,8 @@ records native Cocoa input and changed-layer publications; the
 wheel input and Chromium presentation feedback, with frame-event tracing enabled**;
 see its [report and raw evidence](docs/BRAVE_SCROLL_FPS.md). This bypasses Cocoa
 input and observes a later frame boundary, so these columns do not establish a
-matched FPS ratio or optimization acceptance. Both use the same frozen page,
+matched FPS ratio or optimization acceptance. For the measured FPS rows, both
+browsers use the same frozen page,
 1024×768 document viewport, native scale 2, 600 alternating wheel inputs and a
 full input-window denominator. Neither endpoint measures physical display
 scanout or establishes smooth 60 FPS. **— means unmeasured, not zero FPS.**
@@ -30,7 +37,7 @@ captures use a 1024×768 CSS-pixel viewport. Hacker News uses native capture sca
 the other workloads use scale 1. Old Reddit, Wikipedia and vlang.io use process-tree counters:
 Vox includes capture and teardown, while Brave ends before shutdown. Both sums
 are observed lower bounds because short-lived unsampled children can be missed.
-Hacker News uses exclusive resource-coalition counters through PNG availability,
+Hacker News and CNN use exclusive resource-coalition counters through PNG availability,
 including exited helpers and explicitly allowed coalition-owned system services;
 Vox ends before the PNG file write and Brave includes CDP screenshot delivery.
 GPU execution and services outside the recorded ownership scope are excluded.
@@ -203,6 +210,17 @@ its own matched measurement.
   navigation using the measured capture path matches the frozen Vox pixels.
   The existing production build already met the target; this comparison
   required no runtime optimization.
+- **CNN (provisional):** the frozen homepage has author scripts removed, with
+  normal scripting policy, JavaScriptCore initialization, inline handlers and
+  full-uBO filtering retained. Seven alternating pairs use original-origin
+  replay, fresh private copies of the declared cache/profile templates,
+  1024×768 at scale 1, five seconds of settlement and retained OS caches.
+  All content/filter audits and actual browser exits pass. The highest Vox
+  count, **36,373,350,927**, is **1.13119×** the lowest Brave lower bound,
+  **32,154,975,008**, so the strict 30% target remains open. Brave pair 4 differs
+  at 13,565 pixels; that failure and both Vox outliers remain in the statistics.
+  The live-load check records frame and consent-API JavaScript errors; this
+  frozen startup/capture result does not establish live author-script performance.
 - **vlang.io:** an initialized DOM snapshot with archived assets, author scripts
   removed, animations/transitions disabled and a fixed video poster; JavaScript
   policy remains enabled. The fresh CLI audit records clean exits and exact
@@ -231,8 +249,9 @@ scripting, interactions and authentication parity are outside that record.
 ## Comparisons still open
 
 [Pikabu](docs/PIKABU_INSTRUCTIONS.md) has a small, variable observed median lead
-that does not establish a repeatable advantage. [CNN](docs/CNN_INSTRUCTIONS.md) and
-[Stack Overflow on macOS](docs/STACKOVERFLOW_BRAVE_INSTRUCTIONS.md) have not
+that does not establish a repeatable advantage. [CNN](docs/CNN_INSTRUCTIONS.md)
+has the provisional median lead listed above; its strict 30% acceptance remains
+open. [Stack Overflow on macOS](docs/STACKOVERFLOW_BRAVE_INSTRUCTIONS.md) has not
 established lower instruction counts than Brave. The fresh seven-pair Stack
 Overflow comparison records median observed counts of **27,723,596,574 for Vox**
 and **10,379,419,729 for Brave**: Vox uses **2.67× as many instructions** on the

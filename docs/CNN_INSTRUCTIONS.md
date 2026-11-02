@@ -41,7 +41,8 @@ from 3.73 to 6.48 on 18 logical CPUs. Raw evidence is in
 counters, PNGs, audits and actual exits. The
 [durable 30% follow-up receipt](benchmark-results/cnn-home-thirty-percent-2026-11-01.json)
 retains this cohort and all earlier diagnostic, failing and rejected attempts.
-This is not a qualifying `OPTIMIZED_SITES.md` result.
+The [optimized-sites catalog](../OPTIMIZED_SITES.md) lists this median observation
+as provisional; it has not passed strict acceptance.
 
 A separate instrumented helper diagnostic observes **19,129,205,317** instructions
 in an owned `MTLCompilerService` process, versus 913,424,204 in the adblock worker
