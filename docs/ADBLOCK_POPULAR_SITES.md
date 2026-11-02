@@ -2570,3 +2570,49 @@ hashes, commands, memory guards, rejected candidate and additional oracle run.
 Raw evidence is under `Build/pikabu-clip-state-20261102/`. These are frozen guest
 rendering checks with author scripts removed. They establish no live-site,
 instruction-count or scrolling-performance acceptance.
+
+## Pikabu shadow recording bounds retain raster tiles, 2 November 2026
+
+Commit `7bfca7c50` reduces the unchanged frozen-page comparison from **10,599
+to 10,516 differing pixels**. It fixes 83 header-control pixels, changes no
+other pixels and introduces no errors. Maximum channel error falls from 26 to
+14. The entire visible photo remains exact. Pikabu still fails the full-page
+zero-pixel gate.
+
+Complete-picture shadow recordings now report their three-sigma ink extent,
+matching the compositor layer. Previously they reported the larger scratch
+buffer reserved for leaf readback. That padding expanded the 1084×124 header
+recording to a clipped 1024×148 target and disabled its 576×128 raster tiles.
+Leaf scratch allocation and conservative leaf deferral bounds are preserved.
+The change contains no site, URL or dimension exceptions.
+
+The new native regression fails before the fix on the 20px header blur and
+passes afterward; four cases cover zero blur and fractional-sigma rounding as
+well. Existing outer-shadow groups (24 cases) and deferred layers (32 scenes)
+pass. All **15 selected native pixel captures** pass, and CNN, Guardian and
+Verge retain their unchanged archived viewports at **zero pixels**. The added
+browser fixture is a rounded-control preservation check: it is exact both
+before and after, and two fresh Brave/full-uBO references agree. The native
+bounds assertion supplies the red-to-green reproduction.
+
+The signed production capture uses a fresh process and private profile. Its
+matched control uses the same newly built executable, resources and libraries,
+replacing only the native Skia library with the retained pre-fix version.
+Required native source hashes stayed stable during compilation; two test files
+changed during the shared build. Fresh headless startup passes, and the
+recorded Pikabu stream matches full uBO on 52 decisions with zero blocks or
+disagreements.
+
+The shared-layer adapter test still fails its existing backdrop case at 5,343
+channels. Reverting only the new ink-bounds change reproduces the identical
+first mismatch and channel count. This failure is retained and unresolved.
+Forced-MSAA, shadow-color-filter, rectangular-clip and rect-operation probes
+made no additional improvement. The prior three saved-live/frozen plus-button
+pixels and 66-pixel unmatched-cache oracle variation also remain open; no
+existing reference or tolerance has been changed.
+
+The [shadow-recording receipt](benchmark-results/pikabu-shadow-recording-bounds-2026-11-02.json)
+contains exact identities, region counts, commands, guards, controls and failed
+diagnostics. Raw evidence is under `Build/pikabu-header-20261102/`. These are
+frozen guest rendering results with author scripts removed, without live-site,
+instruction-count or scrolling-performance acceptance.
