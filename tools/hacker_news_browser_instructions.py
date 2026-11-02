@@ -48,6 +48,7 @@ from pikabu_browser_instructions import clone_file
 from process_instruction_counts import CounterSampler, MacCounters
 from page_archive import load_archive
 from run_memory_bounded import publish_adopted_processes
+from measure_precise_scroll import runtime_input_paths
 
 REPO = Path(__file__).resolve().parents[1]
 NAME = 'hacker-news-item-50231722-complete'
@@ -828,6 +829,8 @@ def main():
         'capture_brave_reference.py',
         'measure_sealed_github_instructions.py', 'pikabu_browser_instructions.py',
         'process_instruction_counts.py', 'page_archive.py', 'run_memory_bounded.py'))
+    paths.add(REPO / 'tools/measure_precise_scroll.py')
+    paths.update(runtime_input_paths(apps['vox'] / 'Contents/MacOS/Vox', {}))
     paths.update(path for path in (args.document.parent / ASSETS).rglob('*') if path.is_file())
     if args.home_archive:
         paths.update(path for path in args.home_archive.rglob('*') if path.is_file())
