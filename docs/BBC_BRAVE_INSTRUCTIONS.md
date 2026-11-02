@@ -1,7 +1,15 @@
 # BBC homepage instruction comparison
 
 **The requested 10% advantage remains open. BBC does not qualify for
-`OPTIMIZED_SITES.md`.** Latest cohort 49 uses canonical tools, the completed
+`OPTIMIZED_SITES.md`.** Latest attempted cohort 50 has two early Vox ownership
+rejections and only five complete triples, so it cannot supply an acceptance
+gate. Its early text-font request experiment provides no evidence of a gain
+and has been removed. Among the five completed matched pairs, two improve and
+three regress; their partial median increases by 583,525,731 instructions
+(1.8646894242908671%). Every attempt remains in the
+[experiment supplement](benchmark-results/bbc-font-request-experiment-2026-11-02.json).
+
+Latest complete cohort 49 uses canonical tools, the completed
 production Vox bundle and installed Brave directly for seven alternating
 matched triples. Vox median is **31,284,060,062**, its same-binary control
 **31,433,167,681**, and Brave lower median **15,005,464,950** instructions.
@@ -116,6 +124,9 @@ physical input is still present. Commands, ownership audits and artifact hashes
 remain recorded. Raw archives, logs, PNGs, executable copies, PID registries,
 compiler output and guard receipts remain under
 `Build/bbc-home-instructions-20261101-054807/` in the canonical checkout.
+The font-request supplement adds 21 cohort attempts and eight separate
+diagnostic captures, bringing the retained history to **1,244 attempts across
+50 cohorts**. Cohort 50's two missing Vox intervals remain explicit.
 
 ## Workload and endpoints
 
@@ -2627,3 +2638,60 @@ unresolved. Historical WebP/RGB policy, warm OS caches, original scripts,
 per-engine references and the rendering/scripting limitations remain unchanged.
 The [canonical-input evidence](benchmark-results/bbc-canonical-font-sync-2026-11-02.json)
 preserves the exact counts, identities, host conditions and receipts.
+
+## Early text-font requests, removed (cohort 50)
+
+Commit `d311dc21a` tried starting selected text-face requests from existing clean
+styles before JavaScript startup, without another style pass or geometry.
+`dd2c5895f` isolates the previous request timing in the same-binary control.
+Six focused cases pass in both policies and all three memory modes, for 36
+case executions; all nine compiler/runtime jobs exit zero. All 228 instruction
+tool tests pass. An initial test-source compilation error is retained without
+execution credit.
+
+Both arms use the completed canonical executable
+`c1a609e19395dd68b7a8fa7043f55be7a89e21fb0bc3a7031559ac3fb4770540`.
+Separate candidate/control BBC diagnostics prove that the new path executes
+only when enabled, with original pixels, full content, endpoint ownership and
+native exit zero. JavaScriptCore executes one context and 2,018 / 1,926
+evaluations. Instrumented diagnostics earn no instruction credit.
+
+All seven alternating triples are attempted. Vox pairs 3 and 7 fail the
+existing early check for an app helper outside the measured coalition and
+have no capture-counter intervals. The available process snapshots do not
+record the outside helper's command; its cause remains unattributed. These
+attempts are not retried or excluded. All nineteen completed captures pass
+independent exact PNG comparisons, full semantic audits, native exit zero and
+their endpoint ownership checks. The independent auditor rehashes all 1,637
+pinned inputs unchanged and verifies every root's memory-guard adoption.
+Driver, guard and controller exit 1. The unchanged 12 GiB guard records
+1,487,077,376 peak sampled bytes over 98.551326041 seconds, with no adoption
+error. Per-trial host load and timestamps remain retained.
+
+There is no complete seven-pair gate. The five completed matched pairs supply
+only a partial diagnostic: Vox/control medians 31,876,979,933 / 31,293,454,202,
+with two improving and three regressing pairs. The median regression is
+583,525,731 instructions (1.8646894242908671%). `6962019` removes the experiment;
+both original initial-font cases pass in all three memory modes, with all six
+compiler/runtime guard exits zero. No measured saving, new broad checkpoint or
+cadence reset is credited. The prior broad baseline failures remain unresolved.
+
+Separate hardware-counter diagnostics guide further investigation. Corrected
+root-thread sampling observes 24,100,482,176 main-thread instructions and
+2,560,293,114 on JIT helper threads. These maxima include the post-capture audit
+and omit unsampled exited-thread tails. The first sampler attempt has a valid
+native capture but zero thread samples after a harness API-name error; it
+receives no attribution credit. A separate interposition run records
+2,751,257,521 instructions in outer direct script evaluations, including any
+nested native style/layout work, and reports zero counter errors.
+
+One further diagnostic pair raises DFG warmup thresholds from 1,000 to 10,000.
+Actual option dumps verify the settings with baseline and DFG JIT enabled;
+original pixels/content/native exits/ownership remain valid. Observed JIT-thread
+instructions fall from 2,752,842,128 to 1,771,661,439, while main-thread maxima
+rise from 24,005,483,025 to 24,890,444,063. Pauses, polling, option dumps and
+compilation logs perturb scheduling, so these are diagnostic observations only.
+Production JIT policy remains unchanged. A preparatory audit syntax failure
+and the corrected zero-exit auditor are both retained. All counters, commands,
+hashes, focused/restoration checks and guard receipts are linked from the
+[font-request evidence](benchmark-results/bbc-font-request-experiment-2026-11-02.json).
