@@ -1,0 +1,17 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Image gradient masks and overlay compositing</title>
+<style>
+html,body{margin:0;background:white}
+.card{position:absolute;top:229.09375px;width:242px;height:242px;overflow:hidden;background:#0a8935}
+.card img{position:absolute;left:0;top:-242px;width:484px;height:484px;object-fit:cover}
+#plain{left:4px}#masked{left:260px}#overlay{left:516px}#both{left:772px}
+#masked img,#both img{mask-image:linear-gradient(180deg,#000 70%,transparent)}
+.overlay{position:absolute;left:0;top:-242px;width:484px;height:484px;z-index:2;background:linear-gradient(0deg,rgba(0,0,0,.95),rgba(0,0,0,.25))}
+p{position:absolute;top:1500px}
+</style>
+<div class="card" id="plain"><img src="../resources/techcrunch-hero.webp" decoding="async" width="668" height="445"></div>
+<div class="card" id="masked"><img src="../resources/techcrunch-hero.webp" decoding="async" width="668" height="445"></div>
+<div class="card" id="overlay"><img src="../resources/techcrunch-hero.webp" decoding="async" width="668" height="445"><div class="overlay"></div></div>
+<div class="card" id="both"><img src="../resources/techcrunch-hero.webp" decoding="async" width="668" height="445"><div class="overlay"></div></div>
+<p>The four columns show the same bottom-left quarter of a 484 by 484 image. They retain the original encoded WebP response from the publisher. The first has no effect, the second has the authored gradient mask, the third has the authored dark gradient overlay, and the fourth combines both effects. The image size, object fitting and fractional vertical paint offset match the homepage. These words remain outside the document capture to satisfy the full-uBlock guest-page reference readiness check. The four columns show the same bottom-left quarter of a 484 by 484 image. They retain the original encoded WebP response from the publisher. The first has no effect, the second has the authored gradient mask, the third has the authored dark gradient overlay, and the fourth combines both effects. The image size, object fitting and fractional vertical paint offset match the homepage. These words remain outside the document capture to satisfy the full-uBlock guest-page reference readiness check. The four columns show the same bottom-left quarter of a 484 by 484 image. They retain the original encoded WebP response from the publisher.</p>
