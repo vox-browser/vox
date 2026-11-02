@@ -1,0 +1,103 @@
+{
+  "target": 3200000000,
+  "target_met": false,
+  "criterion": "At least seven complete default production trials, median and maximum upper count at most 3.2B.",
+  "baseline": {
+    "counts": {
+      "default": [
+        4036311853,
+        4013577774,
+        4020918501,
+        3991860295,
+        4002480764,
+        4016093882,
+        3997134580
+      ]
+    },
+    "maxima": {
+      "default": 4036311853
+    },
+    "medians": {
+      "default": 4013577774
+    },
+    "scope": "Exclusive browser resource-coalition creation through encoded document PNG availability, including browser/window startup and the navigation/capture workflow described by navigation_scope. Brave includes CDP target/window setup. OS filesystem and shader caches are not cleared. This is a full startup/capture workflow, not isolated page navigation or rendering work.",
+    "target_met": {
+      "default": false
+    },
+    "valid": true
+  },
+  "svg_region_experiment": {
+    "counts": {
+      "candidate": [
+        3983028685,
+        3994102776,
+        3985930103,
+        3982504263,
+        3979896327,
+        3968396914,
+        3979901184
+      ],
+      "control": [
+        4058694386,
+        4020920326,
+        4013430251,
+        4015404093,
+        4014381514,
+        4024254881,
+        4009882513
+      ]
+    },
+    "maxima": {
+      "candidate": 3994102776,
+      "control": 4058694386
+    },
+    "medians": {
+      "candidate": 3982504263,
+      "control": 4015404093
+    },
+    "scope": "Exclusive browser resource-coalition creation through encoded document PNG availability, including browser/window startup and the navigation/capture workflow described by navigation_scope. Brave includes CDP target/window setup. OS filesystem and shader caches are not cleared. This is a full startup/capture workflow, not isolated page navigation or rendering work.",
+    "target_met": {
+      "candidate": false,
+      "control": false
+    },
+    "valid": true
+  },
+  "svg_region_commit": "11ae14fdf4380bdd92505e18801b2db0bf6d33d4",
+  "svg_region_conservative_ratio": 0.9960647881954541,
+  "current_production_diagnostic": {
+    "counts": {
+      "default": [
+        3963916709,
+        3970081883
+      ]
+    },
+    "maxima": {
+      "default": 3970081883
+    },
+    "medians": {
+      "default": 3966999296.0
+    },
+    "scope": "Exclusive browser resource-coalition creation through encoded document PNG availability, including browser/window startup and the navigation/capture workflow described by navigation_scope. Brave includes CDP target/window setup. OS filesystem and shader caches are not cleared. This is a full startup/capture workflow, not isolated page navigation or rendering work.",
+    "target_met": {
+      "default": false
+    },
+    "valid": true
+  },
+  "checks": {
+    "direct_svg_comparisons": 512,
+    "parent_svg_comparisons": 128,
+    "sanitizers": "pass",
+    "screenshots": 21,
+    "live": "30 stories, complete, 1024x768, no script/native errors",
+    "bundle_recovery": "Original two resource hashes restored; signing, startup and helper pass after restoration."
+  },
+  "raw_evidence": "Build/hn-3200-20261102",
+  "guard_receipts": [
+    "Build/hn-3200-matched-regions-guard.json",
+    "Build/hn-3200-region-asan-guard.json",
+    "Build/hn-3200-parent-tests-guard.json",
+    "Build/hn-3200-broad-recovered-guard.json",
+    "Build/hn-3200-recovery-checks-guard.json",
+    "Build/hn-3200-current-prod-guard.json"
+  ]
+}
