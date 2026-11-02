@@ -3534,3 +3534,14 @@ two, both with no root and with an unrelated root recording; the
 Production build receipts `20261102-210724-00c09498` and
 `20261102-211143-4554b412` retain the superseded and failed attempts. The completed
 `208875f1…` bundle contains this integration repair.
+
+The final validation wait also ends without a qualifying published executable:
+its 480-second limit expires while shared source inputs continue changing.
+The completed `20261102-212114-493a757f` build is superseded; the subsequent
+`20261102-212605-f580c487` build is still running at this checkpoint and its
+inputs have changed too. The existing `208875f1…` browser establishes the BBC
+page result above but cannot validate `673fbece9`. The
+[final validation receipt](../Build/bbc-translation-final-20261102/)
+retains the failed wait and prepared sequential commands. The expanded
+97-test/103-capture production check and final site preservation remain pending;
+no passing result is claimed for them. All completed source fixes are committed.
