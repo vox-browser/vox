@@ -255,7 +255,7 @@ extern "C" int ladybird_v_skia_begin_inset_decorations(CGContextRef destination,
     float x, float y, float width, float height, float canvas_width,
     float canvas_height, float page_y, float scroll_y)
 {
-    if (!s_chromium_painting || !destination
+    if (!s_chromium_painting || !destination || s_speculative_layer_enabled
         || (s_raster_layer_is_root ? s_shared_root_enabled : s_shared_layer_enabled)
         || !shared_picture_draw() || s_inset_decoration_recording
         || s_isolated_input_recordings.count(destination)) return 0;

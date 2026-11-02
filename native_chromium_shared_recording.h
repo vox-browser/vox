@@ -589,6 +589,21 @@ void finish_shared_recording()
 }
 }
 
+namespace {
+// A filter, text mask or decoration records an isolated input, then publishes
+// into its parent outside the shared leaf recorder. Publish the parent's
+// deferred prefix first, before the effect can read or replace those pixels.
+// The existing prefix guard still rejects every unexpected parent write.
+void finish_shared_recording_before_isolated_input(CGContextRef)
+{
+    if (!s_shared_root_recording || !s_shared_root_recording->speculative) return;
+    if (std::getenv("VOX_SPECULATIVE_PICTURE_DIAGNOSTICS"))
+        std::fprintf(stderr, "VOX_SPECULATIVE_ISOLATED_BARRIER leaves=%u t_us=%.3f\n",
+            s_shared_root_recording->deferred_leaves, speculative_picture_time());
+    finish_shared_recording();
+}
+}
+
 extern "C" void ladybird_v_skia_set_shared_recording(int enabled, int width, int height)
 {
     s_shared_root_recording.reset();

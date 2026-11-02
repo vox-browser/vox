@@ -190,6 +190,7 @@ void shared_recording_content(CGContextRef, SkRect, float, float);
 void shared_recording_speculative_content(CGContextRef, SkRect, float, float);
 void shared_recording_image(CGContextRef, SkMatrix const&, VoxGraphiteImage const&);
 void finish_shared_recording();
+void finish_shared_recording_before_isolated_input(CGContextRef);
 void clear_retained_layer_tiles();
 decltype(&vox_graphite_draw_picture_pixels) shared_picture_draw();
 sk_sp<SkData> serialize_shared_picture_image(SkImage*, void*);
@@ -2600,6 +2601,7 @@ extern "C" int ladybird_v_skia_begin_isolated_input(CGContextRef context,
 {
     if (!context || !s_chromium_painting || !shared_picture_draw()
         || !(width > 0 && height > 0) || width > 16384 || height > 16384) return 0;
+    finish_shared_recording_before_isolated_input(context);
     auto recording = std::make_unique<IsolatedInputRecording>();
     recording->canvas_height = height;
     recording->scale = raster_scale_for_context(context);
