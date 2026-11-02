@@ -30,6 +30,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_svg_ellipses_preserve_pixels_beside_paths_and_in_separate_tiles(self):
         self.compare_fixture('svg-ellipse-parent-msaa', width=1024, height=768)
 
+    def test_rounded_mask_keeps_the_replaced_image_and_its_background_together(self):
+        self.compare_fixture('rounded-masked-replaced-image', width=1024, height=768)
+
     def test_pikabu_svg_banner_samples_its_image_pattern_at_the_final_viewport(self):
         self.compare_fixture('pikabu-svg-image-pattern')
 

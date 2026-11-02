@@ -5864,6 +5864,31 @@ void native_draw_image_part_transformed(gg__Image *image, float destination_x,
 		page_y, scroll_y, canvas_width, canvas_height, opacity, nearest_neighbor, clip_radii);
 }
 
+// Replay a validated background/image/opaque rounded CSS-mask scope atomically.
+// Source normalization and color profiles match ordinary replaced-image draws.
+int native_draw_rounded_masked_image(gg__Image *image, const float *rects,
+    const float *clip, const float *transform, float page_x, float page_y,
+    float canvas_width, float canvas_height, gg__Color background, int nearest) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+    CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
+    if (!context || !image || !rects || !clip || !transform) return 0;
+    NativeSkiaImageSource source;
+    if (!native_begin_skia_image_source(context, image, &source)) return 0;
+    ladybird_v_skia_set_image_background(background.r, background.g, background.b, background.a);
+    int drawn = ladybird_v_skia_draw_rgba_image(context, source.pixels,
+        image->width, image->height, source.pitch, rects[0], rects[1], rects[2], rects[3],
+        rects[4], rects[5], rects[6], rects[7], clip[0], clip[1], clip[2], clip[3],
+        transform[0], transform[1], transform[2], transform[3], transform[4], transform[5],
+        page_x, page_y, 0, canvas_width, canvas_height, 1, nearest,
+        source.flags | VOX_GRAPHITE_IMAGE_ROUNDED_ALPHA_MASK, clip + 4);
+    ladybird_v_skia_set_image_background(0, 0, 0, 0);
+    native_end_skia_image_source(&source);
+    return drawn;
+#else
+    return 0;
+#endif
+}
+
 // A gapless background crossing a tile boundary is one image shader. Cropping
 // and clamping separate tiles loses the bilinear samples from the next repeat.
 int native_draw_image_pattern_transformed(gg__Image *image,

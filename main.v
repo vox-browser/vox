@@ -7431,6 +7431,8 @@ fn (mut app BrowserApp) draw() {
 					}
 				}
 				if command.kind == 'begin_svg_mask_layer' {
+					shared_svg_end = app.draw_chromium_masked_image(command_index, 0, page_y)
+					if shared_svg_end > command_index { continue }
 					shared_svg_end = app.draw_chromium_svg_rectangular_mask(app.paint_commands,
 						app.chromium_raster_plan.command_layers, command_index, 0, page_y)
 					if shared_svg_end > command_index { continue }

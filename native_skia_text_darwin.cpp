@@ -2150,6 +2150,9 @@ extern "C" int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
     s_has_image_background = false;
     float const image_border_width = s_image_border_width;
     s_image_border_width = 0;
+    bool rounded_mask = image_flags & VOX_GRAPHITE_IMAGE_ROUNDED_ALPHA_MASK;
+    if (rounded_mask && (!s_chromium_painting || !clip_radii || image_border_width > 0
+            || !graphite_image_draw())) return 0;
     // Flags: premultiplied RGBA (1), readable opaque page backdrop (2),
     // or a tightly packed Y/U/V 4:2:0 payload in place of RGBA (4).
     if (!destination || !source_pixels || image_width <= 0 || image_height <= 0
@@ -2191,6 +2194,8 @@ extern "C" int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
         / static_cast<float>(region.width());
     auto raster_scale_y = static_cast<float>(raster_height)
         / static_cast<float>(region.height());
+    if (rounded_mask && (static_cast<size_t>(raster_width) * raster_height > 8 * 1024 * 1024
+            || !clip_radii || image_border_width > 0)) return 0;
     std::vector<uint32_t> pixels(static_cast<size_t>(raster_width)
         * static_cast<size_t>(raster_height));
     bool has_background = (image_flags & 2) && copy_backdrop(destination,
@@ -2235,6 +2240,9 @@ extern "C" int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
                 static_cast<float>(region.width()), static_cast<float>(region.height()), has_background);
         }
     }
+    // A masked scope is transactional: leave its original replay available
+    // when this backend cannot perform both independent coverage stages.
+    if (rounded_mask) return 0;
     // Build the CPU image only if the GPU path could not draw it.
     sk_sp<SkImage> source_image;
     if (!(image_flags & 4)) {

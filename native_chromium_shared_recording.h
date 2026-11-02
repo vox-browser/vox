@@ -242,7 +242,7 @@ void shared_recording_image(CGContextRef destination, SkMatrix const& matrix,
         border.outset(image.border_width / 2, image.border_width / 2);
         target.join(border);
     }
-    if ((image.flags & (4 | 64 | 128)) || image.has_background_color
+    if ((image.flags & (4 | 64 | 128 | VOX_GRAPHITE_IMAGE_ROUNDED_ALPHA_MASK)) || image.has_background_color
         || image.border_width > 0
         || size_t(image.width) * image.height > 8 * 1024 * 1024) {
         shared_recording_block(matrix.mapRect(target));

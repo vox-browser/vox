@@ -1726,11 +1726,29 @@ fn css_mask_image_for_box(element &dom.Element, computed &css.ComputedProperties
 		width: border_rect.width
 		height: border_rect.height
 	})
+	resolved_radii := paintable_box_normalized_border_radii_data(
+		paintable_box_border_radii_data(computed, css.CSSPixels.nearest_value_for(border_rect.width),
+			css.CSSPixels.nearest_value_for(border_rect.height)), computed, .no)
+	// A non-round contour cannot be represented by this rounded-clip hint.
+	// Leave it in the general mask replay rather than substituting an rrect.
+	border_radii := if computed.corner_shape_parameters().all(it == 1) { resolved_radii } else { BoxRadii{} }
+	mut cache_key := svg_mask_visual_cache_key(bounding_rect, .alpha, operations)
+	for corner in [border_radii.top_left, border_radii.top_right,
+		border_radii.bottom_right, border_radii.bottom_left] {
+		cache_key = svg_clip_hash_mix(cache_key, math.f64_bits(corner.x))
+		cache_key = svg_clip_hash_mix(cache_key, math.f64_bits(corner.y))
+	}
 	return painting.SVGMaskVisualData{
 		bounding_rect: bounding_rect
+		border_radii: painting.BorderRadiiData{
+			top_left: painting.BorderRadiusData{border_radii.top_left.x, border_radii.top_left.y}
+			top_right: painting.BorderRadiusData{border_radii.top_right.x, border_radii.top_right.y}
+			bottom_right: painting.BorderRadiusData{border_radii.bottom_right.x, border_radii.bottom_right.y}
+			bottom_left: painting.BorderRadiusData{border_radii.bottom_left.x, border_radii.bottom_left.y}
+		}
 		mask_type: .alpha
 		operations: operations
-		cache_key: svg_mask_visual_cache_key(bounding_rect, .alpha, operations)
+		cache_key: cache_key
 		scope_id: svg_resource_scope_id(node, 3)
 	}
 }

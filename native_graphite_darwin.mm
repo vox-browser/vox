@@ -529,6 +529,8 @@ static void draw_prepared_image(SkCanvas* canvas, VoxGraphiteImage const* image,
     matrix.set9(image->matrix);
     canvas->setMatrix(matrix);
     auto rect = [](float const* r) { return SkRect::MakeXYWH(r[0], r[1], r[2], r[3]); };
+    bool rounded_mask = image->flags & VOX_GRAPHITE_IMAGE_ROUNDED_ALPHA_MASK;
+    if (rounded_mask) canvas->saveLayer(rect(image->clip), nullptr);
     canvas->save();
     // An image already covers its destination rectangle. An identical square
     // clip is redundant, and changes Graphite's image shader interpolation.
@@ -580,6 +582,18 @@ static void draw_prepared_image(SkCanvas* canvas, VoxGraphiteImage const* image,
             &paint, SkCanvas::kStrict_SrcRectConstraint);
     }
     canvas->restore();
+    if (rounded_mask) {
+        // Content clips share coverage; the CSS mask is an independent stage.
+        SkPaint mask;
+        mask.setBlendMode(SkBlendMode::kDstIn);
+        canvas->saveLayer(rect(image->clip), &mask);
+        mask.setBlendMode(SkBlendMode::kSrcOver);
+        mask.setAntiAlias(true);
+        mask.setColor(SK_ColorWHITE);
+        canvas->drawRRect(rounded_rect(image->clip), mask);
+        canvas->restore();
+        canvas->restore();
+    }
     if (image->border_width > 0) {
         SkPaint border;
         border.setAntiAlias(true);

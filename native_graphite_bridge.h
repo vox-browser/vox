@@ -8,7 +8,9 @@
 enum {
     VOX_GRAPHITE_IMAGE_FORCE_MSAA = 32,
     VOX_GRAPHITE_IMAGE_REPEAT_X = 64,
-    VOX_GRAPHITE_IMAGE_REPEAT_Y = 128
+    VOX_GRAPHITE_IMAGE_REPEAT_Y = 128,
+    // A separately composited opaque CSS mask at the image clip's rounded box.
+    VOX_GRAPHITE_IMAGE_ROUNDED_ALPHA_MASK = 256
 };
 
 enum {

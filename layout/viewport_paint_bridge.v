@@ -2067,6 +2067,12 @@ fn apply_compatibility_visual_context_node(tree &painting.AccumulatedVisualConte
 			resolved_clip := PaintClip{
 				rect: local_clip
 				is_svg_content_mask: true
+				corner_radii: BoxRadii{
+					top_left: CornerRadius{node.data.border_radii.top_left.horizontal, node.data.border_radii.top_left.vertical}
+					top_right: CornerRadius{node.data.border_radii.top_right.horizontal, node.data.border_radii.top_right.vertical}
+					bottom_right: CornerRadius{node.data.border_radii.bottom_right.horizontal, node.data.border_radii.bottom_right.vertical}
+					bottom_left: CornerRadius{node.data.border_radii.bottom_left.horizontal, node.data.border_radii.bottom_left.vertical}
+				}
 				mask_operations: operations
 				cache_key: cache_key
 				scope_id: node.data.scope_id

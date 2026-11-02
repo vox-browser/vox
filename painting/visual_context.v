@@ -154,6 +154,9 @@ pub:
 pub struct SVGMaskVisualData {
 pub:
 	bounding_rect IntRect
+	// CSS mask images are clipped to the rounded border box independently
+	// of the content's overflow and replaced-image clips.
+	border_radii  BorderRadiiData
 	mask_type     SVGMaskType
 	operations    []SVGMaskPaintOperation
 	cache_key     u64
