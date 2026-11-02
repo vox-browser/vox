@@ -88,6 +88,28 @@ class ProductionBuildTests(unittest.TestCase):
                 self.assertEqual(build.worker_after_current(root), 0)
                 compiler.assert_not_called()
 
+    @unittest.skipUnless(sys.platform == 'darwin', 'macOS application-directory publication')
+    def test_new_request_survives_a_rejected_frozen_input_receipt(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            old = self.app(root / 'Build/v', b'old')
+            request = root / 'Build/production-build/request.json'
+            build.write_json(request, dict(id='one'))
+            one, two = dict(head='one', build_inputs_sha256='one'), dict(head='two', build_inputs_sha256='two')
+            calls = []
+            def compile(repo, stage, receipt, environment):
+                calls.append(stage)
+                self.app(stage, str(len(calls)).encode())
+                build.write_json(receipt / 'frozen-compile.json', {})
+                build.write_json(request, dict(id='two'))
+                return 0
+            with patch.object(build, 'validate_repository'), \
+                    patch.object(build, 'repository_state', side_effect=[one, two, two, two]), \
+                    patch('freeze_browser_compile.validate', side_effect=[RuntimeError('changed library'), dict(source_inputs=two)]):
+                self.assertEqual(build.build_pending(root, compile), 0)
+            self.assertEqual(len(calls), 2)
+            self.assertEqual(old.read_bytes(), b'2')
+
     def test_test_only_changes_preserve_build_inputs_and_remain_in_repository_receipt(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

@@ -232,7 +232,11 @@ def build_pending(root, runner=run_build, foreground=False):
                         record.update(exit=1, frozen_input_error=str(error))
                         write_json(receipt / 'result.json', record)
                         print('Frozen production inputs rejected: ' + str(error), flush=True)
-                        return 1
+                        with lock(state / 'queue.lock'):
+                            latest = json.loads((state / 'request.json').read_text())
+                            if latest['id'] != request['id'] or not same_build_inputs(repository_state(root), before):
+                                continue
+                            return 1
                     record['frozen_compilation'] = str(frozen_path)
                     record['repository_after_build'] = after
                     record['verified_inputs'] = frozen['source_inputs']
