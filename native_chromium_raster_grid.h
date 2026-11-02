@@ -11,6 +11,8 @@ struct VoxChromiumRasterGrid {
     }
 };
 
+#include "native_chromium_staged_raster_grid.h"
+
 // Enumerate disjoint rectangles with constant tile ownership. Keep the grid
 // compact even when a leaf covers millions of pixels.
 template<typename Selected>
@@ -135,6 +137,13 @@ bool vox_draw_chromium_raster_grid_impl(std::vector<uint32_t>& pixels, int width
     long extent_y = long(grid.rows) * (grid.height - 2) + 2;
     if (first_x > extent_x || first_y > extent_y
         || width > extent_x - first_x || height > extent_y - first_y) return false;
+    if constexpr (Compact) {
+        if (vox_chromium_staged_grid_enabled()) {
+            std::vector<VoxChromiumStagedTile> plan;
+            if (vox_chromium_plan_staged_grid(width, height, first_x, first_y, grid, plan))
+                return vox_chromium_draw_staged_grid(pixels, width, height, plan, draw);
+        }
+    }
     auto result = pixels;
     std::vector<uint32_t> tile;
     if constexpr (!Compact) tile.resize(static_cast<size_t>(grid.width) * grid.height);
