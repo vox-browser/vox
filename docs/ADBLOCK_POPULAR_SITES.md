@@ -3368,3 +3368,26 @@ values. This diagnostic is not production acceptance. The
 [text artifacts](../Build/slashdot-text-edges-20261102/) retain the references,
 unchanged-pixel comparisons, shaped glyph inputs and native replay receipts.
 Slashdot remains unfinished, and Stack Overflow and Pikabu remain deferred.
+
+
+Commit `9664e073f` retains adjacent underline/text pairs and rounded icon
+backgrounds with their glyphs in one native transaction. Negative-z generated
+backgrounds may precede several foreground glyphs; the selector keeps their
+ordered, bounded run together. Two focused selection tests pass in each GC
+mode, including changed opacity, missing glyph ownership, foreign layers,
+unsupported transforms and separated backgrounds. The registered new fixture
+still fails at exactly the same three pixels in the older `2f4bb4d9…` bundle;
+that is the retained baseline, not a candidate failure. The rendering suite
+now contains **95 tests/101 captures**, with its newest case awaiting production
+validation.
+
+The shared build repeatedly completes with changed inputs and is superseded;
+the last published browser still contains only the radius fix. No duplicate
+production build was queued for this work. Both the solid-SVG gap change and
+the text-coverage change remain **unvalidated in the production browser**.
+[Pending validation evidence](../Build/slashdot-coverage-validation-20261102/pending-validation.json)
+records the source hashes, required commit, superseded receipts, actual focused
+runtime exits and prepared strict/suite/preservation commands. The last valid
+full-page result remains **10 differing pixels** with the preceding **94 tests/
+100 captures passing**; neither zero Slashdot differences nor a passing 95-test
+suite is claimed.
