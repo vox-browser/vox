@@ -1,14 +1,17 @@
 #include "../native_chromium_raster_grid.h"
 #include <cassert>
 
-int main()
+template<bool Compact>
+void deferred_cases()
 {
-    unsetenv("VOX_ENABLE_STAGED_RASTER_GRID");
-    for (int w : {17, 67, 97, 151}) for (int h : {19, 53, 79, 111})
+    for (int w : {17, 67, 97, 151}) for (int h : {19, 53, 79, 111, 151})
     for (long x : {0, 1, 11}) for (long y : {0, 1, 13}) for (int padding : {0,7}) {
         VoxChromiumRasterGrid grid{66,50,4,4};
         std::vector<VoxChromiumStagedTile> plan;
-        assert(vox_chromium_plan_staged_grid(w,h,x,y,grid,plan));
+        if (!vox_chromium_plan_staged_grid<Compact>(w,h,x,y,grid,plan)) {
+            assert(!Compact);
+            continue;
+        }
         std::vector<uint32_t> input(size_t(w)*h+padding);
         for(size_t i=0;i<input.size();++i)input[i]=uint32_t(i*73+19);
         auto expected=input,actual=input;
@@ -18,7 +21,9 @@ int main()
                 order.push_back(cell);
                 for(int row=0;row<th;++row)for(int col=0;col<tw;++col) {
                     size_t at=size_t(row)*tw+col;
-                    auto value=input[size_t(vy-dy+row)*w+vx-dx+col];
+                    long source_x = vx-dx+col, source_y = vy-dy+row;
+                    auto value = source_x >= 0 && source_x < w && source_y >= 0 && source_y < h
+                        ? input[size_t(source_y)*w+source_x] : uint32_t(0);
                     assert(tile[at]==value);
                     tile[at]^=uint32_t(cell*97+vx+col+19*(vy+row));
                 }
@@ -26,15 +31,22 @@ int main()
             };
         };
         auto reference=renderer(first),candidate=renderer(second);
-        assert(vox_draw_chromium_raster_grid_impl<true>(expected,w,h,x,y,grid,reference));
-        assert(vox_chromium_draw_staged_grid(actual,w,h,plan,candidate));
+        assert(vox_draw_chromium_raster_grid_impl<Compact>(expected,w,h,x,y,grid,reference));
+        assert(vox_chromium_draw_staged_grid<Compact>(actual,w,h,plan,candidate));
         assert(first==second&&expected==actual);
         actual=input;int calls=0;
         auto failure=[&](auto& tile,long,long,int,int,int,int,int) {
             ++calls;std::fill(tile.begin(),tile.end(),0);return calls<int(std::min(plan.size(),size_t(2)));
         };
-        assert(!vox_chromium_draw_staged_grid(actual,w,h,plan,failure));assert(actual==input);
+        assert(!vox_chromium_draw_staged_grid<Compact>(actual,w,h,plan,failure));assert(actual==input);
     }
     std::vector<VoxChromiumStagedTile> rejected;
-    assert(!vox_chromium_plan_staged_grid(100,100,0,0,{3,3,100,100},rejected));
+    assert(!vox_chromium_plan_staged_grid<Compact>(100,100,0,0,{3,3,100,100},rejected));
+}
+
+int main()
+{
+    unsetenv("VOX_ENABLE_STAGED_RASTER_GRID");
+    deferred_cases<true>();
+    deferred_cases<false>();
 }

@@ -12,6 +12,7 @@ struct VoxChromiumStagedTile {
     long offset_x, offset_y;
     int cell, x, y, width, height;
     int input_x, input_y, source_x, source_y, target_x, target_y, copy_width, copy_height;
+    int background_x, background_y, background_width, background_height;
 };
 
 inline bool vox_chromium_staged_grid_enabled()
@@ -24,7 +25,9 @@ inline bool vox_chromium_staged_grid_enabled()
 }
 
 // Plan exactly the serial grid's intersections and texel ownership. Keep the
-// staged pixel payload within the old result-copy plus one full tile budget.
+// compact payload within the old result-copy plus one full tile budget. Large
+// complete tiles may stage up to one extra result surface, capped at 32 MiB.
+template<bool Compact>
 inline bool vox_chromium_plan_staged_grid(int width, int height, long first_x,
     long first_y, VoxChromiumRasterGrid grid, std::vector<VoxChromiumStagedTile>& plan)
 {
@@ -43,9 +46,15 @@ inline bool vox_chromium_plan_staged_grid(int width, int height, long first_x,
     long last_row = grid.owner(first_y + height - 1, grid.height, grid.rows);
     size_t count = size_t(last_column - first_column + 1) * (last_row - first_row + 1);
     if (!count || count > 64 || size_t(width) * height < 256) return false;
+    if constexpr (!Compact) {
+        if (size_t(width) * height < 16384
+            || size_t(width) * height * 2 < size_t(grid.width) * grid.height) return false;
+    }
     plan.reserve(count);
     size_t staged_pixels = 0, owned_pixels = 0;
     size_t budget = size_t(width) * height + size_t(grid.width) * grid.height;
+    if constexpr (!Compact)
+        budget = std::min(size_t(8 * 1024 * 1024), budget + size_t(width) * height);
     for (long row = first_row; row <= last_row; ++row) {
         long origin_y = row * (grid.height - 2);
         for (long column = first_column; column <= last_column; ++column) {
@@ -53,7 +62,8 @@ inline bool vox_chromium_plan_staged_grid(int width, int height, long first_x,
             long left = std::max(first_x, origin_x), top = std::max(first_y, origin_y);
             long right = std::min(first_x + width, origin_x + grid.width);
             long bottom = std::min(first_y + height, origin_y + grid.height);
-            int w = int(right - left), h = int(bottom - top);
+            int w = Compact ? int(right - left) : grid.width;
+            int h = Compact ? int(bottom - top) : grid.height;
             if (w <= 0 || h <= 0) return false;
             staged_pixels += size_t(w) * h;
             if (staged_pixels > budget) return false;
@@ -66,27 +76,40 @@ inline bool vox_chromium_plan_staged_grid(int width, int height, long first_x,
             int cw = int(owned_right - owned_left), ch = int(owned_bottom - owned_top);
             if (cw < 0 || ch < 0) return false;
             owned_pixels += size_t(cw) * ch;
-            plan.push_back({first_x - origin_x, first_y - origin_y,
-                int(row * grid.columns + column), int(left - origin_x), int(top - origin_y), w, h,
-                int(left - first_x), int(top - first_y), int(owned_left - left), int(owned_top - top),
-                int(owned_left - first_x), int(owned_top - first_y), cw, ch});
+            long tile_left = Compact ? left : origin_x, tile_top = Compact ? top : origin_y;
+            VoxChromiumStagedTile view;
+            view.offset_x = first_x - origin_x; view.offset_y = first_y - origin_y;
+            view.cell = int(row * grid.columns + column);
+            view.x = int(tile_left - origin_x); view.y = int(tile_top - origin_y);
+            view.width = w; view.height = h;
+            view.input_x = int(left - first_x); view.input_y = int(top - first_y);
+            view.source_x = int(owned_left - tile_left); view.source_y = int(owned_top - tile_top);
+            view.target_x = int(owned_left - first_x); view.target_y = int(owned_top - first_y);
+            view.copy_width = cw; view.copy_height = ch;
+            view.background_x = int(left - tile_left); view.background_y = int(top - tile_top);
+            view.background_width = int(right - left); view.background_height = int(bottom - top);
+            plan.push_back(view);
         }
     }
     return owned_pixels == size_t(width) * height;
 }
 
-template<typename Draw>
+template<bool Compact, typename Draw>
 bool vox_chromium_draw_staged_grid(std::vector<uint32_t>& pixels, int width,
     int height, std::vector<VoxChromiumStagedTile> const& plan, Draw& draw)
 {
     auto render = [&](std::vector<uint32_t>& tile, VoxChromiumStagedTile const& view) {
         tile.reserve(size_t(view.width) * view.height);
-        // Every compact-view texel belongs to the immutable input rectangle.
-        // Construct it directly from rows, without value-initializing it first.
-        for (int y = 0; y < view.height; ++y) {
+        // Initialize uncovered texels to transparency and construct covered
+        // rows directly. Avoid clearing pixels that will be overwritten.
+        tile.insert(tile.end(), size_t(view.background_y) * view.width, uint32_t(0));
+        for (int y = 0; y < view.background_height; ++y) {
+            tile.insert(tile.end(), view.background_x, uint32_t(0));
             auto begin = pixels.begin() + size_t(view.input_y + y) * width + view.input_x;
-            tile.insert(tile.end(), begin, begin + view.width);
+            tile.insert(tile.end(), begin, begin + view.background_width);
+            tile.insert(tile.end(), view.width - view.background_x - view.background_width, uint32_t(0));
         }
+        tile.insert(tile.end(), size_t(view.height - view.background_y - view.background_height) * view.width, uint32_t(0));
         return draw(tile, view.offset_x, view.offset_y, view.cell,
                 view.x, view.y, view.width, view.height)
             && tile.size() >= size_t(view.width) * view.height;
@@ -123,8 +146,8 @@ bool vox_chromium_draw_staged_grid(std::vector<uint32_t>& pixels, int width,
         static auto clock = reinterpret_cast<Clock>(dlsym(RTLD_DEFAULT, "vox_precise_scroll_diagnostic_time"));
         if (clock) time = clock();
 #endif
-        std::fprintf(stderr, "VOX_STAGED_RASTER_GRID tiles=%zu pixels=%zu avoided_copy_bytes=%zu t_us=%.3f\n",
-            plan.size(), size_t(width) * height, size_t(width) * height * 4, time);
+        std::fprintf(stderr, "VOX_STAGED_RASTER_GRID compact=%d tiles=%zu pixels=%zu avoided_copy_bytes=%zu t_us=%.3f\n",
+            Compact, plan.size(), size_t(width) * height, size_t(width) * height * 4, time);
     }
     return true;
 }
