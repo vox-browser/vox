@@ -17,7 +17,8 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
                              settle_seconds=5)
 
     def test_empty_generated_text_preserves_enclosing_inline_end_edges(self):
-        self.compare_fixture('empty-pseudo-inline-end-edges', width=1024, height=768)
+        self.compare_fixture('empty-pseudo-inline-end-edges', width=1024, height=768,
+                             settle_seconds=5)
 
     def test_generated_icons_load_the_author_font_before_system_fallback(self):
         self.compare_fixture('pending-generated-icon-font', width=1024, height=768,
