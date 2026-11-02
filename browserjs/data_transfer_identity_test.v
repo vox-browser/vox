@@ -64,7 +64,7 @@ fn test_native_data_transfer_identity_brands_reject_forged_proxy_and_foreign_wra
 	identity_transfer_export(mut runtime, '__identityBrandedTransfer', wrapper)!
 	runtime.define_value_host_function('__identityRequireTransfer', fn [mut runtime] (_ voidptr, args []voidptr) !voidptr {
 		_ = runtime.native_data_transfer(args[0])!
-		return C.JSValueMakeBoolean(runtime.context, true)
+		return C.vox_jsc_JSValueMakeBoolean(runtime.context, true)
 	})!
 	assert runtime.evaluate_host(r'(()=>{
  const transfer=__identityBrandedTransfer(),marker={};let traps=0,authorGets=0;

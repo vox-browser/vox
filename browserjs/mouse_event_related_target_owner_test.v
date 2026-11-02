@@ -32,7 +32,7 @@ fn mouse_related_owner_fixture() !(&Runtime, &dom.Document, &html.EnvironmentSet
 		if related := mouse.related_target() {
 			return runtime.javascript_event_target(related, none)!
 		}
-		return C.JSValueMakeNull(runtime.context)
+		return C.vox_jsc_JSValueMakeNull(runtime.context)
 	})!
 	for window in html.all_windows() {
 		if voidptr(window) == voidptr(settings.global_object()) {

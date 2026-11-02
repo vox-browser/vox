@@ -29,7 +29,7 @@ pub fn (mut runtime Runtime) define_value_host_function(name string, callback Va
 	runtime.require_javascript_value_context()!
 	$if darwin || linux {
 		record := &ValueHostFunctionRecord{ runtime: runtime, callback: callback }
-		if !C.vox_install_js_host_function(runtime.context, name.str, record, javascript_core_value_host_function) {
+		if !C.vox_install_js_value_host_function(runtime.context, name.str, record) {
 			return error('JavaScriptCore native-value host function installation failed')
 		}
 		runtime.value_host_functions_ << record

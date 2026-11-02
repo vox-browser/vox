@@ -77,12 +77,12 @@ fn (mut runtime Runtime) history_operation(mut binding HistoryBinding, args []vo
 		if voidptr(target) != voidptr(binding.window) {
 			return runtime.event_binding_type_error('Illegal Window receiver')
 		}
-		return C.JSValueMakeUndefined(runtime.context)
+		return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 	}
 	mut history := binding.window.history()
 	match method {
 		'url' { return runtime.binding_string(history.current_url().serialize()) }
-		'length' { return C.JSValueMakeNumber(runtime.context, f64(history.length()!)) }
+		'length' { return C.vox_jsc_JSValueMakeNumber(runtime.context, f64(history.length()!)) }
 		'state' {
 			state := history.state()!
 			document := binding.window.associated_document()
@@ -126,5 +126,5 @@ fn (mut runtime Runtime) history_operation(mut binding HistoryBinding, args []vo
 		}
 		else { return error('Unknown History operation') }
 	}
-	return C.JSValueMakeUndefined(runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 }

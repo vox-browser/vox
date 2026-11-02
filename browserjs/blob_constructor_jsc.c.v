@@ -28,7 +28,7 @@ pub fn (mut host BlobHost) install_constructor() ! {
 	})!
 	sequence_factory := runtime.evaluate_host_value(webidl_sequence_conversion_factory)!
 	defer { runtime.release_javascript_value(sequence_factory) }
-	host.parts_sequence = runtime.retain_javascript_value(runtime.call_javascript_function(sequence_factory, C.JSValueMakeUndefined(runtime.context), [convert])!)!
+	host.parts_sequence = runtime.retain_javascript_value(runtime.call_javascript_function(sequence_factory, C.vox_jsc_JSValueMakeUndefined(runtime.context), [convert])!)!
 	construct := runtime.make_value_host_function(fn [handle] (_ voidptr, args []voidptr) !voidptr {
 		mut host := unsafe { &BlobHost(handle) }
 		return host.construct_blob(args) or {
@@ -37,7 +37,7 @@ pub fn (mut host BlobHost) install_constructor() ! {
 	})!
 	installer := runtime.evaluate_host_value(blob_native_constructor_factory)!
 	defer { runtime.release_javascript_value(installer) }
-	host.constructor = runtime.retain_javascript_value(runtime.call_javascript_function(installer, C.JSValueMakeUndefined(runtime.context), [
+	host.constructor = runtime.retain_javascript_value(runtime.call_javascript_function(installer, C.vox_jsc_JSValueMakeUndefined(runtime.context), [
 		host.prototype,
 		construct,
 		C.JSContextGetGlobalObject(runtime.context),
@@ -45,7 +45,7 @@ pub fn (mut host BlobHost) install_constructor() ! {
 }
 
 fn (host &BlobHost) is_buffer_part(value voidptr) !bool {
-	result := host.runtime.call_javascript_function(host.buffer_kind, C.JSValueMakeUndefined(host.runtime.context), [value])!
+	result := host.runtime.call_javascript_function(host.buffer_kind, C.vox_jsc_JSValueMakeUndefined(host.runtime.context), [value])!
 	return C.JSValueToBoolean(host.runtime.context, result)
 }
 
@@ -54,9 +54,9 @@ fn (mut host BlobHost) convert_part(value voidptr) !voidptr {
 	if host.is_buffer_part(value)! {
 		// The union first selects the actual concrete buffer family, then its
 		// generated restrictions reject shared or resizable backing records.
-		host.runtime.call_javascript_function(host.buffer_validation, C.JSValueMakeUndefined(host.runtime.context), [
+		host.runtime.call_javascript_function(host.buffer_validation, C.vox_jsc_JSValueMakeUndefined(host.runtime.context), [
 			value,
-			C.JSValueMakeBoolean(host.runtime.context, true),
+			C.vox_jsc_JSValueMakeBoolean(host.runtime.context, true),
 		])!
 		return value
 	}
@@ -103,16 +103,16 @@ fn (host &BlobHost) ending_type_exception(text libjs.Utf16String) IError {
 
 fn (host &BlobHost) copy_part_buffer(value voidptr) ![]u8 {
 	mut runtime := unsafe { &Runtime(host.runtime) }
-	view := runtime.call_javascript_function(host.buffer_copy, C.JSValueMakeUndefined(runtime.context), [value])!
+	view := runtime.call_javascript_function(host.buffer_copy, C.vox_jsc_JSValueMakeUndefined(runtime.context), [value])!
 	runtime.retain_javascript_value(view)!
 	defer { runtime.release_javascript_value(view) }
 	mut exception := unsafe { nil }
-	length := C.JSObjectGetTypedArrayByteLength(runtime.context, view, &exception)
+	length := C.vox_jsc_JSObjectGetTypedArrayByteLength(runtime.context, view, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	assert length <= uint(2147483647), 'Source Blob ByteBuffer exceeds the V span'
 	mut bytes := []u8{len: int(length)}
 	if length > 0 {
-		pointer := C.JSObjectGetTypedArrayBytesPtr(runtime.context, view, &exception)
+		pointer := C.vox_jsc_JSObjectGetTypedArrayBytesPtr(runtime.context, view, &exception)
 		if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 		unsafe { C.memcpy(bytes.data, pointer, length) }
 	}
@@ -122,11 +122,11 @@ fn (host &BlobHost) copy_part_buffer(value voidptr) ![]u8 {
 fn (mut host BlobHost) converted_parts(sequence voidptr) ![]fileapi.BlobPart {
 	length_value := host.runtime.binding_property(sequence, 'length')!
 	mut exception := unsafe { nil }
-	length := C.JSValueToNumber(host.runtime.context, length_value, &exception)
+	length := C.vox_jsc_JSValueToNumber(host.runtime.context, length_value, &exception)
 	if exception != unsafe { nil } { return host.runtime.actual_javascript_exception(exception) }
 	mut parts := []fileapi.BlobPart{cap: int(length)}
 	for index in 0 .. int(length) {
-		value := C.JSObjectGetPropertyAtIndex(host.runtime.context, sequence, u32(index), &exception)
+		value := C.vox_jsc_JSObjectGetPropertyAtIndex(host.runtime.context, sequence, u32(index), &exception)
 		if exception != unsafe { nil } {
 			return host.runtime.actual_javascript_exception(exception)
 		}
@@ -148,7 +148,7 @@ fn (mut host BlobHost) construct_blob(args []voidptr) !voidptr {
 	parts_value := host.argument(args, 1)
 	mut sequence := unsafe { nil }
 	if !C.JSValueIsUndefined(host.runtime.context, parts_value) {
-		sequence = host.runtime.call_javascript_function(host.parts_sequence, C.JSValueMakeUndefined(host.runtime.context), [parts_value])!
+		sequence = host.runtime.call_javascript_function(host.parts_sequence, C.vox_jsc_JSValueMakeUndefined(host.runtime.context), [parts_value])!
 		host.runtime.retain_javascript_value(sequence)!
 	}
 	defer { if sequence != unsafe { nil } { host.runtime.release_javascript_value(sequence) } }

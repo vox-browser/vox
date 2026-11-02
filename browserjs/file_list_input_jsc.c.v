@@ -13,7 +13,7 @@ import html
 pub fn (mut runtime Runtime) javascript_input_files(input &dom.HTMLInputElement) !voidptr {
 	runtime.require_javascript_value_context()!
 	mut model := html.HTMLInputElementModel.create(input)
-	list := model.file_list() or { return C.JSValueMakeNull(runtime.context) }
+	list := model.file_list() or { return C.vox_jsc_JSValueMakeNull(runtime.context) }
 	return runtime.javascript_file_list(list)
 }
 

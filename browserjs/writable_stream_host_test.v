@@ -21,7 +21,7 @@ fn test_native_writable_pending_start_write_close_backpressure_capabilities_and_
 		assert owner.libjs_vm().has_running_execution_context()
 		assert settings.realm().script_execution_depth >= 2 && settings.realm().callback_execution_depth >= 1
 		assert voidptr(html.incumbent_settings_object()) == voidptr(settings)
-		return C.JSValueMakeBoolean(owner.context, true)
+		return C.vox_jsc_JSValueMakeBoolean(owner.context, true)
 	})!
 	runtime.evaluate_host(r'
  globalThis.nativeWritableChunk={};nativeWritableChunk.self=nativeWritableChunk;globalThis.nativeSecondChunk=Symbol("second chunk");globalThis.nativeWrites=[];globalThis.nativeWriteSettled=0;

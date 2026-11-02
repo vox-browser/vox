@@ -63,7 +63,7 @@ pub fn (mut host WorkerScriptHost) install(mut runtime Runtime) ! {
 		actual_url := js_source_string(script.filename())
 		defer { C.JSStringRelease(actual_source); C.JSStringRelease(actual_url) }
 		mut exception := unsafe { nil }
-		C.JSEvaluateScript(host.runtime.context, actual_source, unsafe { nil }, actual_url, 1, &exception)
+		C.vox_jsc_JSEvaluateScript(host.runtime.context, actual_source, unsafe { nil }, actual_url, 1, &exception)
 		if exception != unsafe { nil } {
 			return webidl.throw_value(host.runtime.webidl_value(exception)!)
 		}
@@ -122,7 +122,7 @@ fn (mut host WorkerScriptHost) import_scripts(receiver voidptr, args []voidptr) 
 	for value in args { urls << host.runtime.binding_dom_string(value)! }
 	mut scope := unsafe { &html.WorkerGlobalScope(host.environment.global_scope) }
 	scope.import_scripts(urls, host.loader or { return error('Missing worker script loader') })!
-	return C.JSValueMakeUndefined(host.runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 }
 
 // Entry loading and response policy initialization belong to the embedding.

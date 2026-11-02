@@ -15,13 +15,13 @@ fn (mut host XMLHttpRequestHost) install_native_blob_transport(mut runtime Runti
 		if args.len < 2 { return error('Missing internal XMLHttpRequest Blob arguments') }
 		action := runtime.binding_dom_string(args[0])!
 		mut exception := unsafe { nil }
-		key := int(C.JSValueToNumber(runtime.context, args[1], &exception))
+		key := int(C.vox_jsc_JSValueToNumber(runtime.context, args[1], &exception))
 		if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 		record := host.requests[key] or { return error('InvalidStateError: unknown XMLHttpRequest') }
 		mut request := record.request
 		if action == 'response' {
 			response := request.response()
-			blob := response.blob or { return C.JSValueMakeNull(runtime.context) }
+			blob := response.blob or { return C.vox_jsc_JSValueMakeNull(runtime.context) }
 			return runtime.javascript_blob(blob)
 		}
 		if action == 'send' && args.len == 3 {
@@ -29,11 +29,11 @@ fn (mut host XMLHttpRequestHost) install_native_blob_transport(mut runtime Runti
 				serialized := serialize_native_form_data(data)
 				request.send_blob(fileapi.Blob.create(serialized.serialized_data,
 					'multipart/form-data; boundary=${serialized.boundary}'))!
-				return C.JSValueMakeBoolean(runtime.context, true)
+				return C.vox_jsc_JSValueMakeBoolean(runtime.context, true)
 			}
-			blob := runtime.native_blob(args[2]) or { return C.JSValueMakeBoolean(runtime.context, false) }
+			blob := runtime.native_blob(args[2]) or { return C.vox_jsc_JSValueMakeBoolean(runtime.context, false) }
 			request.send_blob(blob)!
-			return C.JSValueMakeBoolean(runtime.context, true)
+			return C.vox_jsc_JSValueMakeBoolean(runtime.context, true)
 		}
 		return error('Unknown internal XMLHttpRequest Blob operation')
 	})!

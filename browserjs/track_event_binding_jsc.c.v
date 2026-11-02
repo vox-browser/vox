@@ -32,7 +32,7 @@ fn (mut runtime Runtime) install_track_event_binding() ! {
 })')!
 	defer { runtime.release_javascript_value(factory) }
 	binding.track_event_prototype = runtime.retain_javascript_value(runtime.call_javascript_function(factory,
-		C.JSValueMakeUndefined(runtime.context), [binding.event_constructor,
+		C.vox_jsc_JSValueMakeUndefined(runtime.context), [binding.event_constructor,
 		C.JSContextGetGlobalObject(runtime.context), construct, getter])!)!
 }
 
@@ -55,7 +55,7 @@ fn (runtime &Runtime) native_track_event_payload(value voidptr) !html.TrackEvent
 fn (mut runtime Runtime) javascript_track_event_payload(event &html.TrackEvent) !voidptr {
 	runtime.require_javascript_value_context()!
 	payload := event.track()
-	if payload.kind == .empty { return C.JSValueMakeNull(runtime.context) }
+	if payload.kind == .empty { return C.vox_jsc_JSValueMakeNull(runtime.context) }
 	// Saved wrappers remain valid after removal from their media list.
 	for host in runtime.media_element_hosts_ {
 		if host.closed { continue }
@@ -137,7 +137,7 @@ fn (mut runtime Runtime) track_event_binding_call(construct bool, receiver voidp
 			}))
 		}
 		runtime.bind_event(receiver, unsafe { &dom.Event(event) })!
-		return C.JSValueMakeUndefined(runtime.context)
+		return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 	}
 	event := runtime.native_event(receiver)!
 	if event.interface_ != .track_event { return runtime.event_binding_type_error('Illegal TrackEvent receiver') }

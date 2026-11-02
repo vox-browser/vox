@@ -21,7 +21,7 @@ pub fn (mut runtime Runtime) define_number_host_function(name string, callback N
 		$if darwin || linux {
 			context := runtime.context
 			runtime.define_value_host_function(name, fn [context, callback] (_ voidptr, _ []voidptr) !voidptr {
-				return C.JSValueMakeNumber(context, callback())
+				return C.vox_jsc_JSValueMakeNumber(context, callback())
 			})!
 			runtime.own_closure(voidptr(callback))
 		} $else {

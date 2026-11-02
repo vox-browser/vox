@@ -26,14 +26,14 @@ fn (mut host CryptoHost) install_generate_key() ! {
 		name := host.algorithm_string(host.argument(args, 0)) or { return host.exception(err) }
 		for index, usage in crypto_native_usages {
 			if name == webcrypto.key_usage_to_string(usage) {
-				return C.JSValueMakeNumber(host.runtime.context, index)
+				return C.vox_jsc_JSValueMakeNumber(host.runtime.context, index)
 			}
 		}
 		return host.exception(error("TypeError: Invalid value '${name}' for enumeration type 'KeyUsage'"))
 	})!
 	sequence := runtime.evaluate_host_value(webidl_sequence_conversion_factory)!
 	defer { runtime.release_javascript_value(sequence) }
-	host.usage_sequence = runtime.retain_javascript_value(runtime.call_javascript_function(sequence, C.JSValueMakeUndefined(runtime.context), [convert])!)!
+	host.usage_sequence = runtime.retain_javascript_value(runtime.call_javascript_function(sequence, C.vox_jsc_JSValueMakeUndefined(runtime.context), [convert])!)!
 	generate := runtime.make_value_host_function(fn [handle] (_ voidptr, args []voidptr) !voidptr {
 		mut host := unsafe { &CryptoHost(handle) }
 		native := host.generate_key_operation(args) or { return host.rejected_crypto_promise(err) }
@@ -42,7 +42,7 @@ fn (mut host CryptoHost) install_generate_key() ! {
 	installer := runtime.evaluate_host_value(r'(function(prototype,generate){Object.defineProperty(prototype,"generateKey",{value:function generateKey(algorithm,extractable,keyUsages){return arguments.length<3?generate(this):generate(this,algorithm,extractable,keyUsages)},writable:true,enumerable:true,configurable:true})})')!
 	defer { runtime.release_javascript_value(installer) }
 	prototype := host.prototypes[.subtle] or { return error('SubtleCrypto prototype unavailable') }
-	runtime.call_javascript_function(installer, C.JSValueMakeUndefined(runtime.context), [
+	runtime.call_javascript_function(installer, C.vox_jsc_JSValueMakeUndefined(runtime.context), [
 		prototype,
 		generate,
 	])!
@@ -50,17 +50,17 @@ fn (mut host CryptoHost) install_generate_key() ! {
 
 fn (host &CryptoHost) convert_crypto_usages(value voidptr) ![]webcrypto.KeyUsage {
 	mut runtime := unsafe { &Runtime(host.runtime) }
-	sequence := runtime.call_javascript_function(host.usage_sequence, C.JSValueMakeUndefined(runtime.context), [value])!
+	sequence := runtime.call_javascript_function(host.usage_sequence, C.vox_jsc_JSValueMakeUndefined(runtime.context), [value])!
 	runtime.retain_javascript_value(sequence)!
 	defer { runtime.release_javascript_value(sequence) }
 	mut exception := unsafe { nil }
-	length := C.JSValueToNumber(runtime.context, runtime.binding_property(sequence, 'length')!, &exception)
+	length := C.vox_jsc_JSValueToNumber(runtime.context, runtime.binding_property(sequence, 'length')!, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	mut result := []webcrypto.KeyUsage{cap: int(length)}
 	for index in 0 .. int(length) {
-		item := C.JSObjectGetPropertyAtIndex(runtime.context, sequence, u32(index), &exception)
+		item := C.vox_jsc_JSObjectGetPropertyAtIndex(runtime.context, sequence, u32(index), &exception)
 		if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
-		id := int(C.JSValueToNumber(runtime.context, item, &exception))
+		id := int(C.vox_jsc_JSValueToNumber(runtime.context, item, &exception))
 		if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 		result << crypto_native_usages[id]
 	}
@@ -110,7 +110,7 @@ fn (host &CryptoHost) normalize_generation(value voidptr, is_object bool) !webid
 		normalized['modulusLength'] = host.generation_uint(dictionary, 'modulusLength', 32)!
 		exponent := runtime.binding_property(dictionary, 'publicExponent')!
 		mut exception := unsafe { nil }
-		kind := C.vox_crypto_integer_view_kind(runtime.context, exponent, &exception)
+		kind := C.vox_jsc_crypto_integer_view_kind(runtime.context, exponent, &exception)
 		if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 		if kind != 1 { return error('TypeError: Not an object of type Uint8Array') }
 		runtime.retain_javascript_value(exponent)!

@@ -35,12 +35,12 @@ pub fn (mut host AbortSignalHost) install(mut runtime Runtime) ! {
 	})!
 	installer := runtime.evaluate_host_value(abort_signal_native_bootstrap)!
 	defer { runtime.release_javascript_value(installer) }
-	prototypes := runtime.call_javascript_function(installer, C.JSValueMakeUndefined(runtime.context), [operate])!
+	prototypes := runtime.call_javascript_function(installer, C.vox_jsc_JSValueMakeUndefined(runtime.context), [operate])!
 	runtime.retain_javascript_value(prototypes)!
 	defer { runtime.release_javascript_value(prototypes) }
 	for index, kind in [AbortSignalHostKind.signal, .controller] {
 		mut exception := unsafe { nil }
-		prototype := C.JSObjectGetPropertyAtIndex(runtime.context, prototypes, u32(index), &exception)
+		prototype := C.vox_jsc_JSObjectGetPropertyAtIndex(runtime.context, prototypes, u32(index), &exception)
 		if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 		host.prototypes[kind] = runtime.retain_javascript_value(prototype)!
 	}
@@ -55,17 +55,17 @@ pub fn (mut host AbortSignalHost) install(mut runtime Runtime) ! {
 
 fn (host &AbortSignalHost) argument(args []voidptr, index int) voidptr {
 	if index < args.len { return args[index] }
-	return C.JSValueMakeUndefined(host.runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 }
 
 fn (mut host AbortSignalHost) value(value webidl.Value) !voidptr {
 	if value.dom_exception_ != none { return host.runtime.javascript_dom_exception(value) }
 	match value.kind {
 		.runtime_value { return host.runtime.actual_webidl_value(value) }
-		.undefined { return C.JSValueMakeUndefined(host.runtime.context) }
-		.null_ { return C.JSValueMakeNull(host.runtime.context) }
-		.boolean { return C.JSValueMakeBoolean(host.runtime.context, value.boolean_value) }
-		.number { return C.JSValueMakeNumber(host.runtime.context, value.number_value) }
+		.undefined { return C.vox_jsc_JSValueMakeUndefined(host.runtime.context) }
+		.null_ { return C.vox_jsc_JSValueMakeNull(host.runtime.context) }
+		.boolean { return C.vox_jsc_JSValueMakeBoolean(host.runtime.context, value.boolean_value) }
+		.number { return C.vox_jsc_JSValueMakeNumber(host.runtime.context, value.number_value) }
 		.string_ { return host.runtime.binding_string(value.string_value) }
 		else { return error('Abort reason requires its actual JavaScript platform wrapper') }
 	}
@@ -134,21 +134,21 @@ fn (mut host AbortSignalHost) operate(args []voidptr) !voidptr {
 		}
 		'timeout' {
 			mut exception := unsafe { nil }
-			number := C.JSValueToNumber(host.runtime.context, value, &exception)
+			number := C.vox_jsc_JSValueToNumber(host.runtime.context, value, &exception)
 			if exception != unsafe { nil } { return host.runtime.actual_javascript_exception(exception) }
 			milliseconds := u64(webidl.convert_to_int(webidl.number_value(number), 64, false, .yes, .no)!)
 			signal := html.abort_signal_timeout(host.settings, milliseconds)!
 			return host.wrap(.signal, voidptr(signal), unsafe { nil })
 		}
-		'validate' { host.record(value, .signal)!; return C.JSValueMakeUndefined(host.runtime.context) }
+		'validate' { host.record(value, .signal)!; return C.vox_jsc_JSValueMakeUndefined(host.runtime.context) }
 		'any' {
 			length := host.runtime.binding_property(value, 'length')!
 			mut exception := unsafe { nil }
-			count := int(C.JSValueToNumber(host.runtime.context, length, &exception))
+			count := int(C.vox_jsc_JSValueToNumber(host.runtime.context, length, &exception))
 			if exception != unsafe { nil } { return host.runtime.actual_javascript_exception(exception) }
 			mut signals := []&dom.AbortSignal{cap: count}
 			for index in 0 .. count {
-				actual := C.JSObjectGetPropertyAtIndex(host.runtime.context, value, u32(index), &exception)
+				actual := C.vox_jsc_JSObjectGetPropertyAtIndex(host.runtime.context, value, u32(index), &exception)
 				if exception != unsafe { nil } { return host.runtime.actual_javascript_exception(exception) }
 				record := host.record(actual, .signal)!
 				signals << unsafe { &dom.AbortSignal(record.native) }
@@ -169,20 +169,20 @@ fn (mut host AbortSignalHost) operate(args []voidptr) !voidptr {
 				return settings.global_relative_event_timestamp()
 			})
 			host.runtime.mark_document_state_dirty()
-			return C.JSValueMakeUndefined(host.runtime.context)
+			return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 		}
 		else {}
 	}
 	record := host.record(value, .signal)!
 	signal := unsafe { &dom.AbortSignal(record.native) }
 	match op {
-		'aborted' { return C.JSValueMakeBoolean(host.runtime.context, signal.aborted()) }
+		'aborted' { return C.vox_jsc_JSValueMakeBoolean(host.runtime.context, signal.aborted()) }
 		'reason' { return host.value(signal.reason().as_webidl_value()!) }
-		'throw' { signal.throw_if_aborted()!; return C.JSValueMakeUndefined(host.runtime.context) }
+		'throw' { signal.throw_if_aborted()!; return C.vox_jsc_JSValueMakeUndefined(host.runtime.context) }
 		'onabort-get' { return host.runtime.javascript_event_handler(unsafe { &dom.EventTarget(signal) }, 'abort') }
 		'onabort-set' {
 			host.runtime.set_javascript_event_handler(unsafe { &dom.EventTarget(signal) }, 'abort', parameter)!
-			return C.JSValueMakeUndefined(host.runtime.context)
+			return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 		}
 		else { return error('TypeError: Unknown AbortSignal operation') }
 	}

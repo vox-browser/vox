@@ -45,14 +45,14 @@ pub fn (mut runtime Runtime) install_time_ranges_binding() ! {
 		})!
 	}
 	mut exception := unsafe { nil }
-	array := C.JSObjectMakeArray(runtime.context, uint(functions.len), functions.data, &exception)
+	array := C.vox_jsc_JSObjectMakeArray(runtime.context, uint(functions.len), functions.data, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	runtime.retain_javascript_value(array)!
 	defer { runtime.release_javascript_value(array) }
 	factory := runtime.evaluate_host_value(time_ranges_native_factory)!
 	defer { runtime.release_javascript_value(factory) }
 	binding.prototype = runtime.retain_javascript_value(runtime.call_javascript_function(factory,
-		C.JSValueMakeUndefined(runtime.context),
+		C.vox_jsc_JSValueMakeUndefined(runtime.context),
 		[array, C.JSContextGetGlobalObject(runtime.context)])!)!
 	time_ranges_bindings_[owner] = binding
 	runtime.add_close_handler(fn [owner, binding] () {
@@ -68,7 +68,7 @@ fn (mut runtime Runtime) time_ranges_operation(binding &TimeRangesBinding, name 
 	record := binding.by_wrapper[receiver] or {
 		return error('TypeError: Not an object of type TimeRanges')
 	}
-	if name == 'length' { return C.JSValueMakeNumber(runtime.context, f64(record.ranges.length())) }
+	if name == 'length' { return C.vox_jsc_JSValueMakeNumber(runtime.context, f64(record.ranges.length())) }
 	if args.len == 0 { return error('TypeError: ${name} requires at least 1 argument') }
 	index := u32(webidl.convert_to_int(runtime.webidl_value(args[0])!, 32, false, .no, .no)!)
 	value := if name == 'start' {
@@ -76,7 +76,7 @@ fn (mut runtime Runtime) time_ranges_operation(binding &TimeRangesBinding, name 
 	} else {
 		record.ranges.end(index) or { return runtime.time_ranges_index_exception(err) }
 	}
-	return C.JSValueMakeNumber(runtime.context, value)
+	return C.vox_jsc_JSValueMakeNumber(runtime.context, value)
 }
 
 fn (mut runtime Runtime) time_ranges_index_exception(reason IError) IError {

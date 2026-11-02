@@ -8,7 +8,7 @@ import streams
 import webidl
 
 
-fn C.JSValueGetTypedArrayType(context voidptr, value voidptr, exception &voidptr) int
+fn C.vox_jsc_JSValueGetTypedArrayType(context voidptr, value voidptr, exception &voidptr) int
 
 fn (host &ReadableStreamHost) read_loop_realm() streams.StreamRealm {
 	owner := voidptr(host)
@@ -43,21 +43,21 @@ fn (host &ReadableStreamHost) read_loop_bytes(value webidl.Value) !streams.ReadL
 		return error('Read-loop chunk belongs to another engine context')
 	}
 	mut exception := unsafe { nil }
-	type_ := C.JSValueGetTypedArrayType(actual.context, actual.value, &exception)
+	type_ := C.vox_jsc_JSValueGetTypedArrayType(actual.context, actual.value, &exception)
 	if exception != unsafe { nil } { return host.runtime.actual_javascript_exception(exception) }
 	if type_ != C.kJSTypedArrayTypeUint8Array { return streams.ReadLoopChunkBytes{} }
 	mut runtime := unsafe { &Runtime(host.runtime) }
-	working_copy := runtime.call_javascript_function(host.read_loop_byte_copy, C.JSValueMakeUndefined(runtime.context), [actual.value])!
+	working_copy := runtime.call_javascript_function(host.read_loop_byte_copy, C.vox_jsc_JSValueMakeUndefined(runtime.context), [actual.value])!
 	runtime.retain_javascript_value(working_copy)!
 	defer { runtime.release_javascript_value(working_copy) }
-	length := C.JSObjectGetTypedArrayByteLength(runtime.context, working_copy, &exception)
+	length := C.vox_jsc_JSObjectGetTypedArrayByteLength(runtime.context, working_copy, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	if length > uint(2147483647) {
 		return error('InternalError: read-loop bytes exceed the source V span')
 	}
 	mut bytes := []u8{len: int(length)}
 	if length > 0 {
-		pointer := C.JSObjectGetTypedArrayBytesPtr(runtime.context, working_copy, &exception)
+		pointer := C.vox_jsc_JSObjectGetTypedArrayBytesPtr(runtime.context, working_copy, &exception)
 		if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 		unsafe { C.memcpy(bytes.data, pointer, length) }
 	}

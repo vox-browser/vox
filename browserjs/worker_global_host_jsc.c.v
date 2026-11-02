@@ -138,7 +138,7 @@ fn (mut host WorkerGlobalHost) operate(args []voidptr) !voidptr {
 	match method {
 		'name' { return runtime.binding_string(host.scope.name()) }
 		'origin' { return runtime.binding_string(host.environment.settings.origin().serialize()) }
-		'isSecureContext' { return C.JSValueMakeBoolean(runtime.context, host.environment.settings.is_secure_context()) }
+		'isSecureContext' { return C.vox_jsc_JSValueMakeBoolean(runtime.context, host.environment.settings.is_secure_context()) }
 		'close' {
 			mut scope := unsafe { &html.DedicatedWorkerGlobalScope(host.scope) }
 			scope.close()
@@ -151,7 +151,7 @@ fn (mut host WorkerGlobalHost) operate(args []voidptr) !voidptr {
 			length := int(clone.number(clone.engine('list_length', [list])!)!)
 			mut buffers := []voidptr{cap: length}
 			for index in 0 .. length {
-				buffers << clone.engine('list_item', [list, C.JSValueMakeNumber(runtime.context, f64(index))])!
+				buffers << clone.engine('list_item', [list, C.vox_jsc_JSValueMakeNumber(runtime.context, f64(index))])!
 			}
 			bytes := encode_worker_message(host.transfer.serialize(args[1], buffers)!)!
 			if bytes.len > 64 * 1024 * 1024 - host.queued_bytes { return error('Dedicated worker outgoing queue is full') }
@@ -160,7 +160,7 @@ fn (mut host WorkerGlobalHost) operate(args []voidptr) !voidptr {
 		}
 		else { return error('Unknown dedicated worker operation') }
 	}
-	return C.JSValueMakeUndefined(runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 }
 
 const worker_global_bootstrap = r'(function(operate,global){

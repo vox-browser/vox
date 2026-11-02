@@ -11,8 +11,8 @@ import webidl
 
 
 fn C.JSObjectSetPrototype(context voidptr, object voidptr, prototype voidptr)
-fn C.JSValueToNumber(context voidptr, value voidptr, exception &voidptr) f64
-fn C.JSValueMakeNull(context voidptr) voidptr
+fn C.vox_jsc_JSValueToNumber(context voidptr, value voidptr, exception &voidptr) f64
+fn C.vox_jsc_JSValueMakeNull(context voidptr) voidptr
 
 @[heap]
 struct QuotaExceededErrorBinding {
@@ -47,8 +47,8 @@ pub fn (mut runtime Runtime) install_quota_exceeded_error_binding() ! {
 		} else {
 			native.requested()
 		}
-		if number := value { return C.JSValueMakeNumber(runtime.context, number) }
-		return C.JSValueMakeNull(runtime.context)
+		if number := value { return C.vox_jsc_JSValueMakeNumber(runtime.context, number) }
+		return C.vox_jsc_JSValueMakeNull(runtime.context)
 	})!
 	binding.prototype = runtime.evaluate_host_value(quota_exceeded_error_native_bootstrap)!
 	runtime.add_close_handler(fn [owner] () { quota_exceeded_error_bindings_.delete(owner) })
@@ -69,8 +69,8 @@ fn (runtime &Runtime) quota_option(options voidptr, name string) !QuotaOptionalD
 	if C.JSValueIsUndefined(runtime.context, value) { return QuotaOptionalDouble{} }
 	mut exception := unsafe { nil }
 	binding := quota_exceeded_error_bindings_[voidptr(runtime)] or { return error('QuotaExceededError binding unavailable') }
-	converted := runtime.call_javascript_function(binding.to_number, C.JSValueMakeUndefined(runtime.context), [value])!
-	number := C.JSValueToNumber(runtime.context, converted, &exception)
+	converted := runtime.call_javascript_function(binding.to_number, C.vox_jsc_JSValueMakeUndefined(runtime.context), [value])!
+	number := C.vox_jsc_JSValueToNumber(runtime.context, converted, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	if math.is_nan(number) || math.is_inf(number, 0) {
 		return error('TypeError: Expected ${name} to be a finite floating-point number')
@@ -84,7 +84,7 @@ fn (mut runtime Runtime) construct_quota_exceeded_error(args []voidptr) !voidptr
 	} else {
 		libjs.utf16_string('')
 	}
-	mut options := C.JSValueMakeUndefined(runtime.context)
+	mut options := C.vox_jsc_JSValueMakeUndefined(runtime.context)
 	if args.len > 1 { options = args[1] }
 	quota := runtime.quota_option(options, 'quota')!
 	requested := runtime.quota_option(options, 'requested')!

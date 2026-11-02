@@ -32,7 +32,7 @@ pub fn (mut host FileHost) install(mut runtime Runtime) ! {
 	})!
 	installer := runtime.evaluate_host_value(file_native_prototype_factory)!
 	defer { runtime.release_javascript_value(installer) }
-	host.prototype = runtime.retain_javascript_value(runtime.call_javascript_function(installer, C.JSValueMakeUndefined(runtime.context), [
+	host.prototype = runtime.retain_javascript_value(runtime.call_javascript_function(installer, C.vox_jsc_JSValueMakeUndefined(runtime.context), [
 		blobs.prototype,
 		operate,
 	])!)!
@@ -46,7 +46,7 @@ pub fn (mut host FileHost) install(mut runtime Runtime) ! {
 
 fn (host &FileHost) argument(args []voidptr, index int) voidptr {
 	if index < args.len { return args[index] }
-	return C.JSValueMakeUndefined(host.runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 }
 
 fn (host &FileHost) record(value voidptr) !&FileHostRecord {
@@ -77,7 +77,7 @@ fn (mut host FileHost) operate(args []voidptr) !voidptr {
 	match name {
 		'name' { return host.runtime.javascript_utf16_string(file.name_utf16()) }
 		'lastModified' {
-			return C.JSValueMakeNumber(host.runtime.context, f64(file.last_modified()))
+			return C.vox_jsc_JSValueMakeNumber(host.runtime.context, f64(file.last_modified()))
 		}
 		else { return error('TypeError: Unknown File operation') }
 	}

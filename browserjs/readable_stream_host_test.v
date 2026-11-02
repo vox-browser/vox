@@ -48,7 +48,7 @@ fn test_native_readable_constructor_keeps_real_pending_callback_chunk_and_contro
 		assert voidptr(html.incumbent_settings_object()) == voidptr(settings)
 		assert owner.libjs_vm().has_running_execution_context()
 		assert voidptr(owner.libjs_vm().running_execution_context()) == voidptr(owner.realm_context)
-		return C.JSValueMakeUndefined(owner.context)
+		return C.vox_jsc_JSValueMakeUndefined(owner.context)
 	})!
 	runtime.evaluate_host('globalThis.chunk={};chunk.self=chunk;globalThis.pullCalls=0;globalThis.source={start(c){__actualCallbackContext();globalThis.controller=c;globalThis.sourceReceiver=this===source;return new Promise(resolve=>globalThis.startResolve=resolve)},pull(c){__actualCallbackContext();pullCalls++;globalThis.sameController=c===controller;return new Promise(resolve=>globalThis.pullResolve=resolve)}};globalThis.stream=new ReadableStream(source,{highWaterMark:0});globalThis.reader=stream.getReader();globalThis.readSettled=false;reader.read().then(result=>{globalThis.result=result;readSettled=true})')!
 	object := runtime.evaluate_host_value('stream')!

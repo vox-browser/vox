@@ -20,7 +20,7 @@ fn (mut host CryptoHost) install_wrapping_operations() ! {
 	installer := runtime.evaluate_host_value(r'(function(prototype,operate){const define=Object.defineProperty;define(prototype,"wrapKey",{value:function wrapKey(format,key,wrappingKey,wrapAlgorithm){return arguments.length<4?operate("wrapKey",this):operate("wrapKey",this,format,key,wrappingKey,wrapAlgorithm)},writable:true,enumerable:true,configurable:true});define(prototype,"unwrapKey",{value:function unwrapKey(format,wrappedKey,unwrappingKey,unwrapAlgorithm,unwrappedKeyAlgorithm,extractable,keyUsages){return arguments.length<7?operate("unwrapKey",this):operate("unwrapKey",this,format,wrappedKey,unwrappingKey,unwrapAlgorithm,unwrappedKeyAlgorithm,extractable,keyUsages)},writable:true,enumerable:true,configurable:true})})')!
 	defer { runtime.release_javascript_value(installer) }
 	prototype := host.prototypes[.subtle] or { return error('SubtleCrypto prototype unavailable') }
-	runtime.call_javascript_function(installer, C.JSValueMakeUndefined(runtime.context), [
+	runtime.call_javascript_function(installer, C.vox_jsc_JSValueMakeUndefined(runtime.context), [
 		prototype,
 		operate,
 	])!

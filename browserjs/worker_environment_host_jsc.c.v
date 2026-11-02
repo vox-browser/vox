@@ -29,7 +29,7 @@ pub fn (mut host WorkerEnvironmentHost) install(mut runtime Runtime) ! {
 	defer { runtime.release_javascript_value(installer) }
 	global := C.JSContextGetGlobalObject(runtime.context)
 	runtime.call_javascript_function(installer, global, [operation, global,
-		C.JSValueMakeBoolean(runtime.context, host.settings.is_secure_context())])!
+		C.vox_jsc_JSValueMakeBoolean(runtime.context, host.settings.is_secure_context())])!
 	worker_environment_bindings_[owner] = &host
 	runtime.add_close_handler(fn [handle, owner] () {
 		mut host := unsafe { &WorkerEnvironmentHost(handle) }
@@ -49,7 +49,7 @@ fn (host &WorkerEnvironmentHost) operate(args []voidptr) !voidptr {
 		'languages' {
 			values := navigator.languages().map(host.runtime.binding_string(it))
 			mut exception := unsafe { nil }
-			array := C.JSObjectMakeArray(host.runtime.context, uint(values.len), values.data, &exception)
+			array := C.vox_jsc_JSObjectMakeArray(host.runtime.context, uint(values.len), values.data, &exception)
 			if exception != unsafe { nil } {
 				return host.runtime.actual_javascript_exception(exception)
 			}
@@ -61,12 +61,12 @@ fn (host &WorkerEnvironmentHost) operate(args []voidptr) !voidptr {
 		'platform' { return host.runtime.binding_string(navigator.platform()) }
 		'product' { return host.runtime.binding_string(navigator.product()) }
 		'userAgent' { return host.runtime.binding_string(navigator.user_agent()) }
-		'onLine' { return C.JSValueMakeBoolean(host.runtime.context, navigator.on_line()) }
+		'onLine' { return C.vox_jsc_JSValueMakeBoolean(host.runtime.context, navigator.on_line()) }
 		'hardwareConcurrency' {
-			return C.JSValueMakeNumber(host.runtime.context, f64(navigator.hardware_concurrency()))
+			return C.vox_jsc_JSValueMakeNumber(host.runtime.context, f64(navigator.hardware_concurrency()))
 		}
 		'deviceMemory' {
-			return C.JSValueMakeNumber(host.runtime.context, navigator.device_memory()!)
+			return C.vox_jsc_JSValueMakeNumber(host.runtime.context, navigator.device_memory()!)
 		}
 		'href' { return host.runtime.binding_string(location.href()) }
 		'origin' { return host.runtime.binding_string(location.origin()) }

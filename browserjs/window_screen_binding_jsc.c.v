@@ -31,12 +31,12 @@ pub fn (mut runtime Runtime) install_window_screen_binding() ! {
 	defer { runtime.release_javascript_value(factory) }
 	global := C.JSContextGetGlobalObject(runtime.context)
 	wrappers := runtime.call_javascript_function(factory, global, [operation, global,
-		C.JSValueMakeBoolean(runtime.context, settings.is_secure_context())])!
+		C.vox_jsc_JSValueMakeBoolean(runtime.context, settings.is_secure_context())])!
 	runtime.retain_javascript_value(wrappers)!
 	defer { runtime.release_javascript_value(wrappers) }
 	for index, native in [voidptr(screen), voidptr(orientation)] {
 		mut exception := unsafe { nil }
-		wrapper := C.JSObjectGetPropertyAtIndex(runtime.context, wrappers, u32(index), &exception)
+		wrapper := C.vox_jsc_JSObjectGetPropertyAtIndex(runtime.context, wrappers, u32(index), &exception)
 		if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 		runtime.bind_event_target(wrapper, unsafe { &dom.EventTarget(native) })!
 	}
@@ -56,9 +56,9 @@ fn (mut runtime Runtime) screen_operation(screen &css.Screen, orientation &css.S
 		if name == 'getHandler' { return runtime.javascript_event_handler(target, 'change') }
 		if args.len < 3 { return error('Missing Screen handler value') }
 		runtime.set_javascript_event_handler(target, 'change', args[2])!
-		return C.JSValueMakeUndefined(runtime.context)
+		return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 	}
-	if name == 'isExtended' { return C.JSValueMakeBoolean(runtime.context, screen.is_extended()) }
+	if name == 'isExtended' { return C.vox_jsc_JSValueMakeBoolean(runtime.context, screen.is_extended()) }
 	if name == 'type' { return runtime.binding_string(orientation.type_().str().replace('_', '-')) }
 	if name == 'lock' {
 		if args.len < 2 { return error('Missing Screen orientation') }
@@ -81,11 +81,11 @@ fn (mut runtime Runtime) screen_operation(screen &css.Screen, orientation &css.S
 				message['NotSupportedError:'.len..].trim_left(' ')))
 			return runtime.actual_javascript_exception(runtime.javascript_dom_exception(exception)!)
 		}
-		return C.JSValueMakeUndefined(runtime.context)
+		return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 	}
 	if name == 'unlock' {
 		orientation.unlock()
-		return C.JSValueMakeUndefined(runtime.context)
+		return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 	}
 	value := match name {
 		'availWidth' { f64(screen.avail_width()) }
@@ -97,5 +97,5 @@ fn (mut runtime Runtime) screen_operation(screen &css.Screen, orientation &css.S
 		'angle' { f64(orientation.angle()) }
 		else { return error('Unknown Screen operation') }
 	}
-	return C.JSValueMakeNumber(runtime.context, value)
+	return C.vox_jsc_JSValueMakeNumber(runtime.context, value)
 }

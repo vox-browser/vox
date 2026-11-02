@@ -7,8 +7,8 @@ import dom
 import html
 
 
-fn C.JSCheckScriptSyntax(context voidptr, source voidptr, source_url voidptr, line int, exception &voidptr) bool
-fn C.JSObjectMakeFunction(context voidptr, name voidptr, parameter_count u32, parameters &voidptr, body voidptr, source_url voidptr, line int, exception &voidptr) voidptr
+fn C.vox_jsc_JSCheckScriptSyntax(context voidptr, source voidptr, source_url voidptr, line int, exception &voidptr) bool
+fn C.vox_jsc_JSObjectMakeFunction(context voidptr, name voidptr, parameter_count u32, parameters &voidptr, body voidptr, source_url voidptr, line int, exception &voidptr) voidptr
 
 pub fn (mut runtime Runtime) install_window_event_handler_compiler(document &dom.Document) ! {
 	runtime.require_javascript_value_context()!
@@ -42,7 +42,7 @@ fn (mut runtime Runtime) compile_window_event_handler(target &dom.EventTarget, n
 	source_value := js_source_string(source)
 	defer { C.JSStringRelease(source_value) }
 	mut syntax_exception := unsafe { nil }
-	if !C.JSCheckScriptSyntax(runtime.context, source_value, unsafe { nil }, 1, &syntax_exception) {
+	if !C.vox_jsc_JSCheckScriptSyntax(runtime.context, source_value, unsafe { nil }, 1, &syntax_exception) {
 		return none
 	}
 	function_name := js_source_string('on' + name)
@@ -67,7 +67,7 @@ fn (mut runtime Runtime) compile_window_event_handler(target &dom.EventTarget, n
 	mut context := runtime.realm_context
 	vm.push_execution_context(mut context)
 	mut exception := unsafe { nil }
-	function := C.JSObjectMakeFunction(runtime.context, function_name, u32(parameters.len), parameters.data,
+	function := C.vox_jsc_JSObjectMakeFunction(runtime.context, function_name, u32(parameters.len), parameters.data,
 		body_value, unsafe { nil }, 1, &exception)
 	popped := vm.pop_execution_context()
 	assert voidptr(popped) == voidptr(runtime.realm_context)

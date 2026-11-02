@@ -24,7 +24,7 @@ fn (bridge &StructuredCloneBridge) engine(name string, arguments []voidptr) !voi
 	key := js_source_string(name)
 	defer { C.JSStringRelease(key) }
 	mut exception := unsafe { nil }
-	function := C.JSObjectGetProperty(bridge.runtime.context, bridge.intrinsic_, key, &exception)
+	function := C.vox_jsc_JSObjectGetProperty(bridge.runtime.context, bridge.intrinsic_, key, &exception)
 	if exception != unsafe { nil } { return bridge.runtime.actual_javascript_exception(exception) }
 	return bridge.runtime.call_engine_function(function, arguments)
 }
@@ -32,7 +32,7 @@ fn (bridge &StructuredCloneBridge) engine(name string, arguments []voidptr) !voi
 fn (bridge &StructuredCloneBridge) number(value voidptr) !f64 {
 	bridge.runtime.require_javascript_value_context()!
 	mut exception := unsafe { nil }
-	result := C.JSValueToNumber(bridge.runtime.context, value, &exception)
+	result := C.vox_jsc_JSValueToNumber(bridge.runtime.context, value, &exception)
 	if exception != unsafe { nil } { return bridge.runtime.actual_javascript_exception(exception) }
 	return result
 }
@@ -185,7 +185,7 @@ fn (mut projection NativeCloneProjection) project(value voidptr) !&dom.JSValue {
 		return &result
 	}
 	if tag >= 7 && tag <= 10 {
-		internal := projection.root(bridge.engine('boxed_value', [value, C.JSValueMakeNumber(bridge.runtime.context, f64(tag))])!)!
+		internal := projection.root(bridge.engine('boxed_value', [value, C.vox_jsc_JSValueMakeNumber(bridge.runtime.context, f64(tag))])!)!
 		match kind {
 			.boolean_object { object.boolean_data = C.JSValueToBoolean(bridge.runtime.context, internal) }
 			.number_object { object.number_data = bridge.number(internal)! }
@@ -218,10 +218,10 @@ fn (mut projection NativeCloneProjection) project(value voidptr) !&dom.JSValue {
 		snapshot := projection.root(bridge.engine(if kind == .map { 'map_snapshot' } else { 'set_snapshot' }, [value])!)!
 		count := int(bridge.number(bridge.engine('list_length', [snapshot])!)!)
 		for index in 0 .. count {
-			first := bridge.engine('list_item', [snapshot, C.JSValueMakeNumber(bridge.runtime.context, f64(index))])!
+			first := bridge.engine('list_item', [snapshot, C.vox_jsc_JSValueMakeNumber(bridge.runtime.context, f64(index))])!
 			if kind == .map {
-				key := projection.project(bridge.engine('list_item', [first, C.JSValueMakeNumber(bridge.runtime.context, 0)])!)!
-				item := projection.project(bridge.engine('list_item', [first, C.JSValueMakeNumber(bridge.runtime.context, 1)])!)!
+				key := projection.project(bridge.engine('list_item', [first, C.vox_jsc_JSValueMakeNumber(bridge.runtime.context, 0)])!)!
+				item := projection.project(bridge.engine('list_item', [first, C.vox_jsc_JSValueMakeNumber(bridge.runtime.context, 1)])!)!
 				object.entries << html.StructuredMapEntry{key: key, value: item}
 			} else {
 				object.values << projection.project(first)!
@@ -235,7 +235,7 @@ fn (mut projection NativeCloneProjection) project(value voidptr) !&dom.JSValue {
 	keys := projection.root(bridge.engine('enumerable_keys', [value])!)!
 	count := int(bridge.number(bridge.engine('list_length', [keys])!)!)
 	for index in 0 .. count {
-		key := bridge.engine('list_item', [keys, C.JSValueMakeNumber(bridge.runtime.context, f64(index))])!
+		key := bridge.engine('list_item', [keys, C.vox_jsc_JSValueMakeNumber(bridge.runtime.context, f64(index))])!
 		if !C.JSValueToBoolean(bridge.runtime.context, bridge.engine('has_own', [value, key])!) { continue }
 		// Source HasOwnProperty, Get(receiver=value), recursive serialize, key.
 		item := projection.project(bridge.engine('get', [value, key])!)!
@@ -249,10 +249,10 @@ fn (mut projection NativeCloneProjection) reconstruct(value dom.JSValue) !voidpt
 	bridge := projection.bridge
 	mut owner := unsafe { &Runtime(bridge.runtime) }
 	match value.kind {
-		.undefined { return C.JSValueMakeUndefined(owner.context) }
-		.null_ { return C.JSValueMakeNull(owner.context) }
-		.boolean { return C.JSValueMakeBoolean(owner.context, value.boolean_data) }
-		.number { return C.JSValueMakeNumber(owner.context, value.number_data) }
+		.undefined { return C.vox_jsc_JSValueMakeUndefined(owner.context) }
+		.null_ { return C.vox_jsc_JSValueMakeNull(owner.context) }
+		.boolean { return C.vox_jsc_JSValueMakeBoolean(owner.context, value.boolean_data) }
+		.number { return C.vox_jsc_JSValueMakeNumber(owner.context, value.number_data) }
 		.string { return projection.adopt_root(owner.javascript_utf16_string(value.string_utf16_ or { libjs.utf16_string(value.string_data) })!) }
 		.runtime_value { return projection.adopt_root(owner.javascript_bigint(value.as_webidl_value()!)!) }
 		else {}
@@ -302,11 +302,11 @@ fn (mut projection NativeCloneProjection) reconstruct(value dom.JSValue) !voidpt
 		projection.output_memory[identity] = actual
 		return actual
 	}
-	mut data := C.JSValueMakeUndefined(owner.context)
+	mut data := C.vox_jsc_JSValueMakeUndefined(owner.context)
 	mut tag := 17
 	match object.kind {
-		.boolean_object { tag = 7; data = C.JSValueMakeBoolean(owner.context, object.boolean_data) }
-		.number_object { tag = 8; data = C.JSValueMakeNumber(owner.context, object.number_data) }
+		.boolean_object { tag = 7; data = C.vox_jsc_JSValueMakeBoolean(owner.context, object.boolean_data) }
+		.number_object { tag = 8; data = C.vox_jsc_JSValueMakeNumber(owner.context, object.number_data) }
 		.string_object { tag = 9; data = projection.adopt_root(owner.javascript_utf16_string(object.string_utf16_ or { libjs.utf16_string(object.string_data) })!) }
 		.big_int_object {
 			tag = 10
@@ -322,15 +322,15 @@ fn (mut projection NativeCloneProjection) reconstruct(value dom.JSValue) !voidpt
 				return native_clone_unsupported('Source Date value cannot be installed exactly by this native constructor')
 			}
 			tag = 11
-			data = C.JSValueMakeNumber(owner.context, date)
+			data = C.vox_jsc_JSValueMakeNumber(owner.context, date)
 		}
 		.map { tag = 13 }
 		.set { tag = 14 }
-		.array { tag = 15; data = C.JSValueMakeNumber(owner.context, f64(object.array_length or { u32(object.values.len) })) }
-		.object { data = C.JSValueMakeBoolean(owner.context, object.null_prototype) }
+		.array { tag = 15; data = C.vox_jsc_JSValueMakeNumber(owner.context, f64(object.array_length or { u32(object.values.len) })) }
+		.object { data = C.vox_jsc_JSValueMakeBoolean(owner.context, object.null_prototype) }
 		else { return native_clone_unsupported('Source native reconstruction for this JavaScript family is not yet bound') }
 	}
-	actual := projection.root(bridge.engine('create', [C.JSValueMakeNumber(owner.context, f64(tag)), data])!)!
+	actual := projection.root(bridge.engine('create', [C.vox_jsc_JSValueMakeNumber(owner.context, f64(tag)), data])!)!
 	projection.output_memory[identity] = actual
 	if object.kind == .map {
 		for entry in object.entries {

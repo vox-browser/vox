@@ -39,46 +39,46 @@ fn (mut runtime Runtime) text_encoder_operation(encoder &encoding.TextEncoder, a
 	mut exception := unsafe { nil }
 	if name == 'encode' {
 		bytes := encoder.encode(source)
-		view := C.JSObjectMakeTypedArray(runtime.context, C.kJSTypedArrayTypeUint8Array, uint(bytes.len), &exception)
+		view := C.vox_jsc_JSObjectMakeTypedArray(runtime.context, C.kJSTypedArrayTypeUint8Array, uint(bytes.len), &exception)
 		if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 		runtime.retain_javascript_value(view)!
 		defer { runtime.release_javascript_value(view) }
 		if bytes.len > 0 {
-			pointer := C.JSObjectGetTypedArrayBytesPtr(runtime.context, view, &exception)
+			pointer := C.vox_jsc_JSObjectGetTypedArrayBytesPtr(runtime.context, view, &exception)
 			if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 			unsafe { C.memcpy(pointer, bytes.data, uint(bytes.len)) }
 		}
 		return view
 	}
 	destination := args[2]
-	if C.JSValueGetTypedArrayType(runtime.context, destination, &exception) != C.kJSTypedArrayTypeUint8Array {
+	if C.vox_jsc_JSValueGetTypedArrayType(runtime.context, destination, &exception) != C.kJSTypedArrayTypeUint8Array {
 		return error('TypeError: destination must be a Uint8Array')
 	}
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	// Query the engine slots after source conversion, which can resize or
 	// detach the buffer. Fixed shared buffers are accepted by this IDL operation;
 	// the wrapper rejects resizable and growable backing stores after conversion.
-	length := C.JSObjectGetTypedArrayByteLength(runtime.context, destination, &exception)
+	length := C.vox_jsc_JSObjectGetTypedArrayByteLength(runtime.context, destination, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	if length > uint(2147483647) {
 		return error('RangeError: destination exceeds the native byte span')
 	}
 	mut result := encoding.TextEncoderEncodeIntoResult{}
 	if length > 0 {
-		buffer := C.JSObjectGetTypedArrayBuffer(runtime.context, destination, &exception)
+		buffer := C.vox_jsc_JSObjectGetTypedArrayBuffer(runtime.context, destination, &exception)
 		if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
-		offset := C.JSObjectGetTypedArrayByteOffset(runtime.context, destination, &exception)
+		offset := C.vox_jsc_JSObjectGetTypedArrayByteOffset(runtime.context, destination, &exception)
 		if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
-		pointer := C.JSObjectGetArrayBufferBytesPtr(runtime.context, buffer, &exception)
+		pointer := C.vox_jsc_JSObjectGetArrayBufferBytesPtr(runtime.context, buffer, &exception)
 		if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 		// The C API pointer is temporary: no JavaScriptCore calls occur until
 		// the borrowed span has been consumed by the native encoding loop.
 		mut bytes := unsafe { (&u8(pointer) + int(offset)).vbytes(int(length)) }
 		result = encoder.encode_into(source, mut bytes)
 	}
-	values := [C.JSValueMakeNumber(runtime.context, f64(result.read)),
-		C.JSValueMakeNumber(runtime.context, f64(result.written))]
-	actual := C.JSObjectMakeArray(runtime.context, uint(values.len), values.data, &exception)
+	values := [C.vox_jsc_JSValueMakeNumber(runtime.context, f64(result.read)),
+		C.vox_jsc_JSValueMakeNumber(runtime.context, f64(result.written))]
+	actual := C.vox_jsc_JSObjectMakeArray(runtime.context, uint(values.len), values.data, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	return actual
 }

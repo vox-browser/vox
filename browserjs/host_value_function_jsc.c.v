@@ -9,22 +9,25 @@ import platform
 
 #include "host_function_darwin.h"
 
-fn C.vox_make_js_host_function(context voidptr, record voidptr, callback fn (voidptr, voidptr, voidptr, uint, &voidptr, &voidptr) voidptr) voidptr
+fn C.vox_make_js_value_host_function(context voidptr, record voidptr) voidptr
+fn C.vox_install_js_value_host_function(context voidptr, name &char, record voidptr) bool
+fn C.vox_make_js_native_value_host_function(context voidptr, name voidptr) voidptr
 fn C.JSValueProtect(context voidptr, value voidptr)
 fn C.JSValueUnprotect(context voidptr, value voidptr)
-fn C.JSObjectMakeArray(context voidptr, count uint, arguments &voidptr, exception &voidptr) voidptr
-fn C.JSObjectCallAsFunction(context voidptr, function voidptr, receiver voidptr, count uint, arguments &voidptr, exception &voidptr) voidptr
-fn C.JSObjectMakeDeferredPromise(context voidptr, resolve &voidptr, reject &voidptr, exception &voidptr) voidptr
-fn C.JSObjectMakeFunctionWithCallback(context voidptr, name voidptr, callback fn (voidptr, voidptr, voidptr, uint, &voidptr, &voidptr) voidptr) voidptr
-fn C.JSValueToObject(context voidptr, value voidptr, exception &voidptr) voidptr
+fn C.vox_jsc_JSObjectMakeArray(context voidptr, count uint, arguments &voidptr, exception &voidptr) voidptr
+fn C.vox_jsc_JSObjectCallAsFunction(context voidptr, function voidptr, receiver voidptr, count uint, arguments &voidptr, exception &voidptr) voidptr
+fn C.vox_jsc_JSObjectMakeDeferredPromise(context voidptr, resolve &voidptr, reject &voidptr, exception &voidptr) voidptr
+fn C.vox_jsc_JSValueToObject(context voidptr, value voidptr, exception &voidptr) voidptr
 
 __global native_value_host_functions_ = map[voidptr]&ValueHostFunctionRecord{}
 
+@[export: 'vox_jsc_value_host_function']
 fn javascript_core_value_host_function(context voidptr, function voidptr, receiver voidptr, count uint, arguments &voidptr, exception &voidptr) voidptr {
 	record := unsafe { &ValueHostFunctionRecord(C.JSObjectGetPrivate(function)) }
 	return invoke_value_host_function_record(record, context, receiver, count, arguments, exception)
 }
 
+@[export: 'vox_jsc_native_value_host_function']
 fn javascript_core_native_value_host_function(context voidptr, function voidptr, receiver voidptr, count uint, arguments &voidptr, exception &voidptr) voidptr {
 	record := native_value_host_function_record(function) or {
 		return host_function_error(context, 'Native JavaScript function binding is closed', exception)
@@ -48,24 +51,24 @@ fn invoke_value_host_function_record(record &ValueHostFunctionRecord, context vo
 	result := record.callback(receiver, args) or {
 		if err is JavaScriptValueException && err.context == context {
 			unsafe { *exception = err.value }
-			return C.JSValueMakeUndefined(context)
+			return C.vox_jsc_JSValueMakeUndefined(context)
 		}
 		if err is webidl.ValueException {
 			if err.value.simple_exception_ != none {
 				mut owner := record.runtime
 				value := owner.javascript_simple_exception(err.value) or { return host_function_error(context, err.msg(), exception) }
 				unsafe { *exception = value }
-				return C.JSValueMakeUndefined(context)
+				return C.vox_jsc_JSValueMakeUndefined(context)
 			}
 			value := record.runtime.actual_webidl_value(err.value) or {
 				return host_function_error(context, err.msg(), exception)
 			}
 			unsafe { *exception = value }
-			return C.JSValueMakeUndefined(context)
+			return C.vox_jsc_JSValueMakeUndefined(context)
 		}
 		return host_function_error(context, err.msg(), exception)
 	}
-	if result == unsafe { nil } { return C.JSValueMakeUndefined(context) }
+	if result == unsafe { nil } { return C.vox_jsc_JSValueMakeUndefined(context) }
 	return result
 }
 
@@ -96,7 +99,7 @@ pub fn (mut runtime Runtime) release_javascript_value(value voidptr) {
 pub fn (mut runtime Runtime) make_value_host_function(callback ValueHostFunction) !voidptr {
 	runtime.require_javascript_value_context()!
 	record := &ValueHostFunctionRecord{ runtime: runtime, callback: callback }
-	function := C.vox_make_js_host_function(runtime.context, record, javascript_core_value_host_function)
+	function := C.vox_make_js_value_host_function(runtime.context, record)
 	runtime.value_host_functions_ << record
 	return runtime.retain_javascript_value(function)
 }
@@ -109,10 +112,10 @@ pub fn (mut runtime Runtime) make_native_value_host_function(name string, length
 	record := &ValueHostFunctionRecord{runtime: &runtime, callback: callback}
 	actual_name := js_source_string(name)
 	defer { C.JSStringRelease(actual_name) }
-	function := C.JSObjectMakeFunctionWithCallback(runtime.context, actual_name, javascript_core_native_value_host_function)
+	function := C.vox_make_js_native_value_host_function(runtime.context, actual_name)
 	if function == unsafe { nil } { return error('JavaScriptCore native function creation failed') }
 	runtime.retain_javascript_value(function)!
-	runtime.call_engine_function(runtime.value_function_metadata_intrinsic_, [function, C.JSValueMakeString(runtime.context, actual_name), C.JSValueMakeNumber(runtime.context, f64(length))])!
+	runtime.call_engine_function(runtime.value_function_metadata_intrinsic_, [function, C.vox_jsc_JSValueMakeString(runtime.context, actual_name), C.vox_jsc_JSValueMakeNumber(runtime.context, f64(length))])!
 	native_value_host_functions_[function] = record
 	runtime.value_host_functions_ << record
 	runtime.add_close_handler(fn [function] () { native_value_host_functions_.delete(function) })
@@ -126,7 +129,7 @@ pub fn (mut runtime Runtime) evaluate_host_value(source string) !voidptr {
 	script := js_source_string(source)
 	defer { C.JSStringRelease(script) }
 	mut exception := unsafe { nil }
-	value := C.JSEvaluateScript(runtime.context, script, unsafe { nil }, unsafe { nil }, 1, &exception)
+	value := C.vox_jsc_JSEvaluateScript(runtime.context, script, unsafe { nil }, unsafe { nil }, 1, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	return runtime.retain_javascript_value(value)
 }
@@ -186,7 +189,7 @@ fn (runtime &Runtime) actual_javascript_exception(value voidptr) IError {
 
 fn (runtime &Runtime) call_engine_function(function voidptr, arguments []voidptr) !voidptr {
 	mut exception := unsafe { nil }
-	value := C.JSObjectCallAsFunction(runtime.context, function, unsafe { nil }, uint(arguments.len), arguments.data, &exception)
+	value := C.vox_jsc_JSObjectCallAsFunction(runtime.context, function, unsafe { nil }, uint(arguments.len), arguments.data, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	return value
 }
@@ -194,7 +197,7 @@ fn (runtime &Runtime) call_engine_function(function voidptr, arguments []voidptr
 pub fn (runtime &Runtime) call_javascript_function(function voidptr, receiver voidptr, arguments []voidptr) !voidptr {
 	runtime.require_javascript_value_context()!
 	mut exception := unsafe { nil }
-	array := C.JSObjectMakeArray(runtime.context, uint(arguments.len), arguments.data, &exception)
+	array := C.vox_jsc_JSObjectMakeArray(runtime.context, uint(arguments.len), arguments.data, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	return runtime.call_engine_function(runtime.value_call_intrinsic_, [function, receiver, array])
 }
@@ -207,19 +210,19 @@ pub fn (runtime &Runtime) forward_javascript_function(function voidptr, receiver
 	runtime.require_javascript_value_context()!
 	context := runtime.context
 	mut exception := unsafe { nil }
-	array := C.JSObjectMakeArray(context, uint(arguments.len), arguments.data, &exception)
+	array := C.vox_jsc_JSObjectMakeArray(context, uint(arguments.len), arguments.data, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	outcome := runtime.call_engine_function(runtime.value_call_intrinsic_,
-		[function, receiver, array, C.JSValueMakeBoolean(context, true)])!
+		[function, receiver, array, C.vox_jsc_JSValueMakeBoolean(context, true)])!
 	runtime.require_javascript_value_context()!
 	if runtime.context != context { return error('JavaScript context changed during native forwarding') }
 	C.JSValueProtect(context, outcome)
 	defer { C.JSValueUnprotect(context, outcome) }
-	object := C.JSValueToObject(context, outcome, &exception)
+	object := C.vox_jsc_JSValueToObject(context, outcome, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
-	completed := C.JSObjectGetPropertyAtIndex(context, object, 0, &exception)
+	completed := C.vox_jsc_JSObjectGetPropertyAtIndex(context, object, 0, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
-	value := C.JSObjectGetPropertyAtIndex(context, object, 1, &exception)
+	value := C.vox_jsc_JSObjectGetPropertyAtIndex(context, object, 1, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	if !C.JSValueToBoolean(context, completed) { return runtime.actual_javascript_exception(value) }
 	return value
@@ -230,7 +233,7 @@ pub fn (mut runtime Runtime) create_javascript_promise() !JavaScriptPromiseCapab
 	mut resolve := unsafe { nil }
 	mut reject := unsafe { nil }
 	mut exception := unsafe { nil }
-	promise := C.JSObjectMakeDeferredPromise(runtime.context, &resolve, &reject, &exception)
+	promise := C.vox_jsc_JSObjectMakeDeferredPromise(runtime.context, &resolve, &reject, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	return JavaScriptPromiseCapability{
 		context: runtime.context

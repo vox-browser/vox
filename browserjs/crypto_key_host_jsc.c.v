@@ -20,7 +20,7 @@ fn (mut host CryptoHost) install_crypto_key() ! {
 	})!
 	installer := runtime.evaluate_host_value(crypto_key_native_bootstrap)!
 	defer { runtime.release_javascript_value(installer) }
-	prototype := runtime.call_javascript_function(installer, C.JSValueMakeUndefined(runtime.context), [get])!
+	prototype := runtime.call_javascript_function(installer, C.vox_jsc_JSValueMakeUndefined(runtime.context), [get])!
 	host.prototypes[.key] = runtime.retain_javascript_value(prototype)!
 }
 
@@ -63,7 +63,7 @@ fn (mut host CryptoHost) crypto_key_get(args []voidptr) !voidptr {
 			if key.bindings_type() == .private_key { type_name = 'private' }
 			return host.runtime.binding_string(type_name)
 		}
-		'extractable' { return C.JSValueMakeBoolean(host.runtime.context, key.extractable) }
+		'extractable' { return C.vox_jsc_JSValueMakeBoolean(host.runtime.context, key.extractable) }
 		'algorithm' { return host.crypto_value(key.algorithm_for_realm(realm)!) }
 		'usages' { return host.crypto_value(key.usages_for_realm(realm)) }
 		else { return error('Unknown CryptoKey attribute') }
@@ -84,7 +84,7 @@ fn (mut host CryptoHost) crypto_object(value webidl.Value) !voidptr {
 			call_arguments << runtime.retain_javascript_value(host.crypto_value(item)!)!
 		}
 		mut exception := unsafe { nil }
-		object = C.JSObjectMakeArray(runtime.context, uint(call_arguments.len), call_arguments.data, &exception)
+		object = C.vox_jsc_JSObjectMakeArray(runtime.context, uint(call_arguments.len), call_arguments.data, &exception)
 		if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	} else {
 		object = C.JSObjectMake(runtime.context, unsafe { nil }, unsafe { nil })
@@ -95,7 +95,7 @@ fn (mut host CryptoHost) crypto_object(value webidl.Value) !voidptr {
 		for name, property in value.object_value {
 			actual := runtime.retain_javascript_value(host.crypto_value(property)!)!
 			defer { runtime.release_javascript_value(actual) }
-			runtime.call_javascript_function(host.define_data, C.JSValueMakeUndefined(runtime.context), [
+			runtime.call_javascript_function(host.define_data, C.vox_jsc_JSValueMakeUndefined(runtime.context), [
 				object,
 				runtime.binding_string(name),
 				actual,
@@ -103,7 +103,7 @@ fn (mut host CryptoHost) crypto_object(value webidl.Value) !voidptr {
 		}
 	}
 	if value.frozen {
-		runtime.call_javascript_function(host.freeze_object, C.JSValueMakeUndefined(runtime.context), [object])!
+		runtime.call_javascript_function(host.freeze_object, C.vox_jsc_JSValueMakeUndefined(runtime.context), [object])!
 	}
 	if value.opaque_id != 0 { host.object_wrappers[value.opaque_id] = object }
 	return object

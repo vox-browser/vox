@@ -34,7 +34,7 @@ fn test_native_timer_callback_uses_owner_task_this_arguments_context_and_ignores
 		assert runtime.libjs_vm().has_running_execution_context()
 		assert settings.realm().script_execution_depth >= 2 && settings.realm().callback_execution_depth >= 2
 		assert voidptr(html.incumbent_settings_object()) == voidptr(settings)
-		return C.JSValueMakeBoolean(runtime.context, true)
+		return C.vox_jsc_JSValueMakeBoolean(runtime.context, true)
 	})!
 	runtime.evaluate_host(r'
  globalThis.nativeTimerRan=false;globalThis.nativeTimerArgument={};globalThis.nativeTimerThenAccesses=0;

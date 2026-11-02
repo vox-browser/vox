@@ -37,7 +37,7 @@ fn (mut runtime Runtime) install_ui_event_binding() ! {
 	mut call_arguments := [binding.event_constructor, C.JSContextGetGlobalObject(runtime.context)]
 	call_arguments << functions
 	binding.ui_event_prototype = runtime.retain_javascript_value(runtime.call_javascript_function(factory,
-		C.JSValueMakeUndefined(runtime.context), call_arguments)!)!
+		C.vox_jsc_JSValueMakeUndefined(runtime.context), call_arguments)!)!
 	binding.ui_event_constructor = runtime.retain_javascript_value(runtime.binding_property(binding.ui_event_prototype,
 		'constructor')!)!
 }
@@ -70,7 +70,7 @@ fn (runtime &Runtime) ui_event_native_view(value voidptr) !voidptr {
 }
 
 fn (runtime &Runtime) ui_event_javascript_view(view voidptr) !voidptr {
-	if view == unsafe { nil } { return C.JSValueMakeNull(runtime.context) }
+	if view == unsafe { nil } { return C.vox_jsc_JSValueMakeNull(runtime.context) }
 	window := runtime.ui_event_owning_window()!
 	if view == voidptr(window.window().dom_proxy()) || view == voidptr(window) {
 		return C.JSContextGetGlobalObject(runtime.context)
@@ -84,7 +84,7 @@ fn (mut runtime Runtime) ui_event_long(value voidptr) !int {
 
 fn (runtime &Runtime) ui_event_dictionary_member(value voidptr, name string) !voidptr {
 	if C.JSValueIsUndefined(runtime.context, value) || C.JSValueIsNull(runtime.context, value) {
-		return C.JSValueMakeUndefined(runtime.context)
+		return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 	}
 	if !C.JSValueIsObject(runtime.context, value) {
 		return runtime.event_binding_type_error('UIEvent options must be a dictionary')
@@ -107,7 +107,7 @@ fn native_ui_event_which(event &dom.Event) u32 {
 
 fn (runtime &Runtime) ui_event_argument(args []voidptr, index int) voidptr {
 	if index < args.len { return args[index] }
-	return C.JSValueMakeUndefined(runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 }
 
 fn (mut runtime Runtime) ui_event_binding_call(method string, receiver voidptr, args []voidptr) !voidptr {
@@ -145,7 +145,7 @@ fn (mut runtime Runtime) ui_event_binding_call(method string, receiver voidptr, 
 			}))
 		}
 		runtime.bind_event(receiver, unsafe { &dom.Event(event) })!
-		return C.JSValueMakeUndefined(context)
+		return C.vox_jsc_JSValueMakeUndefined(context)
 	}
 	// A genuine Event wrapper is insufficient: this receiver must own a UIEvent
 	// record. Check before reading/coercing operation arguments or Proxy fields.
@@ -160,8 +160,8 @@ fn (mut runtime Runtime) ui_event_binding_call(method string, receiver voidptr, 
 		}
 		return match runtime.binding_dom_string(args[0])! {
 			'view' { runtime.ui_event_javascript_view(ui.view())! }
-			'detail' { C.JSValueMakeNumber(context, ui.detail()) }
-			'which' { C.JSValueMakeNumber(context, native_ui_event_which(event)) }
+			'detail' { C.vox_jsc_JSValueMakeNumber(context, ui.detail()) }
+			'which' { C.vox_jsc_JSValueMakeNumber(context, native_ui_event_which(event)) }
 			else { return runtime.event_binding_type_error('Unknown UIEvent attribute') }
 		}
 	}
@@ -175,7 +175,7 @@ fn (mut runtime Runtime) ui_event_binding_call(method string, receiver voidptr, 
 		view := runtime.ui_event_native_view(runtime.ui_event_argument(args, 3))!
 		detail := runtime.ui_event_long(runtime.ui_event_argument(args, 4))!
 		ui.init_ui_event(type_, bubbles, cancelable, view, detail)
-		return C.JSValueMakeUndefined(context)
+		return C.vox_jsc_JSValueMakeUndefined(context)
 	}
 	return runtime.event_binding_type_error('Unknown UIEvent operation')
 }

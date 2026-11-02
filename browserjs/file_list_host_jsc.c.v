@@ -34,7 +34,7 @@ pub fn (mut host FileListHost) install(mut runtime Runtime) ! {
 	})!
 	installer := runtime.evaluate_host_value(file_list_native_factory)!
 	defer { runtime.release_javascript_value(installer) }
-	factory := runtime.call_javascript_function(installer, C.JSValueMakeUndefined(runtime.context), [operate])!
+	factory := runtime.call_javascript_function(installer, C.vox_jsc_JSValueMakeUndefined(runtime.context), [operate])!
 	host.prototype = runtime.retain_javascript_value(runtime.binding_property(factory, 'prototype')!)!
 	host.wrap_function = runtime.retain_javascript_value(runtime.binding_property(factory, 'wrap')!)!
 	file_list_bindings_[owner] = &host
@@ -47,7 +47,7 @@ pub fn (mut host FileListHost) install(mut runtime Runtime) ! {
 
 fn (host &FileListHost) argument(args []voidptr, index int) voidptr {
 	if index < args.len { return args[index] }
-	return C.JSValueMakeUndefined(host.runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 }
 
 fn (host &FileListHost) record(value voidptr) !&FileListHostRecord {
@@ -63,7 +63,7 @@ fn (mut host FileListHost) wrap(list &fileapi.FileList) !voidptr {
 	if host.closed { return error('FileList binding is closed') }
 	native := voidptr(list)
 	if record := host.records[native] { return record.object }
-	object := host.runtime.retain_javascript_value(host.runtime.call_javascript_function(host.wrap_function, C.JSValueMakeUndefined(host.runtime.context), [])!)!
+	object := host.runtime.retain_javascript_value(host.runtime.call_javascript_function(host.wrap_function, C.vox_jsc_JSValueMakeUndefined(host.runtime.context), [])!)!
 	record := &FileListHostRecord{ host: host, list: list, object: object }
 	host.records[native] = record
 	host.by_wrapper[object] = record
@@ -74,22 +74,22 @@ fn (mut host FileListHost) operate(args []voidptr) !voidptr {
 	name := host.runtime.binding_dom_string(host.argument(args, 0))!
 	if name == 'arrayIndex' {
 		key := libjs.PropertyName.from_utf16(host.runtime.native_utf16_string(host.argument(args, 1))!)
-		if !key.is_number() { return C.JSValueMakeUndefined(host.runtime.context) }
-		return C.JSValueMakeNumber(host.runtime.context, f64(key.number))
+		if !key.is_number() { return C.vox_jsc_JSValueMakeUndefined(host.runtime.context) }
+		return C.vox_jsc_JSValueMakeNumber(host.runtime.context, f64(key.number))
 	}
 	list := host.record(host.argument(args, 1))!.list
 	match name {
-		'length' { return C.JSValueMakeNumber(host.runtime.context, f64(u32(list.length()))) }
+		'length' { return C.vox_jsc_JSValueMakeNumber(host.runtime.context, f64(u32(list.length()))) }
 		'indexed' {
 			index := u32(webidl.convert_to_int(host.runtime.webidl_value(host.argument(args, 2))!, 32, false, .no, .no)!)
-			file := list.item(int(index)) or { return C.JSValueMakeUndefined(host.runtime.context) }
+			file := list.item(int(index)) or { return C.vox_jsc_JSValueMakeUndefined(host.runtime.context) }
 			return host.files.wrap(file)
 		}
 		'item' {
 			argc := webidl.value_to_number(host.runtime.webidl_value(host.argument(args, 2))!)!
 			if argc < 1 { return error('TypeError: item() needs one argument') }
 			index := u32(webidl.convert_to_int(host.runtime.webidl_value(host.argument(args, 3))!, 32, false, .no, .no)!)
-			file := list.item(int(index)) or { return C.JSValueMakeNull(host.runtime.context) }
+			file := list.item(int(index)) or { return C.vox_jsc_JSValueMakeNull(host.runtime.context) }
 			return host.files.wrap(file)
 		}
 		else { return error('TypeError: Unknown FileList operation') }

@@ -18,7 +18,7 @@ fn raw_window_handler_fixture() (&Runtime, &html.EnvironmentSettingsObject, &dom
 	owner := voidptr(runtime)
 	runtime.define_value_host_function('__rawContext', fn [owner, settings] (_ voidptr, _ []voidptr) !voidptr {
 		runtime := unsafe { &Runtime(owner) }
-		return C.JSValueMakeBoolean(runtime.context, settings.realm().script_execution_depth > 0
+		return C.vox_jsc_JSValueMakeBoolean(runtime.context, settings.realm().script_execution_depth > 0
 			&& settings.realm().callback_execution_depth > 0)
 	}) or { panic(err) }
 	return runtime, settings, document, target

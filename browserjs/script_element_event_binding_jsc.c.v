@@ -29,7 +29,7 @@ pub fn (mut runtime Runtime) install_script_element_event_binding() ! {
 		if args.len > 1 {
 			html.set_html_script_element_async(script, C.JSValueToBoolean(runtime.context, args[1]))
 		}
-		return C.JSValueMakeBoolean(runtime.context, html.html_script_element_async(script))
+		return C.vox_jsc_JSValueMakeBoolean(runtime.context, html.html_script_element_async(script))
 	})!
 	runtime.define_value_host_function('__ladybirdScriptElementHandler', fn [owner] (_ voidptr, args []voidptr) !voidptr {
 		mut runtime := unsafe { &Runtime(owner) }
@@ -54,7 +54,7 @@ pub fn (mut runtime Runtime) install_script_element_event_binding() ! {
 		if method == 'get' { return runtime.javascript_event_handler(target, name) }
 		if method == 'set' && args.len >= 4 {
 			runtime.set_javascript_event_handler(target, name, args[3])!
-			return C.JSValueMakeUndefined(runtime.context)
+			return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 		}
 		return runtime.event_binding_type_error('Unknown script event handler operation')
 	})!

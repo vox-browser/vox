@@ -50,7 +50,7 @@ fn (mut host MediaSourceHost) install_buffer_bindings() ! {
 				return host.get_buffer_owner(kind, name, receiver) or { return host.exception(err) }
 			})!
 			if name in ['updating', 'buffered', 'length'] {
-				functions << C.JSValueMakeUndefined(runtime.context)
+				functions << C.vox_jsc_JSValueMakeUndefined(runtime.context)
 			} else {
 				functions << runtime.make_native_value_host_function('set ${name}', 1, fn [handle, name, kind] (receiver voidptr, args []voidptr) !voidptr {
 					mut host := unsafe { &MediaSourceHost(handle) }
@@ -72,13 +72,13 @@ fn (mut host MediaSourceHost) install_buffer_bindings() ! {
 		return host.buffer_list_index(args) or { return host.exception(err) }
 	})!
 	mut exception := unsafe { nil }
-	array := C.JSObjectMakeArray(runtime.context, uint(functions.len), functions.data, &exception)
+	array := C.vox_jsc_JSObjectMakeArray(runtime.context, uint(functions.len), functions.data, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	runtime.retain_javascript_value(array)!
 	defer { runtime.release_javascript_value(array) }
 	factory := runtime.evaluate_host_value(media_buffer_native_factory)!
 	defer { runtime.release_javascript_value(factory) }
-	installed := runtime.call_javascript_function(factory, C.JSValueMakeUndefined(runtime.context), [
+	installed := runtime.call_javascript_function(factory, C.vox_jsc_JSValueMakeUndefined(runtime.context), [
 		array,
 		indexed,
 		host.prototype,
@@ -106,7 +106,7 @@ fn (mut host MediaSourceHost) wrap_buffer_owner(kind MediaBufferHostKind, native
 	mut target := unsafe { &dom.EventTarget(nil) }
 	if kind == .list {
 		object = host.runtime.call_javascript_function(host.list_wrap,
-			C.JSValueMakeUndefined(host.runtime.context), [])!
+			C.vox_jsc_JSValueMakeUndefined(host.runtime.context), [])!
 		list := unsafe { &mediasourceextensions.SourceBufferList(native) }
 		target = &list.EventTarget
 	} else {
@@ -150,7 +150,7 @@ fn (mut host MediaSourceHost) get_buffer_owner(kind MediaBufferHostKind, name st
 	}
 	if kind == .list {
 		list := unsafe { &mediasourceextensions.SourceBufferList(record.native) }
-		return C.JSValueMakeNumber(host.runtime.context, f64(list.length()))
+		return C.vox_jsc_JSValueMakeNumber(host.runtime.context, f64(list.length()))
 	}
 	buffer := unsafe { &mediasourceextensions.SourceBuffer(record.native) }
 	if name == 'buffered' {
@@ -158,16 +158,16 @@ fn (mut host MediaSourceHost) get_buffer_owner(kind MediaBufferHostKind, name st
 	}
 	return match name {
 		'mode' { host.runtime.binding_string(buffer.mode().webidl_name()) }
-		'updating' { C.JSValueMakeBoolean(host.runtime.context, buffer.updating()) }
-		else { C.JSValueMakeNumber(host.runtime.context, buffer.timestamp_offset()) }
+		'updating' { C.vox_jsc_JSValueMakeBoolean(host.runtime.context, buffer.updating()) }
+		else { C.vox_jsc_JSValueMakeNumber(host.runtime.context, buffer.timestamp_offset()) }
 	}
 }
 
 fn (host &MediaSourceHost) buffer_number(value voidptr, restricted bool) !f64 {
 	actual := host.runtime.call_javascript_function(host.to_number,
-		C.JSValueMakeUndefined(host.runtime.context), [value])!
+		C.vox_jsc_JSValueMakeUndefined(host.runtime.context), [value])!
 	mut exception := unsafe { nil }
-	number := C.JSValueToNumber(host.runtime.context, actual, &exception)
+	number := C.vox_jsc_JSValueToNumber(host.runtime.context, actual, &exception)
 	if exception != unsafe { nil } { return host.runtime.actual_javascript_exception(exception) }
 	if restricted && (math.is_nan(number) || math.is_inf(number, 0)) {
 		return error('TypeError: Expected a finite floating-point number')
@@ -186,37 +186,37 @@ fn (mut host MediaSourceHost) set_buffer_owner(kind MediaBufferHostKind, name st
 			// Source ignores enum conversion failures before calling the setter.
 			converted := host.dom_string(value) or {
 				if err is JavaScriptValueException { host.runtime.release_javascript_value(err.value) }
-				return C.JSValueMakeUndefined(host.runtime.context)
+				return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 			}
 			mode := mediasourceextensions.append_mode_from_webidl(converted) or {
-				return C.JSValueMakeUndefined(host.runtime.context)
+				return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 			}
 			buffer.set_mode(mode)!
 		} else {
 			buffer.set_timestamp_offset(host.buffer_number(value, true)!)!
 		}
 	}
-	return C.JSValueMakeUndefined(host.runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 }
 
 fn (host &MediaSourceHost) append_buffer_bytes(value voidptr) ![]u8 {
 	host.runtime.call_javascript_function(host.buffer_validation,
-		C.JSValueMakeUndefined(host.runtime.context), [value,
-		C.JSValueMakeBoolean(host.runtime.context, true)])!
+		C.vox_jsc_JSValueMakeUndefined(host.runtime.context), [value,
+		C.vox_jsc_JSValueMakeBoolean(host.runtime.context, true)])!
 	view := host.runtime.call_javascript_function(host.buffer_copy,
-		C.JSValueMakeUndefined(host.runtime.context), [value])!
+		C.vox_jsc_JSValueMakeUndefined(host.runtime.context), [value])!
 	mut runtime := unsafe { &Runtime(host.runtime) }
 	runtime.retain_javascript_value(view)!
 	defer { runtime.release_javascript_value(view) }
 	mut exception := unsafe { nil }
-	length := C.JSObjectGetTypedArrayByteLength(runtime.context, view, &exception)
+	length := C.vox_jsc_JSObjectGetTypedArrayByteLength(runtime.context, view, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	if u64(length) > u64(2_147_483_647) {
 		return error('InternalError: Not enough memory to allocate')
 	}
 	mut bytes := []u8{len: int(length)}
 	if length > 0 {
-		pointer := C.JSObjectGetTypedArrayBytesPtr(runtime.context, view, &exception)
+		pointer := C.vox_jsc_JSObjectGetTypedArrayBytesPtr(runtime.context, view, &exception)
 		if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 		unsafe { C.memcpy(bytes.data, pointer, length) }
 	}
@@ -256,19 +256,19 @@ fn (mut host MediaSourceHost) operate_buffer(name string, receiver voidptr, args
 		}
 	}
 
-	return C.JSValueMakeUndefined(host.runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 }
 
 fn (mut host MediaSourceHost) buffer_list_index(args []voidptr) !voidptr {
 	if args.len == 1 {
 		key := libjs.PropertyName.from_utf16(host.runtime.native_utf16_string(args[0])!)
-		if !key.is_number() { return C.JSValueMakeUndefined(host.runtime.context) }
-		return C.JSValueMakeNumber(host.runtime.context, f64(key.number))
+		if !key.is_number() { return C.vox_jsc_JSValueMakeUndefined(host.runtime.context) }
+		return C.vox_jsc_JSValueMakeNumber(host.runtime.context, f64(key.number))
 	}
 	record := host.buffer_owner_record(.list, args[0])!
 	list := unsafe { &mediasourceextensions.SourceBufferList(record.native) }
 	index := u32(host.buffer_number(args[1], true)!)
-	buffer := list.item(index) or { return C.JSValueMakeUndefined(host.runtime.context) }
+	buffer := list.item(index) or { return C.vox_jsc_JSValueMakeUndefined(host.runtime.context) }
 	return host.wrap_buffer_owner(.buffer, voidptr(buffer))
 }
 

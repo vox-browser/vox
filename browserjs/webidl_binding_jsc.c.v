@@ -45,16 +45,16 @@ pub fn (mut runtime Runtime) webidl_promise_callback(function voidptr, context w
 			mut promise := webidl.create_promise_for(context)
 			owner.observe_javascript_promise(result, fn [owner_handle, mut promise] (_ voidptr, args []voidptr) !voidptr {
 				mut owner := unsafe { &Runtime(owner_handle) }
-				mut value := C.JSValueMakeUndefined(owner.context)
+				mut value := C.vox_jsc_JSValueMakeUndefined(owner.context)
 				if args.len > 0 { value = args[0] }
 				promise.resolve(owner.webidl_value(value)!)
-				return C.JSValueMakeUndefined(owner.context)
+				return C.vox_jsc_JSValueMakeUndefined(owner.context)
 			}, fn [owner_handle, mut promise] (_ voidptr, args []voidptr) !voidptr {
 				mut owner := unsafe { &Runtime(owner_handle) }
-				mut value := C.JSValueMakeUndefined(owner.context)
+				mut value := C.vox_jsc_JSValueMakeUndefined(owner.context)
 				if args.len > 0 { value = args[0] }
 				promise.reject(owner.webidl_value(value)!)
-				return C.JSValueMakeUndefined(owner.context)
+				return C.vox_jsc_JSValueMakeUndefined(owner.context)
 			})!
 			return webidl.promise_value(promise)
 		}
@@ -121,16 +121,16 @@ fn (runtime &Runtime) binding_exception_value(exception IError) voidptr {
 		if message.starts_with(error_kind + ':') { kind = error_kind; message = message[error_kind.len + 1..].trim_left(' '); break }
 	}
 	kind_string := js_source_string(kind)
-	kind_value := C.JSValueMakeString(runtime.context, kind_string)
+	kind_value := C.vox_jsc_JSValueMakeString(runtime.context, kind_string)
 	C.JSStringRelease(kind_string)
 	string_value := js_source_string(message)
-	value := C.JSValueMakeString(runtime.context, string_value)
+	value := C.vox_jsc_JSValueMakeString(runtime.context, string_value)
 	C.JSStringRelease(string_value)
 	if runtime.value_error_intrinsic_ != unsafe { nil } {
 		if actual := runtime.call_engine_function(runtime.value_error_intrinsic_, [kind_value, value]) { return actual }
 	}
 	mut ignored := unsafe { nil }
-	object := C.JSObjectMakeError(runtime.context, 1, &value, &ignored)
+	object := C.vox_jsc_JSObjectMakeError(runtime.context, 1, &value, &ignored)
 	if ignored == unsafe { nil } { return object }
 	return ignored
 }

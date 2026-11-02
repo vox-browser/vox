@@ -31,7 +31,7 @@ fn (mut runtime Runtime) install_keyboard_event_binding() ! {
 	defer { runtime.release_javascript_value(factory) }
 	mut arguments := [binding.ui_event_constructor, C.JSContextGetGlobalObject(runtime.context)]
 	arguments << functions
-	binding.keyboard_event_prototype = runtime.retain_javascript_value(runtime.call_javascript_function(factory, C.JSValueMakeUndefined(runtime.context), arguments)!)!
+	binding.keyboard_event_prototype = runtime.retain_javascript_value(runtime.call_javascript_function(factory, C.vox_jsc_JSValueMakeUndefined(runtime.context), arguments)!)!
 }
 
 fn (mut runtime Runtime) keyboard_event_unsigned(value voidptr) !u32 {
@@ -94,7 +94,7 @@ fn (mut runtime Runtime) keyboard_event_binding_call(method string, receiver voi
 			}))
 		}
 		runtime.bind_event(receiver, unsafe { &dom.Event(event) })!
-		return C.JSValueMakeUndefined(context)
+		return C.vox_jsc_JSValueMakeUndefined(context)
 	}
 	event := runtime.native_event(receiver)!
 	if event.interface_ != .keyboard_event {
@@ -106,15 +106,15 @@ fn (mut runtime Runtime) keyboard_event_binding_call(method string, receiver voi
 		return match name {
 			'key' { runtime.binding_string(keyboard.key()) }
 			'code' { runtime.binding_string(keyboard.code()) }
-			'location' { C.JSValueMakeNumber(context, keyboard.location()) }
-			'ctrlKey' { C.JSValueMakeBoolean(context, keyboard.ctrl_key()) }
-			'shiftKey' { C.JSValueMakeBoolean(context, keyboard.shift_key()) }
-			'altKey' { C.JSValueMakeBoolean(context, keyboard.alt_key()) }
-			'metaKey' { C.JSValueMakeBoolean(context, keyboard.meta_key()) }
-			'repeat' { C.JSValueMakeBoolean(context, keyboard.repeat()) }
-			'isComposing' { C.JSValueMakeBoolean(context, keyboard.is_composing()) }
-			'charCode' { C.JSValueMakeNumber(context, keyboard.char_code()) }
-			'keyCode' { C.JSValueMakeNumber(context, keyboard.key_code()) }
+			'location' { C.vox_jsc_JSValueMakeNumber(context, keyboard.location()) }
+			'ctrlKey' { C.vox_jsc_JSValueMakeBoolean(context, keyboard.ctrl_key()) }
+			'shiftKey' { C.vox_jsc_JSValueMakeBoolean(context, keyboard.shift_key()) }
+			'altKey' { C.vox_jsc_JSValueMakeBoolean(context, keyboard.alt_key()) }
+			'metaKey' { C.vox_jsc_JSValueMakeBoolean(context, keyboard.meta_key()) }
+			'repeat' { C.vox_jsc_JSValueMakeBoolean(context, keyboard.repeat()) }
+			'isComposing' { C.vox_jsc_JSValueMakeBoolean(context, keyboard.is_composing()) }
+			'charCode' { C.vox_jsc_JSValueMakeNumber(context, keyboard.char_code()) }
+			'keyCode' { C.vox_jsc_JSValueMakeNumber(context, keyboard.key_code()) }
 			else { return runtime.event_binding_type_error('Unknown KeyboardEvent attribute') }
 		}
 	}
@@ -122,14 +122,14 @@ fn (mut runtime Runtime) keyboard_event_binding_call(method string, receiver voi
 		if args.len < 1 {
 			return runtime.event_binding_type_error('getModifierState requires an argument')
 		}
-		return C.JSValueMakeBoolean(context, keyboard.get_modifier_state(runtime.binding_dom_string(args[0])!))
+		return C.vox_jsc_JSValueMakeBoolean(context, keyboard.get_modifier_state(runtime.binding_dom_string(args[0])!))
 	}
 	if method == 'initKeyboardEvent' {
 		if args.len < 1 {
 			return runtime.event_binding_type_error('initKeyboardEvent requires an argument')
 		}
 		mut values := args.clone()
-		for values.len < 10 { values << C.JSValueMakeUndefined(context) }
+		for values.len < 10 { values << C.vox_jsc_JSValueMakeUndefined(context) }
 		type_ := runtime.binding_dom_string(values[0])!
 		bubbles := C.JSValueToBoolean(context, values[1])
 		cancelable := C.JSValueToBoolean(context, values[2])
@@ -143,7 +143,7 @@ fn (mut runtime Runtime) keyboard_event_binding_call(method string, receiver voi
 		keyboard.init_keyboard_event(type_, bubbles, cancelable, view, key, location,
 			C.JSValueToBoolean(context, values[6]), C.JSValueToBoolean(context, values[7]),
 			C.JSValueToBoolean(context, values[8]), C.JSValueToBoolean(context, values[9]))
-		return C.JSValueMakeUndefined(context)
+		return C.vox_jsc_JSValueMakeUndefined(context)
 	}
 	return runtime.event_binding_type_error('Unknown KeyboardEvent operation')
 }

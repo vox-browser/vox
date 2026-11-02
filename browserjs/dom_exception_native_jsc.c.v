@@ -8,7 +8,7 @@ import libjs
 
 fn C.JSValueIsUndefined(context voidptr, value voidptr) bool
 fn C.JSValueIsNull(context voidptr, value voidptr) bool
-fn C.JSValueMakeNumber(context voidptr, value f64) voidptr
+fn C.vox_jsc_JSValueMakeNumber(context voidptr, value f64) voidptr
 
 @[heap]
 struct DOMExceptionBinding {
@@ -23,15 +23,14 @@ fn (runtime &Runtime) binding_dom_utf16(value voidptr) !libjs.Utf16String {
 	// Real ECMAScript ToString, including one string-hint author conversion,
 	// Symbol rejection, and the original thrown engine value.
 	mut exception := unsafe { nil }
-	text := C.JSValueToStringCopy(runtime.context, value, &exception)
+	text := C.vox_jsc_JSValueToStringCopy(runtime.context, value, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	if text == unsafe { nil } { return error('Failed to convert IDL UTF16 string') }
 	defer { C.JSStringRelease(text) }
 	length := C.JSStringGetLength(text)
 	if length > uint(2147483647) { return error('IDL string exceeds the source V code-unit span') }
-	characters := C.JSStringGetCharactersPtr(text)
 	mut units := []u16{len: int(length)}
-	for index in 0 .. units.len { units[index] = unsafe { characters[index] } }
+	C.vox_jsc_copy_string_characters(text, units.data, length)
 	return libjs.utf16_string_from_code_units(units)
 }
 
@@ -43,14 +42,14 @@ fn (runtime &Runtime) binding_utf16_string(text libjs.Utf16String) !voidptr {
 	defer { C.JSStringRelease(actual) }
 	// Native callback return is rooted by the engine call boundary; unlike a
 	// public retained-value factory, repeated getters add no persistent root.
-	return C.JSValueMakeString(runtime.context, actual)
+	return C.vox_jsc_JSValueMakeString(runtime.context, actual)
 }
 
 __global dom_exception_bindings_ = map[voidptr]&DOMExceptionBinding{}
 
 fn (runtime &Runtime) binding_dom_string(value voidptr) !string {
 	mut exception := unsafe { nil }
-	text := C.JSValueToStringCopy(runtime.context, value, &exception)
+	text := C.vox_jsc_JSValueToStringCopy(runtime.context, value, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	if text == unsafe { nil } { return error('Failed to convert IDL string') }
 	defer { C.JSStringRelease(text) }
@@ -63,14 +62,14 @@ fn (runtime &Runtime) binding_dom_string(value voidptr) !string {
 fn (runtime &Runtime) binding_string(value string) voidptr {
 	text := js_source_string(value)
 	defer { C.JSStringRelease(text) }
-	return C.JSValueMakeString(runtime.context, text)
+	return C.vox_jsc_JSValueMakeString(runtime.context, text)
 }
 
 fn (runtime &Runtime) binding_property(object voidptr, name string) !voidptr {
 	text := js_source_string(name)
 	defer { C.JSStringRelease(text) }
 	mut exception := unsafe { nil }
-	value := C.JSObjectGetProperty(runtime.context, object, text, &exception)
+	value := C.vox_jsc_JSObjectGetProperty(runtime.context, object, text, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	return value
 }
@@ -98,7 +97,7 @@ pub fn (mut runtime Runtime) install_dom_exception_binding() ! {
 		binding.by_record[voidptr(exception)] = receiver
 		mut mutable_runtime := unsafe { &Runtime(owner) }
 		mutable_runtime.retain_javascript_value(receiver)!
-		return C.JSValueMakeUndefined(runtime.context)
+		return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 	})!
 	runtime.define_value_host_function('__ladybirdDOMExceptionGet', fn [owner, binding] (receiver voidptr, args []voidptr) !voidptr {
 		runtime := unsafe { &Runtime(owner) }
@@ -109,7 +108,7 @@ pub fn (mut runtime Runtime) install_dom_exception_binding() ! {
 		return match name {
 			'name' { runtime.binding_utf16_string(exception.name_utf16())! }
 			'message' { runtime.binding_utf16_string(exception.message_utf16())! }
-			'code' { C.JSValueMakeNumber(runtime.context, exception.code()) }
+			'code' { C.vox_jsc_JSValueMakeNumber(runtime.context, exception.code()) }
 			else { return error('TypeError: Unknown DOMException attribute') }
 		}
 	})!
@@ -129,7 +128,7 @@ pub fn (mut runtime Runtime) javascript_dom_exception(value webidl.Value) !voidp
 	}
 	if actual := binding.by_record[voidptr(native)] { return actual }
 	object := runtime.call_javascript_function(binding.factory,
-		C.JSValueMakeUndefined(runtime.context), [])!
+		C.vox_jsc_JSValueMakeUndefined(runtime.context), [])!
 	runtime.retain_javascript_value(object)!
 	binding.by_wrapper[object] = native
 	binding.by_record[voidptr(native)] = object

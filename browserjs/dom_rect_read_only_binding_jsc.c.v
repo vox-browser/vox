@@ -63,7 +63,7 @@ pub fn (mut runtime Runtime) install_dom_rect_read_only_binding() ! {
 fn (mut runtime Runtime) javascript_read_only_rect(rect &geometry.DOMRectReadOnly) !voidptr {
 	mut binding := dom_rect_read_only_bindings_[voidptr(&runtime)] or { return error('DOMRectReadOnly binding is missing') }
 	if wrapper := binding.wrappers[voidptr(rect)] { return wrapper }
-	wrapper := runtime.retain_javascript_value(runtime.call_javascript_function(binding.make, C.JSValueMakeUndefined(runtime.context), [])!)!
+	wrapper := runtime.retain_javascript_value(runtime.call_javascript_function(binding.make, C.vox_jsc_JSValueMakeUndefined(runtime.context), [])!)!
 	binding.rects[wrapper] = rect
 	binding.wrappers[voidptr(rect)] = wrapper
 	return wrapper
@@ -74,7 +74,7 @@ fn (mut runtime Runtime) dom_rect_read_only_operation(mut binding DOMRectReadOnl
 	method := runtime.binding_dom_string(args[0])!
 	receiver := args[1]
 	if method == 'number' {
-		return C.JSValueMakeNumber(runtime.context, webidl.value_to_number(runtime.webidl_value(args[2])!)!)
+		return C.vox_jsc_JSValueMakeNumber(runtime.context, webidl.value_to_number(runtime.webidl_value(args[2])!)!)
 	}
 	if method in ['construct', 'constructMutable'] {
 		mut values := []f64{cap: 4}
@@ -90,7 +90,7 @@ fn (mut runtime Runtime) dom_rect_read_only_operation(mut binding DOMRectReadOnl
 		runtime.retain_javascript_value(receiver)!
 		binding.rects[receiver] = rect
 		binding.wrappers[voidptr(rect)] = receiver
-		return C.JSValueMakeUndefined(runtime.context)
+		return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 	}
 	if method.starts_with('set:') {
 		mut rect := binding.mutable_rects[receiver] or { return runtime.event_binding_type_error('Illegal DOMRect receiver') }
@@ -102,10 +102,10 @@ fn (mut runtime Runtime) dom_rect_read_only_operation(mut binding DOMRectReadOnl
 			'set:height' { rect.set_height(value) }
 			else { return error('Unknown DOMRect setter') }
 		}
-		return C.JSValueMakeUndefined(runtime.context)
+		return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 	}
 	rect := binding.rects[receiver] or { return runtime.event_binding_type_error('Illegal DOMRectReadOnly receiver') }
-	if method == 'brand' { return C.JSValueMakeUndefined(runtime.context) }
+	if method == 'brand' { return C.vox_jsc_JSValueMakeUndefined(runtime.context) }
 	value := match method {
 		'x' { rect.x() }
 		'y' { rect.y() }
@@ -117,5 +117,5 @@ fn (mut runtime Runtime) dom_rect_read_only_operation(mut binding DOMRectReadOnl
 		'left' { rect.left() }
 		else { return error('Unknown DOMRectReadOnly operation') }
 	}
-	return C.JSValueMakeNumber(runtime.context, value)
+	return C.vox_jsc_JSValueMakeNumber(runtime.context, value)
 }

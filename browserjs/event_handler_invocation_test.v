@@ -30,7 +30,7 @@ fn test_native_window_error_handler_receives_five_original_values_and_strict_boo
 	owner := voidptr(&runtime)
 	runtime.define_value_host_function('__handlerContext', fn [owner, settings] (_ voidptr, _ []voidptr) !voidptr {
 		runtime := unsafe { &Runtime(owner) }
-		return C.JSValueMakeBoolean(runtime.context,
+		return C.vox_jsc_JSValueMakeBoolean(runtime.context,
 			settings.realm().script_execution_depth > 0 && settings.realm().callback_execution_depth > 0)
 	})!
 	runtime.evaluate_host(r'

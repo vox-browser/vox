@@ -39,7 +39,7 @@ pub fn (mut runtime Runtime) install_mutation_observer_binding(resolve MutationO
 	binding.notify = runtime.make_value_host_function(fn [owner, mut binding] (_ voidptr, _ []voidptr) !voidptr {
 		if !binding.closed { binding.queue.notify() }
 		runtime := unsafe { &Runtime(owner) }
-		return C.JSValueMakeUndefined(runtime.context)
+		return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 	})!
 	binding.queue = dom.MutationObserverDeliveryQueue.create(fn [owner, mut binding] () {
 		if binding.closed { return }
@@ -48,7 +48,7 @@ pub fn (mut runtime Runtime) install_mutation_observer_binding(resolve MutationO
 	})
 	runtime.define_value_host_function('__ladybirdMutationObserver', fn [owner, mut binding] (_ voidptr, args []voidptr) !voidptr {
 		mut runtime := unsafe { &Runtime(owner) }
-		if binding.closed { return C.JSValueMakeUndefined(runtime.context) }
+		if binding.closed { return C.vox_jsc_JSValueMakeUndefined(runtime.context) }
 		mut storage := binding.document.native_storage()
 		mut scope := platform.RetainedArenaScope{}
 		if storage != unsafe { nil } { scope = storage.enter_nested() }
@@ -86,7 +86,7 @@ fn (mut runtime Runtime) mutation_observer_operation(mut binding MutationObserve
 	}
 	method := runtime.binding_dom_string(args[0])!
 	receiver := args[1]
-	undefined := C.JSValueMakeUndefined(runtime.context)
+	undefined := C.vox_jsc_JSValueMakeUndefined(runtime.context)
 	if method == 'records' {
 		binding.make_records = runtime.retain_javascript_value(receiver)!
 		return undefined
@@ -115,7 +115,7 @@ fn (mut runtime Runtime) mutation_observer_operation(mut binding MutationObserve
 					runtime.report_event_callback_exception(err)
 					return
 				}
-				values := runtime.call_javascript_function(binding.make_records, C.JSValueMakeUndefined(runtime.context), [runtime.binding_string(source)]) or {
+				values := runtime.call_javascript_function(binding.make_records, C.vox_jsc_JSValueMakeUndefined(runtime.context), [runtime.binding_string(source)]) or {
 					runtime.report_event_callback_exception(err)
 					return
 				}

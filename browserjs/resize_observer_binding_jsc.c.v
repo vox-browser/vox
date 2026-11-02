@@ -79,17 +79,17 @@ fn (runtime &Runtime) resize_observer_element(value voidptr) !&dom.Element {
 
 fn (mut runtime Runtime) resize_observer_make(binding &ResizeObserverBinding, kind int) !voidptr {
 	return runtime.retain_javascript_value(runtime.call_javascript_function(binding.make,
-		C.JSValueMakeUndefined(runtime.context), [C.JSValueMakeNumber(runtime.context, kind)])!)!
+		C.vox_jsc_JSValueMakeUndefined(runtime.context), [C.vox_jsc_JSValueMakeNumber(runtime.context, kind)])!)!
 }
 
 fn (mut runtime Runtime) resize_observer_array(binding &ResizeObserverBinding, values []voidptr, frozen bool) !voidptr {
 	mut exception := unsafe { nil }
-	array := C.JSObjectMakeArray(runtime.context, uint(values.len), values.data, &exception)
+	array := C.vox_jsc_JSObjectMakeArray(runtime.context, uint(values.len), values.data, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	if !frozen { return array }
 	return runtime.retain_javascript_value(runtime.call_javascript_function(binding.make,
-		C.JSValueMakeUndefined(runtime.context), [
-			C.JSValueMakeNumber(runtime.context, 3),
+		C.vox_jsc_JSValueMakeUndefined(runtime.context), [
+			C.vox_jsc_JSValueMakeNumber(runtime.context, 3),
 			array,
 		])!)!
 }
@@ -120,7 +120,7 @@ fn (mut runtime Runtime) resize_observer_operation(mut binding ResizeObserverBin
 	if args.len < 2 { return runtime.event_binding_type_error('Missing ResizeObserver operation') }
 	method := runtime.binding_dom_string(args[0])!
 	receiver := args[1]
-	undefined := C.JSValueMakeUndefined(runtime.context)
+	undefined := C.vox_jsc_JSValueMakeUndefined(runtime.context)
 	if method == 'string' { return runtime.binding_string(runtime.binding_dom_string(args[2])!) }
 	if method == 'element' {
 		runtime.resize_observer_element(args[2])!
@@ -157,8 +157,8 @@ fn (mut runtime Runtime) resize_observer_operation(mut binding ResizeObserverBin
 	if method.starts_with('size ') {
 		size := binding.sizes[receiver] or { return runtime.event_binding_type_error('Illegal ResizeObserverSize receiver') }
 		return match method {
-			'size inlineSize' { C.JSValueMakeNumber(runtime.context, size.inline_size()) }
-			'size blockSize' { C.JSValueMakeNumber(runtime.context, size.block_size()) }
+			'size inlineSize' { C.vox_jsc_JSValueMakeNumber(runtime.context, size.inline_size()) }
+			'size blockSize' { C.vox_jsc_JSValueMakeNumber(runtime.context, size.block_size()) }
 			else { error('Unknown ResizeObserverSize operation') }
 		}
 	}

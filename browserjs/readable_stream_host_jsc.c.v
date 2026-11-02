@@ -14,17 +14,17 @@ import webidl
 __global readable_stream_bindings_ = map[voidptr]&ReadableStreamHost{}
 
 fn C.JSObjectSetPrototype(context voidptr, object voidptr, prototype voidptr)
-fn C.JSObjectGetPropertyAtIndex(context voidptr, object voidptr, index u32, exception &voidptr) voidptr
+fn C.vox_jsc_JSObjectGetPropertyAtIndex(context voidptr, object voidptr, index u32, exception &voidptr) voidptr
 fn C.JSObjectMake(context voidptr, object_class voidptr, data voidptr) voidptr
-fn C.JSObjectSetProperty(context voidptr, object voidptr, name voidptr, value voidptr, attributes u32, exception &voidptr)
+fn C.vox_jsc_JSObjectSetProperty(context voidptr, object voidptr, name voidptr, value voidptr, attributes u32, exception &voidptr)
 fn C.JSValueIsUndefined(context voidptr, value voidptr) bool
 fn C.JSValueIsNull(context voidptr, value voidptr) bool
-fn C.JSValueMakeNull(context voidptr) voidptr
-fn C.JSValueMakeBoolean(context voidptr, value bool) voidptr
-fn C.JSValueMakeNumber(context voidptr, value f64) voidptr
-fn C.JSValueToNumber(context voidptr, value voidptr, exception &voidptr) f64
-fn C.JSObjectMakeTypedArray(context voidptr, type_ int, length uint, exception &voidptr) voidptr
-fn C.JSObjectGetTypedArrayBytesPtr(context voidptr, object voidptr, exception &voidptr) voidptr
+fn C.vox_jsc_JSValueMakeNull(context voidptr) voidptr
+fn C.vox_jsc_JSValueMakeBoolean(context voidptr, value bool) voidptr
+fn C.vox_jsc_JSValueMakeNumber(context voidptr, value f64) voidptr
+fn C.vox_jsc_JSValueToNumber(context voidptr, value voidptr, exception &voidptr) f64
+fn C.vox_jsc_JSObjectMakeTypedArray(context voidptr, type_ int, length uint, exception &voidptr) voidptr
+fn C.vox_jsc_JSObjectGetTypedArrayBytesPtr(context voidptr, object voidptr, exception &voidptr) voidptr
 
 pub fn (mut host ReadableStreamHost) install(mut runtime Runtime) ! {
 	runtime.require_javascript_value_context()!
@@ -46,12 +46,12 @@ pub fn (mut host ReadableStreamHost) install(mut runtime Runtime) ! {
 		return host.operate(args) or { return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err)) }
 	})!
 	installer := runtime.evaluate_host_value(readable_stream_native_bootstrap)!
-	prototypes := runtime.call_javascript_function(installer, C.JSValueMakeUndefined(runtime.context), [create, operate])!
+	prototypes := runtime.call_javascript_function(installer, C.vox_jsc_JSValueMakeUndefined(runtime.context), [create, operate])!
 	runtime.retain_javascript_value(prototypes)!
 	defer { runtime.release_javascript_value(prototypes); runtime.release_javascript_value(installer) }
 	for index, kind in [ReadableStreamHostKind.stream, .default_reader, .default_controller, .byte_controller, .byob_reader] {
 		mut exception := unsafe { nil }
-		prototype := C.JSObjectGetPropertyAtIndex(runtime.context, prototypes, u32(index), &exception)
+		prototype := C.vox_jsc_JSObjectGetPropertyAtIndex(runtime.context, prototypes, u32(index), &exception)
 		if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 		host.prototypes[kind] = runtime.retain_javascript_value(prototype)!
 	}
@@ -80,14 +80,14 @@ pub fn (runtime &Runtime) native_readable_stream(value voidptr) !&streams.Readab
 
 fn (host &ReadableStreamHost) argument(args []voidptr, index int) voidptr {
 	if index < args.len { return args[index] }
-	return C.JSValueMakeUndefined(host.runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 }
 
 fn (host &ReadableStreamHost) property(object voidptr, name string) !voidptr {
 	key := js_source_string(name)
 	defer { C.JSStringRelease(key) }
 	mut exception := unsafe { nil }
-	value := C.JSObjectGetProperty(host.runtime.context, object, key, &exception)
+	value := C.vox_jsc_JSObjectGetProperty(host.runtime.context, object, key, &exception)
 	if exception != unsafe { nil } { return host.runtime.actual_javascript_exception(exception) }
 	return value
 }
@@ -221,14 +221,14 @@ fn (mut host ReadableStreamHost) value(value webidl.Value) !voidptr {
 	context := host.runtime.context
 	match value.kind {
 		.runtime_value { return host.runtime.actual_webidl_value(value) }
-		.undefined { return C.JSValueMakeUndefined(context) }
-		.null_ { return C.JSValueMakeNull(context) }
-		.boolean { return C.JSValueMakeBoolean(context, value.boolean_value) }
-		.number { return C.JSValueMakeNumber(context, value.number_value) }
+		.undefined { return C.vox_jsc_JSValueMakeUndefined(context) }
+		.null_ { return C.vox_jsc_JSValueMakeNull(context) }
+		.boolean { return C.vox_jsc_JSValueMakeBoolean(context, value.boolean_value) }
+		.number { return C.vox_jsc_JSValueMakeNumber(context, value.number_value) }
 		.string_ {
 			text := js_source_string(value.string_value)
 			defer { C.JSStringRelease(text) }
-			return C.JSValueMakeString(context, text)
+			return C.vox_jsc_JSValueMakeString(context, text)
 		}
 		.object {
 			object := C.JSObjectMake(context, unsafe { nil }, unsafe { nil })
@@ -236,7 +236,7 @@ fn (mut host ReadableStreamHost) value(value webidl.Value) !voidptr {
 				actual := host.value(property)!
 				key := js_source_string(name)
 				mut exception := unsafe { nil }
-				C.JSObjectSetProperty(context, object, key, actual, 0, &exception)
+				C.vox_jsc_JSObjectSetProperty(context, object, key, actual, 0, &exception)
 				C.JSStringRelease(key)
 				if exception != unsafe { nil } { return host.runtime.actual_javascript_exception(exception) }
 			}
@@ -252,9 +252,9 @@ fn (mut host ReadableStreamHost) value(value webidl.Value) !voidptr {
 			if buffer.kind != .uint8_array { return error('Native readable result requires an unsigned-byte view') }
 			bytes := webidl.get_buffer_source_copy(buffer)
 			mut exception := unsafe { nil }
-			object := C.JSObjectMakeTypedArray(context, C.kJSTypedArrayTypeUint8Array, uint(bytes.len), &exception)
+			object := C.vox_jsc_JSObjectMakeTypedArray(context, C.kJSTypedArrayTypeUint8Array, uint(bytes.len), &exception)
 			if exception != unsafe { nil } { return host.runtime.actual_javascript_exception(exception) }
-			data := C.JSObjectGetTypedArrayBytesPtr(context, object, &exception)
+			data := C.vox_jsc_JSObjectGetTypedArrayBytesPtr(context, object, &exception)
 			if exception != unsafe { nil } { return host.runtime.actual_javascript_exception(exception) }
 			if bytes.len > 0 { unsafe { vmemcpy(data, bytes.data, bytes.len) } }
 			return object
@@ -284,7 +284,7 @@ fn (mut host ReadableStreamHost) operate(args []voidptr) !voidptr {
 		record := host.record(object, .stream)!
 		mut stream := unsafe { &streams.ReadableStream(record.native) }
 		match operation {
-			'stream.locked' { return C.JSValueMakeBoolean(host.runtime.context, stream.locked()) }
+			'stream.locked' { return C.vox_jsc_JSValueMakeBoolean(host.runtime.context, stream.locked()) }
 			'stream.cancel' { return host.promise(stream.cancel(streams.runtime_value(host.runtime.webidl_value(argument)!)).as_webidl_promise()) }
 			'stream.pipeTo', 'stream.pipeThrough' { return host.pipe_operation(mut stream, operation, argument, host.argument(args, 3)) }
 			'stream.getReader', 'stream.readerConstructor' {
@@ -313,7 +313,7 @@ fn (mut host ReadableStreamHost) operate(args []voidptr) !voidptr {
 			'reader.closed' { return host.promise(reader.closed().as_webidl_promise()) }
 			'reader.read' { return host.promise(reader.read().as_webidl_promise()) }
 			'reader.cancel' { return host.promise(reader.cancel(streams.runtime_value(host.runtime.webidl_value(argument)!)).as_webidl_promise()) }
-			'reader.releaseLock' { reader.release_lock()!; return C.JSValueMakeUndefined(host.runtime.context) }
+			'reader.releaseLock' { reader.release_lock()!; return C.vox_jsc_JSValueMakeUndefined(host.runtime.context) }
 			else {}
 		}
 	}
@@ -321,10 +321,10 @@ fn (mut host ReadableStreamHost) operate(args []voidptr) !voidptr {
 		record := host.record(object, .default_controller)!
 		mut controller := unsafe { &streams.ReadableStreamDefaultController(record.native) }
 		match operation {
-			'controller.desiredSize' { if size := controller.desired_size() { return C.JSValueMakeNumber(host.runtime.context, size) }; return C.JSValueMakeNull(host.runtime.context) }
-			'controller.close' { controller.close()!; return C.JSValueMakeUndefined(host.runtime.context) }
-			'controller.enqueue' { controller.enqueue(streams.runtime_value(host.runtime.webidl_value(argument)!))!; return C.JSValueMakeUndefined(host.runtime.context) }
-			'controller.error' { streams.readable_stream_default_controller_error(mut controller, streams.runtime_value(host.runtime.webidl_value(argument)!)); return C.JSValueMakeUndefined(host.runtime.context) }
+			'controller.desiredSize' { if size := controller.desired_size() { return C.vox_jsc_JSValueMakeNumber(host.runtime.context, size) }; return C.vox_jsc_JSValueMakeNull(host.runtime.context) }
+			'controller.close' { controller.close()!; return C.vox_jsc_JSValueMakeUndefined(host.runtime.context) }
+			'controller.enqueue' { controller.enqueue(streams.runtime_value(host.runtime.webidl_value(argument)!))!; return C.vox_jsc_JSValueMakeUndefined(host.runtime.context) }
+			'controller.error' { streams.readable_stream_default_controller_error(mut controller, streams.runtime_value(host.runtime.webidl_value(argument)!)); return C.vox_jsc_JSValueMakeUndefined(host.runtime.context) }
 			else {}
 		}
 	}
@@ -332,9 +332,9 @@ fn (mut host ReadableStreamHost) operate(args []voidptr) !voidptr {
 		record := host.record(object, .byte_controller)!
 		mut controller := unsafe { &streams.ReadableByteStreamController(record.native) }
 		match operation {
-			'byteController.desiredSize' { if size := controller.desired_size() { return C.JSValueMakeNumber(host.runtime.context, size) }; return C.JSValueMakeNull(host.runtime.context) }
-			'byteController.close' { controller.close()!; return C.JSValueMakeUndefined(host.runtime.context) }
-			'byteController.error' { streams.readable_byte_stream_controller_error(mut controller, streams.runtime_value(host.runtime.webidl_value(argument)!)); return C.JSValueMakeUndefined(host.runtime.context) }
+			'byteController.desiredSize' { if size := controller.desired_size() { return C.vox_jsc_JSValueMakeNumber(host.runtime.context, size) }; return C.vox_jsc_JSValueMakeNull(host.runtime.context) }
+			'byteController.close' { controller.close()!; return C.vox_jsc_JSValueMakeUndefined(host.runtime.context) }
+			'byteController.error' { streams.readable_byte_stream_controller_error(mut controller, streams.runtime_value(host.runtime.webidl_value(argument)!)); return C.vox_jsc_JSValueMakeUndefined(host.runtime.context) }
 			else {}
 		}
 	}

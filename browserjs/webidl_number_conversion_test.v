@@ -28,7 +28,7 @@ fn test_actual_engine_to_number_preserves_primitive_hooks_and_original_exception
 	wrapped := runtime.webidl_value(throwing)!
 	runtime.define_value_host_function('__convertActualNumber', fn [runtime, wrapped] (_ voidptr, _ []voidptr) !voidptr {
 		webidl.value_to_number(wrapped)!
-		return C.JSValueMakeUndefined(runtime.context)
+		return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 	})!
 	assert runtime.evaluate_host('let caught;try{__convertActualNumber()}catch(error){caught=error}caught===numberReason')! == 'true'
 	runtime.evaluate_host('globalThis.Number=()=>{throw "author Number"}')!

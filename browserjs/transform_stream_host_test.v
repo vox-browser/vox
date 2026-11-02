@@ -28,7 +28,7 @@ fn test_native_transform_prepares_real_components_before_pending_start_transform
 		readable_host := host.runtime.readable_stream_host() or { panic('missing owning readable binding') }
 		assert voidptr(native.readable()) in readable_host.records
 		assert voidptr(native.writable()) in host.writable_host.records
-		return C.JSValueMakeBoolean(host.runtime.context, true)
+		return C.vox_jsc_JSValueMakeBoolean(host.runtime.context, true)
 	})!
 	runtime.evaluate_host(r'
  globalThis.nativeTransformChunk={};nativeTransformChunk.self=nativeTransformChunk;globalThis.nativeFlushChunk=Symbol("flush chunk");globalThis.nativeTransforms=0,nativeTransformWritten=false,nativeTransformRead=false,nativeTransformClosed=false;

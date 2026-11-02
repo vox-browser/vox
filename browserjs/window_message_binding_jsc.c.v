@@ -52,12 +52,12 @@ pub fn (mut runtime Runtime) install_message_event_binding() ! {
 	values := runtime.retain_javascript_value(runtime.call_javascript_function(factory, global, [
 		operation,
 		global,
-		C.JSValueMakeBoolean(runtime.context, window_messaging),
+		C.vox_jsc_JSValueMakeBoolean(runtime.context, window_messaging),
 	])!)!
 	defer { runtime.release_javascript_value(values) }
 	mut exception := unsafe { nil }
-	binding.prototype = runtime.retain_javascript_value(C.JSObjectGetPropertyAtIndex(runtime.context, values, 0, &exception))!
-	binding.validate_ports = runtime.retain_javascript_value(C.JSObjectGetPropertyAtIndex(runtime.context, values, 1, &exception))!
+	binding.prototype = runtime.retain_javascript_value(C.vox_jsc_JSObjectGetPropertyAtIndex(runtime.context, values, 0, &exception))!
+	binding.validate_ports = runtime.retain_javascript_value(C.vox_jsc_JSObjectGetPropertyAtIndex(runtime.context, values, 1, &exception))!
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	runtime.install_event_wrapper_provider(EventWrapperProvider{
 		owner:  voidptr(binding)
@@ -65,7 +65,7 @@ pub fn (mut runtime Runtime) install_message_event_binding() ! {
 			if event.interface_ != .message_event { return unsafe { nil } }
 			mut runtime := unsafe { &Runtime(owner) }
 			events := runtime.event_binding()!
-			return runtime.call_javascript_function(events.factory, C.JSValueMakeUndefined(runtime.context), [
+			return runtime.call_javascript_function(events.factory, C.vox_jsc_JSValueMakeUndefined(runtime.context), [
 				runtime.binding_string('event'),
 				binding.prototype,
 			])
@@ -108,7 +108,7 @@ fn (mut runtime Runtime) window_message_operation(mut binding WindowMessageBindi
 	if method == 'string' { return runtime.binding_string(runtime.binding_dom_string(args[2])!) }
 	if method in ['windowBrand', 'post'] {
 		mut window := runtime.message_window(receiver)!
-		if method == 'windowBrand' { return C.JSValueMakeUndefined(runtime.context) }
+		if method == 'windowBrand' { return C.vox_jsc_JSValueMakeUndefined(runtime.context) }
 		settings := runtime.scripting_settings_ or { return error('postMessage requires sender settings') }
 		origin := runtime.binding_dom_string(args[3])!
 		_ = html.window_post_message_target_origin(settings.origin(), origin)!
@@ -123,7 +123,7 @@ fn (mut runtime Runtime) window_message_operation(mut binding WindowMessageBindi
 			target_origin: origin
 			source:        sender.window().dom_proxy()
 		})!
-		return C.JSValueMakeUndefined(runtime.context)
+		return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 	}
 	if method == 'construct' {
 		type_ := runtime.binding_dom_string(args[2])!
@@ -134,7 +134,7 @@ fn (mut runtime Runtime) window_message_operation(mut binding WindowMessageBindi
 		composed := runtime.event_binding_bool_property(dictionary, 'composed', false)!
 		data := runtime.ui_event_dictionary_member(dictionary, 'data')!
 		actual_data := if C.JSValueIsUndefined(runtime.context, data) {
-			C.JSValueMakeNull(runtime.context)
+			C.vox_jsc_JSValueMakeNull(runtime.context)
 		} else {
 			data
 		}
@@ -153,7 +153,7 @@ fn (mut runtime Runtime) window_message_operation(mut binding WindowMessageBindi
 		ports := runtime.ui_event_dictionary_member(dictionary, 'ports')!
 		if !C.JSValueIsUndefined(runtime.context, ports) {
 			// The event factory validates the real iterable, without fabricating ports.
-			runtime.call_javascript_function(binding.validate_ports, C.JSValueMakeUndefined(runtime.context), [ports])!
+			runtime.call_javascript_function(binding.validate_ports, C.vox_jsc_JSValueMakeUndefined(runtime.context), [ports])!
 		}
 		source := runtime.message_source(runtime.ui_event_dictionary_member(dictionary, 'source')!)!
 		mut event := html.MessageEvent.construct_impl(type_, html.MessageEventInit{
@@ -165,7 +165,7 @@ fn (mut runtime Runtime) window_message_operation(mut binding WindowMessageBindi
 		})!
 		runtime.bind_event(receiver, unsafe { &dom.Event(event) })!
 		binding.data[voidptr(event)] = runtime.retain_javascript_value(actual_data)!
-		return C.JSValueMakeUndefined(runtime.context)
+		return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 	}
 	event := runtime.native_event(receiver)!
 	if event.interface_ != .message_event {
@@ -173,7 +173,7 @@ fn (mut runtime Runtime) window_message_operation(mut binding WindowMessageBindi
 	}
 	mut message := unsafe { &html.MessageEvent(event) }
 	match method {
-		'eventBrand' { return C.JSValueMakeUndefined(runtime.context) }
+		'eventBrand' { return C.vox_jsc_JSValueMakeUndefined(runtime.context) }
 		'data' {
 			if value := binding.data[voidptr(event)] { return value }
 			mut projection := NativeCloneProjection{ bridge: binding.clone }
@@ -187,23 +187,23 @@ fn (mut runtime Runtime) window_message_operation(mut binding WindowMessageBindi
 		'source' {
 			if source := message.source() {
 				if source is html.WindowMessageEventSource {
-					window := source.value.window() or { return C.JSValueMakeNull(runtime.context) }
+					window := source.value.window() or { return C.vox_jsc_JSValueMakeNull(runtime.context) }
 					return runtime.javascript_event_target(unsafe { &dom.EventTarget(window) }, none)
 				}
 				return error('MessagePort has no native wrapper')
 			}
-			return C.JSValueMakeNull(runtime.context)
+			return C.vox_jsc_JSValueMakeNull(runtime.context)
 		}
 		'ports' {
 			if message.ports().len > 0 { return error('MessagePort has no native wrapper') }
-			return C.JSObjectMakeArray(runtime.context, 0, unsafe { nil }, unsafe { nil })
+			return C.vox_jsc_JSObjectMakeArray(runtime.context, 0, unsafe { nil }, unsafe { nil })
 		}
 		'init' {
 			type_ := runtime.binding_dom_string(args[2])!
 			origin := runtime.binding_dom_string(args[6])!
 			last_id := runtime.binding_dom_string(args[7])!
 			source := runtime.message_source(args[8])!
-			runtime.call_javascript_function(binding.validate_ports, C.JSValueMakeUndefined(runtime.context), [args[9]])!
+			runtime.call_javascript_function(binding.validate_ports, C.vox_jsc_JSValueMakeUndefined(runtime.context), [args[9]])!
 			if !event.dispatched() {
 				data := runtime.event_callback_result(args[5])!
 				message.init_message_event(type_, C.JSValueToBoolean(runtime.context, args[3]), C.JSValueToBoolean(runtime.context, args[4]), data, origin, last_id, source.value, [])
@@ -215,5 +215,5 @@ fn (mut runtime Runtime) window_message_operation(mut binding WindowMessageBindi
 		}
 		else { return error('Unknown Window messaging operation') }
 	}
-	return C.JSValueMakeUndefined(runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 }

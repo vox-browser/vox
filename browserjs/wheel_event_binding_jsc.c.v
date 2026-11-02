@@ -30,7 +30,7 @@ fn (mut runtime Runtime) install_wheel_event_binding() ! {
 	mut call_arguments := [binding.mouse_event_constructor, C.JSContextGetGlobalObject(runtime.context)]
 	call_arguments << functions
 	binding.wheel_event_prototype = runtime.retain_javascript_value(runtime.call_javascript_function(factory,
-		C.JSValueMakeUndefined(runtime.context), call_arguments)!)!
+		C.vox_jsc_JSValueMakeUndefined(runtime.context), call_arguments)!)!
 }
 
 fn (mut runtime Runtime) wheel_event_double_member(dictionary voidptr, name string) !f64 {
@@ -79,7 +79,7 @@ fn (mut runtime Runtime) wheel_event_binding_call(method string, receiver voidpt
 			}))
 		}
 		runtime.bind_event(receiver, unsafe { &dom.Event(event) })!
-		return C.JSValueMakeUndefined(context)
+		return C.vox_jsc_JSValueMakeUndefined(context)
 	}
 	event := runtime.native_event(receiver)!
 	if event.interface_ != .wheel_event {
@@ -89,13 +89,13 @@ fn (mut runtime Runtime) wheel_event_binding_call(method string, receiver voidpt
 	if method == 'get' {
 		name := runtime.binding_dom_string(args[0])!
 		return match name {
-			'deltaX' { C.JSValueMakeNumber(context, wheel.delta_x()) }
-			'deltaY' { C.JSValueMakeNumber(context, wheel.delta_y()) }
-			'deltaZ' { C.JSValueMakeNumber(context, wheel.delta_z()) }
-			'deltaMode' { C.JSValueMakeNumber(context, wheel.delta_mode()) }
-			'wheelDeltaX' { C.JSValueMakeNumber(context, wheel.wheel_delta_x()) }
-			'wheelDeltaY' { C.JSValueMakeNumber(context, wheel.wheel_delta_y()) }
-			'wheelDelta' { C.JSValueMakeNumber(context, wheel.wheel_delta()) }
+			'deltaX' { C.vox_jsc_JSValueMakeNumber(context, wheel.delta_x()) }
+			'deltaY' { C.vox_jsc_JSValueMakeNumber(context, wheel.delta_y()) }
+			'deltaZ' { C.vox_jsc_JSValueMakeNumber(context, wheel.delta_z()) }
+			'deltaMode' { C.vox_jsc_JSValueMakeNumber(context, wheel.delta_mode()) }
+			'wheelDeltaX' { C.vox_jsc_JSValueMakeNumber(context, wheel.wheel_delta_x()) }
+			'wheelDeltaY' { C.vox_jsc_JSValueMakeNumber(context, wheel.wheel_delta_y()) }
+			'wheelDelta' { C.vox_jsc_JSValueMakeNumber(context, wheel.wheel_delta()) }
 			else { return runtime.event_binding_type_error('Unknown WheelEvent attribute') }
 		}
 	}

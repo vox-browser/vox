@@ -12,7 +12,7 @@ import webidl
 
 fn C.JSValueIsBoolean(context voidptr, value voidptr) bool
 fn C.JSValueIsNumber(context voidptr, value voidptr) bool
-fn C.JSValueToNumber(context voidptr, value voidptr, exception &voidptr) f64
+fn C.vox_jsc_JSValueToNumber(context voidptr, value voidptr, exception &voidptr) f64
 
 pub struct EventWrapperProvider {
 pub:
@@ -220,9 +220,9 @@ pub fn (mut runtime Runtime) javascript_event_target(target &dom.EventTarget, pr
 		return wrapper
 	}
 	wrapper := runtime.call_javascript_function(binding.factory,
-		C.JSValueMakeUndefined(runtime.context), [
+		C.vox_jsc_JSValueMakeUndefined(runtime.context), [
 		runtime.binding_string('target'),
-		prototype or { C.JSValueMakeNull(runtime.context) },
+		prototype or { C.vox_jsc_JSValueMakeNull(runtime.context) },
 	])!
 	runtime.bind_event_target(wrapper, target)!
 	return wrapper
@@ -253,7 +253,7 @@ pub fn (mut runtime Runtime) bind_event(wrapper voidptr, event &dom.Event) ! {
 		return
 	}
 	runtime.retain_javascript_value(wrapper)!
-	runtime.call_javascript_function(binding.define_trusted, C.JSValueMakeUndefined(runtime.context), [wrapper])!
+	runtime.call_javascript_function(binding.define_trusted, C.vox_jsc_JSValueMakeUndefined(runtime.context), [wrapper])!
 	binding.events[wrapper] = event
 	binding.event_wrappers[voidptr(event)] = wrapper
 }
@@ -274,7 +274,7 @@ pub fn (mut runtime Runtime) javascript_event(event &dom.Event) !voidptr {
 			return wrapper
 		}
 	}
-	mut prototype := C.JSValueMakeNull(runtime.context)
+	mut prototype := C.vox_jsc_JSValueMakeNull(runtime.context)
 	if binding.pointer_event_prototype != unsafe { nil } && event.interface_ == .pointer_event {
 		prototype = binding.pointer_event_prototype
 	} else if binding.wheel_event_prototype != unsafe { nil } && event.interface_ == .wheel_event {
@@ -291,7 +291,7 @@ pub fn (mut runtime Runtime) javascript_event(event &dom.Event) !voidptr {
 		prototype = binding.ui_event_prototype
 	}
 	wrapper := runtime.call_javascript_function(binding.factory,
-		C.JSValueMakeUndefined(runtime.context), [
+		C.vox_jsc_JSValueMakeUndefined(runtime.context), [
 		runtime.binding_string(if event.interface_ == .before_unload_event {
 			'beforeunload'
 		} else {
@@ -433,7 +433,7 @@ fn (mut runtime Runtime) event_callback_with_settings(value voidptr, handler boo
 
 fn (mut runtime Runtime) invoke_event_callback(value voidptr, handler bool, event &dom.Event, current_target ?&dom.EventTarget) !dom.JSValue {
 	mut function := unsafe { value }
-	mut receiver := C.JSValueMakeUndefined(runtime.context)
+	mut receiver := C.vox_jsc_JSValueMakeUndefined(runtime.context)
 	if C.JSObjectIsFunction(runtime.context, value) {
 		if target := current_target { receiver = runtime.javascript_event_target(target, none)! }
 	} else {
@@ -450,8 +450,8 @@ fn (mut runtime Runtime) invoke_event_callback(value voidptr, handler bool, even
 		call_arguments = [
 			runtime.binding_string(error_event.message()),
 			runtime.binding_string(error_event.filename()),
-			C.JSValueMakeNumber(runtime.context, error_event.lineno()),
-			C.JSValueMakeNumber(runtime.context, error_event.colno()),
+			C.vox_jsc_JSValueMakeNumber(runtime.context, error_event.lineno()),
+			C.vox_jsc_JSValueMakeNumber(runtime.context, error_event.colno()),
 			runtime.event_callback_argument(error_event.error())!,
 		]
 	} else {
@@ -465,10 +465,10 @@ fn (mut runtime Runtime) event_callback_argument(value dom.JSValue) !voidptr {
 	native := value.as_webidl_value()!
 	if native.dom_exception_ != none { return runtime.javascript_dom_exception(native) }
 	return match native.kind {
-		.undefined { C.JSValueMakeUndefined(runtime.context) }
-		.null_ { C.JSValueMakeNull(runtime.context) }
-		.boolean { C.JSValueMakeBoolean(runtime.context, native.boolean_value) }
-		.number { C.JSValueMakeNumber(runtime.context, native.number_value) }
+		.undefined { C.vox_jsc_JSValueMakeUndefined(runtime.context) }
+		.null_ { C.vox_jsc_JSValueMakeNull(runtime.context) }
+		.boolean { C.vox_jsc_JSValueMakeBoolean(runtime.context, native.boolean_value) }
+		.number { C.vox_jsc_JSValueMakeNumber(runtime.context, native.number_value) }
 		.string_ { runtime.binding_string(native.string_value) }
 		.runtime_value { runtime.actual_webidl_value(native)! }
 		else { return error('Event value has no owning JavaScript object') }
@@ -478,7 +478,7 @@ fn (mut runtime Runtime) event_callback_argument(value dom.JSValue) !voidptr {
 pub fn (runtime &Runtime) javascript_event_handler(target &dom.EventTarget, name string) !voidptr {
 	binding := runtime.event_binding()!
 	callback := target.event_handler_attribute(name) or {
-		return C.JSValueMakeNull(runtime.context)
+		return C.vox_jsc_JSValueMakeNull(runtime.context)
 	}
 	return binding.callbacks[voidptr(callback)] or {
 		return runtime.event_binding_type_error('Event handler has no owning JavaScript callback')
@@ -499,7 +499,7 @@ fn (mut runtime Runtime) event_binding_call(method string, receiver voidptr, arg
 	if method == 'constructTarget' {
 		target := dom.EventTarget.construct_impl()!
 		runtime.bind_event_target(receiver, target)!
-		return C.JSValueMakeUndefined(context)
+		return C.vox_jsc_JSValueMakeUndefined(context)
 	}
 	if method == 'constructEvent' {
 		type_ := runtime.binding_dom_string(args[0])!
@@ -516,7 +516,7 @@ fn (mut runtime Runtime) event_binding_call(method string, receiver voidptr, arg
 			}))
 		}
 		runtime.bind_event(receiver, event)!
-		return C.JSValueMakeUndefined(context)
+		return C.vox_jsc_JSValueMakeUndefined(context)
 	}
 	if method in ['add', 'remove', 'dispatch'] {
 		target := runtime.native_event_target(receiver)!
@@ -530,7 +530,7 @@ fn (mut runtime Runtime) event_binding_call(method string, receiver voidptr, arg
 				}
 				return err
 			}
-			return C.JSValueMakeBoolean(context, result)
+			return C.vox_jsc_JSValueMakeBoolean(context, result)
 		}
 		type_ := runtime.binding_dom_string(args[0])!
 		callback := runtime.event_callback(args[1], false)!
@@ -544,7 +544,7 @@ fn (mut runtime Runtime) event_binding_call(method string, receiver voidptr, arg
 				capture: options.capture
 			})
 		}
-		return C.JSValueMakeUndefined(context)
+		return C.vox_jsc_JSValueMakeUndefined(context)
 	}
 	mut event := runtime.native_event(receiver)!
 	if method in ['getBeforeUnloadReturnValue', 'setBeforeUnloadReturnValue'] {
@@ -556,7 +556,7 @@ fn (mut runtime Runtime) event_binding_call(method string, receiver voidptr, arg
 			return runtime.binding_string(before_unload.return_value())
 		}
 		before_unload.set_return_value(runtime.binding_dom_string(args[0])!)
-		return C.JSValueMakeUndefined(context)
+		return C.vox_jsc_JSValueMakeUndefined(context)
 	}
 	if method == 'getEvent' {
 		property := runtime.binding_dom_string(args[0])!
@@ -577,35 +577,35 @@ fn (mut runtime Runtime) event_binding_call(method string, receiver voidptr, arg
 				if native := target {
 					runtime.javascript_event_target(native, none)!
 				} else {
-					C.JSValueMakeNull(context)
+					C.vox_jsc_JSValueMakeNull(context)
 				}
 			}
 			'eventPhase' {
-				C.JSValueMakeNumber(context, event.event_phase())
+				C.vox_jsc_JSValueMakeNumber(context, event.event_phase())
 			}
 			'timeStamp' {
-				C.JSValueMakeNumber(context, event.time_stamp())
+				C.vox_jsc_JSValueMakeNumber(context, event.time_stamp())
 			}
 			'bubbles' {
-				C.JSValueMakeBoolean(context, event.bubbles())
+				C.vox_jsc_JSValueMakeBoolean(context, event.bubbles())
 			}
 			'cancelable' {
-				C.JSValueMakeBoolean(context, event.cancelable())
+				C.vox_jsc_JSValueMakeBoolean(context, event.cancelable())
 			}
 			'composed' {
-				C.JSValueMakeBoolean(context, event.composed())
+				C.vox_jsc_JSValueMakeBoolean(context, event.composed())
 			}
 			'isTrusted' {
-				C.JSValueMakeBoolean(context, event.is_trusted())
+				C.vox_jsc_JSValueMakeBoolean(context, event.is_trusted())
 			}
 			'defaultPrevented' {
-				C.JSValueMakeBoolean(context, event.default_prevented())
+				C.vox_jsc_JSValueMakeBoolean(context, event.default_prevented())
 			}
 			'cancelBubble' {
-				C.JSValueMakeBoolean(context, event.cancel_bubble())
+				C.vox_jsc_JSValueMakeBoolean(context, event.cancel_bubble())
 			}
 			'returnValue' {
-				C.JSValueMakeBoolean(context, event.return_value())
+				C.vox_jsc_JSValueMakeBoolean(context, event.return_value())
 			}
 			else {
 				return runtime.event_binding_type_error('Unknown Event attribute')
@@ -643,7 +643,7 @@ fn (mut runtime Runtime) event_binding_call(method string, receiver voidptr, arg
 				values << runtime.javascript_event_target(target, none)!
 			}
 			mut exception := unsafe { nil }
-			array := C.JSObjectMakeArray(context, uint(values.len), values.data, &exception)
+			array := C.vox_jsc_JSObjectMakeArray(context, uint(values.len), values.data, &exception)
 			if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 			return array
 		}
@@ -652,5 +652,5 @@ fn (mut runtime Runtime) event_binding_call(method string, receiver voidptr, arg
 		}
 	}
 
-	return C.JSValueMakeUndefined(context)
+	return C.vox_jsc_JSValueMakeUndefined(context)
 }

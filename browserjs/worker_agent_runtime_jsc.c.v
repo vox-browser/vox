@@ -7,7 +7,7 @@ import fetch
 import html
 import platform
 
-fn C.JSCheckScriptSyntax(voidptr, voidptr, voidptr, i32, &voidptr) bool
+fn C.vox_jsc_JSCheckScriptSyntax(voidptr, voidptr, voidptr, i32, &voidptr) bool
 
 pub enum WorkerAgentState {
 	prepared
@@ -163,7 +163,7 @@ pub fn (mut agent WorkerAgentRuntime) load_entry() ! {
 	filename := js_source_string(script.filename())
 	defer { C.JSStringRelease(source); C.JSStringRelease(filename) }
 	mut exception := unsafe { nil }
-	if !C.JSCheckScriptSyntax(agent.runtime.context, source, filename, 1, &exception) {
+	if !C.vox_jsc_JSCheckScriptSyntax(agent.runtime.context, source, filename, 1, &exception) {
 		return error('SyntaxError: worker entry script could not be parsed')
 	}
 	script.set_evaluator(agent.scripts.evaluator or { return error('Missing worker script evaluator') })

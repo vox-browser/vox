@@ -45,7 +45,7 @@ fn test_browser_realm_attachment_pops_initial_context_and_cleans_up_after_real_a
 		owner.evaluate_host('globalThis.nestedHostEntry=true')!
 		assert seen.values.len == previous_jobs
 		assert vm.execution_context_stack().len == 2
-		return C.JSValueMakeUndefined(owner.context)
+		return C.vox_jsc_JSValueMakeUndefined(owner.context)
 	})!
 	runtime.evaluate('__sourceScriptContext();')!
 	assert seen.values == ['source job']

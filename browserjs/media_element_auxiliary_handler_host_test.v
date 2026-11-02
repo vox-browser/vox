@@ -32,7 +32,7 @@ fn auxiliary_media_handler_fixture(replay ?MediaElementReplayHook) !(&Runtime, &
 	handle := voidptr(runtime)
 	runtime.define_value_host_function('__auxiliaryMediaHandlerContext', fn [handle, settings] (_ voidptr, _ []voidptr) !voidptr {
 		runtime := unsafe { &Runtime(handle) }
-		return C.JSValueMakeBoolean(runtime.context, settings.realm().script_execution_depth > 0
+		return C.vox_jsc_JSValueMakeBoolean(runtime.context, settings.realm().script_execution_depth > 0
 			&& settings.realm().callback_execution_depth > 0)
 	})!
 	video_element := document.get_element_by_id('video') or {

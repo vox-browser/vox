@@ -3,7 +3,7 @@ module browserjs
 import dom
 
 
-fn C.JSValueMakeUndefined(context voidptr) voidptr
+fn C.vox_jsc_JSValueMakeUndefined(context voidptr) voidptr
 
 pub fn (mut host ElementWheelHost) install(mut runtime Runtime) ! {
 	runtime.require_javascript_value_context()!
@@ -45,7 +45,7 @@ pub fn (mut host ElementWheelHost) install(mut runtime Runtime) ! {
 		}
 		mut value := voidptr(0)
 		if args.len == 0 {
-			value = C.JSValueMakeUndefined(host.runtime.context)
+			value = C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 		} else {
 			value = args[0]
 		}
@@ -58,11 +58,11 @@ pub fn (mut host ElementWheelHost) install(mut runtime Runtime) ! {
 		} else {
 			?&dom.CallbackType(none)
 		})
-		return C.JSValueMakeUndefined(host.runtime.context)
+		return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 	})!
 	factory := runtime.evaluate_host_value(element_wheel_host_bootstrap)!
 	defer { runtime.release_javascript_value(factory) }
-	runtime.call_javascript_function(factory, C.JSValueMakeUndefined(runtime.context), [
+	runtime.call_javascript_function(factory, C.vox_jsc_JSValueMakeUndefined(runtime.context), [
 		bind,
 		type_,
 		set_resolver,
@@ -146,7 +146,7 @@ fn (mut host ElementWheelHost) bind_wheel_element(args []voidptr) !voidptr {
 		host.runtime.bind_event_target(wrapper, unsafe { &dom.EventTarget(element) })!
 	}
 	host.records[wrapper] = element
-	return C.JSValueMakeBoolean(host.runtime.context, element_exposes_wheel_handler(element))
+	return C.vox_jsc_JSValueMakeBoolean(host.runtime.context, element_exposes_wheel_handler(element))
 }
 
 fn (mut host ElementWheelHost) set_wheel_element_resolver(args []voidptr) !voidptr {
@@ -158,7 +158,7 @@ fn (mut host ElementWheelHost) set_wheel_element_resolver(args []voidptr) !voidp
 		return error('TypeError: Element wrapper resolver is already installed')
 	}
 	host.resolver = host.runtime.retain_javascript_value(args[0])!
-	return C.JSValueMakeUndefined(host.runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 }
 
 fn (mut host ElementWheelHost) resolve_wheel_element_wrapper(target &dom.EventTarget) !voidptr {
@@ -168,7 +168,7 @@ fn (mut host ElementWheelHost) resolve_wheel_element_wrapper(target &dom.EventTa
 		if voidptr(element) != voidptr(target) { continue
 		 }
 		wrapper := host.runtime.call_javascript_function(host.resolver,
-			C.JSValueMakeUndefined(host.runtime.context), [host.runtime.binding_string(key)])!
+			C.vox_jsc_JSValueMakeUndefined(host.runtime.context), [host.runtime.binding_string(key)])!
 		if C.JSValueIsNull(host.runtime.context, wrapper)
 			|| C.JSValueIsUndefined(host.runtime.context, wrapper) {
 			return unsafe { nil }

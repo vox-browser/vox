@@ -15,7 +15,7 @@ fn (host &CryptoHost) algorithm_dictionary(value voidptr, is_object bool) !voidp
 	dictionary := C.JSObjectMake(runtime.context, unsafe { nil }, unsafe { nil })
 	runtime.retain_javascript_value(dictionary)!
 	defer { runtime.release_javascript_value(dictionary) }
-	runtime.call_javascript_function(host.define_data, C.JSValueMakeUndefined(runtime.context), [
+	runtime.call_javascript_function(host.define_data, C.vox_jsc_JSValueMakeUndefined(runtime.context), [
 		dictionary,
 		runtime.binding_string('name'),
 		value,

@@ -91,13 +91,13 @@ fn (mut runtime Runtime) intersection_observer_entries(mut binding IntersectionO
 			values << wrapper
 			continue
 		}
-		wrapper := runtime.retain_javascript_value(runtime.call_javascript_function(binding.make, C.JSValueMakeUndefined(runtime.context), [C.JSValueMakeNumber(runtime.context, 0)])!)!
+		wrapper := runtime.retain_javascript_value(runtime.call_javascript_function(binding.make, C.vox_jsc_JSValueMakeUndefined(runtime.context), [C.vox_jsc_JSValueMakeNumber(runtime.context, 0)])!)!
 		binding.entries[wrapper] = entry
 		binding.wrappers[voidptr(entry)] = wrapper
 		values << wrapper
 	}
 	mut exception := unsafe { nil }
-	array := C.JSObjectMakeArray(runtime.context, uint(values.len), values.data, &exception)
+	array := C.vox_jsc_JSObjectMakeArray(runtime.context, uint(values.len), values.data, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	return array
 }
@@ -108,17 +108,17 @@ fn (mut runtime Runtime) intersection_observer_operation(mut binding Intersectio
 	}
 	method := runtime.binding_dom_string(args[0])!
 	receiver := args[1]
-	undefined := C.JSValueMakeUndefined(runtime.context)
+	undefined := C.vox_jsc_JSValueMakeUndefined(runtime.context)
 	if method == 'string' { return runtime.binding_string(runtime.binding_dom_string(args[2])!) }
 	if method == 'long' {
-		return C.JSValueMakeNumber(runtime.context, webidl.convert_to_int(runtime.webidl_value(args[2])!, 32, true, .no, .no)!)
+		return C.vox_jsc_JSValueMakeNumber(runtime.context, webidl.convert_to_int(runtime.webidl_value(args[2])!, 32, true, .no, .no)!)
 	}
 	if method == 'double' {
 		number := webidl.value_to_number(runtime.webidl_value(args[2])!)!
 		if math.is_nan(number) || math.is_inf(number, 0) {
 			return runtime.event_binding_type_error('IntersectionObserver threshold must be finite')
 		}
-		return C.JSValueMakeNumber(runtime.context, number)
+		return C.vox_jsc_JSValueMakeNumber(runtime.context, number)
 	}
 	if method == 'rootArgument' {
 		node := runtime.intersection_observer_node(args[2])!
@@ -147,7 +147,7 @@ fn (mut runtime Runtime) intersection_observer_operation(mut binding Intersectio
 		mut thresholds := []f64{cap: length}
 		for index in 0 .. length {
 			mut exception := unsafe { nil }
-			value := C.JSObjectGetPropertyAtIndex(runtime.context, args[6], u32(index), &exception)
+			value := C.vox_jsc_JSObjectGetPropertyAtIndex(runtime.context, args[6], u32(index), &exception)
 			if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 			threshold := webidl.value_to_number(runtime.webidl_value(value)!)!
 			if threshold < 0 || threshold > 1 {
@@ -187,10 +187,10 @@ fn (mut runtime Runtime) intersection_observer_operation(mut binding Intersectio
 		})!
 		binding.observers[receiver] = observer
 		binding.roots[receiver] = runtime.retain_javascript_value(args[3])!
-		values := observer.thresholds().map(C.JSValueMakeNumber(runtime.context, it))
-		array := C.JSObjectMakeArray(runtime.context, uint(values.len), values.data, unsafe { nil })
+		values := observer.thresholds().map(C.vox_jsc_JSValueMakeNumber(runtime.context, it))
+		array := C.vox_jsc_JSObjectMakeArray(runtime.context, uint(values.len), values.data, unsafe { nil })
 		binding.thresholds[receiver] = runtime.retain_javascript_value(runtime.call_javascript_function(binding.make, undefined, [
-			C.JSValueMakeNumber(runtime.context, 1),
+			C.vox_jsc_JSValueMakeNumber(runtime.context, 1),
 			array,
 		])!)!
 		return undefined
@@ -198,12 +198,12 @@ fn (mut runtime Runtime) intersection_observer_operation(mut binding Intersectio
 	if method.starts_with('entry ') {
 		entry := binding.entries[receiver] or { return runtime.event_binding_type_error('Illegal IntersectionObserverEntry receiver') }
 		return match method {
-			'entry time' { C.JSValueMakeNumber(runtime.context, entry.time()) }
+			'entry time' { C.vox_jsc_JSValueMakeNumber(runtime.context, entry.time()) }
 			'entry isIntersecting' {
-				C.JSValueMakeBoolean(runtime.context, entry.is_intersecting())
+				C.vox_jsc_JSValueMakeBoolean(runtime.context, entry.is_intersecting())
 			}
 			'entry intersectionRatio' {
-				C.JSValueMakeNumber(runtime.context, entry.intersection_ratio())
+				C.vox_jsc_JSValueMakeNumber(runtime.context, entry.intersection_ratio())
 			}
 			'entry target' {
 				runtime.javascript_event_target(unsafe { &dom.EventTarget(entry.target()) }, none)!
@@ -212,7 +212,7 @@ fn (mut runtime Runtime) intersection_observer_operation(mut binding Intersectio
 				if bounds := entry.root_bounds() {
 					runtime.javascript_read_only_rect(bounds)!
 				} else {
-					C.JSValueMakeNull(runtime.context)
+					C.vox_jsc_JSValueMakeNull(runtime.context)
 				}
 			}
 			'entry boundingClientRect' {
@@ -244,9 +244,9 @@ fn (mut runtime Runtime) intersection_observer_operation(mut binding Intersectio
 		'rootMargin' { return runtime.binding_string(observer.root_margin()) }
 		'scrollMargin' { return runtime.binding_string(observer.scroll_margin()) }
 		'thresholds' { return binding.thresholds[receiver] or { return error('Missing IntersectionObserver thresholds') } }
-		'delay' { return C.JSValueMakeNumber(runtime.context, f64(observer.delay())) }
+		'delay' { return C.vox_jsc_JSValueMakeNumber(runtime.context, f64(observer.delay())) }
 		'trackVisibility' {
-			return C.JSValueMakeBoolean(runtime.context, observer.track_visibility())
+			return C.vox_jsc_JSValueMakeBoolean(runtime.context, observer.track_visibility())
 		}
 		'observerBrand' {}
 		else { return error('Unknown IntersectionObserver operation') }

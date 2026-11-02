@@ -39,7 +39,7 @@ fn test_actual_engine_to_bigint_i64_preserves_number_hint_and_original_throws() 
 	wrapped := runtime.webidl_value(throwing)!
 	runtime.define_value_host_function('__convertActualBigint', fn [runtime, wrapped] (_ voidptr, _ []voidptr) !voidptr {
 		webidl.value_to_bigint_int64(wrapped)!
-		return C.JSValueMakeUndefined(runtime.context)
+		return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 	})!
 	assert runtime.evaluate_host('let caught;try{__convertActualBigint()}catch(error){caught=error}caught===bigintReason')! == 'true'
 	runtime.evaluate_host('BigInt.asIntN=()=>{throw "author asIntN"};globalThis.BigInt=()=>{throw "author BigInt"};BigInt.prototype={toString(){throw "author toString"}};undefined')!

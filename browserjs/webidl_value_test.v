@@ -53,7 +53,7 @@ fn test_native_webidl_runtime_value_conversion_and_context_ownership_use_actual_
 	throwing_wrapped := runtime.webidl_value(throwing)!
 	runtime.define_value_host_function('__nativeConversionThrows', fn [runtime, throwing_wrapped] (_ voidptr, _ []voidptr) !voidptr {
 		webidl.to_string(throwing_wrapped)!
-		return C.JSValueMakeUndefined(runtime.context)
+		return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 	})!
 	assert runtime.evaluate_host('let caught;try{__nativeConversionThrows()}catch(error){caught=error}caught===conversionReason')! == 'true'
 	if _ := other.actual_webidl_value(wrapped) { assert false } else { assert err.msg().contains('another JavaScriptCore context') }

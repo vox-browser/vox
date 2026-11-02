@@ -14,7 +14,7 @@ $if linux {
 	#pkgconfig javascriptcoregtk-4.1
 }
 #flag linux -lz
-#include <JavaScriptCore/JavaScript.h>
+#include "@DIR/../browserjs/jsc_abi.h"
 #include "@DIR/runtime.h"
 
 fn C.vox_adblock_utf8_string(&u8, uint) voidptr
@@ -24,8 +24,8 @@ fn C.JSGlobalContextCreate(voidptr) voidptr
 fn C.JSGlobalContextRelease(voidptr)
 fn C.JSStringCreateWithCharacters(&u16, uint) voidptr
 fn C.JSStringRelease(voidptr)
-fn C.JSEvaluateScript(voidptr, voidptr, voidptr, voidptr, int, &voidptr) voidptr
-fn C.JSValueToStringCopy(voidptr, voidptr, &voidptr) voidptr
+fn C.vox_jsc_JSEvaluateScript(voidptr, voidptr, voidptr, voidptr, int, &voidptr) voidptr
+fn C.vox_jsc_JSValueToStringCopy(voidptr, voidptr, &voidptr) voidptr
 fn C.JSStringGetMaximumUTF8CStringSize(voidptr) uint
 fn C.JSStringGetUTF8CString(voidptr, &char, uint) uint
 fn C.vox_adblock_lock()
@@ -51,7 +51,7 @@ fn evaluate_context(context voidptr, source string) !string {
 	script := script_string(source)
 	defer { C.JSStringRelease(script) }
 	mut exception := unsafe { nil }
-	value := C.JSEvaluateScript(context, script, unsafe { nil }, unsafe { nil }, 1, &exception)
+	value := C.vox_jsc_JSEvaluateScript(context, script, unsafe { nil }, unsafe { nil }, 1, &exception)
 	if exception != unsafe { nil } {
 		return error('Adblock JavaScriptCore: ${value_string(context, exception)!}')
 	}
@@ -60,7 +60,7 @@ fn evaluate_context(context voidptr, source string) !string {
 
 fn value_string(context voidptr, value voidptr) !string {
 	mut exception := unsafe { nil }
-	js_string := C.JSValueToStringCopy(context, value, &exception)
+	js_string := C.vox_jsc_JSValueToStringCopy(context, value, &exception)
 	if js_string == unsafe { nil } {
 		return error('Adblock result cannot be converted to a string')
 	}

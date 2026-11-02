@@ -72,7 +72,7 @@ fn test_native_forwarding_retains_thrown_values_for_collection_and_rejects_close
 	mut runtime := Runtime.create()
 	callback := runtime.evaluate_host_value('(function(){throw {answer:42}})')!
 	mut retained := unsafe { nil }
-	if _ := runtime.forward_javascript_function(callback, C.JSValueMakeUndefined(runtime.context), []voidptr{}) {
+	if _ := runtime.forward_javascript_function(callback, C.vox_jsc_JSValueMakeUndefined(runtime.context), []voidptr{}) {
 		assert false
 	} else {
 		if err is JavaScriptValueException { retained = err.value } else { assert false }

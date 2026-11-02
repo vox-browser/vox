@@ -83,10 +83,10 @@ fn test_actual_javascript_promise_observation_uses_real_engine_thenable_and_reje
 	value := runtime.evaluate_host_value('globalThis.actualFulfillment={source:"value"};({then(resolve){Promise.resolve().then(()=>resolve(actualFulfillment))}})')!
 	runtime.observe_javascript_promise(value, fn [mut seen, runtime] (_ voidptr, args []voidptr) !voidptr {
 		seen.values << args[0]
-		return C.JSValueMakeUndefined(runtime.context)
+		return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 	}, fn [mut seen, runtime] (_ voidptr, args []voidptr) !voidptr {
 		seen.reasons << args[0]
-		return C.JSValueMakeUndefined(runtime.context)
+		return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 	})!
 	_ = runtime.evaluate_host('0')!
 	assert seen.values.len == 1
@@ -96,10 +96,10 @@ fn test_actual_javascript_promise_observation_uses_real_engine_thenable_and_reje
 	_ = runtime.evaluate_host('Reflect.apply=()=>{throw "overwritten"};Promise.prototype.then=()=>{throw "overwritten"};')!
 	runtime.observe_javascript_promise(throwing, fn [mut seen, runtime] (_ voidptr, args []voidptr) !voidptr {
 		seen.values << args[0]
-		return C.JSValueMakeUndefined(runtime.context)
+		return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 	}, fn [mut seen, runtime] (_ voidptr, args []voidptr) !voidptr {
 		seen.reasons << args[0]
-		return C.JSValueMakeUndefined(runtime.context)
+		return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 	})!
 	_ = runtime.evaluate_host('0')!
 	assert seen.values.len == 1
@@ -115,7 +115,7 @@ fn test_raw_values_remain_rooted_in_actual_gc_and_context_ownership_is_checked()
 	value := runtime.evaluate_host_value('({answer:42})')!
 	C.JSGarbageCollect(runtime.context)
 	callback := runtime.evaluate_host_value('(function(value){return value.answer})')!
-	assert js_string_to_v(runtime.context, runtime.call_javascript_function(callback, C.JSValueMakeUndefined(runtime.context), [value])!)! == '42'
+	assert js_string_to_v(runtime.context, runtime.call_javascript_function(callback, C.vox_jsc_JSValueMakeUndefined(runtime.context), [value])!)! == '42'
 	capability := runtime.create_javascript_promise()!
 	if _ := other.resolve_javascript_promise(capability, value) { assert false } else {
 		assert err.msg().contains('another JavaScriptCore context')
@@ -137,10 +137,10 @@ fn test_actual_javascript_promise_observation_releases_ephemeral_roots_after_set
 	baseline := runtime.protected_values_.len
 	runtime.observe_javascript_promise(pending.promise, fn [mut seen, runtime] (_ voidptr, args []voidptr) !voidptr {
 		seen.values << args[0]
-		return C.JSValueMakeUndefined(runtime.context)
+		return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 	}, fn [mut seen, runtime] (_ voidptr, args []voidptr) !voidptr {
 		seen.reasons << args[0]
-		return C.JSValueMakeUndefined(runtime.context)
+		return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 	})!
 	assert runtime.protected_values_.len == baseline + 5
 	runtime.resolve_javascript_promise(pending, value)!

@@ -32,7 +32,7 @@ fn (mut host MediaElementHost) install_track_elements() ! {
 		})!
 		functions << runtime.make_native_value_host_function('set ${name}', 1, fn [handle, name] (receiver voidptr, args []voidptr) !voidptr {
 			mut host := unsafe { &MediaElementHost(handle) }
-			mut value := C.JSValueMakeUndefined(host.runtime.context)
+			mut value := C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 			if args.len > 0 { value = args[0] }
 			return host.set_track_element_attribute(name, receiver, value) or {
 				return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
@@ -48,7 +48,7 @@ fn (mut host MediaElementHost) install_track_elements() ! {
 		})!
 		functions << runtime.make_native_value_host_function('set on${name}', 1, fn [handle, name] (receiver voidptr, args []voidptr) !voidptr {
 			mut host := unsafe { &MediaElementHost(handle) }
-			mut value := C.JSValueMakeUndefined(host.runtime.context)
+			mut value := C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 			if args.len > 0 { value = args[0] }
 			return host.set_track_element_handler(name, receiver, value) or {
 				return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
@@ -68,7 +68,7 @@ fn (mut host MediaElementHost) install_track_elements() ! {
 })')!
 	defer { runtime.release_javascript_value(factory) }
 	host.track_element_prototype = runtime.retain_javascript_value(runtime.call_javascript_function(factory,
-		C.JSValueMakeUndefined(runtime.context), functions)!)!
+		C.vox_jsc_JSValueMakeUndefined(runtime.context), functions)!)!
 }
 
 fn (mut host MediaElementHost) bind_track_element(args []voidptr) !voidptr {
@@ -94,7 +94,7 @@ fn (mut host MediaElementHost) bind_track_element(args []voidptr) !voidptr {
 	host.runtime.bind_event_target(wrapper, unsafe { &dom.EventTarget(element) })!
 	host.track_elements[wrapper] = unsafe { &dom.HTMLTrackElement(element) }
 	C.JSObjectSetPrototype(host.runtime.context, wrapper, host.track_element_prototype)
-	return C.JSValueMakeUndefined(host.runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 }
 
 fn (mut host MediaElementHost) track_element_value(name string, receiver voidptr) !voidptr {
@@ -104,7 +104,7 @@ fn (mut host MediaElementHost) track_element_value(name string, receiver voidptr
 	// cached DOM owner remains authoritative across movement or adoption.
 	if replay := host.replay { replay(host.runtime)! }
 	model := html.html_track_element_model_for_dom_element(element)
-	if name == 'readyState' { return C.JSValueMakeNumber(host.runtime.context, int(model.ready_state())) }
+	if name == 'readyState' { return C.vox_jsc_JSValueMakeNumber(host.runtime.context, int(model.ready_state())) }
 	return host.wrap_text_track(model.track)
 }
 
@@ -114,7 +114,7 @@ fn (mut host MediaElementHost) track_element_attribute(name string, receiver voi
 	if replay := host.replay { replay(host.runtime)! }
 	// Follow Source's generated qualified-name reads. Writes below target the
 	// null namespace, while boolean removal removes the first qualified match.
-	if name == 'default' { return C.JSValueMakeBoolean(host.runtime.context, element.has_attribute(name)) }
+	if name == 'default' { return C.vox_jsc_JSValueMakeBoolean(host.runtime.context, element.has_attribute(name)) }
 	raw := element.get_attribute(name) or {
 		return host.runtime.binding_string(if name == 'kind' { 'subtitles' } else { '' })
 	}
@@ -144,15 +144,15 @@ fn (mut host MediaElementHost) set_track_element_attribute(name string, receiver
 	if replay := host.replay { replay(host.runtime)! }
 	// Publish first: changing src can synchronously fetch and reenter script.
 	if host.attribute_sync != unsafe { nil } {
-		mut synchronized := C.JSValueMakeBoolean(host.runtime.context, present)
+		mut synchronized := C.vox_jsc_JSValueMakeBoolean(host.runtime.context, present)
 		if !boolean { synchronized = host.runtime.binding_utf16_string(converted)! }
 		host.runtime.call_javascript_function(host.attribute_sync,
-			C.JSValueMakeUndefined(host.runtime.context), [receiver, host.runtime.binding_string(name),
-				synchronized, C.JSValueMakeBoolean(host.runtime.context, boolean)])!
+			C.vox_jsc_JSValueMakeUndefined(host.runtime.context), [receiver, host.runtime.binding_string(name),
+				synchronized, C.vox_jsc_JSValueMakeBoolean(host.runtime.context, boolean)])!
 	}
 	if boolean && !present { element.remove_attribute(name) }
 	else { element.set_attribute_value(name, converted.str()) }
-	return C.JSValueMakeUndefined(host.runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 }
 
 fn (host &MediaElementHost) track_element_text_track(target &dom.EventTarget) ?&html.TextTrack {
@@ -182,5 +182,5 @@ fn (mut host MediaElementHost) set_track_element_handler(name string, receiver v
 	target.set_event_handler_attribute(name, if callback != unsafe { nil } {
 		?&dom.CallbackType(callback)
 	} else { none })
-	return C.JSValueMakeUndefined(host.runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 }

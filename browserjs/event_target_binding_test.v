@@ -49,7 +49,7 @@ fn test_native_event_listener_object_original_throw_and_owner_callback_context()
 		runtime := unsafe { &Runtime(owner) }
 		valid := settings.realm().script_execution_depth > 0
 			&& settings.realm().callback_execution_depth > 0
-		return C.JSValueMakeBoolean(runtime.context, valid)
+		return C.vox_jsc_JSValueMakeBoolean(runtime.context, valid)
 	})!
 	assert runtime.evaluate_host(r'
  const target=new EventTarget();const marker={};globalThis.eventMarker=marker;const event=new Event("callback");
@@ -85,7 +85,7 @@ fn test_native_handler_attribute_false_cancellation_and_closed_runtime_callbacks
 	assert !target.dispatch_event(event)
 	assert event.default_prevented()
 	assert runtime.evaluate_host('handlerThis')! == 'true'
-	runtime.set_javascript_event_handler(target, 'load', C.JSValueMakeNumber(runtime.context, 1))!
+	runtime.set_javascript_event_handler(target, 'load', C.vox_jsc_JSValueMakeNumber(runtime.context, 1))!
 	assert C.JSValueIsNull(runtime.context, runtime.javascript_event_handler(target, 'load')!)
 	runtime.set_javascript_event_handler(target, 'load', function)!
 	runtime.close()

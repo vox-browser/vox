@@ -106,7 +106,7 @@ fn test_native_data_transfer_item_string_callback_queues_raw_utf16_snapshot_with
 			&& settings.realm().callback_execution_depth > 0
 			&& runtime.libjs_vm().has_running_execution_context()
 			&& voidptr(html.incumbent_settings_object()) == voidptr(settings)
-		return C.JSValueMakeBoolean(runtime.context, valid)
+		return C.vox_jsc_JSValueMakeBoolean(runtime.context, valid)
 	})!
 	previous := string_callback_queue_ids()
 	assert runtime.evaluate_host(r'(()=>{
@@ -231,7 +231,7 @@ fn test_native_data_transfer_item_string_callback_callable_proxies_abrupt_result
 	mut observed := &StringCallbackNativeCloseObservation{}
 	closing.define_value_host_function('__stringClosedCallback', fn [mut observed, closing] (_ voidptr, _ []voidptr) !voidptr {
 		observed.calls++
-		return C.JSValueMakeUndefined(closing.context)
+		return C.vox_jsc_JSValueMakeUndefined(closing.context)
 	})!
 	callback := closing.evaluate_host_value('globalThis.stringCloseItem=new DataTransfer().items.add("close","text/plain");globalThis.stringCloseCallback=function(){__stringClosedCallback()};stringCloseCallback')!
 	roots_before := closing.protected_values_.filter(it == callback).len

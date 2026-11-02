@@ -21,7 +21,7 @@ fn (mut host CryptoHost) install_export_key() ! {
 	installer := runtime.evaluate_host_value(r'(function(prototype,operate){Object.defineProperty(prototype,"exportKey",{value:function exportKey(format,key){return arguments.length<2?operate(this):operate(this,format,key)},writable:true,enumerable:true,configurable:true})})')!
 	defer { runtime.release_javascript_value(installer) }
 	prototype := host.prototypes[.subtle] or { return error('SubtleCrypto prototype unavailable') }
-	runtime.call_javascript_function(installer, C.JSValueMakeUndefined(runtime.context), [
+	runtime.call_javascript_function(installer, C.vox_jsc_JSValueMakeUndefined(runtime.context), [
 		prototype,
 		export,
 	])!

@@ -16,7 +16,7 @@ pub fn (mut runtime Runtime) javascript_data_transfer_files(transfer &html.DataT
 
 pub fn (mut runtime Runtime) javascript_data_transfer_item_file(item &html.DataTransferItem) !voidptr {
 	runtime.require_javascript_value_context()!
-	file := item.get_as_file_record() or { return C.JSValueMakeNull(runtime.context) }
+	file := item.get_as_file_record() or { return C.vox_jsc_JSValueMakeNull(runtime.context) }
 	return runtime.javascript_file(file)
 }
 

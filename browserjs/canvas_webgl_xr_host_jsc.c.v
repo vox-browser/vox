@@ -36,7 +36,7 @@ fn (mut host CanvasWebGLHost) install_xr(mut runtime Runtime) ! {
 		return owner.javascript_webidl_promise(native, fn [owner_handle] (value webidl.Value) !voidptr {
 			mut owner := unsafe { &Runtime(owner_handle) }
 			if value.kind == .runtime_value { return owner.actual_webidl_value(value) }
-			if value.kind == .undefined { return C.JSValueMakeUndefined(owner.context) }
+			if value.kind == .undefined { return C.vox_jsc_JSValueMakeUndefined(owner.context) }
 			if _ := value.dom_exception_ { return owner.javascript_dom_exception(value) }
 			return error('Value is outside the WebGL XR Promise binding')
 		})

@@ -23,16 +23,16 @@ fn (mut projection NativeCloneProjection) project_error(value voidptr, mut objec
 	// Source Get(name), own message descriptor/ToString, then own cause
 	// descriptor/ToString. Metadata retains actual engine values.
 	metadata := projection.root(bridge.engine('error_metadata', [value])!)!
-	name := bridge.engine('list_item', [metadata, C.JSValueMakeNumber(bridge.runtime.context, 0)])!
+	name := bridge.engine('list_item', [metadata, C.vox_jsc_JSValueMakeNumber(bridge.runtime.context, 0)])!
 	if C.JSValueIsString(bridge.runtime.context, name) {
 		object.error_type = source_native_error_type(bridge.runtime.native_utf16_string(name)!.str())
 	}
-	message := bridge.engine('list_item', [metadata, C.JSValueMakeNumber(bridge.runtime.context, 1)])!
+	message := bridge.engine('list_item', [metadata, C.vox_jsc_JSValueMakeNumber(bridge.runtime.context, 1)])!
 	if !C.JSValueIsUndefined(bridge.runtime.context, message) {
 		object.has_message = true
 		object.string_utf16_ = bridge.runtime.native_utf16_string(message)!
 	}
-	cause := bridge.engine('list_item', [metadata, C.JSValueMakeNumber(bridge.runtime.context, 2)])!
+	cause := bridge.engine('list_item', [metadata, C.vox_jsc_JSValueMakeNumber(bridge.runtime.context, 2)])!
 	if !C.JSValueIsUndefined(bridge.runtime.context, cause) {
 		object.has_cause = true
 		object.cause_utf16_ = bridge.runtime.native_utf16_string(cause)!
@@ -42,8 +42,8 @@ fn (mut projection NativeCloneProjection) project_error(value voidptr, mut objec
 fn (mut projection NativeCloneProjection) reconstruct_error(object &html.StructuredObject) !voidptr {
 	bridge := projection.bridge
 	mut owner := unsafe { &Runtime(bridge.runtime) }
-	mut message := C.JSValueMakeUndefined(owner.context)
-	mut cause := C.JSValueMakeUndefined(owner.context)
+	mut message := C.vox_jsc_JSValueMakeUndefined(owner.context)
+	mut cause := C.vox_jsc_JSValueMakeUndefined(owner.context)
 	if object.has_message {
 		text := object.string_utf16_ or { return native_clone_unsupported('Missing source Error message string') }
 		message = projection.adopt_root(owner.javascript_utf16_string(text)!)
@@ -52,7 +52,7 @@ fn (mut projection NativeCloneProjection) reconstruct_error(object &html.Structu
 		text := object.cause_utf16_ or { return native_clone_unsupported('Missing source Error cause string') }
 		cause = projection.adopt_root(owner.javascript_utf16_string(text)!)
 	}
-	actual := bridge.engine('create_error', [C.JSValueMakeNumber(owner.context, f64(u8(object.error_type))), message, cause])!
+	actual := bridge.engine('create_error', [C.vox_jsc_JSValueMakeNumber(owner.context, f64(u8(object.error_type))), message, cause])!
 	if C.JSValueIsUndefined(owner.context, actual) {
 		// JSC has no native InternalError; do not fabricate another named Error.
 		return native_clone_unsupported('Source InternalError constructor is unavailable in this native engine')

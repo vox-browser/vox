@@ -34,12 +34,12 @@ pub fn (mut host QueuingStrategyHost) install(mut runtime Runtime) ! {
 	})!
 	installer := runtime.evaluate_host_value(queuing_strategy_native_bootstrap)!
 	defer { runtime.release_javascript_value(installer) }
-	prototypes := runtime.call_javascript_function(installer, C.JSValueMakeUndefined(runtime.context), [create, operate])!
+	prototypes := runtime.call_javascript_function(installer, C.vox_jsc_JSValueMakeUndefined(runtime.context), [create, operate])!
 	runtime.retain_javascript_value(prototypes)!
 	defer { runtime.release_javascript_value(prototypes) }
 	for index, kind in [QueuingStrategyHostKind.count, .byte_length] {
 		mut exception := unsafe { nil }
-		prototype := C.JSObjectGetPropertyAtIndex(runtime.context, prototypes, u32(index), &exception)
+		prototype := C.vox_jsc_JSObjectGetPropertyAtIndex(runtime.context, prototypes, u32(index), &exception)
 		if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 		host.prototypes[kind] = runtime.retain_javascript_value(prototype)!
 	}
@@ -51,8 +51,8 @@ pub fn (mut host QueuingStrategyHost) install(mut runtime Runtime) ! {
 			if host.closed { return error('Queuing strategy binding is closed') }
 			// HTML/WindowOrWorkerGlobalScope.cpp builtin steps: Return 1, or
 			// Return ? GetV(chunk, "byteLength"). Neither coerces the result.
-			if !byte_length { return C.JSValueMakeNumber(host.runtime.context, 1) }
-			return host.runtime.call_javascript_function(host.byte_length_get_v_, C.JSValueMakeUndefined(host.runtime.context), [host.argument(arguments, 0)])!
+			if !byte_length { return C.vox_jsc_JSValueMakeNumber(host.runtime.context, 1) }
+			return host.runtime.call_javascript_function(host.byte_length_get_v_, C.vox_jsc_JSValueMakeUndefined(host.runtime.context), [host.argument(arguments, 0)])!
 		})!
 		callback := &webidl.CallbackType{...host.runtime.webidl_callback(actual, fn [host_handle] (value webidl.Value) !voidptr {
 			mut host := unsafe { &QueuingStrategyHost(host_handle) }
@@ -71,17 +71,17 @@ pub fn (mut host QueuingStrategyHost) install(mut runtime Runtime) ! {
 
 fn (host &QueuingStrategyHost) argument(args []voidptr, index int) voidptr {
 	if index < args.len { return args[index] }
-	return C.JSValueMakeUndefined(host.runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 }
 
 fn (mut host QueuingStrategyHost) value(value webidl.Value) !voidptr {
 	if host.closed { return error('Queuing strategy binding is closed') }
 	if value.kind == .runtime_value { return host.runtime.actual_webidl_value(value) }
 	return match value.kind {
-		.undefined { C.JSValueMakeUndefined(host.runtime.context) }
-		.null_ { C.JSValueMakeNull(host.runtime.context) }
-		.boolean { C.JSValueMakeBoolean(host.runtime.context, value.boolean_value) }
-		.number { C.JSValueMakeNumber(host.runtime.context, value.number_value) }
+		.undefined { C.vox_jsc_JSValueMakeUndefined(host.runtime.context) }
+		.null_ { C.vox_jsc_JSValueMakeNull(host.runtime.context) }
+		.boolean { C.vox_jsc_JSValueMakeBoolean(host.runtime.context, value.boolean_value) }
+		.number { C.vox_jsc_JSValueMakeNumber(host.runtime.context, value.number_value) }
 		.string_ { host.runtime.binding_string(value.string_value) }
 		else { return error('Queuing strategy callback requires an actual engine value') }
 	}
@@ -140,7 +140,7 @@ fn (mut host QueuingStrategyHost) operate(args []voidptr) !voidptr {
 	}
 	hwm := if kind == .count { unsafe { &streams.CountQueuingStrategy(record.native) }.high_water_mark() }
 		else { unsafe { &streams.ByteLengthQueuingStrategy(record.native) }.high_water_mark() }
-	return C.JSValueMakeNumber(host.runtime.context, hwm)
+	return C.vox_jsc_JSValueMakeNumber(host.runtime.context, hwm)
 }
 
 const queuing_strategy_native_bootstrap = r'(function(create,operate){

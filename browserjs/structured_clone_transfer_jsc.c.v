@@ -91,9 +91,9 @@ pub fn (bridge &ArrayBufferTransferBridge) serialize(value voidptr, transfer_lis
 		if C.JSValueIsUndefined(owner.context, metadata) {
 			return native_clone_unsupported('Exact native ArrayBuffer slot getters are unavailable')
 		}
-		resizable := bridge.clone.engine('list_item', [metadata, C.JSValueMakeNumber(owner.context, 1)])!
+		resizable := bridge.clone.engine('list_item', [metadata, C.vox_jsc_JSValueMakeNumber(owner.context, 1)])!
 		if C.JSValueToBoolean(owner.context, resizable) {
-			maximum := bridge.clone.engine('list_item', [metadata, C.JSValueMakeNumber(owner.context, 2)])!
+			maximum := bridge.clone.engine('list_item', [metadata, C.vox_jsc_JSValueMakeNumber(owner.context, 2)])!
 			placeholder.max_byte_length = u64(bridge.clone.number(maximum)!)
 		}
 		projected := html.structured_object_value(placeholder)

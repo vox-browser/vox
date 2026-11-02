@@ -122,7 +122,7 @@ fn (runtime &Runtime) raw_wheel_handler_body_is_valid(handler_name string, body 
 	// Parse the actual FunctionBody in isolation. Checking a generated Script
 	// alone would allow closing braces to escape into the scope factory.
 	mut exception := voidptr(0)
-	validated := C.JSObjectMakeFunction(runtime.context, name, 1, &parameter,
+	validated := C.vox_jsc_JSObjectMakeFunction(runtime.context, name, 1, &parameter,
 		body_value, unsafe { nil }, 1, &exception)
 	return exception == unsafe { nil } && validated != unsafe { nil }
 }
@@ -162,16 +162,16 @@ fn (mut host ElementWheelHost) compile_raw_wheel_handler(target &dom.EventTarget
 	factory_body := js_source_string(openings + 'return ({' + handler_name + ':function(event){\n' + body + '\n}}).' + handler_name + ';' + endings)
 	defer { C.JSStringRelease(factory_body) }
 	mut exception := voidptr(0)
-	factory := C.JSObjectMakeFunction(runtime.context, unsafe { nil }, 0, unsafe { nil },
+	factory := C.vox_jsc_JSObjectMakeFunction(runtime.context, unsafe { nil }, 0, unsafe { nil },
 		factory_body, unsafe { nil }, 1, &exception)
 	if exception != unsafe { nil } || factory == unsafe { nil } { return none }
 	C.JSValueProtect(runtime.context, factory)
 	defer { C.JSValueUnprotect(runtime.context, factory) }
 	exception = unsafe { nil }
-	carrier := C.JSObjectMakeArray(runtime.context, uint(scopes.len), scopes.data, &exception)
+	carrier := C.vox_jsc_JSObjectMakeArray(runtime.context, uint(scopes.len), scopes.data, &exception)
 	if exception != unsafe { nil } || carrier == unsafe { nil } { return none }
 	exception = unsafe { nil }
-	function := C.JSObjectCallAsFunction(runtime.context, factory, carrier, 0, unsafe { nil }, &exception)
+	function := C.vox_jsc_JSObjectCallAsFunction(runtime.context, factory, carrier, 0, unsafe { nil }, &exception)
 	if exception != unsafe { nil } || function == unsafe { nil } { return none }
 	mut callback := runtime.event_callback_with_settings(function, true, host.settings) or { return none }
 	callback.compiled_source_text_ = source

@@ -22,7 +22,7 @@ fn (mut runtime Runtime) install_drag_event_binding() ! {
 	factory := runtime.evaluate_host_value(drag_event_bootstrap())!
 	defer { runtime.release_javascript_value(factory) }
 	binding.drag_event_prototype = runtime.retain_javascript_value(runtime.call_javascript_function(factory,
-		C.JSValueMakeUndefined(runtime.context), [binding.mouse_event_constructor,
+		C.vox_jsc_JSValueMakeUndefined(runtime.context), [binding.mouse_event_constructor,
 		C.JSContextGetGlobalObject(runtime.context), construct, get_transfer])!)!
 }
 
@@ -56,7 +56,7 @@ fn (mut runtime Runtime) drag_event_binding_call(method string, receiver voidptr
 			}))
 		}
 		runtime.bind_event(receiver, unsafe { &dom.Event(event) })!
-		return C.JSValueMakeUndefined(runtime.context)
+		return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 	}
 	event := runtime.native_event(receiver)!
 	if event.interface_ != .drag_event {
@@ -65,7 +65,7 @@ fn (mut runtime Runtime) drag_event_binding_call(method string, receiver voidptr
 	if method == 'get' {
 		drag := unsafe { &html.DragEvent(event) }
 		if transfer := drag.data_transfer() { return runtime.javascript_data_transfer(transfer)! }
-		return C.JSValueMakeNull(runtime.context)
+		return C.vox_jsc_JSValueMakeNull(runtime.context)
 	}
 	return runtime.event_binding_type_error('Unknown DragEvent operation')
 }

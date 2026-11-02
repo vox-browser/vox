@@ -35,9 +35,9 @@ pub fn (mut runtime Runtime) install_window_media_query_binding() ! {
 	runtime.retain_javascript_value(prototypes)!
 	defer { runtime.release_javascript_value(prototypes) }
 	mut exception := unsafe { nil }
-	binding.list_prototype = runtime.retain_javascript_value(C.JSObjectGetPropertyAtIndex(runtime.context, prototypes, 0, &exception))!
+	binding.list_prototype = runtime.retain_javascript_value(C.vox_jsc_JSObjectGetPropertyAtIndex(runtime.context, prototypes, 0, &exception))!
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
-	binding.event_prototype = runtime.retain_javascript_value(C.JSObjectGetPropertyAtIndex(runtime.context, prototypes, 1, &exception))!
+	binding.event_prototype = runtime.retain_javascript_value(C.vox_jsc_JSObjectGetPropertyAtIndex(runtime.context, prototypes, 1, &exception))!
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	runtime.install_event_wrapper_provider(EventWrapperProvider{
 		owner:  voidptr(binding)
@@ -45,7 +45,7 @@ pub fn (mut runtime Runtime) install_window_media_query_binding() ! {
 			if event.interface_ != .media_query_list_event { return unsafe { nil } }
 			mut runtime := unsafe { &Runtime(owner) }
 			events := runtime.event_binding()!
-			return runtime.call_javascript_function(events.factory, C.JSValueMakeUndefined(runtime.context),
+			return runtime.call_javascript_function(events.factory, C.vox_jsc_JSValueMakeUndefined(runtime.context),
 				[runtime.binding_string('event'), binding.event_prototype])
 		}
 	})!
@@ -107,7 +107,7 @@ fn (mut runtime Runtime) window_media_query_operation(mut binding WindowMediaQue
 			}))
 		}
 		runtime.bind_event(receiver, event.base_event())!
-		return C.JSValueMakeUndefined(runtime.context)
+		return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 	}
 	if method in ['eventmedia', 'eventmatches'] {
 		event := runtime.native_event(receiver)!
@@ -118,13 +118,13 @@ fn (mut runtime Runtime) window_media_query_operation(mut binding WindowMediaQue
 		return if method == 'eventmedia' {
 			runtime.binding_string(query_event.media())
 		} else {
-			C.JSValueMakeBoolean(runtime.context, query_event.matches())
+			C.vox_jsc_JSValueMakeBoolean(runtime.context, query_event.matches())
 		}
 	}
 	list := binding.lists[receiver] or { return runtime.event_binding_type_error('Illegal MediaQueryList receiver') }
 	match method {
 		'media' { return runtime.binding_string(list.media()) }
-		'matches' { return C.JSValueMakeBoolean(runtime.context, list.matches()) }
+		'matches' { return C.vox_jsc_JSValueMakeBoolean(runtime.context, list.matches()) }
 		'getHandler' {
 			return runtime.javascript_event_handler(unsafe { &dom.EventTarget(list) }, 'change')
 		}
@@ -137,9 +137,9 @@ fn (mut runtime Runtime) window_media_query_operation(mut binding WindowMediaQue
 				return runtime.event_binding_type_error('Missing media query listener')
 			}
 			return runtime.event_binding_call(if method == 'addListener' { 'add' } else { 'remove' }, receiver,
-				[runtime.binding_string('change'), args[2], C.JSValueMakeUndefined(runtime.context)])
+				[runtime.binding_string('change'), args[2], C.vox_jsc_JSValueMakeUndefined(runtime.context)])
 		}
 		else { return error('Unknown media query operation') }
 	}
-	return C.JSValueMakeUndefined(runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 }

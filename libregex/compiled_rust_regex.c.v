@@ -35,8 +35,8 @@ struct C.RustRegexNamedGroup {
 	index    u32
 }
 
-fn C.rust_regex_compile(&u16, uint, C.RustRegexFlags, &&u8, &uint) &C.RustRegex
-fn C.rust_regex_compile_ascii(&u8, uint, C.RustRegexFlags, &&u8, &uint) &C.RustRegex
+fn C.vox_rust_regex_compile(&u16, uint, C.RustRegexFlags, &&u8, &uint) &C.RustRegex
+fn C.vox_rust_regex_compile_ascii(&u8, uint, C.RustRegexFlags, &&u8, &uint) &C.RustRegex
 fn C.rust_regex_free_error(&u8, uint)
 fn C.rust_regex_free(&C.RustRegex)
 fn C.rust_regex_exec_into(&C.RustRegex, &u16, uint, uint, &int, u32) int
@@ -92,11 +92,11 @@ pub fn CompiledRustRegex.compile(pattern libjs.Utf16String, flags ECMAScriptComp
 	}
 	if pattern.has_ascii_storage() {
 		bytes := regex_ascii_bytes(units)
-		handle = C.rust_regex_compile_ascii(bytes.data, uint(units.len), actual_flags, &error_data, &error_length)
+		handle = C.vox_rust_regex_compile_ascii(bytes.data, uint(units.len), actual_flags, &error_data, &error_length)
 	} else {
 		mut storage := units.clone()
 		if storage.len == 0 { storage = [u16(0)] }
-		handle = C.rust_regex_compile(storage.data, uint(units.len), actual_flags, &error_data, &error_length)
+		handle = C.vox_rust_regex_compile(storage.data, uint(units.len), actual_flags, &error_data, &error_length)
 	}
 	if isnil(handle) {
 		mut message := 'Invalid pattern'

@@ -21,13 +21,13 @@ fn test_native_generic_callback_invokes_when_callable_without_adding_caller_scri
 		assert settings.realm().script_execution_depth > 0 && settings.realm().callback_execution_depth > 0
 		assert owner.libjs_vm().has_running_execution_context()
 		assert voidptr(html.incumbent_settings_object()) == voidptr(settings)
-		return C.JSValueMakeBoolean(owner.context, true)
+		return C.vox_jsc_JSValueMakeBoolean(owner.context, true)
 	})!
 	function := runtime.evaluate_host_value('globalThis.actualGenericCallbackCalls=0;(function(value){actualGenericCallbackCalls++;if(!__actualGenericCallbackContext())throw "missing context";return value})')!
 	argument := runtime.webidl_value(runtime.evaluate_host_value('({actual:"argument"})')!)!
 	callback := runtime.webidl_callback(function, fn [owner_handle] (value webidl.Value) !voidptr {
 		owner := unsafe { &Runtime(owner_handle) }
-		if value.kind == .undefined { return C.JSValueMakeUndefined(owner.context) }
+		if value.kind == .undefined { return C.vox_jsc_JSValueMakeUndefined(owner.context) }
 		return owner.actual_webidl_value(value)
 	})!
 	runtime.evaluate_host('globalThis.actualSizeCalls=0;globalThis.actualSizeWritable=new WritableStream({}, {size(){actualSizeCalls++;if(!__actualGenericCallbackContext())throw "missing size context";return 1}})')!

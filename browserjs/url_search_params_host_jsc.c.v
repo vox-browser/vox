@@ -45,7 +45,7 @@ pub fn (mut host URLSearchParamsHost) install(mut runtime Runtime) ! {
 	})!
 	factory := runtime.evaluate_host_value(url_search_params_native_factory)!
 	defer { runtime.release_javascript_value(factory) }
-	installed := runtime.call_javascript_function(factory, C.JSValueMakeUndefined(runtime.context), [
+	installed := runtime.call_javascript_function(factory, C.vox_jsc_JSValueMakeUndefined(runtime.context), [
 		host.array(methods)!,
 		convert,
 		construct,
@@ -73,7 +73,7 @@ fn (host &URLSearchParamsHost) exception(reason IError) IError {
 
 fn (host &URLSearchParamsHost) argument(args []voidptr, index int) voidptr {
 	if index < args.len { return args[index] }
-	return C.JSValueMakeUndefined(host.runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 }
 
 fn (host &URLSearchParamsHost) record(value voidptr) !&URLSearchParamsHostRecord {
@@ -123,7 +123,7 @@ pub fn (runtime &Runtime) native_url_search_params(value voidptr) !&domurl.URLSe
 
 fn (host &URLSearchParamsHost) usv_string(value voidptr) !string {
 	actual := host.runtime.call_javascript_function(host.to_dom_string,
-		C.JSValueMakeUndefined(host.runtime.context), [value])!
+		C.vox_jsc_JSValueMakeUndefined(host.runtime.context), [value])!
 	return host.runtime.native_utf16_string(actual)!.to_well_formed().str()
 }
 
@@ -133,7 +133,7 @@ fn (mut host URLSearchParamsHost) string_value(text string) !voidptr {
 
 fn (mut host URLSearchParamsHost) array(values []voidptr) !voidptr {
 	mut exception := unsafe { nil }
-	actual := C.JSObjectMakeArray(host.runtime.context, uint(values.len), values.data, &exception)
+	actual := C.vox_jsc_JSObjectMakeArray(host.runtime.context, uint(values.len), values.data, &exception)
 	if exception != unsafe { nil } {
 		return host.exception(host.runtime.actual_javascript_exception(exception))
 	}
@@ -142,7 +142,7 @@ fn (mut host URLSearchParamsHost) array(values []voidptr) !voidptr {
 
 fn (host &URLSearchParamsHost) at(array voidptr, index int) !voidptr {
 	mut exception := unsafe { nil }
-	value := C.JSObjectGetPropertyAtIndex(host.runtime.context, array, u32(index), &exception)
+	value := C.vox_jsc_JSObjectGetPropertyAtIndex(host.runtime.context, array, u32(index), &exception)
 	if exception != unsafe { nil } { return host.runtime.actual_javascript_exception(exception) }
 	return value
 }
@@ -150,7 +150,7 @@ fn (host &URLSearchParamsHost) at(array voidptr, index int) !voidptr {
 fn (host &URLSearchParamsHost) length(array voidptr) !int {
 	value := host.runtime.binding_property(array, 'length')!
 	mut exception := unsafe { nil }
-	length := C.JSValueToNumber(host.runtime.context, value, &exception)
+	length := C.vox_jsc_JSValueToNumber(host.runtime.context, value, &exception)
 	if exception != unsafe { nil } { return host.runtime.actual_javascript_exception(exception) }
 	if length > 2147483647 { return error('RangeError: Converted sequence exceeds the V span') }
 	return int(length)
@@ -214,7 +214,7 @@ fn (mut host URLSearchParamsHost) next(receiver voidptr) !voidptr {
 	}
 	mut iterator := record.iterator
 	step := iterator.next()
-	mut value := C.JSValueMakeUndefined(host.runtime.context)
+	mut value := C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 	if !step.done {
 		value = match record.kind {
 			.key {
@@ -229,8 +229,8 @@ fn (mut host URLSearchParamsHost) next(receiver voidptr) !voidptr {
 		}
 	}
 	return host.runtime.call_javascript_function(host.iterator_result,
-		C.JSValueMakeUndefined(host.runtime.context), [value,
-		C.JSValueMakeBoolean(host.runtime.context, step.done)])
+		C.vox_jsc_JSValueMakeUndefined(host.runtime.context), [value,
+		C.vox_jsc_JSValueMakeBoolean(host.runtime.context, step.done)])
 }
 
 fn (mut host URLSearchParamsHost) operate(name string, receiver voidptr, args []voidptr) !voidptr {
@@ -264,16 +264,16 @@ fn (mut host URLSearchParamsHost) operate(name string, receiver voidptr, args []
 				receiver,
 			])!
 		})!
-		return C.JSValueMakeUndefined(host.runtime.context)
+		return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 	}
-	if name == 'size' { return C.JSValueMakeNumber(host.runtime.context, f64(params.size())) }
+	if name == 'size' { return C.vox_jsc_JSValueMakeNumber(host.runtime.context, f64(params.size())) }
 	if name == 'toString' { return host.string_value(params.to_string()) }
 	if name == 'keys' { return host.iterator(params, .key) }
 	if name == 'values' { return host.iterator(params, .value) }
 	if name == 'entries' { return host.iterator(params, .key_value) }
 	if name == 'sort' {
 		params.sort()
-		return C.JSValueMakeUndefined(host.runtime.context)
+		return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 	}
 	key := host.usv_string(host.argument(args, 0))!
 	mut value := ?string(none)
@@ -293,7 +293,7 @@ fn (mut host URLSearchParamsHost) operate(name string, receiver voidptr, args []
 		}
 		'get' {
 			if found := params.get(key) { return host.string_value(found) }
-			return C.JSValueMakeNull(host.runtime.context)
+			return C.vox_jsc_JSValueMakeNull(host.runtime.context)
 		}
 		'getAll' {
 			mut values := []voidptr{}
@@ -303,14 +303,14 @@ fn (mut host URLSearchParamsHost) operate(name string, receiver voidptr, args []
 			return host.array(values)
 		}
 		'has' {
-			return C.JSValueMakeBoolean(host.runtime.context, params.has(key, value))
+			return C.vox_jsc_JSValueMakeBoolean(host.runtime.context, params.has(key, value))
 		}
 		else {
 			return error('TypeError: Unknown URLSearchParams operation')
 		}
 	}
 
-	return C.JSValueMakeUndefined(host.runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 }
 
 const url_search_params_native_factory = r'(function(methods,usv,construct,global){

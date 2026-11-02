@@ -55,31 +55,31 @@ fn (mut runtime Runtime) text_decoder_operation(mut binding TextDecoderBinding, 
 		})!
 		binding.decoders[receiver] = decoder
 		runtime.retain_javascript_value(receiver)!
-		return C.JSValueMakeUndefined(runtime.context)
+		return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 	}
 	decoder := binding.decoders[receiver] or { return error('TypeError: Illegal TextDecoder receiver') }
 	match name {
 		'encoding' { return runtime.binding_string(decoder.encoding()) }
-		'fatal' { return C.JSValueMakeBoolean(runtime.context, decoder.fatal()) }
-		'ignoreBOM' { return C.JSValueMakeBoolean(runtime.context, decoder.ignore_bom()) }
+		'fatal' { return C.vox_jsc_JSValueMakeBoolean(runtime.context, decoder.fatal()) }
+		'ignoreBOM' { return C.vox_jsc_JSValueMakeBoolean(runtime.context, decoder.ignore_bom()) }
 		else {}
 	}
 	mut bytes := []u8{}
 	if !C.JSValueIsUndefined(runtime.context, args[2]) {
 		// Copy after options conversion, which may mutate or detach the input.
 		// Captured engine accessors ignore author buffer/offset/length properties.
-		view := runtime.call_javascript_function(binding.buffer_copy, C.JSValueMakeUndefined(runtime.context), [args[2]])!
+		view := runtime.call_javascript_function(binding.buffer_copy, C.vox_jsc_JSValueMakeUndefined(runtime.context), [args[2]])!
 		runtime.retain_javascript_value(view)!
 		defer { runtime.release_javascript_value(view) }
 		mut exception := unsafe { nil }
-		length := C.JSObjectGetTypedArrayByteLength(runtime.context, view, &exception)
+		length := C.vox_jsc_JSObjectGetTypedArrayByteLength(runtime.context, view, &exception)
 		if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 		if length > uint(2147483647) {
 			return error('RangeError: input exceeds the native byte span')
 		}
 		bytes = []u8{len: int(length)}
 		if length > 0 {
-			pointer := C.JSObjectGetTypedArrayBytesPtr(runtime.context, view, &exception)
+			pointer := C.vox_jsc_JSObjectGetTypedArrayBytesPtr(runtime.context, view, &exception)
 			if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 			// Borrowed C API pointers are consumed without intervening JSC calls.
 			unsafe { C.memcpy(bytes.data, pointer, length) }

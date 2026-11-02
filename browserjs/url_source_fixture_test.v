@@ -30,7 +30,7 @@ fn test_native_url_binding_matches_unmodified_source_url_and_query_fixture_outpu
 		runtime.define_value_host_function('println', fn [owner, mut output] (_ voidptr, args []voidptr) !voidptr {
 			runtime := unsafe { &Runtime(owner) }
 			output.lines << runtime.native_utf16_string(args[0])!.str()
-			return C.JSValueMakeUndefined(runtime.context)
+			return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 		})!
 		runtime.evaluate_host('globalThis.test=function(callback){callback()}')!
 		input := os.read_file('${source}/Tests/LibWeb/Text/input/URL/${name}.html')!

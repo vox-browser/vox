@@ -79,7 +79,7 @@ fn test_worker_import_scripts_executes_nested_sources_in_its_actual_realm_and_so
 		script := settings.realm().active_classic_script_ or { panic('Missing active imported script') }
 		assert script.filename() == runtime.binding_dom_string(args[0])!
 		assert settings.realm().script_execution_depth >= 2
-		return C.JSValueMakeBoolean(context, true)
+		return C.vox_jsc_JSValueMakeBoolean(context, true)
 	})!
 	host.run('globalThis.order=[];importScripts("one.js","/two.js");order.push("done");', host.environment.global_scope.url(), .yes)!
 	assert runtime.evaluate_host('order.join() === "one,Санкт-Петербург 😀,two,done"&&typeof document==="undefined"&&typeof window==="undefined"')! == 'true'
@@ -167,7 +167,7 @@ fn test_worker_classic_scripts_report_original_entry_errors_and_restore_nested_s
 	assert settings.realm().active_classic_script_ == none
 	assert settings.realm().script_execution_depth == 0
 	actual := runtime.actual_webidl_value(observed.values[0].native_value_ or { panic('Missing actual entry exception') })!
-	assert runtime.call_engine_function(runtime.value_same_intrinsic_, [actual, runtime.evaluate_host_value('marker')!])! == C.JSValueMakeBoolean(runtime.context, true)
+	assert runtime.call_engine_function(runtime.value_same_intrinsic_, [actual, runtime.evaluate_host_value('marker')!])! == C.vox_jsc_JSValueMakeBoolean(runtime.context, true)
 }
 
 fn test_worker_script_adapter_keeps_retained_state_across_scratch_resets_and_closes_its_registration() {

@@ -42,7 +42,7 @@ pub fn (mut host TransformStreamHost) install(mut runtime Runtime) ! {
 	})!
 	installer := runtime.evaluate_host_value(transform_stream_native_bootstrap)!
 	defer { runtime.release_javascript_value(installer) }
-	prototypes := runtime.call_javascript_function(installer, C.JSValueMakeUndefined(runtime.context), [
+	prototypes := runtime.call_javascript_function(installer, C.vox_jsc_JSValueMakeUndefined(runtime.context), [
 		create,
 		operate,
 	])!
@@ -50,7 +50,7 @@ pub fn (mut host TransformStreamHost) install(mut runtime Runtime) ! {
 	defer { runtime.release_javascript_value(prototypes) }
 	for index, kind in [TransformStreamHostKind.stream, .default_controller] {
 		mut exception := unsafe { nil }
-		prototype := C.JSObjectGetPropertyAtIndex(runtime.context, prototypes, u32(index), &exception)
+		prototype := C.vox_jsc_JSObjectGetPropertyAtIndex(runtime.context, prototypes, u32(index), &exception)
 		if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 		host.prototypes[kind] = runtime.retain_javascript_value(prototype)!
 	}
@@ -64,7 +64,7 @@ pub fn (mut host TransformStreamHost) install(mut runtime Runtime) ! {
 
 fn (host &TransformStreamHost) argument(args []voidptr, index int) voidptr {
 	if index < args.len { return args[index] }
-	return C.JSValueMakeUndefined(host.runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 }
 
 fn (mut host TransformStreamHost) exception_value(exception IError) voidptr {
@@ -192,21 +192,21 @@ fn (mut host TransformStreamHost) operate(args []voidptr) !voidptr {
 		match operation {
 			'controller.desiredSize' {
 				if size := controller.desired_size() {
-					return C.JSValueMakeNumber(host.runtime.context, size)
+					return C.vox_jsc_JSValueMakeNumber(host.runtime.context, size)
 				}
-				return C.JSValueMakeNull(host.runtime.context)
+				return C.vox_jsc_JSValueMakeNull(host.runtime.context)
 			}
 			'controller.enqueue' {
 				controller.enqueue(streams.runtime_value(host.runtime.webidl_value(argument)!))!
-				return C.JSValueMakeUndefined(host.runtime.context)
+				return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 			}
 			'controller.error' {
 				streams.transform_stream_default_controller_error(mut controller, streams.runtime_value(host.runtime.webidl_value(argument)!))
-				return C.JSValueMakeUndefined(host.runtime.context)
+				return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 			}
 			'controller.terminate' {
 				streams.transform_stream_default_controller_terminate(mut controller)
-				return C.JSValueMakeUndefined(host.runtime.context)
+				return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 			}
 			else {}
 		}

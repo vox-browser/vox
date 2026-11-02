@@ -39,7 +39,7 @@ pub fn (mut host URLHost) install(mut runtime Runtime) ! {
 			return host.get(name, receiver) or { return host.exception(err) }
 		})!
 		if name in ['origin', 'searchParams'] {
-			accessors << C.JSValueMakeUndefined(runtime.context)
+			accessors << C.vox_jsc_JSValueMakeUndefined(runtime.context)
 		} else {
 			accessors << runtime.make_native_value_host_function('set ${name}', 1, fn [handle, name] (receiver voidptr, args []voidptr) !voidptr {
 				mut host := unsafe { &URLHost(handle) }
@@ -63,12 +63,12 @@ pub fn (mut host URLHost) install(mut runtime Runtime) ! {
 	})!
 	factory := runtime.evaluate_host_value(url_native_factory)!
 	defer { runtime.release_javascript_value(factory) }
-	installed := runtime.call_javascript_function(factory, C.JSValueMakeUndefined(runtime.context), [
+	installed := runtime.call_javascript_function(factory, C.vox_jsc_JSValueMakeUndefined(runtime.context), [
 		host.array(accessors)!,
 		host.array(methods)!,
 		construct,
 		C.JSContextGetGlobalObject(runtime.context),
-		C.JSValueMakeBoolean(runtime.context, host.settings.fetch_request_client_is_window()),
+		C.vox_jsc_JSValueMakeBoolean(runtime.context, host.settings.fetch_request_client_is_window()),
 	])!
 	host.prototype = runtime.retain_javascript_value(runtime.binding_property(installed,
 		'prototype')!)!
@@ -88,7 +88,7 @@ fn (host &URLHost) exception(reason IError) IError {
 
 fn (host &URLHost) argument(args []voidptr, index int) voidptr {
 	if index < args.len { return args[index] }
-	return C.JSValueMakeUndefined(host.runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 }
 
 fn (host &URLHost) record(value voidptr) !&URLHostRecord {
@@ -126,7 +126,7 @@ pub fn (runtime &Runtime) native_url(value voidptr) !&domurl.DOMURL {
 
 fn (host &URLHost) dom_string(value voidptr) !libjs.Utf16String {
 	actual := host.runtime.call_javascript_function(host.to_dom_string,
-		C.JSValueMakeUndefined(host.runtime.context), [value])!
+		C.vox_jsc_JSValueMakeUndefined(host.runtime.context), [value])!
 	return host.runtime.native_utf16_string(actual)
 }
 
@@ -140,7 +140,7 @@ fn (mut host URLHost) string_value(text string) !voidptr {
 
 fn (mut host URLHost) array(values []voidptr) !voidptr {
 	mut exception := unsafe { nil }
-	actual := C.JSObjectMakeArray(host.runtime.context, uint(values.len), values.data, &exception)
+	actual := C.vox_jsc_JSObjectMakeArray(host.runtime.context, uint(values.len), values.data, &exception)
 	if exception != unsafe { nil } { return host.runtime.actual_javascript_exception(exception) }
 	return host.runtime.retain_javascript_value(actual)
 }
@@ -164,7 +164,7 @@ fn (host &URLHost) input(args []voidptr, offset int) !URLHostInput {
 
 fn (mut host URLHost) construct(args []voidptr) !voidptr {
 	mut exception := unsafe { nil }
-	count := C.JSValueToNumber(host.runtime.context, host.argument(args, 3), &exception)
+	count := C.vox_jsc_JSValueToNumber(host.runtime.context, host.argument(args, 3), &exception)
 	if exception != unsafe { nil } { return host.runtime.actual_javascript_exception(exception) }
 	if count < 1 { return error('TypeError: URL requires at least 1 argument') }
 	converted := host.input(args, 1)!
@@ -214,7 +214,7 @@ fn (mut host URLHost) set(name string, receiver voidptr, value voidptr) !voidptr
 		else { return error('TypeError: Unknown URL attribute') }
 	}
 
-	return C.JSValueMakeUndefined(host.runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 }
 
 fn (mut host URLHost) operate(name string, receiver voidptr, args []voidptr) !voidptr {
@@ -233,17 +233,17 @@ fn (mut host URLHost) operate(name string, receiver voidptr, args []voidptr) !vo
 	if name == 'revokeObjectURL' {
 		// Unlike the URL components, this argument is DOMString, not USVString.
 		html.revoke_object_url(host.dom_string(args[0])!.str())
-		return C.JSValueMakeUndefined(host.runtime.context)
+		return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 	}
 	converted := host.input(args, 0)!
 	if name == 'canParse' {
-		return C.JSValueMakeBoolean(host.runtime.context, domurl.DOMURL.can_parse(converted.input,
+		return C.vox_jsc_JSValueMakeBoolean(host.runtime.context, domurl.DOMURL.can_parse(converted.input,
 			converted.base))
 	}
 	if parsed := domurl.DOMURL.parse_for_bindings(converted.input, converted.base) {
 		return host.wrap(parsed)
 	}
-	return C.JSValueMakeNull(host.runtime.context)
+	return C.vox_jsc_JSValueMakeNull(host.runtime.context)
 }
 
 const url_native_factory = r'(function(accessors,methods,construct,global,isWindow){

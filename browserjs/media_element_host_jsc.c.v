@@ -9,7 +9,7 @@ import mediasourceextensions
 import webidl
 
 
-fn C.JSObjectMakeDate(context voidptr, count uint, arguments &voidptr, exception &voidptr) voidptr
+fn C.vox_jsc_JSObjectMakeDate(context voidptr, count uint, arguments &voidptr, exception &voidptr) voidptr
 
 pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 	runtime.require_javascript_value_context()!
@@ -30,7 +30,7 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 		})!
 	}
 	mut exception := unsafe { nil }
-	array := C.JSObjectMakeArray(runtime.context, uint(getters.len), getters.data, &exception)
+	array := C.vox_jsc_JSObjectMakeArray(runtime.context, uint(getters.len), getters.data, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	runtime.retain_javascript_value(array)!
 	defer { runtime.release_javascript_value(array) }
@@ -38,14 +38,14 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 	for name in ['defaultPlaybackRate', 'playbackRate', 'volume', 'muted', 'currentTime'] {
 		setters << runtime.make_native_value_host_function('set ${name}', 1, fn [handle, name] (receiver voidptr, args []voidptr) !voidptr {
 			mut host := unsafe { &MediaElementHost(handle) }
-			mut argument := C.JSValueMakeUndefined(host.runtime.context)
+			mut argument := C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 			if args.len > 0 { argument = args[0] }
 			return host.set_property(name, receiver, argument) or {
 				return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
 			}
 		})!
 	}
-	setter_array := C.JSObjectMakeArray(runtime.context, uint(setters.len), setters.data, &exception)
+	setter_array := C.vox_jsc_JSObjectMakeArray(runtime.context, uint(setters.len), setters.data, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	runtime.retain_javascript_value(setter_array)!
 	defer { runtime.release_javascript_value(setter_array) }
@@ -60,18 +60,18 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 		})!
 		handler_setters << runtime.make_native_value_host_function('set on${name}', 1, fn [handle, name] (receiver voidptr, args []voidptr) !voidptr {
 			mut host := unsafe { &MediaElementHost(handle) }
-			mut argument := C.JSValueMakeUndefined(host.runtime.context)
+			mut argument := C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 			if args.len > 0 { argument = args[0] }
 			return host.set_event_handler(name, receiver, argument) or {
 				return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
 			}
 		})!
 	}
-	handler_getter_array := C.JSObjectMakeArray(runtime.context, uint(handler_getters.len), handler_getters.data, &exception)
+	handler_getter_array := C.vox_jsc_JSObjectMakeArray(runtime.context, uint(handler_getters.len), handler_getters.data, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	runtime.retain_javascript_value(handler_getter_array)!
 	defer { runtime.release_javascript_value(handler_getter_array) }
-	handler_setter_array := C.JSObjectMakeArray(runtime.context, uint(handler_setters.len), handler_setters.data, &exception)
+	handler_setter_array := C.vox_jsc_JSObjectMakeArray(runtime.context, uint(handler_setters.len), handler_setters.data, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	runtime.retain_javascript_value(handler_setter_array)!
 	defer { runtime.release_javascript_value(handler_setter_array) }
@@ -118,7 +118,7 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 	})!
 	default_muted_setter := runtime.make_native_value_host_function('set defaultMuted', 1, fn [handle] (receiver voidptr, args []voidptr) !voidptr {
 		mut host := unsafe { &MediaElementHost(handle) }
-		mut value := C.JSValueMakeUndefined(host.runtime.context)
+		mut value := C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 		if args.len > 0 { value = args[0] }
 		return host.set_default_muted(receiver, value) or {
 			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
@@ -138,7 +138,7 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 	})!
 	loop_setter := runtime.make_native_value_host_function('set loop', 1, fn [handle] (receiver voidptr, args []voidptr) !voidptr {
 		mut host := unsafe { &MediaElementHost(handle) }
-		mut value := C.JSValueMakeUndefined(host.runtime.context)
+		mut value := C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 		if args.len > 0 { value = args[0] }
 		return host.set_loop(receiver, value) or {
 			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
@@ -152,7 +152,7 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 	})!
 	autoplay_setter := runtime.make_native_value_host_function('set autoplay', 1, fn [handle] (receiver voidptr, args []voidptr) !voidptr {
 		mut host := unsafe { &MediaElementHost(handle) }
-		mut value := C.JSValueMakeUndefined(host.runtime.context)
+		mut value := C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 		if args.len > 0 { value = args[0] }
 		return host.set_autoplay(receiver, value) or {
 			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
@@ -166,7 +166,7 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 	})!
 	preload_setter := runtime.make_native_value_host_function('set preload', 1, fn [handle] (receiver voidptr, args []voidptr) !voidptr {
 		mut host := unsafe { &MediaElementHost(handle) }
-		mut value := C.JSValueMakeUndefined(host.runtime.context)
+		mut value := C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 		if args.len > 0 { value = args[0] }
 		return host.set_preload(receiver, value) or {
 			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
@@ -180,7 +180,7 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 	})!
 	cross_origin_setter := runtime.make_native_value_host_function('set crossOrigin', 1, fn [handle] (receiver voidptr, args []voidptr) !voidptr {
 		mut host := unsafe { &MediaElementHost(handle) }
-		mut value := C.JSValueMakeUndefined(host.runtime.context)
+		mut value := C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 		if args.len > 0 { value = args[0] }
 		return host.set_cross_origin(receiver, value) or {
 			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
@@ -195,7 +195,7 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 			}
 		})!
 	}
-	dimension_array := C.JSObjectMakeArray(runtime.context, uint(dimension_getters.len), dimension_getters.data, &exception)
+	dimension_array := C.vox_jsc_JSObjectMakeArray(runtime.context, uint(dimension_getters.len), dimension_getters.data, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	runtime.retain_javascript_value(dimension_array)!
 	defer { runtime.release_javascript_value(dimension_array) }
@@ -209,14 +209,14 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 		})!
 		size_accessors << runtime.make_native_value_host_function('set ${name}', 1, fn [handle, name] (receiver voidptr, args []voidptr) !voidptr {
 			mut host := unsafe { &MediaElementHost(handle) }
-			mut value := C.JSValueMakeUndefined(host.runtime.context)
+			mut value := C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 			if args.len > 0 { value = args[0] }
 			return host.set_video_size_attribute(name, receiver, value) or {
 				return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
 			}
 		})!
 	}
-	size_array := C.JSObjectMakeArray(runtime.context, uint(size_accessors.len), size_accessors.data, &exception)
+	size_array := C.vox_jsc_JSObjectMakeArray(runtime.context, uint(size_accessors.len), size_accessors.data, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	runtime.retain_javascript_value(size_array)!
 	defer { runtime.release_javascript_value(size_array) }
@@ -228,7 +228,7 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 	})!
 	poster_setter := runtime.make_native_value_host_function('set poster', 1, fn [handle] (receiver voidptr, args []voidptr) !voidptr {
 		mut host := unsafe { &MediaElementHost(handle) }
-		mut value := C.JSValueMakeUndefined(host.runtime.context)
+		mut value := C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 		if args.len > 0 { value = args[0] }
 		return host.set_poster(receiver, value) or {
 			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
@@ -242,7 +242,7 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 	})!
 	controls_setter := runtime.make_native_value_host_function('set controls', 1, fn [handle] (receiver voidptr, args []voidptr) !voidptr {
 		mut host := unsafe { &MediaElementHost(handle) }
-		mut value := C.JSValueMakeUndefined(host.runtime.context)
+		mut value := C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 		if args.len > 0 { value = args[0] }
 		return host.set_controls(receiver, value) or {
 			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
@@ -256,7 +256,7 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 	})!
 	plays_inline_setter := runtime.make_native_value_host_function('set playsInline', 1, fn [handle] (receiver voidptr, args []voidptr) !voidptr {
 		mut host := unsafe { &MediaElementHost(handle) }
-		mut value := C.JSValueMakeUndefined(host.runtime.context)
+		mut value := C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 		if args.len > 0 { value = args[0] }
 		return host.set_plays_inline(receiver, value) or {
 			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
@@ -270,7 +270,7 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 	})!
 	src_setter := runtime.make_native_value_host_function('set src', 1, fn [handle] (receiver voidptr, args []voidptr) !voidptr {
 		mut host := unsafe { &MediaElementHost(handle) }
-		mut value := C.JSValueMakeUndefined(host.runtime.context)
+		mut value := C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 		if args.len > 0 { value = args[0] }
 		return host.set_src(receiver, value) or {
 			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
@@ -284,7 +284,7 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 	})!
 	src_object_setter := runtime.make_native_value_host_function('set srcObject', 1, fn [handle] (receiver voidptr, args []voidptr) !voidptr {
 		mut host := unsafe { &MediaElementHost(handle) }
-		mut value := C.JSValueMakeUndefined(host.runtime.context)
+		mut value := C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 		if args.len > 0 { value = args[0] }
 		return host.set_src_object(receiver, value) or {
 			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
@@ -305,7 +305,7 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(error('TypeError: Audio facade factory must be installed once with a callable')))
 		}
 		host.audio_factory = host.runtime.retain_javascript_value(args[0])!
-		return C.JSValueMakeUndefined(host.runtime.context)
+		return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 	})!
 	bind := runtime.make_value_host_function(fn [handle] (_ voidptr, args []voidptr) !voidptr {
 		mut host := unsafe { &MediaElementHost(handle) }
@@ -317,7 +317,7 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 		json2.encode(media_element_event_handler_names)))!
 	defer { runtime.release_javascript_value(factory) }
 	prototypes := runtime.retain_javascript_value(runtime.call_javascript_function(factory,
-		C.JSValueMakeUndefined(runtime.context), [array, setter_array, bind, fast_seek, start_date,
+		C.vox_jsc_JSValueMakeUndefined(runtime.context), [array, setter_array, bind, fast_seek, start_date,
 			pause, load, play, handler_getter_array, handler_setter_array, can_play_type,
 			default_muted_getter, default_muted_setter, set_attribute_sync, loop_getter, loop_setter,
 			autoplay_getter, autoplay_setter, preload_getter, preload_setter,
@@ -378,7 +378,7 @@ fn (mut host MediaElementHost) bind(args []voidptr) !voidptr {
 	if !C.JSValueIsObject(host.runtime.context, wrapper) {
 		return error('TypeError: Media element wrapper is not an object')
 	}
-	if _ := host.records[wrapper] { return C.JSValueMakeUndefined(host.runtime.context) }
+	if _ := host.records[wrapper] { return C.vox_jsc_JSValueMakeUndefined(host.runtime.context) }
 	key := host.runtime.binding_dom_string(args[1])!
 	tag := host.runtime.binding_dom_string(args[2])!
 	element := host.element_for_binding(key, tag)!
@@ -392,14 +392,14 @@ fn (mut host MediaElementHost) bind(args []voidptr) !voidptr {
 	C.JSObjectSetPrototype(host.runtime.context, wrapper, prototype)
 	host.records[wrapper] = media
 	host.bound_elements[wrapper] = element
-	return C.JSValueMakeUndefined(host.runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 }
 
 fn (mut host MediaElementHost) create_audio() !voidptr {
 	if host.closed { return error('TypeError: Media element binding is closed') }
 	if replay := host.replay { replay(host.runtime)! }
 	if host.audio_factory != unsafe { nil } {
-		wrapper := host.runtime.call_javascript_function(host.audio_factory, C.JSValueMakeUndefined(host.runtime.context), [])!
+		wrapper := host.runtime.call_javascript_function(host.audio_factory, C.vox_jsc_JSValueMakeUndefined(host.runtime.context), [])!
 		host.media_element_for_binding(wrapper)!
 		element := host.bound_elements[wrapper] or { return error('TypeError: Audio factory has no native owner') }
 		if element.local_name() != 'audio' { return error('TypeError: Audio factory requires an HTML audio owner') }
@@ -425,7 +425,7 @@ fn (mut host MediaElementHost) initialize_audio(args []voidptr) !voidptr {
 	if element.local_name() != 'audio' { return error('TypeError: Audio factory requires an HTML audio owner') }
 	if replay := host.replay { replay(host.runtime)! }
 	if host.attribute_sync != unsafe { nil } {
-		host.runtime.call_javascript_function(host.attribute_sync, C.JSValueMakeUndefined(host.runtime.context),
+		host.runtime.call_javascript_function(host.attribute_sync, C.vox_jsc_JSValueMakeUndefined(host.runtime.context),
 			[receiver, host.runtime.binding_string('preload'), host.runtime.binding_string('auto')])!
 	}
 	element.set_attribute_value('preload', 'auto')
@@ -434,12 +434,12 @@ fn (mut host MediaElementHost) initialize_audio(args []voidptr) !voidptr {
 	if !C.JSValueIsUndefined(host.runtime.context, args[1]) {
 		source := host.runtime.binding_dom_utf16(args[1])!
 		if host.attribute_sync != unsafe { nil } {
-			host.runtime.call_javascript_function(host.attribute_sync, C.JSValueMakeUndefined(host.runtime.context),
+			host.runtime.call_javascript_function(host.attribute_sync, C.vox_jsc_JSValueMakeUndefined(host.runtime.context),
 				[receiver, host.runtime.binding_string('src'), host.runtime.binding_utf16_string(source)!])!
 		}
 		element.set_attribute_value('src', source.str())
 	}
-	return C.JSValueMakeUndefined(host.runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 }
 
 fn (mut host MediaElementHost) set_attribute_sync(args []voidptr) !voidptr {
@@ -451,7 +451,7 @@ fn (mut host MediaElementHost) set_attribute_sync(args []voidptr) !voidptr {
 		return error('TypeError: Media attribute synchronization is already installed')
 	}
 	host.attribute_sync = host.runtime.retain_javascript_value(args[0])!
-	return C.JSValueMakeUndefined(host.runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 }
 
 fn (mut host MediaElementHost) default_muted(receiver voidptr) !voidptr {
@@ -460,7 +460,7 @@ fn (mut host MediaElementHost) default_muted(receiver voidptr) !voidptr {
 	element := host.bound_elements[receiver] or {
 		return error('TypeError: Not an object of type HTMLMediaElement')
 	}
-	return C.JSValueMakeBoolean(host.runtime.context, element.has_attribute_ns(none, 'muted'))
+	return C.vox_jsc_JSValueMakeBoolean(host.runtime.context, element.has_attribute_ns(none, 'muted'))
 }
 
 fn (mut host MediaElementHost) set_default_muted(receiver voidptr, value voidptr) !voidptr {
@@ -481,10 +481,10 @@ fn (mut host MediaElementHost) set_default_muted(receiver voidptr, value voidptr
 	// synchronous customized-built-in reaction delivery remains a runtime boundary.
 	if host.attribute_sync != unsafe { nil } {
 		host.runtime.call_javascript_function(host.attribute_sync,
-			C.JSValueMakeUndefined(host.runtime.context), [receiver,
-				host.runtime.binding_string('muted'), C.JSValueMakeBoolean(host.runtime.context, present)])!
+			C.vox_jsc_JSValueMakeUndefined(host.runtime.context), [receiver,
+				host.runtime.binding_string('muted'), C.vox_jsc_JSValueMakeBoolean(host.runtime.context, present)])!
 	}
-	return C.JSValueMakeUndefined(host.runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 }
 
 fn (mut host MediaElementHost) loop(receiver voidptr) !voidptr {
@@ -493,7 +493,7 @@ fn (mut host MediaElementHost) loop(receiver voidptr) !voidptr {
 	element := host.bound_elements[receiver] or {
 		return error('TypeError: Not an object of type HTMLMediaElement')
 	}
-	return C.JSValueMakeBoolean(host.runtime.context, element.has_attribute_ns(none, 'loop'))
+	return C.vox_jsc_JSValueMakeBoolean(host.runtime.context, element.has_attribute_ns(none, 'loop'))
 }
 
 fn (mut host MediaElementHost) set_loop(receiver voidptr, value voidptr) !voidptr {
@@ -504,10 +504,10 @@ fn (mut host MediaElementHost) set_loop(receiver voidptr, value voidptr) !voidpt
 	media.set_loop(present)
 	if host.attribute_sync != unsafe { nil } {
 		host.runtime.call_javascript_function(host.attribute_sync,
-			C.JSValueMakeUndefined(host.runtime.context), [receiver,
-				host.runtime.binding_string('loop'), C.JSValueMakeBoolean(host.runtime.context, present)])!
+			C.vox_jsc_JSValueMakeUndefined(host.runtime.context), [receiver,
+				host.runtime.binding_string('loop'), C.vox_jsc_JSValueMakeBoolean(host.runtime.context, present)])!
 	}
-	return C.JSValueMakeUndefined(host.runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 }
 
 fn (mut host MediaElementHost) autoplay(receiver voidptr) !voidptr {
@@ -516,7 +516,7 @@ fn (mut host MediaElementHost) autoplay(receiver voidptr) !voidptr {
 	element := host.bound_elements[receiver] or {
 		return error('TypeError: Not an object of type HTMLMediaElement')
 	}
-	return C.JSValueMakeBoolean(host.runtime.context, element.has_attribute_ns(none, 'autoplay'))
+	return C.vox_jsc_JSValueMakeBoolean(host.runtime.context, element.has_attribute_ns(none, 'autoplay'))
 }
 
 fn (mut host MediaElementHost) set_autoplay(receiver voidptr, value voidptr) !voidptr {
@@ -527,11 +527,11 @@ fn (mut host MediaElementHost) set_autoplay(receiver voidptr, value voidptr) !vo
 	// the outer write first so an inner reflected write remains the final value.
 	if host.attribute_sync != unsafe { nil } {
 		host.runtime.call_javascript_function(host.attribute_sync,
-			C.JSValueMakeUndefined(host.runtime.context), [receiver,
-				host.runtime.binding_string('autoplay'), C.JSValueMakeBoolean(host.runtime.context, present)])!
+			C.vox_jsc_JSValueMakeUndefined(host.runtime.context), [receiver,
+				host.runtime.binding_string('autoplay'), C.vox_jsc_JSValueMakeBoolean(host.runtime.context, present)])!
 	}
 	media.set_autoplay(present)
-	return C.JSValueMakeUndefined(host.runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 }
 
 fn (mut host MediaElementHost) preload(receiver voidptr) !voidptr {
@@ -549,18 +549,18 @@ fn (mut host MediaElementHost) set_preload(receiver voidptr, value voidptr) !voi
 	// Publish the raw string before deferred fetching can reenter and replace it.
 	if host.attribute_sync != unsafe { nil } {
 		host.runtime.call_javascript_function(host.attribute_sync,
-			C.JSValueMakeUndefined(host.runtime.context), [receiver,
+			C.vox_jsc_JSValueMakeUndefined(host.runtime.context), [receiver,
 				host.runtime.binding_string('preload'), host.runtime.binding_utf16_string(converted)!])!
 	}
 	media.set_preload(raw)
-	return C.JSValueMakeUndefined(host.runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 }
 
 fn (mut host MediaElementHost) cross_origin(receiver voidptr) !voidptr {
 	media := host.media_element_for_binding(receiver)!
 	if replay := host.replay { replay(host.runtime)! }
 	if keyword := media.cross_origin() { return host.runtime.binding_string(keyword) }
-	return C.JSValueMakeNull(host.runtime.context)
+	return C.vox_jsc_JSValueMakeNull(host.runtime.context)
 }
 
 fn (mut host MediaElementHost) set_cross_origin(receiver voidptr, value voidptr) !voidptr {
@@ -571,18 +571,18 @@ fn (mut host MediaElementHost) set_cross_origin(receiver voidptr, value voidptr)
 	}
 	if replay := host.replay { replay(host.runtime)! }
 	mut raw := ?string(none)
-	mut synchronized_value := C.JSValueMakeBoolean(host.runtime.context, false)
+	mut synchronized_value := C.vox_jsc_JSValueMakeBoolean(host.runtime.context, false)
 	if text := converted {
 		raw = text.str()
 		synchronized_value = host.runtime.binding_utf16_string(text)!
 	}
 	if host.attribute_sync != unsafe { nil } {
 		host.runtime.call_javascript_function(host.attribute_sync,
-			C.JSValueMakeUndefined(host.runtime.context), [receiver,
+			C.vox_jsc_JSValueMakeUndefined(host.runtime.context), [receiver,
 				host.runtime.binding_string('crossorigin'), synchronized_value])!
 	}
 	media.set_crossorigin(raw)
-	return C.JSValueMakeUndefined(host.runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 }
 
 fn (host &MediaElementHost) video_element_for_binding(receiver voidptr) !&dom.Element {
@@ -599,17 +599,17 @@ fn (mut host MediaElementHost) video_dimension(name string, receiver voidptr) !v
 	video := html.html_video_element_model_for_dom_element(unsafe { &dom.HTMLVideoElement(element) })
 	mut pixels := video.video_width()
 	if name == 'videoHeight' { pixels = video.video_height() }
-	return C.JSValueMakeNumber(host.runtime.context, f64(pixels))
+	return C.vox_jsc_JSValueMakeNumber(host.runtime.context, f64(pixels))
 }
 
 fn (mut host MediaElementHost) video_size_attribute(name string, receiver voidptr) !voidptr {
 	element := host.video_element_for_binding(receiver)!
 	if replay := host.replay { replay(host.runtime)! }
 	// Source's unsigned-long reflection reads the first qualified attribute.
-	raw := element.get_attribute(name) or { return C.JSValueMakeNumber(host.runtime.context, 0) }
-	value := html.parse_non_negative_integer(raw) or { return C.JSValueMakeNumber(host.runtime.context, 0) }
-	if value > 0x7fff_ffff { return C.JSValueMakeNumber(host.runtime.context, 0) }
-	return C.JSValueMakeNumber(host.runtime.context, f64(value))
+	raw := element.get_attribute(name) or { return C.vox_jsc_JSValueMakeNumber(host.runtime.context, 0) }
+	value := html.parse_non_negative_integer(raw) or { return C.vox_jsc_JSValueMakeNumber(host.runtime.context, 0) }
+	if value > 0x7fff_ffff { return C.vox_jsc_JSValueMakeNumber(host.runtime.context, 0) }
+	return C.vox_jsc_JSValueMakeNumber(host.runtime.context, f64(value))
 }
 
 fn (mut host MediaElementHost) set_video_size_attribute(name string, receiver voidptr, value voidptr) !voidptr {
@@ -622,17 +622,17 @@ fn (mut host MediaElementHost) set_video_size_attribute(name string, receiver vo
 	raw := reflected.str()
 	if host.attribute_sync != unsafe { nil } {
 		host.runtime.call_javascript_function(host.attribute_sync,
-			C.JSValueMakeUndefined(host.runtime.context), [receiver,
+			C.vox_jsc_JSValueMakeUndefined(host.runtime.context), [receiver,
 				host.runtime.binding_string(name), host.runtime.binding_string(raw)])!
 	}
 	element.set_attribute_value(name, raw)
-	return C.JSValueMakeUndefined(host.runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 }
 
 fn (mut host MediaElementHost) plays_inline(receiver voidptr) !voidptr {
 	element := host.video_element_for_binding(receiver)!
 	if replay := host.replay { replay(host.runtime)! }
-	return C.JSValueMakeBoolean(host.runtime.context, element.has_attribute('playsinline'))
+	return C.vox_jsc_JSValueMakeBoolean(host.runtime.context, element.has_attribute('playsinline'))
 }
 
 fn (mut host MediaElementHost) set_plays_inline(receiver voidptr, value voidptr) !voidptr {
@@ -641,9 +641,9 @@ fn (mut host MediaElementHost) set_plays_inline(receiver voidptr, value voidptr)
 	if replay := host.replay { replay(host.runtime)! }
 	if host.attribute_sync != unsafe { nil } {
 		host.runtime.call_javascript_function(host.attribute_sync,
-			C.JSValueMakeUndefined(host.runtime.context), [receiver,
-				host.runtime.binding_string('playsinline'), C.JSValueMakeBoolean(host.runtime.context, present),
-				C.JSValueMakeBoolean(host.runtime.context, true)])!
+			C.vox_jsc_JSValueMakeUndefined(host.runtime.context), [receiver,
+				host.runtime.binding_string('playsinline'), C.vox_jsc_JSValueMakeBoolean(host.runtime.context, present),
+				C.vox_jsc_JSValueMakeBoolean(host.runtime.context, true)])!
 	}
 	// Generated boolean reflection removes the first qualified Attr, while
 	// presence writes an empty value into the null-namespace slot.
@@ -652,7 +652,7 @@ fn (mut host MediaElementHost) set_plays_inline(receiver voidptr, value voidptr)
 	} else {
 		element.remove_attribute('playsinline')
 	}
-	return C.JSValueMakeUndefined(host.runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 }
 
 fn (mut host MediaElementHost) src(receiver voidptr) !voidptr {
@@ -674,17 +674,17 @@ fn (mut host MediaElementHost) set_src(receiver voidptr, value voidptr) !voidptr
 	// Publish captured raw attributes before the DOM load hook can reenter.
 	if host.attribute_sync != unsafe { nil } {
 		host.runtime.call_javascript_function(host.attribute_sync,
-			C.JSValueMakeUndefined(host.runtime.context), [receiver,
+			C.vox_jsc_JSValueMakeUndefined(host.runtime.context), [receiver,
 				host.runtime.binding_string('src'), host.runtime.binding_utf16_string(converted)!])!
 	}
 	element.set_attribute_value('src', converted.str())
-	return C.JSValueMakeUndefined(host.runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 }
 
 fn (mut host MediaElementHost) src_object(receiver voidptr) !voidptr {
 	media := host.media_element_for_binding(receiver)!
 	if replay := host.replay { replay(host.runtime)! }
-	provider := media.src_object() or { return C.JSValueMakeNull(host.runtime.context) }
+	provider := media.src_object() or { return C.vox_jsc_JSValueMakeNull(host.runtime.context) }
 	if provider.kind == .blob {
 		blob := provider.blob or { return error('TypeError: Media provider has no Blob') }
 		return host.runtime.javascript_blob(blob)
@@ -715,7 +715,7 @@ fn (mut host MediaElementHost) set_src_object(receiver voidptr, value voidptr) !
 			message['NotSupportedError:'.len..].trim_left(' ')))
 		return host.runtime.actual_javascript_exception(host.runtime.javascript_dom_exception(native_exception)!)
 	}
-	return C.JSValueMakeUndefined(host.runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 }
 
 fn (mut host MediaElementHost) poster(receiver voidptr) !voidptr {
@@ -737,11 +737,11 @@ fn (mut host MediaElementHost) set_poster(receiver voidptr, value voidptr) !void
 	// Publish facade text before the existing poster algorithm can reenter.
 	if host.attribute_sync != unsafe { nil } {
 		host.runtime.call_javascript_function(host.attribute_sync,
-			C.JSValueMakeUndefined(host.runtime.context), [receiver,
+			C.vox_jsc_JSValueMakeUndefined(host.runtime.context), [receiver,
 				host.runtime.binding_string('poster'), host.runtime.binding_utf16_string(converted)!])!
 	}
 	element.set_attribute_value('poster', converted.str())
-	return C.JSValueMakeUndefined(host.runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 }
 
 fn (mut host MediaElementHost) controls(receiver voidptr) !voidptr {
@@ -750,7 +750,7 @@ fn (mut host MediaElementHost) controls(receiver voidptr) !voidptr {
 	element := host.bound_elements[receiver] or {
 		return error('TypeError: Not an object of type HTMLMediaElement')
 	}
-	return C.JSValueMakeBoolean(host.runtime.context, element.has_attribute_ns(none, 'controls'))
+	return C.vox_jsc_JSValueMakeBoolean(host.runtime.context, element.has_attribute_ns(none, 'controls'))
 }
 
 fn (mut host MediaElementHost) set_controls(receiver voidptr, value voidptr) !voidptr {
@@ -763,8 +763,8 @@ fn (mut host MediaElementHost) set_controls(receiver voidptr, value voidptr) !vo
 	}
 	if host.attribute_sync != unsafe { nil } {
 		host.runtime.call_javascript_function(host.attribute_sync,
-			C.JSValueMakeUndefined(host.runtime.context), [receiver,
-				host.runtime.binding_string('controls'), C.JSValueMakeBoolean(host.runtime.context, present)])!
+			C.vox_jsc_JSValueMakeUndefined(host.runtime.context), [receiver,
+				host.runtime.binding_string('controls'), C.vox_jsc_JSValueMakeBoolean(host.runtime.context, present)])!
 	}
 	// Reflect the content attribute, independently of the controls UI's lifecycle.
 	if present {
@@ -772,7 +772,7 @@ fn (mut host MediaElementHost) set_controls(receiver voidptr, value voidptr) !vo
 	} else {
 		element.remove_attribute_ns(none, 'controls')
 	}
-	return C.JSValueMakeUndefined(host.runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 }
 
 fn (mut host MediaElementHost) get(name string, receiver voidptr) !voidptr {
@@ -784,20 +784,20 @@ fn (mut host MediaElementHost) get(name string, receiver voidptr) !voidptr {
 		'played' { host.runtime.javascript_time_ranges(media.played())! }
 		'seekable' { host.runtime.javascript_time_ranges(media.seekable())! }
 		'currentSrc' { host.runtime.binding_string(media.current_src()) }
-		'networkState' { C.JSValueMakeNumber(host.runtime.context, f64(media.network_state())) }
-		'readyState' { C.JSValueMakeNumber(host.runtime.context, f64(media.ready_state())) }
-		'seeking' { C.JSValueMakeBoolean(host.runtime.context, media.seeking()) }
-		'duration' { C.JSValueMakeNumber(host.runtime.context, media.duration()) }
-		'paused' { C.JSValueMakeBoolean(host.runtime.context, media.paused()) }
-		'ended' { C.JSValueMakeBoolean(host.runtime.context, media.ended()) }
-		'defaultPlaybackRate' { C.JSValueMakeNumber(host.runtime.context, media.default_playback_rate()) }
-		'playbackRate' { C.JSValueMakeNumber(host.runtime.context, media.playback_rate()) }
-		'volume' { C.JSValueMakeNumber(host.runtime.context, media.volume()) }
-		'muted' { C.JSValueMakeBoolean(host.runtime.context, media.muted()) }
-		'currentTime' { C.JSValueMakeNumber(host.runtime.context, media.current_time()) }
+		'networkState' { C.vox_jsc_JSValueMakeNumber(host.runtime.context, f64(media.network_state())) }
+		'readyState' { C.vox_jsc_JSValueMakeNumber(host.runtime.context, f64(media.ready_state())) }
+		'seeking' { C.vox_jsc_JSValueMakeBoolean(host.runtime.context, media.seeking()) }
+		'duration' { C.vox_jsc_JSValueMakeNumber(host.runtime.context, media.duration()) }
+		'paused' { C.vox_jsc_JSValueMakeBoolean(host.runtime.context, media.paused()) }
+		'ended' { C.vox_jsc_JSValueMakeBoolean(host.runtime.context, media.ended()) }
+		'defaultPlaybackRate' { C.vox_jsc_JSValueMakeNumber(host.runtime.context, media.default_playback_rate()) }
+		'playbackRate' { C.vox_jsc_JSValueMakeNumber(host.runtime.context, media.playback_rate()) }
+		'volume' { C.vox_jsc_JSValueMakeNumber(host.runtime.context, media.volume()) }
+		'muted' { C.vox_jsc_JSValueMakeBoolean(host.runtime.context, media.muted()) }
+		'currentTime' { C.vox_jsc_JSValueMakeNumber(host.runtime.context, media.current_time()) }
 		'error' {
 			if failure := media.error() { host.runtime.javascript_media_error(failure)! }
-			else { C.JSValueMakeNull(host.runtime.context) }
+			else { C.vox_jsc_JSValueMakeNull(host.runtime.context) }
 		}
 		else { return error('Unknown media element getter') }
 	}
@@ -819,14 +819,14 @@ fn (mut host MediaElementHost) set_event_handler(name string, receiver voidptr, 
 	} else {
 		none
 	})
-	return C.JSValueMakeUndefined(host.runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 }
 
 fn (mut host MediaElementHost) restricted_double(name string, value voidptr) !f64 {
 	// Unary plus preserves ECMAScript ToNumber, including the BigInt rejection.
 	converted := host.runtime.call_engine_function(host.runtime.value_number_intrinsic_, [value])!
 	mut exception := unsafe { nil }
-	number := C.JSValueToNumber(host.runtime.context, converted, &exception)
+	number := C.vox_jsc_JSValueToNumber(host.runtime.context, converted, &exception)
 	if exception != unsafe { nil } { return host.runtime.actual_javascript_exception(exception) }
 	if !math.is_finite(number) { return error('TypeError: Expected ${name} to be a finite floating-point number') }
 	return number
@@ -839,7 +839,7 @@ fn (mut host MediaElementHost) fast_seek(receiver voidptr, args []voidptr) !void
 	number := host.restricted_double('time', args[0])!
 	if replay := host.replay { replay(host.runtime)! }
 	media.fast_seek(number)
-	return C.JSValueMakeUndefined(host.runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 }
 
 fn (mut host MediaElementHost) can_play_type(receiver voidptr, args []voidptr) !voidptr {
@@ -865,9 +865,9 @@ fn (mut host MediaElementHost) start_date(receiver voidptr) !voidptr {
 	if !math.is_nan(value) && math.abs(value) > 8_640_000_000_000_000.0 {
 		return error('Source media Date value cannot be installed exactly by JavaScriptCore')
 	}
-	call_arguments := [C.JSValueMakeNumber(host.runtime.context, value)]
+	call_arguments := [C.vox_jsc_JSValueMakeNumber(host.runtime.context, value)]
 	mut exception := unsafe { nil }
-	date := C.JSObjectMakeDate(host.runtime.context, 1, call_arguments.data, &exception)
+	date := C.vox_jsc_JSObjectMakeDate(host.runtime.context, 1, call_arguments.data, &exception)
 	if exception != unsafe { nil } { return host.runtime.actual_javascript_exception(exception) }
 	return date
 }
@@ -876,7 +876,7 @@ fn (mut host MediaElementHost) pause(receiver voidptr) !voidptr {
 	mut media := host.media_element_for_binding(receiver)!
 	if replay := host.replay { replay(host.runtime)! }
 	media.pause()
-	return C.JSValueMakeUndefined(host.runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 }
 
 fn (mut host MediaElementHost) wrap_play_promise(promise &webidl.Promise) !voidptr {
@@ -884,7 +884,7 @@ fn (mut host MediaElementHost) wrap_play_promise(promise &webidl.Promise) !voidp
 	return host.runtime.javascript_webidl_promise(promise, fn [handle] (value webidl.Value) !voidptr {
 		mut host := unsafe { &MediaElementHost(handle) }
 		if value.dom_exception_ != none { return host.runtime.javascript_dom_exception(value) }
-		if value.kind == .undefined { return C.JSValueMakeUndefined(host.runtime.context) }
+		if value.kind == .undefined { return C.vox_jsc_JSValueMakeUndefined(host.runtime.context) }
 		return host.runtime.actual_webidl_value(value)
 	})
 }
@@ -912,7 +912,7 @@ fn (mut host MediaElementHost) load(receiver voidptr) !voidptr {
 			message['NotSupportedError:'.len..].trim_left(' ')))
 		return host.runtime.actual_javascript_exception(host.runtime.javascript_dom_exception(native_exception)!)
 	}
-	return C.JSValueMakeUndefined(host.runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 }
 
 fn (mut host MediaElementHost) set_property(name string, receiver voidptr, value voidptr) !voidptr {
@@ -923,7 +923,7 @@ fn (mut host MediaElementHost) set_property(name string, receiver voidptr, value
 		muted := C.JSValueToBoolean(host.runtime.context, value)
 		if replay := host.replay { replay(host.runtime)! }
 		media.set_muted(muted)
-		return C.JSValueMakeUndefined(host.runtime.context)
+		return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 	}
 	number := host.restricted_double(name, value)!
 	if replay := host.replay { replay(host.runtime)! }
@@ -948,7 +948,7 @@ fn (mut host MediaElementHost) set_property(name string, receiver voidptr, value
 			return host.runtime.actual_javascript_exception(host.runtime.javascript_dom_exception(native_exception)!)
 		}
 	}
-	return C.JSValueMakeUndefined(host.runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 }
 
 // The compact DOM hierarchy remains partial. This base prototype exposes only
@@ -1043,14 +1043,14 @@ fn (mut host MediaElementHost) install_media_tracks() ! {
 		}
 	})!
 	mut exception := unsafe { nil }
-	array := C.JSObjectMakeArray(runtime.context, uint(functions.len), functions.data, &exception)
+	array := C.vox_jsc_JSObjectMakeArray(runtime.context, uint(functions.len), functions.data, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	runtime.retain_javascript_value(array)!
 	defer { runtime.release_javascript_value(array) }
 	factory := runtime.evaluate_host_value(media_tracks_native_factory)!
 	defer { runtime.release_javascript_value(factory) }
 	installed := runtime.retain_javascript_value(runtime.call_javascript_function(factory,
-		C.JSValueMakeUndefined(runtime.context), [array, indexed, host.prototype, C.JSValueMakeBoolean(runtime.context, false)])!)!
+		C.vox_jsc_JSValueMakeUndefined(runtime.context), [array, indexed, host.prototype, C.vox_jsc_JSValueMakeBoolean(runtime.context, false)])!)!
 	defer { runtime.release_javascript_value(installed) }
 	host.audio_track_prototype = runtime.retain_javascript_value(runtime.binding_property(installed, 'track')!)!
 	host.audio_list_wrap = runtime.retain_javascript_value(runtime.binding_property(installed, 'wrapList')!)!
@@ -1083,7 +1083,7 @@ fn (mut host MediaElementHost) wrap_audio_track_list(list &html.AudioTrackList) 
 	if host.closed { return error('TypeError: Media element binding is closed') }
 	if wrapper := host.audio_owner_wrappers[voidptr(list)] { return wrapper }
 	wrapper := host.runtime.call_javascript_function(host.audio_list_wrap,
-		C.JSValueMakeUndefined(host.runtime.context), [])!
+		C.vox_jsc_JSValueMakeUndefined(host.runtime.context), [])!
 	host.runtime.bind_event_target(wrapper, list.event_target())!
 	host.audio_lists[wrapper] = list
 	host.audio_owner_wrappers[voidptr(list)] = wrapper
@@ -1111,34 +1111,34 @@ fn (mut host MediaElementHost) audio_track_operation(name string, receiver voidp
 	}
 	if name in ['length', 'getTrackById'] || name.starts_with('on') || name.starts_with('setOn') {
 		list := host.audio_lists[receiver] or { return error('TypeError: Not an object of type AudioTrackList') }
-		if name == 'length' { return C.JSValueMakeNumber(context, f64(list.length())) }
+		if name == 'length' { return C.vox_jsc_JSValueMakeNumber(context, f64(list.length())) }
 		if name == 'getTrackById' {
 			if args.len == 0 { return error('TypeError: getTrackById requires at least 1 argument') }
 			id := host.runtime.binding_dom_string(args[0])!
-			track := list.get_track_by_id(id) or { return C.JSValueMakeNull(context) }
+			track := list.get_track_by_id(id) or { return C.vox_jsc_JSValueMakeNull(context) }
 			return host.wrap_audio_track(track)
 		}
 		if name.starts_with('setOn') {
-			mut value := C.JSValueMakeUndefined(context)
+			mut value := C.vox_jsc_JSValueMakeUndefined(context)
 			if args.len > 0 { value = args[0] }
 			host.runtime.set_javascript_event_handler(list.event_target(), name[5..].to_lower(), value)!
-			return C.JSValueMakeUndefined(context)
+			return C.vox_jsc_JSValueMakeUndefined(context)
 		}
 		return host.runtime.javascript_event_handler(list.event_target(), name[2..])
 	}
 	mut track := host.audio_tracks[receiver] or { return error('TypeError: Not an object of type AudioTrack') }
 	if name == 'setEnabled' {
-		mut value := C.JSValueMakeUndefined(context)
+		mut value := C.vox_jsc_JSValueMakeUndefined(context)
 		if args.len > 0 { value = args[0] }
 		track.set_enabled(C.JSValueToBoolean(context, value))
-		return C.JSValueMakeUndefined(context)
+		return C.vox_jsc_JSValueMakeUndefined(context)
 	}
 	return match name {
 		'id' { host.runtime.binding_string(track.base.id()) }
 		'kind' { host.runtime.binding_string(track.base.kind()) }
 		'label' { host.runtime.binding_string(track.base.label()) }
 		'language' { host.runtime.binding_string(track.base.language()) }
-		else { C.JSValueMakeBoolean(context, track.enabled) }
+		else { C.vox_jsc_JSValueMakeBoolean(context, track.enabled) }
 	}
 }
 
@@ -1146,14 +1146,14 @@ fn (mut host MediaElementHost) audio_track_list_index(args []voidptr) !voidptr {
 	if host.closed { return error('TypeError: Media element binding is closed') }
 	if args.len == 1 {
 		key := libjs.PropertyName.from_utf16(host.runtime.native_utf16_string(args[0])!)
-		if !key.is_number() { return C.JSValueMakeUndefined(host.runtime.context) }
-		return C.JSValueMakeNumber(host.runtime.context, f64(key.number))
+		if !key.is_number() { return C.vox_jsc_JSValueMakeUndefined(host.runtime.context) }
+		return C.vox_jsc_JSValueMakeNumber(host.runtime.context, f64(key.number))
 	}
 	list := host.audio_lists[args[0]] or { return error('TypeError: Not an object of type AudioTrackList') }
 	mut exception := unsafe { nil }
-	index := u32(C.JSValueToNumber(host.runtime.context, args[1], &exception))
+	index := u32(C.vox_jsc_JSValueToNumber(host.runtime.context, args[1], &exception))
 	if exception != unsafe { nil } { return host.runtime.actual_javascript_exception(exception) }
-	track := list.item(index) or { return C.JSValueMakeUndefined(host.runtime.context) }
+	track := list.item(index) or { return C.vox_jsc_JSValueMakeUndefined(host.runtime.context) }
 	return host.wrap_audio_track(track)
 }
 
@@ -1218,14 +1218,14 @@ fn (mut host MediaElementHost) install_video_tracks() ! {
 		}
 	})!
 	mut exception := unsafe { nil }
-	array := C.JSObjectMakeArray(runtime.context, uint(functions.len), functions.data, &exception)
+	array := C.vox_jsc_JSObjectMakeArray(runtime.context, uint(functions.len), functions.data, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	runtime.retain_javascript_value(array)!
 	defer { runtime.release_javascript_value(array) }
 	factory := runtime.evaluate_host_value(media_tracks_native_factory)!
 	defer { runtime.release_javascript_value(factory) }
 	installed := runtime.retain_javascript_value(runtime.call_javascript_function(factory,
-		C.JSValueMakeUndefined(runtime.context), [array, indexed, host.prototype, C.JSValueMakeBoolean(runtime.context, true)])!)!
+		C.vox_jsc_JSValueMakeUndefined(runtime.context), [array, indexed, host.prototype, C.vox_jsc_JSValueMakeBoolean(runtime.context, true)])!)!
 	defer { runtime.release_javascript_value(installed) }
 	host.video_track_prototype = runtime.retain_javascript_value(runtime.binding_property(installed, 'track')!)!
 	host.video_list_wrap = runtime.retain_javascript_value(runtime.binding_property(installed, 'wrapList')!)!
@@ -1235,7 +1235,7 @@ fn (mut host MediaElementHost) wrap_video_track_list(list &html.VideoTrackList) 
 	if host.closed { return error('TypeError: Media element binding is closed') }
 	if wrapper := host.video_owner_wrappers[voidptr(list)] { return wrapper }
 	wrapper := host.runtime.call_javascript_function(host.video_list_wrap,
-		C.JSValueMakeUndefined(host.runtime.context), [])!
+		C.vox_jsc_JSValueMakeUndefined(host.runtime.context), [])!
 	host.runtime.bind_event_target(wrapper, &list.EventTarget)!
 	host.video_lists[wrapper] = list
 	host.video_owner_wrappers[voidptr(list)] = wrapper
@@ -1263,35 +1263,35 @@ fn (mut host MediaElementHost) video_track_operation(name string, receiver voidp
 	}
 	if name in ['length', 'selectedIndex', 'getTrackById'] || name.starts_with('on') || name.starts_with('setOn') {
 		list := host.video_lists[receiver] or { return error('TypeError: Not an object of type VideoTrackList') }
-		if name == 'length' { return C.JSValueMakeNumber(context, f64(list.length())) }
-		if name == 'selectedIndex' { return C.JSValueMakeNumber(context, f64(list.selected_index())) }
+		if name == 'length' { return C.vox_jsc_JSValueMakeNumber(context, f64(list.length())) }
+		if name == 'selectedIndex' { return C.vox_jsc_JSValueMakeNumber(context, f64(list.selected_index())) }
 		if name == 'getTrackById' {
 			if args.len == 0 { return error('TypeError: getTrackById requires at least 1 argument') }
 			id := host.runtime.binding_dom_string(args[0])!
-			track := list.get_track_by_id(id) or { return C.JSValueMakeNull(context) }
+			track := list.get_track_by_id(id) or { return C.vox_jsc_JSValueMakeNull(context) }
 			return host.wrap_video_track(track)
 		}
 		if name.starts_with('setOn') {
-			mut value := C.JSValueMakeUndefined(context)
+			mut value := C.vox_jsc_JSValueMakeUndefined(context)
 			if args.len > 0 { value = args[0] }
 			host.runtime.set_javascript_event_handler(&list.EventTarget, name[5..].to_lower(), value)!
-			return C.JSValueMakeUndefined(context)
+			return C.vox_jsc_JSValueMakeUndefined(context)
 		}
 		return host.runtime.javascript_event_handler(&list.EventTarget, name[2..])
 	}
 	mut track := host.video_tracks[receiver] or { return error('TypeError: Not an object of type VideoTrack') }
 	if name == 'setSelected' {
-		mut value := C.JSValueMakeUndefined(context)
+		mut value := C.vox_jsc_JSValueMakeUndefined(context)
 		if args.len > 0 { value = args[0] }
 		track.set_selected(C.JSValueToBoolean(context, value))
-		return C.JSValueMakeUndefined(context)
+		return C.vox_jsc_JSValueMakeUndefined(context)
 	}
 	return match name {
 		'id' { host.runtime.binding_string(track.base.id()) }
 		'kind' { host.runtime.binding_string(track.base.kind()) }
 		'label' { host.runtime.binding_string(track.base.label()) }
 		'language' { host.runtime.binding_string(track.base.language()) }
-		else { C.JSValueMakeBoolean(context, track.selected) }
+		else { C.vox_jsc_JSValueMakeBoolean(context, track.selected) }
 	}
 }
 
@@ -1299,14 +1299,14 @@ fn (mut host MediaElementHost) video_track_list_index(args []voidptr) !voidptr {
 	if host.closed { return error('TypeError: Media element binding is closed') }
 	if args.len == 1 {
 		key := libjs.PropertyName.from_utf16(host.runtime.native_utf16_string(args[0])!)
-		if !key.is_number() { return C.JSValueMakeUndefined(host.runtime.context) }
-		return C.JSValueMakeNumber(host.runtime.context, f64(key.number))
+		if !key.is_number() { return C.vox_jsc_JSValueMakeUndefined(host.runtime.context) }
+		return C.vox_jsc_JSValueMakeNumber(host.runtime.context, f64(key.number))
 	}
 	list := host.video_lists[args[0]] or { return error('TypeError: Not an object of type VideoTrackList') }
 	mut exception := unsafe { nil }
-	index := u32(C.JSValueToNumber(host.runtime.context, args[1], &exception))
+	index := u32(C.vox_jsc_JSValueToNumber(host.runtime.context, args[1], &exception))
 	if exception != unsafe { nil } { return host.runtime.actual_javascript_exception(exception) }
-	track := list.item(index) or { return C.JSValueMakeUndefined(host.runtime.context) }
+	track := list.item(index) or { return C.vox_jsc_JSValueMakeUndefined(host.runtime.context) }
 	return host.wrap_video_track(track)
 }
 
@@ -1334,14 +1334,14 @@ fn (mut host MediaElementHost) install_text_tracks() ! {
 		}
 	})!
 	mut exception := unsafe { nil }
-	array := C.JSObjectMakeArray(runtime.context, uint(functions.len), functions.data, &exception)
+	array := C.vox_jsc_JSObjectMakeArray(runtime.context, uint(functions.len), functions.data, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	runtime.retain_javascript_value(array)!
 	defer { runtime.release_javascript_value(array) }
 	factory := runtime.evaluate_host_value(media_tracks_native_factory)!
 	defer { runtime.release_javascript_value(factory) }
 	installed := runtime.retain_javascript_value(runtime.call_javascript_function(factory,
-		C.JSValueMakeUndefined(runtime.context), [array, indexed, host.prototype, C.JSValueMakeBoolean(runtime.context, false), C.JSValueMakeBoolean(runtime.context, true)])!)!
+		C.vox_jsc_JSValueMakeUndefined(runtime.context), [array, indexed, host.prototype, C.vox_jsc_JSValueMakeBoolean(runtime.context, false), C.vox_jsc_JSValueMakeBoolean(runtime.context, true)])!)!
 	defer { runtime.release_javascript_value(installed) }
 	host.text_track_prototype = runtime.retain_javascript_value(runtime.binding_property(installed, 'track')!)!
 	host.text_list_wrap = runtime.retain_javascript_value(runtime.binding_property(installed, 'wrapList')!)!
@@ -1351,7 +1351,7 @@ fn (mut host MediaElementHost) wrap_text_track_list(list &html.TextTrackList) !v
 	if host.closed { return error('TypeError: Media element binding is closed') }
 	if wrapper := host.text_owner_wrappers[voidptr(list)] { return wrapper }
 	wrapper := host.runtime.call_javascript_function(host.text_list_wrap,
-		C.JSValueMakeUndefined(host.runtime.context), [])!
+		C.vox_jsc_JSValueMakeUndefined(host.runtime.context), [])!
 	host.runtime.bind_event_target(wrapper, &list.EventTarget)!
 	host.text_lists[wrapper] = list
 	host.text_owner_wrappers[voidptr(list)] = wrapper
@@ -1380,45 +1380,45 @@ fn (mut host MediaElementHost) text_track_operation(name string, receiver voidpt
 	}
 	if name in ['length', 'getTrackById', 'onchange', 'setOnchange', 'onaddtrack', 'setOnaddtrack', 'onremovetrack', 'setOnremovetrack'] {
 		list := host.text_lists[receiver] or { return error('TypeError: Not an object of type TextTrackList') }
-		if name == 'length' { return C.JSValueMakeNumber(context, f64(list.length())) }
+		if name == 'length' { return C.vox_jsc_JSValueMakeNumber(context, f64(list.length())) }
 		if name == 'getTrackById' {
 			if args.len == 0 { return error('TypeError: getTrackById requires at least 1 argument') }
 			id := host.runtime.binding_dom_utf16(args[0])!.str()
-			track := list.get_track_by_id(id) or { return C.JSValueMakeNull(context) }
+			track := list.get_track_by_id(id) or { return C.vox_jsc_JSValueMakeNull(context) }
 			return host.wrap_text_track(track)
 		}
 		if name.starts_with('setOn') {
-			mut value := C.JSValueMakeUndefined(context)
+			mut value := C.vox_jsc_JSValueMakeUndefined(context)
 			if args.len > 0 { value = args[0] }
 			host.runtime.set_javascript_event_handler(&list.EventTarget, name[5..].to_lower(), value)!
-			return C.JSValueMakeUndefined(context)
+			return C.vox_jsc_JSValueMakeUndefined(context)
 		}
 		return host.runtime.javascript_event_handler(&list.EventTarget, name[2..])
 	}
 	mut track := host.text_tracks[receiver] or { return error('TypeError: Not an object of type TextTrack') }
 	if name == 'setMode' {
-		mut value := C.JSValueMakeUndefined(context)
+		mut value := C.vox_jsc_JSValueMakeUndefined(context)
 		if args.len > 0 { value = args[0] }
 		// Source's generated enum attribute setter ignores conversion errors.
 		converted := host.runtime.binding_dom_utf16(value) or {
 			if err is JavaScriptValueException { host.runtime.release_javascript_value(err.value) }
-			return C.JSValueMakeUndefined(context)
+			return C.vox_jsc_JSValueMakeUndefined(context)
 		}
 		mode := match converted.str() {
 			'disabled' { html.TextTrackMode.disabled }
 			'hidden' { html.TextTrackMode.hidden }
 			'showing' { html.TextTrackMode.showing }
-			else { return C.JSValueMakeUndefined(context) }
+			else { return C.vox_jsc_JSValueMakeUndefined(context) }
 		}
 		track.set_mode(mode)
-		return C.JSValueMakeUndefined(context)
+		return C.vox_jsc_JSValueMakeUndefined(context)
 	}
 	if name == 'oncuechange' { return host.runtime.javascript_event_handler(&track.EventTarget, 'cuechange') }
 	if name == 'setOncuechange' {
-		mut value := C.JSValueMakeUndefined(context)
+		mut value := C.vox_jsc_JSValueMakeUndefined(context)
 		if args.len > 0 { value = args[0] }
 		host.runtime.set_javascript_event_handler(&track.EventTarget, 'cuechange', value)!
-		return C.JSValueMakeUndefined(context)
+		return C.vox_jsc_JSValueMakeUndefined(context)
 	}
 	if name == 'kind' { return host.runtime.binding_string(track.kind().str()) }
 	if name == 'mode' { return host.runtime.binding_string(track.mode().str()) }
@@ -1430,14 +1430,14 @@ fn (mut host MediaElementHost) text_track_list_index(args []voidptr) !voidptr {
 	if host.closed { return error('TypeError: Media element binding is closed') }
 	if args.len == 1 {
 		key := libjs.PropertyName.from_utf16(host.runtime.native_utf16_string(args[0])!)
-		if !key.is_number() { return C.JSValueMakeUndefined(host.runtime.context) }
-		return C.JSValueMakeNumber(host.runtime.context, f64(key.number))
+		if !key.is_number() { return C.vox_jsc_JSValueMakeUndefined(host.runtime.context) }
+		return C.vox_jsc_JSValueMakeNumber(host.runtime.context, f64(key.number))
 	}
 	list := host.text_lists[args[0]] or { return error('TypeError: Not an object of type TextTrackList') }
 	mut exception := unsafe { nil }
-	index := u32(C.JSValueToNumber(host.runtime.context, args[1], &exception))
+	index := u32(C.vox_jsc_JSValueToNumber(host.runtime.context, args[1], &exception))
 	if exception != unsafe { nil } { return host.runtime.actual_javascript_exception(exception) }
-	track := list.item(int(index)) or { return C.JSValueMakeUndefined(host.runtime.context) }
+	track := list.item(int(index)) or { return C.vox_jsc_JSValueMakeUndefined(host.runtime.context) }
 	return host.wrap_text_track(track)
 }
 

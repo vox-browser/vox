@@ -13,8 +13,10 @@ CASES = [
     "css/color_interpolation_test.v", "dom/range_mutation_order_test.v",
     "platform/gc_keepalive_linux_test.v",
     "libjs/stack_info_test.v",
+    "libregex/native_abi_test.v",
     "platform/native_timer_test.v", "platform/native_deferred_test.v",
     "platform/fontconfig_linux_test.v", "browserjs/linux_runtime_test.v",
+    "browserjs/jsc_abi_test.v",
     "gfxfont/woff_test.v",
     "browserjs/runtime_test.v", "browserjs/host_function_test.v",
     "browserjs/event_target_binding_test.v", "adblock/engine_test.v",
@@ -33,6 +35,15 @@ def main():
     args = parser.parse_args()
     repo = Path(__file__).resolve().parent.parent
     compiler = os.environ.get("V_BIN") or shutil.which("v") or str(Path.home() / "code/v/v")
+    c_compiler = os.environ.get("CC", "clang")
+    c_version = subprocess.check_output([c_compiler, "--version"], text=True)
+    c_flags = "-Werror=incompatible-pointer-types"
+    if "clang" in c_version.lower():
+        c_flags += " -Werror=incompatible-function-pointer-types"
+        # Clang groups const-discard warnings under pointer incompatibility.
+        # Keep those existing diagnostics as warnings while rejecting actual
+        # pointer/output-slot mismatches at native API boundaries.
+        c_flags += " -Wno-error=incompatible-pointer-types-discards-qualifiers"
     environment = dict(os.environ, V_C_ERROR_BUG_REPORT_DISABLED="1",
                        V_MACOS_V3_NO_FALLBACK="1")
     bypass = "127.0.0.1,localhost,::1," + environment.get("NO_PROXY", environment.get("no_proxy", ""))
@@ -50,10 +61,11 @@ def main():
     output_root.mkdir(parents=True, exist_ok=True)
     output = Path(tempfile.mkdtemp(prefix="run-", dir=output_root))
     print(f"Logs: {output}", flush=True)
+    print(f"C diagnostics: {c_compiler} -cstrict {c_flags}", flush=True)
     with tempfile.TemporaryDirectory(prefix="vox-native-") as temporary:
         for case in args.cases:
             command = [compiler, "-memory-limit", "10G", "-enable-globals",
-                       "-cc", os.environ.get("CC", "clang"),
+                       "-cc", c_compiler, "-cstrict", "-cflags", c_flags,
                        "-gc", args.gc, "-d", "use_openssl",
                        "-exclude", "@vlib/time/zoneinfo.native.v", "-path", paths]
             if args.gc != "none":

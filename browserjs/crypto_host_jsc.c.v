@@ -10,10 +10,10 @@ import webidl
 #include "crypto_views_darwin.h"
 
 fn C.JSObjectMake(context voidptr, object_class voidptr, data voidptr) voidptr
-fn C.vox_crypto_integer_view_kind(context voidptr, value voidptr, exception &voidptr) int
+fn C.vox_jsc_crypto_integer_view_kind(context voidptr, value voidptr, exception &voidptr) int
 fn C.JSContextGetGlobalObject(context voidptr) voidptr
 fn C.JSValueToBoolean(context voidptr, value voidptr) bool
-fn C.JSObjectGetArrayBufferByteLength(context voidptr, object voidptr, exception &voidptr) uint
+fn C.vox_jsc_JSObjectGetArrayBufferByteLength(context voidptr, object voidptr, exception &voidptr) uint
 
 __global crypto_bindings_ = map[voidptr]&CryptoHost{}
 
@@ -37,15 +37,15 @@ pub fn (mut host CryptoHost) install(mut runtime Runtime) ! {
 	host.typed_array_witness = runtime.evaluate_host_value('(function(){const apply=Reflect.apply,values=Int8Array.prototype.values;return function(view){return apply(values,view,[])}})()')!
 	installer := runtime.evaluate_host_value(crypto_native_bootstrap)!
 	defer { runtime.release_javascript_value(installer) }
-	prototypes := runtime.call_javascript_function(installer, C.JSValueMakeUndefined(runtime.context), [
+	prototypes := runtime.call_javascript_function(installer, C.vox_jsc_JSValueMakeUndefined(runtime.context), [
 		operate,
-		C.JSValueMakeBoolean(runtime.context, host.settings.is_secure_context()),
+		C.vox_jsc_JSValueMakeBoolean(runtime.context, host.settings.is_secure_context()),
 	])!
 	runtime.retain_javascript_value(prototypes)!
 	defer { runtime.release_javascript_value(prototypes) }
 	for index, kind in [CryptoHostKind.crypto, .subtle] {
 		mut exception := unsafe { nil }
-		prototype := C.JSObjectGetPropertyAtIndex(runtime.context, prototypes, u32(index), &exception)
+		prototype := C.vox_jsc_JSObjectGetPropertyAtIndex(runtime.context, prototypes, u32(index), &exception)
 		if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 		host.prototypes[kind] = runtime.retain_javascript_value(prototype)!
 	}
@@ -126,7 +126,7 @@ pub fn (runtime &Runtime) native_subtle_crypto(value voidptr) !&webcrypto.Subtle
 
 fn (host &CryptoHost) argument(args []voidptr, index int) voidptr {
 	if index < args.len { return args[index] }
-	return C.JSValueMakeUndefined(host.runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 }
 
 fn (mut host CryptoHost) operate(args []voidptr) !voidptr {
@@ -155,35 +155,35 @@ fn (mut host CryptoHost) operate(args []voidptr) !voidptr {
 
 fn (mut host CryptoHost) random_values(value voidptr) !voidptr {
 	runtime := host.runtime
-	is_view := runtime.call_javascript_function(host.array_is_view, C.JSValueMakeUndefined(runtime.context), [value])!
+	is_view := runtime.call_javascript_function(host.array_is_view, C.vox_jsc_JSValueMakeUndefined(runtime.context), [value])!
 	if !C.JSValueToBoolean(runtime.context, is_view) {
 		// The pinned union conversion has no matching concrete view branch.
 		return error('TypeError: No union types matched')
 	}
-	validation := runtime.call_javascript_function(host.view_validation, C.JSValueMakeUndefined(runtime.context), [value])!
+	validation := runtime.call_javascript_function(host.view_validation, C.vox_jsc_JSValueMakeUndefined(runtime.context), [value])!
 	validation_error := runtime.binding_dom_string(validation)!
 	if validation_error != '' { return error('TypeError: ${validation_error}') }
 	mut exception := unsafe { nil }
-	kind := C.vox_crypto_integer_view_kind(runtime.context, value, &exception)
+	kind := C.vox_jsc_crypto_integer_view_kind(runtime.context, value, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	if kind < 0 {
 		_ := host.service.crypto().get_random_values_for_view(.data_view, false, 0)!
 		return error('InvalidStateError: Non-integer Crypto view unexpectedly succeeded')
 	}
 	mut out_of_bounds := false
-	runtime.call_javascript_function(host.typed_array_witness, C.JSValueMakeUndefined(runtime.context), [value]) or { out_of_bounds = true }
+	runtime.call_javascript_function(host.typed_array_witness, C.vox_jsc_JSValueMakeUndefined(runtime.context), [value]) or { out_of_bounds = true }
 	if out_of_bounds {
 		_ := host.service.crypto().get_random_values_for_view(unsafe { webcrypto.RandomValuesArrayKind(kind) }, true, 0)!
 	}
-	length := C.JSObjectGetTypedArrayByteLength(runtime.context, value, &exception)
+	length := C.vox_jsc_JSObjectGetTypedArrayByteLength(runtime.context, value, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	random := host.service.crypto().get_random_values_for_view(unsafe { webcrypto.RandomValuesArrayKind(kind) }, out_of_bounds, u64(length))!
 	if random.len == 0 { return value }
-	buffer := C.JSObjectGetTypedArrayBuffer(runtime.context, value, &exception)
+	buffer := C.vox_jsc_JSObjectGetTypedArrayBuffer(runtime.context, value, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
-	offset := C.JSObjectGetTypedArrayByteOffset(runtime.context, value, &exception)
+	offset := C.vox_jsc_JSObjectGetTypedArrayByteOffset(runtime.context, value, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
-	pointer := C.JSObjectGetArrayBufferBytesPtr(runtime.context, buffer, &exception)
+	pointer := C.vox_jsc_JSObjectGetArrayBufferBytesPtr(runtime.context, buffer, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	unsafe { C.memcpy(&u8(pointer) + offset, random.data, uint(random.len)) }
 	return value

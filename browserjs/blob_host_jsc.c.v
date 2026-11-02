@@ -43,7 +43,7 @@ pub fn (mut host BlobHost) install(mut runtime Runtime) ! {
 	})!
 	installer := runtime.evaluate_host_value(blob_native_prototype_factory)!
 	defer { runtime.release_javascript_value(installer) }
-	host.prototype = runtime.retain_javascript_value(runtime.call_javascript_function(installer, C.JSValueMakeUndefined(runtime.context), [operate])!)!
+	host.prototype = runtime.retain_javascript_value(runtime.call_javascript_function(installer, C.vox_jsc_JSValueMakeUndefined(runtime.context), [operate])!)!
 	blob_bindings_[owner] = &host
 	runtime.add_close_handler(fn [handle, owner] () {
 		mut host := unsafe { &BlobHost(handle) }
@@ -54,7 +54,7 @@ pub fn (mut host BlobHost) install(mut runtime Runtime) ! {
 
 fn (host &BlobHost) argument(args []voidptr, index int) voidptr {
 	if index < args.len { return args[index] }
-	return C.JSValueMakeUndefined(host.runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 }
 
 fn (host &BlobHost) record(value voidptr) !&BlobHostRecord {
@@ -90,13 +90,13 @@ pub fn (runtime &Runtime) native_blob(value voidptr) !&fileapi.Blob {
 }
 
 fn (host &BlobHost) dom_string(value voidptr) !libjs.Utf16String {
-	actual := host.runtime.call_javascript_function(host.to_dom_string, C.JSValueMakeUndefined(host.runtime.context), [value])!
+	actual := host.runtime.call_javascript_function(host.to_dom_string, C.vox_jsc_JSValueMakeUndefined(host.runtime.context), [value])!
 	return host.runtime.native_utf16_string(actual)
 }
 
 fn (host &BlobHost) clamped_i64(value voidptr) !i64 {
 	mut exception := unsafe { nil }
-	number := C.JSValueToNumber(host.runtime.context, value, &exception)
+	number := C.vox_jsc_JSValueToNumber(host.runtime.context, value, &exception)
 	if exception != unsafe { nil } { return host.runtime.actual_javascript_exception(exception) }
 	return i64(webidl.convert_to_int(webidl.number_value(number), 64, true, .no, .yes)!)
 }
@@ -105,7 +105,7 @@ fn (mut host BlobHost) operate(name string, args []voidptr) !voidptr {
 	blob := host.record(host.argument(args, 1))!.blob
 	realm := host.readable.read_loop_realm()
 	match name {
-		'size' { return C.JSValueMakeNumber(host.runtime.context, f64(blob.size())) }
+		'size' { return C.vox_jsc_JSValueMakeNumber(host.runtime.context, f64(blob.size())) }
 		'type' { return host.runtime.javascript_utf16_string(blob.type_utf16()) }
 		'slice' {
 			mut start := ?i64(none)

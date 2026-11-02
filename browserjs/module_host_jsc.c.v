@@ -32,7 +32,7 @@ pub fn (mut host ModuleHost) install(mut runtime Runtime) ! {
 			mut host := unsafe { &ModuleHost(owner) }
 			if host.closed || args.len != 3 { return error('Invalid module fetch callback') }
 			host.load(host.runtime.binding_dom_string(args[0])!, args[1], args[2])!
-			return C.JSValueMakeUndefined(host.runtime.context)
+			return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 		})!
 		evaluated := runtime.make_value_host_function(fn [owner] (_ voidptr, args []voidptr) !voidptr {
 			mut host := unsafe { &ModuleHost(owner) }
@@ -49,7 +49,7 @@ pub fn (mut host ModuleHost) install(mut runtime Runtime) ! {
 					host.evaluated(host.runtime.binding_dom_string(args[0])!)
 				}
 			}
-			return C.JSValueMakeUndefined(host.runtime.context)
+			return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 		})!
 		host.native_loader = C.vox_module_loader_install(runtime.context, fetcher, evaluated)
 		if host.native_loader == unsafe { nil } {
@@ -74,7 +74,7 @@ pub fn (mut host ModuleHost) install(mut runtime Runtime) ! {
 			return host.runtime.binding_string(resolved)
 		})!
 		factory := runtime.evaluate_host_value(module_source_factory())!
-		host.transform = runtime.call_javascript_function(factory, C.JSValueMakeUndefined(runtime.context),
+		host.transform = runtime.call_javascript_function(factory, C.vox_jsc_JSValueMakeUndefined(runtime.context),
 			[resolver, runtime.binding_string(host.helper_name)])!
 		runtime.retain_javascript_value(host.transform)!
 		runtime.module_host_ = host
@@ -131,11 +131,11 @@ fn (mut host ModuleHost) resolve(specifier string, base string, parent string) !
 
 fn (mut host ModuleHost) rewrite(code string, base string, key string, is_module bool) !string {
 	value := host.runtime.call_javascript_function(host.transform,
-		C.JSValueMakeUndefined(host.runtime.context), [
+		C.vox_jsc_JSValueMakeUndefined(host.runtime.context), [
 			host.runtime.binding_string(code),
 			host.runtime.binding_string(base),
 			host.runtime.binding_string(key),
-			C.JSValueMakeBoolean(host.runtime.context, is_module),
+			C.vox_jsc_JSValueMakeBoolean(host.runtime.context, is_module),
 		])!
 	return host.runtime.binding_dom_string(value)
 }
@@ -216,7 +216,7 @@ fn (mut host ModuleHost) execute(source ScriptSource, stringify_result bool) !st
 			mut host := unsafe { &ModuleHost(owner) }
 			mut execution := unsafe { &BrowserModuleExecution(entry) }
 			host.finish_script(mut execution, '')
-			return C.JSValueMakeUndefined(host.runtime.context)
+			return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 		}
 		rejected := fn [owner, entry] (_ voidptr, args []voidptr) !voidptr {
 			mut host := unsafe { &ModuleHost(owner) }
@@ -227,7 +227,7 @@ fn (mut host ModuleHost) execute(source ScriptSource, stringify_result bool) !st
 				'Module evaluation failed'
 			}
 			host.finish_script(mut execution, message)
-			return C.JSValueMakeUndefined(host.runtime.context)
+			return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 		}
 		mut mutable_runtime := unsafe { &Runtime(runtime) }
 		mutable_runtime.own_closure(voidptr(fulfilled))
@@ -308,9 +308,9 @@ fn (mut host ModuleHost) reject(mut operation BrowserModuleOperation, message st
 	operation.finished = true
 	mut runtime := unsafe { &Runtime(host.runtime) }
 	value := runtime.call_javascript_function(runtime.value_error_intrinsic_,
-		C.JSValueMakeUndefined(runtime.context), [runtime.binding_string('TypeError'),
+		C.vox_jsc_JSValueMakeUndefined(runtime.context), [runtime.binding_string('TypeError'),
 			runtime.binding_string(message)]) or { return }
-	runtime.call_javascript_function(operation.reject, C.JSValueMakeUndefined(runtime.context), [value]) or {}
+	runtime.call_javascript_function(operation.reject, C.vox_jsc_JSValueMakeUndefined(runtime.context), [value]) or {}
 	runtime.release_javascript_value(operation.resolve)
 	runtime.release_javascript_value(operation.reject)
 }

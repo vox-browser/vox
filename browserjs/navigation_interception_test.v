@@ -36,7 +36,7 @@ fn native_interception_context(document &dom.Document) webidl.PromiseContext {
 
 fn native_interception_converter(runtime &Runtime) JavaScriptWebIDLValueConverter {
 	return fn [runtime] (value webidl.Value) !voidptr {
-		if value.kind == .undefined { return C.JSValueMakeUndefined(runtime.context) }
+		if value.kind == .undefined { return C.vox_jsc_JSValueMakeUndefined(runtime.context) }
 		return runtime.actual_webidl_value(value)
 	}
 }

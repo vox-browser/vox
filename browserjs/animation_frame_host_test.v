@@ -50,7 +50,7 @@ fn test_native_frame_callback_uses_real_rendering_task_document_origin_receiver_
 		assert settings.realm().script_execution_depth >= 1
 			&& settings.realm().callback_execution_depth >= 1
 		assert voidptr(html.incumbent_settings_object()) == voidptr(settings)
-		return C.JSValueMakeBoolean(runtime.context, true)
+		return C.vox_jsc_JSValueMakeBoolean(runtime.context, true)
 	})!
 	before_roots := runtime.protected_values_.len
 	runtime.evaluate_host(r'globalThis.frameThenAccesses=0;globalThis.frameCalls=[];globalThis.frameId=requestAnimationFrame(function(now){"use strict";frameCalls.push([now,this===undefined,__frameOwner()]);return {get then(){frameThenAccesses++;throw "must not read then"}}});')!

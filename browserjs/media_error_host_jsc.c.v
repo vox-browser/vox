@@ -39,14 +39,14 @@ pub fn (mut runtime Runtime) install_media_error_binding() ! {
 		})!
 	}
 	mut exception := unsafe { nil }
-	array := C.JSObjectMakeArray(runtime.context, uint(getters.len), getters.data, &exception)
+	array := C.vox_jsc_JSObjectMakeArray(runtime.context, uint(getters.len), getters.data, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	runtime.retain_javascript_value(array)!
 	defer { runtime.release_javascript_value(array) }
 	factory := runtime.evaluate_host_value(media_error_native_factory)!
 	defer { runtime.release_javascript_value(factory) }
 	binding.prototype = runtime.retain_javascript_value(runtime.call_javascript_function(factory,
-		C.JSValueMakeUndefined(runtime.context), [array, C.JSContextGetGlobalObject(runtime.context)])!)!
+		C.vox_jsc_JSValueMakeUndefined(runtime.context), [array, C.JSContextGetGlobalObject(runtime.context)])!)!
 	media_error_bindings_[owner] = binding
 	runtime.add_close_handler(fn [owner, binding] () {
 		mut retained := unsafe { &MediaErrorBinding(binding) }
@@ -65,7 +65,7 @@ fn (runtime &Runtime) media_error_get(binding &MediaErrorBinding, name string, r
 	}
 	// Receiver identity is native: no author property, Proxy, or prototype read.
 	return match name {
-		'code' { C.JSValueMakeNumber(runtime.context, f64(record.media_error.code())) }
+		'code' { C.vox_jsc_JSValueMakeNumber(runtime.context, f64(record.media_error.code())) }
 		'message' { runtime.binding_string(record.media_error.message()) }
 		else { return error('Unknown MediaError getter') }
 	}

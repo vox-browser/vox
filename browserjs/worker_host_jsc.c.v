@@ -69,7 +69,7 @@ pub fn (mut host WorkerHost) install(mut runtime Runtime) ! {
 	})!
 	factory := runtime.evaluate_host_value(worker_host_bootstrap)!
 	defer { runtime.release_javascript_value(factory) }
-	runtime.call_javascript_function(factory, C.JSValueMakeUndefined(runtime.context), [operation])!
+	runtime.call_javascript_function(factory, C.vox_jsc_JSValueMakeUndefined(runtime.context), [operation])!
 	callback := fn [handle] () {
 		mut host := unsafe { &WorkerHost(handle) }
 		host.poll()
@@ -132,20 +132,20 @@ fn (mut host WorkerHost) construct(receiver voidptr, args []voidptr) !voidptr {
 		creation_time: highresolutiontime.unsafe_shared_current_time()
 	}) or {
 		host.queue_failure(remote)
-		return C.JSValueMakeUndefined(runtime.context)
+		return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 	}
 	mut process := WorkerProcess.spawn(host.executable) or {
 		host.queue_failure(remote)
-		return C.JSValueMakeUndefined(runtime.context)
+		return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 	}
 	process.queue(u32(WorkerAgentFrameKind.start), bytes) or {
 		process.close()
 		host.queue_failure(remote)
-		return C.JSValueMakeUndefined(runtime.context)
+		return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 	}
 	remote.process = process
 	host.timer.start()
-	return C.JSValueMakeUndefined(runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 }
 
 fn (mut host WorkerHost) operate(args []voidptr) !voidptr {
@@ -167,10 +167,10 @@ fn (mut host WorkerHost) operate(args []voidptr) !voidptr {
 			length := int(clone.number(clone.engine('list_length', [args[3]])!)!)
 			mut buffers := []voidptr{cap: length}
 			for index in 0 .. length {
-				buffers << clone.engine('list_item', [args[3], C.JSValueMakeNumber(runtime.context, f64(index))])!
+				buffers << clone.engine('list_item', [args[3], C.vox_jsc_JSValueMakeNumber(runtime.context, f64(index))])!
 			}
 			bytes := encode_worker_message(host.transfer.serialize(args[2], buffers)!)!
-			if remote.worker.terminated_ { return C.JSValueMakeUndefined(runtime.context) }
+			if remote.worker.terminated_ { return C.vox_jsc_JSValueMakeUndefined(runtime.context) }
 			if process := remote.process {
 				process.queue(u32(WorkerAgentFrameKind.message), bytes) or {
 					remote.disconnect()
@@ -180,7 +180,7 @@ fn (mut host WorkerHost) operate(args []voidptr) !voidptr {
 		}
 		else { return error('Unknown Worker operation') }
 	}
-	return C.JSValueMakeUndefined(runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 }
 
 // Never wait on a worker from the browser thread. Each endpoint has a bounded

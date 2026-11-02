@@ -47,13 +47,13 @@ fn (mut runtime Runtime) performance_operation(mut binding PerformanceObserverBi
 	if voidptr(target) != voidptr(performance) {
 		return runtime.event_binding_type_error('Illegal Performance receiver')
 	}
-	undefined := C.JSValueMakeUndefined(runtime.context)
+	undefined := C.vox_jsc_JSValueMakeUndefined(runtime.context)
 	mut current := unsafe { &html.GlobalScopePerformance(performance) }
 	match method {
 		'brand' { return undefined }
 		'string' { return runtime.binding_string(runtime.binding_dom_string(args[2])!) }
-		'now' { return C.JSValueMakeNumber(runtime.context, current.now()) }
-		'timeOrigin' { return C.JSValueMakeNumber(runtime.context, current.time_origin()) }
+		'now' { return C.vox_jsc_JSValueMakeNumber(runtime.context, current.now()) }
+		'timeOrigin' { return C.vox_jsc_JSValueMakeNumber(runtime.context, current.time_origin()) }
 		'getHandler' { return runtime.javascript_event_handler(target, 'resourcetimingbufferfull') }
 		'setHandler' {
 			runtime.set_javascript_event_handler(target, 'resourcetimingbufferfull', args[2])!

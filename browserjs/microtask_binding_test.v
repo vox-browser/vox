@@ -57,7 +57,7 @@ fn test_microtask_binding_reports_original_exception_continues_and_ignores_resul
 	assert reported.error_in_promise == .no
 	value := runtime.actual_webidl_value(reported.value.native_value_ or { panic('Missing original exception') })!
 	assert runtime.call_engine_function(runtime.value_same_intrinsic_, [value,
-		runtime.evaluate_host_value('marker')!])! == C.JSValueMakeBoolean(runtime.context, true)
+		runtime.evaluate_host_value('marker')!])! == C.vox_jsc_JSValueMakeBoolean(runtime.context, true)
 }
 
 fn test_microtask_binding_webidl_receiver_callback_and_native_function_shape() {

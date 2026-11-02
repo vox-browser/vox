@@ -7,11 +7,11 @@ import dom
 import highresolutiontime
 
 
-fn C.JSObjectGetTypedArrayBuffer(context voidptr, object voidptr, exception &voidptr) voidptr
-fn C.JSObjectGetArrayBufferBytesPtr(context voidptr, object voidptr, exception &voidptr) voidptr
-fn C.JSObjectGetTypedArrayByteLength(context voidptr, object voidptr, exception &voidptr) uint
-fn C.JSObjectGetTypedArrayByteOffset(context voidptr, object voidptr, exception &voidptr) uint
-fn C.JSValueMakeBoolean(context voidptr, value bool) voidptr
+fn C.vox_jsc_JSObjectGetTypedArrayBuffer(context voidptr, object voidptr, exception &voidptr) voidptr
+fn C.vox_jsc_JSObjectGetArrayBufferBytesPtr(context voidptr, object voidptr, exception &voidptr) voidptr
+fn C.vox_jsc_JSObjectGetTypedArrayByteLength(context voidptr, object voidptr, exception &voidptr) uint
+fn C.vox_jsc_JSObjectGetTypedArrayByteOffset(context voidptr, object voidptr, exception &voidptr) uint
+fn C.vox_jsc_JSValueMakeBoolean(context voidptr, value bool) voidptr
 
 pub fn (mut host FontFaceHost) install(mut runtime Runtime) ! {
 	settings := unsafe { &html.EnvironmentSettingsObject(host.document.relevant_settings_object()) }
@@ -58,7 +58,7 @@ pub fn (mut host FontFaceHost) install(mut runtime Runtime) ! {
 			if host.closed { return }
 			wrapper := host.wrap_face(mut runtime, face) or { return }
 			runtime.call_javascript_function(host.set_cache,
-				C.JSValueMakeUndefined(runtime.context), [runtime.binding_string('add'),
+				C.vox_jsc_JSValueMakeUndefined(runtime.context), [runtime.binding_string('add'),
 				wrapper]) or {}
 		}
 		did_remove:  fn [handle, owner] (face &css.FontFaceObject) {
@@ -67,7 +67,7 @@ pub fn (mut host FontFaceHost) install(mut runtime Runtime) ! {
 			if host.closed { return }
 			wrapper := host.wrappers[voidptr(face)] or { return }
 			runtime.call_javascript_function(host.set_cache,
-				C.JSValueMakeUndefined(runtime.context), [runtime.binding_string('delete'),
+				C.vox_jsc_JSValueMakeUndefined(runtime.context), [runtime.binding_string('delete'),
 				wrapper]) or {}
 		}
 		did_reorder: fn [handle, owner] () {
@@ -75,11 +75,11 @@ pub fn (mut host FontFaceHost) install(mut runtime Runtime) ! {
 			mut runtime := unsafe { &Runtime(owner) }
 			if host.closed { return }
 			runtime.call_javascript_function(host.set_cache,
-				C.JSValueMakeUndefined(runtime.context), [runtime.binding_string('clear')]) or {}
+				C.vox_jsc_JSValueMakeUndefined(runtime.context), [runtime.binding_string('clear')]) or {}
 			for face in host.set.set_entries() {
 				wrapper := host.wrap_face(mut runtime, face) or { continue }
 				runtime.call_javascript_function(host.set_cache,
-					C.JSValueMakeUndefined(runtime.context), [
+					C.vox_jsc_JSValueMakeUndefined(runtime.context), [
 					runtime.binding_string('add'),
 					wrapper,
 				]) or {}
@@ -88,7 +88,7 @@ pub fn (mut host FontFaceHost) install(mut runtime Runtime) ! {
 	})
 	for face in host.set.set_entries() {
 		wrapper := host.wrap_face(mut runtime, face)!
-		runtime.call_javascript_function(host.set_cache, C.JSValueMakeUndefined(runtime.context), [
+		runtime.call_javascript_function(host.set_cache, C.vox_jsc_JSValueMakeUndefined(runtime.context), [
 			runtime.binding_string('add'),
 			wrapper,
 		])!
@@ -110,11 +110,11 @@ fn (mut host FontFaceHost) cache_font_event(mut runtime Runtime, wrapper voidptr
 	mut faces := []voidptr{cap: event.fontfaces().len}
 	for face in event.fontfaces() { faces << host.wrap_face(mut runtime, unsafe { &css.FontFaceObject(face) })! }
 	mut exception := unsafe { nil }
-	array := C.JSObjectMakeArray(runtime.context, uint(faces.len), faces.data, &exception)
+	array := C.vox_jsc_JSObjectMakeArray(runtime.context, uint(faces.len), faces.data, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	runtime.retain_javascript_value(array)!
 	defer { runtime.release_javascript_value(array) }
-	frozen := runtime.call_javascript_function(host.font_event_freeze, C.JSValueMakeUndefined(runtime.context), [array])!
+	frozen := runtime.call_javascript_function(host.font_event_freeze, C.vox_jsc_JSValueMakeUndefined(runtime.context), [array])!
 	runtime.retain_javascript_value(frozen)!
 	host.font_event_faces[wrapper] = frozen
 }
@@ -122,7 +122,7 @@ fn (mut host FontFaceHost) cache_font_event(mut runtime Runtime, wrapper voidptr
 fn (mut host FontFaceHost) wrap_font_event(mut runtime Runtime, event &css.FontFaceSetLoadEvent) !voidptr {
 	binding := runtime.event_binding()!
 	if wrapper := binding.event_wrappers[voidptr(event.base_event())] { return wrapper }
-	wrapper := runtime.call_javascript_function(host.font_event_factory, C.JSValueMakeUndefined(runtime.context), [])!
+	wrapper := runtime.call_javascript_function(host.font_event_factory, C.vox_jsc_JSValueMakeUndefined(runtime.context), [])!
 	host.cache_font_event(mut runtime, wrapper, event)!
 	return wrapper
 }
@@ -130,7 +130,7 @@ fn (mut host FontFaceHost) wrap_font_event(mut runtime Runtime, event &css.FontF
 fn (mut host FontFaceHost) wrap_face(mut runtime Runtime, face &css.FontFaceObject) !voidptr {
 	if wrapper := host.wrappers[voidptr(face)] { return wrapper }
 	wrapper := runtime.call_javascript_function(host.face_factory,
-		C.JSValueMakeUndefined(runtime.context), [])!
+		C.vox_jsc_JSValueMakeUndefined(runtime.context), [])!
 	runtime.retain_javascript_value(wrapper)!
 	host.faces[wrapper] = face
 	host.wrappers[voidptr(face)] = wrapper
@@ -139,7 +139,7 @@ fn (mut host FontFaceHost) wrap_face(mut runtime Runtime, face &css.FontFaceObje
 
 fn (mut host FontFaceHost) convert(mut runtime Runtime, value webidl.Value) !voidptr {
 	if value.kind == .runtime_value { return runtime.actual_webidl_value(value) }
-	if value.kind == .undefined { return C.JSValueMakeUndefined(runtime.context) }
+	if value.kind == .undefined { return C.vox_jsc_JSValueMakeUndefined(runtime.context) }
 	if value.dom_exception_ != none { return runtime.javascript_dom_exception(value) }
 	if value.kind == .platform_object {
 		if 'FontFaceSet' in value.platform_interfaces && value.opaque_id == u64(voidptr(host.set)) {
@@ -156,7 +156,7 @@ fn (mut host FontFaceHost) convert(mut runtime Runtime, value webidl.Value) !voi
 			values << host.convert(mut runtime, item)!
 		}
 		mut exception := unsafe { nil }
-		array := C.JSObjectMakeArray(runtime.context, uint(values.len), values.data, &exception)
+		array := C.vox_jsc_JSObjectMakeArray(runtime.context, uint(values.len), values.data, &exception)
 		if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 		return array
 	}
@@ -175,7 +175,7 @@ fn (mut host FontFaceHost) promise(mut runtime Runtime, promise &webidl.Promise)
 
 fn (mut host FontFaceHost) call(mut runtime Runtime, method string, receiver voidptr, args []voidptr) !voidptr {
 	if method == 'event:faceBrand' {
-		if _ := host.faces[args[0]] { return C.JSValueMakeUndefined(runtime.context) }
+		if _ := host.faces[args[0]] { return C.vox_jsc_JSValueMakeUndefined(runtime.context) }
 		return runtime.event_binding_type_error('fontfaces entry is not a FontFace')
 	}
 	if method == 'event:faces' {
@@ -192,12 +192,12 @@ fn (mut host FontFaceHost) call(mut runtime Runtime, method string, receiver voi
 		}
 		if C.JSValueIsObject(runtime.context, args[1]) {
 			value := runtime.binding_property(args[1], 'fontfaces')!
-			array := runtime.call_javascript_function(host.font_event_sequence, C.JSValueMakeUndefined(runtime.context), [value])!
+			array := runtime.call_javascript_function(host.font_event_sequence, C.vox_jsc_JSValueMakeUndefined(runtime.context), [value])!
 			runtime.retain_javascript_value(array)!
 			defer { runtime.release_javascript_value(array) }
 			length := runtime.binding_property(array, 'length')!
 			mut exception := unsafe { nil }
-			count := int(C.JSValueToNumber(runtime.context, length, &exception))
+			count := int(C.vox_jsc_JSValueToNumber(runtime.context, length, &exception))
 			if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 			for index in 0 .. count {
 				face_wrapper := runtime.binding_property(array, index.str())!
@@ -212,25 +212,25 @@ fn (mut host FontFaceHost) call(mut runtime Runtime, method string, receiver voi
 		})
 		event := css.FontFaceSetLoadEvent.create_with_time_stamp(type_, init, time_stamp)
 		host.cache_font_event(mut runtime, receiver, event)!
-		return C.JSValueMakeUndefined(runtime.context)
+		return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 	}
 	if method == 'construct' {
 		family := runtime.binding_dom_string(args[0])!
 		view := runtime.call_javascript_function(host.buffer_source_view,
-			C.JSValueMakeUndefined(runtime.context), [args[1]])!
+			C.vox_jsc_JSValueMakeUndefined(runtime.context), [args[1]])!
 		mut source := css.FontFaceSource{}
 		if C.JSValueIsNull(runtime.context, view) {
 			source = css.FontFaceSource.from_string(runtime.binding_dom_string(args[1])!)
 		} else {
 			mut exception := unsafe { nil }
-			length := C.JSObjectGetTypedArrayByteLength(runtime.context, view, &exception)
+			length := C.vox_jsc_JSObjectGetTypedArrayByteLength(runtime.context, view, &exception)
 			if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
-			offset := C.JSObjectGetTypedArrayByteOffset(runtime.context, view, &exception)
+			offset := C.vox_jsc_JSObjectGetTypedArrayByteOffset(runtime.context, view, &exception)
 			if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
-			buffer := C.JSObjectGetTypedArrayBuffer(runtime.context, view, &exception)
+			buffer := C.vox_jsc_JSObjectGetTypedArrayBuffer(runtime.context, view, &exception)
 			if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 			// Copy immediately after acquiring the temporary backing-store pointer.
-			pointer := C.JSObjectGetArrayBufferBytesPtr(runtime.context, buffer, &exception)
+			pointer := C.vox_jsc_JSObjectGetArrayBufferBytesPtr(runtime.context, buffer, &exception)
 			if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 			data := if length == 0 {
 				[]u8{}
@@ -272,7 +272,7 @@ fn (mut host FontFaceHost) call(mut runtime Runtime, method string, receiver voi
 		host.faces[receiver] = face
 		host.wrappers[voidptr(face)] = receiver
 		runtime.retain_javascript_value(receiver)!
-		return C.JSValueMakeUndefined(runtime.context)
+		return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 	}
 	if method.starts_with('set:') {
 		if receiver != host.set_wrapper {
@@ -285,12 +285,12 @@ fn (mut host FontFaceHost) call(mut runtime Runtime, method string, receiver voi
 		}
 		if operation == 'handler:set' {
 			runtime.set_javascript_event_handler(unsafe { &dom.EventTarget(set) }, runtime.binding_dom_string(args[0])!, args[1])!
-			return C.JSValueMakeUndefined(runtime.context)
+			return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 		}
 		if operation == 'ready' { return host.promise(mut runtime, set.ready()) }
 		if operation == 'status' { return runtime.binding_string(set.status().str()) }
-		if operation == 'size' { return C.JSValueMakeNumber(runtime.context, set.set_entries().len) }
-		if operation == 'brand' { return C.JSValueMakeUndefined(runtime.context) }
+		if operation == 'size' { return C.vox_jsc_JSValueMakeNumber(runtime.context, set.set_entries().len) }
+		if operation == 'brand' { return C.vox_jsc_JSValueMakeUndefined(runtime.context) }
 		if operation in ['add', 'delete', 'has'] {
 			face := host.faces[args[0]] or {
 				return runtime.actual_javascript_exception(runtime.binding_exception_value(error('TypeError: Argument is not a FontFace')))
@@ -300,14 +300,14 @@ fn (mut host FontFaceHost) call(mut runtime Runtime, method string, receiver voi
 				return host.set_wrapper
 			}
 			if operation == 'delete' {
-				return C.JSValueMakeBoolean(runtime.context, set.delete_(face))
+				return C.vox_jsc_JSValueMakeBoolean(runtime.context, set.delete_(face))
 			}
-			return C.JSValueMakeBoolean(runtime.context,
+			return C.vox_jsc_JSValueMakeBoolean(runtime.context,
 				set.set_entries().any(voidptr(it) == voidptr(face)))
 		}
 		if operation == 'clear' {
 			set.clear()
-			return C.JSValueMakeUndefined(runtime.context)
+			return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 		}
 		font := runtime.binding_dom_string(args[0])!
 		text := if args.len > 1 && !C.JSValueIsUndefined(runtime.context, args[1]) {
@@ -317,7 +317,7 @@ fn (mut host FontFaceHost) call(mut runtime Runtime, method string, receiver voi
 		}
 		if operation == 'load' { return host.promise(mut runtime, set.load(font, text) or {
 				return host.binding_exception(mut runtime, err)}) }
-		if operation == 'check' { return C.JSValueMakeBoolean(runtime.context, set.check(font, text) or {
+		if operation == 'check' { return C.vox_jsc_JSValueMakeBoolean(runtime.context, set.check(font, text) or {
 				return host.binding_exception(mut runtime, err)}) }
 		return error('Unknown FontFaceSet binding operation')
 	}
@@ -386,7 +386,7 @@ fn (mut host FontFaceHost) call(mut runtime Runtime, method string, receiver voi
 		}
 	}
 
-	return C.JSValueMakeUndefined(runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 }
 
 fn (mut host FontFaceHost) binding_exception(mut runtime Runtime, reason IError) IError {

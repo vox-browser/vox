@@ -19,7 +19,7 @@ pub fn (mut runtime Runtime) webidl_value(value voidptr) !webidl.Value {
 	mut number_primitive := ?f64(none)
 	if C.JSValueIsNumber(runtime.context, value) {
 		mut exception := unsafe { nil }
-		number_primitive = C.JSValueToNumber(runtime.context, value, &exception)
+		number_primitive = C.vox_jsc_JSValueToNumber(runtime.context, value, &exception)
 		if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	}
 	return webidl.runtime_value(webidl.RuntimeValue{
@@ -32,7 +32,7 @@ pub fn (mut runtime Runtime) webidl_value(value voidptr) !webidl.Value {
 			owner.require_javascript_value_context()!
 			converted := owner.call_engine_function(owner.value_number_intrinsic_, [value])!
 			mut exception := unsafe { nil }
-			number := C.JSValueToNumber(owner.context, converted, &exception)
+			number := C.vox_jsc_JSValueToNumber(owner.context, converted, &exception)
 			if exception != unsafe { nil } { return owner.actual_javascript_exception(exception) }
 			return number
 		}
@@ -70,7 +70,7 @@ pub fn (mut runtime Runtime) webidl_value(value voidptr) !webidl.Value {
 			owner := unsafe { &Runtime(owner_handle) }
 			owner.require_javascript_value_context()!
 			mut exception := unsafe { nil }
-			string_value := C.JSValueToStringCopy(owner.context, value, &exception)
+			string_value := C.vox_jsc_JSValueToStringCopy(owner.context, value, &exception)
 			if exception != unsafe { nil } { return owner.actual_javascript_exception(exception) }
 			if string_value == unsafe { nil } { return error('JavaScriptCore string conversion failed') }
 			defer { C.JSStringRelease(string_value) }
@@ -91,7 +91,7 @@ pub fn (mut runtime Runtime) javascript_bigint(value webidl.Value) !voidptr {
 	integer := webidl.value_to_bigint(value)!
 	text := js_source_string(integer.big_integer.str())
 	defer { C.JSStringRelease(text) }
-	actual := runtime.call_engine_function(runtime.value_bigint_intrinsic_, [C.JSValueMakeString(runtime.context, text)])!
+	actual := runtime.call_engine_function(runtime.value_bigint_intrinsic_, [C.vox_jsc_JSValueMakeString(runtime.context, text)])!
 	return runtime.retain_javascript_value(actual)
 }
 

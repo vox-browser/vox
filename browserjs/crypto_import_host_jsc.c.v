@@ -37,8 +37,8 @@ fn (mut host CryptoHost) install_import_key() ! {
 	})!
 	sequence := runtime.evaluate_host_value(webidl_sequence_conversion_factory)!
 	defer { runtime.release_javascript_value(sequence) }
-	host.string_sequence = runtime.retain_javascript_value(runtime.call_javascript_function(sequence, C.JSValueMakeUndefined(runtime.context), [strings])!)!
-	host.prime_sequence = runtime.retain_javascript_value(runtime.call_javascript_function(sequence, C.JSValueMakeUndefined(runtime.context), [primes])!)!
+	host.string_sequence = runtime.retain_javascript_value(runtime.call_javascript_function(sequence, C.vox_jsc_JSValueMakeUndefined(runtime.context), [strings])!)!
+	host.prime_sequence = runtime.retain_javascript_value(runtime.call_javascript_function(sequence, C.vox_jsc_JSValueMakeUndefined(runtime.context), [primes])!)!
 	host.buffer_is_array = runtime.evaluate_host_value(r'(function(){const apply=Reflect.apply,get=Object.getOwnPropertyDescriptor(ArrayBuffer.prototype,"byteLength").get;return function(value){try{apply(get,value,[]);return true}catch(error){return false}}})()')!
 	import_key := runtime.make_value_host_function(fn [handle] (_ voidptr, args []voidptr) !voidptr {
 		mut host := unsafe { &CryptoHost(handle) }
@@ -48,16 +48,16 @@ fn (mut host CryptoHost) install_import_key() ! {
 	installer := runtime.evaluate_host_value(r'(function(prototype,operate){Object.defineProperty(prototype,"importKey",{value:function importKey(format,keyData,algorithm,extractable,keyUsages){return arguments.length<5?operate(this):operate(this,format,keyData,algorithm,extractable,keyUsages)},writable:true,enumerable:true,configurable:true})})')!
 	defer { runtime.release_javascript_value(installer) }
 	prototype := host.prototypes[.subtle] or { return error('SubtleCrypto prototype unavailable') }
-	runtime.call_javascript_function(installer, C.JSValueMakeUndefined(runtime.context), [
+	runtime.call_javascript_function(installer, C.vox_jsc_JSValueMakeUndefined(runtime.context), [
 		prototype,
 		import_key,
 	])!
 }
 
 fn (host &CryptoHost) import_data_is_buffer(value voidptr) !bool {
-	view := host.runtime.call_javascript_function(host.array_is_view, C.JSValueMakeUndefined(host.runtime.context), [value])!
+	view := host.runtime.call_javascript_function(host.array_is_view, C.vox_jsc_JSValueMakeUndefined(host.runtime.context), [value])!
 	if C.JSValueToBoolean(host.runtime.context, view) { return true }
-	array := host.runtime.call_javascript_function(host.buffer_is_array, C.JSValueMakeUndefined(host.runtime.context), [value])!
+	array := host.runtime.call_javascript_function(host.buffer_is_array, C.vox_jsc_JSValueMakeUndefined(host.runtime.context), [value])!
 	return C.JSValueToBoolean(host.runtime.context, array)
 }
 
@@ -65,15 +65,15 @@ fn (mut host CryptoHost) convert_jwk_sequence(value voidptr, primes bool) !webid
 	mut runtime := unsafe { &Runtime(host.runtime) }
 	mut converter := host.string_sequence
 	if primes { converter = host.prime_sequence }
-	sequence := runtime.call_javascript_function(converter, C.JSValueMakeUndefined(runtime.context), [value])!
+	sequence := runtime.call_javascript_function(converter, C.vox_jsc_JSValueMakeUndefined(runtime.context), [value])!
 	runtime.retain_javascript_value(sequence)!
 	defer { runtime.release_javascript_value(sequence) }
 	mut exception := unsafe { nil }
-	length := int(C.JSValueToNumber(runtime.context, runtime.binding_property(sequence, 'length')!, &exception))
+	length := int(C.vox_jsc_JSValueToNumber(runtime.context, runtime.binding_property(sequence, 'length')!, &exception))
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	mut result := []webidl.Value{cap: length}
 	for index in 0 .. length {
-		item := C.JSObjectGetPropertyAtIndex(runtime.context, sequence, u32(index), &exception)
+		item := C.vox_jsc_JSObjectGetPropertyAtIndex(runtime.context, sequence, u32(index), &exception)
 		if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 		if primes {
 			mut dictionary := map[string]webidl.Value{}

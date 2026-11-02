@@ -2,10 +2,10 @@ module browserjs
 
 import webidl
 
-fn C.JSValueMakeBoolean(context voidptr, value bool) voidptr
-fn C.JSValueMakeNumber(context voidptr, value f64) voidptr
+fn C.vox_jsc_JSValueMakeBoolean(context voidptr, value bool) voidptr
+fn C.vox_jsc_JSValueMakeNumber(context voidptr, value f64) voidptr
 fn C.JSObjectMake(context voidptr, object_class voidptr, data voidptr) voidptr
-fn C.JSObjectSetProperty(context voidptr, object voidptr, name voidptr, value voidptr, attributes u32, exception &voidptr)
+fn C.vox_jsc_JSObjectSetProperty(context voidptr, object voidptr, name voidptr, value voidptr, attributes u32, exception &voidptr)
 
 @[heap]
 struct NativeBindingJobs {
@@ -33,16 +33,16 @@ fn (mut jobs NativeBindingJobs) drain() {
 fn native_binding_converter(runtime &Runtime) JavaScriptWebIDLValueConverter {
 	return fn [runtime] (value webidl.Value) !voidptr {
 		if value.kind == .runtime_value { return runtime.actual_webidl_value(value) }
-		if value.kind == .undefined { return C.JSValueMakeUndefined(runtime.context) }
-		if value.kind == .boolean { return C.JSValueMakeBoolean(runtime.context, value.boolean_value) }
-		if value.kind == .number { return C.JSValueMakeNumber(runtime.context, value.number_value) }
+		if value.kind == .undefined { return C.vox_jsc_JSValueMakeUndefined(runtime.context) }
+		if value.kind == .boolean { return C.vox_jsc_JSValueMakeBoolean(runtime.context, value.boolean_value) }
+		if value.kind == .number { return C.vox_jsc_JSValueMakeNumber(runtime.context, value.number_value) }
 		if value.kind == .object {
 			object := C.JSObjectMake(runtime.context, unsafe { nil }, unsafe { nil })
 			convert := native_binding_converter(runtime)
 			for name, property in value.object_value {
 				key := js_source_string(name)
 				mut exception := unsafe { nil }
-				C.JSObjectSetProperty(runtime.context, object, key, convert(property)!, 0, &exception)
+				C.vox_jsc_JSObjectSetProperty(runtime.context, object, key, convert(property)!, 0, &exception)
 				C.JSStringRelease(key)
 				if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 			}

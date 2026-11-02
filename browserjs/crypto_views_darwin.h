@@ -1,10 +1,10 @@
 #pragma once
-#include <JavaScriptCore/JavaScript.h>
+#include "jsc_abi.h"
 
 // The native engine brand is used; constructor names and JS properties cannot spoof it.
-static int vox_crypto_integer_view_kind(JSContextRef context, JSValueRef value, JSValueRef* exception)
+static int vox_jsc_crypto_integer_view_kind(void* context, void* value, void** exception)
 {
-    switch (JSValueGetTypedArrayType(context, value, exception)) {
+    switch (vox_jsc_JSValueGetTypedArrayType(context, value, exception)) {
     case kJSTypedArrayTypeInt8Array: return 0;
     case kJSTypedArrayTypeUint8Array: return 1;
     case kJSTypedArrayTypeUint8ClampedArray: return 2;

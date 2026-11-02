@@ -41,7 +41,7 @@ pub fn (mut runtime Runtime) install_window_find_binding(before_search ?WindowFi
 		if synchronize := before_search { synchronize(runtime)! }
 		result := actual_window.find(query)
 		runtime.mark_document_state_dirty()
-		return C.JSValueMakeBoolean(runtime.context, result)
+		return C.vox_jsc_JSValueMakeBoolean(runtime.context, result)
 	})!
 	factory := runtime.evaluate_host_value(window_find_binding_factory())!
 	global := C.JSContextGetGlobalObject(runtime.context)

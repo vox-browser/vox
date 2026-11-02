@@ -62,7 +62,7 @@ fn test_host_json_factory_and_data_installation_share_one_html_script_turn() {
 	runtime.define_value_host_function('__initialized', fn [owner, settings, mut seen] (_ voidptr, _ []voidptr) !voidptr {
 		assert settings.realm().script_execution_depth == 1
 		seen.factory_called = true
-		return C.JSValueMakeUndefined(unsafe { &Runtime(owner) }.context)
+		return C.vox_jsc_JSValueMakeUndefined(unsafe { &Runtime(owner) }.context)
 	})!
 	mut event_loop := unsafe { &html.EventLoop(settings.responsible_event_loop()) }
 	event_loop.enqueue_microtask(html.Task.create(.microtask, none, fn [settings, mut seen] () {

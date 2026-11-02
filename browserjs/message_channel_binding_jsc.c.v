@@ -75,7 +75,7 @@ fn (mut runtime Runtime) message_channel_operation(mut binding MessageChannelBin
 		runtime.retain_javascript_value(receiver)!
 		runtime.message_channel_port_wrapper(mut binding, channel.port1())!
 		runtime.message_channel_port_wrapper(mut binding, channel.port2())!
-		return C.JSValueMakeUndefined(runtime.context)
+		return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 	}
 	if method in ['port1', 'port2'] {
 		channel := binding.channels[receiver] or { return runtime.event_binding_type_error('Illegal MessageChannel receiver') }
@@ -120,5 +120,5 @@ fn (mut runtime Runtime) message_channel_operation(mut binding MessageChannelBin
 		}
 		else { return error('Unknown MessageChannel operation') }
 	}
-	return C.JSValueMakeUndefined(runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 }

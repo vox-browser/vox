@@ -68,7 +68,7 @@ fn test_worker_streams_use_the_worker_realm_without_a_document() {
 		assert voidptr(html.incumbent_settings_object()) == owner
 		assert settings.realm().script_execution_depth >= 2
 		assert settings.realm().callback_execution_depth >= 1
-		return C.JSValueMakeBoolean(context, true)
+		return C.vox_jsc_JSValueMakeBoolean(context, true)
 	})!
 	runtime.evaluate_host(r'
  globalThis.workerReads=[];globalThis.workerWritten=false;

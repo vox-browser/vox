@@ -50,7 +50,7 @@ fn (mut runtime Runtime) install_data_transfer_binding() ! {
 	mut call_arguments := [binding.data_transfer_prototype, C.JSContextGetGlobalObject(runtime.context)]
 	call_arguments << functions
 	binding.data_transfer_constructor = runtime.retain_javascript_value(runtime.call_javascript_function(factory,
-		C.JSValueMakeUndefined(runtime.context), call_arguments)!)!
+		C.vox_jsc_JSValueMakeUndefined(runtime.context), call_arguments)!)!
 }
 
 fn (mut runtime Runtime) data_transfer_types_array(transfer &html.DataTransfer) !voidptr {
@@ -70,11 +70,11 @@ fn (mut runtime Runtime) data_transfer_types_array(transfer &html.DataTransfer) 
 		values << runtime.retain_javascript_value(runtime.binding_utf16_string(text)!)!
 	}
 	mut exception := unsafe { nil }
-	array := C.JSObjectMakeArray(runtime.context, uint(values.len), values.data, &exception)
+	array := C.vox_jsc_JSObjectMakeArray(runtime.context, uint(values.len), values.data, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	runtime.retain_javascript_value(array)!
 	runtime.call_javascript_function(binding.data_transfer_freeze_array,
-		C.JSValueMakeUndefined(runtime.context), [array]) or {
+		C.vox_jsc_JSValueMakeUndefined(runtime.context), [array]) or {
 		runtime.release_javascript_value(array)
 		return err
 	}
@@ -91,7 +91,7 @@ fn (mut runtime Runtime) data_transfer_types_array(transfer &html.DataTransfer) 
 fn (mut runtime Runtime) data_transfer_binding_call(operation string, receiver voidptr, args []voidptr) !voidptr {
 	if operation == 'construct' {
 		runtime.bind_data_transfer(receiver, html.DataTransfer.construct_impl())!
-		return C.JSValueMakeUndefined(runtime.context)
+		return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 	}
 	// Generated bindings require the native receiver before arity/conversion,
 	// even when a store is protected, read-only or already disassociated.
@@ -149,5 +149,5 @@ fn (mut runtime Runtime) data_transfer_binding_call(operation string, receiver v
 		}
 	}
 
-	return C.JSValueMakeUndefined(runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 }

@@ -20,7 +20,7 @@ fn (mut host CryptoHost) install_kem_operations() ! {
 	installer := runtime.evaluate_host_value(r'(function(prototype,operate){const define=Object.defineProperty;define(prototype,"encapsulateBits",{value:function encapsulateBits(algorithm,key){return arguments.length<2?operate("encapsulateBits",this):operate("encapsulateBits",this,algorithm,key)},writable:true,enumerable:true,configurable:true});define(prototype,"encapsulateKey",{value:function encapsulateKey(algorithm,key,sharedKeyAlgorithm,extractable,keyUsages){return arguments.length<5?operate("encapsulateKey",this):operate("encapsulateKey",this,algorithm,key,sharedKeyAlgorithm,extractable,keyUsages)},writable:true,enumerable:true,configurable:true});define(prototype,"decapsulateBits",{value:function decapsulateBits(algorithm,key,ciphertext){return arguments.length<3?operate("decapsulateBits",this):operate("decapsulateBits",this,algorithm,key,ciphertext)},writable:true,enumerable:true,configurable:true});define(prototype,"decapsulateKey",{value:function decapsulateKey(algorithm,key,ciphertext,sharedKeyAlgorithm,extractable,keyUsages){return arguments.length<6?operate("decapsulateKey",this):operate("decapsulateKey",this,algorithm,key,ciphertext,sharedKeyAlgorithm,extractable,keyUsages)},writable:true,enumerable:true,configurable:true})})')!
 	defer { runtime.release_javascript_value(installer) }
 	prototype := host.prototypes[.subtle] or { return error('SubtleCrypto prototype unavailable') }
-	runtime.call_javascript_function(installer, C.JSValueMakeUndefined(runtime.context), [
+	runtime.call_javascript_function(installer, C.vox_jsc_JSValueMakeUndefined(runtime.context), [
 		prototype,
 		operate,
 	])!

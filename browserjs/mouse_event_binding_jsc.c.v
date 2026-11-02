@@ -46,7 +46,7 @@ fn (mut runtime Runtime) install_mouse_event_binding() ! {
 	mut call_arguments := [binding.ui_event_constructor, C.JSContextGetGlobalObject(runtime.context)]
 	call_arguments << functions
 	binding.mouse_event_prototype = runtime.retain_javascript_value(runtime.call_javascript_function(factory,
-		C.JSValueMakeUndefined(runtime.context), call_arguments)!)!
+		C.vox_jsc_JSValueMakeUndefined(runtime.context), call_arguments)!)!
 	binding.mouse_event_constructor = runtime.retain_javascript_value(runtime.binding_property(binding.mouse_event_prototype,
 		'constructor')!)!
 }
@@ -164,7 +164,7 @@ fn (mut runtime Runtime) mouse_event_binding_call(method string, receiver voidpt
 			}))
 		}
 		runtime.bind_event(receiver, unsafe { &dom.Event(event) })!
-		return C.JSValueMakeUndefined(context)
+		return C.vox_jsc_JSValueMakeUndefined(context)
 	}
 	event := runtime.native_event(receiver)!
 	if !native_event_is_mouse_event(event) {
@@ -178,38 +178,38 @@ fn (mut runtime Runtime) mouse_event_binding_call(method string, receiver voidpt
 		name := runtime.binding_dom_string(args[0])!
 		if name in ['screenX', 'screenY', 'pageX', 'pageY', 'clientX', 'clientY', 'x', 'y', 'offsetX',
 			'offsetY'] {
-			return C.JSValueMakeNumber(context, native_mouse_event_coordinate(event, name))
+			return C.vox_jsc_JSValueMakeNumber(context, native_mouse_event_coordinate(event, name))
 		}
 		return match name {
 			'ctrlKey' {
-				C.JSValueMakeBoolean(context, mouse.ctrl_key())
+				C.vox_jsc_JSValueMakeBoolean(context, mouse.ctrl_key())
 			}
 			'shiftKey' {
-				C.JSValueMakeBoolean(context, mouse.shift_key())
+				C.vox_jsc_JSValueMakeBoolean(context, mouse.shift_key())
 			}
 			'altKey' {
-				C.JSValueMakeBoolean(context, mouse.alt_key())
+				C.vox_jsc_JSValueMakeBoolean(context, mouse.alt_key())
 			}
 			'metaKey' {
-				C.JSValueMakeBoolean(context, mouse.meta_key())
+				C.vox_jsc_JSValueMakeBoolean(context, mouse.meta_key())
 			}
 			'movementX' {
-				C.JSValueMakeNumber(context, mouse.movement_x())
+				C.vox_jsc_JSValueMakeNumber(context, mouse.movement_x())
 			}
 			'movementY' {
-				C.JSValueMakeNumber(context, mouse.movement_y())
+				C.vox_jsc_JSValueMakeNumber(context, mouse.movement_y())
 			}
 			'button' {
-				C.JSValueMakeNumber(context, mouse.button())
+				C.vox_jsc_JSValueMakeNumber(context, mouse.button())
 			}
 			'buttons' {
-				C.JSValueMakeNumber(context, mouse.buttons())
+				C.vox_jsc_JSValueMakeNumber(context, mouse.buttons())
 			}
 			'relatedTarget' {
 				if related := mouse.related_target() {
 					return runtime.javascript_event_target(related, none)!
 				}
-				return C.JSValueMakeNull(context)
+				return C.vox_jsc_JSValueMakeNull(context)
 			}
 			else {
 				return runtime.event_binding_type_error('Unknown MouseEvent attribute')
@@ -221,7 +221,7 @@ fn (mut runtime Runtime) mouse_event_binding_call(method string, receiver voidpt
 			return runtime.event_binding_type_error('getModifierState requires one argument')
 		}
 		key := runtime.binding_dom_string(args[0])!
-		return C.JSValueMakeBoolean(context, mouse.get_modifier_state(key))
+		return C.vox_jsc_JSValueMakeBoolean(context, mouse.get_modifier_state(key))
 	}
 	if method == 'initMouseEvent' {
 		if args.len < 1 {
@@ -247,7 +247,7 @@ fn (mut runtime Runtime) mouse_event_binding_call(method string, receiver voidpt
 		if related_pointer != unsafe { nil } { related = related_pointer }
 		mouse.init_mouse_event(type_, bubbles, cancelable, view, detail, screen_x, screen_y,
 			client_x, client_y, ctrl_key, alt_key, shift_key, meta_key, button, related)
-		return C.JSValueMakeUndefined(context)
+		return C.vox_jsc_JSValueMakeUndefined(context)
 	}
 	return runtime.event_binding_type_error('Unknown MouseEvent operation')
 }

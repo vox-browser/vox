@@ -12,7 +12,7 @@ pub fn (mut host FileListHost) install_constructor() ! {
 	mut runtime := unsafe { &Runtime(host.runtime) }
 	installer := runtime.evaluate_host_value(file_list_native_constructor_factory)!
 	defer { runtime.release_javascript_value(installer) }
-	host.constructor = runtime.retain_javascript_value(runtime.call_javascript_function(installer, C.JSValueMakeUndefined(runtime.context), [
+	host.constructor = runtime.retain_javascript_value(runtime.call_javascript_function(installer, C.vox_jsc_JSValueMakeUndefined(runtime.context), [
 		host.prototype,
 		C.JSContextGetGlobalObject(runtime.context),
 	])!)!

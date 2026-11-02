@@ -54,7 +54,7 @@ fn media_raw_wheel_fixture(install_media bool, install_document bool) !&MediaRaw
 		if settings.realm().script_execution_depth == 0 && settings.realm().callback_execution_depth == 0 {
 			probe.without_html_execution++
 		}
-		return C.JSValueMakeUndefined(runtime.context)
+		return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 	})!
 	runtime.evaluate_host(r'
 globalThis.mediaRawWheelSpecs=Object.create(null);globalThis.mediaRawWheelFacades=Object.create(null);
@@ -90,7 +90,7 @@ __ladybirdElementWheelSetResolver(mediaRawWheelResolve);0')!
 	resolver_probe.owner_contexts = true
 	runtime.define_value_host_function('__mediaRawWheelContext', fn [handle, settings] (_ voidptr, _ []voidptr) !voidptr {
 		runtime := unsafe { &Runtime(handle) }
-		return C.JSValueMakeBoolean(runtime.context, settings.realm().script_execution_depth > 0
+		return C.vox_jsc_JSValueMakeBoolean(runtime.context, settings.realm().script_execution_depth > 0
 			&& settings.realm().callback_execution_depth > 0
 			&& runtime.libjs_vm().has_running_execution_context()
 			&& voidptr(html.current_principal_settings_object()) == voidptr(settings)
@@ -275,7 +275,7 @@ fn test_raw_media_wheel_function_body_csp_name_filter_and_unavailable_owners_pre
 				else { element.set_attribute_value('onwheel', 'mediaRawRuns+=10;return false;') }
 			}
 			runtime := unsafe { &Runtime(runtime_handle) }
-			return C.JSValueMakeUndefined(runtime.context)
+			return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 		})!
 		runtime.evaluate_host('mediaRawResolverBefore=function(){${function_name}()};0')!
 		assert stale_target.get_current_value_of_event_handler('wheel') == none

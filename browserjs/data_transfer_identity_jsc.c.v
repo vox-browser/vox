@@ -33,7 +33,7 @@ pub fn (mut runtime Runtime) javascript_data_transfer(transfer &html.DataTransfe
 	if wrapper := binding.data_transfer_wrappers[voidptr(transfer)] { return wrapper }
 	runtime.install_data_transfer_identity()!
 	wrapper := runtime.call_javascript_function(binding.data_transfer_factory,
-		C.JSValueMakeUndefined(runtime.context), [])!
+		C.vox_jsc_JSValueMakeUndefined(runtime.context), [])!
 	runtime.bind_data_transfer(wrapper, transfer)!
 	return wrapper
 }

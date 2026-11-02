@@ -30,12 +30,12 @@ pub fn (mut runtime Runtime) install_window_current_event_binding() ! {
 		}
 		actual_window := window or { return error('Window.event requires its actual owning Window model') }
 		method := runtime.binding_dom_string(args[0])!
-		if method == 'validate' { return C.JSValueMakeUndefined(runtime.context) }
+		if method == 'validate' { return C.vox_jsc_JSValueMakeUndefined(runtime.context) }
 		if method != 'get' {
 			return runtime.event_binding_type_error('Unknown Window.event operation')
 		}
 		if current := actual_window.event() { return runtime.javascript_event(current)! }
-		return C.JSValueMakeUndefined(runtime.context)
+		return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 	})!
 	factory := runtime.evaluate_host_value(window_current_event_binding_factory())!
 	global := C.JSContextGetGlobalObject(runtime.context)

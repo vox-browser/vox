@@ -43,7 +43,7 @@ pub fn (mut host FormDataHost) install(mut runtime Runtime) ! {
 	})!
 	factory := runtime.evaluate_host_value(form_data_native_factory)!
 	defer { runtime.release_javascript_value(factory) }
-	installed := runtime.call_javascript_function(factory, C.JSValueMakeUndefined(runtime.context), [
+	installed := runtime.call_javascript_function(factory, C.vox_jsc_JSValueMakeUndefined(runtime.context), [
 		host.array(methods)!,
 		construct,
 		C.JSContextGetGlobalObject(runtime.context),
@@ -72,7 +72,7 @@ fn (mut host FormDataHost) exception(reason IError) IError {
 
 fn (host &FormDataHost) argument(args []voidptr, index int) voidptr {
 	if index < args.len { return args[index] }
-	return C.JSValueMakeUndefined(host.runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 }
 
 fn (host &FormDataHost) record(value voidptr) !&xhr.FormData {
@@ -107,7 +107,7 @@ fn (host &FormDataHost) usv_string(value voidptr) !string {
 
 fn (mut host FormDataHost) array(values []voidptr) !voidptr {
 	mut exception := unsafe { nil }
-	array := C.JSObjectMakeArray(host.runtime.context, uint(values.len), values.data, &exception)
+	array := C.vox_jsc_JSObjectMakeArray(host.runtime.context, uint(values.len), values.data, &exception)
 	if exception != unsafe { nil } { return host.runtime.actual_javascript_exception(exception) }
 	return host.runtime.retain_javascript_value(array)
 }
@@ -176,7 +176,7 @@ fn (mut host FormDataHost) next(receiver voidptr) !voidptr {
 	if host.closed { return error('TypeError: FormData binding is closed') }
 	mut record := host.iterators[receiver] or { return error('TypeError: Not a FormData iterator') }
 	step := record.iterator.next()
-	mut value := C.JSValueMakeUndefined(host.runtime.context)
+	mut value := C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 	if !step.done {
 		value = match record.kind {
 			.key { host.runtime.binding_string(step.key) }
@@ -186,9 +186,9 @@ fn (mut host FormDataHost) next(receiver voidptr) !voidptr {
 			}
 		}
 	}
-	return host.runtime.call_javascript_function(host.iterator_result, C.JSValueMakeUndefined(host.runtime.context), [
+	return host.runtime.call_javascript_function(host.iterator_result, C.vox_jsc_JSValueMakeUndefined(host.runtime.context), [
 		value,
-		C.JSValueMakeBoolean(host.runtime.context, step.done),
+		C.vox_jsc_JSValueMakeBoolean(host.runtime.context, step.done),
 	])
 }
 
@@ -223,7 +223,7 @@ fn (mut host FormDataHost) operate(name string, receiver voidptr, args []voidptr
 			])!
 			index++
 		}
-		return C.JSValueMakeUndefined(host.runtime.context)
+		return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 	}
 	// The three-argument overload selects Blob before converting either string.
 	if name in ['append', 'set'] && args.len > 2 {
@@ -258,16 +258,16 @@ fn (mut host FormDataHost) operate(name string, receiver voidptr, args []voidptr
 	} else if name == 'delete' {
 		data.delete(key)
 	} else if name == 'has' {
-		return C.JSValueMakeBoolean(host.runtime.context, data.has(key))
+		return C.vox_jsc_JSValueMakeBoolean(host.runtime.context, data.has(key))
 	} else if name == 'get' {
 		if value := data.get(key) { return host.value(value) }
-		return C.JSValueMakeNull(host.runtime.context)
+		return C.vox_jsc_JSValueMakeNull(host.runtime.context)
 	} else if name == 'getAll' {
 		mut values := []voidptr{}
 		for value in data.get_all(key) { values << host.value(value)! }
 		return host.array(values)
 	}
-	return C.JSValueMakeUndefined(host.runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 }
 
 const form_data_native_factory = r'(function(methods,construct,global){

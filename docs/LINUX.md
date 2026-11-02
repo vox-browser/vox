@@ -98,6 +98,17 @@ CC=gcc python3 tools/test_linux_native.py \
     css/color_interpolation_test.v dom/range_mutation_order_test.v gfxfont/woff_test.v
 ```
 
+The runner enables V's strict C diagnostics and treats incompatible pointer
+types, including callback signatures, as errors, so the compiler's normal
+warning suppression cannot hide native output-parameter mismatches. Existing
+const-discard diagnostics remain warnings. The JavaScriptCore and regex
+boundary checks can be run separately:
+
+```sh
+python3 tools/test_linux_native.py \
+    browserjs/linux_runtime_test.v browserjs/jsc_abi_test.v libregex/native_abi_test.v
+```
+
 The port was checked on Ubuntu 24.04 ARM64: fourteen focused files passed with
 Boehm, with the timer, deferred-delivery, font-discovery, JavaScriptCore and
 OpenSSL compatibility files also checked without GC. The browser smoke covers

@@ -31,7 +31,7 @@ pub fn (mut host MediaSourceHost) install(mut runtime Runtime) ! {
 			return host.get(name, receiver) or { return host.exception(err) }
 		})!
 		if name in ['readyState', 'canConstructInDedicatedWorker'] {
-			functions << C.JSValueMakeUndefined(runtime.context)
+			functions << C.vox_jsc_JSValueMakeUndefined(runtime.context)
 		} else {
 			functions << runtime.make_native_value_host_function('set ${name}', 1, fn [handle, name] (receiver voidptr, args []voidptr) !voidptr {
 				mut host := unsafe { &MediaSourceHost(handle) }
@@ -59,13 +59,13 @@ pub fn (mut host MediaSourceHost) install(mut runtime Runtime) ! {
 		return host.wrap(source, host.argument(args, 0)) or { return host.exception(err) }
 	})!
 	mut exception := unsafe { nil }
-	array := C.JSObjectMakeArray(runtime.context, uint(functions.len), functions.data, &exception)
+	array := C.vox_jsc_JSObjectMakeArray(runtime.context, uint(functions.len), functions.data, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	runtime.retain_javascript_value(array)!
 	defer { runtime.release_javascript_value(array) }
 	factory := runtime.evaluate_host_value(media_source_native_factory)!
 	defer { runtime.release_javascript_value(factory) }
-	installed := runtime.call_javascript_function(factory, C.JSValueMakeUndefined(runtime.context), [
+	installed := runtime.call_javascript_function(factory, C.vox_jsc_JSValueMakeUndefined(runtime.context), [
 		array,
 		construct,
 		C.JSContextGetGlobalObject(runtime.context),
@@ -109,7 +109,7 @@ fn (host &MediaSourceHost) exception(reason IError) IError {
 
 fn (host &MediaSourceHost) argument(args []voidptr, index int) voidptr {
 	if index < args.len { return args[index] }
-	return C.JSValueMakeUndefined(host.runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 }
 
 fn (host &MediaSourceHost) record(value voidptr) !&MediaSourceHostRecord {
@@ -157,20 +157,20 @@ pub fn (runtime &Runtime) native_media_source(value voidptr) !&mediasourceextens
 
 fn (host &MediaSourceHost) dom_string(value voidptr) !string {
 	actual := host.runtime.call_javascript_function(host.to_dom_string,
-		C.JSValueMakeUndefined(host.runtime.context), [value])!
+		C.vox_jsc_JSValueMakeUndefined(host.runtime.context), [value])!
 	return host.runtime.native_utf16_string(actual)!.str()
 }
 
 fn (mut host MediaSourceHost) get(name string, receiver voidptr) !voidptr {
 	if name == 'canConstructInDedicatedWorker' {
-		return C.JSValueMakeBoolean(host.runtime.context,
+		return C.vox_jsc_JSValueMakeBoolean(host.runtime.context,
 			mediasourceextensions.MediaSource.can_construct_in_dedicated_worker())
 	}
 	source := host.record(receiver)!.source
 	if name == 'readyState' {
 		return host.runtime.binding_string(source.ready_state().webidl_name())
 	}
-	if name == 'duration' { return C.JSValueMakeNumber(host.runtime.context, source.duration()) }
+	if name == 'duration' { return C.vox_jsc_JSValueMakeNumber(host.runtime.context, source.duration()) }
 	return host.runtime.javascript_event_handler(&source.EventTarget, name[2..])
 }
 
@@ -179,21 +179,21 @@ fn (mut host MediaSourceHost) set(name string, receiver voidptr, value voidptr) 
 	if name == 'duration' {
 		// The C API's number conversion accepts BigInt; WebIDL ToNumber does not.
 		actual := host.runtime.call_javascript_function(host.to_number,
-			C.JSValueMakeUndefined(host.runtime.context), [value])!
+			C.vox_jsc_JSValueMakeUndefined(host.runtime.context), [value])!
 		mut exception := unsafe { nil }
-		number := C.JSValueToNumber(host.runtime.context, actual, &exception)
+		number := C.vox_jsc_JSValueToNumber(host.runtime.context, actual, &exception)
 		if exception != unsafe { nil } { return host.runtime.actual_javascript_exception(exception) }
 		source.set_duration(number)!
 	} else {
 		host.runtime.set_javascript_event_handler(&source.EventTarget, name[2..], value)!
 	}
-	return C.JSValueMakeUndefined(host.runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 }
 
 fn (mut host MediaSourceHost) operate(name string, receiver voidptr, args []voidptr) !voidptr {
 	if name == 'isTypeSupported' {
 		if args.len == 0 { return error('TypeError: isTypeSupported requires at least 1 argument') }
-		return C.JSValueMakeBoolean(host.runtime.context,
+		return C.vox_jsc_JSValueMakeBoolean(host.runtime.context,
 			mediasourceextensions.MediaSource.is_type_supported(host.dom_string(args[0])!))
 	}
 	mut source := host.record(receiver)!.source
@@ -202,7 +202,7 @@ fn (mut host MediaSourceHost) operate(name string, receiver voidptr, args []void
 		ending = mediasourceextensions.end_of_stream_error_from_webidl(host.dom_string(args[0])!)!
 	}
 	source.end_of_stream(ending)!
-	return C.JSValueMakeUndefined(host.runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 }
 
 const media_source_native_factory = r'(function(functions,construct,global){

@@ -36,7 +36,7 @@ pub fn (mut host WritableStreamHost) install(mut runtime Runtime) ! {
 	})!
 	installer := runtime.evaluate_host_value(writable_stream_native_bootstrap)!
 	defer { runtime.release_javascript_value(installer) }
-	prototypes := runtime.call_javascript_function(installer, C.JSValueMakeUndefined(runtime.context), [
+	prototypes := runtime.call_javascript_function(installer, C.vox_jsc_JSValueMakeUndefined(runtime.context), [
 		create,
 		operate,
 	])!
@@ -44,7 +44,7 @@ pub fn (mut host WritableStreamHost) install(mut runtime Runtime) ! {
 	defer { runtime.release_javascript_value(prototypes) }
 	for index, kind in [WritableStreamHostKind.stream, .default_writer, .default_controller] {
 		mut exception := unsafe { nil }
-		prototype := C.JSObjectGetPropertyAtIndex(runtime.context, prototypes, u32(index), &exception)
+		prototype := C.vox_jsc_JSObjectGetPropertyAtIndex(runtime.context, prototypes, u32(index), &exception)
 		if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 		host.prototypes[kind] = runtime.retain_javascript_value(prototype)!
 	}
@@ -58,7 +58,7 @@ pub fn (mut host WritableStreamHost) install(mut runtime Runtime) ! {
 
 fn (host &WritableStreamHost) argument(args []voidptr, index int) voidptr {
 	if index < args.len { return args[index] }
-	return C.JSValueMakeUndefined(host.runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 }
 
 fn (mut host WritableStreamHost) exception_value(exception IError) voidptr {
@@ -70,9 +70,9 @@ fn (mut host WritableStreamHost) exception_value(exception IError) voidptr {
 
 fn (host &WritableStreamHost) number(value voidptr) !f64 {
 	// JSValueToNumber accepts BigInt; actual ECMAScript ToNumber must reject it.
-	primitive := host.runtime.call_javascript_function(host.to_number_, C.JSValueMakeUndefined(host.runtime.context), [value])!
+	primitive := host.runtime.call_javascript_function(host.to_number_, C.vox_jsc_JSValueMakeUndefined(host.runtime.context), [value])!
 	mut exception := unsafe { nil }
-	number := C.JSValueToNumber(host.runtime.context, primitive, &exception)
+	number := C.vox_jsc_JSValueToNumber(host.runtime.context, primitive, &exception)
 	if exception != unsafe { nil } { return host.runtime.actual_javascript_exception(exception) }
 	return number
 }
@@ -220,10 +220,10 @@ fn (mut host WritableStreamHost) value(value webidl.Value) !voidptr {
 	if value.simple_exception_ != none { return host.runtime.javascript_simple_exception(value) }
 	return match value.kind {
 		.runtime_value { host.runtime.actual_webidl_value(value)! }
-		.undefined { C.JSValueMakeUndefined(host.runtime.context) }
-		.null_ { C.JSValueMakeNull(host.runtime.context) }
-		.boolean { C.JSValueMakeBoolean(host.runtime.context, value.boolean_value) }
-		.number { C.JSValueMakeNumber(host.runtime.context, value.number_value) }
+		.undefined { C.vox_jsc_JSValueMakeUndefined(host.runtime.context) }
+		.null_ { C.vox_jsc_JSValueMakeNull(host.runtime.context) }
+		.boolean { C.vox_jsc_JSValueMakeBoolean(host.runtime.context, value.boolean_value) }
+		.number { C.vox_jsc_JSValueMakeNumber(host.runtime.context, value.number_value) }
 		.string_ { host.runtime.binding_string(value.string_value) }
 		.platform_object {
 			if value.platform_interfaces.contains('WritableStreamDefaultController') {
@@ -261,7 +261,7 @@ fn (mut host WritableStreamHost) operate(args []voidptr) !voidptr {
 		record := host.record(object, .stream)!
 		mut stream := unsafe { &streams.WritableStream(record.native) }
 		match operation {
-			'stream.locked' { return C.JSValueMakeBoolean(host.runtime.context, stream.locked()) }
+			'stream.locked' { return C.vox_jsc_JSValueMakeBoolean(host.runtime.context, stream.locked()) }
 			'stream.abort' {
 				return host.promise(stream.abort(streams.runtime_value(host.runtime.webidl_value(argument)!)).as_webidl_promise())
 			}
@@ -283,9 +283,9 @@ fn (mut host WritableStreamHost) operate(args []voidptr) !voidptr {
 			'writer.ready' { return host.promise(writer.ready().as_webidl_promise()) }
 			'writer.desiredSize' {
 				if size := writer.desired_size_for_bindings()!.value {
-					return C.JSValueMakeNumber(host.runtime.context, size)
+					return C.vox_jsc_JSValueMakeNumber(host.runtime.context, size)
 				}
-				return C.JSValueMakeNull(host.runtime.context)
+				return C.vox_jsc_JSValueMakeNull(host.runtime.context)
 			}
 			'writer.write' {
 				return host.promise(writer.write(streams.runtime_value(host.runtime.webidl_value(argument)!)).as_webidl_promise())
@@ -296,7 +296,7 @@ fn (mut host WritableStreamHost) operate(args []voidptr) !voidptr {
 			'writer.close' { return host.promise(writer.close().as_webidl_promise()) }
 			'writer.releaseLock' {
 				writer.release_lock()
-				return C.JSValueMakeUndefined(host.runtime.context)
+				return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 			}
 			else {}
 		}
@@ -310,7 +310,7 @@ fn (mut host WritableStreamHost) operate(args []voidptr) !voidptr {
 			}
 			'controller.error' {
 				streams.writable_stream_default_controller_error_if_needed(mut controller, streams.runtime_value(host.runtime.webidl_value(argument)!))
-				return C.JSValueMakeUndefined(host.runtime.context)
+				return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 			}
 			else {}
 		}

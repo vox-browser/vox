@@ -25,7 +25,7 @@ pub fn (mut host FileHost) install_constructor() ! {
 	})!
 	installer := runtime.evaluate_host_value(file_native_constructor_factory)!
 	defer { runtime.release_javascript_value(installer) }
-	host.constructor = runtime.retain_javascript_value(runtime.call_javascript_function(installer, C.JSValueMakeUndefined(runtime.context), [
+	host.constructor = runtime.retain_javascript_value(runtime.call_javascript_function(installer, C.vox_jsc_JSValueMakeUndefined(runtime.context), [
 		host.prototype,
 		construct,
 		C.JSContextGetGlobalObject(runtime.context),
@@ -56,7 +56,7 @@ fn (mut host FileHost) property_bag(value voidptr) !fileapi.FilePropertyBag {
 
 fn (mut host FileHost) construct_file(args []voidptr) !voidptr {
 	if host.closed { return error('TypeError: File binding is closed') }
-	sequence := host.runtime.call_javascript_function(host.blobs.parts_sequence, C.JSValueMakeUndefined(host.runtime.context), [
+	sequence := host.runtime.call_javascript_function(host.blobs.parts_sequence, C.vox_jsc_JSValueMakeUndefined(host.runtime.context), [
 		host.argument(args, 1),
 	])!
 	host.runtime.retain_javascript_value(sequence)!

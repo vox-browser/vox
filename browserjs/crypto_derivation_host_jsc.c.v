@@ -23,7 +23,7 @@ fn (mut host CryptoHost) install_derivation_operations() ! {
 	installer := runtime.evaluate_host_value(r'(function(prototype,operate){const define=Object.defineProperty;define(prototype,"deriveBits",{value:function deriveBits(algorithm,baseKey){return arguments.length<2?operate("deriveBits",this):arguments.length<3?operate("deriveBits",this,algorithm,baseKey):operate("deriveBits",this,algorithm,baseKey,arguments[2])},writable:true,enumerable:true,configurable:true});define(prototype,"deriveKey",{value:function deriveKey(algorithm,baseKey,derivedKeyType,extractable,keyUsages){return arguments.length<5?operate("deriveKey",this):operate("deriveKey",this,algorithm,baseKey,derivedKeyType,extractable,keyUsages)},writable:true,enumerable:true,configurable:true})})')!
 	defer { runtime.release_javascript_value(installer) }
 	prototype := host.prototypes[.subtle] or { return error('SubtleCrypto prototype unavailable') }
-	runtime.call_javascript_function(installer, C.JSValueMakeUndefined(runtime.context), [
+	runtime.call_javascript_function(installer, C.vox_jsc_JSValueMakeUndefined(runtime.context), [
 		prototype,
 		operate,
 	])!

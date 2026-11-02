@@ -47,7 +47,7 @@ pub fn (mut host TimerHost) install(mut runtime Runtime) ! {
 		actual_url := js_source_string(url.serialize())
 		defer { C.JSStringRelease(actual_source); C.JSStringRelease(actual_url) }
 		mut exception := unsafe { nil }
-		C.JSEvaluateScript(runtime.context, actual_source, unsafe { nil }, actual_url, 1, &exception)
+		C.vox_jsc_JSEvaluateScript(runtime.context, actual_source, unsafe { nil }, actual_url, 1, &exception)
 		if exception != unsafe { nil } { return webidl.throw_value(runtime.webidl_value(exception)!) }
 		return dom.js_undefined()
 	})
@@ -63,7 +63,7 @@ pub fn (mut host TimerHost) install(mut runtime Runtime) ! {
 	})!
 	installer := runtime.evaluate_host_value(timer_host_bootstrap)!
 	defer { runtime.release_javascript_value(installer) }
-	runtime.call_javascript_function(installer, C.JSValueMakeUndefined(runtime.context), [operation])!
+	runtime.call_javascript_function(installer, C.vox_jsc_JSValueMakeUndefined(runtime.context), [operation])!
 	timer_host_bindings_[owner_handle] = &host
 	timer_scope_bindings_[scope_handle] = &host
 	runtime.add_close_handler(fn [host_handle, owner_handle, scope_handle] () {
@@ -76,17 +76,17 @@ pub fn (mut host TimerHost) install(mut runtime Runtime) ! {
 
 fn (host &TimerHost) argument(arguments []voidptr, index int) voidptr {
 	if index < arguments.len { return arguments[index] }
-	return C.JSValueMakeUndefined(host.runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 }
 
 fn (mut host TimerHost) value(value webidl.Value) !voidptr {
 	if value.dom_exception_ != none { return host.runtime.javascript_dom_exception(value) }
 	return match value.kind {
 		.runtime_value { host.runtime.actual_webidl_value(value)! }
-		.undefined { C.JSValueMakeUndefined(host.runtime.context) }
-		.null_ { C.JSValueMakeNull(host.runtime.context) }
-		.boolean { C.JSValueMakeBoolean(host.runtime.context, value.boolean_value) }
-		.number { C.JSValueMakeNumber(host.runtime.context, value.number_value) }
+		.undefined { C.vox_jsc_JSValueMakeUndefined(host.runtime.context) }
+		.null_ { C.vox_jsc_JSValueMakeNull(host.runtime.context) }
+		.boolean { C.vox_jsc_JSValueMakeBoolean(host.runtime.context, value.boolean_value) }
+		.number { C.vox_jsc_JSValueMakeNumber(host.runtime.context, value.number_value) }
 		.string_ { host.runtime.binding_string(value.string_value) }
 		else { return error('Timer value requires its actual JavaScript platform wrapper') }
 	}
@@ -98,12 +98,12 @@ fn (mut host TimerHost) operate(arguments []voidptr) !voidptr {
 	handler_value := host.argument(arguments, 1)
 	if op == 'clear' {
 		mut exception := unsafe { nil }
-		number := C.JSValueToNumber(host.runtime.context, handler_value, &exception)
+		number := C.vox_jsc_JSValueToNumber(host.runtime.context, handler_value, &exception)
 		if exception != unsafe { nil } { return host.runtime.actual_javascript_exception(exception) }
 		id := i32(webidl.convert_to_int(webidl.number_value(number), 32, true, .no, .no)!)
 		mut scope := unsafe { &html.WindowOrWorkerGlobalScopeMixin(host.scope) }
 		scope.clear_timeout(id)
-		return C.JSValueMakeUndefined(host.runtime.context)
+		return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 	}
 	mut roots := []voidptr{}
 	mut installed := false
@@ -125,16 +125,16 @@ fn (mut host TimerHost) operate(arguments []voidptr) !voidptr {
 		handler = html.timer_source_handler(host.runtime.binding_dom_string(handler_value)!)
 	}
 	mut exception := unsafe { nil }
-	number := C.JSValueToNumber(host.runtime.context, host.argument(arguments, 2), &exception)
+	number := C.vox_jsc_JSValueToNumber(host.runtime.context, host.argument(arguments, 2), &exception)
 	if exception != unsafe { nil } { return host.runtime.actual_javascript_exception(exception) }
 	timeout := i32(webidl.convert_to_int(webidl.number_value(number), 32, true, .no, .no)!)
 	actual_arguments := host.argument(arguments, 3)
 	length := host.runtime.binding_property(actual_arguments, 'length')!
-	count := int(C.JSValueToNumber(host.runtime.context, length, &exception))
+	count := int(C.vox_jsc_JSValueToNumber(host.runtime.context, length, &exception))
 	if exception != unsafe { nil } { return host.runtime.actual_javascript_exception(exception) }
 	mut values := []dom.JSValue{cap: count}
 	for index in 0 .. count {
-		value := C.JSObjectGetPropertyAtIndex(host.runtime.context, actual_arguments, u32(index), &exception)
+		value := C.vox_jsc_JSObjectGetPropertyAtIndex(host.runtime.context, actual_arguments, u32(index), &exception)
 		if exception != unsafe { nil } { return host.runtime.actual_javascript_exception(exception) }
 		values << dom.js_webidl_value(host.runtime.webidl_value(value)!)
 		roots << value
@@ -143,7 +143,7 @@ fn (mut host TimerHost) operate(arguments []voidptr) !voidptr {
 	id := if op == 'interval' { scope.set_interval(handler, timeout, values) } else { scope.set_timeout(handler, timeout, values) }
 	host.ids[id] = roots
 	installed = true
-	return C.JSValueMakeNumber(host.runtime.context, id)
+	return C.vox_jsc_JSValueMakeNumber(host.runtime.context, id)
 }
 
 const timer_host_bootstrap = r'(function(operate){

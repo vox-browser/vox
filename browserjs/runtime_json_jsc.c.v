@@ -1,6 +1,6 @@
 module browserjs
 
-fn C.JSValueMakeFromJSONString(context voidptr, text voidptr) voidptr
+fn C.vox_jsc_JSValueMakeFromJSONString(context voidptr, text voidptr) voidptr
 
 fn (mut runtime Runtime) initialize_javascript_core_host_from_json(factory_source string, json_text string) ! {
 	runtime.require_javascript_value_context()!
@@ -12,7 +12,7 @@ fn (mut runtime Runtime) initialize_javascript_core_host_from_json(factory_sourc
 	text := js_source_string(json_text)
 	if text == unsafe { nil } { return error('JavaScriptCore JSON string creation failed') }
 	defer { C.JSStringRelease(text) }
-	value := C.JSValueMakeFromJSONString(runtime.context, text)
+	value := C.vox_jsc_JSValueMakeFromJSONString(runtime.context, text)
 	if value == unsafe { nil } { return error('SyntaxError: Invalid host JSON data') }
 	runtime.retain_javascript_value(value)!
 	defer { runtime.release_javascript_value(value) }

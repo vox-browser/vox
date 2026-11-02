@@ -9,6 +9,7 @@ $if linux {
 	#pkgconfig javascriptcoregtk-4.1
 }
 #include <JavaScriptCore/JavaScript.h>
+#include "@DIR/jsc_abi.h"
 #include "@DIR/source_string_darwin.h"
 #include "@DIR/runtime_agent_context.h"
 
@@ -17,12 +18,12 @@ fn C.JSGlobalContextRelease(context voidptr)
 fn C.JSStringCreateWithUTF8CString(value &char) voidptr
 fn C.JSStringCreateWithCharacters(characters &u16, count uint) voidptr
 fn C.JSStringRelease(value voidptr)
-fn C.JSEvaluateScript(context voidptr, script voidptr, this_object voidptr, source_url voidptr, starting_line_number int, exception &voidptr) voidptr
-fn C.JSValueToStringCopy(context voidptr, value voidptr, exception &voidptr) voidptr
+fn C.vox_jsc_JSEvaluateScript(context voidptr, script voidptr, this_object voidptr, source_url voidptr, starting_line_number int, exception &voidptr) voidptr
+fn C.vox_jsc_JSValueToStringCopy(context voidptr, value voidptr, exception &voidptr) voidptr
 fn C.JSValueIsObject(context voidptr, value voidptr) bool
 fn C.JSValueIsString(context voidptr, value voidptr) bool
 fn C.JSValueIsNumber(context voidptr, value voidptr) bool
-fn C.JSObjectGetProperty(context voidptr, object voidptr, property_name voidptr, exception &voidptr) voidptr
+fn C.vox_jsc_JSObjectGetProperty(context voidptr, object voidptr, property_name voidptr, exception &voidptr) voidptr
 fn C.JSStringGetMaximumUTF8CStringSize(value voidptr) uint
 fn C.JSStringGetUTF8CString(value voidptr, buffer &char, buffer_size uint) uint
 fn C.vox_browserjs_source_utf8_string(bytes &u8, length uint) voidptr
@@ -30,7 +31,7 @@ fn C.vox_browserjs_create_agent_context(worker_global i32) voidptr
 
 fn js_string_to_v(context voidptr, value voidptr) !string {
 	mut exception := unsafe { nil }
-	string_value := C.JSValueToStringCopy(context, value, &exception)
+	string_value := C.vox_jsc_JSValueToStringCopy(context, value, &exception)
 	if string_value == unsafe { nil } {
 		return error('JavaScript value could not be converted to a string')
 	}
@@ -60,7 +61,7 @@ fn js_exception_message(context voidptr, exception voidptr) string {
 	}
 	defer { C.JSStringRelease(stack_name) }
 	mut ignored_exception := unsafe { nil }
-	stack := C.JSObjectGetProperty(context, exception, stack_name, &ignored_exception)
+	stack := C.vox_jsc_JSObjectGetProperty(context, exception, stack_name, &ignored_exception)
 	if ignored_exception != unsafe { nil } || stack == unsafe { nil }
 		|| !C.JSValueIsString(context, stack) {
 		return message
@@ -97,11 +98,11 @@ fn javascript_core_syntax_position(context voidptr, exception voidptr, property 
 	name := js_source_string(property)
 	defer { C.JSStringRelease(name) }
 	mut ignored := unsafe { nil }
-	value := C.JSObjectGetProperty(context, exception, name, &ignored)
+	value := C.vox_jsc_JSObjectGetProperty(context, exception, name, &ignored)
 	if ignored != unsafe { nil } || value == unsafe { nil } || !C.JSValueIsNumber(context, value) {
 		return fallback
 	}
-	number := C.JSValueToNumber(context, value, &ignored)
+	number := C.vox_jsc_JSValueToNumber(context, value, &ignored)
 	return if ignored == unsafe { nil } && number >= 1 && number <= 2147483647 { int(number) } else { fallback }
 }
 
@@ -122,7 +123,7 @@ fn evaluate_with_javascript_core(context voidptr, source ScriptSource, stringify
 		C.JSStringRelease(source_url)
 	}
 	mut exception := unsafe { nil }
-	value := C.JSEvaluateScript(context, script, unsafe { nil }, source_url, source.starting_line,
+	value := C.vox_jsc_JSEvaluateScript(context, script, unsafe { nil }, source_url, source.starting_line,
 		&exception)
 	if exception != unsafe { nil } {
 		message := js_exception_message(context, exception)

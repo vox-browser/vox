@@ -18,14 +18,14 @@ pub fn (mut runtime Runtime) install_css_namespace_binding() ! {
 		first := runtime.binding_dom_string(args[1])!
 		if method == 'escape' { return runtime.binding_string(css.escape(first)) }
 		if method == 'supportsCondition' {
-			return C.JSValueMakeBoolean(runtime.context, css.supports_condition(first))
+			return C.vox_jsc_JSValueMakeBoolean(runtime.context, css.supports_condition(first))
 		}
 		second := runtime.binding_dom_string(args[2])!
-		return C.JSValueMakeBoolean(runtime.context, css.supports_property(first, second))
+		return C.vox_jsc_JSValueMakeBoolean(runtime.context, css.supports_property(first, second))
 	})!
 	factory := runtime.evaluate_host_value(css_namespace_binding_factory())!
 	defer { runtime.release_javascript_value(factory) }
-	runtime.call_javascript_function(factory, C.JSValueMakeUndefined(runtime.context), [
+	runtime.call_javascript_function(factory, C.vox_jsc_JSValueMakeUndefined(runtime.context), [
 		operation,
 		C.JSContextGetGlobalObject(runtime.context),
 	])!

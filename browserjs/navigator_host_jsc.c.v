@@ -46,7 +46,7 @@ fn (host &NavigatorHost) operate(args []voidptr) !voidptr {
 		'languages' {
 			values := navigator.languages().map(host.runtime.binding_string(it))
 			mut exception := unsafe { nil }
-			array := C.JSObjectMakeArray(host.runtime.context, uint(values.len), values.data,
+			array := C.vox_jsc_JSObjectMakeArray(host.runtime.context, uint(values.len), values.data,
 				&exception)
 			if exception != unsafe { nil } {
 				return host.runtime.actual_javascript_exception(exception)
@@ -81,22 +81,22 @@ fn (host &NavigatorHost) operate(args []voidptr) !voidptr {
 			return host.runtime.binding_string(navigator.vendor_sub())
 		}
 		'onLine' {
-			return C.JSValueMakeBoolean(host.runtime.context, navigator.on_line())
+			return C.vox_jsc_JSValueMakeBoolean(host.runtime.context, navigator.on_line())
 		}
 		'cookieEnabled' {
-			return C.JSValueMakeBoolean(host.runtime.context, navigator.cookie_enabled())
+			return C.vox_jsc_JSValueMakeBoolean(host.runtime.context, navigator.cookie_enabled())
 		}
 		'webdriver' {
-			return C.JSValueMakeBoolean(host.runtime.context, navigator.webdriver())
+			return C.vox_jsc_JSValueMakeBoolean(host.runtime.context, navigator.webdriver())
 		}
 		'pdfViewerEnabled' {
-			return C.JSValueMakeBoolean(host.runtime.context, navigator.pdf_viewer_enabled())
+			return C.vox_jsc_JSValueMakeBoolean(host.runtime.context, navigator.pdf_viewer_enabled())
 		}
 		'hardwareConcurrency' {
-			return C.JSValueMakeNumber(host.runtime.context, f64(navigator.hardware_concurrency()))
+			return C.vox_jsc_JSValueMakeNumber(host.runtime.context, f64(navigator.hardware_concurrency()))
 		}
 		'javaEnabled' {
-			return C.JSValueMakeBoolean(host.runtime.context, navigator.java_enabled())
+			return C.vox_jsc_JSValueMakeBoolean(host.runtime.context, navigator.java_enabled())
 		}
 		else {
 			return error('Unknown Navigator operation')

@@ -11,9 +11,10 @@ $if gcboehm ? {
 fn assert_source_string_units(text voidptr, expected []u16) {
 	assert text != unsafe { nil }
 	assert int(C.JSStringGetLength(text)) == expected.len
-	characters := C.JSStringGetCharactersPtr(text)
+	mut characters := []u16{len: expected.len}
+	C.vox_jsc_copy_string_characters(text, characters.data, uint(characters.len))
 	for index, unit in expected {
-		assert unsafe { characters[index] } == unit
+		assert characters[index] == unit
 	}
 }
 

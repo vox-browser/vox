@@ -46,10 +46,10 @@ fn (mut runtime Runtime) install_pointer_event_binding() ! {
 	factory := runtime.evaluate_host_value(pointer_event_bootstrap())!
 	defer { runtime.release_javascript_value(factory) }
 	mut call_arguments := [binding.mouse_event_constructor, C.JSContextGetGlobalObject(runtime.context),
-		C.JSValueMakeBoolean(runtime.context, settings.is_secure_context())]
+		C.vox_jsc_JSValueMakeBoolean(runtime.context, settings.is_secure_context())]
 	call_arguments << functions
 	values := runtime.retain_javascript_value(runtime.call_javascript_function(factory,
-		C.JSValueMakeUndefined(runtime.context), call_arguments)!)!
+		C.vox_jsc_JSValueMakeUndefined(runtime.context), call_arguments)!)!
 	defer { runtime.release_javascript_value(values) }
 	binding.pointer_event_prototype =
 		runtime.retain_javascript_value(runtime.binding_property(values, '0')!)!
@@ -85,9 +85,9 @@ fn (mut runtime Runtime) pointer_event_sequence(value voidptr) ![]&dom.PointerEv
 	if C.JSValueIsUndefined(runtime.context, value) { return []&dom.PointerEvent{} }
 	binding := runtime.event_binding()!
 	array := runtime.retain_javascript_value(runtime.call_javascript_function(binding.pointer_event_sequence_converter,
-		C.JSValueMakeUndefined(runtime.context), [value])!)!
+		C.vox_jsc_JSValueMakeUndefined(runtime.context), [value])!)!
 	defer { runtime.release_javascript_value(array) }
-	length := int(C.JSValueToNumber(runtime.context, runtime.binding_property(array, 'length')!,
+	length := int(C.vox_jsc_JSValueToNumber(runtime.context, runtime.binding_property(array, 'length')!,
 		unsafe { nil }))
 	mut events := []&dom.PointerEvent{cap: length}
 	for index in 0 .. length {
@@ -169,25 +169,25 @@ fn (mut runtime Runtime) pointer_event_binding_call(method string, receiver void
 			}))
 		}
 		runtime.bind_event(receiver, unsafe { &dom.Event(event) })!
-		return C.JSValueMakeUndefined(context)
+		return C.vox_jsc_JSValueMakeUndefined(context)
 	}
 	pointer := runtime.native_pointer_event(receiver)!
 	if method == 'get' {
 		name := runtime.binding_dom_string(args[0])!
 		return match name {
-			'pointerId' { C.JSValueMakeNumber(context, pointer.pointer_id()) }
-			'width' { C.JSValueMakeNumber(context, pointer.width()) }
-			'height' { C.JSValueMakeNumber(context, pointer.height()) }
-			'pressure' { C.JSValueMakeNumber(context, pointer.pressure()) }
-			'tangentialPressure' { C.JSValueMakeNumber(context, pointer.tangential_pressure()) }
-			'tiltX' { C.JSValueMakeNumber(context, pointer.tilt_x()) }
-			'tiltY' { C.JSValueMakeNumber(context, pointer.tilt_y()) }
-			'twist' { C.JSValueMakeNumber(context, pointer.twist()) }
-			'altitudeAngle' { C.JSValueMakeNumber(context, pointer.altitude_angle()) }
-			'azimuthAngle' { C.JSValueMakeNumber(context, pointer.azimuth_angle()) }
+			'pointerId' { C.vox_jsc_JSValueMakeNumber(context, pointer.pointer_id()) }
+			'width' { C.vox_jsc_JSValueMakeNumber(context, pointer.width()) }
+			'height' { C.vox_jsc_JSValueMakeNumber(context, pointer.height()) }
+			'pressure' { C.vox_jsc_JSValueMakeNumber(context, pointer.pressure()) }
+			'tangentialPressure' { C.vox_jsc_JSValueMakeNumber(context, pointer.tangential_pressure()) }
+			'tiltX' { C.vox_jsc_JSValueMakeNumber(context, pointer.tilt_x()) }
+			'tiltY' { C.vox_jsc_JSValueMakeNumber(context, pointer.tilt_y()) }
+			'twist' { C.vox_jsc_JSValueMakeNumber(context, pointer.twist()) }
+			'altitudeAngle' { C.vox_jsc_JSValueMakeNumber(context, pointer.altitude_angle()) }
+			'azimuthAngle' { C.vox_jsc_JSValueMakeNumber(context, pointer.azimuth_angle()) }
 			'pointerType' { runtime.binding_string(pointer.pointer_type()) }
-			'isPrimary' { C.JSValueMakeBoolean(context, pointer.is_primary()) }
-			'persistentDeviceId' { C.JSValueMakeNumber(context, pointer.persistent_device_id()) }
+			'isPrimary' { C.vox_jsc_JSValueMakeBoolean(context, pointer.is_primary()) }
+			'persistentDeviceId' { C.vox_jsc_JSValueMakeNumber(context, pointer.persistent_device_id()) }
 			else { return runtime.event_binding_type_error('Unknown PointerEvent attribute') }
 		}
 	}
@@ -202,7 +202,7 @@ fn (mut runtime Runtime) pointer_event_binding_call(method string, receiver void
 			values << runtime.javascript_event(unsafe { &dom.Event(event) })!
 		}
 		mut exception := unsafe { nil }
-		array := C.JSObjectMakeArray(context, uint(values.len), values.data, &exception)
+		array := C.vox_jsc_JSObjectMakeArray(context, uint(values.len), values.data, &exception)
 		if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 		return array
 	}

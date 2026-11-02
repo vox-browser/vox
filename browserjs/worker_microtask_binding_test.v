@@ -40,7 +40,7 @@ fn test_worker_microtasks_share_promise_fifo_and_enter_the_actual_worker_callbac
 		assert voidptr(html.current_principal_settings_object()) == voidptr(settings)
 		assert voidptr(html.incumbent_settings_object()) == voidptr(settings)
 		assert voidptr(settings.responsible_event_loop()) == voidptr(loop)
-		return C.JSValueMakeBoolean(context, true)
+		return C.vox_jsc_JSValueMakeBoolean(context, true)
 	})!
 	assert runtime.evaluate_host(r'
  globalThis.order=[];globalThis.callbackRealm=false;globalThis.strictReceiver=false;
@@ -75,7 +75,7 @@ fn test_worker_microtasks_report_the_original_exception_continue_and_ignore_call
 	assert observed.values.len == 1
 	actual := runtime.actual_webidl_value(observed.values[0].native_value_ or { panic('Missing original exception') })!
 	assert runtime.call_engine_function(runtime.value_same_intrinsic_, [actual,
-		runtime.evaluate_host_value('marker')!])! == C.JSValueMakeBoolean(runtime.context, true)
+		runtime.evaluate_host_value('marker')!])! == C.vox_jsc_JSValueMakeBoolean(runtime.context, true)
 }
 
 fn test_worker_microtask_callback_conversion_receiver_checks_and_native_function_metadata() {

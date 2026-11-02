@@ -60,7 +60,7 @@ fn test_native_readable_size_callback_has_source_context_receiver_and_original_t
 		assert settings.realm().script_execution_depth > 0 && settings.realm().callback_execution_depth > 0
 		assert owner.libjs_vm().has_running_execution_context()
 		assert voidptr(html.incumbent_settings_object()) == voidptr(settings)
-		return C.JSValueMakeBoolean(owner.context, true)
+		return C.vox_jsc_JSValueMakeBoolean(owner.context, true)
 	})!
 	assert runtime.evaluate_host(r'
  globalThis.sizeChunk={},sizeContextCalls=0,sizeReadableController=undefined;

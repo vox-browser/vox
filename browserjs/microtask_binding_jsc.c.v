@@ -47,14 +47,14 @@ pub fn (mut runtime Runtime) enqueue_javascript_microtask(callback voidptr) ! {
 			html.queue_a_task(.microtask, settings.responsible_event_loop(), none, fn [owner, mut binding, token] () {
 				if binding.closed { return }
 				mut runtime := unsafe { &Runtime(owner) }
-				runtime.call_javascript_function(binding.enqueue, C.JSValueMakeUndefined(runtime.context), [C.JSValueMakeNumber(runtime.context, f64(token))]) or {
+				runtime.call_javascript_function(binding.enqueue, C.vox_jsc_JSValueMakeUndefined(runtime.context), [C.vox_jsc_JSValueMakeNumber(runtime.context, f64(token))]) or {
 					runtime.report_event_callback_exception(err)
 				}
 			})
 			return
 		}
 	}
-	runtime.call_javascript_function(binding.enqueue, C.JSValueMakeUndefined(runtime.context), [C.JSValueMakeNumber(runtime.context, f64(token))]) or {
+	runtime.call_javascript_function(binding.enqueue, C.vox_jsc_JSValueMakeUndefined(runtime.context), [C.vox_jsc_JSValueMakeNumber(runtime.context, f64(token))]) or {
 		binding.pending.delete(token)
 		runtime.release_javascript_value(callback)
 		return err
@@ -76,7 +76,7 @@ pub fn (mut runtime Runtime) install_microtask_binding() ! {
 	}
 	deliver := runtime.make_value_host_function(fn [owner, mut binding] (_ voidptr, args []voidptr) !voidptr {
 		mut runtime := unsafe { &Runtime(owner) }
-		undefined := C.JSValueMakeUndefined(runtime.context)
+		undefined := C.vox_jsc_JSValueMakeUndefined(runtime.context)
 		if binding.closed || args.len != 1 { return undefined }
 		mut allocation_scope := platform.RetainedArenaScope{}
 		if document := binding.document {
@@ -85,7 +85,7 @@ pub fn (mut runtime Runtime) install_microtask_binding() ! {
 		}
 		defer { allocation_scope.finish() }
 		// This private argument is an engine Number, not a WebIDL long.
-		token := int(C.JSValueToNumber(runtime.context, args[0], unsafe { nil }))
+		token := int(C.vox_jsc_JSValueToNumber(runtime.context, args[0], unsafe { nil }))
 		job := binding.pending[token] or { return undefined }
 		binding.pending.delete(token)
 		defer { runtime.release_javascript_value(job.callback) }
@@ -121,24 +121,24 @@ pub fn (mut runtime Runtime) install_microtask_binding() ! {
 		token := binding.next_token
 		callback := runtime.retain_javascript_value(args[0])!
 		binding.pending[token] = QueuedMicrotaskCallback{callback, runtime.callback_settings()}
-		runtime.call_javascript_function(binding.enqueue, C.JSValueMakeUndefined(runtime.context), [C.JSValueMakeNumber(runtime.context, f64(token))]) or {
+		runtime.call_javascript_function(binding.enqueue, C.vox_jsc_JSValueMakeUndefined(runtime.context), [C.vox_jsc_JSValueMakeNumber(runtime.context, f64(token))]) or {
 			binding.pending.delete(token)
 			runtime.release_javascript_value(callback)
 			return err
 		}
-		return C.JSValueMakeUndefined(runtime.context)
+		return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 	})!
 	carrier := runtime.create_javascript_promise()!
 	defer { runtime.release_javascript_promise(carrier) }
-	runtime.resolve_javascript_promise(carrier, C.JSValueMakeUndefined(runtime.context))!
+	runtime.resolve_javascript_promise(carrier, C.vox_jsc_JSValueMakeUndefined(runtime.context))!
 	factory := runtime.evaluate_host_value(microtask_binding_factory())!
 	defer { runtime.release_javascript_value(factory) }
 	global := C.JSContextGetGlobalObject(runtime.context)
 	functions := runtime.call_javascript_function(factory, global, [deliver, global, carrier.promise,
 		queue])!
 	mut exception := unsafe { nil }
-	binding.enqueue = runtime.retain_javascript_value(C.JSObjectGetPropertyAtIndex(runtime.context, functions, 0, &exception))!
-	binding.deactivate = runtime.retain_javascript_value(C.JSObjectGetPropertyAtIndex(runtime.context, functions, 1, &exception))!
+	binding.enqueue = runtime.retain_javascript_value(C.vox_jsc_JSObjectGetPropertyAtIndex(runtime.context, functions, 0, &exception))!
+	binding.deactivate = runtime.retain_javascript_value(C.vox_jsc_JSObjectGetPropertyAtIndex(runtime.context, functions, 1, &exception))!
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	microtask_bindings_[owner] = binding
 	runtime.add_close_handler(fn [owner, mut binding] () {

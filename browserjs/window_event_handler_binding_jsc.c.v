@@ -36,7 +36,7 @@ pub fn (mut runtime Runtime) install_window_event_handler_binding() ! {
 		if method == 'get' { return runtime.javascript_event_handler(target, name) }
 		if method == 'set' && args.len >= 4 {
 			runtime.set_javascript_event_handler(target, name, args[3])!
-			return C.JSValueMakeUndefined(runtime.context)
+			return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 		}
 		return runtime.event_binding_type_error('Unknown Window handler operation')
 	})!

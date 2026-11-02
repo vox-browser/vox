@@ -51,7 +51,7 @@ pub fn (mut host FetchHost) install(mut runtime Runtime) ! {
 	})!
 	factory := runtime.evaluate_host_value(fetch_native_factory)!
 	defer { runtime.release_javascript_value(factory) }
-	installed := runtime.call_javascript_function(factory, C.JSValueMakeUndefined(runtime.context), [
+	installed := runtime.call_javascript_function(factory, C.vox_jsc_JSValueMakeUndefined(runtime.context), [
 		operate,
 		convert,
 		C.JSContextGetGlobalObject(runtime.context),
@@ -76,11 +76,11 @@ pub fn (mut host FetchHost) install(mut runtime Runtime) ! {
 
 fn (host &FetchHost) argument(args []voidptr, index int) voidptr {
 	if index < args.len { return args[index] }
-	return C.JSValueMakeUndefined(host.runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 }
 
 fn (host &FetchHost) dom_string(value voidptr) !libjs.Utf16String {
-	actual := host.runtime.call_javascript_function(host.to_string, C.JSValueMakeUndefined(host.runtime.context), [value])!
+	actual := host.runtime.call_javascript_function(host.to_string, C.vox_jsc_JSValueMakeUndefined(host.runtime.context), [value])!
 	return host.runtime.native_utf16_string(actual)
 }
 
@@ -109,25 +109,25 @@ fn (host &FetchHost) byte_value(value string) !voidptr {
 
 fn (host &FetchHost) array(items []voidptr) !voidptr {
 	mut exception := unsafe { nil }
-	result := C.JSObjectMakeArray(host.runtime.context, uint(items.len), items.data, &exception)
+	result := C.vox_jsc_JSObjectMakeArray(host.runtime.context, uint(items.len), items.data, &exception)
 	if exception != unsafe { nil } { return host.runtime.actual_javascript_exception(exception) }
 	return result
 }
 
 fn (host &FetchHost) index(value voidptr, index int) !voidptr {
 	mut exception := unsafe { nil }
-	result := C.JSObjectGetPropertyAtIndex(host.runtime.context, value, u32(index), &exception)
+	result := C.vox_jsc_JSObjectGetPropertyAtIndex(host.runtime.context, value, u32(index), &exception)
 	if exception != unsafe { nil } { return host.runtime.actual_javascript_exception(exception) }
 	return result
 }
 
 fn (host &FetchHost) pairs(value voidptr) ![]fetch.HeaderPair {
-	array := host.runtime.call_javascript_function(host.header_pairs, C.JSValueMakeUndefined(host.runtime.context), [value])!
+	array := host.runtime.call_javascript_function(host.header_pairs, C.vox_jsc_JSValueMakeUndefined(host.runtime.context), [value])!
 	host.runtime.retain_javascript_value(array)!
 	defer { host.runtime.release_javascript_value(array) }
 	length := host.runtime.binding_property(array, 'length')!
 	mut exception := unsafe { nil }
-	count := int(C.JSValueToNumber(host.runtime.context, length, &exception))
+	count := int(C.vox_jsc_JSValueToNumber(host.runtime.context, length, &exception))
 	if exception != unsafe { nil } { return host.runtime.actual_javascript_exception(exception) }
 	mut pairs := []fetch.HeaderPair{cap: count}
 	for i in 0 .. count {
@@ -184,9 +184,9 @@ fn (mut host FetchHost) body_init(value voidptr) !FetchOptionalBody {
 	}
 	if blobs := blob_bindings_[voidptr(host.runtime)] {
 		if blobs.is_buffer_part(value)! {
-			host.runtime.call_javascript_function(blobs.buffer_validation, C.JSValueMakeUndefined(host.runtime.context), [
+			host.runtime.call_javascript_function(blobs.buffer_validation, C.vox_jsc_JSValueMakeUndefined(host.runtime.context), [
 				value,
-				C.JSValueMakeBoolean(host.runtime.context, true),
+				C.vox_jsc_JSValueMakeBoolean(host.runtime.context, true),
 			])!
 			mut owner := unsafe { &BlobHost(blobs) }
 			return FetchOptionalBody{ value: fetch.BodyInit{ kind: .bytes, bytes: owner.copy_part_buffer(value)! } }
@@ -209,7 +209,7 @@ fn (host &FetchHost) member(value voidptr, key string) !voidptr {
 	if C.JSValueIsObject(host.runtime.context, value) {
 		return host.runtime.binding_property(value, key)
 	}
-	return C.JSValueMakeUndefined(host.runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 }
 
 fn (host &FetchHost) optional_string(value voidptr, usv bool, bytes bool) !FetchOptionalString {
@@ -356,7 +356,7 @@ fn (mut host FetchHost) response_init(value voidptr) !fetch.ResponseInit {
 	mut status := u16(200)
 	if !C.JSValueIsUndefined(host.runtime.context, status_value) {
 		mut exception := unsafe { nil }
-		number := C.JSValueToNumber(host.runtime.context, status_value, &exception)
+		number := C.vox_jsc_JSValueToNumber(host.runtime.context, status_value, &exception)
 		if exception != unsafe { nil } {
 			return host.runtime.actual_javascript_exception(exception)
 		}
@@ -372,7 +372,7 @@ fn (mut host FetchHost) operate(name string, args []voidptr) !voidptr {
 	receiver := host.argument(args, 1)
 	value := host.argument(args, 2)
 	other := host.argument(args, 3)
-	undefined := C.JSValueMakeUndefined(context)
+	undefined := C.vox_jsc_JSValueMakeUndefined(context)
 	match name {
 		'fetch', 'constructRequest' {
 			if args.len < 5 || !C.JSValueToBoolean(context, host.argument(args, 4)) {
@@ -403,7 +403,7 @@ fn (mut host FetchHost) operate(name string, args []voidptr) !voidptr {
 			mut status := u16(302)
 			if !C.JSValueIsUndefined(context, other) {
 				mut exception := unsafe { nil }
-				number := C.JSValueToNumber(context, other, &exception)
+				number := C.vox_jsc_JSValueToNumber(context, other, &exception)
 				if exception != unsafe { nil } {
 					return host.runtime.actual_javascript_exception(exception)
 				}
@@ -446,13 +446,13 @@ fn (mut host FetchHost) operate(name string, args []voidptr) !voidptr {
 			'get' {
 				_ := headers.has(key)!
 				if result := headers.get(key) { return host.byte_value(result) }
-				return C.JSValueMakeNull(context)
+				return C.vox_jsc_JSValueMakeNull(context)
 			}
-			'has' { return C.JSValueMakeBoolean(context, headers.has(key)!) }
+			'has' { return C.vox_jsc_JSValueMakeBoolean(context, headers.has(key)!) }
 			'delete' { headers.delete(key)! }
 			'append', 'set' {
 				mut exception := unsafe { nil }
-				count := C.JSValueToNumber(context, host.argument(args, 4), &exception)
+				count := C.vox_jsc_JSValueToNumber(context, host.argument(args, 4), &exception)
 				if count < 2 { return error('TypeError: Header value is required') }
 				text := host.byte_string(other)!
 				if method == 'append' {
@@ -488,12 +488,12 @@ fn (mut host FetchHost) operate(name string, args []voidptr) !voidptr {
 			'duplex' { 'half' }
 			'headers' { return host.wrap(.headers, voidptr(request.headers()), undefined) }
 			'signal' { return host.runtime.javascript_abort_signal(request.signal()) }
-			'keepalive' { return C.JSValueMakeBoolean(context, request.keepalive()) }
+			'keepalive' { return C.vox_jsc_JSValueMakeBoolean(context, request.keepalive()) }
 			'isReloadNavigation' {
-				return C.JSValueMakeBoolean(context, request.is_reload_navigation())
+				return C.vox_jsc_JSValueMakeBoolean(context, request.is_reload_navigation())
 			}
 			'isHistoryNavigation' {
-				return C.JSValueMakeBoolean(context, request.is_history_navigation())
+				return C.vox_jsc_JSValueMakeBoolean(context, request.is_history_navigation())
 			}
 			'clone' { return host.wrap(.request, voidptr(request.clone()!), undefined) }
 			else { return error('Unknown Request operation') }
@@ -506,9 +506,9 @@ fn (mut host FetchHost) operate(name string, args []voidptr) !voidptr {
 		match name[9..] {
 			'type' { return host.runtime.binding_string(response.type_().str().replace('_', '')) }
 			'url' { return host.runtime.binding_string(response.url()) }
-			'redirected' { return C.JSValueMakeBoolean(context, response.redirected()) }
-			'status' { return C.JSValueMakeNumber(context, response.status()) }
-			'ok' { return C.JSValueMakeBoolean(context, response.ok()) }
+			'redirected' { return C.vox_jsc_JSValueMakeBoolean(context, response.redirected()) }
+			'status' { return C.vox_jsc_JSValueMakeNumber(context, response.status()) }
+			'ok' { return C.vox_jsc_JSValueMakeBoolean(context, response.ok()) }
 			'statusText' { return host.byte_value(response.status_text()) }
 			'headers' { return host.wrap(.headers, voidptr(response.headers()), undefined) }
 			'clone' { return host.wrap(.response, voidptr(response.clone()!), undefined) }
@@ -522,10 +522,10 @@ fn (mut host FetchHost) operate(name string, args []voidptr) !voidptr {
 			.response { unsafe { &fetch.ResponseObject(record.native) }.body_mixin() }
 			else { return error('TypeError: Illegal Body receiver') }
 		}
-		if name == 'body.bodyUsed' { return C.JSValueMakeBoolean(context, mixin.body_used()) }
+		if name == 'body.bodyUsed' { return C.vox_jsc_JSValueMakeBoolean(context, mixin.body_used()) }
 		if name == 'body.body' {
 			if body := mixin.body { return host.runtime.javascript_readable_stream(body.stream()) }
-			return C.JSValueMakeNull(context)
+			return C.vox_jsc_JSValueMakeNull(context)
 		}
 		return host.consume_body(name[5..], mixin)
 	}
@@ -545,7 +545,7 @@ fn (mut host FetchHost) body_result(method string, bytes []u8, mime string) !voi
 			decoder := encoding.TextDecoder.create()
 			text := host.runtime.binding_string(decoder.decode(bytes, encoding.TextDecodeOptions{})!)
 			if method == 'text' { return text }
-			return host.runtime.call_javascript_function(host.json_parse, C.JSValueMakeUndefined(host.runtime.context), [text])
+			return host.runtime.call_javascript_function(host.json_parse, C.vox_jsc_JSValueMakeUndefined(host.runtime.context), [text])
 		}
 		else { return error('TypeError: Unknown Body operation') }
 	}
@@ -616,7 +616,7 @@ fn (mut host FetchHost) start_fetch(request &fetch.RequestObject) !voidptr {
 			}
 			object := fetch.ResponseObject.from_response(response, .immutable)
 			operation.response = object
-			wrapper := host.wrap(.response, voidptr(object), C.JSValueMakeUndefined(host.runtime.context)) or {
+			wrapper := host.wrap(.response, voidptr(object), C.vox_jsc_JSValueMakeUndefined(host.runtime.context)) or {
 				operation.reject(host.runtime.binding_exception_value(err))
 				operation.finish()
 				return

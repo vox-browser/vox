@@ -28,7 +28,7 @@ pub fn (mut runtime Runtime) install_window_viewport_binding() ! {
 				'devicePixelRatio' { window.device_pixel_ratio() }
 				else { return error('Unknown Window viewport attribute') }
 			}
-			return C.JSValueMakeNumber(runtime.context, value)
+			return C.vox_jsc_JSValueMakeNumber(runtime.context, value)
 		}
 		return error('Viewport attributes require their actual owning Window model')
 	})!

@@ -66,7 +66,7 @@ pub fn (mut runtime Runtime) install_performance_observer_binding() ! {
 }
 
 fn (mut runtime Runtime) performance_observer_list(mut binding PerformanceObserverBinding, entries []&performancetimeline.PerformanceEntry) !voidptr {
-	value := runtime.retain_javascript_value(runtime.call_javascript_function(binding.make, C.JSValueMakeUndefined(runtime.context), [C.JSValueMakeNumber(runtime.context, 1)])!)!
+	value := runtime.retain_javascript_value(runtime.call_javascript_function(binding.make, C.vox_jsc_JSValueMakeUndefined(runtime.context), [C.vox_jsc_JSValueMakeNumber(runtime.context, 1)])!)!
 	binding.lists[value] = performancetimeline.PerformanceObserverEntryList.create(entries)
 	return value
 }
@@ -78,13 +78,13 @@ fn (mut runtime Runtime) performance_observer_entries(mut binding PerformanceObs
 			values << cached
 			continue
 		}
-		value := runtime.retain_javascript_value(runtime.call_javascript_function(binding.make, C.JSValueMakeUndefined(runtime.context), [C.JSValueMakeNumber(runtime.context, 2)])!)!
+		value := runtime.retain_javascript_value(runtime.call_javascript_function(binding.make, C.vox_jsc_JSValueMakeUndefined(runtime.context), [C.vox_jsc_JSValueMakeNumber(runtime.context, 2)])!)!
 		binding.entries[value] = entry
 		binding.wrappers[voidptr(entry)] = value
 		values << value
 	}
 	mut exception := unsafe { nil }
-	array := C.JSObjectMakeArray(runtime.context, uint(values.len), values.data, &exception)
+	array := C.vox_jsc_JSObjectMakeArray(runtime.context, uint(values.len), values.data, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	return array
 }
@@ -93,14 +93,14 @@ fn (mut runtime Runtime) performance_observer_operation(mut binding PerformanceO
 	if args.len < 2 { return error('Missing PerformanceObserver operation') }
 	method := runtime.binding_dom_string(args[0])!
 	receiver := args[1]
-	undefined := C.JSValueMakeUndefined(runtime.context)
+	undefined := C.vox_jsc_JSValueMakeUndefined(runtime.context)
 	if method == 'string' { return runtime.binding_string(runtime.binding_dom_string(args[2])!) }
 	if method == 'unsigned' {
-		return C.JSValueMakeNumber(runtime.context, f64(webidl.convert_to_int(runtime.webidl_value(args[2])!, 32, false, .no, .no)!))
+		return C.vox_jsc_JSValueMakeNumber(runtime.context, f64(webidl.convert_to_int(runtime.webidl_value(args[2])!, 32, false, .no, .no)!))
 	}
 	if method == 'supported' {
 		values := performancetimeline.supported_entry_types.map(runtime.binding_string(it))
-		return C.JSObjectMakeArray(runtime.context, uint(values.len), values.data, unsafe { nil })
+		return C.vox_jsc_JSObjectMakeArray(runtime.context, uint(values.len), values.data, unsafe { nil })
 	}
 	if method == 'construct' {
 		callback := runtime.retain_javascript_value(args[2])!
@@ -123,12 +123,12 @@ fn (mut runtime Runtime) performance_observer_operation(mut binding PerformanceO
 				return
 			}
 			dropped := if count := options.dropped_entries_count {
-				C.JSValueMakeNumber(runtime.context, f64(count))
+				C.vox_jsc_JSValueMakeNumber(runtime.context, f64(count))
 			} else {
-				C.JSValueMakeUndefined(runtime.context)
+				C.vox_jsc_JSValueMakeUndefined(runtime.context)
 			}
-			callback_options := runtime.call_javascript_function(binding.make, C.JSValueMakeUndefined(runtime.context), [
-				C.JSValueMakeNumber(runtime.context, 3),
+			callback_options := runtime.call_javascript_function(binding.make, C.vox_jsc_JSValueMakeUndefined(runtime.context), [
+				C.vox_jsc_JSValueMakeNumber(runtime.context, 3),
 				dropped,
 			]) or {
 				runtime.report_event_callback_exception(err)
@@ -155,7 +155,7 @@ fn (mut runtime Runtime) performance_observer_operation(mut binding PerformanceO
 					mut types := []string{cap: length}
 					for index in 0 .. length {
 						mut exception := unsafe { nil }
-						value := C.JSObjectGetPropertyAtIndex(runtime.context, args[4], u32(index), &exception)
+						value := C.vox_jsc_JSObjectGetPropertyAtIndex(runtime.context, args[4], u32(index), &exception)
 						if exception != unsafe { nil } {
 							return runtime.actual_javascript_exception(exception)
 						}
@@ -199,8 +199,8 @@ fn (mut runtime Runtime) performance_observer_operation(mut binding PerformanceO
 	return match method {
 		'name' { runtime.binding_string(entry.name()) }
 		'entryType' { runtime.binding_string(entry.entry_type()) }
-		'startTime' { C.JSValueMakeNumber(runtime.context, entry.start_time()) }
-		'duration' { C.JSValueMakeNumber(runtime.context, entry.duration()) }
+		'startTime' { C.vox_jsc_JSValueMakeNumber(runtime.context, entry.start_time()) }
+		'duration' { C.vox_jsc_JSValueMakeNumber(runtime.context, entry.duration()) }
 		else { return error('Unknown PerformanceObserver operation') }
 	}
 }

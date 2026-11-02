@@ -24,7 +24,7 @@ pub fn (mut host AnimationFrameHost) install(mut runtime Runtime) ! {
 	})!
 	installer := runtime.evaluate_host_value(animation_frame_host_bootstrap)!
 	defer { runtime.release_javascript_value(installer) }
-	runtime.call_javascript_function(installer, C.JSValueMakeUndefined(runtime.context), [
+	runtime.call_javascript_function(installer, C.vox_jsc_JSValueMakeUndefined(runtime.context), [
 		operation,
 	])!
 	runtime.add_close_handler(fn [host_handle] () {
@@ -60,7 +60,7 @@ fn (mut host AnimationFrameHost) operate(arguments []voidptr) !voidptr {
 	mut window := unsafe { &html.WindowModel(host.window) }
 	if op == 'cancel' {
 		mut exception := unsafe { nil }
-		number := C.JSValueToNumber(host.runtime.context, arguments[1], &exception)
+		number := C.vox_jsc_JSValueToNumber(host.runtime.context, arguments[1], &exception)
 		if exception != unsafe { nil } { return host.runtime.actual_javascript_exception(exception) }
 		id := u32(webidl.convert_to_int(webidl.number_value(number), 32, false, .no, .no)!)
 		pending := window.has_pending_animation_frame_callback(id)
@@ -68,7 +68,7 @@ fn (mut host AnimationFrameHost) operate(arguments []voidptr) !voidptr {
 		if pending {
 			if record := host.records[id] { host.finish(record) }
 		}
-		return C.JSValueMakeUndefined(host.runtime.context)
+		return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 	}
 	if op != 'request' { return error('TypeError: Invalid AnimationFrameProvider operation') }
 	host_handle := voidptr(&host)
@@ -76,8 +76,8 @@ fn (mut host AnimationFrameHost) operate(arguments []voidptr) !voidptr {
 	callback := host.runtime.webidl_callback(function, fn [host_handle] (value webidl.Value) !voidptr {
 		host := unsafe { &AnimationFrameHost(host_handle) }
 		return match value.kind {
-			.undefined { C.JSValueMakeUndefined(host.runtime.context) }
-			.number { C.JSValueMakeNumber(host.runtime.context, value.number_value) }
+			.undefined { C.vox_jsc_JSValueMakeUndefined(host.runtime.context) }
+			.number { C.vox_jsc_JSValueMakeNumber(host.runtime.context, value.number_value) }
 			else { host.runtime.actual_webidl_value(value)! }
 		}
 	})!
@@ -100,7 +100,7 @@ fn (mut host AnimationFrameHost) operate(arguments []voidptr) !voidptr {
 		host.replay_callback() or { host.report(err) }
 	})
 	host.records[record.handle] = record
-	return C.JSValueMakeNumber(host.runtime.context, record.handle)
+	return C.vox_jsc_JSValueMakeNumber(host.runtime.context, record.handle)
 }
 
 // AnimationFrameProvider.idl: required callable callback, unsigned-long handle,

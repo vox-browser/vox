@@ -22,7 +22,7 @@ fn (mut runtime Runtime) install_file_system_entry_identity() ! {
 	defer { runtime.release_javascript_value(factory) }
 	// Runtime captures the intrinsic errors at context creation, so a late
 	// Window upgrade cannot route illegal construction through author globals.
-	identity := runtime.call_javascript_function(factory, C.JSValueMakeUndefined(runtime.context),
+	identity := runtime.call_javascript_function(factory, C.vox_jsc_JSValueMakeUndefined(runtime.context),
 		[runtime.value_error_intrinsic_])!
 	runtime.retain_javascript_value(identity)!
 	defer { runtime.release_javascript_value(identity) }
@@ -45,14 +45,14 @@ fn (mut runtime Runtime) install_file_system_entry_binding() ! {
 				mut runtime := unsafe { &Runtime(owner) }
 				entry := runtime.native_file_system_entry(receiver)!
 				return match property {
-					'isFile' { C.JSValueMakeBoolean(runtime.context, entry.is_file()) }
-					'isDirectory' { C.JSValueMakeBoolean(runtime.context, entry.is_directory()) }
+					'isFile' { C.vox_jsc_JSValueMakeBoolean(runtime.context, entry.is_file()) }
+					'isDirectory' { C.vox_jsc_JSValueMakeBoolean(runtime.context, entry.is_directory()) }
 					else { runtime.binding_utf16_string(entry.name_utf16())! }
 				}
 			})!
 	}
 	binding.constructor = runtime.retain_javascript_value(runtime.call_javascript_function(
-		binding.install, C.JSValueMakeUndefined(runtime.context), call_arguments)!)!
+		binding.install, C.vox_jsc_JSValueMakeUndefined(runtime.context), call_arguments)!)!
 }
 
 pub fn (mut runtime Runtime) javascript_file_system_entry(entry &entriesapi.FileSystemEntry) !voidptr {
@@ -62,7 +62,7 @@ pub fn (mut runtime Runtime) javascript_file_system_entry(entry &entriesapi.File
 	mut binding := runtime.event_binding()!.file_system_entry_binding
 	if wrapper := binding.wrappers[voidptr(entry)] { return wrapper }
 	wrapper := runtime.retain_javascript_value(runtime.call_javascript_function(binding.wrap,
-		C.JSValueMakeUndefined(runtime.context), [])!)!
+		C.vox_jsc_JSValueMakeUndefined(runtime.context), [])!)!
 	binding.entries[wrapper] = entry
 	binding.wrappers[voidptr(entry)] = wrapper
 	return wrapper

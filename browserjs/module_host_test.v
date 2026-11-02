@@ -64,7 +64,7 @@ fn test_native_modules_link_cycles_live_exports_import_maps_and_top_level_await(
 	runtime.define_value_host_function('__moduleHasOwner', fn [settings, owner] (_ voidptr, _ []voidptr) !voidptr {
 		runtime := unsafe { &Runtime(owner) }
 		active := settings.realm().script_execution_depth > 0 && runtime.libjs_vm().has_running_execution_context()
-		return C.JSValueMakeBoolean(runtime.context, active)
+		return C.vox_jsc_JSValueMakeBoolean(runtime.context, active)
 	})!
 	mut scope := settings.universal_global_scope()
 	map_ := html.parse_import_map_string('{"imports":{"counter":"/lib/counter.js","cycle":"/lib/cycle.js"}}', document.url)!

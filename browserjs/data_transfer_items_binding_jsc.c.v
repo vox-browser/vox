@@ -40,18 +40,18 @@ fn (mut runtime Runtime) install_data_transfer_items_identity() ! {
 		operation := runtime.binding_dom_string(runtime.ui_event_argument(args, 0))!
 		if operation == 'arrayIndex' {
 			key := libjs.PropertyName.from_utf16(runtime.native_utf16_string(runtime.ui_event_argument(args, 1))!)
-			if !key.is_number() { return C.JSValueMakeUndefined(runtime.context) }
-			return C.JSValueMakeNumber(runtime.context, f64(key.number))
+			if !key.is_number() { return C.vox_jsc_JSValueMakeUndefined(runtime.context) }
+			return C.vox_jsc_JSValueMakeNumber(runtime.context, f64(key.number))
 		}
 		list := runtime.native_data_transfer_item_list(runtime.ui_event_argument(args, 1))!
 		index := u32(webidl.convert_to_int(runtime.webidl_value(runtime.ui_event_argument(args, 2))!,
 			32, false, .no, .no)!)
-		item := list.item(uint(index)) or { return C.JSValueMakeUndefined(runtime.context) }
+		item := list.item(uint(index)) or { return C.vox_jsc_JSValueMakeUndefined(runtime.context) }
 		return runtime.javascript_data_transfer_item(item)
 	})!
 	factory := runtime.evaluate_host_value(data_transfer_items_identity_factory())!
 	defer { runtime.release_javascript_value(factory) }
-	identity := runtime.call_javascript_function(factory, C.JSValueMakeUndefined(runtime.context), [operate])!
+	identity := runtime.call_javascript_function(factory, C.vox_jsc_JSValueMakeUndefined(runtime.context), [operate])!
 	// Retain the private object while reading its members across engine calls.
 	runtime.retain_javascript_value(identity)!
 	defer { runtime.release_javascript_value(identity) }
@@ -82,7 +82,7 @@ fn (mut runtime Runtime) install_data_transfer_items_binding() ! {
 	}
 	mut call_arguments := [C.JSContextGetGlobalObject(runtime.context)]
 	call_arguments << functions
-	constructors := runtime.call_javascript_function(binding.install_function, C.JSValueMakeUndefined(runtime.context), call_arguments)!
+	constructors := runtime.call_javascript_function(binding.install_function, C.vox_jsc_JSValueMakeUndefined(runtime.context), call_arguments)!
 	runtime.retain_javascript_value(constructors)!
 	defer { runtime.release_javascript_value(constructors) }
 	binding.item_constructor = runtime.retain_javascript_value(runtime.binding_property(constructors, 'DataTransferItem')!)!
@@ -96,26 +96,26 @@ fn (mut runtime Runtime) data_transfer_items_binding_call(operation string, rece
 			if args.len == 0 { return runtime.event_binding_type_error('getAsString() needs one argument') }
 			function := args[0]
 			if C.JSValueIsNull(runtime.context, function) || C.JSValueIsUndefined(runtime.context, function) {
-				return C.JSValueMakeUndefined(runtime.context)
+				return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 			}
 			if !C.JSValueIsObject(runtime.context, function) || !C.JSObjectIsFunction(runtime.context, function) {
 				binding := runtime.event_binding()!.data_transfer_item_binding
 				// JSC's public ABI has no side-effect-free native class-name query.
 				// Primitive diagnostics retain their raw units; objects use Object.
 				message := runtime.call_javascript_function(binding.not_callable_message,
-					C.JSValueMakeUndefined(runtime.context), [function])!
+					C.vox_jsc_JSValueMakeUndefined(runtime.context), [function])!
 				actual := runtime.call_engine_function(runtime.value_error_intrinsic_, [runtime.binding_string('TypeError'), message])!
 				return runtime.actual_javascript_exception(actual)
 			}
-			data := item.string_data_utf16() or { return C.JSValueMakeUndefined(runtime.context) }
+			data := item.string_data_utf16() or { return C.vox_jsc_JSValueMakeUndefined(runtime.context) }
 			runtime.queue_data_transfer_string_callback(function, data)!
-			return C.JSValueMakeUndefined(runtime.context)
+			return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 		}
 		return match operation {
 			'kind' { runtime.binding_string(item.kind()) }
 			'type' { runtime.binding_utf16_string(item.type_utf16())! }
 			'webkitGetAsEntry' {
-				entry := item.webkit_get_as_entry() or { return C.JSValueMakeNull(runtime.context) }
+				entry := item.webkit_get_as_entry() or { return C.vox_jsc_JSValueMakeNull(runtime.context) }
 				runtime.javascript_file_system_entry(entry)!
 			}
 			else { runtime.javascript_data_transfer_item_file(item)! }
@@ -128,7 +128,7 @@ fn (mut runtime Runtime) data_transfer_items_binding_call(operation string, rece
 	// Selected operations brand before conversion and the implementation's gate.
 	mut list := runtime.native_data_transfer_item_list(receiver)!
 	match operation {
-		'length' { return C.JSValueMakeNumber(runtime.context, f64(u32(list.length()))) }
+		'length' { return C.vox_jsc_JSValueMakeNumber(runtime.context, f64(u32(list.length()))) }
 		'add' {
 			// Generated effective overload sets choose File for one argument and
 			// DOMString, DOMString for two or more, regardless of the first value.
@@ -136,7 +136,7 @@ fn (mut runtime Runtime) data_transfer_items_binding_call(operation string, rece
 				file := runtime.native_file(args[0]) or {
 					return runtime.event_binding_type_error('Not an object of type File')
 				}
-				item := list.add_file_record(file) or { return C.JSValueMakeNull(runtime.context) }
+				item := list.add_file_record(file) or { return C.vox_jsc_JSValueMakeNull(runtime.context) }
 				return runtime.javascript_data_transfer_item(item)
 			}
 			data := runtime.binding_dom_utf16(args[0])!
@@ -150,7 +150,7 @@ fn (mut runtime Runtime) data_transfer_items_binding_call(operation string, rece
 				}
 				return err
 			}
-			item := result.item or { return C.JSValueMakeNull(runtime.context) }
+			item := result.item or { return C.vox_jsc_JSValueMakeNull(runtime.context) }
 			return runtime.javascript_data_transfer_item(item)
 		}
 		'remove' {
@@ -168,7 +168,7 @@ fn (mut runtime Runtime) data_transfer_items_binding_call(operation string, rece
 		'clear' { list.clear() }
 		else { return runtime.event_binding_type_error('Unknown DataTransferItemList operation') }
 	}
-	return C.JSValueMakeUndefined(runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 }
 
 fn (mut runtime Runtime) queue_data_transfer_string_callback(function voidptr, data libjs.Utf16String) ! {
@@ -177,7 +177,7 @@ fn (mut runtime Runtime) queue_data_transfer_string_callback(function voidptr, d
 	callback := runtime.webidl_callback(function, fn [owner] (value webidl.Value) !voidptr {
 		mut runtime := unsafe { &Runtime(owner) }
 		return match value.kind {
-			.undefined { C.JSValueMakeUndefined(runtime.context) }
+			.undefined { C.vox_jsc_JSValueMakeUndefined(runtime.context) }
 			.string_ { runtime.binding_utf16_string(value.string_utf16())! }
 			else { return error('Unexpected FunctionStringCallback argument') }
 		}
@@ -209,7 +209,7 @@ pub fn (mut runtime Runtime) javascript_data_transfer_item_list(list &html.DataT
 	mut binding := runtime.event_binding()!.data_transfer_item_binding
 	if wrapper := binding.list_wrappers[voidptr(list)] { return wrapper }
 	wrapper := runtime.retain_javascript_value(runtime.call_javascript_function(binding.wrap_list,
-		C.JSValueMakeUndefined(runtime.context), [])!)!
+		C.vox_jsc_JSValueMakeUndefined(runtime.context), [])!)!
 	binding.lists[wrapper] = list
 	binding.list_wrappers[voidptr(list)] = wrapper
 	return wrapper
@@ -228,7 +228,7 @@ pub fn (mut runtime Runtime) javascript_data_transfer_item(item &html.DataTransf
 	mut binding := runtime.event_binding()!.data_transfer_item_binding
 	if wrapper := binding.item_wrappers[voidptr(item)] { return wrapper }
 	wrapper := runtime.retain_javascript_value(runtime.call_javascript_function(binding.wrap_item,
-		C.JSValueMakeUndefined(runtime.context), [])!)!
+		C.vox_jsc_JSValueMakeUndefined(runtime.context), [])!)!
 	binding.items[wrapper] = item
 	binding.item_wrappers[voidptr(item)] = wrapper
 	return wrapper

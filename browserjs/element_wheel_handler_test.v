@@ -64,7 +64,7 @@ __ladybirdElementWheelSetResolver(elementWheelHandlerResolve);0')!
 	handle := voidptr(runtime)
 	runtime.define_value_host_function('__elementWheelHandlerContext', fn [handle, settings] (_ voidptr, _ []voidptr) !voidptr {
 		runtime := unsafe { &Runtime(handle) }
-		return C.JSValueMakeBoolean(runtime.context, settings.realm().script_execution_depth > 0
+		return C.vox_jsc_JSValueMakeBoolean(runtime.context, settings.realm().script_execution_depth > 0
 			&& settings.realm().callback_execution_depth > 0
 			&& runtime.libjs_vm().has_running_execution_context()
 			&& voidptr(html.current_principal_settings_object()) == voidptr(settings)

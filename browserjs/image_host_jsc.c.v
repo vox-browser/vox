@@ -30,7 +30,7 @@ pub fn (mut host ImageHost) install(mut runtime Runtime) ! {
 	})!
 	installer := runtime.evaluate_host_value(image_host_bootstrap)!
 	defer { runtime.release_javascript_value(installer) }
-	host.prototype = runtime.call_javascript_function(installer, C.JSValueMakeUndefined(runtime.context), [
+	host.prototype = runtime.call_javascript_function(installer, C.vox_jsc_JSValueMakeUndefined(runtime.context), [
 		decode,
 		get,
 		set_attribute,
@@ -57,7 +57,7 @@ pub fn (mut host ImageHost) install(mut runtime Runtime) ! {
 
 fn (mut host ImageHost) convert(value webidl.Value) !voidptr {
 	if value.dom_exception_ != none { return host.runtime.javascript_dom_exception(value) }
-	if value.kind == .undefined { return C.JSValueMakeUndefined(host.runtime.context) }
+	if value.kind == .undefined { return C.vox_jsc_JSValueMakeUndefined(host.runtime.context) }
 	return host.runtime.actual_webidl_value(value)
 }
 
@@ -91,7 +91,7 @@ fn (mut host ImageHost) bind(arguments []voidptr) !voidptr {
 	if !C.JSValueIsObject(host.runtime.context, wrapper) {
 		return error('TypeError: Image wrapper is not an object')
 	}
-	if _ := host.records[wrapper] { return C.JSValueMakeUndefined(host.runtime.context) }
+	if _ := host.records[wrapper] { return C.vox_jsc_JSValueMakeUndefined(host.runtime.context) }
 	key := host.runtime.binding_dom_string(arguments[1])!
 	element := host.element_for_binding(key)!
 	image := unsafe { &dom.HTMLImageElement(element) }
@@ -102,7 +102,7 @@ fn (mut host ImageHost) bind(arguments []voidptr) !voidptr {
 	if !model.has_pending_request() && (element.has_attribute('src') || element.has_attribute('srcset')) {
 		model.update_the_image_data(false, false)
 	}
-	return C.JSValueMakeUndefined(host.runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 }
 
 fn (mut host ImageHost) set_attribute(arguments []voidptr) !voidptr {
@@ -118,10 +118,10 @@ fn (mut host ImageHost) set_attribute(arguments []voidptr) !voidptr {
 	old := element.get_attribute(name)
 	if text := value {
 		if previous := old {
-			if text == previous { return C.JSValueMakeUndefined(host.runtime.context) }
+			if text == previous { return C.vox_jsc_JSValueMakeUndefined(host.runtime.context) }
 		}
 	} else if old == none {
-		return C.JSValueMakeUndefined(host.runtime.context)
+		return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 	}
 	if text := value {
 		element.set_attribute_value(name, text)
@@ -134,7 +134,7 @@ fn (mut host ImageHost) set_attribute(arguments []voidptr) !voidptr {
 		node.set_needs_layout_update(.html_image_element_update_the_image_data)
 		node.set_needs_repaint(.paint_commands)
 	}
-	return C.JSValueMakeUndefined(host.runtime.context)
+	return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 }
 
 fn (mut host ImageHost) get(receiver voidptr, arguments []voidptr) !voidptr {
@@ -144,20 +144,20 @@ fn (mut host ImageHost) get(receiver voidptr, arguments []voidptr) !voidptr {
 	return match property {
 		'crossOrigin' {
 			match record.model.crossorigin() {
-				.no_cors { C.JSValueMakeNull(host.runtime.context) }
+				.no_cors { C.vox_jsc_JSValueMakeNull(host.runtime.context) }
 				.anonymous { host.runtime.binding_string('anonymous') }
 				.use_credentials { host.runtime.binding_string('use-credentials') }
 			}
 		}
-		'complete' { C.JSValueMakeBoolean(host.runtime.context, record.model.complete()) }
-		'naturalWidth' { C.JSValueMakeNumber(host.runtime.context, record.model.natural_width()) }
-		'naturalHeight' { C.JSValueMakeNumber(host.runtime.context, record.model.natural_height()) }
+		'complete' { C.vox_jsc_JSValueMakeBoolean(host.runtime.context, record.model.complete()) }
+		'naturalWidth' { C.vox_jsc_JSValueMakeNumber(host.runtime.context, record.model.natural_width()) }
+		'naturalHeight' { C.vox_jsc_JSValueMakeNumber(host.runtime.context, record.model.natural_height()) }
 		'currentSrc' { host.runtime.binding_string(record.model.current_src()) }
 		'width' {
-			C.JSValueMakeNumber(host.runtime.context, html.html_image_element_width(record.element))
+			C.vox_jsc_JSValueMakeNumber(host.runtime.context, html.html_image_element_width(record.element))
 		}
 		'height' {
-			C.JSValueMakeNumber(host.runtime.context, html.html_image_element_height(record.element))
+			C.vox_jsc_JSValueMakeNumber(host.runtime.context, html.html_image_element_height(record.element))
 		}
 		else { return error('TypeError: Unknown image property') }
 	}

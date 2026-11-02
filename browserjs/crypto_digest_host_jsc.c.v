@@ -35,27 +35,27 @@ fn (mut host CryptoHost) install_digest() ! {
 	installer := runtime.evaluate_host_value(r'(function(prototype,digestNative){Object.defineProperty(prototype,"digest",{value:function digest(algorithm,data){return arguments.length<2?digestNative(this):digestNative(this,algorithm,data)},writable:true,enumerable:true,configurable:true})})')!
 	defer { runtime.release_javascript_value(installer) }
 	prototype := host.prototypes[.subtle] or { return error('SubtleCrypto prototype unavailable') }
-	runtime.call_javascript_function(installer, C.JSValueMakeUndefined(runtime.context), [
+	runtime.call_javascript_function(installer, C.vox_jsc_JSValueMakeUndefined(runtime.context), [
 		prototype,
 		digest,
 	])!
 }
 
 fn (host &CryptoHost) algorithm_string(value voidptr) !string {
-	actual := host.runtime.call_javascript_function(host.to_dom_string, C.JSValueMakeUndefined(host.runtime.context), [value])!
+	actual := host.runtime.call_javascript_function(host.to_dom_string, C.vox_jsc_JSValueMakeUndefined(host.runtime.context), [value])!
 	return host.runtime.binding_dom_string(actual)
 }
 
 fn (host &CryptoHost) algorithm_number(value voidptr) !f64 {
-	actual := host.runtime.call_javascript_function(host.to_number, C.JSValueMakeUndefined(host.runtime.context), [value])!
+	actual := host.runtime.call_javascript_function(host.to_number, C.vox_jsc_JSValueMakeUndefined(host.runtime.context), [value])!
 	mut exception := unsafe { nil }
-	result := C.JSValueToNumber(host.runtime.context, actual, &exception)
+	result := C.vox_jsc_JSValueToNumber(host.runtime.context, actual, &exception)
 	if exception != unsafe { nil } { return host.runtime.actual_javascript_exception(exception) }
 	return result
 }
 
 fn (host &CryptoHost) algorithm_has(object voidptr, name string) !bool {
-	actual := host.runtime.call_javascript_function(host.has_property, C.JSValueMakeUndefined(host.runtime.context), [
+	actual := host.runtime.call_javascript_function(host.has_property, C.vox_jsc_JSValueMakeUndefined(host.runtime.context), [
 		object,
 		host.runtime.binding_string(name),
 	])!
@@ -63,9 +63,9 @@ fn (host &CryptoHost) algorithm_has(object voidptr, name string) !bool {
 }
 
 fn (host &CryptoHost) validate_crypto_buffer(value voidptr, binding_restrictions bool) ! {
-	host.runtime.call_javascript_function(host.buffer_validation, C.JSValueMakeUndefined(host.runtime.context), [
+	host.runtime.call_javascript_function(host.buffer_validation, C.vox_jsc_JSValueMakeUndefined(host.runtime.context), [
 		value,
-		C.JSValueMakeBoolean(host.runtime.context, binding_restrictions),
+		C.vox_jsc_JSValueMakeBoolean(host.runtime.context, binding_restrictions),
 	])!
 }
 
@@ -74,18 +74,18 @@ fn (host &CryptoHost) copy_crypto_buffer(value voidptr) !webidl.BufferSource {
 	// The copy operation returns a zero-offset engine-owned byte view. JSC
 	// supplies the shared-buffer reads; native code only copies its result.
 	mut runtime := unsafe { &Runtime(host.runtime) }
-	view := runtime.call_javascript_function(host.buffer_copy, C.JSValueMakeUndefined(runtime.context), [value])!
+	view := runtime.call_javascript_function(host.buffer_copy, C.vox_jsc_JSValueMakeUndefined(runtime.context), [value])!
 	runtime.retain_javascript_value(view)!
 	defer { runtime.release_javascript_value(view) }
 	mut exception := unsafe { nil }
-	length := C.JSObjectGetTypedArrayByteLength(runtime.context, view, &exception)
+	length := C.vox_jsc_JSObjectGetTypedArrayByteLength(runtime.context, view, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	if u64(length) > u64(2_147_483_647) {
 		return error('InternalError: Not enough memory to allocate')
 	}
 	mut bytes := []u8{len: int(length)}
 	if length > 0 {
-		pointer := C.JSObjectGetTypedArrayBytesPtr(runtime.context, view, &exception)
+		pointer := C.vox_jsc_JSObjectGetTypedArrayBytesPtr(runtime.context, view, &exception)
 		if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 		unsafe { C.memcpy(bytes.data, pointer, length) }
 	}
@@ -161,10 +161,10 @@ fn (mut host CryptoHost) crypto_promise(native &webidl.Promise) !voidptr {
 fn (mut host CryptoHost) crypto_value(value webidl.Value) !voidptr {
 	mut runtime := unsafe { &Runtime(host.runtime) }
 	if value.kind == .runtime_value { return runtime.actual_webidl_value(value) }
-	if value.kind == .undefined { return C.JSValueMakeUndefined(runtime.context) }
-	if value.kind == .null_ { return C.JSValueMakeNull(runtime.context) }
-	if value.kind == .boolean { return C.JSValueMakeBoolean(runtime.context, value.boolean_value) }
-	if value.kind == .number { return C.JSValueMakeNumber(runtime.context, value.number_value) }
+	if value.kind == .undefined { return C.vox_jsc_JSValueMakeUndefined(runtime.context) }
+	if value.kind == .null_ { return C.vox_jsc_JSValueMakeNull(runtime.context) }
+	if value.kind == .boolean { return C.vox_jsc_JSValueMakeBoolean(runtime.context, value.boolean_value) }
+	if value.kind == .number { return C.vox_jsc_JSValueMakeNumber(runtime.context, value.number_value) }
 	if value.kind == .string_ { return runtime.binding_utf16_string(value.string_utf16()) }
 	if _ := value.dom_exception_ { return runtime.javascript_dom_exception(value) }
 	if value.kind == .platform_object { return host.wrap_crypto_key(webcrypto.crypto_key_from_value(value)!) }
@@ -172,17 +172,17 @@ fn (mut host CryptoHost) crypto_value(value webidl.Value) !voidptr {
 		source := value.buffer_value or { return error('Missing native Crypto buffer') }
 		bytes := webidl.get_buffer_source_copy(source)
 		mut exception := unsafe { nil }
-		view := C.JSObjectMakeTypedArray(runtime.context, C.kJSTypedArrayTypeUint8Array, uint(bytes.len), &exception)
+		view := C.vox_jsc_JSObjectMakeTypedArray(runtime.context, C.kJSTypedArrayTypeUint8Array, uint(bytes.len), &exception)
 		if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 		runtime.retain_javascript_value(view)!
 		defer { runtime.release_javascript_value(view) }
 		if bytes.len > 0 {
-			pointer := C.JSObjectGetTypedArrayBytesPtr(runtime.context, view, &exception)
+			pointer := C.vox_jsc_JSObjectGetTypedArrayBytesPtr(runtime.context, view, &exception)
 			if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 			unsafe { C.memcpy(pointer, bytes.data, uint(bytes.len)) }
 		}
 		if source.kind == .uint8_array { return view }
-		buffer := C.JSObjectGetTypedArrayBuffer(runtime.context, view, &exception)
+		buffer := C.vox_jsc_JSObjectGetTypedArrayBuffer(runtime.context, view, &exception)
 		if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 		return buffer
 	}
