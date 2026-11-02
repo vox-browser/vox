@@ -28,6 +28,7 @@ fn (mut app BrowserApp) initialize_browser_bookmarks() {
 	}
 	if app.restrict_to_optimized_sites {
 		app.bookmarks.seed_optimized_sites() or { app.report_bookmarks_error(err.msg()) }
+		app.bookmarks.seed_forum_news_sites() or { app.report_bookmarks_error(err.msg()) }
 	}
 }
 

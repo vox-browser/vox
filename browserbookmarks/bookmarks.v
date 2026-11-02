@@ -17,6 +17,7 @@ struct SavedBookmarks {
 pub:
 	optimized_defaults_added bool
 	hacker_news_default_added bool
+	forum_news_defaults_added bool
 	visible bool
 	items   []Bookmark
 	version u64
@@ -28,6 +29,7 @@ pub struct Store {
 pub mut:
 	optimized_defaults_added bool
 	hacker_news_default_added bool
+	forum_news_defaults_added bool
 	visible bool
 	items   []Bookmark
 	version u64
@@ -55,6 +57,7 @@ pub fn open(path string) !&Store {
 		saved := json2.decode[SavedBookmarks](contents)!
 		store.optimized_defaults_added = saved.optimized_defaults_added
 		store.hacker_news_default_added = saved.hacker_news_default_added
+		store.forum_news_defaults_added = saved.forum_news_defaults_added
 		store.visible = saved.visible
 		store.version = saved.version
 		for item in saved.items {
@@ -92,6 +95,32 @@ pub fn (mut store Store) seed_optimized_sites() ! {
 	store.persist(true, items) or {
 		store.optimized_defaults_added = false
 		store.hacker_news_default_added = false
+		return err
+	}
+}
+
+// Add the comparison catalog once, including to profiles seeded by older
+// browsers. Reload under the profile lock so stale tabs preserve user edits.
+pub fn (mut store Store) seed_forum_news_sites() ! {
+	guard := processlock.acquire(store.path)!
+	defer { guard.release() }
+	store.reload()!
+	if store.forum_news_defaults_added { return }
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	mut items := store.items.clone()
+	mut position := 0
+	for index, item in items {
+		if optimizedsites.bookmarked_sites.any(it.address == item.url) { position = index + 1 }
+	}
+	for site in optimizedsites.forum_news_sites {
+		if items.any(it.url == site.address) { continue }
+		items.insert(position, Bookmark{url: site.address, title: site.title})
+		position++
+	}
+	store.forum_news_defaults_added = true
+	store.persist(store.visible, items) or {
+		store.forum_news_defaults_added = false
 		return err
 	}
 }
@@ -195,7 +224,7 @@ fn (mut store Store) write_profile(visible bool, items []Bookmark) ! {
 		os.mkdir_all(os.dir(store.path))!
 		temporary := '${store.path}.tmp-${os.getpid()}'
 		mut file := os.open_file(temporary, 'w', 0o600)!
-		encoded := json2.encode(SavedBookmarks{ visible: visible, items: items, version: store.version + 1, optimized_defaults_added: store.optimized_defaults_added, hacker_news_default_added: store.hacker_news_default_added },
+		encoded := json2.encode(SavedBookmarks{ visible: visible, items: items, version: store.version + 1, optimized_defaults_added: store.optimized_defaults_added, hacker_news_default_added: store.hacker_news_default_added, forum_news_defaults_added: store.forum_news_defaults_added },
 			escape_unicode: true
 		)
 		file.write_string(encoded) or {
@@ -231,5 +260,6 @@ pub fn (mut store Store) reload() ! {
 	store.version = fresh.version
 	store.optimized_defaults_added = fresh.optimized_defaults_added
 	store.hacker_news_default_added = fresh.hacker_news_default_added
+	store.forum_news_defaults_added = fresh.forum_news_defaults_added
 	store.profile_hash = fresh.profile_hash
 }

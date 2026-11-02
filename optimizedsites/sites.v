@@ -25,7 +25,7 @@ pub fn allows(address string) bool {
 	if parsed.scheme !in ['http', 'https'] { return false }
 	host := parsed.host or { return false }
 	name := host.serialize().trim_right('.').to_lower()
-	for site in sites {
+	for site in bookmarked_sites {
 		if name == site.host || name.ends_with('.' + site.host) { return true }
 	}
 	return false

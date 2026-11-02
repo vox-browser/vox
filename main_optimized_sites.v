@@ -22,7 +22,7 @@ fn (mut app BrowserApp) allow_browser_destination(address string) bool {
 		app.navigation_restriction_notice = ''
 		return true
 	}
-	app.navigation_restriction_notice = 'Use an optimized bookmark, or enable “Allow opening any site” in Settings.'
+	app.navigation_restriction_notice = 'Use a bookmark, or enable “Allow opening any site” in Settings.'
 	app.load_status = 'Navigation blocked'
 	app.status = app.load_status
 	app.cancel_address_bar()
@@ -33,7 +33,7 @@ fn (mut app BrowserApp) allow_browser_destination(address string) bool {
 
 fn (app &BrowserApp) browser_bar_bookmarks() []browserbookmarks.Bookmark {
 	if app.optimized_sites_only() {
-		return optimizedsites.sites.map(browserbookmarks.Bookmark{url: it.address, title: it.title})
+		return optimizedsites.bookmarked_sites.map(browserbookmarks.Bookmark{url: it.address, title: it.title})
 	}
 	return app.bookmarks.items
 }
