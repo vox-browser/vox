@@ -41,6 +41,7 @@ __global (
 	fetch_http_memory_cache_pending  = map[string][]FetchMemoryCacheEntry{}
 	fetch_http_memory_cache_complete = map[string][]FetchMemoryCacheEntry{}
 	fetch_parallel_queue_factory FetchParallelQueueFactory
+	fetch_default_user_agent_provider DefaultUserAgentProvider
 )
 
 pub enum BodyBytesKind {
@@ -699,6 +700,21 @@ pub fn default_user_agent_value() string {
 	return 'Mozilla/5.0 (LibWeb; Ladybird) AppleWebKit/537.36 (KHTML, like Gecko) Ladybird/1.0 Safari/537.36'
 }
 
+// ResourceLoader installs the browser's URL-sensitive identity without adding
+// a Fetch -> Loader import cycle. Standalone Fetch users retain their default.
+pub type DefaultUserAgentProvider = fn (dom.URL) string
+
+pub fn install_default_user_agent_provider(provider DefaultUserAgentProvider) {
+	fetch_default_user_agent_provider = provider
+}
+
+pub fn default_user_agent_for_url(url dom.URL) string {
+	if fetch_default_user_agent_provider != unsafe { nil } {
+		return fetch_default_user_agent_provider(url)
+	}
+	return default_user_agent_value()
+}
+
 pub struct NetworkPartitionKey {
 pub:
 	// Upstream keeps the URL::Origin itself in the partition key. Keeping the
@@ -1247,7 +1263,7 @@ pub fn http_network_or_cache_fetch(params &FetchParams, host &FetchHost) &Pendin
 	if !http_request.header_list.contains('User-Agent') {
 		http_request.header_list.append(http.Header{
 			name:  'User-Agent'
-			value: default_user_agent_value()
+			value: default_user_agent_for_url(http_request.current_url())
 		})
 	}
 	if http_request.cache_mode == .default && ['If-Modified-Since', 'If-None-Match',

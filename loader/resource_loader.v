@@ -8,6 +8,7 @@
 module loader
 
 import dom
+import fetch
 import http
 import os
 import platform
@@ -117,7 +118,18 @@ $if test {
 
 pub fn initialize() &ResourceLoader {
 	loader_global_resource_loader = ResourceLoader.create()
+	install_fetch_user_agent_provider()
 	return loader_global_resource_loader
+}
+
+// Worker helper processes install the same identity before creating a Loader.
+pub fn install_fetch_user_agent_provider() {
+	fetch.install_default_user_agent_provider(resource_loader_user_agent_for_fetch)
+}
+
+fn resource_loader_user_agent_for_fetch(url dom.URL) string {
+	if is_initialized() { return the().user_agent_for_url(url) }
+	return default_user_agent()
 }
 
 pub fn is_initialized() bool {
