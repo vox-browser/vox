@@ -70,6 +70,29 @@ class ProductionBuildTests(unittest.TestCase):
                 self.assertEqual(build.build_pending(root, foreground=True), 75)
                 self.assertEqual(build.build_pending(root), 0)
 
+    @unittest.skipUnless(sys.platform == 'darwin', 'macOS application-directory publication')
+    def test_new_commit_is_not_lost_when_the_previous_build_fails(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            old = self.app(root / 'Build/v', b'old')
+            request = root / 'Build/production-build/request.json'
+            build.write_json(request, dict(id='one'))
+            calls = []
+
+            def compile(repo, stage, receipt, environment):
+                calls.append(stage)
+                if len(calls) == 1:
+                    build.write_json(request, dict(id='two'))
+                    return 1
+                self.app(stage, b'new commit')
+                return 0
+
+            states = [dict(head='one'), dict(head='two'), dict(head='two')]
+            with patch.object(build, 'validate_repository'), \
+                    patch.object(build, 'repository_state', side_effect=states):
+                self.assertEqual(build.build_pending(root, compile), 0)
+            self.assertEqual(old.read_bytes(), b'new commit')
+
     def test_auto_build_drops_measurement_overrides_and_keeps_dependency_locations(self):
         env = dict(PATH='bin', V_BIN='/compiler/v', GIT_DIR='other', VOX_PRIVATE_GRAPHITE_HELPER='probe',
                    VOX_PHASE_DIAGNOSTICS='1', LADYBIRD_V_PROFILE='trace',

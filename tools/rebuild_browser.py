@@ -173,7 +173,12 @@ def build_pending(root, runner=run_build, foreground=False):
                 if code:
                     write_json(receipt / 'result.json', record)
                     print('Production build failed; previous bundle retained. See ' + str(receipt), flush=True)
-                    return code
+                    with lock(state / 'queue.lock'):
+                        latest = json.loads((state / 'request.json').read_text())
+                        if latest['id'] != request['id'] or repository_state(root) != before:
+                            continue
+                        fcntl.flock(build_lock, fcntl.LOCK_UN)
+                        return code
                 after = repository_state(root)
                 if before != after:
                     record['superseded'] = True
