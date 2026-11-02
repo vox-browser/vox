@@ -2744,3 +2744,67 @@ diagnostics and a complete seven-triple unprofiled cohort remain pending on a
 bundle containing the change. An older bundle cannot validate it. The existing
 5,000,000-instruction broad-check cadence applies to measured BBC savings;
 prior broad baseline failures remain unresolved.
+
+## Font-input production validation and cohorts 51–52
+
+The later completed production executable
+`f769e44dbef6c5c309654f532cadf36bc7d5288a4b99c9f4a03f40845649be49`
+contains the font-input index and excludes the removed early-font experiment.
+Fresh startup, eleven screenshot smoke checks within their unchanged bounds
+and eight exact SVG mutation checks pass. Eight smoke images are exact; three
+use existing allowances. Separate BBC diagnostics verify the indexed path only
+in the candidate and actual JavaScriptCore execution in both arms. These
+instrumented runs earn no instruction credit.
+
+Cohort 51 retains thirteen attempts: four complete alternating triples and
+the fifth control. An input fingerprint check then rejects the cohort.
+Immediate later hashes match the pinned inputs, but the original driver did
+not retain the differing observation, so its file and cause remain unknown.
+Commit `71793596d` records changed or unavailable identities before rejection;
+all 232 instruction-tool tests pass. This is a tooling correction, without
+engine credit. No partial cohort is pooled with the next cohort.
+
+Cohort 52 completes seven alternating triples using canonical tools and apps,
+the same launch-to-encoded-PNG coalition scope and unchanged references.
+Independent auditing rechecks 1,637 input identities, all 21 complete content
+audits and exact PNGs, fourteen Vox capture ownership proofs and seven Brave
+counter brackets. All native browser exits are zero, and the memory guard
+adopts every browser root. Driver, guard and controller exit 1 because the
+instruction target fails:
+
+| Statistic | Candidate Vox | Full-scan Vox control | Brave lower bound |
+| --- | ---: | ---: | ---: |
+| Median instructions | 32,105,605,236 | 31,799,655,533 | 15,063,146,742 |
+
+The candidate independent median regresses by 305,949,703 instructions.
+Five paired trials improve and two regress; the median paired reduction is
+567,341,128. Both statistics and every trial are retained, without a robust
+BBC optimization claim. The conservative ratio is **2.1903755525**, and the
+integer gate fails: **325,813,940,150 > 133,873,182,522**. The history now
+contains 1,278 cohort attempts across 52 cohorts. BBC remains absent from
+`OPTIMIZED_SITES.md`.
+
+Broad checks enter all 456 selected layout cases in both default and no-GC
+modes: 454 pass in each. The text-control baseline remains 13.5 versus 13;
+the toggle baseline is 16 versus 15. Both failures reproduce in a separate
+five-case control with the font-input optimization disabled. All 95 broad
+compile/runtime jobs have terminal guard receipts and unchanged owned inputs.
+There is no whole-suite pass or cadence reset.
+
+A separate JavaScriptCore sampling diagnostic retains 530 samples, including
+356 native-host leaf samples. Geometry-read stacks account for much of the
+inclusive host activity; this is time sampling, not retired-instruction
+attribution. Additional stylesheet diagnostics find 641 identical server and
+initial client rules, plus 139 server-only metadata rules targeting an absent
+tag. Preparatory proxy rejection, an adblock-error load and an ineffective
+hook are retained alongside the successful original-PNG/content/ownership
+checks. This motivates a guarded redundant-sheet-removal experiment; it earns
+no browser optimization credit yet.
+
+The explicit historical RGB WebP policy, cross-browser pixel differences,
+module CORS failure and other rendering limitations above still apply. These
+are frozen-page observations, without current-default or live-site credit.
+Exact counts, native checks, raw failed attempts, ownership proofs, host
+telemetry and receipts are preserved in the
+[production supplement](benchmark-results/bbc-font-input-production-2026-11-02.json)
+and [compressed raw cohorts](benchmark-results/bbc-font-input-production-2026-11-02-raw.json.gz).
