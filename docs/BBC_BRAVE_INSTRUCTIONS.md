@@ -2811,7 +2811,7 @@ and [compressed raw cohorts](benchmark-results/bbc-font-input-production-2026-11
 
 ## Adjacent stylesheet replacement, pending browser measurement
 
-Commits `96c9ea496` and `a9496867c` narrow invalidation when removing an inline
+Commits `3fc8f581f` and `c034c3ac6` narrow invalidation when removing an inline
 sheet immediately followed by a replacement with the same complete selector
 sequence and conditional structure. Unchanged declarations need no additional
 restyling; changed declarations retain their existing selector invalidation.
@@ -2836,7 +2836,7 @@ compile/runtime jobs**. Fourteen new cases cover ownership, pending updates,
 unseen/removed tags, full sequence order, independent shorthand expansion,
 logical aliases, duplicate internal declarations, media/global effects, live
 CSSOM changes and selective invalidation. Preparatory failures and the earlier
-normalized-only fixture remain retained. Tool commit `8b88d6eee` adds the
+normalized-only fixture remain retained. Tool commit `949526463` adds the
 isolated control flag; all **233 instruction-tool tests** pass.
 
 Two fresh native sampling runs on the available browser retain exact reference
