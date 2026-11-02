@@ -2114,3 +2114,35 @@ are superseded when compiled inputs change, so the published browser still
 cannot validate the pending fixed-owner, hidden-SVG and shadow-color fixes.
 The last tested full ChatGPT result remains the older bundle's 120 differing
 pixels. Full-page pixel parity remains open.
+
+## Test-only production-build invalidation
+
+`f5651c585` fixes an unnecessary rebuild trigger found while waiting for the
+integrated pixel checks. The supervisor previously treated screenshot fixtures,
+V test files and standalone test drivers as production build inputs. Editing
+one could supersede a successfully compiled browser despite changing no input
+consumed by that build. This is an additional trigger; genuine runtime-source
+changes still require a new build.
+
+The production fingerprint now excludes `Tests/`, V's `_test.v` files and
+standalone Python/C-family test drivers under `tools/`. The complete repository
+receipt continues hashing them. Runtime sources, native headers (including
+headers whose names mention tests), packaged resources, worker entry points and
+build helpers remain production inputs. Visual-check fixture/reference hashes
+are separate measurement inputs and still require verification.
+
+All thirteen build-manager tests pass. The retained old-policy check fails
+eight test-only mutation/addition cases; runtime-source/header/helper/resource
+controls continue invalidating builds. A publication test edits a reference
+during compilation and verifies one successful build, changed full repository
+receipts and unchanged production inputs. Evidence is retained in
+`build-input-filter-1/` beneath the private root. The active supervisor loaded
+the earlier code; a new supervisor process will use the corrected filter.
+The existing build continues under its memory guard.
+
+`current-painter-recheck-1/` also recompiles the native shadow regression and
+the corrected banner reduction after the shared painter headers change. All
+eight GPU comparisons and both fractional-color banner controls remain exact,
+with unchanged actual source/library inputs and zero compiler/runtime exits.
+The published bundle still predates the rendering fixes, so the full-page and
+installed-browser SVG gates remain pending.
