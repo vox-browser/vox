@@ -86,6 +86,9 @@ fn (mut app BrowserApp) start_process_tabs() {
 	if folder == '' && app.browser_ui().tab_color != .none {
 		app.tabs.session.set_color(app.tabs.session.id, app.browser_ui().tab_color) or { eprintln(err) }
 	}
+	if folder == '' && app.browser_ui().custom_tab_title != '' {
+		app.tabs.session.set_custom_title(app.tabs.session.id, app.browser_ui().custom_tab_title) or { eprintln(err) }
+	}
 	app.tabs.process_visible = folder == ''
 	if folder != '' {
 		app.tabs.process_initializing = true
@@ -241,8 +244,13 @@ fn (mut app BrowserApp) poll_process_tabs() {
 	}
 	if time.sys_mono_now() >= app.tabs.profile_refresh_at {
 		app.tabs.profile_refresh_at = time.sys_mono_now() + 1_000_000_000
-		if app.browser_chrome.tab_coloring != browsersettings.current().enable_tab_coloring {
-			app.invalidate_tab_color_snapshot()
+		settings := browsersettings.current()
+		if app.browser_chrome.tab_coloring != settings.enable_tab_coloring
+			|| app.browser_chrome.custom_tab_titles != settings.enable_custom_tab_titles {
+			if !settings.enable_custom_tab_titles && app.browser_ui().tab_title_editor != none {
+				app.dismiss_browser_popup()
+			}
+			app.invalidate_tab_customization_snapshot()
 			app.refresh_browser_ui()
 		}
 		// Profile writers merge under a process lock; refresh readers without

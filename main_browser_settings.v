@@ -42,26 +42,27 @@ fn browser_settings_input(id string, value string, hint string, x f64, y f64, wi
 }
 
 fn browser_settings_elements(proxy browsersettings.Proxy) ui2.Element {
-	return ui2.view('settings-root', ui2.rect(0, 0, 500, 548), ui2.BoxStyle{}, [
+	return ui2.view('settings-root', ui2.rect(0, 0, 500, 578), ui2.BoxStyle{}, [
 		ui2.label('settings-browsing-heading', 'Browsing', ui2.rect(24, 20, 452, 24), ui2.TextStyle{ size: 18 }),
 		ui2.checkbox('settings-allow-any-site', 'Allow opening any site', proxy.allow_any_site, ui2.rect(24, 56, 452, 24), ui2.TextStyle{ size: 13 }),
 		ui2.label('settings-browsing-note', 'Unconfirmed, untested sites may render slowly.', ui2.rect(24, 88, 452, 20), ui2.TextStyle{ size: 12 }),
 		ui2.label('settings-browsing-progress', 'We’re improving performance quickly.', ui2.rect(24, 108, 452, 20), ui2.TextStyle{ size: 12 }),
 		ui2.checkbox('settings-tab-coloring', 'Enable tab coloring', proxy.enable_tab_coloring, ui2.rect(24, 134, 452, 24), ui2.TextStyle{ size: 13 }),
-		ui2.label('settings-heading', 'Network', ui2.rect(24, 188, 452, 24), ui2.TextStyle{ size: 18 }),
-		ui2.checkbox('settings-enabled', 'Use SOCKS5 proxy', proxy.enabled, ui2.rect(24, 228, 452, 24), ui2.TextStyle{ size: 13 }),
-		ui2.label('settings-host-label', 'Host', ui2.rect(24, 267, 320, 20), ui2.TextStyle{ size: 13 }),
-		ui2.label('settings-port-label', 'Port', ui2.rect(368, 267, 108, 20), ui2.TextStyle{ size: 13 }),
-		browser_settings_input('settings-host', proxy.host, '127.0.0.1', 24, 290, 324),
-		browser_settings_input('settings-port', proxy.port, '1080', 368, 290, 108),
-		ui2.label('settings-sites-label', 'Only for these sites', ui2.rect(24, 334, 452, 20), ui2.TextStyle{ size: 13 }),
-		browser_settings_input('settings-sites', proxy.sites, 'example.com, another.org', 24, 358, 452),
-		ui2.label('settings-sites-help', 'Includes subdomains. Separate with commas; leave empty for all.', ui2.rect(24, 392, 452, 20), ui2.TextStyle{ size: 12 }),
-		ui2.label('settings-help', 'Other sites connect directly. Proxied DNS uses SOCKS5.', ui2.rect(24, 413, 452, 20), ui2.TextStyle{ size: 12 }),
-		ui2.label('settings-request-help', 'Changes apply to new requests.', ui2.rect(24, 434, 452, 20), ui2.TextStyle{ size: 12 }),
-		ui2.label('settings-error', browser_settings_ui.error, ui2.rect(24, 462, 452, 24), ui2.TextStyle{ size: 12, color: 0xb42318 }),
-		ui2.with_native_style(ui2.button('settings-cancel', 'Cancel', ui2.rect(294, 502, 86, 28), ui2.BoxStyle{}, ui2.TextStyle{ size: 13 })),
-		ui2.with_native_style(ui2.button('settings-apply', 'Apply', ui2.rect(390, 502, 86, 28), ui2.BoxStyle{}, ui2.TextStyle{ size: 13 })),
+		ui2.checkbox('settings-custom-tab-titles', 'Enable custom tab titles', proxy.enable_custom_tab_titles, ui2.rect(24, 164, 452, 24), ui2.TextStyle{ size: 13 }),
+		ui2.label('settings-heading', 'Network', ui2.rect(24, 218, 452, 24), ui2.TextStyle{ size: 18 }),
+		ui2.checkbox('settings-enabled', 'Use SOCKS5 proxy', proxy.enabled, ui2.rect(24, 258, 452, 24), ui2.TextStyle{ size: 13 }),
+		ui2.label('settings-host-label', 'Host', ui2.rect(24, 297, 320, 20), ui2.TextStyle{ size: 13 }),
+		ui2.label('settings-port-label', 'Port', ui2.rect(368, 297, 108, 20), ui2.TextStyle{ size: 13 }),
+		browser_settings_input('settings-host', proxy.host, '127.0.0.1', 24, 320, 324),
+		browser_settings_input('settings-port', proxy.port, '1080', 368, 320, 108),
+		ui2.label('settings-sites-label', 'Only for these sites', ui2.rect(24, 364, 452, 20), ui2.TextStyle{ size: 13 }),
+		browser_settings_input('settings-sites', proxy.sites, 'example.com, another.org', 24, 388, 452),
+		ui2.label('settings-sites-help', 'Includes subdomains. Separate with commas; leave empty for all.', ui2.rect(24, 422, 452, 20), ui2.TextStyle{ size: 12 }),
+		ui2.label('settings-help', 'Other sites connect directly. Proxied DNS uses SOCKS5.', ui2.rect(24, 443, 452, 20), ui2.TextStyle{ size: 12 }),
+		ui2.label('settings-request-help', 'Changes apply to new requests.', ui2.rect(24, 464, 452, 20), ui2.TextStyle{ size: 12 }),
+		ui2.label('settings-error', browser_settings_ui.error, ui2.rect(24, 492, 452, 24), ui2.TextStyle{ size: 12, color: 0xb42318 }),
+		ui2.with_native_style(ui2.button('settings-cancel', 'Cancel', ui2.rect(294, 532, 86, 28), ui2.BoxStyle{}, ui2.TextStyle{ size: 13 })),
+		ui2.with_native_style(ui2.button('settings-apply', 'Apply', ui2.rect(390, 532, 86, 28), ui2.BoxStyle{}, ui2.TextStyle{ size: 13 })),
 	])
 }
 
@@ -75,12 +76,16 @@ fn browser_settings_visible() bool {
 fn show_browser_settings() {
 	if browser_settings_visible() {
 		$if vox_ui2 ? {
-			ui2.show_embedded_panel('settings', 'Vox Settings', 500, 548, browser_settings_elements(browser_settings_ui.draft))
+			ui2.show_embedded_panel('settings', 'Vox Settings', 500, 578, browser_settings_elements(browser_settings_ui.draft))
 		}
 		return
 	}
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
+	if address_bar_owner.app != unsafe { nil } {
+		mut app := address_bar_owner.app.active_browser_tab()
+		app.dismiss_browser_popup()
+	}
 	mut state := unsafe { browser_settings_ui }
 	state.open = true
 	state.draft = browsersettings.current()
@@ -90,6 +95,7 @@ fn show_browser_settings() {
 	ui2.set_control_checked('settings-enabled', state.draft.enabled)
 	ui2.set_control_checked('settings-allow-any-site', state.draft.allow_any_site)
 	ui2.set_control_checked('settings-tab-coloring', state.draft.enable_tab_coloring)
+	ui2.set_control_checked('settings-custom-tab-titles', state.draft.enable_custom_tab_titles)
 	ui2.set_text('settings-host', state.draft.host)
 	ui2.set_text('settings-port', state.draft.port)
 	ui2.set_text('settings-sites', state.draft.sites)
@@ -97,7 +103,7 @@ fn show_browser_settings() {
 
 fn refresh_browser_settings() {
 	$if vox_ui2 ? {
-		ui2.show_embedded_panel('settings', 'Vox Settings', 500, 548, browser_settings_elements(browser_settings_ui.draft))
+		ui2.show_embedded_panel('settings', 'Vox Settings', 500, 578, browser_settings_elements(browser_settings_ui.draft))
 	}
 	if address_bar_owner.app != unsafe { nil } {
 		mut app := address_bar_owner.app.active_browser_tab()
@@ -134,6 +140,7 @@ fn browser_settings_event(event string) {
 	defer { platform.leave_persistent(persistent) }
 	mut state := unsafe { browser_settings_ui }
 	state.draft = browsersettings.Proxy{
+		enable_custom_tab_titles: ui2.control_checked('settings-custom-tab-titles')
 		enable_tab_coloring: ui2.control_checked('settings-tab-coloring')
 		allow_any_site: ui2.control_checked('settings-allow-any-site')
 		enabled:        ui2.control_checked('settings-enabled')
@@ -142,15 +149,17 @@ fn browser_settings_event(event string) {
 		sites:          ui2.text('settings-sites')
 	}
 	if event == 'settings-apply' {
-		previous_tab_coloring := browsersettings.current().enable_tab_coloring
+		previous := browsersettings.current()
 		browsersettings.save(state.draft) or {
 			state.error = err.msg()
 			refresh_browser_settings()
 			return
 		}
-		if previous_tab_coloring != state.draft.enable_tab_coloring && address_bar_owner.app != unsafe { nil } {
+		if (previous.enable_tab_coloring != state.draft.enable_tab_coloring
+			|| previous.enable_custom_tab_titles != state.draft.enable_custom_tab_titles) && address_bar_owner.app != unsafe { nil } {
 			mut app := address_bar_owner.app.active_browser_tab()
-			app.invalidate_tab_color_snapshot()
+			if !state.draft.enable_custom_tab_titles && app.browser_ui().tab_title_editor != none { app.dismiss_browser_popup() }
+			app.invalidate_tab_customization_snapshot()
 		}
 		close_browser_settings()
 	} else if event == 'settings-enabled' {

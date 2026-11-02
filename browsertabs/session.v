@@ -20,9 +20,10 @@ pub mut:
 	id       string
 	pid      int
 	title    string = 'New Tab'
+	custom_title string
 	url      string
 	favicon  string
-	color    Color
+	color    TabColor
 	ready    bool
 	activate bool
 	detach   bool
@@ -314,6 +315,10 @@ pub fn (mut session Session) detach_self(frame Frame) !&Session {
 	index := session.index()
 	if index >= 0 {
 		detached.set_color(detached.id, session.state.tabs[index].color) or {
+			detached.leave() or {}
+			return err
+		}
+		detached.set_custom_title(detached.id, session.state.tabs[index].custom_title) or {
 			detached.leave() or {}
 			return err
 		}

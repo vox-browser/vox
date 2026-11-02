@@ -8,6 +8,7 @@ import dom
 import html
 import json2
 import os
+import platform
 import rand
 import time
 
@@ -29,7 +30,8 @@ struct DetachedTabSession {
 	drop_x        f64
 	drop_y        f64
 	forms         []DetachedTabFormValue
-	color         browsertabs.Color
+	color         browsertabs.TabColor
+	custom_title  string
 }
 
 struct DetachedTabFormValue {
@@ -104,6 +106,7 @@ fn (app &BrowserApp) detached_tab_session() DetachedTabSession {
 		drop_y:        drop_y
 		forms:         forms
 		color:         app.browser_ui().tab_color
+		custom_title:  app.browser_ui().custom_tab_title
 	}
 }
 
@@ -133,8 +136,11 @@ fn (session DetachedTabSession) policy_value() BrowserScriptPolicy {
 }
 
 fn (mut app BrowserApp) restore_detached_tab(session DetachedTabSession) {
+	persistent := platform.enter_persistent()
 	mut state := app.browser_ui()
 	state.tab_color = session.color
+	state.custom_tab_title = session.custom_title.clone()
+	platform.leave_persistent(persistent)
 	app.ensure_browser_zoom_levels()
 	app.zoom_levels.set_for_url(session.url, session.zoom) or {
 		eprintln('Vox: could not restore domain zoom: ${err.msg()}')

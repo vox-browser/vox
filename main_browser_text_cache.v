@@ -72,18 +72,12 @@ fn (app &BrowserApp) cached_browser_console_footer() string {
 	return cache.footer
 }
 
-fn (app &BrowserApp) cached_browser_tab_titles() []string {
+fn (app &BrowserApp) cached_browser_tab_titles(custom_titles bool) []string {
 	mut cache := app.browser_text_cache()
 	count := app.browser_tab_count()
 	mut unchanged := cache.tab_titles.len == count
 	for index in 0 .. count {
-		title := if app.process_tabs() {
-			app.tabs.session.state.tabs[index].title
-		} else if app.tabs != unsafe { nil } {
-			app.tabs.pages[index].browser_tab_title()
-		} else {
-			app.browser_tab_title()
-		}
+		title := app.browser_display_tab_title(index, custom_titles)
 		if index >= cache.tab_titles.len || cache.tab_titles[index] != title { unchanged = false }
 	}
 	if unchanged { return cache.tab_titles }
@@ -93,13 +87,7 @@ fn (app &BrowserApp) cached_browser_tab_titles() []string {
 	// only when its values change; keep each published list immutable.
 	mut titles := []string{cap: count}
 	for index in 0 .. count {
-		titles << if app.process_tabs() {
-			app.tabs.session.state.tabs[index].title.clone()
-		} else if app.tabs != unsafe { nil } {
-			app.tabs.pages[index].browser_tab_title()
-		} else {
-			app.browser_tab_title()
-		}
+		titles << app.browser_display_tab_title(index, custom_titles).clone()
 	}
 	cache.tab_titles = titles
 	return titles

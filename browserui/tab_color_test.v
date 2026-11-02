@@ -28,7 +28,7 @@ fn record_tab_color_event(event string) {
 }
 
 fn test_tab_palette_has_named_choices_default_and_one_selected_row() {
-	for color in [browsertabs.Color.none, .red, .orange, .yellow, .green, .blue, .purple, .pink] {
+	for color in [browsertabs.TabColor.none, .red, .orange, .yellow, .green, .blue, .purple, .pink] {
 		rows := tab_color_rows(color)
 		assert rows[0].group && rows[0].text == 'Tab Color'
 		assert rows[1].text == 'Default'

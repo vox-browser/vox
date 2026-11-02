@@ -12,11 +12,19 @@ pub:
 	width    f64 // distance between tab origins; shoulders overlap by 10px
 	selected bool
 	dragging bool
-	color    browsertabs.Color
+	color    browsertabs.TabColor
 	color_action string
+	rename_action string
 }
 
-pub fn tab_fill(color browsertabs.Color, selected bool) u32 {
+fn tab_context_menu(tab Tab) []ui2.MenuEntry {
+	mut entries := []ui2.MenuEntry{}
+	if tab.color_action != '' { entries << ui2.MenuEntry{ id: tab.color_action, title: 'Tab Color…' } }
+	if tab.rename_action != '' { entries << ui2.MenuEntry{ id: tab.rename_action, title: 'Rename Tab…' } }
+	return entries
+}
+
+pub fn tab_fill(color browsertabs.TabColor, selected bool) u32 {
 	if selected {
 		return match color {
 			.none { u32(0xf7f7f7) }
@@ -41,9 +49,9 @@ pub fn tab_fill(color browsertabs.Color, selected bool) u32 {
 	}
 }
 
-pub fn tab_color_rows(selected browsertabs.Color) []MenuRow {
+pub fn tab_color_rows(selected browsertabs.TabColor) []MenuRow {
 	mut rows := [MenuRow{ text: 'Tab Color', group: true }]
-	for color in [browsertabs.Color.none, .red, .orange, .yellow, .green, .blue, .purple, .pink] {
+	for color in [browsertabs.TabColor.none, .red, .orange, .yellow, .green, .blue, .purple, .pink] {
 		rows << MenuRow{
 			id: 'tab-color-${color}'
 			text: if color == .none { 'Default' } else { color.str().title() }
@@ -147,9 +155,7 @@ pub fn tab_strip(width f64, tabs []Tab, new_x f64) ui2.Element {
 			action_id:           'tabdrag-${tab.index}'
 			clickable:           true
 			draggable:           true
-			menu:                if tab.color_action != '' {
-				[ui2.MenuEntry{ id: tab.color_action, title: 'Tab Color…' }]
-			} else { []ui2.MenuEntry{} }
+			menu:                tab_context_menu(tab)
 			tooltip:             tab.title
 			accessibility_role:  'tab'
 			accessibility_label: tab.title

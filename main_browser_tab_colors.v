@@ -18,14 +18,14 @@ fn (app &BrowserApp) browser_tab_identity(index int) string {
 	return 'local-${u64(voidptr(app.tabs.pages[index]))}'
 }
 
-fn (app &BrowserApp) browser_tab_colors() []browsertabs.Color {
+fn (app &BrowserApp) browser_tab_colors() []browsertabs.TabColor {
 	if app.process_tabs() { return app.tabs.session.state.tabs.map(it.color) }
 	if app.tabs == unsafe { nil } { return [app.browser_ui().tab_color] }
 	return app.tabs.pages.map(it.browser_ui().tab_color)
 }
 
 // Resolve the owner again at completion: menu indices can move or disappear.
-fn (app &BrowserApp) browser_color_target_index(target string) int {
+fn (app &BrowserApp) browser_tab_index_for_identity(target string) int {
 	for index in 0 .. app.browser_tab_count() {
 		if app.browser_tab_identity(index) == target { return index }
 	}
@@ -34,7 +34,7 @@ fn (app &BrowserApp) browser_color_target_index(target string) int {
 
 fn (mut app BrowserApp) show_tab_color_menu(target string) {
 	if !browsersettings.current().enable_tab_coloring { return }
-	index := app.browser_color_target_index(target)
+	index := app.browser_tab_index_for_identity(target)
 	if index < 0 { return }
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
@@ -56,9 +56,9 @@ fn (mut app BrowserApp) show_tab_color_menu(target string) {
 
 fn (mut app BrowserApp) complete_tab_color_menu(name string) {
 	if !browsersettings.current().enable_tab_coloring { return }
-	color := browsertabs.Color.from_string(name) or { return }
+	color := browsertabs.TabColor.from_string(name) or { return }
 	target := app.browser_ui().tab_color_target
-	index := app.browser_color_target_index(target)
+	index := app.browser_tab_index_for_identity(target)
 	if index < 0 { return }
 	if app.process_tabs() {
 		app.tabs.session.set_color(target, color) or {
@@ -70,10 +70,10 @@ fn (mut app BrowserApp) complete_tab_color_menu(name string) {
 		mut state := tab.browser_ui()
 		state.tab_color = color
 	}
-	app.invalidate_tab_color_snapshot()
+	app.invalidate_tab_customization_snapshot()
 }
 
-fn (mut app BrowserApp) invalidate_tab_color_snapshot() {
+fn (mut app BrowserApp) invalidate_tab_customization_snapshot() {
 	app.snapshot_cached = false
 	app.snapshot_hold = false
 	app.snapshot_hold_until = 0

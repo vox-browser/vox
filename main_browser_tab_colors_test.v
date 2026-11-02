@@ -31,7 +31,7 @@ fn test_tab_coloring_targets_clicked_owner_and_revalidates_closed_disabled_and_s
 	assert app.browser_ui().tab_color == .none
 	assert app.browser_ui().popup == none
 	assert !app.snapshot_cached && !app.snapshot_hold
-	assert app.browser_tab_colors() == [browsertabs.Color.red, .none]
+	assert app.browser_tab_colors() == [browsertabs.TabColor.red, .none]
 	app.show_tab_color_menu(first_id)
 	current := app.browser_ui().popup or { panic('missing current menu') }
 	app.browser_popup_action('browser-menu:${popup.token}:tab-color-blue')

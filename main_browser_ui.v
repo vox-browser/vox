@@ -22,8 +22,12 @@ mut:
 	link            string
 	select_node     &dom.Node = unsafe { nil }
 	select_document dom.UniqueNodeID
-	tab_color       browsertabs.Color
+	tab_color       browsertabs.TabColor
 	tab_color_target string
+	custom_tab_title string
+	tab_title_target string
+	tab_title_editor ?browserui.TabTitleEditor
+	tab_title_focus_pending bool
 }
 
 fn (app &BrowserApp) browser_ui() &BrowserUIState {
@@ -42,6 +46,7 @@ fn (mut app BrowserApp) refresh_browser_ui() {
 
 fn (app &BrowserApp) browser_popup_elements(width int, height int) []ui2.Element {
 	state := app.browser_ui()
+	if editor := state.tab_title_editor { return editor.elements(f64(width), f64(height)) }
 	if popup := state.popup { return popup.elements(f64(width), f64(height)) }
 	return []ui2.Element{}
 }
@@ -49,6 +54,9 @@ fn (app &BrowserApp) browser_popup_elements(width int, height int) []ui2.Element
 fn (mut app BrowserApp) dismiss_browser_popup() {
 	if app.browser_ui_ == unsafe { nil } { return }
 	mut state := app.browser_ui()
+	if editor := state.tab_title_editor {
+		if ui2.focused_id() == editor.input_id() { ui2.blur_embedded_textbox() }
+	}
 	if state.select_node != unsafe { nil } && app.document != unsafe { nil }
 		&& state.select_document == app.document.unique_id() {
 		app.close_browser_select_picker(state.select_node)
@@ -56,6 +64,9 @@ fn (mut app BrowserApp) dismiss_browser_popup() {
 	state.select_node = unsafe { nil }
 	state.link = ''
 	state.tab_color_target = ''
+	state.tab_title_target = ''
+	state.tab_title_editor = none
+	state.tab_title_focus_pending = false
 	state.popup = none
 	state.version++
 }
@@ -182,6 +193,18 @@ fn browser_ui_key(event ui2.KeyEvent) {
 	defer { platform.leave_persistent(persistent) }
 	if address_bar_owner.app == unsafe { nil } { return }
 	mut app := address_bar_owner.app.active_browser_tab()
+	if app.browser_ui().tab_title_editor != none {
+		if event.code == .escape || (event.code == .w && (event.cmd || event.ctrl)) {
+			app.dismiss_browser_popup()
+			app.refresh_browser_ui()
+			ui2.consume_key()
+		} else if event.code == .enter {
+			editor := app.browser_ui().tab_title_editor or { return }
+			app.browser_tab_title_editor_action(editor.action('save'))
+			ui2.consume_key()
+		}
+		return
+	}
 	mut settings_keys := browser_settings_visible()
 	$if vox_ui2 ? {
 		settings_keys = settings_keys && ui2.embedded_key_panel() == 'settings'
@@ -226,7 +249,7 @@ fn browser_ui_key(event ui2.KeyEvent) {
 fn browser_ui_scroll(_ f64, y f64, dx f64, dy f64) bool {
 	if y < 0 || y >= tab_strip_height || address_bar_owner.app == unsafe { nil } { return false }
 	mut app := address_bar_owner.app.active_browser_tab()
-	if app.browser_ui().popup != none { return false }
+	if app.browser_ui().popup != none || app.browser_ui().tab_title_editor != none { return false }
 	delta := if math.abs(dx) > math.abs(dy) { dx } else { dy }
 	if math.abs(delta) > 0.5 {
 		app.activate_tab_chrome(if delta > 0 { 'tab-previous' } else { 'tab-next' })

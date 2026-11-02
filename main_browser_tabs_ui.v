@@ -44,8 +44,9 @@ fn (app &BrowserApp) browser_tab_strip(chrome BrowserChromeState) ui2.Element {
 			width: width
 			selected: index == chrome.selected_tab
 			dragging: moving
-			color: if chrome.tab_coloring && index < chrome.tab_colors.len { chrome.tab_colors[index] } else { browsertabs.Color.none }
+			color: if chrome.tab_coloring && index < chrome.tab_colors.len { chrome.tab_colors[index] } else { browsertabs.TabColor.none }
 			color_action: if chrome.tab_coloring { 'tab-color-menu:${app.browser_tab_identity(index)}' } else { '' }
+			rename_action: if chrome.custom_tab_titles { 'tab-rename:${app.browser_tab_identity(index)}' } else { '' }
 		}
 		if moving { dragged << item } else { tabs << item }
 	}

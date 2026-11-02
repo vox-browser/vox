@@ -25,7 +25,8 @@ struct BrowserChromeState {
 	tab_titles             []string
 	tab_favicons           []int
 	tab_coloring           bool
-	tab_colors             []browsertabs.Color
+	custom_tab_titles      bool
+	tab_colors             []browsertabs.TabColor
 	selected_tab           int
 	debug                  bool
 	bookmarks_visible      bool
@@ -86,7 +87,8 @@ fn (mut app BrowserApp) toggle_browser_debug() {
 fn (app &BrowserApp) browser_chrome_snapshot_path(resource_url string) string {
 	// Keep previous chrome layouts and debug-only diagnostics out of normal
 	// startup snapshots, while retaining the shared snapshots cache directory.
-	return cached_snapshot_path('${resource_url}\nui2-classic-chrome-v6:tab-coloring=${browsersettings.current().enable_tab_coloring}:${app.chrome_debug}:${app.browser_tab_snapshot_key()}:zoom=${app.page_zoom}:bookmarks=${app.bookmark_bar_visible()}:${if app.bookmarks != unsafe { nil } {
+	settings := browsersettings.current()
+	return cached_snapshot_path('${resource_url}\nui2-classic-chrome-v6:custom-titles=${settings.enable_custom_tab_titles}:tab-coloring=${settings.enable_tab_coloring}:${app.chrome_debug}:${app.browser_tab_snapshot_key()}:zoom=${app.page_zoom}:bookmarks=${app.bookmark_bar_visible()}:${if app.bookmarks != unsafe { nil } {
 		app.bookmarks.version
 	} else {
 		u64(0)
@@ -104,8 +106,9 @@ fn (app &BrowserApp) chrome_footer() string {
 }
 
 fn (app &BrowserApp) browser_chrome_state(width int, height int) BrowserChromeState {
-	titles := app.cached_browser_tab_titles()
-	tab_coloring := browsersettings.current().enable_tab_coloring
+	settings := browsersettings.current()
+	titles := app.cached_browser_tab_titles(settings.enable_custom_tab_titles)
+	tab_coloring := settings.enable_tab_coloring
 	return BrowserChromeState{
 		memory:                 app.browser_ui().memory_label
 		ui_version:             app.browser_ui().version
@@ -113,7 +116,8 @@ fn (app &BrowserApp) browser_chrome_state(width int, height int) BrowserChromeSt
 		tab_titles:             titles
 		tab_favicons:           app.cached_browser_tab_favicons()
 		tab_coloring:           tab_coloring
-		tab_colors:             if tab_coloring { app.browser_tab_colors() } else { []browsertabs.Color{} }
+		custom_tab_titles:      settings.enable_custom_tab_titles
+		tab_colors:             if tab_coloring { app.browser_tab_colors() } else { []browsertabs.TabColor{} }
 		selected_tab:           app.browser_selected_tab()
 		width:                  width
 		height:                 height
@@ -239,6 +243,14 @@ fn (mut app BrowserApp) update_browser_chrome(width int, height int) {
 }
 
 fn (mut app BrowserApp) activate_browser_chrome(action string) {
+	if action.starts_with('tab-rename:') {
+		app.show_browser_tab_title_editor(action.all_after(':'))
+		return
+	}
+	if action.starts_with('tab-title-editor:') {
+		app.browser_tab_title_editor_action(action)
+		return
+	}
 	if action.starts_with('tab-color-menu:') {
 		app.show_tab_color_menu(action.all_after(':'))
 		return
