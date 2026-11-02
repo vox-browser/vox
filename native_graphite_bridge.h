@@ -11,6 +11,11 @@ enum {
     VOX_GRAPHITE_IMAGE_REPEAT_Y = 128
 };
 
+enum {
+    VOX_GRAPHITE_SVG_BACKDROP = 1,
+    VOX_GRAPHITE_SVG_FORCE_MSAA = 2
+};
+
 // Only pixels and plain values cross this boundary. The compatibility GPU
 // backend owns its Skia objects independently of the translated engine's Skia.
 typedef struct {
@@ -178,7 +183,7 @@ int vox_graphite_draw_path_parts_pixels(const VoxGraphitePixelRegion *regions, i
 int vox_graphite_draw_path_batch_pixels(uint8_t *pixels, int width, int height,
     int pitch, int has_background, const VoxGraphitePath *paths, int count);
 int vox_graphite_draw_svg_image_pixels(uint8_t *pixels, int width, int height,
-    int pitch, int has_background, const VoxGraphitePath *paths, int count,
+    int pitch, int flags, const VoxGraphitePath *paths, int count,
     const float *parent_matrix, const float *viewport, const float *rounded_clip);
 int vox_graphite_draw_svg_pattern_pixels(uint8_t *pixels, int width, int height,
     int pitch, int has_background, const VoxGraphitePath *paths, int count,

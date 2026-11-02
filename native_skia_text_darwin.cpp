@@ -4689,7 +4689,7 @@ extern "C" int ladybird_v_skia_draw_svg_path_batch(CGContextRef destination,
     auto image_to_raster = raster_matrix(matrix, region, sx, sy);
     float viewport[] {x, y, width, height};
     auto draw_in_raster = [&](std::vector<uint32_t>& target, int target_width,
-                              int target_height, int offset_x, long offset_y) {
+                              int target_height, int offset_x, long offset_y, bool force_msaa = false) {
         auto parent = image_to_raster;
         parent.postTranslate(offset_x, offset_y);
         float parent_values[9];
@@ -4704,6 +4704,19 @@ extern "C" int ladybird_v_skia_draw_svg_path_batch(CGContextRef destination,
                     SkPixmap(info, target.data(), size_t(target_width) * 4));
                 if (!backdrop) return false;
                 canvas->drawImage(backdrop, 0, 0);
+            }
+            if (force_msaa && rounded_clip) {
+                // Select the same parent pass as the complete raster tile.
+                // The SVG paths themselves are isolated by its saveLayer.
+                SkPaint noop;
+                noop.setAntiAlias(true);
+                noop.setShader(SkShaders::Color(SK_ColorTRANSPARENT));
+                SkPath trigger;
+                trigger.moveTo(0, 0);
+                trigger.cubicTo(.01f, .001f, 0, .01f, .01f, .01f);
+                trigger.lineTo(.005f, .002f);
+                trigger.close();
+                canvas->drawPath(trigger, noop);
             }
             if (gpu_clips) {
                 for (auto const& clip : s_shared_clips.find(destination)->second.clips) {
@@ -4725,8 +4738,10 @@ extern "C" int ladybird_v_skia_draw_svg_path_batch(CGContextRef destination,
                     bytes->data(), bytes->size(), identity)) return true;
         }
         all_draws_clipped = false;
+        int flags = (has_background ? VOX_GRAPHITE_SVG_BACKDROP : 0)
+            | (force_msaa && rounded_clip ? VOX_GRAPHITE_SVG_FORCE_MSAA : 0);
         return draw(reinterpret_cast<uint8_t*>(target.data()), target_width,
-            target_height, target_width * 4, has_background, paths, count,
+            target_height, target_width * 4, flags, paths, count,
             parent_values, viewport, rounded_clip) != 0;
     };
     constexpr size_t maximum_tile_pixels = 8 * 1024 * 1024;
@@ -4738,8 +4753,8 @@ extern "C" int ladybird_v_skia_draw_svg_path_batch(CGContextRef destination,
     bool drawn = false;
     if (has_background) drawn = draw_chromium_root_raster_grid(pixels, raster_width,
         raster_height, region, page_x, page_y, scroll_y, scale,
-        [&](auto& target, long offset_x, long offset_y, bool) {
-            return draw_in_raster(target, s_msaa_grid_width, s_msaa_grid_height, offset_x, offset_y);
+        [&](auto& target, long offset_x, long offset_y, bool msaa) {
+            return draw_in_raster(target, s_msaa_grid_width, s_msaa_grid_height, offset_x, offset_y, msaa);
         });
     // A CSS-pixel enclosing rectangle can extend one device pixel beyond a
     // fractional layer origin. Rasterize at the layer's own dimensions and

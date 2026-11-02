@@ -22,6 +22,9 @@ fn chromium_svg_background_msaa_rects(command layout.PaintCommand) []layout.Layo
 fn append_chromium_svg_background_msaa_triggers(command layout.PaintCommand, index int,
 	mut triggers []ChromiumMSAATrigger) {
 	if command.image_data == unsafe { nil } || command.opacity <= 0 { return }
+	// Rounded SVG backgrounds are image shaders on the parent pass. Their
+	// vector paths belong to the shader's image, not the parent's MSAA tile.
+	if chromium_svg_background_outer_clip(&command) != none { return }
 	// These paths rasterize into the picture shader's own image, rather than
 	// selecting multisampling for unrelated leaves in the parent render pass.
 	if chromium_svg_fractional_background(&command) != none { return }

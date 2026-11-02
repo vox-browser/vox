@@ -24,6 +24,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_shadow_picture_bounds_preserve_existing_rounded_control_pixels(self):
         self.compare_fixture('pikabu-shadow-picture-tiles', width=1024, height=768)
 
+    def test_rounded_svg_backgrounds_follow_the_parent_tile_msaa_mode(self):
+        self.compare_fixture('svg-rounded-parent-msaa', width=1024, height=768)
+
     def test_pikabu_svg_banner_samples_its_image_pattern_at_the_final_viewport(self):
         self.compare_fixture('pikabu-svg-image-pattern')
 

@@ -413,6 +413,32 @@ fn test_svg_background_paths_trigger_msaa_in_the_parent_raster_layer() {
  assert image.cached_display_list()!=none
 }
 
+fn test_rounded_svg_backgrounds_use_parent_msaa_without_triggering_it() {
+	command, mut image := msaa_test_svg_background(242)
+	defer { image.finalize() }
+	radius := layout.CornerRadius{8, 8}
+	rounded := layout.PaintCommand{
+		...command
+		image_data: &layout.PaintImageData{
+			...command.image_data
+			image_clip_radii: layout.BoxRadii{
+				top_left: radius
+				top_right: radius
+				bottom_right: radius
+				bottom_left: radius
+			}
+		}
+	}
+	assert chromium_svg_background_outer_clip(&rounded) != none
+	assert chromium_msaa_tiles([rounded], 1, 256).len == 0
+	assert image.cached_display_list() == none
+	// A separate path selects only its own tile, even when the rounded image
+	// overlaps the boundary between that tile and the next one.
+	neighbor := msaa_test_svg_path(60, 120, 'svg')
+	assert chromium_msaa_tiles([rounded, neighbor], 1, 256) == [0]
+	assert chromium_msaa_tiles([command, neighbor], 1, 256) == [0, 1]
+}
+
 fn test_svg_msaa_preparation_skips_distant_pictures_and_keeps_offscreen_tile_paths() {
  far,mut distant_image:=msaa_test_svg_background(3000)
  defer {distant_image.finalize()}

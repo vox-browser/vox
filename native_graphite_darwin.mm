@@ -1696,7 +1696,7 @@ int vox_graphite_draw_path_batch_pixels(uint8_t* pixels, int width, int height,
 // device scale and the raster tile's translation.
 extern "C" __attribute__((visibility("default")))
 int vox_graphite_draw_svg_image_pixels(uint8_t* pixels, int width, int height,
-    int pitch, int has_background, VoxGraphitePath const* paths, int count,
+    int pitch, int flags, VoxGraphitePath const* paths, int count,
     float const* parent_values, float const* viewport, float const* rounded_clip)
 {
     if (!pixels || !paths || !parent_values || !viewport || count <= 0 || count > 65536
@@ -1713,12 +1713,15 @@ int vox_graphite_draw_svg_image_pixels(uint8_t* pixels, int width, int height,
         kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
     auto surface = SkSurfaces::RenderTarget(recorder.get(), info);
     if (!surface) return 0;
-    if (has_background) surface->writePixels(SkPixmap(info, pixels, pitch), 0, 0);
+    if (flags & VOX_GRAPHITE_SVG_BACKDROP) surface->writePixels(SkPixmap(info, pixels, pitch), 0, 0);
     else surface->getCanvas()->clear(SK_ColorTRANSPARENT);
     SkMatrix matrix;
     matrix.set9(parent_values);
     SkM44 parent(matrix);
     auto* canvas = surface->getCanvas();
+    // Paths inside the SVG's saveLayer do not select MSAA for the parent
+    // pass. Its rounded boundary still uses the owning raster tile's mode.
+    if (flags & VOX_GRAPHITE_SVG_FORCE_MSAA) force_msaa_render_pass(canvas, width, height);
     canvas->setMatrix(parent);
     canvas->clipRect(SkRect::MakeXYWH(viewport[0], viewport[1], viewport[2], viewport[3]), true);
     if (rounded_clip) {
