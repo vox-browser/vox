@@ -1,6 +1,7 @@
 module layout
 
 import css
+import dom
 
 // Blink retains a composited surface for opacity/transform will-change hints and for
 // non-perspective 3D operations even when their matrix is affine. Painting the
@@ -11,6 +12,8 @@ fn chromium_transform_needs_surface(node &Node) bool {
 		return false
 	}
 	computed := node.computed_values()
+	animation := chromium_compositor_animation_properties(node)
+	if animation.opacity || (animation.transform && node.is_transformable()) { return true }
 	if chromium_will_change_transform_needs_surface(node) {
 		return true
 	}
@@ -27,6 +30,19 @@ fn chromium_transform_needs_surface(node &Node) bool {
 		}
 	}
 	return false
+}
+
+fn chromium_compositor_animation_properties(node &Node) css.CompositorAnimationProperties {
+	if node.document().font_rendering_policy() != .chromium {
+		return css.CompositorAnimationProperties{}
+	}
+	if generator := node.pseudo_element_generator() {
+		return css.compositor_animation_properties(dom.AbstractElement.new(generator,
+			dom_pseudo_element_for_layout_node(node.generated_for_pseudo_element())))
+	}
+	dom_node := node.dom_node() or { return css.CompositorAnimationProperties{} }
+	element := dom_node.as_element() or { return css.CompositorAnimationProperties{} }
+	return css.compositor_animation_properties(dom.AbstractElement.new(element, none))
 }
 
 fn chromium_will_change_transform_needs_surface(node &Node) bool {

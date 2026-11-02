@@ -321,7 +321,7 @@ fn chromium_chunk_context(chunk ChromiumRasterChunk, result &DocumentLayoutResul
 }
 
 fn chromium_paint_chunk_is_interested(chunk ChromiumRasterChunk, cull LayoutRect) bool {
-	return chunk.state.fixed_to_viewport || chunk.state.sticky_frame > 0
+	return chunk.state.fixed_to_viewport || chunk.state.sticky_frame > 0 || chunk.unbounded_transform_overlap
 		|| chromium_layer_bounds_overlap(chunk.bounds, cull)
 }
 
@@ -395,6 +395,10 @@ fn chromium_layerize_visible_paint_chunks(result &DocumentLayoutResult,
 			if chunk.unbounded_sticky_overlap {
 				last := scratch.paint_chunks[group]
 				scratch.paint_chunks[group] = ChromiumRasterChunk{ ...last, unbounded_sticky_overlap: true }
+			}
+			if chunk.unbounded_transform_overlap {
+				last := scratch.paint_chunks[group]
+				scratch.paint_chunks[group] = ChromiumRasterChunk{ ...last, unbounded_transform_overlap: true }
 			}
 			scratch.command_chunk_groups << group
 		}

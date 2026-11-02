@@ -23,6 +23,7 @@ pub mut:
 	scroll_background_command int = -1
 mut:
 	unbounded_sticky_overlap bool
+	unbounded_transform_overlap bool
 }
 
 pub struct ChromiumRasterLayerPlan {
@@ -57,6 +58,7 @@ struct ChromiumRasterChunk {
 	command_index int
 	command_end   int
 	unbounded_sticky_overlap bool
+	unbounded_transform_overlap bool
 }
 
 // Working storage of chromium_raster_layer_plan, reused by every recording:
@@ -73,6 +75,7 @@ mut:
 	sticky_scroll_parents map[int]int
 	fixed_bounds       map[u64]LayoutRect
 	compositor_bounds  map[u64]LayoutRect
+	compositor_unbounded_animations map[u64]bool
 	compositor_scopes  []u64
 	paint_metadata []ChromiumPaintMetadata
 	paint_phase_firsts []int
@@ -139,6 +142,7 @@ fn (mut plan ChromiumRasterLayerPlan) prepare(count int) {
 		plan.layer_storage[index].composited_contents = false
 		plan.layer_storage[index].scroll_background_command = -1
 		plan.layer_storage[index].unbounded_sticky_overlap = false
+		plan.layer_storage[index].unbounded_transform_overlap = false
 		plan.layer_storage[index].command_indices.clear()
 	}
 	plan.layers = []ChromiumRasterLayer{}
@@ -153,6 +157,7 @@ fn (mut plan ChromiumRasterLayerPlan) append_layer(legacy bool) {
 	plan.layer_storage[index].scroll_contents = false
 	plan.layer_storage[index].composited_contents = false
 	plan.layer_storage[index].unbounded_sticky_overlap = false
+	plan.layer_storage[index].unbounded_transform_overlap = false
 	plan.layers = unsafe { plan.layer_storage[..index + 1] }
 }
 
@@ -192,8 +197,10 @@ fn chromium_layerize_chunks_into(chunks []ChromiumRasterChunk, count int, device
 			// that later content can be reordered behind it during scrolling.
 			sticky_overlap := states[index].sticky_frame != chunk.state.sticky_frame
 				&& (plan.layers[index].unbounded_sticky_overlap || chunk.unbounded_sticky_overlap)
+			animation_overlap := states[index].effect_scope != chunk.state.effect_scope
+				&& (plan.layers[index].unbounded_transform_overlap || chunk.unbounded_transform_overlap)
 			if !states[index].atomic_mask
-				&& (sticky_overlap || chromium_layer_bounds_overlap(plan.layers[index].bounds, chunk.bounds)) {
+				&& (sticky_overlap || animation_overlap || chromium_layer_bounds_overlap(plan.layers[index].bounds, chunk.bounds)) {
 				separated_by_overlap = true
 				break
 			}
@@ -206,6 +213,8 @@ fn chromium_layerize_chunks_into(chunks []ChromiumRasterChunk, count int, device
 		}
 		plan.layers[merged].unbounded_sticky_overlap = plan.layers[merged].unbounded_sticky_overlap
 			|| chunk.unbounded_sticky_overlap
+		plan.layers[merged].unbounded_transform_overlap = plan.layers[merged].unbounded_transform_overlap
+			|| chunk.unbounded_transform_overlap
 		plan.layers[merged].bounds = chromium_layer_bounds_union(plan.layers[merged].bounds, chunk.bounds)
 		end := if chunk.command_end > chunk.command_index {
 			chunk.command_end
@@ -304,6 +313,24 @@ fn chromium_sticky_needs_compositing(box &BlockBox, boxes_by_layout map[u64]&Blo
 
 fn chromium_raster_chunk_bounds(box &BlockBox, command &PaintCommand) LayoutRect {
 	return chromium_raster_chunk_bounds_with_root_scroll(box, command, 0)
+}
+
+fn chromium_animated_transform_has_no_ancestor_clip(box &BlockBox,
+	result &DocumentLayoutResult) bool {
+	// A clip within the animated box moves with it. Only a clip above the
+	// animation can bound its possible movement in the parent's raster space.
+	mut context := if box.own_transform_visual_context_idx > 0 {
+		box.own_transform_visual_context_idx
+	} else { box.own_effects_visual_context_idx }
+	if context <= 0 || context >= result.visual_context_tree.nodes.len { return false }
+	context = result.visual_context_tree.nodes[context].parent_index
+	for context > 0 {
+		data := result.visual_context_tree.nodes[context].data
+		if data is painting.ClipVisualData || data is painting.ClipPathVisualData
+			|| data is painting.SVGClipVisualData { return false }
+		context = result.visual_context_tree.nodes[context].parent_index
+	}
+	return true
 }
 
 fn chromium_raster_chunk_bounds_with_root_scroll(box &BlockBox, command &PaintCommand,
@@ -407,6 +434,7 @@ fn update_chromium_raster_layer_plan_with_cull(document &dom.Document, commands 
 	scratch.sticky_scroll_parents.clear()
 	scratch.fixed_bounds.clear()
 	scratch.compositor_bounds.clear()
+	scratch.compositor_unbounded_animations.clear()
 	for entry in result.paint_order {
 		// Use the box pointer itself: reading its transform through the loop's
 		// entry copy makes current V move every copy to the heap.
@@ -417,6 +445,13 @@ fn update_chromium_raster_layer_plan_with_cull(document &dom.Document, commands 
 			// origins and GPU edge coverage.
 			scratch.compositor_bounds[u64(box.own_effects_visual_context_idx)] =
 				compatibility_affine_map_rect(box.paint_transform, box.border_box())
+			if box.layout_handle != unsafe { nil } {
+				node := unsafe { &Node(box.layout_handle) }
+				if chromium_compositor_animation_properties(node).transform {
+					scratch.compositor_unbounded_animations[u64(box.own_effects_visual_context_idx)] =
+						chromium_animated_transform_has_no_ancestor_clip(box, result)
+				}
+			}
 		}
 		if chromium_user_scrollable_box(box) {
 			scratch.composited_scrolls[box.own_scroll_frame_index] = true
@@ -530,6 +565,7 @@ fn update_chromium_raster_layer_plan_with_cull(document &dom.Document, commands 
 					bounds:        compositor_bounds
 					command_index: first
 					command_end:   end
+					unbounded_transform_overlap: scratch.compositor_unbounded_animations[effect_scope]
 				}
 				index = end
 				continue
@@ -643,6 +679,7 @@ fn update_chromium_raster_layer_plan_with_cull(document &dom.Document, commands 
 				command_index: first
 				command_end:   end
 				unbounded_sticky_overlap: unbounded_sticky_overlap
+				unbounded_transform_overlap: scratch.compositor_unbounded_animations[effect_scope]
 			}
 		}
 		index = end
