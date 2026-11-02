@@ -13,6 +13,7 @@ struct SharedRootRecording {
     int tile_width = 0, tile_height = 0, columns = 0, rows = 0;
     double scroll_y = 0;
     bool root = true;
+    bool speculative = false;
     float origin_x = 0, origin_y = 0, layer_width = 0, layer_height = 0;
     std::vector<SkRect> replay_bounds;
     std::vector<SkRect> blocked_bounds;
@@ -23,6 +24,7 @@ struct SharedRootRecording {
 std::unique_ptr<SharedRootRecording> s_shared_root_recording;
 bool s_shared_root_enabled = false;
 bool s_shared_layer_enabled = false;
+bool s_speculative_layer_enabled = false;
 bool s_shared_layer_backdrop = false;
 int s_shared_viewport_width = 0, s_shared_viewport_height = 0;
 bool s_deferred_layer_frame_enabled = false;
@@ -33,6 +35,7 @@ extern "C" void ladybird_v_skia_begin_deferred_layer_frame(int enabled)
 {
     s_deferred_layer_frame_enabled = enabled && !std::getenv("VOX_DISABLE_DEFERRED_LAYERS");
     s_deferred_layer_frame_failed = false;
+    s_speculative_layer_enabled = false;
     s_deferred_layer_destinations.clear();
 }
 
@@ -40,6 +43,7 @@ extern "C" int ladybird_v_skia_finish_deferred_layer_frame()
 {
     int result = !s_deferred_layer_frame_failed;
     s_deferred_layer_frame_enabled = false;
+    s_speculative_layer_enabled = false;
     s_deferred_layer_destinations.clear();
     return result;
 }
@@ -80,11 +84,17 @@ bool shared_recording_defers_leaf_raster(CGContextRef destination, SkRect const&
     return true;
 }
 
+static double speculative_picture_time();
 struct DeferredLayerPublication {
     SharedRootRecording const& group;
     bool published = false;
     ~DeferredLayerPublication() {
-        if (group.deferred_leaves && !published) s_deferred_layer_frame_failed = true;
+        if (group.deferred_leaves && !published) {
+            s_deferred_layer_frame_failed = true;
+            if (group.speculative && std::getenv("VOX_SPECULATIVE_PICTURE_DIAGNOSTICS"))
+                std::fprintf(stderr, "VOX_SPECULATIVE_PICTURE_FAILED leaves=%u t_us=%.3f\n",
+                    group.deferred_leaves, speculative_picture_time());
+        }
     }
 };
 #ifdef VOX_TEST_DEFERRED_LAYERS
@@ -104,6 +114,8 @@ struct SharedClipState {
 // Clips can precede the first recorded draw. Keep their state per destination,
 // including while an offscreen mask or compositor layer is being painted.
 std::unordered_map<CGContextRef, SharedClipState> s_shared_clips;
+
+#include "native_chromium_speculative_recording.h"
 
 decltype(&vox_graphite_draw_picture_pixels) shared_picture_draw()
 {
@@ -131,6 +143,7 @@ SkCanvas* shared_recording_canvas(CGContextRef destination)
         group->canvas_height = height;
         group->scale = scale;
         group->root = s_raster_layer_is_root;
+        group->speculative = s_speculative_layer_enabled;
         group->origin_x = s_raster_origin_x;
         group->origin_y = s_raster_origin_y;
         group->layer_width = s_raster_layer_width;
@@ -150,7 +163,7 @@ SkCanvas* shared_recording_canvas(CGContextRef destination)
             int left, top, right, bottom;
             // An empty canvas still uses the layer's fractional local origin.
             // A painted prefix already belongs to the destination's pixel grid.
-            if (s_shared_layer_backdrop || native_opacity_layer_ink_bounds(prefix.pixels, prefix.pitch, 0, 0,
+            if (s_shared_layer_backdrop || group->speculative || native_opacity_layer_ink_bounds(prefix.pixels, prefix.pitch, 0, 0,
                     pixel_width, pixel_height, &left, &top, &right, &bottom)) {
                 group->backdrop.resize(size_t(pixel_width) * pixel_height);
                 copy_backdrop_pixels(prefix, pixel_width, pixel_height, group->backdrop);
@@ -468,6 +481,10 @@ void finish_shared_recording()
         publication.published = composite_pixels(group->destination, std::move(pixels), width, height, left,
             group->canvas_height - top - height / group->scale,
             width / group->scale, height / group->scale, true) != 0;
+        if (publication.published && group->speculative && group->deferred_leaves
+            && std::getenv("VOX_SPECULATIVE_PICTURE_DIAGNOSTICS"))
+            std::fprintf(stderr, "VOX_SPECULATIVE_PICTURE_PUBLISH leaves=%u width=%d height=%d t_us=%.3f\n",
+                group->deferred_leaves, width, height, speculative_picture_time());
         if (publication.published && group->deferred_leaves && std::getenv("VOX_PICTURE_REGION_DIAGNOSTICS"))
             std::fprintf(stderr, "VOX_DEFERRED_LAYER leaves=%u width=%d height=%d\n",
                 group->deferred_leaves, width, height);
@@ -533,6 +550,7 @@ extern "C" void ladybird_v_skia_set_shared_recording(int enabled, int width, int
     s_shared_root_recording.reset();
     s_shared_clips.clear();
     s_shared_layer_enabled = false;
+    s_speculative_layer_enabled = false;
     s_shared_layer_backdrop = false;
     s_shared_root_enabled = enabled && width > 0 && height > 0;
     s_shared_viewport_width = width;
@@ -601,6 +619,19 @@ extern "C" void ladybird_v_skia_add_shared_rounded_clip(CGContextRef destination
 extern "C" void ladybird_v_skia_set_layer_shared_recording(int enabled)
 {
     s_shared_layer_enabled = enabled != 0;
+    s_speculative_layer_enabled = false;
+    if (!enabled && speculative_picture_enabled() && s_deferred_layer_frame_enabled
+        && !s_raster_layer_is_root && !s_direct_image_layer
+        && s_raster_layer_width > 0 && s_raster_layer_height > 0) {
+        auto context = speculative_picture_current_context();
+        if (speculative_picture_context_eligible(context)) {
+            ladybird_v_skia_set_deferred_layer_destination(context, 1);
+            if (s_deferred_layer_destinations.count(context)) {
+                s_speculative_layer_enabled = true;
+                s_shared_layer_enabled = true;
+            }
+        }
+    }
 }
 
 extern "C" int ladybird_v_skia_layer_shared_recording_enabled()
