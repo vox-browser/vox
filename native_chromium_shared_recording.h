@@ -266,11 +266,11 @@ sk_sp<SkData> serialize_shared_picture_image(SkImage* image, void*)
         ? SharedPicturePixelsScope::active->encode(std::move(bytes)) : bytes;
 }
 
-void shared_recording_image(CGContextRef destination, SkMatrix const& matrix,
+bool shared_recording_image(CGContextRef destination, SkMatrix const& matrix,
     VoxGraphiteImage const& image)
 {
     auto* canvas = shared_recording_canvas(destination);
-    if (!canvas) return;
+    if (!canvas) return false;
     auto target = SkRect::MakeXYWH(image.destination[0], image.destination[1],
         image.destination[2], image.destination[3]);
     if (image.has_background_color)
@@ -281,11 +281,20 @@ void shared_recording_image(CGContextRef destination, SkMatrix const& matrix,
         border.outset(image.border_width / 2, image.border_width / 2);
         target.join(border);
     }
+    auto unsupported = [&] {
+        // No image operation has entered the picture yet. Finish its valid
+        // prefix before the ordinary image reads that backdrop and draws.
+        if (s_shared_root_recording && s_shared_root_recording->speculative
+            && s_shared_root_recording->destination == destination)
+            finish_shared_recording();
+        else
+            shared_recording_block(destination, matrix.mapRect(target));
+        return false;
+    };
     if ((image.flags & (4 | 64 | 128 | VOX_GRAPHITE_IMAGE_ROUNDED_ALPHA_MASK)) || image.has_background_color
         || image.border_width > 0
         || size_t(image.width) * image.height > 8 * 1024 * 1024) {
-        shared_recording_block(destination, matrix.mapRect(target));
-        return;
+        return unsupported();
     }
     auto info = SkImageInfo::Make(image.width, image.height, kRGBA_8888_SkColorType,
         (image.flags & 1) ? kPremul_SkAlphaType : kUnpremul_SkAlphaType,
@@ -296,8 +305,7 @@ void shared_recording_image(CGContextRef destination, SkMatrix const& matrix,
         premultiplied.resize(size_t(image.width) * image.height * 4);
         info = info.makeAlphaType(kPremul_SkAlphaType);
         if (!source.readPixels(info, premultiplied.data(), size_t(image.width) * 4)) {
-            shared_recording_block(destination, matrix.mapRect(target));
-            return;
+            return unsupported();
         }
         source = SkPixmap(info, premultiplied.data(), size_t(image.width) * 4);
     }
@@ -347,13 +355,12 @@ void shared_recording_image(CGContextRef destination, SkMatrix const& matrix,
             ? resize(&input, scaled.data(), upload_width, upload_height, upload_width * 4)
             : source.scalePixels(resized, SkSamplingOptions(SkFilterMode::kLinear, SkMipmapMode::kNearest));
         if (!success) {
-            shared_recording_block(destination, matrix.mapRect(target));
-            return;
+            return unsupported();
         }
         source = resized;
     }
     auto bitmap = SkImages::RasterFromPixmapCopy(source);
-    if (!bitmap) { shared_recording_block(destination, matrix.mapRect(target)); return; }
+    if (!bitmap) return unsupported();
     float sx = float(upload_width) / image.width, sy = float(upload_height) / image.height;
     auto source_rect = SkRect::MakeXYWH(image.source[0] * sx, image.source[1] * sy,
         image.source[2] * sx, image.source[3] * sy);
@@ -397,6 +404,7 @@ void shared_recording_image(CGContextRef destination, SkMatrix const& matrix,
         canvas->drawImageRect(bitmap, source_rect, target, sampling, &paint, SkCanvas::kStrict_SrcRectConstraint);
     }
     canvas->restore();
+    return true;
 }
 
 #include "native_chromium_retained_tiles.h"

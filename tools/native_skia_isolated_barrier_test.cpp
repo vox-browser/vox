@@ -16,6 +16,10 @@ static void pending_parent(CGContextRef parent, bool blocked = false)
 {
     ladybird_v_skia_begin_deferred_layer_frame(1);
     ladybird_v_skia_set_deferred_layer_destination(parent, 1);
+    s_speculative_layer_enabled = true;
+    s_msaa_grid_columns = 2;
+    s_msaa_grid_width = s_msaa_grid_height = 34;
+    s_raster_layer_width = s_raster_layer_height = 64;
     auto group = std::make_unique<SharedRootRecording>();
     group->destination = parent;
     group->canvas_width = group->canvas_height = 64;
@@ -41,6 +45,8 @@ static void pending_parent(CGContextRef parent, bool blocked = false)
 
 int main()
 {
+    setenv("VOX_ENABLE_COMPLETE_SPECULATIVE_PICTURES", "1", 1);
+    setenv("VOX_ENABLE_RETAINED_LAYER_TILES", "0", 1);
     auto parent = bitmap(), input = bitmap();
     ladybird_v_skia_set_chromium_painting(1);
     pending_parent(parent);
@@ -51,6 +57,57 @@ int main()
     assert(pixels[8 * 256 + 8 * 4 + 3] == 255);
     assert(pixels[32 * 256 + 32 * 4 + 3] == 0);
     ladybird_v_skia_discard_isolated_input(ladybird_v_skia_take_isolated_input(input));
+    assert(ladybird_v_skia_finish_deferred_layer_frame());
+
+    // Supported images become owned picture input without publishing a
+    // second ordinary raster. Mutating the caller bytes cannot alter it.
+    CGContextClearRect(parent, CGRectMake(0, 0, 64, 64));
+    pending_parent(parent);
+    uint8_t image[] {0, 255, 0, 255};
+    auto draw_image = [&] {
+        return ladybird_v_skia_draw_rgba_image(parent, image, 1, 1, 4,
+            8, 8, 4, 4, 0, 0, 1, 1, 8, 8, 4, 4,
+            1, 0, 0, 1, 0, 0, 0, 0, 0, 64, 64, 1, 1, 1, nullptr);
+    };
+    assert(draw_image());
+    assert(s_shared_root_recording && s_shared_root_recording->deferred_leaves == 2);
+    assert(pixels[8 * 256 + 8 * 4 + 3] == 0);
+    image[1] = 0; image[2] = 255;
+    finish_shared_recording();
+    assert(!s_deferred_layer_frame_failed);
+    assert(pixels[8 * 256 + 8 * 4 + 1] == 255);
+    assert(pixels[8 * 256 + 8 * 4 + 2] == 0);
+    assert(pixels[5 * 256 + 5 * 4] == 255);
+    assert(ladybird_v_skia_finish_deferred_layer_frame());
+
+    // An image with a separate background retains ordinary rendering, after
+    // the preceding deferred red rectangle has reached its real backdrop.
+    CGContextClearRect(parent, CGRectMake(0, 0, 64, 64));
+    pending_parent(parent);
+    ladybird_v_skia_set_image_background(255, 255, 255, 255);
+    assert(draw_image());
+    assert(!s_shared_root_recording && !s_deferred_layer_frame_failed);
+    assert(pixels[5 * 256 + 5 * 4] == 255);
+    assert(pixels[8 * 256 + 8 * 4 + 2] == 255);
+    assert(ladybird_v_skia_finish_deferred_layer_frame());
+
+    // Strokes include their cap/join ink before the picture accepts their
+    // deferred leaf. They must not paint a separate bitmap behind its back.
+    CGContextClearRect(parent, CGRectMake(0, 0, 64, 64));
+    pending_parent(parent);
+    float line[] {0, 8, 8, 0,0,0,0,0,0,0,0,0,
+        1, 18, 8, 0,0,0,0,0,0,0,0,0};
+    assert(ladybird_v_skia_draw_svg_path_with_colors(parent, line, 2, 0,
+        1, 0, 0, 1, 0, 0, 0, 0, 0, 64, 64,
+        0, 0, 0, 0, 0, 0, 0, 255, 255, 1, 4, 2, 0, 4, 0,
+        nullptr, 0, 0, 1, nullptr, nullptr));
+    assert(s_shared_root_recording && s_shared_root_recording->deferred_leaves == 2);
+    assert(pixels[8 * 256 + 10 * 4 + 3] == 0);
+    assert(s_shared_root_recording->replay_bounds.back().contains(SkRect::MakeLTRB(6, 6, 20, 10)));
+    finish_shared_recording();
+    assert(!s_deferred_layer_frame_failed);
+    assert(pixels[8 * 256 + 10 * 4 + 2] == 255);
+    assert(pixels[5 * 256 + 5 * 4] == 255);
     assert(ladybird_v_skia_finish_deferred_layer_frame());
 
     // A same-canvas isolated recorder also replaces pixels outside the

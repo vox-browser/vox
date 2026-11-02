@@ -188,7 +188,7 @@ void shared_recording_clip(CGContextRef, SkCanvas*);
 void shared_recording_block(SkRect);
 void shared_recording_content(CGContextRef, SkRect, float, float);
 void shared_recording_speculative_content(CGContextRef, SkRect, float, float);
-void shared_recording_image(CGContextRef, SkMatrix const&, VoxGraphiteImage const&);
+bool shared_recording_image(CGContextRef, SkMatrix const&, VoxGraphiteImage const&);
 void finish_shared_recording();
 void finish_shared_recording_before_isolated_input(CGContextRef);
 void clear_retained_layer_tiles();
@@ -2256,10 +2256,8 @@ extern "C" int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
         / static_cast<float>(region.height());
     if (rounded_mask && (static_cast<size_t>(raster_width) * raster_height > 8 * 1024 * 1024
             || !clip_radii || image_border_width > 0)) return 0;
-    std::vector<uint32_t> pixels(static_cast<size_t>(raster_width)
-        * static_cast<size_t>(raster_height));
-    bool has_background = (image_flags & 2) && copy_backdrop(destination,
-        region, destination_scale, raster_width, raster_height, pixels);
+    std::vector<uint32_t> pixels;
+    bool has_background = false;
     if (s_chromium_painting) {
         VoxGraphiteImage descriptor {
             .matrix = {},
@@ -2281,7 +2279,14 @@ extern "C" int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
         std::copy_n(s_image_color_profile, VOX_IMAGE_COLOR_PROFILE_VALUES, descriptor.color_profile);
         if (clip_radii) std::copy_n(clip_radii, 8, descriptor.clip + 4);
         retain_compatible_image_decode(descriptor, matrix, destination_scale);
-        shared_recording_image(destination, matrix, descriptor);
+        if (shared_recording_image(destination, matrix, descriptor)) {
+            auto ink = device_bounds.makeOutset(2, 2);
+            shared_recording_speculative_content(destination, ink, page_y, scroll_y);
+            if (shared_recording_defers_leaf_raster(destination, ink)) return 1;
+        }
+        pixels.resize(size_t(raster_width) * raster_height);
+        has_background = (image_flags & 2) && copy_backdrop(destination,
+            region, destination_scale, raster_width, raster_height, pixels);
         raster_matrix(matrix, region, raster_scale_x, raster_scale_y).get9(descriptor.matrix);
         auto rows = chromium_layer_msaa_rows(region.top, raster_height, page_y, scroll_y, destination_scale);
         auto draw = graphite_image_draw();
@@ -2303,6 +2308,11 @@ extern "C" int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
     // A masked scope is transactional: leave its original replay available
     // when this backend cannot perform both independent coverage stages.
     if (rounded_mask) return 0;
+    if (pixels.empty()) {
+        pixels.resize(size_t(raster_width) * raster_height);
+        has_background = (image_flags & 2) && copy_backdrop(destination,
+            region, destination_scale, raster_width, raster_height, pixels);
+    }
     // Build the CPU image only if the GPU path could not draw it.
     sk_sp<SkImage> source_image;
     if (!(image_flags & 4)) {
@@ -2920,6 +2930,10 @@ extern "C" int ladybird_v_skia_draw_masked_image(CGContextRef destination,
     if (width <= 0 || height <= 0 || CGImageGetWidth(mask) != static_cast<size_t>(width)
         || CGImageGetHeight(mask) != static_cast<size_t>(height))
         return 0;
+
+    // This completed mask publishes outside the shared leaf stream. Its
+    // parent prefix must reach the destination before the copy is issued.
+    finish_shared_recording_before_isolated_input(destination);
 
     auto decode_image = [width, height](CGImageRef image) -> sk_sp<SkImage> {
         auto pitch = static_cast<size_t>(width) * 4;
@@ -5122,26 +5136,6 @@ extern "C" int ladybird_v_skia_draw_svg_path_with_colors(CGContextRef destinatio
 			canvas->drawPath(non_scaling_stroke ? transformed_stroke_path : path, paint);
 		}
 	};
-    if (auto* canvas = shared_recording_canvas(destination)) {
-        shared_recording_content(destination, matrix.mapRect(local_bounds), page_y, scroll_y);
-        canvas->save();
-        shared_recording_clip(destination, canvas);
-        draw_path(canvas, RasterRegion{}, 1, 1);
-        canvas->restore();
-        if (has_fill && !has_stroke && s_shared_root_recording && s_shared_root_recording->speculative
-            && complete_speculative_picture_enabled()) {
-            auto ink = matrix.mapRect(local_bounds).makeOutset(2, 2);
-            shared_recording_speculative_content(destination, ink, page_y, scroll_y);
-            if (shared_recording_defers_leaf_raster(destination, ink)) return 1;
-        }
-    }
-	if (s_raster_command_group
-		&& s_raster_command_group->destination == destination) {
-		auto& group = *s_raster_command_group;
-		draw_path(group.surface->getCanvas(), group.region, group.scale_x,
-			group.scale_y);
-		return 1;
-	}
 	if (has_stroke && stroke_width > 0.0f && !non_scaling_stroke) {
         SkPaint bounds_paint;
         bounds_paint.setStyle(SkPaint::kStroke_Style);
@@ -5163,6 +5157,26 @@ extern "C" int ladybird_v_skia_draw_svg_path_with_colors(CGContextRef destinatio
 		SkRect stroke_bounds;
 		if (bounds_paint.canComputeFastBounds())
 			device_bounds.join(bounds_paint.computeFastBounds(transformed_stroke_path.getBounds(), &stroke_bounds));
+	}
+    if (auto* canvas = shared_recording_canvas(destination)) {
+        shared_recording_content(destination, device_bounds, page_y, scroll_y);
+        canvas->save();
+        shared_recording_clip(destination, canvas);
+        draw_path(canvas, RasterRegion{}, 1, 1);
+        canvas->restore();
+        if (s_shared_root_recording && s_shared_root_recording->speculative
+            && complete_speculative_picture_enabled()) {
+            auto ink = device_bounds.makeOutset(2, 2);
+            shared_recording_speculative_content(destination, ink, page_y, scroll_y);
+            if (shared_recording_defers_leaf_raster(destination, ink)) return 1;
+        }
+    }
+	if (s_raster_command_group
+		&& s_raster_command_group->destination == destination) {
+		auto& group = *s_raster_command_group;
+		draw_path(group.surface->getCanvas(), group.region, group.scale_x,
+			group.scale_y);
+		return 1;
 	}
 	RasterRegion region;
 	if (!clipped_raster_region(device_bounds, canvas_width,
