@@ -287,6 +287,10 @@ fn run_uncached_inline_formatting_context_for_width(mut state LayoutState, conta
 				if context := parent_block_context {
 					mut mutable_context := unsafe { &BlockFormattingContext(context) }
 					line_builder.commit_pending_margin_before_float()
+					// Float placement may need to start below the existing inline
+					// content. Its line height is computed lazily; a stale zero height
+					// would put the float on that line and push earlier boxes aside.
+					line_builder.update_last_line()
 					clear := node.computed_values().clear()
 					clearance := mutable_context.clearance_y(clear, node.computed_values().direction(), containing_block_used_values.cumulative_offset().y(), line_builder.current_block_offset_value())
 					mut float_block_offset := line_builder.current_block_offset_value()
@@ -311,6 +315,7 @@ fn run_uncached_inline_formatting_context_for_width(mut state LayoutState, conta
 					}
 					mutable_context.layout_floating_box(mut state, node, containing_styled, available_space.width.to_px_or_zero(), container_height, float_block_offset, line_builder)
 					line_builder.recalculate_available_space()
+					line_builder.last_line_needs_update = true
 				}
 			}
 			.text {

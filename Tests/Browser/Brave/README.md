@@ -11,6 +11,13 @@ adblock snapshot, and Brave's executable, native frameworks, GPU libraries and
 helper executables. Retargeting a framework's active `Current` version also
 invalidates the comparison, even when both version directories remain present.
 
+`inline-block-followed-by-full-float` checks that a later full-width float
+starts below the completed inline line instead of displacing the earlier
+inline block. Its 1024×768 reference comes from two agreeing full-uBO Brave
+captures. The preceding production browser differs at 76,001 pixels. Focused
+layout checks cover fitting floats on both sides and prevent footer geometry
+from inflating the document's scrolling width; production validation is pending.
+
 Five focused CNN fixtures cover the solid and repeated SVG header backgrounds,
 the rounded header with a captured mask, fractional SVG background pictures,
 and a ticker fade beside an unsupported offscreen SVG background. They are
