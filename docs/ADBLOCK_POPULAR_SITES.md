@@ -2653,3 +2653,51 @@ under `Build/pikabu-shadow-compositing-20261102/`. Existing references and
 tolerances are unchanged. Earlier saved-live/frozen and unmatched-cache oracle
 variations remain open. This establishes frozen guest rendering progress, with
 no live-site, instruction-count or scrolling-performance acceptance.
+
+## Pikabu rounded SVG backgrounds inherit tile MSAA, 2 November 2026
+
+Commit `ea90237b0` reduces the unchanged frozen-page comparison from **184 to
+104 differing pixels**. It fixes 80 topic-icon pixels, changes no other pixels
+and introduces no errors. The photo remains exact. The full-page zero-pixel
+gate stays open around the avatar, notification badge and small controls.
+
+Paths elsewhere in a raster tile select MSAA for that tile's parent pass.
+Rounded SVG backgrounds isolate their own paths in a saveLayer, so those paths
+do not select the parent's mode. The native SVG batch previously ignored the
+mode supplied by the raster grid. It now forwards that mode to both supported
+GPU replay paths. The planner also excludes validated rounded SVG image paths
+from parent MSAA triggers, keeping ordinary tiles ordinary. No site, URL or
+image-size exceptions were added.
+
+The new four-icon regression includes a separate path in the first tile and
+ordinary icons in the next tile. It improves from **32 differing pixels to
+zero**, and two fresh Brave/full-uBO references from the normal harness agree
+exactly. All **21 focused planner functions** pass in default and no-GC modes.
+The production bundle passes all **77 rendering tests / 82 captures**, fresh
+headless startup and the unchanged CNN, Guardian and Verge archived viewports
+at **zero pixels**. Its Pikabu stream matches full uBO on 52 decisions, with
+zero blocks or disagreements.
+
+Three focused native checks pass with address and undefined-behavior
+sanitizers: 96 SVG clip comparisons and 107 eligibility checks, 96 mask draws
+and 288 mapping checks, plus 360 backing-color cases, 24 typed GPU colors and
+24 mixed-mode tile comparisons. The matched production control uses the same
+new executable and resources with the two previous native raster libraries;
+its pixels are identical to the original 184-pixel control. Required V/native
+source hashes stayed stable during the build; an unrelated worker source
+changed in the shared checkout.
+
+The original full-page Brave reference also repeats exactly in current normal,
+warmed, early-LayerTree and late-LayerTree trials. The earlier 66-pixel oracle
+variation remains retained and unattributed: the new checks do not establish
+cache warmup or LayerTree instrumentation as its cause. No existing golden or
+tolerance was changed. Removing SVG isolation, changing GPU replay backends,
+prerasterizing SVGs or using an image shader alone did not supply this fix;
+those probes and the initial failed production compile remain in the evidence.
+
+The [rounded-SVG MSAA receipt](benchmark-results/pikabu-rounded-svg-parent-msaa-2026-11-02.json)
+records hashes, frames, commands, guards, reference trials and rejected probes.
+Raw artifacts are under `Build/pikabu-rounded-icons-20261102/`. These are frozen
+guest rendering results with author scripts removed, without live-site,
+instruction-count or scrolling-performance acceptance. Earlier saved-live and
+synthetic SVG discrepancies remain open.
