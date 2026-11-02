@@ -42,6 +42,11 @@ VOX_RUNTIME_ASSETS = (
     'css/ua_default.css', 'css/ua_quirks_mode.css',
     'css/ua_mathml_default.css', 'css/ua_svg_default.css', 'html/media_controls.css',
 )
+VOX_BUNDLED_ADBLOCK_ASSETS = {
+    'adblock/engine.snapshot.bin': 'adblock.snapshot.bin',
+    'adblock/engine.snapshot.json.gz': 'adblock.engine.snapshot.json.gz',
+    'adblock/engine.js.gz': 'adblock.engine.js.gz',
+}
 
 
 def read_json(path):
@@ -127,7 +132,13 @@ def executable_identity(binary):
         helper = binary.parent / 'VoxAdblockWorker'
         if helper.is_file():
             paths.append(helper)
-        paths.extend(REPO / name for name in VOX_RUNTIME_ASSETS if (REPO / name).is_file())
+        for name in VOX_RUNTIME_ASSETS:
+            packaged = VOX_BUNDLED_ADBLOCK_ASSETS.get(name)
+            resource = binary.parent.parent / 'Resources' / packaged if packaged else None
+            if resource and resource.is_file():
+                paths.append(resource)
+            elif (REPO / name).is_file():
+                paths.append(REPO / name)
     return {str(p.resolve()): digest(p.read_bytes()) for p in paths}
 
 

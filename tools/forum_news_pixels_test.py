@@ -5,7 +5,7 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
-from forum_news_pixels import (CATALOG, VOX_RUNTIME_ASSETS, brave_identity, capture_site_archive, check_filters, check_native,
+from forum_news_pixels import (CATALOG, VOX_BUNDLED_ADBLOCK_ASSETS, VOX_RUNTIME_ASSETS, brave_identity, capture_site_archive, check_filters, check_native,
                                executable_identity,
                                native_capture_environment, oracle_command, run_case, seal_capture,
                                warm_native_cache, warm_oracle_cache, write_json)
@@ -93,6 +93,33 @@ class ForumNewsPixelTests(unittest.TestCase):
                 after = json.loads((args.output / 'news/browser-identities-after.json').read_text())
                 before = json.loads((args.output / 'news/browser-identities.json').read_text())
                 self.assertNotEqual(before, after)
+
+    def test_packaged_filter_inputs_replace_unused_checkout_copies_in_identity(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            vox, _, _ = self.browser_inputs(root)
+            checkout = root / 'checkout'
+            resources = vox.parent.parent / 'Resources'
+            resources.mkdir()
+            for source, packaged in VOX_BUNDLED_ADBLOCK_ASSETS.items():
+                path = checkout / source
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(b'checkout')
+                (resources / packaged).write_bytes(packaged.encode())
+            with patch('forum_news_pixels.REPO', checkout):
+                before = executable_identity(vox)
+                for source, packaged in VOX_BUNDLED_ADBLOCK_ASSETS.items():
+                    self.assertNotIn(str((checkout / source).resolve()), before)
+                    self.assertEqual(before[str(resources / packaged)], digest(packaged.encode()))
+                    (checkout / source).write_bytes(b'new unrelated checkout version')
+                self.assertEqual(before, executable_identity(vox))
+                for packaged in VOX_BUNDLED_ADBLOCK_ASSETS.values():
+                    with self.subTest(packaged=packaged):
+                        path = resources / packaged
+                        original = path.read_bytes()
+                        path.write_bytes(b'changed packaged input')
+                        self.assertNotEqual(before, executable_identity(vox))
+                        path.write_bytes(original)
 
     def test_comparison_retains_both_browser_identities_for_an_unchanged_capture(self):
         with tempfile.TemporaryDirectory() as temporary:
