@@ -424,7 +424,9 @@ void finish_shared_recording()
         int height = CGBitmapContextGetHeight(group->destination);
         auto current = read_backdrop(group->destination, {}, group->scale, width, height);
         if (!current.pixels || !group->original_prefix.equal(current.pixels, size_t(width) * 4, current.pitch, height)) {
-            speculative_picture_decline(*group);
+            // An ordinary, non-deferred segment already owns its pixels. It
+            // cannot poison later independent root segments for this layer.
+            if (group->deferred_leaves) speculative_picture_decline(*group);
             if (std::getenv("VOX_SPECULATIVE_PICTURE_DIAGNOSTICS"))
                 std::fprintf(stderr, "VOX_SPECULATIVE_ROOT_CHANGED leaves=%u t_us=%.3f\n",
                     group->deferred_leaves, speculative_picture_time());

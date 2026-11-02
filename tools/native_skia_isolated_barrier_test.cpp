@@ -153,6 +153,17 @@ int main()
     s_shared_root_recording.reset();
     ladybird_v_skia_finish_deferred_layer_frame();
 
+    // A non-deferred segment's ordinary write vetoes that publication, but
+    // does not globally decline later independent pictures on the same root.
+    pending_parent(parent);
+    s_shared_root_recording->deferred_leaves = 0;
+    auto declined = s_speculative_declined_layers.size();
+    pixels[0] ^= 1;
+    finish_shared_recording();
+    assert(!s_deferred_layer_frame_failed);
+    assert(s_speculative_declined_layers.size() == declined);
+    assert(ladybird_v_skia_finish_deferred_layer_frame());
+
     // A failed parent publication still requests whole-frame ordinary replay.
     pending_parent(parent, true);
     assert(ladybird_v_skia_begin_isolated_input(input, 64, 64));
