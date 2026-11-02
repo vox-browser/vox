@@ -3024,3 +3024,33 @@ retains source/formula references, exact fixture and browser identities, guards,
 failed checks and raw evidence under `Build/slashdot-radio-20261102/`. Slashdot's
 last qualified full-page difference is still **9,190 pixels**, before browser
 validation of these latest fixes. Stack Overflow and Pikabu remain deferred.
+
+
+## Slashdot transparent border color runs, 2 November 2026
+
+Commit `d86fe11f9` fixes the square comment-bubble tails. A transparent side's
+triangle stayed queued while zero-width sides were skipped. The next opaque
+side then flushed both triangles with its own color. Skipped sides now respect
+color-run boundaries, retaining separate transparent and opaque paths. The
+typed CSS/transport probe confirms that the visible path contains only one
+triangle after the fix. This intentionally corrects an early-return behavior
+that is also present in the current upstream Rust border painter.
+
+Three focused cases pass with default GC and `-gc none`; all **21 existing
+painting cases and eight table-border cases** pass. Tests cover all four
+orientations, hidden sides, and flushing the final same-color run. Two fresh
+full-uBO Brave references agree for the registered
+`border-color-runs-zero-width` fixture. The settled older production bundle
+differs at **208 pixels**, with complete document readiness. That is baseline
+evidence and earns no validation credit for code the bundle does not contain.
+
+The eight-minute check for a newer published browser exits **75** without
+running the pending browser checks. The shared build remains busy; no duplicate
+production build is queued. The border, byline and radio pixel checks, the
+84-test/89-capture rendering suite, and full-page preservation remain pending.
+Slashdot's last qualified full-page difference remains **9,190 pixels**.
+
+The [border-run receipt](benchmark-results/slashdot-border-color-runs-2026-11-02.json)
+records source and oracle hashes, the typed path output, original failing
+checks, the explicit-alpha fixture correction, guards and raw evidence under
+`Build/slashdot-validation-20261102/`. Stack Overflow and Pikabu remain deferred.
