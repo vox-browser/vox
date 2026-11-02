@@ -11,6 +11,11 @@ Overflow and Pikabu remain deferred, and Reddit guest access remains blocked.
 The final checkpoints record pinned builds, workload policies and evidence.
 These results concern frozen viewports and do not establish live scripting parity.
 
+The forum/news catalog now contains **15 sites**. The five additions are
+TechCrunch, Engadget, The Register, Slate and WIRED. Their initial strict
+comparisons expose open rendering/source-fidelity gaps; registration does not
+mark them complete. See [the five-site report](FORUM_NEWS_EXPANSION.md).
+
 The matrix exercises guest pages on 13 representative news, video, social,
 shopping, reference, and developer sites. It compares Vox's native filtering
 engine with full Manifest V2 uBlock Origin 1.75.0 in an isolated Brave profile,

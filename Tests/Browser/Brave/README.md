@@ -1,5 +1,12 @@
 # Brave rendering fixtures
 
+The [forum/news catalog](forum-news.json) has 15 entries. The five new guest-page
+archives (TechCrunch, Engadget, The Register, Slate and WIRED) retain full-uBO
+source evidence and original encoded response bodies. Their strict pixel checks
+currently fail; see [the expansion report](../../../docs/FORUM_NEWS_EXPANSION.md)
+for the baseline and open gaps. Six original archives pass both strict gates;
+CNN's source gate, Reddit access and the two deferred sites remain open.
+
 The registered CNN archive is pixel-exact against Brave with full uBO at
 1024×768, scale 1, when both browsers start fresh after complete encoded-response
 cache warmups. The separate saved-live/frozen-reference gate remains open.
