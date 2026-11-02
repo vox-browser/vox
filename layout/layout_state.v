@@ -995,6 +995,7 @@ mut:
 	intrinsic_seed_stamps_ []u32
 	intrinsic_seed_epoch_ u32
 	inline_measurements_ map[u64][]&InlineMeasurementLayout
+	independent_measurements_ map[u64][]&IndependentMeasurementLayout
 }
 
 fn (mut pool MeasurementUsedValuesChunkPool) take() &MeasurementUsedValuesChunk {
@@ -1026,6 +1027,7 @@ fn (mut pool MeasurementUsedValuesChunkPool) release() {
 	pool.intrinsic_seed_stamps_ = []u32{}
 	pool.intrinsic_seed_order_ = unsafe { nil }
 	pool.inline_measurements_ = map[u64][]&InlineMeasurementLayout{}
+	pool.independent_measurements_ = map[u64][]&IndependentMeasurementLayout{}
 	for chunk in pool.chunks {
 		free_measurement_allocation(chunk)
 	}

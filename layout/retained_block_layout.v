@@ -117,6 +117,9 @@ fn run_retaining_independent_formatting_context(mut state LayoutState, box &Node
 	mut used UsedValues, mode LayoutMode, space AvailableSpace) FormattingContextResult {
 	mut geometry_scratch := begin_nested_geometry_scratch(box.document(), mode)
 	defer { geometry_scratch.finish() }
+	if state.subtree_root != none && !disable_independent_measurement_reuse {
+		return run_measurement_independent_formatting_context(mut state, box, mut used, mode, space)
+	}
 	styled := box.as_node_with_style() or {
 		return layout_uncached_independent_formatting_context(mut state, box, mut used, mode, space)
 	}
