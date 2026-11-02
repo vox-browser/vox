@@ -74,6 +74,31 @@ int main(int argc, char** argv)
     assert(cache.entry_count() == faces.size());
     assert(cache.retained_bytes() <= 128 * 1024 * 1024);
 
+    // Distinct, equally sized packets can decode the same face: the embedded
+    // stream has its own length, so one trailing byte is not consumed by Skia.
+    // Both lookup methods must still key all caller bytes and own those keys.
+    auto raw_face = faces[0]->serialize(SkTypeface::SerializeBehavior::kDoIncludeData);
+    std::vector<uint8_t> equal_length(static_cast<uint8_t const*>(raw_face->data()),
+        static_cast<uint8_t const*>(raw_face->data()) + raw_face->size());
+    equal_length.push_back(0);
+    auto* previous_setting = std::getenv("VOX_ENABLE_DIRECT_PICTURE_TYPEFACE_LOOKUP");
+    bool had_setting = previous_setting != nullptr;
+    std::string saved_setting = previous_setting ? previous_setting : "";
+    for (auto setting : {"0", "1"}) {
+        setenv("VOX_ENABLE_DIRECT_PICTURE_TYPEFACE_LOOKUP", setting, 1);
+        VoxPictureTypefaceCache exact;
+        auto original = exact.decode(equal_length.data(), equal_length.size());
+        assert(original);
+        equal_length.back() = 1;
+        assert(exact.decode(equal_length.data(), equal_length.size()));
+        assert(exact.entry_count() == 2);
+        equal_length.back() = 0;
+        assert(exact.decode(equal_length.data(), equal_length.size())->uniqueID() == original->uniqueID());
+        assert(exact.entry_count() == 2);
+    }
+    if (had_setting) setenv("VOX_ENABLE_DIRECT_PICTURE_TYPEFACE_LOOKUP", saved_setting.c_str(), 1);
+    else unsetenv("VOX_ENABLE_DIRECT_PICTURE_TYPEFACE_LOOKUP");
+
     // Font names, weights and glyph pixels survive the real picture protocol.
     SkPictureRecorder recorder;
     auto* canvas = recorder.beginRecording(SkRect::MakeWH(160, 64));
