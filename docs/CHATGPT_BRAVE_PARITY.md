@@ -951,7 +951,7 @@ download ledgers record **one** fresh homepage GET through
 `socks5h://127.0.0.1:1337`, and 228 new asset attempts with no repeated static
 URLs. The refreshed HTML SHA256 is
 `d0b3728cb686e0b8daa56463be1e5a5da96551073f3e0af585953779cf402547`.
-Every later homepage navigation uses these cached bytes. The initial 129-asset
+All matched homepage captures use these cached bytes. The initial 129-asset
 limit left modules missing; the next capture completed startup but blocked a
 connectivity probe. Both failed attempts remain retained.
 
@@ -1141,3 +1141,50 @@ That observer is diagnostic only and does not establish the fallback's cause.
 The earlier style-based observer crashed and is retained without acceptance
 credit in `vox-worker-diagnostic/`. Request-path differences are being checked;
 no full live-conversation parity claim is made yet.
+
+## Decoder metadata lifetime across navigation
+
+`f0047c3c2` protects the seven typed compact-query decoders from publishing
+process-wide field metadata in a document arena. `json2` initializes that
+metadata lazily; releasing its first allocation owner leaves later queries
+with dangling pointers. `query-decode-baseline/poison.log` deterministically
+reproduces a read from the released “initial compact query document” arena in
+the inline-style decoder. Several earlier native diagnostics failed on that
+same decoder path.
+
+The new helper initializes only immutable field metadata in base storage,
+then decodes actual request strings in their caller's allocation scope.
+Navigation retirement, escaped-string ownership and syntax-failure scope
+restoration pass nine focused executions across default, no-GC and
+preallocated modes, with arena poisoning enabled. Receipts are in
+`query-decode-checks/`, `query-decode-checks-remaining/` and
+`query-decode-focused-summary.json`. The first no-GC compilation ran out of
+disk space; its failed attempt is retained. Generated historical test
+executables were removed with SHA256 cleanup receipts; commands, logs,
+screenshots, references and pinned production bundles remain.
+
+The resulting production is pinned in `query-decode-production/Vox.app`,
+executable SHA256
+`a935e1163b0e1c9cf6ae29e5ebb26d2cacc876e5d28120528f8a271cde35ffb5`.
+Its owned inputs remain stable across the successful build, whose sampled
+peak RSS is 9,996,615,680 bytes. Unrelated shared inputs changed and are listed
+in its receipt. The unmodified live Enter check passes again with the exact
+reply and empty native/module error collections. All nine standard rendering
+and startup groups pass in `query-decode-validation-remainder/`, including the
+unchanged homepage at zero differing pixels.
+
+The additional whole-browser poison experiment is **failed**. Its fixed-delay
+input activated Voice before the composer was ready, navigated to
+`/?mode=voice`, reported missing `TextEncoderStream` support on that different
+document, and faulted during shutdown. A later title-gated diagnostic also
+activated Voice and failed. Neither supplies Send or poison acceptance.
+`query-decode-validation/results.json` retains the failed group alongside the
+ten passing normal groups; its combined assessment remains false.
+
+The input investigation now waits separately for composer attachment and a
+draft that enables Send. On the decoder build, the textarea contains the full
+prompt but that application state never becomes ready. The matching frontend
+uses `instanceof InputEvent`, `inputType` and `data`; native text edits currently
+arrive through a plain `UIEvent` wrapper. This is the next compatibility slice.
+The instrumented renderer-error module and title markers remain diagnostic
+only and supply no unmodified-page pixel acceptance.
