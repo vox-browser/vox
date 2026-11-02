@@ -299,7 +299,9 @@ elif [ "$gc_mode" != none ]; then
 else
     set -- "$@" -prod -gc none
 fi
-"$v_compiler" "$@" -cflags "$helper_cflags" \
+# Imported font/runtime modules may contribute link flags without any live
+# helper symbols. Do not initialize their unused native libraries at startup.
+"$v_compiler" "$@" -cflags "$helper_cflags" -ldflags "-Wl,-dead_strip_dylibs" \
     -o "$helper_tmp" "$repo_dir/tools/adblock-worker-mini/main.v"
 chmod 755 "$helper_tmp"
 if command -v codesign >/dev/null 2>&1; then
