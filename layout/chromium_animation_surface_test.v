@@ -2,6 +2,60 @@ module layout
 
 import html
 
+fn test_completed_unfilled_animation_releases_its_compositor_surface() {
+	for property, values in {
+		'transform': ['translateX(0)', 'translateX(40px)']
+		'opacity': ['1', '.5']
+	} {
+		for fill in ['none', 'backwards', 'forwards', 'both'] {
+			mut document := html.parse_document('<!doctype html><style>
+				@keyframes move{from{${property}:${values[0]}}to{${property}:${values[1]}}}
+				div{width:100px;height:40px;background:red;animation:move 1s linear ${fill}}
+				</style><div></div>')
+			defer { document.finalize() }
+			document.set_font_rendering_policy(.chromium)
+			_ = layout_document_typed_in_viewport(document, 300, 200)
+			document.update_animations_and_send_events(0)
+			document.update_animations_and_send_events(500)
+			_ = layout_document_typed_in_viewport(document, 300, 200)
+			active := display_list_commands(document.record_display_list() or { panic('paint') })
+			assert active.any(it.kind == 'begin_css_effect_layer'), '${property} ${fill}: active'
+			document.update_animations_and_send_events(2000)
+			_ = layout_document_typed_in_viewport(document, 300, 200)
+			finished := display_list_commands(document.record_display_list() or { panic('paint') })
+			assert finished.any(it.kind == 'begin_css_effect_layer') == (fill in ['forwards', 'both']), '${property} ${fill}: finished'
+		}
+	}
+}
+
+fn test_completed_svg_animation_rejoins_its_parent_picture() {
+	mut document := html.parse_document('<!doctype html><style>
+		body{margin:0;height:2000px}@keyframes swing{from{transform:rotate(35deg)}to{transform:rotate(0)}}
+		header{transform:translateZ(0);width:300px;height:64px;background:#89cc52}
+		svg{width:24px;height:24px;animation:swing 1s ease-out;transform-origin:center top}
+		</style><header><svg><path fill="#fcfdff" d="M4 4L12 2L20 20L4 20Z"/></svg><span>Later</span></header>')
+	defer { document.finalize() }
+	document.set_font_rendering_policy(.chromium)
+	_ = layout_document_typed_in_viewport(document, 1024, 768)
+	document.update_animations_and_send_events(0)
+	document.update_animations_and_send_events(2000)
+	_ = layout_document_typed_in_viewport(document, 1024, 768)
+	commands := display_list_commands(document.record_display_list() or { panic('paint') })
+	assert commands.filter(it.kind == 'begin_css_effect_layer').len == 1
+	plan := chromium_raster_layer_plan(document, commands, 1)
+	mut owner := -1
+	mut checked := 0
+	for index, command in commands {
+		if (command.kind == 'fill_rect' && command.width == 300 && command.height == 64)
+			|| command.kind == 'draw_svg_path' || (command.kind == 'draw_text' && command.text == 'Later') {
+			if owner < 0 { owner = plan.command_layers[index] }
+			assert plan.command_layers[index] == owner
+			checked++
+		}
+	}
+	assert checked == 3
+}
+
 fn test_chromium_css_animation_keeps_its_surface_while_paused() {
 	for chromium in [false, true] {
 		for state in ['running', 'paused'] {

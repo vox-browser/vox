@@ -33,6 +33,10 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_rounded_mask_keeps_the_replaced_image_and_its_background_together(self):
         self.compare_fixture('rounded-masked-replaced-image', width=1024, height=768)
 
+    def test_completed_animations_return_header_icons_to_their_parent_picture(self):
+        self.compare_fixture('completed-animation-parent-picture', width=1024, height=768,
+                             settle_seconds=5)
+
     def test_pikabu_svg_banner_samples_its_image_pattern_at_the_final_viewport(self):
         self.compare_fixture('pikabu-svg-image-pattern')
 
@@ -58,7 +62,7 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
         self.compare_fixture('verge-transformed-drop-shadow', width=1024, height=768)
 
     def compare_fixture(self, name, width=800, height=600, scroll_y=0, document_active=False,
-                        initial_viewport=False):
+                        initial_viewport=False, settle_seconds=0):
         output = Path(tempfile.mkdtemp(prefix='forum-news-inline-', dir=REPO / 'Build'))
         fixture = REPO / 'Tests/Browser/Brave/input' / (name + '.html')
         reference = REPO / 'Tests/Browser/Brave/expected' / (name + '.png')
@@ -67,7 +71,7 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
                        if not k.lower().endswith('_proxy') and not k.startswith(('VOX_', 'LADYBIRD_', 'DYLD_', 'GC_'))}
         environment.update(VOX_PROFILE_DIR=str(output / 'profile'), VOX_TEST_WINDOW='1',
             VOX_CAPTURE_DOCUMENT_ONLY='1', LADYBIRD_SCREENSHOT_SCALE='1',
-            LADYBIRD_SCREENSHOT_DELAY_SECONDS='0')
+            LADYBIRD_SCREENSHOT_DELAY_SECONDS=str(settle_seconds))
         if document_active:
             environment['VOX_CAPTURE_DOCUMENT_ACTIVE'] = '1'
         if initial_viewport:

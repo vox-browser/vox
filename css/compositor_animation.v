@@ -24,6 +24,14 @@ pub fn compositor_animation_properties(target dom.AbstractElement) CompositorAni
 			|| entry.animation.play_state() !in [.running, .paused] { continue }
 		effect := entry.animation.effect() or { continue }
 		if effect.specified_iteration_duration <= 0 || effect.iteration_count <= 0 { continue }
+		// CSSAnimation keeps its playback state after sampling the end. An
+		// unfilled effect on a monotonic timeline no longer contributes paint
+		// and must not leave a stale surface or overlap barrier behind.
+		if effect.current_phase == .after && effect.output_progress == none {
+			if timeline := entry.animation.timeline() {
+				if timeline.kind == .document { continue }
+			}
+		}
 		result.opacity = result.opacity || keyframe_effect_animates_property(effect, .opacity)
 		for property in [PropertyID.transform, .translate, .rotate, .scale] {
 			result.transform = result.transform || keyframe_effect_animates_property(effect, property)
