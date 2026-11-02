@@ -168,6 +168,8 @@ def run_trial(engine, app, folder, args):
                              else 'jsc_baseline_warmup', None)
             args.vox_environment = dict(environment, **jsc_baseline_environment(warmup))
         if engine == 'control':
+            if getattr(args, 'control_disable_early_text_font_requests', False):
+                args.vox_environment['VOX_DISABLE_EARLY_TEXT_FONT_REQUESTS'] = '1'
             if getattr(args, 'control_retain_selector_rule_font_sync', False):
                 args.vox_environment['VOX_RETAIN_SELECTOR_RULE_FONT_SYNC'] = '1'
             if getattr(args, 'control_retain_empty_procedural_styles', False):
@@ -259,6 +261,8 @@ def parse_args(argv=None):
     parser.add_argument('--memory-guard-registry', type=Path, required=True)
     parser.add_argument('--vox-app', type=Path, default=REPO / 'Build/v/Vox.app')
     parser.add_argument('--control-vox-app', type=Path, help='Also run a pinned Vox control before each candidate/Brave pair')
+    parser.add_argument('--control-disable-early-text-font-requests', action='store_true',
+                        help='Keep text font requests at first layout in the matched control')
     parser.add_argument('--control-retain-selector-rule-font-sync', action='store_true',
                         help='Rescan font registrations after selector-only CSSOM edits in the matched control')
     parser.add_argument('--control-retain-empty-procedural-styles', action='store_true',
@@ -353,7 +357,7 @@ def parse_args(argv=None):
             parser.error('JSC baseline warmup must be a positive signed 32-bit integer')
     if args.control_jsc_baseline_warmup is not None and not args.control_vox_app:
         parser.error('The JSC baseline control needs --control-vox-app')
-    if any((args.control_retain_selector_rule_font_sync, args.control_retain_empty_procedural_styles, args.control_copy_stationary_raster_pixels, args.control_disable_inline_measurement_reuse,
+    if any((args.control_disable_early_text_font_requests, args.control_retain_selector_rule_font_sync, args.control_retain_empty_procedural_styles, args.control_copy_stationary_raster_pixels, args.control_disable_inline_measurement_reuse,
             args.control_disable_grid_width_only, args.control_disable_stationary_raster,
             args.control_disable_client_geometry_index,
             args.control_disable_tracked_persistent_shortcut, args.control_disable_attribute_case_buckets,
@@ -451,6 +455,7 @@ def main():
             control=jsc_baseline_environment(args.control_jsc_baseline_warmup)),
         retain_incremental_webp_paint_policy=args.retain_incremental_webp_paint_policy,
         webp_policy_credit='None: explicit historical workload compatibility only',
+        control_disable_early_text_font_requests=args.control_disable_early_text_font_requests,
         control_retain_selector_rule_font_sync=args.control_retain_selector_rule_font_sync,
         control_retain_empty_procedural_styles=args.control_retain_empty_procedural_styles,
         control_disable_grid_width_only=args.control_disable_grid_width_only,
