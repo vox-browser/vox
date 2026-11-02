@@ -156,6 +156,58 @@ reproduces the same 7,634 native differences with source equality;
 pass. The plain local-file fixture is intentionally absent from the inline
 suite because that route exercises a different decoder.
 
+## November 3 continuation: rectangular image crops
+
+Commit `7aee89d53` transfers a contained integer overflow crop into the image's
+GPU operation. Previously that crop remained on Quartz's destination while the
+GPU drew the larger image content rectangle. Those two operation sequences can
+choose different bilinear samples. The existing rounded-clip priority remains;
+fractional, empty, containing, disjoint and unsupported clips retain their
+preceding path. SVG images and rectangular video clips are unchanged.
+
+The original encoded WebP and committed full-uBO Brave reference supply the
+native regression. The unchanged adapter configuration reproduces the browser's
+24-pixel plain-photo residual with the toolbar offset and root tile grid. The
+new crop arguments give **zero differing pixels in all four tested viewport/grid
+configurations**, in both optimized and ASan/UBSan executables. The
+[final native receipt](../Build/forum-news-resume-20261103/rect-clip-native-final/summary.json)
+pins the browser libraries, external Skia, decoder, fixture, reference and test
+inputs. The focused V clip-selection suite executes successfully with
+[default GC](../Build/forum-news-resume-20261103/rect-clip-default2-run.guard.json)
+and [GC disabled](../Build/forum-news-resume-20261103/rect-clip-none-run.guard.json).
+A [live display-list diagnostic](../Build/forum-news-resume-20261103/live-clip-dump3-run.guard.json)
+confirms that the fractional card layout publishes the integer `(4,229,242,242)`
+overflow clip consumed by this policy.
+
+This is a native adapter/clip-policy result, **not a new production homepage
+pass**. The installed bundle still has SHA-256 `0bb14e2f…` at the 01:00 Moscow
+checkpoint. All earlier failed diagnostics remain under
+[`Build/forum-news-resume-20261103`](../Build/forum-news-resume-20261103/):
+the first native regression lacked its standalone GPU-helper load and entered
+the adapter's fallback; the initial raw adapter probe indexed bitmap rows in
+reverse. The original interpose attempt could not resolve the locally loaded
+symbol; the next captured draw arguments but recursed through the interposed
+lookup and was terminated. Neither supplies a qualified browser PNG or engine
+regression claim. The final independent native regression explicitly loads the
+pinned GPU helper and records the four unchanged controls too.
+
+Two shared production builds failed with a shell EOF/quoting error
+while the entry script was being edited. Commit `1fb32b06e` makes future build
+launchers read the canonical entry script once and deliver it through memory,
+preserving `$0` and source-change rejection without copying repository tools.
+[Eleven launcher tests](../Build/forum-news-resume-20261103/build-launch-final-tests.guard.json)
+pass, including a concurrent script edit and real memory-guard stdin delivery.
+The already-running worker retains its loaded launcher code; subsequent builds
+have also been superseded by checkout changes, so no new bundle has qualified.
+
+A single [pending validation job](../Build/forum-news-resume-20261103/after-build/state.json)
+waits up to 20 minutes for a verified shared production receipt containing
+`7aee89d53`. It then runs the two mask browser regressions, the HTTP photo
+comparison, and strict TechCrunch/Hacker News comparisons sequentially through
+their memory guards. It records every result and rejects a bundle change across
+the batch. It does not request a production build. A waiting or timed-out state
+is not a pixel pass, and the five added sites remain incomplete.
+
 ## Run
 
 ```sh
