@@ -146,6 +146,24 @@ def trial_order(index, control=False):
     return order if index % 2 == 0 else order[::-1]
 
 
+def verify_benchmark_inputs(paths, pinned, trial_folder):
+    """Retain the failing observation even if a concurrent write is restored."""
+    try:
+        observed = browser.fingerprint(paths)
+    except OSError as error:
+        browser.write_json(trial_folder / 'input-identity-failure.json', dict(
+            invalidates_cohort=True, unavailable_input=error.filename,
+            error=str(error)))
+        raise
+    if observed != pinned:
+        changed = [dict(path=path, expected=pinned.get(path), observed=observed.get(path))
+                   for path in sorted(pinned.keys() | observed.keys())
+                   if pinned.get(path) != observed.get(path)]
+        browser.write_json(trial_folder / 'input-identity-failure.json', dict(
+            invalidates_cohort=True, changed_inputs=changed))
+        browser.require(False, 'Pinned benchmark input changed')
+
+
 def audit_instruction_logging(row, log, diagnostic=False):
     prefixes = ('Vox retained block font generation:', 'Vox retained inline font generation:',
                 'Vox retained text font generation:')
@@ -531,7 +549,8 @@ def main():
                 row['scope'] = SCOPE
                 browser.write_json(args.output / f'pair-{index+1}-{engine}/result.json', row)
                 pair[engine] = row
-                browser.require(browser.fingerprint(paths) == pinned, 'Pinned benchmark input changed')
+                verify_benchmark_inputs(paths, pinned,
+                                        args.output / f'pair-{index+1}-{engine}')
                 print(json.dumps(browser.progress_record(index+1, engine, row, 'launch')), flush=True)
             pairs.append(pair)
             browser.write_json(args.output / 'pairs.json', pairs)

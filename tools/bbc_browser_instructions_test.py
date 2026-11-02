@@ -1,9 +1,13 @@
 import unittest
+import json
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
-from bbc_browser_instructions import URL, audit_instruction_logging, evaluate_cohort, jsc_baseline_environment, parse_args, trial_order, run_trial, validate_document
+from bbc_browser_instructions import URL, audit_instruction_logging, evaluate_cohort, jsc_baseline_environment, parse_args, trial_order, run_trial, validate_document, verify_benchmark_inputs
 from types import SimpleNamespace
 from unittest.mock import patch
 from hacker_news_browser_instructions import evaluate_pairs
+from measure_sealed_github_instructions import fingerprint
 
 
 def document():
@@ -21,6 +25,44 @@ def document():
 
 
 class BBCInstructionTests(unittest.TestCase):
+    def test_unchanged_input_identity_does_not_create_a_failure_receipt(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / 'input.txt'
+            source.write_text('original')
+            verify_benchmark_inputs({source}, fingerprint({source}), root)
+            self.assertFalse((root / 'input-identity-failure.json').exists())
+
+    def test_transient_input_change_remains_recorded_after_original_bytes_return(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / 'input.txt'
+            source.write_text('original')
+            pinned = fingerprint({source})
+            source.write_text('changed')
+            changed = fingerprint({source})
+            with self.assertRaisesRegex(RuntimeError, 'Pinned benchmark input changed'):
+                verify_benchmark_inputs({source}, pinned, root)
+            source.write_text('original')
+            self.assertEqual(fingerprint({source}), pinned)
+            receipt = json.loads((root / 'input-identity-failure.json').read_text())
+            self.assertTrue(receipt['invalidates_cohort'])
+            self.assertEqual(receipt['changed_inputs'], [dict(path=str(source),
+                expected=pinned[str(source)], observed=changed[str(source)])])
+
+    def test_unavailable_input_is_recorded_and_still_rejected(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / 'input.txt'
+            source.write_text('original')
+            pinned = fingerprint({source})
+            source.unlink()
+            with self.assertRaises(FileNotFoundError):
+                verify_benchmark_inputs({source}, pinned, root)
+            receipt = json.loads((root / 'input-identity-failure.json').read_text())
+            self.assertTrue(receipt['invalidates_cohort'])
+            self.assertEqual(receipt['unavailable_input'], str(source))
+
     def test_baseline_jit_settings_are_isolated_from_brave_and_restored_on_failure(self):
         environment = dict(VOX_PROXY='socks5h://fixture', VOX_RETAIN_INCREMENTAL_WEBP_PAINT_POLICY='1')
         args = SimpleNamespace(vox_environment=environment, control_disable_grid_width_only=False,
