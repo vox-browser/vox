@@ -1,12 +1,14 @@
 # Popular-site adblock verification
 
-The latest BBC, CNN, Guardian and Verge rendering checkpoints are recorded at the end
-of this document. Guardian and Verge pass the registered viewport comparison
-with cold and complete-response caches. BBC and CNN complete-response cache
-captures are pixel-exact; cold BBC and CNN's saved-live/frozen-reference
-acceptance remain open. The latest bundle also preserves CNN and Guardian's
-unchanged archived viewports exactly; the earlier Guardian timeout is retained
-with its original evidence below.
+The latest Slashdot frozen viewport is pixel-exact against Brave with matching
+full uBlock Origin: zero differing pixels in two complete-response-cache runs.
+All 96 rendering tests/102 captures pass on the same production build, which
+also preserves Hacker News, CNN, Guardian, Verge and Lobsters. A fresh BBC check
+currently differs at 60 separator pixels; its historical cached zero-diff result
+is retained below. Stack Overflow and Pikabu remain deferred at the user's
+request, and Reddit's access check does not count as page coverage.
+See the final checkpoints for pinned builds, workloads and evidence. These
+results concern the recorded frozen viewports and cache policies.
 
 The matrix exercises guest pages on 13 representative news, video, social,
 shopping, reference, and developer sites. It compares Vox's native filtering
@@ -3458,3 +3460,31 @@ and the final browser code passes the V compile check. The
 [disjoint-header checks](../Build/slashdot-disjoint-headers-20261102/) retain
 these results. The unchanged 96-test/102-capture suite and original Slashdot
 reference still require the combined production build.
+
+
+## Slashdot zero-diff checkpoint, 2 November 2026
+
+The completed production executable
+`5792ada53843e1d998b4d1392a615147cfe72f22afd523284f25a1c648e6ded9`
+contains the primitive-owner and disjoint-header fixes. Two independent strict
+Slashdot runs pass: **zero native differing pixels and zero saved-live/frozen
+Brave pixels**, with matching full-uBO audits. Both use the unchanged 33-response
+archive (`2e05c1621ac041a40bf799556ef78b5a1c131f183371c7b279aada8c9733a09c`),
+1024×768 at scale one, original-origin replay and complete encoded-response
+caches in fresh processes. The frozen author-script policy remains identical
+between browsers; this is not a claim of live scripting parity. Independent
+RGBA decoding confirms the first pair has identical pixel bytes.
+
+All **96 rendering tests/102 captures pass**. CNN, Guardian, Verge and Lobsters
+preservation captures remain exact. A fresh strict Hacker News run also passes
+with zero native and saved-live/frozen differences. The same three-site driver
+retains the later Slashdot repeat and a **60-pixel BBC mismatch**, so that whole
+driver exits one; no wholesale three-site pass is claimed. BBC's saved-live/frozen
+comparison is exact, and its mismatch is confined to the 1px Audio separator.
+All browser identities remain pinned throughout their checks. The
+[final Slashdot receipts](../Build/slashdot-disjoint-validation-20261102/)
+retain strict runs, independent RGBA hashes, the expanded suite, preservation
+captures, raw exits and the BBC failure. No reference or threshold changed.
+Slashdot's frozen viewport is complete; BBC's current separator mismatch is the
+next rendering issue. Stack Overflow and Pikabu stay deferred, and Reddit's
+network-security block still prevents feed coverage.
