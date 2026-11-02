@@ -1,6 +1,7 @@
 module main
 
 import layout
+import math
 import painting
 
 fn test_replaced_image_gpu_clip_keeps_paths_masks_and_transformed_ancestors_native() {
@@ -78,4 +79,47 @@ fn test_replaced_image_gpu_clip_preserves_own_radii_and_rectangular_ancestors() 
 	assert replaced_image_gpu_ancestor_clip_index(&missing) == -1
 	not_an_image := layout.PaintCommand{...command, kind: 'draw_video'}
 	assert replaced_image_gpu_ancestor_clip_index(&not_an_image) == -1
+}
+
+fn test_replaced_image_transfers_an_integer_overflow_crop_to_the_gpu() {
+	clip := layout.PaintClip{rect: layout.LayoutRect{4, 229, 242, 242}}
+	command := layout.PaintCommand{
+		kind: 'draw_replaced_image'
+		has_clip: true
+		image_paintable: &painting.ImagePaintable{
+			image_rect: painting.Rect{4, -12.90625, 484, 484}
+		}
+		clip_list: &layout.PaintClipList{items: [clip]}
+	}
+	assert replaced_image_gpu_ancestor_clip_index(&command) == 0
+	assert replaced_image_gpu_clip_data(&command, painting.IntRect{4, -13, 484, 484},
+		painting.CornerRadii{}, 0) == [f32(4), 229, 242, 242, 0, 0, 0, 0, 0, 0, 0, 0]!
+	for rect in [layout.LayoutRect{4, -13, 484, 484}, layout.LayoutRect{0, -100, 1000, 1000},
+		layout.LayoutRect{4, 229.09375, 242, 242}, layout.LayoutRect{4, 229, 242.5, 242},
+		layout.LayoutRect{4, 229, 0, 242}, layout.LayoutRect{800, 229, 242, 242},
+		layout.LayoutRect{0, 229, 242, 242}, layout.LayoutRect{4, 229, math.inf(1), 242}] {
+		other := layout.PaintCommand{...command,
+			clip_list: &layout.PaintClipList{items: [layout.PaintClip{rect: rect}]}}
+		assert replaced_image_gpu_ancestor_clip_index(&other) == -1
+	}
+	vector := layout.PaintCommand{...command,
+		image_paintable: &painting.ImagePaintable{
+			image_rect: painting.Rect{4, -12.90625, 484, 484}
+			is_svg_image: true
+		}}
+	assert replaced_image_gpu_ancestor_clip_index(&vector) == -1
+	video := layout.PaintCommand{...command, kind: 'draw_video',
+		video_paintable: &painting.VideoPaintable{}}
+	assert replaced_image_gpu_ancestor_clip_index(&video) == -1
+	inner := layout.PaintClip{rect: layout.LayoutRect{20, 240, 100, 100}}
+	nested := layout.PaintCommand{...command, clip_list: &layout.PaintClipList{items: [clip, inner]}}
+	assert replaced_image_gpu_ancestor_clip_index(&nested) == 1
+	// Rounded clipping keeps its existing priority, even outside the rectangle.
+	rounded := layout.PaintClip{rect: layout.LayoutRect{0, 0, 800, 800},
+		corner_radii: layout.BoxRadii{top_left: layout.CornerRadius{4, 4}}}
+	for clips in [[rounded, clip], [clip, rounded]] {
+		combined := layout.PaintCommand{...command, clip_list: &layout.PaintClipList{items: clips}}
+		index := replaced_image_gpu_ancestor_clip_index(&combined)
+		assert clips[index].corner_radii.top_left.x == 4
+	}
 }
