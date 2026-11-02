@@ -1742,3 +1742,115 @@ bundle is used, and that older executable cannot validate the ownership fix.
 status; prepared native checks are `run_candidate_burst_1.py` and
 `run_candidate_typing_1.py`. No browser-crash resolution or additional native
 pixel-parity result is claimed for this source fix yet.
+
+
+## CSS diagnostic map lifetime and refreshed live state, 2026-11-02
+
+The preload ownership fix is present in production executable
+`208875f192d26570965f87aa88c6f5b31a57f3204793380697a15bf608bd3a96`.
+`Build/chatgpt-rapid-cleanup-20261102/candidate-burst-1/` still reproduces
+Voice activation and exit 139 on that executable with unchanged inputs. Its
+faulting stack reaches `ErrorReporter.report()` while parsing the destination
+stylesheet, before normal disposal. The earlier preload fix alone therefore
+does not resolve the rapid-input failure.
+
+`17c3576e0` corrects a separate shared CSS diagnostic lifetime bug. Updating
+an existing diagnostic can grow and rehash V's map before finding the key.
+That update previously ran outside persistent storage, allowing global map
+metadata to enter a temporary stylesheet arena. Both insertion and repeated
+updates now enter persistent storage. The regression exercises every map size
+from 1 through 128, repeats reports in temporary storage, resets and overwrites
+that storage, and then verifies every retained occurrence count. The original
+code fails with an occurrence count of zero instead of two. Earlier probes
+with sparse sizes or without overwriting retired storage pass and are retained
+as insufficient reproducers.
+
+The corrected regression and existing diagnostic and stylesheet-workspace
+checks pass all 30 test-function executions across default, no-GC and patched
+production-preallocated modes; all 18 compile/runtime steps exit zero and the
+focused source hashes remain stable. Private evidence is in
+`Build/chatgpt-css-error-lifetime-20261102/`, particularly `before-reuse/`,
+`focused/results.json` and `focused/source-stable.json`. No native crash
+resolution is inferred from those unit checks.
+
+The later available production executable
+`c8993aa08e74513dacc5fda3f384b9cd6eb2835eddc8f98cf315b4c39bd9c324`
+precedes this CSS fix. Static disassembly confirms that its persistent-storage
+entry still follows the existing-key lookup. Its `latest-typing-1/` native
+capture does reach the live conversation with the exact prompt and reply,
+empty native errors and JavaScript diagnostics, unchanged inputs and browser
+exit zero. The frontend is unmodified archived HTML with cached static assets;
+backend requests remain live through the local SOCKS proxy. Input uses native
+per-character turns followed by Send. This success does not cover burst input
+or validate the newer CSS code.
+
+Fresh Brave runs `brave-fresh-1/` and `brave-settle-3/` also reach the real
+homepage and live reply with no runtime exceptions. Their current page state
+has a second disclaimer line and shifts the lower composer and cookie banner
+relative to the retained reference. The long-settle control keeps the same
+private session, disables the browser cache, waits 40 seconds after homepage
+readiness and 45 seconds after the reply, and retains those bulk differences.
+The original PNG references and comparison tolerances remain unchanged. This
+new live-state comparison does not replace the old frozen-page acceptance.
+`brave-settle-2/` fails at harness startup because a reused profile contains a
+stale debugger endpoint; it supplies no content or rendering result. The next
+run removes that stale endpoint before launching a fresh browser process.
+
+Against the fresh short-settle Brave conversation, `latest-typing-1/` has
+406 differing pixels; the long-settle comparison has 433. The copy/share SVG
+buttons exist at the expected native layout coordinates but their icons are
+missing from the PNG. These differences remain failures of exact rendering;
+text-chat functionality does not establish current pixel parity. The prior
+references, refreshed captures, failed attempts and raw comparisons remain
+under the private evidence root. Current browser validation of `17c3576e0`
+awaits a published shared bundle that actually contains it; superseded builds
+are not validation of the installed executable.
+
+
+`style-diagnostic-1/` and `style-diagnostic-2/` reach the live reply and render
+both response icons on the same `c8993aa0…` executable. Their PNGs have
+identical decoded pixels and differ from the fresh Brave conversation by
+120 pixels around the cookie banner. The first read-only script cannot iterate
+the facade's attributes; the second stops at rectangle serialization. These
+instrumented captures are diagnostic observations, not uninstrumented
+acceptance. `brave-style-4/` independently reaches the live reply and exactly
+matches `brave-fresh-1/after.png`; the retained older references are unchanged.
+
+`latest-typing-2/` and `latest-typing-4/` both preserve audited readiness and the
+exact submitted prompt but show no assistant reply or conversation URL at the
+110-second capture. Both browsers exit zero with stable identities and empty
+reported errors; both content gates correctly fail. The latter uses refreshed
+Brave cookies and the newer, hash-verified merged frontend. Thus freshness
+alone does not establish reliable live chat. `latest-typing-3/` never launches
+the browser because that merged archive initially lacks its required seal;
+this harness failure remains retained separately. `style-diagnostic-3/` uses
+direct rectangle fields, reaches the live reply and obtains visible computed
+styles for the action buttons. Its pre-query snapshot reports zero queued
+operations and 399 dirty facade records. A selector query can flush pending
+facade state; these observations do not isolate the reason for the ordinary
+capture failures or establish an asynchronous replay fix.
+
+## Bounding rectangle binding follow-up, 2026-11-02
+
+The style diagnostic exposes a separate concrete API gap:
+`getBoundingClientRect()` returns a plain object even though the runtime already
+implements `DOMRect` and `DOMRectReadOnly`. Calling the returned rectangle's
+`toJSON()` fails. `1995e261f` returns fresh native-backed, mutable `DOMRect`
+snapshots through both the shared and per-element geometry binding paths.
+The binding captures the intrinsic constructor before author replacement and
+preserves live native layout reads and receiver checks. This fixes the observed
+API failure; it is not attributed as the cause of missing sprites or replies.
+
+Both new regression functions fail before the fix: one rejects the rectangle
+type, and one rejects the result after author replacement of the global
+constructor. Afterwards all 30 focused test-function executions pass: four
+client/bounding-rectangle cases and one descriptor case, each in shared and
+per-element modes, across default, no-GC and patched production-preallocated
+builds. The checks cover exact JSON fields, mutable independent snapshots,
+subsequent layout changes, hidden/detached empty rectangles, SVG elements,
+intrinsic constructor capture and illegal receivers. All 18 compile/runtime
+steps exit zero and the focused inputs remain unchanged. Evidence is in
+`bounding-rect-before/` and `bounding-rect-focused/` beneath the same private
+root. Installed-browser validation awaits a shared production bundle containing
+this commit. `current-assessment.json` indexes these checks, current captures,
+failed attempts and the remaining live and pixel gates.
