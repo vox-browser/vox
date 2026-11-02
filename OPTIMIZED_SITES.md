@@ -15,6 +15,18 @@ Provisional entries retain unresolved acceptance checks.
 | Wikipedia portal (www.wikipedia.org) | 2026-11-01 | 7 | Median | 6,686,475,010 | 9,702,898,348 | **31.09%** | 515.1 | 614.2 | 3.1–3.6 | 59.57–59.79 | [Audit](docs/OPTIMIZED_SITES_AUDIT.md), [comparison](docs/WIKIPEDIA_BRAVE_INSTRUCTIONS.md) |
 | vlang.io (CLI protocol) | 2026-11-01 | 7 | Mean | 8.630 billion | 10.500 billion | **17.81%** | 709.6 | 668.9 | 0.8–0.9 | 59.49–59.79 | [Audit](docs/OPTIMIZED_SITES_AUDIT.md), [comparison](docs/VLANG_RENDERING_INSTRUCTIONS.md) |
 
+**Hacker News, current-Vox follow-up (2026-11-02):** the archived homepage's
+startup-through-encoded-PNG median is **3,974,847,245**, **17.080% below** the
+original Vox baseline of 4,793,590,625; the conservative historical reduction
+is **16.115%**. Seven complete alternating encoder-control/default-Vox pairs
+retain exact reference pixels and all 30 stories. This is a Vox-baseline
+comparison; the additional Vox/Brave cohort failed one Brave ownership audit
+and supplies no replacement for the historical Brave row. Author scripts execute
+through JavaScriptCore. Live functional validation passes, while the instruction
+claim remains frozen-page startup/capture work and establishes no rendering-time
+or scrolling-FPS gain. See the [report](docs/HACKER_NEWS_VOX_REDUCTION.md) and
+[raw counts](docs/performance/hn-vox-reduction-20261102.json).
+
 **‡ RAM** is the median observed peak of simultaneous browser process-tree
 physical footprints from separate **2026-11-02** measurements: two fresh pairs
 per site, three for vlang.io. MiB means 1,048,576 bytes. Sampling covers root
