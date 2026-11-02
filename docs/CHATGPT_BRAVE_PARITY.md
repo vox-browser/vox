@@ -2004,3 +2004,30 @@ building newer source; superseded receipts and the original failures remain
 retained. Current live pixel parity and the corrected native SVG guard await
 an executable that contains both rendering fixes. No duplicate production
 build, copied bundle, changed reference PNG or relaxed tolerance is used.
+
+## Fresh private-session refresh
+
+`brave-fresh-6/` launches a new private Brave profile through
+`socks5h://127.0.0.1:1337`, downloads the homepage once, verifies application
+readiness and receives the exact live test reply. It records no runtime
+exceptions. Executable and measurement-input identities remain stable
+throughout the capture; browser/guard exit zero and the observed process-tree
+peak is 1,324,990,464 bytes. All 394 newly captured response bodies pass their
+hash and length checks.
+
+The reply PNG is byte-identical to the retained `brave-style-4/after.png`, with
+SHA-256 `742795448dec4df1c9076d8a2ee81e35ec3b57998c74d918a88b34775289fc7c`.
+This refreshes session evidence without replacing the reference or changing a
+tolerance. `fresh-merged-archive-6/` seals the fresh homepage/resources together
+with previously captured immutable static/worker assets; all 611 response
+bodies are verified. The prepared native check uses the fresh session cookies
+and keeps subsequent backend requests live through SOCKS, without seeding
+backend responses.
+
+The shared build attempt `20261102-235354-342478ad` completes successfully but
+is superseded because compiled inputs change during the build. The supervisor
+starts `20261102-235949-39c3e18d`. The published bundle remains `0bb14e2f…` at
+this refresh checkpoint. The pending fixed-container visual pair, audited
+hidden-resource repaint check and live Send comparison explicitly pin the
+candidate executable, so the older bundle cannot stand in for validation of
+the new rendering fixes.
