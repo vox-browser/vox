@@ -562,6 +562,7 @@ class BBCInstructionTests(unittest.TestCase):
     def test_cohort_projects_controls_and_preserves_the_integer_brave_gate(self):
         def row(count):
             return dict(exit=0, pixels_exact=True, content_exact=True,
+                        capture_ownership_audit=dict(passed=True),
                         launch_instruction_interval=dict(lower=count, upper=count))
         pairs = [dict(vox=row(9 * 10**17), brave=row(10**18), control=row(11 * 10**17))
                  for _ in range(7)]
@@ -583,6 +584,22 @@ class BBCInstructionTests(unittest.TestCase):
                 broken[0]['control'] = dict(row(11 * 10**17), **{key: value})
                 with self.assertRaises(RuntimeError):
                     evaluate_cohort(broken, True)
+
+    def test_cohort_rejects_missing_or_failed_capture_ownership_even_with_lower_counts(self):
+        def row(count):
+            return dict(exit=0, pixels_exact=True, content_exact=True,
+                        capture_ownership_audit=dict(passed=True),
+                        launch_instruction_interval=dict(lower=count, upper=count))
+        for engine in ['vox', 'control']:
+            for audit in [None, {}, dict(passed=False)]:
+                pairs = [dict(vox=row(100), brave=row(1000), control=row(200)) for _ in range(7)]
+                if audit is None:
+                    del pairs[0][engine]['capture_ownership_audit']
+                else:
+                    pairs[0][engine]['capture_ownership_audit'] = audit
+                with self.subTest(engine=engine, audit=audit), self.assertRaisesRegex(
+                        RuntimeError, 'endpoint-matched live coalition ownership'):
+                    evaluate_cohort(pairs, True)
 
     def test_attribute_and_scope_controls_never_leak_between_trials(self):
         environment = {'VOX_PROXY': 'socks5h://fixture'}

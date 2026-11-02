@@ -321,7 +321,7 @@ def exit_watch(pid):
     return queue
 
 
-def await_exit(queue, deadline):
+def await_exit(queue, deadline, while_running=None):
     while True:
         events = queue.control(None, 1, .05)
         if events:
@@ -330,6 +330,8 @@ def await_exit(queue, deadline):
                     'Kernel did not supply exit status')
             return event.data
         require(time.monotonic() < deadline, 'Browser exit watchdog expired')
+        if while_running:
+            while_running()
 
 
 def accepted_coalition_executable(path, app):
@@ -425,6 +427,34 @@ def membership(api, cid, app, pid, deadline, attempts, browser=None):
         return scan
 
 
+def capture_ownership_audit(scans, endpoint):
+    """Prove the live task set at a native endpoint without moving its counter.
+
+    Monotonic task-start/exit totals matching a stable scan exclude task churn
+    between that scan and the endpoint. Aggregate counters retain exited work;
+    this does not recover individual identities of already exited tasks.
+    """
+    require(endpoint.get('label') == 'capture_document_encoded'
+            and type(endpoint.get('coalition_id')) is int and endpoint['coalition_id'] > 0
+            and type(endpoint.get('tasks_started')) is int
+            and type(endpoint.get('tasks_exited')) is int
+            and 0 <= endpoint['tasks_exited'] < endpoint['tasks_started'],
+            'Invalid native capture ownership endpoint')
+    for scan in reversed(scans):
+        if not all(scan.get(key) is True for key in
+                   ('stable', 'all_owned', 'exact_live_count', 'root_present', 'ownership_stable')):
+            continue
+        readings = [scan.get(key, {}) for key in
+                    ('before_snapshot', 'after_snapshot', 'after_ownership_snapshot')]
+        if not all(all(reading.get(key) == endpoint.get(key) for key in
+                       ('coalition_id', 'tasks_started', 'tasks_exited')) for reading in readings):
+            continue
+        return dict(passed=True, method='Stable live ownership with native endpoint task totals',
+                    endpoint=dict(endpoint), scan=scan,
+                    exited_task_identity_limit='Aggregate exited work is included; individual exited identities are not recovered')
+    raise RuntimeError('No stable owned Vox task set matches the native PNG endpoint')
+
+
 def run_browser(engine, app, folder, args):
     folder.mkdir()
     binary = app / 'Contents/MacOS' / ('Vox' if engine == 'vox' else 'Brave Browser')
@@ -501,10 +531,33 @@ def run_browser(engine, app, folder, args):
                 [row['pid'] for row in result['membership_before']['members']
                  if row['executable'].startswith(str(app) + '/Contents/')])
         if engine == 'vox':
-            result['kernel_exit_status'] = await_exit(queue, deadline)
+            audit_capture_ownership = getattr(args, 'audit_vox_capture_ownership', False)
+            capture_scans = [result['membership_before']]
+            def observe_owned_tasks():
+                # A process may exit during a scan. Retain partial attempts;
+                # acceptance still requires a complete endpoint-matching scan.
+                try:
+                    scan = membership(api, cid, app, root['pid'],
+                                      min(deadline, time.monotonic() + .15),
+                                      result['membership_attempts'])
+                    capture_scans.append(scan)
+                    if registry:
+                        publish_adopted_processes(registry,
+                            [row['pid'] for row in scan['members']
+                             if row['executable'].startswith(str(app) + '/Contents/')])
+                except (OSError, RuntimeError) as error:
+                    result.setdefault('capture_ownership_scan_errors', []).append(str(error))
+            if audit_capture_ownership:
+                result['kernel_exit_status'] = await_exit(queue, deadline, observe_owned_tasks)
+                result['capture_ownership_scans'] = capture_scans
+            else:
+                result['kernel_exit_status'] = await_exit(queue, deadline)
             require(result['kernel_exit_status'] == 0, 'Vox exited unsuccessfully')
             markers = parse_native_coalitions((folder / 'browser.log').read_text(), cid)
             result['native_coalition_markers'] = markers
+            if audit_capture_ownership:
+                result['capture_ownership_audit'] = capture_ownership_audit(capture_scans,
+                                                                         markers['markers'][-1])
             value = markers['delta']['instructions']
             result['instruction_interval'] = dict(lower=value, upper=value)
             audit = json.loads((folder / 'audit.json').read_text())

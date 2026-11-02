@@ -13,7 +13,7 @@ from hacker_news_browser_instructions import (
     exact_coalition_membership, fixture_server, membership, launch_instruction_interval,
     parse_args, progress_record, finish_capture_readiness,
     prepare_browser_profile,
-    configure_brave_viewport,
+    configure_brave_viewport, capture_ownership_audit, await_exit,
 )
 
 
@@ -24,6 +24,80 @@ def observation(lower, upper=None, **changes):
 
 
 class HackerNewsInstructionGateTests(unittest.TestCase):
+    def capture_scan(self, started=5, exited=2):
+        snapshot = dict(coalition_id=10, tasks_started=started, tasks_exited=exited,
+                        instructions=900)
+        return dict(stable=True, all_owned=True, exact_live_count=True,
+                    root_present=True, ownership_stable=True,
+                    before_snapshot=dict(snapshot), after_snapshot=dict(snapshot),
+                    after_ownership_snapshot=dict(snapshot))
+
+    def capture_endpoint(self):
+        return dict(label='capture_document_encoded', coalition_id=10,
+                    tasks_started=5, tasks_exited=2, instructions=1000)
+
+    def test_capture_ownership_preserves_cumulative_endpoint_and_counts_exited_tasks(self):
+        endpoint = self.capture_endpoint()
+        scan = self.capture_scan()
+        result = capture_ownership_audit([self.capture_scan(2, 1), scan], endpoint)
+        self.assertTrue(result['passed'])
+        self.assertIs(result['scan'], scan)
+        self.assertEqual(result['endpoint']['instructions'], 1000)
+        self.assertEqual(result['endpoint']['tasks_exited'], 2)
+        self.assertEqual(endpoint, self.capture_endpoint())
+
+    def test_early_ownership_scan_cannot_certify_later_helpers(self):
+        with self.assertRaisesRegex(RuntimeError, 'No stable owned Vox task set'):
+            capture_ownership_audit([self.capture_scan(2, 1)], self.capture_endpoint())
+
+    def test_capture_ownership_requires_every_live_ownership_check(self):
+        for key in ['stable', 'all_owned', 'exact_live_count', 'root_present', 'ownership_stable']:
+            with self.subTest(key=key):
+                scan = self.capture_scan()
+                scan[key] = False
+                with self.assertRaises(RuntimeError):
+                    capture_ownership_audit([scan], self.capture_endpoint())
+
+    def test_capture_ownership_rejects_identity_changes_and_scan_churn(self):
+        for phase in ['before_snapshot', 'after_snapshot', 'after_ownership_snapshot']:
+            for key in ['coalition_id', 'tasks_started', 'tasks_exited']:
+                with self.subTest(phase=phase, key=key):
+                    scan = self.capture_scan()
+                    scan[phase][key] += 1
+                    with self.assertRaises(RuntimeError):
+                        capture_ownership_audit([scan], self.capture_endpoint())
+
+    def test_capture_ownership_rejects_missing_or_non_native_endpoints(self):
+        for endpoint in [{}, dict(self.capture_endpoint(), label='navigation_started'),
+                         dict(self.capture_endpoint(), tasks_started=2, tasks_exited=2),
+                         dict(self.capture_endpoint(), coalition_id=True)]:
+            with self.subTest(endpoint=endpoint), self.assertRaises(RuntimeError):
+                capture_ownership_audit([self.capture_scan()], endpoint)
+
+    def test_exit_observer_keeps_the_kernel_status_and_samples_only_while_live(self):
+        event = Mock(fflags=1 | 0x04000000, data=0)
+        queue, observe = Mock(), Mock()
+        queue.control.side_effect = [[], [], [event]]
+        with patch('hacker_news_browser_instructions.select.KQ_NOTE_EXIT', 1, create=True):
+            self.assertEqual(await_exit(queue, float('inf'), observe), 0)
+            self.assertEqual(observe.call_count, 2)
+            queue.control.side_effect = [[event]]
+            observe.reset_mock()
+            self.assertEqual(await_exit(queue, float('inf'), observe), 0)
+            observe.assert_not_called()
+
+    def test_exit_observer_rejects_unknown_status_and_obeys_deadline(self):
+        queue = Mock()
+        queue.control.return_value = [Mock(fflags=0, data=0)]
+        with patch('hacker_news_browser_instructions.select.KQ_NOTE_EXIT', 1, create=True), \
+                self.assertRaisesRegex(RuntimeError, 'Kernel did not supply exit status'):
+            await_exit(queue, float('inf'), Mock())
+        queue.control.return_value = []
+        observer = Mock()
+        with self.assertRaisesRegex(RuntimeError, 'watchdog expired'):
+            await_exit(queue, 0, observer)
+        observer.assert_not_called()
+
     def test_explicit_emulated_capture_scale_does_not_change_native_viewport_default(self):
         from types import SimpleNamespace
         browser, client = Mock(), Mock()

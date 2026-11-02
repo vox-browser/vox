@@ -384,6 +384,9 @@ def evaluate_cohort(pairs, has_control=False):
     browser.require(len(pairs) >= 7, 'Acceptance needs seven complete pairs')
     engines = {'vox', 'brave', 'control'} if has_control else {'vox', 'brave'}
     browser.require(all(set(pair) == engines for pair in pairs), 'Incomplete BBC cohort')
+    browser.require(all(pair[engine].get('capture_ownership_audit', {}).get('passed') is True
+                        for pair in pairs for engine in engines - {'brave'}),
+                    'Every Vox capture needs endpoint-matched live coalition ownership')
     summary = browser.evaluate_pairs(
         [dict(vox=pair['vox'], brave=pair['brave']) for pair in pairs], .9, 'launch')
     if has_control:
@@ -401,6 +404,7 @@ def main():
     browser.write_json(args.audit_config, dict(selectors=SELECTORS))
     args.expected = None
     args.instruction_scope = 'launch'
+    args.audit_vox_capture_ownership = True
     args.vox_arguments = ['--js-engine', 'javascriptcore']
     args.content_validator = lambda audit: validate_document(audit, expected)
     args.audit_expression = audit_expression()
@@ -442,6 +446,7 @@ def main():
         fixture=expected, original_scripts_retained=True, author_javascript_enabled=True,
         viewport=[1024, 768], scale=args.scale, settle_seconds=args.settle_seconds,
         javascript_backends=dict(vox='javascriptcore', brave='v8'),
+        vox_capture_ownership_policy='Require a stable live ownership scan matching the native PNG endpoint task totals; cumulative counters include exited tasks',
         jsc_baseline_environment=dict(vox=jsc_baseline_environment(args.jsc_baseline_warmup),
             control=jsc_baseline_environment(args.control_jsc_baseline_warmup)),
         retain_incremental_webp_paint_policy=args.retain_incremental_webp_paint_policy,
