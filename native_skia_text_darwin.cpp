@@ -15,6 +15,7 @@
 #include "native_chromium_image_decode_cache.h"
 #include "native_picture_typeface_cache.h"
 #include "native_graphite_solid_rect.h"
+#include "native_solid_svg_polygons.h"
 #include "native_plain_rect_raster.h"
 #include "native_svg_path_regions.h"
 #include "native_chromium_raster_phase.h"
@@ -4718,6 +4719,25 @@ static bool svg_batch_has_complete_raster_clips(CGContextRef destination,
     return true;
 }
 
+static bool solid_svg_has_standard_samples()
+{
+    static bool const supported = [] {
+        id<MTLDevice> device = MTLCreateSystemDefaultDevice();
+        if (!device) return false;
+        bool matches = [device supportsTextureSampleCount:4];
+        if (matches) {
+            MTLSamplePosition positions[4];
+            [device getDefaultSamplePositions:positions count:4];
+            MTLSamplePosition expected[] {{.375f,.125f},{.875f,.375f},{.125f,.625f},{.625f,.875f}};
+            for (int i = 0; i < 4; ++i)
+                matches &= positions[i].x == expected[i].x && positions[i].y == expected[i].y;
+        }
+        [device release];
+        return matches;
+    }();
+    return supported;
+}
+
 extern "C" int ladybird_v_skia_draw_svg_path_batch(CGContextRef destination,
     VoxGraphitePath const* paths, int count, float const* outer, float x, float y,
     float width, float height, float page_x, float page_y, float scroll_y,
@@ -4755,11 +4775,40 @@ extern "C" int ladybird_v_skia_draw_svg_path_batch(CGContextRef destination,
     std::vector<uint32_t> pixels(static_cast<size_t>(raster_width) * raster_height);
     bool has_background = s_raster_layer_is_root && opaque_backdrop && copy_backdrop(destination, region,
         scale, raster_width, raster_height, pixels);
-    bool gpu_clips = shared_picture_draw() && svg_batch_has_complete_raster_clips(destination,
-        canvas_width, canvas_height, scale);
-    bool all_draws_clipped = gpu_clips;
     auto image_to_raster = raster_matrix(matrix, region, sx, sy);
     float viewport[] {x, y, width, height};
+    bool complete_clips = svg_batch_has_complete_raster_clips(destination, canvas_width, canvas_height, scale);
+    if (!std::getenv("VOX_DISABLE_SOLID_SVG_POLYGONS") && has_background && complete_clips
+        && !rounded_clip && raster_width <= 128 && raster_height <= 128 && solid_svg_has_standard_samples()
+        && draw_chromium_root_raster_grid<true>(pixels, raster_width, raster_height,
+            region, page_x, page_y, scroll_y, scale,
+            [&](auto& target, long dx, long dy, bool msaa, int x, int y, int w, int h) {
+                if (!msaa) return false;
+                auto device_clip = SkRect::MakeWH(s_msaa_grid_width, s_msaa_grid_height);
+                for (auto const& clip : s_shared_clips.find(destination)->second.clips) {
+                    if (!clip.rect.isRect()) return false;
+                    auto transform = raster_matrix(clip.matrix, region, sx, sy);
+                    transform.postTranslate(dx, dy);
+                    if (!device_clip.intersect(transform.mapRect(clip.rect.rect()))) return false;
+                }
+                float clips[] {device_clip.left(), device_clip.top(), device_clip.right(), device_clip.bottom()};
+                auto parent = image_to_raster; parent.postTranslate(dx, dy);
+                float values[9]; parent.get9(values);
+                VoxGraphitePixelRegion view {x, y, w, h, w * 4, reinterpret_cast<uint8_t*>(target.data())};
+                bool drawn = vox_draw_solid_svg_polygons(view, paths, count, values, viewport, clips);
+                if (drawn && std::getenv("VOX_SOLID_SVG_POLYGONS_DIAGNOSTICS"))
+                    std::fprintf(stderr, "VOX_SOLID_SVG_POLYGONS paths=%d view=%d,%d,%d,%d\n", count, x, y, w, h);
+                return drawn;
+            })) {
+        CGContextSaveGState(destination);
+        CGContextResetClip(destination);
+        auto result = composite_pixels(destination, std::move(pixels), raster_width, raster_height,
+            region.left, canvas_height - region.bottom, region.width(), region.height(), has_background);
+        CGContextRestoreGState(destination);
+        return result;
+    }
+    bool gpu_clips = shared_picture_draw() && complete_clips;
+    bool all_draws_clipped = gpu_clips;
     auto make_svg_picture = [&](int target_width, int target_height, long offset_x,
                                 long offset_y, bool force_msaa,
                                 std::vector<uint32_t> const* backdrop_pixels) -> sk_sp<SkData> {
