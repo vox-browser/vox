@@ -1898,3 +1898,46 @@ window position; the subsequent capture uses the display-selection helper's
 position and is retained separately. The initial standalone plan probe reads
 compatibility commands without paint metadata and is not a native layer-plan
 check; its corrected probe records the display list before inspecting layers.
+
+
+## Independent fixed-container raster coverage
+
+The wider sibling-SVG control isolates an actual planner bug. Expanding the
+transparent fixed SVG container from 40 to 740 pixels changes 71 banner pixels
+in Vox, with maximum channel error 12, while Brave's banner remains exactly
+unchanged. The visible SVG stays below the banner in both variants. Native
+paint records show that the wider container's path merges into the banner's
+layer, changing its multisample coverage. The control and raw images are in
+`minimal-cookie-1/fixed-coverage-control.json` and the `wide-svg-*` outputs.
+This is separate from the small control's pre-existing 752 one-channel-error
+pixels against Brave.
+
+`9cee866b6` adds the owning fixed container's identity to raster property state.
+Sibling viewport-fixed containers retain independent raster coverage, while
+ordinary descendants of the same fixed container can still share a picture.
+Compositor boundary markers keep that same owner identity. The corrected
+before regression fails because both sibling draws receive layer 1. An earlier
+version of that regression incorrectly requires viewport-only paint metadata
+from an unculled plan; that harness failure is retained separately and is not
+the product regression.
+
+All 105 focused test-function executions pass: two new fixed-owner functions,
+23 existing layer-plan functions and ten paint-chunk metadata functions in
+each of default, no-GC and patched production-preallocated modes. All 18
+compile/runtime steps exit zero, and the focused source identities remain
+stable. Evidence is in `fixed-raster-before-corrected/` and
+`fixed-raster-focused/` under the private root.
+
+The committed visual pair is
+`Tests/Browser/Ref/fixed-sibling-raster.html` and
+`Tests/Browser/Ref/fixed-sibling-raster.ref.html`. Its opaque white SVG paints
+below the banner over the same white background, so the pair should be
+pixel-identical. The older `0bb14e2f…` production bundle fails this invariant
+by 71 pixels, with maximum channel error 12 and stable inputs; both actual
+browser captures exit zero. `fixed-raster-visual-before/` retains those images,
+commands and guards. Capture both documents at 1024 by 768 using the default
+Chromium paint policy. The layout-test font selects LibWeb policy and bypasses
+this planner, so the ordinary LibWeb screenshot mode cannot validate this
+specific rendering regression. Browser validation of the new fixed-owner
+source and its effect on the remaining 120 live-page pixels awaits a published
+bundle containing `9cee866b6`. No existing pixel reference or tolerance changes.
