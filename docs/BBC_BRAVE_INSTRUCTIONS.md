@@ -1,7 +1,23 @@
 # BBC homepage instruction comparison
 
 **The requested 10% advantage remains open. BBC does not qualify for
-`OPTIMIZED_SITES.md`.** Latest cohort 48 completes seven alternating matched
+`OPTIMIZED_SITES.md`.** Latest cohort 49 uses canonical tools, the completed
+production Vox bundle and installed Brave directly for seven alternating
+matched triples. Vox median is **31,284,060,062**, its same-binary control
+**31,433,167,681**, and Brave lower median **15,005,464,950** instructions.
+The strict gate fails `318586703770 > 134536767903`, conservative ratio
+**2.1312243326651696**. All native exits and complete content audits pass;
+Brave pair 2 changes 304,064 reference pixels (maximum channel error 18),
+invalidating acceptance. All fourteen Vox/control PNGs remain exact.
+
+The matched median point difference is **149,107,619 (0.47436396011124593%)**;
+three pairs improve and four regress. Conservative control ratio
+**1.0385805274608737** fails. This protocol correction establishes no robust
+speedup and earns no engine optimization credit. The
+[canonical-input supplement](benchmark-results/bbc-canonical-font-sync-2026-11-02.json)
+retains every attempt, including the mismatched Brave capture.
+
+Prior cohort 48 completes seven alternating matched
 triples with all 21 original pixel/content/native-exit checks and endpoint
 ownership checks passing. Vox median is **31,871,477,469**, its same-binary
 font-synchronization control **32,079,725,335**, and Brave lower median
@@ -76,7 +92,7 @@ Brave cohort also fails the diagnostic integer gate:
 10% advantage over Brave. The prior baseline-JIT experiments remain rejected;
 production JIT thresholds remain unchanged.
 
-Cohorts 37–46 explicitly use `VOX_RETAIN_INCREMENTAL_WEBP_PAINT_POLICY=1` in
+Cohorts 37–49 explicitly use `VOX_RETAIN_INCREMENTAL_WEBP_PAINT_POLICY=1` in
 both Vox arms to reproduce the historical frozen RGB workload. Production's
 completed-response YUV policy changes photo pixels; an unchanged-binary
 isolation confirms that the historical switch restores the original reference.
@@ -91,7 +107,9 @@ retain the earlier 1,140 attempts across 46 cohorts. The
 [font-synchronization supplement](benchmark-results/bbc-selector-font-sync-2026-11-02.json)
 indexes **1,192 retained attempts across 48 cohorts**, including failures and
 first launches. It rechecks 42 new raw trial records; the prior audit checked
-952 earlier cohort records. Cohort 47's seven missing Brave counter intervals
+952 earlier cohort records. The canonical-input supplement adds 21 cohort
+records and two execution diagnostics, bringing the retained history through
+cohort 49 to **1,215 attempts**. Cohort 47's seven missing Brave counter intervals
 remain explicit. Private historical bundle/tool copies were removed from the
 shared workspace, so their earlier input-hash receipts do not imply every
 physical input is still present. Commands, ownership audits and artifact hashes
@@ -190,6 +208,8 @@ was not verified and cannot satisfy the new ownership gate.
 | Batched pseudo-element candidates | 33,363,170,629 | 16,086,526,413 | 2.1165767005241722 | Brave pair 2 photo differs; median regresses 1.0759% against control; implementation removed |
 | Omit empty procedural CSS payload | 32,872,445,783 | 16,080,434,504 | 2.1303968698649767 | All captures valid; median point falls 2.4505% against control; four improve/three regress; both conservative gates fail |
 | Capture-time coalition ownership audit | 32,561,838,795 | 16,174,399,220 | 2.050232557790847 | Protocol correction only; all endpoint ownership proofs pass; Brave pairs 1/4 photo mismatches and integer gate fail |
+| Selector-only font registration retention | 31,871,477,469 | 15,388,048,710 | 2.1335091816256653 | All captures valid; four matched pairs improve/three regress; both conservative gates fail |
+| Canonical inputs and preexisting-task identity | 31,284,060,062 | 15,005,464,950 | 2.1312243326651696 | Protocol correction only; Brave pair 2 differs; all native/content checks pass; integer gate fails |
 
 The grid block-height cohort alternates an older control, candidate and Brave;
 control/candidate medians are 101,567,929,247 and 90,700,737,334 (10.70% observed
@@ -2570,3 +2590,40 @@ the private copied Brave bundle after launch; this copy still needs administrato
 cleanup. The installed comparison browser is unchanged. The exact path, failed
 cleanup receipts and remaining flags are recorded in the supplement. Future
 measurements must use canonical bundles/tools under the updated repository rule.
+
+## Canonical inputs and preexisting-task identity (cohort 49)
+
+Tooling commit `9e53174f6` strengthens shared-app ownership checks. Each task
+already running from that app must retain its PID, command, positive process
+start ticks and resource-coalition ID before it can be excluded from the new
+trial. A reused PID, changed coalition or vanished task supplies no exemption;
+an older task in the measured coalition invalidates the trial. New unowned
+helpers still fail. All 227 instruction-tool tests pass.
+
+This cohort directly references `Build/v/Vox.app`, installed Brave and canonical
+repository tools, without new app/tool copies or metadata protection. Both Vox
+arms use executable
+`e9b1cdeb2197ef69aacf701bb0e12149aecfabed3f2c68cb675d34631c3f681e`.
+Separate candidate/control execution diagnostics preserve original pixels,
+full content, ownership and native exit zero. They execute one JavaScriptCore
+context with 1,937 / 1,973 evaluations; the font-retention trace appears only
+when enabled. The instrumented diagnostics receive no instruction credit.
+
+The independent auditor verifies all 21 raw records and semantic audits,
+fourteen Vox endpoint proofs and seven Brave endpoint brackets, and rehashes
+all 1,638 pinned inputs at its recorded audit time. Twenty original PNG checks
+are exact; Brave pair 2 differs by 304,064 pixels, maximum channel error 18.
+No attempt is retried or excluded. All native exits are zero; driver, guard
+and controller exit 1 because acceptance fails. All browser roots are adopted;
+the guard records 66 process identities, no adoption error, 1,483,292,672 peak
+sampled bytes and 105.9209165 seconds under the unchanged 12 GiB budget.
+
+The small matched median point difference does not establish a robust speedup.
+Three pairs improve and four regress, with conservative control ratio
+1.0385805274608737. The feature's preceding focused/broad checks remain valid;
+this ownership correction changes no engine policy or capture boundary and
+receives no additional engine credit. The known broad baseline failures remain
+unresolved. Historical WebP/RGB policy, warm OS caches, original scripts,
+per-engine references and the rendering/scripting limitations remain unchanged.
+The [canonical-input evidence](benchmark-results/bbc-canonical-font-sync-2026-11-02.json)
+preserves the exact counts, identities, host conditions and receipts.
