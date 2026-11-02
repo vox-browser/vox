@@ -2941,3 +2941,70 @@ and [compressed raw profile, cohorts and microbenchmark](benchmark-results/bbc-v
 retain commands, function rows, source drift, input hashes, failed preparations,
 exact counters, guards, host telemetry and audit results. Generated evidence
 stays local under the repository's ignore policy.
+
+## Executed substring path and intrinsic-context candidate (cohort 54)
+
+The later completed production executable
+`1c9c91f584d6bff71b8f92cc5b236f22e92cbbe0f795d9e8674307d3a96aa8a6`
+contains the substring change. Separate enabled/control diagnostics confirm
+that its new boundary scan executes only when enabled; both preserve full BBC
+content, capture ownership and native exit zero. JavaScriptCore creates one
+context and performs 1,936/1,951 evaluations. Both images retain the historical
+120-pixel mismatch. These instrumented runs earn no instruction credit.
+
+Cohort 54 retains seven alternating control/Vox/Brave triples. Candidate
+instructions are 29,284,491,103; 31,384,726,604; 30,243,106,790;
+30,018,310,875; 30,623,903,667; 31,646,854,418; 31,969,894,523.
+The corresponding controls are 30,376,801,504; 30,561,902,689; 31,126,387,271;
+31,077,720,216; 31,050,299,033; 30,055,138,801; 31,036,251,546.
+Their medians are **30,623,903,667 versus 31,036,251,546**, a 1.3286%
+point reduction, with four paired improvements and three regressions.
+All fourteen Vox images have the same PNG hash and differ from the unchanged
+reference by 120 pixels. Their complete content, native exits and exclusive
+capture ownership pass independent auditing.
+
+Brave pair 5 fails because a private helper is outside its resource coalition.
+Its raw counter brackets and cleanup exit remain recorded; no replacement
+trial or selected launch count is manufactured. The other six Brave lower
+counts are 15,147,685,055; 15,170,928,414; 15,170,300,641; 15,209,275,762;
+14,997,522,655; 15,086,195,807. Their partial median is 15,158,992,848, which
+is explicitly **six complete trials**, not a seven-trial acceptance statistic.
+Even the partial instruction comparison fails:
+`319698945230 > 134977703895`. The guard adopts every recorded browser root,
+reports no adoption errors, peaks at 1,492,549,632 bytes and completes in
+107.1428 seconds. Driver, guard and controller exit 1. All 21 attempts remain
+included, bringing the history to **1,313 cohort attempts across 54 cohorts**.
+This invalid cohort earns no BBC saving or broad-check cadence reset.
+
+The V profile also identifies repeated independent layouts inside intrinsic
+probes. Commit `778ee82dc` tests a new cache confined to one document layout
+pass. It keys closed flow/flex/grid contexts by mode, available space, root
+sizes and constraints, and the complete containing-block size chain. Replay
+rechecks text, tree order, computed-style identity/revision, image dimensions,
+font generation and style environment. Lines, glyph runs, inline-end records
+and descendant geometry are owned independently of the producer's retiring
+scratch arena. Positioned/float, subgrid, table, generated, clamped and other
+unsupported dependencies retain full layout. Each node keeps at most four
+entries; closing the pass drops the cache.
+
+Twenty focused cases pass enabled and disabled in default, no-GC and
+preallocated modes: **120 executions, nine zero-exit jobs**. They compare
+results and geometry against uncached probes after scratch retirement and
+consumer mutation, and cover width/mode, text/style/tree/font/containing-height
+changes and excluded dependencies. Three initial test preparations fail and
+remain retained: one propagation-syntax error, duplicate indexes in a synthetic
+mutation, then a missing containing block on its synthetic new child. These
+are corrected before the passing checks. Control tooling `00c85d48d` isolates
+`VOX_DISABLE_INDEPENDENT_MEASUREMENT_REUSE=1`; 63 BBC tests and the combined
+212 browser-instruction tests pass. The initial malformed test insertion is
+also retained in the failed tooling receipt.
+
+The available completed browser initially lacks this context cache. A shared
+production build is already running and supplies generated C with the new
+path; no duplicate build is queued. Production eligibility, matched instruction
+results and native conformance remain pending for this candidate. The target
+and BBC catalog entry remain open, with earlier broad failures and rendering/
+script limitations unchanged. See the local
+[evidence](benchmark-results/bbc-intrinsic-context-2026-11-02.json) and raw
+`Build/bbc-intrinsic-context-20261102/` receipts. Generated reports stay local
+under the repository ignore policy.
