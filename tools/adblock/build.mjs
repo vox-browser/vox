@@ -27,6 +27,18 @@ const options = {
     bundle: true, platform: 'browser', format: 'iife', target: 'safari16.4',
     define: { global: 'globalThis' }, minify: true, legalComments: 'eof', loader: { '.dat': 'text' }, metafile: true,
     plugins: [{ name: 'standalone-ublock-background', setup(b) {
+        // The indexed catalog supplies ordinary redirect/scriptlet queries.
+        // Keep the vendor's asynchronous full-catalog API, but parse its
+        // original module only if a caller actually requests that API.
+        b.onLoad({filter: /\/redirect-engine\.js$/}, async args => {
+            if (!lazyParser) return;
+            const source = await fs.readFile(args.path, 'utf8');
+            const anchor = "import('/js/resources/scriptlets.js')";
+            if (source.split(anchor).length !== 2) throw new Error('Unexpected uBO builtin resource import');
+            return {contents:source.replace(anchor,
+                'Promise.resolve().then(() => globalThis.voxAdblockLoadBuiltinScriptlets())'),
+                loader:'js', resolveDir:path.dirname(args.path)};
+        });
         b.onLoad({filter: /\/tools\/adblock\/resources\.js$/}, () => lazyParser ? {
             contents: resourcesStub(), loader:'js', resolveDir:here,
         } : undefined);
@@ -86,8 +98,12 @@ const parserBundle = await build({entryPoints:[path.join(root,'adblock/vendor/ub
     bundle:true,platform:'browser',format:'iife',globalName:'voxAdblockParser',target:'safari16.4',
     minify:true,legalComments:'eof',write:false});
 const parserSource = parserBundle.outputFiles[0].text;
+const scriptletBundle = await build({entryPoints:[path.join(root,'adblock/vendor/ublock/js/resources/scriptlets.js')],
+    bundle:true,platform:'browser',format:'iife',globalName:'voxAdblockBuiltinScriptlets',target:'safari16.4',
+    minify:true,legalComments:'eof',write:false});
+const builtinScriptletsSource = scriptletBundle.outputFiles[0].text;
 const resourceCatalog = context.voxAdblockResourceSnapshot();
-const snapshot = encodeSnapshot(serializer.deserialize(selfie), { lazyCosmetics: true, lazyNetworkBuckets: true, publicSuffixText, parserSource, resourceCatalog });
+const snapshot = encodeSnapshot(serializer.deserialize(selfie), { lazyCosmetics: true, lazyNetworkBuckets: true, publicSuffixText, parserSource, builtinScriptletsSource, resourceCatalog });
 await fs.writeFile(path.join(here, 'generated-defaults.js'), snapshot.source);
 await fs.writeFile(path.join(root, 'adblock/engine.snapshot.bin'), encodeNativeSnapshot(snapshot.binary));
 await fs.writeFile(path.join(root, 'adblock/engine.snapshot.json.gz'), gzipSync(snapshot.metadata, {level: 9, mtime: 0}));

@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 import vm from 'node:vm';
 import { gunzipSync } from 'node:zlib';
 import test from 'node:test';
+import { builtinScriptlets } from '../../adblock/vendor/ublock/js/resources/scriptlets.js';
 const code = gunzipSync(await fs.readFile(new URL('../../adblock/engine.js.gz', import.meta.url))).toString();
 const nativeSnapshot = await fs.readFile(new URL('../../adblock/engine.snapshot.bin', import.meta.url));
 const bytes = nativeSnapshot.subarray(16);
@@ -37,6 +38,30 @@ test('default matching stays parser-free and custom filters load the original pa
     defaults.context.voxAdblockInitialize('||metrics.example^$script\n##.advert');
     assert.equal(typeof defaults.context.voxAdblockParser.AstFilterParser, 'function');
     assert.equal(defaults.check({url:'https://metrics.example/ad.js',source_url:'https://news.ycombinator.com/',request_type:'script'}).blocked,true);
+});
+
+test('the full builtin module stays unloaded until requested and retains every entry', async () => {
+    const {context,check} = engine();
+    check({url:'https://news.ycombinator.com/',source_url:'https://news.ycombinator.com/',request_type:'main_frame'});
+    context.voxDocumentFilters('https://www.theverge.com/', ['.ad-banner']);
+    context.voxAdblockInitialize('example.test##+js(set, voxSentinel, 42)');
+    assert.match(context.voxDocumentFilters('https://example.test/').scriptlets, /voxSentinel/);
+    assert.equal(typeof context.voxAdblockBuiltinScriptlets, 'undefined');
+    const module = await vm.runInContext('Promise.resolve().then(() => voxAdblockLoadBuiltinScriptlets())', context);
+    assert.equal(context.voxAdblockLoadBuiltinScriptlets(), module);
+    assert.equal(module.builtinScriptlets.length, builtinScriptlets.length);
+    for (let index = 0; index < builtinScriptlets.length; ++index) {
+        const original = builtinScriptlets[index], restored = module.builtinScriptlets[index];
+        assert.equal(typeof restored.fn, 'function');
+        const {fn:originalFn,...originalMetadata} = original;
+        const {fn:restoredFn,...restoredMetadata} = restored;
+        assert.deepEqual(JSON.parse(JSON.stringify(restoredMetadata)), originalMetadata);
+        assert.ok(restoredFn.toString().length > 0);
+    }
+    const inputs = JSON.parse(await fs.readFile(new URL('./bundle-inputs.json', import.meta.url)));
+    assert.ok(!inputs.some(path => path.includes('/js/resources/')));
+    context.voxAdblockInitialize();
+    assert.equal(check({url:'https://securepubads.g.doubleclick.net/tag/js/gpt.js',source_url:'https://www.theverge.com/',request_type:'script'}).blocked,true);
 });
 
 test('lazy tables preserve complete eager cosmetic, scriptlet and request decisions across the site corpus', async () => {

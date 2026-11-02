@@ -21,6 +21,10 @@ globalThis.voxAdblockLoadParser = () => {
 globalThis.voxAdblockLoadResources = () => {
     return defaultData.resources();
 };
+globalThis.voxAdblockLoadBuiltinScriptlets = () => {
+    if (!globalThis.voxAdblockBuiltinScriptlets) (0, eval)(defaultData.builtinScriptletsSource());
+    return globalThis.voxAdblockBuiltinScriptlets;
+};
 globalThis.voxAdblockResourceSnapshot = () => snapshotResources();
 const fctx = new FilteringContext();
 let activeListCount = 0;

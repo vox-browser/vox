@@ -52,6 +52,17 @@ test('each restoration owns mutable arrays and maps while bundle bytes remain re
     assert.deepEqual(Array.from(context.voxAdblockSnapshotBytes), Array.from(encoded.binary));
 });
 
+test('deferred builtin module source round-trips as exact UTF-16 without evaluation', () => {
+    const source = 'globalThis.loaded=true; /* λ 😀 \ud800 */';
+    const encoded = encodeSnapshot({words:new Uint32Array([1])}, {builtinScriptletsSource:source});
+    const {context} = restore(encoded);
+    context.TextDecoder = TextDecoder;
+    assert.equal(context.loaded, undefined);
+    assert.equal(context.snapshot.builtinScriptletsSource(), source);
+    assert.equal(context.snapshot.builtinScriptletsSource(), source);
+    assert.equal(context.loaded, undefined);
+});
+
 test('native clone callback receives bounded views and preserves fresh restoration ownership', () => {
     const encoded = encodeSnapshot({ bytes: new Uint8Array([7, 8]), words: new Uint32Array([11, 12]) });
     const { context } = restore(encoded);

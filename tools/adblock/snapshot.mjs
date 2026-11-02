@@ -2,7 +2,7 @@ import { packedArray, packedMap, readPackedValue, encodePackedTable } from './la
 
 // Preserve uBO's engine selfies, loading large typed arrays as native bytes and
 // parsing metadata with JSON.parse rather than interpreting giant JS literals.
-export function encodeSnapshot(snapshot, { lazyCosmetics = false, lazyNetworkBuckets = false, publicSuffixText, parserSource, resourceCatalog } = {}) {
+export function encodeSnapshot(snapshot, { lazyCosmetics = false, lazyNetworkBuckets = false, publicSuffixText, parserSource, builtinScriptletsSource, resourceCatalog } = {}) {
     const chunks = [], views = [], fixups = [];
     let byteLength = 0;
     const active = new Set();
@@ -77,7 +77,7 @@ export function encodeSnapshot(snapshot, { lazyCosmetics = false, lazyNetworkBuc
     const metadata = JSON.stringify(encode(snapshot, 'snapshot')).replace(/[\u007F-\uFFFF]/g, character =>
         `\\u${character.charCodeAt(0).toString(16).padStart(4, '0')}`);
     let suffixReader = '';
-    for (const [name, value] of [['publicSuffixText',publicSuffixText],['parserSource',parserSource]]) {
+    for (const [name, value] of [['publicSuffixText',publicSuffixText],['parserSource',parserSource],['builtinScriptletsSource',builtinScriptletsSource]]) {
         if (value === undefined) continue;
         const table = encodePackedTable([value], 1), offset = byteLength;
         chunks.push(table); byteLength += table.length;
