@@ -208,6 +208,49 @@ their memory guards. It records every result and rejects a bundle change across
 the batch. It does not request a production build. A waiting or timed-out state
 is not a pixel pass, and the five added sites remain incomplete.
 
+## November 3 production validation
+
+The shared build
+[`20261103-011139-5e6ed988`](../Build/production-build/receipts/20261103-011139-5e6ed988/result.json)
+passed its startup check and published executable SHA-256
+`1bcbbb5cca048906caf2151070018fb7ec0618b5af140b465700ba31a9cd1d75`.
+It contains the three committed TechCrunch mask/crop fixes above. The pending
+validation job completed on this unchanged bundle; it no longer awaits a build.
+
+Both `techcrunch-mask-sizing` and `techcrunch-gradient-solid` now match their
+unchanged Brave references exactly. The complete rendering suite also passes:
+**99 tests / 105 captures**, with unchanged browser, runtime assets, test inputs
+and references throughout the batch. Its [summary](../Build/forum-news-production-resume-20261103/summary.json),
+[guard/log](../Build/forum-news-production-resume-20261103/inline.log) and
+[capture inventory](../Build/forum-news-production-resume-20261103/captures.json)
+retain the results. These browser checks validate the previously pending fixes;
+they do not establish full-site equality.
+
+| Workload | Saved source → frozen Brave pixels | Vox → frozen Brave pixels | Result |
+| --- | ---: | ---: | --- |
+| HTTP photo/mask regression | 0 | 4 | Reduced from 7,634; still fails |
+| TechCrunch homepage | 0 | 34,710 | Still fails |
+| Hacker News control | 0 | 0 | Strict pass |
+
+The [completed pending job](../Build/forum-news-resume-20261103/after-build/state.json)
+retains every command, guard, browser identity and result. Its overall result is
+a failure because the photo and homepage comparisons still differ. A second
+[TechCrunch comparison](../Build/forum-news-techcrunch-geometry-20261103/comparison/summary.json)
+independently reproduces all 34,710 differing pixels. Native DOM audits confirm
+that the three visible cards and their overlay bounds match Brave exactly.
+34,709 differing pixels have maximum channel error one; the remaining pixel is
+on the large SVG logo. No tolerance or reference was changed.
+
+The four photo errors reproduce in both the native probe and production PNG,
+at `(455,255)`, `(455,275)`, `(455,278)` and `(455,293)`. These rows lie inside
+the mask's fully opaque region, and the output equals the corresponding plain
+photo pixels. This narrows that residual to image sampling rather than mask
+alpha composition. An independent
+[full-height HTTP diagnostic](../Build/forum-news-full-photo-20261103/summary.json)
+also preserves source equality and has 45 native differences, confined to its
+masked columns. It is an authored diagnostic, not another homepage pass.
+The five additions remain incomplete.
+
 ## Run
 
 ```sh
