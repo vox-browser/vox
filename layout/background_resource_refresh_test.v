@@ -125,3 +125,21 @@ fn test_background_refresh_defers_pending_container_query_stabilization_to_norma
  resource_refresh_publish(address, resource_refresh_source)
  assert refresh_document_background_resources(document, {address:true})
 }
+
+fn test_declined_background_completion_refreshes_snapshot_during_retained_viewport_relayout() {
+	address := 'https://resource-refresh.test/late-arrow.svg'
+	mut document := html.parse_document('<!doctype html><div style="width:10px;height:10px;background:url(${address})"></div>')
+	defer { document.finalize() }
+	enable_native_paint_tree_storage(document)
+	_ = layout_document_typed_in_viewport(document, 200, 100)
+	assert !resource_refresh_commands(document).any(it.image().background_svg_document != none
+		|| it.image().background_static_svg_resource != none)
+	root := document.layout_engine_handle()
+	resource_refresh_publish(address, resource_refresh_source)
+	document.set_needs_repaint_with_invalidation(.paint_commands)
+	assert !refresh_document_background_resources(document, {address:true})
+	_ = layout_document_typed_in_viewport(document, 200, 100)
+	assert document.layout_engine_handle() == root
+	assert resource_refresh_commands(document).any(it.image().background_svg_document != none
+		|| it.image().background_static_svg_resource != none)
+}

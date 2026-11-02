@@ -14,9 +14,19 @@ struct CompletedBackgroundResource {
 // Keep the general renderer refresh for every pending style, geometry or paint
 // update; its snapshots may contain changes beyond these resource bytes.
 pub fn refresh_document_background_resources(document &dom.Document, changed map[string]bool) bool {
-	if changed.len == 0 || !document.layout_is_up_to_date()
-		|| document.needs_style_update_after_layout() { return false }
+	if changed.len == 0 { return false }
 	mut result := document_layout_result(document) or { return false }
+	mut refreshed := false
+	defer {
+		// A declined resource patch needs fresh decoded-image owners even when
+		// viewport relayout can retain geometry and ordinary paint snapshots.
+		// Otherwise a pending repaint can keep a previously unavailable image.
+		if !refreshed {
+			result.paint_tree_needs_style_update = true
+			result.paint_style_update_requires_full_refresh = true
+		}
+	}
+	if !document.layout_is_up_to_date() || document.needs_style_update_after_layout() { return false }
 	if result.needs_repaint || result.paint_tree.layout_handle == unsafe { nil }
 		|| document.cached_display_list() == none { return false }
 	node := document.as_node()
@@ -39,6 +49,7 @@ pub fn refresh_document_background_resources(document &dom.Document, changed map
 	result.needs_repaint = true
 	mut mutable_document := unsafe { &dom.Document(document) }
 	mutable_document.set_needs_repaint_with_invalidation(.paint_commands)
+	refreshed = true
 	return true
 }
 
