@@ -2222,8 +2222,11 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 			commands << PaintCommand{ kind: 'begin_background_blend_group' }
 		}
 		mut color_rect := background_box_rect_from_border(box, box.decorations().background_color_clip, background_border_rect)
+		background_transform := normalized_affine(box.own_paint_transform)
 		if box.snaps_background_rect && box.uses_own_paint_transform_4x4
-			&& !box.canvas().paints_canvas_background && box_radii_are_zero(box_radii) {
+			&& !box.canvas().paints_canvas_background && box_radii_are_zero(box_radii)
+			&& (background_transform[0] != 1 || background_transform[1] != 0
+				|| background_transform[2] != 0 || background_transform[3] != 1) {
 			// Blink snaps a transformed solid fill in the box's local paint
 			// space. Snapping its absolute edges first changes rotated contours.
 			raw := background_box_rect_from_border(box, box.decorations().background_color_clip, border_rect)

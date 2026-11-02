@@ -13,6 +13,10 @@ from forum_news_pixels import REPO, VOX, executable_identity, guarded, write_jso
 @unittest.skipUnless(sys.platform == 'darwin', 'The reference uses native macOS fonts')
 class ForumNewsInlinePixelsTests(unittest.TestCase):
 
+    def test_translation_only_solid_backgrounds_snap_before_the_css_translation(self):
+        self.compare_fixture('chromium-translated-solid-fill', width=1024, height=768,
+                             settle_seconds=5)
+
     def test_positioned_headers_keep_coverage_across_background_images(self):
         self.compare_fixture('chromium-positioned-header-image-gap', width=1024, height=768,
                              settle_seconds=5)
