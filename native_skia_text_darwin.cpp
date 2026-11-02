@@ -29,6 +29,9 @@
 #include "include/gpu/ganesh/mtl/GrMtlBackendContext.h"
 
 #include "include/core/SkCanvas.h"
+#include "include/utils/SkNoDrawCanvas.h"
+#include "include/core/SkBlender.h"
+#include "include/core/SkPathEffect.h"
 #include "include/core/SkBlendMode.h"
 #include "include/core/SkBlurTypes.h"
 #include "include/core/SkColor.h"
@@ -185,6 +188,7 @@ void shared_recording_block(SkRect);
 void shared_recording_content(CGContextRef, SkRect, float, float);
 void shared_recording_image(CGContextRef, SkMatrix const&, VoxGraphiteImage const&);
 void finish_shared_recording();
+void clear_retained_layer_tiles();
 decltype(&vox_graphite_draw_picture_pixels) shared_picture_draw();
 sk_sp<SkData> serialize_shared_picture_image(SkImage*, void*);
 
@@ -989,6 +993,7 @@ extern "C" void ladybird_v_skia_release_unused_graphics_memory()
         if (purge) purge();
         dlclose(library);
     }
+    clear_retained_layer_tiles();
     clear_native_rounded_image_cache();
     s_sparse_raster_pool.clear();
     s_glyph_raster_cache.clear();

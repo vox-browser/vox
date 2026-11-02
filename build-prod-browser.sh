@@ -159,7 +159,7 @@ if [ -f "$skia_root/lib/libskia.dylib" ] && [ -d "$skia_root/include/skia/includ
     python3 "$repo_dir/tools/build_mac_graphite_dawn.py" --skia-root "$skia_root" \
         --output "$dawn_library"
     bridge_library="$build_dir/libLadybirdVSkiaText.dylib"
-    clang++ -std=c++20 -O2 -fPIC -dynamiclib -x objective-c++ \
+    clang++ -std=c++20 -O2 -fno-rtti -fPIC -dynamiclib -x objective-c++ \
 		-I"$skia_root/include/skia" -I"$skia_root/include" \
 		"$repo_dir/native_skia_text_darwin.cpp" \
         -L"$skia_root/lib" -lskia \

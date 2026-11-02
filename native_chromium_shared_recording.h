@@ -382,6 +382,8 @@ void shared_recording_image(CGContextRef destination, SkMatrix const& matrix,
     canvas->restore();
 }
 
+#include "native_chromium_retained_tiles.h"
+
 void finish_shared_recording()
 {
     auto group = std::move(s_shared_root_recording);
@@ -402,8 +404,7 @@ void finish_shared_recording()
     SkSerialProcs procs;
     procs.fImageProc = serialize_shared_picture_image;
     procs.fTypefaceProc = vox_serialize_picture_typeface;
-    auto bytes = picture->serialize(&procs);
-    if (!bytes || bytes->size() > 64 * 1024 * 1024) return;
+    sk_sp<SkData> bytes;
     if (!group->root) {
         // A layer is atomic: an unsupported image, allocation failure or backend
         // failure leaves all of its ordinary leaf draws intact.
@@ -450,7 +451,9 @@ void finish_shared_recording()
             && std::abs(first_y - std::round(first_y)) < .001
             && first_x + width <= int64_t(grid.columns) * (grid.width - 2) + 2
             && first_y + height <= int64_t(grid.rows) * (grid.height - 2) + 2;
-        if (tiled) {
+        if (draw_retained_layer_tiles(*group, picture.get(), pixels, width, height, left, top)) {
+            // Retained transparent ink joins the same backdrop/publication path.
+        } else if ((bytes = picture->serialize(&procs)) && bytes->size() <= 64 * 1024 * 1024 && tiled) {
             if (!vox_draw_chromium_raster_grid(pixels, width, height,
                     std::lround(first_x), std::lround(first_y), grid,
                     [&](auto& tile, long offset_x, long offset_y, int) {
@@ -462,8 +465,11 @@ void finish_shared_recording()
                             grid.width, grid.height, grid.width * 4,
                             bytes->data(), bytes->size(), tile_matrix);
                     })) return;
-        } else if (!shared_picture_draw()(reinterpret_cast<uint8_t*>(pixels.data()), width,
-                height, width * 4, bytes->data(), bytes->size(), matrix)) return;
+        } else {
+            if (!bytes || bytes->size() > 64 * 1024 * 1024
+                || !shared_picture_draw()(reinterpret_cast<uint8_t*>(pixels.data()), width,
+                    height, width * 4, bytes->data(), bytes->size(), matrix)) return;
+        }
         if (!group->backdrop.empty()) {
             // Each compositor picture blends over the pixels present before
             // its fallback leaves ran. Combining pictures on transparency first
@@ -490,6 +496,8 @@ void finish_shared_recording()
                 group->deferred_leaves, width, height);
         return;
     }
+    bytes = picture->serialize(&procs);
+    if (!bytes || bytes->size() > 64 * 1024 * 1024) return;
     int width = group->tile_width, height = group->tile_height;
     if (width <= 2 || height <= 2 || size_t(width) * height > 8 * 1024 * 1024) return;
     std::set<int> candidates;
