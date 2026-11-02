@@ -47,3 +47,24 @@ fn test_ordinary_blocks_retain_the_background_before_foreground_phase() {
 	}
 	assert blue_index >= 0 && svg_index > blue_index
 }
+
+fn test_atomic_inline_background_follows_its_enclosing_inline_decoration() {
+	for display in ['inline-block', 'inline-flex', 'inline-grid'] {
+		for nested in [false, true] {
+			content := '<i style="display:${display};width:20px;height:30px;background:blue"></i>'
+			mut document := html.parse_document('<!doctype html><style>body{margin:0;font:20px/40px Arial}#host{position:relative;background:rgb(9 8 7);padding:3px;border:1px solid}</style><div><span id="host">${if nested { '<span>${content}</span>' } else { content }}</span></div>')
+			defer { document.finalize() }
+			document.set_font_rendering_policy(.chromium)
+			_ = layout_document_typed_in_viewport(document, 200, 120)
+			commands := display_list_commands(document.record_display_list() or { panic('paint') })
+			mut parent_index := -1
+			mut atomic_index := -1
+			for index, command in commands {
+				if command.kind == 'fill_rect' && command.color == 'rgb(9 8 7)' { parent_index = index }
+				if command.kind == 'fill_rect' && command.color == 'rgb(0 0 255)' { atomic_index = index }
+			}
+			assert parent_index >= 0
+			assert atomic_index > parent_index
+		}
+	}
+}

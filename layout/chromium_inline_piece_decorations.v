@@ -18,12 +18,12 @@ fn inline_box_paints_decorations(node &Node, used &UsedValues) bool {
 		|| style.box_shadow().len > 0 || style.outline_style() != .none_
 }
 
-// The decorated inline ancestors of `fragment_node` beyond its nearest inline
-// owner, which paints from the fragment itself.
+// Text paints its nearest inline owner's decoration from the text fragment.
+// Atomic inlines have no such text fragment, so include their nearest owner.
 fn nested_decorated_inline_ancestors(fragment_node &Node, state &LayoutState) []&Node {
 	mut result := []&Node{}
 	mut ancestor := fragment_node.parent()
-	mut is_nearest := true
+	mut is_nearest := !fragment_node.is_atomic_inline()
 	for ancestor != none {
 		current := ancestor or { break }
 		if !current.is_inline_node() || current.is_atomic_inline() {
