@@ -284,7 +284,8 @@ fn (mut parser Parser) parse_supports_feature(mut tokens SupportsTokenStream) ?&
 	// `<supports-selector-fn> = selector( <complex-selector> )`
 	if first_token.is_function_named('selector') {
 		selector := supports_component_values_to_string(first_token.function().value)
-		is_match := parse_selector_with_parser(selector, parser.context.declared_namespaces) != none
+		mut selector_parser := RuleSelectorParser.create(parser.context, selector, 'utf-8')
+		is_match := selector_parser.parse_as_selector(.standard) != none
 			&& !supports_selector_contains_unknown_webkit_pseudo_element(selector)
 		tokens = transaction
 		return BooleanExpression.create_supports_selector(selector, is_match)

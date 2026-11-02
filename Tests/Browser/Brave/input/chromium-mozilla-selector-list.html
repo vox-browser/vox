@@ -1,0 +1,19 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Unsupported Mozilla pseudos invalidate their complete selector list</title>
+<style>
+html, body { margin:0; background:white; font:14px Arial; }
+.row { margin:24px; width:400px; padding:16px; background:#066; }
+input { font:14px Arial; width:180px; height:28px; box-sizing:border-box; border:1px solid #007575; border-radius:5px; padding:5px; background:#005757; }
+.search, input::-moz-placeholder { color:darkgray; background:red; }
+.valid::-webkit-input-placeholder { color:#ace; }
+.control { color:#123; }
+.control, input::-moz-range-thumb { color:red; }
+[title="::-moz-placeholder"] { color:#369; }
+</style>
+<div class="row"><input class="search" placeholder="Search"></div>
+<div class="row"><input class="valid" placeholder="Author placeholder"></div>
+<div class="control">The unsupported selector invalidates this grouped color.</div>
+<div title="::-moz-placeholder">Quoted attribute text remains valid.</div>
+
+<p style="position:absolute;top:2000px">Selector list validity regression. Selector list validity regression. Selector list validity regression. Selector list validity regression. Selector list validity regression. Selector list validity regression. Selector list validity regression. Selector list validity regression. Selector list validity regression. Selector list validity regression. Selector list validity regression. Selector list validity regression. Selector list validity regression. Selector list validity regression. Selector list validity regression. Selector list validity regression. Selector list validity regression. Selector list validity regression. Selector list validity regression. Selector list validity regression. Selector list validity regression. Selector list validity regression. Selector list validity regression. Selector list validity regression. Selector list validity regression. Selector list validity regression. Selector list validity regression. Selector list validity regression. Selector list validity regression. Selector list validity regression. Selector list validity regression. Selector list validity regression. Selector list validity regression. Selector list validity regression. Selector list validity regression. Selector list validity regression. Selector list validity regression. Selector list validity regression. Selector list validity regression. Selector list validity regression. Selector list validity regression. Selector list validity regression. Selector list validity regression. Selector list validity regression. Selector list validity regression. Selector list validity regression. Selector list validity regression. Selector list validity regression. Selector list validity regression. Selector list validity regression. Selector list validity regression. Selector list validity regression. Selector list validity regression. Selector list validity regression. Selector list validity regression. </p>

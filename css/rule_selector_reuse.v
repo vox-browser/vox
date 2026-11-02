@@ -16,9 +16,9 @@ __global rule_selector_reuse_reported bool
 // cache, so its graph owner is the same as the completed stylesheet's owner.
 fn (mut parser RuleSelectorParser) parse_memoized_rule_selector(text string, mode ParserSelectorType) ?Selector {
 	if disable_rule_selector_reuse || parser.declared_namespaces.len > 0 {
-		return parser_parse_validated_selector(text, mode, parser.declared_namespaces)
+		return parser.parse_supported_rule_selector(text, mode)
 	}
-	key := '${int(mode)}\x00${text}'
+	key := '${int(mode)}\x00${parser.uses_chromium_selector_policy()}\x00${text}'
 	if selector := parser.parsed_rule_selectors[key] {
 		mut data := unsafe { &SelectorData(selector.data_) }
 		data.repeated_rule_parse = true
@@ -28,7 +28,7 @@ fn (mut parser RuleSelectorParser) parse_memoized_rule_selector(text string, mod
 		}
 		return selector
 	}
-	selector := parser_parse_validated_selector(text, mode, parser.declared_namespaces) or { return none }
+	selector := parser.parse_supported_rule_selector(text, mode) or { return none }
 	if parser.parsed_rule_selectors.len < maximum_reused_rule_selectors
 		&& parser.parsed_rule_selector_bytes + key.len <= maximum_reused_rule_selector_bytes {
 		parser.parsed_rule_selectors[key] = selector

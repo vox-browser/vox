@@ -333,6 +333,16 @@ the additional end-edge loss seen in Slashdot's real byline, beyond the empty
 generated-content case above. Native validation of this additional fix is
 tracked separately in the Slashdot receipt.
 
+`chromium-mozilla-selector-list` covers a Slashdot search control whose grouped
+rule includes `::-moz-placeholder`, another unsupported control alias, a valid
+WebKit placeholder, and quoted attribute text. Two full-uBO Brave references
+agree at 1024×768, scale 1. Chromium compatibility rejects the entire standard
+selector list when it contains Mozilla pseudos; LibWeb retains its aliases.
+Four focused cases also cover escaped names, forgiving branches, parser memo
+policy changes, namespaces, and `@supports selector()`. The preceding production
+browser differs at 6,761 pixels; native validation of the fix is tracked in the
+Slashdot receipt.
+
 `stackoverflow-independent-hyphen-shaping` checks inserted system-font hyphens
 at integer and fractional line origins, narrow line fitting, explicit hyphen
 controls, and Arial. Its 800×600, scale 1 reference comes from two agreeing

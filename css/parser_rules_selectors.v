@@ -3090,7 +3090,9 @@ fn (mut parser RuleSelectorParser) parse_a_selector_list(mut tokens ParserTokenS
 		} else if selector := parser.parse_memoized_rule_selector(selector_text, mode) {
 			selectors.selectors << selector
 		} else if parsing_mode == .forgiving {
-			selectors.selectors << selector_from_text(selector_text)
+			selectors.selectors << create_selector(selector_text, [CompoundSelector{
+				simple_selectors: [invalid_simple_selector(selector_text)]
+			}])
 		} else {
 			return none
 		}
