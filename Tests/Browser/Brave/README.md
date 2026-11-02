@@ -330,32 +330,35 @@ path. The fixture is pixel-exact on the canonical `192ff348…` production brows
 whitespace at inline box endings, including their own edges and a following
 tab stop. Two full-uBO Brave references agree at 1024×768 and scale 1. It exposes
 the additional end-edge loss seen in Slashdot's real byline, beyond the empty
-generated-content case above. Native validation of this additional fix is
-tracked separately in the Slashdot receipt.
+generated-content case above. The canonical `c1a609e1…` production browser
+improves this fixture from 6,637 differing pixels to zero.
 
 `chromium-mozilla-selector-list` covers a Slashdot search control whose grouped
 rule includes `::-moz-placeholder`, another unsupported control alias, a valid
 WebKit placeholder, and quoted attribute text. Two full-uBO Brave references
 agree at 1024×768, scale 1. Chromium compatibility rejects the entire standard
 selector list when it contains Mozilla pseudos; LibWeb retains its aliases.
-Four focused cases also cover escaped names, forgiving branches, parser memo
-policy changes, namespaces, and `@supports selector()`. The preceding production
-browser differs at 6,761 pixels; native validation of the fix is tracked in the
-Slashdot receipt.
+Seven focused cases also cover escaped names, forgiving branches, parser memo
+policy changes, namespaces, `@supports selector()`, and native stylesheet loading.
+The canonical `f769e44d…` production browser improves the fixture from 6,761
+differing pixels to zero.
 
 `svg-fractional-background-container` covers SVG background aspect-ratio fitting
 at automatic, integer, and fractional image sizes. Two full-uBO Brave references
 agree at 1024×768, scale 1. The preceding production browser differs at 294
-pixels. Keep the SVG layout container at LayoutUnit precision while rounding
-its recording bounds separately; native validation is tracked in the Slashdot
-receipt.
+pixels. Keep the SVG layout container at LayoutUnit precision, then map it into
+the rounded image bounds. The first candidate fixes only the container and
+differs at 429 pixels; native validation of the residual mapping is pending.
 
 `chromium-inline-font-box` covers positioned icon backings, short and tall
 atomic children, nested fonts, padding and extra line spacing. Two full-uBO
 Brave references agree at 1024×768, scale 1. Baseline-aligned Chromium inlines
 use their own ascent/descent for the paint box and positioned containing block.
 LibWeb, other writing modes and non-baseline alignment keep their existing
-geometry. Native validation is tracked in the Slashdot receipt.
+geometry. The first candidate improves 3,591 differing pixels to 1,320; the
+atomic-descendant paint-order follow-up is pending native validation. A fifth
+typed case also retains the paint baseline when a following clear break grows
+the line around a float.
 
 `chromium-transformed-solid-fill` covers opaque rotated squares, chevrons and
 a fractional rectangle at two angles. Two full-uBO Brave references agree at

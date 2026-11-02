@@ -3102,3 +3102,39 @@ Slashdot remains unfinished; Stack Overflow and Pikabu stay deferred. The
 [strict receipt](benchmark-results/slashdot-empty-inline-pixels-2026-11-02.json)
 retains the failed before/partial checks, executable/library identities, complete
 production receipt, raw commands, guards, captures and preservation results.
+
+## Slashdot header layout and raster follow-ups, 2 November 2026
+
+Nine additional fixes are committed separately: Chromium selector aliases and
+document policy through native stylesheet loading; fractional SVG layout and
+its mapping into rounded image bounds; inline font boxes, atomic descendant
+paint order and float-clearance baselines; GPU blending for blurred text; and
+Skia coverage for rotated solid fills. Focused default/no-GC CSS/layout checks pass.
+The native text backend passes 14 existing and 18 new glyph comparisons, and
+the transformed-fill geometry checks pass. Four extracted pixel fixtures have
+two agreeing full-uBO Brave references and are registered in the rendering suite.
+
+An intermediate canonical browser reduces the strict full Slashdot difference
+from **890 to 541 pixels**, with **zero saved-live/frozen differences**. The
+later `f769e44d…` browser makes the selector fixture exact, improving its 6,761
+pixels to zero. A fresh, uninstrumented native replay of that browser differs
+at **244 pixels**: 81 in the SVG logo, 103 in the Submit text shadow and 60 in
+rotated shapes. This latter replay is a diagnostic; it does not rerun the full
+uBO gate. An injected diagnostic preserves the shadow color and removes its
+103 differences, but supplies no production acceptance credit. The later full
+uBO rerun reports **245 native pixels and one saved-live/frozen Brave pixel**,
+at the first poll radio. It fails acceptance, with the reference and tolerance
+unchanged. Its request/filter checks still agree. Four fresh native captures
+retain exact CNN, Guardian, Verge and Lobsters viewports on `f769e44d…`.
+
+Final validation needs a canonical bundle containing the remaining follow-ups.
+Shared source changes keep superseding production builds; no duplicate build
+was queued. The intermediate 88-test/93-capture run also changes browser
+identity mid-suite and is invalid for acceptance. A bounded follow-up wait
+exits 75 without a new browser. The four focused pixel cases, strict full-page
+gate, current **89-test/94-capture suite**, and four-site preservation checks
+remain pending. Slashdot is unfinished; Stack Overflow and Pikabu stay deferred.
+
+The [source-fix receipt](benchmark-results/slashdot-header-source-fixes-2026-11-02.json)
+retains commits, exact identities, reference hashes, before/after checks,
+failures, memory guards and superseded build receipts.
