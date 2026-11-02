@@ -1,14 +1,14 @@
 # Popular-site adblock verification
 
-The latest Slashdot frozen viewport is pixel-exact against Brave with matching
-full uBlock Origin: zero differing pixels in two complete-response-cache runs.
-All 96 rendering tests/102 captures pass on the same production build, which
-also preserves Hacker News, CNN, Guardian, Verge and Lobsters. A fresh BBC check
-currently differs at 60 separator pixels; its historical cached zero-diff result
-is retained below. Stack Overflow and Pikabu remain deferred at the user's
-request, and Reddit's access check does not count as page coverage.
-See the final checkpoints for pinned builds, workloads and evidence. These
-results concern the recorded frozen viewports and cache policies.
+Slashdot's frozen viewport is pixel-exact against Brave with matching full
+uBlock Origin in two complete-response-cache runs; its pinned build passes all
+96 rendering tests/102 captures. A newer production build also restores BBC to
+zero native and saved-live/frozen differences. The expanded 97-test regression
+suite still awaits production verification of the subsequent fractional-edge
+correction. Stack Overflow and Pikabu remain deferred at the user's request,
+and Reddit's access check does not count as page coverage. See the final
+checkpoints for pinned builds, workloads and evidence. These results concern
+the recorded frozen viewports and cache policies.
 
 The matrix exercises guest pages on 13 representative news, video, social,
 shopping, reference, and developer sites. It compares Vox's native filtering
@@ -3488,3 +3488,49 @@ captures, raw exits and the BBC failure. No reference or threshold changed.
 Slashdot's frozen viewport is complete; BBC's current separator mismatch is the
 next rendering issue. Stack Overflow and Pikabu stay deferred, and Reddit's
 network-security block still prevents feed coverage.
+
+
+## BBC translated background checkpoint, 2 November 2026
+
+Commit `e22145d6b` restores snapping of both absolute layout edges before a
+translation-only CSS transform. Non-translation transforms retain their local
+paint space, and rounded backgrounds keep their existing path. The Audio
+separator's fractional layout origin had escaped that snapping, leaving a
+60-pixel difference. The new reduced reference is unchanged between two
+independent full-uBO Brave captures; its failing production baseline has 542
+differing pixels. Two new unit cases fail before the fix, and all seven focused
+layout tests pass after it in both default GC and `-gc none` modes.
+
+Production executable
+`208875f192d26570965f87aa88c6f5b31a57f3204793380697a15bf608bd3a96`
+passes a fresh strict BBC comparison: **zero native differing pixels and zero
+saved-live/frozen Brave pixels**, with matching full-uBO audits. The unchanged
+94-response archive has manifest SHA-256
+`ded3c976d0e47081743f3caa948576e5c9aa2f144cede9b1cc07674bd399bc8b`.
+The run uses original-origin replay, complete encoded-response caches, fresh
+processes, 1024×768 at scale one and the same removed-author-script policy.
+[Intermediate production evidence](../Build/bbc-translation-validation-20261102/)
+retains that pass and the focused suite's remaining 142 fractional-edge pixels.
+Its other seven methods/eight captures remain exact. It is not a whole-suite
+pass and does not change the earlier cold WebP limitation.
+
+Commit `673fbece9` retains translated solid backgrounds in Skia's coverage and
+color-blending path after layout snapping, including fractional author
+translations. A diagnostic of that path is exact against the unchanged reduced
+reference, and all seven focused layout cases pass in both GC modes. The
+committed correction still requires the next production build, the expanded
+97-test/103-capture suite and site preservation. The
+[separator investigation](../Build/bbc-separator-20261102/) retains raw baselines,
+reference agreement, diagnostic captures and unit checks; rejected readiness
+and injected-hover attempts supply no acceptance evidence.
+
+The first production attempt completed but was superseded by concurrent source
+changes. Removal of an image-batch experiment also removed isolated primitive
+height/scale fields still required by the owner fix, causing the replacement
+build to fail compilation. Commit `b52d67b7c` restores only those fields and their
+initialization. Four independent native pixel scenes pass at scales one and
+two, both with no root and with an unrelated root recording; the
+`Build/bbc-restore-isolated-{compile,run}.json` guards retain these checks.
+Production build receipts `20261102-210724-00c09498` and
+`20261102-211143-4554b412` retain the superseded and failed attempts. The completed
+`208875f1…` bundle contains this integration repair.
