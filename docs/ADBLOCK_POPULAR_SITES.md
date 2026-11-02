@@ -2616,3 +2616,40 @@ contains exact identities, region counts, commands, guards, controls and failed
 diagnostics. Raw evidence is under `Build/pikabu-header-20261102/`. These are
 frozen guest rendering results with author scripts removed, without live-site,
 instruction-count or scrolling-performance acceptance.
+
+## Pikabu transparent picture compositing removes shadow differences, 2 November 2026
+
+Commit `376762de8` reduces the unchanged frozen-page comparison from **10,516
+to 184 differing pixels**. It fixes 10,332 pixels, introduces no errors and
+changes two already-different pixels. The photo remains exact. The full-page
+zero-pixel gate stays open around small SVG/icon/control boundaries.
+
+The header's shadow bands were already different in its GPU raster before
+native publication. The picture had included an opaque copy of the page
+prefix, blending each shadow directly over it. A compositor picture instead
+rounds its combined premultiplied ink on transparency before meeting that
+prefix. The native bridge now retains its existing captured-prefix blend after
+rasterization and removes the opaque-prefix draw from the picture. This also
+fixes the shared-layer adapter's preceding 5,343-channel failure.
+
+The native adapter passes its 144 rounded/gradient picture comparisons,
+root/clip/fallback controls and **40 backdrop combinations**. The latter cover
+five prefix alpha levels, both scales, both flush boundaries and both prefix
+hints; two alpha levels were added with this fix. The four shadow-bounds cases,
+24 outer-shadow group cases and 32 deferred-layer scenes remain green.
+
+A private probe passed all **76 focused rendering tests / 81 captures**. Fresh
+production processes then passed **11 selected tests / 16 captures**, headless
+startup and the unchanged CNN, Guardian and Verge archived viewports at zero
+pixels. The production Pikabu request stream matches full uBO on 52 decisions
+with zero blocks or disagreements. The matched control differs only in the
+native Skia library; its executable and other libraries are identical to the
+candidate. All source snapshots stayed stable during the production build.
+
+The [transparent-picture receipt](benchmark-results/pikabu-transparent-picture-composite-2026-11-02.json)
+retains exact hashes, frames, region counts, guards, the formerly failing
+adapter assertion and private/production qualifications. Raw artifacts are
+under `Build/pikabu-shadow-compositing-20261102/`. Existing references and
+tolerances are unchanged. Earlier saved-live/frozen and unmatched-cache oracle
+variations remain open. This establishes frozen guest rendering progress, with
+no live-site, instruction-count or scrolling-performance acceptance.
