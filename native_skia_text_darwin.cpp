@@ -1494,7 +1494,7 @@ static int draw_retained_glyph_run(CGContextRef destination,
     // Keep the foreground and glyph coverage in the GPU blend, as in Blink's
     // raster tile. Even the float CPU blitter can round a covered channel one
     // level differently. The existing glyph cache retains the complete result.
-    if (chromium && has_float_color && glyph_count <= 4096 && pixel_count <= 32768) {
+    if (chromium && (has_float_color || blur > 0) && glyph_count <= 4096 && pixel_count <= 32768) {
         if (auto draw = shared_picture_draw()) {
             SkPictureRecorder recorder;
             auto* recording = recorder.beginRecording(SkRect::MakeWH(raster_width, raster_height));
