@@ -1360,3 +1360,33 @@ assets, observes its native message handler, and finishes with zero error
 events and zero reported exceptions. The earlier settled audit without
 performance failed and is retained. These are worker startup checks using the
 existing archive, with no new homepage download or browser screenshot credit.
+
+`ceb0d2241` transfers fresh native MessagePorts through the dedicated-worker
+process protocol. Each process keeps its own HTML endpoints and JavaScript
+wrappers; hidden endpoints relay owned messages over the existing worker pipe.
+Mixed buffer/port graphs retain transfer-list order, aliases and the received
+MessageEvent.ports identities. Source ports are neutered, ArrayBuffers detach,
+and port messages arriving before the receiving Worker task remain queued.
+Messages and buffers cross by owning copies; this makes no zero-copy claim.
+
+The new port tests and codec checks, plus classic/module agents, parent/child
+sessions, ArrayBuffer transfer and both window/worker channel regressions,
+pass 47 selected functions in each of the three memory modes: 141 function
+executions. Receipts are in `worker-port-transfer-complete/`,
+`worker-port-codec-final/` and the `worker-port-*-regression/` directories. The
+standalone window-channel recovery is `worker-port-window-channel-standalone/`:
+the initial invocation could not compile because its helpers lived in another
+test file. Those helpers now belong to the actual channel test input; no
+assertions were removed. All earlier failures remain retained.
+
+Port transfer currently rejects active, previously used or queued endpoints,
+and transferring a port through MessagePort.postMessage is still unsupported.
+Those paths fail explicitly instead of dropping queued messages. The current
+ChatGPT handoff uses a fresh port. Its first real process check reaches the
+sandbox and then fails because non-configurable implementation callbacks are
+visible on the worker global. The private diagnostic observer in
+`dil-port-process-error-observer-2/` identifies
+`__ladybirdDOMExceptionConstruct`; the subsequent worker-global audit also
+finds the quota callbacks. This observer changes only the diagnostic worker
+response. Browser conversation pixels with the new worker support remain
+unvalidated at this point.
