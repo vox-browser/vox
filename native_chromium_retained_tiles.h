@@ -122,7 +122,7 @@ class RetainedLayerCanvas final : public SkNoDrawCanvas {
     {
         if (op != SkClipOp::kIntersect || !getTotalMatrix().rectStaysRect()) return false;
         auto bounds = getTotalMatrix().mapRect(rect);
-        if (!bounds.contains(SkRect::MakeWH(group_.canvas_width, group_.canvas_height))) return false;
+        if (!bounds.contains(SkRect::MakeXYWH(0, group_.page_y, group_.viewport_width, group_.viewport_height))) return false;
         for (float v : {bounds.left(), bounds.top(), bounds.right(), bounds.bottom()})
             if (!std::isfinite(v) || v * group_.scale != std::floor(v * group_.scale)) return false;
         return true;
@@ -233,35 +233,60 @@ public:
     sk_sp<SkPicture> finish() { return recorder_.finishRecordingAsPicture(); }
 };
 
+struct RetainedLayerTilePixels {
+    VoxRasterSnapshot pixels;
+    int width, height;
+    explicit RetainedLayerTilePixels(std::vector<uint32_t> const& input, int w, int h)
+        : pixels(reinterpret_cast<uint8_t const*>(input.data()), size_t(w) * 4, size_t(w) * 4, h),
+          width(w), height(h) { }
+};
+
 class RetainedLayerTileCache {
     struct Entry {
+        uint64_t hash;
         std::vector<uint8_t> key;
-        std::shared_ptr<std::vector<uint32_t> const> pixels;
+        std::shared_ptr<RetainedLayerTilePixels const> pixels;
         sk_sp<SkPicture> owner;
         size_t cost;
     };
-    std::list<Entry> entries_;
+    using Entries = std::list<Entry>;
+    Entries entries_;
+    std::unordered_multimap<uint64_t, Entries::iterator> index_;
     size_t bytes_ = 0;
-public:
-    void clear() { entries_.clear(); bytes_ = 0; }
-    std::shared_ptr<std::vector<uint32_t> const> find(std::vector<uint8_t> const& key)
+    static uint64_t hash(std::vector<uint8_t> const& key)
     {
-        for (auto it = entries_.begin(); it != entries_.end(); ++it) {
-            if (it->key != key) continue;
-            auto pixels = it->pixels; entries_.splice(entries_.begin(), entries_, it); return pixels;
+        uint64_t value = 14695981039346656037ull;
+        for (auto byte : key) value = (value ^ byte) * 1099511628211ull;
+        return value;
+    }
+public:
+    void clear() { index_.clear(); entries_.clear(); bytes_ = 0; }
+    std::shared_ptr<RetainedLayerTilePixels const> find(std::vector<uint8_t> const& key)
+    {
+        auto candidates = index_.equal_range(hash(key));
+        for (auto it = candidates.first; it != candidates.second; ++it) {
+            auto entry = it->second;
+            if (entry->key != key) continue;
+            auto pixels = entry->pixels; entries_.splice(entries_.begin(), entries_, entry); return pixels;
         }
         return {};
     }
-    void insert(std::vector<uint8_t> key, std::shared_ptr<std::vector<uint32_t> const> pixels,
+    void insert(std::vector<uint8_t> key, std::shared_ptr<RetainedLayerTilePixels const> pixels,
         sk_sp<SkPicture> owner, size_t resources)
     {
-        size_t cost = key.capacity() + pixels->capacity() * 4 + owner->approximateBytesUsed() + resources;
+        size_t cost = key.capacity() + pixels->pixels.size() + owner->approximateBytesUsed() + resources;
         constexpr size_t limit = 64 * 1024 * 1024;
         if (cost > limit / 2) return;
-        while (!entries_.empty() && (bytes_ + cost > limit || entries_.size() >= 128)) {
-            bytes_ -= entries_.back().cost; entries_.pop_back();
+        while (!entries_.empty() && (bytes_ + cost > limit || entries_.size() >= 2048)) {
+            auto last = std::prev(entries_.end());
+            auto candidates = index_.equal_range(last->hash);
+            for (auto it = candidates.first; it != candidates.second; ++it)
+                if (it->second == last) { index_.erase(it); break; }
+            bytes_ -= last->cost; entries_.pop_back();
         }
-        bytes_ += cost; entries_.push_front({std::move(key), std::move(pixels), std::move(owner), cost});
+        auto value = hash(key);
+        bytes_ += cost; entries_.push_front({value, std::move(key), std::move(pixels), std::move(owner), cost});
+        index_.emplace(value, entries_.begin());
     }
 };
 RetainedLayerTileCache s_retained_layer_tiles;
@@ -285,9 +310,9 @@ static bool draw_retained_layer_tiles(SharedRootRecording const& group, SkPictur
     int tw = group.tile_width, th = group.tile_height, step_x = tw - 2, step_y = th - 2;
     auto owner = [](int value, int step) { return int(std::floor(double(value - 1) / step)); };
     struct Tile {
-        int x, y; bool complete;
+        int x, y;
         std::vector<uint8_t> key;
-        std::shared_ptr<std::vector<uint32_t> const> pixels;
+        std::shared_ptr<RetainedLayerTilePixels const> pixels;
         std::shared_ptr<std::vector<uint32_t>> raster;
     };
     std::vector<Tile> tiles;
@@ -295,17 +320,17 @@ static bool draw_retained_layer_tiles(SharedRootRecording const& group, SkPictur
     size_t raster_area = 0;
     for (int row = owner(first_y, step_y); row <= owner(first_y + height - 1, step_y); ++row) {
         for (int col = owner(first_x, step_x); col <= owner(first_x + width - 1, step_x); ++col) {
-            Tile tile {col * step_x, row * step_y, false, {}, {}, {}};
+            Tile tile {col * step_x, row * step_y, {}, {}, {}};
             if (tiles.size() >= 64) return false;
-            tile.complete = anchor_x + tile.x >= 0 && anchor_y + tile.y >= group.page_y * group.scale
-                && anchor_x + tile.x + tw <= group.viewport_width * group.scale
-                && anchor_y + tile.y + th <= (group.page_y + group.viewport_height) * group.scale;
             auto append = [&](auto value) {
                 auto* bytes = reinterpret_cast<uint8_t const*>(&value);
                 tile.key.insert(tile.key.end(), bytes, bytes + sizeof(value));
             };
             append(tw); append(th); append(group.scale); append(phase_x); append(phase_y);
             append(tile.x); append(tile.y);
+            // Key every operation affecting the complete tile, even when the
+            // current viewport exposes only part of it. Missing/changed culled
+            // operations change that key; unchanged input can reuse edge tiles.
             auto bounds = SkRect::MakeXYWH((tile.x - phase_x) / group.scale,
                 (tile.y - phase_y) / group.scale, tw / group.scale, th / group.scale);
             for (auto const& draw : canvas.draws) {
@@ -314,7 +339,7 @@ static bool draw_retained_layer_tiles(SharedRootRecording const& group, SkPictur
                 tile.key.insert(tile.key.end(), draw.key.begin(), draw.key.end());
                 if (tile.key.size() > 1024 * 1024) return false;
             }
-            if (tile.complete) tile.pixels = s_retained_layer_tiles.find(tile.key);
+            tile.pixels = s_retained_layer_tiles.find(tile.key);
             if (tile.pixels) ++hits;
             else {
                 ++misses; raster_area += size_t(tw) * th;
@@ -343,15 +368,15 @@ static bool draw_retained_layer_tiles(SharedRootRecording const& group, SkPictur
     }
     for (auto& tile : tiles) {
         if (tile.raster) {
-            tile.pixels = tile.raster;
-            if (tile.complete)
-                s_retained_layer_tiles.insert(std::move(tile.key), tile.pixels, canonical, canvas.image_bytes);
+            tile.pixels = std::make_shared<RetainedLayerTilePixels>(*tile.raster, tw, th);
+            s_retained_layer_tiles.insert(std::move(tile.key), tile.pixels, canonical, canvas.image_bytes);
         }
         int x0 = std::max(first_x, tile.x + 1), x1 = std::min(first_x + width, tile.x + tw - 1);
         int y0 = std::max(first_y, tile.y + 1), y1 = std::min(first_y + height, tile.y + th - 1);
-        for (int y = y0; y < y1; ++y)
-            std::copy_n(tile.pixels->data() + size_t(y - tile.y) * tw + x0 - tile.x,
-                x1 - x0, output.data() + size_t(y - first_y) * width + x0 - first_x);
+        if (x1 > x0 && y1 > y0 && !tile.pixels->pixels.copy_region_to(
+                reinterpret_cast<uint8_t*>(output.data() + size_t(y0 - first_y) * width + x0 - first_x),
+                tw, th, size_t(width) * 4,
+                {size_t(x0 - tile.x), size_t(y0 - tile.y), size_t(x1 - tile.x), size_t(y1 - tile.y)})) return false;
     }
     if (std::getenv("VOX_RETAINED_LAYER_TILES_DIAGNOSTICS"))
         std::fprintf(stderr, "VOX_RETAINED_LAYER_TILES hits=%d misses=%d raster_pixels=%zu draws=%zu phase_x=%.9g phase_y=%.9g t_us=%.3f\n",

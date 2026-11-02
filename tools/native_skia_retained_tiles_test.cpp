@@ -42,6 +42,25 @@ int main()
     assert(ca.valid && cb.valid && ca.draws.size() == 2 && cb.draws.size() == 2);
     assert(ca.draws[0].key == cb.draws[0].key && ca.draws[1].key == cb.draws[1].key);
     assert(ca.draws[0].bounds == cb.draws[0].bounds);
+    // Browser chrome is outside the document viewport. Its viewport clip
+    // moves relative to a layer during scrolling but is applied at publication.
+    auto chrome_a = group_at(20), chrome_b = group_at(40);
+    chrome_a.page_y = chrome_b.page_y = 112;
+    chrome_a.canvas_height = chrome_b.canvas_height = 880;
+    auto chrome_picture = [](SharedRootRecording const& group) {
+        SkPictureRecorder recorder;
+        auto* c = recorder.beginRecording(SkRect::MakeWH(1024, 880));
+        c->clipRect(SkRect::MakeXYWH(0, 112, 1024, 768), true);
+        c->setMatrix(SkMatrix::Translate(0, 112 - group.scroll_y));
+        SkPaint paint; paint.setColor(SK_ColorRED);
+        c->drawRect(SkRect::MakeXYWH(100, 200, 70, 60), paint);
+        return recorder.finishRecordingAsPicture();
+    };
+    RetainedLayerCanvas cf(chrome_a), cg(chrome_b);
+    chrome_picture(chrome_a)->playback(&cf); chrome_picture(chrome_b)->playback(&cg);
+    cf.finish(); cg.finish();
+    assert(cf.valid && cg.valid && cf.draws.size() == 1 && cg.draws.size() == 1);
+    assert(cf.draws[0].key == cg.draws[0].key);
     // A restored clip must not leak into the following independent primitive.
     auto unclipped = scene(first, SK_ColorRED, false);
     RetainedLayerCanvas cc(first); unclipped->playback(&cc); cc.finish();
@@ -56,14 +75,17 @@ int main()
     // The cache owns both identity and pixels after its caller releases them.
     RetainedLayerTileCache cache;
     auto key = ca.draws[0].key;
-    auto pixels = std::make_shared<std::vector<uint32_t>>(16, 0x12345678);
+    auto pixels = std::make_shared<RetainedLayerTilePixels>(std::vector<uint32_t>(16, 0x12345678), 4, 4);
     cache.insert(key, pixels, owner_a, 0);
     key[0] ^= 1; pixels.reset(); a.reset(); owner_a.reset();
     assert(!cache.find(key));
     auto hit = cache.find(ca.draws[0].key);
-    assert(hit && hit->size() == 16 && (*hit)[15] == 0x12345678);
+    std::vector<uint32_t> decoded(16);
+    assert(hit && hit->pixels.copy_to(reinterpret_cast<uint8_t*>(decoded.data()), 16, 16, 4));
+    assert(decoded[15] == 0x12345678);
     cache.clear(); assert(!cache.find(ca.draws[0].key));
-    assert((*hit)[0] == 0x12345678);
+    assert(hit->pixels.copy_to(reinterpret_cast<uint8_t*>(decoded.data()), 16, 16, 4));
+    assert(decoded[0] == 0x12345678);
     // Rendering failures must leave the supplied destination buffer untouched.
     std::vector<uint32_t> target(64, 0x99887766), before = target;
     first.tile_width = first.tile_height = 0;
