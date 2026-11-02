@@ -1235,5 +1235,73 @@ submit signal to `authReady=false`; `hasText` is true, the draft is exact, and
 the other blocking flags are clear. It changes two composer modules to expose
 their inputs and adds a hidden observer, so it is diagnostic only. The earlier
 probe preparations and failed archive-header attempt remain retained without
-acceptance credit. The frontend's form-controller attachment is the next
-investigation target; no authentication bypass or site-specific patch is made.
+acceptance credit. The subsequent controller investigation is recorded below.
+
+## Custom element events and frontend readiness
+
+`9d2a968f5` routes arbitrary author event names through the native listener
+list used by element `dispatchEvent`. Existing built-in resource/UI adapters
+retain their delivery paths. Previously, custom element listeners stayed in
+the compact JavaScript list, while dispatch used native DOM records. A refresh
+event therefore never reached the composer's listener, leaving its frontend
+`authReady` flag false. This flag describes controller readiness on the logged
+out page, not a login result.
+
+`vox-controller-state/` verifies that the controller's attachment guards all
+pass but its readiness update never runs. The focused baseline retains the
+same mismatch: document listeners receive `refresh`, while the target and
+parent element listeners do not. `custom-event-baseline/` preserves its input,
+hash, failed exits and the test-file rename receipt. An existing CustomEvent
+test filename was initially reused by mistake; its original contents were
+restored unchanged, and the new regression lives separately in
+`main_compact_custom_element_event_test.v`.
+
+Propagation, event identity, cancellation, once/duplicate handling, removal,
+AbortSignal cleanup, case sensitivity, created-element identity and retained
+built-in adapter behavior pass fifteen focused test executions in the three
+memory modes. Final hashes are stable in `custom-element-event-checks/` and
+`custom-element-host-checks/`.
+
+The completed shared production from `Build/pikabu-clip-state-20261102/` was
+reused rather than submitting another build. It is pinned at
+`custom-element-production/Vox.app`, executable SHA256
+`de1a55c201c45d3e8a49d21379f83a5cf1871a9bf2423a1c98b2ca0602ec0e6b`.
+All build inputs remain stable, the build exits successfully, and sampled peak
+RSS is 9,624,305,664 bytes. The updated controller diagnostic observes readiness
+becoming true and a native Send receiving the exact reply with no native/module
+errors. Its instrumented page supplies diagnostic evidence only.
+
+On the unmodified refreshed page, `vox-custom-element-live-enter/` passes with
+the exact reply and empty error collections. All nine retained rendering and
+startup groups pass in `custom-element-validation-remainder/`, including the
+unchanged homepage at zero differing pixels, eleven smoke cases with existing
+allowances, and ten exact SVG mutations. The one-second fixed-delay Send attempt
+still activates Voice and faults during teardown; its failure remains in
+`custom-element-validation/`. A separate unmodified Send run with five seconds
+of settling after typing passes in `vox-custom-element-settled-live-click/`.
+This slower test does not erase the earlier failure or establish a one-second
+input-readiness guarantee. The combined assessment retains the failed attempt.
+
+Both successful unmodified conversation captures now produce the same PNG,
+with 1,440 differing pixels against the unchanged live Brave reference. The
+remaining mismatch is confined to the assistant reply and its actions. The
+user bubble now matches; the assistant still uses the ordinary paragraph DOM
+with its twelve-pixel margin offset.
+
+## Rich reply response selection
+
+`vox-custom-element-worker-wire-diagnostic/` captures the native backend
+response and observes the reply renderer. Rich browser rendering is enabled,
+but the response contains `dil:null` and ordinary Markdown, so no worker is
+created. Brave's retained response instead contains a `dil-v2` payload. The
+HTTP Fetch user agent differs from `navigator.userAgent`.
+
+The controlled HTTP-only override in
+`vox-navigator-ua-worker-wire-diagnostic/` uses exactly the existing navigator
+user agent. It receives the rich DIL payload and creates the corresponding
+module worker. The next concrete failure is `Worker.postMessage` rejecting a
+MessagePort as an unsupported transfer-list entry; fifteen native errors are
+retained. Module-worker execution is also explicitly unsupported by the current
+agent runtime. These diagnostics change no product user-agent behavior and
+make no live pixel-parity claim. User-agent coherence, module execution and
+cross-process port transfer remain required before rich-reply acceptance.
