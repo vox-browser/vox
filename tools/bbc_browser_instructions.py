@@ -168,6 +168,8 @@ def run_trial(engine, app, folder, args):
                              else 'jsc_baseline_warmup', None)
             args.vox_environment = dict(environment, **jsc_baseline_environment(warmup))
         if engine == 'control':
+            if getattr(args, 'control_disable_batched_pseudo_candidates', False):
+                args.vox_environment['VOX_DISABLE_BATCHED_PSEUDO_CANDIDATES'] = '1'
             if getattr(args, 'control_copy_stationary_raster_pixels', False):
                 args.vox_environment['VOX_COPY_STATIONARY_RASTER_PIXELS'] = '1'
             if getattr(args, 'control_disable_inline_measurement_reuse', False):
@@ -255,6 +257,8 @@ def parse_args(argv=None):
     parser.add_argument('--memory-guard-registry', type=Path, required=True)
     parser.add_argument('--vox-app', type=Path, default=REPO / 'Build/v/Vox.app')
     parser.add_argument('--control-vox-app', type=Path, help='Also run a pinned Vox control before each candidate/Brave pair')
+    parser.add_argument('--control-disable-batched-pseudo-candidates', action='store_true',
+                        help='Query each pseudo-element candidate separately in the matched control')
     parser.add_argument('--control-copy-stationary-raster-pixels', action='store_true',
                         help='Copy unchanged document pixels instead of retaining the immutable native frame')
     parser.add_argument('--control-disable-inline-measurement-reuse', action='store_true',
@@ -345,7 +349,8 @@ def parse_args(argv=None):
             parser.error('JSC baseline warmup must be a positive signed 32-bit integer')
     if args.control_jsc_baseline_warmup is not None and not args.control_vox_app:
         parser.error('The JSC baseline control needs --control-vox-app')
-    if any((args.control_copy_stationary_raster_pixels, args.control_disable_inline_measurement_reuse,
+    if any((args.control_disable_batched_pseudo_candidates,
+            args.control_copy_stationary_raster_pixels, args.control_disable_inline_measurement_reuse,
             args.control_disable_grid_width_only, args.control_disable_stationary_raster,
             args.control_disable_client_geometry_index,
             args.control_disable_tracked_persistent_shortcut, args.control_disable_attribute_case_buckets,
@@ -441,6 +446,7 @@ def main():
         jsc_baseline_environment=dict(vox=jsc_baseline_environment(args.jsc_baseline_warmup),
             control=jsc_baseline_environment(args.control_jsc_baseline_warmup)),
         retain_incremental_webp_paint_policy=args.retain_incremental_webp_paint_policy,
+        control_disable_batched_pseudo_candidates=args.control_disable_batched_pseudo_candidates,
         webp_policy_credit='None: explicit historical workload compatibility only',
         control_disable_grid_width_only=args.control_disable_grid_width_only,
         control_disable_stationary_raster=args.control_disable_stationary_raster,

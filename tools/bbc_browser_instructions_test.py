@@ -644,7 +644,8 @@ class BBCInstructionTests(unittest.TestCase):
     def test_optimization_controls_require_a_control_app(self):
         args = ['--archive', 'archive', '--output', 'output', '--memory-guard-registry', 'pids.json',
                 '--capture-reference']
-        for flag in ['--control-copy-stationary-raster-pixels', '--control-disable-inline-measurement-reuse',
+        for flag in ['--control-disable-batched-pseudo-candidates',
+                     '--control-copy-stationary-raster-pixels', '--control-disable-inline-measurement-reuse',
                      '--control-disable-grid-width-only', '--control-disable-stationary-raster',
                      '--control-disable-client-geometry-index',
                      '--control-disable-tracked-persistent-shortcut',
@@ -658,6 +659,25 @@ class BBCInstructionTests(unittest.TestCase):
                     parse_args(args + [flag])
                 self.assertTrue(getattr(parse_args(args + [flag, '--control-vox-app', 'Vox.app']),
                                         flag[2:].replace('-', '_')))
+
+    def test_batched_pseudo_control_is_isolated_and_restored_after_failure(self):
+        environment = {'VOX_PROXY': 'socks5h://fixture'}
+        args = SimpleNamespace(vox_environment=environment, control_disable_grid_width_only=False,
+                               control_disable_batched_pseudo_candidates=True)
+        seen = []
+        def observe(engine, app, folder, options):
+            seen.append((engine, dict(options.vox_environment)))
+            return {'exit': 0}
+        with patch('bbc_browser_instructions.browser.run_browser', side_effect=observe):
+            for engine in ['control', 'vox', 'brave']:
+                run_trial(engine, 'same-app', engine, args)
+        self.assertEqual(seen, [('vox', dict(environment, VOX_DISABLE_BATCHED_PSEUDO_CANDIDATES='1')),
+                               ('vox', environment), ('brave', environment)])
+        self.assertIs(args.vox_environment, environment)
+        with patch('bbc_browser_instructions.browser.run_browser', side_effect=RuntimeError('failed')):
+            with self.assertRaises(RuntimeError):
+                run_trial('control', 'same-app', 'control', args)
+        self.assertIs(args.vox_environment, environment)
 
     def test_stationary_control_flag_never_reaches_candidate_or_brave(self):
         environment = {'VOX_PROXY': 'socks5h://fixture'}
