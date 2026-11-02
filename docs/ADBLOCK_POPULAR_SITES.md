@@ -3164,3 +3164,75 @@ them remain pending. The [browser-input receipt](benchmark-results/slashdot-brow
 retains exact hashes, commands, exits, stable oracle captures, earlier failures
 and build receipts. Slashdot remains unfinished; Stack Overflow and Pikabu stay
 deferred.
+
+## Slashdot SVG bounds, float placement and runtime assets, 2 November 2026
+
+The completed `bafbc4c0…` production browser contains `01d16d134` (snap
+transformed solid backgrounds in local coordinates) and `dd8e2b589` (enclose
+SVG batch safety bounds in whole pixels, while preserving author clips).
+The rotated-fill fixture improves from 234 differing pixels to zero, and the
+fractional SVG fixture improves from nine to zero. All five focused fixtures
+pass, including the blurred byte-color text fixture added in `88b01505f`.
+The unchanged **90-test/95-capture rendering suite passes completely** on this
+browser. The [local production artifacts](../Build/slashdot-svg-final-20261102/)
+retain executable/native-library identities, commands, memory guards and images.
+
+The strict full-uBO gate on that browser still reports **46 native differing
+pixels and zero saved-live/frozen differences**, using the unchanged sealed
+manifest `2e05c162…`. This is the last completed full-uBO comparison before the new runtime-input
+audit, not a zero-pixel acceptance. Four earlier preservation captures on `6415ee31…`
+retain exact CNN, Guardian, Verge and Lobsters viewports. The later four-site
+attempt fails to load every page with “Invalid bundled uBlock Origin snapshot
+bytes”; its large differences are navigation-error pages and receive no
+rendering or preservation credit. Concurrent filter-asset changes make an
+older C-optimized browser's runtime inputs incompatible with its bundled data.
+
+Commit `23920e6a1` therefore extends browser input checks to the bundled filter
+helper and 20 checkout assets used by `$embed_file` in C-optimized builds.
+All **19 harness tests pass**, including ten independent browser/helper/asset
+mutation scenarios. The [local guard](../Build/slashdot-runtime-inputs-20261102.guard.json)
+records the actual successful test exit. This closes an evidence gap; it earns
+no rendering improvement credit.
+
+Commit `08d91e408` completes the current inline line's geometry before placing
+a later float, then updates the line after the float changes its available
+space. A stale zero line height put Slashdot's footer float beside an earlier
+inline block and expanded the root scrolling surface to 1,672.96875 pixels.
+Two new layout tests pass in both GC modes, including the 478-pixel shrink-to-fit
+size and fitting floats on either side; eight existing float and line-builder
+tests also pass. An inlined-CSS source diagnostic changes the captured page's
+scrolling width to 1,024 pixels. This diagnostic changes resource-loading
+conditions and does not validate the full native page. The registered
+`inline-block-followed-by-full-float` fixture has two agreeing, identity-pinned
+full-uBO Brave references; its preceding production capture differs at 76,001
+pixels. The [local float artifacts](../Build/slashdot-inline-float-fit-20261102/)
+retain the failing baseline, source checks, reference agreement and unsuccessful
+fixture-setup attempts. The suite now contains **91 tests/96 captures**;
+production validation of this last fix remains pending.
+
+The solid-background change's broader transport check retains three failures
+out of 155 tests. An unchanged-source control has exactly the same three
+failures; the focused background, partial-border and shadow checks pass.
+Forcing a narrower root raster grid reduces the full-page diagnostic from 46
+to 41 pixels, but supplies no engine or acceptance credit. Forcing shared
+recording regresses the image and is discarded. A newer shared bundle also
+exposes a retained-background resource regression; the existing diagnostic
+fallback restores the 46-pixel image, and the separately committed resource
+refresh fix still needs production validation. No reference or tolerance is
+changed. Slashdot remains unfinished; Stack Overflow and Pikabu stay deferred.
+
+Commit `3f5b6b50d` handles automatically sized, ratio-only SVGs in Chromium
+mode. Brave's Mastodon viewport is **19.984375 × 22.84375**, while
+Vox retains a 20-pixel width. Transfer the quantized used height through the
+ratio, preserve that height during block finalization, and retain authored
+sizes, minimums, LibWeb behavior and SVG-image viewports. Four new layout tests
+pass in both GC modes; eight adjacent replaced-size and SVG-metadata tests also
+pass on the final source. The five-sample pixel fixture has two agreeing full-uBO
+Brave references and reproduces the same 52-channel-error pixel at (956, 62),
+plus its block-layout counterpart. Its preceding browser differs at two pixels;
+a diagnostic with explicit matching dimensions is exact and supplies no
+production acceptance credit. The [local SVG sizing artifacts](../Build/slashdot-auto-svg-20261102/)
+retain the original failure, the incomplete first candidate, corrected checks,
+reference agreement, native baseline and diagnostic. The suite now contains
+**92 tests/97 captures**. Both latest layout fixes and the expanded suite await
+a shared production bundle; no duplicate build is queued.

@@ -7,7 +7,7 @@ See the [CNN report](../../../docs/CNN_BRAVE_PARITY.md) for scope and evidence.
 
 The full-site harness records both browser identities before and after every
 attempt, including failures. It pins Vox's executable, native libraries and
-adblock snapshot, and Brave's executable, native frameworks, GPU libraries and
+adblock snapshot, bundled filter helper and checkout runtime assets, and Brave's executable, native frameworks, GPU libraries and
 helper executables. Retargeting a framework's active `Current` version also
 invalidates the comparison, even when both version directories remain present.
 
@@ -17,6 +17,14 @@ inline block. Its 1024×768 reference comes from two agreeing full-uBO Brave
 captures. The preceding production browser differs at 76,001 pixels. Focused
 layout checks cover fitting floats on both sides and prevent footer geometry
 from inflating the document's scrolling width; production validation is pending.
+
+`svg-auto-ratio-rounding` checks ratio-only inline and block SVGs, explicit
+sizes and a minimum width. Its 1024×768 reference comes from two agreeing
+full-uBO Brave captures. The preceding browser differs at two pixels, each
+showing the same 52-channel-error fringe as Slashdot's Mastodon icon. Focused
+layout checks preserve the used auto height when transferring it to width,
+along with authored sizes, LibWeb sizing and SVG-image viewports. Production
+validation of the new sizing path is pending.
 
 Five focused CNN fixtures cover the solid and repeated SVG header backgrounds,
 the rounded header with a captured mask, fractional SVG background pictures,
