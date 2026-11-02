@@ -1854,3 +1854,47 @@ steps exit zero and the focused inputs remain unchanged. Evidence is in
 root. Installed-browser validation awaits a shared production bundle containing
 this commit. `current-assessment.json` indexes these checks, current captures,
 failed attempts and the remaining live and pixel gates.
+
+
+## Published production follow-up, 2026-11-02 evening
+
+The shared supervisor publishes executable
+`0bb14e2f940d1ee83a4a57f48179ab40fb3ecf71aa8b7331f199676792ab6974`
+with compiled-input hash
+`957400908dd63a5c454797fc199588b1d1496a8a51fc5b3dc8cada4159bc9778`.
+The retained receipt is `production-0bb-identity.json`. Its verified source
+identity includes `1995e261f`; the executable contains the intrinsic rectangle
+factory. Static disassembly also verifies persistent-storage entry before the
+CSS diagnostic map lookup. This supersedes the earlier pending-bundle status
+for these source changes without rewriting their historical failed trials.
+
+`production-burst-1/` reaches the exact live prompt/reply and conversation URL,
+with no native errors or JavaScript diagnostics, a successful PNG, normal
+shutdown, browser/guard exit zero and stable executable/input identities. Its
+30 key events run in one native turn at 45 seconds, followed by the fixed
+Send click one second later. The guard observes a peak of 2,885,025,792 bytes.
+The Voice navigation and crash are not observed in this attempt.
+`production-typing-1/` independently passes the same content, error, identity,
+PNG and shutdown checks with per-character native turns. Both use unmodified
+archived frontend/static assets and live backend traffic through SOCKS. These
+are two recorded successful workflows, not a general guarantee covering the
+retained earlier failures, every fresh challenge or other ChatGPT features.
+
+Both document PNGs differ from `brave-style-4/after.png` by exactly 120 pixels,
+all within `(272, 558, 1012, 684)` around the cookie banner. Both retain the
+expected response icons. The original reference PNGs and tolerances remain
+unchanged; current exact-pixel parity remains open. A separate layer trace
+places the banner and a lower SVG button in the same native raster layer.
+That is a diagnostic observation, not yet an isolated explanation or a fix.
+The new `brave-cookie-5/` capture retains computed cookie geometry, a frozen
+DOM and the available CDP layer observations for further reduction. A small
+static fixed-banner control has 752 differing pixels, each with channel error
+one; its absolute-position counterpart is exact. Moving the transparent fixed
+container's top changes neither browser's fixed-banner PNG. Adding a separate
+fixed SVG also leaves the banner pixels unchanged in both browsers. These
+controls prevent treating an unverified flattening or layer-identity change
+as a rendering repair. The first minimal Brave launch uses an incorrect
+window position; the subsequent capture uses the display-selection helper's
+position and is retained separately. The initial standalone plan probe reads
+compatibility commands without paint metadata and is not a native layer-plan
+check; its corrected probe records the display list before inspecting layers.
