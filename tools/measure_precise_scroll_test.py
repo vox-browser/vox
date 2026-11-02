@@ -605,6 +605,28 @@ class ExplicitNativeCandidateIdentityTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             measure_precise_scroll.verify_native_images(log, binary)
 
+    def test_declared_picture_backend_requires_exact_loaded_identity(self):
+        binary = Path('/bundle/Vox')
+        picture = Path('/candidate/libVoxGraphiteDawn.dylib')
+        native = binary.parent / 'libLadybirdVSkiaText.dylib'
+        lines = ['SCROLL_IMAGE name=' + path.name + ' path_hex=' + os.fsencode(path).hex()
+                 for path in [native, picture]]
+        log = '\n'.join(lines)
+        selected = measure_precise_scroll.verify_native_images(log, binary, picture_bridge=picture)
+        self.assertEqual(selected[picture.name], str(picture))
+        with self.assertRaises(ValueError):
+            measure_precise_scroll.verify_native_images(log, binary)
+        with self.assertRaisesRegex(ValueError, 'Missing selected picture'):
+            measure_precise_scroll.verify_native_images(lines[0], binary, picture_bridge=picture)
+        wrong = log.replace(os.fsencode(picture).hex(),
+                            os.fsencode(binary.parent / picture.name).hex())
+        with self.assertRaises(ValueError):
+            measure_precise_scroll.verify_native_images(wrong, binary, picture_bridge=picture)
+        unrelated = Path('/candidate/libVoxGraphite.dylib')
+        log += '\nSCROLL_IMAGE name=' + unrelated.name + ' path_hex=' + os.fsencode(unrelated).hex()
+        with self.assertRaises(ValueError):
+            measure_precise_scroll.verify_native_images(log, binary, picture_bridge=picture)
+
     def test_declared_candidate_rejects_the_original_bridge(self):
         binary = Path('/bundle/Vox')
         path = binary.parent / 'libLadybirdVSkiaText.dylib'
