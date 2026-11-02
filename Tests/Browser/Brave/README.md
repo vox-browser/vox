@@ -1,5 +1,14 @@
 # Brave rendering fixtures
 
+`chromium-fractional-fixed-shadow` checks a five-percent shadow in a fixed
+compositor picture at 1024×768, scale 1. Its reference comes from two agreeing
+fresh Brave captures. The older `0bb14e2f…` production bundle differs by 752
+pixels; a native reduction reproducing that screenshot exactly becomes
+pixel-identical to Brave when it retains the fractional shadow color. Run
+`python3 tools/fixed_shadow_pixels_test.py` against a production bundle
+containing `f447b8603`. Installed-browser validation remains pending; see
+[the ChatGPT report](../../../docs/CHATGPT_BRAVE_PARITY.md).
+
 The [forum/news catalog](forum-news.json) has 15 entries. The five new guest-page
 archives (TechCrunch, Engadget, The Register, Slate and WIRED) retain full-uBO
 source evidence and original encoded response bodies. Their strict pixel checks

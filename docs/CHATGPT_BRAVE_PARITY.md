@@ -2070,3 +2070,47 @@ from the actual browser reduction, so it supplies no live-page pixel gain or
 whole-page acceptance claim. The last tested production ChatGPT result remains
 120 differing pixels until a published bundle containing the rendering fixes
 is captured against the unchanged Brave reference.
+
+## Exact reduced-banner check
+
+`banner-arguments-3/` observes the actual old production paint calls with a
+native probe. It verifies probe loading, normal browser/guard exit, stable
+binary/library/fixture identities and a screenshot identical to the retained
+old native reduction. The shadow cutout is `(273, 559, 738, 124)` with radius
+29, one CSS pixel inside the opaque border box. The earlier model used the
+outer border box instead; that modeling error accounts for its unexplained
+corner pixels and does not require a layout change.
+
+With this corrected cutout, `banner-native-probe-1/actual-clip/` reproduces the
+old native PNG exactly using the legacy byte shadow color, retaining all 752
+differences from Brave. With fractional shadow color and the committed
+recording fix, the same reduced native scene matches Brave exactly: zero
+differing pixels and zero channel error. Separate border-color toggles leave
+those results unchanged. The complete source fingerprint stays stable during
+this check. This establishes reduced-banner parity through the native
+renderer; it does not substitute for the pending full ChatGPT capture.
+
+The failed diagnostic attempts are retained. `banner-arguments-1/` provides
+no probe-loading or intercepted-call evidence. The environment-preserving
+launcher in `banner-arguments-2/` verifies loading, but its `RTLD_NEXT`
+forwarding attempt ends with signal 10 and no PNG.
+The successful third probe forwards through the original imported C symbol.
+Neither of the preceding attempts supplies paint-parameter evidence.
+
+The durable browser regression is
+`Tests/Browser/Brave/input/chromium-fractional-fixed-shadow.html`, its expected
+PNG and `tools/fixed_shadow_pixels_test.py`. Two fresh Brave processes agree
+exactly with each other and the original reduced reference at 1024×768, scale
+1; identities and inputs remain stable. `fixed-shadow-reference-1/` retains
+both commands, guards and metadata. The expected PNG hash is
+`f418d4562fe9690651e10559d9e21defb58cb4db1ff017565d81d544070e69e6`.
+`fixed-shadow-browser-before/` runs the new test against `0bb14e2f…` and
+correctly records exit 1 with 752 differing pixels, maximum channel error one
+and unchanged fixture inputs. Its native artifacts are in
+`Build/forum-news-inline-1pkx6ng2/`. No existing reference or tolerance changes.
+
+The shared supervisor continues building newer source. Its completed attempts
+are superseded when compiled inputs change, so the published browser still
+cannot validate the pending fixed-owner, hidden-SVG and shadow-color fixes.
+The last tested full ChatGPT result remains the older bundle's 120 differing
+pixels. Full-page pixel parity remains open.
