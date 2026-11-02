@@ -2861,3 +2861,83 @@ canonical runners. The earlier rendering/script limitations and private Brave
 immutable-flag cleanup remain open. Generated evidence remains local in
 `docs/benchmark-results/` and `Build/`, following the repository's current
 ignore policy; the source, tests and this report text are committed.
+
+## V function profiling and bounded substring search (cohort 53)
+
+The requested `v -profile` diagnostic uses `-profile-no-inline` and
+`-profile-fns main__main`, with preallocated no-GC C-O3 compilation. Both
+instrumented builds finish successfully but encounter concurrent source
+changes, so neither validates the current checkout. Three dated launches then
+load adblock-error pages and are rejected as BBC profiles. All attempts remain
+retained. No canonical browser bundle or repository tool is copied.
+
+A successful dated diagnostic uses the supported self-worker and embedded
+snapshot fallback to keep filtering enabled with matching embedded assets.
+Per-PID profile files prevent helper shutdown from overwriting the root's
+report. It passes complete BBC content, native-exit and capture-ownership
+audits; its image retains the current 120-pixel difference from the historical
+reference. Two empty helper profiles supply no call-count evidence.
+Instrumentation raises this run to 239,500,337,091 instructions, which earns
+no comparison credit.
+
+The root report records **10,469 nonzero function rows**, with 25,156
+instrumented functions and no negative self-time rows. It observes 399,306
+attribute substring searches, 22,250 grid formatting calls, 341 document layout
+updates and 345 style updates. These are instrumented observations: inline
+functions are excluded, shared counters are not thread-safe, elapsed time
+includes waiting, and recursive inclusive times overlap. They cannot be added
+or interpreted as per-function retired instructions. The earlier stylesheet
+removal helper records two early rejected attempts and no successful witness;
+it receives no BBC gain credit.
+
+The selector source is identical before/after that diagnostic build and to
+the pre-change baseline. Commit `dd0add623` adds first/last-byte rejection
+before comparing the interior of bounded attribute substring windows. ASCII
+folding, exact slice boundaries and the existing long-pattern search remain
+intact. Fourteen focused cases pass with the candidate enabled and forced off
+in all three memory modes: **84 executions and nine zero-exit jobs**. Coverage
+includes every byte value, embedded NULs, Unicode boundaries, borrowed slices,
+overlapping matches and HTML attribute case rules. Tool commit `c0cfdbba4`
+isolates the original scan; all **234 instruction-tool tests** pass.
+
+Four alternating standalone pairs compare the same C-O3 executable over
+500,000 calls after warmup. Inputs combine 262 archived URL values with seven
+synthetic patterns and both case modes; every trial asserts 54,471 matches
+across 3,668 cases. Candidate counts are 204,654,474; 204,565,062; 204,579,872;
+204,571,570. Controls are 340,177,641; 340,168,789; 340,171,015; 340,180,390.
+The median reduction is **39.8615%**. Disassembly retains the call inside the
+loop. This excludes browser startup, DOM/layout, page scripts, PNG capture and
+Brave; it is not a BBC saving or a broad-check cadence reset.
+
+Cohort 53 separately measures the latest completed unprofiled browser,
+`c9f2ba4f4f37f7308a435ee6aad419c074817aed6f977712d50595ea77b15301`,
+which predates the substring change. All seven alternating pairs complete:
+
+| Statistic | Vox | Brave lower bound |
+| --- | ---: | ---: |
+| Median instructions | 30,497,696,829 | 15,039,059,425 |
+
+Independent auditing reproduces all fourteen full content and ownership
+checks, verifies all native exits are zero, rechecks all 1,637 pinned files and
+confirms that the memory guard adopted every browser root. All seven Vox
+images differ by 120 pixels from the original reference; Brave pair 2 differs
+by 64,177 pixels, while its other six captures are exact. References and
+tolerances remain unchanged. The instruction gate also fails:
+**319,696,388,710 > 134,571,742,605**. Driver, guard and controller exit 1.
+No failed observation is excluded. The history now retains **1,292 cohort
+attempts across 53 cohorts**, without attributing intervening build changes
+to this candidate.
+
+The completed production browser still lacks the new substring path, and the
+shared production build is busy. A new-production eligibility/JSC diagnostic
+and matched unprofiled cohort remain pending. The 10% target, reference
+failures and BBC catalog entry remain open; historical rendering/script
+limitations and prior broad failures are unchanged. Native startup, eleven
+smoke checks within unchanged bounds and eight exact SVG checks pass on the
+earlier completed `bafbc4c0…` bundle.
+
+The local [V profile evidence](benchmark-results/bbc-v-profile-substring-2026-11-02.json)
+and [compressed raw profile, cohorts and microbenchmark](benchmark-results/bbc-v-profile-substring-2026-11-02-raw.json.gz)
+retain commands, function rows, source drift, input hashes, failed preparations,
+exact counters, guards, host telemetry and audit results. Generated evidence
+stays local under the repository's ignore policy.
