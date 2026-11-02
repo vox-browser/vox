@@ -2015,7 +2015,7 @@ pub fn (mut sheet CSSStyleSheet) insert_rule(rule string, index u32) !u32 {
 	} else {
 		sheet.invalidate_owners(.style_sheet_insert_rule)
 	}
-	sheet.synchronize_fonts_after_rule_change()
+	sheet.synchronize_fonts_after_selector_rule_change(parsed_rule)
 	return result
 }
 
@@ -2032,13 +2032,16 @@ pub fn (mut sheet CSSStyleSheet) delete_rule(index u32) ! {
 	previous_sheet_effects := determine_shadow_root_style_sheet_effects_for_style_sheet(sheet)
 	// Project before removal clears the rule's stylesheet/namespace context.
 	deleted_style_invalidation := invalidation_for_deleted_style_rule(sheet, index)
+	deleted_rule := sheet.rules.item(uint(index))
 	sheet.rules.remove_a_css_rule(index)!
 	if invalidation := deleted_style_invalidation {
 		invalidate_owners_for_deleted_style_rule(mut sheet, invalidation, previous_sheet_effects)
 	} else {
 		sheet.invalidate_owners_with_previous_effects(.style_sheet_delete_rule, previous_sheet_effects)
 	}
-	sheet.synchronize_fonts_after_rule_change()
+	if rule := deleted_rule {
+		sheet.synchronize_fonts_after_selector_rule_change(rule)
+	}
 }
 
 // https://drafts.csswg.org/cssom/#dom-cssstylesheet-replace
