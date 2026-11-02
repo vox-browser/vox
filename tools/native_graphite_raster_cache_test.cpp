@@ -3,6 +3,7 @@
 #include <cassert>
 #include <iostream>
 #include <limits>
+#include <cstddef>
 
 static VoxGraphiteImage image(uint8_t const* pixels)
 {
@@ -64,9 +65,61 @@ static void large_draw_admission()
     assert(!small.hit && small.pending);
 }
 
+static void equivalent_path_admission(bool change_padding)
+{
+    constexpr int width=128, height=128, pitch=width*4+16;
+    std::vector<uint8_t> pixels(size_t(pitch)*height,31);
+    auto original=pixels;
+    float segments[12] {};
+    float stops[] {1,0,0,1,0,0,0,1,1,1};
+    VoxGraphitePath path {};
+    path.matrix[0]=path.matrix[4]=path.matrix[8]=1;
+    path.segments=segments;path.segment_count=1;
+    path.gradient=1;path.stop_count=2;path.stops=stops;path.opacity=.8f;
+    auto changed=path;
+    if(change_padding) {
+        constexpr size_t begin=offsetof(VoxGraphitePath,matrix)+sizeof(path.matrix);
+        constexpr size_t end=offsetof(VoxGraphitePath,segments);
+        static_assert(end>begin);
+        auto* bytes=reinterpret_cast<uint8_t*>(&changed);
+        for(size_t i=begin;i<end;++i) bytes[i]=0xA5;
+    } else {
+        std::fill_n(changed.clip,12,83.f);
+        std::fill_n(changed.ancestor_clip,12,97.f);
+        std::fill_n(changed.float_color,4,.25f);
+    }
+    VoxGraphiteRasterCache cache(1024*1024,16,true);
+    auto first=cache.prepare(path,width,height,pitch,true,pixels.data());
+    assert(!first.hit&&!first.pending);
+    auto second=cache.prepare(changed,width,height,pitch,true,pixels.data());
+    // Padding and disabled payloads are absent from the complete cache
+    // identity. They must not make an identical draw look like a first use.
+    assert(!second.hit&&second.pending);
+    for(int y=0;y<height;++y) std::fill_n(pixels.data()+size_t(y)*pitch,width*4,147);
+    cache.finish(std::move(second),pixels.data(),pitch);
+    pixels=original;
+    assert(cache.prepare(path,width,height,pitch,true,pixels.data()).hit);
+    for(int y=0;y<height;++y) {
+        for(int x=0;x<width*4;++x) assert(pixels[size_t(y)*pitch+x]==147);
+        for(int x=width*4;x<pitch;++x) assert(pixels[size_t(y)*pitch+x]==31);
+    }
+    // Enabling those payloads is a real identity change, even if the
+    // admission fingerprint happens to collide.
+    for(int field=0;field<3;++field) {
+        pixels=original;auto active=changed;
+        if(field==0) active.has_clip=1;
+        if(field==1) active.has_ancestor_clip=1;
+        if(field==2) active.has_float_color=1;
+        assert(!cache.prepare(active,width,height,pitch,true,pixels.data()).hit);
+        assert(pixels==original);
+    }
+}
+
 int main()
 {
     large_draw_admission();
+    equivalent_path_admission(true);
+    equivalent_path_admission(false);
     std::vector<uint8_t> source(16, 87), pixels(16, 31);
     auto descriptor = image(source.data());
     VoxGraphiteRasterCache cache;

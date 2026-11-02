@@ -253,10 +253,33 @@ class VoxGraphiteRasterCache {
             shape.clip_outs = nullptr;
             bytes(&shape, sizeof(shape));
         } else if (entry.is_path) {
-            auto path = entry.path;
-            path.segments = nullptr;
-            path.stops = nullptr;
-            bytes(&path, sizeof(path));
+            static bool const canonical = !std::getenv("VOX_DISABLE_CANONICAL_PATH_ADMISSION");
+            auto const& path = entry.path;
+            if (!canonical) {
+                auto old_key = path;
+                old_key.segments = nullptr;
+                old_key.stops = nullptr;
+                bytes(&old_key, sizeof(old_key));
+            } else {
+                // Match same_path(): padding, addresses and disabled payloads
+                // are not identity. Hashing their object representation can
+                // prevent an equal second draw from ever entering the cache.
+                auto field = [&](auto const& value) { bytes(&value, sizeof(value)); };
+                field(path.matrix); field(path.segment_count); field(path.even_odd);
+                field(path.red); field(path.green); field(path.blue); field(path.alpha);
+                field(path.stroke); field(path.line_cap); field(path.line_join);
+                field(path.non_scaling_stroke); field(path.has_float_alpha);
+                field(path.has_float_color);
+                if (path.has_float_color) field(path.float_color);
+                field(path.stroke_width); field(path.miter_limit);
+                field(path.gradient); field(path.tile_mode); field(path.linear_color_space);
+                field(path.stop_count); field(path.gradient_premul);
+                field(path.gradient_points); field(path.gradient_matrix); field(path.opacity);
+                field(path.has_clip);
+                if (path.has_clip) field(path.clip);
+                field(path.has_ancestor_clip);
+                if (path.has_ancestor_clip) field(path.ancestor_clip);
+            }
         } else {
             bytes(&entry.shadow, sizeof(entry.shadow));
         }
