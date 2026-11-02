@@ -187,6 +187,21 @@ int main()
     assert(s_speculative_declined_layers.size() == declined);
     assert(ladybird_v_skia_finish_deferred_layer_frame());
 
+    // A tiny root segment in a tall document preserves the immutable
+    // prefix outside its ink, including pixels in the same original GPU tile.
+    CGContextSetRGBFillColor(parent, 0, 1, 0, 1);
+    CGContextFillRect(parent, CGRectMake(0, 0, 64, 64));
+    pending_parent(parent);
+    s_shared_root_recording->layer_height = 12000;
+    finish_shared_recording();
+    assert(!s_deferred_layer_frame_failed);
+    assert(pixels[8 * 256 + 8 * 4] == 255);
+    assert(pixels[8 * 256 + 8 * 4 + 1] == 0);
+    assert(pixels[32 * 256 + 32 * 4] == 0);
+    assert(pixels[32 * 256 + 32 * 4 + 1] == 255);
+    assert(pixels[32 * 256 + 32 * 4 + 3] == 255);
+    assert(ladybird_v_skia_finish_deferred_layer_frame());
+
     // A failed parent publication still requests whole-frame ordinary replay.
     pending_parent(parent, true);
     assert(ladybird_v_skia_begin_isolated_input(input, 64, 64));

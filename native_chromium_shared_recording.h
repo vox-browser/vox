@@ -171,8 +171,9 @@ SkCanvas* shared_recording_canvas(CGContextRef destination)
             int left, top, right, bottom;
             // An empty canvas still uses the layer's fractional local origin.
             // A painted prefix already belongs to the destination's pixel grid.
-            if (s_shared_layer_backdrop || group->speculative || native_opacity_layer_ink_bounds(prefix.pixels, prefix.pitch, 0, 0,
-                    pixel_width, pixel_height, &left, &top, &right, &bottom)) {
+            if (!group->checks_prefix && (s_shared_layer_backdrop || group->speculative
+                || native_opacity_layer_ink_bounds(prefix.pixels, prefix.pitch, 0, 0,
+                    pixel_width, pixel_height, &left, &top, &right, &bottom))) {
                 group->backdrop.resize(size_t(pixel_width) * pixel_height);
                 copy_backdrop_pixels(prefix, pixel_width, pixel_height, group->backdrop);
                 group->backdrop_width = pixel_width;
@@ -458,7 +459,11 @@ void finish_shared_recording()
             || group->layer_height * group->scale > (group->checks_prefix ? 16777216 : 16384)) return;
         float left = group->origin_x;
         float top = group->origin_y + group->page_y - group->scroll_y;
-        auto bounds = SkRect::MakeXYWH(left, top, group->layer_width, group->layer_height);
+        // A root segment owns only its recorded ink. Its logical document
+        // extent still anchors full-sized GPU tiles, but must not turn every
+        // small text/icon segment into a viewport-sized CPU publication.
+        auto bounds = group->checks_prefix ? SkRect::MakeEmpty()
+            : SkRect::MakeXYWH(left, top, group->layer_width, group->layer_height);
         // Shadows and SVG overflow can paint beyond the compositor box. Replace
         // their complete ink together with the contents, including the blur tail.
         for (auto ink : group->replay_bounds) {
@@ -468,9 +473,9 @@ void finish_shared_recording()
         if (!bounds.intersect(SkRect::MakeWH(group->canvas_width, group->canvas_height))) return;
         // Retain the local raster phase when no leading overflow needs extra
         // pixels; rounding every origin also shifts existing fractional SVGs.
-        if (bounds.left() != left || !group->backdrop.empty())
+        if (bounds.left() != left || !group->backdrop.empty() || group->checks_prefix)
             left = std::floor(bounds.left() * group->scale) / group->scale;
-        if (bounds.top() != top || !group->backdrop.empty())
+        if (bounds.top() != top || !group->backdrop.empty() || group->checks_prefix)
             top = std::floor(bounds.top() * group->scale) / group->scale;
         int width = std::ceil((bounds.right() - left) * group->scale);
         int height = std::ceil((bounds.bottom() - top) * group->scale);
@@ -513,7 +518,26 @@ void finish_shared_recording()
                 || !shared_picture_draw()(reinterpret_cast<uint8_t*>(pixels.data()), width,
                     height, width * 4, bytes->data(), bytes->size(), matrix)) return;
         }
-        if (!group->backdrop.empty()) {
+        if (group->checks_prefix) {
+            // The immutable RGBA prefix already supplies the byte-exact guard.
+            // Decode only the publication rectangle instead of storing a
+            // second full-viewport BGRA copy for each small root segment.
+            int full_width = CGBitmapContextGetWidth(group->destination);
+            int full_height = CGBitmapContextGetHeight(group->destination);
+            int x = std::lround(left * group->scale), y = std::lround(top * group->scale);
+            if (x < 0 || y < 0 || x + width > full_width || y + height > full_height) return;
+            std::vector<uint32_t> prefix(size_t(width) * height);
+            if (!group->original_prefix.copy_region_to(reinterpret_cast<uint8_t*>(prefix.data()),
+                    full_width, full_height, size_t(width) * 4,
+                    {size_t(x), size_t(y), size_t(x + width), size_t(y + height)})) return;
+            swap_red_blue_pixels(reinterpret_cast<uint8_t*>(prefix.data()),
+                reinterpret_cast<uint8_t const*>(prefix.data()), prefix.size());
+            for (int row = 0; row < height; ++row) {
+                auto* output = reinterpret_cast<uint8_t*>(pixels.data() + size_t(row) * width);
+                auto* background = reinterpret_cast<uint8_t const*>(prefix.data() + size_t(row) * width);
+                native_composite_opacity_pixels(output, background, output, width, 1);
+            }
+        } else if (!group->backdrop.empty()) {
             // Each compositor picture blends over the pixels present before
             // its fallback leaves ran. Combining pictures on transparency first
             // loses Chromium's rounding at overlapping shadow edges.
