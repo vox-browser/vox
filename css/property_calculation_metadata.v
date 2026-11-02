@@ -4219,6 +4219,8 @@ pub fn property_multiplicity(property_id PropertyID) PropertyMultiplicity {
 
 pub fn property_affects_layout(property_id PropertyID) bool {
 	return match property_id {
+		// SVG path data changes the path bounds stored in layout UsedValues.
+		.d { true }
 		.text_box_trim, .text_box_edge { true }
 		.font_synthesis, .font_synthesis_weight, .font_synthesis_style, .font_synthesis_small_caps, .font_synthesis_position { true }
 		.hyphens { true }
