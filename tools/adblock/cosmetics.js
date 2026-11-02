@@ -1,14 +1,12 @@
 // Native embedding of the full uBlock Origin 1.75.0 cosmetic and scriptlet engines.
 import './platform.js';
+import { createResources } from './resources.js';
 import cosmeticEngine from '../../adblock/vendor/ublock/js/cosmetic-filtering.js';
 import { ScriptletFilteringEngine } from '../../adblock/vendor/ublock/js/scriptlet-filtering-core.js';
 import { redirectEngine } from '../../adblock/vendor/ublock/js/redirect-engine.js';
-import redirectableResources from '../../adblock/vendor/ublock/js/redirect-resources.js';
-import { builtinScriptlets } from '../../adblock/vendor/ublock/js/resources/scriptlets.js';
 import { AstFilterParser, utils } from '../../adblock/vendor/ublock/js/static-filtering-parser.js';
 import { CompiledListWriter, CompiledListReader } from '../../adblock/vendor/ublock/js/static-filtering-io.js';
 import { hostnameFromURI, domainFromHostname } from '../../adblock/vendor/ublock/js/uri-utils.js';
-import resourceData from '../../adblock/extended/redirect-resources.json';
 
 const scriptletEngine = new ScriptletFilteringEngine();
 const environment = ['chromium', 'ublock', 'user_stylesheet'];
@@ -16,34 +14,9 @@ const environment = ['chromium', 'ublock', 'user_stylesheet'];
 export { redirectEngine };
 
 function initializeResources() {
-    redirectEngine.resources.clear();
-    redirectEngine.aliases.clear();
-    for (const scriptlet of builtinScriptlets) {
-        const name = scriptlet.name;
-        const data = scriptlet.fn.toString();
-        redirectEngine.resources.set(name, {
-            ...scriptlet,
-            mime: name.endsWith('.fn') ? 'fn/javascript' : 'text/javascript',
-            data,
-            dependencies: scriptlet.dependencies || [],
-            toContent: () => data,
-        });
-        for (const alias of scriptlet.aliases || []) redirectEngine.aliases.set(alias, name);
-    }
-    for (const [name, details] of redirectableResources) {
-        const resource = resourceData[name];
-        if (resource) redirectEngine.resources.set(name, {
-            mime: resource.mime, data: resource.data,
-            dependencies: [],
-            toContent: () => resource.text || '',
-            toURL: fctx => name === 'empty'
-                ? `data:${({ script: 'text/javascript', stylesheet: 'text/css', main_frame: 'text/html', sub_frame: 'text/html' })[fctx.type] || 'text/plain'},`
-                : resource.data,
-        });
-        for (const alias of (Array.isArray(details.alias) ? details.alias : details.alias ? [details.alias] : [])) {
-            redirectEngine.aliases.set(alias, name);
-        }
-    }
+    const tables = createResources();
+    redirectEngine.resources = tables.resources;
+    redirectEngine.aliases = tables.aliases;
 }
 
 export function initializeCosmetics(lists) {

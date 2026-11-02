@@ -9,6 +9,7 @@ import crypto from 'node:crypto';
 import * as serializer from '../../adblock/vendor/ublock/js/s14e-serializer.js';
 import { encodeSnapshot, encodeNativeSnapshot } from './snapshot.mjs';
 import { parserStub } from './lazy_parser.mjs';
+import { resourcesStub } from './lazy_resources.mjs';
 import * as parserExports from '../../adblock/vendor/ublock/js/static-filtering-parser.js';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '../..');
@@ -26,6 +27,9 @@ const options = {
     bundle: true, platform: 'browser', format: 'iife', target: 'safari16.4',
     define: { global: 'globalThis' }, minify: true, legalComments: 'eof', loader: { '.dat': 'text' }, metafile: true,
     plugins: [{ name: 'standalone-ublock-background', setup(b) {
+        b.onLoad({filter: /\/tools\/adblock\/resources\.js$/}, () => lazyParser ? {
+            contents: resourcesStub(), loader:'js', resolveDir:here,
+        } : undefined);
         b.onLoad({filter: /\/static-filtering-parser\.js$/}, args => lazyParser ? {
             contents: parserStub(parserExports), loader:'js', resolveDir:path.dirname(args.path),
         } : undefined);
@@ -82,7 +86,8 @@ const parserBundle = await build({entryPoints:[path.join(root,'adblock/vendor/ub
     bundle:true,platform:'browser',format:'iife',globalName:'voxAdblockParser',target:'safari16.4',
     minify:true,legalComments:'eof',write:false});
 const parserSource = parserBundle.outputFiles[0].text;
-const snapshot = encodeSnapshot(serializer.deserialize(selfie), { lazyCosmetics: true, lazyNetworkBuckets: true, publicSuffixText, parserSource });
+const resourceCatalog = context.voxAdblockResourceSnapshot();
+const snapshot = encodeSnapshot(serializer.deserialize(selfie), { lazyCosmetics: true, lazyNetworkBuckets: true, publicSuffixText, parserSource, resourceCatalog });
 await fs.writeFile(path.join(here, 'generated-defaults.js'), snapshot.source);
 await fs.writeFile(path.join(root, 'adblock/engine.snapshot.bin'), encodeNativeSnapshot(snapshot.binary));
 await fs.writeFile(path.join(root, 'adblock/engine.snapshot.json.gz'), gzipSync(snapshot.metadata, {level: 9, mtime: 0}));

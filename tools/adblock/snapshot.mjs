@@ -2,7 +2,7 @@ import { packedArray, packedMap, readPackedValue, encodePackedTable } from './la
 
 // Preserve uBO's engine selfies, loading large typed arrays as native bytes and
 // parsing metadata with JSON.parse rather than interpreting giant JS literals.
-export function encodeSnapshot(snapshot, { lazyCosmetics = false, lazyNetworkBuckets = false, publicSuffixText, parserSource } = {}) {
+export function encodeSnapshot(snapshot, { lazyCosmetics = false, lazyNetworkBuckets = false, publicSuffixText, parserSource, resourceCatalog } = {}) {
     const chunks = [], views = [], fixups = [];
     let byteLength = 0;
     const active = new Set();
@@ -82,6 +82,15 @@ export function encodeSnapshot(snapshot, { lazyCosmetics = false, lazyNetworkBuc
         const table = encodePackedTable([value], 1), offset = byteLength;
         chunks.push(table); byteLength += table.length;
         suffixReader += `${name}(){const bytes=globalThis.voxAdblockSnapshotBytes;return (globalThis.voxAdblockReadPackedValue||(${readPackedValue}))(new Uint8Array(bytes.buffer,bytes.byteOffset+${offset},${table.length}),0);},`;
+    }
+    if (resourceCatalog !== undefined) {
+        const tables = [];
+        for (const name of ['entries','aliases']) {
+            const table = encodePackedTable(resourceCatalog[name],2), offset = byteLength;
+            chunks.push(table); byteLength += table.length;
+            tables.push(`${name}:packedMap(new Uint8Array(bytes.buffer,bytes.byteOffset+${offset},${table.length}),read,globalThis.voxAdblockEagerSnapshotTables===true)`);
+        }
+        suffixReader += `resources(){const bytes=globalThis.voxAdblockSnapshotBytes,packedMap=${packedMap},read=globalThis.voxAdblockReadPackedValue||(${readPackedValue});return {${tables.join(',')}};},`;
     }
     const readers = hasPackedTables ? `const packedArray=${packedArray},packedMap=${packedMap},read=globalThis.voxAdblockReadPackedValue||(${readPackedValue});` : '';
     const source = `export default {${suffixReader}restore(){const bytes=globalThis.voxAdblockSnapshotBytes;if(!(bytes instanceof Uint8Array)||bytes.byteLength!==${byteLength})throw new Error('Invalid bundled uBlock Origin snapshot bytes');const clone=(Type,offset,length)=>{const view=new Type(bytes.buffer,bytes.byteOffset+offset,length);return typeof globalThis.voxAdblockCloneSnapshotView==='function'?globalThis.voxAdblockCloneSnapshotView(view):new Type(view);};${readers}let snapshot=globalThis.voxAdblockReadSnapshotMetadata();${fixups.join('')}return snapshot;}};\n`;

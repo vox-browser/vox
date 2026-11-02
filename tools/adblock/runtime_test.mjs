@@ -33,6 +33,7 @@ test('default matching stays parser-free and custom filters load the original pa
         defaults.context.voxAdblockCheckResponse({url,source_url:archive.url,request_type:type},response.headers);
     }
     assert.equal(typeof defaults.context.voxAdblockParser, 'undefined');
+    defaults.context.voxDocumentFilters('https://news.ycombinator.com/', ['.title','.content','#hnmain']);
     defaults.context.voxAdblockInitialize('||metrics.example^$script\n##.advert');
     assert.equal(typeof defaults.context.voxAdblockParser.AstFilterParser, 'function');
     assert.equal(defaults.check({url:'https://metrics.example/ad.js',source_url:'https://news.ycombinator.com/',request_type:'script'}).blocked,true);
@@ -126,4 +127,16 @@ test('custom filters compile normally and repeated default restores get fresh mu
         assert.deepEqual(JSON.parse(initial.context.voxAdblockInitialize()),initial.info);
         assert.deepEqual(initial.check({url:'https://securepubads.g.doubleclick.net/tag/js/gpt.js',source_url:'https://www.theverge.com/',request_type:'script'}),baseline);
     }
+});
+
+
+test('restored scriptlet functions and dependencies execute in the page', () => {
+    const {context}=engine('example.test##+js(set, voxSentinel, 42)');
+    const filters=context.voxDocumentFilters('https://example.test/');
+    assert.match(filters.scriptlets,/voxSentinel/);
+    const page=vm.createContext({document:{currentScript:{},readyState:'complete'},console,Request,EventTarget,fetch,XMLHttpRequest:class {}});
+    vm.runInContext('globalThis.self=globalThis;globalThis.window=globalThis;',page);
+    vm.runInContext(filters.scriptlets,page);
+    page.document.currentScript=null;
+    assert.equal(page.voxSentinel,42);
 });

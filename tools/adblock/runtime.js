@@ -11,12 +11,17 @@ import { initializeCosmetics, documentFilters, redirectEngine, cosmeticSnapshot,
 import defaultData from './generated-defaults.js';
 import * as serializer from '../../adblock/vendor/ublock/js/s14e-serializer.js';
 import { checkResponseHeaders } from './response_headers.js';
+import { snapshotResources } from './resources.js';
 
 const environment = ['ublock', 'chromium', 'user_stylesheet'];
 globalThis.voxAdblockLoadParser = () => {
     if (!globalThis.voxAdblockParser) (0, eval)(defaultData.parserSource());
     return globalThis.voxAdblockParser;
 };
+globalThis.voxAdblockLoadResources = () => {
+    return defaultData.resources();
+};
+globalThis.voxAdblockResourceSnapshot = () => snapshotResources();
 const fctx = new FilteringContext();
 let activeListCount = 0;
 function compileNetwork(raw, name) {
