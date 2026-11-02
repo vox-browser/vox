@@ -8185,7 +8185,7 @@ fn main() {
 		height: options.height
 		min_width: 640
 		min_height: 480
-		window_title: 'vox'
+		window_title: browser_window_title('')
 		bg_color: gg.rgb(232, 237, 243)
 		native_rendering: $if macos { true } $else { false }
 		init_fn: fn (mut app BrowserApp) {

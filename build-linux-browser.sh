@@ -67,7 +67,7 @@ linux_modules=$(python3 "$repo_dir/tools/prepare_linux_modules.py" "$v_compiler"
 # `vox2.encoding` while its imports still name vlib's `encoding` directory.
 # Listing the repository first keeps its packages unqualified wherever it lives.
 set -- -memory-limit 10G -enable-globals -cc "${CC:-clang}" \
-    -d use_openssl \
+    -d vox_production -d use_openssl \
     -exclude '@vlib/time/zoneinfo.native.v' \
     -path "$repo_dir|$linux_modules|$http_modules|$ui2_modules|@vmodules|@vlib" -gc "$gc_mode"
 if [ "$gc_mode" = none ]; then
