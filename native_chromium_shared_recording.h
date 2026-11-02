@@ -18,7 +18,6 @@ struct SharedRootRecording {
     std::vector<SkRect> blocked_bounds;
     std::vector<uint32_t> backdrop;
     int backdrop_width = 0;
-    bool opaque_backdrop_recorded = false;
     unsigned deferred_leaves = 0;
 };
 std::unique_ptr<SharedRootRecording> s_shared_root_recording;
@@ -160,29 +159,10 @@ SkCanvas* shared_recording_canvas(CGContextRef destination)
         }
         group->recorder = std::make_unique<SkPictureRecorder>();
         auto* canvas = group->recorder->beginRecording(SkRect::MakeWH(width, height));
-        if (s_shared_layer_backdrop && !group->backdrop.empty()) {
-            auto const* bytes = reinterpret_cast<uint8_t const*>(group->backdrop.data());
-            bool opaque = true;
-            for (size_t i = 3; i < group->backdrop.size() * 4; i += 4)
-                if (bytes[i] != 255) { opaque = false; break; }
-            if (opaque) {
-                auto info = SkImageInfo::Make(group->backdrop_width,
-                    int(group->backdrop.size() / group->backdrop_width),
-                    kBGRA_8888_SkColorType, kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
-                auto image = SkImages::RasterFromPixmapCopy(SkPixmap(info, bytes, group->backdrop_width * 4));
-                if (image) {
-                    // Resume over the actual opaque prefix in the GPU picture.
-                    // Post-blending a transparent picture quantizes its curved
-                    // edges before they meet that prefix.
-                    canvas->save();
-                    canvas->scale(1 / group->scale, 1 / group->scale);
-                    canvas->drawImage(image, 0, 0);
-                    canvas->restore();
-                    group->opaque_backdrop_recorded = true;
-                    group->backdrop.clear();
-                }
-            }
-        }
+        // A compositor picture starts transparent, even over an opaque
+        // destination. Its combined premultiplied ink is rounded before the
+        // picture meets that prefix. Keep the prefix for publication below;
+        // painting it into the picture changes overlapping shadow coverage.
         s_shared_root_recording = std::move(group);
     }
     return s_shared_root_recording->destination == destination
@@ -418,9 +398,9 @@ void finish_shared_recording()
         if (!bounds.intersect(SkRect::MakeWH(group->canvas_width, group->canvas_height))) return;
         // Retain the local raster phase when no leading overflow needs extra
         // pixels; rounding every origin also shifts existing fractional SVGs.
-        if (bounds.left() != left || !group->backdrop.empty() || group->opaque_backdrop_recorded)
+        if (bounds.left() != left || !group->backdrop.empty())
             left = std::floor(bounds.left() * group->scale) / group->scale;
-        if (bounds.top() != top || !group->backdrop.empty() || group->opaque_backdrop_recorded)
+        if (bounds.top() != top || !group->backdrop.empty())
             top = std::floor(bounds.top() * group->scale) / group->scale;
         int width = std::ceil((bounds.right() - left) * group->scale);
         int height = std::ceil((bounds.bottom() - top) * group->scale);

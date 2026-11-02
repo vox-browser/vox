@@ -487,7 +487,7 @@ int main()
             tiled_layer(scale, scroll);
             tiled_layer(scale, scroll, true);
         }
-        for (int alpha : {0, 128, 255}) for (bool switch_layer : {false, true})
+        for (int alpha : {0, 64, 128, 224, 255}) for (bool switch_layer : {false, true})
         for (bool backdrop_hint : {false, true})
             backdrop_layers(scale, alpha, switch_layer, backdrop_hint);
         root_background(scale);
