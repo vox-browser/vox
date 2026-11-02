@@ -3967,7 +3967,7 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
         };
         raster_matrix(matrix, region, raster_scale_x, raster_scale_y).get9(sparse.matrix);
         NativeRoundedImageCapture cached;
-        if (native_rounded_image_cache_enabled() && s_raster_layer_is_root
+        if (native_rounded_image_cache_enabled()
             && alpha == 255 && size_t(raster_width) * raster_height >= 16384
             && rgba_bitmap(destination) && CGBitmapContextGetBitsPerComponent(destination) == 8
             && paint.getColor4f() == SkColor4f::FromColor(SkColorSetRGB(red, green, blue))) {
@@ -3985,15 +3985,17 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
                 add(red); add(green); add(blue); add(alpha); add(raster_scale_x); add(raster_scale_y);
                 add(s_msaa_tile_rows); add(s_msaa_grid_width); add(s_msaa_grid_height);
                 add(s_msaa_grid_columns); add(s_raster_layer_width); add(s_raster_layer_height);
-                long grid_origin[] {std::lround((region.left - page_x) * destination_scale),
-                    std::lround((region.top - page_y + scroll_y + s_root_raster_scroll_y) * destination_scale)};
+                add(s_raster_layer_is_root);
+                long grid_origin[] {
+                    std::lround((region.left - page_x - (s_raster_layer_is_root ? 0 : s_raster_origin_x)) * destination_scale),
+                    std::lround((region.top - page_y + scroll_y + (s_raster_layer_is_root ? s_root_raster_scroll_y : -s_raster_origin_y)) * destination_scale)};
                 add(grid_origin);
                 size_t legacy_count = s_msaa_tiles.size(); add(legacy_count);
                 if (legacy_count) append_glyph_key(key, s_msaa_tiles.data(), legacy_count);
                 size_t grid_count = s_msaa_grid_tiles.size(); add(grid_count);
                 if (grid_count) append_glyph_key(key, s_msaa_grid_tiles.data(), grid_count);
                 auto rect = CGRectMake(region.left, canvas_height - region.bottom, region.width(), region.height());
-                cached.begin(destination, rect, std::move(key), raster_width, raster_height, backdrop);
+                cached.begin(destination, rect, std::move(key), raster_width, raster_height, backdrop, s_raster_layer_is_root);
                 if (auto image = cached.image()) return composite_image(destination, image, rect, true);
             }
         }

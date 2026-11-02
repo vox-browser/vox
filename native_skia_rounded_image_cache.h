@@ -53,7 +53,7 @@ public:
         if (published) CGImageRelease(published);
     }
     void begin(CGContextRef context, CGRect rect, std::vector<uint8_t> key,
-        int width, int height, Backdrop backdrop)
+        int width, int height, Backdrop backdrop, bool root = true)
     {
         // Bound admission metadata independently of image/backdrop storage.
         if (s_native_rounded_capture || key.size() > 4096) return;
@@ -72,8 +72,8 @@ public:
         if (std::getenv("VOX_NATIVE_ROUNDED_IMAGE_CACHE_DIAGNOSTICS")) {
             using Clock = double (*)();
             static auto clock = reinterpret_cast<Clock>(dlsym(RTLD_DEFAULT, "vox_precise_scroll_diagnostic_time"));
-            std::fprintf(stderr, "VOX_NATIVE_ROUNDED_IMAGE_CACHE admitted=%d hit=%d pending=%d pixels=%zu t_us=%.3f\n",
-                admitted, bool(request.image), bool(request.pending), size_t(width) * height, clock ? clock() : -1);
+            std::fprintf(stderr, "VOX_NATIVE_ROUNDED_IMAGE_CACHE root=%d admitted=%d hit=%d pending=%d pixels=%zu t_us=%.3f\n",
+                root, admitted, bool(request.image), bool(request.pending), size_t(width) * height, clock ? clock() : -1);
         }
     }
     CGImageRef image() const { return request.image; }
