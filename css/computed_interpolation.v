@@ -10702,6 +10702,9 @@ const counting_bloom_filter_key_mask = counting_bloom_filter_bucket_count - 1
 pub struct CountingBloomFilter {
 mut:
 	buckets []u8
+	ancestor_visits []AncestorFilterVisit
+	ancestor_hashes []u32
+	record_ancestor_hashes bool
 }
 
 pub fn CountingBloomFilter.new() CountingBloomFilter {
@@ -10711,6 +10714,9 @@ pub fn CountingBloomFilter.new() CountingBloomFilter {
 }
 
 pub fn (mut f CountingBloomFilter) clear() {
+	f.ancestor_visits.clear()
+	f.ancestor_hashes.clear()
+	f.record_ancestor_hashes = false
 	for i in 0 .. f.buckets.len {
 		f.buckets[i] = 0
 	}
@@ -11053,6 +11059,7 @@ pub fn (mut s StyleComputer) reset_has_result_cache() {
 
 fn (mut filter CountingBloomFilter) update_element_hash(hash u32, adding bool) {
 	if adding {
+		if filter.record_ancestor_hashes { filter.ancestor_hashes << hash }
 		filter.increment(hash)
 	} else {
 		filter.decrement(hash)
@@ -11060,11 +11067,11 @@ fn (mut filter CountingBloomFilter) update_element_hash(hash u32, adding bool) {
 }
 
 pub fn (mut s StyleComputer) push_ancestor(element &dom.Element) {
-	s.ancestor_filter_.update_element_hashes(element, true)
+	s.push_ancestor_with_saved_hashes(element)
 }
 
 pub fn (mut s StyleComputer) pop_ancestor(element &dom.Element) {
-	s.ancestor_filter_.update_element_hashes(element, false)
+	s.pop_ancestor_with_saved_hashes(element)
 }
 
 pub fn (s &StyleComputer) create_document_style() &ComputedProperties {
