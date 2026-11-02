@@ -1,6 +1,7 @@
 module adblock
 
 import json2
+import os
 $if prealloc {
 	import platform
 }
@@ -106,7 +107,13 @@ fn create_context_in_current_arena(custom_filters ?string) !voidptr {
 		C.JSGlobalContextRelease(context)
 		return err
 	}
-	source := decompress_engine_source(compressed_engine_source.to_bytes()) or {
+	compressed_source := if directory := snapshot_asset_directory() {
+		os.read_bytes(os.join_path(directory, 'engine.js.gz')) or {
+			C.JSGlobalContextRelease(context)
+			return error('Cannot read diagnostic adblock source: ${err}')
+		}
+	} else { compressed_engine_source.to_bytes() }
+	source := decompress_engine_source(compressed_source) or {
 		C.JSGlobalContextRelease(context)
 		return error('Cannot decompress bundled adblock engine: ${err}')
 	}
