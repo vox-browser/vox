@@ -535,9 +535,12 @@ CGImageRef create_pixel_image(CGContextRef destination, std::vector<uint32_t>&& 
     return image_from_provider(provider, width, height, rgba);
 }
 
+void capture_native_rounded_image(CGContextRef, CGImageRef, CGRect, bool);
+
 int composite_image(CGContextRef destination, CGImageRef image, CGRect rect, bool copy_background = false)
 {
     if (!image) return 0;
+    capture_native_rounded_image(destination, image, rect, copy_background);
     CGContextSaveGState(destination);
     if (copy_background) CGContextSetBlendMode(destination, kCGBlendModeCopy);
     CGContextSetInterpolationQuality(destination, kCGInterpolationNone);
@@ -589,10 +592,11 @@ class GlyphRasterCache {
 #ifdef VOX_GLYPH_CACHE_DIAGNOSTICS
     uint64_t requests = 0, hits = 0, evictions = 0;
 #endif
-    size_t byte_limit, entry_limit;
+    size_t byte_limit, entry_limit, max_entry_bytes;
 public:
-    explicit GlyphRasterCache(size_t limit = 64 * 1024 * 1024, size_t count = 4096)
-        : byte_limit(limit), entry_limit(count) { }
+    explicit GlyphRasterCache(size_t limit = 64 * 1024 * 1024, size_t count = 4096,
+        size_t single_limit = 256 * 1024)
+        : byte_limit(limit), entry_limit(count), max_entry_bytes(single_limit) { }
     struct Request {
         CGImageRef image {nullptr};
         std::unique_ptr<Entry> pending;
@@ -611,7 +615,7 @@ public:
         if (row_bytes > byte_limit / size_t(height)) return {};
         size_t pixel_bytes = row_bytes * size_t(height);
         size_t cost = key.size() + pixel_bytes * (background ? 2 : 1);
-        if (!entry_limit || cost > std::min(byte_limit, size_t(256 * 1024))) return {};
+        if (!entry_limit || cost > std::min(byte_limit, max_entry_bytes)) return {};
         uint64_t hash = 14695981039346656037ull;
         for (auto value : key) hash = (hash ^ value) * 1099511628211ull;
         auto candidates = index.equal_range(hash);
@@ -798,6 +802,8 @@ bool copy_backdrop(CGContextRef destination, RasterRegion const& region,
     return source.pixels != nullptr;
 }
 
+#include "native_skia_rounded_image_cache.h"
+
 // SVG mask canvases retain page coordinates in a translated, smaller bitmap.
 // Read its actual device pixels before blending a path instead of quantizing
 // the path on transparency and letting Quartz blend that intermediate image.
@@ -952,6 +958,7 @@ extern "C" void ladybird_v_skia_release_unused_graphics_memory()
         if (purge) purge();
         dlclose(library);
     }
+    clear_native_rounded_image_cache();
     s_sparse_raster_pool.clear();
     s_glyph_raster_cache.clear();
     s_glyph_text_blob_cache.clear();
@@ -3959,6 +3966,37 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
             .fill = fill, .anti_alias = anti_alias, .force_msaa = 0
         };
         raster_matrix(matrix, region, raster_scale_x, raster_scale_y).get9(sparse.matrix);
+        NativeRoundedImageCapture cached;
+        if (native_rounded_image_cache_enabled() && s_raster_layer_is_root
+            && alpha == 255 && size_t(raster_width) * raster_height >= 16384
+            && rgba_bitmap(destination) && CGBitmapContextGetBitsPerComponent(destination) == 8
+            && paint.getColor4f() == SkColor4f::FromColor(SkColorSetRGB(red, green, blue))) {
+            auto space = CGBitmapContextGetColorSpace(destination);
+            auto name = space ? CGColorSpaceCopyName(space) : nullptr;
+            bool srgb = name && CFEqual(name, kCGColorSpaceSRGB);
+            if (name) CFRelease(name);
+            auto backdrop = srgb ? read_backdrop(destination, region, destination_scale,
+                raster_width, raster_height) : Backdrop{};
+            auto ctm = CGContextGetCTM(destination);
+            if (backdrop.pixels && ctm.a == destination_scale && ctm.d == destination_scale) {
+                std::vector<uint8_t> key;
+                auto add = [&](auto const& value) { append_glyph_key(key, &value, 1); };
+                add(sparse.matrix); add(sparse.rect); add(thickness); add(fill); add(anti_alias);
+                add(red); add(green); add(blue); add(alpha); add(raster_scale_x); add(raster_scale_y);
+                add(s_msaa_tile_rows); add(s_msaa_grid_width); add(s_msaa_grid_height);
+                add(s_msaa_grid_columns); add(s_raster_layer_width); add(s_raster_layer_height);
+                long grid_origin[] {std::lround((region.left - page_x) * destination_scale),
+                    std::lround((region.top - page_y + scroll_y + s_root_raster_scroll_y) * destination_scale)};
+                add(grid_origin);
+                size_t legacy_count = s_msaa_tiles.size(); add(legacy_count);
+                if (legacy_count) append_glyph_key(key, s_msaa_tiles.data(), legacy_count);
+                size_t grid_count = s_msaa_grid_tiles.size(); add(grid_count);
+                if (grid_count) append_glyph_key(key, s_msaa_grid_tiles.data(), grid_count);
+                auto rect = CGRectMake(region.left, canvas_height - region.bottom, region.width(), region.height());
+                cached.begin(destination, rect, std::move(key), raster_width, raster_height, backdrop);
+                if (auto image = cached.image()) return composite_image(destination, image, rect, true);
+            }
+        }
         if (draw_chromium_sparse_rounded(destination, sparse, paint, region,
                 destination_scale, page_x, page_y, scroll_y, canvas_height)) return 1;
     }
