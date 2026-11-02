@@ -6,7 +6,7 @@ import math
 // Different corner radii use a rounded fill rather than the scalar-radius
 // underlay. Keep that fill and its uniform border in the same root render pass.
 fn chromium_rounded_background_pair_end(commands []layout.PaintCommand, layers []int, index int) int {
-	partial_end := chromium_partial_decoration_run_end(commands, layers, index)
+	partial_end := chromium_partial_decoration_end(commands, layers, index)
 	if partial_end > index { return partial_end }
 	if index < 0 || index + 1 >= commands.len || layers.len != commands.len { return index }
 	background := unsafe { &commands[index] }
@@ -56,10 +56,7 @@ fn (mut app BrowserApp) draw_chromium_rounded_background_pair(index int, page_y 
 			app.chromium_raster_plan.command_layers, index)
 		if end == index { return index }
 		app.flush_rounded_rect_underlay(0, page_y, window_height)
-		separated := end > index + 3
-		if separated {
-			if !app.begin_chromium_partial_decoration_run(index, end, page_y) { return index }
-		} else if C.native_begin_deferred_inset_decorations(2, page_y + 2,
+		if C.native_begin_deferred_inset_decorations(2, page_y + 2,
 			f32(app.viewport_width - 4), f32(app.viewport_height - 4),
 			f32(app.ctx.width), f32(app.ctx.height), page_y, 0) == 0 { return index }
 		for i in index .. end {

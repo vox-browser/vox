@@ -7407,10 +7407,11 @@ fn (mut app BrowserApp) draw() {
 			mut raster_layer := -1
 			mut text_scroll_layer := false
 			mut replay_scratch := app.begin_native_replay_scratch()
+			mut early_partial_headers := []int{}
 			mut shared_svg_end := 0
 			mut rect_prefetch_end := 0
 			for command_index in 0 .. app.paint_commands.len {
-				if command_index < shared_svg_end { continue }
+				if command_index < shared_svg_end || command_index in early_partial_headers { continue }
 				$if macos {
 					if app.ctx.native_rendering && command_index < app.chromium_raster_plan.command_layers.len
 						&& app.chromium_raster_plan.command_layers[command_index] < 0 { continue }
@@ -7481,6 +7482,12 @@ fn (mut app BrowserApp) draw() {
 					coverage_end := app.draw_chromium_text_coverage_run(command_index, page_y, window.height)
 					if coverage_end > command_index {
 						shared_svg_end = coverage_end
+						continue
+					}
+					header_index := app.draw_chromium_disjoint_partial_header(command_index, page_y, window.height)
+					if header_index >= 0 {
+						early_partial_headers << header_index
+						shared_svg_end = command_index + 2
 						continue
 					}
 					rounded_end := app.draw_chromium_rounded_background_pair(command_index, page_y, window.height)

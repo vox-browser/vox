@@ -83,86 +83,78 @@ fn test_positioned_partial_border_headers_keep_intervening_draw_order() {
 	mut document := html.parse_document(os.read_file('${@VMODROOT}/Tests/Browser/Brave/input/chromium-partial-rounded-border.html')!)
 	defer { document.finalize() }
 	document.set_font_rendering_policy(.chromium)
-	root := layout.layout_document_typed_in_viewport(document, 1024, 768)
+	root := layout.layout_document_typed_in_viewport(document,1024,768)
 	source := root.paint_commands()
 	mut starts := []int{}
-	for i, command in source {
-		if command.kind == 'paint_partial_rounded_border' { starts << i - 1 }
-	}
+	for i,command in source { if command.kind == 'paint_partial_rounded_border' { starts << i-1 } }
 	assert starts.len == 2
-	a, b := starts[0], starts[1]
-	gap := layout.PaintCommand{kind: 'fill_rect', x: 30, y: 20, width: 40, height: 20,
-		color: 'rgb(200 200 200)', opacity: 1}
-	commands := [source[a], source[a + 1], gap, source[b], source[b + 1], source[a + 2], source[b + 2]]
-	layers := []int{len: commands.len}
-	assert chromium_partial_decoration_end(commands, layers, 0) == 0
-	assert chromium_rounded_background_pair_end(commands, layers, 0) == commands.len
-	for replacement in [layout.PaintCommand{...gap, kind: 'begin_css_effect_layer'},
-		layout.PaintCommand{...gap, opacity: 0.5}] {
+	a,b := starts[0],starts[1]
+	gap := layout.PaintCommand{kind:'fill_rect',x:30,y:20,width:40,height:20,color:'rgb(200 200 200)',opacity:1}
+	commands := [source[a],source[a+1],gap,source[b],source[b+1],source[a+2],source[b+2]]
+	layers := []int{len:commands.len}
+	assert chromium_partial_decoration_end(commands,layers,0) == 0
+	assert chromium_disjoint_partial_header_index(commands,layers,0) == 5
+	assert chromium_disjoint_partial_header_index(commands,layers,3) == 6
+	mut foreign := layers.clone()
+	for i in [2,3,4,6] { foreign[i] = 1 }
+	assert chromium_disjoint_partial_header_index(commands,foreign,0) == 5
+	assert chromium_disjoint_partial_header_index(commands,foreign,3) == 6
+	for replacement in [
+		layout.PaintCommand{...gap,kind:'begin_css_effect_layer'},
+		layout.PaintCommand{...gap,x:701,y:92,opacity:0.5},
+		layout.PaintCommand{...gap,kind:'stroke_rounded_rect',stroke_width:1000},
+		layout.PaintCommand{...gap,kind:'draw_background_image'},
+	] {
 		mut changed := commands.clone()
 		changed[2] = replacement
-		assert chromium_rounded_background_pair_end(changed, layers, 0) == 0
+		assert chromium_disjoint_partial_header_index(changed,layers,0) == -1
 	}
-	mut foreign := layers.clone()
-	foreign[2] = 1
-	assert chromium_rounded_background_pair_end(commands, foreign, 0) == 0
 	mut missing := commands.clone()
-	missing[6].x += 1
-	assert chromium_rounded_background_pair_end(missing, layers, 0) == 0
-	// A solid SVG leaf between block backgrounds and positioned headers is
-	// retained by the same native picture, without admitting resource/effect
-	// paths which need their own replay scopes.
+	missing[5].x += 1
+	assert chromium_disjoint_partial_header_index(missing,layers,0) == -1
+	assert chromium_disjoint_partial_header_index(commands,[]int{},0) == -1
+	assert chromium_disjoint_partial_header_index(commands,layers,-1) == -1
 	mut svg_document := html.parse_document('<!doctype html><svg width="20" height="20"><path fill="#004d4d" d="M0 0L20 3L8 20Z"/></svg>')
 	defer { svg_document.finalize() }
 	svg_document.set_font_rendering_policy(.chromium)
-	svg_root := layout.layout_document_typed_in_viewport(svg_document, 1024, 768)
+	svg_root := layout.layout_document_typed_in_viewport(svg_document,1024,768)
 	paths := svg_root.paint_commands().filter(it.kind == 'draw_svg_path')
 	assert paths.len == 1
 	mut with_path := commands.clone()
 	with_path[2] = paths[0]
-	assert chromium_rounded_background_pair_end(with_path, layers, 0) == commands.len
-	for replacement in [layout.PaintCommand{...paths[0], svg_data: unsafe { nil }},
-		layout.PaintCommand{...paths[0], opacity: 0.5},
-		layout.PaintCommand{...paths[0], group_opacity: 0.5},
-		layout.PaintCommand{...paths[0], recording_clip: layout.LayoutRect{0,0,10,10}}] {
-		with_path[2] = replacement
-		assert chromium_rounded_background_pair_end(with_path, layers, 0) == 0
-	}
-	image := layout.PaintCommand{...gap, kind:'draw_background_image',
-		image_data:&layout.PaintImageData{image_url:'test.png'}}
+	assert chromium_disjoint_partial_header_index(with_path,layers,0) == 5
+	with_path[2] = layout.PaintCommand{...paths[0],svg_data:unsafe { nil }}
+	assert chromium_disjoint_partial_header_index(with_path,layers,0) == -1
+	image := layout.PaintCommand{...gap,kind:'draw_background_image',
+		image_data:&layout.PaintImageData{image_url:'test.png',image_clip_x:30,image_clip_y:20,image_clip_width:40,image_clip_height:20}}
 	mut with_image := commands.clone()
 	with_image[2] = image
-	assert chromium_rounded_background_pair_end(with_image, layers, 0) == commands.len
-	for replacement in [
-		layout.PaintCommand{...image, image_data:unsafe { nil }},
-		layout.PaintCommand{...image, image_data:&layout.PaintImageData{image_url:'test.svg'}},
-		layout.PaintCommand{...image, image_data:&layout.PaintImageData{image_url:'test.png',background_blend_mode:.multiply}},
-	] {
-		with_image[2] = replacement
-		assert chromium_rounded_background_pair_end(with_image, layers, 0) == 0
-	}
+	assert chromium_disjoint_partial_header_index(with_image,layers,0) == 5
+	with_image[2] = layout.PaintCommand{...image,image_data:&layout.PaintImageData{...image.image_data,image_clip_x:701,image_clip_y:92}}
+	assert chromium_disjoint_partial_header_index(with_image,layers,0) == -1
 }
 
 fn test_positioned_headers_retain_real_svg_background_image_inputs() {
 	mut document := html.parse_document(os.read_file('${@VMODROOT}/Tests/Browser/Brave/input/chromium-positioned-header-image-gap.html')!)
 	defer { document.finalize() }
 	document.set_font_rendering_policy(.chromium)
-	root := layout.layout_document_typed_in_viewport(document, 1024, 768)
+	root := layout.layout_document_typed_in_viewport(document,1024,768)
 	commands := root.paint_commands()
-	layers := []int{len:commands.len}
-	mut start := -1
-	for i, command in commands {
-		if command.kind == 'paint_partial_rounded_border' { start = i - 1; break }
+	mut layers := []int{len:commands.len}
+	// The native plan places the second card in an independent raster. The
+	// first header then appears between that raster's image and its header.
+	for i,command in commands { if command.y >= 600 { layers[i] = 1 } }
+	mut count := 0
+	for i,command in commands {
+		if command.kind != 'paint_partial_rounded_border' { continue }
+		header := chromium_disjoint_partial_header_index(commands,layers,i-1)
+		assert header > i+1
+		assert commands[header].kind == 'fill_rounded_rect'
+		assert commands[header].color == 'rgb(76 76 76)'
+		assert commands[header].y == command.y
+		assert layers[header] == layers[i]
+		count++
 	}
-	assert start >= 0
-	end := chromium_rounded_background_pair_end(commands, layers, start)
-	assert end > start + 3
-	mut images := 0
-	mut headers := 0
-	for command in commands[start..end] {
-		if command.kind == 'draw_background_image' { images++ }
-		if command.kind == 'fill_rounded_rect' && command.color == 'rgb(76 76 76)' { headers++ }
-	}
-	assert images == 2
-	assert headers == 2
+	assert count == 2
+	assert commands.filter(it.kind == 'draw_background_image').len == 2
 }
