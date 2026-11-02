@@ -3828,7 +3828,6 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 		none
 	}
 	app.install_browser_new_tab_image_fetch_hooks()
-	image_loader.finish_initialization(app.js_runtime != unsafe { nil })
 	app.queue_initial_style_preload_completions(preloaded_resources)
 	if debug_timing_enabled() {
 		mut source_bytes := 0
@@ -3847,9 +3846,12 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 		_ = prepare_document_render_heap(app.document)
 	}
 	if app.js_runtime == unsafe { nil } && !is_browser_new_tab_url(loaded.url) {
-		static_image_loader := if app.layout_tree_only { ?&BrowserImageRequestLoader(none) } else { image_loader }
+		static_image_loader := if app.can_load_images_asynchronously() { ?&BrowserImageRequestLoader(image_loader) } else { none }
 		install_static_browser_image_fetch_hooks_with_loader(app.document, app.nonrendered_image_preloads, static_image_loader)
 	}
+	// Static images consume the installation's completed responses too, before
+	// the loader drops that cache and retains only its in-flight requests.
+	image_loader.finish_initialization(app.js_runtime != unsafe { nil })
 	apply_cookie_banner_policy(app.document)
 	checkpoint = debug_timing_checkpoint('cookie_blocker', checkpoint)
 	// Stylesheets that scripts inserted, and that the disk cache holds, take

@@ -3,6 +3,25 @@ module main
 import css
 import dom
 
+// SVG image/filter resources can feed a mask or paint server before an HTML
+// image model exists. Keep those bytes in the static document's preload barrier,
+// including a URL shared by an ordinary <img>.
+fn document_svg_image_preload_urls(document &dom.Document, base_url string) map[string]bool {
+	mut urls := map[string]bool{}
+	mut images := css.query_selector_all(document.as_node(), 'image')
+	images << css.query_selector_all(document.as_node(), 'feImage')
+	for image in images {
+		if image.is_html_element() { continue }
+		source := if image.has_attribute('href') {
+			image.get_attribute_value('href').trim_space()
+		} else {
+			image.get_attribute_value('xlink:href').trim_space()
+		}
+		if source != '' { urls[resolve_document_reference(source, base_url)] = true }
+	}
+	return urls
+}
+
 // Keep classification local to this preload pass: a resource can occur in
 // several element roles, and later DOM or scripting-policy changes need a new
 // index. Stylesheets retain priority over scripts, with images as the fallback.

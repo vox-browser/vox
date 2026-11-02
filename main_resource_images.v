@@ -104,11 +104,7 @@ fn install_static_browser_image_fetch_hooks_with_loader(document &dom.Document,
 		image := unsafe { &dom.HTMLImageElement(element) }
 		mut model := html.html_image_element_model_for_dom_element(image)
 		if owner := image_loader {
-			if browser_image_has_lazy_loading_policy(image) {
-				model.set_model_async_fetch_hook(owner.lazy_static_callback())
-			} else {
-				model.set_model_fetch_hook(browser_image_model_fetch)
-			}
+			model.set_model_async_fetch_hook(owner.static_callback())
 		} else {
 			model.set_model_fetch_hook(browser_image_model_fetch)
 		}

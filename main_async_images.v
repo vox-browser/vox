@@ -10,6 +10,10 @@ import painting
 
 const max_browser_image_fetches = 8
 
+fn (app &BrowserApp) can_load_images_asynchronously() bool {
+	return !app.layout_tree_only && app.page_model != unsafe { nil }
+}
+
 struct BrowserImageFetchJob {
 	url string
 	source_url string
@@ -88,6 +92,17 @@ fn (loader &BrowserImageRequestLoader) callback() browserjs.ImageAsyncRequestFet
 		address dom.URL, complete html.HTMLImageFetchCompletion) {
 		mut mutable_loader := unsafe { &BrowserImageRequestLoader(loader) }
 		mutable_loader.request(image, model, address, complete)
+	}
+}
+
+// Static documents use the same deduplication, cache, lazy-loading policy and
+// document-owned completions as script-created images, without creating a VM.
+fn (loader &BrowserImageRequestLoader) static_callback() html.HTMLImageModelAsyncFetchHook {
+	return fn [loader] (model &html.HTMLImageElementModel, address dom.URL,
+		complete html.HTMLImageFetchCompletion) {
+		image := model.image_element() or { finish_browser_image_request(complete, none); return }
+		mut owner := unsafe { &BrowserImageRequestLoader(loader) }
+		owner.request(image, model, address, complete)
 	}
 }
 

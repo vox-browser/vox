@@ -158,9 +158,14 @@ fn (mut app BrowserApp) start_page_preload(loaded LoadedPage, add_history bool) 
 		results:     results
 	}
 	mut initial_urls := []string{}
+	svg_images := document_svg_image_preload_urls(document, base_url)
 	for resource_url in urls {
 		if (types[resource_url] or { 'image' }) == 'image' {
-			if !scripting_enabled { pending.image_urls << resource_url }
+			// Windowed pages use the native image loader after commit. Waiting
+			// here lets one slow illustration hold the entire article offscreen.
+			if !scripting_enabled && (!app.can_load_images_asynchronously() || resource_url in svg_images) {
+				pending.image_urls << resource_url
+			}
 		} else {
 			initial_urls << resource_url
 		}

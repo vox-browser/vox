@@ -255,10 +255,13 @@ fn test_async_navigation_does_not_wait_for_hidden_image_response() {
 	assert <-requested
 	release <- true
 	assert <-finished
-	resource := <-app.background_resource_results
-	app.background_resource_results <- resource
-	app.poll_background_resources()
-	assert app.background_resource_pending.len == 0
+	deadline := time.sys_mono_now() + 5 * time.second
+	for app.document.anything_is_delaying_the_load_event() && time.sys_mono_now() < deadline {
+		app.poll_browser_image_requests()
+		time.sleep(time.millisecond)
+	}
+	assert !app.document.anything_is_delaying_the_load_event()
+	assert app.image_request_loader?.pending.len == 0
 	mut document := app.document
 	document.finalize()
 	old.finalize()

@@ -100,15 +100,6 @@ fn browser_lazy_image_needs_deferral(image &dom.HTMLImageElement) bool {
 	return !script_image_is_near_viewport(element, document.viewport_rect().height)
 }
 
-fn (loader &BrowserImageRequestLoader) lazy_static_callback() html.HTMLImageModelAsyncFetchHook {
-	return fn [loader] (model &html.HTMLImageElementModel, address dom.URL,
-		complete html.HTMLImageFetchCompletion) {
-		image := model.image_element() or { finish_browser_image_request(complete, none); return }
-		mut owner := unsafe { &BrowserImageRequestLoader(loader) }
-		owner.request(image, model, address, complete)
-	}
-}
-
 fn (app &BrowserApp) has_resumable_lazy_image_requests() bool {
 	mut loader := app.image_request_loader or { return false }
 	if loader.cancelled || voidptr(loader.document) != voidptr(app.document)
