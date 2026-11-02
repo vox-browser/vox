@@ -29,6 +29,9 @@ fn begin_initial_layout_snapshot(style &ComputedProperties, document &dom.Docume
 		previous := style.computed_layout_cache()
 		if previous.writable_owner_identity != 0
 			|| style.reuses_computed_layout_cache(u64(voidptr(style)))
+			// A final animation update can resolve ordinary values in the
+			// sample arena. The interning pool outlives that target's samples.
+			|| platform.transient_arena_entered()
 			|| owner == unsafe { nil }
 			|| voidptr(owner) != voidptr(platform.current_retained_arena())
 			|| style.has_animated_properties() || style.has_animated_custom_properties() {
