@@ -159,9 +159,14 @@ if [ -f "$skia_root/lib/libskia.dylib" ] && [ -d "$skia_root/include/skia/includ
     python3 "$repo_dir/tools/build_mac_graphite_dawn.py" --skia-root "$skia_root" \
         --output "$dawn_library"
     bridge_library="$build_dir/libLadybirdVSkiaText.dylib"
+    snapshot_deflate=$(python3 "$repo_dir/tools/build_snapshot_deflate.py")
+    cp "$snapshot_deflate/libdeflate-1.24/COPYING" "$resources_dir/libdeflate-LICENSE.txt"
     clang++ -std=c++20 -O2 -fno-rtti -fPIC -dynamiclib -x objective-c++ \
 		-I"$skia_root/include/skia" -I"$skia_root/include" \
+		-DLADYBIRD_V_HAS_SNAPSHOT_DEFLATE -I"$snapshot_deflate/libdeflate-1.24" \
 		"$repo_dir/native_skia_text_darwin.cpp" \
+        -x none "$snapshot_deflate/snapshot-build/libdeflate.a" \
+        "-Wl,-unexported_symbol,_libdeflate_*" \
         -L"$skia_root/lib" -lskia \
         -framework CoreFoundation -framework CoreGraphics -framework CoreText -framework Foundation -framework Metal \
         -Wl,-rpath,"$skia_root/lib" \

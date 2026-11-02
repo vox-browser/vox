@@ -7,6 +7,7 @@
 #include "native_raster_snapshot.h"
 #include "native_immutable_rgba_image.h"
 #include "native_rgba_alpha_bounds.h"
+#include "native_snapshot_deflate.h"
 #include <CoreGraphics/CoreGraphics.h>
 #include <dlfcn.h>
 #include <chrono>

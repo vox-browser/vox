@@ -6,6 +6,8 @@
 #include <math.h>
 #include <string.h>
 #include <zlib.h>
+#include <dlfcn.h>
+#include <stdio.h>
 
 static void native_png_write_u32(unsigned char *bytes, uint32_t value)
 {
@@ -88,16 +90,25 @@ static NSData *native_encode_opaque_snapshot_png(NSBitmapImageRep *bitmap,
     }
     size_t size = rows.length;
     NSMutableData *compressed = [NSMutableData dataWithLength:compressBound((uLong)size)];
-    z_stream stream = {0};
-    // Smaller hash/token tables reduce cold snapshot encoding work. Keep the
-    // full 32 KiB match window and ordinary lossless DEFLATE.
-    if (deflateInit2(&stream, Z_BEST_SPEED, Z_DEFLATED, MAX_WBITS, 5, Z_DEFAULT_STRATEGY) != Z_OK) return nil;
-    stream.next_in = rows.mutableBytes; stream.avail_in = (uInt)size;
-    stream.next_out = compressed.mutableBytes; stream.avail_out = (uInt)compressed.length;
-    int status = deflate(&stream, Z_FINISH);
-    size_t written = stream.total_out;
-    deflateEnd(&stream);
-    if (status != Z_STREAM_END) return nil;
+    typedef size_t (*SnapshotCompressor)(const void *, size_t, void *, size_t);
+    SnapshotCompressor compressor = (SnapshotCompressor)dlsym(RTLD_DEFAULT,
+        "ladybird_v_snapshot_compress_zlib");
+    size_t written = !getenv("VOX_DISABLE_LIBDEFLATE_PNG") && compressor
+        ? compressor(rows.bytes, size, compressed.mutableBytes, compressed.length) : 0;
+    if (written && getenv("VOX_LIBDEFLATE_PNG_DIAGNOSTICS"))
+        fprintf(stderr, "VOX_LIBDEFLATE_PNG input=%zu output=%zu\n", size, written);
+    if (!written) {
+        z_stream stream = {0};
+        // Retain the original lossless encoder if the optional backend is
+        // absent, cannot allocate, or cannot fit its output in this buffer.
+        if (deflateInit2(&stream, Z_BEST_SPEED, Z_DEFLATED, MAX_WBITS, 5, Z_DEFAULT_STRATEGY) != Z_OK) return nil;
+        stream.next_in = rows.mutableBytes; stream.avail_in = (uInt)size;
+        stream.next_out = compressed.mutableBytes; stream.avail_out = (uInt)compressed.length;
+        int status = deflate(&stream, Z_FINISH);
+        written = stream.total_out;
+        deflateEnd(&stream);
+        if (status != Z_STREAM_END) return nil;
+    }
     compressed.length = written;
 
     const unsigned char signature[] = {137,80,78,71,13,10,26,10};

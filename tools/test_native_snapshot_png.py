@@ -67,6 +67,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--source-root', type=Path, default=Path(__file__).resolve().parent.parent)
     parser.add_argument('--output', type=Path)
+    parser.add_argument('--compression-library', type=Path)
+    parser.add_argument('--sanitize', action='store_true')
     args = parser.parse_args()
     source = args.source_root.resolve()
     output = args.output.resolve() if args.output else Path(tempfile.mkdtemp(prefix='vox-snapshot-png-'))
@@ -76,6 +78,9 @@ def main():
     files = (source / 'native_snapshot_png_darwin.h', source / 'native_snapshot_png_opaque_darwin.h', source / 'tools/native_snapshot_png_test.m',
              Path(__file__).resolve(), compiler)
     pins = {str(path): digest(path) for path in files}
+    if args.compression_library:
+        args.compression_library = args.compression_library.resolve()
+        pins[str(args.compression_library)] = digest(args.compression_library)
     result = dict(passed=False, pins=pins, jobs={})
     try:
         for name, flag in [('nonarc', '-fno-objc-arc'), ('arc', '-fobjc-arc')]:
@@ -86,6 +91,8 @@ def main():
             command = [str(compiler), flag, '-O2', '-Wall', '-Wextra', '-Werror',
                        '-framework', 'Cocoa', '-framework', 'ImageIO', '-lz', '-I', str(source),
                        str(source / 'tools/native_snapshot_png_test.m'), '-o', str(directory / 'tests')]
+            if args.sanitize:
+                command[1:1] = ['-fsanitize=address,undefined', '-fno-omit-frame-pointer']
             row = dict(command=command, passed=False)
             result['jobs'][name] = row
             with (directory / 'compile.log').open('w') as log:
@@ -94,7 +101,10 @@ def main():
                 continue
             row['binary_sha256'] = digest(directory / 'tests')
             with (directory / 'test.log').open('w') as log:
-                row['test_exit_code'] = subprocess.run([str(directory / 'tests'), str(artifacts)],
+                arguments = [str(directory / 'tests'), str(artifacts)]
+                if args.compression_library:
+                    arguments.append(str(args.compression_library))
+                row['test_exit_code'] = subprocess.run(arguments,
                     stdout=log, stderr=subprocess.STDOUT).returncode
             records = [json.loads(line) for line in (directory / 'test.log').read_text().splitlines()
                        if line.startswith('{')]
@@ -104,9 +114,15 @@ def main():
             row['fallback_cases'] = [dict(case=case['case'], **compare(
                 artifacts / ('case-%d-reference.png' % case['case']),
                 artifacts / ('case-%d-fallback.png' % case['case']))) for case in records]
+            row['zlib_cases'] = [dict(case=case['case'], **compare(
+                artifacts / ('case-%d-reference.png' % case['case']),
+                artifacts / ('case-%d-zlib.png' % case['case']))) for case in records]
+            row['compression_backend_verified'] = (not args.compression_library or
+                'VOX_LIBDEFLATE_PNG input=' in (directory / 'test.log').read_text())
             row['passed'] = (row['test_exit_code'] == 0 and len(records) == 45 and
                 {case['case'] for case in records} == set(range(45)) and
-                all(case['passed'] for case in row['cases'] + row['fallback_cases']) and
+                all(case['passed'] for case in row['cases'] + row['fallback_cases'] + row['zlib_cases']) and
+                row['compression_backend_verified'] and
                 'PASS 45 snapshot PNG pixel/profile/density cases' in (directory / 'test.log').read_text())
         result['changed_inputs'] = [str(path) for path, sha in pins.items() if digest(Path(path)) != sha]
         result['passed'] = len(result['jobs']) == 2 and all(row['passed'] for row in result['jobs'].values()) and not result['changed_inputs']

@@ -6,7 +6,27 @@
 
 int main(int argc, const char *argv[])
 {
-    assert(argc == 2);
+    assert(argc == 2 || argc == 3);
+    if (argc == 3) {
+        assert(dlopen(argv[2], RTLD_NOW | RTLD_GLOBAL));
+        typedef size_t (*Compressor)(const void *, size_t, void *, size_t);
+        Compressor compress = (Compressor)dlsym(RTLD_DEFAULT, "ladybird_v_snapshot_compress_zlib");
+        assert(compress);
+        const char input[] = "snapshot compression";
+        unsigned char compressed[128], decoded[128];
+        size_t count = compress(input, sizeof(input), compressed, sizeof(compressed));
+        assert(count > 0);
+        uLongf size = sizeof(decoded);
+        assert(uncompress(decoded, &size, compressed, count) == Z_OK);
+        assert(size == sizeof(input) && !memcmp(input, decoded, size));
+        assert(!compress(input, sizeof(input), compressed, 1));
+        assert(!compress(NULL, sizeof(input), compressed, sizeof(compressed)));
+        assert(!compress(input, sizeof(input), NULL, sizeof(compressed)));
+        assert(!compress(input, 0, compressed, sizeof(compressed)));
+        assert(!compress(input, 64 * 1024 * 1024 + 1, compressed, sizeof(compressed)));
+        assert(!compress(input, sizeof(input), compressed, 0));
+        assert(setenv("VOX_LIBDEFLATE_PNG_DIAGNOSTICS", "1", 1) == 0);
+    }
     @autoreleasepool {
         NSString *output = [NSString stringWithUTF8String:argv[1]];
         NSArray<NSColorSpace *> *spaces = @[[NSColorSpace sRGBColorSpace],
@@ -53,6 +73,10 @@ int main(int argc, const char *argv[])
                     }
                     NSData *fast = native_encode_opaque_snapshot_png(converted, converted.CGImage, density);
                     if (fast) { assert([fast isEqualToData:actual]); ++optimized_cases; }
+                    assert(setenv("VOX_DISABLE_LIBDEFLATE_PNG", "1", 1) == 0);
+                    NSData *zlib = native_encode_snapshot_png(converted);
+                    assert(unsetenv("VOX_DISABLE_LIBDEFLATE_PNG") == 0);
+                    assert(zlib);
                     assert(setenv("VOX_DISABLE_OPAQUE_SNAPSHOT_PNG", "1", 1) == 0);
                     assert(native_encode_opaque_snapshot_png(converted, converted.CGImage, density) == nil);
                     NSData *fallback = native_encode_snapshot_png(converted);
@@ -65,6 +89,8 @@ int main(int argc, const char *argv[])
                         [stem stringByAppendingString:@"-actual.png"]] atomically:YES]);
                     assert([fallback writeToFile:[output stringByAppendingPathComponent:
                         [stem stringByAppendingString:@"-fallback.png"]] atomically:YES]);
+                    assert([zlib writeToFile:[output stringByAppendingPathComponent:
+                        [stem stringByAppendingString:@"-zlib.png"]] atomically:YES]);
                     printf("{\"case\":%u,\"alpha\":%u,\"scale\":%u,\"width\":19,\"height\":13}\n",
                         cases, alpha, scale);
                     ++cases;
