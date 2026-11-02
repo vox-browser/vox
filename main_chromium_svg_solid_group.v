@@ -2,10 +2,7 @@ module main
 
 import layout
 import painting
-
-$if macos {
-	import math
-}
+import math
 
 // Keep coverage between adjacent solid SVG paths, including translucent
 // strokes such as the native textarea grip, until their shared MSAA resolve.
@@ -154,6 +151,37 @@ fn (mut app BrowserApp) draw_chromium_svg_opacity_group(commands []layout.PaintC
 	return if drawn == start + 2 { start + 3 } else { start }
 }
 
+fn chromium_svg_solid_run_viewport(commands []layout.PaintCommand, start int,
+	end int) ?layout.LayoutRect {
+	if start < 0 || end <= start || end > commands.len { return none }
+	mut left := math.inf(1)
+	mut top := math.inf(1)
+	mut right := math.inf(-1)
+	mut bottom := math.inf(-1)
+	for index in start .. end {
+		bounds := chromium_msaa_trigger_rect(&commands[index]) or { return none }
+		left = math.min(left, bounds.x)
+		top = math.min(top, bounds.y)
+		right = math.max(right, bounds.x + bounds.width)
+		bottom = math.max(bottom, bounds.y + bounds.height)
+	}
+	// The native batch uses a non-antialiased viewport clip. Enclose its
+	// safety bounds in whole pixels so a downscaled SVG keeps edge samples.
+	left = math.floor(left)
+	top = math.floor(top)
+	right = math.ceil(right)
+	bottom = math.ceil(bottom)
+	first := &commands[start]
+	if first.has_clip {
+		left = math.max(left, first.clip_x)
+		top = math.max(top, first.clip_y)
+		right = math.min(right, first.clip_x + first.clip_width)
+		bottom = math.min(bottom, first.clip_y + first.clip_height)
+	}
+	if right <= left || bottom <= top { return layout.LayoutRect{} }
+	return layout.LayoutRect{left, top, right - left, bottom - top}
+}
+
 fn (mut app BrowserApp) draw_chromium_svg_solid_run(commands []layout.PaintCommand,
 	start int, end int, page_x f32, page_y f32, opacity f64) int {
 	$if macos {
@@ -162,19 +190,12 @@ fn (mut app BrowserApp) draw_chromium_svg_solid_run(commands []layout.PaintComma
 			return start
 		}
 		if end == start { return start }
+		viewport := chromium_svg_solid_run_viewport(commands, start, end) or { return start }
+		if viewport.width <= 0 || viewport.height <= 0 { return end }
 		mut paths := []C.VoxGraphitePath{cap: end - start}
-		mut left := math.inf(1)
-		mut top := math.inf(1)
-		mut right := math.inf(-1)
-		mut bottom := math.inf(-1)
 		for index in start .. end {
 			command := &commands[index]
 			data := command.svg_data
-			bounds := chromium_msaa_trigger_rect(*command) or { return start }
-			left = math.min(left, bounds.x)
-			top = math.min(top, bounds.y)
-			right = math.max(right, bounds.x + bounds.width)
-			bottom = math.max(bottom, bounds.y + bounds.height)
 			matrix := multiply_paint_transforms(command.transform, data.path_transform)
 			stroke := command.color == ''
 			color := if stroke {
@@ -219,18 +240,10 @@ fn (mut app BrowserApp) draw_chromium_svg_solid_run(commands []layout.PaintComma
 				} * opacity)
 			}
 		}
-		first := &commands[start]
-		if first.has_clip {
-			left = math.max(left, first.clip_x)
-			top = math.max(top, first.clip_y)
-			right = math.min(right, first.clip_x + first.clip_width)
-			bottom = math.min(bottom, first.clip_y + first.clip_height)
-		}
-		if right <= left || bottom <= top { return end }
 		app.flush_rounded_rect_underlay(page_x, page_y, int(app.ctx.height))
 		identity := [f32(1), 0, 0, 1, 0, 0]!
-		if C.native_draw_svg_path_batch(paths.data, paths.len, &identity[0], f32(left),
-			f32(top), f32(right - left), f32(bottom - top), page_x, page_y, 0,
+		if C.native_draw_svg_path_batch(paths.data, paths.len, &identity[0], f32(viewport.x),
+			f32(viewport.y), f32(viewport.width), f32(viewport.height), page_x, page_y, 0,
 			f32(app.ctx.width), f32(app.ctx.height), unsafe { nil }) != 0 {
 			return end
 		}

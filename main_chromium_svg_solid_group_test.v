@@ -4,6 +4,42 @@ import layout
 import painting
 import css
 
+fn scaled_svg_viewport_command() layout.PaintCommand {
+	return layout.PaintCommand{
+		kind: 'draw_svg_path'
+		color: 'white'
+		transform: [f64(1), 0, 0, 1, 33, 422]!
+		svg_data: &layout.PaintSVGPathData{
+			path_transform: [f64(.04), 0, 0, .04, 0, 10.5]!
+			path_data: [f32(0), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+				1, 400, 70, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+		}
+	}
+}
+
+fn test_downscaled_svg_batch_viewport_keeps_the_last_covered_pixel_row() {
+	command := scaled_svg_viewport_command()
+	bounds := chromium_msaa_trigger_rect(&command) or { panic('bounds') }
+	assert bounds.y + bounds.height > 435.25 && bounds.y + bounds.height < 435.5
+	viewport := chromium_svg_solid_run_viewport([command, command], 0, 2) or { panic('viewport') }
+	assert viewport.y == 432 && viewport.y + viewport.height == 436
+	assert viewport.x == 32 && viewport.x + viewport.width == 50
+}
+
+fn test_svg_batch_enclosure_preserves_fractional_author_clip_boundaries() {
+	command := layout.PaintCommand{
+		...scaled_svg_viewport_command()
+		has_clip: true
+		clip_x: 33.25
+		clip_y: 432.875
+		clip_width: 10.5
+		clip_height: 2.375
+	}
+	viewport := chromium_svg_solid_run_viewport([command, command], 0, 2) or { panic('viewport') }
+	assert viewport == layout.LayoutRect{33.25, 432.875, 10.5, 2.375}
+	assert chromium_svg_solid_run_viewport([], 0, 0) == none
+}
+
 fn svg_solid_group_test_command() layout.PaintCommand {
 	return layout.PaintCommand{
 		kind:     'draw_svg_path'
