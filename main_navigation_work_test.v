@@ -159,8 +159,10 @@ fn test_queued_mouse_release_completes_its_link_click_after_preparation() {
 	mut original := app.document
 	defer { original.finalize() }
 	rect := app.document.get_element_by_id('italian')?.get_bounding_client_rect()
-	x := f32(rect.x + rect.width / 2)
-	y := f32(rect.y + rect.height / 2) + app.page_top()
+	// Layout uses display pixels on Retina; native input uses CSS viewport pixels.
+	scale := app.document.layout_coordinate_scale()
+	x := f32((rect.x + rect.width / 2) / scale * app.page_zoom)
+	y := f32((rect.y + rect.height / 2) / scale * app.page_zoom) + app.page_top()
 	app.ctx = &gg.Context{}
 	mut scope := app.begin_navigation_work()
 	app.handle_event(&gg.Event{ typ: .mouse_down, mouse_button: .left, mouse_x: x, mouse_y: y })
