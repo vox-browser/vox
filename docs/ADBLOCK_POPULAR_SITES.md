@@ -2477,3 +2477,49 @@ the default 12 GiB guard after a retained 3 GiB failure; frozen/native runtime
 checks retain 3 GiB. This validates frozen guest rendering with author scripts
 removed. Full live scripting, video, authenticated behavior and all scroll
 positions remain unqualified. There is no instruction-count or scrolling claim.
+
+## Direct-image raster scale and conservative clips, 2 November 2026
+
+Commit `cd567c6de` retains eligible running and paused CSS transform/opacity
+animation surfaces, including identity samples, and preserves their overlap
+barriers. Commit `202e09746` adds a bounded direct-image raster path: a uniform
+source scale and overlapping raster tiles followed by compositor image quads.
+The final visible quad keeps its fractional bounds. The implementation selects
+single-image compositor layers without URL, site or image-dimension exceptions.
+
+The new shared-clip image regression improves from **69,331 differing pixels
+to zero**, with two agreeing Brave/full-uBO references. A separate standalone
+rounded-wrapper control remains exact before and after the change. Both are
+registered in the native pixel suite. Image-local corner radii, mixed pictures
+and unsupported geometry retain their existing paths. Rounded ancestor clips
+are currently eligible only when their prefix is shared with the preceding
+composited layer; general clip upcasting remains pending. Chromium likewise
+[rejects picture-local clip operations when recognizing a direct image](https://github.com/chromium/chromium/blob/main/cc/paint/display_item_list.cc#L378).
+
+**The full Pikabu gate remains open at 79,930 pixels**, compared with 79,769
+before the animation-layer change. Its visible photo still has **69,331**
+differences. An unrestricted private sampler made that entire photo exact and
+reduced the full viewport to **10,599** pixels, but regressed the standalone
+rounded-wrapper case by 69,331 pixels. That predicate was rejected. The
+committed conservative predicate preserves that control and leaves the real
+photo on its existing picture path until its parent-picture/compositor clip
+mapping can be established. The header shadow and remaining controls, and the
+three saved-live/frozen Brave reference pixels, are also unresolved. No site
+fixture, existing reference or tolerance was changed to pass the gate.
+
+All **47 compositor checks** and **three eligibility checks** pass in default
+and no-GC modes. Native raster geometry checks pass in release and with
+ASan/UBSan. All **13 selected native pixel captures** pass, covering the two new
+cases and existing SVG, WebP and shadow controls. The pinned final bundle keeps
+CNN, Guardian and Verge's unchanged archived viewports exact; fresh headless
+startup also passes. Pikabu's recorded native stream matches full uBO on all
+52 decisions, with no blocks or disagreements.
+
+The [direct-image receipt](benchmark-results/pikabu-direct-image-raster-2026-11-02.json)
+retains executable/library and fixture hashes, commands, guards, agreeing
+references, failing controls and remaining work. Raw artifacts are under
+`Build/pikabu-direct-image-20261102/`. Required renderer inputs stayed unchanged
+during the final build; five unrelated shared JavaScript/BBC-tool files changed,
+so evidence is attached to the pinned executable and libraries. These checks
+cover frozen guest rendering with author scripts removed and establish no
+live-site, instruction-count or scrolling-performance acceptance.
