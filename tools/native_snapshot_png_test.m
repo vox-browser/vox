@@ -4,9 +4,46 @@
 #include <string.h>
 #include "native_snapshot_png_darwin.h"
 
+static void test_opacity_scan(void)
+{
+    unsigned char storage[3 * (65 * 4 + 7) + 7];
+    assert(!vox_rgba8_is_opaque(NULL, 1, 1, 4));
+    assert(!vox_rgba8_is_opaque(storage, 0, 1, 4));
+    assert(!vox_rgba8_is_opaque(storage, 1, 0, 4));
+    assert(!vox_rgba8_is_opaque(storage, SIZE_MAX / 4 + 1, 1, SIZE_MAX));
+    assert(!vox_rgba8_is_opaque(storage, 2, 1, 7));
+    assert(!vox_rgba8_is_opaque(storage, 1, 2, SIZE_MAX));
+    for (size_t width = 1; width <= 65; ++width)
+        for (size_t height = 1; height <= 3; ++height)
+            for (size_t padding = 0; padding <= 7; ++padding)
+                for (size_t alignment = 0; alignment <= 7; ++alignment) {
+                    size_t pitch = width * 4 + padding;
+                    unsigned char *pixels = storage + alignment;
+                    memset(storage, 0, sizeof storage);
+                    for (size_t y = 0; y < height; ++y) for (size_t x = 0; x < width; ++x) {
+                        unsigned char *pixel = pixels + y * pitch + x * 4;
+                        pixel[0] = (unsigned char)(x * 37 + y);
+                        pixel[1] = (unsigned char)(x + y * 17);
+                        pixel[2] = (unsigned char)(x * 11 + y * 43);
+                        pixel[3] = 255;
+                    }
+                    assert(vox_rgba8_is_opaque(pixels, width, height, pitch));
+                    // Every alpha position, including the first/last byte of
+                    // each vector block and its scalar tail, must reject.
+                    for (size_t y = 0; y < height; ++y) for (size_t x = 0; x < width; ++x) {
+                        unsigned char *alpha = pixels + y * pitch + x * 4 + 3;
+                        *alpha = (unsigned char)((x * 31 + y * 13) % 255);
+                        assert(!vox_rgba8_is_opaque(pixels, width, height, pitch));
+                        *alpha = 255;
+                    }
+                }
+    puts("PASS padded/unaligned opacity scans and every alpha position at widths 1..65");
+}
+
 int main(int argc, const char *argv[])
 {
     assert(argc == 2 || argc == 3);
+    test_opacity_scan();
     if (argc == 3) {
         assert(dlopen(argv[2], RTLD_NOW | RTLD_GLOBAL));
         typedef size_t (*Compressor)(const void *, size_t, void *, size_t);

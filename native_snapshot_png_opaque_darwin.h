@@ -8,6 +8,7 @@
 #include <zlib.h>
 #include <dlfcn.h>
 #include <stdio.h>
+#include "native_rgba_is_opaque.h"
 
 static void native_png_write_u32(unsigned char *bytes, uint32_t value)
 {
@@ -77,9 +78,7 @@ static NSData *native_encode_opaque_snapshot_png(NSBitmapImageRep *bitmap,
         || dpi_x > UINT32_MAX || dpi_y > UINT32_MAX || meter_x > UINT32_MAX || meter_y > UINT32_MAX))
         return nil;
     const unsigned char *source = bitmap.bitmapData;
-    for (NSInteger y = 0; y < height; ++y)
-        for (NSInteger x = 0; x < width; ++x)
-            if (source[(size_t)y * row_pitch + (size_t)x * 4 + 3] != 255) return nil;
+    if (!vox_rgba8_is_opaque(source, (size_t)width, (size_t)height, (size_t)row_pitch)) return nil;
 
     NSMutableData *rows = [NSMutableData dataWithLength:filtered_pitch * height];
     unsigned char *filtered = rows.mutableBytes;
