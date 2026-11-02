@@ -418,6 +418,7 @@ pub fn (mut builder LineBuilder) append_text_item(item &InlineLevelItem, content
 		builder.append_text_chunk_with_trailing_whitespace(text_node, item.offset_in_node,
 			item.length_in_node, CSSPixels.new(0), opening_advance, CSSPixels.new(0),
 			CSSPixels.new(0), item.width, CSSPixels.new(0), glyph_run, item.trailing_whitespace)
+		builder.append_inline_end_edges(item.padding_end.plus(item.border_end), item.margin_end)
 		return
 	}
 	builder.append_text_chunk_with_trailing_whitespace(text_node, item.offset_in_node,

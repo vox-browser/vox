@@ -739,14 +739,8 @@ fn (mut iterator InlineLevelIterator) generate_next_item() ?InlineLevelItem {
 		}
 		iterator.previous_chunk_can_break_after = chunk.can_break_after
 		iterator.add_extra_box_model_metrics_to_item(mut item, is_first_chunk, is_last_chunk)
-		// The zero-length generated fragment anchors its inline ancestor's box
-		// geometry. Its closing edges are derived from that ancestor's used values;
-		// they do not advance the following text in upstream's retained line.
-		if text_node.retains_empty_generated_fragment_ && chunk.length == 0 {
-			item.padding_end = CSSPixels.new(0)
-			item.border_end = CSSPixels.new(0)
-			item.margin_end = CSSPixels.new(0)
-		}
+		// Empty generated text still closes its pseudo-element and any enclosing
+		// inline boxes. Their end edges must advance later content and markers.
 		return item
 	}
 
