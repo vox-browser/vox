@@ -3391,3 +3391,31 @@ runtime exits and prepared strict/suite/preservation commands. The last valid
 full-page result remains **10 differing pixels** with the preceding **94 tests/
 100 captures passing**; neither zero Slashdot differences nor a passing 95-test
 suite is claimed.
+
+
+Production executable
+`1df5c3f69a9e7db4ab81804b2708f79a2f9291cb86eb872b51b7fd778c6cb1e2`
+now validates `9664e073f`: the decorated-text fixture is exact, all five focused
+methods/six captures pass, and full Slashdot falls from ten to **seven** native
+differences. All seven are card-border pixels with maximum channel error one;
+the saved-live/frozen Brave comparison remains exact. The
+[coverage validation](../Build/slashdot-coverage-validation-20261102/) records
+this actual production result. The SVG-gap run proceeds farther, then the
+[paint-order trace](../Build/slashdot-header-image-gap-20261102/before/)
+rejects a background-image command before the positioned headers.
+
+Commit `2612a43d0` admits background-image gaps through the existing shared-picture
+capability validator. Missing payloads, unsupported SVG resources and non-normal
+blend modes retain their old rendering path. A new reduced page keeps two
+positioned headers behind real SVG background inputs; its two full-uBO Brave
+references agree, and the previous production browser differs by exactly seven
+pixels. Four focused selection cases pass, including that real SVG input. The
+native test still matches the unchanged card reference on cold and repeated
+replay, and now verifies that a failed non-deferred recording reports its
+completed ordinary fallback with unchanged pixels. The initial test incorrectly
+expected a failure status from that completed fallback; its failed assertion
+and the corrected passing run are both retained. No native implementation
+change was required. The [image-gap artifacts](../Build/slashdot-header-image-gap-20261102/)
+retain source checks, oracle agreement and the failing production baseline.
+The registered suite now has **96 tests/102 captures**; production validation
+of the image-gap change remains pending.
