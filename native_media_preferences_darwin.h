@@ -1,5 +1,10 @@
 #include <AppKit/AppKit.h>
 
+int native_prefers_reduced_motion(void)
+{
+    return NSWorkspace.sharedWorkspace.accessibilityDisplayShouldReduceMotion;
+}
+
 int native_prefers_reduced_transparency(void)
 {
     return NSWorkspace.sharedWorkspace.accessibilityDisplayShouldReduceTransparency;

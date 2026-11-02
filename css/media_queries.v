@@ -1571,7 +1571,11 @@ fn query_media_feature(feature_name string, document ?&dom.Document) ?MediaFeatu
 			reduce := if doc := document { doc.prefers_reduced_transparency() } else { false }
 			media_feature_ident_value(if reduce { 'reduce' } else { 'no-preference' })
 		}
-		'prefers-contrast', 'prefers-reduced-data', 'prefers-reduced-motion' {
+		'prefers-reduced-motion' {
+			reduce := if doc := document { doc.prefers_reduced_motion() } else { false }
+			media_feature_ident_value(if reduce { 'reduce' } else { 'no-preference' })
+		}
+		'prefers-contrast', 'prefers-reduced-data' {
 			media_feature_ident_value('no-preference')
 		}
 		'resolution' {

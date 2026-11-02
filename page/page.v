@@ -552,6 +552,7 @@ pub fn Page.create(device_scale f64) !&Page {
 		did_update_editing_history_callback: page_did_update_editing_history_callback
 		preferred_color_scheme_callback: page_preferred_color_scheme_callback
 		prefers_reduced_transparency_callback: page_prefers_reduced_transparency_callback
+		prefers_reduced_motion_callback: page_prefers_reduced_motion_callback
 		user_style_callback: page_user_style_callback
 		request_frame_callback: page_request_frame_callback
 		has_rendering_opportunity_callback: page_has_rendering_opportunity_callback

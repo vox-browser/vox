@@ -396,7 +396,15 @@ pub fn (window &WindowModel) query_media_feature(media_feature css.MediaFeatureI
 		.prefers_reduced_data {
 			css.MediaFeatureValue.from_ident('no-preference')
 		}
-		.prefers_reduced_motion { css.MediaFeatureValue.from_ident(configuration.preferred_motion) }
+		.prefers_reduced_motion {
+			document := window.associated_document()
+			page := document.page()
+			preference := if page != unsafe { nil }
+				&& page.prefers_reduced_motion_callback != unsafe { nil } {
+				if document.prefers_reduced_motion() { 'reduce' } else { 'no-preference' }
+			} else { configuration.preferred_motion }
+			css.MediaFeatureValue.from_ident(preference)
+		}
 		.resolution {
 			css.MediaFeatureValue.from_resolution(css.Resolution.make_dots_per_pixel(window.device_pixel_ratio()))
 		}
