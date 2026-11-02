@@ -39,7 +39,7 @@ or live site acceptance. Earlier invalid captures, protocol corrections,
 failing cohorts and their outliers remain retained.
 
 The machine-readable [evidence](benchmark-results/bbc-brave-instructions-2026-11-01.json)
-retains 1,066 attempts and 43 cohorts, including failures and first launches;
+retains 1,068 attempts and 43 cohorts, including failures and first launches;
 889 complete cohort raw results were independently checked against the recorded
 vectors, medians and integer gates. It also retains ownership audits, commands and artifact hashes. Raw archives, logs,
 PNGs, executable copies, PID registries, compiler output and guard receipts are
@@ -2159,6 +2159,39 @@ layout/animation failures remain unresolved. No whole-suite pass or cadence
 reset is claimed.
 
 Receipts are `small-callback-*` and `small-callback-shared-*` under the evidence
-root. The durable report now retains 1,066 attempts across 43 cohorts, with
+root. The durable report now retains 1,068 attempts across 43 cohorts, with
 889 complete cohort records independently compared to raw counters, medians
 and integer gates. BBC still does not qualify for `OPTIMIZED_SITES.md`.
+
+
+## Native bitmap API costs (diagnostics only)
+
+Two read-only interposition runs examine the retained immutable-frame build
+`edf40864f23109690ec562d97f85bea10fa465478774614ad30d83b7d7c7ae16`.
+The four relevant frame/cache source files still match that build byte-for-byte.
+Newer shared binaries contain the rejected callback experiment, so this pinned
+completed production build examines the retained frame path. These diagnostics
+do not validate newer unrelated rendering changes. Original BBC pixels,
+full content and native exits pass, with 1,966/1,903 JSC evaluations and positive
+immutable-frame traces. Counter errors remain zero across 20/33 caller groups.
+Small 2-by-3 bitmap controls positively exercise every selected API. Caller
+addresses resolve through their actual image with `dladdr`, avoiding the
+injected probe's image-zero identity.
+
+The first run observes 110 native frame-context creations at 2048-by-1704
+costing 8,873,944 instructions and 23 snapshots costing 22,444,360. The second
+observes 103 creations at 5,738,811 and 24 snapshots at 14,392,836. The native
+frame extent includes chrome; the document PNG scope is unchanged. In the
+second run, 80 stationary-cache `CGBitmapContextGetData` calls observe only
+1,426,776 instructions. These process-wide inclusive intervals include
+counter/probe/background work and may overlap. They cannot be summed as
+exclusive cost, compared as an unprofiled speedup, or treated as achievable
+savings. Their small observed size does not justify adding a context pool or
+changing cache eligibility. Neither change is implemented.
+
+All source, dylib hashes, positive-control logs, native identities, original
+images, API caller offsets, commands and actual exits remain under
+`native-context-*`; `native-context-diagnostic-assessment.json` records the
+qualification and exact observations. Both attempts are retained, bringing
+the report to 1,068 attempts; the 43-cohort/889-record checks remain unchanged.
+No new acceptance claim, instruction credit or broad-check reset follows.
