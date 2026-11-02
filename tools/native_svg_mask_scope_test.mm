@@ -6,6 +6,7 @@
 #undef restrict
 #include "../native_svg_mask_layer_darwin.h"
 #include "../native_svg_mask_opacity_darwin.h"
+#include "../native_initial_document_clear.h"
 #include <cassert>
 #include <iostream>
 
@@ -14,6 +15,7 @@ static CGFloat test_scale = 1;
 static CGFloat native_svg_mask_backing_scale(void) { return test_scale; }
 static CGContextRef native_font_compositing_context;
 static int native_font_compositing_transparency_depth;
+static VoxInitialDocumentClear native_layer_initial_document_clear;
 // The production entry points compile as Objective-C, which permits void*
 // conversion. Supply the same data with an explicit cast for this C++ fixture.
 static uint8_t* mask_bitmap_data(CGContextRef context)
@@ -290,12 +292,99 @@ static void opacity_fallback_cases()
     assert(native_opacity_canvas_pool_bytes == 0);
 }
 
+static bool image_mask_composite_case(int alpha, int phase)
+{
+    clear_cache();
+    ladybird_v_skia_set_shared_recording(0, 64, 64);
+    constexpr int extent = 64;
+    int size = extent * test_scale, pitch = size * 4;
+    std::vector<uint8_t> actual, expected_rgba;
+    auto context = bitmap(actual);
+    CGContextFlush(context);
+    for (int y = 0; y < size; ++y) for (int x = 0; x < size; ++x) {
+        auto i = size_t(y) * pitch + x * 4;
+        actual[i] = uint8_t((x * 17 + phase * 41) & 255);
+        actual[i + 1] = uint8_t((y * 23 + phase * 11) & 255);
+        actual[i + 2] = uint8_t((x * 7 + y * 13) & 255);
+        actual[i + 3] = 255;
+    }
+    std::vector<uint8_t> source(actual.size());
+    for (size_t i = 0; i < source.size(); i += 4) {
+        source[i] = uint8_t((i * 11 + phase * 7) & 255);
+        source[i + 1] = uint8_t((i * 5 + phase * 43) & 255);
+        source[i + 2] = uint8_t((i * 3 + phase * 29) & 255);
+        source[i + 3] = 255;
+    }
+    auto info = SkImageInfo::Make(size, size, kRGBA_8888_SkColorType,
+        kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
+    auto backdrop = SkImages::RasterFromPixmapCopy(SkPixmap(info, actual.data(), pitch));
+    auto foreground = SkImages::RasterFromPixmapCopy(SkPixmap(info, source.data(), pitch));
+    assert(backdrop && foreground);
+    auto graphics = [NSGraphicsContext graphicsContextWithCGContext:context flipped:NO];
+    [NSGraphicsContext setCurrentContext:graphics];
+    native_font_compositing_context = context;
+    native_font_compositing_transparency_depth = 0;
+    native_begin_svg_content_mask(711, 0, extent, extent, 0, 0, extent, extent,
+        1, 0, 0, 1, 0, 0, 0, 0, 0);
+    assert(native_svg_clip_build_context);
+    CGContextSetRGBFillColor(native_svg_clip_build_context, 1, 1, 1, alpha / 255.0);
+    CGContextFillRect(native_svg_clip_build_context, CGRectMake(0, 0, extent, extent));
+    native_finish_svg_mask_cache();
+    std::vector<uint8_t> mask(actual.size());
+    for (size_t i = 0; i < mask.size(); i += 4) {
+        mask[i] = mask[i + 1] = mask[i + 2] = mask[i + 3] = alpha;
+    }
+    auto mask_image = SkImages::RasterFromPixmapCopy(SkPixmap(info, mask.data(), pitch));
+    assert(mask_image);
+    SkPictureRecorder recorder;
+    auto* canvas = recorder.beginRecording(SkRect::MakeWH(size, size));
+    canvas->drawImage(backdrop, 0, 0);
+    canvas->saveLayer(nullptr, nullptr);
+    canvas->drawImage(foreground, 0, 0);
+    SkPaint mask_paint; mask_paint.setBlendMode(SkBlendMode::kDstIn);
+    canvas->drawImage(mask_image, 0, 0, SkSamplingOptions(), &mask_paint);
+    canvas->restore();
+    SkSerialProcs procs; procs.fImageProc = serialize_shared_picture_image;
+    auto record = recorder.finishRecordingAsPicture()->serialize(&procs);
+    std::vector<uint32_t> expected(size_t(size) * size);
+    float identity[] {1, 0, 0, 0, 1, 0, 0, 0, 1};
+    assert(record && shared_picture_draw()(reinterpret_cast<uint8_t*>(expected.data()),
+        size, size, pitch, record->data(), record->size(), identity));
+    auto space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+    auto source_context = CGBitmapContextCreate(source.data(), size, size, 8, pitch,
+        space, kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+    CGColorSpaceRelease(space); assert(source_context);
+    auto source_image = CGBitmapContextCreateImage(source_context); assert(source_image);
+    native_begin_svg_mask_layer();
+    auto content_context = [[NSGraphicsContext currentContext] CGContext];
+    CGContextSetInterpolationQuality(content_context, kCGInterpolationNone);
+    CGContextDrawImage(content_context, CGRectMake(0, 0, extent, extent), source_image);
+    native_end_svg_mask_layer(711, 1, extent, extent, 0, 0, 0);
+    CGContextFlush(context);
+    expected_rgba.resize(actual.size());
+    swap_red_blue_pixels(expected_rgba.data(), reinterpret_cast<uint8_t*>(expected.data()), expected.size());
+    int differences = 0;
+    for (size_t i = 0; i < actual.size(); ++i) if (actual[i] != expected_rgba[i]) {
+        if (differences++ < 3) std::fprintf(stderr, "mask composite alpha=%d phase=%d byte=%zu actual=%u expected=%u\n",
+            alpha, phase, i, actual[i], expected_rgba[i]);
+    }
+    CGImageRelease(source_image); CGContextRelease(source_context);
+    native_font_compositing_context = nullptr;
+    CGContextRelease(context); clear_cache();
+    return differences == 0;
+}
+
 int main()
 {
     @autoreleasepool {
-        int cases = 0, opacity_cases = 0;
+        int cases = 0, opacity_cases = 0, image_mask_cases = 0;
         for (int scale : {1, 2}) {
             test_scale = scale;
+            for (int alpha : {0, 1, 2, 13, 63, 64, 127, 128, 129, 191, 254, 255})
+                for (int phase : {0, 1, 2}) {
+                    if (!image_mask_composite_case(alpha, phase)) return 1;
+                    ++image_mask_cases;
+                }
             for (float opacity : {0.f, .25f, .5f, .6f, .75f, 1.f})
                 for (bool nested : {false, true}) { opacity_case(opacity, nested); ++opacity_cases; }
             opacity_fallback_cases();
@@ -317,6 +406,7 @@ int main()
         native_end_svg_mask_layer(0, 1, 64, 64, 0, 0, 0);
         assert(s_shared_clips.empty());
         std::cout << cases << " SVG mask scope and pixel cases; " << opacity_cases
-            << " float opacity GPU comparisons and both-scale scope fallbacks passed\n";
+            << " float opacity GPU comparisons; " << image_mask_cases
+            << " image/alpha-mask GPU comparisons and both-scale scope fallbacks passed\n";
     }
 }
