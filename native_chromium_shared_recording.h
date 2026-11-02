@@ -5,7 +5,6 @@
 // supplies the fallback frame; complete supported pictures replace root SVG
 // tiles or one isolated CSS compositor surface before it is composited.
 namespace {
-#include "native_chromium_recorded_image_cache.h"
 struct SharedRootRecording {
     std::unique_ptr<SkPictureRecorder> recorder;
     CGContextRef destination;
@@ -361,14 +360,8 @@ bool shared_recording_image(CGContextRef destination, SkMatrix const& matrix,
         }
         source = resized;
     }
-    bool image_reused = false;
-    auto bitmap = s_shared_root_recording && s_shared_root_recording->speculative
-            && !std::getenv("VOX_DISABLE_RECORDED_IMAGE_CACHE")
-        ? s_recorded_image_cache.get(source, &image_reused) : SkImages::RasterFromPixmapCopy(source);
+    auto bitmap = SkImages::RasterFromPixmapCopy(source);
     if (!bitmap) return unsupported();
-    if (std::getenv("VOX_RECORDED_IMAGE_DIAGNOSTICS"))
-        std::fprintf(stderr, "VOX_RECORDED_IMAGE hit=%d width=%d height=%d t_us=%.3f\n",
-            image_reused, upload_width, upload_height, speculative_picture_time());
     float sx = float(upload_width) / image.width, sy = float(upload_height) / image.height;
     auto source_rect = SkRect::MakeXYWH(image.source[0] * sx, image.source[1] * sy,
         image.source[2] * sx, image.source[3] * sy);
