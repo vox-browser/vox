@@ -158,7 +158,6 @@ def main():
         "-Wl,-exported_symbol,_vox_graphite_draw_image_pixels",
         "-Wl,-exported_symbol,_vox_graphite_draw_direct_image_pixels",
         "-Wl,-exported_symbol,_vox_graphite_draw_image_region_pixels",
-        "-Wl,-exported_symbol,_vox_graphite_draw_image_regions_pixels",
         "-Wl,-exported_symbol,_vox_graphite_draw_image_tiles",
         "-Wl,-exported_symbol,_vox_graphite_resize_rgba_pixels",
         "-Wl,-exported_symbol,_vox_graphite_draw_shape_pixels",

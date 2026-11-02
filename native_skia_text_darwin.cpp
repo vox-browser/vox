@@ -152,8 +152,6 @@ VoxRasterBufferPool s_sparse_raster_pool;
 
 struct IsolatedInputRecording {
     SkPictureRecorder recorder;
-    float canvas_height = 0;
-    float scale = 1;
     SkRect bounds = SkRect::MakeEmpty();
     bool unsupported = false;
     bool defer_leaf_raster = false;
@@ -285,16 +283,6 @@ auto graphite_image_region_draw()
         void* library = dlopen("@rpath/libVoxGraphite.dylib", RTLD_LAZY | RTLD_LOCAL);
         return library ? reinterpret_cast<decltype(&vox_graphite_draw_image_region_pixels)>(
             dlsym(library, "vox_graphite_draw_image_region_pixels")) : nullptr;
-    }();
-    return draw;
-}
-
-auto graphite_image_regions_draw()
-{
-    static auto draw = [] {
-        void* library = dlopen("@rpath/libVoxGraphite.dylib", RTLD_LAZY | RTLD_LOCAL);
-        return library ? reinterpret_cast<decltype(&vox_graphite_draw_image_regions_pixels)>(
-            dlsym(library, "vox_graphite_draw_image_regions_pixels")) : nullptr;
     }();
     return draw;
 }
@@ -2554,8 +2542,6 @@ extern "C" int ladybird_v_skia_begin_isolated_input(CGContextRef context,
     if (!context || !s_chromium_painting || !shared_picture_draw()
         || !(width > 0 && height > 0) || width > 16384 || height > 16384) return 0;
     auto recording = std::make_unique<IsolatedInputRecording>();
-    recording->canvas_height = height;
-    recording->scale = raster_scale_for_context(context);
     recording->recorder.beginRecording(SkRect::MakeWH(width, height));
     s_isolated_input_recordings[context] = std::move(recording);
     return 1;
@@ -5133,48 +5119,6 @@ static long chromium_raster_tile_for_row(long row)
     return row <= spacing ? 0 : (row - 1) / spacing;
 }
 
-static bool draw_chromium_layer_image_tile_batch(std::vector<uint32_t>& pixels,
-    int raster_width, int raster_height, RasterRegion const& region,
-    float scale, float page_x, float page_y, float scroll_y, VoxGraphiteImage const& descriptor)
-{
-    static bool const enabled = [] {
-        auto* value = std::getenv("VOX_ENABLE_IMAGE_TILE_BATCH");
-        return value && !std::strcmp(value, "1") && !std::getenv("VOX_DISABLE_IMAGE_TILE_BATCH");
-    }();
-    if (!enabled || s_msaa_grid_columns <= 0 || s_msaa_grid_width <= 2 || s_msaa_grid_height <= 2
-        || s_msaa_grid_width > 16384 || s_msaa_grid_height > 16384 || (descriptor.flags & 4)
-        || !std::isfinite(s_raster_layer_height) || !(scale > 0)
-        || !std::isfinite(scale) || s_raster_layer_height * scale > INT32_MAX) return false;
-    auto draw = graphite_image_regions_draw();
-    if (!draw) return false;
-    long first_x = std::lround((region.left - page_x
-        - (s_raster_layer_is_root ? 0 : s_raster_origin_x)) * scale);
-    long first_y = std::lround((region.top - page_y + scroll_y
-        + s_root_raster_scroll_y - (s_raster_layer_is_root ? 0 : s_raster_origin_y)) * scale);
-    int content_height = std::max(1, int(std::ceil(s_raster_layer_height * scale)));
-    int rows = int(std::max<int64_t>(1, (int64_t(content_height) - 2 + s_msaa_grid_height - 3)
-        / (s_msaa_grid_height - 2)));
-    VoxChromiumRasterGrid grid{s_msaa_grid_width, s_msaa_grid_height, s_msaa_grid_columns, rows};
-    return vox_draw_chromium_raster_grid_batch(pixels, raster_width, raster_height,
-        first_x, first_y, grid, [&](auto& tiles) {
-            std::vector<VoxGraphitePixelRegion> views;
-            std::vector<VoxGraphiteImage> images;
-            for (auto& tile : tiles) {
-                auto image = descriptor;
-                image.matrix[2] += tile.offset_x;
-                image.matrix[5] += tile.offset_y;
-                bool msaa = std::binary_search(s_msaa_grid_tiles.begin(), s_msaa_grid_tiles.end(), tile.cell);
-                image.flags = (image.flags & ~VOX_GRAPHITE_IMAGE_FORCE_MSAA)
-                    | (msaa ? VOX_GRAPHITE_IMAGE_FORCE_MSAA : 0);
-                images.push_back(image);
-                views.push_back({tile.x, tile.y, tile.width, tile.height, tile.width * 4,
-                    reinterpret_cast<uint8_t*>(tile.pixels.data())});
-            }
-            return draw(views.data(), images.data(), int(views.size()),
-                s_msaa_grid_width, s_msaa_grid_height, 1) != 0;
-        }, 4 * 1024 * 1024);
-}
-
 static bool draw_chromium_layer_image_tiles(std::vector<uint32_t>& pixels,
     int raster_width, int raster_height, RasterRegion const& region,
     float scale, float page_x, float page_y, float scroll_y,
@@ -5209,9 +5153,6 @@ static bool draw_chromium_layer_image_tiles(std::vector<uint32_t>& pixels,
     // Image interpolation depends on the complete raster extent. Independent
     // layers need their own tile coordinates too, rather than a tight leaf
     // surface that changes the texels beside a rounded clip or border.
-    if (draw_region && has_background && s_msaa_grid_columns > 0
-        && draw_chromium_layer_image_tile_batch(pixels, raster_width, raster_height,
-            region, scale, page_x, page_y, scroll_y, descriptor)) return true;
     if (draw_region && has_background && s_msaa_grid_columns > 0)
         return draw_chromium_layer_raster_grid<true>(pixels, raster_width, raster_height,
             region, page_x, page_y, scroll_y, scale,

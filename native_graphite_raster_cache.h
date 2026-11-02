@@ -332,11 +332,8 @@ public:
         parameters.image = image;
         return prepare_image(parameters, width, height, pitch, has_background, pixels);
     }
-    // A separate hit destination leaves the input view immutable during a
-    // transactional batch. Misses still snapshot the actual input backdrop.
     Request prepare_region(VoxGraphiteImage const& image, int surface_width,
-        int surface_height, VoxGraphitePixelRegion const& region, bool has_background,
-        uint8_t* cached_output = nullptr, int output_pitch = 0)
+        int surface_height, VoxGraphitePixelRegion const& region, bool has_background)
     {
         if (surface_width <= 0 || surface_height <= 0 || region.x < 0 || region.y < 0
             || region.width <= 0 || region.height <= 0
@@ -350,7 +347,7 @@ public:
         parameters.region_x = region.x;
         parameters.region_y = region.y;
         return prepare_image(parameters, region.width, region.height, region.pitch,
-            has_background, region.pixels, cached_output, output_pitch);
+            has_background, region.pixels);
     }
     // Background placements share one source during a call. Across calls the
     // cache still owns and compares its bytes, including animated/reused data.
@@ -374,8 +371,7 @@ public:
     }
 private:
     Request prepare_image(Entry const& parameters, int width, int height,
-        int pitch, bool has_background, uint8_t* pixels,
-        uint8_t* cached_output = nullptr, int output_pitch = 0)
+        int pitch, bool has_background, uint8_t* pixels)
     {
         auto const& image = parameters.image;
         Request request;
@@ -393,8 +389,7 @@ private:
             if (w > limit / h || uv_w > limit / uv_h) return request;
             source = {image.pixels, w * h + 2 * uv_w * uv_h, 0, 1};
         } else if (source.bytes > source.pitch) return request;
-        return prepare_entry(parameters, source, width, height, pitch, has_background, pixels,
-            {nullptr, 0, 0, 1}, cached_output, output_pitch);
+        return prepare_entry(parameters, source, width, height, pitch, has_background, pixels);
     }
 public:
     Request prepare(VoxGraphiteShadow const& shadow, int width, int height,
@@ -466,16 +461,11 @@ public:
     }
 private:
     Request prepare_entry(Entry const& parameters, Rows source, int width, int height,
-        int pitch, bool has_background, uint8_t* pixels, Rows extra = {nullptr, 0, 0, 1},
-        uint8_t* cached_output = nullptr, int output_pitch = 0)
+        int pitch, bool has_background, uint8_t* pixels, Rows extra = {nullptr, 0, 0, 1})
     {
         Request request;
         if (!pixels || width <= 0 || height <= 0 || pitch <= 0
             || size_t(pitch) < size_t(width) * 4 || !entry_limit) return request;
-        if (cached_output ? output_pitch <= 0 || size_t(output_pitch) < size_t(width) * 4
-                          : output_pitch != 0) return request;
-        auto* output = cached_output ? cached_output : pixels;
-        int copy_pitch = cached_output ? output_pitch : pitch;
         // Small controls in the root layer use complete 544x256 Chromium
         // tiles, including their backdrop. Admit that raw pair even when the
         // control itself occupies only a few pixels. Retained entries still
@@ -531,14 +521,14 @@ private:
             if (exact_region) {
                 if ((has_background && !backdrop.equal(entry.background, opaque))
                     || !source.equal(*entry.source)) continue;
-                entry.output.copy_to(output, backdrop.bytes, copy_pitch, backdrop.height);
+                entry.output.copy_to(pixels, backdrop.bytes, backdrop.pitch, backdrop.height);
             } else {
                 size_t x = parameters.region_x - entry.region_x, y = parameters.region_y - entry.region_y;
                 VoxRasterSnapshot::Rect region {x, y, x + size_t(width), y + size_t(height)};
                 if ((has_background && !entry.background.equal_region(pixels,
                         entry.width, entry.height, pitch, region))
                     || !source.equal(*entry.source)) continue;
-                if (!entry.output.copy_region_to(output, entry.width, entry.height, copy_pitch, region)) continue;
+                if (!entry.output.copy_region_to(pixels, entry.width, entry.height, pitch, region)) continue;
 #ifdef VOX_IMAGE_REGION_KEY_DIAGNOSTICS
                 std::fprintf(stderr, "VOX_IMAGE_SUBVIEW_HIT width=%d height=%d from=%dx%d\n",
                     width, height, entry.width, entry.height);
