@@ -1,0 +1,579 @@
+{
+  "target": "Reduce the measured current Vox launch-through-encoded-PNG instruction count by another 15%",
+  "target_fraction": {
+    "numerator": 17,
+    "denominator": 20
+  },
+  "accepted": false,
+  "reason": "The installed diagnostic includes an automatically built rejected PNG prototype. Final source validation is pending the shared production build. The diagnostic also falls short of 15%.",
+  "cohorts": {
+    "baseline": {
+      "raw_directory": "Build/hn-15-20261102-baseline",
+      "inputs_sha256": "fe1178fa9609272f328137dea7ea0e399e98fa80b8caf77925804cc207aae11d",
+      "scope": "Exclusive browser resource-coalition creation through encoded document PNG availability, including browser/window startup and the navigation/capture workflow described by navigation_scope. Brave includes CDP target/window setup. OS filesystem and shader caches are not cleared. This is a full startup/capture workflow, not isolated page navigation or rendering work.",
+      "files": {
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": {
+          "bytes": 23166608,
+          "sha256": "f769e44dbef6c5c309654f532cadf36bc7d5288a4b99c9f4a03f40845649be49"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": {
+          "bytes": 624704,
+          "sha256": "e7ff6b8b203a6b6fb06da890559af21f0961cabf4114de7bbdd826f23cf29ab3"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": {
+          "bytes": 471888,
+          "sha256": "40ad586745631516ef2f9e7ddabb2c78db27943ab929a28c271c2cd2a7d4c27b"
+        }
+      },
+      "rows": [
+        {
+          "launch_instruction_interval": {
+            "lower": 4790319809,
+            "upper": 4790319809
+          },
+          "pixels_exact": true,
+          "content_exact": true,
+          "exit": 0,
+          "started_unix": 1793616040.209407,
+          "finished_unix": 1793616043.616277,
+          "root": {
+            "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/hn-15-20261102-baseline/pair-1-vox/document.png http://127.0.0.1:65469/",
+            "parent": 1,
+            "pid": 3581,
+            "uid": 501
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              7.4794921875,
+              6.5869140625,
+              5.1005859375
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              7.44091796875,
+              6.59375,
+              5.111328125
+            ]
+          },
+          "kernel_exit_status": 0,
+          "pair": 1,
+          "result": "Build/hn-15-20261102-baseline/pair-1-vox/result.json",
+          "result_sha256": "f45b5c9557d4a52708fcbd6323aab793eee4f9aa0da91af9717fc760566f5634"
+        },
+        {
+          "launch_instruction_interval": {
+            "lower": 4778040604,
+            "upper": 4778040604
+          },
+          "pixels_exact": true,
+          "content_exact": true,
+          "exit": 0,
+          "started_unix": 1793616052.525555,
+          "finished_unix": 1793616055.808613,
+          "root": {
+            "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/hn-15-20261102-baseline/pair-2-vox/document.png http://127.0.0.1:65469/",
+            "parent": 1,
+            "pid": 4095,
+            "uid": 501
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              7.298828125,
+              6.59033203125,
+              5.126953125
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              7.298828125,
+              6.59033203125,
+              5.126953125
+            ]
+          },
+          "kernel_exit_status": 0,
+          "pair": 2,
+          "result": "Build/hn-15-20261102-baseline/pair-2-vox/result.json",
+          "result_sha256": "9be55720247e909d5ee40b13ce40f83ffcae17aeaf39a3ad11166395ecdf3e00"
+        },
+        {
+          "launch_instruction_interval": {
+            "lower": 4862329540,
+            "upper": 4862329540
+          },
+          "pixels_exact": true,
+          "content_exact": true,
+          "exit": 0,
+          "started_unix": 1793616056.373015,
+          "finished_unix": 1793616060.670825,
+          "root": {
+            "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/hn-15-20261102-baseline/pair-3-vox/document.png http://127.0.0.1:65469/",
+            "parent": 1,
+            "pid": 4277,
+            "uid": 501
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              7.298828125,
+              6.59033203125,
+              5.126953125
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              8.2353515625,
+              6.7958984375,
+              5.2080078125
+            ]
+          },
+          "kernel_exit_status": 0,
+          "pair": 3,
+          "result": "Build/hn-15-20261102-baseline/pair-3-vox/result.json",
+          "result_sha256": "e34a0197f34eee2fe56b9b19393fa8df9e4c25d22b70135605d58a7a4d45a485"
+        },
+        {
+          "launch_instruction_interval": {
+            "lower": 4813725682,
+            "upper": 4813725682
+          },
+          "pixels_exact": true,
+          "content_exact": true,
+          "exit": 0,
+          "started_unix": 1793616070.505541,
+          "finished_unix": 1793616073.9039629,
+          "root": {
+            "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/hn-15-20261102-baseline/pair-4-vox/document.png http://127.0.0.1:65469/",
+            "parent": 1,
+            "pid": 5315,
+            "uid": 501
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              8.75927734375,
+              6.951171875,
+              5.28125
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              8.2978515625,
+              6.88525390625,
+              5.267578125
+            ]
+          },
+          "kernel_exit_status": 0,
+          "pair": 4,
+          "result": "Build/hn-15-20261102-baseline/pair-4-vox/result.json",
+          "result_sha256": "c2ff166bdce16acec0881b54cd2a0b5d9011c51f7b400a6929e71cbebe4dffee"
+        },
+        {
+          "launch_instruction_interval": {
+            "lower": 4799324150,
+            "upper": 4799324150
+          },
+          "pixels_exact": true,
+          "content_exact": true,
+          "exit": 0,
+          "started_unix": 1793616074.4349298,
+          "finished_unix": 1793616078.0763688,
+          "root": {
+            "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/hn-15-20261102-baseline/pair-5-vox/document.png http://127.0.0.1:65469/",
+            "parent": 1,
+            "pid": 5703,
+            "uid": 501
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              8.2978515625,
+              6.88525390625,
+              5.267578125
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              8.43408203125,
+              6.9365234375,
+              5.294921875
+            ]
+          },
+          "kernel_exit_status": 0,
+          "pair": 5,
+          "result": "Build/hn-15-20261102-baseline/pair-5-vox/result.json",
+          "result_sha256": "0301abfeb05bd9a2d6fb7c1577f3f36a98f79f675a4f724c4cda8ea8ca994d92"
+        },
+        {
+          "launch_instruction_interval": {
+            "lower": 4793590625,
+            "upper": 4793590625
+          },
+          "pixels_exact": true,
+          "content_exact": true,
+          "exit": 0,
+          "started_unix": 1793616087.3831968,
+          "finished_unix": 1793616090.81999,
+          "root": {
+            "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/hn-15-20261102-baseline/pair-6-vox/document.png http://127.0.0.1:65469/",
+            "parent": 1,
+            "pid": 7022,
+            "uid": 501
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              8.77978515625,
+              7.0546875,
+              5.35546875
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              8.77978515625,
+              7.0546875,
+              5.35546875
+            ]
+          },
+          "kernel_exit_status": 0,
+          "pair": 6,
+          "result": "Build/hn-15-20261102-baseline/pair-6-vox/result.json",
+          "result_sha256": "5edf1466c54eac24628a2c8e9dbef85cfbe5e78266bd36521820baa9a98e473e"
+        },
+        {
+          "launch_instruction_interval": {
+            "lower": 4757734898,
+            "upper": 4757734898
+          },
+          "pixels_exact": true,
+          "content_exact": true,
+          "exit": 0,
+          "started_unix": 1793616091.235571,
+          "finished_unix": 1793616094.4865222,
+          "root": {
+            "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/hn-15-20261102-baseline/pair-7-vox/document.png http://127.0.0.1:65469/",
+            "parent": 1,
+            "pid": 7287,
+            "uid": 501
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              8.77978515625,
+              7.0546875,
+              5.35546875
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              8.63720703125,
+              7.0537109375,
+              5.36474609375
+            ]
+          },
+          "kernel_exit_status": 0,
+          "pair": 7,
+          "result": "Build/hn-15-20261102-baseline/pair-7-vox/result.json",
+          "result_sha256": "59c8a4cc5c066528441d7bc0ed5c53dc0a297dae168915c02cf6e258dfe532e9"
+        }
+      ],
+      "median": 4793590625,
+      "identity_policy": "The harness pins the whole app, dependencies, fixture, tools and reference before each cohort and rejects changed identities."
+    },
+    "installed_diagnostic": {
+      "raw_directory": "Build/hn-15-20261102/installed-observation",
+      "inputs_sha256": "c76b55ff677006864c20f2bae9bdcc13c8b6d64c8731852e82440578cdad6a66",
+      "scope": "Exclusive browser resource-coalition creation through encoded document PNG availability, including browser/window startup and the navigation/capture workflow described by navigation_scope. Brave includes CDP target/window setup. OS filesystem and shader caches are not cleared. This is a full startup/capture workflow, not isolated page navigation or rendering work.",
+      "files": {
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": {
+          "bytes": 23202032,
+          "sha256": "ca64e02972e15eb90fc597c6f4da56b35b7918ca285334ccf6f2344edfa55175"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": {
+          "bytes": 624704,
+          "sha256": "e7ff6b8b203a6b6fb06da890559af21f0961cabf4114de7bbdd826f23cf29ab3"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": {
+          "bytes": 471888,
+          "sha256": "76bbd3cc3f91787b6b3442d0cf571467f86e51302357f6eb42ca8fdcfade1390"
+        }
+      },
+      "rows": [
+        {
+          "launch_instruction_interval": {
+            "lower": 4566185403,
+            "upper": 4566185403
+          },
+          "pixels_exact": true,
+          "content_exact": true,
+          "exit": 0,
+          "started_unix": 1793622199.762578,
+          "finished_unix": 1793622202.998776,
+          "root": {
+            "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/hn-15-20261102/installed-observation/pair-1-vox/document.png http://127.0.0.1:61667/",
+            "parent": 1,
+            "pid": 3426,
+            "uid": 501
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              9.83837890625,
+              14.1015625,
+              21.61865234375
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              9.83837890625,
+              14.1015625,
+              21.61865234375
+            ]
+          },
+          "kernel_exit_status": 0,
+          "pair": 1,
+          "result": "Build/hn-15-20261102/installed-observation/pair-1-vox/result.json",
+          "result_sha256": "39fb88b2d5063a1e4350332734ee4a908a9aecead9aab04dc974553e12824258"
+        },
+        {
+          "launch_instruction_interval": {
+            "lower": 4524030062,
+            "upper": 4524030062
+          },
+          "pixels_exact": true,
+          "content_exact": true,
+          "exit": 0,
+          "started_unix": 1793622211.771573,
+          "finished_unix": 1793622215.099919,
+          "root": {
+            "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/hn-15-20261102/installed-observation/pair-2-vox/document.png http://127.0.0.1:61667/",
+            "parent": 1,
+            "pid": 3992,
+            "uid": 501
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              9.48779296875,
+              13.88427734375,
+              21.453125
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              9.76904296875,
+              13.869140625,
+              21.4033203125
+            ]
+          },
+          "kernel_exit_status": 0,
+          "pair": 2,
+          "result": "Build/hn-15-20261102/installed-observation/pair-2-vox/result.json",
+          "result_sha256": "1f4042dc062c4f38a8229c78cbd4aee8c33f2ff12377301ea2ae4f4c1258ee14"
+        },
+        {
+          "launch_instruction_interval": {
+            "lower": 4542802836,
+            "upper": 4542802836
+          },
+          "pixels_exact": true,
+          "content_exact": true,
+          "exit": 0,
+          "started_unix": 1793622215.539558,
+          "finished_unix": 1793622218.986588,
+          "root": {
+            "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/hn-15-20261102/installed-observation/pair-3-vox/document.png http://127.0.0.1:61667/",
+            "parent": 1,
+            "pid": 4179,
+            "uid": 501
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              9.76904296875,
+              13.869140625,
+              21.4033203125
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              9.76904296875,
+              13.869140625,
+              21.4033203125
+            ]
+          },
+          "kernel_exit_status": 0,
+          "pair": 3,
+          "result": "Build/hn-15-20261102/installed-observation/pair-3-vox/result.json",
+          "result_sha256": "58303995846093af6752dda9c9477b3783fb8b6d097a952f08f2fcbd85702d5c"
+        },
+        {
+          "launch_instruction_interval": {
+            "lower": 4489012411,
+            "upper": 4489012411
+          },
+          "pixels_exact": true,
+          "content_exact": true,
+          "exit": 0,
+          "started_unix": 1793622228.1829162,
+          "finished_unix": 1793622231.5049798,
+          "root": {
+            "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/hn-15-20261102/installed-observation/pair-4-vox/document.png http://127.0.0.1:61667/",
+            "parent": 1,
+            "pid": 4745,
+            "uid": 501
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              10.546875,
+              13.90478515625,
+              21.328125
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              10.5029296875,
+              13.83984375,
+              21.26171875
+            ]
+          },
+          "kernel_exit_status": 0,
+          "pair": 4,
+          "result": "Build/hn-15-20261102/installed-observation/pair-4-vox/result.json",
+          "result_sha256": "97fb83e7cb5460a7d693b3201867ca9d3ba61b7f2da88742afe60986255ce551"
+        },
+        {
+          "launch_instruction_interval": {
+            "lower": 4505579895,
+            "upper": 4505579895
+          },
+          "pixels_exact": true,
+          "content_exact": true,
+          "exit": 0,
+          "started_unix": 1793622231.982163,
+          "finished_unix": 1793622235.3508391,
+          "root": {
+            "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/hn-15-20261102/installed-observation/pair-5-vox/document.png http://127.0.0.1:61667/",
+            "parent": 1,
+            "pid": 4904,
+            "uid": 501
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              10.5029296875,
+              13.83984375,
+              21.26171875
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              10.14208984375,
+              13.70947265625,
+              21.171875
+            ]
+          },
+          "kernel_exit_status": 0,
+          "pair": 5,
+          "result": "Build/hn-15-20261102/installed-observation/pair-5-vox/result.json",
+          "result_sha256": "481d825ebe48e617a40c27ff75a2e9311040ec521455bcc50c9c64354dcd7de2"
+        },
+        {
+          "launch_instruction_interval": {
+            "lower": 4513035599,
+            "upper": 4513035599
+          },
+          "pixels_exact": true,
+          "content_exact": true,
+          "exit": 0,
+          "started_unix": 1793622244.267585,
+          "finished_unix": 1793622247.3603892,
+          "root": {
+            "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/hn-15-20261102/installed-observation/pair-6-vox/document.png http://127.0.0.1:61667/",
+            "parent": 1,
+            "pid": 5443,
+            "uid": 501
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              10.69091796875,
+              13.763671875,
+              21.14697265625
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              10.47509765625,
+              13.66796875,
+              21.06982421875
+            ]
+          },
+          "kernel_exit_status": 0,
+          "pair": 6,
+          "result": "Build/hn-15-20261102/installed-observation/pair-6-vox/result.json",
+          "result_sha256": "d340ebcc0f7d2408b8710f37133740a11c372001fe3ca20f4db2d555360ffcf8"
+        },
+        {
+          "launch_instruction_interval": {
+            "lower": 4462135647,
+            "upper": 4462135647
+          },
+          "pixels_exact": true,
+          "content_exact": true,
+          "exit": 0,
+          "started_unix": 1793622247.777156,
+          "finished_unix": 1793622251.043422,
+          "root": {
+            "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/hn-15-20261102/installed-observation/pair-7-vox/document.png http://127.0.0.1:61667/",
+            "parent": 1,
+            "pid": 5556,
+            "uid": 501
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              10.47509765625,
+              13.66796875,
+              21.06982421875
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              10.11669921875,
+              13.54052734375,
+              20.9814453125
+            ]
+          },
+          "kernel_exit_status": 0,
+          "pair": 7,
+          "result": "Build/hn-15-20261102/installed-observation/pair-7-vox/result.json",
+          "result_sha256": "0ef3811f016f033479370b0533ca68f9d7ee3483a790beb321c4faf2bce317ae"
+        }
+      ],
+      "median": 4513035599,
+      "identity_policy": "The harness pins the whole app, dependencies, fixture, tools and reference before each cohort and rejects changed identities."
+    }
+  },
+  "median_target_instructions": 4074552031.25,
+  "diagnostic_median_reduction_fraction": 0.05852711421305401,
+  "diagnostic_conservative_candidate_over_baseline": 0.9597393509502765,
+  "diagnostic_15_percent_gate": false
+}
