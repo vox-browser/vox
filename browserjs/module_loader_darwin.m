@@ -18,27 +18,36 @@
 
 @interface VoxModuleLoader : NSObject {
     JSValue *_fetch;
-    JSValue *_evaluated;
+    void *_owner;
+    VoxModuleEvaluationCallback _evaluated;
 }
-- (instancetype)initWithFetch:(JSValue *)fetch evaluated:(JSValue *)evaluated;
+- (instancetype)initWithFetch:(JSValue *)fetch owner:(void *)owner evaluated:(VoxModuleEvaluationCallback)evaluated;
 @end
 @implementation VoxModuleLoader
-- (instancetype)initWithFetch:(JSValue *)fetch evaluated:(JSValue *)evaluated
+- (instancetype)initWithFetch:(JSValue *)fetch owner:(void *)owner evaluated:(VoxModuleEvaluationCallback)evaluated
 {
     if ((self = [super init])) {
 #if __has_feature(objc_arc)
-        _fetch = fetch; _evaluated = evaluated;
+        _fetch = fetch;
 #else
-        _fetch = [fetch retain]; _evaluated = [evaluated retain];
+        _fetch = [fetch retain];
 #endif
+        _owner = owner; _evaluated = evaluated;
     }
     return self;
 }
 #if !__has_feature(objc_arc)
-- (void)dealloc { [_fetch release]; [_evaluated release]; [super dealloc]; }
+- (void)dealloc { [_fetch release]; [super dealloc]; }
 #endif
-- (void)willEvaluateModule:(NSURL *)key { [_evaluated callWithArguments:@[key.absoluteString, @YES]]; }
-- (void)didEvaluateModule:(NSURL *)key { [_evaluated callWithArguments:@[key.absoluteString, @NO]]; }
+// Reentering JS here consumes a pending module exception at the API boundary.
+// Notify the embedding directly and leave exception propagation to JSC.
+- (void)notifyEvaluation:(NSURL *)key starting:(bool)starting
+{
+    NSData *bytes = [key.absoluteString dataUsingEncoding:NSUTF8StringEncoding];
+    _evaluated(_owner, bytes.bytes, (unsigned int)bytes.length, starting);
+}
+- (void)willEvaluateModule:(NSURL *)key { [self notifyEvaluation:key starting:true]; }
+- (void)didEvaluateModule:(NSURL *)key { [self notifyEvaluation:key starting:false]; }
 - (void)context:(JSContext *)context fetchModuleForIdentifier:(JSValue *)identifier
     withResolveHandler:(JSValue *)resolve andRejectHandler:(JSValue *)reject
 {
@@ -46,7 +55,7 @@
 }
 @end
 
-void *vox_module_loader_install(JSGlobalContextRef raw, JSObjectRef fetch, JSObjectRef evaluated)
+void *vox_module_loader_install(JSGlobalContextRef raw, JSObjectRef fetch, void *owner, VoxModuleEvaluationCallback evaluated)
 {
     @autoreleasepool {
         JSContext *context = [JSContext contextWithJSGlobalContextRef:raw];
@@ -56,8 +65,7 @@ void *vox_module_loader_install(JSGlobalContextRef raw, JSObjectRef fetch, JSObj
             ![scriptClass respondsToSelector:@selector(scriptOfType:withSource:andSourceURL:andBytecodeCache:inVirtualMachine:error:)])
             return NULL;
         VoxModuleLoader *loader = [[VoxModuleLoader alloc] initWithFetch:
-            [JSValue valueWithJSValueRef:fetch inContext:context] evaluated:
-            [JSValue valueWithJSValueRef:evaluated inContext:context]];
+            [JSValue valueWithJSValueRef:fetch inContext:context] owner:owner evaluated:evaluated];
         context.moduleLoaderDelegate = loader;
 #if __has_feature(objc_arc)
         return (__bridge_retained void *)loader;

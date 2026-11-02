@@ -181,7 +181,6 @@ fn test_worker_agent_distinguishes_parse_failure_from_a_reported_runtime_excepti
 		}
 		if _ := agent.load_entry() { assert false }
 	}
-	if _ := WorkerAgentRuntime.create(dom.URL{value: 'https://worker-agent.test/module.js'}, html.WorkerOptions{type_: .module_}, worker_agent_test_outside(), 12, none) { assert false }
 }
 
 fn test_worker_agent_runs_fetch_timer_and_microtasks_on_its_worker_loop_and_cancels_on_close() {

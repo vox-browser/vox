@@ -68,7 +68,8 @@ pub fn (mut host WorkerGlobalHost) install(mut runtime Runtime) ! {
 	})!
 	factory := runtime.evaluate_host_value(worker_global_bootstrap)!
 	defer { runtime.release_javascript_value(factory) }
-	runtime.call_javascript_function(factory, global, [operation, global])!
+	runtime.call_javascript_function(factory, global, [operation, global,
+		C.JSValueMakeBoolean(runtime.context, runtime.worker_module_global)])!
 	worker_global_bindings_[owner] = &host
 	runtime.add_close_handler(fn [handle, owner] () {
 		mut host := unsafe { &WorkerGlobalHost(handle) }
@@ -163,33 +164,38 @@ fn (mut host WorkerGlobalHost) operate(args []voidptr) !voidptr {
 	return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 }
 
-const worker_global_bootstrap = r'(function(operate,global){
+const worker_global_bootstrap = r'(function(operate,global,moduleGlobal){
  const define=Object.defineProperty,descriptor=Object.getOwnPropertyDescriptor,create=Object.create,setPrototype=Object.setPrototypeOf,apply=Reflect.apply,TypeError=global.TypeError,iterator=Symbol.iterator;
  const object=value=>value!==null&&(typeof value==="object"||typeof value==="function");
  function WorkerGlobalScope(){throw new TypeError("Illegal constructor")}
  function DedicatedWorkerGlobalScope(){throw new TypeError("Illegal constructor")}
  setPrototype(WorkerGlobalScope,EventTarget);setPrototype(DedicatedWorkerGlobalScope,WorkerGlobalScope);
  WorkerGlobalScope.prototype=create(EventTarget.prototype);
- const dedicatedPrototype=Object.getPrototypeOf(global);
- if(dedicatedPrototype===Object.prototype||dedicatedPrototype===null)throw new TypeError("Worker runtime requires a host global class");
+ const dedicatedPrototype=moduleGlobal?create(WorkerGlobalScope.prototype):Object.getPrototypeOf(global);
+ if(!moduleGlobal&&(dedicatedPrototype===Object.prototype||dedicatedPrototype===null))throw new TypeError("Worker runtime requires a host global class");
  setPrototype(dedicatedPrototype,WorkerGlobalScope.prototype);DedicatedWorkerGlobalScope.prototype=dedicatedPrototype;
+ // Module-capable JSC globals have an immutable link to Object.prototype.
+ // Expose their real native scope members as own properties; do not counterfeit
+ // prototype introspection or put worker members on ordinary objects.
+ function scopeProperty(prototype,key,property){define(prototype,key,property);if(moduleGlobal)define(global,key,property)}
  for(const constructor of [WorkerGlobalScope,DedicatedWorkerGlobalScope]){
   define(constructor,"prototype",{writable:false});
   define(constructor.prototype,"constructor",{value:constructor,writable:true,configurable:true});
   define(constructor.prototype,Symbol.toStringTag,{value:constructor.name,configurable:true});
   define(global,constructor.name,{value:constructor,writable:true,configurable:true});
  }
+ if(moduleGlobal){define(global,"constructor",{value:DedicatedWorkerGlobalScope,writable:true,configurable:true});define(global,Symbol.toStringTag,{value:"DedicatedWorkerGlobalScope",configurable:true})}
  function brand(value){if(value!==global&&value!==undefined&&value!==null)throw new TypeError("Illegal DedicatedWorkerGlobalScope receiver")}
  for(const name of ["self","origin","isSecureContext","name"]){
   const get=descriptor({get [name](){brand(this);return name==="self"?global:operate(name)}},name).get;
   const property={get,enumerable:true,configurable:true};
   if(name==="name"||name==="origin")property.set=descriptor({set [name](value){brand(this);define(global,name,{value,writable:true,enumerable:true,configurable:true})}},name).set;
-  define(name==="name"?DedicatedWorkerGlobalScope.prototype:WorkerGlobalScope.prototype,name,property);
+  scopeProperty(name==="name"?DedicatedWorkerGlobalScope.prototype:WorkerGlobalScope.prototype,name,property);
  }
  for(const name of ["error","languagechange","offline","online","rejectionhandled","unhandledrejection","message","messageerror"]){
   const key="on"+name;
   const property=descriptor({get [key](){brand(this);return operate("getHandler",name)},set [key](value){brand(this);operate("setHandler",name,value)}},key);
-  define(name==="message"||name==="messageerror"?DedicatedWorkerGlobalScope.prototype:WorkerGlobalScope.prototype,key,property);
+  scopeProperty(name==="message"||name==="messageerror"?DedicatedWorkerGlobalScope.prototype:WorkerGlobalScope.prototype,key,property);
  }
  function sequence(value,method){
   if(!object(value))throw new TypeError("transfer must be an iterable object");
@@ -209,7 +215,7 @@ const worker_global_bootstrap = r'(function(operate,global){
   }
   return operate("post",message,transfer);
  },close(){brand(this);return operate("close")}};
- for(const name of ["postMessage","close"])define(DedicatedWorkerGlobalScope.prototype,name,{value:methods[name],writable:true,enumerable:true,configurable:true});
+ for(const name of ["postMessage","close"])scopeProperty(DedicatedWorkerGlobalScope.prototype,name,{value:methods[name],writable:true,enumerable:true,configurable:true});
  // Global EventTarget methods also support the unqualified calls used by worker scripts.
  const add=EventTarget.prototype.addEventListener,remove=EventTarget.prototype.removeEventListener,dispatch=EventTarget.prototype.dispatchEvent;
  const events={addEventListener(type,callback){brand(this);return apply(add,global,arguments)},removeEventListener(type,callback){brand(this);return apply(remove,global,arguments)},dispatchEvent(event){brand(this);return apply(dispatch,global,arguments)}};

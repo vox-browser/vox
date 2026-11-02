@@ -65,6 +65,7 @@ pub struct Runtime {
 pub:
 	engine Engine
 mut:
+	worker_module_global bool
 	context                   voidptr
 	closed                    bool
 	host_functions_           []&HostFunctionRecord
@@ -102,6 +103,14 @@ pub fn Runtime.create() &Runtime {
 // Worker globals need their host prototype allocated when JSC creates the realm.
 pub fn Runtime.create_for_worker() &Runtime {
 	return Runtime.create_with_global(.javascriptcore, true)
+}
+
+// Apple's module API requires its ordinary global class. Keep the worker's
+// bindings as own properties rather than altering the realm's Object.prototype.
+pub fn Runtime.create_for_module_worker() &Runtime {
+	mut runtime := Runtime.create_with_global(.javascriptcore, false)
+	runtime.worker_module_global = true
+	return runtime
 }
 
 pub fn Runtime.create_with_engine(engine Engine) &Runtime {

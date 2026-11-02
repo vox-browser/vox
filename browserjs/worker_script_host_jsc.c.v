@@ -99,9 +99,10 @@ pub fn (mut host WorkerScriptHost) install(mut runtime Runtime) ! {
 			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
 		}
 	})!
-	installer := runtime.evaluate_host_value('(function(method){Object.defineProperty(WorkerGlobalScope.prototype,"importScripts",{value:method,writable:true,enumerable:true,configurable:true})})')!
+	installer := runtime.evaluate_host_value('(function(method,moduleGlobal){const property={value:method,writable:true,enumerable:true,configurable:true};Object.defineProperty(WorkerGlobalScope.prototype,"importScripts",property);if(moduleGlobal)Object.defineProperty(globalThis,"importScripts",property)})')!
 	defer { runtime.release_javascript_value(installer) }
-	runtime.call_javascript_function(installer, global, [operation])!
+	runtime.call_javascript_function(installer, global, [operation,
+		C.JSValueMakeBoolean(runtime.context, runtime.worker_module_global)])!
 	worker_script_bindings_[owner] = &host
 	runtime.add_close_handler(fn [handle, owner] () {
 		mut host := unsafe { &WorkerScriptHost(handle) }

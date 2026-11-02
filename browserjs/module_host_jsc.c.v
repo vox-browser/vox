@@ -13,7 +13,7 @@ $if darwin {
 	#include "module_loader_darwin.h"
 }
 
-fn C.vox_module_loader_install(voidptr, voidptr, voidptr) voidptr
+fn C.vox_module_loader_install(voidptr, voidptr, voidptr, fn (voidptr, &char, u32, bool)) voidptr
 fn C.vox_module_loader_close(voidptr, voidptr)
 fn C.vox_module_loader_evaluate(voidptr, &char, uint, &voidptr) voidptr
 fn C.vox_module_loader_supply(voidptr, voidptr, &char, uint, &char, uint, &voidptr) voidptr
@@ -34,24 +34,7 @@ pub fn (mut host ModuleHost) install(mut runtime Runtime) ! {
 			host.load(host.runtime.binding_dom_string(args[0])!, args[1], args[2])!
 			return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 		})!
-		evaluated := runtime.make_value_host_function(fn [owner] (_ voidptr, args []voidptr) !voidptr {
-			mut host := unsafe { &ModuleHost(owner) }
-			if !host.closed && args.len == 2 {
-				if mut document := host.settings.responsible_document() {
-					if C.JSValueToBoolean(host.runtime.context, args[1]) {
-						host.current_scripts << BrowserModuleCurrentScript{ script: document.current_script() }
-						document.set_current_script(none)
-					} else if host.current_scripts.len > 0 {
-						document.set_current_script(host.current_scripts.pop().script)
-					}
-				}
-				if !C.JSValueToBoolean(host.runtime.context, args[1]) {
-					host.evaluated(host.runtime.binding_dom_string(args[0])!)
-				}
-			}
-			return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
-		})!
-		host.native_loader = C.vox_module_loader_install(runtime.context, fetcher, evaluated)
+		host.native_loader = C.vox_module_loader_install(runtime.context, fetcher, owner, module_evaluation_notification)
 		if host.native_loader == unsafe { nil } {
 			return error('This JavaScriptCore version has no native module loader')
 		}
@@ -84,6 +67,25 @@ pub fn (mut host ModuleHost) install(mut runtime Runtime) ! {
 		})
 		installed = true
 	}
+}
+
+fn module_evaluation_notification(owner voidptr, bytes &char, length u32, starting bool) {
+	mut host := unsafe { &ModuleHost(owner) }
+	if host.closed { return }
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	if mut entry := host.worker_entry {
+		if starting { entry.evaluated = true }
+	}
+	if mut document := host.settings.responsible_document() {
+		if starting {
+			host.current_scripts << BrowserModuleCurrentScript{ script: document.current_script() }
+			document.set_current_script(none)
+		} else if host.current_scripts.len > 0 {
+			document.set_current_script(host.current_scripts.pop().script)
+		}
+	}
+	if !starting { host.evaluated(unsafe { bytes.vstring_with_len(int(length)) }.clone()) }
 }
 
 pub fn (mut host ModuleHost) close() {

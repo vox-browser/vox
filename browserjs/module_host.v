@@ -62,6 +62,7 @@ mut:
 	deferred_readiness []string
 	diagnostics        []string
 	closed             bool
+	worker_entry       ?&WorkerModuleEntryResult
 }
 
 pub fn ModuleHost.create(settings &html.EnvironmentSettingsObject, transport &fetch.FetchHost) &ModuleHost {

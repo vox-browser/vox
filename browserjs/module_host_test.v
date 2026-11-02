@@ -114,6 +114,7 @@ fn test_native_dynamic_import_preserves_arguments_nested_imports_and_rejections(
 		'https://dynamic.test/value.js':   'export default 42;'
 		'https://dynamic.test/name.js':    'export default "/value.js";'
 		'https://dynamic.test/not-js.txt': 'globalThis.mimeExecuted=true;'
+		'https://dynamic.test/throws.js': 'throw new Error("dynamic module runtime");'
 	}, seen))
 	host.install(mut runtime)!
 	assert runtime.run_document_scripts_collect_errors([ScriptSource{
@@ -128,16 +129,18 @@ const recursive=import(import("/name.js").then(ns=>ns.default)).catch(reason=>re
 const unknown=import("missing-bare-name").catch(reason=>results.push(reason instanceof TypeError));
 const symbol=import(Symbol()).catch(reason=>results.push(reason instanceof TypeError));
 const mime=import("/not-js.txt").catch(reason=>results.push(reason instanceof TypeError));
-Promise.all([normal,nested,recursive,unknown,symbol,mime]).then(()=>globalThis.dynamicDone=true);
+const thrown=import("/throws.js").catch(reason=>globalThis.caughtModuleError=reason.message);
+Promise.all([normal,nested,recursive,unknown,symbol,mime,thrown]).then(()=>globalThis.dynamicDone=true);
 '
 	}]) == []
 	module_test_until(host, runtime, 'globalThis.dynamicDone===true')
 	assert runtime.evaluate_host('results.filter(x=>x===42).length===2&&results.filter(x=>x===true).length===4&&order.join() === "options,coerce"&&!globalThis.mimeExecuted')! == 'true'
+	assert runtime.evaluate_host('caughtModuleError==="dynamic module runtime"')! == 'true'
 	// Rewriting must leave these syntax errors for JavaScriptCore to reject.
 	for invalid in ['import(...[])', 'import("/value.js",{},3)'] {
 		assert runtime.run_document_scripts_collect_errors([ScriptSource{ code: invalid }]).len == 1
 	}
-	assert seen.urls.len == 3, seen.urls.str()
+	assert seen.urls.len == 4, seen.urls.str()
 }
 
 fn test_module_readiness_does_not_wait_for_top_level_await_and_close_releases_delayers() {

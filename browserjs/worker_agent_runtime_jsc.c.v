@@ -21,6 +21,7 @@ pub enum WorkerAgentState {
 pub struct WorkerAgentRuntime {
 pub:
 	environment &html.WorkerEnvironmentSettingsObject
+	options html.WorkerOptions
 mut:
 	runtime &Runtime
 	global &WorkerGlobalHost
@@ -29,18 +30,18 @@ mut:
 	outside &html.EnvironmentSettingsSnapshot
 	entry_url dom.URL
 	state_ WorkerAgentState
+	pending_messages [][]u8
 }
 
 @[heap]
 struct WorkerEntryFetchResult {
 mut:
-	script ?&html.ClassicScript
+	script ?&html.Script
 }
 
 // A worker owns one transport for both synchronous script loading and fetch().
 // A supplied transport is useful for deterministic replay; otherwise use Curl.
 pub fn WorkerAgentRuntime.create(url dom.URL, options html.WorkerOptions, outside html.SerializedEnvironmentSettingsObject, creation_time f64, transport ?&fetch.FetchHost) !&WorkerAgentRuntime {
-	if options.type_ != .classic { return error('Module worker execution is not implemented') }
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
 	// The caller can release its startup frame or scratch arena immediately.
@@ -53,10 +54,11 @@ pub fn WorkerAgentRuntime.create(url dom.URL, options html.WorkerOptions, outsid
 		html.SerializedWorkerGlobalScope { html.WorkerGlobalOwner(owned.global) }
 	}
 	environment := html.WorkerEnvironmentSettingsObject.setup(&scope.WorkerGlobalScope, mut realm, owned, creation_time)
-	mut runtime := Runtime.create_for_worker()
+	mut runtime := if options.type_ == .module_ { Runtime.create_for_module_worker() } else { Runtime.create_for_worker() }
 	mut global := WorkerGlobalHost.create(environment)!
 	mut agent := &WorkerAgentRuntime{
 		environment: environment
+		options: html.WorkerOptions{...options, name: options.name.clone()}
 		runtime: runtime
 		global: global
 		outside: html.EnvironmentSettingsSnapshot.create_for_worker_fetch(owned)
@@ -115,6 +117,14 @@ fn (mut agent WorkerAgentRuntime) install(transport ?&fetch.FetchHost) ! {
 
 fn (mut agent WorkerAgentRuntime) perform_script_fetch(request &fetch.Request, top html.TopLevelModule) !&fetch.Response {
 	entry := top == .yes && if destination := request.destination { destination == .worker } else { false }
+	if agent.options.type_ == .module_ {
+		mut actual := unsafe { &fetch.Request(request) }
+		actual.credentials_mode = worker_module_credentials(agent.options.credentials)
+		if entry {
+			actual.set_client(agent.outside)
+			actual.referrer = fetch.Referrer{}
+		}
+	}
 	if entry {
 		mut actual := unsafe { &fetch.Request(request) }
 		actual.reserved_client = agent.environment.settings.environment()
@@ -147,15 +157,21 @@ pub fn (mut agent WorkerAgentRuntime) load_entry() ! {
 			agent.shutdown()
 		}
 	}
+	if agent.options.type_ == .module_ {
+		agent.load_module_entry()!
+		agent.complete_startup()!
+		return
+	}
 	result := &WorkerEntryFetchResult{}
 	result_ptr := voidptr(result)
 	complete := fn [result_ptr] (script ?&html.Script) {
 		mut result := unsafe { &WorkerEntryFetchResult(result_ptr) }
-		if actual := script { result.script = unsafe { &html.ClassicScript(actual) } }
+		result.script = script
 	}
 	defer { platform.release_closure(voidptr(complete)) }
 	html.fetch_classic_worker_script(agent.entry_url, agent.outside, .worker, agent.environment.settings, agent.scripts.perform_fetch, complete)!
-	mut script := result.script or { return error('NetworkError: worker entry script could not be loaded') }
+	actual := result.script or { return error('NetworkError: worker entry script could not be loaded') }
+	mut script := unsafe { &html.ClassicScript(actual) }
 	if reason := script.error_to_rethrow() { return error(reason) }
 	// JSC evaluates source lazily. Check syntax before marking the environment
 	// ready so malformed entries follow the worker startup-failure path.
@@ -169,7 +185,7 @@ pub fn (mut agent WorkerAgentRuntime) load_entry() ! {
 	script.set_evaluator(agent.scripts.evaluator or { return error('Missing worker script evaluator') })
 	mut environment := agent.environment.settings.environment()
 	environment.execution_ready = true
-	agent.state_ = .ready
+	agent.complete_startup()!
 	// HTML reports a runtime exception through the worker global. Such an
 	// exception does not discard an otherwise successfully loaded worker.
 	script.run(.no) or {}
@@ -177,7 +193,51 @@ pub fn (mut agent WorkerAgentRuntime) load_entry() ! {
 
 pub fn (mut agent WorkerAgentRuntime) queue_message(bytes []u8) ! {
 	if agent.state_ in [.failed, .closed] { return }
+	if agent.state_ != .ready {
+		_ = decode_worker_message(bytes)!
+		persistent := platform.enter_persistent()
+		defer { platform.leave_persistent(persistent) }
+		agent.pending_messages << bytes.clone()
+		return
+	}
 	agent.global.queue_message(bytes)!
+}
+
+fn (mut agent WorkerAgentRuntime) complete_startup() ! {
+	for bytes in agent.pending_messages { agent.global.queue_message(bytes)! }
+	agent.pending_messages = []
+	agent.state_ = .ready
+}
+
+fn (mut agent WorkerAgentRuntime) load_module_entry() ! {
+	result := &WorkerEntryFetchResult{}
+	result_handle := voidptr(result)
+	mut module_script := ?&html.JavaScriptModuleScript(none)
+	// Fetching and linking populate the actual worker module map. Native JSC
+	// then consumes those same sources and owns syntax and module evaluation.
+	handle := voidptr(&agent)
+	complete := fn [result_handle] (script ?&html.Script) {
+		mut result := unsafe { &WorkerEntryFetchResult(result_handle) }
+		result.script = script
+	}
+	defer { platform.release_closure(voidptr(complete)) }
+	perform := fn [handle] (request &fetch.Request, top html.TopLevelModule) !&fetch.Response {
+		mut agent := unsafe { &WorkerAgentRuntime(handle) }
+		return agent.perform_script_fetch(request, top)
+	}
+	defer { platform.release_closure(voidptr(perform)) }
+	html.fetch_module_worker_script_graph(agent.entry_url, agent.environment.settings,
+		.worker, agent.environment.settings, perform, complete)!
+	if actual := result.script { module_script = unsafe { &html.JavaScriptModuleScript(actual) } }
+	script := module_script or { return error('NetworkError: worker module graph could not be loaded') }
+	if script.kind != .javascript { return error('Worker entry must be a JavaScript module') }
+	mut environment := agent.environment.settings.environment()
+	environment.execution_ready = true
+	mut modules := ModuleHost.create(agent.environment.settings, agent.fetcher.transport)
+	modules.install(mut agent.runtime)!
+	mut options := html.default_script_fetch_options()
+	options.credentials_mode = worker_module_credentials(agent.options.credentials)
+	modules.run_worker_module_entry(script, options, agent.fetcher.timeout_ms)!
 }
 
 pub fn (mut agent WorkerAgentRuntime) take_outgoing() [][]u8 {
