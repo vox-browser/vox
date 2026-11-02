@@ -1,14 +1,18 @@
 # BBC homepage instruction comparison
 
 **The requested 10% advantage remains open. BBC does not qualify for
-`OPTIMIZED_SITES.md`.** Cohort 40 has a Vox median of **33,933,451,330**,
-a same-binary control median of **35,617,351,645**, and a Brave lower median
-of **16,118,311,870** instructions. All 14 Vox/control captures preserve the
-original pixels and content and exit normally. Brave pair 7 changes 368,241
+`OPTIMIZED_SITES.md`.** Cohort 41 has a Vox median of **34,812,815,726**,
+a same-binary control median of **34,725,251,873**, and a Brave lower median
+of **16,130,512,650** instructions. All 14 Vox/control captures preserve the
+original pixels and content and exit normally. Brave pair 3 changes 64,177
 photo pixels, invalidating acceptance. Every observation remains retained;
 no sample is retried or excluded.
 
-Reusing closed text measurements reduces the observed Vox median by
+The attempted metric-context optimization regresses by **87,563,853 instructions
+(0.252161894520575%)** and has been removed. Its diagnostic integer gate also
+fails: `433311860140 > 143635008213`, ratio 2.715080947032688.
+
+The retained closed-text measurement cache in cohort 40 reduces the observed Vox median by
 **1,683,900,315 instructions (4.727752730701374%)** against its matched
 control. All seven candidate/control pairs improve, but the conservative
 highest-candidate/lowest-control ratio is 1.0341074114812472. The invalid
@@ -17,7 +21,7 @@ Brave cohort also fails the diagnostic integer gate:
 10% advantage over Brave. The prior baseline-JIT experiments remain rejected;
 production JIT thresholds remain unchanged.
 
-Cohorts 37–40 explicitly use `VOX_RETAIN_INCREMENTAL_WEBP_PAINT_POLICY=1` in
+Cohorts 37–41 explicitly use `VOX_RETAIN_INCREMENTAL_WEBP_PAINT_POLICY=1` in
 both Vox arms to reproduce the historical frozen RGB workload. Production's
 completed-response YUV policy changes photo pixels; an unchanged-binary
 isolation confirms that the historical switch restores the original reference.
@@ -27,8 +31,8 @@ or live site acceptance. Earlier invalid captures, protocol corrections,
 failing cohorts and their outliers remain retained.
 
 The machine-readable [evidence](benchmark-results/bbc-brave-instructions-2026-11-01.json)
-retains 990 attempts and 40 cohorts, including failures and first launches;
-826 complete cohort raw results were independently checked against the recorded
+retains 1,017 attempts and 41 cohorts, including failures and first launches;
+847 complete cohort raw results were independently checked against the recorded
 vectors, medians and integer gates. It also retains ownership audits, commands and artifact hashes. Raw archives, logs,
 PNGs, executable copies, PID registries, compiler output and guard receipts are
 under `Build/bbc-home-instructions-20261101-054807/` in the canonical checkout.
@@ -116,6 +120,7 @@ capture marker. An invalid cohort is retained for diagnosis, not acceptance.
 | Earlier baseline JIT, historical WebP policy | 35,976,507,921 | 15,918,309,134 | 2.361239852002433 | All captures valid; threshold 50 regresses 4.1131% against control; production default unchanged |
 | Later baseline JIT, historical WebP policy | 35,194,223,202 | 15,768,785,889 | 2.3256469115293705 | All captures valid; threshold 5,000 regresses 1.2389% against control; production default unchanged |
 | Closed text measurement reuse | 33,933,451,330 | 16,118,311,870 | 2.234345803519834 | Brave pair 7 photo differs; acceptance invalid; diagnostic gate fails |
+| Value-dependent metric contexts | 34,812,815,726 | 16,130,512,650 | 2.715080947032688 | Brave pair 3 photo differs; median regresses 0.2522% against control; implementation removed |
 
 The grid block-height cohort alternates an older control, candidate and Brave;
 control/candidate medians are 101,567,929,247 and 90,700,737,334 (10.70% observed
@@ -1879,3 +1884,94 @@ profiles. Every archived profile member and symlink was checked before its
 source directory retired; the restoration manifest and archives remain in
 Build. Counters, logs, PNGs, audits, raw results, fixtures and references keep
 their original paths and bytes.
+
+## Rejected nested measurements and metric contexts (cohort 41)
+
+The nested inline-measurement extension (`8704f76e2`, isolated tooling
+`0b411196c`) passed its focused checks and preserved original BBC content,
+pixels, native exits and JavaScript execution in enabled and disabled captures.
+It did not emit a nested-reuse witness. A separate O0 eligibility probe counted
+27,466 calls, 198 eligible entries, 198 stores, **zero hits and zero retained
+geometry records**. There was no acceptance cohort for an unused path. The
+extension and control were removed in `93dd6740a` and `3276aa39a`; the existing
+direct-text cache remains. The initial probe-preparation failure is retained.
+Removal restores the prior source exactly; 24 focused cases pass in both
+control settings in all three memory modes (144 executions), and all 207
+instruction-tool tests pass. Raw prefixes are `nested-inline-*`.
+
+A separate current CSS/workflow probe uses an O2 build with 1-in-64 sampled
+fine CSS scopes and exact entry counts. The final record has 63,580 counter
+reads, balanced depth and zero metadata errors. Original pixels, content and
+native exit pass, with one JavaScriptCore context and 2,115 evaluations. Style
+updates account for 6,068,210,171 inclusive instructions, viewport layout for
+6,041,144,578 inclusive, and engine callbacks for 6,612,688,206 selected-exclusive
+instructions. Fine scopes observe 54,197 metric-context constructions and
+12,725 property computations. These instrumented process scopes overlap,
+include observer/background work, and have sampling phase bias; multiplying
+recursive samples and adding them does not establish a saving. This diagnostic
+contains the unused nested extension but no reverted font-validation memo.
+Receipts are `current-css-workflow-*`, including the compact assessment.
+
+The next experiment (`70baf68b9`, tooling `51a345bfd`) prepared full font,
+viewport and query-container contexts only for values that consume them.
+Ordinary property computation, dependency tracking, font-size, line-height,
+math-depth, relative values, compound values and system colors retained their
+normal paths. All 64 focused CSS cases passed with the fast path enabled and
+forced off in default, no-GC and preallocated modes (384 executions); all 208
+instruction-tool tests passed. Enabled and disabled production diagnostics
+proved the intended path, original pixels/content/native exits, and actual
+JavaScript execution. No diagnostic instruction total supplies performance
+credit.
+
+The production build completed in 238.514674417 seconds, peak sampled RSS
+9,102,868,480 bytes. Source inputs were stable throughout the build. Pinned
+executable SHA256 is
+`61d23fed4b5fa73433e13b938b256bdbc4191bbacbda66ced4aa5af3e1742b9b`;
+generated C is
+`707559e6e1967f36194d4f119247611d50eebb1f42e7786af4215f4f55c58851`.
+Fresh headless startup and strict deep code-signature verification pass.
+Both cohort Vox arms use this exact executable; only the full-context control
+differs. The historical WebP setting is identical in both, and verbose font
+tracing and profiling are absent. All tool sources and native libraries are
+pinned in the receipts. An incorrect control flag first failed argument
+parsing with exit 2 before any browser launch; that attempt remains retained,
+and the corrected command uses a distinct `v2` output directory.
+
+All seven alternating control/Vox/Brave triples remain in
+`metric-computation-context-v2-cohort/`. Vox median 34,812,815,726 exceeds
+control 34,725,251,873 by 87,563,853 instructions (0.252161894520575%).
+The candidate/control pair reductions are 2.7156098402680073%,
+-28.339715225672023%, -0.21813721358538984%, 1.547023959861915%,
+2.679772009153669%, -1.6533154693872731% and 5.250426604934566%.
+The conservative candidate/control ratio is 1.2833971522567202. The second
+Vox trial's 43,331,186,014 instructions and first Brave launch's
+31,963,770,618 lower bound remain included. No outlier is excluded or retried.
+
+All 14 Vox/control captures pass original pixels/content and native exits.
+Brave pair 3 changes 64,177 photo pixels (2.0401%), maximum channel error 15,
+within `32,882 472x266`; its native exit and content audit pass, but the
+benchmark exits 1 for the pixel failure. The cohort therefore cannot establish
+acceptance. It also fails the diagnostic integer gate
+`433311860140 > 143635008213`, ratio 2.715080947032688.
+The memory guard adopts 68 processes without error, peaks at 1,753,956,352
+bytes and completes in 111.39216320899999 seconds; driver and guard exit 1.
+Host snapshots, commands, ownership audits, raw counters, all images and
+actual exits remain in the evidence root.
+
+The regressing CSS implementation and its control were removed in
+`2cd57a9fc` and `1a571768e`. The prior source is restored exactly; 61 focused
+cases pass in all three memory modes (183 executions), along with 207 tool
+tests. No new broad batch is triggered by a regressing median or an unused
+nested path. The previous broad batch still passes 455/456 in each mode,
+with the unchanged 13.5-versus-13 text-control failure; it does not establish
+a whole-suite pass or reset. The requested 10% goal remains open.
+
+Disk pressure required further verified lossless compression of closed
+compiler sources, focused binaries, historical pinned executables, sampled
+traces and 14 additional completed private profiles. Decoded SHA256 values,
+file modes and every archived profile member/symlink were checked before
+source retirement. Restore compressed inputs before reusing a historical
+binary or source path. Full manifests and compact receipts remain under
+`completed-profile-compression-v{2,3}-*` and
+`standalone-artifact-compression-v{4,5,6,7,8,9}-*`. No counter, log, PNG,
+audit, raw result, fixture or reference was removed or changed.
