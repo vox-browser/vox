@@ -1680,3 +1680,65 @@ Send acceptance and does not erase the exit-139 failure.
 production receipts and retained failures. Basic text-chat rendering passes for
 the recorded workflows; reliable fresh-load challenge handling and the
 rapid-click cleanup failure remain unresolved.
+
+## Preload allocation ownership follow-up, 2026-11-02
+
+`90c3b01e6` fixes discovery documents created while a temporary caller arena is
+entered. Their Document identity, URL and font-policy metadata now use
+persistent storage. Parsing and style discovery explicitly enter the discovery
+document's independent payload arena, and exported resource URL vectors and
+strings escape both that document and a temporary caller. The previous ordinary
+storage entry preserved an already-entered caller, which let asynchronous
+preload state retain temporary allocations.
+
+The new `main_preload_identity_storage_test.v` first fails because the Document
+itself belongs to the caller arena. After correcting document ownership, its
+second case exposes the separately retained URL vector in the caller arena.
+Both cases now release the caller before using the retained state and pass.
+The existing preload-storage and navigation-input-storage tests also pass:
+five functions in each of default, no-GC and preallocated modes. All required
+source hashes stay unchanged during these final checks. The preallocated run
+uses the same patched runtime preparation as production with the compiler from
+PATH. An earlier attempt selected a different V checkout that rejected the
+repository's existing `uint` usage; it executed no tests and earns no credit.
+
+Private evidence is in `Build/chatgpt-rapid-cleanup-20261102/`, including
+`preload-owner-before/`, `preload-owner-after-identity/`,
+`preload-owner-verified/` and `preload-regressions/`.
+
+The available production executable at the start of this follow-up is
+`f769e44dbef6c5c309654f532cadf36bc7d5288a4b99c9f4a03f40845649be49`.
+`baseline-burst-1/` reproduces Voice activation and the disposal crash on that
+identity with exit 139 and unchanged inputs. Separate fault-recorder runs
+catch an earlier map insertion fault and a CSS-source serialization fault
+during navigation. These instrumented failures are diagnostic evidence rather
+than pixel or performance acceptance; they do not prove that the preload fix
+repairs every observed fault.
+
+The fresh Brave capture with debugger auto-attachment fails readiness within
+two minutes. Removing that debugger attachment in `brave-fresh-home-2/` reaches
+the real homepage-ready marker with no runtime exceptions. Its homepage PNG is
+byte-identical to the retained reference, with zero differing pixels. The first
+failure remains retained and is not attributed to service compatibility. The
+fresh homepage and its unmodified static responses are retained for subsequent
+native checks, with missing immutable worker assets supplied from the earlier
+archive and every body hash verified.
+
+The corrected standalone HTML-link fixture in `css-root-diagnostic-3/` also
+parses and retires the saved 1,897,153-byte Voice stylesheet, retaining 699
+top-level rules and exiting 0 under its 3 GiB runtime guard. It does not
+reproduce the native navigation fault. The earlier standalone attempts fail
+at harness setup: one uses an invalid method name, and one constructs an
+inappropriate element before an unsafe link cast. They receive no parser
+acceptance credit.
+
+Browser validation of `90c3b01e6` remains pending. Multiple shared production
+builds complete compilation and smoke checks but are superseded by concurrent
+compiled-source edits, including receipts `20261102-135944-54a55bfc`,
+`20261102-140543-e157c03b` and `20261102-141127-73cb4598`. The canonical completed
+bundle still has the older `f769e44d…` identity. No duplicate build or copied
+bundle is used, and that older executable cannot validate the ownership fix.
+`validation-assessment.json` records the exact before/after checks and pending
+status; prepared native checks are `run_candidate_burst_1.py` and
+`run_candidate_typing_1.py`. No browser-crash resolution or additional native
+pixel-parity result is claimed for this source fix yet.
