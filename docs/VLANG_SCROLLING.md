@@ -1,6 +1,6 @@
 # vlang.io scrolling
 
-The live **60 FPS target remains unmet**. The latest verified default-path runs (`ae08e7ca`) measure **10.59 / 11.16 scroll-changing publications/s**, with every measured interval exceeding 16.67 ms. The region-cache experiment passes pixel checks but receives zero live input calls, so it was removed without a timing cohort. Loaded native libraries match the canonical bundle. The intermittent CSS/SVG fault remains unresolved; successful diagnostic launches do not establish a fix. These are completed Cocoa layer publications; physical display scanout is unmeasured. See the [latest checkpoint](#first-fault-diagnostics-and-region-cache-eligibility).
+The live **60 FPS target remains unmet**. The latest verified default-path runs (`ae08e7ca`) measure **10.59 / 11.16 scroll-changing publications/s**, with every measured interval exceeding 16.67 ms. A separate V function profile identifies costly paint replay, gradient tiles and repeated relayout; it supplies no unprofiled FPS improvement. Loaded native libraries match the selected executable's pinned paths. The intermittent CSS/SVG fault remains unresolved; successful diagnostic launches do not establish a fix. These are completed Cocoa layer publications; physical display scanout is unmeasured. See the [latest profile checkpoint](#v-function-profile-of-live-scrolling) and the retained [unprofiled verification](#first-fault-diagnostics-and-region-cache-eligibility).
 
 The [compositor milestone receipt](benchmark-results/vlang-scroll-20261101-compositor-milestone.json) and [compressed raw records](benchmark-results/vlang-scroll-20261101-compositor-milestone-raw.json.gz) retain 64 completed measurements and 1,657 raw text artifacts through this checkpoint, including diagnostic runs, failures, commands, input/publication timestamps, source and executable identities, host load, guard exits and rejected patches. Full artifacts remain in `Build/vlang-scroll-compositor-20261101-111741/`. That milestone is historical; later accepted cohorts are retained below.
 
@@ -483,3 +483,28 @@ The [admission checkpoint](benchmark-results/vlang-scroll-20261102-path-admissio
 Both padding and disabled-payload regressions fail before the fix and pass afterward, including under ASan/UBSan. Ninety-six native scenes across scales, backgrounds, gradients, strokes, clipping and color spaces pass all 384 exact comparisons. Canonical admission supplies 96 verified hits, including 64 gradient hits; the same binary with the old admission hash supplies zero hits. These are deterministic native admission/correctness checks, not scrolling performance results.
 
 The bounded browser-validation pipeline waits ten minutes without finding a completed production bundle containing the fix and launches no browser trials. Concurrent source changes supersede the shared builds; the available bundle remains usable for baseline work. Frozen-page and live-path/FPS validation of this change remain pending. No rendering tolerance, reference, unprofiled FPS result or instruction-savings carry changes.
+
+## V function profile of live scrolling
+
+The [V profile checkpoint](benchmark-results/vlang-scroll-20261102-v-profile.json) and [compressed raw records](benchmark-results/vlang-scroll-20261102-v-profile-raw.json.gz) retain both actual live runs, full function reports, compile commands, source/generated-C identities, loaded-library identities, content audits and actual browser/driver/guard exits. The user-requested `v -profile` diagnostic enables counters inside `main__BrowserApp__draw` and `main__BrowserApp__handle_event`, including their callees, with `-profile-no-inline`. The native observer confirms `SCROLL_PROFILE_RESET before_first_input=1 diagnostic_only=1` in each run.
+
+The original combined V/Clang compile exceeds the default 12 GiB aggregate guard. The interruption and later adoption of its orphaned compiler are retained. Compiling the same generated C separately at `-O1` succeeds with unchanged inputs and a 9,326,329,856-byte sampled peak. This produces the bare diagnostic executable `Build/v/Vox-profile` (`0ef490f4`), using existing production native libraries. The production app is not replaced or copied. This unpublished instrumented executable differs from the normal `-O3` production build and cannot establish production FPS.
+
+Both fresh live launches complete all 600 precise native delta-2 wheel inputs, reversing every 60 events, with the verified vlang.io title, 1024×768 document viewport and backing scale 2. Profiles/caches are empty, networking is direct HTTPS, author scripting is automatic and OS caches remain enabled. The first trial uses the usual 20-second settle, but its independent scheduled audit still records an interactive document and loading fonts. Its browser and precise driver exit zero; the validating wrapper/guard child exits one. This incomplete-content diagnostic remains retained. The second trial extends settling to 60 seconds and passes readiness, fonts, native-error, icon-size and script-mutated download-icon checks. Its author CSS is the unchanged 51,866-byte `b71286ff…` stylesheet; browser, precise driver, wrapper and guard all exit zero.
+
+The second profile records 66 draw calls taking 12,000.572 ms inclusive. Selected main-thread rendering callers are:
+
+| V function | Calls | Inclusive time (ms) | Exclusive time (ms) |
+| --- | ---: | ---: | ---: |
+| `BrowserApp.draw_command` | 11,319 | 5,919.162 | 3,888.052 |
+| `draw_native_css_gradient_tile` | 310 | 1,430.067 | 1,429.358 |
+| `BrowserApp.draw_chromium_rounded_background_pair` | 771 | 771.451 | 762.902 |
+| `native_draw_retained_glyph_run` | 2,174 | 553.489 | 547.179 |
+| `BrowserApp.relayout` | 36 | 2,751.048 | 0.067 |
+| `AnimationSampleStorage.retire_unreachable` | 66 | 576.558 | 0.035 |
+
+Native C calls are charged to their V callers. Exclusive paint-command time averages 58.91 ms per draw callback, gradient tiles 21.66 ms, rounded-background pairs 11.56 ms and glyph replay 8.29 ms in this instrumented build. Relayout averages 76.42 ms per invocation, or 41.68 ms amortized across those draw calls. These findings prioritize native leaf replay/gradient submission and repeated layout work; they do not establish the corresponding unprofiled costs or savings.
+
+V's profile enable flag and per-function counters are process-global. Background socket waits and timer sleeps also accumulate while a rendering root enables profiling, so the full exclusive sum is not a main-thread time partition. Their large raw totals must not be attributed to scroll blocking. Inclusive roots and callees overlap and must not be added. Counter reset is confirmed before input, but a function already active at reset can still contribute its elapsed time when it returns; exit-written reports also include tail callbacks inside the selected roots. These are function-profile diagnostics, not an exact closed first-to-last input interval.
+
+No unprofiled optimization cohort, cache-path credit, instruction saving or CSS/SVG crash resolution is claimed. The latest verified production throughput remains 10.59/11.16 scroll-changing publications/s, and smooth live 60 FPS remains open.
