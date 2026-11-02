@@ -373,6 +373,13 @@ Chromium solid fills with non-axis-aligned transforms use Skia edge coverage,
 as rounded rectangles already do. Native validation is tracked in the Slashdot
 receipt.
 
+`chromium-blurred-byte-text-shadow` covers Submit-style text on colored
+backdrops, fractional origins, three blur radii, translucent and opaque shadows,
+and Helvetica Neue, Arial and Verdana. Two full-uBO Brave references agree at
+1024×768, scale 1. The preceding `f769e44d…` production browser differs at
+1,059 pixels. The GPU-blending fix has 18 passing native shadow/cache comparisons;
+this browser regression awaits a production bundle containing that fix.
+
 `stackoverflow-independent-hyphen-shaping` checks inserted system-font hyphens
 at integer and fractional line origins, narrow line fitting, explicit hyphen
 controls, and Arial. Its 800×600, scale 1 reference comes from two agreeing
