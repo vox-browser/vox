@@ -104,6 +104,7 @@ class CNNHomeInstructionTests(unittest.TestCase):
 
     def pairs(self, count=7, vox=900, brave=1000):
         return [dict(vox=dict(exit=0, content_exact=True, pixels_exact=True,
+                             capture_ownership_audit=dict(passed=True),
                              filter_gate=dict(passed=True),
                              launch_instruction_interval=dict(lower=vox, upper=vox)),
                      brave=dict(exit=0, content_exact=True, pixels_exact=True,
@@ -127,6 +128,10 @@ class CNNHomeInstructionTests(unittest.TestCase):
         pairs = self.pairs()
         pairs[0]['vox']['filter_gate']['passed'] = False
         with self.assertRaisesRegex(RuntimeError, 'full-uBO'):
+            benchmark.summarize(pairs)
+        pairs = self.pairs()
+        del pairs[0]['vox']['capture_ownership_audit']
+        with self.assertRaisesRegex(RuntimeError, 'endpoint-matching helper ownership'):
             benchmark.summarize(pairs)
 
     def test_control_statistics_require_complete_verified_controls(self):

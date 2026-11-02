@@ -152,12 +152,15 @@ def summarize(pairs, diagnostic=False, target_vox_fraction=.9):
                     target_vox_fraction=target_vox_fraction,
                     reason='Diagnostic observations; seven complete pairs required')
     browser.require(len(pairs) >= 7, 'Seven complete alternating pairs required')
+    browser.require(all(pair.get('vox', {}).get('capture_ownership_audit', {}).get('passed') is True
+                        for pair in pairs), 'Every Vox capture needs endpoint-matching helper ownership')
     browser.require(all(pair.get('vox', {}).get('filter_gate', {}).get('passed') is True
                         and pair.get('brave', {}).get('brave_setup') for pair in pairs),
                     'Every pair needs verified full-uBO filtering')
     result = browser.evaluate_pairs([dict(vox=pair['vox'], brave=pair['brave']) for pair in pairs], target_vox_fraction, 'launch')
     if any('control' in pair for pair in pairs):
         browser.require(all('control' in pair and pair['control'].get('filter_gate', {}).get('passed')
+                            and pair['control'].get('capture_ownership_audit', {}).get('passed')
                             for pair in pairs), 'Every control needs verified content and filters')
         result['matched_control'] = browser.evaluate_pairs(
             [dict(vox=pair['vox'], brave=pair['control']) for pair in pairs], 1, 'launch')
@@ -310,6 +313,7 @@ def main(argv=None, workload=None):
     expected = workload.fixture_expectations(args.archive)
     args.output.mkdir(parents=True, exist_ok=False)
     args.scale, args.instruction_scope = 1, 'launch'
+    args.audit_vox_capture_ownership = True
     args.brave_emulated_viewport = True
     args.brave_initial_page = True
     args.audit_config = args.output / 'audit-config.json'
