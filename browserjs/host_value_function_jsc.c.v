@@ -5,7 +5,6 @@ module browserjs
 
 import webidl
 import platform
-import os
 
 
 #include "host_function_darwin.h"
@@ -21,18 +20,6 @@ fn C.vox_jsc_JSObjectMakeDeferredPromise(context voidptr, resolve &voidptr, reje
 fn C.vox_jsc_JSValueToObject(context voidptr, value voidptr, exception &voidptr) voidptr
 
 __global native_value_host_functions_ = map[voidptr]&ValueHostFunctionRecord{}
-
-const box_callback_arguments = os.getenv('VOX_BOX_CALLBACK_ARGUMENTS') != ''
-const callback_argument_diagnostics = os.getenv('VOX_CALLBACK_ARGUMENT_DIAGNOSTICS') != ''
-__global callback_argument_diagnostics_seen u8
-
-fn report_small_callback_arguments(count int) {
-	if !callback_argument_diagnostics { return }
-	bit := u8(1) << count
-	if callback_argument_diagnostics_seen & bit != 0 { return }
-	callback_argument_diagnostics_seen |= bit
-	eprintln('Vox callback arguments: direct ${count}')
-}
 
 @[export: 'vox_jsc_value_host_function']
 fn javascript_core_value_host_function(context voidptr, function voidptr, receiver voidptr, count uint, arguments &voidptr, exception &voidptr) voidptr {
@@ -148,11 +135,6 @@ fn (mut runtime Runtime) initialize_javascript_value_intrinsics() ! {
 	// global Reflect/Promise properties. Native Promise adoption remains JSC's
 	// Resolve function, including then getter access and thenable job scheduling.
 	runtime.value_call_intrinsic_ = runtime.evaluate_host_value('(function(){const apply=Reflect.apply;return function(callback,receiver,args,caught){if(!caught)return apply(callback,receiver,args);try{return [true,apply(callback,receiver,args)]}catch(error){return [false,error]}}})()')!
-	// Common callback arities can build their argument list inside JSC, avoiding
-	// a C API array allocation. Reflect.apply still preserves primitive/undefined
-	// receivers, callable proxies, and the original exception value.
-	runtime.value_call_zero_intrinsic_ = runtime.evaluate_host_value('(function(){const apply=Reflect.apply;return function(callback,receiver){return apply(callback,receiver,[])}})()')!
-	runtime.value_call_one_intrinsic_ = runtime.evaluate_host_value('(function(){const apply=Reflect.apply;return function(callback,receiver,value){return apply(callback,receiver,[value])}})()')!
 	runtime.promise_observe_intrinsic_ = runtime.evaluate_host_value('(function(){const apply=Reflect.apply,then=Promise.prototype.then;return function(promise,fulfilled,rejected){return apply(then,promise,[fulfilled,rejected])}})()')!
 	runtime.value_error_intrinsic_ = runtime.evaluate_host_value('(function(){const E=Error,T=TypeError,R=RangeError,V=EvalError,F=ReferenceError,U=URIError;return function(kind,message){return new (kind==="TypeError"?T:kind==="RangeError"?R:kind==="EvalError"?V:kind==="ReferenceError"?F:kind==="URIError"?U:E)(message)}})()')!
 	runtime.value_same_intrinsic_ = runtime.evaluate_host_value('Object.is')!
@@ -210,16 +192,6 @@ fn (runtime &Runtime) call_engine_function(function voidptr, arguments []voidptr
 
 pub fn (runtime &Runtime) call_javascript_function(function voidptr, receiver voidptr, arguments []voidptr) !voidptr {
 	runtime.require_javascript_value_context()!
-	if !box_callback_arguments {
-		if arguments.len == 0 {
-			report_small_callback_arguments(0)
-			return runtime.call_engine_function(runtime.value_call_zero_intrinsic_, [function, receiver])
-		}
-		if arguments.len == 1 {
-			report_small_callback_arguments(1)
-			return runtime.call_engine_function(runtime.value_call_one_intrinsic_, [function, receiver, arguments[0]])
-		}
-	}
 	mut exception := unsafe { nil }
 	array := C.vox_jsc_JSObjectMakeArray(runtime.context, uint(arguments.len), arguments.data, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
