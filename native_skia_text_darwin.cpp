@@ -370,6 +370,16 @@ auto graphite_path_parts_draw()
     return draw;
 }
 
+auto graphite_svg_image_region_draw()
+{
+    static auto draw = [] {
+        void* library = dlopen("@rpath/libVoxGraphite.dylib", RTLD_LAZY | RTLD_LOCAL);
+        return library ? reinterpret_cast<decltype(&vox_graphite_draw_svg_image_region_pixels)>(
+            dlsym(library, "vox_graphite_draw_svg_image_region_pixels")) : nullptr;
+    }();
+    return draw;
+}
+
 auto graphite_path_batch_draw()
 {
     static auto draw = [] {
@@ -4701,21 +4711,19 @@ extern "C" int ladybird_v_skia_draw_svg_path_batch(CGContextRef destination,
     bool all_draws_clipped = gpu_clips;
     auto image_to_raster = raster_matrix(matrix, region, sx, sy);
     float viewport[] {x, y, width, height};
-    auto draw_in_raster = [&](std::vector<uint32_t>& target, int target_width,
-                              int target_height, int offset_x, long offset_y, bool force_msaa = false) {
+    auto make_svg_picture = [&](int target_width, int target_height, long offset_x,
+                                long offset_y, bool force_msaa,
+                                std::vector<uint32_t> const* backdrop_pixels) -> sk_sp<SkData> {
         auto parent = image_to_raster;
         parent.postTranslate(offset_x, offset_y);
-        float parent_values[9];
-        parent.get9(parent_values);
-        if (gpu_clips || (!s_raster_layer_is_root && !has_background && shared_picture_draw())) {
             SkPictureRecorder recorder;
             auto* canvas = recorder.beginRecording(SkRect::MakeWH(target_width, target_height));
-            if (has_background) {
+            if (backdrop_pixels) {
                 auto info = SkImageInfo::Make(target_width, target_height, kBGRA_8888_SkColorType,
                     kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
                 auto backdrop = SkImages::RasterFromPixmapCopy(
-                    SkPixmap(info, target.data(), size_t(target_width) * 4));
-                if (!backdrop) return false;
+                    SkPixmap(info, backdrop_pixels->data(), size_t(target_width) * 4));
+                if (!backdrop) return nullptr;
                 canvas->drawImage(backdrop, 0, 0);
             }
             if (force_msaa) {
@@ -4745,8 +4753,18 @@ extern "C" int ladybird_v_skia_draw_svg_path_batch(CGContextRef destination,
             SkSerialProcs procs;
             procs.fImageProc = serialize_shared_picture_image;
             auto bytes = picture->serialize(&procs);
+        return recorded ? bytes : nullptr;
+    };
+    auto draw_in_raster = [&](std::vector<uint32_t>& target, int target_width,
+                              int target_height, int offset_x, long offset_y, bool force_msaa = false) {
+        auto parent = image_to_raster;
+        parent.postTranslate(offset_x, offset_y);
+        float parent_values[9]; parent.get9(parent_values);
+        if (gpu_clips || (!s_raster_layer_is_root && !has_background && shared_picture_draw())) {
+            auto bytes = make_svg_picture(target_width, target_height, offset_x, offset_y,
+                force_msaa, has_background ? &target : nullptr);
             float identity[] {1, 0, 0, 0, 1, 0, 0, 0, 1};
-            if (recorded && bytes && shared_picture_draw()(reinterpret_cast<uint8_t*>(target.data()),
+            if (bytes && shared_picture_draw()(reinterpret_cast<uint8_t*>(target.data()),
                     target_width, target_height, target_width * 4,
                     bytes->data(), bytes->size(), identity)) return true;
         }
@@ -4764,7 +4782,36 @@ extern "C" int ladybird_v_skia_draw_svg_path_batch(CGContextRef destination,
     long first_row = std::lround((region.top - page_y + scroll_y
         + (s_raster_layer_is_root ? s_root_raster_scroll_y : -s_raster_origin_y)) * scale);
     bool drawn = false;
-    if (has_background) drawn = draw_chromium_root_raster_grid(pixels, raster_width,
+    bool const compact_svg_regions = !std::getenv("VOX_DISABLE_SVG_IMAGE_REGIONS");
+    auto draw_region = graphite_svg_image_region_draw();
+    auto draw_picture_region = picture_regions_backdrop_draw();
+    if (compact_svg_regions && has_background && (gpu_clips ? draw_picture_region != nullptr : draw_region != nullptr))
+        drawn = draw_chromium_root_raster_grid<true>(pixels, raster_width, raster_height,
+            region, page_x, page_y, scroll_y, scale,
+            [&](auto& target, long dx, long dy, bool msaa, int x, int y, int w, int h) {
+                auto parent = image_to_raster;
+                parent.postTranslate(dx, dy);
+                float values[9]; parent.get9(values);
+                VoxGraphitePixelRegion view {x, y, w, h, w * 4,
+                    reinterpret_cast<uint8_t*>(target.data())};
+                int flags = VOX_GRAPHITE_SVG_BACKDROP | (msaa ? VOX_GRAPHITE_SVG_FORCE_MSAA : 0);
+                int result = 0;
+                if (gpu_clips) {
+                    auto bytes = make_svg_picture(s_msaa_grid_width, s_msaa_grid_height,
+                        dx, dy, msaa, nullptr);
+                    if (bytes) {
+                        VoxGraphitePictureRegion job {view, bytes->data(), bytes->size(),
+                            {1, 0, 0, 0, 1, 0, 0, 0, 1}};
+                        result = draw_picture_region(&job, 1, s_msaa_grid_width, s_msaa_grid_height);
+                    }
+                } else result = draw_region(&view, s_msaa_grid_width, s_msaa_grid_height,
+                    flags, paths, count, values, viewport, rounded_clip);
+                if (result && std::getenv("VOX_SVG_REGION_DIAGNOSTICS"))
+                    std::fprintf(stderr, "VOX_SVG_REGION tile=%d,%d view=%d,%d,%d,%d\n",
+                        s_msaa_grid_width, s_msaa_grid_height, x, y, w, h);
+                return result != 0;
+            });
+    if (!drawn && has_background) drawn = draw_chromium_root_raster_grid(pixels, raster_width,
         raster_height, region, page_x, page_y, scroll_y, scale,
         [&](auto& target, long offset_x, long offset_y, bool msaa) {
             return draw_in_raster(target, s_msaa_grid_width, s_msaa_grid_height, offset_x, offset_y, msaa);

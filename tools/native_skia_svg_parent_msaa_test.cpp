@@ -24,9 +24,11 @@ int main()
     constexpr int width = 1024, height = 768, tile_rows = 256, origin_y = 254;
     float identity[] {1, 0, 0, 1, 0, 0};
     int cases = 0, different = 0;
-    for (bool clipped : {false, true}) for (bool msaa : {false, true})
+    for (bool regional : {false, true}) for (bool clipped : {false, true}) for (bool msaa : {false, true})
     for (int scale : {1, 2}) for (float phase : {0.f, .25f, .5f, .875f})
     for (uint32_t background : {0xfffcfdffU, 0xff78b247U}) {
+        if (regional) unsetenv("VOX_DISABLE_SVG_IMAGE_REGIONS");
+        else setenv("VOX_DISABLE_SVG_IMAGE_REGIONS", "1", 1);
         int pw = width * scale, ph = height * scale;
         std::vector<uint8_t> actual(size_t(pw) * ph * 4);
         for (size_t i = 0; i < actual.size(); i += 4) {

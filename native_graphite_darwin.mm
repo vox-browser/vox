@@ -1723,14 +1723,14 @@ int vox_graphite_draw_path_batch_pixels(uint8_t* pixels, int width, int height,
 // Keep the SVG's user-space transform separate from its embedding transform.
 // A non-scaling stroke cancels the former while retaining the latter, including
 // device scale and the raster tile's translation.
-extern "C" __attribute__((visibility("default")))
-int vox_graphite_draw_svg_image_pixels(uint8_t* pixels, int width, int height,
+static int draw_svg_image_pixels(uint8_t* pixels, int width, int height,
     int pitch, int flags, VoxGraphitePath const* paths, int count,
-    float const* parent_values, float const* viewport, float const* rounded_clip)
+    float const* parent_values, float const* viewport, float const* rounded_clip,
+    VoxGraphitePixelRegion const* region)
 {
     if (!pixels || !paths || !parent_values || !viewport || count <= 0 || count > 65536
         || width <= 0 || height <= 0 || pitch <= 0
-        || static_cast<size_t>(pitch) < static_cast<size_t>(width) * 4) return 0;
+        || static_cast<size_t>(pitch) < static_cast<size_t>(region ? region->width : width) * 4) return 0;
     for (int index = 0; index < count; ++index)
         if (!paths[index].segments || paths[index].segment_count <= 0) return 0;
     std::lock_guard lock(gpu_mutex);
@@ -1742,7 +1742,11 @@ int vox_graphite_draw_svg_image_pixels(uint8_t* pixels, int width, int height,
         kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
     auto surface = SkSurfaces::RenderTarget(recorder.get(), info);
     if (!surface) return 0;
-    if (flags & VOX_GRAPHITE_SVG_BACKDROP) surface->writePixels(SkPixmap(info, pixels, pitch), 0, 0);
+    if (region) {
+        surface->getCanvas()->clear(SK_ColorTRANSPARENT);
+        if (flags & VOX_GRAPHITE_SVG_BACKDROP)
+            surface->writePixels(SkPixmap(info.makeWH(region->width, region->height), pixels, pitch), region->x, region->y);
+    } else if (flags & VOX_GRAPHITE_SVG_BACKDROP) surface->writePixels(SkPixmap(info, pixels, pitch), 0, 0);
     else surface->getCanvas()->clear(SK_ColorTRANSPARENT);
     SkMatrix matrix;
     matrix.set9(parent_values);
@@ -1760,7 +1764,45 @@ int vox_graphite_draw_svg_image_pixels(uint8_t* pixels, int width, int height,
     for (int index = 0; index < count; ++index)
         if (!draw_path_on_canvas(canvas, paths + index, &parent)) return 0;
     if (rounded_clip) canvas->restore();
-    return read_pixels(gpu, recorder.get(), surface.get(), info, pixels, pitch);
+    if (!region) return read_pixels(gpu, recorder.get(), surface.get(), info, pixels, pitch);
+    auto recording = recorder.get()->snap();
+    skgpu::graphite::InsertRecordingInfo insertion;
+    insertion.fRecording = recording.get();
+    if (gpu->insertRecording(insertion) != skgpu::graphite::InsertStatus::kSuccess) return 0;
+    std::unique_ptr<const SkImage::AsyncReadResult> result;
+    gpu->asyncRescaleAndReadPixels(surface.get(), info.makeWH(region->width, region->height),
+        SkIRect::MakeXYWH(region->x, region->y, region->width, region->height),
+        SkImage::RescaleGamma::kSrc, SkImage::RescaleMode::kNearest,
+        [](void* target, std::unique_ptr<const SkImage::AsyncReadResult> data) {
+            *static_cast<std::unique_ptr<const SkImage::AsyncReadResult>*>(target) = std::move(data);
+        }, &result);
+    if (!gpu->submit(skgpu::graphite::SubmitInfo(skgpu::graphite::SyncToCpu::kYes)) || !result) return 0;
+    for (int row = 0; row < region->height; ++row)
+        std::memcpy(pixels + size_t(row) * pitch,
+            static_cast<uint8_t const*>(result->data(0)) + size_t(row) * result->rowBytes(0), size_t(region->width) * 4);
+    return 1;
+}
+
+extern "C" __attribute__((visibility("default")))
+int vox_graphite_draw_svg_image_pixels(uint8_t* pixels, int width, int height,
+    int pitch, int flags, VoxGraphitePath const* paths, int count,
+    float const* parent, float const* viewport, float const* rounded_clip)
+{
+    return draw_svg_image_pixels(pixels, width, height, pitch, flags, paths, count, parent, viewport, rounded_clip, nullptr);
+}
+
+extern "C" __attribute__((visibility("default")))
+int vox_graphite_draw_svg_image_region_pixels(VoxGraphitePixelRegion const* region,
+    int width, int height, int flags, VoxGraphitePath const* paths, int count,
+    float const* parent, float const* viewport, float const* rounded_clip)
+{
+    if (!region || !region->pixels || width <= 0 || height <= 0 || width > 16384 || height > 16384
+        || region->x < 0 || region->y < 0 || region->width <= 0 || region->height <= 0
+        || region->width > width || region->height > height || region->pitch <= 0
+        || region->x > width - region->width || region->y > height - region->height
+        || size_t(region->pitch) < size_t(region->width) * 4) return 0;
+    return draw_svg_image_pixels(region->pixels, width, height, region->pitch, flags,
+        paths, count, parent, viewport, rounded_clip, region);
 }
 
 #include "native_graphite_svg_pattern.h"

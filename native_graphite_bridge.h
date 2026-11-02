@@ -188,6 +188,11 @@ int vox_graphite_draw_path_batch_pixels(uint8_t *pixels, int width, int height,
 int vox_graphite_draw_svg_image_pixels(uint8_t *pixels, int width, int height,
     int pitch, int flags, const VoxGraphitePath *paths, int count,
     const float *parent_matrix, const float *viewport, const float *rounded_clip);
+// Preserve the full SVG tile coordinates while transferring one CPU region.
+// Unsupported inputs and failures leave the region and its padding untouched.
+int vox_graphite_draw_svg_image_region_pixels(const VoxGraphitePixelRegion *region,
+    int surface_width, int surface_height, int flags, const VoxGraphitePath *paths,
+    int count, const float *parent_matrix, const float *viewport, const float *rounded_clip);
 int vox_graphite_draw_svg_pattern_pixels(uint8_t *pixels, int width, int height,
     int pitch, int has_background, const VoxGraphitePath *paths, int count,
     const float *parent_matrix, const float *tile, const float *clip, float opacity, int linear);
