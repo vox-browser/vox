@@ -4500,12 +4500,11 @@ extern "C" int ladybird_v_skia_draw_outer_box_shadow(CGContextRef destination,
         if (auto* recording = shared_recording_canvas(destination)) {
             SkPaint paint;
             paint.setAntiAlias(true);
-            auto color = SkColorSetARGB(alpha, red, green, blue);
             if (has_float_color)
-                color = SkColor4f{s_unrounded_paint_color[0], s_unrounded_paint_color[1],
-                    s_unrounded_paint_color[2], s_unrounded_paint_color[3]}.toSkColor();
-            // Chromium's box-shadow paint uses the rounded sRGB color.
-            paint.setColor(color);
+                paint.setColor4f({s_unrounded_paint_color[0], s_unrounded_paint_color[1],
+                    s_unrounded_paint_color[2], s_unrounded_paint_color[3]});
+            else
+                paint.setColor(SkColorSetARGB(alpha, red, green, blue));
             paint.setMaskFilter(SkMaskFilter::MakeBlur(kNormal_SkBlurStyle,
                 std::max(blur, 0.0f) / 2.0f));
             recording->save();
