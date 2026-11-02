@@ -602,6 +602,7 @@ mut:
 	// scene arenas (see display_list_scene.v).
 	paint_tree_storage &PaintTreeStorage = unsafe { nil }
 	paint_tree_pool &PaintTreeStoragePool = unsafe { nil }
+	equal_text_cache &NativeEqualTextCache = unsafe { nil }
 	scene      &DisplayListScene      = unsafe { nil }
 	scene_pool &DisplayListScenePool = unsafe { nil }
 }
@@ -613,6 +614,13 @@ fn document_layout_update_callback_with_paint_tree(document &dom.Document, viewp
 	// synchronous pass too, including its retained paint-tree projection.
 	mut font_policy := platform.begin_layout_font_policy_scope()
 	defer { font_policy.finish() }
+	if needs_layout_tree_rebuild && build_paint_tree {
+		if mut previous := document_layout_result(document) {
+			if previous.reuse_native_equal_text(viewport_width, viewport_height) {
+				return voidptr(previous)
+			}
+		}
+	}
 	resize_handle_states := if previous := document_layout_result(document) {
 		previous.resize_handle_states.clone()
 	} else {
@@ -654,6 +662,7 @@ fn document_layout_update_callback_with_paint_tree(document &dom.Document, viewp
 	}
 	if build_paint_tree {
 		install_document_painting_bridge(document, result_ptr)
+		result_ptr.remember_native_equal_text_inputs(viewport_width, viewport_height)
 	}
 	return voidptr(result_ptr)
 }

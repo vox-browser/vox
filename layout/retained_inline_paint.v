@@ -57,6 +57,9 @@ fn rebase_retained_inline_fragment_into(fragment &TextFragment, dx f64, dy f64,
 	}
 	output = TextFragment{
 		...fragment
+		text_run_id: if fragment.layout_handle != unsafe { nil } {
+			text_run_identity(unsafe { &Node(fragment.layout_handle) })
+		} else { fragment.text_run_id }
 		x: x
 		y: y
 		paint_line_top: top
