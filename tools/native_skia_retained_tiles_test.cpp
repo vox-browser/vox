@@ -34,6 +34,17 @@ static sk_sp<SkPicture> scene(SharedRootRecording const& group, SkColor color,
 
 int main()
 {
+    // Exercise vector and scalar texture sampling, premultiplication and
+    // destination padding with an independently known quarter-step result.
+    uint8_t above[68], below[68], sampled[72];
+    std::fill_n(above, 68, uint8_t(0));
+    std::fill_n(below, 68, uint8_t(128));
+    std::fill_n(sampled, 72, uint8_t(177));
+    retained_layer_lerp_rows(sampled, above, below, 68, .25f);
+    for (int i = 0; i < 68; ++i) assert(sampled[i] == 32);
+    for (int i = 68; i < 72; ++i) assert(sampled[i] == 177);
+    retained_layer_lerp_rows(sampled, above, below, 68, 1);
+    for (int i = 0; i < 68; ++i) assert(sampled[i] == 128);
     auto first = group_at(20), second = group_at(40);
     auto a = scene(first, SK_ColorRED, true), b = scene(second, SK_ColorRED, true);
     RetainedLayerCanvas ca(first), cb(second);
@@ -61,6 +72,21 @@ int main()
     cf.finish(); cg.finish();
     assert(cf.valid && cg.valid && cf.draws.size() == 1 && cg.draws.size() == 1);
     assert(cf.draws[0].key == cg.draws[0].key);
+    // Match the bridge's float arithmetic when the document starts below
+    // chrome. Computing page minus double-scroll first gives another float.
+    auto fractional_a = group_at(4.20000006258), fractional_b = group_at(100.800001502);
+    fractional_a.page_y = fractional_b.page_y = 112;
+    auto fractional_picture = [](SharedRootRecording const& group) {
+        SkPictureRecorder recorder; auto* c = recorder.beginRecording(SkRect::MakeWH(1024, 880));
+        c->setMatrix(SkMatrix::Translate(0, group.page_y - float(group.scroll_y)));
+        SkPaint paint; c->drawRect(SkRect::MakeXYWH(100, 200, 60, 30), paint);
+        return recorder.finishRecordingAsPicture();
+    };
+    RetainedLayerCanvas ch(fractional_a), ci(fractional_b);
+    fractional_picture(fractional_a)->playback(&ch); fractional_picture(fractional_b)->playback(&ci);
+    ch.finish(); ci.finish();
+    assert(ch.valid && ci.valid && ch.draws.size() == 1 && ci.draws.size() == 1);
+    assert(ch.draws[0].key == ci.draws[0].key);
     // A restored clip must not leak into the following independent primitive.
     auto unclipped = scene(first, SK_ColorRED, false);
     RetainedLayerCanvas cc(first); unclipped->playback(&cc); cc.finish();

@@ -1,4 +1,5 @@
 #pragma once
+#include "native_chromium_layer_texture_scroll.h"
 
 // Included inside the shared-picture namespace. Tiles contain transparent
 // layer ink, never a captured destination. A cache hit still blends against
@@ -229,7 +230,7 @@ public:
     explicit RetainedLayerCanvas(SharedRootRecording const& group)
         : SkNoDrawCanvas(SkIRect::MakeLTRB(-32768, -32768, 32768, 32768)), group_(group),
           output_(recorder_.beginRecording(SkRect::MakeLTRB(-32768, -32768, 32768, 32768))),
-          root_y_(float(group.page_y - group.scroll_y)) { }
+          root_y_(group.page_y - float(group.scroll_y)) { }
     sk_sp<SkPicture> finish() { return recorder_.finishRecordingAsPicture(); }
 };
 
@@ -301,7 +302,13 @@ static bool draw_retained_layer_tiles(SharedRootRecording const& group, SkPictur
     RetainedLayerCanvas canvas(group); picture->playback(&canvas);
     auto canonical = canvas.finish();
     if (!canvas.valid || !canonical || canvas.draws.empty()) return false;
-    float world_x = group.origin_x, world_y = float(group.origin_y + group.page_y - group.scroll_y);
+    auto* texture_mode = std::getenv("VOX_ENABLE_LAYER_TEXTURE_SCROLL");
+    bool texture_scroll = texture_mode && !std::strcmp(texture_mode, "1")
+        && group.origin_x * group.scale == std::floor(group.origin_x * group.scale)
+        && group.origin_y * group.scale == std::floor(group.origin_y * group.scale);
+    float world_x = group.origin_x;
+    float world_y = texture_scroll ? group.page_y - float(group.scroll_y) + group.origin_y
+        : float(group.origin_y + group.page_y - group.scroll_y);
     float device_x = world_x * group.scale, device_y = world_y * group.scale;
     int anchor_x = std::floor(device_x), anchor_y = std::floor(device_y);
     float phase_x = device_x - anchor_x, phase_y = device_y - anchor_y;
@@ -326,13 +333,14 @@ static bool draw_retained_layer_tiles(SharedRootRecording const& group, SkPictur
                 auto* bytes = reinterpret_cast<uint8_t const*>(&value);
                 tile.key.insert(tile.key.end(), bytes, bytes + sizeof(value));
             };
-            append(tw); append(th); append(group.scale); append(phase_x); append(phase_y);
+            append(tw); append(th); append(group.scale); append(texture_scroll);
+            append(phase_x); append(texture_scroll ? 0.f : phase_y);
             append(tile.x); append(tile.y);
             // Key every operation affecting the complete tile, even when the
             // current viewport exposes only part of it. Missing/changed culled
             // operations change that key; unchanged input can reuse edge tiles.
             auto bounds = SkRect::MakeXYWH((tile.x - phase_x) / group.scale,
-                (tile.y - phase_y) / group.scale, tw / group.scale, th / group.scale);
+                (tile.y - (texture_scroll ? 0.f : phase_y)) / group.scale, tw / group.scale, th / group.scale);
             for (auto const& draw : canvas.draws) {
                 if (!SkRect::Intersects(bounds, draw.bounds)) continue;
                 append(uint32_t(draw.key.size()));
@@ -361,11 +369,13 @@ static bool draw_retained_layer_tiles(SharedRootRecording const& group, SkPictur
             VoxGraphitePictureRegion region {};
             region.output = {0, 0, tw, th, tw * 4, reinterpret_cast<uint8_t*>(tile.raster->data())};
             region.bytes = bytes->data(); region.size = bytes->size();
-            float matrix[] {group.scale, 0, phase_x - tile.x, 0, group.scale, phase_y - tile.y, 0, 0, 1};
+            float matrix[] {group.scale, 0, phase_x - tile.x, 0, group.scale,
+                (texture_scroll ? 0.f : phase_y) - tile.y, 0, 0, 1};
             std::copy(matrix, matrix + 9, region.matrix); regions.push_back(region);
         }
         if (!picture_regions_draw()(regions.data(), regions.size(), tw, th)) return false;
     }
+    std::vector<uint32_t> sample_rows;
     for (auto& tile : tiles) {
         if (tile.raster) {
             tile.pixels = std::make_shared<RetainedLayerTilePixels>(*tile.raster, tw, th);
@@ -373,13 +383,28 @@ static bool draw_retained_layer_tiles(SharedRootRecording const& group, SkPictur
         }
         int x0 = std::max(first_x, tile.x + 1), x1 = std::min(first_x + width, tile.x + tw - 1);
         int y0 = std::max(first_y, tile.y + 1), y1 = std::min(first_y + height, tile.y + th - 1);
-        if (x1 > x0 && y1 > y0 && !tile.pixels->pixels.copy_region_to(
+        if (x1 <= x0 || y1 <= y0) continue;
+        if (texture_scroll && phase_y != 0) {
+            // The border above the owned texels supplies the second sample.
+            // Decompress into one reusable tile-sized scratch allocation.
+            int span = x1 - x0, rows = y1 - y0;
+            sample_rows.resize(size_t(span) * (rows + 1));
+            if (!tile.pixels->pixels.copy_region_to(reinterpret_cast<uint8_t*>(sample_rows.data()),
+                    tw, th, size_t(span) * 4,
+                    {size_t(x0 - tile.x), size_t(y0 - tile.y - 1), size_t(x1 - tile.x), size_t(y1 - tile.y)})) return false;
+            for (int y = 0; y < rows; ++y)
+                retained_layer_lerp_rows(reinterpret_cast<uint8_t*>(output.data()
+                        + size_t(y0 + y - first_y) * width + x0 - first_x),
+                    reinterpret_cast<uint8_t const*>(sample_rows.data() + size_t(y) * span),
+                    reinterpret_cast<uint8_t const*>(sample_rows.data() + size_t(y + 1) * span),
+                    size_t(span) * 4, 1 - phase_y);
+        } else if (!tile.pixels->pixels.copy_region_to(
                 reinterpret_cast<uint8_t*>(output.data() + size_t(y0 - first_y) * width + x0 - first_x),
                 tw, th, size_t(width) * 4,
                 {size_t(x0 - tile.x), size_t(y0 - tile.y), size_t(x1 - tile.x), size_t(y1 - tile.y)})) return false;
     }
     if (std::getenv("VOX_RETAINED_LAYER_TILES_DIAGNOSTICS"))
-        std::fprintf(stderr, "VOX_RETAINED_LAYER_TILES hits=%d misses=%d raster_pixels=%zu draws=%zu phase_x=%.9g phase_y=%.9g t_us=%.3f\n",
-            hits, misses, raster_area, canvas.draws.size(), phase_x, phase_y, speculative_picture_time());
+        std::fprintf(stderr, "VOX_RETAINED_LAYER_TILES hits=%d misses=%d raster_pixels=%zu draws=%zu phase_x=%.9g phase_y=%.9g t_us=%.3f texture_scroll=%d\n",
+            hits, misses, raster_area, canvas.draws.size(), phase_x, phase_y, speculative_picture_time(), texture_scroll);
     return true;
 }
