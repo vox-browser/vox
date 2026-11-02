@@ -12,6 +12,10 @@ from forum_news_pixels import REPO, VOX, executable_identity, guarded, write_jso
 
 @unittest.skipUnless(sys.platform == 'darwin', 'The reference uses native macOS fonts')
 class ForumNewsInlinePixelsTests(unittest.TestCase):
+    def test_chromium_baseline_inlines_use_their_own_font_boxes(self):
+        self.compare_fixture('chromium-inline-font-box', width=1024, height=768,
+                             settle_seconds=5)
+
     def test_svg_background_layout_keeps_fractional_container_dimensions(self):
         self.compare_fixture('svg-fractional-background-container', width=1024, height=768,
                              settle_seconds=5)

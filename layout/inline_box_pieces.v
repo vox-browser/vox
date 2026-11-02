@@ -163,6 +163,29 @@ fn inline_box_piece_node_index(mut per_nodes []InlineBoxPieceNode, mut node_to_i
 	return per_nodes.len - 1
 }
 
+// Blink's baseline-aligned inline box uses its own font ascent/descent. Atomic
+// children and line-height affect the line, but do not resize this paint box or
+// the containing block it supplies to positioned descendants. Keep the existing
+// geometry for other writing modes/alignment subtrees and for LibWeb policy.
+fn chromium_baseline_inline_font_box(node &Node, line_box &LineBox) ?css.CSSPixelRect {
+	if line_box.writing_mode_ != .horizontal_tb
+		|| node.document().font_rendering_policy() != .chromium { return none }
+	mut ancestor := node
+	for is_fragmented_inline(ancestor) {
+		style := ancestor.computed_values()
+		if style.vertical_align() != .baseline || style.vertical_align_length_percentage() != none {
+			return none
+		}
+		ancestor = ancestor.parent() or { break }
+	}
+	metrics := layout_font_metrics_for_node(node)
+	baseline := line_box.bottom().minus(line_box.block_length()).plus(line_box.baseline())
+	return css.CSSPixelRect{
+		y: baseline.minus(CSSPixels.nearest_value_for(f64(metrics.ascent)))
+		height: CSSPixels.nearest_value_for(f64(metrics.ascent + metrics.descent))
+	}
+}
+
 // InlineFormattingContext::compute_inline_box_pieces(). Rectangles are relative
 // to the containing block's content origin and exclude relative positioning.
 fn compute_inline_box_pieces(container &Node, used &UsedValues, state &LayoutState) []InlineBoxPiece {
@@ -354,13 +377,17 @@ fn compute_inline_box_pieces_in_workspace(container &Node, used &UsedValues, sta
 			is_last_content_line := last_line_with_content == line.line_index
 			has_low_edge := if reversed { is_last_content_line } else { is_first_content_line }
 			has_high_edge := if reversed { is_first_content_line } else { is_last_content_line }
-			content_block_start := line.first_direct_fragment_block_start or {
+			mut content_block_start := line.first_direct_fragment_block_start or {
 				line.fallback_block_start_from_contributions or { CSSPixels.new(0) }
 			}
-			content_block_length := if line.first_direct_fragment_block_start != none {
+			mut content_block_length := if line.first_direct_fragment_block_start != none {
 				line.max_direct_fragment_block_length
 			} else {
 				node.computed_values().line_height()
+			}
+			if font_box := chromium_baseline_inline_font_box(node, used.line_boxes[line.line_index]) {
+				content_block_start = font_box.y
+				content_block_length = font_box.height
 			}
 			border_inline_start := line.contributions_inline_start.minus(if has_low_edge {
 				border_padding_low
