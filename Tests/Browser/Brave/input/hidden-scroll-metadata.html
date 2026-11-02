@@ -1,0 +1,17 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Invisible scroll metadata preserves the root raster</title>
+<style>
+html,body{margin:0;background:white}
+.banner{height:48px;background:#5631ea}
+header{position:relative;z-index:999;height:68px;background:#212623}
+.menu{position:absolute;top:55px;left:0;width:100%;height:822px;overflow:auto;opacity:0;pointer-events:none;z-index:-1}
+.inside{height:1200px;background:red}
+main{height:811px;background:#0a8935}
+.card{position:absolute;left:4px;top:229.09375px;width:484px;height:663px;background:linear-gradient(0deg,rgba(0,0,0,.95),rgba(0,0,0,.25))}
+p{position:absolute;top:2000px}
+</style>
+<div class="banner"></div>
+<header><div class="menu"><div class="inside"></div></div></header>
+<main><div class="card"></div></main>
+<p>This regression retains a closed navigation menu whose scroll container overlaps the visible document. The menu has zero opacity and contributes no painted pixels. Its scroll geometry must not change the raster coordinates of the ordinary gradient below the header. The banner, header, green backdrop and translucent gradient are all static and require no fonts, scripts, images or external responses. The document extends below the viewport so the menu and page both have a real scrolling range. These words are outside the captured viewport and provide the guest-document readiness text used by the full uBlock Origin reference workflow. This regression retains a closed navigation menu whose scroll container overlaps the visible document. The menu has zero opacity and contributes no painted pixels. Its scroll geometry must not change the raster coordinates of the ordinary gradient below the header. The banner, header, green backdrop and translucent gradient are all static and require no fonts, scripts, images or external responses. The document extends below the viewport so the menu and page both have a real scrolling range. These words are outside the captured viewport and provide the guest-document readiness text used by the full uBlock Origin reference workflow.</p>
