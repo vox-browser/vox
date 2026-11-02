@@ -1,6 +1,7 @@
 module browserui
 
 import ui2
+import browsertabs
 
 pub struct Tab {
 pub:
@@ -11,6 +12,45 @@ pub:
 	width    f64 // distance between tab origins; shoulders overlap by 10px
 	selected bool
 	dragging bool
+	color    browsertabs.Color
+	color_action string
+}
+
+pub fn tab_fill(color browsertabs.Color, selected bool) u32 {
+	if selected {
+		return match color {
+			.none { u32(0xf7f7f7) }
+			.red { u32(0xffd6d6) }
+			.orange { u32(0xffe0bd) }
+			.yellow { u32(0xffefb0) }
+			.green { u32(0xd0edcf) }
+			.blue { u32(0xd0e4ff) }
+			.purple { u32(0xe6d8fa) }
+			.pink { u32(0xfad5e7) }
+		}
+	}
+	return match color {
+		.none { u32(0xd4d4d4) }
+		.red { u32(0xe9b3b3) }
+		.orange { u32(0xe9c49e) }
+		.yellow { u32(0xe6d793) }
+		.green { u32(0xafd0ad) }
+		.blue { u32(0xadc6e6) }
+		.purple { u32(0xc6b5df) }
+		.pink { u32(0xdfb1c7) }
+	}
+}
+
+pub fn tab_color_rows(selected browsertabs.Color) []MenuRow {
+	mut rows := [MenuRow{ text: 'Tab Color', group: true }]
+	for color in [browsertabs.Color.none, .red, .orange, .yellow, .green, .blue, .purple, .pink] {
+		rows << MenuRow{
+			id: 'tab-color-${color}'
+			text: if color == .none { 'Default' } else { color.str().title() }
+			checked: color == selected
+		}
+	}
+	return rows
 }
 
 fn tab_cubic(mut points []ui2.VectorPoint, c1 ui2.VectorPoint, c2 ui2.VectorPoint, end ui2.VectorPoint) {
@@ -93,17 +133,13 @@ pub fn tab_strip(width f64, tabs []Tab, new_x f64) ui2.Element {
 			accessibility_label: 'Close ${tab.title}'
 		}
 		if tab.selected {
-			content << ui2.view('tab-seam-${tab.index}', ui2.rect(1, 23, paint_width - 2, 1), ui2.BoxStyle{ bg: 0xf7f7f7 }, [])
+			content << ui2.view('tab-seam-${tab.index}', ui2.rect(1, 23, paint_width - 2, 1), ui2.BoxStyle{ bg: tab_fill(tab.color, true) }, [])
 		}
 		element := ui2.Element{
 			...ui2.view('tab-${tab.index}', ui2.rect(tab.x, 5, paint_width, 24), ui2.BoxStyle{ transparent: true }, content)
 			vector:              ui2.VectorPath{
 				points:       classic_tab_outline(paint_width)
-				fill:         if tab.selected {
-					u32(0xf7f7f7)
-				} else {
-					u32(0xd4d4d4)
-				}
+				fill:         tab_fill(tab.color, tab.selected)
 				stroke:       0xadadad
 				stroke_width: 1
 			}
@@ -111,6 +147,9 @@ pub fn tab_strip(width f64, tabs []Tab, new_x f64) ui2.Element {
 			action_id:           'tabdrag-${tab.index}'
 			clickable:           true
 			draggable:           true
+			menu:                if tab.color_action != '' {
+				[ui2.MenuEntry{ id: tab.color_action, title: 'Tab Color…' }]
+			} else { []ui2.MenuEntry{} }
 			tooltip:             tab.title
 			accessibility_role:  'tab'
 			accessibility_label: tab.title

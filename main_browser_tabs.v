@@ -403,8 +403,8 @@ fn browser_tab_shortcut(key gg.KeyCode, modifier gg.Modifier) string {
 
 fn (app &BrowserApp) browser_tab_snapshot_key() string {
 	if app.process_tabs() { return app.tabs.session.encoded_state() }
-	if app.tabs == unsafe { nil } { return 'single' }
+	if app.tabs == unsafe { nil } { return 'single:${app.browser_ui().tab_color}' }
 	mut parts := ['${app.tabs.selected}']
-	for tab in app.tabs.pages { parts << '${tab.address}:${tab.browser_tab_title()}' }
+	for tab in app.tabs.pages { parts << '${tab.address}:${tab.browser_tab_title()}:${tab.browser_ui().tab_color}' }
 	return parts.join('\n')
 }

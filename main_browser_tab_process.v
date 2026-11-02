@@ -2,6 +2,7 @@ module main
 
 import adblock
 import browsertabs
+import browsersettings
 import encoding.base64
 import os
 import platform
@@ -81,6 +82,9 @@ fn (mut app BrowserApp) start_process_tabs() {
 			sapp.quit()
 			return
 		}
+	}
+	if folder == '' && app.browser_ui().tab_color != .none {
+		app.tabs.session.set_color(app.tabs.session.id, app.browser_ui().tab_color) or { eprintln(err) }
 	}
 	app.tabs.process_visible = folder == ''
 	if folder != '' {
@@ -237,6 +241,10 @@ fn (mut app BrowserApp) poll_process_tabs() {
 	}
 	if time.sys_mono_now() >= app.tabs.profile_refresh_at {
 		app.tabs.profile_refresh_at = time.sys_mono_now() + 1_000_000_000
+		if app.browser_chrome.tab_coloring != browsersettings.current().enable_tab_coloring {
+			app.invalidate_tab_color_snapshot()
+			app.refresh_browser_ui()
+		}
 		// Profile writers merge under a process lock; refresh readers without
 		// overwriting another tab's history, bookmarks or per-domain zoom.
 		if app.browsing_history != unsafe { nil } {

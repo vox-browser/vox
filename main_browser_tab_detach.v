@@ -2,6 +2,7 @@ module main
 
 import adblock
 import browserjs
+import browsertabs
 import css
 import dom
 import html
@@ -28,6 +29,7 @@ struct DetachedTabSession {
 	drop_x        f64
 	drop_y        f64
 	forms         []DetachedTabFormValue
+	color         browsertabs.Color
 }
 
 struct DetachedTabFormValue {
@@ -101,6 +103,7 @@ fn (app &BrowserApp) detached_tab_session() DetachedTabSession {
 		drop_x:        drop_x
 		drop_y:        drop_y
 		forms:         forms
+		color:         app.browser_ui().tab_color
 	}
 }
 
@@ -130,6 +133,8 @@ fn (session DetachedTabSession) policy_value() BrowserScriptPolicy {
 }
 
 fn (mut app BrowserApp) restore_detached_tab(session DetachedTabSession) {
+	mut state := app.browser_ui()
+	state.tab_color = session.color
 	app.ensure_browser_zoom_levels()
 	app.zoom_levels.set_for_url(session.url, session.zoom) or {
 		eprintln('Vox: could not restore domain zoom: ${err.msg()}')

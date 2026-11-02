@@ -39,6 +39,7 @@ fn test_ui2_settings_apply_cancel_validation_and_toolbar_reconciliation() {
 		show_browser_settings()
 		assert browser_settings_visible()
 		assert !ui2.control_checked('settings-allow-any-site')
+		assert !ui2.control_checked('settings-tab-coloring')
 		assert ui2.text('settings-browsing-note').contains('may render slowly')
 		host := ui2.embedded_browser_control('settings-host')
 		assert C.native_test_chrome_enabled(host) == 0
@@ -60,17 +61,24 @@ fn test_ui2_settings_apply_cancel_validation_and_toolbar_reconciliation() {
 		assert ui2.text('settings-error').contains('hostnames')
 		ui2.set_text('settings-sites', 'Example.com, another.org')
 		C.native_test_chrome_click(ui2.embedded_browser_control('settings-allow-any-site'))
+		C.native_test_chrome_click(ui2.embedded_browser_control('settings-tab-coloring'))
+		app.snapshot_cached = true
+		app.snapshot_hold = true
 		browser_settings_event('settings-apply')
 		assert !browser_settings_visible()
 		assert browsersettings.current().host == 'localhost'
 		assert browsersettings.current().port == '9050'
 		assert browsersettings.current().sites == 'example.com, another.org'
 		assert browsersettings.current().allow_any_site
+		assert browsersettings.current().enable_tab_coloring
+		assert !app.snapshot_cached && !app.snapshot_hold
 		show_browser_settings()
+		C.native_test_chrome_click(ui2.embedded_browser_control('settings-tab-coloring'))
 		ui2.set_text('settings-sites', 'discarded.example')
 		C.native_test_chrome_click(ui2.embedded_browser_control('settings-cancel'))
 		show_browser_settings()
 		assert ui2.text('settings-sites') == 'example.com, another.org'
+		assert ui2.control_checked('settings-tab-coloring')
 		assert ui2.text('settings-error') == ''
 		assert C.native_test_address_shortcut(ui2.embedded_browser_control('settings-port'), app, address_bar_shortcut, 53, 0) != 0
 		assert !browser_settings_visible()

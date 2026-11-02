@@ -22,6 +22,7 @@ pub mut:
 	title    string = 'New Tab'
 	url      string
 	favicon  string
+	color    Color
 	ready    bool
 	activate bool
 	detach   bool
@@ -310,6 +311,13 @@ pub fn (mut session Session) detach(index int) ! {
 // launched before detaching, even though their tab metadata stays in that group.
 pub fn (mut session Session) detach_self(frame Frame) !&Session {
 	mut detached := create(frame)!
+	index := session.index()
+	if index >= 0 {
+		detached.set_color(detached.id, session.state.tabs[index].color) or {
+			detached.leave() or {}
+			return err
+		}
+	}
 	session.leave() or {
 		detached.leave() or {}
 		return err

@@ -11,6 +11,7 @@ pub struct Proxy {
 pub:
 	// settings.json also owns the temporary optimized-sites browsing mode.
 	allow_any_site bool
+	enable_tab_coloring bool
 	enabled bool
 	host    string = '127.0.0.1'
 	port    string = '1080'

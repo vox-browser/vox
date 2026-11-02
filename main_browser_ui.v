@@ -1,6 +1,7 @@
 module main
 
 import browserui
+import browsertabs
 import dom
 import platform
 import ui2
@@ -21,6 +22,8 @@ mut:
 	link            string
 	select_node     &dom.Node = unsafe { nil }
 	select_document dom.UniqueNodeID
+	tab_color       browsertabs.Color
+	tab_color_target string
 }
 
 fn (app &BrowserApp) browser_ui() &BrowserUIState {
@@ -52,6 +55,7 @@ fn (mut app BrowserApp) dismiss_browser_popup() {
 	}
 	state.select_node = unsafe { nil }
 	state.link = ''
+	state.tab_color_target = ''
 	state.popup = none
 	state.version++
 }
@@ -66,6 +70,12 @@ fn (mut app BrowserApp) browser_popup_action(action string) {
 		return
 	}
 	link := state.link
+	if id.starts_with('tab-color-') {
+		app.complete_tab_color_menu(id.all_after('tab-color-'))
+		app.dismiss_browser_popup()
+		app.refresh_browser_ui()
+		return
+	}
 	if id.starts_with('select-') {
 		app.complete_browser_select_picker(id.all_after('select-').u32())
 		app.dismiss_browser_popup()
