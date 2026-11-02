@@ -79,6 +79,18 @@ def enqueue(root, background=True):
                     stdout=log, stderr=subprocess.STDOUT, start_new_session=True, close_fds=True)
 
 
+def production_input_path(relative):
+    path = Path(relative)
+    # Tests are not compiled into the app. Native headers remain inputs even
+    # when their names mention tests: some host environment-driven checks.
+    test_tool = relative.startswith('tools/') and (
+        (path.stem.endswith('_test') and path.suffix in {'.py', '.c', '.cpp', '.m', '.mm'})
+        or (path.name.startswith('test_') and path.suffix == '.py'))
+    return not (relative.startswith(('docs/', 'Tests/'))
+                or relative.endswith('_test.v') or test_tool
+                or relative in {'AGENTS.md', 'OPTIMIZED_SITES.md'})
+
+
 def repository_state(root):
     digest = hashlib.sha256()
     build_digest = hashlib.sha256()
@@ -91,8 +103,7 @@ def repository_state(root):
         # Keep the full repository receipt, but publication depends on inputs
         # consumed by the build. Site reports and agent instructions are not
         # compiler, resource, packaging, or helper inputs.
-        production_input = not (relative.startswith('docs/') or relative in {
-            'AGENTS.md', 'OPTIMIZED_SITES.md'})
+        production_input = production_input_path(relative)
         def update(data):
             digest.update(data)
             if production_input:

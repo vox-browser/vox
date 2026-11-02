@@ -12,6 +12,86 @@ import rebuild_browser as build
 
 
 class ProductionBuildTests(unittest.TestCase):
+    def test_test_only_changes_preserve_build_inputs_and_remain_in_repository_receipt(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            test_inputs = [
+                'Tests/Browser/Brave/input/banner.html',
+                'Tests/Browser/Brave/expected/banner.png',
+                'layout/banner_test.v',
+                'tools/fixed_shadow_pixels_test.py',
+                'tools/test_native_shadow.py',
+                'tools/native_shadow_test.cpp',
+                'tools/native_shadow_test.mm',
+            ]
+            runtime_inputs = [
+                'main.v', 'layout/paint.v', 'layout/test_helpers.v',
+                'native_browser_tab_titles_test_darwin.h',
+                'tools/test_runtime_bridge.h', 'tools/native_runtime_test.h',
+                'tools/build_mac_graphite.py',
+                'tools/prepare_ui2.py', 'tools/adblock-worker-mini/main.v',
+                'adblock/engine.snapshot.bin', 'packaging/Vox.entitlements.plist',
+            ]
+            names = test_inputs + runtime_inputs
+            for name in names:
+                path = root / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(b'original')
+            def git(repo, *args):
+                if args[0] == 'ls-files':
+                    return b'\0'.join(name.encode() for name in names) + b'\0'
+                if args[0] == 'rev-parse': return b'head'
+                return b' M changed'
+            with patch.object(build, 'git', side_effect=git):
+                for name in names:
+                    with self.subTest(path=name):
+                        before = build.repository_state(root)
+                        (root / name).write_bytes(b'changed')
+                        after = build.repository_state(root)
+                        self.assertNotEqual(before['repository_sha256'], after['repository_sha256'])
+                        self.assertEqual(build.same_build_inputs(before, after), name in test_inputs)
+                for name, ignored in [('tools/added_test.cpp', True), ('layout/added.v', False)]:
+                    with self.subTest(added_path=name):
+                        before = build.repository_state(root)
+                        (root / name).write_bytes(b'new file')
+                        names.append(name)
+                        after = build.repository_state(root)
+                        self.assertNotEqual(before['repository_sha256'], after['repository_sha256'])
+                        self.assertEqual(build.same_build_inputs(before, after), ignored)
+                        names.remove(name)
+                        (root / name).unlink()
+                        self.assertTrue(build.same_build_inputs(before, build.repository_state(root)))
+
+    @unittest.skipUnless(sys.platform == 'darwin', 'macOS application-directory publication')
+    def test_reference_edit_during_compile_publishes_without_a_second_build(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            old = self.app(root / 'Build/v', b'old')
+            fixture = root / 'Tests/Browser/expected.png'
+            fixture.parent.mkdir(parents=True)
+            fixture.write_bytes(b'old reference')
+            request = root / 'Build/production-build/request.json'
+            build.write_json(request, dict(id='one'))
+            calls = []
+            def git(repo, *args):
+                if args[0] == 'ls-files': return b'Tests/Browser/expected.png\0'
+                if args[0] == 'rev-parse': return b'head'
+                return b' M Tests/Browser/expected.png'
+            def compile(repo, stage, receipt, environment):
+                calls.append(stage)
+                self.app(stage, b'compiled engine')
+                fixture.write_bytes(b'new reference')
+                build.write_json(request, dict(id='reference-edit'))
+                return 0
+            with patch.object(build, 'validate_repository'), patch.object(build, 'git', side_effect=git):
+                self.assertEqual(build.build_pending(root, compile), 0)
+            self.assertEqual(len(calls), 1)
+            self.assertEqual(old.read_bytes(), b'compiled engine')
+            receipt = json.loads((root / 'Build/production-build/latest.json').read_text())
+            self.assertNotEqual(receipt['inputs']['repository_sha256'],
+                                receipt['verified_inputs']['repository_sha256'])
+            self.assertTrue(build.same_build_inputs(receipt['inputs'], receipt['verified_inputs']))
+
     def test_repository_receipt_retains_docs_changes_without_invalidating_build_inputs(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
