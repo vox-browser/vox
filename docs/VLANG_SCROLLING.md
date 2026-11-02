@@ -785,3 +785,42 @@ Root-specific diagnostics show why child-layer reuse remains insufficient. Vlang
 The same commit connects an optional recorded-fill deferral result to the platform graphics adapter and defers eligible solid SVG leaves. Rectangles are recorded in document coordinates before scroll composition. An older executable still performs its ordinary Cocoa fills and cannot exercise this adapter change merely by replacing the Skia bridge. The final native bridge compiles with stable inputs and exports the new service; live validation requires a newer completed shared executable. A concurrent build linking an earlier bridge reports the new symbol missing. The adapter now resolves this optional service dynamically, keeping the old-library fallback explicit.
 
 The full experiment requires `VOX_ENABLE_SPECULATIVE_PICTURES=1`, `VOX_ENABLE_RETAINED_LAYER_TILES=1`, `VOX_ENABLE_COMPLETE_SPECULATIVE_PICTURES=1`, `VOX_ENABLE_LAYER_TEXTURE_SCROLL=1` and `VOX_ENABLE_ROOT_SPECULATIVE_PICTURES=1`. The latest completed installed bundle is reused for applicable checks; the busy shared build is not duplicated. No focused correctness/regression suite has been launched by this workflow after the user's deferral. Independently triggered production builds keep their own startup gates. Sampling, clipping, rollback, cache ownership and distant-coordinate checks are authored but unexecuted; no reference or tolerance was changed.
+
+
+## Root-picture bounds and rejected cache experiments (2026-11-03)
+
+**The live 60 FPS goal remains open.** The [checkpoint](benchmark-results/vlang-scroll-20261103-root-pictures.json) and [compressed raw records](benchmark-results/vlang-scroll-20261103-root-pictures-raw.json.gz) retain 43 workflows/build attempts, 885 artifacts and 776 text records, including failures and every complete timing trial. No optimization is accepted. All retained rendering stays opt-in, and correctness, ownership, sanitizer and screenshot tests remain deferred under the user's instruction until the FPS goal.
+
+The completed production bundle finally contains the root-fill adapter. The first fresh diagnostic still publishes zero roots during input. Stack tracing identifies independent CSS-gradient blur and nested decoration publications changing a pending root prefix. `f1530b128` publishes preceding draws before isolated inputs and keeps decorations in their owning picture. `fa1802de1` defers supported images and stroked SVG leaves, includes stroke ink, and closes prefixes before mask publication. The separate live diagnostic then verifies 418 input-window root publications and 19,516 tile hits with no picture failures. These are use counters, not FPS savings or pixel acceptance.
+
+`7328589d5` charges a shared retained picture/resource owner once while keeping the 64 MiB tile budget. The key trace shows a viewport-relative solid background changing while its neighboring gradient key stays stable; `ed8f6290c` keeps that cheap fill in the ordinary prefix. `8276f6904` prevents a zero-deferred-leaf segment from blacklisting later independent root pictures, while preserving the changed-pixel veto. `d519559ab` registers full-width gradient fringes before deciding deferral. `fc96ba3dc` bounds root CPU publication to recorded ink, preserves original GPU tile dimensions/coordinates, and decodes only that backdrop region from the existing owned RGBA guard snapshot. Its diagnostic verifies 490 input-window root publications, including narrow text/icon output, without picture failures. Focused source cases are authored but unexecuted.
+
+| Prototype/cohort | Pair 1 control→candidate FPS | Pair 2 control→candidate FPS |
+| --- | ---: | ---: |
+| Complete root recording | 9.893→6.673 | 9.479→6.275 |
+| Shared owner/prefix revision | 6.798→5.045 | 6.159→4.688 |
+| Bounded root publications + gradient fringe | 7.073→6.346 | 6.842→6.396 |
+| Unused empty-child experiment | 9.168→5.275 | 5.327→4.792 |
+| Image identity component | 6.112→4.630 | 5.273→5.967 |
+| Typeface lookup component | 8.468→7.938 | 7.762→8.778 |
+
+The first four cohorts compare ordinary rendering with the full experimental picture/tile path at successive native revisions. The last two isolate a component: both arms keep identical retained-picture flags, and only the image-cache or direct-typeface option changes. They do not measure ordinary production defaults. Different executables, private native candidates and host conditions prevent attributing cross-cohort changes to one feature. Every complete cohort retains zero browser/driver/guard exits and successful document, font, icon, stylesheet and input-identity gates. Host loads and overlapping builds are retained; the empty-child cohort's controls vary from 9.168 to 5.327 FPS.
+
+The empty-child path has zero useful input hits and is removed, with its exact reconstructed implementation and unexecuted test patch retained. Image identity records 294 input-window cache hits but mixed FPS; `62b0a8c23` removes `4052f2958` and restores its implementation paths exactly. A separate natural-image operation records zero input use and is removed before timing. Direct typeface lookup records 891 input-window hits over 1,085,137,451 embedded font bytes, but its FPS is also mixed; `93c85456c` removes `17ec762ae` and its unexecuted feature-only cases exactly. Removed experiments earn no gain.
+
+The last component cohort's full-window measurements are:
+
+| Trial | Scroll FPS | Actual input Hz | Inputs / completed publications | Median / p95 / max scroll interval (ms) | Over 16.67 ms | Leading / trailing scroll gap (ms) |
+| --- | ---: | ---: | --- | --- | ---: | --- |
+| control-1 | 8.468 | 42.27 | 600 / 123 | 115.31 / 141.89 / 190.78 | 100% | 331.50 / 0.18 |
+| candidate-1 | 7.938 | 41.71 | 600 / 119 | 119.46 / 162.54 / 201.19 | 100% | 221.27 / 130.63 |
+| control-2 | 7.762 | 39.74 | 600 / 123 | 124.24 / 157.65 / 249.26 | 100% | 334.86 / 22.96 |
+| candidate-2 | 8.778 | 44.94 | 600 / 123 | 108.78 / 142.16 / 213.33 | 100% | 230.53 / 23.28 |
+
+Every measured scroll interval in all six cohorts misses the 60 Hz budget. The complete interval distributions, input/publication counts, leading/trailing gaps, host load/timestamps, executable/native/runtime identities and exits for all trials are in the checkpoint and raw records. Throughput uses the entire actual first-to-last input period; native layer publication does not establish physical display scanout.
+
+All runs keep direct live HTTPS, automatic author scripts, private empty profiles/caches, retained OS caches, matching-title readiness plus 30 seconds settling, a 1024×768 document viewport with 112px chrome at backing scale 2, and 600 precise native delta-2 wheel inputs requested at 60 Hz and reversed every 60 events. No author animation, pixel reference or tolerance changes. Invalidation failures remain: one observer-script rewrite changes file identity despite identical bytes, and shared bundle publication changes another attempt's pinned executable/libraries. Those workflows supply no performance acceptance.
+
+A separate native stack diagnostic samples the actual input epoch from approximately 0.073 to 5.933 seconds, with browser, driver, sampler and guard exits zero. Of 2,662 main-thread samples, the per-category unions contain 1,378 in shared-picture finish, 959 in retained-tile draw, 347 in snapshot encoding, 238 in typeface decode and 356 in GPU submission. Categories overlap and must not be summed. Raw occurrence totals (including 656 snapshot-encoding occurrences and 255 snapshot-replay occurrences) are preserved separately; nested occurrences are removed in `sample-analysis-union.json`. No sample count establishes measured time or retired-instruction savings.
+
+Tool commit `c3110eb69` allows an explicitly selected picture backend while requiring its exact loaded path, bytes and file identity; other graphics backends remain bundle-local. The successful fresh font diagnostic verifies this selection. Its earlier attempt is invalidated by a shared bundle replacement and retained. This tooling provides no engine credit. No focused correctness/regression tests were run by this continuation; independent shared production startup gates do not establish opt-in pixel correctness. No instruction credit or broad-check cadence reset is claimed.
