@@ -2926,3 +2926,31 @@ identities and guards under `Build/lobsters-parity-20261102-resume/`. The
 zero-pixel threshold remains unchanged. This qualifies the new frozen guest
 viewport with author scripts removed; interactions, other cache conditions and
 scroll positions remain outside this result.
+
+
+## Slashdot generated icon fonts, 2 November 2026
+
+Commit `28043f788` starts matching pending author fonts before selecting a system
+fallback. Generated private-use icons previously never fetched Slashdot's
+`sdicon.woff`. The extracted regression improves from **2,369 pixels to zero**,
+with two agreeing full-uBO Brave references. Three new layout cases pass with
+default GC and `-gc none`; 22 existing font/chunk cases pass. The rendering suite
+passes **81 tests and 86 captures**, and the archived CNN, Guardian, Verge and
+Lobsters viewports remain exact. The checks pin an already completed shared
+production build; no duplicate build was queued.
+
+The same frozen Slashdot bytes improve from **10,634 to 9,190 pixels**. Their
+live/frozen comparison remains invalid because the snapshot omits the visible
+privacy dialog's shadow tree. A real mouse click on **I DO NOT ACCEPT**, followed
+by capture in that same guest process, yields a new qualified snapshot with
+**zero live/frozen pixels**. Its native comparison still differs at **9,190
+pixels**; bylines, comment-bubble tails and control/header details remain open.
+The earlier captures and failed saved-profile consent attempts remain retained.
+Slashdot is not an accepted pixel-exact site. Stack Overflow and Pikabu remain
+deferred as requested.
+
+The [Slashdot receipt](benchmark-results/slashdot-brave-pixels-2026-11-02.json)
+links commands, pinned identities, source/filter hashes, guard exits and raw
+evidence under `Build/slashdot-parity-20261102/`. The qualified result covers the
+script-free frozen guest viewport after declining consent; it does not establish
+first-visit dialog, interaction, cold-cache or performance parity.
