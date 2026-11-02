@@ -10,7 +10,11 @@ if [ "$#" -ne 0 ]; then
     exit 2
 fi
 repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
-build_dir="$repo_dir/Build/linux"
+if [ "${VOX_BUILD_SUPERVISED:-0}" != 1 ]; then
+    exec python3 "$repo_dir/tools/rebuild_browser.py" --build
+fi
+build_dir=${VOX_BUILD_OUTPUT_DIR:-"$repo_dir/Build/linux"}
+cache_dir="$repo_dir/Build/linux"
 v_compiler=${V_BIN:-}
 if [ -z "$v_compiler" ]; then
     v_compiler=$(command -v v || true)
@@ -48,9 +52,9 @@ for dependency in javascriptcoregtk-4.1 glib-2.0 fontconfig harfbuzz icu-uc icu-
 done
 mkdir -p "$build_dir"
 if command -v cargo >/dev/null 2>&1; then
-    CARGO_TARGET_DIR="$build_dir/rust-jpegxl" cargo build --quiet --release --locked \
+    CARGO_TARGET_DIR="$cache_dir/rust-jpegxl" cargo build --quiet --release --locked \
         --manifest-path "$repo_dir/native_jpegxl_rust/Cargo.toml"
-    cp "$build_dir/rust-jpegxl/release/libvox_jpegxl.so" "$build_dir/libVoxJPEGXL.so"
+    cp "$cache_dir/rust-jpegxl/release/libvox_jpegxl.so" "$build_dir/libVoxJPEGXL.so"
 fi
 python3 "$repo_dir/tools/build_regex_backend.py"
 python3 "$repo_dir/tools/build_linux_native.py"

@@ -15,6 +15,15 @@ set -eu
 #   LADYBIRD_VCPKG_TRIPLET    upstream vcpkg triplet directory
 #   VOX_BUILD_SCRATCH_DIR     compiler output root (defaults to Build/v)
 
+if [ "$#" -ne 0 ]; then
+    echo "usage: build-prod-browser.sh" >&2
+    exit 2
+fi
+repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
+if [ "${VOX_BUILD_SUPERVISED:-0}" != 1 ]; then
+    exec python3 "$repo_dir/tools/rebuild_browser.py" --build
+fi
+
 case "$(uname -s)" in
     Linux) exec sh "$(dirname -- "$0")/build-linux-browser.sh" "$@" ;;
     Darwin) ;;
@@ -26,8 +35,8 @@ if [ "$#" -ne 0 ]; then
     exit 2
 fi
 
-repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
-build_dir="$repo_dir/Build/v"
+build_dir=${VOX_BUILD_OUTPUT_DIR:-"$repo_dir/Build/v"}
+cache_dir="$repo_dir/Build/v"
 bundle_dir="$build_dir/Vox.app"
 binary_dir="$bundle_dir/Contents/MacOS"
 resources_dir="$bundle_dir/Contents/Resources"
@@ -107,7 +116,7 @@ if [ -z "$rust_cargo" ]; then
     fi
 fi
 if [ -n "$rust_cargo" ]; then
-    rust_target_dir="$build_dir/rust-yuv"
+    rust_target_dir="$cache_dir/rust-yuv"
     PATH="$(dirname "$rust_cargo"):$PATH" CARGO_TARGET_DIR="$rust_target_dir" \
         "$rust_cargo" build --quiet --release --locked \
         --manifest-path "$repo_dir/native_yuv_rust/Cargo.toml"
@@ -116,7 +125,7 @@ if [ -n "$rust_cargo" ]; then
 fi
 jpegxl_library=""
 if [ -n "$rust_cargo" ]; then
-    jpegxl_target_dir="$build_dir/rust-jpegxl"
+    jpegxl_target_dir="$cache_dir/rust-jpegxl"
     PATH="$(dirname "$rust_cargo"):$PATH" CARGO_TARGET_DIR="$jpegxl_target_dir" \
         "$rust_cargo" build --quiet --release --locked \
         --manifest-path "$repo_dir/native_jpegxl_rust/Cargo.toml"
@@ -185,7 +194,7 @@ prealloc_modules=""
 # initialization. Stage the same checked initializer for every browser build.
 font_modules=$(python3 "$repo_dir/tools/prepare_font_runtime.py" "$v_compiler")
 if [ "$gc_mode" = prealloc ]; then
-    prealloc_modules=$(python3 "$repo_dir/tools/prepare_prealloc_runtime.py" "$v_compiler" "$compiler_output_root/prealloc-runtime")
+    prealloc_modules=$(python3 "$repo_dir/tools/prepare_prealloc_runtime.py" "$v_compiler" "$cache_dir/prealloc-runtime")
     v_compiler="$prealloc_modules/compiler/v"
 fi
 # Anchor package names at the repository; see build-linux-browser.sh. Without

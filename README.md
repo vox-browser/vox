@@ -247,6 +247,14 @@ The macOS production builder uses `-enable-globals -prealloc -gc none -cflags -O
 upstream Skia text bridge when its release dependencies are available, writes
 `Build/v/Vox.app` with the executable `Contents/MacOS/Vox`, and ad-hoc signs the
 bundle. `build_ladybird.sh` remains as a compatibility alias for existing tooling.
+Builds use the canonical `master` checkout. `Build/` holds generated outputs,
+shared compiler caches and validation records; browser benchmarks reference
+existing application bundles instead of copying them into every cohort.
+Install automatic commit builds once with `python3 tools/rebuild_browser.py --install-hook`.
+Each commit requests a production rebuild. Concurrent requests share one worker,
+which rebuilds the latest source when commits arrive during compilation. It keeps
+the previous completed bundle until a signed replacement passes fresh startup
+validation. Status and logs are in `Build/production-build/`.
 Scoped arenas own document payloads, paint trees, display-list scenes and
 temporary measurement/replay data. Retained snapshots keep their allocation
 owners alive. Individual V `free()` calls do nothing under `-prealloc`; reclaiming
