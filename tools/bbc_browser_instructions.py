@@ -200,8 +200,6 @@ def run_trial(engine, app, folder, args):
                 args.vox_environment['VOX_RETAIN_EMPTY_PROCEDURAL_STYLES'] = '1'
             if getattr(args, 'control_copy_stationary_raster_pixels', False):
                 args.vox_environment['VOX_COPY_STATIONARY_RASTER_PIXELS'] = '1'
-            if getattr(args, 'control_disable_independent_measurement_reuse', False):
-                args.vox_environment['VOX_DISABLE_INDEPENDENT_MEASUREMENT_REUSE'] = '1'
             if getattr(args, 'control_disable_inline_measurement_reuse', False):
                 args.vox_environment['VOX_DISABLE_INLINE_MEASUREMENT_REUSE'] = '1'
             if args.control_disable_grid_width_only:
@@ -301,8 +299,6 @@ def parse_args(argv=None):
                         help='Retain comment-only procedural CSS replacement in the matched control')
     parser.add_argument('--control-copy-stationary-raster-pixels', action='store_true',
                         help='Copy unchanged document pixels instead of retaining the immutable native frame')
-    parser.add_argument('--control-disable-independent-measurement-reuse', action='store_true',
-                        help='Recompute closed independent contexts in each temporary measurement of the control')
     parser.add_argument('--control-disable-inline-measurement-reuse', action='store_true',
                         help='Recompute closed text layouts in each temporary measurement of the matched control')
     parser.add_argument('--jsc-baseline-warmup', type=int,
@@ -391,7 +387,7 @@ def parse_args(argv=None):
             parser.error('JSC baseline warmup must be a positive signed 32-bit integer')
     if args.control_jsc_baseline_warmup is not None and not args.control_vox_app:
         parser.error('The JSC baseline control needs --control-vox-app')
-    if any((args.control_disable_independent_measurement_reuse, args.control_retain_selector_substring_scan, args.control_retain_redundant_sheet_removal, args.control_retain_full_font_input_scan, args.control_disable_early_text_font_requests, args.control_retain_selector_rule_font_sync, args.control_retain_empty_procedural_styles, args.control_copy_stationary_raster_pixels, args.control_disable_inline_measurement_reuse,
+    if any((args.control_retain_selector_substring_scan, args.control_retain_redundant_sheet_removal, args.control_retain_full_font_input_scan, args.control_disable_early_text_font_requests, args.control_retain_selector_rule_font_sync, args.control_retain_empty_procedural_styles, args.control_copy_stationary_raster_pixels, args.control_disable_inline_measurement_reuse,
             args.control_disable_grid_width_only, args.control_disable_stationary_raster,
             args.control_disable_client_geometry_index,
             args.control_disable_tracked_persistent_shortcut, args.control_disable_attribute_case_buckets,
@@ -501,7 +497,6 @@ def main():
         control_disable_tracked_persistent_shortcut=args.control_disable_tracked_persistent_shortcut,
         control_disable_attribute_case_buckets=args.control_disable_attribute_case_buckets,
         control_disable_persistent_scope_jumps=args.control_disable_persistent_scope_jumps,
-        control_disable_independent_measurement_reuse=args.control_disable_independent_measurement_reuse,
         control_disable_inline_measurement_reuse=args.control_disable_inline_measurement_reuse,
         control_copy_stationary_raster_pixels=args.control_copy_stationary_raster_pixels,
         control_disable_extended_longhand_reuse=args.control_disable_extended_longhand_reuse,
