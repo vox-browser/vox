@@ -51,6 +51,7 @@ std::mutex gpu_mutex;
 VoxGraphiteRasterCache image_cache(32 * 1024 * 1024, 2048);
 VoxGraphiteImageUploadCache<sk_sp<SkImage>> image_upload_cache;
 VoxGraphiteRasterCache path_cache(8 * 1024 * 1024, 512, true);
+VoxGraphiteRasterCache path_region_cache(32 * 1024 * 1024, 512, true);
 VoxGraphiteRasterCache shape_cache(16 * 1024 * 1024, 512, true);
 VoxGraphiteRasterCache shadow_cache(8 * 1024 * 1024, 128, true);
 // Reuse only the target allocation; every draw still clears, paints and reads
@@ -261,6 +262,7 @@ void vox_graphite_release_unused_graphics_memory()
     shape_cache.clear();
     shadow_cache.clear();
     path_cache.clear();
+    path_region_cache.clear();
     if (!gpu_context) return;
     // Draw wrappers already synchronously read their pixels. Submit/wait also
     // covers a previous early-return path before dropping unused cache refs.
@@ -1535,6 +1537,16 @@ int vox_graphite_draw_path_region_pixels(VoxGraphitePixelRegion const* region,
         || region->x > width - region->width || region->y > height - region->height
         || size_t(region->pitch) < size_t(region->width) * 4) return 0;
     std::lock_guard lock(gpu_mutex);
+    static bool const enabled = std::getenv("VOX_ENABLE_PATH_REGION_CACHE");
+    auto cached = enabled ? path_region_cache.prepare_region(*path, width, height,
+        *region, has_background != 0) : VoxGraphiteRasterCache::Request{};
+    if (std::getenv("VOX_PATH_REGION_CACHE_DIAGNOSTICS")) {
+        using Clock = double (*)();
+        static auto clock = reinterpret_cast<Clock>(dlsym(RTLD_DEFAULT, "vox_precise_scroll_diagnostic_time"));
+        std::fprintf(stderr, "VOX_PATH_REGION_CACHE enabled=%d hit=%d pending=%d width=%d height=%d gradient=%d t_us=%.3f\n",
+            enabled, cached.hit, bool(cached.pending), region->width, region->height, path->gradient, clock ? clock() : -1);
+    }
+    if (cached.hit) return 1;
     auto* gpu = context();
     if (!gpu) return 0;
     auto info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
@@ -1573,6 +1585,7 @@ int vox_graphite_draw_path_region_pixels(VoxGraphitePixelRegion const* region,
         std::memcpy(region->pixels + size_t(row) * region->pitch,
             static_cast<uint8_t const*>(result->data(0)) + size_t(row) * result->rowBytes(0),
             size_t(region->width) * 4);
+    path_region_cache.finish(std::move(cached), region->pixels, region->pitch);
     return 1;
 }
 

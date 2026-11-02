@@ -50,8 +50,13 @@ int main(int argc, char** argv)
             p[0]=uint8_t(col*17+row*7);p[1]=uint8_t(col*11+row*13);p[2]=uint8_t(col*5+row*19);p[3]=255;
         }
         for(int row=0;row<h;++row)std::memcpy(expected.data()+(size_t(y+row)*width+x)*4,actual.data()+1+size_t(row)*pitch,size_t(w)*4);
+        auto input=actual;
         assert(full(expected.data(),width,height,width*4,bg,&path));
         VoxGraphitePixelRegion view{x,y,w,h,pitch,actual.data()+1};
+        // First draw, repeated admission, then an owned cached result. Each
+        // replay starts with the original backdrop, including row padding.
+        for(int replay=0;replay<3;++replay) {
+        actual=input;view.pixels=actual.data()+1;
         assert(draw(&view,width,height,bg,&path));
         for(int row=0;row<h;++row) {
             if(std::memcmp(actual.data()+1+size_t(row)*pitch,expected.data()+(size_t(y+row)*width+x)*4,size_t(w)*4)) {
@@ -63,6 +68,7 @@ int main(int argc, char** argv)
         ++comparisons;
         finish_a();
         finish_b();
+        }
     }
     std::vector<uint8_t> p(64*32*4,71);auto untouched=p;VoxGraphitePixelRegion view{0,0,64,32,256,p.data()};VoxGraphitePath path{};
     assert(!draw(&view,width,height,1,&path));float segments[12]{};path.segments=segments;path.segment_count=1;

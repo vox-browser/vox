@@ -389,6 +389,27 @@ public:
             width, height, pitch, has_background, pixels,
             Rows {reinterpret_cast<uint8_t const*>(path.stops), size_t(path.stop_count) * 5 * sizeof(float), 0, 1});
     }
+    Request prepare_region(VoxGraphitePath const& path, int surface_width,
+        int surface_height, VoxGraphitePixelRegion const& region, bool has_background)
+    {
+        if (!path.segments || path.segment_count <= 0 || path.stop_count < 0
+            || (path.stop_count && !path.stops) || surface_width <= 0 || surface_height <= 0
+            || region.x < 0 || region.y < 0 || region.width <= 0 || region.height <= 0
+            || region.width > surface_width || region.height > surface_height
+            || region.x > surface_width - region.width
+            || region.y > surface_height - region.height) return {};
+        Entry parameters;
+        parameters.is_path = true;
+        parameters.path = path;
+        parameters.surface_width = surface_width;
+        parameters.surface_height = surface_height;
+        parameters.region_x = region.x;
+        parameters.region_y = region.y;
+        return prepare_entry(parameters,
+            Rows {reinterpret_cast<uint8_t const*>(path.segments), size_t(path.segment_count) * 12 * sizeof(float), 0, 1},
+            region.width, region.height, region.pitch, has_background, region.pixels,
+            Rows {reinterpret_cast<uint8_t const*>(path.stops), size_t(path.stop_count) * 5 * sizeof(float), 0, 1});
+    }
     Request prepare_path_patches(VoxGraphitePath const& path, int surface_width,
         int surface_height, int pixel_count, bool has_background, uint8_t* pixels,
         std::vector<int> const& rectangles)
