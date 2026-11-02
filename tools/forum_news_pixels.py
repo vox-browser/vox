@@ -189,18 +189,34 @@ def warm_oracle_cache(common, route, output, timeout):
     return prepared
 
 
+def capture_site_archive(common, route, output, archive, timeout, cache_policy):
+    """Match the live oracle's encoded-cache policy to its frozen replay."""
+    policy = output / 'capture-cache-policy.json'
+    write_json(policy, dict(policy=cache_policy, warmup_qualified=False))
+    prepared = common
+    if cache_policy == 'complete':
+        warmup = output / 'capture-warmup'
+        warmup.mkdir()
+        prepared = warm_oracle_cache(common, route, warmup, timeout)
+        write_json(policy, dict(policy=cache_policy, warmup_qualified=True,
+                               warmup_report=str(warmup / 'brave-warm.json'),
+                               decoded_images='Fresh capture process; encoded cache retained'))
+    capture = output / 'capture'
+    report = output / 'capture.json'
+    guarded([*prepared, *route, '--capture-dir', capture, '--output', report],
+            output / 'capture', timeout)
+    seal_capture(capture, archive, report)
+
+
 def run_case(site, args):
     output = args.output / site['id']
     output.mkdir(parents=True, exist_ok=False)
     archive = args.fixtures / site['id']
     common = oracle_command(site, args)
     if args.capture:
-        capture = output / 'capture'
-        report = output / 'capture.json'
         capture_route = ['--proxy-server', args.capture_proxy] if args.capture_proxy else []
-        guarded([*common, *capture_route, '--capture-dir', capture, '--output', report],
-                output / 'capture', args.timeout)
-        seal_capture(capture, archive, report)
+        capture_site_archive(common, capture_route, output, archive, args.timeout,
+                             args.cache_policy)
     if not (archive / 'manifest.json').is_file() and (archive / 'status.json').is_file():
         unavailable = read_json(archive / 'status.json')
         raise RuntimeError('Site fixture unavailable: ' + unavailable['reason'])
@@ -297,7 +313,7 @@ def main():
                         help='Copy a closed prepared Brave profile into each disposable oracle profile')
     parser.add_argument('--vox', type=Path, default=VOX)
     parser.add_argument('--cache-policy', choices=['cold', 'complete'], default='cold',
-                        help='Use an empty native cache, or warm both browsers in discarded processes first')
+                        help='Use an empty native cache, or warm live capture and both replay browsers in discarded processes first')
     parser.add_argument('--diff-tool', type=Path)
     parser.add_argument('--audit-config', type=Path, help='Native capture selectors for diagnosing a mismatch; include body and images')
     parser.add_argument('--settle', type=float, default=5)

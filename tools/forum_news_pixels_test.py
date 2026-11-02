@@ -5,12 +5,63 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
-from forum_news_pixels import (CATALOG, check_filters, check_native, native_capture_environment,
+from forum_news_pixels import (CATALOG, capture_site_archive, check_filters, check_native, native_capture_environment,
                                oracle_command, seal_capture, warm_native_cache, warm_oracle_cache, write_json)
 from page_archive import digest, load_archive
 
 
 class ForumNewsPixelTests(unittest.TestCase):
+    def test_complete_live_capture_uses_qualified_cache_without_changing_the_replay_template(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary)
+            archive = output / 'sealed'
+            common = ['oracle', '--profile-template', '/original', '--extension', '/full-ubo']
+            prepared = ['oracle', '--profile-template', '/closed-warmup', '--extension', '/full-ubo']
+            route = ['--proxy-server', 'http://127.0.0.1:1234']
+            events = []
+            def warm(command, capture_route, directory, timeout):
+                self.assertEqual(command, common)
+                self.assertEqual(capture_route, route)
+                self.assertTrue(directory.is_dir())
+                events.append('warm')
+                return prepared
+            def capture(command, prefix, timeout):
+                self.assertEqual(command, prepared + route + ['--capture-dir', output/'capture',
+                                                              '--output', output/'capture.json'])
+                events.append('capture')
+            with patch('forum_news_pixels.warm_oracle_cache', side_effect=warm), \
+                    patch('forum_news_pixels.guarded', side_effect=capture), \
+                    patch('forum_news_pixels.seal_capture') as seal:
+                capture_site_archive(common, route, output, archive, 60, 'complete')
+            self.assertEqual(events, ['warm', 'capture'])
+            self.assertEqual(common[2], '/original')
+            self.assertTrue(json.loads((output/'capture-cache-policy.json').read_text())['warmup_qualified'])
+            seal.assert_called_once_with(output/'capture', archive, output/'capture.json')
+
+    def test_cold_live_capture_does_not_add_cache_warmup(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary)
+            common = ['oracle', '--extension', '/full-ubo']
+            with patch('forum_news_pixels.warm_oracle_cache') as warm, \
+                    patch('forum_news_pixels.guarded') as capture, \
+                    patch('forum_news_pixels.seal_capture'):
+                capture_site_archive(common, [], output, output/'sealed', 60, 'cold')
+            warm.assert_not_called()
+            self.assertEqual(capture.call_args.args[0][:len(common)], common)
+            self.assertFalse(json.loads((output/'capture-cache-policy.json').read_text())['warmup_qualified'])
+
+    def test_failed_live_cache_warmup_cannot_capture_or_replace_a_fixture(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary)
+            with patch('forum_news_pixels.warm_oracle_cache', side_effect=RuntimeError('not ready')), \
+                    patch('forum_news_pixels.guarded') as capture, \
+                    patch('forum_news_pixels.seal_capture') as seal:
+                with self.assertRaisesRegex(RuntimeError, 'not ready'):
+                    capture_site_archive(['oracle'], [], output, output/'sealed', 60, 'complete')
+            capture.assert_not_called()
+            seal.assert_not_called()
+            self.assertFalse(json.loads((output/'capture-cache-policy.json').read_text())['warmup_qualified'])
+
     def test_oracle_warmup_replaces_only_the_disposable_profile_template(self):
         with tempfile.TemporaryDirectory() as temporary:
             output = Path(temporary)
