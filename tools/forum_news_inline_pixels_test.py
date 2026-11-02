@@ -12,6 +12,9 @@ from forum_news_pixels import REPO, VOX, executable_identity, guarded, write_jso
 
 @unittest.skipUnless(sys.platform == 'darwin', 'The reference uses native macOS fonts')
 class ForumNewsInlinePixelsTests(unittest.TestCase):
+    def test_empty_generated_text_preserves_enclosing_inline_end_edges(self):
+        self.compare_fixture('empty-pseudo-inline-end-edges', width=1024, height=768)
+
     def test_generated_icons_load_the_author_font_before_system_fallback(self):
         self.compare_fixture('pending-generated-icon-font', width=1024, height=768,
                              settle_seconds=2)

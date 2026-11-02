@@ -1,0 +1,20 @@
+<!doctype html><meta charset="utf-8"><title>Empty pseudo inline end edges</title>
+<style>
+body { margin:0; font:16px/20px Arial; background:white; color:#333 }
+section { margin:20px; position:relative; height:54px; width:500px }
+.outer { border-right:1px solid transparent; margin-right:3px }
+.inner { padding-right:10px }
+.atomic { display:inline-block; width:12px; height:10px; background:#c00 }
+.empty .inner::after { content:"" }
+.own .inner::after { content:""; padding-right:5px; border-right:2px solid transparent; margin-right:3px }
+.before .inner::before { content:""; padding-right:5px; border-right:2px solid transparent; margin-right:3px }
+.mark { position:absolute; height:20px; padding-left:10px; background:#eef; color:#006666 }
+.sized { display:inline-block }
+</style>
+<section><span class="outer"><span class="inner"><i class="atomic"></i></span></span><span class="mark">Ordinary inline end edges</span></section>
+<section class="empty"><span class="outer"><span class="inner"><i class="atomic"></i></span></span><span class="mark">Empty pseudo closes its ancestors</span></section>
+<section class="empty own"><span class="outer"><span class="inner"><i class="atomic"></i></span></span><span class="mark">Own and enclosing end edges</span></section>
+<section class="before"><span class="outer"><span class="inner"><i class="atomic"></i></span></span><span class="mark">Opening pseudo with closing edges</span></section>
+<section class="empty"><span class="sized"><span class="outer"><span class="inner"><i class="atomic"></i></span></span></span> Intrinsic inline width</section>
+<section class="empty"><span class="outer"><span class="inner"><i class="atomic"></i></span></span> <span class="mark">Collapsed trailing whitespace</span></section>
+<p style="position:absolute;top:2000px">Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. Inline end edge regression. </p>

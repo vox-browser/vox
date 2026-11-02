@@ -2954,3 +2954,40 @@ links commands, pinned identities, source/filter hashes, guard exits and raw
 evidence under `Build/slashdot-parity-20261102/`. The qualified result covers the
 script-free frozen guest viewport after declining consent; it does not establish
 first-visit dialog, interaction, cold-cache or performance parity.
+
+
+## Slashdot inline end edges and qualified fixture registration, 2 November 2026
+
+Commit `2dc4cb900` preserves closing inline padding, borders and margins after an
+empty generated string. Previously, a generated empty pseudo-element discarded
+its enclosing boxes' closing edges, moving Slashdot's absolutely positioned
+byline **14px left**. Three new layout cases pass with default GC and `-gc none`,
+including own pseudo-element edges and three whitespace forms. All **315
+formatting cases and 12 inline/cache cases** pass. The tree suite passes 55 of
+56 cases; its inline-fieldset display failure also reproduces while building
+the tree without executing formatting, independently of this change.
+
+The new `empty-pseudo-inline-end-edges` regression uses two agreeing full-uBO
+Brave references at 1024×768. The older canonical browser differs at **12,341
+pixels**. Transparent borders retain their layout widths and isolate this test
+from a separate inline-border block-geometry issue found in a painted probe.
+That original probe and its 12,573-pixel failure remain retained. The strict
+82-test/87-capture rendering suite and full-page comparison still need a
+canonical production bundle containing the closing-edge fix. The shared worker
+is busy, and completed builds have repeatedly been superseded by concurrent
+repository changes. No duplicate production build is queued and no older
+bundle receives validation credit for the new code.
+
+The refreshed **33-response Slashdot fixture is registered** in
+`Tests/Browser/Brave/sites/slashdot`. Two fresh frozen replays reproduce its
+visible live guest capture exactly after real consent decline. Both native
+checks on the completed font-fix browser differ at **9,190 pixels**; these
+counts precede production validation of the inline end-edge fix. All 14 harness
+and seven archive checks pass, and the resource hashes verify. The previous
+canonical fixture is retained in Git and in the raw evidence. This snapshot
+qualification earns no additional engine-rendering credit.
+
+The [updated Slashdot receipt](benchmark-results/slashdot-brave-pixels-2026-11-02.json)
+records the focused checks, independently failing fieldset control, source
+interaction, references, registered fixture and pending production validation.
+Slashdot remains unfinished; Stack Overflow and Pikabu remain deferred.

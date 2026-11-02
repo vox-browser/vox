@@ -300,6 +300,15 @@ Slashdot's archived `sdicon.woff` (SHA-256
 `625cd71745541c37495055244a8c139e6f3c784b0f5262503ee0f304ee52944e`),
 whose embedded notice credits the original authors at fontello.com (2015).
 
+`empty-pseudo-inline-end-edges` covers an empty generated string closing nested
+inline boxes, its own end edges, an opening pseudo-element, intrinsic inline
+width, and collapsed trailing whitespace. Transparent borders preserve the edge
+widths while isolating layout from the separate inline-border painting gap.
+Two full-uBO Brave captures agree at 1024×768 and scale 1. The older production
+bundle differs at 12,341 pixels. The matching layout tests pass in both GC modes;
+see the [Slashdot receipt](../../../docs/benchmark-results/slashdot-brave-pixels-2026-11-02.json)
+for the production pixel-validation status.
+
 `stackoverflow-independent-hyphen-shaping` checks inserted system-font hyphens
 at integer and fractional line origins, narrow line fitting, explicit hyphen
 controls, and Arial. Its 800×600, scale 1 reference comes from two agreeing
