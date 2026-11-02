@@ -40,7 +40,7 @@ int vox_graphite_draw_image_regions_pixels(VoxGraphitePixelRegion const* regions
             || overlaps(destinations[i], sources[j])) return 0;
     struct Readback { std::unique_ptr<const SkImage::AsyncReadResult> result; };
     struct Job {
-        std::vector<uint8_t> pixels;
+        std::unique_ptr<uint8_t[]> pixels;
         VoxGraphiteRasterCache::Request cached;
         PreparedImageDraw prepared;
         std::shared_ptr<Readback> readback;
@@ -50,10 +50,9 @@ int vox_graphite_draw_image_regions_pixels(VoxGraphitePixelRegion const* regions
     std::vector<Job> jobs(count);
     for (int i = 0; i < count; ++i) {
         auto const& view = regions[i];
-        jobs[i].pixels.resize(size_t(view.width) * view.height * 4);
-        if (has_background) for (int y = 0; y < view.height; ++y)
-            std::memcpy(jobs[i].pixels.data() + size_t(y) * view.width * 4,
-                view.pixels + size_t(y) * view.pitch, size_t(view.width) * 4);
+        // Every byte is supplied by a cache hit or a completed readback.
+        // The immutable caller view remains the GPU's original backdrop.
+        jobs[i].pixels.reset(new uint8_t[size_t(view.width) * view.height * 4]);
     }
     auto info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
         kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
@@ -64,9 +63,8 @@ int vox_graphite_draw_image_regions_pixels(VoxGraphitePixelRegion const* regions
         auto& job = jobs[i];
         auto const& view = regions[i];
         auto const& image = images[i];
-        VoxGraphitePixelRegion owned {view.x, view.y, view.width, view.height,
-            view.width * 4, job.pixels.data()};
-        job.cached = image_cache.prepare_region(image, width, height, owned, has_background != 0);
+        job.cached = image_cache.prepare_region(image, width, height, view, has_background != 0,
+            job.pixels.get(), view.width * 4);
         if (job.cached.hit) { ++hits; continue; }
         if (!gpu) gpu = context();
         if (!gpu) { success = false; break; }
@@ -86,8 +84,8 @@ int vox_graphite_draw_image_regions_pixels(VoxGraphitePixelRegion const* regions
         SkAutoCanvasRestore state(canvas, true);
         canvas->clear(SK_ColorTRANSPARENT);
         auto view_info = info.makeWH(view.width, view.height);
-        if (has_background) surface->writePixels(SkPixmap(view_info, job.pixels.data(),
-            size_t(view.width) * 4), view.x, view.y);
+        if (has_background) surface->writePixels(SkPixmap(view_info, view.pixels,
+            view.pitch), view.x, view.y);
         plan_image_draw(&image, job.prepared);
         if (!prepare_image_texture(recorder, &image, job.prepared)) { success = false; break; }
         if (image.flags & VOX_GRAPHITE_IMAGE_FORCE_MSAA) force_msaa_render_pass(canvas, width, height);
@@ -125,15 +123,15 @@ int vox_graphite_draw_image_regions_pixels(VoxGraphitePixelRegion const* regions
         if (!job.readback) continue;
         auto const& result = job.readback->result;
         for (int y = 0; y < view.height; ++y)
-            std::memcpy(job.pixels.data() + size_t(y) * view.width * 4,
+            std::memcpy(job.pixels.get() + size_t(y) * view.width * 4,
                 static_cast<uint8_t const*>(result->data(0)) + size_t(y) * result->rowBytes(0),
                 size_t(view.width) * 4);
         image_upload_cache.finish(std::move(job.prepared.upload), job.prepared.texture);
-        image_cache.finish(std::move(job.cached), job.pixels.data(), view.width * 4);
+        image_cache.finish(std::move(job.cached), job.pixels.get(), view.width * 4);
     }
     for (int i = 0; i < count; ++i) for (int y = 0; y < regions[i].height; ++y)
         std::memcpy(regions[i].pixels + size_t(y) * regions[i].pitch,
-            jobs[i].pixels.data() + size_t(y) * regions[i].width * 4, size_t(regions[i].width) * 4);
+            jobs[i].pixels.get() + size_t(y) * regions[i].width * 4, size_t(regions[i].width) * 4);
     if (std::getenv("VOX_IMAGE_BATCH_DIAGNOSTICS")) {
         using Clock = double (*)();
         static auto clock = reinterpret_cast<Clock>(dlsym(RTLD_DEFAULT, "vox_precise_scroll_diagnostic_time"));
