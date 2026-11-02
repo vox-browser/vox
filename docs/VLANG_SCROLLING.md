@@ -1,6 +1,6 @@
 # vlang.io scrolling
 
-The live **60 FPS target remains unmet**. The latest two verified default-path runs (`6415ee31`) measure **10.14 / 9.69 scroll-changing publications/s**, with every measured interval exceeding 16.67 ms. Their alternating wheel-hit controls measure 10.03 / 9.96; there is no demonstrated FPS gain. A separate V function profile identifies costly paint replay, gradient tiles and repeated paint-snapshot reconstruction. The callback synchronization fast path passes production pixels but remains unused during live input. Loaded native libraries match the selected executable's pinned paths. The intermittent CSS/SVG fault remains unresolved. These are completed Cocoa layer publications; physical display scanout is unmeasured. See the [latest comparison and diagnostic correction](#live-callback-and-wheel-validation).
+The live **60 FPS target remains unmet**. The latest fully pinned default-path runs (`118eb720`) measure **10.82 / 10.52 scroll-changing publications/s**, with every measured interval exceeding 16.67 ms. Alternating full-refresh controls measure 10.46 / 10.61; mixed directions establish no reliable FPS gain. A separate native profile finds most input-window wall time inside graphics calls, especially rounded rectangles, gradients and shadows. Paint-snapshot retention executes during live scrolling and preserves frozen-page and SVG reference pixels. The intermittent CSS/SVG fault remains unresolved. These are completed Cocoa layer publications; physical display scanout is unmeasured. See the [corrected production comparison](#production-validation-with-pinned-runtime-inputs).
 
 The [compositor milestone receipt](benchmark-results/vlang-scroll-20261101-compositor-milestone.json) and [compressed raw records](benchmark-results/vlang-scroll-20261101-compositor-milestone-raw.json.gz) retain 64 completed measurements and 1,657 raw text artifacts through this checkpoint, including diagnostic runs, failures, commands, input/publication timestamps, source and executable identities, host load, guard exits and rejected patches. Full artifacts remain in `Build/vlang-scroll-compositor-20261101-111741/`. That milestone is historical; later accepted cohorts are retained below.
 
@@ -505,6 +505,8 @@ The second profile records 66 draw calls taking 12,000.572 ms inclusive. Selecte
 
 Native C calls are charged to their V callers. Exclusive paint-command time averages 58.91 ms per draw callback, gradient tiles 21.66 ms, rounded-background pairs 11.56 ms and glyph replay 8.29 ms in this instrumented build. Relayout averages 76.42 ms per invocation, or 41.68 ms amortized across those draw calls. These findings prioritize native leaf replay/gradient submission and repeated layout work; they do not establish the corresponding unprofiled costs or savings.
 
+The generated C also reads the profile timer at every instrumented function entry, even when `-profile-fns` suppresses counter accumulation outside the chosen roots. Getter-heavy tree traversals therefore incur substantial diagnostic overhead. The roughly 60 ms attributed to paint reconstruction is not a predicted unprofiled saving. The compiler witness is `vlib/v/gen/c/profile.v` in the pinned V source; generated-C and compiler identities remain in the profile checkpoint.
+
 V's profile enable flag and per-function counters are process-global. Background socket waits and timer sleeps also accumulate while a rendering root enables profiling, so the full exclusive sum is not a main-thread time partition. Their large raw totals must not be attributed to scroll blocking. Inclusive roots and callees overlap and must not be added. Counter reset is confirmed before input, but a function already active at reset can still contribute its elapsed time when it returns; exit-written reports also include tail callbacks inside the selected roots. These are function-profile diagnostics, not an exact closed first-to-last input interval.
 
 No unprofiled optimization cohort, cache-path credit, instruction saving or CSS/SVG crash resolution is claimed. At that profile checkpoint, verified production throughput was 10.59/11.16 scroll-changing publications/s. Later matched results appear below; smooth live 60 FPS remains open.
@@ -538,7 +540,7 @@ The earlier callback/wheel eligibility summaries incorrectly classified engine m
 | Control 2, reuse disabled | 9.964 | 53.29 | 600 / 116 | 97.99 / 118.00 / 182.83 | 100% | 227.32 / 0.18 |
 | Candidate 2, default | 9.686 | 51.80 | 600 / 116 | 99.83 / 123.83 / 142.74 | 100% | 232.21 / 131.95 |
 
-All four processes, drivers and the aggregate memory guard exit zero. Control/candidate median throughput is 9.996/9.913 FPS; the pairs have mixed directions. One-minute host loads vary from 5.61 to 8.67 on 18 logical CPUs and rise during the later trials. This does not establish useful scroll performance improvement. Every measured interval misses the 60 Hz budget.
+These earlier wheel measurements predate worker/runtime-input pinning and remain historical observations, not optimization acceptance. Raw values are preserved. All four processes, drivers and the aggregate memory guard exit zero. Control/candidate median throughput is 9.996/9.913 FPS; the pairs have mixed directions. One-minute host loads vary from 5.61 to 8.67 on 18 logical CPUs and rise during the later trials. This does not establish useful scroll performance improvement. Every measured interval misses the 60 Hz budget.
 
 The workload is unchanged: direct live `https://vlang.io/`, automatic author scripts, fresh empty private profiles/caches, OS caches retained, matching-title readiness followed by 20 seconds of settling, 1024×768 document viewport, 112px chrome, scale 2, and 600 precise delta-2 native inputs requested at 60 Hz with reversal every 60 events. Throughput spans the entire actual first-to-last input period. Both arms use default legacy native cache admission and identical pinned executable/libraries. Complete-document, loaded-font, icon-size, script-mutated download-icon and 51,866-byte author-CSS audits pass; stylesheet SHA256 remains `b71286ffeac1c0622b63535dcea97bc74dd25a7d3073d21cdd19919e126b6ed2`.
 
@@ -554,6 +556,42 @@ The [focused checkpoint](../Build/vlang-viewport-refresh-20261102-1625/checkpoin
 
 The separate viewport-interest file fails its blue-background assertion at line 63 in both GC modes, identically with this optimization disabled. The diagnostic reports zero calls to the changed branch in that file. It receives no whole-file pass credit, and its existing projection failure remains unresolved.
 
-The latest completed production bundle `bafbc4c0` lacks this change. Four subsequent shared builds compile and pass startup but are superseded by concurrent source changes; another shared build is running. The prepared [production validation](../Build/vlang-viewport-live-20261102-1630/validation-status.json) exits 75 at its source-identity gate without launching a candidate. No duplicate build is queued manually. Fresh production pixels, eight SVG mutation guards, an actual-input reuse diagnostic and two alternating unprofiled control/candidate pairs remain pending. The [native-clock probe fixture](../Build/vlang-viewport-live-20261102-1630/probe-fixture-result.json) passes all three cases. No scrolling gain or crash resolution is claimed, and the 60 FPS target remains open.
+Production validation is now complete on the selected executable `118eb72018bd9b0760daba7fd84828dbd145f73fc2ae0b08e77847519c7a7f60`. Four frozen-page control/candidate pairs at scales 1/2 and Y=0/240 and all eight required SVG mutation guards are pixel-exact. The separate native-clock diagnostic confirms **82 native paint-owner reuses during actual input**, zero rebuilds in that window, 107 startup reuses and four tail reuses. The [new checkpoint](../Build/vlang-viewport-pinned-20261102-1750/checkpoint.json) retains the completed matched cohort, all audits, runtime identities and guard exits. Earlier unavailable/superseded build attempts remain preserved. The native-clock probe's three-case fixture also passes. No CSS/SVG lifetime fault resolution is claimed.
 
 A separate GPU-only [gradient-chain prototype](../Build/vlang-gradient-chain-20261102-1610/runtime.log) preserves each original target and byte-format resolve between draws while avoiding intermediate CPU readback. All 288 comparisons are exact. Its two-gradient native diagnostic measures approximately 3.95/4.01 ms for separate draws versus 0.93/0.97 ms for the chain. It has no browser integration or live eligibility evidence and earns no FPS credit; Quartz clips, layer recording and transactional fallback still require integration checks.
+
+
+## Production validation with pinned runtime inputs
+
+The [corrected checkpoint](../Build/vlang-viewport-pinned-20261102-1750/checkpoint.json), [raw records](../Build/vlang-viewport-pinned-20261102-1750/raw-evidence.json.gz) and [inventory](../Build/vlang-viewport-pinned-20261102-1750/artifact-inventory.json) retain all attempts, pixels, identities, audits, actual input/publication timestamps and exits. Earlier `c9f2ba4f` retention observations were 10.198→10.064 and 8.726→9.523 FPS. They omitted worker/runtime-input pinning and cannot supply optimization acceptance; their original measurements and the qualification remain [preserved](../Build/vlang-viewport-live-20261102-1630/checkpoint.json). The new attempt first rejected a changed production identity before launching any browser, then prepared matching inputs for the selected completed bundle.
+
+Commit `6601e5a4e` pins the actual adblock worker and selected runtime assets in `measure_precise_scroll.py`. V's runtime-loaded embedded assets can change independently of the executable: a later checkout engine script rejected the older packaged snapshot even in an uninjected worker self-test. A three-file fixture extracted from the selected bundle's verified Git revision matches its packaged snapshot exactly and is selected through the existing `VOX_ADBLOCK_ENGINE_ASSETS` mechanism. The full algorithm, data and author-script policy are retained. The earlier failed worker/probe diagnostics remain preserved. Hashes plus device/inode/size/mtime/ctime identities now reject mutation and change-then-restore during a run. All 28 focused tool tests pass, including an integrated worker-mutation rejection. The initial path-alias fixture failure remains retained.
+
+| Alternating live trial | Scroll FPS | Actual input Hz | Inputs / completed publications | Median / p95 / max scroll interval (ms) | Missed 16.67 ms | Leading / trailing scroll gap (ms) |
+| --- | ---: | ---: | --- | --- | ---: | --- |
+| Control 1 | 10.460 | 52.65 | 600 / 124 | 94.95 / 108.77 / 177.89 | 100% | 211.58 / 0.14 |
+| Candidate 1 | 10.820 | 54.93 | 600 / 122 | 91.10 / 108.50 / 113.93 | 100% | 241.37 / 16.94 |
+| Control 2 | 10.607 | 52.08 | 600 / 126 | 93.59 / 105.95 / 114.51 | 100% | 217.69 / 25.70 |
+| Candidate 2 | 10.522 | 54.33 | 600 / 123 | 92.31 / 107.86 / 195.08 | 100% | 153.62 / 89.81 |
+
+Both pairs complete with all content gates, browser exits, driver exits and the aggregate guard at zero. Default-path throughput is 10.820/10.522 FPS against 10.460/10.607 with full paint reconstruction. One pair improves and one regresses; no reliable FPS gain is established. One-minute host load varies from 4.00 to 6.13 on 18 logical CPUs. A shared production compilation overlaps the cohort and is retained as host contention. Every measured scroll interval exceeds 16.67 ms.
+
+The workload remains live direct HTTPS, automatic author scripts, a fresh empty private profile/cache per launch, OS caches retained, title readiness followed by 20 seconds of settling, 1024×768 document viewport, 112px chrome, scale 2, and 600 precise delta-2 Cocoa wheel inputs requested at 60 Hz, reversing every 60 events. The denominator is the entire actual first-to-last input window. Both arms use the same executable, native libraries, worker and runtime assets. Complete-document, loaded-font, icon-size, mutated download-icon and original 51,866-byte author-CSS audits pass. No reference or tolerance changed. The 60 FPS goal remains open.
+
+## Native painting after the V profile
+
+The [validated native diagnostic](../Build/vlang-native-paint-profile-20261102-1650/attempt7-allocator/validated-analysis.json) records 10,178 graphics calls, of which 9,942 are fully enclosed by the actual first-to-last input window. Boundary and tail calls remain separate. All 15 wrapped symbols resolve to the selected bundle's actual `libLadybirdVSkiaText.dylib`; parameter/return-value fixtures and an injected/uninjected frozen-page pair pass exactly. This separate diagnostic preselects the same effective `MallocSpaceEfficient=1` allocator policy so the production allocator's one-time self-exec cannot discard the main-process probe. Child helpers do not inherit that probe. Earlier failed setups, including missing helper symbols, mismatched assets and lost instrumentation across self-exec, remain retained and receive no performance credit.
+
+| Native call group | Input calls | Inclusive wall time (ms) |
+| --- | ---: | ---: |
+| Rounded rectangles | 2,025 | 2,320.49 |
+| Clipped radial gradients | 367 | 1,602.93 |
+| Outer shadows | 635 | 1,383.25 |
+| Glyph runs | 4,241 | 765.97 |
+| RGBA images | 386 | 735.31 |
+| Clipped linear gradients | 212 | 705.18 |
+| SVG paths with colors | 1,624 | 505.48 |
+| Inner shadows | 122 | 201.68 |
+| Shared-recording finish | 330 | 76.26 |
+
+Merging overlapping native-call intervals yields 8,296.47 ms inside the 11,411.70 ms actual input window. These are inclusive, instrumented wall durations, including waits; they are neither an exclusive CPU partition nor unprofiled FPS evidence. The profile directs further work toward native rendering/submission. No retired-instruction saving or broad-suite cadence reset is claimed.
