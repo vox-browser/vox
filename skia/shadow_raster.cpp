@@ -1,6 +1,7 @@
 // ABI adaptation of DisplayListPlayerSkia.cpp:737-798 and
 // DisplayListResourceStorage.cpp::make_text_blob(). Command construction is V.
 #include "shadow_raster.h"
+#include "shadow_typeface_cache.h"
 #include "include/core/SkCanvas.h"
 #include "include/core/SkColorFilter.h"
 #include "include/core/SkColorSpace.h"
@@ -44,6 +45,14 @@ static sk_sp<SkFontMgr> shadow_font_manager()
     static auto manager = SkFontMgr_New_Custom_Empty();
 #endif
     return manager;
+}
+
+static sk_sp<SkTypeface> shadow_typeface(char const* path, int face_index)
+{
+    thread_local VoxShadowTypefaceCache cache;
+    return cache.get(path, face_index, [](char const* file, int index) {
+        return shadow_font_manager()->makeFromFile(file, index);
+    });
 }
 
 static SkPath shadow_clip_path(VoxCanvasPath const& input)
@@ -120,7 +129,7 @@ extern "C" bool vox_skia_shadow(uint8_t* pixels, int width, int height, int pitc
         canvas.drawPath(difference, paint);
         canvas.restore();
     } else {
-        auto face = shadow_font_manager()->makeFromFile(command->font_path, command->face_index);
+        auto face = shadow_typeface(command->font_path, command->face_index);
         if (!face)
             return false;
         SkFont font(face, command->font_size);
