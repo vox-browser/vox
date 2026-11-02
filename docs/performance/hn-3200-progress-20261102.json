@@ -99,5 +99,274 @@
     "Build/hn-3200-broad-recovered-guard.json",
     "Build/hn-3200-recovery-checks-guard.json",
     "Build/hn-3200-current-prod-guard.json"
-  ]
+  ],
+  "current_production_v2_diagnostic": {
+    "counts": {
+      "default": [
+        4058785591,
+        4389144582
+      ]
+    },
+    "maxima": {
+      "default": 4389144582
+    },
+    "medians": {
+      "default": 4223965086.5
+    },
+    "scope": "Exclusive browser resource-coalition creation through encoded document PNG availability, including browser/window startup and the navigation/capture workflow described by navigation_scope. Brave includes CDP target/window setup. OS filesystem and shader caches are not cleared. This is a full startup/capture workflow, not isolated page navigation or rendering work.",
+    "target_met": {
+      "default": false
+    },
+    "valid": true,
+    "evidence": "Build/hn-3200-20261102/current-production-v2",
+    "input_pins": "Build/hn-3200-20261102/current-production-v2/inputs.json"
+  },
+  "aligned_border": {
+    "counts": {
+      "candidate": [
+        4009100897,
+        4043668316,
+        4006807272,
+        4007172036,
+        3995901252,
+        3990417717,
+        3991584059
+      ],
+      "control": [
+        4005263056,
+        4049423093,
+        4006989417,
+        4020128478,
+        3989552658,
+        4013033048,
+        4041913012
+      ]
+    },
+    "maxima": {
+      "candidate": 4043668316,
+      "control": 4049423093
+    },
+    "medians": {
+      "candidate": 4006807272,
+      "control": 4013033048
+    },
+    "scope": "Exclusive browser resource-coalition creation through encoded document PNG availability, including browser/window startup and the navigation/capture workflow described by navigation_scope. Brave includes CDP target/window setup. OS filesystem and shader caches are not cleared. This is a full startup/capture workflow, not isolated page navigation or rendering work.",
+    "target_met": {
+      "candidate": false,
+      "control": false
+    },
+    "valid": true,
+    "evidence": "Build/hn-3200-20261102/uniform-border-matched",
+    "input_pins": "Build/hn-3200-20261102/uniform-border-matched/inputs.json"
+  },
+  "solid_polygons_initial": {
+    "counts": {
+      "candidate": [
+        3910202430,
+        3908682990,
+        3885284259,
+        3900182734,
+        3919451602,
+        3945761116,
+        3915697636
+      ],
+      "control": [
+        4057796063,
+        4014493954,
+        4016593573,
+        4001803373,
+        4017120512,
+        4018075359,
+        4006853325
+      ]
+    },
+    "maxima": {
+      "candidate": 3945761116,
+      "control": 4057796063
+    },
+    "medians": {
+      "candidate": 3910202430,
+      "control": 4016593573
+    },
+    "scope": "Exclusive browser resource-coalition creation through encoded document PNG availability, including browser/window startup and the navigation/capture workflow described by navigation_scope. Brave includes CDP target/window setup. OS filesystem and shader caches are not cleared. This is a full startup/capture workflow, not isolated page navigation or rendering work.",
+    "target_met": {
+      "candidate": false,
+      "control": false
+    },
+    "valid": true,
+    "evidence": "Build/hn-3200-20261102/solid-polygons-matched",
+    "input_pins": "Build/hn-3200-20261102/solid-polygons-matched/inputs.json"
+  },
+  "solid_polygons_final": {
+    "counts": {
+      "candidate": [
+        3886366961,
+        3890638654,
+        3911973875,
+        3919559433,
+        3879827831,
+        3880707182,
+        3892174373
+      ],
+      "control": [
+        4008862735,
+        4007836882,
+        4013545860,
+        4025458054,
+        4039755619,
+        4020987422,
+        3998182623
+      ]
+    },
+    "maxima": {
+      "candidate": 3919559433,
+      "control": 4039755619
+    },
+    "medians": {
+      "candidate": 3890638654,
+      "control": 4013545860
+    },
+    "scope": "Exclusive browser resource-coalition creation through encoded document PNG availability, including browser/window startup and the navigation/capture workflow described by navigation_scope. Brave includes CDP target/window setup. OS filesystem and shader caches are not cleared. This is a full startup/capture workflow, not isolated page navigation or rendering work.",
+    "target_met": {
+      "candidate": false,
+      "control": false
+    },
+    "valid": true,
+    "evidence": "Build/hn-3200-20261102/solid-polygons-final-matched",
+    "input_pins": "Build/hn-3200-20261102/solid-polygons-final-matched/inputs.json"
+  },
+  "rejected_root_picture": {
+    "counts": {
+      "control": [
+        4008096994,
+        4000130676
+      ],
+      "forced_root": [
+        4187936066,
+        4201679569
+      ]
+    },
+    "maxima": {
+      "control": 4008096994,
+      "forced_root": 4201679569
+    },
+    "medians": {
+      "control": 4004113835.0,
+      "forced_root": 4194807817.5
+    },
+    "scope": "Exclusive browser resource-coalition creation through encoded document PNG availability, including browser/window startup and the navigation/capture workflow described by navigation_scope. Brave includes CDP target/window setup. OS filesystem and shader caches are not cleared. This is a full startup/capture workflow, not isolated page navigation or rendering work.",
+    "target_met": {
+      "control": false,
+      "forced_root": false
+    },
+    "valid": true,
+    "evidence": "Build/hn-3200-20261102/root-forced-matched",
+    "input_pins": "Build/hn-3200-20261102/root-forced-matched/inputs.json"
+  },
+  "rejected_dawn_shapes": {
+    "counts": {
+      "control": [
+        4044097604,
+        3996300268
+      ],
+      "dawn_shapes": [
+        4063662178,
+        4065626145
+      ]
+    },
+    "maxima": {
+      "control": 4044097604,
+      "dawn_shapes": 4065626145
+    },
+    "medians": {
+      "control": 4020198936.0,
+      "dawn_shapes": 4064644161.5
+    },
+    "scope": "Exclusive browser resource-coalition creation through encoded document PNG availability, including browser/window startup and the navigation/capture workflow described by navigation_scope. Brave includes CDP target/window setup. OS filesystem and shader caches are not cleared. This is a full startup/capture workflow, not isolated page navigation or rendering work.",
+    "target_met": {
+      "control": false,
+      "dawn_shapes": false
+    },
+    "valid": true,
+    "evidence": "Build/hn-3200-20261102/dawn-shapes-matched",
+    "input_pins": "Build/hn-3200-20261102/dawn-shapes-matched/inputs.json"
+  },
+  "aligned_border_commit": "8dad2e2ef",
+  "solid_polygons_commit": "b01e5243f",
+  "final_native_override": "Build/hn-3200-20261102/solid-polygons-v3/libLadybirdVSkiaText.dylib",
+  "production_acceptance": "Not achieved. Native-library override cohorts are not default production acceptance.",
+  "additional_checks": {
+    "border_sanitizers": {
+      "command": [
+        "sh",
+        "-c",
+        "clang++ -std=c++20 -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer tools/native_graphite_uniform_border_test.cpp -o Build/hn-3200-20261102/uniform-border-tests-asan && Build/hn-3200-20261102/uniform-border-tests-asan Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 444645376,
+      "elapsed_seconds": 1.39472575,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "border_broad": {
+      "command": [
+        "python3",
+        "Build/hn-continue-20261102/broad/run.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 293879808,
+      "elapsed_seconds": 115.97184675,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "polygon_sanitizers_and_parent": {
+      "command": [
+        "python3",
+        "-c",
+        "import json,subprocess;from pathlib import Path;p=Path(\"Build/hn-3200-20261102\");c=json.loads((p/\"solid-polygons-test-command.json\").read_text());c[c.index(\"-O2\"):(c.index(\"-O2\")+1)]=[\"-O1\",\"-g\",\"-fsanitize=address,undefined\",\"-fno-omit-frame-pointer\"];c[-1]+=\"-final-asan\";subprocess.run(c,check=True);subprocess.run([c[-1]],check=True);c=json.loads((p/\"polygon-parent-test-command.json\").read_text());subprocess.run(c,check=True);subprocess.run([c[-1]],check=True)"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1120976896,
+      "elapsed_seconds": 15.562245791,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "polygon_broad": {
+      "command": [
+        "python3",
+        "Build/hn-continue-20261102/broad/run.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 347209728,
+      "elapsed_seconds": 107.77115125,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "polygon_live_startup_helper": {
+      "command": [
+        "python3",
+        "Build/hn-3200-20261102/solid-polygons-final-checks.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 355336192,
+      "elapsed_seconds": 5.266230917000001,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
+  }
 }
