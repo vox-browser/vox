@@ -65,8 +65,9 @@ fn retained_flow_validation_is_current(cache &RetainedFlowValidationCache) bool 
 }
 
 // TreeBuilder's DOM invalidation flags identify the branches which need new
-// boxes. Keep ordinary flow branches outside those mutations, including their
-// text shaping caches and live DOM layout boundaries. Formatting and geometry
+// boxes. Keep ordinary flow and text-only block grid/flex branches outside
+// those mutations, including text shaping caches and live DOM layout boundaries.
+// Formatting and geometry
 // still run against a fresh LayoutState for the whole resulting tree.
 fn reusable_clean_flow_subtree(element &dom.Element, mut rejected map[u64]bool) ?RetainedFlowSubtree {
 	if rejected[u64(voidptr(element))] { return none }
@@ -87,13 +88,14 @@ fn reusable_clean_flow_subtree(element &dom.Element, mut rejected map[u64]bool) 
 	computed := css.computed_properties_for_element(element) or { return none }
 	// Display changes invalidate the parent which owns this insertion. A node
 	// which just became unboxed can still have its previous principal box here.
-	if !computed.display().is_flow_inside() && !computed.display().is_flow_root_inside() {
+	if !retained_tree_display_is_supported(computed.display()) {
 		return none
 	}
 	mirror := dom_root.unsafe_layout_node() or { return none }
 	if mirror.real_layout_handle() == unsafe { nil } { return none }
 	root := unsafe { &Node(mirror.real_layout_handle()) }
-	if (!root.is_block_container() && !root.is_inline_node()) || root.is_anonymous() { return none }
+	if (!root.is_block_container() && !root.is_inline_node()
+		&& !retained_tree_is_block_formatting_container(root)) || root.is_anonymous() { return none }
 	parent := root.parent() or { return none }
 	if parent.is_anonymous() { return none }
 	parent_dom := parent.dom_node() or { return none }
@@ -103,6 +105,7 @@ fn reusable_clean_flow_subtree(element &dom.Element, mut rejected map[u64]bool) 
 		&& retained_flow_layout_node_is_ordinary(root)
 		&& retained_flow_validation_is_current(root.flow_validation_cache_) {
 		report_retained_flow_item(root)
+		report_retained_formatting_tree(root)
 		return RetainedFlowSubtree{root: root, elements: root.flow_validation_cache_.elements}
 	}
 	mut elements := []&dom.Element{}
@@ -116,6 +119,7 @@ fn reusable_clean_flow_subtree(element &dom.Element, mut rejected map[u64]bool) 
 		}
 	}
 	report_retained_flow_item(root)
+	report_retained_formatting_tree(root)
 	return RetainedFlowSubtree{
 		root:     root
 		elements: elements
@@ -207,8 +211,13 @@ fn retained_flow_layout_node_is_ordinary(node &Node) bool {
 		if node.is_flex_item() != parent_computed.display().is_flex_inside()
 			|| node.is_grid_item_ != parent_computed.display().is_grid_inside() { return false }
 	}
-	if !node.is_text_node() && !node.display().is_flow_inside()
-		&& !node.display().is_flow_root_inside() { return false }
+	if !node.is_text_node() && !retained_tree_display_is_supported(node.display()) { return false }
+	if node.display().is_grid_inside() {
+		computed := node.computed_values()
+		if computed.grid_template_columns().is_subgrid() || computed.grid_template_rows().is_subgrid() {
+			return false
+		}
+	}
 	if metrics := node.as_node_with_style_and_box_model_metrics() {
 		if metrics.continuation_of_node() != none { return false }
 	}
