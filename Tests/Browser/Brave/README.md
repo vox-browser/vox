@@ -6,7 +6,8 @@ fresh Brave captures. The older `0bb14e2f…` production bundle differs by 752
 pixels; a native reduction reproducing that screenshot exactly becomes
 pixel-identical to Brave when it retains the fractional shadow color. Run
 `python3 tools/fixed_shadow_pixels_test.py` against a production bundle
-containing `f447b8603`. Installed-browser validation remains pending; see
+containing `f447b8603`. The installed `f8618e0d…` bundle passes with zero
+differing pixels and stable bundle/fixture identities; see
 [the ChatGPT report](../../../docs/CHATGPT_BRAVE_PARITY.md).
 
 The [forum/news catalog](forum-news.json) has 15 entries. The five new guest-page

@@ -1,22 +1,24 @@
 # ChatGPT rendering and startup against Brave
 
-The macOS production browser now completes a fully live logged-out ChatGPT
-conversation through SOCKS and matches Brave **pixel for pixel at 1024×768,
-scale 1**: zero differing pixels out of 786,432. Native typing preserves the
-exact prompt, and clicking Send one second later produces the rich reply
-“Vox ready.” with empty error collections. This check starts with an empty
-profile, cookie store and resource cache; it replays no frontend or backend
-responses. Earlier archived homepage and conversation checks also remain exact.
+The production build containing the fixed-container, inherited SVG-style and
+fractional-shadow fixes now completes the guest ChatGPT send/reply workflow
+and matches the retained Brave conversation reference exactly at 1024×768,
+scale 1. The check uses the original captured frontend and static assets;
+subsequent backend requests remain live through SOCKS. Native typing preserves
+the exact prompt and Send produces “Vox ready.” with empty error collections.
 
-The user authorized additional fresh sessions on 2026-11-02. A fresh normal
-Brave capture confirms that both retained references are unchanged. Live
-navigation is still subject to intermittent Cloudflare challenges: a subsequent
-empty-session Enter attempt receives a challenge before composer readiness,
-sends no input, and fails acceptance. A rapid one-turn typing burst followed by
-a blind one-second click can still activate Voice and crash during cleanup;
-full ChatGPT parity remains open. The latest build identities, checks and
-retained failures appear in the final continuation below; earlier sections
-describe their historical build and network conditions.
+A newer fresh Brave session differs from that retained reference by 27 pixels,
+all at the blue user-message bubble's rounded edges. Vox still matches the
+retained reference exactly and differs from the newer session at those same 27
+pixels, with maximum channel error two. Replaying the newer homepage in Brave
+reproduces its newer pixels. Current-session pixel parity therefore remains
+open; no reference or tolerance has been changed.
+
+Earlier fully live empty-profile checks, Cloudflare failures and native input
+failures remain documented below. The user authorized fresh sessions on
+2026-11-02. The final continuation records the newly published build and its
+focused conformance checks; earlier sections retain their historical build and
+network conditions.
 
 ## Captured workload
 
@@ -2146,3 +2148,69 @@ eight GPU comparisons and both fractional-color banner controls remain exact,
 with unchanged actual source/library inputs and zero compiler/runtime exits.
 The published bundle still predates the rendering fixes, so the full-page and
 installed-browser SVG gates remain pending.
+
+## Published production validation and the newer bubble edge
+
+The frozen-input production pipeline publishes executable SHA-256
+`1bcbbb5cca048906caf2151070018fb7ec0618b5af140b465700ba31a9cd1d75`
+with receipt `Build/production-build/receipts/20261103-011139-5e6ed988/`.
+Its verified inputs contain `9cee866b6`, `af634b414` and `f447b8603`.
+The preceding superseded attempts are retained. Later shared source edits do
+not invalidate the sealed compiler inputs recorded by this receipt.
+
+Evidence below is in `Build/chatgpt-css-error-lifetime-20261102/`:
+
+- `production-1bc-typing-7/`: fresh native process, audited application
+  readiness, separate native typing events and Send after one second. It
+  observes the exact prompt and live reply, a conversation URL, no JavaScript
+  diagnostics and no native reported errors. Browser and memory guard exit
+  zero; executable, native libraries and measurement inputs remain stable.
+  Sampled process-tree peak RSS is 2,969,583,616 bytes.
+- `retained-pixels.json` in that directory: zero differing pixels against
+  unchanged `brave-style-4/after.png`, SHA-256
+  `742795448dec4df1c9076d8a2ee81e35ec3b57998c74d918a88b34775289fc7c`.
+  `pixels.json` records 27 differing pixels against `brave-fresh-7/after.png`,
+  SHA-256 `1b35a7492c394330fe9740c93304176c3160d5c77a338df5fd4b7a4e048e608c`.
+  Their bounding box is `(765, 80, 1005, 121)` and maximum channel error is two.
+- `fixed-raster-visual-1bc-1/`: the fixed-container regression improves from
+  71 differing pixels on the old bundle to zero, with stable inputs/identities.
+- `hidden-style-1bc-1/`: the inherited SVG paint-resource update improves
+  from 10,000 differing pixels to zero. The ten-second capture separately
+  verifies application readiness, the changed resource style and empty errors;
+  the earlier shorter capture failures remain retained.
+- `conformance-1bc-1/`: all eleven standard screenshot smoke cases pass their
+  existing checks, and all nine remaining image-source/SVG paint-server
+  mutation reftests are pixel-exact. Together with the separately audited
+  inherited-style case, all ten SVG checks pass. No references change.
+- `fixed-shadow-browser-current-1/`: the permanent fixed-picture shadow test
+  passes on executable `f8618e0dd1854b53833106b154f9354dab0646d2e30069302a1c83163da33b60`.
+  The old bundle's 752 differing pixels become zero. Browser/test and outer
+  guard exit zero; fixture/reference hashes and bundle inputs remain stable.
+  The earlier `fixed-shadow-browser-1bc-1/` attempt fails its identity
+  precondition before launching a browser and receives no validation credit.
+
+`brave-fresh-7/` captures 395 responses through SOCKS and verifies every retained
+body's hash and length. Its two root document requests are recorded; this
+session is not described as a single homepage download. The merged archive
+retains 611 verified original responses. `brave-replay-8/` uses that same
+archived homepage/static policy with live backend routing and reproduces the
+newer reference byte for byte. Both normal and replayed Brave runs reach the
+exact reply without runtime exceptions and retain stable identities/inputs.
+The older single-download fresh-session evidence remains unchanged.
+
+`production-bubble-diagnostic-1/` repeats native send/reply on executable
+`9cd7a4070b1721ba7a3ce41772dd35102b5b913aa1fab6990dc03af0a0169d6a`.
+It again matches the retained reference exactly and has the same 27 newer
+edge differences. Read-only style inspection leaves its PNG unchanged.
+The bubble's computed geometry, color and radius agree between browsers.
+Brave controls in `brave-bubble-10/` explicitly assigning the computed RGB
+background and removing overflow clipping also leave the newer PNG unchanged.
+
+The reductions in `bubble-reduction-1/` through `bubble-reduction-4/` preserve
+all attempts, including the first model's incorrect white backdrop. Corrected
+sticky/grid geometry with the actual offscreen root width is pixel-exact in
+both browsers and reproduces the retained bubble edge. Invisible fixed and
+ordinary sidebar SVG controls also remain exact. These controls do not
+establish a renderer fix for the newer full-page edge; no speculative paint
+policy change is credited. Full current-session parity and broader ChatGPT
+feature coverage remain open.
