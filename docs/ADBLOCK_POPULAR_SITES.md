@@ -2845,3 +2845,32 @@ including corrected test/compile failures. Raw artifacts are under
 `Build/pikabu-controls-final-20261102/`. These are frozen guest rendering results
 with author scripts removed. Live-site, performance and earlier oracle/synthetic
 qualifications remain open; existing references and tolerances are unchanged.
+
+
+## Pikabu sidebar diagnostics deferred, 2 November 2026
+
+At the user's request, Pikabu is deferred with **four differing pixels** in
+the unchanged frozen-page comparison. The completed header fix remains
+`4e38cb765`; no sidebar engine fix is claimed.
+
+Two candidate expansions of the SVG-isolation validator pass their focused
+checks and 81 rendering tests / 86 captures, but leave every full-page pixel
+unchanged. The existing shared-recording selector already accepts the rounded
+borders and rectangular clip. Those candidate edits, tests and assets were
+reverted, with their exact sources and build identities retained under `Build/`.
+
+A private native trace confirms that the sidebar picture is published at
+origin 745,80 with extent 269×2039. A fresh Brave/full-uBO compositor trace
+repeats the unchanged reference exactly and reports the same 320×416 tile
+allocation. Coordinate, layer-clip and forced-MSAA probes do not resolve the
+four pixels. One malformed offset probe changes geometry and is invalid as
+conformance evidence; it is retained separately.
+
+The [sidebar diagnostic receipt](benchmark-results/pikabu-sidebar-diagnostics-2026-11-02.json)
+records all probes, guards, failed checks and disk-space recovery. Raw evidence
+is under `Build/pikabu-sidebar-picture-20261102/` and
+`Build/pikabu-sidebar-native-20261102/`. Completed test executables and inactive
+generated C were compressed with byte checks and restoration hashes. Existing
+references and tolerances remain unchanged. The saved-live reference gap and
+earlier synthetic/oracle qualifications stay open; there is no live-site or
+performance acceptance.
