@@ -14,8 +14,13 @@ import subprocess
 def localize(executable, build_directory):
     commands = subprocess.check_output(['otool', '-l', str(executable)], text=True)
     paths = re.findall(r'cmd LC_RPATH\s+cmdsize \d+\s+path (.*?) \(offset \d+\)', commands)
-    shared = str(Path(build_directory).resolve())
-    remove = [path for path in paths if str(Path(path).resolve()) == shared]
+    # V modules can add the canonical library directory independently of the
+    # staging directory passed by the production build. Both must disappear:
+    # otherwise the app can load newer shared libraries than its signed ones.
+    shared_build_directory = Path(__file__).resolve().parents[1] / 'Build/v'
+    external = {str(Path(folder).resolve())
+                for folder in (build_directory, shared_build_directory)}
+    remove = [path for path in paths if str(Path(path).resolve()) in external]
     if remove and '@executable_path' not in paths:
         raise RuntimeError('Cannot remove the shared runtime path without a bundle-local search path')
     for path in dict.fromkeys(remove):

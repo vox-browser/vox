@@ -5,15 +5,17 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from localize_bundle_rpaths import localize
 
 
 @unittest.skipUnless(sys.platform == 'darwin', 'Mach-O packaging requires macOS')
 class BundleRuntimePathsTests(unittest.TestCase):
-    def fixture(self, root, bundle_fallback=True):
-        shared, bundle = root / 'shared build', root / 'Vox.app/Contents/MacOS'
-        shared.mkdir()
+    def fixture(self, root, bundle_fallback=True, extra_rpath=None, canonical=False):
+        shared = root / ('Build/v' if canonical else 'shared build')
+        bundle = root / 'Vox.app/Contents/MacOS'
+        shared.mkdir(parents=True)
         bundle.mkdir(parents=True)
         source, main = root / 'helper.c', root / 'main.c'
         for folder, value in [(shared, 17), (bundle, 29)]:
@@ -28,6 +30,8 @@ class BundleRuntimePathsTests(unittest.TestCase):
                    '-Wl,-rpath,' + str(shared), '-o', str(executable)]
         if bundle_fallback:
             command.append('-Wl,-rpath,@executable_path')
+        if extra_rpath is not None:
+            command.append('-Wl,-rpath,' + str(extra_rpath))
         subprocess.run(command, check=True)
         return executable, shared
 
@@ -58,6 +62,23 @@ class BundleRuntimePathsTests(unittest.TestCase):
                 localize(executable, shared)
             self.assertEqual(hashlib.sha256(executable.read_bytes()).hexdigest(), before)
             self.assertEqual(self.run_fixture(executable), '17')
+
+    def test_staged_build_removes_both_staging_and_canonical_runtime_paths(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            staging = root / '.production-output'
+            staging.mkdir()
+            executable, shared = self.fixture(root, extra_rpath=staging, canonical=True)
+            self.assertEqual(self.run_fixture(executable), '17')
+            with patch('localize_bundle_rpaths.__file__', str(root / 'tools/localize_bundle_rpaths.py')):
+                self.assertEqual(localize(executable, staging), [str(shared), str(staging)])
+            subprocess.run(['codesign', '--force', '--sign', '-', str(executable)],
+                           check=True, capture_output=True)
+            self.assertEqual(self.run_fixture(executable), '29')
+            before = hashlib.sha256(executable.read_bytes()).hexdigest()
+            with patch('localize_bundle_rpaths.__file__', str(root / 'tools/localize_bundle_rpaths.py')):
+                self.assertEqual(localize(executable, staging), [])
+            self.assertEqual(hashlib.sha256(executable.read_bytes()).hexdigest(), before)
 
 
 if __name__ == '__main__':
