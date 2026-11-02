@@ -53,8 +53,8 @@ int main(int argc, char** argv)
         auto input=actual;
         assert(full(expected.data(),width,height,width*4,bg,&path));
         VoxGraphitePixelRegion view{x,y,w,h,pitch,actual.data()+1};
-        // First draw, repeated admission, then an owned cached result. Each
-        // replay starts with the original backdrop, including row padding.
+        // Reused targets must clear old pixels before each draw. Each replay
+        // starts with the original backdrop, including row padding.
         for(int replay=0;replay<3;++replay) {
         actual=input;view.pixels=actual.data()+1;
         assert(draw(&view,width,height,bg,&path));

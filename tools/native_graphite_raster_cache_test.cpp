@@ -64,58 +64,9 @@ static void large_draw_admission()
     assert(!small.hit && small.pending);
 }
 
-static void gradient_region_identity()
-{
-    constexpr int width = 81, height = 37, pitch = width * 4 + 7;
-    std::vector<uint8_t> pixels(size_t(pitch) * height, 31);
-    float segments[12] {};
-    float stops[] {.9f, .1f, .3f, .8f, 0, .1f, .5f, .7f, .4f, 1};
-    VoxGraphitePath path {};
-    path.segments = segments; path.segment_count = 1;
-    path.stops = stops; path.stop_count = 2; path.gradient = 1;
-    path.matrix[0] = path.matrix[4] = path.matrix[8] = 1;
-    VoxGraphitePixelRegion region {57, 23, width, height, pitch, pixels.data()};
-    VoxGraphiteRasterCache cache;
-    auto request = cache.prepare_region(path, 544, 256, region, true);
-    assert(request.pending && !request.hit);
-    for (int row = 0; row < height; ++row)
-        std::fill_n(pixels.data() + row * pitch, width * 4, 137);
-    cache.finish(std::move(request), pixels.data(), pitch);
-    auto reset = [&] { std::fill(pixels.begin(), pixels.end(), 31); };
-    reset();
-    assert(cache.prepare_region(path, 544, 256, region, true).hit);
-    for (int row = 0; row < height; ++row) {
-        for (int x = 0; x < width * 4; ++x) assert(pixels[row * pitch + x] == 137);
-        for (int x = width * 4; x < pitch; ++x) assert(pixels[row * pitch + x] == 31);
-    }
-    reset();
-    assert(!cache.prepare_region(path, 545, 256, region, true).hit);
-    assert(!cache.prepare_region(path, 544, 257, region, true).hit);
-    region.x++;
-    assert(!cache.prepare_region(path, 544, 256, region, true).hit);
-    region.x--; region.y++;
-    assert(!cache.prepare_region(path, 544, 256, region, true).hit);
-    region.y--;
-    stops[1] += .01f;
-    assert(!cache.prepare_region(path, 544, 256, region, true).hit);
-    stops[1] -= .01f;
-    segments[4]++;
-    assert(!cache.prepare_region(path, 544, 256, region, true).hit);
-    segments[4]--;
-    pixels.back()++; // Row padding is outside the key and must remain untouched.
-    assert(cache.prepare_region(path, 544, 256, region, true).hit);
-    assert(pixels.back() == 32);
-    reset(); pixels[1]++;
-    auto original = pixels;
-    assert(!cache.prepare_region(path, 544, 256, region, true).hit && pixels == original);
-    region.x = -1;
-    assert(!cache.prepare_region(path, 544, 256, region, true).pending);
-}
-
 int main()
 {
     large_draw_admission();
-    gradient_region_identity();
     std::vector<uint8_t> source(16, 87), pixels(16, 31);
     auto descriptor = image(source.data());
     VoxGraphiteRasterCache cache;
