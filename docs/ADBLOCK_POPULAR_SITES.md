@@ -2701,3 +2701,43 @@ Raw artifacts are under `Build/pikabu-rounded-icons-20261102/`. These are frozen
 guest rendering results with author scripts removed, without live-site,
 instruction-count or scrolling-performance acceptance. Earlier saved-live and
 synthetic SVG discrepancies remain open.
+
+
+## Pikabu SVG ellipses retain parent tile MSAA, 2 November 2026
+
+Commit `923322f4e` reduces the unchanged frozen-page comparison from **104 to
+92 differing pixels**. All 12 changed dot-edge pixels now match Brave; no new
+errors appear. The visible photo stays exact. The remaining 92 pixels consist
+of 54 avatar edges, 34 header notification/bell/badge pixels and four other
+small-control pixels, so Pikabu's zero-pixel gate remains open.
+
+SVG batches previously inherited parent MSAA only when they also had a rounded
+SVG image boundary. Analytic ellipses without that boundary lost the selected
+tile mode. Both native replay paths now inherit it. Tile selection remains
+unchanged: an attempted fill-only ellipse exclusion canceled the improvement
+and was reverted before the accepted production build.
+
+The new native regression compares the public batch API against independent
+complete Dawn rasters with a visible non-convex neighboring path. It covers
+MSAA on/off, both native replay paths, two scales, four fractional translations
+and two backdrops. Its **64 cases fail against the previous library with 504
+differing pixels and pass against the fix with zero**, under address and
+undefined-behavior sanitizers. A new browser preservation fixture also matches
+two fresh Brave/full-uBO references exactly; it was already exact before this
+fix and does not supply the failing-before result.
+
+The final production bundle passes **78 rendering tests / 83 captures**, all
+four focused native raster checks, fresh headless startup and the archived
+CNN, Guardian and Verge viewports at **zero pixels**. Its 52 Pikabu request
+decisions agree with full uBO, with zero blocks or disagreements. The matched
+control changes only the native Skia library and reproduces the previous
+104-pixel frame exactly. Production source hashes remained stable; two test
+drivers changed during the build.
+
+The [ellipse parent-MSAA receipt](benchmark-results/pikabu-svg-ellipse-parent-msaa-2026-11-02.json)
+records identities, guards, frames, the rejected planner/oval/image-clip probes
+and the isolated 54-pixel avatar reproduction. Raw artifacts are retained in
+`Build/pikabu-small-controls-20261102/`. Existing goldens and tolerances are
+unchanged. These are frozen guest rendering results with author scripts
+removed; live-site, performance and the earlier saved-live/synthetic reference
+qualifications remain open.
