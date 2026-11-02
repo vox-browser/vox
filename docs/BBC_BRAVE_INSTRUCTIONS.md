@@ -8,6 +8,9 @@ and has been removed. Among the five completed matched pairs, two improve and
 three regress; their partial median increases by 583,525,731 instructions
 (1.8646894242908671%). Every attempt remains in the
 [experiment supplement](benchmark-results/bbc-font-request-experiment-2026-11-02.json).
+The subsequent font-input scan optimization is committed and passes focused
+checks, but still awaits a completed production bundle and a new BBC cohort;
+its isolated microbenchmark earns no site-level credit.
 
 Latest complete cohort 49 uses canonical tools, the completed
 production Vox bundle and installed Brave directly for seven alternating
@@ -2695,3 +2698,49 @@ Production JIT policy remains unchanged. A preparatory audit syntax failure
 and the corrected zero-exit auditor are both retained. All counters, commands,
 hashes, focused/restoration checks and guard receipts are linked from the
 [font-request evidence](benchmark-results/bbc-font-request-experiment-2026-11-02.json).
+
+## Font-input index, pending production validation
+
+`e6c401e08` replaces the repeated all-longhand scan during font-cache reuse with
+a process-lifetime index derived once from the existing mutation predicate.
+It compares the same 21 current font inputs in the original property order.
+It retains owner/environment guards, animated values and in-place comparisons;
+no element's font values are memoized. The index uses persistent allocation so
+the first document's native arena cannot own its lifetime. `4ac6d68f9` isolates
+the previous full scan in the matched control.
+
+All 48 focused cases pass with indexing enabled and forced off in default,
+no-GC and preallocated modes: 288 case executions and nine zero-exit jobs.
+Coverage includes every longhand's font-cache behavior, animated and in-place
+changes, index lifetime after document destruction, font synthesis and the
+existing font-input refresh cases. All 229 instruction-tool tests pass. Earlier
+compile-only preparations remain retained; only final unchanged sources receive
+this execution credit.
+
+Eight standalone microbenchmark trials use the same C-O3 preallocated no-GC
+executable, five uncounted warmup calls and 200,000 measured comparisons each,
+alternating equal and changed font sizes. Every trial asserts 100,000 matches.
+The four indexed counts span 730,825,223–730,859,333 instructions; the four full
+scans span 3,351,088,371–3,351,262,797. The retained disassembly confirms calls
+to the comparison inside the loop. The first four trials lack host telemetry;
+the later four retain CPU count, load and timestamps, without excluding earlier
+results. A strict V `-prod` preparation fails on existing pointer-map checks;
+the corrected microbenchmark retains V runtime checks and uses the same C-O3
+preallocation policy as production.
+
+This measures a function, without browser startup, BBC content or PNG capture.
+It establishes no BBC saving, Brave advantage, broad-check cadence reset or
+catalog qualification. The
+[font-input evidence](benchmark-results/bbc-font-input-index-2026-11-02.json)
+pins the exact counts, executable/generated-C hashes, guards and source checks.
+
+At the recorded receipt time, the latest completed canonical browser remains
+`c1a609e19395dd68b7a8fa7043f55be7a89e21fb0bc3a7031559ac3fb4770540`.
+It lacks this change and still contains the early-font experiment already
+removed from `master`. The shared production build is busy; no duplicate build
+or private app/tool copy is queued. Prepared runners reference canonical apps
+and tools. Fresh startup, eleven smoke/eight SVG checks, separate BBC path/JSC
+diagnostics and a complete seven-triple unprofiled cohort remain pending on a
+bundle containing the change. An older bundle cannot validate it. The existing
+5,000,000-instruction broad-check cadence applies to measured BBC savings;
+prior broad baseline failures remain unresolved.
