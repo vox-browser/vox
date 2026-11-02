@@ -40,3 +40,41 @@ const RealRect=DOMRect;globalThis.DOMRect=function(){throw new Error("author con
 '], runtime, mut messages)
 	assert messages == []string{}
 }
+
+fn test_compact_bounding_rects_are_mutable_dom_rect_snapshots_with_json_serialization() {
+	mut document := html.parse_document('<!doctype html><style>body{margin:0}#box{position:absolute;left:12px;top:14px;width:40px;height:20px}#hidden{display:none}</style><div id="box"></div><div id="hidden"></div>')
+	mut runtime := browserjs.Runtime.create()
+	defer {
+		runtime.close()
+		document.finalize()
+	}
+	layout.install_document_layout_hook(document)
+	mut messages := []string{}
+	run_document_javascript(document, 'about:blank', [r'
+const rect=box.getBoundingClientRect();
+if(!(rect instanceof DOMRect)||!(rect instanceof DOMRectReadOnly))throw new Error("bounding rectangle type");
+if(JSON.stringify(rect.toJSON())!==JSON.stringify({x:12,y:14,width:40,height:20,top:14,right:52,bottom:34,left:12}))throw new Error("bounding rectangle serialization");
+rect.x=100;rect.width=-20;if(rect.left!==80||rect.right!==100||box.getBoundingClientRect().x!==12)throw new Error("mutable independent snapshot");
+box.style.width="70px";if(rect.width!==-20||box.getBoundingClientRect().width!==70)throw new Error("live geometry and retained snapshot");
+for(const element of [hidden,document.createElement("div")]){const empty=element.getBoundingClientRect();if(!(empty instanceof DOMRect)||Object.values(empty.toJSON()).some(value=>value!==0))throw new Error("empty bounding rectangle");}
+'], runtime, mut messages)
+	assert messages == []string{}
+}
+
+fn test_compact_bounding_rect_uses_the_intrinsic_constructor_after_author_replacement() {
+	mut document := html.parse_document('<!doctype html><svg id="drawing" width="30" height="20"></svg><div id="box"></div>')
+	mut runtime := browserjs.Runtime.create()
+	defer {
+		runtime.close()
+		document.finalize()
+	}
+	layout.install_document_layout_hook(document)
+	mut messages := []string{}
+	run_document_javascript(document, 'about:blank', [r'
+const RealRect=DOMRect;globalThis.DOMRect=function(){throw new Error("author rectangle constructor")};
+if(!(drawing.getBoundingClientRect() instanceof RealRect)||!(box.getBoundingClientRect() instanceof RealRect))throw new Error("intrinsic bounding rectangle constructor");
+let brands=0;for(const receiver of [{},Object.create(box),null])try{box.getBoundingClientRect.call(receiver)}catch(error){if(error instanceof TypeError)brands++}
+if(brands!==3)throw new Error("bounding rectangle receiver checks");
+'], runtime, mut messages)
+	assert messages == []string{}
+}

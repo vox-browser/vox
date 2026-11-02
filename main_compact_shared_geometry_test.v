@@ -5,6 +5,7 @@ import browserjs
 fn test_shared_geometry_descriptors_keep_live_reads_flags_and_receiver_checks() {
 	mut runtime := browserjs.Runtime.create()
 	defer { runtime.close() }
+	runtime.install_dom_rect_read_only_binding()!
 	_ = runtime.evaluate_host(r'
 const __elementRecords=new WeakMap(),__elementRecordGet=WeakMap.prototype.get,__elementApply=Reflect.apply;
 const __compactScrollFinite=Number.isFinite,requests=[],sizes={a:30,b:80,s:90};
