@@ -88,7 +88,7 @@ fn test_procedural_style_actions_and_later_css_additions_reach_the_user_origin()
 	refresh_browser_adblock(document, runtime, mut messages)
 	paid := document.get_element_by_id('paid') or { panic('style action removed paid node') }
 	style := css.StyleComputer.new(document).compute_style(dom.AbstractElement.new(paid, none))
-	assert style.property(.color, .no)!.css_text == 'rgb(255, 0, 0)'
+	assert (style.property(.color, .no) or { panic("missing computed property") }).css_text == 'rgb(255, 0, 0)'
 	assert document.get_element_by_id('organic') != none
 	// A nonstandard adapter can emit extra CSS while committing. The final
 	// install still handles it rather than assuming the primed payload is final.
@@ -96,7 +96,7 @@ fn test_procedural_style_actions_and_later_css_additions_reach_the_user_origin()
 	refresh_browser_adblock(document, runtime, mut messages)
 	organic := document.get_element_by_id('organic') or { panic('missing organic node') }
 	organic_style := css.StyleComputer.new(document).compute_style(dom.AbstractElement.new(organic, none))
-	assert organic_style.property(.color, .no)!.css_text == 'rgb(0, 128, 0)'
+	assert (organic_style.property(.color, .no) or { panic("missing computed property") }).css_text == 'rgb(0, 128, 0)'
 	assert messages == []string{}
 }
 

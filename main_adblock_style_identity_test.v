@@ -24,7 +24,7 @@ fn test_unchanged_cosmetic_rules_do_not_replace_the_user_sheet_after_token_chang
 	assert !document.needs_full_style_update()
 	advert := document.get_element_by_id('advert') or { panic('missing advert') }
 	computed := css.StyleComputer.new(document).compute_style(dom.AbstractElement.new(advert, none))
-	assert computed.property(.display, .no)!.css_text == 'none'
+	assert (computed.property(.display, .no) or { panic("missing computed property") }).css_text == 'none'
 	assert source.contains('#news { color: green !important; }')
 }
 
