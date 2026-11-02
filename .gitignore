@@ -1,4 +1,6 @@
 /Build/
+# Generated benchmark reports and raw measurements stay local.
+/docs/benchmark-results/
 *.v3cc.*/
 /tools/layout_corpus
 
